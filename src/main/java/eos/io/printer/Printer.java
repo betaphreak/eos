@@ -1,5 +1,6 @@
 package eos.io.printer;
 
+import eos.economy.Economy;
 import lombok.Getter;
 
 /**
@@ -75,9 +76,13 @@ public abstract class Printer {
 	public abstract void printTitles();
 
 	/**
-	 * Print data, called by Economy at each time step
+	 * Print data, called by {@link Economy#newDay()} at each time step.
+	 *
+	 * @param economy
+	 *            the economy being printed (source of the in-game date and time
+	 *            step)
 	 */
-	public abstract void print();
+	public abstract void print(Economy economy);
 
 	/**
 	 * Clean up the printer

@@ -14,7 +14,7 @@ import eos.economy.*;
  * <p>
  * 3. Add the printer to the Economy by calling <tt>Economy.addPrinter()</tt>.
  * <p>
- * 4. Call <tt>print()</tt> of this printer in <tt>Economy.step()</tt> to print
+ * 4. Call <tt>print()</tt> of this printer in <tt>Economy.newDay()</tt> to print
  * data.
  * <p>
  * 5. Include <tt>cleanup()</tt> of this printer in
@@ -217,12 +217,12 @@ public class ConsumerMktPricePrinter extends Printer {
 	}
 
 	/**
-	 * Print data, called by Economy.step() at each time step
+	 * Print data, called by Economy.newDay() at each time step
 	 */
-	public void print() {
-		int step = Economy.getTimeStep();
+	public void print(Economy economy) {
+		int step = economy.getTimeStep();
 		if (step >= start && step <= end && (step - start) % period == 0)
-			printWriter.println(Economy.getDate(), mkt.getLastMktPrice());
+			printWriter.println(economy.getDate(), mkt.getLastMktPrice());
 	}
 
 	/**

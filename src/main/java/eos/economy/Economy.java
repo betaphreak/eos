@@ -12,14 +12,21 @@ import eos.io.printer.Printer;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Market;
 import eos.util.Averager;
+import eos.util.Rng;
+import lombok.Getter;
 
 /**
- * Economy provides a container to hold all agents and markets together.
- * 
+ * Economy provides a container to hold all agents and markets together. It is
+ * an instance (no longer a static singleton): a {@link GameSession} owns the
+ * random-number seed and creates economies from it, so several independent
+ * economies may coexist in one JVM. Agents, banks and markets hold a reference
+ * to the economy they belong to; printers receive it in {@link
+ * Printer#print(Economy)}.
+ *
  * @author zhihongx
- * 
+ *
  */
-public class 	Economy {
+public class Economy {
 
 	/****************** constants *****************************/
 
@@ -31,84 +38,107 @@ public class 	Economy {
 	/********************************************************/
 
 	// banks in the economy
-	private static LinkedHashSet<Bank> banks = new LinkedHashSet<Bank>();
+	private final LinkedHashSet<Bank> banks = new LinkedHashSet<Bank>();
 
 	// agents in the economy (who are still alive)
-	private static LinkedHashSet<Agent> agents = new LinkedHashSet<Agent>();
+	private final LinkedHashSet<Agent> agents = new LinkedHashSet<Agent>();
 
 	// agents who die in the current step
-	private static LinkedHashSet<Agent> deadAgents = new LinkedHashSet<Agent>();
+	private final LinkedHashSet<Agent> deadAgents = new LinkedHashSet<Agent>();
 
 	// symbol table mapping good names to their markets
-	private static LinkedHashMap<String, Market> markets = new LinkedHashMap<String, Market>();
+	private final LinkedHashMap<String, Market> markets = new LinkedHashMap<String, Market>();
 
 	// consumer goods market
-	private static LinkedHashSet<ConsumerGoodMarket> consumerGoodMarkets = new LinkedHashSet<ConsumerGoodMarket>();
+	private final LinkedHashSet<ConsumerGoodMarket> consumerGoodMarkets = new LinkedHashSet<ConsumerGoodMarket>();
 
 	// printers
-	private static ArrayList<Printer> printers = new ArrayList<Printer>();
+	private final ArrayList<Printer> printers = new ArrayList<Printer>();
 
 	// current time step
-	private static int timeStep = 0;
+	private int timeStep = 0;
+
+	// ID for the next agent created in this economy
+	private int nextAvailableID = 1;
 
 	// in-game date of step 0; each step advances one day
-	private static LocalDate startDate = LocalDate.of(1444, 12, 11);
+	private final LocalDate startDate;
+
+	// random-number generator (shared with the owning game session)
+	@Getter
+	private final Rng rng;
 
 	// CPI in the last step
-	private static double lastCPI;
+	private double lastCPI;
 
 	// inflation in the current step
-	private static double inflation;
+	private double inflation;
 
 	// average inflation within <tt>INFLATION_TIME_WIN</tt>
-	private static double avgInflation;
+	private double avgInflation;
 
 	// an averager used to compute average inflation
-	private static Averager inflationAvger = new Averager(INFLATION_TIME_WIN);
+	private final Averager inflationAvger = new Averager(INFLATION_TIME_WIN);
+
+	/**
+	 * Create a new economy whose step 0 falls on <tt>startDate</tt>, drawing
+	 * randomness from <tt>rng</tt>. Each step advances one day. Use {@link
+	 * GameSession#newEconomy(LocalDate)} to create an economy with a
+	 * reproducible random-number seed.
+	 *
+	 * @param startDate
+	 *            the in-game date of step 0
+	 * @param rng
+	 *            the random-number generator for this economy
+	 */
+	public Economy(LocalDate startDate, Rng rng) {
+		this.startDate = startDate;
+		this.rng = rng;
+	}
+
+	/**
+	 * Return a fresh unique agent ID within this economy (also used as the
+	 * agent's bank account number). IDs are per-economy, so two economies have
+	 * independent ID spaces.
+	 *
+	 * @return a fresh unique agent ID
+	 */
+	public int nextAgentID() {
+		return nextAvailableID++;
+	}
 
 	/**
 	 * Return market corresponding to <tt>good</tt>
-	 * 
+	 *
 	 * @param good
 	 *            name of a good
 	 * @return market corresponding to <tt>good</tt>
 	 */
-	public static Market getMarket(String good) {
+	public Market getMarket(String good) {
 		return markets.get(good);
 	}
 
 	/**
 	 * Run simulation for <tt>steps</tt> number of steps
-	 * 
+	 *
 	 * @param steps
 	 */
-	public static void run(int steps) {
+	public void run(int steps) {
 		for (int i = 0; i < steps; i++) {
 			LocalDate date = getDate();
 			if (date.getMonthValue() == 1 && date.getDayOfMonth() == 1)
 				System.out.println(date);
-			step();
+			newDay();
 		}
 	}
 
 	/**
 	 * Return the current time step
-	 * 
+	 *
 	 * @return the current time step
 	 */
-	public static int getTimeStep() {
+	public int getTimeStep() {
 		return timeStep;
-	}
-
-	/**
-	 * Set the in-game date of step 0. Each step advances one day, so the
-	 * current date is <tt>startDate + timeStep</tt> days.
-	 *
-	 * @param date
-	 *            the in-game date of step 0
-	 */
-	public static void setStartDate(LocalDate date) {
-		startDate = date;
 	}
 
 	/**
@@ -117,14 +147,14 @@ public class 	Economy {
 	 *
 	 * @return the current in-game date
 	 */
-	public static LocalDate getDate() {
+	public LocalDate getDate() {
 		return startDate.plusDays(timeStep);
 	}
 
 	/**
-	 * Run simulation for one step
+	 * Advance the simulation by one day (one step).
 	 */
-	public static void step() {
+	public void newDay() {
 		for (Agent agent : agents) {
 			agent.act();
 			if (!agent.isAlive())
@@ -143,7 +173,7 @@ public class 	Economy {
 		}
 
 		for (Printer printer : printers)
-			printer.print();
+			printer.print(this);
 
 		updateInflation();
 		timeStep++;
@@ -152,7 +182,7 @@ public class 	Economy {
 	/**
 	 * Update inflation value
 	 */
-	private static void updateInflation() {
+	private void updateInflation() {
 		double cpi = 0;
 		for (ConsumerGoodMarket mkt : consumerGoodMarkets) {
 			cpi += mkt.getLastMktPrice();
@@ -171,28 +201,28 @@ public class 	Economy {
 
 	/**
 	 * Return the average inflation within <tt>INFLATION_TIME_WIN</tt>
-	 * 
+	 *
 	 * @return the average inflation within <tt>INFLATION_TIME_WIN</tt>
 	 */
-	public static double getInflation() {
+	public double getInflation() {
 		return avgInflation;
 	}
 
 	/**
 	 * Return agents who are still alive
-	 * 
+	 *
 	 * @return agents who are still alive
 	 */
-	public static Collection<Agent> getAgents() {
+	public Collection<Agent> getAgents() {
 		return agents;
 	}
 
 	/**
 	 * Add <tt>market</tt> to the economy
-	 * 
+	 *
 	 * @param market
 	 */
-	public static void addMarket(Market market) {
+	public void addMarket(Market market) {
 		assert (market != null);
 		if (markets.containsKey(market.getGood()))
 			throw new RuntimeException("Economy already contains a market for "
@@ -207,7 +237,7 @@ public class 	Economy {
 	 *
 	 * @param bank
 	 */
-	public static void addBank(Bank bank) {
+	public void addBank(Bank bank) {
 		assert (bank != null);
 		banks.add(bank);
 	}
@@ -217,16 +247,16 @@ public class 	Economy {
 	 *
 	 * @param agent
 	 */
-	public static void addAgent(Agent agent) {
+	public void addAgent(Agent agent) {
 		agents.add(agent);
 	}
 
 	/**
 	 * Add <tt>printer</tt>
-	 * 
+	 *
 	 * @param printer
 	 */
-	public static void addPrinter(Printer printer) {
+	public void addPrinter(Printer printer) {
 		assert (printer != null);
 		printers.add(printer);
 		printer.printTitles();
@@ -235,7 +265,7 @@ public class 	Economy {
 	/**
 	 * clean up printers
 	 */
-	public static void cleanUpPrinters() {
+	public void cleanUpPrinters() {
 		for (Printer printer : printers)
 			printer.cleanup();
 	}

@@ -3,40 +3,38 @@ package eos.util;
 import java.util.Random;
 
 /**
- * Minimal seedable random-number generator shared across the simulation. All
- * draws come from a single {@link java.util.Random}, so a run is fully
- * determined by the seed set via {@link #setSeed(long)} — the same seed yields
- * an identical run.
+ * Minimal seedable random-number generator. Each instance wraps its own
+ * {@link java.util.Random}, so a run is fully determined by the seed passed at
+ * construction — the same seed yields an identical sequence. A {@link
+ * eos.economy.GameSession} owns one {@code Rng} and shares it with the economies
+ * it creates, so distinct sessions draw from independent generators.
  */
 public final class Rng {
 
-	private static Random random = new Random();
+	private final Random random;
 
-	private Rng() {
-	}
-
-	/** Reset the generator to a fixed seed for a reproducible run. */
-	public static void setSeed(long seed) {
-		random = new Random(seed);
+	/** Create a generator seeded with <tt>seed</tt> for a reproducible run. */
+	public Rng(long seed) {
+		this.random = new Random(seed);
 	}
 
 	/** The backing generator (e.g. for {@link java.util.Collections#shuffle}). */
-	public static Random getRandom() {
+	public Random getRandom() {
 		return random;
 	}
 
 	/** Uniform real in [0, 1). */
-	public static double uniform() {
+	public double uniform() {
 		return random.nextDouble();
 	}
 
 	/** Uniform real in [a, b). */
-	public static double uniform(double a, double b) {
+	public double uniform(double a, double b) {
 		return a + random.nextDouble() * (b - a);
 	}
 
 	/** Uniform integer in [0, n). */
-	public static int uniform(int n) {
+	public int uniform(int n) {
 		return (int) (random.nextDouble() * n);
 	}
 
@@ -48,7 +46,7 @@ public final class Rng {
 	 * @param stddev the standard deviation
 	 * @return a normally distributed value
 	 */
-	public static double gaussian(double mean, double stddev) {
+	public double gaussian(double mean, double stddev) {
 		double x, y, r;
 		do {
 			x = uniform(-1.0, 1.0);

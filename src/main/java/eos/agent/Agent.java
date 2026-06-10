@@ -1,6 +1,7 @@
 package eos.agent;
 
 import eos.bank.Bank;
+import eos.economy.Economy;
 import eos.good.Good;
 import lombok.Getter;
 
@@ -12,9 +13,6 @@ import lombok.Getter;
  */
 public abstract class Agent {
 
-	// ID for the next agent
-	private static int nextAvailableID = 1;
-
 	// each agent has an unique ID that is also used as the bank account number
 	@Getter
 	private final int ID;
@@ -22,6 +20,10 @@ public abstract class Agent {
 	// the bank at which this agent holds its accounts
 	@Getter
 	private final Bank bank;
+
+	// the economy this agent belongs to
+	@Getter
+	private final Economy economy;
 
 	// is the agent alive?
 	@Getter
@@ -35,11 +37,14 @@ public abstract class Agent {
 	 *
 	 * @param bank
 	 *            the bank at which this agent holds its accounts
+	 * @param economy
+	 *            the economy this agent belongs to
 	 */
-	public Agent(Bank bank) {
+	public Agent(Bank bank, Economy economy) {
 		isAlive = true;
-		ID = nextAvailableID++;
 		this.bank = bank;
+		this.economy = economy;
+		ID = economy.nextAgentID();
 	}
 
 	/**
@@ -69,7 +74,7 @@ public abstract class Agent {
 	}
 
 	/**
-	 * Called by Economy.step() in each simulation step.
+	 * Called by Economy.newDay() in each simulation step.
 	 */
 	public abstract void act();
 

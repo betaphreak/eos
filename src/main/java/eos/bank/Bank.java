@@ -42,6 +42,9 @@ public class Bank {
 	// tunable model parameters
 	private final BankConfig config;
 
+	// the economy this bank belongs to
+	private final Economy economy;
+
 	// working copy of the loan-sensitivity parameter; normalized at step 0
 	private double tao;
 
@@ -84,9 +87,12 @@ public class Bank {
 	 *
 	 * @param config
 	 *            tunable model parameters
+	 * @param economy
+	 *            the economy this bank belongs to
 	 */
-	public Bank(BankConfig config) {
+	public Bank(BankConfig config, Economy economy) {
 		this.config = config;
+		this.economy = economy;
 		this.tao = config.tao();
 		this.loanIR = config.initLoanIR();
 		this.depositIRAvger = new Averager(config.ltIRWin());
@@ -225,7 +231,7 @@ public class Bank {
 	}
 
 	/**
-	 * Called by Economy.step() in every time step
+	 * Called by Economy.newDay() in every time step
 	 */
 	public void act() {
 		totalLoan = 0;
@@ -241,7 +247,7 @@ public class Bank {
 			acct.interest = 0;
 		}
 
-		if (Economy.getTimeStep() == 0) {
+		if (economy.getTimeStep() == 0) {
 			tao /= Math.max(1, Math.abs(totalDeposit - totalLoan));
 			targetIR = loanIR;
 		}

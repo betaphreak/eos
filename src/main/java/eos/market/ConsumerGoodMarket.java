@@ -71,9 +71,13 @@ public class ConsumerGoodMarket extends Market {
 	 *            <p>
 	 * @param initHigh
 	 *            max initial price
+	 *            <p>
+	 * @param economy
+	 *            the economy this market belongs to
 	 */
-	public ConsumerGoodMarket(String good, double initLow, double initHigh) {
-		super(good);
+	public ConsumerGoodMarket(String good, double initLow, double initHigh,
+			Economy economy) {
+		super(good, economy);
 		buyOffers = new ArrayList<BuyOffer>();
 		sellOffers = new ArrayList<SellOffer>();
 		this.initLow = initLow;
@@ -140,7 +144,7 @@ public class ConsumerGoodMarket extends Market {
 	 */
 	public void clear() {
 		double low, high, price;
-		if (Economy.getTimeStep() == 0) {
+		if (economy.getTimeStep() == 0) {
 			low = initLow;
 			high = initHigh;
 		} else {

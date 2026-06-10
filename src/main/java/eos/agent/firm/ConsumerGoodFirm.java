@@ -85,17 +85,20 @@ public abstract class ConsumerGoodFirm extends Firm {
 	 *            tunable model parameters
 	 * @param bank
 	 *            the bank at which this firm holds its accounts
+	 * @param economy
+	 *            the economy this firm belongs to
 	 */
 	public ConsumerGoodFirm(String productName, double initCheckingBal,
 			double initSavingsBal, double initOutput, double initWageBudget,
 			int initCapital, CFirm[] capitalProducers, FirmConfig config,
-			Bank bank) {
-		super(initCheckingBal, initSavingsBal, bank);
+			Bank bank, Economy economy) {
+		super(initCheckingBal, initSavingsBal, bank, economy);
 		this.config = config;
-		capital = new Capital(initCapital, getID(), bank, capitalProducers);
-		pMkt = (ConsumerGoodMarket) Economy.getMarket(productName);
-		cMkt = (CapitalMarket) Economy.getMarket("Capital");
-		lMkt = (LaborMarket) Economy.getMarket("Labor");
+		capital = new Capital(initCapital, getID(), bank, capitalProducers,
+				economy.getRng());
+		pMkt = (ConsumerGoodMarket) economy.getMarket(productName);
+		cMkt = (CapitalMarket) economy.getMarket("Capital");
+		lMkt = (LaborMarket) economy.getMarket("Labor");
 		output = initOutput;
 		wageBudget = initWageBudget;
 		loan = 0;
@@ -108,7 +111,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 	}
 
 	/**
-	 * Called by Economy.step() in each step.
+	 * Called by Economy.newDay() in each step.
 	 */
 	public void act() {
 		double newOutput, newWageBudget, pPrice;
@@ -125,7 +128,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 		wage = labor.getQuantity() > 0 ? wageBudget / labor.getQuantity() : 0;
 
 		if (labor.getQuantity() > 0) {
-			if (Economy.getTimeStep() == 0) {
+			if (getEconomy().getTimeStep() == 0) {
 				// initial step
 				newOutput = output;
 				newWageBudget = wageBudget;
@@ -182,7 +185,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 												// capital
 		capitalCost = capital.useCapital(); // cost of capital in this step
 
-		if (Economy.getTimeStep() > 0) {
+		if (getEconomy().getTimeStep() > 0) {
 			int capitalToBuy = 0; // number of machines to purchase
 			double capitalPrice = cMkt.getAvgPrice();
 			double IR = bank.getLoanIR(); // interest rate
@@ -209,7 +212,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 			 * 2000 when the economy stabilizes
 			 */
 			if (IK >= IR && utilization > 0.8 && profit > 5 * avgProfit
-					&& Economy.getTimeStep() > 2000)
+					&& getEconomy().getTimeStep() > 2000)
 				capitalToBuy += 1;
 
 			/*
@@ -217,7 +220,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 			 * still decides to expand in this case, which does not really make
 			 * sense)
 			 */
-			if (profit < -5 * avgProfit && Economy.getTimeStep() > 2000)
+			if (profit < -5 * avgProfit && getEconomy().getTimeStep() > 2000)
 				capitalToBuy -= 1;
 			/***************************************************************/
 

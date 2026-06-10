@@ -6,8 +6,8 @@ import java.util.Collections;
 import eos.bank.Bank;
 import eos.agent.firm.Firm;
 import eos.agent.laborer.Laborer;
+import eos.economy.Economy;
 import eos.good.Labor;
-import eos.util.Rng;
 
 /**
  * A labor market
@@ -39,9 +39,12 @@ public class LaborMarket extends Market {
 
 	/**
 	 * Create a new labor market
+	 *
+	 * @param economy
+	 *            the economy this market belongs to
 	 */
-	public LaborMarket() {
-		super("Labor");
+	public LaborMarket(Economy economy) {
+		super("Labor", economy);
 		employers = new ArrayList<Employer>();
 		employees = new ArrayList<Employee>();
 		totalBudget = 0;
@@ -84,8 +87,8 @@ public class LaborMarket extends Market {
 	 * Clear the market.
 	 */
 	public void clear() {
-		Collections.shuffle(employers, Rng.getRandom());
-		Collections.shuffle(employees, Rng.getRandom());
+		Collections.shuffle(employers, economy.getRng().getRandom());
+		Collections.shuffle(employees, economy.getRng().getRandom());
 		int low = 0;
 		double sum = 0;
 		for (Employer employer : employers) {

@@ -4,8 +4,9 @@ import java.util.function.IntFunction;
 
 import eos.bank.Bank;
 import eos.bank.BankConfig;
+import eos.economy.Economy;
+import eos.economy.GameSession;
 import eos.io.SimLog;
-import eos.util.Rng;
 
 /**
  * Simulation (two-bank case): the same economy as {@link Simulation1}, but with
@@ -25,11 +26,12 @@ public class Simulation3 {
 	 * @return the harness, exposing the constructed markets, banks and agents
 	 */
 	public static SimulationHarness run() {
-		SimLog.init();
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
-		Rng.setSeed(7654321);
+		GameSession session = new GameSession(7654321);
+		Economy economy = session.newEconomy(cfg.startDate());
+		SimLog.init(economy);
 
-		SimulationHarness h = new SimulationHarness(cfg);
+		SimulationHarness h = new SimulationHarness(cfg, economy);
 		h.createMarkets();
 		Bank bankA = h.addBank(BankConfig.DEFAULT);
 		Bank bankB = h.addBank(BankConfig.DEFAULT);

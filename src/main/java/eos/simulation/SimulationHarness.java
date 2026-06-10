@@ -14,16 +14,17 @@ import eos.agent.laborer.LaborerConfig;
 import eos.bank.Bank;
 import eos.bank.BankConfig;
 import eos.economy.Economy;
+import eos.economy.GameSession;
 import eos.io.printer.*;
 import eos.market.*;
 import lombok.Getter;
 
 /**
  * Shared construction and run logic for the bundled simulations. Each
- * {@code Simulation} builds an economy from a {@link SimulationConfig} through
- * this harness, supplying only what differs between runs: the seed (set on
- * {@code Rng} before calling), which bank each agent uses, and how each
- * agent's initial state is drawn. After {@link #run()} the harness exposes the
+ * {@code Simulation} creates an {@link Economy} from a {@link GameSession}
+ * (which owns the seed) and populates it through this harness, supplying only
+ * what differs between runs: which bank each agent uses, and how each agent's
+ * initial state is drawn. After {@link #run()} the harness exposes the
  * constructed markets, banks and agents so tests can assert on the final state.
  * <p>
  * Call order mirrors the original hand-written simulations and matters because
@@ -35,6 +36,7 @@ import lombok.Getter;
 public class SimulationHarness {
 
 	private final SimulationConfig cfg;
+	private final Economy economy;
 	private final List<Bank> banks = new ArrayList<>();
 
 	private ConsumerGoodMarket enjoymentMkt;
@@ -47,32 +49,32 @@ public class SimulationHarness {
 	private NFirm[] nFirms;
 	private Laborer[] laborers;
 
-	public SimulationHarness(SimulationConfig cfg) {
+	public SimulationHarness(SimulationConfig cfg, Economy economy) {
 		this.cfg = cfg;
-		Economy.setStartDate(cfg.startDate());
+		this.economy = economy;
 	}
 
 	/** Create the four markets and register them (labor market first). */
 	public void createMarkets() {
 		enjoymentMkt = new ConsumerGoodMarket("Enjoyment", cfg.ePrice().min(),
-				cfg.ePrice().max());
+				cfg.ePrice().max(), economy);
 		necessityMkt = new ConsumerGoodMarket("Necessity", cfg.nPrice().min(),
-				cfg.nPrice().max());
-		laborMkt = new LaborMarket();
-		capitalMkt = new CapitalMarket();
-		Economy.addMarket(laborMkt);
-		Economy.addMarket(enjoymentMkt);
-		Economy.addMarket(necessityMkt);
-		Economy.addMarket(capitalMkt);
+				cfg.nPrice().max(), economy);
+		laborMkt = new LaborMarket(economy);
+		capitalMkt = new CapitalMarket(economy);
+		economy.addMarket(laborMkt);
+		economy.addMarket(enjoymentMkt);
+		economy.addMarket(necessityMkt);
+		economy.addMarket(capitalMkt);
 	}
 
 	/**
 	 * Create a bank from <tt>bankConfig</tt>, register it, and return it.
 	 */
 	public Bank addBank(BankConfig bankConfig) {
-		Bank bank = new Bank(bankConfig);
+		Bank bank = new Bank(bankConfig, economy);
 		banks.add(bank);
-		Economy.addBank(bank);
+		economy.addBank(bank);
 		return bank;
 	}
 
@@ -85,7 +87,7 @@ public class SimulationHarness {
 	public void createFirms(Bank capitalFirmBank, IntFunction<Bank> firmBank,
 			IntToDoubleFunction eSavings, IntToDoubleFunction nSavings) {
 		CFirm cFirm = new CFirm(cfg.cFirm().checking(), cfg.cFirm().savings(),
-				cfg.cFirm().wageBudget(), capitalFirmBank);
+				cfg.cFirm().wageBudget(), capitalFirmBank, economy);
 		capitalFirms = new CFirm[] { cFirm };
 
 		eFirms = new EFirm[cfg.numEFirms()];
@@ -93,20 +95,20 @@ public class SimulationHarness {
 			eFirms[i] = new EFirm(cfg.eFirm().checking(),
 					eSavings.applyAsDouble(i), cfg.eFirm().output(),
 					cfg.eFirm().wageBudget(), cfg.eFirm().capital(),
-					capitalFirms, FirmConfig.DEFAULT, firmBank.apply(i));
+					capitalFirms, FirmConfig.DEFAULT, firmBank.apply(i), economy);
 
 		nFirms = new NFirm[cfg.numNFirms()];
 		for (int i = 0; i < cfg.numNFirms(); i++)
 			nFirms[i] = new NFirm(cfg.nFirm().checking(),
 					nSavings.applyAsDouble(i), cfg.nFirm().output(),
 					cfg.nFirm().wageBudget(), cfg.nFirm().capital(),
-					capitalFirms, FirmConfig.DEFAULT, firmBank.apply(i));
+					capitalFirms, FirmConfig.DEFAULT, firmBank.apply(i), economy);
 
-		Economy.addAgent(cFirm);
+		economy.addAgent(cFirm);
 		for (NFirm f : nFirms)
-			Economy.addAgent(f);
+			economy.addAgent(f);
 		for (EFirm f : eFirms)
-			Economy.addAgent(f);
+			economy.addAgent(f);
 	}
 
 	/**
@@ -122,8 +124,8 @@ public class SimulationHarness {
 			laborers[i] = new Laborer(cfg.laborer().e(), initN.applyAsDouble(i),
 					cfg.laborer().checking(), savings.applyAsDouble(i),
 					cfg.laborer().savingsRate(), LaborerConfig.DEFAULT,
-					laborerBank.apply(i));
-			Economy.addAgent(laborers[i]);
+					laborerBank.apply(i), economy);
+			economy.addAgent(laborers[i]);
 		}
 		laborMkt.clear();
 	}
@@ -131,28 +133,28 @@ public class SimulationHarness {
 	/** Register the printers common to every simulation. */
 	public void addCommonPrinters() {
 		int stepSize = cfg.stepSize();
-		Economy.addPrinter(new LaborersPrinter("Laborer", stepSize, laborers));
-		Economy.addPrinter(
+		economy.addPrinter(new LaborersPrinter("Laborer", stepSize, laborers));
+		economy.addPrinter(
 				new ConsumerMktPricePrinter("EPrice", stepSize, enjoymentMkt));
-		Economy.addPrinter(
+		economy.addPrinter(
 				new ConsumerMktVolPrinter("EVol", stepSize, enjoymentMkt));
-		Economy.addPrinter(new FirmsPrinter("EFirms", stepSize, eFirms));
-		Economy.addPrinter(
+		economy.addPrinter(new FirmsPrinter("EFirms", stepSize, eFirms));
+		economy.addPrinter(
 				new ConsumerMktPricePrinter("NPrice", stepSize, necessityMkt));
-		Economy.addPrinter(
+		economy.addPrinter(
 				new ConsumerMktVolPrinter("NVol", stepSize, necessityMkt));
-		Economy.addPrinter(new FirmsPrinter("NFirms", stepSize, nFirms));
+		economy.addPrinter(new FirmsPrinter("NFirms", stepSize, nFirms));
 	}
 
 	/** Register a {@link BankPrinter} writing to <tt>fileName</tt>. */
 	public void addBankPrinter(String fileName, Bank bank) {
-		Economy.addPrinter(new BankPrinter(fileName, cfg.stepSize(), bank));
+		economy.addPrinter(new BankPrinter(fileName, cfg.stepSize(), bank));
 	}
 
 	/** Run the simulation for the configured number of steps, then clean up. */
 	public void run() {
-		Economy.run(cfg.numStep());
-		Economy.cleanUpPrinters();
+		economy.run(cfg.numStep());
+		economy.cleanUpPrinters();
 	}
 
 	/** Number of laborers still alive after the run. */

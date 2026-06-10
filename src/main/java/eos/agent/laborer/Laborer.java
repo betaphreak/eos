@@ -111,11 +111,13 @@ public class Laborer extends Agent {
 	 *            tunable model parameters
 	 * @param bank
 	 *            the bank at which this laborer holds its accounts
+	 * @param economy
+	 *            the economy this laborer belongs to
 	 */
 	public Laborer(double initEQty, double initNQty, double initCheckingBal,
 			double initSavingsBal, double initSavingsRate, LaborerConfig config,
-			Bank bank) {
-		super(bank);
+			Bank bank, Economy economy) {
+		super(bank, economy);
 
 		// open a checking account and a savings account
 		bank.openAcct(this.getID(), initCheckingBal, initSavingsBal);
@@ -123,9 +125,9 @@ public class Laborer extends Agent {
 		this.config = config;
 		enjoyment = new Enjoyment(initEQty);
 		necessity = new Necessity(initNQty);
-		eMkt = (ConsumerGoodMarket) Economy.getMarket("Enjoyment");
-		nMkt = (ConsumerGoodMarket) Economy.getMarket("Necessity");
-		lMkt = (LaborMarket) Economy.getMarket("Labor");
+		eMkt = (ConsumerGoodMarket) economy.getMarket("Enjoyment");
+		nMkt = (ConsumerGoodMarket) economy.getMarket("Necessity");
+		lMkt = (LaborMarket) economy.getMarket("Labor");
 		this.savingsRate = initSavingsRate;
 		demandForE = new DemandForE();
 		demandForN = new DemandForN();
@@ -133,7 +135,7 @@ public class Laborer extends Agent {
 	}
 
 	/**
-	 * Called by Economy.step() in each step.
+	 * Called by Economy.newDay() in each step.
 	 */
 	public void act() {
 		Bank bank = getBank();
@@ -156,7 +158,7 @@ public class Laborer extends Agent {
 			return;
 		}
 
-		if (Economy.getTimeStep() > 0) {
+		if (getEconomy().getTimeStep() > 0) {
 			if (RR < lowRR)
 				lowRR = RR;
 			if (RR > highRR)
@@ -180,7 +182,7 @@ public class Laborer extends Agent {
 		double targetConsumption = checking + savings - targetSavings;
 
 		// compute consumption
-		if (Economy.getTimeStep() == 0)
+		if (getEconomy().getTimeStep() == 0)
 			consumption = income;
 		else
 			consumption = Math.min(

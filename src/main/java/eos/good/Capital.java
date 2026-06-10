@@ -57,9 +57,11 @@ public class Capital extends Good {
 	 *            bank at which the owner holds its accounts
 	 * @param producers
 	 *            array of all CFirms
+	 * @param rng
+	 *            random-number generator used to initialize the machines
 	 */
 	public Capital(int quantity, int ownerID, Bank ownerBank,
-			CFirm[] producers) {
+			CFirm[] producers, Rng rng) {
 		super(0);
 		this.ownerBank = ownerBank;
 		this.quantity = quantity;
@@ -68,9 +70,9 @@ public class Capital extends Good {
 			Machine machine = new Machine();
 			machine.price = CFirm.INIT_CAPITAL_PRICE;
 			machine.life = CFirm.CAPITAL_LIFE;
-			machine.remainingLife = Rng.uniform(machine.life / 2)
+			machine.remainingLife = rng.uniform(machine.life / 2)
 					+ machine.life / 2;
-			machine.producer = producers[Rng.uniform(producers.length)];
+			machine.producer = producers[rng.uniform(producers.length)];
 			machines.add(machine);
 		}
 		scrappedMachines = new ArrayList<Machine>();

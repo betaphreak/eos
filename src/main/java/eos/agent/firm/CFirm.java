@@ -62,10 +62,12 @@ public class CFirm extends Firm {
 	 *            initial wage budget
 	 * @param bank
 	 *            the bank at which this firm holds its accounts
+	 * @param economy
+	 *            the economy this firm belongs to
 	 */
 	public CFirm(double initCheckingBal, double initSavingsBal,
-			double initWageBudget, Bank bank) {
-		super(initCheckingBal, initSavingsBal, bank);
+			double initWageBudget, Bank bank, Economy economy) {
+		super(initCheckingBal, initSavingsBal, bank, economy);
 
 		// we assume infinite capacity here
 		// so we give A a very large value.
@@ -74,13 +76,13 @@ public class CFirm extends Firm {
 		beta = 0.5;
 		this.price = INIT_CAPITAL_PRICE;
 		wageBudget = initWageBudget;
-		cMkt = (CapitalMarket) Economy.getMarket("Capital");
-		lMkt = (LaborMarket) Economy.getMarket("Labor");
+		cMkt = (CapitalMarket) economy.getMarket("Capital");
+		lMkt = (LaborMarket) economy.getMarket("Labor");
 		lMkt.addEmployer(this, labor, initWageBudget);
 	}
 
 	/**
-	 * Called by Economy.step() in each step
+	 * Called by Economy.newDay() in each step
 	 */
 	public void act() {
 		Bank bank = getBank();

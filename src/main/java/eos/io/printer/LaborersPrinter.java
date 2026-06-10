@@ -13,7 +13,7 @@ import eos.economy.*;
  * <p>
  * 3. Add the printer to the Economy by calling <tt>Economy.addPrinter()</tt>.
  * <p>
- * 4. Call <tt>print()</tt> of this printer in <tt>Economy.step()</tt> to print
+ * 4. Call <tt>print()</tt> of this printer in <tt>Economy.newDay()</tt> to print
  * data.
  * <p>
  * 5. Include <tt>cleanup()</tt> of this printer in
@@ -220,8 +220,8 @@ public class LaborersPrinter extends Printer {
 	/**
 	 * Print data, called by Economy at each time step
 	 */
-	public void print() {
-		int step = Economy.getTimeStep();
+	public void print(Economy economy) {
+		int step = economy.getTimeStep();
 		if (step >= start && step <= end && (step - start) % period == 0) {
 			double avgWage = 0;
 			double avgIC = 0;
@@ -255,7 +255,7 @@ public class LaborersPrinter extends Printer {
 			avgEStock /= laborers.length;
 			avgNConsumption /= laborers.length;
 			avgEConsumption /= laborers.length;
-			printWriter.println(Economy.getDate(), avgWage, avgIC, avgConsumption,
+			printWriter.println(economy.getDate(), avgWage, avgIC, avgConsumption,
 					avgSavings, totSavings, avgSavingsRate, avgNStock, avgEStock,
 					avgNConsumption, avgEConsumption);
 		}

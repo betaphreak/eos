@@ -2,6 +2,8 @@ package eos.simulation;
 
 import eos.bank.Bank;
 import eos.bank.BankConfig;
+import eos.economy.Economy;
+import eos.economy.GameSession;
 import eos.io.SimLog;
 import eos.util.Rng;
 
@@ -21,21 +23,23 @@ public class Simulation2 {
 	 * @return the harness, exposing the constructed markets, bank and agents
 	 */
 	public static SimulationHarness run() {
-		SimLog.init();
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
-		Rng.setSeed(2345);
+		GameSession session = new GameSession(2345);
+		Economy economy = session.newEconomy(cfg.startDate());
+		SimLog.init(economy);
 
-		SimulationHarness h = new SimulationHarness(cfg);
+		SimulationHarness h = new SimulationHarness(cfg, economy);
+		Rng rng = economy.getRng();
 		h.createMarkets();
 		Bank bank = h.addBank(BankConfig.DEFAULT);
 		h.createFirms(bank, i -> bank,
-				i -> Rng.uniform(cfg.eFirm().savings() * 1.1,
+				i -> rng.uniform(cfg.eFirm().savings() * 1.1,
 						cfg.eFirm().savings() * 0.9),
-				i -> Rng.uniform(cfg.nFirm().savings() * 1.1,
+				i -> rng.uniform(cfg.nFirm().savings() * 1.1,
 						cfg.nFirm().savings() * 0.9));
 		h.createLaborers(i -> bank,
-				i -> Rng.gaussian(15, 3),
-				i -> Rng.uniform(cfg.laborer().savings() * 0.9,
+				i -> rng.gaussian(15, 3),
+				i -> rng.uniform(cfg.laborer().savings() * 0.9,
 						cfg.laborer().savings() * 1.1));
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);

@@ -11,7 +11,7 @@ Each simulation step is **one in-game day**. The default run starts on
 
 ## The model
 
-The economy advances in a fixed phase order every day (`Economy.step()`):
+The economy advances in a fixed phase order every day (`Economy.newDay()`):
 
 1. **Agents act** — each agent reads yesterday's prices/income and posts buy/sell
    offers to markets (no transaction happens yet).

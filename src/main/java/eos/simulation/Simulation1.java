@@ -2,8 +2,9 @@ package eos.simulation;
 
 import eos.bank.Bank;
 import eos.bank.BankConfig;
+import eos.economy.Economy;
+import eos.economy.GameSession;
 import eos.io.SimLog;
-import eos.util.Rng;
 
 /**
  * Simulation (homogeneous case): every agent of a type starts identical, all
@@ -21,11 +22,12 @@ public class Simulation1 {
 	 * @return the harness, exposing the constructed markets, bank and agents
 	 */
 	public static SimulationHarness run() {
-		SimLog.init();
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
-		Rng.setSeed(7654321);
+		GameSession session = new GameSession(7654321);
+		Economy economy = session.newEconomy(cfg.startDate());
+		SimLog.init(economy);
 
-		SimulationHarness h = new SimulationHarness(cfg);
+		SimulationHarness h = new SimulationHarness(cfg, economy);
 		h.createMarkets();
 		Bank bank = h.addBank(BankConfig.DEFAULT);
 		h.createFirms(bank, i -> bank,
