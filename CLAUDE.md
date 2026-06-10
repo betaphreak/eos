@@ -64,6 +64,7 @@ Note: `ConsumerGoodFirm.act()` contains explicitly-labeled **"hacks"** (capital-
 
 - `good/` — `Good` is a mutable quantity holder; `Capital`, `Labor`, `Necessity`, `Enjoyment` are the concrete goods.
 - `io/printer/` — each `Printer` writes one CSV via `CSVPrintWriter`. Register printers with `Economy.addPrinter(...)` (which writes the header row immediately) and finalize with `Economy.cleanUpPrinters()` after the run.
+- `io/SimLog.java` — event logging via `java.util.logging`. `SimLog.init()` (called first thing in each `main`) installs a formatter that prefixes every record with the current `Economy.getTimeStep()`, writing to **stderr** with per-record flush. Classes that emit events are annotated with Lombok `@Log` and call `log.info(...)` for events (e.g. a laborer dying) or `log.warning(...)` for anomalies (e.g. a price crossing `PRICE_SKYROCKET_FACTOR`×its initial level in `ConsumerGoodMarket`). This is for discrete events — bulk time-series still goes through printers to CSV. Note `Economy.run`'s per-1000-step progress counter still prints to stdout, so progress and events are on separate streams.
 - `util/` — `StdRandom` (seeded RNG; **set `StdRandom.setSeed(...)` for reproducible runs**), `Averager` (rolling window average used for inflation and long-term rates), `In`/`Out` (Sedgewick-style I/O).
 
 ## Conventions

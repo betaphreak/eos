@@ -5,17 +5,22 @@ import java.util.ArrayList;
 import eos.agent.Agent;
 import eos.bank.Bank;
 import eos.economy.Economy;
+import lombok.extern.java.Log;
 
 /**
  * A market trading consumer goods.
- * 
+ *
  * @author zhihongx
- * 
+ *
  */
+@Log
 public class ConsumerGoodMarket extends Market {
 	/***************** constants ********************************/
 	// percentage by which price could change in each step
 	private static final double zeta = 0.1;
+
+	// price is flagged once it exceeds this multiple of its initial level
+	private static final int PRICE_SKYROCKET_FACTOR = 10;
 
 	/**********************************************************/
 
@@ -51,6 +56,9 @@ public class ConsumerGoodMarket extends Market {
 
 	// total supply of good
 	private double mktSupply;
+
+	// whether the price is currently flagged as skyrocketed
+	private boolean priceSkyrocketed = false;
 
 	/**
 	 * Create a new consumer good market trading a good named good
@@ -175,6 +183,20 @@ public class ConsumerGoodMarket extends Market {
 		}
 
 		mktPrice = price;
+
+		// flag when the price drifts past a high multiple of its initial level,
+		// and again when it returns below; log once per crossing
+		double skyrocketThreshold = PRICE_SKYROCKET_FACTOR * initHigh;
+		if (!priceSkyrocketed && mktPrice > skyrocketThreshold) {
+			priceSkyrocketed = true;
+			log.warning(String.format("%s skyrocketed to %.2f (>%dx init)",
+					good, mktPrice, PRICE_SKYROCKET_FACTOR));
+		} else if (priceSkyrocketed && mktPrice <= skyrocketThreshold) {
+			priceSkyrocketed = false;
+			log.info(String.format("%s back below threshold (%.2f)", good,
+					mktPrice));
+		}
+
 		mktGoodVol = vol;
 		mktMoneyVol = price * mktGoodVol;
 		mktSupply = supply;

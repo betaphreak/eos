@@ -8,6 +8,7 @@ import eos.agent.firm.FirmConfig;
 import eos.market.*;
 import eos.util.StdRandom;
 import eos.economy.*;
+import eos.io.SimLog;
 import eos.io.printer.*;
 
 /**
@@ -55,6 +56,9 @@ import eos.io.printer.*;
 public class Simulation2 {
 
 	public static void main(String[] args) {
+
+		// configure step-prefixed logging
+		SimLog.init();
 
 		// run configuration; this simulation perturbs the initial state of
 		// each agent around these values to create a heterogeneous population

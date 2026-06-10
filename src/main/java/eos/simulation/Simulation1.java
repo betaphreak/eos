@@ -8,6 +8,7 @@ import eos.agent.firm.FirmConfig;
 import eos.market.*;
 import eos.util.StdRandom;
 import eos.economy.*;
+import eos.io.SimLog;
 import eos.io.printer.*;
 
 /**
@@ -55,6 +56,9 @@ import eos.io.printer.*;
 public class Simulation1 {
 
 	public static void main(String[] args) {
+
+		// configure step-prefixed logging
+		SimLog.init();
 
 		// run configuration (homogeneous: every agent of a type starts identical)
 		SimulationConfig cfg = SimulationConfig.DEFAULT;

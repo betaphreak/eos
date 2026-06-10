@@ -11,13 +11,15 @@ import eos.market.ConsumerGoodMarket;
 import eos.market.LaborMarket;
 import eos.market.Demand;
 import lombok.Getter;
+import lombok.extern.java.Log;
 
 /**
  * Laborer
  * 
  * @author zhihongx
- * 
+ *
  */
+@Log
 public class Laborer extends Agent {
 
 	// tunable model parameters
@@ -143,10 +145,9 @@ public class Laborer extends Agent {
 		// not enough to eat; die
 		if (necessity.decrease(config.eatAmt()) < config.eatAmt()) {
 			die();
-			System.out.println(Economy.getTimeStep() + ": " + getName()
-					+ getID() + " died with " + acct.getChecking()
-					+ " checking and " + acct.getSavings()
-					+ " savings");
+			log.info(String.format(
+					"%s%d died with %.2f checking and %.2f savings",
+					getName(), getID(), acct.getChecking(), acct.getSavings()));
 			Bank.closeAcct(getID());
 			return;
 		}
