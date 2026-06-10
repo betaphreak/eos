@@ -1,0 +1,22 @@
+package eos.simulation;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+
+/**
+ * Smoke test for the homogeneous, single-bank simulation. Runs the full
+ * economy (assertions enabled via Surefire) and checks it stays healthy. A
+ * fresh JVM is forked per test class, so the static {@code Economy}/{@code
+ * Agent} state starts clean.
+ */
+class Simulation1Test {
+
+	@Test
+	void runsToCompletionWithHealthyEconomy() {
+		SimulationHarness h = assertDoesNotThrow(Simulation1::run);
+		assertEquals(1, h.getBanks().size(), "Simulation1 uses one bank");
+		SimulationAssertions.assertHealthy(h);
+	}
+}

@@ -27,6 +27,12 @@
             <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.11.3</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -64,6 +70,22 @@
                         <classpath/>
                         <argument>${sim.main}</argument>
                     </arguments>
+                </configuration>
+            </plugin>
+
+            <!--
+              Each simulation test runs the full economy. The model keeps state
+              in static singletons (Economy, Agent.nextAvailableID), so a fresh
+              JVM is forked per test class (reuseForks=false) to isolate them.
+              Assertions stay on, matching how the simulations run under exec.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+                <configuration>
+                    <reuseForks>false</reuseForks>
+                    <enableAssertions>true</enableAssertions>
                 </configuration>
             </plugin>
         </plugins>

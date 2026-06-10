@@ -10,16 +10,19 @@ The root package is `eos`, under the standard Maven layout at `src/main/java/eos
 
 ## Build & run
 
-Maven project, Java 21 (`pom.xml`). There is no test suite yet (`src/test/java` does not exist).
+Maven project, Java 21 (`pom.xml`). Tests use JUnit 5 (`mvn test`).
 
 ```powershell
 mvn clean compile          # compile to target/classes
 mvn exec:exec              # run Simulation1 (forks a JVM with -ea)
 mvn exec:exec -Dsim.main=eos.simulation.Simulation2   # run another entry point
 mvn package                # build the jar in target/
+mvn test                   # run the JUnit 5 suite (each Simulation runs full as a smoke test)
 ```
 
-`exec:exec` runs in a **forked JVM with assertions enabled** (`-ea`) because the code uses `assert` as real invariant checks; the main class is the `sim.main` property (default `eos.simulation.Simulation1`). The entry points (each has a `main`) are `Simulation1` (homogeneous agents), `Simulation2` (heterogeneous, randomized init), and `Simulation3` (two banks, agents split across them — a worked example of the multi-bank setup). A run is configured through `SimulationConfig.DEFAULT` read at the top of `main` (agent counts, initial balances, number of steps, print interval), plus the per-`main` seed and init logic.
+`exec:exec` runs in a **forked JVM with assertions enabled** (`-ea`) because the code uses `assert` as real invariant checks; the main class is the `sim.main` property (default `eos.simulation.Simulation1`). The entry points are `Simulation1` (homogeneous agents), `Simulation2` (heterogeneous, randomized init), and `Simulation3` (two banks, agents split across them — a worked example of the multi-bank setup). Each consists of a `static run()` that builds and runs the economy and returns a `SimulationHarness`, plus a `main()` that just calls `run()`. **`SimulationHarness` consolidates the shared construction** (markets, banks, firm/laborer loops, printers, run/cleanup); a `Simulation` supplies only what differs — the seed, which bank each agent uses (`IntFunction<Bank>`), and how each agent's initial state is drawn (`IntToDoubleFunction`). The call order in the harness mirrors the original sims and matters (deferred settlement + reproducible RNG consumption). A run is configured through `SimulationConfig.DEFAULT`.
+
+Tests (`src/test/java`, JUnit 5) treat each simulation as a smoke test: `Simulation*Test` calls `Simulation*.run()` for a full ~10k-step run and asserts invariants on the returned harness (most laborers survive, prices finite/positive, default banks finite & zero-profit; `Simulation3Test` also checks both banks carry loan+deposit pools). The model keeps state in static singletons (`Economy`, `Agent.nextAvailableID`), so Surefire is configured `reuseForks=false` — a fresh JVM per test class isolates that state (and keeps `-ea` on).
 
 Output CSVs are written to an `output/` directory created relative to the **current working directory** at runtime (i.e. the project root when launched via Maven; see `io/printer/CSVPrintWriter.java`). Runs are reproducible: each simulation's `main` calls `StdRandom.setSeed(...)`, so the same seed yields identical output.
 
