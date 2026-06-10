@@ -245,4 +245,12 @@ public class ConsumerGoodMarket extends Market {
 	public double getLastMktSupply() {
 		return mktSupply;
 	}
+
+	@Override
+	public String toString() {
+		return String.format(
+				"ConsumerGoodMarket[%s price=%.3f vol=%.1f supply=%.1f buys=%d sells=%d]",
+				good, mktPrice, mktGoodVol, mktSupply, buyOffers.size(),
+				sellOffers.size());
+	}
 }

@@ -151,4 +151,11 @@ public class CapitalMarket extends Market {
 		return mktGoodVol;
 	}
 
+	@Override
+	public String toString() {
+		return String.format(
+				"CapitalMarket[avgPrice=%.3f lastVol=%.1f buys=%d sells=%d]",
+				avgPrice, mktGoodVol, buyOffers.size(), sellOffers.size());
+	}
+
 }

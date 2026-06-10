@@ -249,4 +249,18 @@ public class Laborer extends Agent {
 	public double getSavings() {
 		return getBank().getSavings(getID());
 	}
+
+	/**
+	 * A concise, debug-friendly summary: id, household head, alive status and
+	 * the latest economic snapshot. Uses only cached fields (no bank lookup),
+	 * so it is safe to call even after the laborer has died and closed its
+	 * account.
+	 */
+	@Override
+	public String toString() {
+		return String.format(
+				"Laborer#%d %s [%s wage=%.2f income=%.2f consumption=%.2f savingsRate=%.2f]",
+				getID(), head.fullName(), isAlive() ? "alive" : "dead", wage,
+				income, consumption, savingsRate);
+	}
 }
