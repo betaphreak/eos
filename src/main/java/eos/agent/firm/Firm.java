@@ -84,12 +84,14 @@ public abstract class Firm extends Agent {
 	 *            initial checking account balance
 	 * @param initSavingsBal
 	 *            intial savings account balance
+	 * @param bank
+	 *            the bank at which this firm holds its accounts
 	 */
-	public Firm(double initCheckingBal, double initSavingsBal) {
-		super();
-		
-		// open a checking account and a savings account 
-		Bank.openAcct(getID(), initCheckingBal, initSavingsBal);
+	public Firm(double initCheckingBal, double initSavingsBal, Bank bank) {
+		super(bank);
+
+		// open a checking account and a savings account
+		bank.openAcct(getID(), initCheckingBal, initSavingsBal);
 		labor = new Labor(0);
 	}
 

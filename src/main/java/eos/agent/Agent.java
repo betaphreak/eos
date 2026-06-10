@@ -1,13 +1,14 @@
 package eos.agent;
 
+import eos.bank.Bank;
 import eos.good.Good;
 import lombok.Getter;
 
 /**
  * Parent class of all agents
- * 
+ *
  * @author zhihongx
- * 
+ *
  */
 public abstract class Agent {
 
@@ -18,6 +19,10 @@ public abstract class Agent {
 	@Getter
 	private final int ID;
 
+	// the bank at which this agent holds its accounts
+	@Getter
+	private final Bank bank;
+
 	// is the agent alive?
 	@Getter
 	private boolean isAlive;
@@ -26,11 +31,15 @@ public abstract class Agent {
 	private String className = null;
 
 	/**
-	 * Create a new agent
+	 * Create a new agent holding its accounts at <tt>bank</tt>
+	 *
+	 * @param bank
+	 *            the bank at which this agent holds its accounts
 	 */
-	public Agent() {
+	public Agent(Bank bank) {
 		isAlive = true;
 		ID = nextAvailableID++;
+		this.bank = bank;
 	}
 
 	/**

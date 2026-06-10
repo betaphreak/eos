@@ -4,56 +4,25 @@ import java.util.HashMap;
 
 import eos.economy.Economy;
 import eos.util.Averager;
+import lombok.Getter;
 
 /**
- * Bank. There is only one bank in the current model. Each agent has a checking
- * account and a savings account. All transactions are settled exclusively
- * through transfers between the checking accounts. A positive balance in the
- * savings account signifies deposit and earns interest. A negative balance
- * signifies loans and pays interest. There are two interest rates - loan
- * interest rate and deposit interest rate. Loan interest rate is determined by
- * the demand and supply of loans. Deposit interest rate is computed by
- * distributing interest payment from all debtors to creditors.
+ * Bank. The economy may contain more than one bank; each agent holds its
+ * accounts at a specific bank instance and payments are routed through the
+ * payer's and payee's banks. Each agent has a checking account and a savings
+ * account. A positive balance in the savings account signifies deposit and
+ * earns interest. A negative balance signifies loans and pays interest. There
+ * are two interest rates - loan interest rate and deposit interest rate. Loan
+ * interest rate is determined by the demand and supply of loans. Deposit
+ * interest rate is computed by distributing interest payment from all debtors
+ * to creditors.
  *
  * @author zhihongx
  *
  */
 public class Bank {
 
-	/************* parameters **********************/
-	/**
-	 * initial loan interest rate
-	 */
-	public static final double INIT_LOAN_IR = 0.01;
-
-	/**
-	 * interest rate when total loan == total deposit
-	 */
-	public static final double IR0 = 0.01;
-
-	/**
-	 * sensitivity of interest rate to a change in total loan
-	 */
-	public static double tao = 0.005;
-
-	/**
-	 * time window within which long-term interest rate is measured
-	 */
-	public static final int LT_IR_WIN = 100;
-
-	/**
-	 * max loan interest rate
-	 */
-	public static double MAX_LOAN_IR = 0.01;
-
-	/**
-	 * min loan interest rate
-	 */
-	public static double MIN_LOAN_IR = 0.0005;
-
-	/*********************************************/
-
-	/* payment purposes */
+	/* payment purposes (shared across all banks) */
 
 	/**
 	 * primary income: wage for laborers, sales revenue for firms
@@ -70,32 +39,55 @@ public class Bank {
 	 */
 	public static final int OTHER = 2;
 
+	// tunable model parameters
+	private final BankConfig config;
+
+	// working copy of the loan-sensitivity parameter; normalized at step 0
+	private double tao;
+
 	// map from agentID to the corresponding account
-	private static HashMap<Integer, Account> accounts = new HashMap<Integer, Account>();
+	private final HashMap<Integer, Account> accounts = new HashMap<Integer, Account>();
 
 	// total amount of loans
-	private static double totalLoan;
+	@Getter
+	private double totalLoan;
 
 	// total amount of deposits
-	private static double totalDeposit;
+	@Getter
+	private double totalDeposit;
 
 	// loan interest rate
-	private static double loanIR = INIT_LOAN_IR;
+	@Getter
+	private double loanIR;
 
 	// deposit interest rate
-	private static double depositIR;
+	@Getter
+	private double depositIR;
 
 	// long-term loan interest rate
-	private static double ltLoanIR;
+	private double ltLoanIR;
 
 	// long-term deposit interest rate
-	private static double ltDepositIR;
+	private double ltDepositIR;
 
-	// classes used to compute the average interest rate within LT_IR_WIN
-	private static Averager depositIRAvger = new Averager(LT_IR_WIN),
-			loanIRAvger = new Averager(LT_IR_WIN);
+	// classes used to compute the average interest rate within ltIRWin
+	private final Averager depositIRAvger, loanIRAvger;
 
-	private static double targetIR;
+	private double targetIR;
+
+	/**
+	 * Create a new bank.
+	 *
+	 * @param config
+	 *            tunable model parameters
+	 */
+	public Bank(BankConfig config) {
+		this.config = config;
+		this.tao = config.tao();
+		this.loanIR = config.initLoanIR();
+		this.depositIRAvger = new Averager(config.ltIRWin());
+		this.loanIRAvger = new Averager(config.ltIRWin());
+	}
 
 	/**
 	 * Open an account, which includes a checking account and a savings account;
@@ -106,7 +98,7 @@ public class Bank {
 	 * @param initSavingsBal
 	 *            initial savings account balance
 	 */
-	public static void openAcct(int agentID, double initCheckingBal,
+	public void openAcct(int agentID, double initCheckingBal,
 			double initSavingsBal) {
 		if (accounts.containsKey(agentID)) {
 			System.err.println("openAcct: account already existed: " + agentID);
@@ -121,7 +113,7 @@ public class Bank {
 	 *
 	 * @param agentID
 	 */
-	public static void closeAcct(int agentID) {
+	public void closeAcct(int agentID) {
 		accounts.remove(agentID);
 	}
 
@@ -131,7 +123,7 @@ public class Bank {
 	 * @param agentID
 	 * @return the agent's account
 	 */
-	private static Account requireAcct(int agentID) {
+	private Account requireAcct(int agentID) {
 		Account acct = accounts.get(agentID);
 		if (acct == null) {
 			System.err.println("account doesn't exist: " + agentID);
@@ -146,7 +138,7 @@ public class Bank {
 	 * @param agentID
 	 * @return the checking account balance
 	 */
-	public static double getChecking(int agentID) {
+	public double getChecking(int agentID) {
 		return requireAcct(agentID).checking;
 	}
 
@@ -156,7 +148,7 @@ public class Bank {
 	 * @param agentID
 	 * @return the savings account balance
 	 */
-	public static double getSavings(int agentID) {
+	public double getSavings(int agentID) {
 		return requireAcct(agentID).savings;
 	}
 
@@ -166,76 +158,45 @@ public class Bank {
 	 * @param agentID
 	 * @return a reference to the agent's account
 	 */
-	public static Account getAcct(int agentID) {
+	public Account getAcct(int agentID) {
 		return accounts.get(agentID);
 	}
 
 	/**
-	 * Deduct <tt>amt</tt> from the payer's checking account. If the checking
+	 * Deduct <tt>amt</tt> from the agent's checking account. If the checking
 	 * account contains an insufficient balance, funds would be withdrawn from
 	 * the savings account to make up the difference.
 	 *
-	 * @param payerID
+	 * @param agentID
 	 * @param amt
-	 *            amount to be paid
+	 *            amount to withdraw
 	 */
-	public static void payFrom(int payerID, double amt) {
-		Account fromAcct = accounts.get(payerID);
-
-		if (fromAcct.checking < amt) {
-			double diff = amt - fromAcct.checking;
-			fromAcct.checking += diff;
-			fromAcct.savings -= diff;
+	public void withdraw(int agentID, double amt) {
+		Account acct = accounts.get(agentID);
+		if (acct.checking < amt) {
+			double diff = amt - acct.checking;
+			acct.checking += diff;
+			acct.savings -= diff;
 		}
-		fromAcct.checking -= amt;
+		acct.checking -= amt;
 	}
 
 	/**
-	 * Add <tt>amt</tt> to payee's checking account.
+	 * Add <tt>amt</tt> to the agent's checking account and record it as income.
 	 *
-	 * @param payeeID
+	 * @param agentID
 	 * @param amt
-	 *            amount to be paid
+	 *            amount to credit
 	 * @param purpose
 	 *            purpose of the payment (either PRIIC or SECIC)
 	 */
-	public static void payTo(int payeeID, double amt, int purpose) {
-		Account toAcct = accounts.get(payeeID);
-		toAcct.checking += amt;
+	public void credit(int agentID, double amt, int purpose) {
+		Account acct = accounts.get(agentID);
+		acct.checking += amt;
 		if (purpose == PRIIC)
-			toAcct.priIC += amt;
+			acct.priIC += amt;
 		else
-			toAcct.secIC += amt;
-	}
-
-	/**
-	 * Transfer <tt>amt</tt> from payer's checking account to payee's checking
-	 * account. If payer's checking account has a balance less than <tt>amt</tt>
-	 * , funds will be withdrawn from the savings account to make up the
-	 * difference.
-	 *
-	 * @param payerID
-	 * @param payeeID
-	 * @param amt
-	 *            amount to be paid
-	 * @param purpose
-	 *            either PRIIC or SECIC
-	 */
-	public static void pay(int payerID, int payeeID, double amt, int purpose) {
-		Account fromAcct = accounts.get(payerID);
-		Account toAcct = accounts.get(payeeID);
-		if (fromAcct.checking < amt) {
-			double diff = amt - fromAcct.checking;
-			fromAcct.checking += diff;
-			fromAcct.savings -= diff;
-		}
-
-		fromAcct.checking -= amt;
-		toAcct.checking += amt;
-		if (purpose == PRIIC)
-			toAcct.priIC += amt;
-		else
-			toAcct.secIC += amt;
+			acct.secIC += amt;
 	}
 
 	/**
@@ -248,7 +209,7 @@ public class Bank {
 	 *            amount to be paid
 	 * @return actual amount of money deposited into the savings account
 	 */
-	public static double deposit(int agentID, double amt) {
+	public double deposit(int agentID, double amt) {
 		Account acct = accounts.get(agentID);
 		double ret = Math.min(amt, acct.checking);
 		acct.checking -= ret;
@@ -259,7 +220,7 @@ public class Bank {
 	/**
 	 * Called by Economy.step() in every time step
 	 */
-	public static void act() {
+	public void act() {
 		totalLoan = 0;
 		totalDeposit = 0;
 
@@ -283,19 +244,14 @@ public class Bank {
 			depositIR = 0;
 		} else {
 			// set target loan interest rate
-			targetIR = IR0 - tao * (totalLoan - totalDeposit);
+			targetIR = config.ir0() - tao * (totalLoan - totalDeposit);
 
 			// set loan interest rate
 			loanIR = Math.max(loanIR - 0.001,
 					Math.min(loanIR + 0.001, targetIR));
 
-			/*
-			 * if (Economy.getTimeStep() == 3000) loanIR = 0.001;
-			 *
-			 * if (Economy.getTimeStep() == 3001) loanIR = oldLoanIR;
-			 */
-
-			loanIR = Math.min(MAX_LOAN_IR, Math.max(MIN_LOAN_IR, loanIR));
+			loanIR = Math.min(config.maxLoanIR(),
+					Math.max(config.minLoanIR(), loanIR));
 
 			/* compute deposit interest rate */
 			depositIR = loanIR * totalLoan / totalDeposit;
@@ -318,29 +274,11 @@ public class Bank {
 	}
 
 	/**
-	 * Return the loan interest rate in the last step
-	 *
-	 * @return the loan interest rate in the last step
-	 */
-	public static double getLoanIR() {
-		return loanIR;
-	}
-
-	/**
-	 * Return the deposit interest rate in the last step
-	 *
-	 * @return the deposit interest rate in the last step
-	 */
-	public static double getDepositIR() {
-		return depositIR;
-	}
-
-	/**
 	 * Return the long-term deposit interest rate in the last step
 	 *
 	 * @return the long-term deposit interest rate in the last step
 	 */
-	public static double getLTDepositIR() {
+	public double getLTDepositIR() {
 		return ltDepositIR;
 	}
 
@@ -349,25 +287,7 @@ public class Bank {
 	 *
 	 * @return the long-term loan interest rate in the last step
 	 */
-	public static double getLTLoanIR() {
+	public double getLTLoanIR() {
 		return ltLoanIR;
-	}
-
-	/**
-	 * Return the total loan in the last step
-	 *
-	 * @return the total loan in the last step
-	 */
-	public static double getTotalLoan() {
-		return totalLoan;
-	}
-
-	/**
-	 * Return the total deposit in the last step
-	 *
-	 * @return the total deposit in the last step
-	 */
-	public static double getTotalDeposit() {
-		return totalDeposit;
 	}
 }

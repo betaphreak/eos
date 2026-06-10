@@ -171,13 +171,14 @@ public class ConsumerGoodMarket extends Market {
 				double qty = offer.demand.getDemand(price) / demand
 						* vol;
 				double payAmt = qty * price;
-				Bank.payFrom(offer.buyer.getID(), payAmt);
+				offer.buyer.getBank().withdraw(offer.buyer.getID(), payAmt);
 				offer.buyer.getGood(good).increase(qty);
 			}
 			for (SellOffer offer : sellOffers) {
 				double qty = offer.qty / supply * vol;
 				double payAmt = qty * price;
-				Bank.payTo(offer.seller.getID(), payAmt, Bank.PRIIC);
+				offer.seller.getBank().credit(offer.seller.getID(), payAmt,
+						Bank.PRIIC);
 				offer.seller.getGood(good).decrease(qty);
 			}
 		}

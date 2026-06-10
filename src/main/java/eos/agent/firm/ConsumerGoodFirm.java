@@ -83,13 +83,16 @@ public abstract class ConsumerGoodFirm extends Firm {
 	 *            array of capital good producers
 	 * @param config
 	 *            tunable model parameters
+	 * @param bank
+	 *            the bank at which this firm holds its accounts
 	 */
 	public ConsumerGoodFirm(String productName, double initCheckingBal,
 			double initSavingsBal, double initOutput, double initWageBudget,
-			int initCapital, CFirm[] capitalProducers, FirmConfig config) {
-		super(initCheckingBal, initSavingsBal);
+			int initCapital, CFirm[] capitalProducers, FirmConfig config,
+			Bank bank) {
+		super(initCheckingBal, initSavingsBal, bank);
 		this.config = config;
-		capital = new Capital(initCapital, getID(), capitalProducers);
+		capital = new Capital(initCapital, getID(), bank, capitalProducers);
 		pMkt = (ConsumerGoodMarket) Economy.getMarket(productName);
 		cMkt = (CapitalMarket) Economy.getMarket("Capital");
 		lMkt = (LaborMarket) Economy.getMarket("Labor");
@@ -109,9 +112,10 @@ public abstract class ConsumerGoodFirm extends Firm {
 	 */
 	public void act() {
 		double newOutput, newWageBudget, pPrice;
+		Bank bank = getBank();
 
 		// get firm finance information
-		Account acct = Bank.getAcct(getID());
+		Account acct = bank.getAcct(getID());
 		revenue = acct.priIC;
 		loan = -acct.getSavings();
 		totalCost = wageBudget + capitalCost - acct.interest;
@@ -135,7 +139,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 
 				// pay interest on loans (if any)
 				if (acct.interest < 0)
-					Bank.deposit(getID(), -acct.interest);
+					bank.deposit(getID(), -acct.interest);
 
 				// compute marginal cost
 				double beta = config.beta();
@@ -168,7 +172,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 
 		// pay loan (if any)
 		if (loan > 0) {
-			Bank.deposit(getID(),
+			bank.deposit(getID(),
 					Math.max(0, Math.min(acct.getChecking(), loan)));
 		}
 
@@ -181,7 +185,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 		if (Economy.getTimeStep() > 0) {
 			int capitalToBuy = 0; // number of machines to purchase
 			double capitalPrice = cMkt.getAvgPrice();
-			double IR = Bank.getLoanIR(); // interest rate
+			double IR = bank.getLoanIR(); // interest rate
 			double IK = profit / oldCapitalVal; // rate of return on capital
 			double utilization = newOutput / capacity; // capacity utilization
 			double MR = acct.priIC / capitalQty * (1 - config.beta()); // marginal

@@ -22,12 +22,14 @@ public class LaborMarket extends Market {
 		private Labor labor;
 		private double wageBudget; // total wage budget
 		private String name; // name of the employer
-		private int bankID; // ID of the employer
+		private int bankID; // account number of the employer
+		private Bank bank; // bank of the employer
 	}
 
 	/* employee */
 	private class Employee {
-		private int bankID;
+		private int bankID; // account number of the employee
+		private Bank bank; // bank of the employee
 	}
 
 	private ArrayList<Employer> employers;
@@ -61,6 +63,7 @@ public class LaborMarket extends Market {
 		employer.wageBudget = wageBudget;
 		employer.name = firm.getName();
 		employer.bankID = firm.getID();
+		employer.bank = firm.getBank();
 		employers.add(employer);
 		totalBudget += wageBudget;
 	}
@@ -73,6 +76,7 @@ public class LaborMarket extends Market {
 	public void addEmployee(Laborer laborer) {
 		Employee employee = new Employee();
 		employee.bankID = laborer.getID();
+		employee.bank = laborer.getBank();
 		employees.add(employee);
 	}
 
@@ -90,8 +94,9 @@ public class LaborMarket extends Market {
 
 			double wage = employer.wageBudget / (high - low);
 			for (int i = low; i < high; i++) {
-				Bank.pay(employer.bankID, employees.get(i).bankID, wage,
-						Bank.PRIIC);
+				Employee employee = employees.get(i);
+				employer.bank.withdraw(employer.bankID, wage);
+				employee.bank.credit(employee.bankID, wage, Bank.PRIIC);
 				employer.labor.increase(1);
 			}
 			low = high;

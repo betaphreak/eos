@@ -18,6 +18,9 @@ public class Capital extends Good {
 	// ID of the owner
 	private int ownerID;
 
+	// bank at which the owner holds its accounts
+	private Bank ownerBank;
+
 	/* a machine */
 	private class Machine {
 
@@ -50,11 +53,15 @@ public class Capital extends Good {
 	 *            initial quantity of machines
 	 * @param ownerID
 	 *            ID of the owner
+	 * @param ownerBank
+	 *            bank at which the owner holds its accounts
 	 * @param producers
 	 *            array of all CFirms
 	 */
-	public Capital(int quantity, int ownerID, CFirm[] producers) {
+	public Capital(int quantity, int ownerID, Bank ownerBank,
+			CFirm[] producers) {
 		super(0);
+		this.ownerBank = ownerBank;
 		this.quantity = quantity;
 		machines = new LinkedHashSet<Machine>();
 		for (int i = 0; i < quantity; i++) {
@@ -138,8 +145,9 @@ public class Capital extends Good {
 		for (Machine machine : machines) {
 			machine.remainingLife--;
 			cost += machine.price;
-			Bank.pay(ownerID, machine.producer.getID(), machine.price,
-					Bank.PRIIC);
+			ownerBank.withdraw(ownerID, machine.price);
+			machine.producer.getBank().credit(machine.producer.getID(),
+					machine.price, Bank.PRIIC);
 			if (machine.remainingLife == 0) {
 				scrappedMachines.add(machine);
 				scrapped++;

@@ -5,6 +5,8 @@ import eos.agent.firm.CFirm;
 import eos.agent.firm.EFirm;
 import eos.agent.firm.NFirm;
 import eos.agent.firm.FirmConfig;
+import eos.bank.Bank;
+import eos.bank.BankConfig;
 import eos.market.*;
 import eos.util.StdRandom;
 import eos.economy.*;
@@ -78,9 +80,13 @@ public class Simulation1 {
 		Economy.addMarket(nMkt);
 		Economy.addMarket(cMkt);
 
+		/* Create and add the bank */
+		Bank bank = new Bank(BankConfig.DEFAULT);
+		Economy.addBank(bank);
+
 		/* Create and add firms */
 		CFirm cFirm = new CFirm(cfg.cFirm().checking(), cfg.cFirm().savings(),
-				cfg.cFirm().wageBudget());
+				cfg.cFirm().wageBudget(), bank);
 		CFirm[] cFirms = new CFirm[1];
 		cFirms[0] = cFirm;
 
@@ -89,7 +95,7 @@ public class Simulation1 {
 			double initSavings = cfg.eFirm().savings();
 			eFirms[i] = new EFirm(cfg.eFirm().checking(), initSavings,
 					cfg.eFirm().output(), cfg.eFirm().wageBudget(),
-					cfg.eFirm().capital(), cFirms, FirmConfig.DEFAULT);
+					cfg.eFirm().capital(), cFirms, FirmConfig.DEFAULT, bank);
 		}
 
 		NFirm[] nFirms = new NFirm[cfg.numNFirms()];
@@ -97,7 +103,7 @@ public class Simulation1 {
 			double initSavings = cfg.nFirm().savings();
 			nFirms[i] = new NFirm(cfg.nFirm().checking(), initSavings,
 					cfg.nFirm().output(), cfg.nFirm().wageBudget(),
-					cfg.nFirm().capital(), cFirms, FirmConfig.DEFAULT);
+					cfg.nFirm().capital(), cFirms, FirmConfig.DEFAULT, bank);
 		}
 
 		Economy.addAgent(cFirm);
@@ -113,7 +119,7 @@ public class Simulation1 {
 			double initSavings = cfg.laborer().savings();
 			laborers[i] = new Laborer(cfg.laborer().e(), initN,
 					cfg.laborer().checking(), initSavings,
-					cfg.laborer().savingsRate(), LaborerConfig.DEFAULT);
+					cfg.laborer().savingsRate(), LaborerConfig.DEFAULT, bank);
 			Economy.addAgent(laborers[i]);
 		}
 
@@ -144,7 +150,7 @@ public class Simulation1 {
 		FirmsPrinter nFirmsPrt = new FirmsPrinter("NFirms", stepSize, nFirms);
 		Economy.addPrinter(nFirmsPrt);
 
-		BankPrinter bankPrt = new BankPrinter("Bank", stepSize);
+		BankPrinter bankPrt = new BankPrinter("Bank", stepSize, bank);
 		Economy.addPrinter(bankPrt);
 
 		/* Run simulation */

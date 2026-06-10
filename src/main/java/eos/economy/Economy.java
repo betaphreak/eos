@@ -29,6 +29,9 @@ public class Economy {
 
 	/********************************************************/
 
+	// banks in the economy
+	private static LinkedHashSet<Bank> banks = new LinkedHashSet<Bank>();
+
 	// agents in the economy (who are still alive)
 	private static LinkedHashSet<Agent> agents = new LinkedHashSet<Agent>();
 
@@ -102,7 +105,8 @@ public class Economy {
 				deadAgents.add(agent);
 		}
 
-		Bank.act();
+		for (Bank bank : banks)
+			bank.act();
 
 		for (Agent agent : deadAgents)
 			agents.remove(agent);
@@ -173,8 +177,18 @@ public class Economy {
 	}
 
 	/**
+	 * Add <tt>bank</tt> to the economy
+	 *
+	 * @param bank
+	 */
+	public static void addBank(Bank bank) {
+		assert (bank != null);
+		banks.add(bank);
+	}
+
+	/**
 	 * Add <tt>agent</tt> to the economy
-	 * 
+	 *
 	 * @param agent
 	 */
 	public static void addAgent(Agent agent) {

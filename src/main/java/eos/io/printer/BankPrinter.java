@@ -49,6 +49,9 @@ public class BankPrinter extends Printer {
 	// print writer that writes output to a CSV file
 	private final CSVPrintWriter printWriter;
 
+	// the bank whose rates and totals are tracked
+	private final Bank bank;
+
 	/**
 	 * Create a new <tt>BankPrinter</tt>.
 	 * <p>
@@ -72,9 +75,11 @@ public class BankPrinter extends Printer {
 	 *            the simulation respectively.
 	 *            <p>
 	 */
-	public BankPrinter(String fileName, int period, int start, int end) {
+	public BankPrinter(String fileName, int period, int start, int end,
+			Bank bank) {
 		super(period, start, end);
 		this.printWriter = new CSVPrintWriter(fileName);
+		this.bank = bank;
 	}
 
 	/**
@@ -95,8 +100,8 @@ public class BankPrinter extends Printer {
 	 *            starting time step, no data will be printed before this
 	 *            <p>
 	 */
-	public BankPrinter(String fileName, int period, int start) {
-		this(fileName, period, start, Integer.MAX_VALUE);
+	public BankPrinter(String fileName, int period, int start, Bank bank) {
+		this(fileName, period, start, Integer.MAX_VALUE, bank);
 	}
 
 	/**
@@ -115,8 +120,8 @@ public class BankPrinter extends Printer {
 	 *            5, data will be printed every 5 time steps.
 	 *            <p>
 	 */
-	public BankPrinter(String fileName, int period) {
-		this(fileName, period, 0);
+	public BankPrinter(String fileName, int period, Bank bank) {
+		this(fileName, period, 0, bank);
 	}
 
 	/**
@@ -140,9 +145,10 @@ public class BankPrinter extends Printer {
 	 *            the simulation respectively.
 	 *            <p>
 	 */
-	public BankPrinter(int period, int start, int end) {
+	public BankPrinter(int period, int start, int end, Bank bank) {
 		super(period, start, end);
 		this.printWriter = new CSVPrintWriter("bank");
+		this.bank = bank;
 	}
 
 	/**
@@ -160,8 +166,8 @@ public class BankPrinter extends Printer {
 	 *            starting time step, no data will be printed before this
 	 *            <p>
 	 */
-	public BankPrinter(int period, int start) {
-		this(period, start, Integer.MAX_VALUE);
+	public BankPrinter(int period, int start, Bank bank) {
+		this(period, start, Integer.MAX_VALUE, bank);
 	}
 
 	/**
@@ -175,8 +181,8 @@ public class BankPrinter extends Printer {
 	 *            5, data will be printed every 5 time steps.
 	 *            <p>
 	 */
-	public BankPrinter(int period) {
-		this(period, 0);
+	public BankPrinter(int period, Bank bank) {
+		this(period, 0, bank);
 	}
 
 	/**
@@ -185,9 +191,9 @@ public class BankPrinter extends Printer {
 	public void print() {
 		int step = Economy.getTimeStep();
 		if (step >= start && step <= end && (step - start) % period == 0)
-			printWriter.println(step, Bank.getLoanIR(), Bank.getLTLoanIR(),
-					Bank.getDepositIR(), Bank.getLTDepositIR(),
-					Bank.getTotalLoan(), Bank.getTotalDeposit());
+			printWriter.println(step, bank.getLoanIR(), bank.getLTLoanIR(),
+					bank.getDepositIR(), bank.getLTDepositIR(),
+					bank.getTotalLoan(), bank.getTotalDeposit());
 	}
 
 	/**

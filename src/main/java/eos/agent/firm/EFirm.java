@@ -1,5 +1,6 @@
 package eos.agent.firm;
 
+import eos.bank.Bank;
 import eos.good.Enjoyment;
 import eos.good.Good;
 
@@ -28,12 +29,14 @@ public class EFirm extends ConsumerGoodFirm {
 	 *            array of capital good producers
 	 * @param config
 	 *            tunable model parameters
+	 * @param bank
+	 *            the bank at which this firm holds its accounts
 	 */
 	public EFirm(double initCheckingBal, double initSavingsBal,
 			double initOutput, double initWageBudget, int initCapital,
-			CFirm[] capitalProducers, FirmConfig config) {
+			CFirm[] capitalProducers, FirmConfig config, Bank bank) {
 		super("Enjoyment", initCheckingBal, initSavingsBal, initOutput,
-				initWageBudget, initCapital, capitalProducers, config);
+				initWageBudget, initCapital, capitalProducers, config, bank);
 		product = new Enjoyment(0);
 	}
 

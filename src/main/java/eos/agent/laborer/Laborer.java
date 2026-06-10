@@ -109,13 +109,16 @@ public class Laborer extends Agent {
 	 *            initial savings rate
 	 * @param config
 	 *            tunable model parameters
+	 * @param bank
+	 *            the bank at which this laborer holds its accounts
 	 */
 	public Laborer(double initEQty, double initNQty, double initCheckingBal,
-			double initSavingsBal, double initSavingsRate, LaborerConfig config) {
-		super();
+			double initSavingsBal, double initSavingsRate, LaborerConfig config,
+			Bank bank) {
+		super(bank);
 
 		// open a checking account and a savings account
-		Bank.openAcct(this.getID(), initCheckingBal, initSavingsBal);
+		bank.openAcct(this.getID(), initCheckingBal, initSavingsBal);
 
 		this.config = config;
 		enjoyment = new Enjoyment(initEQty);
@@ -133,14 +136,15 @@ public class Laborer extends Agent {
 	 * Called by Economy.step() in each step.
 	 */
 	public void act() {
-		Account acct = Bank.getAcct(this.getID());
+		Bank bank = getBank();
+		Account acct = bank.getAcct(this.getID());
 		wage = acct.priIC;
 		income = wage + acct.secIC + acct.interest;
 
 		// should have used real interest rate i.e. Bank.getDepositIR() -
 		// Economy.getInflation(). But that seems to produce some instability
 		// need further testing!!!
-		double RR = Bank.getDepositIR();
+		double RR = bank.getDepositIR();
 
 		// not enough to eat; die
 		if (necessity.decrease(config.eatAmt()) < config.eatAmt()) {
@@ -148,7 +152,7 @@ public class Laborer extends Agent {
 			log.info(String.format(
 					"%s%d died with %.2f checking and %.2f savings",
 					getName(), getID(), acct.getChecking(), acct.getSavings()));
-			Bank.closeAcct(getID());
+			bank.closeAcct(getID());
 			return;
 		}
 
@@ -185,7 +189,7 @@ public class Laborer extends Agent {
 
 		// compute amount to deposit
 		double new_deposit = checking - consumption;
-		Bank.deposit(getID(), new_deposit);
+		bank.deposit(getID(), new_deposit);
 
 		// compute savings rate
 		savingsRate = (savings + new_deposit) / (checking + savings);
@@ -231,6 +235,6 @@ public class Laborer extends Agent {
 	 * @return savings
 	 */
 	public double getSavings() {
-		return Bank.getSavings(getID());
+		return getBank().getSavings(getID());
 	}
 }

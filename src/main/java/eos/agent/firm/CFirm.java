@@ -60,10 +60,12 @@ public class CFirm extends Firm {
 	 *            initial savings account balance
 	 * @param initWageBudget
 	 *            initial wage budget
+	 * @param bank
+	 *            the bank at which this firm holds its accounts
 	 */
 	public CFirm(double initCheckingBal, double initSavingsBal,
-			double initWageBudget) {
-		super(initCheckingBal, initSavingsBal);
+			double initWageBudget, Bank bank) {
+		super(initCheckingBal, initSavingsBal, bank);
 
 		// we assume infinite capacity here
 		// so we give A a very large value.
@@ -81,18 +83,19 @@ public class CFirm extends Firm {
 	 * Called by Economy.step() in each step
 	 */
 	public void act() {
+		Bank bank = getBank();
 
 		// Capital firms are not supposed to have loans in this
 		// design. But if for some reason a firm has a positive
 		// loan, pay back that loan.
-		loan = -Bank.getSavings(getID());
+		loan = -bank.getSavings(getID());
 		if (loan > 0)
-			Bank.deposit(getID(), loan);
+			bank.deposit(getID(), loan);
 
 		capacity = convertToProduct(labor.getQuantity());
 		wage = labor.getQuantity() > 0 ? wageBudget / labor.getQuantity() : 0;
 
-		Account acct = Bank.getAcct(getID());
+		Account acct = bank.getAcct(getID());
 		revenue = acct.priIC;
 		output = revenue / price;
 		wageBudget = revenue - loan; // set new wage budget
