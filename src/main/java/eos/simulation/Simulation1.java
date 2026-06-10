@@ -4,6 +4,7 @@ import eos.agent.laborer.*;
 import eos.agent.firm.CFirm;
 import eos.agent.firm.EFirm;
 import eos.agent.firm.NFirm;
+import eos.agent.firm.FirmConfig;
 import eos.market.*;
 import eos.util.StdRandom;
 import eos.economy.*;
@@ -121,7 +122,7 @@ public class Simulation1 {
 			double initSavings = EFIRM_INIT_SAVINGS;
 			eFirms[i] = new EFirm(EFIRM_INIT_CHECKING, initSavings,
 					EFIRM_INIT_OUTPUT, EFIRM_INIT_WAGEBUDGET,
-					EFIRM_INIT_CAPITAL, cFirms);
+					EFIRM_INIT_CAPITAL, cFirms, FirmConfig.DEFAULT);
 		}
 
 		NFirm[] nFirms = new NFirm[NUM_NFIRMS];
@@ -129,7 +130,7 @@ public class Simulation1 {
 			double initSavings = NFIRM_INIT_SAVINGS;
 			nFirms[i] = new NFirm(NFIRM_INIT_CHECKING, initSavings,
 					NFIRM_INIT_OUTPUT, NFIRM_INIT_WAGEBUDGET,
-					NFIRM_INIT_CAPITAL, cFirms);
+					NFIRM_INIT_CAPITAL, cFirms, FirmConfig.DEFAULT);
 		}
 
 		Economy.addAgent(cFirm);
@@ -145,7 +146,7 @@ public class Simulation1 {
 			double initSavings = LABORER_INIT_SAVINGS;
 			laborers[i] = new Laborer(LABORER_INIT_E, initN,
 					LABORER_INIT_CHECKING, initSavings,
-					LABORER_INIT_SAVINGS_RATE);
+					LABORER_INIT_SAVINGS_RATE, LaborerConfig.DEFAULT);
 			Economy.addAgent(laborers[i]);
 		}
 

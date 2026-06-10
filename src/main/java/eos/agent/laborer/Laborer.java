@@ -20,22 +20,8 @@ import lombok.Getter;
  */
 public class Laborer extends Agent {
 
-	/**************** constants ******************************/
-	// target necessity stock
-	private static final double targetNStock = 26;
-
-	// base savings to wage ratio
-	private static final double baseSavingsToIncomeRatio = 10;
-
-	// quantity of necessity consumed in each step
-	private static final double eatAmt = 1.0;
-
-	// sensitivity of target savings to real interest rate
-	private static final double epsilon = 0.1;
-
-	// max percentage change in consumption allowed in each step
-	private static final double upsilon = 0.04;
-	/********************************************************/
+	// tunable model parameters
+	private final LaborerConfig config;
 
 	// enjoyment market
 	private final ConsumerGoodMarket eMkt;
@@ -119,14 +105,17 @@ public class Laborer extends Agent {
 	 *            initial savings account balance
 	 * @param initSavingsRate
 	 *            initial savings rate
+	 * @param config
+	 *            tunable model parameters
 	 */
 	public Laborer(double initEQty, double initNQty, double initCheckingBal,
-			double initSavingsBal, double initSavingsRate) {
+			double initSavingsBal, double initSavingsRate, LaborerConfig config) {
 		super();
 
 		// open a checking account and a savings account
 		Bank.openAcct(this.getID(), initCheckingBal, initSavingsBal);
 
+		this.config = config;
 		enjoyment = new Enjoyment(initEQty);
 		necessity = new Necessity(initNQty);
 		eMkt = (ConsumerGoodMarket) Economy.getMarket("Enjoyment");
@@ -152,7 +141,7 @@ public class Laborer extends Agent {
 		double RR = Bank.getDepositIR();
 
 		// not enough to eat; die
-		if (necessity.decrease(eatAmt) < eatAmt) {
+		if (necessity.decrease(config.eatAmt()) < config.eatAmt()) {
 			die();
 			System.out.println(Economy.getTimeStep() + ": " + getName()
 					+ getID() + " died with " + acct.getChecking()
@@ -177,10 +166,10 @@ public class Laborer extends Agent {
 		double savings = acct.getSavings();
 
 		// compute target savings
-		double targetSavings = income * baseSavingsToIncomeRatio;
+		double targetSavings = income * config.baseSavingsToIncomeRatio();
 		if (highRR > lowRR)
-			targetSavings *= (RR - lowRR) / (highRR - lowRR) * epsilon * 2 + 1
-					- epsilon;
+			targetSavings *= (RR - lowRR) / (highRR - lowRR) * config.epsilon() * 2 + 1
+					- config.epsilon();
 
 		// compute target consumption
 		double targetConsumption = checking + savings - targetSavings;
@@ -190,8 +179,8 @@ public class Laborer extends Agent {
 			consumption = income;
 		else
 			consumption = Math.min(
-					Math.max(consumption * (1 - upsilon), targetConsumption),
-					consumption * (1 + upsilon));
+					Math.max(consumption * (1 - config.upsilon()), targetConsumption),
+					consumption * (1 + config.upsilon()));
 
 		// compute amount to deposit
 		double new_deposit = checking - consumption;
@@ -202,13 +191,13 @@ public class Laborer extends Agent {
 
 		// compute consumption of necessity (in $)
 		nConsumption = consumption
-				* Math.max(0, 1 - necessity.getQuantity() / targetNStock);
+				* Math.max(0, 1 - necessity.getQuantity() / config.targetNStock());
 
 		// compute consumption of enjoyment (in $)
 		eConsumption = consumption - nConsumption;
 
 		// if laborer has only 1 unit of necessity left, buy at least 1
-		minN = necessity.getQuantity() < 2 * eatAmt ? eatAmt : 0;
+		minN = necessity.getQuantity() < 2 * config.eatAmt() ? config.eatAmt() : 0;
 
 		// post buy offer to enjoyment market
 		eMkt.addBuyOffer(this, demandForE);

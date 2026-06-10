@@ -18,49 +18,16 @@ import eos.util.Averager;
  */
 public abstract class ConsumerGoodFirm extends Firm {
 
-	// time window within which average profit is computed
-	private static final int AVG_PROFIT_WIN = 1000;
-
-	/*******************************************************
-	 * These must be initialized by the subclass
-	 * ------------------------------------------------------
-	 */
-	
 	/**
-	 * technology coefficient in the production function
+	 * tunable model parameters
 	 */
-	protected double A;
+	protected final FirmConfig config;
 
 	/**
-	 * sensitivity of output to labor (power on L in the production function
-	 */
-	protected double beta;
-
-	/**
-	 * sensitivity of output to marginal profit
-	 */
-	protected double phi;
-
-	/**
-	 * sensitivity of wage to money flow gap
-	 */
-	protected double lambda;
-
-	/**
-	 * minimal capacity utilization to allow capital expansion
-	 */
-	protected double eUtilThreshold;
-
-	/**
-	 * minimal capacity utilization to allow capital replacement
-	 */
-	protected double rUtilThreshold;
-
-	/**
-	 * product the firm is producing/selling (enjoyment or necessity)
+	 * product the firm is producing/selling (enjoyment or necessity).
+	 * Must be initialized by the subclass.
 	 */
 	protected Good product;
-	/*******************************************************/
 
 	/**
 	 * capital owned by the firm
@@ -114,11 +81,14 @@ public abstract class ConsumerGoodFirm extends Firm {
 	 *            initial amount of capital
 	 * @param capitalProducers
 	 *            array of capital good producers
+	 * @param config
+	 *            tunable model parameters
 	 */
 	public ConsumerGoodFirm(String productName, double initCheckingBal,
 			double initSavingsBal, double initOutput, double initWageBudget,
-			int initCapital, CFirm[] capitalProducers) {
+			int initCapital, CFirm[] capitalProducers, FirmConfig config) {
 		super(initCheckingBal, initSavingsBal);
+		this.config = config;
 		capital = new Capital(initCapital, getID(), capitalProducers);
 		pMkt = (ConsumerGoodMarket) Economy.getMarket(productName);
 		cMkt = (CapitalMarket) Economy.getMarket("Capital");
@@ -127,7 +97,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 		wageBudget = initWageBudget;
 		loan = 0;
 		capitalCost = 0;
-		pfAvger = new Averager(AVG_PROFIT_WIN);
+		pfAvger = new Averager(config.avgProfitWin());
 
 		// post wage to the labor market so that the firm
 		// gets employees before the first round begins
@@ -160,7 +130,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 						- totalCost;
 
 				// set new wage budget
-				newWageBudget = wageBudget + lambda * moneyFlowGap;
+				newWageBudget = wageBudget + config.lambda() * moneyFlowGap;
 				newWageBudget = Math.max(0, newWageBudget);
 
 				// pay interest on loans (if any)
@@ -168,7 +138,8 @@ public abstract class ConsumerGoodFirm extends Firm {
 					Bank.deposit(getID(), -acct.interest);
 
 				// compute marginal cost
-				double MC = wage / beta * Math.pow(A, -1 / beta)
+				double beta = config.beta();
+				double MC = wage / beta * Math.pow(config.A(), -1 / beta)
 						* Math.pow(output, 1 / beta - 1)
 						* Math.pow(capital.getQuantity(), 1 - 1 / beta);
 
@@ -176,7 +147,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 				marginalProfit = pPrice - MC; // marginal profit
 
 				// set new output
-				newOutput = output * (1 + phi * marginalProfit / pPrice);
+				newOutput = output * (1 + config.phi() * marginalProfit / pPrice);
 			}
 
 			// constrain output by capacity
@@ -213,14 +184,14 @@ public abstract class ConsumerGoodFirm extends Firm {
 			double IR = Bank.getLoanIR(); // interest rate
 			double IK = profit / oldCapitalVal; // rate of return on capital
 			double utilization = newOutput / capacity; // capacity utilization
-			double MR = acct.priIC / capitalQty * (1 - beta); // marginal
+			double MR = acct.priIC / capitalQty * (1 - config.beta()); // marginal
 																// revenue on
 																// capital
 
 			// buy capital if rate of return on capital >= interest rate,
 			// capacity utilization >= eUtilThreshold,
 			// marginal revenue >= capital price
-			if (IK >= IR && utilization >= eUtilThreshold && MR >= capitalPrice)
+			if (IK >= IR && utilization >= config.eUtilThreshold() && MR >= capitalPrice)
 				capitalToBuy += 1;
 
 			double avgProfit = pfAvger.update(Math.abs(profit));
@@ -252,7 +223,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 				// replace scrapped machines
 
 				double x = capitalQty - scrapped;
-				while (output / convertToProduct(labor.getQuantity(), x) > rUtilThreshold
+				while (output / convertToProduct(labor.getQuantity(), x) > config.rUtilThreshold()
 						&& x < capitalQty && acct.priIC / x > capitalPrice)
 					x++;
 				capitalToBuy += scrapped + x - capitalQty;
@@ -288,6 +259,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 	 *         amount of capital
 	 */
 	public double convertToProduct(double labor, double K) {
-		return A * Math.pow(labor, beta) * Math.pow(K, 1 - beta);
+		return config.A() * Math.pow(labor, config.beta())
+				* Math.pow(K, 1 - config.beta());
 	}
 }

@@ -26,22 +26,15 @@ public class EFirm extends ConsumerGoodFirm {
 	 *            initial amount of capital
 	 * @param capitalProducers
 	 *            array of capital good producers
+	 * @param config
+	 *            tunable model parameters
 	 */
 	public EFirm(double initCheckingBal, double initSavingsBal,
 			double initOutput, double initWageBudget, int initCapital,
-			CFirm[] capitalProducers) {
+			CFirm[] capitalProducers, FirmConfig config) {
 		super("Enjoyment", initCheckingBal, initSavingsBal, initOutput,
-				initWageBudget, initCapital, capitalProducers);
-		A = 2; // technology coefficient in production function
-		beta = 0.5; // sensitivity of output to labor
-		phi = 0.5; // sensitivity of output to marginal profit
-		lambda = 0.2; // sensitivity of wage to money flow gap
+				initWageBudget, initCapital, capitalProducers, config);
 		product = new Enjoyment(0);
-		
-		// minimal capacity utilization to allow capital expansion
-		eUtilThreshold = 0.9; 
-		// minimal capacity utilization to allow capital replacement
-		rUtilThreshold = 0.75;
 	}
 
 	/**
