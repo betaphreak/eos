@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import eos.agent.firm.CFirm;
 import eos.good.Capital;
-import eos.util.StdRandom;
+import eos.util.Rng;
 import lombok.Getter;
 
 /**
@@ -106,13 +106,13 @@ public class CapitalMarket extends Market {
 	 */
 	public void clear() {
 		mktGoodVol = 0;
-		Collections.shuffle(buyOffers, StdRandom.getRandom());
+		Collections.shuffle(buyOffers, Rng.getRandom());
 		for (BuyOffer buyOffer : buyOffers) {
 			if (supply == 0)
 				return;
 			SellOffer picked = null;
 			while (picked == null) {
-				double winner = StdRandom.uniform();
+				double winner = Rng.uniform();
 				double val = 0;
 				for (SellOffer sellOffer : sellOffers) {
 					val += 1 / sellOffer.price / totalMetric;

@@ -5,7 +5,7 @@ import java.util.function.IntFunction;
 import eos.bank.Bank;
 import eos.bank.BankConfig;
 import eos.io.SimLog;
-import eos.util.StdRandom;
+import eos.util.Rng;
 
 /**
  * Simulation (two-bank case): the same economy as {@link Simulation1}, but with
@@ -27,7 +27,7 @@ public class Simulation3 {
 	public static SimulationHarness run() {
 		SimLog.init();
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
-		StdRandom.setSeed(7654321);
+		Rng.setSeed(7654321);
 
 		SimulationHarness h = new SimulationHarness(cfg);
 		h.createMarkets();

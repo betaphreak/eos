@@ -24,7 +24,7 @@ mvn test                   # run the JUnit 5 suite (each Simulation runs full as
 
 Tests (`src/test/java`, JUnit 5) treat each simulation as a smoke test: `Simulation*Test` calls `Simulation*.run()` for a full ~10k-step run and asserts invariants on the returned harness (most laborers survive, prices finite/positive, default banks finite & zero-profit; `Simulation3Test` also checks both banks carry loan+deposit pools). The model keeps state in static singletons (`Economy`, `Agent.nextAvailableID`), so Surefire is configured `reuseForks=false` — a fresh JVM per test class isolates that state (and keeps `-ea` on).
 
-Output CSVs are written to an `output/` directory created relative to the **current working directory** at runtime (i.e. the project root when launched via Maven; see `io/printer/CSVPrintWriter.java`). Runs are reproducible: each simulation's `main` calls `StdRandom.setSeed(...)`, so the same seed yields identical output.
+Output CSVs are written to an `output/` directory created relative to the **current working directory** at runtime (i.e. the project root when launched via Maven; see `io/printer/CSVPrintWriter.java`). Runs are reproducible: each simulation's `run()` calls `Rng.setSeed(...)`, so the same seed yields identical output.
 
 Toolchain on this machine: Temurin JDK 21 at `C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot` (set as user `JAVA_HOME`), Maven 3.9.9 at `C:\Users\Eu\tools\apache-maven-3.9.9` (both added to the user `PATH`).
 
@@ -69,7 +69,7 @@ Note: `ConsumerGoodFirm.act()` contains explicitly-labeled **"hacks"** (capital-
 - `io/printer/` — each `Printer` writes one CSV via `CSVPrintWriter`. Register printers with `Economy.addPrinter(...)` (which writes the header row immediately) and finalize with `Economy.cleanUpPrinters()` after the run.
 - `io/SimLog.java` — event logging via `java.util.logging`. `SimLog.init()` (called first thing in each `main`) installs a formatter that prefixes every record with the current **in-game date** (`Economy.getDate()`, e.g. `1452-03-14: WARN …`), writing to **stderr** with per-record flush. Classes that emit events are annotated with Lombok `@Log` and call `log.info(...)` for events (e.g. a laborer dying) or `log.warning(...)` for anomalies (e.g. a price crossing `PRICE_SKYROCKET_FACTOR`×its initial level in `ConsumerGoodMarket`). This is for discrete events — bulk time-series still goes through printers to CSV. Note `Economy.run`'s progress counter prints the in-game date to stdout every January 1st (once per in-game year), so progress and events are on separate streams.
 - The in-game date is the canonical display unit: every place a step was shown as an integer now shows `Economy.getDate()` — the SimLog prefix, the progress counter, and the first column of every printer CSV (header `Date`, ISO `yyyy-MM-dd`). `Economy` holds the start date (set from `cfg.startDate()` by `SimulationHarness`); `getDate()` returns `startDate + timeStep` days. The integer `timeStep` is still used internally for control flow (`getTimeStep() == 0`, the `> 2000` calibration hacks, printer period gating).
-- `util/` — `StdRandom` (seeded RNG; **set `StdRandom.setSeed(...)` for reproducible runs**), `Averager` (rolling window average used for inflation and long-term rates), `In`/`Out` (Sedgewick-style I/O).
+- `util/` — `Rng` (minimal seedable RNG over `java.util.Random`; **set `Rng.setSeed(...)` for reproducible runs**) and `Averager` (rolling window average used for inflation and long-term rates).
 
 ## Conventions
 

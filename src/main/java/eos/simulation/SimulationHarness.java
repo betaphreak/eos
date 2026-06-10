@@ -22,7 +22,7 @@ import lombok.Getter;
  * Shared construction and run logic for the bundled simulations. Each
  * {@code Simulation} builds an economy from a {@link SimulationConfig} through
  * this harness, supplying only what differs between runs: the seed (set on
- * {@code StdRandom} before calling), which bank each agent uses, and how each
+ * {@code Rng} before calling), which bank each agent uses, and how each
  * agent's initial state is drawn. After {@link #run()} the harness exposes the
  * constructed markets, banks and agents so tests can assert on the final state.
  * <p>

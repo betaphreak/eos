@@ -7,7 +7,7 @@ import eos.bank.Bank;
 import eos.agent.firm.Firm;
 import eos.agent.laborer.Laborer;
 import eos.good.Labor;
-import eos.util.StdRandom;
+import eos.util.Rng;
 
 /**
  * A labor market
@@ -84,8 +84,8 @@ public class LaborMarket extends Market {
 	 * Clear the market.
 	 */
 	public void clear() {
-		Collections.shuffle(employers, StdRandom.getRandom());
-		Collections.shuffle(employees, StdRandom.getRandom());
+		Collections.shuffle(employers, Rng.getRandom());
+		Collections.shuffle(employees, Rng.getRandom());
 		int low = 0;
 		double sum = 0;
 		for (Employer employer : employers) {

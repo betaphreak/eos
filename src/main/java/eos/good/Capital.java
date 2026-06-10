@@ -5,7 +5,7 @@ import java.util.LinkedHashSet;
 
 import eos.bank.Bank;
 import eos.agent.firm.CFirm;
-import eos.util.StdRandom;
+import eos.util.Rng;
 
 /**
  * Capital stock
@@ -68,9 +68,9 @@ public class Capital extends Good {
 			Machine machine = new Machine();
 			machine.price = CFirm.INIT_CAPITAL_PRICE;
 			machine.life = CFirm.CAPITAL_LIFE;
-			machine.remainingLife = StdRandom.uniform(machine.life / 2)
+			machine.remainingLife = Rng.uniform(machine.life / 2)
 					+ machine.life / 2;
-			machine.producer = producers[StdRandom.uniform(producers.length)];
+			machine.producer = producers[Rng.uniform(producers.length)];
 			machines.add(machine);
 		}
 		scrappedMachines = new ArrayList<Machine>();

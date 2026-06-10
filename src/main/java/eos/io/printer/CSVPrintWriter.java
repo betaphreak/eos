@@ -1,8 +1,12 @@
 package eos.io.printer;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 
-import eos.util.Out;
 import lombok.Getter;
 
 /**
@@ -19,7 +23,7 @@ public class CSVPrintWriter {
 	private final String fileName;
 
 	// output stream
-	private final Out out;
+	private final PrintWriter out;
 
 	/**
 	 * Create a new CSVPrinter
@@ -42,7 +46,13 @@ public class CSVPrintWriter {
 		File file = new File(dirName);
 		if (!file.exists())
 			file.mkdirs();
-		this.out = new Out(fileName);
+		// UTF-8, autoflush, system line separator (matches the prior writer)
+		try {
+			this.out = new PrintWriter(new OutputStreamWriter(
+					new FileOutputStream(fileName), StandardCharsets.UTF_8), true);
+		} catch (FileNotFoundException e) {
+			throw new RuntimeException("could not open " + fileName, e);
+		}
 	}
 
 	/**

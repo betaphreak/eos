@@ -3,7 +3,7 @@ package eos.simulation;
 import eos.bank.Bank;
 import eos.bank.BankConfig;
 import eos.io.SimLog;
-import eos.util.StdRandom;
+import eos.util.Rng;
 
 /**
  * Simulation (heterogeneous case): one bank, but each agent's initial state is
@@ -23,19 +23,19 @@ public class Simulation2 {
 	public static SimulationHarness run() {
 		SimLog.init();
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
-		StdRandom.setSeed(2345);
+		Rng.setSeed(2345);
 
 		SimulationHarness h = new SimulationHarness(cfg);
 		h.createMarkets();
 		Bank bank = h.addBank(BankConfig.DEFAULT);
 		h.createFirms(bank, i -> bank,
-				i -> StdRandom.uniform(cfg.eFirm().savings() * 1.1,
+				i -> Rng.uniform(cfg.eFirm().savings() * 1.1,
 						cfg.eFirm().savings() * 0.9),
-				i -> StdRandom.uniform(cfg.nFirm().savings() * 1.1,
+				i -> Rng.uniform(cfg.nFirm().savings() * 1.1,
 						cfg.nFirm().savings() * 0.9));
 		h.createLaborers(i -> bank,
-				i -> StdRandom.gaussian(15, 3),
-				i -> StdRandom.uniform(cfg.laborer().savings() * 0.9,
+				i -> Rng.gaussian(15, 3),
+				i -> Rng.uniform(cfg.laborer().savings() * 0.9,
 						cfg.laborer().savings() * 1.1));
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);
