@@ -11,8 +11,8 @@ import eos.economy.Economy;
 
 /**
  * Configures java.util.logging so every record is prefixed with the current
- * simulation step. Call {@link #init()} once at the start of a simulation's
- * <tt>main</tt>, before {@link Economy#run(int)}.
+ * in-game date ({@link Economy#getDate()}). Call {@link #init()} once at the
+ * start of a simulation's <tt>main</tt>, before {@link Economy#run(int)}.
  * <p>
  * Agents and markets log via Lombok <tt>@Log</tt> (a java.util.logging
  * {@link Logger}): use <tt>log.info(...)</tt> for events (e.g. an agent dying)
@@ -38,19 +38,19 @@ public final class SimLog {
 			root.removeHandler(h);
 		ConsoleHandler handler = new ConsoleHandler();
 		handler.setLevel(Level.ALL);
-		handler.setFormatter(new StepFormatter());
+		handler.setFormatter(new DateFormatter());
 		root.addHandler(handler);
 		root.setLevel(Level.INFO);
 		initialized = true;
 	}
 
-	/** Prefixes each message with <tt>step &lt;n&gt;:</tt> and a level label. */
-	private static final class StepFormatter extends Formatter {
+	/** Prefixes each message with the in-game date and a level label. */
+	private static final class DateFormatter extends Formatter {
 		@Override
 		public String format(LogRecord record) {
 			String level = record.getLevel() == Level.WARNING ? "WARN"
 					: record.getLevel().getName();
-			return "step " + Economy.getTimeStep() + ": " + level + " "
+			return Economy.getDate() + ": " + level + " "
 					+ formatMessage(record) + System.lineSeparator();
 		}
 	}

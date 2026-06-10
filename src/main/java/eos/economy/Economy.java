@@ -1,5 +1,6 @@
 package eos.economy;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -18,7 +19,7 @@ import eos.util.Averager;
  * @author zhihongx
  * 
  */
-public class Economy {
+public class 	Economy {
 
 	/****************** constants *****************************/
 
@@ -50,6 +51,9 @@ public class Economy {
 	// current time step
 	private static int timeStep = 0;
 
+	// in-game date of step 0; each step advances one day
+	private static LocalDate startDate = LocalDate.of(1444, 12, 11);
+
 	// CPI in the last step
 	private static double lastCPI;
 
@@ -80,8 +84,9 @@ public class Economy {
 	 */
 	public static void run(int steps) {
 		for (int i = 0; i < steps; i++) {
-			if (i % 1000 == 0)
-				System.out.println(i);
+			LocalDate date = getDate();
+			if (date.getMonthValue() == 1 && date.getDayOfMonth() == 1)
+				System.out.println(date);
 			step();
 		}
 	}
@@ -93,6 +98,27 @@ public class Economy {
 	 */
 	public static int getTimeStep() {
 		return timeStep;
+	}
+
+	/**
+	 * Set the in-game date of step 0. Each step advances one day, so the
+	 * current date is <tt>startDate + timeStep</tt> days.
+	 *
+	 * @param date
+	 *            the in-game date of step 0
+	 */
+	public static void setStartDate(LocalDate date) {
+		startDate = date;
+	}
+
+	/**
+	 * Return the current in-game date (the date of step 0 plus the current
+	 * time step in days).
+	 *
+	 * @return the current in-game date
+	 */
+	public static LocalDate getDate() {
+		return startDate.plusDays(timeStep);
 	}
 
 	/**

@@ -23,7 +23,7 @@ import eos.economy.*;
  * <p>
  * The output of the printer is a CSV file. If you have closely followed the
  * above steps, the first line of the file should be the column titles, and the
- * first column is the time step. All entries are comma-delimited (without
+ * first column is the in-game date. All entries are comma-delimited (without
  * space). The file could be directly used as an input file for <tt>Grapher</tt>
  * and <tt>MultiAxisGrapher</tt>. You could also open the file with most
  * spreadsheet softwares like Microsoft Excel and OpenOffice Spreadsheet, and
@@ -35,7 +35,7 @@ import eos.economy.*;
  * in your specified directory.
  * <p>
  * The default columns to be printed are: <br>
- * Col0: time step<br>
+ * Col0: in-game date<br>
  * Col1: volume traded<br>
  * Col2: market supply<br>
  */
@@ -223,7 +223,7 @@ public class ConsumerMktVolPrinter extends Printer {
 	public void print() {
 		int step = Economy.getTimeStep();
 		if (step >= start && step <= end && (step - start) % period == 0)
-			printWriter.println(step, mkt.getLastMktGoodVol(),
+			printWriter.println(Economy.getDate(), mkt.getLastMktGoodVol(),
 					mkt.getLastMktSupply());
 	}
 
@@ -231,7 +231,7 @@ public class ConsumerMktVolPrinter extends Printer {
 	 * Print column titles
 	 */
 	public void printTitles() {
-		printWriter.println("Step", mkt.getGood() + "_Volume", mkt.getGood()
+		printWriter.println("Date", mkt.getGood() + "_Volume", mkt.getGood()
 				+ "_Supply");
 	}
 

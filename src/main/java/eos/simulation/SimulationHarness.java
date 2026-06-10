@@ -49,6 +49,7 @@ public class SimulationHarness {
 
 	public SimulationHarness(SimulationConfig cfg) {
 		this.cfg = cfg;
+		Economy.setStartDate(cfg.startDate());
 	}
 
 	/** Create the four markets and register them (labor market first). */

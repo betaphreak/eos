@@ -22,7 +22,7 @@ import eos.economy.*;
  * <p>
  * The output of the printer is a CSV file. If you have closely followed the
  * above steps, the first line of the file should be the column titles, and the
- * first column is the time step. All entries are comma-delimited (without
+ * first column is the in-game date. All entries are comma-delimited (without
  * space). The file could be directly used as an input file for <tt>Grapher</tt>
  * and <tt>MultiAxisGrapher</tt>. You could also open the file with most
  * spreadsheet softwares like Microsoft Excel and OpenOffice Spreadsheet, and
@@ -34,7 +34,7 @@ import eos.economy.*;
  * in your specified directory.
  * <p>
  * The default columns to be printed are: <br>
- * Col0: time step<br>
+ * Col0: in-game date<br>
  * Col1: total revenue<br>
  * Col2: total output<br>
  * Col3: total loan<br>
@@ -257,7 +257,7 @@ public class FirmsPrinter extends Printer {
 			avgLabor /= firms.length;
 			avgMarginalProfit /= firms.length;
 
-			printWriter.println(step, totRevenue, totOutput, totLoan,
+			printWriter.println(Economy.getDate(), totRevenue, totOutput, totLoan,
 					avgRevenue, avgOutput, avgLoan, avgProfit, avgLabor,
 					avgMarginalProfit, totCost, totLaborCost, totCapitalCost);
 		}
@@ -267,7 +267,7 @@ public class FirmsPrinter extends Printer {
 	 * Print column titles
 	 */
 	public void printTitles() {
-		printWriter.println("Step", "TotalRevenue", "TotalOutput", "TotalLoan",
+		printWriter.println("Date", "TotalRevenue", "TotalOutput", "TotalLoan",
 				"AvgRevenue", "AvgOutput", "AvgLoan", "AvgProfit", "AvgLabor",
 				"AvgMarginalProfit", "TotalCost", "TotalLaborCost",
 				"TotalCapitalCost");
