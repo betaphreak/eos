@@ -10,6 +10,7 @@ import eos.good.Necessity;
 import eos.market.ConsumerGoodMarket;
 import eos.market.LaborMarket;
 import eos.market.Demand;
+import eos.name.Person;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
@@ -24,6 +25,11 @@ public class Laborer extends Agent {
 
 	// tunable model parameters
 	private final LaborerConfig config;
+
+	// head of this household (each laborer represents one household): a male
+	// given name plus a unique dynasty surname
+	@Getter
+	private final Person head;
 
 	// enjoyment market
 	private final ConsumerGoodMarket eMkt;
@@ -122,6 +128,10 @@ public class Laborer extends Agent {
 		// open a checking account and a savings account
 		bank.openAcct(this.getID(), initCheckingBal, initSavingsBal);
 
+		// name the household head (separate naming RNG; doesn't affect the
+		// economic random stream)
+		this.head = economy.getNames().nextHead();
+
 		this.config = config;
 		enjoyment = new Enjoyment(initEQty);
 		necessity = new Necessity(initNQty);
@@ -152,8 +162,8 @@ public class Laborer extends Agent {
 		if (necessity.decrease(config.eatAmt()) < config.eatAmt()) {
 			die();
 			log.info(String.format(
-					"%s%d died with %.2f checking and %.2f savings",
-					getName(), getID(), acct.getChecking(), acct.getSavings()));
+					"%s (household %d) died with %.2f checking and %.2f savings",
+					head.fullName(), getID(), acct.getChecking(), acct.getSavings()));
 			bank.closeAcct(getID());
 			return;
 		}

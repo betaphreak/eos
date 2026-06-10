@@ -41,6 +41,12 @@
             <version>5.11.3</version>
             <scope>test</scope>
         </dependency>
+        <!-- Parses the name tables in src/main/resources (see eos.name). -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.18.2</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -82,10 +88,11 @@
             </plugin>
 
             <!--
-              Each simulation test runs the full economy. The model keeps state
-              in static singletons (Economy, Agent.nextAvailableID), so a fresh
-              JVM is forked per test class (reuseForks=false) to isolate them.
-              Assertions stay on, matching how the simulations run under exec.
+              Each simulation test runs the full economy. Economy state is
+              per-instance now, but the SimLog logging handler is still a
+              process-global static, so a fresh JVM is forked per test class
+              (reuseForks=false) to isolate it. Assertions stay on, matching
+              how the simulations run under exec.
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

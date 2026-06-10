@@ -11,6 +11,7 @@ import eos.bank.Bank;
 import eos.io.printer.Printer;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Market;
+import eos.name.NameRegistry;
 import eos.util.Averager;
 import eos.util.Rng;
 import lombok.Getter;
@@ -68,6 +69,10 @@ public class Economy {
 	@Getter
 	private final Rng rng;
 
+	// name sets (shared with the owning game session)
+	@Getter
+	private final NameRegistry names;
+
 	// CPI in the last step
 	private double lastCPI;
 
@@ -90,10 +95,13 @@ public class Economy {
 	 *            the in-game date of step 0
 	 * @param rng
 	 *            the random-number generator for this economy
+	 * @param names
+	 *            the name sets for this economy
 	 */
-	public Economy(LocalDate startDate, Rng rng) {
+	public Economy(LocalDate startDate, Rng rng, NameRegistry names) {
 		this.startDate = startDate;
 		this.rng = rng;
+		this.names = names;
 	}
 
 	/**
