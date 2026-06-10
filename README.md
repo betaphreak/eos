@@ -116,3 +116,8 @@ keeps state in static singletons, so Surefire forks a fresh JVM per test class.
 (Maven build, Java 21, configuration records, tests, multi-bank support). The
 agent behavior and market-clearing model are his; see `CLAUDE.md` for detailed
 architecture notes.
+
+## License
+
+Licensed under the **Apache License, Version 2.0** — see [`LICENSE`](LICENSE)
+and [`NOTICE`](NOTICE).

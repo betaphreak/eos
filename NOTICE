@@ -1,0 +1,7 @@
+eos
+Copyright 2026 Alexandru Giurovici
+
+The original agent-based macroeconomic model was written by Zhihong Xu
+(circa 2011). This project modernizes and substantially modifies that work
+(Maven build, Java 21, configuration records, JUnit tests, multi-bank
+support, an in-game calendar, and event logging).
