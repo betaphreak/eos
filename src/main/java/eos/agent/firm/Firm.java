@@ -3,6 +3,7 @@ package eos.agent.firm;
 import eos.agent.Agent;
 import eos.bank.Bank;
 import eos.good.Labor;
+import lombok.Getter;
 
 /**
  * Parent class of all firms.
@@ -20,11 +21,13 @@ public abstract class Firm extends Agent {
 	/**
 	 *  max output the firm could produce with the current capital and labor
 	 */
+	@Getter
 	protected double capacity;
 
 	/**
 	 *  output in the last step
 	 */
+	@Getter
 	protected double output;
 
 	/**
@@ -35,36 +38,43 @@ public abstract class Firm extends Agent {
 	/**
 	 *  wage (per worker) in the last step
 	 */
+	@Getter
 	protected double wage;
 
 	/**
 	 *  total loan in the last step
 	 */
+	@Getter
 	protected double loan;
 
 	/**
 	 *  revenue in the last step
 	 */
+	@Getter
 	protected double revenue;
 
 	/**
 	 *  profit in the last step
 	 */
+	@Getter
 	protected double profit;
 
 	/**
 	 *  marginal profit in the last step
 	 */
+	@Getter
 	protected double marginalProfit;
 
 	/**
 	 *  cost of capital in the last step
 	 */
+	@Getter
 	protected double capitalCost;
 
 	/**
 	 *  total cost in the last step
 	 */
+	@Getter
 	protected double totalCost;
 
 	/**
@@ -84,94 +94,12 @@ public abstract class Firm extends Agent {
 	}
 
 	/**
-	 * Return output in the last step
-	 * 
-	 * @return output in the last step
-	 */
-	public double getOutput() {
-		return output;
-	}
-
-	/**
-	 * Return capacity in the last step
-	 * 
-	 * @return capacity in the last step
-	 */
-	public double getCapacity() {
-		return capacity;
-	}
-
-	/**
-	 * Return wage (per worker) in the last step
-	 * 
-	 * @return wage (per worker) in the last step
-	 */
-	public double getWage() {
-		return wage;
-	}
-
-	/**
-	 * Return loan in the last step
-	 * 
-	 * @return loan in the last step
-	 */
-	public double getLoan() {
-		return loan;
-	}
-
-	/**
-	 * Return revenue in the last step
-	 * 
-	 * @return revenue
-	 */
-	public double getRevenue() {
-		return revenue;
-	}
-
-	/**
 	 * Return amount of labor owned by the firm
 	 * 
 	 * @return amount of labor owned by the firm
 	 */
 	public double getLabor() {
 		return labor.getQuantity();
-	}
-
-	/**
-	 * Return profit in the last step
-	 * 
-	 * @return profit in the last step
-	 */
-	public double getProfit() {
-		return profit;
-	}
-
-	/**
-	 * Return marginal profit in the last step
-	 * 
-	 * @return marginal profit in the last step
-	 */
-	public double getMarginalProfit() {
-		return marginalProfit;
-
-	}
-
-	/**
-	 * Return total capital cost in the last step
-	 * 
-	 * @return total capital cost
-	 */
-	public double getCapitalCost() {
-		return capitalCost;
-	}
-
-	/**
-	 * Return total cost in the last step
-	 * 
-	 * @return total cost
-	 */
-	public double getTotalCost() {
-		return totalCost;
 	}
 
 	/**

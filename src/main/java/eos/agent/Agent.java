@@ -1,6 +1,7 @@
 package eos.agent;
 
 import eos.good.Good;
+import lombok.Getter;
 
 /**
  * Parent class of all agents
@@ -14,9 +15,11 @@ public abstract class Agent {
 	private static int nextAvailableID = 1;
 
 	// each agent has an unique ID that is also used as the bank account number
+	@Getter
 	private final int ID;
 
 	// is the agent alive?
+	@Getter
 	private boolean isAlive;
 
 	// name of the agent's class
@@ -37,24 +40,6 @@ public abstract class Agent {
 	 * @return a reference to a good given <tt>goodName</tt>
 	 */
 	public abstract Good getGood(String goodName);
-
-	/**
-	 * Return the ID of the agent
-	 * 
-	 * @return the ID of the agent
-	 */
-	public final int getID() {
-		return ID;
-	}
-
-	/**
-	 * Is the agent alive?
-	 * 
-	 * @return whether the agent is alive
-	 */
-	public final boolean isAlive() {
-		return isAlive;
-	}
 
 	/**
 	 * Return the class name of the agent

@@ -1,10 +1,13 @@
 package eos.io.printer;
 
+import lombok.Getter;
+
 /**
  * Parent class of all printers
  * @author zhihongx
  *
  */
+@Getter
 public abstract class Printer {
 
 	/**
@@ -64,33 +67,6 @@ public abstract class Printer {
 	 */
 	public Printer(int period) {
 		this(period, 0, Integer.MAX_VALUE);
-	}
-
-	/**
-	 * Return the period of this Printer
-	 * 
-	 * @return the period of this Printer
-	 */
-	public int getPeriod() {
-		return this.period;
-	}
-
-	/**
-	 * Return the starting step of this Printer
-	 * 
-	 * @return the starting step of this Printer
-	 */
-	public int getStart() {
-		return this.start;
-	}
-
-	/**
-	 * Return the ending step of this Printer
-	 * 
-	 * @return the ending step of this Printer
-	 */
-	public int getEnd() {
-		return this.end;
 	}
 
 	/**

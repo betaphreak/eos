@@ -3,6 +3,7 @@ package eos.io.printer;
 import java.io.File;
 
 import eos.util.Out;
+import lombok.Getter;
 
 /**
  * A print writer to write output to a CSV file
@@ -13,7 +14,8 @@ import eos.util.Out;
 public class CSVPrintWriter {
 
 	
-	// name of the output file 
+	// name of the output file
+	@Getter
 	private final String fileName;
 
 	// output stream
@@ -41,15 +43,6 @@ public class CSVPrintWriter {
 		if (!file.exists())
 			file.mkdirs();
 		this.out = new Out(fileName);
-	}
-
-	/**
-	 * Return the name of the output file
-	 * 
-	 * @return the name of the output file
-	 */
-	public String getFileName() {
-		return fileName;
 	}
 
 	/**

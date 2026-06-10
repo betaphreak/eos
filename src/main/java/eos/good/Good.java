@@ -1,16 +1,19 @@
 package eos.good;
 
+import lombok.Getter;
+
 /**
  * Parent class of all goods.
- * 
+ *
  * @author zhihongx
- * 
+ *
  */
 public abstract class Good {
 
 	/**
 	 *  quantity of the good
 	 */
+	@Getter
 	protected double quantity;
 
 	/**
@@ -25,15 +28,6 @@ public abstract class Good {
 	 */
 	public Good(double quantity) {
 		this.quantity = quantity;
-	}
-
-	/**
-	 * Return quantity of the good
-	 * 
-	 * @return quantity of the good
-	 */
-	public double getQuantity() {
-		return quantity;
 	}
 
 	/**

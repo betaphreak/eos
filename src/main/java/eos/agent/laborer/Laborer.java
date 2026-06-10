@@ -10,6 +10,7 @@ import eos.good.Necessity;
 import eos.market.ConsumerGoodMarket;
 import eos.market.LaborMarket;
 import eos.market.Demand;
+import lombok.Getter;
 
 /**
  * Laborer
@@ -53,15 +54,19 @@ public class Laborer extends Agent {
 
 	// savings rate (portion of total income+savings that is saved in the last
 	// step)
+	@Getter
 	private double savingsRate;
 
 	// consumption (in $)
+	@Getter
 	private double consumption;
 
 	// consumption of enjoyment (in $)
+	@Getter
 	private double eConsumption;
 
 	// consumption of necessity (in $)
+	@Getter
 	private double nConsumption;
 
 	// minimum necessity (in real quantity) to buy in the current step
@@ -80,9 +85,11 @@ public class Laborer extends Agent {
 	private DemandForN demandForN;
 
 	// total income
+	@Getter
 	private double income;
 
 	// wage from employment
+	@Getter
 	private double wage;
 
 	/* demand for enjoyment */
@@ -229,65 +236,11 @@ public class Laborer extends Agent {
 	}
 
 	/**
-	 * Return wage in the last step
-	 * 
-	 * @return wage in the last step
-	 */
-	public double getWage() {
-		return wage;
-	}
-
-	/**
-	 * Return total income in the last step
-	 * 
-	 * @return total income in the last step
-	 */
-	public double getIncome() {
-		return income;
-	}
-
-	/**
-	 * Return consumption (in $)
-	 * 
-	 * @return consumption (in $)
-	 */
-	public double getConsumption() {
-		return consumption;
-	}
-
-	/**
 	 * Return savings
-	 * 
+	 *
 	 * @return savings
 	 */
 	public double getSavings() {
 		return Bank.getBalance(getID(), Bank.SAVINGS);
-	}
-
-	/**
-	 * Return savings rate
-	 * 
-	 * @return savings rate
-	 */
-	public double getSavingsRate() {
-		return savingsRate;
-	}
-
-	/**
-	 * Return consumption of necessity (in $)
-	 * 
-	 * @return consumption of necessity
-	 */
-	public double getNConsumption() {
-		return nConsumption;
-	}
-
-	/**
-	 * Return consumption of enjoyment
-	 * 
-	 * @return consumption of enjoyment
-	 */
-	public double getEConsumption() {
-		return eConsumption;
 	}
 }

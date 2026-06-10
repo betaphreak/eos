@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import eos.agent.firm.CFirm;
 import eos.good.Capital;
 import eos.util.StdRandom;
+import lombok.Getter;
 
 /**
  * A market trading capital good
@@ -47,6 +48,7 @@ public class CapitalMarket extends Market {
 	private double totalPrice;
 
 	// average capital price
+	@Getter
 	private double avgPrice;
 
 	/**
@@ -135,15 +137,6 @@ public class CapitalMarket extends Market {
 		supply = 0;
 		buyOffers.clear();
 		sellOffers.clear();
-	}
-
-	/**
-	 * Return average price of sell offers posted
-	 * 
-	 * @return average price of sell offers posted
-	 */
-	public double getAvgPrice() {
-		return avgPrice;
 	}
 
 	/**

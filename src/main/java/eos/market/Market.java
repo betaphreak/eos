@@ -1,16 +1,19 @@
 package eos.market;
 
+import lombok.Getter;
+
 /**
  * Parent class of all markets
- * 
+ *
  * @author zhihongx
- * 
+ *
  */
 public abstract class Market {
 
 	/**
 	 *  name of the good to be traded in the market
 	 */
+	@Getter
 	protected String good;
 
 	/**
@@ -21,15 +24,6 @@ public abstract class Market {
 	 */
 	public Market(String good) {
 		this.good = good;
-	}
-
-	/**
-	 * Return name of the good traded in the market
-	 * 
-	 * @return name of the good traded in the market
-	 */
-	public String getGood() {
-		return good;
 	}
 
 	/**
