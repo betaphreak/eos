@@ -15,11 +15,11 @@ Maven project, Java 21 (`pom.xml`). There is no test suite yet (`src/test/java` 
 ```powershell
 mvn clean compile          # compile to target/classes
 mvn exec:exec              # run Simulation1 (forks a JVM with -ea)
-mvn exec:exec -Dsim.main=eos.simulation.Simulation2   # run the other entry point
+mvn exec:exec -Dsim.main=eos.simulation.Simulation2   # run another entry point
 mvn package                # build the jar in target/
 ```
 
-`exec:exec` runs in a **forked JVM with assertions enabled** (`-ea`) because the code uses `assert` as real invariant checks; the main class is the `sim.main` property (default `eos.simulation.Simulation1`). `Simulation1` (homogeneous agents) and `Simulation2` are the two entry points (each has a `main`). Tuning a run means editing the `private static final` constants at the top of the simulation class — agent counts, initial balances, number of steps, print interval (`STEP_SIZE`).
+`exec:exec` runs in a **forked JVM with assertions enabled** (`-ea`) because the code uses `assert` as real invariant checks; the main class is the `sim.main` property (default `eos.simulation.Simulation1`). The entry points (each has a `main`) are `Simulation1` (homogeneous agents), `Simulation2` (heterogeneous, randomized init), and `Simulation3` (two banks, agents split across them — a worked example of the multi-bank setup). A run is configured through `SimulationConfig.DEFAULT` read at the top of `main` (agent counts, initial balances, number of steps, print interval), plus the per-`main` seed and init logic.
 
 Output CSVs are written to an `output/` directory created relative to the **current working directory** at runtime (i.e. the project root when launched via Maven; see `io/printer/CSVPrintWriter.java`). Runs are reproducible: each simulation's `main` calls `StdRandom.setSeed(...)`, so the same seed yields identical output.
 
