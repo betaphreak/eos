@@ -1,7 +1,7 @@
 package eos.agent.firm;
 
 import eos.bank.Bank;
-import eos.bank.Bank.Account;
+import eos.bank.Account;
 import eos.economy.Economy;
 import eos.good.Good;
 import eos.market.CapitalMarket;
@@ -85,7 +85,7 @@ public class CFirm extends Firm {
 		// Capital firms are not supposed to have loans in this
 		// design. But if for some reason a firm has a positive
 		// loan, pay back that loan.
-		loan = -Bank.getBalance(getID(), Bank.SAVINGS);
+		loan = -Bank.getSavings(getID());
 		if (loan > 0)
 			Bank.deposit(getID(), loan);
 

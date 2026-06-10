@@ -1,7 +1,7 @@
 package eos.agent.firm;
 
 import eos.bank.Bank;
-import eos.bank.Bank.Account;
+import eos.bank.Account;
 import eos.economy.Economy;
 import eos.good.Capital;
 import eos.good.Good;
@@ -143,7 +143,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 		// get firm finance information
 		Account acct = Bank.getAcct(getID());
 		revenue = acct.priIC;
-		loan = -acct.getBalance(Bank.SAVINGS);
+		loan = -acct.getSavings();
 		totalCost = wageBudget + capitalCost - acct.interest;
 		profit = revenue - totalCost;
 
@@ -156,7 +156,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 				newOutput = output;
 				newWageBudget = wageBudget;
 			} else {
-				double moneyFlowGap = acct.getBalance(Bank.CHECKING)
+				double moneyFlowGap = acct.getChecking()
 						- totalCost;
 
 				// set new wage budget
@@ -198,7 +198,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 		// pay loan (if any)
 		if (loan > 0) {
 			Bank.deposit(getID(),
-					Math.max(0, Math.min(acct.getBalance(Bank.CHECKING), loan)));
+					Math.max(0, Math.min(acct.getChecking(), loan)));
 		}
 
 		double oldCapitalVal = capitalVal;
@@ -273,7 +273,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 		wageBudget = newWageBudget;
 		acct.priIC = 0;
 		labor.decrease(labor.getQuantity()); // clear unused labor
-		loan = -acct.getBalance(Bank.SAVINGS);
+		loan = -acct.getSavings();
 	}
 
 	/**

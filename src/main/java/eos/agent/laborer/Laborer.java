@@ -2,7 +2,7 @@ package eos.agent.laborer;
 
 import eos.agent.Agent;
 import eos.bank.Bank;
-import eos.bank.Bank.Account;
+import eos.bank.Account;
 import eos.economy.Economy;
 import eos.good.Enjoyment;
 import eos.good.Good;
@@ -155,8 +155,8 @@ public class Laborer extends Agent {
 		if (necessity.decrease(eatAmt) < eatAmt) {
 			die();
 			System.out.println(Economy.getTimeStep() + ": " + getName()
-					+ getID() + " died with " + acct.getBalance(Bank.CHECKING)
-					+ " checking and " + acct.getBalance(Bank.SAVINGS)
+					+ getID() + " died with " + acct.getChecking()
+					+ " checking and " + acct.getSavings()
 					+ " savings");
 			Bank.closeAcct(getID());
 			return;
@@ -173,8 +173,8 @@ public class Laborer extends Agent {
 			highRR = RR;
 		}
 
-		double checking = acct.getBalance(Bank.CHECKING);
-		double savings = acct.getBalance(Bank.SAVINGS);
+		double checking = acct.getChecking();
+		double savings = acct.getSavings();
 
 		// compute target savings
 		double targetSavings = income * baseSavingsToIncomeRatio;
@@ -241,6 +241,6 @@ public class Laborer extends Agent {
 	 * @return savings
 	 */
 	public double getSavings() {
-		return Bank.getBalance(getID(), Bank.SAVINGS);
+		return Bank.getSavings(getID());
 	}
 }

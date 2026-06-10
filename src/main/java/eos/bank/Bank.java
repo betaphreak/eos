@@ -14,9 +14,9 @@ import eos.util.Averager;
  * interest rate and deposit interest rate. Loan interest rate is determined by
  * the demand and supply of loans. Deposit interest rate is computed by
  * distributing interest payment from all debtors to creditors.
- * 
+ *
  * @author zhihongx
- * 
+ *
  */
 public class Bank {
 
@@ -53,16 +53,6 @@ public class Bank {
 
 	/*********************************************/
 
-	/**
-	 * account type - checking account
-	 */
-	public static final int CHECKING = 0;
-
-	/**
-	 * account type - savings account
-	 */
-	public static final int SAVINGS = 1;
-
 	/* payment purposes */
 
 	/**
@@ -79,65 +69,6 @@ public class Bank {
 	 * other payment
 	 */
 	public static final int OTHER = 2;
-
-	/**
-	 * An account of an agent
-	 * 
-	 * @author zhihongx
-	 * 
-	 */
-	public static class Account {
-		// account balance: <tt>balance[CHECKING]</tt> gives the checking
-		// account balance, and <tt>balance[SAVINGS]</tt> gives the savings
-		// account balance
-		private double[] balance;
-
-		/* These give the most recent payment information */
-		/**
-		 * primary income in the last step
-		 */
-		public double priIC;
-		
-		/**
-		 *  secondary income in the last step
-		 */
-		public double secIC; 
-		
-		/**
-		 *  interest in the last step
-		 */
-		public double interest; 
-
-		/**
-		 * Create a new account with checking account balance
-		 * <tt>checkingBal</tt> and savings account balance <tt>savingsBal</tt>
-		 */
-		public Account(double checkingBal, double savingsBal) {
-			balance = new double[2];
-			balance[CHECKING] = checkingBal;
-			balance[SAVINGS] = savingsBal;
-			priIC = 0;
-			secIC = 0;
-		}
-
-		/**
-		 * Return the balance of <tt>acctType</tt>
-		 * 
-		 * @param acctType
-		 * @return balance of <tt>acctType</tt>
-		 */
-		public double getBalance(int acctType) {
-			if (acctType == CHECKING)
-				return balance[CHECKING];
-			else if (acctType == SAVINGS)
-				return balance[SAVINGS];
-			else {
-				System.err.println("getBalance: Illegal acctType");
-				System.exit(1);
-				return 0;
-			}
-		}
-	}
 
 	// map from agentID to the corresponding account
 	private static HashMap<Integer, Account> accounts = new HashMap<Integer, Account>();
@@ -168,7 +99,7 @@ public class Bank {
 
 	/**
 	 * Open an account, which includes a checking account and a savings account;
-	 * 
+	 *
 	 * @param agentID
 	 * @param initCheckingBal
 	 *            initial checking account balance
@@ -187,7 +118,7 @@ public class Bank {
 
 	/**
 	 * Close an account
-	 * 
+	 *
 	 * @param agentID
 	 */
 	public static void closeAcct(int agentID) {
@@ -195,25 +126,43 @@ public class Bank {
 	}
 
 	/**
-	 * Return the balance of the specified account
-	 * 
+	 * Return the account of <tt>agentID</tt>, exiting if it does not exist.
+	 *
 	 * @param agentID
-	 * @param acctType
-	 *            account type, either CHECKING or SAVINGS
-	 * @return the balance of the specified account
+	 * @return the agent's account
 	 */
-	public static double getBalance(int agentID, int acctType) {
+	private static Account requireAcct(int agentID) {
 		Account acct = accounts.get(agentID);
 		if (acct == null) {
-			System.err.println("getBalance: account doesn't exist: " + agentID);
+			System.err.println("account doesn't exist: " + agentID);
 			System.exit(1);
 		}
-		return acct.getBalance(acctType);
+		return acct;
+	}
+
+	/**
+	 * Return the checking account balance of <tt>agentID</tt>
+	 *
+	 * @param agentID
+	 * @return the checking account balance
+	 */
+	public static double getChecking(int agentID) {
+		return requireAcct(agentID).checking;
+	}
+
+	/**
+	 * Return the savings account balance of <tt>agentID</tt>
+	 *
+	 * @param agentID
+	 * @return the savings account balance
+	 */
+	public static double getSavings(int agentID) {
+		return requireAcct(agentID).savings;
 	}
 
 	/**
 	 * Return a reference to the agent's account
-	 * 
+	 *
 	 * @param agentID
 	 * @return a reference to the agent's account
 	 */
@@ -225,7 +174,7 @@ public class Bank {
 	 * Deduct <tt>amt</tt> from the payer's checking account. If the checking
 	 * account contains an insufficient balance, funds would be withdrawn from
 	 * the savings account to make up the difference.
-	 * 
+	 *
 	 * @param payerID
 	 * @param amt
 	 *            amount to be paid
@@ -233,17 +182,17 @@ public class Bank {
 	public static void payFrom(int payerID, double amt) {
 		Account fromAcct = accounts.get(payerID);
 
-		if (fromAcct.balance[CHECKING] < amt) {
-			double diff = amt - fromAcct.balance[CHECKING];
-			fromAcct.balance[CHECKING] += diff;
-			fromAcct.balance[SAVINGS] -= diff;
+		if (fromAcct.checking < amt) {
+			double diff = amt - fromAcct.checking;
+			fromAcct.checking += diff;
+			fromAcct.savings -= diff;
 		}
-		fromAcct.balance[CHECKING] -= amt;
+		fromAcct.checking -= amt;
 	}
 
 	/**
 	 * Add <tt>amt</tt> to payee's checking account.
-	 * 
+	 *
 	 * @param payeeID
 	 * @param amt
 	 *            amount to be paid
@@ -252,7 +201,7 @@ public class Bank {
 	 */
 	public static void payTo(int payeeID, double amt, int purpose) {
 		Account toAcct = accounts.get(payeeID);
-		toAcct.balance[CHECKING] += amt;
+		toAcct.checking += amt;
 		if (purpose == PRIIC)
 			toAcct.priIC += amt;
 		else
@@ -264,7 +213,7 @@ public class Bank {
 	 * account. If payer's checking account has a balance less than <tt>amt</tt>
 	 * , funds will be withdrawn from the savings account to make up the
 	 * difference.
-	 * 
+	 *
 	 * @param payerID
 	 * @param payeeID
 	 * @param amt
@@ -275,14 +224,14 @@ public class Bank {
 	public static void pay(int payerID, int payeeID, double amt, int purpose) {
 		Account fromAcct = accounts.get(payerID);
 		Account toAcct = accounts.get(payeeID);
-		if (fromAcct.balance[CHECKING] < amt) {
-			double diff = amt - fromAcct.balance[CHECKING];
-			fromAcct.balance[CHECKING] += diff;
-			fromAcct.balance[SAVINGS] -= diff;
+		if (fromAcct.checking < amt) {
+			double diff = amt - fromAcct.checking;
+			fromAcct.checking += diff;
+			fromAcct.savings -= diff;
 		}
 
-		fromAcct.balance[CHECKING] -= amt;
-		toAcct.balance[CHECKING] += amt;
+		fromAcct.checking -= amt;
+		toAcct.checking += amt;
 		if (purpose == PRIIC)
 			toAcct.priIC += amt;
 		else
@@ -293,7 +242,7 @@ public class Bank {
 	 * Deposit <tt>amt</tt> from agent's checking account to the savings
 	 * account. If the checking account balance is less than <tt>amt</tt>, all
 	 * remaining balance in checking account is deposited
-	 * 
+	 *
 	 * @param agentID
 	 * @param amt
 	 *            amount to be paid
@@ -301,9 +250,9 @@ public class Bank {
 	 */
 	public static double deposit(int agentID, double amt) {
 		Account acct = accounts.get(agentID);
-		double ret = Math.min(amt, acct.balance[CHECKING]);
-		acct.balance[CHECKING] -= ret;
-		acct.balance[SAVINGS] += ret;
+		double ret = Math.min(amt, acct.checking);
+		acct.checking -= ret;
+		acct.savings += ret;
 		return ret;
 	}
 
@@ -316,7 +265,7 @@ public class Bank {
 
 		/* compute total loan and total deposit */
 		for (Account acct : accounts.values()) {
-			double bal = acct.balance[SAVINGS];
+			double bal = acct.savings;
 			if (bal < 0)
 				totalLoan -= bal;
 			else
@@ -342,7 +291,7 @@ public class Bank {
 
 			/*
 			 * if (Economy.getTimeStep() == 3000) loanIR = 0.001;
-			 * 
+			 *
 			 * if (Economy.getTimeStep() == 3001) loanIR = oldLoanIR;
 			 */
 
@@ -353,12 +302,12 @@ public class Bank {
 
 			/* pay interest and collect interest payment */
 			for (Account acct : accounts.values()) {
-				if (acct.balance[SAVINGS] > 0) {
-					acct.interest = acct.balance[SAVINGS] * depositIR;
-					acct.balance[CHECKING] += acct.interest;
+				if (acct.savings > 0) {
+					acct.interest = acct.savings * depositIR;
+					acct.checking += acct.interest;
 				} else {
-					acct.interest = acct.balance[SAVINGS] * loanIR;
-					acct.balance[SAVINGS] += acct.interest;
+					acct.interest = acct.savings * loanIR;
+					acct.savings += acct.interest;
 				}
 			}
 		}
@@ -370,7 +319,7 @@ public class Bank {
 
 	/**
 	 * Return the loan interest rate in the last step
-	 * 
+	 *
 	 * @return the loan interest rate in the last step
 	 */
 	public static double getLoanIR() {
@@ -379,7 +328,7 @@ public class Bank {
 
 	/**
 	 * Return the deposit interest rate in the last step
-	 * 
+	 *
 	 * @return the deposit interest rate in the last step
 	 */
 	public static double getDepositIR() {
@@ -388,7 +337,7 @@ public class Bank {
 
 	/**
 	 * Return the long-term deposit interest rate in the last step
-	 * 
+	 *
 	 * @return the long-term deposit interest rate in the last step
 	 */
 	public static double getLTDepositIR() {
@@ -397,7 +346,7 @@ public class Bank {
 
 	/**
 	 * Return the long-term loan interest rate in the last step
-	 * 
+	 *
 	 * @return the long-term loan interest rate in the last step
 	 */
 	public static double getLTLoanIR() {
@@ -406,7 +355,7 @@ public class Bank {
 
 	/**
 	 * Return the total loan in the last step
-	 * 
+	 *
 	 * @return the total loan in the last step
 	 */
 	public static double getTotalLoan() {
@@ -415,7 +364,7 @@ public class Bank {
 
 	/**
 	 * Return the total deposit in the last step
-	 * 
+	 *
 	 * @return the total deposit in the last step
 	 */
 	public static double getTotalDeposit() {
