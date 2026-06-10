@@ -12,9 +12,9 @@ import eos.io.printer.*;
 
 /**
  * Simulation (heterogeneous case)
- * 
+ *
  * @author zhihongx
- * 
+ *
  */
 
 /**
@@ -54,56 +54,20 @@ import eos.io.printer.*;
  */
 public class Simulation2 {
 
-	/*************** constants **********************************/
-
-	// number of steps between two printer outputs
-	private static final int STEP_SIZE = 50;
-
-	// number of steps to run
-	private static final int NUM_STEP = 10000;
-
-	private static final int NUM_LABORERS = 450;
-	private static final int NUM_EFIRMS = 10;
-	private static final int NUM_NFIRMS = 10;
-
-	private static final double MIN_INIT_E_PRICE = 0.1;
-	private static final double MAX_INIT_E_PRICE = 5;
-	private static final double MIN_INIT_N_PRICE = 0.1;
-	private static final double MAX_INIT_N_PRICE = 5;
-
-	private static final double EFIRM_INIT_CHECKING = 100;
-	private static final double EFIRM_INIT_SAVINGS = -1000;
-	private static final double EFIRM_INIT_OUTPUT = 40;
-	private static final double EFIRM_INIT_WAGEBUDGET = 100;
-	private static final int EFIRM_INIT_CAPITAL = 30;
-
-	private static final double NFIRM_INIT_CHECKING = 100;
-	private static final double NFIRM_INIT_SAVINGS = -1000;
-	private static final double NFIRM_INIT_OUTPUT = 50;
-	private static final double NFIRM_INIT_WAGEBUDGET = 100;
-	private static final int NFIRM_INIT_CAPITAL = 30;
-
-	private static final double CFIRM_INIT_WAGEBUDGET = 500;
-	private static final double CFIRM_INIT_CHECKING = CFIRM_INIT_WAGEBUDGET;
-	private static final double CFIRM_INIT_SAVINGS = 0;
-
-	private static final double LABORER_INIT_E = 0;
-	private static final double LABORER_INIT_CHECKING = 0;
-	private static final double LABORER_INIT_SAVINGS = 100;
-	private static final double LABORER_INIT_SAVINGS_RATE = 0.9;
-
-	/************************************************************/
-
 	public static void main(String[] args) {
+
+		// run configuration; this simulation perturbs the initial state of
+		// each agent around these values to create a heterogeneous population
+		SimulationConfig cfg = SimulationConfig.DEFAULT;
 
 		// set the seed for the pseudorandom number generator
 		StdRandom.setSeed(2345);
 
 		/* Create and add markets */
 		ConsumerGoodMarket eMkt = new ConsumerGoodMarket("Enjoyment",
-				MIN_INIT_E_PRICE, MAX_INIT_E_PRICE);
+				cfg.ePrice().min(), cfg.ePrice().max());
 		ConsumerGoodMarket nMkt = new ConsumerGoodMarket("Necessity",
-				MIN_INIT_N_PRICE, MAX_INIT_N_PRICE);
+				cfg.nPrice().min(), cfg.nPrice().max());
 		LaborMarket lMkt = new LaborMarket();
 		CapitalMarket cMkt = new CapitalMarket();
 		Economy.addMarket(lMkt);
@@ -112,44 +76,44 @@ public class Simulation2 {
 		Economy.addMarket(cMkt);
 
 		/* Create and add firms */
-		CFirm cFirm = new CFirm(CFIRM_INIT_CHECKING, CFIRM_INIT_SAVINGS,
-				CFIRM_INIT_WAGEBUDGET);
+		CFirm cFirm = new CFirm(cfg.cFirm().checking(), cfg.cFirm().savings(),
+				cfg.cFirm().wageBudget());
 		CFirm[] cFirms = new CFirm[1];
 		cFirms[0] = cFirm;
 
-		EFirm[] eFirms = new EFirm[NUM_EFIRMS];
-		for (int i = 0; i < NUM_EFIRMS; i++) {
-			double initSavings = StdRandom.uniform(EFIRM_INIT_SAVINGS * 1.1,
-					EFIRM_INIT_SAVINGS * 0.9);
-			eFirms[i] = new EFirm(EFIRM_INIT_CHECKING, initSavings,
-					EFIRM_INIT_OUTPUT, EFIRM_INIT_WAGEBUDGET,
-					EFIRM_INIT_CAPITAL, cFirms, FirmConfig.DEFAULT);
+		EFirm[] eFirms = new EFirm[cfg.numEFirms()];
+		for (int i = 0; i < cfg.numEFirms(); i++) {
+			double initSavings = StdRandom.uniform(cfg.eFirm().savings() * 1.1,
+					cfg.eFirm().savings() * 0.9);
+			eFirms[i] = new EFirm(cfg.eFirm().checking(), initSavings,
+					cfg.eFirm().output(), cfg.eFirm().wageBudget(),
+					cfg.eFirm().capital(), cFirms, FirmConfig.DEFAULT);
 		}
 
-		NFirm[] nFirms = new NFirm[NUM_NFIRMS];
-		for (int i = 0; i < NUM_NFIRMS; i++) {
-			double initSavings = StdRandom.uniform(NFIRM_INIT_SAVINGS * 1.1,
-					NFIRM_INIT_SAVINGS * 0.9);
-			nFirms[i] = new NFirm(NFIRM_INIT_CHECKING, initSavings,
-					NFIRM_INIT_OUTPUT, NFIRM_INIT_WAGEBUDGET,
-					NFIRM_INIT_CAPITAL, cFirms, FirmConfig.DEFAULT);
+		NFirm[] nFirms = new NFirm[cfg.numNFirms()];
+		for (int i = 0; i < cfg.numNFirms(); i++) {
+			double initSavings = StdRandom.uniform(cfg.nFirm().savings() * 1.1,
+					cfg.nFirm().savings() * 0.9);
+			nFirms[i] = new NFirm(cfg.nFirm().checking(), initSavings,
+					cfg.nFirm().output(), cfg.nFirm().wageBudget(),
+					cfg.nFirm().capital(), cFirms, FirmConfig.DEFAULT);
 		}
 
 		Economy.addAgent(cFirm);
-		for (int i = 0; i < NUM_NFIRMS; i++)
+		for (int i = 0; i < cfg.numNFirms(); i++)
 			Economy.addAgent(nFirms[i]);
-		for (int i = 0; i < NUM_EFIRMS; i++)
+		for (int i = 0; i < cfg.numEFirms(); i++)
 			Economy.addAgent(eFirms[i]);
 
 		/* Create and add laborers */
-		Laborer[] laborers = new Laborer[NUM_LABORERS];
-		for (int i = 0; i < NUM_LABORERS; i++) {
+		Laborer[] laborers = new Laborer[cfg.numLaborers()];
+		for (int i = 0; i < cfg.numLaborers(); i++) {
 			double initN = StdRandom.gaussian(15, 3);
-			double initSavings = StdRandom.uniform(LABORER_INIT_SAVINGS * 0.9,
-					LABORER_INIT_SAVINGS * 1.1);
-			laborers[i] = new Laborer(LABORER_INIT_E, initN,
-					LABORER_INIT_CHECKING, initSavings,
-					LABORER_INIT_SAVINGS_RATE, LaborerConfig.DEFAULT);
+			double initSavings = StdRandom.uniform(cfg.laborer().savings() * 0.9,
+					cfg.laborer().savings() * 1.1);
+			laborers[i] = new Laborer(cfg.laborer().e(), initN,
+					cfg.laborer().checking(), initSavings,
+					cfg.laborer().savingsRate(), LaborerConfig.DEFAULT);
 			Economy.addAgent(laborers[i]);
 		}
 
@@ -157,33 +121,34 @@ public class Simulation2 {
 		lMkt.clear();
 
 		/* Create and add printers */
-		LaborersPrinter laborersPrt = new LaborersPrinter("Laborer", STEP_SIZE,
+		int stepSize = cfg.stepSize();
+		LaborersPrinter laborersPrt = new LaborersPrinter("Laborer", stepSize,
 				laborers);
 		Economy.addPrinter(laborersPrt);
 
 		ConsumerMktPricePrinter ePricePrt = new ConsumerMktPricePrinter(
-				"EPrice", STEP_SIZE, eMkt);
+				"EPrice", stepSize, eMkt);
 		Economy.addPrinter(ePricePrt);
 		ConsumerMktVolPrinter eVolPrt = new ConsumerMktVolPrinter("EVol",
-				STEP_SIZE, eMkt);
+				stepSize, eMkt);
 		Economy.addPrinter(eVolPrt);
-		FirmsPrinter eFirmsPrt = new FirmsPrinter("EFirms", STEP_SIZE, eFirms);
+		FirmsPrinter eFirmsPrt = new FirmsPrinter("EFirms", stepSize, eFirms);
 		Economy.addPrinter(eFirmsPrt);
 
 		ConsumerMktPricePrinter nPricePrt = new ConsumerMktPricePrinter(
-				"NPrice", STEP_SIZE, nMkt);
+				"NPrice", stepSize, nMkt);
 		Economy.addPrinter(nPricePrt);
 		ConsumerMktVolPrinter nVolPrt = new ConsumerMktVolPrinter("NVol",
-				STEP_SIZE, nMkt);
+				stepSize, nMkt);
 		Economy.addPrinter(nVolPrt);
-		FirmsPrinter nFirmsPrt = new FirmsPrinter("NFirms", STEP_SIZE, nFirms);
+		FirmsPrinter nFirmsPrt = new FirmsPrinter("NFirms", stepSize, nFirms);
 		Economy.addPrinter(nFirmsPrt);
 
-		BankPrinter bankPrt = new BankPrinter("Bank", STEP_SIZE);
+		BankPrinter bankPrt = new BankPrinter("Bank", stepSize);
 		Economy.addPrinter(bankPrt);
 
 		/* Run simulation */
-		Economy.run(NUM_STEP);
+		Economy.run(cfg.numStep());
 		Economy.cleanUpPrinters();
 	}
 }
