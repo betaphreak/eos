@@ -45,6 +45,10 @@ public class Bank {
 	// the economy this bank belongs to
 	private final Economy economy;
 
+	// display name, defaulted from the economy's bank sequence (e.g. "Bank 1")
+	@Getter
+	private final String name;
+
 	// working copy of the loan-sensitivity parameter; normalized at step 0
 	private double tao;
 
@@ -93,6 +97,7 @@ public class Bank {
 	public Bank(BankConfig config, Economy economy) {
 		this.config = config;
 		this.economy = economy;
+		this.name = "Bank " + economy.nextBankNumber();
 		this.tao = config.tao();
 		this.loanIR = config.initLoanIR();
 		this.depositIRAvger = new Averager(config.ltIRWin());
@@ -309,5 +314,17 @@ public class Bank {
 	 */
 	public double getLTLoanIR() {
 		return ltLoanIR;
+	}
+
+	/**
+	 * A concise, debug-friendly summary: name, account count and the latest
+	 * pool sizes, rates and retained equity.
+	 */
+	@Override
+	public String toString() {
+		return String.format(
+				"%s [accounts=%d loan=%.1f deposit=%.1f loanIR=%.4f depositIR=%.4f equity=%.2f]",
+				name, accounts.size(), totalLoan, totalDeposit, loanIR,
+				depositIR, equity);
 	}
 }

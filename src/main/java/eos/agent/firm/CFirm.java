@@ -68,6 +68,7 @@ public class CFirm extends Firm {
 	public CFirm(double initCheckingBal, double initSavingsBal,
 			double initWageBudget, Bank bank, Economy economy) {
 		super(initCheckingBal, initSavingsBal, bank, economy);
+		setName("Capital Firm");
 
 		// we assume infinite capacity here
 		// so we give A a very large value.

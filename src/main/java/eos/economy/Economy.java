@@ -62,6 +62,9 @@ public class Economy {
 	// ID for the next agent created in this economy
 	private int nextAvailableID = 1;
 
+	// sequence number for the next bank's default name in this economy
+	private int nextBankNo = 1;
+
 	// in-game date of step 0; each step advances one day
 	private final LocalDate startDate;
 
@@ -113,6 +116,16 @@ public class Economy {
 	 */
 	public int nextAgentID() {
 		return nextAvailableID++;
+	}
+
+	/**
+	 * Return the next sequence number for a bank's default name in this economy
+	 * (1, 2, ...), so banks are numbered independently per economy.
+	 *
+	 * @return the next bank sequence number
+	 */
+	public int nextBankNumber() {
+		return nextBankNo++;
 	}
 
 	/**

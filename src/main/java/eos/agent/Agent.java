@@ -29,8 +29,8 @@ public abstract class Agent {
 	@Getter
 	private boolean isAlive;
 
-	// name of the agent's class
-	private String className = null;
+	// display name; defaults to the class simple name, overridable via setName
+	private String name = null;
 
 	/**
 	 * Create a new agent holding its accounts at <tt>bank</tt>
@@ -56,14 +56,25 @@ public abstract class Agent {
 	public abstract Good getGood(String goodName);
 
 	/**
-	 * Return the class name of the agent
-	 * 
-	 * @return the class name of the agent
+	 * Return the agent's display name, which defaults to the class simple name
+	 * unless a subclass set a friendlier one via {@link #setName(String)}.
+	 *
+	 * @return the agent's display name
 	 */
 	public final String getName() {
-		if (className == null)
-			className = this.getClass().getSimpleName();
-		return className;
+		if (name == null)
+			name = this.getClass().getSimpleName();
+		return name;
+	}
+
+	/**
+	 * Set the agent's display name, overriding the class-name default.
+	 *
+	 * @param name
+	 *            the display name
+	 */
+	protected final void setName(String name) {
+		this.name = name;
 	}
 
 	/**

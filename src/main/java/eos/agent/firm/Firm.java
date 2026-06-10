@@ -110,11 +110,23 @@ public abstract class Firm extends Agent {
 
 	/**
 	 * Return total labor cost in the last step
-	 * 
+	 *
 	 * @return total labor cost
 	 */
 	public double getLaborCost() {
 		return wageBudget;
+	}
+
+	/**
+	 * A concise, debug-friendly summary: name, id, alive status and the latest
+	 * production/finance snapshot.
+	 */
+	@Override
+	public String toString() {
+		return String.format(
+				"%s #%d [%s output=%.1f capacity=%.1f wage=%.2f revenue=%.2f profit=%.2f loan=%.2f labor=%.1f]",
+				getName(), getID(), isAlive() ? "alive" : "dead", output,
+				capacity, wage, revenue, profit, loan, labor.getQuantity());
 	}
 
 }

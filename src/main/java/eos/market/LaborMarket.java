@@ -112,7 +112,7 @@ public class LaborMarket extends Market {
 	@Override
 	public String toString() {
 		return String.format(
-				"LaborMarket[employers=%d employees=%d budget=%.1f]",
-				employers.size(), employees.size(), totalBudget);
+				"%s [employers=%d employees=%d budget=%.1f]",
+				name, employers.size(), employees.size(), totalBudget);
 	}
 }

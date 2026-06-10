@@ -93,6 +93,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 			int initCapital, CFirm[] capitalProducers, FirmConfig config,
 			Bank bank, Economy economy) {
 		super(initCheckingBal, initSavingsBal, bank, economy);
+		setName(productName + " Firm");
 		this.config = config;
 		capital = new Capital(initCapital, getID(), bank, capitalProducers,
 				economy.getRng());

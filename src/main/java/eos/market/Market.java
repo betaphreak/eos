@@ -18,6 +18,12 @@ public abstract class Market {
 	protected String good;
 
 	/**
+	 * display name, defaulted from the traded good (e.g. "Enjoyment Market")
+	 */
+	@Getter
+	protected final String name;
+
+	/**
 	 * the economy this market belongs to
 	 */
 	protected final Economy economy;
@@ -32,6 +38,7 @@ public abstract class Market {
 	 */
 	public Market(String good, Economy economy) {
 		this.good = good;
+		this.name = good + " Market";
 		this.economy = economy;
 	}
 
