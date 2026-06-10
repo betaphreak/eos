@@ -1,5 +1,7 @@
 package eos.simulation;
 
+import lombok.Builder;
+
 /**
  * Run-level configuration for a simulation: step counts, population sizes,
  * market price bounds, and the initial state of each agent type. Immutable;
@@ -19,6 +21,7 @@ package eos.simulation;
  * @param cFirm       initial state of the capital firm
  * @param laborer     initial state of each laborer
  */
+@Builder(toBuilder = true)
 public record SimulationConfig(
 		int stepSize,
 		int numStep,
@@ -33,10 +36,12 @@ public record SimulationConfig(
 		LaborerInit laborer) {
 
 	/** Inclusive bounds for a market's initial price. */
+	@Builder(toBuilder = true)
 	public record PriceRange(double min, double max) {
 	}
 
 	/** Initial state of a consumer-good firm. */
+	@Builder(toBuilder = true)
 	public record FirmInit(
 			double checking,
 			double savings,
@@ -46,6 +51,7 @@ public record SimulationConfig(
 	}
 
 	/** Initial state of the capital firm. */
+	@Builder(toBuilder = true)
 	public record CFirmInit(
 			double wageBudget,
 			double checking,
@@ -53,6 +59,7 @@ public record SimulationConfig(
 	}
 
 	/** Initial state of a laborer. */
+	@Builder(toBuilder = true)
 	public record LaborerInit(
 			double e,
 			double checking,

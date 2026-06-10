@@ -1,5 +1,7 @@
 package eos.agent.firm;
 
+import lombok.Builder;
+
 /**
  * Tunable model parameters for a {@link ConsumerGoodFirm}. Immutable; share one
  * instance across a homogeneous population or build per-firm instances for a
@@ -15,6 +17,7 @@ package eos.agent.firm;
  *                       replacement
  * @param avgProfitWin   time window within which average profit is computed
  */
+@Builder(toBuilder = true)
 public record FirmConfig(
 		double A,
 		double beta,

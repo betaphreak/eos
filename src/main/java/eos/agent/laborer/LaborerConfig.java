@@ -1,5 +1,7 @@
 package eos.agent.laborer;
 
+import lombok.Builder;
+
 /**
  * Tunable model parameters for a {@link Laborer}. Immutable; share one instance
  * across a homogeneous population or build per-laborer instances for a
@@ -13,6 +15,7 @@ package eos.agent.laborer;
  * @param upsilon                  max percentage change in consumption allowed in
  *                                 each step
  */
+@Builder(toBuilder = true)
 public record LaborerConfig(
 		double targetNStock,
 		double baseSavingsToIncomeRatio,
