@@ -16,6 +16,12 @@ import lombok.Builder;
  *                   measured
  * @param maxLoanIR  max loan interest rate
  * @param minLoanIR  min loan interest rate
+ * @param spread     fraction of gross interest margin the bank retains as
+ *                   profit instead of redistributing to depositors (0 = the
+ *                   original zero-profit pass-through)
+ * @param feeRate    transaction fee charged to the payer on each withdrawal,
+ *                   as a fraction of the amount, retained as profit (0 = no
+ *                   fee)
  */
 @Builder(toBuilder = true)
 public record BankConfig(
@@ -24,9 +30,11 @@ public record BankConfig(
 		double tao,
 		int ltIRWin,
 		double maxLoanIR,
-		double minLoanIR) {
+		double minLoanIR,
+		double spread,
+		double feeRate) {
 
-	/** The original hard-coded parameter values. */
+	/** The original hard-coded parameter values (zero-profit bank). */
 	public static final BankConfig DEFAULT =
-			new BankConfig(0.01, 0.01, 0.005, 100, 0.01, 0.0005);
+			new BankConfig(0.01, 0.01, 0.005, 100, 0.01, 0.0005, 0, 0);
 }

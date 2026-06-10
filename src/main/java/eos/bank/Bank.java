@@ -64,6 +64,10 @@ public class Bank {
 	@Getter
 	private double depositIR;
 
+	// cumulative retained profit (interest spread + transaction fees)
+	@Getter
+	private double equity;
+
 	// long-term loan interest rate
 	private double ltLoanIR;
 
@@ -173,12 +177,15 @@ public class Bank {
 	 */
 	public void withdraw(int agentID, double amt) {
 		Account acct = accounts.get(agentID);
-		if (acct.checking < amt) {
-			double diff = amt - acct.checking;
+		double fee = amt * config.feeRate();
+		double total = amt + fee;
+		if (acct.checking < total) {
+			double diff = total - acct.checking;
 			acct.checking += diff;
 			acct.savings -= diff;
 		}
-		acct.checking -= amt;
+		acct.checking -= total;
+		equity += fee;
 	}
 
 	/**
@@ -253,8 +260,15 @@ public class Bank {
 			loanIR = Math.min(config.maxLoanIR(),
 					Math.max(config.minLoanIR(), loanIR));
 
-			/* compute deposit interest rate */
-			depositIR = loanIR * totalLoan / totalDeposit;
+			/*
+			 * Compute deposit interest rate. Without a spread the bank
+			 * redistributes all collected loan interest to depositors
+			 * (depositIR * totalDeposit == loanIR * totalLoan), making zero
+			 * profit. A positive spread pays depositors less and retains the
+			 * difference as equity.
+			 */
+			depositIR = loanIR * totalLoan / totalDeposit * (1 - config.spread());
+			equity += loanIR * totalLoan * config.spread();
 
 			/* pay interest and collect interest payment */
 			for (Account acct : accounts.values()) {

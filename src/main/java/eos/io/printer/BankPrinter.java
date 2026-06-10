@@ -42,7 +42,8 @@ import eos.economy.*;
  * Col4: smoothed deposit interest rate <br>
  * Col5: total loan <br>
  * Col6: total deposit<br>
- * 
+ * Col7: equity (cumulative retained profit)<br>
+ *
  */
 public class BankPrinter extends Printer {
 
@@ -193,7 +194,8 @@ public class BankPrinter extends Printer {
 		if (step >= start && step <= end && (step - start) % period == 0)
 			printWriter.println(step, bank.getLoanIR(), bank.getLTLoanIR(),
 					bank.getDepositIR(), bank.getLTDepositIR(),
-					bank.getTotalLoan(), bank.getTotalDeposit());
+					bank.getTotalLoan(), bank.getTotalDeposit(),
+					bank.getEquity());
 	}
 
 	/**
@@ -201,7 +203,7 @@ public class BankPrinter extends Printer {
 	 */
 	public void printTitles() {
 		printWriter.println("Step", "LoanIR", "LTLoanIR", "DepositIR",
-				"LTDepositIR", "TotalLoan", "TotalDeposit");
+				"LTDepositIR", "TotalLoan", "TotalDeposit", "Equity");
 	}
 
 	/**
