@@ -41,6 +41,7 @@ public class Simulation3 {
 		h.createFirms(bankA, alternate,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createLaborers(alternate, i -> 15, i -> cfg.laborer().savings());
+		h.enableExternalInflow(bankA);
 		h.addCommonPrinters();
 		h.addBankPrinter("BankA", bankA);
 		h.addBankPrinter("BankB", bankB);

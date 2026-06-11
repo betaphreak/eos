@@ -1,13 +1,14 @@
 package eos.io.printer;
 
+import eos.agent.Agent;
 import eos.agent.laborer.Laborer;
 import eos.economy.*;
 
 /**
- * This printer tracks statistics of a group of laborers. To use it:
+ * This printer tracks statistics of the economy's laborer population. To use it:
  * <p>
  * 1. Create a new <tt>LaborersPrinter</tt>. See
- * {@link #LaborersPrinter(String fileName, int period, int start, int end, Laborer[] laborers)}.
+ * {@link #LaborersPrinter(String fileName, int period, int start, int end)}.
  * <p>
  * 2. Call <tt>printTitles()</tt> to print column titles.
  * <p>
@@ -19,6 +20,12 @@ import eos.economy.*;
  * 5. Include <tt>cleanup()</tt> of this printer in
  * <tt>Economy.cleanUpPrinters()</tt>, and call that method to clean up the
  * printers.
+ * <p>
+ * Each row aggregates over <em>all laborers currently alive in the economy</em>
+ * (read from {@link Economy#getAgents()} at print time), so it reflects the
+ * living population as it changes — the founding cohort plus any replacement and
+ * immigrant households — not a fixed initial set. Averages are over the living
+ * count.
  * <p>
  * The output of the printer is a CSV file. If you have closely followed the
  * above steps, the first line of the file should be the column titles, and the
@@ -45,25 +52,23 @@ import eos.economy.*;
  * Col8: average necessity consumption<br>
  * Col9: average enjoyment consumption<br>
  * Col10: average age of living laborers, in years<br>
+ * Col11: number of living laborers<br>
  *
  */
 public class LaborersPrinter extends Printer {
 
 	// print writer that writes output to a CSV file
 	private final CSVPrintWriter printWriter;
-	
-	// laborers to be tracked
-	private final Laborer[] laborers;
 
 	/**
 	 * Create a new <tt>LaborersPrinter</tt>.
 	 * <p>
-	 * 
+	 *
 	 * @param fileName
 	 *            name of the CSV output file. A default name will be used if it
 	 *            is omitted
 	 *            <p>
-	 * 
+	 *
 	 * @param period
 	 *            number of steps between two printing. e.g. if <tt>period</tt>
 	 *            = 5, data will be printed every 5 time steps.
@@ -78,29 +83,24 @@ public class LaborersPrinter extends Printer {
 	 *            omitted, they will be taken to be the first and last step of
 	 *            the simulation respectively.
 	 *            <p>
-	 * @param laborers
-	 *            laborers to be tracked
-	 *            <p>
-	 * 
+	 *
 	 */
-	public LaborersPrinter(String fileName, int period, int start, int end,
-			Laborer[] laborers) {
+	public LaborersPrinter(String fileName, int period, int start, int end) {
 		super(period, start, end);
 		this.printWriter = new CSVPrintWriter(fileName);
-		this.laborers = laborers;
 	}
 
 	/**
 	 * Create a new <tt>LaborersPrinter</tt>. See
-	 * {@link #LaborersPrinter(String fileName, int period, int start, int end, Laborer[] laborers)}
-	 * . <tt>end</tt> is set to the end of the simulation.
+	 * {@link #LaborersPrinter(String fileName, int period, int start, int end)}.
+	 * <tt>end</tt> is set to the end of the simulation.
 	 * <p>
-	 * 
+	 *
 	 * @param fileName
 	 *            name of the CSV output file. A default name will be used if it
 	 *            is omitted
 	 *            <p>
-	 * 
+	 *
 	 * @param period
 	 *            number of steps between two prints. e.g. if <tt>period</tt> =
 	 *            5, data will be printed every 5 time steps.
@@ -108,47 +108,40 @@ public class LaborersPrinter extends Printer {
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
-	 * @param laborers
-	 *            laborers to be tracked
-	 *            <p>
-	 * 
+	 *
 	 */
-	public LaborersPrinter(String fileName, int period, int start,
-			Laborer[] laborers) {
-		this(fileName, period, start, Integer.MAX_VALUE, laborers);
+	public LaborersPrinter(String fileName, int period, int start) {
+		this(fileName, period, start, Integer.MAX_VALUE);
 	}
 
 	/**
 	 * Create a new <tt>LaborersPrinter</tt>. See
-	 * {@link #LaborersPrinter(String fileName, int period, int start, int end, Laborer[] laborers)}
-	 * . <tt>start</tt> is set to 0. <tt>end</tt> is set to the end of the
+	 * {@link #LaborersPrinter(String fileName, int period, int start, int end)}.
+	 * <tt>start</tt> is set to 0. <tt>end</tt> is set to the end of the
 	 * simulation.
 	 * <p>
-	 * 
+	 *
 	 * @param fileName
 	 *            name of the CSV output file. A default name will be used if it
 	 *            is omitted
 	 *            <p>
-	 * 
+	 *
 	 * @param period
 	 *            number of steps between two prints. e.g. if <tt>period</tt> =
 	 *            5, data will be printed every 5 time steps.
 	 *            <p>
-	 * @param laborers
-	 *            laborers to be tracked
-	 *            <p>
-	 * 
+	 *
 	 */
-	public LaborersPrinter(String fileName, int period, Laborer[] laborers) {
-		this(fileName, period, 0, laborers);
+	public LaborersPrinter(String fileName, int period) {
+		this(fileName, period, 0);
 	}
 
 	/**
 	 * Create a new <tt>LaborersPrinter</tt>. See
-	 * {@link #LaborersPrinter(String fileName, int period, int start, int end, Laborer[] laborers)}
-	 * . A default <tt>fileName</tt> is used.
+	 * {@link #LaborersPrinter(String fileName, int period, int start, int end)}.
+	 * A default <tt>fileName</tt> is used.
 	 * <p>
-	 * 
+	 *
 	 * @param period
 	 *            number of steps between two prints. e.g. if <tt>period</tt> =
 	 *            5, data will be printed every 5 time steps.
@@ -163,25 +156,20 @@ public class LaborersPrinter extends Printer {
 	 *            omitted, they will be taken to be the first and last step of
 	 *            the simulation respectively.
 	 *            <p>
-	 * @param laborers
-	 *            laborers to be tracked
-	 *            <p>
-	 * 
+	 *
 	 */
-	public LaborersPrinter(int period, int start, int end, Laborer[] laborers) {
+	public LaborersPrinter(int period, int start, int end) {
 		super(period, start, end);
-		this.laborers = laborers;
-		String fileName = "laborers";
-		this.printWriter = new CSVPrintWriter(fileName);
+		this.printWriter = new CSVPrintWriter("laborers");
 	}
 
 	/**
 	 * Create a new <tt>LaborersPrinter</tt>. See
-	 * {@link #LaborersPrinter(String fileName, int period, int start, int end, Laborer[] laborers)}
-	 * . A default <tt>fileName</tt> is used. <tt>end</tt> is set to the end of
-	 * the simulation.
+	 * {@link #LaborersPrinter(String fileName, int period, int start, int end)}.
+	 * A default <tt>fileName</tt> is used. <tt>end</tt> is set to the end of the
+	 * simulation.
 	 * <p>
-	 * 
+	 *
 	 * @param period
 	 *            number of steps between two prints. e.g. if <tt>period</tt> =
 	 *            5, data will be printed every 5 time steps.
@@ -189,33 +177,27 @@ public class LaborersPrinter extends Printer {
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
-	 * @param laborers
-	 *            laborers to be tracked
-	 *            <p>
-	 * 
+	 *
 	 */
-	public LaborersPrinter(int period, int start, Laborer[] laborers) {
-		this(period, start, Integer.MAX_VALUE, laborers);
+	public LaborersPrinter(int period, int start) {
+		this(period, start, Integer.MAX_VALUE);
 	}
 
 	/**
 	 * Create a new <tt>LaborersPrinter</tt>. See
-	 * {@link #LaborersPrinter(String fileName, int period, int start, int end, Laborer[] laborers)}
-	 * . A default <tt>fileName</tt> is used. <tt>start</tt> is set to 0.
+	 * {@link #LaborersPrinter(String fileName, int period, int start, int end)}.
+	 * A default <tt>fileName</tt> is used. <tt>start</tt> is set to 0.
 	 * <tt>end</tt> is set to the end of the simulation.
 	 * <p>
-	 * 
+	 *
 	 * @param period
 	 *            number of steps between two prints. e.g. if <tt>period</tt> =
 	 *            5, data will be printed every 5 time steps.
 	 *            <p>
-	 * @param laborers
-	 *            laborers to be tracked
-	 *            <p>
-	 * 
+	 *
 	 */
-	public LaborersPrinter(int period, Laborer[] laborers) {
-		this(period, 0, laborers);
+	public LaborersPrinter(int period) {
+		this(period, 0);
 	}
 
 	/**
@@ -235,37 +217,39 @@ public class LaborersPrinter extends Printer {
 			double avgNConsumption = 0;
 			double avgEConsumption = 0;
 			double avgAge = 0;
-			int aliveCount = 0;
+			int count = 0;
 
-			for (int i = 0; i < laborers.length; i++)
-				if (laborers[i].isAlive()) {
-					avgWage += laborers[i].getWage();
-					avgIC += laborers[i].getIncome();
-					avgConsumption += laborers[i].getConsumption();
-					totSavings += laborers[i].getSavings();
-					avgSavingsRate += laborers[i].getSavingsRate();
-					avgNStock += laborers[i].getGood("Necessity").getQuantity();
-					avgEStock += laborers[i].getGood("Enjoyment").getQuantity();
-					avgNConsumption += laborers[i].getNConsumption();
-					avgEConsumption += laborers[i].getEConsumption();
-					avgAge += laborers[i].getAgeYears();
-					aliveCount++;
+			// aggregate over the living laborer population, which grows and is
+			// replenished over the run (founders, replacements and immigrants)
+			for (Agent agent : economy.getAgents())
+				if (agent instanceof Laborer laborer) {
+					avgWage += laborer.getWage();
+					avgIC += laborer.getIncome();
+					avgConsumption += laborer.getConsumption();
+					totSavings += laborer.getSavings();
+					avgSavingsRate += laborer.getSavingsRate();
+					avgNStock += laborer.getGood("Necessity").getQuantity();
+					avgEStock += laborer.getGood("Enjoyment").getQuantity();
+					avgNConsumption += laborer.getNConsumption();
+					avgEConsumption += laborer.getEConsumption();
+					avgAge += laborer.getAgeYears();
+					count++;
 				}
-			// age is averaged over the living (not the original cohort), so it
-			// stays a meaningful mean as founding heads die off
-			avgAge = aliveCount > 0 ? avgAge / aliveCount : 0;
-			avgWage /= laborers.length;
-			avgIC /= laborers.length;
-			avgConsumption /= laborers.length;
-			avgSavings = totSavings / laborers.length;
-			avgSavingsRate /= laborers.length;
-			avgNStock /= laborers.length;
-			avgEStock /= laborers.length;
-			avgNConsumption /= laborers.length;
-			avgEConsumption /= laborers.length;
+			if (count > 0) {
+				avgWage /= count;
+				avgIC /= count;
+				avgConsumption /= count;
+				avgSavings = totSavings / count;
+				avgSavingsRate /= count;
+				avgNStock /= count;
+				avgEStock /= count;
+				avgNConsumption /= count;
+				avgEConsumption /= count;
+				avgAge /= count;
+			}
 			printWriter.println(economy.getDate(), avgWage, avgIC, avgConsumption,
 					avgSavings, totSavings, avgSavingsRate, avgNStock, avgEStock,
-					avgNConsumption, avgEConsumption, avgAge);
+					avgNConsumption, avgEConsumption, avgAge, count);
 		}
 	}
 
@@ -275,7 +259,7 @@ public class LaborersPrinter extends Printer {
 	public void printTitles() {
 		printWriter.println("Date", "AvgWage", "AvgTotalIncome",
 				"AvgConsumption", "AvgSavings", "TotalSavings", "AvgSavings_Rate", "AvgNStock",
-				"AvgEStock", "AvgNConsumption", "AvgEConsumption", "AvgAge");
+				"AvgEStock", "AvgNConsumption", "AvgEConsumption", "AvgAge", "Count");
 	}
 
 	/**
@@ -288,7 +272,7 @@ public class LaborersPrinter extends Printer {
 
 	/**
 	 * Return the name of the output file.
-	 * 
+	 *
 	 * @return the name of the output file
 	 */
 	public String getFileName() {

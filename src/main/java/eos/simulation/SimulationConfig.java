@@ -32,6 +32,13 @@ import lombok.Builder;
  * @param meanInitAgeYears mean initial age (years) of founding household heads,
  *                     the center of the normal distribution their ages are
  *                     drawn from
+ * @param externalInflowPerStep money entering the economy from outside each
+ *                     step, injected into the bank's equity; 0 leaves the
+ *                     economy closed (no inflow, no immigration)
+ * @param immigrationThreshold equity level at which the bank funds one new
+ *                     immigrant household out of equity (and the household's
+ *                     opening checking balance); only fires when
+ *                     {@code externalInflowPerStep > 0}
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -48,7 +55,9 @@ public record SimulationConfig(
 		CFirmInit cFirm,
 		LaborerInit laborer,
 		boolean mortalityEnabled,
-		double meanInitAgeYears) {
+		double meanInitAgeYears,
+		double externalInflowPerStep,
+		double immigrationThreshold) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -112,5 +121,7 @@ public record SimulationConfig(
 			new CFirmInit(500, 500, 0),            // cFirm
 			new LaborerInit(0, 0, 100, 0.9),       // laborer
 			true,                                  // mortalityEnabled
-			35);                                   // meanInitAgeYears
+			35,                                    // meanInitAgeYears
+			0,                                     // externalInflowPerStep (closed)
+			100);                                  // immigrationThreshold
 }

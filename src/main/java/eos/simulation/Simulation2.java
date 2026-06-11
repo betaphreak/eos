@@ -42,6 +42,7 @@ public class Simulation2 {
 				i -> rng.gaussian(15, 3),
 				i -> rng.uniform(cfg.laborer().savings() * 0.9,
 						cfg.laborer().savings() * 1.1));
+		h.enableExternalInflow(bank);
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);
 		h.run();

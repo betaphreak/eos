@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import eos.agent.Agent;
@@ -102,6 +104,16 @@ public class Economy {
 	// policy producing a replacement agent when one dies (default: no
 	// replacement, so the population shrinks)
 	private UnaryOperator<Agent> replacementPolicy = dead -> null;
+
+	// per-step side effects run once each newDay after deaths/replacements
+	// settle (e.g. injecting external money into a bank's equity in an open
+	// economy); default: none
+	private final List<Runnable> stepActions = new ArrayList<Runnable>();
+
+	// policy admitting brand-new households each newDay (e.g. externally-funded
+	// immigration), run after the step actions so it sees their effects;
+	// default: none
+	private Supplier<List<Agent>> immigrationPolicy = () -> List.of();
 
 	// whether the mortality feature is active (aging, old-age death,
 	// inheritance); false recovers the pre-mortality behavior
@@ -224,6 +236,13 @@ public class Economy {
 		deadAgents.clear();
 		agents.addAll(replacements);
 
+		// run per-step side effects (e.g. external money inflow), then admit any
+		// brand-new households (e.g. immigration funded by that inflow); they
+		// join this step's labor clearing and first act() next step
+		for (Runnable action : stepActions)
+			action.run();
+		agents.addAll(immigrationPolicy.get());
+
 		for (Market market : markets.values()) {
 			market.clear();
 		}
@@ -318,6 +337,32 @@ public class Economy {
 	 */
 	public void setReplacementPolicy(UnaryOperator<Agent> policy) {
 		this.replacementPolicy = policy;
+	}
+
+	/**
+	 * Register a side effect to run once each step, after the dead are removed
+	 * and replacements admitted but before markets clear. Used for open-economy
+	 * effects such as injecting external money into a bank's equity. Multiple
+	 * actions run in registration order.
+	 *
+	 * @param action
+	 *            the per-step side effect
+	 */
+	public void addStepAction(Runnable action) {
+		stepActions.add(action);
+	}
+
+	/**
+	 * Set the policy that admits brand-new households each step (e.g.
+	 * externally-funded immigration). The policy returns the new agents to
+	 * admit, or an empty list for none. It runs each step after the step
+	 * actions, so it sees their effects (e.g. freshly injected equity).
+	 *
+	 * @param policy
+	 *            the immigration policy
+	 */
+	public void setImmigrationPolicy(Supplier<List<Agent>> policy) {
+		this.immigrationPolicy = policy;
 	}
 
 	/**

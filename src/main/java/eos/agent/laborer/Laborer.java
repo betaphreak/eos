@@ -149,6 +149,41 @@ public class Laborer extends Agent {
 	}
 
 	/**
+	 * Create a brand-new household funded out of the bank's equity rather than a
+	 * fresh endowment — an externally-bankrolled immigrant settling in an open
+	 * economy. It starts a new dynasty (a fresh working-age head with a unique
+	 * surname); its opening balances are drawn from equity (so the external
+	 * money that fed equity now circulates), as for a successor household.
+	 *
+	 * @param initEQty
+	 *            initial enjoyment quantity
+	 * @param initNQty
+	 *            initial necessity quantity
+	 * @param initCheckingBal
+	 *            initial checking account balance (drawn from equity)
+	 * @param initSavingsBal
+	 *            initial savings account balance (drawn from equity)
+	 * @param initSavingsRate
+	 *            initial savings rate
+	 * @param config
+	 *            tunable model parameters
+	 * @param bank
+	 *            the bank at which this laborer holds its accounts
+	 * @param economy
+	 *            the economy this laborer belongs to
+	 * @param fundedFromEquity
+	 *            must be true; selects equity funding over a fresh endowment
+	 *            (distinguishes this constructor from the founding one)
+	 */
+	public Laborer(double initEQty, double initNQty, double initCheckingBal,
+			double initSavingsBal, double initSavingsRate, LaborerConfig config,
+			Bank bank, Economy economy, boolean fundedFromEquity) {
+		this(initEQty, initNQty, initCheckingBal, initSavingsBal,
+				fundedFromEquity, initSavingsRate, config, bank, economy,
+				economy.getNames().nextHead());
+	}
+
+	/**
 	 * Create the household that succeeds <tt>predecessor</tt> when its head
 	 * dies: it inherits the predecessor's estate (its account balances, funded
 	 * out of the bank's equity so money stays in circulation) and continues the

@@ -170,6 +170,21 @@ public class Bank {
 	}
 
 	/**
+	 * Inject money from outside the economy into the bank's equity. Unlike
+	 * retained interest spread or fees (which capture money already inside the
+	 * economy), this is genuinely new money entering an open economy; it
+	 * bankrolls externally-funded household formation. The counterpart drawdown
+	 * happens in {@link #openInheritedAcct(int, double, double)} when the new
+	 * household's account is opened out of equity.
+	 *
+	 * @param amount
+	 *            the external funds to add to equity
+	 */
+	public void injectExternalFunds(double amount) {
+		equity += amount;
+	}
+
+	/**
 	 * Return the account of <tt>agentID</tt>, exiting if it does not exist.
 	 *
 	 * @param agentID

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.IntFunction;
 import java.util.function.IntToDoubleFunction;
 
+import eos.agent.Agent;
 import eos.agent.firm.CFirm;
 import eos.agent.firm.EFirm;
 import eos.agent.firm.FirmConfig;
@@ -150,10 +151,38 @@ public class SimulationHarness {
 		laborMkt.clear();
 	}
 
+	/**
+	 * Open the economy through <tt>gatewayBank</tt>: external money flows into
+	 * that bank's equity each step (a standalone per-step economy action), and
+	 * the immigration policy funds one brand-new immigrant household out of
+	 * equity for every {@code immigrationThreshold} accumulated — population
+	 * growth bankrolled from outside. The simulation chooses which bank is the
+	 * gateway. A no-op when {@code externalInflowPerStep} is 0 (closed economy).
+	 *
+	 * @param gatewayBank
+	 *            the bank through which external money enters the economy
+	 */
+	public void enableExternalInflow(Bank gatewayBank) {
+		if (cfg.externalInflowPerStep() <= 0)
+			return;
+		economy.addStepAction(() -> gatewayBank
+				.injectExternalFunds(cfg.externalInflowPerStep()));
+		economy.setImmigrationPolicy(() -> {
+			List<Agent> immigrants = new ArrayList<>();
+			while (gatewayBank.getEquity() >= cfg.immigrationThreshold()) {
+				immigrants.add(new Laborer(cfg.laborer().e(),
+						REPLACEMENT_NECESSITY_STOCK, cfg.immigrationThreshold(),
+						0, cfg.laborer().savingsRate(), LaborerConfig.DEFAULT,
+						gatewayBank, economy, true));
+			}
+			return immigrants;
+		});
+	}
+
 	/** Register the printers common to every simulation. */
 	public void addCommonPrinters() {
 		int stepSize = cfg.stepSize();
-		economy.addPrinter(new LaborersPrinter("Laborer", stepSize, laborers));
+		economy.addPrinter(new LaborersPrinter("Laborer", stepSize));
 		economy.addPrinter(
 				new ConsumerMktPricePrinter("EPrice", stepSize, enjoymentMkt));
 		economy.addPrinter(
