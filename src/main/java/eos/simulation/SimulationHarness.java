@@ -43,10 +43,10 @@ public class SimulationHarness {
 	private final Economy economy;
 	private final List<Bank> banks = new ArrayList<>();
 
-	// behavioral parameters for the consumer-good firms; default is the
-	// canonical legacy calibration. Set before createFirms to vary the run
-	// (e.g. switch on the labor-share wage-budget rule).
-	private FirmConfig firmConfig = FirmConfig.DEFAULT;
+	// behavioral parameters for the consumer-good firms; defaults to the
+	// canonical values with the run's labor-share applied (see constructor).
+	// Replace via setFirmConfig before createFirms to vary other firm params.
+	private FirmConfig firmConfig;
 
 	private ConsumerGoodMarket enjoymentMkt;
 	private ConsumerGoodMarket necessityMkt;
@@ -61,6 +61,10 @@ public class SimulationHarness {
 	public SimulationHarness(SimulationConfig cfg, Economy economy) {
 		this.cfg = cfg;
 		this.economy = economy;
+		// seed the firm parameters with the run's labor-share (the rest are the
+		// canonical defaults); setFirmConfig can override before createFirms
+		this.firmConfig =
+				FirmConfig.DEFAULT.toBuilder().laborShare(cfg.laborShare()).build();
 		// fix the mortality regime before any agent is constructed, so laborers
 		// see the right setting when they sample their initial age
 		economy.setMortalityEnabled(cfg.mortalityEnabled());

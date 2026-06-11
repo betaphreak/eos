@@ -39,6 +39,11 @@ import lombok.Builder;
  *                     immigrant household out of equity (and the household's
  *                     opening checking balance); only fires when
  *                     {@code externalInflowPerStep > 0}
+ * @param laborShare   fraction of its revenue each consumer-good firm budgets
+ *                     for wages (the labor-share wage-budget rule), so total
+ *                     wage spending — and the market wage totalBudget/N —
+ *                     scales with the economy as population grows; 0 falls back
+ *                     to the legacy cash-flow-gap rule
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -57,7 +62,8 @@ public record SimulationConfig(
 		boolean mortalityEnabled,
 		double meanInitAgeYears,
 		double externalInflowPerStep,
-		double immigrationThreshold) {
+		double immigrationThreshold,
+		double laborShare) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -123,5 +129,6 @@ public record SimulationConfig(
 			true,                                  // mortalityEnabled
 			35,                                    // meanInitAgeYears
 			0,                                     // externalInflowPerStep (closed)
-			100);                                  // immigrationThreshold
+			100,                                   // immigrationThreshold
+			0.5);                                  // laborShare
 }
