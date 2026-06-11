@@ -284,6 +284,16 @@ public class Economy {
 	}
 
 	/**
+	 * Return the latest consumer price index (the mean of the consumer-good
+	 * market prices), as last computed by {@code updateInflation()}.
+	 *
+	 * @return the latest CPI
+	 */
+	public double getCPI() {
+		return lastCPI;
+	}
+
+	/**
 	 * Return agents who are still alive
 	 *
 	 * @return agents who are still alive

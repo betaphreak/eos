@@ -43,6 +43,11 @@ import eos.economy.*;
  * Col5: total loan <br>
  * Col6: total deposit<br>
  * Col7: equity (cumulative retained profit)<br>
+ * Col8: CPI (consumer price index — mean of consumer-good market prices), to
+ * two decimals<br>
+ * Col9: inflation (economy-wide smoothed average inflation, formatted as a
+ * percent truncated to two decimals; the real rate is the deposit/loan rate
+ * less this)<br>
  *
  */
 public class BankPrinter extends Printer {
@@ -195,7 +200,23 @@ public class BankPrinter extends Printer {
 			printWriter.println(economy.getDate(), bank.getLoanIR(), bank.getLTLoanIR(),
 					bank.getDepositIR(), bank.getLTDepositIR(),
 					bank.getTotalLoan(), bank.getTotalDeposit(),
-					bank.getEquity());
+					bank.getEquity(), String.format("%.2f", economy.getCPI()),
+					formatPercent(economy.getInflation()));
+	}
+
+	/**
+	 * Format a fraction as a percent string truncated (toward zero) to two
+	 * decimal places, e.g. 0.0045 -&gt; "0.45%". Truncating rather than rounding
+	 * matches the requested display.
+	 *
+	 * @param fraction
+	 *            the value as a fraction (0.01 == 1%)
+	 * @return the truncated percent string
+	 */
+	private static String formatPercent(double fraction) {
+		double pct = fraction * 100;
+		double truncated = (long) (pct * 100) / 100.0;
+		return String.format("%.2f%%", truncated);
 	}
 
 	/**
@@ -203,7 +224,8 @@ public class BankPrinter extends Printer {
 	 */
 	public void printTitles() {
 		printWriter.println("Date", "LoanIR", "LTLoanIR", "DepositIR",
-				"LTDepositIR", "TotalLoan", "TotalDeposit", "Equity");
+				"LTDepositIR", "TotalLoan", "TotalDeposit", "Equity", "CPI",
+				"Inflation");
 	}
 
 	/**
