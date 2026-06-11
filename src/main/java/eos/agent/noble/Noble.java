@@ -32,9 +32,9 @@ import lombok.extern.java.Log;
  * economy.getNames().nextHead()} — so it carries a male given name and a unique
  * dynasty surname from the session's name pool (on the separate naming RNG, so
  * naming a noble never perturbs the economic random stream). It also ages and
- * dies on the same schedule: when mortality is enabled the head carries a
- * {@code birthDate} and may die of old age each step against the {@code
- * mortality/} life table, whereupon a <b>successor of the same dynasty</b>
+ * dies on the same schedule: the head carries a {@code birthDate} and may die
+ * of old age each step against the {@code mortality/} life table, whereupon a
+ * <b>successor of the same dynasty</b>
  * inherits the estate <i>and the ownership of the firms</i> (wired via {@link
  * Economy#addReplacementPolicy}), so the aristocracy persists across generations.
  * <p>
@@ -57,8 +57,7 @@ public class Noble extends Agent {
 	@Getter
 	private final Person head;
 
-	// in-game birth date of the head (the source of truth for its age). Null when
-	// mortality is disabled, since heads neither age nor die of old age then.
+	// in-game birth date of the head (the source of truth for its age)
 	@Getter
 	private final LocalDate birthDate;
 
@@ -179,13 +178,10 @@ public class Noble extends Agent {
 			bank.openAcct(getID(), initCheckingBal, initSavingsBal);
 
 		// named the same way as a laborer household head, and aged the same way:
-		// a working-age birth date sampled on the separate mortality RNG (only
-		// when mortality is active, so a no-mortality run stays age-less)
+		// a working-age birth date sampled on the separate mortality RNG
 		this.head = head;
-		this.birthDate = economy.isMortalityEnabled()
-				? economy.getDate().minusDays(economy.getDemography()
-						.sampleInitialAgeDays(economy.getMeanInitAgeYears()))
-				: null;
+		this.birthDate = economy.getDate().minusDays(economy.getDemography()
+				.sampleInitialAgeDays(economy.getMeanInitAgeYears()));
 
 		this.config = config;
 		this.firms = new ArrayList<>(ownedFirms);
@@ -203,11 +199,10 @@ public class Noble extends Agent {
 		Bank bank = getBank();
 		Account acct = bank.getAcct(getID());
 
-		// the head may die of old age (only when mortality is active); its estate
-		// folds into the bank's equity, and a successor of the same dynasty
-		// inherits both the estate and the firms (see addReplacementPolicy)
-		if (getEconomy().isMortalityEnabled()
-				&& getEconomy().getDemography().diesOfOldAge(ageDays())) {
+		// the head may die of old age; its estate folds into the bank's equity,
+		// and a successor of the same dynasty inherits both the estate and the
+		// firms (see addReplacementPolicy)
+		if (getEconomy().getDemography().diesOfOldAge(ageDays())) {
 			die();
 			log.info(String.format(
 					"%s (noble %d, b. %s) died of old age at %d",
@@ -293,13 +288,12 @@ public class Noble extends Agent {
 	}
 
 	/**
-	 * Return the head's age in whole years, or 0 when mortality is disabled
-	 * (heads have no birth date and do not age).
+	 * Return the head's age in whole years.
 	 *
 	 * @return the head's age in years
 	 */
 	public int getAgeYears() {
-		return birthDate == null ? 0 : ageDays() / 365;
+		return ageDays() / 365;
 	}
 
 	/**

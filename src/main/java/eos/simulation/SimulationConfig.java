@@ -23,11 +23,6 @@ import lombok.Builder;
  * @param nFirm        initial state of each necessity firm
  * @param cFirm        initial state of the capital firm
  * @param laborer      initial state of each laborer
- * @param mortalityEnabled whether laborers age and die of old age, with a new
- *                     household replacing each death and the bank inheriting
- *                     each estate; false recovers the pre-mortality population
- *                     dynamics (no aging, no replacement, deaths just close the
- *                     account)
  * @param meanInitAgeYears mean initial age (years) of founding household heads,
  *                     the center of the normal distribution their ages are
  *                     drawn from
@@ -57,7 +52,6 @@ public record SimulationConfig(
 		FirmInit nFirm,
 		CFirmInit cFirm,
 		LaborerInit laborer,
-		boolean mortalityEnabled,
 		double meanInitAgeYears,
 		double externalInflowPerStep,
 		double immigrationThreshold,
@@ -123,7 +117,6 @@ public record SimulationConfig(
 			new FirmInit(100, -1000, 50, 100, 30), // nFirm
 			new CFirmInit(500, 500, 0),            // cFirm
 			new LaborerInit(0, 0, 100, 0.9),       // laborer
-			true,                                  // mortalityEnabled
 			35,                                    // meanInitAgeYears
 			0,                                     // externalInflowPerStep (closed)
 			100,                                   // immigrationThreshold

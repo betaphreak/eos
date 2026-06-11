@@ -84,12 +84,11 @@ public class AristocraticEconomy {
 			economy.addAgent(noble);
 		}
 
-		// when a noble's head dies (mortality), a successor of the same dynasty
-		// inherits its estate, firms and banks, so the aristocracy persists
-		if (cfg.mortalityEnabled())
-			economy.addReplacementPolicy(dead -> dead instanceof Noble n
-					? new Noble(n, NobleConfig.DEFAULT, economy)
-					: null);
+		// when a noble's head dies, a successor of the same dynasty inherits its
+		// estate, firms and banks, so the aristocracy persists
+		economy.addReplacementPolicy(dead -> dead instanceof Noble n
+				? new Noble(n, NobleConfig.DEFAULT, economy)
+				: null);
 
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);

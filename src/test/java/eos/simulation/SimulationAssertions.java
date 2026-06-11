@@ -23,10 +23,9 @@ final class SimulationAssertions {
 
 	/** Assert the post-run economy is healthy. */
 	static void assertHealthy(SimulationHarness h) {
-		// the economy did not collapse: the population is sustained. With
-		// mortality on this counts heirs that succeeded the founding cohort
-		// (the founders themselves age and die); with mortality off it is the
-		// untouched original cohort.
+		// the economy did not collapse: the population is sustained. This counts
+		// heirs that succeeded the founding cohort (the founders themselves age
+		// and die of old age, each replaced by a successor household).
 		long alive = h.currentLaborerCount();
 		assertTrue(alive > 400,
 				"expected >400 laborers alive, got " + alive);

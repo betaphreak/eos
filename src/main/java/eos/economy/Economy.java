@@ -117,11 +117,6 @@ public class Economy {
 	// default: none
 	private Supplier<List<Agent>> immigrationPolicy = () -> List.of();
 
-	// whether the mortality feature is active (aging, old-age death,
-	// inheritance); false recovers the pre-mortality behavior
-	@Getter
-	private boolean mortalityEnabled = true;
-
 	/**
 	 * Create a new economy whose step 0 falls on <tt>startDate</tt>, drawing
 	 * randomness from <tt>rng</tt>. Each step advances one day. Use {@link
@@ -383,19 +378,6 @@ public class Economy {
 	 */
 	public void setImmigrationPolicy(Supplier<List<Agent>> policy) {
 		this.immigrationPolicy = policy;
-	}
-
-	/**
-	 * Enable or disable the mortality feature (aging, old-age death and estate
-	 * inheritance). When disabled, laborers neither age nor die of old age and
-	 * deaths close the account without the bank inheriting it; set this before
-	 * constructing agents.
-	 *
-	 * @param enabled
-	 *            whether mortality is active
-	 */
-	public void setMortalityEnabled(boolean enabled) {
-		this.mortalityEnabled = enabled;
 	}
 
 	/**

@@ -65,9 +65,6 @@ public class SimulationHarness {
 		// canonical defaults); setFirmConfig can override before createFirms
 		this.firmConfig =
 				FirmConfig.DEFAULT.toBuilder().laborShare(cfg.laborShare()).build();
-		// fix the mortality regime before any agent is constructed, so laborers
-		// see the right setting when they sample their initial age
-		economy.setMortalityEnabled(cfg.mortalityEnabled());
 	}
 
 	/** Create the four markets and register them (labor market first). */
@@ -158,16 +155,14 @@ public class SimulationHarness {
 
 		// when a household's head dies, a successor household continues the same
 		// dynasty at the same bank, inheriting the estate (so money and the
-		// labor force stay roughly constant). Only when mortality is active;
-		// otherwise the population shrinks as before.
-		if (cfg.mortalityEnabled())
-			economy.addReplacementPolicy(dead -> {
-				if (!(dead instanceof Laborer))
-					return null;
-				return new Laborer((Laborer) dead, cfg.laborer().e(),
-						REPLACEMENT_NECESSITY_STOCK, cfg.laborer().savingsRate(),
-						LaborerConfig.DEFAULT, economy);
-			});
+		// labor force stay roughly constant)
+		economy.addReplacementPolicy(dead -> {
+			if (!(dead instanceof Laborer))
+				return null;
+			return new Laborer((Laborer) dead, cfg.laborer().e(),
+					REPLACEMENT_NECESSITY_STOCK, cfg.laborer().savingsRate(),
+					LaborerConfig.DEFAULT, economy);
+		});
 
 		laborMkt.clear();
 	}

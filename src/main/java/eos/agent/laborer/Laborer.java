@@ -36,8 +36,7 @@ public class Laborer extends Agent {
 
 	// in-game birth date of the household head: the date of construction less a
 	// sampled initial age. The source of truth for the head's age (derived as
-	// the days from here to the economy's current date). Null when mortality is
-	// disabled, since heads neither age nor die of old age in that mode.
+	// the days from here to the economy's current date).
 	@Getter
 	private final LocalDate birthDate;
 
@@ -231,14 +230,10 @@ public class Laborer extends Agent {
 
 		// the household head (named on a separate naming RNG, aged on a separate
 		// mortality RNG; neither perturbs the economic random stream). The birth
-		// date is the current in-game date less a sampled initial age. Sample
-		// only when mortality is active, so a no-mortality run never touches the
-		// demographic stream (and leaves the head age-less).
+		// date is the current in-game date less a sampled initial age.
 		this.head = head;
-		this.birthDate = economy.isMortalityEnabled()
-				? economy.getDate().minusDays(economy.getDemography()
-						.sampleInitialAgeDays(economy.getMeanInitAgeYears()))
-				: null;
+		this.birthDate = economy.getDate().minusDays(economy.getDemography()
+				.sampleInitialAgeDays(economy.getMeanInitAgeYears()));
 
 		this.config = config;
 		enjoyment = new Enjoyment(initEQty);
@@ -259,19 +254,17 @@ public class Laborer extends Agent {
 		Bank bank = getBank();
 		Account acct = bank.getAcct(this.getID());
 
-		// the household head may die of old age (only when mortality is active);
-		// its age in days is the span from its birth date to today
-		if (getEconomy().isMortalityEnabled()) {
-			if (getEconomy().getDemography().diesOfOldAge(ageDays())) {
-				die();
-				log.info(String.format(
-						"%s (household %d, b. %s) died of old age at %d",
-						head.fullName(), getID(), birthDate, getAgeYears()));
-				estateChecking = acct.getChecking();
-				estateSavings = acct.getSavings();
-				bank.inheritAndClose(getID());
-				return;
-			}
+		// the household head may die of old age; its age in days is the span
+		// from its birth date to today
+		if (getEconomy().getDemography().diesOfOldAge(ageDays())) {
+			die();
+			log.info(String.format(
+					"%s (household %d, b. %s) died of old age at %d",
+					head.fullName(), getID(), birthDate, getAgeYears()));
+			estateChecking = acct.getChecking();
+			estateSavings = acct.getSavings();
+			bank.inheritAndClose(getID());
+			return;
 		}
 
 		wage = acct.priIC;
@@ -288,15 +281,10 @@ public class Laborer extends Agent {
 			log.info(String.format(
 					"%s (household %d) died with %.2f checking and %.2f savings",
 					head.fullName(), getID(), acct.getChecking(), acct.getSavings()));
-			// with mortality a successor household inherits the estate; without
-			// it, deaths just close the account (the pre-mortality behavior)
-			if (getEconomy().isMortalityEnabled()) {
-				estateChecking = acct.getChecking();
-				estateSavings = acct.getSavings();
-				bank.inheritAndClose(getID());
-			} else {
-				bank.closeAcct(getID());
-			}
+			// a successor household of the same dynasty inherits the estate
+			estateChecking = acct.getChecking();
+			estateSavings = acct.getSavings();
+			bank.inheritAndClose(getID());
 			return;
 		}
 
@@ -385,7 +373,7 @@ public class Laborer extends Agent {
 
 	/**
 	 * Return the household head's age in days: the span from its birth date to
-	 * the economy's current date. Only meaningful when mortality is enabled.
+	 * the economy's current date.
 	 *
 	 * @return the head's age in days
 	 */
@@ -394,13 +382,12 @@ public class Laborer extends Agent {
 	}
 
 	/**
-	 * Return the household head's age in whole years, or 0 when mortality is
-	 * disabled (heads have no birth date and do not age).
+	 * Return the household head's age in whole years.
 	 *
 	 * @return the head's age in years
 	 */
 	public int getAgeYears() {
-		return birthDate == null ? 0 : ageDays() / 365;
+		return ageDays() / 365;
 	}
 
 	/**

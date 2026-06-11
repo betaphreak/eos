@@ -45,7 +45,6 @@ public class SmallOpenEconomy {
 				.numEFirms(2)
 				.numNFirms(2)
 				.numLaborers(90)
-				.mortalityEnabled(true)
 				.externalInflowPerStep(EXTERNAL_INFLOW_PER_STEP)
 				.immigrationThreshold(IMMIGRATION_THRESHOLD)
 				.build();

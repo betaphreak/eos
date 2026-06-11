@@ -26,7 +26,10 @@ The economy advances in a fixed phase order every day (`Economy.newDay()`):
 
 - **Laborers** earn wages, choose consumption vs. saving (a target-savings model
   sensitive to the real interest rate), buy Necessity and Enjoyment goods, eat
-  one unit of Necessity per day, and die if they cannot eat.
+  one unit of Necessity per day, and die if they cannot eat. Each laborer is a
+  household whose head ages and dies of old age on a real mortality schedule
+  (Coale-Demeny West Level 3); a successor household of the same dynasty inherits
+  the estate, so money and the labor force stay in circulation.
 - **Firms** come in three kinds: `CFirm` produces capital (machines), while
   `EFirm` (Enjoyment) and `NFirm` (Necessity) combine labor and capital through a
   **Cobb-Douglas production function** `A·L^β·K^(1-β)`, adjusting output, wages,
