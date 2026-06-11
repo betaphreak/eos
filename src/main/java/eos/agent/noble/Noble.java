@@ -69,6 +69,9 @@ public class Noble extends Agent {
 	// the firms this noble owns and draws dividends from
 	private final List<Firm> firms;
 
+	// the banks this noble owns and draws dividends from
+	private final List<Bank> banks;
+
 	// enjoyment and necessity the noble consumes
 	private final Enjoyment enjoyment;
 	private final Necessity necessity;
@@ -121,6 +124,8 @@ public class Noble extends Agent {
 	 *            initial savings account balance
 	 * @param ownedFirms
 	 *            the firms this noble owns (a defensive copy is kept)
+	 * @param ownedBanks
+	 *            the banks this noble owns (a defensive copy is kept)
 	 * @param config
 	 *            tunable model parameters
 	 * @param bank
@@ -129,10 +134,10 @@ public class Noble extends Agent {
 	 *            the economy this noble belongs to
 	 */
 	public Noble(double initCheckingBal, double initSavingsBal,
-			List<Firm> ownedFirms, NobleConfig config, Bank bank,
-			Economy economy) {
-		this(initCheckingBal, initSavingsBal, false, ownedFirms, config, bank,
-				economy, economy.getNames().nextHead());
+			List<Firm> ownedFirms, List<Bank> ownedBanks, NobleConfig config,
+			Bank bank, Economy economy) {
+		this(initCheckingBal, initSavingsBal, false, ownedFirms, ownedBanks,
+				config, bank, economy, economy.getNames().nextHead());
 	}
 
 	/**
@@ -143,7 +148,8 @@ public class Noble extends Agent {
 	 * same surname), banking at the same bank. A fresh working-age head is drawn.
 	 *
 	 * @param predecessor
-	 *            the deceased noble whose estate, firms and dynasty are inherited
+	 *            the deceased noble whose estate, firms, banks and dynasty are
+	 *            inherited
 	 * @param config
 	 *            tunable model parameters
 	 * @param economy
@@ -151,7 +157,8 @@ public class Noble extends Agent {
 	 */
 	public Noble(Noble predecessor, NobleConfig config, Economy economy) {
 		this(predecessor.estateChecking, predecessor.estateSavings, true,
-				predecessor.firms, config, predecessor.getBank(), economy,
+				predecessor.firms, predecessor.banks, config,
+				predecessor.getBank(), economy,
 				economy.getNames()
 						.nextHeadInDynasty(predecessor.head.surname()));
 	}
@@ -163,8 +170,8 @@ public class Noble extends Agent {
 	 * rest of the household identically.
 	 */
 	private Noble(double initCheckingBal, double initSavingsBal,
-			boolean inherited, List<Firm> ownedFirms, NobleConfig config,
-			Bank bank, Economy economy, Person head) {
+			boolean inherited, List<Firm> ownedFirms, List<Bank> ownedBanks,
+			NobleConfig config, Bank bank, Economy economy, Person head) {
 		super(bank, economy);
 		if (inherited)
 			bank.openInheritedAcct(getID(), initCheckingBal, initSavingsBal);
@@ -182,6 +189,7 @@ public class Noble extends Agent {
 
 		this.config = config;
 		this.firms = new ArrayList<>(ownedFirms);
+		this.banks = new ArrayList<>(ownedBanks);
 		this.enjoyment = new Enjoyment(0);
 		this.necessity = new Necessity(0);
 		this.eMkt = (ConsumerGoodMarket) economy.getMarket("Enjoyment");
@@ -221,6 +229,19 @@ public class Noble extends Agent {
 			double share = config.dividendRate() * Math.max(0, firm.getProfit());
 			if (share > 0) {
 				firm.getBank().withdraw(firm.getID(), share);
+				bank.credit(getID(), share, Bank.SECIC);
+				dividends += share;
+			}
+		}
+
+		// dividends from owned banks: skim a share of each bank's retained profit
+		// (interest spread + transaction fees) straight out of its equity,
+		// leaving the inheritance / external-funds buffer that also sits in equity
+		// untouched
+		for (Bank b : banks) {
+			double share = config.dividendRate() * b.getDistributableProfit();
+			if (share > 0) {
+				b.payDividend(share);
 				bank.credit(getID(), share, Bank.SECIC);
 				dividends += share;
 			}
@@ -289,8 +310,9 @@ public class Noble extends Agent {
 	@Override
 	public String toString() {
 		return String.format(
-				"Noble#%d %s [%s age=%d firms=%d dividends=%.2f income=%.2f consumption=%.2f]",
+				"Noble#%d %s [%s age=%d firms=%d banks=%d dividends=%.2f income=%.2f consumption=%.2f]",
 				getID(), head.fullName(), isAlive() ? "alive" : "dead",
-				getAgeYears(), firms.size(), dividends, income, consumption);
+				getAgeYears(), firms.size(), banks.size(), dividends, income,
+				consumption);
 	}
 }

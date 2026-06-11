@@ -75,6 +75,15 @@ public class Bank {
 	@Getter
 	private double equity;
 
+	// gross profit ever retained (interest spread + transaction fees) and the
+	// portion of it already paid out to owners as dividends. Their difference is
+	// the slice of equity attributable to profit — and thus distributable to an
+	// owner — as opposed to estates in transit or injected external funds, which
+	// also pass through equity but must not be skimmed.
+	private double cumulativeProfit;
+	@Getter
+	private double distributedProfit;
+
 	// long-term loan interest rate
 	private double ltLoanIR;
 
@@ -185,6 +194,36 @@ public class Bank {
 	}
 
 	/**
+	 * The bank's retained profit not yet paid out to owners: cumulative interest
+	 * spread and transaction fees, less dividends already distributed. This is the
+	 * slice of {@link #getEquity() equity} attributable to profit (as opposed to
+	 * estates in transit or injected external funds, which also pass through
+	 * equity), so a noble owner can skim it as a dividend without disturbing
+	 * inheritance or the open-economy money buffer. Zero for a default
+	 * zero-profit bank ({@code spread == 0} and {@code feeRate == 0}).
+	 *
+	 * @return the distributable retained profit
+	 */
+	public double getDistributableProfit() {
+		return Math.max(0, cumulativeProfit - distributedProfit);
+	}
+
+	/**
+	 * Pay out <tt>amt</tt> of the bank's retained profit to an owner as a
+	 * dividend: it leaves the bank's equity. Only genuine profit is distributable
+	 * (see {@link #getDistributableProfit()}); the caller must not request more.
+	 *
+	 * @param amt
+	 *            the dividend to pay out (0 ≤ amt ≤ {@link #getDistributableProfit()})
+	 */
+	public void payDividend(double amt) {
+		assert amt >= 0 && amt <= getDistributableProfit() + 1e-9
+				: "dividend exceeds distributable profit";
+		equity -= amt;
+		distributedProfit += amt;
+	}
+
+	/**
 	 * Return the account of <tt>agentID</tt>, exiting if it does not exist.
 	 *
 	 * @param agentID
@@ -249,6 +288,7 @@ public class Bank {
 		}
 		acct.checking -= total;
 		equity += fee;
+		cumulativeProfit += fee;
 	}
 
 	/**
@@ -331,7 +371,9 @@ public class Bank {
 			 * difference as equity.
 			 */
 			depositIR = loanIR * totalLoan / totalDeposit * (1 - config.spread());
-			equity += loanIR * totalLoan * config.spread();
+			double spreadProfit = loanIR * totalLoan * config.spread();
+			equity += spreadProfit;
+			cumulativeProfit += spreadProfit;
 
 			/* pay interest and collect interest payment */
 			for (Account acct : accounts.values()) {

@@ -16,17 +16,23 @@ import eos.io.printer.NoblesPrinter;
 
 /**
  * Simulation (with an aristocracy): the homogeneous, single-bank economy of
- * {@link Simulation1}, plus a small class of <b>nobles</b> who own the firms and
- * live off their profits. The firms and laborers are unchanged; two noble
- * households split ownership of all the consumer and capital firms between them,
- * each drawing a dividend from its firms' surplus every step (through the bank's
- * previously-dormant secondary-income channel) and spending it back into the
- * consumer-good markets.
+ * {@link Simulation1}, plus a small class of <b>nobles</b> who own the means of
+ * production — the firms <i>and</i> the bank — and live off their profits. The
+ * firms and laborers are unchanged; two noble households split ownership of all
+ * the consumer and capital firms between them, and the senior noble also owns the
+ * bank. Each draws a dividend every step — from its firms' surplus and, for the
+ * bank owner, from the bank's retained interest spread — through the bank's
+ * previously-dormant secondary-income channel, then spends it back into the
+ * consumer-good markets. The bank is given a small {@value #BANK_SPREAD} interest
+ * spread (the documented-safe level) so it actually turns a profit to distribute;
+ * the noble owner skims that profit out of the bank's equity, leaving the
+ * inheritance / external-funds buffer untouched.
  * <p>
  * This is the "option A" design: nobles are rentier owners, not workers — they
  * never enter the labor market, and influence it only on the demand side via
  * their consumption. Each noble is a named household (a unique dynasty surname,
- * drawn just like a laborer's) tracked by the {@code Nobles.csv} printer.
+ * drawn just like a laborer's) that ages, dies and passes its estate and its
+ * holdings to a same-dynasty heir; the {@code Nobles.csv} printer tracks them.
  */
 public class Simulation6 {
 
@@ -35,6 +41,9 @@ public class Simulation6 {
 
 	/** Each noble's opening savings (its seed fortune). */
 	static final double NOBLE_INITIAL_SAVINGS = 1000;
+
+	/** Interest spread given to the (noble-owned) bank so it earns a profit. */
+	static final double BANK_SPREAD = 0.005;
 
 	/**
 	 * Build and run the simulation.
@@ -51,7 +60,8 @@ public class Simulation6 {
 
 		SimulationHarness h = new SimulationHarness(cfg, economy);
 		h.createMarkets();
-		Bank bank = h.addBank(BankConfig.DEFAULT);
+		Bank bank = h.addBank(
+				BankConfig.DEFAULT.toBuilder().spread(BANK_SPREAD).build());
 		h.createFirms(bank, i -> bank,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createLaborers(i -> bank, i -> 15, i -> cfg.laborer().savings());
@@ -67,13 +77,15 @@ public class Simulation6 {
 			List<Firm> owned = new ArrayList<>();
 			for (int i = n; i < allFirms.size(); i += NUM_NOBLES)
 				owned.add(allFirms.get(i));
-			Noble noble = new Noble(0, NOBLE_INITIAL_SAVINGS, owned,
+			// the senior noble (n == 0) also owns the bank
+			List<Bank> ownedBanks = (n == 0) ? List.of(bank) : List.<Bank>of();
+			Noble noble = new Noble(0, NOBLE_INITIAL_SAVINGS, owned, ownedBanks,
 					NobleConfig.DEFAULT, bank, economy);
 			economy.addAgent(noble);
 		}
 
 		// when a noble's head dies (mortality), a successor of the same dynasty
-		// inherits its estate and its firms, so the aristocracy persists
+		// inherits its estate, firms and banks, so the aristocracy persists
 		if (cfg.mortalityEnabled())
 			economy.addReplacementPolicy(dead -> dead instanceof Noble n
 					? new Noble(n, NobleConfig.DEFAULT, economy)
