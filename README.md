@@ -19,7 +19,8 @@ The economy advances in a fixed phase order every day (`Economy.newDay()`):
    deposit interest rates, and pays/charges interest.
 3. **Markets clear** — this is where transactions actually settle, by finding a
    price where supply ≈ demand.
-4. **Printers** write a row of CSV; the in-game date advances by one day.
+4. **Printers** write a row of CSV (one row per in-game month, on the first of
+   the month); the in-game date advances by one day.
 
 ### Agents
 
@@ -49,7 +50,7 @@ dependency; no manual setup needed.)
 
 ```bash
 mvn clean compile          # compile
-mvn exec:exec              # run Simulation1 in a forked JVM with assertions (-ea)
+mvn exec:exec              # run HomogeneousEconomy in a forked JVM with assertions (-ea)
 mvn test                   # run the JUnit 5 test suite
 mvn package                # build the jar
 ```
@@ -58,20 +59,24 @@ mvn package                # build the jar
 invariant checks. Select a different entry point with the `sim.main` property:
 
 ```bash
-mvn exec:exec -Dsim.main=eos.simulation.Simulation2   # heterogeneous agents
-mvn exec:exec -Dsim.main=eos.simulation.Simulation3   # two-bank example
+mvn exec:exec -Dsim.main=eos.simulation.HeterogeneousEconomy   # heterogeneous agents
+mvn exec:exec -Dsim.main=eos.simulation.TwoBankEconomy   # two-bank example
 ```
 
-The three entry points are:
+The entry points are:
 
-| Class         | Description                                                        |
-|---------------|--------------------------------------------------------------------|
-| `Simulation1` | Homogeneous agents, a single bank.                                 |
-| `Simulation2` | Heterogeneous agents (randomized initial state), a single bank.    |
-| `Simulation3` | Two banks, with agents split across them (a multi-bank example).   |
+| Class                  | Description                                                                                 |
+|------------------------|---------------------------------------------------------------------------------------------|
+| `HomogeneousEconomy`   | Homogeneous agents, a single bank (the default run).                                         |
+| `HeterogeneousEconomy` | Heterogeneous agents (randomized initial state), a single bank.                              |
+| `TwoBankEconomy`       | Two banks, with agents split across them (a multi-bank example).                             |
+| `ScaleSweep`           | Scales the firm/laborer counts down together to find the smallest economy that stays stable. |
+| `SmallOpenEconomy`     | An economy opened to external money inflow + immigration, growing past its starting size.    |
+| `AristocraticEconomy`  | The default economy plus noble owner households that draw firm and bank dividends.           |
 
 Each consists of a `static run()` that builds and runs the economy via
-`SimulationHarness`, plus a `main()` that calls it.
+`SimulationHarness`, plus a `main()` that calls it — except `ScaleSweep`, whose
+`main()` runs the multi-economy sweep and prints a stability table to stdout.
 
 ## Configuration
 
@@ -90,8 +95,10 @@ BankConfig.DEFAULT.toBuilder().spread(0.005).build();   // a profit-making bank
 ## Output
 
 Each run writes CSV files to an `output/` directory (created relative to the
-working directory). The first column of every file is the in-game **date**
-(`yyyy-MM-dd`). Discrete events — an agent dying, a price skyrocketing — are
+working directory), one row per in-game month. The first column of every file is
+the in-game **date** (`yyyy-MM-dd`). Floating-point cells are formatted to two
+decimals; the bank's interest-rate and inflation columns are shown as percents
+(e.g. `0.45%`). Discrete events — an agent dying, a price skyrocketing — are
 logged to stderr, prefixed with the in-game date, e.g.:
 
 ```
@@ -100,15 +107,18 @@ logged to stderr, prefixed with the in-game date, e.g.:
 
 ## Reproducibility
 
-Each simulation seeds the RNG (`StdRandom.setSeed(...)`) at the start of its
-run, so the same seed yields byte-identical output.
+Each run's `GameSession` seeds its `Rng` from a single seed and shares it with
+the economy it creates, so the same seed yields byte-identical output. (Naming
+and mortality draw from separate salted RNGs, so they never perturb the economic
+stream.)
 
 ## Tests
 
 `mvn test` runs a JUnit 5 smoke test per simulation: each runs the full
 25-year economy (assertions on) and checks it stays healthy — most laborers
-survive, prices stay finite and positive, and banks remain sound. The model
-keeps state in static singletons, so Surefire forks a fresh JVM per test class.
+survive, prices stay finite and positive, and banks remain sound. Economy state
+is per-instance, but the logging handler is a process-global static, so Surefire
+forks a fresh JVM per test class to isolate it.
 
 ## Credits
 

@@ -8,7 +8,7 @@ import eos.economy.*;
  * This printer tracks statistics of the economy's laborer population. To use it:
  * <p>
  * 1. Create a new <tt>LaborersPrinter</tt>. See
- * {@link #LaborersPrinter(String fileName, int period, int start, int end)}.
+ * {@link #LaborersPrinter(String fileName, int start, int end)}.
  * <p>
  * 2. Call <tt>printTitles()</tt> to print column titles.
  * <p>
@@ -69,10 +69,6 @@ public class LaborersPrinter extends Printer {
 	 *            is omitted
 	 *            <p>
 	 *
-	 * @param period
-	 *            number of steps between two printing. e.g. if <tt>period</tt>
-	 *            = 5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
@@ -85,14 +81,14 @@ public class LaborersPrinter extends Printer {
 	 *            <p>
 	 *
 	 */
-	public LaborersPrinter(String fileName, int period, int start, int end) {
-		super(period, start, end);
+	public LaborersPrinter(String fileName, int start, int end) {
+		super(start, end);
 		this.printWriter = new CSVPrintWriter(fileName);
 	}
 
 	/**
 	 * Create a new <tt>LaborersPrinter</tt>. See
-	 * {@link #LaborersPrinter(String fileName, int period, int start, int end)}.
+	 * {@link #LaborersPrinter(String fileName, int start, int end)}.
 	 * <tt>end</tt> is set to the end of the simulation.
 	 * <p>
 	 *
@@ -101,22 +97,18 @@ public class LaborersPrinter extends Printer {
 	 *            is omitted
 	 *            <p>
 	 *
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
 	 *
 	 */
-	public LaborersPrinter(String fileName, int period, int start) {
-		this(fileName, period, start, Integer.MAX_VALUE);
+	public LaborersPrinter(String fileName, int start) {
+		this(fileName, start, Integer.MAX_VALUE);
 	}
 
 	/**
 	 * Create a new <tt>LaborersPrinter</tt>. See
-	 * {@link #LaborersPrinter(String fileName, int period, int start, int end)}.
+	 * {@link #LaborersPrinter(String fileName, int start, int end)}.
 	 * <tt>start</tt> is set to 0. <tt>end</tt> is set to the end of the
 	 * simulation.
 	 * <p>
@@ -126,26 +118,18 @@ public class LaborersPrinter extends Printer {
 	 *            is omitted
 	 *            <p>
 	 *
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 *
 	 */
-	public LaborersPrinter(String fileName, int period) {
-		this(fileName, period, 0);
+	public LaborersPrinter(String fileName) {
+		this(fileName, 0);
 	}
 
 	/**
 	 * Create a new <tt>LaborersPrinter</tt>. See
-	 * {@link #LaborersPrinter(String fileName, int period, int start, int end)}.
+	 * {@link #LaborersPrinter(String fileName, int start, int end)}.
 	 * A default <tt>fileName</tt> is used.
 	 * <p>
 	 *
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
@@ -158,54 +142,45 @@ public class LaborersPrinter extends Printer {
 	 *            <p>
 	 *
 	 */
-	public LaborersPrinter(int period, int start, int end) {
-		super(period, start, end);
+	public LaborersPrinter(int start, int end) {
+		super(start, end);
 		this.printWriter = new CSVPrintWriter("laborers");
 	}
 
 	/**
 	 * Create a new <tt>LaborersPrinter</tt>. See
-	 * {@link #LaborersPrinter(String fileName, int period, int start, int end)}.
+	 * {@link #LaborersPrinter(String fileName, int start, int end)}.
 	 * A default <tt>fileName</tt> is used. <tt>end</tt> is set to the end of the
 	 * simulation.
 	 * <p>
 	 *
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
 	 *
 	 */
-	public LaborersPrinter(int period, int start) {
-		this(period, start, Integer.MAX_VALUE);
+	public LaborersPrinter(int start) {
+		this(start, Integer.MAX_VALUE);
 	}
 
 	/**
 	 * Create a new <tt>LaborersPrinter</tt>. See
-	 * {@link #LaborersPrinter(String fileName, int period, int start, int end)}.
+	 * {@link #LaborersPrinter(String fileName, int start, int end)}.
 	 * A default <tt>fileName</tt> is used. <tt>start</tt> is set to 0.
 	 * <tt>end</tt> is set to the end of the simulation.
 	 * <p>
 	 *
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 *
 	 */
-	public LaborersPrinter(int period) {
-		this(period, 0);
+	public LaborersPrinter() {
+		this(0);
 	}
 
 	/**
 	 * Print data, called by Economy at each time step
 	 */
 	public void print(Economy economy) {
-		int step = economy.getTimeStep();
-		if (step >= start && step <= end && (step - start) % period == 0) {
+		if (shouldPrint(economy)) {
 			double avgWage = 0;
 			double avgIC = 0;
 			double avgConsumption = 0;

@@ -7,7 +7,7 @@ import eos.economy.*;
  * This printer tracks statistics of a group of firms. To use it:
  * <p>
  * 1. Create a new <tt>FirmsPrinter</tt>. See
- * {@link #FirmsPrinter(String fileName, int period, int start, int end, Firm[] firms)}.
+ * {@link #FirmsPrinter(String fileName, int start, int end, Firm[] firms)}.
  * <p>
  * 2. Call <tt>printTitles()</tt> to print column titles.
  * <p>
@@ -66,10 +66,6 @@ public class FirmsPrinter extends Printer {
 	 *            is omitted
 	 *            <p>
 	 * 
-	 * @param period
-	 *            number of steps between two printing. e.g. if <tt>period</tt>
-	 *            = 5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
@@ -85,16 +81,16 @@ public class FirmsPrinter extends Printer {
 	 *            <p>
 	 * 
 	 */
-	public FirmsPrinter(String fileName, int period, int start, int end,
+	public FirmsPrinter(String fileName, int start, int end,
 			Firm[] firms) {
-		super(period, start, end);
+		super(start, end);
 		this.printWriter = new CSVPrintWriter(fileName);
 		this.firms = firms;
 	}
 
 	/**
 	 * Create a new <tt>FirmsPrinter</tt>. See
-	 * {@link #FirmsPrinter(String fileName, int period, int start, int end, Firm[] firms)}
+	 * {@link #FirmsPrinter(String fileName, int start, int end, Firm[] firms)}
 	 * . <tt>end</tt> is set to the end of the simulation.
 	 * <p>
 	 * 
@@ -103,10 +99,6 @@ public class FirmsPrinter extends Printer {
 	 *            is omitted
 	 *            <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
@@ -115,13 +107,13 @@ public class FirmsPrinter extends Printer {
 	 *            <p>
 	 * 
 	 */
-	public FirmsPrinter(String fileName, int period, int start, Firm[] firms) {
-		this(fileName, period, start, Integer.MAX_VALUE, firms);
+	public FirmsPrinter(String fileName, int start, Firm[] firms) {
+		this(fileName, start, Integer.MAX_VALUE, firms);
 	}
 
 	/**
 	 * Create a new <tt>FirmsPrinter</tt>. See
-	 * {@link #FirmsPrinter(String fileName, int period, int start, int end, Firm[] firms)}
+	 * {@link #FirmsPrinter(String fileName, int start, int end, Firm[] firms)}
 	 * . <tt>start</tt> is set to 0. <tt>end</tt> is set to the end of the
 	 * simulation.
 	 * <p>
@@ -131,29 +123,21 @@ public class FirmsPrinter extends Printer {
 	 *            is omitted
 	 *            <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param firms
 	 *            firms to be tracked
 	 *            <p>
 	 * 
 	 */
-	public FirmsPrinter(String fileName, int period, Firm[] firms) {
-		this(fileName, period, 0, firms);
+	public FirmsPrinter(String fileName, Firm[] firms) {
+		this(fileName, 0, firms);
 	}
 
 	/**
 	 * Create a new <tt>FirmsPrinter</tt>. See
-	 * {@link #FirmsPrinter(String fileName, int period, int start, int end, Firm[] firms)}
+	 * {@link #FirmsPrinter(String fileName, int start, int end, Firm[] firms)}
 	 * . A default <tt>fileName</tt> is used.
 	 * <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
@@ -169,8 +153,8 @@ public class FirmsPrinter extends Printer {
 	 *            <p>
 	 * 
 	 */
-	public FirmsPrinter(int period, int start, int end, Firm[] firms) {
-		super(period, start, end);
+	public FirmsPrinter(int start, int end, Firm[] firms) {
+		super(start, end);
 		this.firms = firms;
 		String fileName = "firms";
 		this.printWriter = new CSVPrintWriter(fileName);
@@ -178,15 +162,11 @@ public class FirmsPrinter extends Printer {
 
 	/**
 	 * Create a new <tt>FirmsPrinter</tt>. See
-	 * {@link #FirmsPrinter(String fileName, int period, int start, int end, Firm[] firms)}
+	 * {@link #FirmsPrinter(String fileName, int start, int end, Firm[] firms)}
 	 * . A default <tt>fileName</tt> is used. <tt>end</tt> is set to the end of
 	 * the simulation.
 	 * <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
@@ -195,36 +175,31 @@ public class FirmsPrinter extends Printer {
 	 *            <p>
 	 * 
 	 */
-	public FirmsPrinter(int period, int start, Firm[] firms) {
-		this(period, start, Integer.MAX_VALUE, firms);
+	public FirmsPrinter(int start, Firm[] firms) {
+		this(start, Integer.MAX_VALUE, firms);
 	}
 
 	/**
 	 * Create a new <tt>FirmsPrinter</tt>. See
-	 * {@link #FirmsPrinter(String fileName, int period, int start, int end, Firm[] firms)}
+	 * {@link #FirmsPrinter(String fileName, int start, int end, Firm[] firms)}
 	 * . A default <tt>fileName</tt> is used. <tt>start</tt> is set to 0.
 	 * <tt>end</tt> is set to the end of the simulation.
 	 * <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param firms
 	 *            firms to be tracked
 	 *            <p>
 	 * 
 	 */
-	public FirmsPrinter(int period, Firm[] firms) {
-		this(period, 0, firms);
+	public FirmsPrinter(Firm[] firms) {
+		this(0, firms);
 	}
 
 	/**
 	 * Print data, called by Economy.newDay() at each time step
 	 */
 	public void print(Economy economy) {
-		int step = economy.getTimeStep();
-		if (step >= start && step <= end && (step - start) % period == 0) {
+		if (shouldPrint(economy)) {
 			double totRevenue = 0;
 			double avgRevenue = 0;
 			double totOutput = 0;

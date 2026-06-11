@@ -15,7 +15,7 @@ import eos.util.Rng;
  *
  * @author zhihongx
  */
-public class Simulation2 {
+public class HeterogeneousEconomy {
 
 	/**
 	 * Build and run the simulation.

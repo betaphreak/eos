@@ -11,12 +11,12 @@ import org.junit.jupiter.api.Test;
  * fresh JVM is forked per test class, so the process-global {@code SimLog}
  * logging handler starts clean.
  */
-class Simulation1Test {
+class HomogeneousEconomyTest {
 
 	@Test
 	void runsToCompletionWithHealthyEconomy() {
-		SimulationHarness h = assertDoesNotThrow(Simulation1::run);
-		assertEquals(1, h.getBanks().size(), "Simulation1 uses one bank");
+		SimulationHarness h = assertDoesNotThrow(HomogeneousEconomy::run);
+		assertEquals(1, h.getBanks().size(), "HomogeneousEconomy uses one bank");
 		SimulationAssertions.assertHealthy(h);
 	}
 }

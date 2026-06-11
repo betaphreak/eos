@@ -8,7 +8,7 @@ import eos.economy.*;
  * necessity market) and prints to a CSV file. To use it:
  * <p>
  * 1. Create a new <tt>ConsumerMktPricePrinter</tt>. See
- * {@link #ConsumerMktPricePrinter(String fileName, int period, int start, int end, ConsumerGoodMarket market)}.
+ * {@link #ConsumerMktPricePrinter(String fileName, int start, int end, ConsumerGoodMarket market)}.
  * <p>
  * 2. Call <tt>printTitles()</tt> to print column titles.
  * <p>
@@ -59,10 +59,6 @@ public class ConsumerMktPricePrinter extends Printer {
 	 *            is omitted
 	 *            <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
@@ -78,16 +74,16 @@ public class ConsumerMktPricePrinter extends Printer {
 	 *            <p>
 	 * 
 	 */
-	public ConsumerMktPricePrinter(String fileName, int period, int start,
+	public ConsumerMktPricePrinter(String fileName, int start,
 			int end, ConsumerGoodMarket market) {
-		super(period, start, end);
+		super(start, end);
 		this.printWriter = new CSVPrintWriter(fileName);
 		this.mkt = market;
 	}
 
 	/**
 	 * Create a new <tt>ConsumerMktPricePrinter</tt>. See
-	 * {@link #ConsumerMktPricePrinter(String fileName, int period, int start, int end, ConsumerGoodMarket market)}
+	 * {@link #ConsumerMktPricePrinter(String fileName, int start, int end, ConsumerGoodMarket market)}
 	 * . <tt>end</tt> is set to the end of the simulation.
 	 * <p>
 	 * 
@@ -96,10 +92,6 @@ public class ConsumerMktPricePrinter extends Printer {
 	 *            is omitted
 	 *            <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
@@ -108,14 +100,14 @@ public class ConsumerMktPricePrinter extends Printer {
 	 *            <p>
 	 * 
 	 */
-	public ConsumerMktPricePrinter(String fileName, int period, int start,
+	public ConsumerMktPricePrinter(String fileName, int start,
 			ConsumerGoodMarket market) {
-		this(fileName, period, start, Integer.MAX_VALUE, market);
+		this(fileName, start, Integer.MAX_VALUE, market);
 	}
 
 	/**
 	 * Create a new <tt>ConsumerMktPricePrinter</tt>. See
-	 * {@link #ConsumerMktPricePrinter(String fileName, int period, int start, int end, ConsumerGoodMarket market)}
+	 * {@link #ConsumerMktPricePrinter(String fileName, int start, int end, ConsumerGoodMarket market)}
 	 * . <tt>start</tt> is set to 0. <tt>end</tt> is set to the end of the
 	 * simulation.
 	 * <p>
@@ -125,30 +117,22 @@ public class ConsumerMktPricePrinter extends Printer {
 	 *            is omitted
 	 *            <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param market
 	 *            market to be tracked
 	 *            <p>
 	 * 
 	 */
-	public ConsumerMktPricePrinter(String fileName, int period,
+	public ConsumerMktPricePrinter(String fileName,
 			ConsumerGoodMarket market) {
-		this(fileName, period, 0, market);
+		this(fileName, 0, market);
 	}
 
 	/**
 	 * Create a new <tt>ConsumerMktPricePrinter</tt>. See
-	 * {@link #ConsumerMktPricePrinter(String fileName, int period, int start, int end, ConsumerGoodMarket market)}
+	 * {@link #ConsumerMktPricePrinter(String fileName, int start, int end, ConsumerGoodMarket market)}
 	 * . A default <tt>fileName</tt> is used.
 	 * <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
@@ -164,9 +148,9 @@ public class ConsumerMktPricePrinter extends Printer {
 	 *            <p>
 	 * 
 	 */
-	public ConsumerMktPricePrinter(int period, int start, int end,
+	public ConsumerMktPricePrinter(int start, int end,
 			ConsumerGoodMarket market) {
-		super(period, start, end);
+		super(start, end);
 		this.mkt = market;
 		String fileName = market.getGood() + "_Price";
 		this.printWriter = new CSVPrintWriter(fileName);
@@ -174,15 +158,11 @@ public class ConsumerMktPricePrinter extends Printer {
 
 	/**
 	 * Create a new <tt>ConsumerMktPricePrinter</tt>. See
-	 * {@link #ConsumerMktPricePrinter(String fileName, int period, int start, int end, ConsumerGoodMarket market)}
+	 * {@link #ConsumerMktPricePrinter(String fileName, int start, int end, ConsumerGoodMarket market)}
 	 * . A default <tt>fileName</tt> is used. <tt>end</tt> is set to the end of
 	 * the simulation.
 	 * <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
@@ -191,37 +171,32 @@ public class ConsumerMktPricePrinter extends Printer {
 	 *            <p>
 	 * 
 	 */
-	public ConsumerMktPricePrinter(int period, int start,
+	public ConsumerMktPricePrinter(int start,
 			ConsumerGoodMarket market) {
-		this(period, start, Integer.MAX_VALUE, market);
+		this(start, Integer.MAX_VALUE, market);
 	}
 
 	/**
 	 * Create a new <tt>ConsumerMktPricePrinter</tt>. See
-	 * {@link #ConsumerMktPricePrinter(String fileName, int period, int start, int end, ConsumerGoodMarket market)}
+	 * {@link #ConsumerMktPricePrinter(String fileName, int start, int end, ConsumerGoodMarket market)}
 	 * . A default <tt>fileName</tt> is used. <tt>start</tt> is set to 0.
 	 * <tt>end</tt> is set to the end of the simulation.
 	 * <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param market
 	 *            market to be tracked
 	 *            <p>
 	 * 
 	 */
-	public ConsumerMktPricePrinter(int period, ConsumerGoodMarket market) {
-		this(period, 0, market);
+	public ConsumerMktPricePrinter(ConsumerGoodMarket market) {
+		this(0, market);
 	}
 
 	/**
 	 * Print data, called by Economy.newDay() at each time step
 	 */
 	public void print(Economy economy) {
-		int step = economy.getTimeStep();
-		if (step >= start && step <= end && (step - start) % period == 0)
+		if (shouldPrint(economy))
 			printWriter.println(economy.getDate(), mkt.getLastMktPrice());
 	}
 

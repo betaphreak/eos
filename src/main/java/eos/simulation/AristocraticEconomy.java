@@ -16,7 +16,7 @@ import eos.io.printer.NoblesPrinter;
 
 /**
  * Simulation (with an aristocracy): the homogeneous, single-bank economy of
- * {@link Simulation1}, plus a small class of <b>nobles</b> who own the means of
+ * {@link HomogeneousEconomy}, plus a small class of <b>nobles</b> who own the means of
  * production — the firms <i>and</i> the bank — and live off their profits. The
  * firms and laborers are unchanged; two noble households split ownership of all
  * the consumer and capital firms between them, and the senior noble also owns the
@@ -34,7 +34,7 @@ import eos.io.printer.NoblesPrinter;
  * drawn just like a laborer's) that ages, dies and passes its estate and its
  * holdings to a same-dynasty heir; the {@code Nobles.csv} printer tracks them.
  */
-public class Simulation6 {
+public class AristocraticEconomy {
 
 	/** Number of noble households the firms are divided among. */
 	static final int NUM_NOBLES = 2;
@@ -93,7 +93,7 @@ public class Simulation6 {
 
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);
-		economy.addPrinter(new NoblesPrinter("Nobles", cfg.stepSize()));
+		economy.addPrinter(new NoblesPrinter("Nobles"));
 		h.run();
 		return h;
 	}

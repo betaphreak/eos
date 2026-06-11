@@ -9,16 +9,16 @@ import eos.economy.GameSession;
 import eos.io.SimLog;
 
 /**
- * Simulation (two-bank case): the same economy as {@link Simulation1}, but with
+ * Simulation (two-bank case): the same economy as {@link HomogeneousEconomy}, but with
  * <b>two</b> banks and every agent type split across them (the capital firm
  * banks at A; enjoyment firms, necessity firms and laborers alternate A/B by
  * index). Wages, purchases and capital payments therefore cross bank
  * boundaries, exercising the agent-routed settlement. Each bank gets its own
  * {@code BankPrinter} ("BankA"/"BankB"). The two banks set rates independently
  * over their own pools, so this run is <i>not</i> expected to match
- * {@link Simulation1}.
+ * {@link HomogeneousEconomy}.
  */
-public class Simulation3 {
+public class TwoBankEconomy {
 
 	/**
 	 * Build and run the simulation.

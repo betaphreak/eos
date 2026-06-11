@@ -17,16 +17,16 @@ import eos.market.ConsumerGoodMarket;
  * the invariants are checked directly here. The defining property is that the
  * population <i>grows</i> past its starting size rather than holding flat.
  */
-class Simulation5Test {
+class SmallOpenEconomyTest {
 
-	// laborers the run starts with (cf. Simulation5's config)
+	// laborers the run starts with (cf. SmallOpenEconomy's config)
 	private static final int INITIAL_LABORERS = 90;
 
 	@Test
 	void runsToCompletionWithGrowingPopulation() {
-		SimulationHarness h = assertDoesNotThrow(Simulation5::run);
+		SimulationHarness h = assertDoesNotThrow(SmallOpenEconomy::run);
 
-		assertEquals(2, h.getBanks().size(), "Simulation5 uses two banks");
+		assertEquals(2, h.getBanks().size(), "SmallOpenEconomy uses two banks");
 
 		// immigration grows the population beyond its starting size (mortality's
 		// 1:1 replacement alone would only hold it flat)

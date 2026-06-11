@@ -12,7 +12,7 @@ import eos.io.SimLog;
 /**
  * Simulation (scale sweep): explores <b>how small the economy can be and still
  * be stable</b>. It does not model a single fixed population like
- * {@link Simulation1}; instead it scales the consumer-firm and laborer counts
+ * {@link HomogeneousEconomy}; instead it scales the consumer-firm and laborer counts
  * <i>down together</i> at the default firms:laborers ratio and reports, for each
  * scale, whether the run stayed healthy.
  * <p>
@@ -23,7 +23,7 @@ import eos.io.SimLog;
  * {@code k * }{@value #LABORERS_PER_FIRM} laborers, so the composition matches
  * the calibrated default at every size. The sweep walks {@code k} from the
  * default down to 1, runs each as a homogeneous single-bank economy (like
- * {@link Simulation1}), and scores stability.
+ * {@link HomogeneousEconomy}), and scores stability.
  * <p>
  * A run is judged <b>stable</b> when, after the full horizon, (1) its laborer
  * population is sustained (at least {@value #MIN_SURVIVAL_PCT}% of the initial
@@ -42,7 +42,7 @@ import eos.io.SimLog;
  * {@link #main} runs the sweep and prints the minimum stable scale;
  * {@link #run()} is the convention hook returning one default-scale harness.
  */
-public class Simulation4 {
+public class ScaleSweep {
 
 	/** Seed shared by every scale, so the runs are comparable and reproducible. */
 	static final long SEED = 7654321L;
@@ -82,7 +82,7 @@ public class Simulation4 {
 
 	/**
 	 * Build and run a single homogeneous, single-bank economy at the given scale
-	 * (mirrors {@link Simulation1#run()} but with the firm/laborer counts varied
+	 * (mirrors {@link HomogeneousEconomy#run()} but with the firm/laborer counts varied
 	 * and no printers registered). Returns the finished harness so the caller can
 	 * inspect the final state.
 	 *

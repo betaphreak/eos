@@ -202,23 +202,22 @@ public class SimulationHarness {
 
 	/** Register the printers common to every simulation. */
 	public void addCommonPrinters() {
-		int stepSize = cfg.stepSize();
-		economy.addPrinter(new LaborersPrinter("Laborer", stepSize));
+		economy.addPrinter(new LaborersPrinter("Laborer"));
 		economy.addPrinter(
-				new ConsumerMktPricePrinter("EPrice", stepSize, enjoymentMkt));
+				new ConsumerMktPricePrinter("EPrice", enjoymentMkt));
 		economy.addPrinter(
-				new ConsumerMktVolPrinter("EVol", stepSize, enjoymentMkt));
-		economy.addPrinter(new FirmsPrinter("EFirms", stepSize, eFirms));
+				new ConsumerMktVolPrinter("EVol", enjoymentMkt));
+		economy.addPrinter(new FirmsPrinter("EFirms", eFirms));
 		economy.addPrinter(
-				new ConsumerMktPricePrinter("NPrice", stepSize, necessityMkt));
+				new ConsumerMktPricePrinter("NPrice", necessityMkt));
 		economy.addPrinter(
-				new ConsumerMktVolPrinter("NVol", stepSize, necessityMkt));
-		economy.addPrinter(new FirmsPrinter("NFirms", stepSize, nFirms));
+				new ConsumerMktVolPrinter("NVol", necessityMkt));
+		economy.addPrinter(new FirmsPrinter("NFirms", nFirms));
 	}
 
 	/** Register a {@link BankPrinter} writing to <tt>fileName</tt>. */
 	public void addBankPrinter(String fileName, Bank bank) {
-		economy.addPrinter(new BankPrinter(fileName, cfg.stepSize(), bank));
+		economy.addPrinter(new BankPrinter(fileName, bank));
 	}
 
 	/** Run the simulation for the configured number of steps, then clean up. */

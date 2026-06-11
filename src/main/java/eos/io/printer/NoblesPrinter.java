@@ -23,18 +23,15 @@ public class NoblesPrinter extends Printer {
 	 *
 	 * @param fileName
 	 *            name of the CSV output file
-	 * @param period
-	 *            number of steps between two prints
 	 */
-	public NoblesPrinter(String fileName, int period) {
-		super(period);
+	public NoblesPrinter(String fileName) {
+		super();
 		this.printWriter = new CSVPrintWriter(fileName);
 	}
 
 	@Override
 	public void print(Economy economy) {
-		int step = economy.getTimeStep();
-		if (step < start || step > end || (step - start) % period != 0)
+		if (!shouldPrint(economy))
 			return;
 
 		double totDividends = 0, totIncome = 0, totConsumption = 0, totWealth = 0;

@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import eos.simulation.Simulation4.ScaleResult;
+import eos.simulation.ScaleSweep.ScaleResult;
 
 /**
  * Tests for the scale-sweep simulation. The full sweep runs many economies, so
@@ -17,13 +17,13 @@ import eos.simulation.Simulation4.ScaleResult;
  * guard equivalent to the other smoke tests); the minimum-selection logic is
  * checked as a pure function over synthetic results to stay fast.
  */
-class Simulation4Test {
+class ScaleSweepTest {
 
 	@Test
 	void defaultScaleIsStable() {
-		SimulationHarness h = assertDoesNotThrow(() -> Simulation4
-				.runScale(Simulation4.DEFAULT_FIRMS, Simulation4.DEFAULT_LABORERS));
-		assertNull(Simulation4.diagnose(h),
+		SimulationHarness h = assertDoesNotThrow(() -> ScaleSweep
+				.runScale(ScaleSweep.DEFAULT_FIRMS, ScaleSweep.DEFAULT_LABORERS));
+		assertNull(ScaleSweep.diagnose(h),
 				"default scale should be judged stable");
 		assertTrue(h.currentLaborerCount() > 400,
 				"expected >400 laborers alive, got " + h.currentLaborerCount());
@@ -39,7 +39,7 @@ class Simulation4Test {
 
 		// fewest firms among the stable rows (k=2), even though k=3 is unstable:
 		// stability need not be monotonic in the scale
-		assertEquals(2, Simulation4.minimumStable(results).firmsPerType());
+		assertEquals(2, ScaleSweep.minimumStable(results).firmsPerType());
 	}
 
 	@Test
@@ -47,6 +47,6 @@ class Simulation4Test {
 		List<ScaleResult> results = List.of(
 				new ScaleResult(2, 90, false, "collapsed", 0, Double.NaN, 1.0),
 				new ScaleResult(1, 45, false, "threw", 0, Double.NaN, 1.0));
-		assertEquals(null, Simulation4.minimumStable(results));
+		assertEquals(null, ScaleSweep.minimumStable(results));
 	}
 }

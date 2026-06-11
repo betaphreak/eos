@@ -8,7 +8,7 @@ import eos.economy.*;
  * it:
  * <p>
  * 1. Create a new <tt>BankPrinter</tt>. See constructor
- * {@link #BankPrinter(String fileName, int period, int start, int end)}.
+ * {@link #BankPrinter(String fileName, int start, int end)}.
  * <p>
  * 2. Call <tt>printTitles()</tt> to print column titles.
  * <p>
@@ -36,10 +36,10 @@ import eos.economy.*;
  * <p>
  * The default columns to be printed are: <br>
  * Col0: in-game date <br>
- * Col1: loan interest rate <br>
- * Col2: smoothed loan interest rate <br>
- * Col3: deposit interest rate <br>
- * Col4: smoothed deposit interest rate <br>
+ * Col1: loan interest rate, as a percent truncated to two decimals <br>
+ * Col2: smoothed loan interest rate, as a percent truncated to two decimals <br>
+ * Col3: deposit interest rate, as a percent truncated to two decimals <br>
+ * Col4: smoothed deposit interest rate, as a percent truncated to two decimals <br>
  * Col5: total loan <br>
  * Col6: total deposit<br>
  * Col7: equity (cumulative retained profit)<br>
@@ -66,10 +66,6 @@ public class BankPrinter extends Printer {
 	 *            name of the CSV output file. A default name will be used if it
 	 *            is omitted
 	 *            <p>
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
@@ -81,16 +77,16 @@ public class BankPrinter extends Printer {
 	 *            the simulation respectively.
 	 *            <p>
 	 */
-	public BankPrinter(String fileName, int period, int start, int end,
+	public BankPrinter(String fileName, int start, int end,
 			Bank bank) {
-		super(period, start, end);
+		super(start, end);
 		this.printWriter = new CSVPrintWriter(fileName);
 		this.bank = bank;
 	}
 
 	/**
 	 * Create a new <tt>BankPrinter</tt>. See
-	 * {@link #BankPrinter(String fileName, int period, int start, int end)}.
+	 * {@link #BankPrinter(String fileName, int start, int end)}.
 	 * <tt>end</tt> is set to the end of the simulation.
 	 * <p>
 	 * 
@@ -98,21 +94,17 @@ public class BankPrinter extends Printer {
 	 *            name of the CSV output file. A default name will be used if it
 	 *            is omitted
 	 *            <p>
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
 	 */
-	public BankPrinter(String fileName, int period, int start, Bank bank) {
-		this(fileName, period, start, Integer.MAX_VALUE, bank);
+	public BankPrinter(String fileName, int start, Bank bank) {
+		this(fileName, start, Integer.MAX_VALUE, bank);
 	}
 
 	/**
 	 * Create a new <tt>BankPrinter</tt>. See
-	 * {@link #BankPrinter(String fileName, int period, int start, int end)}.
+	 * {@link #BankPrinter(String fileName, int start, int end)}.
 	 * <tt>start</tt> is set to 0. <tt>end</tt> is set to the end of the
 	 * simulation.
 	 * <p>
@@ -121,25 +113,17 @@ public class BankPrinter extends Printer {
 	 *            name of the CSV output file. A default name will be used if it
 	 *            is omitted
 	 *            <p>
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 */
-	public BankPrinter(String fileName, int period, Bank bank) {
-		this(fileName, period, 0, bank);
+	public BankPrinter(String fileName, Bank bank) {
+		this(fileName, 0, bank);
 	}
 
 	/**
 	 * Create a new <tt>BankPrinter</tt>. See
-	 * {@link #BankPrinter(String fileName, int period, int start, int end)}. A
+	 * {@link #BankPrinter(String fileName, int start, int end)}. A
 	 * default <tt>fileName</tt> is used.
 	 * <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
@@ -151,56 +135,48 @@ public class BankPrinter extends Printer {
 	 *            the simulation respectively.
 	 *            <p>
 	 */
-	public BankPrinter(int period, int start, int end, Bank bank) {
-		super(period, start, end);
+	public BankPrinter(int start, int end, Bank bank) {
+		super(start, end);
 		this.printWriter = new CSVPrintWriter("bank");
 		this.bank = bank;
 	}
 
 	/**
 	 * Create a new <tt>BankPrinter</tt>. See
-	 * {@link #BankPrinter(String fileName, int period, int start, int end)}. A
+	 * {@link #BankPrinter(String fileName, int start, int end)}. A
 	 * default <tt>fileName</tt> is used. <tt>end</tt> is set to the end of the
 	 * simulation.
 	 * <p>
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 * @param start
 	 *            starting time step, no data will be printed before this
 	 *            <p>
 	 */
-	public BankPrinter(int period, int start, Bank bank) {
-		this(period, start, Integer.MAX_VALUE, bank);
+	public BankPrinter(int start, Bank bank) {
+		this(start, Integer.MAX_VALUE, bank);
 	}
 
 	/**
 	 * Create a new <tt>BankPrinter</tt>. See
-	 * {@link #BankPrinter(String fileName, int period, int start, int end)}. A
+	 * {@link #BankPrinter(String fileName, int start, int end)}. A
 	 * default <tt>fileName</tt> is used. <tt>end</tt> is set to the end of the
 	 * simulation. <tt>start</tt> is set to 0.
 	 * 
-	 * @param period
-	 *            number of steps between two prints. e.g. if <tt>period</tt> =
-	 *            5, data will be printed every 5 time steps.
-	 *            <p>
 	 */
-	public BankPrinter(int period, Bank bank) {
-		this(period, 0, bank);
+	public BankPrinter(Bank bank) {
+		this(0, bank);
 	}
 
 	/**
 	 * Print data, called by Economy.newDay() at each time step
 	 */
 	public void print(Economy economy) {
-		int step = economy.getTimeStep();
-		if (step >= start && step <= end && (step - start) % period == 0)
-			printWriter.println(economy.getDate(), bank.getLoanIR(), bank.getLTLoanIR(),
-					bank.getDepositIR(), bank.getLTDepositIR(),
+		if (shouldPrint(economy))
+			printWriter.println(economy.getDate(),
+					formatPercent(bank.getLoanIR()), formatPercent(bank.getLTLoanIR()),
+					formatPercent(bank.getDepositIR()), formatPercent(bank.getLTDepositIR()),
 					bank.getTotalLoan(), bank.getTotalDeposit(),
-					bank.getEquity(), String.format("%.2f", economy.getCPI()),
+					bank.getEquity(), economy.getCPI(),
 					formatPercent(economy.getInflation()));
 	}
 

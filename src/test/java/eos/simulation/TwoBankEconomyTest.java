@@ -13,13 +13,13 @@ import eos.bank.Bank;
  * verifies both banks are active intermediaries — confirming cross-bank
  * settlement works when agents are split across banks.
  */
-class Simulation3Test {
+class TwoBankEconomyTest {
 
 	@Test
 	void runsToCompletionWithTwoActiveBanks() {
-		SimulationHarness h = assertDoesNotThrow(Simulation3::run);
+		SimulationHarness h = assertDoesNotThrow(TwoBankEconomy::run);
 
-		assertEquals(2, h.getBanks().size(), "Simulation3 uses two banks");
+		assertEquals(2, h.getBanks().size(), "TwoBankEconomy uses two banks");
 		SimulationAssertions.assertHealthy(h);
 
 		// both banks must carry real loan and deposit pools: if cross-bank

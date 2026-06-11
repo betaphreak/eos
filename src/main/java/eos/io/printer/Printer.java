@@ -12,11 +12,6 @@ import lombok.Getter;
 public abstract class Printer {
 
 	/**
-	 * interval (in steps) between two printing
-	 */
-	protected final int period;
-
-	/**
 	 * starting time step
 	 */
 	protected final int start;
@@ -27,47 +22,54 @@ public abstract class Printer {
 	protected final int end;
 
 	/**
-	 * Create a new printer that prints every period steps from the start step
-	 * till the end step.
-	 * 
-	 * @param period
-	 *            number of steps between two prints
+	 * Create a new printer that prints on the first day of each month between
+	 * the start step and the end step (inclusive).
+	 *
 	 * @param start
 	 *            starting time step
 	 * @param end
 	 *            ending time step
 	 */
-	public Printer(int period, int start, int end) {
-		assert (period > 0);
+	public Printer(int start, int end) {
 		assert (start >= 0);
 		assert (end >= start);
-		this.period = period;
 		this.start = start;
 		this.end = end;
 	}
 
 	/**
-	 * Create a new printer that prints every period steps from the start step
-	 * till the last step
-	 * 
-	 * @param period
-	 *            number of steps between two prints
+	 * Create a new printer that prints on the first day of each month from the
+	 * start step till the last step.
+	 *
 	 * @param start
 	 *            starting time step
 	 */
-	public Printer(int period, int start) {
-		this(period, start, Integer.MAX_VALUE);
+	public Printer(int start) {
+		this(start, Integer.MAX_VALUE);
 	}
 
 	/**
-	 * Create a new printer that prints every period steps from the first step
-	 * till the last step
-	 * 
-	 * @param period
-	 *            number of steps between two printing
+	 * Create a new printer that prints on the first day of each month over the
+	 * whole run.
 	 */
-	public Printer(int period) {
-		this(period, 0, Integer.MAX_VALUE);
+	public Printer() {
+		this(0, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * Whether this printer should emit a row on the current step. A row is
+	 * written on the <b>first day of each month</b> (the in-game date's day of
+	 * month is 1), provided the step is within the printer's [{@code start},
+	 * {@code end}] bounds.
+	 *
+	 * @param economy
+	 *            the economy being printed (source of the in-game date and step)
+	 * @return {@code true} if a data row should be written this step
+	 */
+	protected boolean shouldPrint(Economy economy) {
+		int step = economy.getTimeStep();
+		return step >= start && step <= end
+				&& economy.getDate().getDayOfMonth() == 1;
 	}
 
 	/**

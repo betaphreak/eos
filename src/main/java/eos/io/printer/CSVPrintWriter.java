@@ -56,8 +56,24 @@ public class CSVPrintWriter {
 	}
 
 	/**
+	 * Render a single cell value. Floating-point numbers (<tt>Double</tt> /
+	 * <tt>Float</tt>) are formatted to two decimal places to keep the CSV
+	 * readable; everything else (dates, ints, strings, values a caller has
+	 * already formatted into a <tt>String</tt>) is left untouched.
+	 *
+	 * @param arg
+	 *            the value to render
+	 * @return its CSV string representation
+	 */
+	private static String format(Object arg) {
+		if (arg instanceof Double || arg instanceof Float)
+			return String.format("%.2f", ((Number) arg).doubleValue());
+		return String.valueOf(arg);
+	}
+
+	/**
 	 * Print <tt>args</tt> separated by comma, followed by a new line character
-	 * 
+	 *
 	 * @param args
 	 *            arguments to be printed
 	 */
@@ -67,18 +83,18 @@ public class CSVPrintWriter {
 			return;
 		}
 		for (int i = 0; i < args.length - 1; i++)
-			out.print(args[i] + ",");
-		out.println(args[args.length - 1]);
+			out.print(format(args[i]) + ",");
+		out.println(format(args[args.length - 1]));
 	}
 
 	/**
 	 * Print <tt>arg</tt>
-	 * 
+	 *
 	 * @param arg
 	 *            argument to be printed
 	 */
 	public void print(Object arg) {
-		out.print(arg);
+		out.print(format(arg));
 	}
 
 	/**

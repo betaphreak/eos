@@ -12,7 +12,6 @@ import lombok.Builder;
  * shared by the bundled simulations. Build a modified instance to script a
  * different run without editing source.
  *
- * @param stepSize     number of steps (days) between two printer outputs
  * @param startDate    in-game date of step 0; each step advances one day
  * @param durationYears number of in-game years the simulation runs
  * @param numLaborers  number of laborers
@@ -47,7 +46,6 @@ import lombok.Builder;
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
-		int stepSize,
 		LocalDate startDate,
 		int durationYears,
 		int numLaborers,
@@ -114,7 +112,6 @@ public record SimulationConfig(
 
 	/** The original canonical run configuration. */
 	public static final SimulationConfig DEFAULT = new SimulationConfig(
-			50,                                    // stepSize (days between prints)
 			LocalDate.of(1444, 12, 11),            // startDate
 			25,                                    // durationYears
 			450,                                   // numLaborers

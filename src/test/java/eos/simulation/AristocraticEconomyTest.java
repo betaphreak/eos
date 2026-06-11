@@ -21,11 +21,11 @@ import eos.market.ConsumerGoodMarket;
  * grew their fortunes, and that a noble succession occurred (heir inherited the
  * holdings).
  */
-class Simulation6Test {
+class AristocraticEconomyTest {
 
 	@Test
 	void runsHealthyAndPaysFirmAndBankDividends() {
-		SimulationHarness h = assertDoesNotThrow(Simulation6::run);
+		SimulationHarness h = assertDoesNotThrow(AristocraticEconomy::run);
 
 		// population sustained and consumer-good prices finite/positive
 		assertTrue(h.currentLaborerCount() > 400,
@@ -35,7 +35,7 @@ class Simulation6Test {
 
 		// the single bank stays a finite, active intermediary, but now turns a
 		// profit (positive equity) and has paid part of it out as dividends
-		assertEquals(1, h.getBanks().size(), "Simulation6 uses one bank");
+		assertEquals(1, h.getBanks().size(), "AristocraticEconomy uses one bank");
 		Bank bank = h.getBanks().get(0);
 		assertTrue(Double.isFinite(bank.getTotalDeposit())
 				&& bank.getTotalDeposit() > 0, "expected positive total deposit");
@@ -52,7 +52,7 @@ class Simulation6Test {
 		// successor that replaced a founder who died of old age
 		SimulationConfig cfg = h.getCfg();
 		int foundingAgents = cfg.numEFirms() + cfg.numNFirms() + 1
-				+ cfg.numLaborers() + Simulation6.NUM_NOBLES;
+				+ cfg.numLaborers() + AristocraticEconomy.NUM_NOBLES;
 
 		int nobleCount = 0;
 		double totalDividends = 0;
@@ -67,13 +67,13 @@ class Simulation6Test {
 					anyHeir = true;
 			}
 
-		assertEquals(Simulation6.NUM_NOBLES, nobleCount,
+		assertEquals(AristocraticEconomy.NUM_NOBLES, nobleCount,
 				"expected the noble population sustained by succession");
 		assertTrue(totalDividends > 0,
 				"expected nobles to draw positive dividends, got " + totalDividends);
 		assertTrue(
-				totalWealth > Simulation6.NUM_NOBLES
-						* Simulation6.NOBLE_INITIAL_SAVINGS,
+				totalWealth > AristocraticEconomy.NUM_NOBLES
+						* AristocraticEconomy.NOBLE_INITIAL_SAVINGS,
 				"expected noble wealth to grow past the seed fortunes, got "
 						+ totalWealth);
 		assertTrue(anyHeir,

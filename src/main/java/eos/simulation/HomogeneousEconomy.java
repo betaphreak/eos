@@ -14,7 +14,7 @@ import eos.io.SimLog;
  *
  * @author zhihongx
  */
-public class Simulation1 {
+public class HomogeneousEconomy {
 
 	/**
 	 * Build and run the simulation.
