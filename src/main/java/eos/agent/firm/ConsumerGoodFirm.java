@@ -134,11 +134,18 @@ public abstract class ConsumerGoodFirm extends Firm {
 				newOutput = output;
 				newWageBudget = wageBudget;
 			} else {
-				double moneyFlowGap = acct.getChecking()
-						- totalCost;
-
 				// set new wage budget
-				newWageBudget = wageBudget + config.lambda() * moneyFlowGap;
+				if (config.laborShare() > 0) {
+					// labor-share rule: budget a fixed share of revenue, so
+					// total wage spending — and the uniform market wage
+					// totalBudget/N — scales with the economy instead of being
+					// outrun by a growing labor pool
+					newWageBudget = config.laborShare() * revenue;
+				} else {
+					// legacy rule: nudge the budget by the firm's cash-flow gap
+					double moneyFlowGap = acct.getChecking() - totalCost;
+					newWageBudget = wageBudget + config.lambda() * moneyFlowGap;
+				}
 				newWageBudget = Math.max(0, newWageBudget);
 
 				// pay interest on loans (if any)

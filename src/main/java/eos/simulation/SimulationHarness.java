@@ -43,6 +43,11 @@ public class SimulationHarness {
 	private final Economy economy;
 	private final List<Bank> banks = new ArrayList<>();
 
+	// behavioral parameters for the consumer-good firms; default is the
+	// canonical legacy calibration. Set before createFirms to vary the run
+	// (e.g. switch on the labor-share wage-budget rule).
+	private FirmConfig firmConfig = FirmConfig.DEFAULT;
+
 	private ConsumerGoodMarket enjoymentMkt;
 	private ConsumerGoodMarket necessityMkt;
 	private LaborMarket laborMkt;
@@ -86,6 +91,18 @@ public class SimulationHarness {
 	}
 
 	/**
+	 * Override the consumer-good firms' behavioral parameters (default {@link
+	 * FirmConfig#DEFAULT}). Must be called before {@link #createFirms} to take
+	 * effect.
+	 *
+	 * @param firmConfig
+	 *            the firm parameters to use for the enjoyment and necessity firms
+	 */
+	public void setFirmConfig(FirmConfig firmConfig) {
+		this.firmConfig = firmConfig;
+	}
+
+	/**
 	 * Create the capital firm (banking at <tt>capitalFirmBank</tt>) and the
 	 * consumer-good firms, then add them to the economy. The bank and initial
 	 * savings of each consumer-good firm are supplied by the caller (by index);
@@ -102,14 +119,14 @@ public class SimulationHarness {
 			eFirms[i] = new EFirm(cfg.eFirm().checking(),
 					eSavings.applyAsDouble(i), cfg.eFirm().output(),
 					cfg.eFirm().wageBudget(), cfg.eFirm().capital(),
-					capitalFirms, FirmConfig.DEFAULT, firmBank.apply(i), economy);
+					capitalFirms, firmConfig, firmBank.apply(i), economy);
 
 		nFirms = new NFirm[cfg.numNFirms()];
 		for (int i = 0; i < cfg.numNFirms(); i++)
 			nFirms[i] = new NFirm(cfg.nFirm().checking(),
 					nSavings.applyAsDouble(i), cfg.nFirm().output(),
 					cfg.nFirm().wageBudget(), cfg.nFirm().capital(),
-					capitalFirms, FirmConfig.DEFAULT, firmBank.apply(i), economy);
+					capitalFirms, firmConfig, firmBank.apply(i), economy);
 
 		economy.addAgent(cFirm);
 		for (NFirm f : nFirms)
