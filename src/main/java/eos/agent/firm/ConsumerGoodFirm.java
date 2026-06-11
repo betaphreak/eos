@@ -212,15 +212,25 @@ public abstract class ConsumerGoodFirm extends Firm {
 			double avgProfit = pfAvger.update(Math.abs(profit));
 
 			/***************************************************************/
-			/* The following steps are considered hacks, use with discretion */
+			/* The following steps are considered hacks, use with discretion. */
 			/*
-			 * Spur firms to buy capital when profit is really high (more than 5
-			 * times the average). In this case, capacity utilization
-			 * requirement is lowered 0.8 from 0.9. Turn this on only after step
-			 * 2000 when the economy stabilizes
+			 * These nudges key off the rolling average profit, which is only
+			 * meaningful once the economy has reached steady state, so they
+			 * stay off for the first config.warmupDays() steps. The magic
+			 * numbers (warm-up length, the profit-spike multiple, and the
+			 * lowered utilization bar) live in FirmConfig.
 			 */
-			if (IK >= IR && utilization > 0.8 && profit > 5 * avgProfit
-					&& getEconomy().getTimeStep() > 2000)
+			boolean warmedUp = getEconomy().getTimeStep() > config.warmupDays();
+
+			/*
+			 * Spur firms to buy capital when profit is really high (more than
+			 * capitalNudgeProfitFactor times the average). In this case the
+			 * capacity-utilization requirement is lowered from eUtilThreshold
+			 * to capitalNudgeUtilThreshold.
+			 */
+			if (warmedUp && IK >= IR
+					&& utilization > config.capitalNudgeUtilThreshold()
+					&& profit > config.capitalNudgeProfitFactor() * avgProfit)
 				capitalToBuy += 1;
 
 			/*
@@ -228,7 +238,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 			 * still decides to expand in this case, which does not really make
 			 * sense)
 			 */
-			if (profit < -5 * avgProfit && getEconomy().getTimeStep() > 2000)
+			if (warmedUp && profit < -config.capitalNudgeProfitFactor() * avgProfit)
 				capitalToBuy -= 1;
 			/***************************************************************/
 
