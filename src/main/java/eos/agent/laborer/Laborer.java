@@ -201,8 +201,8 @@ public class Laborer extends Agent {
 		// demographic stream (and leaves the head age-less).
 		this.head = head;
 		this.birthDate = economy.isMortalityEnabled()
-				? economy.getDate()
-						.minusDays(economy.getDemography().sampleInitialAgeDays())
+				? economy.getDate().minusDays(economy.getDemography()
+						.sampleInitialAgeDays(economy.getMeanInitAgeYears()))
 				: null;
 
 		this.config = config;

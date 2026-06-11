@@ -82,6 +82,11 @@ public class Economy {
 	@Getter
 	private final Demography demography;
 
+	// mean of the normal distribution from which founding household heads draw
+	// their initial age, in years (see Demography.sampleInitialAgeDays)
+	@Getter
+	private final double meanInitAgeYears;
+
 	// CPI in the last step
 	private double lastCPI;
 
@@ -106,7 +111,7 @@ public class Economy {
 	/**
 	 * Create a new economy whose step 0 falls on <tt>startDate</tt>, drawing
 	 * randomness from <tt>rng</tt>. Each step advances one day. Use {@link
-	 * GameSession#newEconomy(LocalDate)} to create an economy with a
+	 * GameSession#newEconomy(LocalDate, double)} to create an economy with a
 	 * reproducible random-number seed.
 	 *
 	 * @param startDate
@@ -117,13 +122,16 @@ public class Economy {
 	 *            the name sets for this economy
 	 * @param demography
 	 *            the demographic service for this economy
+	 * @param meanInitAgeYears
+	 *            mean initial age (years) of founding household heads
 	 */
 	public Economy(LocalDate startDate, Rng rng, NameRegistry names,
-			Demography demography) {
+			Demography demography, double meanInitAgeYears) {
 		this.startDate = startDate;
 		this.rng = rng;
 		this.names = names;
 		this.demography = demography;
+		this.meanInitAgeYears = meanInitAgeYears;
 	}
 
 	/**

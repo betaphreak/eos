@@ -65,9 +65,11 @@ public class GameSession {
 	 *
 	 * @param startDate
 	 *            the in-game date of step 0
+	 * @param meanInitAgeYears
+	 *            mean initial age (years) of founding household heads
 	 * @return a fresh economy
 	 */
-	public Economy newEconomy(LocalDate startDate) {
-		return new Economy(startDate, rng, names, demography);
+	public Economy newEconomy(LocalDate startDate, double meanInitAgeYears) {
+		return new Economy(startDate, rng, names, demography, meanInitAgeYears);
 	}
 }

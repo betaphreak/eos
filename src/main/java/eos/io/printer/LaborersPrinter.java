@@ -44,7 +44,8 @@ import eos.economy.*;
  * Col7: average enjoyment stock<br>
  * Col8: average necessity consumption<br>
  * Col9: average enjoyment consumption<br>
- * 
+ * Col10: average age of living laborers, in years<br>
+ *
  */
 public class LaborersPrinter extends Printer {
 
@@ -233,6 +234,8 @@ public class LaborersPrinter extends Printer {
 			double avgEStock = 0;
 			double avgNConsumption = 0;
 			double avgEConsumption = 0;
+			double avgAge = 0;
+			int aliveCount = 0;
 
 			for (int i = 0; i < laborers.length; i++)
 				if (laborers[i].isAlive()) {
@@ -245,7 +248,12 @@ public class LaborersPrinter extends Printer {
 					avgEStock += laborers[i].getGood("Enjoyment").getQuantity();
 					avgNConsumption += laborers[i].getNConsumption();
 					avgEConsumption += laborers[i].getEConsumption();
+					avgAge += laborers[i].getAgeYears();
+					aliveCount++;
 				}
+			// age is averaged over the living (not the original cohort), so it
+			// stays a meaningful mean as founding heads die off
+			avgAge = aliveCount > 0 ? avgAge / aliveCount : 0;
 			avgWage /= laborers.length;
 			avgIC /= laborers.length;
 			avgConsumption /= laborers.length;
@@ -257,7 +265,7 @@ public class LaborersPrinter extends Printer {
 			avgEConsumption /= laborers.length;
 			printWriter.println(economy.getDate(), avgWage, avgIC, avgConsumption,
 					avgSavings, totSavings, avgSavingsRate, avgNStock, avgEStock,
-					avgNConsumption, avgEConsumption);
+					avgNConsumption, avgEConsumption, avgAge);
 		}
 	}
 
@@ -267,7 +275,7 @@ public class LaborersPrinter extends Printer {
 	public void printTitles() {
 		printWriter.println("Date", "AvgWage", "AvgTotalIncome",
 				"AvgConsumption", "AvgSavings", "TotalSavings", "AvgSavings_Rate", "AvgNStock",
-				"AvgEStock", "AvgNConsumption", "AvgEConsumption");
+				"AvgEStock", "AvgNConsumption", "AvgEConsumption", "AvgAge");
 	}
 
 	/**

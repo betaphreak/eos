@@ -25,7 +25,8 @@ public class Simulation2 {
 	public static SimulationHarness run() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		GameSession session = new GameSession(2345);
-		Economy economy = session.newEconomy(cfg.startDate());
+		Economy economy = session.newEconomy(cfg.startDate(),
+				cfg.meanInitAgeYears());
 		SimLog.init(economy);
 
 		SimulationHarness h = new SimulationHarness(cfg, economy);

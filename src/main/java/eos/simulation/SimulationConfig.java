@@ -29,6 +29,9 @@ import lombok.Builder;
  *                     each estate; false recovers the pre-mortality population
  *                     dynamics (no aging, no replacement, deaths just close the
  *                     account)
+ * @param meanInitAgeYears mean initial age (years) of founding household heads,
+ *                     the center of the normal distribution their ages are
+ *                     drawn from
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -44,7 +47,8 @@ public record SimulationConfig(
 		FirmInit nFirm,
 		CFirmInit cFirm,
 		LaborerInit laborer,
-		boolean mortalityEnabled) {
+		boolean mortalityEnabled,
+		double meanInitAgeYears) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -107,5 +111,6 @@ public record SimulationConfig(
 			new FirmInit(100, -1000, 50, 100, 30), // nFirm
 			new CFirmInit(500, 500, 0),            // cFirm
 			new LaborerInit(0, 0, 100, 0.9),       // laborer
-			true);                                 // mortalityEnabled
+			true,                                  // mortalityEnabled
+			35);                                   // meanInitAgeYears
 }
