@@ -133,6 +133,43 @@ public class Bank {
 	}
 
 	/**
+	 * Settle a deceased account holder's estate and close the account. The bank
+	 * inherits any leftover money and absorbs (cancels) any outstanding debt;
+	 * the net worth of the account (checking plus savings, the latter negative
+	 * for a loan) is added to the bank's equity.
+	 *
+	 * @param agentID
+	 *            the deceased account holder
+	 */
+	public void inheritAndClose(int agentID) {
+		Account acct = accounts.get(agentID);
+		if (acct != null) {
+			equity += acct.checking + acct.savings;
+			accounts.remove(agentID);
+		}
+	}
+
+	/**
+	 * Open an account for an heir, funding it out of the bank's equity. This is
+	 * the counterpart to {@link #inheritAndClose(int)}: the deceased estate that
+	 * was folded into equity is handed to the successor household, so money
+	 * stays in circulation rather than being permanently drained. A loan
+	 * (negative savings) carried over likewise reduces equity by the inherited
+	 * debt.
+	 *
+	 * @param agentID
+	 *            the heir's account (== agent) id
+	 * @param checking
+	 *            inherited checking balance
+	 * @param savings
+	 *            inherited savings balance (negative for a loan)
+	 */
+	public void openInheritedAcct(int agentID, double checking, double savings) {
+		equity -= checking + savings;
+		openAcct(agentID, checking, savings);
+	}
+
+	/**
 	 * Return the account of <tt>agentID</tt>, exiting if it does not exist.
 	 *
 	 * @param agentID

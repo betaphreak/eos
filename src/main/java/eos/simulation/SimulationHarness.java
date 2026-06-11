@@ -35,6 +35,9 @@ import lombok.Getter;
 @Getter
 public class SimulationHarness {
 
+	// fixed necessity stock granted to a replacement household
+	private static final int REPLACEMENT_NECESSITY_STOCK = 15;
+
 	private final SimulationConfig cfg;
 	private final Economy economy;
 	private final List<Bank> banks = new ArrayList<>();
@@ -52,6 +55,9 @@ public class SimulationHarness {
 	public SimulationHarness(SimulationConfig cfg, Economy economy) {
 		this.cfg = cfg;
 		this.economy = economy;
+		// fix the mortality regime before any agent is constructed, so laborers
+		// see the right setting when they sample their initial age
+		economy.setMortalityEnabled(cfg.mortalityEnabled());
 	}
 
 	/** Create the four markets and register them (labor market first). */
@@ -127,6 +133,20 @@ public class SimulationHarness {
 					laborerBank.apply(i), economy);
 			economy.addAgent(laborers[i]);
 		}
+
+		// when a household's head dies, a successor household continues the same
+		// dynasty at the same bank, inheriting the estate (so money and the
+		// labor force stay roughly constant). Only when mortality is active;
+		// otherwise the population shrinks as before.
+		if (cfg.mortalityEnabled())
+			economy.setReplacementPolicy(dead -> {
+				if (!(dead instanceof Laborer))
+					return null;
+				return new Laborer((Laborer) dead, cfg.laborer().e(),
+						REPLACEMENT_NECESSITY_STOCK, cfg.laborer().savingsRate(),
+						LaborerConfig.DEFAULT, economy);
+			});
+
 		laborMkt.clear();
 	}
 
@@ -157,12 +177,21 @@ public class SimulationHarness {
 		economy.cleanUpPrinters();
 	}
 
-	/** Number of laborers still alive after the run. */
+	/** Number of the <em>initial</em> laborers still alive after the run. */
 	public long aliveLaborerCount() {
 		long n = 0;
 		for (Laborer l : laborers)
 			if (l.isAlive())
 				n++;
 		return n;
+	}
+
+	/**
+	 * Number of laborers (households) currently alive in the economy, including
+	 * replacements that succeeded the initial cohort.
+	 */
+	public long currentLaborerCount() {
+		return economy.getAgents().stream().filter(a -> a instanceof Laborer)
+				.count();
 	}
 }

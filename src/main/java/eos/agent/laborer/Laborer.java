@@ -31,6 +31,19 @@ public class Laborer extends Agent {
 	@Getter
 	private final Person head;
 
+	// age of the household head, in days (advances one per step)
+	private int ageDays;
+
+	// estate (checking, savings) snapshot taken at death so a successor
+	// household can inherit it; savings is negative for an outstanding loan
+	private double estateChecking, estateSavings;
+
+	// true until this household's first act(): seeds consumption and the
+	// interest-rate window. A successor born after step 0 must bootstrap just
+	// like the founding cohort did, otherwise its multiplicative consumption
+	// adjustment stays pinned at 0 and it hoards all income.
+	private boolean firstAct = true;
+
 	// enjoyment market
 	private final ConsumerGoodMarket eMkt;
 
@@ -123,14 +136,65 @@ public class Laborer extends Agent {
 	public Laborer(double initEQty, double initNQty, double initCheckingBal,
 			double initSavingsBal, double initSavingsRate, LaborerConfig config,
 			Bank bank, Economy economy) {
+		this(initEQty, initNQty, initCheckingBal, initSavingsBal, false,
+				initSavingsRate, config, bank, economy,
+				economy.getNames().nextHead());
+	}
+
+	/**
+	 * Create the household that succeeds <tt>predecessor</tt> when its head
+	 * dies: it inherits the predecessor's estate (its account balances, funded
+	 * out of the bank's equity so money stays in circulation) and continues the
+	 * same dynasty (a new head, same surname), banking at the same bank. A fresh
+	 * working-age head is drawn.
+	 *
+	 * @param predecessor
+	 *            the deceased household whose estate and dynasty are inherited
+	 * @param initEQty
+	 *            initial enjoyment quantity
+	 * @param initNQty
+	 *            initial necessity quantity
+	 * @param initSavingsRate
+	 *            initial savings rate
+	 * @param config
+	 *            tunable model parameters
+	 * @param economy
+	 *            the economy this laborer belongs to
+	 */
+	public Laborer(Laborer predecessor, double initEQty, double initNQty,
+			double initSavingsRate, LaborerConfig config, Economy economy) {
+		this(initEQty, initNQty, predecessor.estateChecking,
+				predecessor.estateSavings, true, initSavingsRate, config,
+				predecessor.getBank(), economy,
+				economy.getNames()
+						.nextHeadInDynasty(predecessor.head.surname()));
+	}
+
+	/**
+	 * Shared constructor. Opens the account either as a fresh endowment
+	 * ({@code inherited == false}) or out of the bank's equity
+	 * ({@code inherited == true}, for a successor household), then initializes
+	 * the rest of the household identically.
+	 */
+	private Laborer(double initEQty, double initNQty, double initCheckingBal,
+			double initSavingsBal, boolean inherited, double initSavingsRate,
+			LaborerConfig config, Bank bank, Economy economy, Person head) {
 		super(bank, economy);
 
 		// open a checking account and a savings account
-		bank.openAcct(this.getID(), initCheckingBal, initSavingsBal);
+		if (inherited)
+			bank.openInheritedAcct(this.getID(), initCheckingBal, initSavingsBal);
+		else
+			bank.openAcct(this.getID(), initCheckingBal, initSavingsBal);
 
-		// name the household head (separate naming RNG; doesn't affect the
-		// economic random stream)
-		this.head = economy.getNames().nextHead();
+		// the household head (named on a separate naming RNG, aged on a separate
+		// mortality RNG; neither perturbs the economic random stream). Age only
+		// when mortality is active, so a no-mortality run never touches the
+		// demographic stream.
+		this.head = head;
+		this.ageDays = economy.isMortalityEnabled()
+				? economy.getDemography().sampleInitialAgeDays()
+				: 0;
 
 		this.config = config;
 		enjoyment = new Enjoyment(initEQty);
@@ -150,6 +214,22 @@ public class Laborer extends Agent {
 	public void act() {
 		Bank bank = getBank();
 		Account acct = bank.getAcct(this.getID());
+
+		// the household head ages a day and may die of old age (only when
+		// mortality is active)
+		if (getEconomy().isMortalityEnabled()) {
+			ageDays++;
+			if (getEconomy().getDemography().diesOfOldAge(ageDays)) {
+				die();
+				log.info(String.format("%s (household %d) died of old age at %d",
+						head.fullName(), getID(), getAgeYears()));
+				estateChecking = acct.getChecking();
+				estateSavings = acct.getSavings();
+				bank.inheritAndClose(getID());
+				return;
+			}
+		}
+
 		wage = acct.priIC;
 		income = wage + acct.secIC + acct.interest;
 
@@ -164,17 +244,25 @@ public class Laborer extends Agent {
 			log.info(String.format(
 					"%s (household %d) died with %.2f checking and %.2f savings",
 					head.fullName(), getID(), acct.getChecking(), acct.getSavings()));
-			bank.closeAcct(getID());
+			// with mortality a successor household inherits the estate; without
+			// it, deaths just close the account (the pre-mortality behavior)
+			if (getEconomy().isMortalityEnabled()) {
+				estateChecking = acct.getChecking();
+				estateSavings = acct.getSavings();
+				bank.inheritAndClose(getID());
+			} else {
+				bank.closeAcct(getID());
+			}
 			return;
 		}
 
-		if (getEconomy().getTimeStep() > 0) {
+		if (!firstAct) {
 			if (RR < lowRR)
 				lowRR = RR;
 			if (RR > highRR)
 				highRR = RR;
 		} else {
-			// initial step
+			// this household's first step
 			lowRR = RR;
 			highRR = RR;
 		}
@@ -192,7 +280,7 @@ public class Laborer extends Agent {
 		double targetConsumption = checking + savings - targetSavings;
 
 		// compute consumption
-		if (getEconomy().getTimeStep() == 0)
+		if (firstAct)
 			consumption = income;
 		else
 			consumption = Math.min(
@@ -228,6 +316,7 @@ public class Laborer extends Agent {
 		acct.priIC = 0;
 		acct.secIC = 0;
 		acct.interest = 0;
+		firstAct = false;
 	}
 
 	/**
@@ -251,6 +340,15 @@ public class Laborer extends Agent {
 	}
 
 	/**
+	 * Return the household head's age in whole years.
+	 *
+	 * @return the head's age in years
+	 */
+	public int getAgeYears() {
+		return ageDays / 365;
+	}
+
+	/**
 	 * A concise, debug-friendly summary: id, household head, alive status and
 	 * the latest economic snapshot. Uses only cached fields (no bank lookup),
 	 * so it is safe to call even after the laborer has died and closed its
@@ -259,8 +357,8 @@ public class Laborer extends Agent {
 	@Override
 	public String toString() {
 		return String.format(
-				"Laborer#%d %s [%s wage=%.2f income=%.2f consumption=%.2f savingsRate=%.2f]",
-				getID(), head.fullName(), isAlive() ? "alive" : "dead", wage,
-				income, consumption, savingsRate);
+				"Laborer#%d %s [%s age=%d wage=%.2f income=%.2f consumption=%.2f savingsRate=%.2f]",
+				getID(), head.fullName(), isAlive() ? "alive" : "dead",
+				getAgeYears(), wage, income, consumption, savingsRate);
 	}
 }

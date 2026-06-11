@@ -101,4 +101,18 @@ public final class NameRegistry {
 		String givenName = nextMaleName();
 		return new Person(givenName, surname);
 	}
+
+	/**
+	 * Create the head of a household that continues an existing dynasty: a new
+	 * male given name paired with the given surname. The dynasty pool is not
+	 * touched, so a household succeeding its deceased head never consumes a new
+	 * (and ultimately finite) surname.
+	 *
+	 * @param surname
+	 *            the dynasty surname to continue
+	 * @return the successor household head
+	 */
+	public Person nextHeadInDynasty(String surname) {
+		return new Person(nextMaleName(), surname);
+	}
 }

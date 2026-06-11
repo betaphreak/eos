@@ -156,6 +156,7 @@ public class ConsumerGoodMarket extends Market {
 		double demand;
 		
 		// find market price
+		int iters = 0;
 		while (true) {
 			price = (low + high) / 2;
 			demand = getDemand(price);
@@ -165,6 +166,15 @@ public class ConsumerGoodMarket extends Market {
 				low = price;
 			else
 				high = price;
+			// safety net: a non-finite price (or pathological non-convergence)
+			// would otherwise loop forever, since NaN/Infinity fail both exit
+			// tests above. A finite search converges well within this cap.
+			if (!Double.isFinite(price) || ++iters > 100) {
+				log.warning(String.format(
+						"%s price search did not converge (price=%g supply=%g demand=%g); aborting",
+						good, price, supply, demand));
+				break;
+			}
 		}
 
 		double vol = Math.min(supply, demand);

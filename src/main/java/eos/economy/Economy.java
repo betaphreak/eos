@@ -5,12 +5,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.function.UnaryOperator;
 
 import eos.agent.Agent;
 import eos.bank.Bank;
 import eos.io.printer.Printer;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Market;
+import eos.mortality.Demography;
 import eos.name.NameRegistry;
 import eos.util.Averager;
 import eos.util.Rng;
@@ -76,6 +78,10 @@ public class Economy {
 	@Getter
 	private final NameRegistry names;
 
+	// demographic service (shared with the owning game session)
+	@Getter
+	private final Demography demography;
+
 	// CPI in the last step
 	private double lastCPI;
 
@@ -87,6 +93,15 @@ public class Economy {
 
 	// an averager used to compute average inflation
 	private final Averager inflationAvger = new Averager(INFLATION_TIME_WIN);
+
+	// policy producing a replacement agent when one dies (default: no
+	// replacement, so the population shrinks)
+	private UnaryOperator<Agent> replacementPolicy = dead -> null;
+
+	// whether the mortality feature is active (aging, old-age death,
+	// inheritance); false recovers the pre-mortality behavior
+	@Getter
+	private boolean mortalityEnabled = true;
 
 	/**
 	 * Create a new economy whose step 0 falls on <tt>startDate</tt>, drawing
@@ -100,11 +115,15 @@ public class Economy {
 	 *            the random-number generator for this economy
 	 * @param names
 	 *            the name sets for this economy
+	 * @param demography
+	 *            the demographic service for this economy
 	 */
-	public Economy(LocalDate startDate, Rng rng, NameRegistry names) {
+	public Economy(LocalDate startDate, Rng rng, NameRegistry names,
+			Demography demography) {
 		this.startDate = startDate;
 		this.rng = rng;
 		this.names = names;
+		this.demography = demography;
 	}
 
 	/**
@@ -185,9 +204,17 @@ public class Economy {
 		for (Bank bank : banks)
 			bank.act();
 
-		for (Agent agent : deadAgents)
+		// remove the dead and spawn any replacement agents (e.g. a new
+		// household when a laborer dies), so the population can stay stable
+		ArrayList<Agent> replacements = new ArrayList<Agent>();
+		for (Agent agent : deadAgents) {
 			agents.remove(agent);
+			Agent replacement = replacementPolicy.apply(agent);
+			if (replacement != null)
+				replacements.add(replacement);
+		}
 		deadAgents.clear();
+		agents.addAll(replacements);
 
 		for (Market market : markets.values()) {
 			market.clear();
@@ -270,6 +297,32 @@ public class Economy {
 	 */
 	public void addAgent(Agent agent) {
 		agents.add(agent);
+	}
+
+	/**
+	 * Set the policy that produces a replacement agent when one dies. The
+	 * policy receives the dead agent and returns its replacement, or null for
+	 * none. Replacements are created and registered each step, right after the
+	 * dead are removed.
+	 *
+	 * @param policy
+	 *            the replacement policy
+	 */
+	public void setReplacementPolicy(UnaryOperator<Agent> policy) {
+		this.replacementPolicy = policy;
+	}
+
+	/**
+	 * Enable or disable the mortality feature (aging, old-age death and estate
+	 * inheritance). When disabled, laborers neither age nor die of old age and
+	 * deaths close the account without the bank inheriting it; set this before
+	 * constructing agents.
+	 *
+	 * @param enabled
+	 *            whether mortality is active
+	 */
+	public void setMortalityEnabled(boolean enabled) {
+		this.mortalityEnabled = enabled;
 	}
 
 	/**

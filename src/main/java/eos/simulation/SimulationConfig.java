@@ -24,6 +24,11 @@ import lombok.Builder;
  * @param nFirm        initial state of each necessity firm
  * @param cFirm        initial state of the capital firm
  * @param laborer      initial state of each laborer
+ * @param mortalityEnabled whether laborers age and die of old age, with a new
+ *                     household replacing each death and the bank inheriting
+ *                     each estate; false recovers the pre-mortality population
+ *                     dynamics (no aging, no replacement, deaths just close the
+ *                     account)
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -38,7 +43,8 @@ public record SimulationConfig(
 		FirmInit eFirm,
 		FirmInit nFirm,
 		CFirmInit cFirm,
-		LaborerInit laborer) {
+		LaborerInit laborer,
+		boolean mortalityEnabled) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -100,5 +106,6 @@ public record SimulationConfig(
 			new FirmInit(100, -1000, 40, 100, 30), // eFirm
 			new FirmInit(100, -1000, 50, 100, 30), // nFirm
 			new CFirmInit(500, 500, 0),            // cFirm
-			new LaborerInit(0, 0, 100, 0.9));      // laborer
+			new LaborerInit(0, 0, 100, 0.9),       // laborer
+			true);                                 // mortalityEnabled
 }

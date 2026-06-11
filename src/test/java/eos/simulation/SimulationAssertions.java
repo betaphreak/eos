@@ -7,19 +7,27 @@ import eos.bank.Bank;
 import eos.market.ConsumerGoodMarket;
 
 /**
- * Shared invariant checks for the simulation smoke tests. A healthy run keeps
- * (almost) all laborers alive, leaves market prices finite and positive, and
- * leaves each default bank a finite, zero-profit intermediary.
+ * Shared invariant checks for the simulation smoke tests. A healthy run sustains
+ * its laborer population, leaves market prices finite and positive, and leaves
+ * each default bank a finite, zero-profit intermediary.
  */
 final class SimulationAssertions {
+
+	// estate inheritance routes a deceased household's net worth through the
+	// bank's equity (in on its death step, back out when the heir is funded);
+	// at rest the two net out, so allow only floating-point slack here.
+	private static final double EQUITY_EPS = 1e-3;
 
 	private SimulationAssertions() {
 	}
 
 	/** Assert the post-run economy is healthy. */
 	static void assertHealthy(SimulationHarness h) {
-		// the economy did not collapse: the vast majority of laborers survive
-		long alive = h.aliveLaborerCount();
+		// the economy did not collapse: the population is sustained. With
+		// mortality on this counts heirs that succeeded the founding cohort
+		// (the founders themselves age and die); with mortality off it is the
+		// untouched original cohort.
+		long alive = h.currentLaborerCount();
 		assertTrue(alive > 400,
 				"expected >400 laborers alive, got " + alive);
 
@@ -30,7 +38,7 @@ final class SimulationAssertions {
 		// every (default) bank is a finite, zero-profit intermediary
 		assertTrue(!h.getBanks().isEmpty(), "expected at least one bank");
 		for (Bank bank : h.getBanks()) {
-			assertEquals(0.0, bank.getEquity(),
+			assertEquals(0.0, bank.getEquity(), EQUITY_EPS,
 					"default bank must make zero profit");
 			assertFinite(bank.getTotalDeposit(), "totalDeposit");
 			assertFinite(bank.getTotalLoan(), "totalLoan");
