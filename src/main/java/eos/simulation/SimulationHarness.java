@@ -161,7 +161,7 @@ public class SimulationHarness {
 		// labor force stay roughly constant). Only when mortality is active;
 		// otherwise the population shrinks as before.
 		if (cfg.mortalityEnabled())
-			economy.setReplacementPolicy(dead -> {
+			economy.addReplacementPolicy(dead -> {
 				if (!(dead instanceof Laborer))
 					return null;
 				return new Laborer((Laborer) dead, cfg.laborer().e(),

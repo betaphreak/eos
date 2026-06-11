@@ -101,9 +101,11 @@ public class Economy {
 	// an averager used to compute average inflation
 	private final Averager inflationAvger = new Averager(INFLATION_TIME_WIN);
 
-	// policy producing a replacement agent when one dies (default: no
-	// replacement, so the population shrinks)
-	private UnaryOperator<Agent> replacementPolicy = dead -> null;
+	// policies producing a replacement agent when one dies, tried in registration
+	// order until one returns non-null (default: none, so the population shrinks).
+	// A list so independent populations — laborer households, noble households —
+	// can each register their own successor rule without overwriting the others.
+	private final List<UnaryOperator<Agent>> replacementPolicies = new ArrayList<UnaryOperator<Agent>>();
 
 	// per-step side effects run once each newDay after deaths/replacements
 	// settle (e.g. injecting external money into a bank's equity in an open
@@ -229,7 +231,12 @@ public class Economy {
 		ArrayList<Agent> replacements = new ArrayList<Agent>();
 		for (Agent agent : deadAgents) {
 			agents.remove(agent);
-			Agent replacement = replacementPolicy.apply(agent);
+			Agent replacement = null;
+			for (UnaryOperator<Agent> policy : replacementPolicies) {
+				replacement = policy.apply(agent);
+				if (replacement != null)
+					break;
+			}
 			if (replacement != null)
 				replacements.add(replacement);
 		}
@@ -337,16 +344,19 @@ public class Economy {
 	}
 
 	/**
-	 * Set the policy that produces a replacement agent when one dies. The
-	 * policy receives the dead agent and returns its replacement, or null for
-	 * none. Replacements are created and registered each step, right after the
-	 * dead are removed.
+	 * Register a policy that produces a replacement agent when one dies. The
+	 * policy receives the dead agent and returns its replacement, or null if it
+	 * does not handle that agent. Registered policies are tried in registration
+	 * order until one returns non-null, so independent populations (e.g. laborer
+	 * and noble households) can each register their own successor rule.
+	 * Replacements are created and registered each step, right after the dead are
+	 * removed.
 	 *
 	 * @param policy
 	 *            the replacement policy
 	 */
-	public void setReplacementPolicy(UnaryOperator<Agent> policy) {
-		this.replacementPolicy = policy;
+	public void addReplacementPolicy(UnaryOperator<Agent> policy) {
+		replacementPolicies.add(policy);
 	}
 
 	/**
