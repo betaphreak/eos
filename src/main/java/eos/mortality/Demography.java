@@ -13,6 +13,12 @@ public final class Demography {
 
 	private static final int DAYS_PER_YEAR = 365;
 
+	// founding-cohort initial ages are drawn from a normal distribution centered
+	// on a working age, truncated below so every founding head is of working age
+	private static final double INIT_AGE_MEAN_YEARS = 35;
+	private static final double INIT_AGE_STDDEV_YEARS = 10;
+	private static final int MIN_INIT_AGE_YEARS = 15;
+
 	private final Rng rng;
 	private final LifeTable table;
 
@@ -41,13 +47,20 @@ public final class Demography {
 	}
 
 	/**
-	 * Draw an initial age (in days) for a working-age household head from the
-	 * stationary population distribution.
+	 * Draw an initial age (in days) for a founding household head from a normal
+	 * distribution centered on a working age (mean
+	 * {@value #INIT_AGE_MEAN_YEARS}, sd {@value #INIT_AGE_STDDEV_YEARS} years),
+	 * truncated below at {@value #MIN_INIT_AGE_YEARS} so every founding head is
+	 * of working age.
 	 *
 	 * @return an age in days
 	 */
 	public int sampleInitialAgeDays() {
-		int years = table.sampleAdultAgeYears(rng);
+		int years;
+		do {
+			years = (int) Math.round(
+					rng.gaussian(INIT_AGE_MEAN_YEARS, INIT_AGE_STDDEV_YEARS));
+		} while (years < MIN_INIT_AGE_YEARS);
 		return years * DAYS_PER_YEAR + rng.uniform(DAYS_PER_YEAR);
 	}
 
