@@ -41,6 +41,24 @@ public class Laborer extends Agent implements Household {
 	@Getter
 	private final LocalDate birthDate;
 
+	// in-game date this household came into being in the colony — the moment its
+	// head (an already-grown person, born back on birthDate) arrived and founded
+	// it. Distinct from birthDate: a working-age adult founds the household now.
+	@Getter
+	private final LocalDate foundingDate;
+
+	// this household's skill (an integer in [0, 20]): the source of its labor
+	// productivity. Drawn at birth from the demographic skill distribution and
+	// re-rolled for a successor head, so skill is not inherited across
+	// generations.
+	@Getter
+	private final int skill;
+
+	// labor produced per step when employed, derived from skill by the
+	// productivity curve (skill 10 -> 1 unit, the legacy homogeneous case)
+	@Getter
+	private final double productivity;
+
 	// estate (checking, savings) snapshot taken at death so a successor
 	// household can inherit it; savings is negative for an outstanding loan
 	private double estateChecking, estateSavings;
@@ -131,8 +149,7 @@ public class Laborer extends Agent implements Household {
 			double initSavingsBal, double initSavingsRate, LaborerConfig config,
 			Bank bank, Settlement colony) {
 		this(initEQty, initNQty, initCheckingBal, initSavingsBal, false,
-				initSavingsRate, config, bank, colony,
-				colony.getNames().nextHead());
+				initSavingsRate, config, bank, colony, null);
 	}
 
 	/**
@@ -166,8 +183,7 @@ public class Laborer extends Agent implements Household {
 			double initSavingsBal, double initSavingsRate, LaborerConfig config,
 			Bank bank, Settlement colony, boolean fundedFromEquity) {
 		this(initEQty, initNQty, initCheckingBal, initSavingsBal,
-				fundedFromEquity, initSavingsRate, config, bank, colony,
-				colony.getNames().nextHead());
+				fundedFromEquity, initSavingsRate, config, bank, colony, null);
 	}
 
 	/**
@@ -194,9 +210,7 @@ public class Laborer extends Agent implements Household {
 			double initSavingsRate, LaborerConfig config, Settlement colony) {
 		this(initEQty, initNQty, predecessor.estateChecking,
 				predecessor.estateSavings, true, initSavingsRate, config,
-				predecessor.getBank(), colony,
-				colony.getNames()
-						.nextHeadInDynasty(predecessor.head.surname()));
+				predecessor.getBank(), colony, predecessor.head.surname());
 	}
 
 	/**
@@ -207,7 +221,7 @@ public class Laborer extends Agent implements Household {
 	 */
 	private Laborer(double initEQty, double initNQty, double initCheckingBal,
 			double initSavingsBal, boolean inherited, double initSavingsRate,
-			LaborerConfig config, Bank bank, Settlement colony, Person head) {
+			LaborerConfig config, Bank bank, Settlement colony, String surname) {
 		super(bank, colony);
 
 		// open a checking account and a savings account
@@ -216,12 +230,31 @@ public class Laborer extends Agent implements Household {
 		else
 			bank.openAcct(this.getID(), initCheckingBal, initSavingsBal);
 
-		// the household head (named on a separate naming RNG, aged on a separate
-		// mortality RNG; neither perturbs the economic random stream). The birth
-		// date is the current in-game date less a sampled initial age.
-		this.head = head;
+		// the head is aged on a separate mortality RNG: its birth date is today
+		// less a sampled initial age. The household itself is founded now.
 		this.birthDate = colony.getDate().minusDays(colony.getDemography()
 				.sampleInitialAgeDays(colony.getMeanInitAgeYears()));
+		this.foundingDate = colony.getDate();
+
+		// skill is a fresh draw for every head (founders, immigrants, and each
+		// successor), centered on the colony's mean skill, on the demographic
+		// skill RNG; it fixes this household's labor productivity for life
+		this.skill = colony.getDemography().sampleSkill(colony.getMeanSkill());
+		this.productivity = Household.productivityOf(skill);
+
+		// draw the head on the naming RNG with the given name's rarity tracking
+		// skill — abler households get rarer, more distinctive names. A null
+		// surname starts a new dynasty; otherwise the head continues the given one.
+		double nameRarity = (double) skill / Household.MAX_SKILL;
+		this.head = (surname == null)
+				? colony.getNames().nextHead(nameRarity)
+				: colony.getNames().nextHeadInDynasty(surname, nameRarity);
+
+		// a notable arrival (skill above the threshold) is worth recording by name
+		if (isNotable())
+			log.info(String.format(
+					"%s founded a household in the colony — notable (skill %d)",
+					head.fullName(), skill));
 
 		this.config = config;
 		enjoyment = new Enjoyment(initEQty);

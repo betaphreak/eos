@@ -11,6 +11,7 @@ import java.util.function.UnaryOperator;
 
 import eos.agent.Agent;
 import eos.agent.Household;
+import eos.agent.laborer.Laborer;
 import eos.bank.Bank;
 import eos.io.printer.Printer;
 import eos.market.ConsumerGoodMarket;
@@ -20,6 +21,7 @@ import eos.name.NameRegistry;
 import eos.util.Averager;
 import eos.util.Rng;
 import lombok.Getter;
+import lombok.extern.java.Log;
 
 /**
  * Settlement provides a container to hold all agents and markets together. It is
@@ -32,6 +34,7 @@ import lombok.Getter;
  * @author zhihongx
  *
  */
+@Log
 public class Settlement {
 
 	/****************** constants *****************************/
@@ -97,6 +100,20 @@ public class Settlement {
 	@Getter
 	private final double targetNStock;
 
+	// mean of this colony's household skill distribution, fixed at colony start:
+	// the center of the spread from which every household (founding and successor)
+	// draws its skill, hence the colony's labor productivity (see Demography)
+	@Getter
+	private final double meanSkill;
+
+	// lifecycle: a colony is "started" once it begins running (start()) and
+	// "dies" the step its last laborer is gone (no workforce left). deathDate
+	// records when, and the transition is terminal.
+	private boolean started = false;
+	private boolean died = false;
+	@Getter
+	private LocalDate deathDate;
+
 	// CPI in the last step
 	private double lastCPI;
 
@@ -143,15 +160,71 @@ public class Settlement {
 	 *            mean initial age (years) of founding household heads
 	 * @param targetNStock
 	 *            target necessity stock every laborer tries to accumulate
+	 * @param meanSkill
+	 *            mean of this colony's household skill distribution
 	 */
 	public Settlement(LocalDate startDate, Rng rng, NameRegistry names,
-			Demography demography, double meanInitAgeYears, double targetNStock) {
+			Demography demography, double meanInitAgeYears, double targetNStock,
+			double meanSkill) {
 		this.startDate = startDate;
 		this.rng = rng;
 		this.names = names;
 		this.demography = demography;
 		this.meanInitAgeYears = meanInitAgeYears;
 		this.targetNStock = targetNStock;
+		this.meanSkill = meanSkill;
+	}
+
+	/**
+	 * Begin the colony's life: mark it started (founded and populated), so that
+	 * later losing all its laborers counts as the colony <b>dying</b> rather than
+	 * never having lived. Logs the founding once. Called at the start of {@link
+	 * #run(int)}; idempotent.
+	 */
+	public void start() {
+		if (started)
+			return;
+		started = true;
+		log.info("The colony was founded on " + getDate() + ".");
+	}
+
+	/**
+	 * Whether the colony is alive: it has started and has not died.
+	 *
+	 * @return true if the colony is alive
+	 */
+	public boolean isAlive() {
+		return started && !died;
+	}
+
+	/**
+	 * Whether the colony has died — a started colony that lost its last laborer
+	 * (it has no workforce left). The transition is terminal.
+	 *
+	 * @return true if the colony has died
+	 */
+	public boolean isDead() {
+		return died;
+	}
+
+	// number of living laborer households in this colony (the workforce)
+	private long livingLaborerCount() {
+		long n = 0;
+		for (Agent agent : agents)
+			if (agent instanceof Laborer)
+				n++;
+		return n;
+	}
+
+	// detect colony death: a started, still-living colony that has lost its last
+	// laborer dies now (terminal). Called each newDay once the population settles.
+	void updateLifecycle() {
+		if (started && !died && livingLaborerCount() == 0) {
+			died = true;
+			deathDate = getDate();
+			log.info("The colony died on " + deathDate
+					+ " (its last laborer is gone)");
+		}
 	}
 
 	/**
@@ -192,6 +265,7 @@ public class Settlement {
 	 * @param steps
 	 */
 	public void run(int steps) {
+		start();
 		for (int i = 0; i < steps; i++) {
 			LocalDate date = getDate();
 			if (date.getMonthValue() == 1 && date.getDayOfMonth() == 1)
@@ -261,6 +335,10 @@ public class Settlement {
 		for (Runnable action : stepActions)
 			action.run();
 		agents.addAll(immigrationPolicy.get());
+
+		// the population for this step is now settled: a started colony that has
+		// lost its last laborer dies here
+		updateLifecycle();
 
 		for (Market market : markets.values()) {
 			market.clear();

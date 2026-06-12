@@ -115,6 +115,40 @@ public final class NameTable {
 		return names[names.length - 1];
 	}
 
+	// half-width of the uniform jitter (in percentile units) applied around the
+	// target rarity, so households of the same rarity still draw varied names
+	private static final double RARITY_JITTER = 0.125;
+
+	/**
+	 * Draw a name near a target <b>rarity percentile</b>. The names are ordered
+	 * common&rarr;rare, so {@code percentile} 0 favors the most common names and 1
+	 * the rarest; the draw is jittered by &plusmn;{@value #RARITY_JITTER} (clamped
+	 * to {@code [0, 1]}) so similar-rarity draws still vary. Unlike
+	 * {@link #pick(Rng)} (a weighted draw over the whole table), this biases the
+	 * selection toward a chosen slice of the rarity range.
+	 *
+	 * @param rng
+	 *            the random-number generator to draw from
+	 * @param percentile
+	 *            target rarity in {@code [0, 1]} (0 = commonest, 1 = rarest);
+	 *            values outside the range are clamped
+	 * @return a name near that rarity
+	 */
+	public String pickAtRarity(Rng rng, double percentile) {
+		double p = clamp01(percentile) + (rng.uniform() - 0.5) * 2 * RARITY_JITTER;
+		double r = clamp01(p) * total;
+		for (int i = 0; i < names.length; i++) {
+			r -= weights[i];
+			if (r < 0)
+				return names[i];
+		}
+		return names[names.length - 1];
+	}
+
+	private static double clamp01(double x) {
+		return Math.max(0, Math.min(1, x));
+	}
+
 	/** Number of distinct names in the table. */
 	public int size() {
 		return names.length;

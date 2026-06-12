@@ -145,13 +145,29 @@ public final class NameRegistry {
 
 	/**
 	 * Create the head of a new household: a male given name plus a unique
-	 * dynasty surname.
+	 * dynasty surname. The given name is a plain weighted draw.
 	 *
 	 * @return the household head
 	 */
 	public Person nextHead() {
 		String surname = nextDynastyName();
 		String givenName = nextMaleName();
+		return new Person(givenName, surname);
+	}
+
+	/**
+	 * Create the head of a new household whose <b>given name's rarity tracks
+	 * {@code nameRarity}</b>: a male given name drawn near that rarity percentile
+	 * (0 = common, 1 = rare) plus a unique dynasty surname. Used to give abler
+	 * households more distinctive names.
+	 *
+	 * @param nameRarity
+	 *            target rarity of the given name in {@code [0, 1]}
+	 * @return the household head
+	 */
+	public Person nextHead(double nameRarity) {
+		String surname = nextDynastyName();
+		String givenName = male.pickAtRarity(rng, nameRarity);
 		return new Person(givenName, surname);
 	}
 
@@ -167,5 +183,19 @@ public final class NameRegistry {
 	 */
 	public Person nextHeadInDynasty(String surname) {
 		return new Person(nextMaleName(), surname);
+	}
+
+	/**
+	 * Create a successor head continuing <tt>surname</tt> whose given name's
+	 * rarity tracks <tt>nameRarity</tt> (0 = common, 1 = rare).
+	 *
+	 * @param surname
+	 *            the dynasty surname to continue
+	 * @param nameRarity
+	 *            target rarity of the given name in {@code [0, 1]}
+	 * @return the successor household head
+	 */
+	public Person nextHeadInDynasty(String surname, double nameRarity) {
+		return new Person(male.pickAtRarity(rng, nameRarity), surname);
 	}
 }

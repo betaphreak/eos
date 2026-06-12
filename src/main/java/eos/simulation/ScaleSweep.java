@@ -100,7 +100,7 @@ public class ScaleSweep {
 				.build();
 		GameSession session = new GameSession(SEED);
 		Settlement colony = session.newSettlement(cfg.startDate(),
-				cfg.meanInitAgeYears(), cfg.targetNStock());
+				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkill());
 		SimLog.init(colony);
 
 		SimulationHarness h = new SimulationHarness(cfg, colony);

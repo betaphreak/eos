@@ -54,4 +54,20 @@ class LifeTableTest {
 		for (int i = 0; i < 200; i++)
 			assertEquals(a.sampleInitialAgeDays(35), b.sampleInitialAgeDays(35));
 	}
+
+	@Test
+	void sampledSkillsAreInRangeAndCenteredNearFive() {
+		Demography demo = new Demography(new Rng(7), new Rng(11));
+		int n = 10000;
+		long sum = 0;
+		for (int i = 0; i < n; i++) {
+			int skill = demo.sampleSkill(5);
+			assertTrue(skill >= 0 && skill <= 20, "skill out of range: " + skill);
+			sum += skill;
+		}
+		// drawn ~N(5, 3) clamped to [0, 20], so the mean sits just above 5 (the
+		// left tail clamped at 0 pulls it up slightly)
+		double mean = (double) sum / n;
+		assertTrue(mean > 4.5 && mean < 6.0, "unexpected mean skill: " + mean);
+	}
 }

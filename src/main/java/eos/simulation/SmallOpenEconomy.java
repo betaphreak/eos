@@ -51,7 +51,7 @@ public class SmallOpenEconomy {
 
 		GameSession session = new GameSession(7654321);
 		Settlement colony = session.newSettlement(cfg.startDate(),
-				cfg.meanInitAgeYears(), cfg.targetNStock());
+				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkill());
 		SimLog.init(colony);
 
 		SimulationHarness h = new SimulationHarness(cfg, colony);

@@ -29,6 +29,10 @@ import lombok.Builder;
  * @param targetNStock target necessity stock every laborer tries to accumulate
  *                     (in real units); a colony-wide constant rather than a
  *                     per-laborer preference, so it is set on the {@code Settlement}
+ * @param meanSkill    mean of the household skill distribution at colony start;
+ *                     a colony-start property (set on the {@code Settlement}) that
+ *                     centers the skill spread of its founding and successor
+ *                     households, hence their labor productivity
  * @param externalInflowPerStep money entering the colony from outside each
  *                     step, injected into the bank's equity; 0 leaves the
  *                     colony closed (no inflow, no immigration)
@@ -57,6 +61,7 @@ public record SimulationConfig(
 		LaborerInit laborer,
 		double meanInitAgeYears,
 		double targetNStock,
+		double meanSkill,
 		double externalInflowPerStep,
 		double immigrationThreshold,
 		double laborShare) {
@@ -123,6 +128,7 @@ public record SimulationConfig(
 			new LaborerInit(0, 0, 100, 0.9),       // laborer
 			35,                                    // meanInitAgeYears
 			26,                                    // targetNStock
+			5,                                     // meanSkill
 			0,                                     // externalInflowPerStep (closed)
 			100,                                   // immigrationThreshold
 			0.5);                                  // laborShare

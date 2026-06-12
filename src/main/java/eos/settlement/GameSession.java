@@ -32,6 +32,7 @@ public class GameSession {
 	// one (and from each other), all seeded from the same session seed
 	private static final long NAME_SEED_SALT = 0x9E3779B97F4A7C15L;
 	private static final long MORTALITY_SEED_SALT = 0xD1B54A32D192ED03L;
+	private static final long SKILL_SEED_SALT = 0xBF58476D1CE4E5B9L;
 	private static final long COLONY_SEED_SALT = 0xA24BAED4963EE407L;
 
 	// random-number seed for this session
@@ -59,7 +60,8 @@ public class GameSession {
 	public GameSession(long seed) {
 		this.seed = seed;
 		this.names = new NameRegistry(new Rng(seed ^ NAME_SEED_SALT));
-		this.demography = new Demography(new Rng(seed ^ MORTALITY_SEED_SALT));
+		this.demography = new Demography(new Rng(seed ^ MORTALITY_SEED_SALT),
+				new Rng(seed ^ SKILL_SEED_SALT));
 	}
 
 	/**
@@ -75,15 +77,17 @@ public class GameSession {
 	 *            mean initial age (years) of founding household heads
 	 * @param targetNStock
 	 *            target necessity stock every laborer tries to accumulate
+	 * @param meanSkill
+	 *            mean of the colony's household skill distribution
 	 * @return a fresh colony
 	 */
 	public Settlement newSettlement(LocalDate startDate, double meanInitAgeYears,
-			double targetNStock) {
+			double targetNStock, double meanSkill) {
 		// index 0 -> bare seed (byte-identical to the old single shared rng);
 		// later colonies get a distinct, decorrelated seed
 		Rng colonyRng = new Rng(seed ^ (COLONY_SEED_SALT * colonyCount));
 		colonyCount++;
 		return new Settlement(startDate, colonyRng, names, demography,
-				meanInitAgeYears, targetNStock);
+				meanInitAgeYears, targetNStock, meanSkill);
 	}
 }

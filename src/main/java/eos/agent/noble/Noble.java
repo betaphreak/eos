@@ -62,6 +62,16 @@ public class Noble extends Agent implements Household {
 	@Getter
 	private final LocalDate birthDate;
 
+	// in-game date this noble house came into being in the colony (its head
+	// arrived and founded it); distinct from the head's birthDate
+	@Getter
+	private final LocalDate foundingDate;
+
+	// this household's skill (0..20), drawn around the colony's mean skill like a
+	// laborer's. A noble sells no labor today, so it is carried for later use.
+	@Getter
+	private final int skill;
+
 	// estate (checking, savings) snapshot taken at death so a successor noble can
 	// inherit it; savings is negative for an outstanding loan
 	private double estateChecking, estateSavings;
@@ -124,7 +134,7 @@ public class Noble extends Agent implements Household {
 			List<Firm> ownedFirms, List<Bank> ownedBanks, NobleConfig config,
 			Bank bank, Settlement colony) {
 		this(initCheckingBal, initSavingsBal, false, ownedFirms, ownedBanks,
-				config, bank, colony, colony.getNames().nextHead());
+				config, bank, colony, null);
 	}
 
 	/**
@@ -145,9 +155,7 @@ public class Noble extends Agent implements Household {
 	public Noble(Noble predecessor, NobleConfig config, Settlement colony) {
 		this(predecessor.estateChecking, predecessor.estateSavings, true,
 				predecessor.firms, predecessor.banks, config,
-				predecessor.getBank(), colony,
-				colony.getNames()
-						.nextHeadInDynasty(predecessor.head.surname()));
+				predecessor.getBank(), colony, predecessor.head.surname());
 	}
 
 	/**
@@ -158,18 +166,35 @@ public class Noble extends Agent implements Household {
 	 */
 	private Noble(double initCheckingBal, double initSavingsBal,
 			boolean inherited, List<Firm> ownedFirms, List<Bank> ownedBanks,
-			NobleConfig config, Bank bank, Settlement colony, Person head) {
+			NobleConfig config, Bank bank, Settlement colony, String surname) {
 		super(bank, colony);
 		if (inherited)
 			bank.openInheritedAcct(getID(), initCheckingBal, initSavingsBal);
 		else
 			bank.openAcct(getID(), initCheckingBal, initSavingsBal);
 
-		// named the same way as a laborer household head, and aged the same way:
-		// a working-age birth date sampled on the separate mortality RNG
-		this.head = head;
+		// aged the same way as a laborer household head: a working-age birth date
+		// sampled on the separate mortality RNG. The house is founded now.
 		this.birthDate = colony.getDate().minusDays(colony.getDemography()
 				.sampleInitialAgeDays(colony.getMeanInitAgeYears()));
+		this.foundingDate = colony.getDate();
+
+		// skill is drawn around the colony mean exactly as for a laborer (each
+		// head re-rolls); unused for now, as nobles sell no labor
+		this.skill = colony.getDemography().sampleSkill(colony.getMeanSkill());
+
+		// the head is named on the naming RNG with the given name's rarity tracking
+		// skill, like a laborer; a null surname starts a new dynasty, else continue
+		double nameRarity = (double) skill / Household.MAX_SKILL;
+		this.head = (surname == null)
+				? colony.getNames().nextHead(nameRarity)
+				: colony.getNames().nextHeadInDynasty(surname, nameRarity);
+
+		// a notable noble (skill above the threshold) is worth recording by name
+		if (isNotable())
+			log.info(String.format(
+					"%s founded a noble house in the colony — notable (skill %d)",
+					head.fullName(), skill));
 
 		this.config = config;
 		this.firms = new ArrayList<>(ownedFirms);

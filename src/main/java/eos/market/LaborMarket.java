@@ -30,6 +30,7 @@ public class LaborMarket extends Market {
 	private class Employee {
 		private int bankID; // account number of the employee
 		private Bank bank; // bank of the employee
+		private double productivity; // labor produced when employed (by skill)
 	}
 
 	private ArrayList<Employer> employers;
@@ -80,6 +81,7 @@ public class LaborMarket extends Market {
 		Employee employee = new Employee();
 		employee.bankID = laborer.getID();
 		employee.bank = laborer.getBank();
+		employee.productivity = laborer.getProductivity();
 		employees.add(employee);
 	}
 
@@ -100,7 +102,10 @@ public class LaborMarket extends Market {
 				Employee employee = employees.get(i);
 				employer.bank.withdraw(employer.bankID, wage);
 				employee.bank.credit(employee.bankID, wage, Bank.PRIIC);
-				employer.labor.increase(1);
+				// the firm gets this worker's skill-scaled labor (a skill-10
+				// worker produces 1, as in the old homogeneous case); the wage,
+				// though, is still split per head, not by skill
+				employer.labor.increase(employee.productivity);
 			}
 			low = high;
 		}
