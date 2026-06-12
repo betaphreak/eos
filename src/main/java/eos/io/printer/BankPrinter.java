@@ -1,6 +1,7 @@
 package eos.io.printer;
 
 import eos.bank.Bank;
+import eos.bank.CurrencyType;
 import eos.settlement.*;
 
 /**
@@ -40,14 +41,17 @@ import eos.settlement.*;
  * Col2: smoothed loan interest rate, as a percent truncated to two decimals <br>
  * Col3: deposit interest rate, as a percent truncated to two decimals <br>
  * Col4: smoothed deposit interest rate, as a percent truncated to two decimals <br>
- * Col5: total loan <br>
- * Col6: total deposit<br>
- * Col7: equity (cumulative retained profit)<br>
- * Col8: CPI (consumer price index — mean of consumer-good market prices), to
- * two decimals<br>
+ * Col5: total loan, in the bank's own currency (see Col10)<br>
+ * Col6: total deposit, in the bank's own currency<br>
+ * Col7: equity (cumulative retained profit), in the bank's own currency<br>
+ * Col8: CPI (consumer price index — mean of consumer-good market prices, in
+ * copper), to two decimals<br>
  * Col9: inflation (colony-wide smoothed average inflation, formatted as a
  * percent truncated to two decimals; the real rate is the deposit/loan rate
  * less this)<br>
+ * Col10: currency — the {@link CurrencyType} the loan/deposit/equity columns are
+ * denominated in (the colony keeps all accounting in copper internally and
+ * converts for display at the fixed exchange rate)<br>
  *
  */
 public class BankPrinter extends Printer {
@@ -171,13 +175,19 @@ public class BankPrinter extends Printer {
 	 * Print data, called by Settlement.newDay() at each time step
 	 */
 	public void print(Settlement colony) {
-		if (shouldPrint(colony))
+		if (shouldPrint(colony)) {
+			// pools are kept in copper internally; display them in the bank's own
+			// currency at the colony's fixed exchange rate. CPI stays in copper (it
+			// is an economy-wide price index, not this bank's money).
+			CurrencyType c = bank.getCurrency();
 			printWriter.println(colony.getDate(),
 					formatPercent(bank.getLoanIR()), formatPercent(bank.getLTLoanIR()),
 					formatPercent(bank.getDepositIR()), formatPercent(bank.getLTDepositIR()),
-					bank.getTotalLoan(), bank.getTotalDeposit(),
-					bank.getEquity(), colony.getCPI(),
-					formatPercent(colony.getInflation()));
+					colony.convert(bank.getTotalLoan(), CurrencyType.COPPER, c),
+					colony.convert(bank.getTotalDeposit(), CurrencyType.COPPER, c),
+					colony.convert(bank.getEquity(), CurrencyType.COPPER, c),
+					colony.getCPI(), formatPercent(colony.getInflation()), c);
+		}
 	}
 
 	/**
@@ -201,7 +211,7 @@ public class BankPrinter extends Printer {
 	public void printTitles() {
 		printWriter.println("Date", "LoanIR", "LTLoanIR", "DepositIR",
 				"LTDepositIR", "TotalLoan", "TotalDeposit", "Equity", "CPI",
-				"Inflation");
+				"Inflation", "Currency");
 	}
 
 	/**

@@ -3,6 +3,7 @@ package eos.io.printer;
 import eos.agent.Household;
 import eos.agent.laborer.Laborer;
 import eos.agent.noble.Noble;
+import eos.bank.CurrencyType;
 import eos.settlement.Settlement;
 
 /**
@@ -14,9 +15,11 @@ import eos.settlement.Settlement;
  * successors and new arrivals, not a fixed initial set). Register with {@link
  * Settlement#addPrinter} and finalize with {@link Settlement#cleanUpPrinters}.
  * <p>
- * Columns: Date, Name, Type, Skill, Age, Income, Wealth. {@code Type} is
- * "Noble" or "Notable laborer"; {@code Income} and {@code Wealth} are the
- * person's latest values. Years with no persons of interest contribute no rows.
+ * Columns: Date, Name, Type, Skill, Age, Income, Wealth, Currency. {@code Type}
+ * is "Noble" or "Notable laborer"; {@code Income} and {@code Wealth} are the
+ * person's latest values, displayed in their own bank's {@code Currency}
+ * (converted from the internal copper at the colony's fixed exchange rate). Years
+ * with no persons of interest contribute no rows.
  */
 public class PersonsOfInterestPrinter extends Printer {
 
@@ -43,25 +46,33 @@ public class PersonsOfInterestPrinter extends Printer {
 		for (Household h : colony.getPersonsOfInterest()) {
 			String type;
 			double income, wealth;
+			CurrencyType currency;
 			if (h instanceof Noble noble) {
 				type = "Noble";
 				income = noble.getIncome();
 				wealth = noble.getWealth();
+				currency = noble.getBank().getCurrency();
 			} else {
 				Laborer laborer = (Laborer) h;
 				type = "Notable laborer";
 				income = laborer.getIncome();
 				wealth = laborer.getWealth();
+				currency = laborer.getBank().getCurrency();
 			}
+			// income/wealth are copper internally; display each person's in their
+			// own bank's currency at the colony's fixed exchange rate
 			printWriter.println(colony.getDate(), h.getHead().fullName(), type,
-					h.getSkill(), h.getAgeYears(), income, wealth);
+					h.getSkill(), h.getAgeYears(),
+					colony.convert(income, CurrencyType.COPPER, currency),
+					colony.convert(wealth, CurrencyType.COPPER, currency),
+					currency);
 		}
 	}
 
 	@Override
 	public void printTitles() {
 		printWriter.println("Date", "Name", "Type", "Skill", "Age", "Income",
-				"Wealth");
+				"Wealth", "Currency");
 	}
 
 	@Override

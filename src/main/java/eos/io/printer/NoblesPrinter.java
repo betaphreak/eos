@@ -2,6 +2,7 @@ package eos.io.printer;
 
 import eos.agent.Agent;
 import eos.agent.noble.Noble;
+import eos.bank.CurrencyType;
 import eos.settlement.Settlement;
 
 /**
@@ -12,7 +13,9 @@ import eos.settlement.Settlement;
  * with {@link Settlement#cleanUpPrinters}.
  * <p>
  * Columns: Date, Count, AvgDividends, AvgIncome, AvgConsumption, AvgWealth,
- * TotalWealth, AvgAge.
+ * TotalWealth, AvgAge, Currency. The four monetary columns are denominated in
+ * the nobles' own currency (Currency), converted from the internal copper at the
+ * colony's fixed exchange rate.
  */
 public class NoblesPrinter extends Printer {
 
@@ -34,15 +37,24 @@ public class NoblesPrinter extends Printer {
 		if (!shouldPrint(colony))
 			return;
 
+		// monetary fields are kept in copper internally; display them in the
+		// nobles' own currency at the colony's fixed exchange rate
 		double totDividends = 0, totIncome = 0, totConsumption = 0, totWealth = 0;
 		double totAge = 0;
 		int count = 0;
+		CurrencyType currency = CurrencyType.COPPER;
 		for (Agent agent : colony.getAgents())
 			if (agent instanceof Noble noble) {
-				totDividends += noble.getDividends();
-				totIncome += noble.getIncome();
-				totConsumption += noble.getConsumption();
-				totWealth += noble.getWealth();
+				CurrencyType c = noble.getBank().getCurrency();
+				currency = c;
+				totDividends += colony.convert(noble.getDividends(),
+						CurrencyType.COPPER, c);
+				totIncome += colony.convert(noble.getIncome(),
+						CurrencyType.COPPER, c);
+				totConsumption += colony.convert(noble.getConsumption(),
+						CurrencyType.COPPER, c);
+				totWealth += colony.convert(noble.getWealth(),
+						CurrencyType.COPPER, c);
 				totAge += noble.getAgeYears();
 				count++;
 			}
@@ -50,13 +62,14 @@ public class NoblesPrinter extends Printer {
 		double inv = count > 0 ? 1.0 / count : 0;
 		printWriter.println(colony.getDate(), count, totDividends * inv,
 				totIncome * inv, totConsumption * inv, totWealth * inv, totWealth,
-				totAge * inv);
+				totAge * inv, currency);
 	}
 
 	@Override
 	public void printTitles() {
 		printWriter.println("Date", "Count", "AvgDividends", "AvgIncome",
-				"AvgConsumption", "AvgWealth", "TotalWealth", "AvgAge");
+				"AvgConsumption", "AvgWealth", "TotalWealth", "AvgAge",
+				"Currency");
 	}
 
 	@Override

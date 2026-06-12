@@ -40,7 +40,11 @@ public class BimetallicEconomy {
 	/** Number of noble households the firms are divided among. */
 	static final int NUM_NOBLES = 2;
 
-	/** Each noble's opening savings (its seed fortune), in silver. */
+	/**
+	 * Each noble's opening savings (its seed fortune). Like all balances this is
+	 * held in copper internally; at the fixed exchange rate it reads as 10 silver
+	 * in the silver-denominated reports.
+	 */
 	static final double NOBLE_INITIAL_SAVINGS = 1000;
 
 	/**

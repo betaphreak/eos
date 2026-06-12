@@ -15,6 +15,7 @@ import eos.agent.firm.StrategicFirm;
 import eos.agent.laborer.Laborer;
 import eos.agent.noble.Noble;
 import eos.bank.Bank;
+import eos.bank.CurrencyType;
 import eos.io.printer.Printer;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Market;
@@ -285,6 +286,25 @@ public class Settlement {
 				System.out.println(date);
 			newDay();
 		}
+	}
+
+	/**
+	 * Convert <tt>amount</tt> from currency <tt>from</tt> into currency
+	 * <tt>to</tt> at the colony's <b>fixed exchange rate</b> (see {@link
+	 * CurrencyType}). All internal accounting is in copper (the base unit prices
+	 * are quoted in); this converts amounts specified in another currency and is
+	 * used by the printers to display a bank's balances in its own currency.
+	 *
+	 * @param amount
+	 *            an amount in currency <tt>from</tt>
+	 * @param from
+	 *            the source currency
+	 * @param to
+	 *            the target currency
+	 * @return the equivalent amount in currency <tt>to</tt>
+	 */
+	public double convert(double amount, CurrencyType from, CurrencyType to) {
+		return CurrencyType.convert(amount, from, to);
 	}
 
 	/**
