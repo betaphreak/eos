@@ -87,9 +87,12 @@ public class StrategicEconomy {
 
 		h.createLaborers(i -> copper, i -> 15, i -> cfg.laborer().savings());
 		h.enableExternalInflow(copper);
+		// every settlement has a ruler, banking in gold (created last)
+		Bank gold = h.createDefaultRuler();
 		h.addCommonPrinters();
 		h.addBankPrinter("Copper", copper);
 		h.addBankPrinter("Silver", silver);
+		h.addBankPrinter("Gold", gold);
 		StrategicFirm firm = h.getStrategicFirm();
 		colony.addPrinter(new StrategicPrinter("Strategic", firm, copper));
 		colony.addPrinter(new NoblesPrinter("Nobles"));

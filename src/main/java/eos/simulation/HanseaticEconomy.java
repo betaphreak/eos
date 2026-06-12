@@ -120,17 +120,20 @@ public class HanseaticEconomy {
 				.numNFirms(NUM_NFIRMS)
 				.build();
 		SimulationConfig lubeckCfg = base.toBuilder()
+				.settlementName("Lübeck Altstadt")
 				.latitude(53.86730).longitude(10.68744).build();
 		SimulationConfig schwartauCfg = base.toBuilder()
+				.settlementName("Bad Schwartau")
 				.latitude(53.91992).longitude(10.69753).build();
 
-		Settlement lubeck = session.newSettlement(lubeckCfg.startDate(),
-				lubeckCfg.meanInitAgeYears(), lubeckCfg.targetNStock(),
-				lubeckCfg.meanSkill(), lubeckCfg.latitude(), lubeckCfg.longitude());
-		Settlement schwartau = session.newSettlement(schwartauCfg.startDate(),
-				schwartauCfg.meanInitAgeYears(), schwartauCfg.targetNStock(),
-				schwartauCfg.meanSkill(), schwartauCfg.latitude(),
-				schwartauCfg.longitude());
+		Settlement lubeck = session.newSettlement(lubeckCfg.settlementName(),
+				lubeckCfg.startDate(), lubeckCfg.meanInitAgeYears(),
+				lubeckCfg.targetNStock(), lubeckCfg.meanSkill(),
+				lubeckCfg.latitude(), lubeckCfg.longitude());
+		Settlement schwartau = session.newSettlement(schwartauCfg.settlementName(),
+				schwartauCfg.startDate(), schwartauCfg.meanInitAgeYears(),
+				schwartauCfg.targetNStock(), schwartauCfg.meanSkill(),
+				schwartauCfg.latitude(), schwartauCfg.longitude());
 
 		// route logging through the in-game date before any agent is constructed
 		SimLog.init(lubeck);
@@ -194,9 +197,13 @@ public class HanseaticEconomy {
 		h.createLaborers(i -> copper, i -> 15, i -> cfg.laborer().savings());
 		h.enableExternalInflow(copper);
 
+		// every settlement has a ruler, banking in gold (created last)
+		Bank gold = h.createDefaultRuler();
+
 		h.addCommonPrinters(prefix);
 		h.addBankPrinter(prefix + "Copper", copper);
 		h.addBankPrinter(prefix + "Silver", silver);
+		h.addBankPrinter(prefix + "Gold", gold);
 		colony.addPrinter(new StrategicPrinter(prefix + "Strategic",
 				h.getStrategicFirm(), copper));
 		colony.addPrinter(new NoblesPrinter(prefix + "Nobles"));

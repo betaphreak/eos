@@ -32,11 +32,12 @@ class StrategicEconomyTest {
 		// bank deposit/rates finite
 		SimulationAssertions.assertCoreHealthy(h, 401);
 
-		// two banks under the default tiered system: the copper bank accumulated
-		// equity from the export earnings (the export firm banks copper), and the
-		// silver money-changer skimmed FX fees from the nobles' export wages
-		assertEquals(2, h.getBanks().size(),
-				"StrategicEconomy uses two banks (copper + silver)");
+		// three banks under the default tiered system: the copper bank accumulated
+		// equity from the export earnings (the export firm banks copper), the silver
+		// money-changer skimmed FX fees from the nobles' export wages, and the ruler
+		// banks in gold (every settlement has a ruler)
+		assertEquals(3, h.getBanks().size(),
+				"StrategicEconomy uses three banks (copper + silver + gold)");
 		Bank copper = h.getBanks().get(0);
 		assertTrue(copper.getEquity() > 0,
 				"expected the copper bank to accumulate equity from exports, got "

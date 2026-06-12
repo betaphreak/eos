@@ -65,12 +65,14 @@ public class GameSession {
 	}
 
 	/**
-	 * Create a new colony whose step 0 falls on <tt>startDate</tt>, drawing
-	 * economic randomness from a fresh per-colony {@link Rng} (so colonies in
-	 * this session are independent), and names and mortality from the session's
-	 * shared {@link NameRegistry} and {@link Demography} (so surnames stay unique
-	 * across colonies).
+	 * Create a new colony named <tt>name</tt> whose step 0 falls on
+	 * <tt>startDate</tt>, drawing economic randomness from a fresh per-colony
+	 * {@link Rng} (so colonies in this session are independent), and names and
+	 * mortality from the session's shared {@link NameRegistry} and {@link
+	 * Demography} (so surnames stay unique across colonies).
 	 *
+	 * @param name
+	 *            the settlement's name (a display label)
 	 * @param startDate
 	 *            the in-game date of step 0
 	 * @param meanInitAgeYears
@@ -85,14 +87,14 @@ public class GameSession {
 	 *            the colony's geographic longitude in decimal degrees (east positive)
 	 * @return a fresh colony
 	 */
-	public Settlement newSettlement(LocalDate startDate, double meanInitAgeYears,
-			double targetNStock, double meanSkill, double latitude,
-			double longitude) {
+	public Settlement newSettlement(String name, LocalDate startDate,
+			double meanInitAgeYears, double targetNStock, double meanSkill,
+			double latitude, double longitude) {
 		// index 0 -> bare seed (byte-identical to the old single shared rng);
 		// later colonies get a distinct, decorrelated seed
 		Rng colonyRng = new Rng(seed ^ (COLONY_SEED_SALT * colonyCount));
 		colonyCount++;
-		return new Settlement(startDate, colonyRng, names, demography,
+		return new Settlement(name, startDate, colonyRng, names, demography,
 				meanInitAgeYears, targetNStock, meanSkill, latitude, longitude);
 	}
 }

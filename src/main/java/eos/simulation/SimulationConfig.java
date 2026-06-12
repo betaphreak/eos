@@ -12,6 +12,8 @@ import lombok.Builder;
  * shared by the bundled simulations. Build a modified instance to script a
  * different run without editing source.
  *
+ * @param settlementName the settlement's name (a display label, exposed via
+ *                     {@code Settlement.getName()})
  * @param startDate    in-game date of step 0; each step advances one day
  * @param durationYears number of in-game years the simulation runs
  * @param numLaborers  number of laborers
@@ -53,6 +55,7 @@ import lombok.Builder;
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
+		String settlementName,
 		LocalDate startDate,
 		int durationYears,
 		int numLaborers,
@@ -122,6 +125,7 @@ public record SimulationConfig(
 
 	/** The original canonical run configuration. */
 	public static final SimulationConfig DEFAULT = new SimulationConfig(
+			"Eos",                                 // settlementName
 			LocalDate.of(1444, 12, 11),            // startDate
 			25,                                    // durationYears
 			450,                                   // numLaborers

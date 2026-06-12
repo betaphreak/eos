@@ -14,6 +14,9 @@ import eos.agent.firm.StrategicFirm;
 import eos.agent.firm.StrategicFirmConfig;
 import eos.agent.laborer.Laborer;
 import eos.agent.laborer.LaborerConfig;
+import eos.agent.noble.Noble;
+import eos.agent.noble.NobleConfig;
+import eos.agent.ruler.Ruler;
 import eos.bank.Bank;
 import eos.bank.BankConfig;
 import eos.bank.CurrencyType;
@@ -43,6 +46,25 @@ public class SimulationHarness {
 
 	// fixed necessity stock granted to a replacement household
 	private static final int REPLACEMENT_NECESSITY_STOCK = 15;
+
+	/**
+	 * Number of noble households the default export sector creates to staff its
+	 * {@link StrategicFirm} (see {@link #createDefaultStrategicSector(Bank)}).
+	 */
+	public static final int DEFAULT_NUM_NOBLES = 5;
+
+	/** Opening savings (seed fortune) of each default-sector noble. */
+	public static final double DEFAULT_NOBLE_SAVINGS = 1000;
+
+	/** The default ruler's opening fortune, in <b>gold</b> (see {@link #createDefaultRuler()}). */
+	public static final double DEFAULT_RULER_GOLD = 10;
+
+	/**
+	 * Fraction of its treasury the default ruler spends on enjoyment each step — a
+	 * small rate, so the sovereign's luxury habit draws the reserves down gradually
+	 * rather than exhausting them.
+	 */
+	public static final double DEFAULT_RULER_CONSUMPTION_RATE = 0.0002;
 
 	/**
 	 * Currency-exchange (FX) fee charged by the default non-copper money-changer
@@ -99,9 +121,9 @@ public class SimulationHarness {
 	 */
 	public static SimulationHarness create(SimulationConfig cfg, long seed) {
 		GameSession session = new GameSession(seed);
-		Settlement colony = session.newSettlement(cfg.startDate(),
-				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkill(),
-				cfg.latitude(), cfg.longitude());
+		Settlement colony = session.newSettlement(cfg.settlementName(),
+				cfg.startDate(), cfg.meanInitAgeYears(), cfg.targetNStock(),
+				cfg.meanSkill(), cfg.latitude(), cfg.longitude());
 		SimLog.init(colony);
 		return new SimulationHarness(cfg, colony);
 	}
@@ -282,6 +304,62 @@ public class SimulationHarness {
 	}
 
 	/**
+	 * Give the colony its default <b>export sector</b>, so every settlement has
+	 * one: the noble-only labor market, the single {@link StrategicFirm} (banking
+	 * at <tt>bank</tt>, into whose equity its export earnings flow), the {@value
+	 * #DEFAULT_NUM_NOBLES} worker-nobles that staff it (banking at the same
+	 * <tt>bank</tt>), and the primed noble labor market — bundling the steps {@link
+	 * StrategicEconomy} performs by hand. Mirror that simulation's order: call this
+	 * after {@link #createFirms} and <em>before</em> {@link #createLaborers}.
+	 * <p>
+	 * This creates fresh nobles. A colony that already has its own nobles (e.g.
+	 * {@link AristocraticEconomy}) should instead call the granular {@link
+	 * #createNobleLaborMarket()} / {@link #createStrategicFirm} before its nobles
+	 * and {@link #primeNobleLabor()} after them — its existing nobles then staff
+	 * the export firm (a {@link Noble} automatically works any noble labor market
+	 * present).
+	 *
+	 * @param bank
+	 *            the bank at which the export firm and its nobles hold accounts
+	 */
+	public void createDefaultStrategicSector(Bank bank) {
+		createNobleLaborMarket();
+		createStrategicFirm(bank, StrategicFirmConfig.DEFAULT);
+		for (int n = 0; n < DEFAULT_NUM_NOBLES; n++)
+			colony.addAgent(new Noble(0, DEFAULT_NOBLE_SAVINGS, List.of(),
+					List.of(), NobleConfig.DEFAULT, bank, colony));
+		// when a noble's head dies, a same-dynasty successor keeps working the
+		// export sector
+		colony.addReplacementPolicy(dead -> dead instanceof Noble n
+				? new Noble(n, NobleConfig.DEFAULT, colony)
+				: null);
+		primeNobleLabor();
+	}
+
+	/**
+	 * Give the colony its default <b>ruler</b>, so every settlement has a sovereign:
+	 * a {@link Ruler} banking in gold (so this also lazily creates the colony's gold
+	 * bank), holding {@value #DEFAULT_RULER_GOLD} gold and spending it down on
+	 * enjoyment at {@value #DEFAULT_RULER_CONSUMPTION_RATE} per step — which converts
+	 * gold to copper and so turns the gold bank's FX fee. A same-dynasty heir
+	 * succeeds it when its head dies of old age. Create the ruler <em>last</em>
+	 * (after the commoners and any nobles) so its demographic draws don't perturb
+	 * theirs.
+	 *
+	 * @return the gold bank the ruler owns and banks at (so the caller can register
+	 *         a {@link BankPrinter} for it)
+	 */
+	public Bank createDefaultRuler() {
+		Bank gold = getGoldBank();
+		colony.addAgent(new Ruler(CurrencyType.GOLD.toCopper(DEFAULT_RULER_GOLD),
+				DEFAULT_RULER_CONSUMPTION_RATE, gold, colony));
+		colony.addReplacementPolicy(dead -> dead instanceof Ruler r
+				? new Ruler(r, colony)
+				: null);
+		return gold;
+	}
+
+	/**
 	 * Create the laborers and add them to the colony, then clear the labor
 	 * market once so firms have workers before step 0. The bank, initial
 	 * necessity stock and initial savings of each laborer are supplied by the
@@ -371,6 +449,39 @@ public class SimulationHarness {
 	/** Register a {@link BankPrinter} writing to <tt>fileName</tt>. */
 	public void addBankPrinter(String fileName, Bank bank) {
 		colony.addPrinter(new BankPrinter(fileName, bank));
+	}
+
+	/**
+	 * Register a {@link StrategicPrinter} for the colony's export firm, reporting
+	 * equity in <tt>bank</tt>'s currency. The strategic firm must already exist.
+	 *
+	 * @param fileName
+	 *            the CSV output file name
+	 * @param bank
+	 *            the bank whose equity the export earnings flow into
+	 */
+	public void addStrategicPrinter(String fileName, Bank bank) {
+		colony.addPrinter(new StrategicPrinter(fileName, strategicFirm, bank));
+	}
+
+	/**
+	 * Register the export sector's printers — the {@link StrategicPrinter}, the
+	 * {@link NoblesPrinter} and the {@link PersonsOfInterestPrinter} — for a colony
+	 * whose nobles are the default export workforce (and so has no other noble
+	 * printers). The filenames are prefixed with <tt>prefix</tt> (see {@link
+	 * #addCommonPrinters(String)}).
+	 *
+	 * @param prefix
+	 *            prepended to each printer's filename ({@code ""} for the default)
+	 * @param bank
+	 *            the bank whose equity the export earnings flow into
+	 */
+	public void addStrategicSectorPrinters(String prefix, Bank bank) {
+		colony.addPrinter(
+				new StrategicPrinter(prefix + "Strategic", strategicFirm, bank));
+		colony.addPrinter(new NoblesPrinter(prefix + "Nobles"));
+		colony.addPrinter(
+				new PersonsOfInterestPrinter(prefix + "PersonsOfInterest"));
 	}
 
 	/** Run the simulation for the configured number of steps, then clean up. */

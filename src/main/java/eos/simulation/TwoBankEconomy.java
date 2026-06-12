@@ -32,11 +32,18 @@ public class TwoBankEconomy {
 
 		h.createFirms(bankA, alternate,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+		// every settlement has an export sector; its firm and nobles bank at A (so
+		// the colony keeps its two banks rather than gaining a third)
+		h.createDefaultStrategicSector(bankA);
 		h.createLaborers(alternate, i -> 15, i -> cfg.laborer().savings());
 		h.enableExternalInflow(bankA);
+		// every settlement has a ruler, banking in gold (created last)
+		Bank gold = h.createDefaultRuler();
 		h.addCommonPrinters();
 		h.addBankPrinter("BankA", bankA);
 		h.addBankPrinter("BankB", bankB);
+		h.addBankPrinter("Gold", gold);
+		h.addStrategicSectorPrinters("", bankA);
 		h.run();
 		return h;
 	}

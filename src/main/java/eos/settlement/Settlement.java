@@ -89,6 +89,11 @@ public class Settlement {
 	// sequence number for the next bank's default name in this colony
 	private int nextBankNo = 1;
 
+	// the settlement's name (e.g. "Lübeck Altstadt"); a display label, fixed at
+	// colony start
+	@Getter
+	private final String name;
+
 	// in-game date of step 0; each step advances one day
 	private final LocalDate startDate;
 
@@ -198,11 +203,14 @@ public class Settlement {
 	private Supplier<List<Agent>> immigrationPolicy = () -> List.of();
 
 	/**
-	 * Create a new colony whose step 0 falls on <tt>startDate</tt>, drawing
-	 * randomness from <tt>rng</tt>. Each step advances one day. Use {@link
-	 * GameSession#newSettlement(LocalDate, double, double, double, double, double)}
-	 * to create a colony with a reproducible random-number seed.
+	 * Create a new colony named <tt>name</tt> whose step 0 falls on
+	 * <tt>startDate</tt>, drawing randomness from <tt>rng</tt>. Each step advances
+	 * one day. Use {@link GameSession#newSettlement(String, LocalDate, double,
+	 * double, double, double, double)} to create a colony with a reproducible
+	 * random-number seed.
 	 *
+	 * @param name
+	 *            the settlement's name (a display label)
 	 * @param startDate
 	 *            the in-game date of step 0
 	 * @param rng
@@ -222,9 +230,11 @@ public class Settlement {
 	 * @param longitude
 	 *            the colony's geographic longitude in decimal degrees (east positive)
 	 */
-	public Settlement(LocalDate startDate, Rng rng, NameRegistry names,
-			Demography demography, double meanInitAgeYears, double targetNStock,
-			double meanSkill, double latitude, double longitude) {
+	public Settlement(String name, LocalDate startDate, Rng rng,
+			NameRegistry names, Demography demography, double meanInitAgeYears,
+			double targetNStock, double meanSkill, double latitude,
+			double longitude) {
+		this.name = name;
 		this.startDate = startDate;
 		this.rng = rng;
 		this.names = names;
@@ -249,7 +259,7 @@ public class Settlement {
 		if (started)
 			return;
 		started = true;
-		log.info("The colony was founded on " + getDate() + ".");
+		log.info(name + " was founded on " + getDate() + ".");
 	}
 
 	/**
@@ -286,7 +296,7 @@ public class Settlement {
 		if (started && !died && livingLaborerCount() == 0) {
 			died = true;
 			deathDate = getDate();
-			log.info("The colony died on " + deathDate
+			log.info(name + " died on " + deathDate
 					+ " (its last laborer is gone)");
 		}
 	}

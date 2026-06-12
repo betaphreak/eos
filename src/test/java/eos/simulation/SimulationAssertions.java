@@ -1,6 +1,5 @@
 package eos.simulation;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -11,19 +10,14 @@ import eos.bank.Bank;
  * finished colony" definition — population sustained, prices finite and
  * positive, banks finite intermediaries — lives in the production helper {@link
  * ColonyHealth} (also used by {@link ScaleSweep}), so it is defined once; this
- * class adapts it to JUnit assertions and layers the test-only bank
- * zero-profit check for the closed default runs on top.
+ * class adapts it to JUnit assertions and layers the test-only check that the
+ * default runs' banks stay finite intermediaries on top.
  */
 final class SimulationAssertions {
 
 	// the closed default runs sustain a large population (the founding 450
 	// laborers, replaced 1:1 as heads die of old age)
 	private static final long MIN_DEFAULT_LABORERS = 401;
-
-	// estate inheritance routes a deceased household's net worth through the
-	// bank's equity (in on its death step, back out when the heir is funded);
-	// at rest the two net out, so allow only floating-point slack here.
-	private static final double EQUITY_EPS = 1e-3;
 
 	private SimulationAssertions() {
 	}
@@ -46,12 +40,15 @@ final class SimulationAssertions {
 		// (founders age and die of old age, each replaced by a successor).
 		assertCoreHealthy(h, MIN_DEFAULT_LABORERS);
 
-		// additionally, every default bank is a zero-profit intermediary with a
-		// finite loan pool (ColonyHealth already covers deposits and rates)
+		// additionally, every default bank stays a finite intermediary. Equity is no
+		// longer pinned at zero: every settlement now has an export sector (a {@link
+		// eos.agent.firm.StrategicFirm}) that injects its export earnings into the
+		// bank holding its account, so that bank's equity grows over the run. We
+		// therefore require equity to be finite (and the loan pool too), not zero.
 		assertTrue(!h.getBanks().isEmpty(), "expected at least one bank");
 		for (Bank bank : h.getBanks()) {
-			assertEquals(0.0, bank.getEquity(), EQUITY_EPS,
-					"default bank must make zero profit");
+			assertTrue(Double.isFinite(bank.getEquity()),
+					"bank equity not finite: " + bank.getEquity());
 			assertTrue(Double.isFinite(bank.getTotalLoan()),
 					"totalLoan not finite: " + bank.getTotalLoan());
 		}

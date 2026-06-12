@@ -29,13 +29,19 @@ public class HeterogeneousEconomy {
 						cfg.eFirm().savings() * 0.9),
 				i -> rng.uniform(cfg.nFirm().savings() * 1.1,
 						cfg.nFirm().savings() * 0.9));
+		// every settlement has an export sector (the strategic firm + its nobles)
+		h.createDefaultStrategicSector(bank);
 		h.createLaborers(i -> bank,
 				i -> rng.gaussian(15, 3),
 				i -> rng.uniform(cfg.laborer().savings() * 0.9,
 						cfg.laborer().savings() * 1.1));
 		h.enableExternalInflow(bank);
+		// every settlement has a ruler, banking in gold (created last)
+		Bank gold = h.createDefaultRuler();
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);
+		h.addBankPrinter("Gold", gold);
+		h.addStrategicSectorPrinters("", bank);
 		h.run();
 		return h;
 	}
