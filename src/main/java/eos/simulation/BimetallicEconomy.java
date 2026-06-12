@@ -35,14 +35,24 @@ import eos.settlement.Settlement;
  * Above them sits the settlement's <b>ruler</b> ({@link Ruler}), who owns a third
  * bank denominated in <b>gold</b> and holds his fortune ({@value
  * #RULER_INITIAL_GOLD} gold) there as its sole client — the gold bank has no
- * other clients. The ruler is a passive treasury: it neither earns nor spends, so
- * its gold stays put (it does, like everyone, age and pass to a heir). The colony
- * thus mirrors its class structure in metal: commoners in copper, nobles in
- * silver, the ruler in gold.
+ * other clients. The ruler earns nothing but indulges a luxury habit, spending a
+ * small fraction of the treasury on enjoyment each step (it ages and passes to a
+ * heir like everyone). The colony thus mirrors its class structure in metal:
+ * commoners in copper, nobles in silver, the ruler in gold.
  * <p>
- * Currency is, for now, a label: cross-currency payments move nominal amounts
- * one-for-one (there is no exchange rate). This wires the two-currency split a
- * later exchange-rate mechanism would build on.
+ * Currency exchange carries <b>friction</b>. The three metals convert at a fixed
+ * rate (see {@link CurrencyType}), but because every price is quoted in copper
+ * (the base unit), a noble banking in silver must convert on <em>every</em>
+ * payment — losing {@value #EXCHANGE_FEE_RATE} of it — when a dividend is credited
+ * to its silver account (copper → silver) and again when it spends into the
+ * copper consumer markets (silver → copper). The silver bank is the nobles'
+ * money-changer and retains that fee as equity; the <b>senior noble owns the
+ * silver bank</b>, so that profit flows back to it as a bank dividend. The gold
+ * bank likewise skims the fee whenever the ruler buys enjoyment (gold → copper),
+ * so it too now turns a profit. Only the copper bank — the base currency, which
+ * never converts — stays a zero-profit intermediary. This is the conversion
+ * friction that makes the currency split bite: holding a metal other than the
+ * copper everything is priced in is no longer free.
  */
 public class BimetallicEconomy {
 
@@ -60,6 +70,21 @@ public class BimetallicEconomy {
 	static final double RULER_INITIAL_GOLD = 10;
 
 	/**
+	 * Currency-exchange (FX) fee the non-copper banks charge their clients to
+	 * convert to/from copper (the quote currency) on each payment — the friction
+	 * that makes the currency split bite. The copper bank charges nothing (it is
+	 * the base currency).
+	 */
+	static final double EXCHANGE_FEE_RATE = 0.02;
+
+	/**
+	 * Fraction of its treasury the ruler spends on enjoyment each step — a small
+	 * rate, so the sovereign's luxury habit draws the reserves down gradually over
+	 * the run rather than exhausting them.
+	 */
+	static final double RULER_CONSUMPTION_RATE = 0.0002;
+
+	/**
 	 * Build and run the simulation.
 	 *
 	 * @return the harness, exposing the constructed markets, banks, firms and
@@ -73,11 +98,15 @@ public class BimetallicEconomy {
 		h.createMarkets();
 		// the default first bank is copper (commoners); the nobles' bank is silver;
 		// the ruler's is gold
+		// the non-copper banks act as money-changers: they charge an FX fee to
+		// convert their clients' payments to/from copper (the quote currency)
 		Bank copper = h.addBank(BankConfig.DEFAULT);
 		Bank silver = h.addBank(BankConfig.DEFAULT.toBuilder()
-				.currency(CurrencyType.SILVER).build());
+				.currency(CurrencyType.SILVER)
+				.exchangeFeeRate(EXCHANGE_FEE_RATE).build());
 		Bank gold = h.addBank(BankConfig.DEFAULT.toBuilder()
-				.currency(CurrencyType.GOLD).build());
+				.currency(CurrencyType.GOLD)
+				.exchangeFeeRate(EXCHANGE_FEE_RATE).build());
 
 		// every firm and laborer banks in copper
 		h.createFirms(copper, i -> copper,
@@ -86,7 +115,10 @@ public class BimetallicEconomy {
 		h.enableExternalInflow(copper);
 
 		// gather every firm and divide ownership round-robin among the nobles, who
-		// bank in silver (they own the firms but not the banks)
+		// bank in silver. The senior noble (n == 0) also owns the silver bank, so
+		// the FX fees it skims (on every noble's purchases and dividends) flow back
+		// to that noble as a bank dividend — the money-changer's profit accrues to
+		// an aristocrat.
 		List<Firm> allFirms = new ArrayList<>();
 		allFirms.addAll(Arrays.asList(h.getEFirms()));
 		allFirms.addAll(Arrays.asList(h.getNFirms()));
@@ -96,8 +128,9 @@ public class BimetallicEconomy {
 			List<Firm> owned = new ArrayList<>();
 			for (int i = n; i < allFirms.size(); i += NUM_NOBLES)
 				owned.add(allFirms.get(i));
+			List<Bank> ownedBanks = (n == 0) ? List.of(silver) : List.<Bank>of();
 			Noble noble = new Noble(0, NOBLE_INITIAL_SAVINGS, owned,
-					List.<Bank>of(), NobleConfig.DEFAULT, silver, colony);
+					ownedBanks, NobleConfig.DEFAULT, silver, colony);
 			colony.addAgent(noble);
 		}
 
@@ -108,11 +141,13 @@ public class BimetallicEconomy {
 				: null);
 
 		// the ruler owns the gold bank and holds its fortune there as its sole
-		// client; a passive treasury, it neither earns nor spends. Created last so
-		// its demographic draws do not perturb the commoners' or nobles'. When it
-		// dies of old age a same-dynasty heir succeeds it.
+		// client; it earns nothing but indulges a luxury habit, spending a small
+		// fraction of the treasury on enjoyment each step (converting gold -> copper,
+		// which fires the gold bank's FX fee). Created last so its demographic draws
+		// do not perturb the commoners' or nobles'. When it dies of old age a
+		// same-dynasty heir succeeds it.
 		Ruler ruler = new Ruler(CurrencyType.GOLD.toCopper(RULER_INITIAL_GOLD),
-				gold, colony);
+				RULER_CONSUMPTION_RATE, gold, colony);
 		colony.addAgent(ruler);
 		colony.addReplacementPolicy(dead -> dead instanceof Ruler r
 				? new Ruler(r, colony)

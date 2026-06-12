@@ -296,9 +296,25 @@ public class Bank {
 	}
 
 	/**
+	 * This bank's currency-exchange (FX) fee rate. Because every price is quoted
+	 * in copper (the base unit), a non-copper account converts to/from copper on
+	 * every payment, so the bank charges {@link BankConfig#exchangeFeeRate()} as
+	 * its money-changer's cut; a copper bank is already in the base currency and
+	 * never charges (returns 0).
+	 *
+	 * @return the FX fee fraction applied to this bank's payments
+	 */
+	private double exchangeFeeRate() {
+		return currency == CurrencyType.COPPER ? 0 : config.exchangeFeeRate();
+	}
+
+	/**
 	 * Deduct <tt>amt</tt> from the agent's checking account. If the checking
 	 * account contains an insufficient balance, funds would be withdrawn from
-	 * the savings account to make up the difference.
+	 * the savings account to make up the difference. The payer also bears the
+	 * transaction fee ({@link BankConfig#feeRate()}) and, for a non-copper bank,
+	 * the currency-exchange fee on the copper-quoted amount being paid out (see
+	 * {@link #exchangeFeeRate()}); both are retained as the bank's profit.
 	 *
 	 * @param agentID
 	 * @param amt
@@ -306,7 +322,7 @@ public class Bank {
 	 */
 	public void withdraw(int agentID, double amt) {
 		Account acct = accounts.get(agentID);
-		double fee = amt * config.feeRate();
+		double fee = amt * (config.feeRate() + exchangeFeeRate());
 		double total = amt + fee;
 		if (acct.checking < total) {
 			double diff = total - acct.checking;
@@ -320,6 +336,11 @@ public class Bank {
 
 	/**
 	 * Add <tt>amt</tt> to the agent's checking account and record it as income.
+	 * For a non-copper bank the payee bears the currency-exchange fee on the
+	 * copper-quoted amount being received (see {@link #exchangeFeeRate()}): the
+	 * net of the fee is credited and recorded as income, and the fee is retained
+	 * as the bank's profit. Money is conserved — the fee moves into equity rather
+	 * than the payee's checking.
 	 *
 	 * @param agentID
 	 * @param amt
@@ -329,11 +350,15 @@ public class Bank {
 	 */
 	public void credit(int agentID, double amt, int purpose) {
 		Account acct = accounts.get(agentID);
-		acct.checking += amt;
+		double fee = amt * exchangeFeeRate();
+		double net = amt - fee;
+		acct.checking += net;
 		if (purpose == PRIIC)
-			acct.priIC += amt;
+			acct.priIC += net;
 		else
-			acct.secIC += amt;
+			acct.secIC += net;
+		equity += fee;
+		cumulativeProfit += fee;
 	}
 
 	/**
