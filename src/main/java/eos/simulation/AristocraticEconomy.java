@@ -8,24 +8,26 @@ import eos.agent.firm.Firm;
 import eos.agent.noble.Noble;
 import eos.agent.noble.NobleConfig;
 import eos.bank.Bank;
-import eos.bank.BankConfig;
 import eos.settlement.Settlement;
 import eos.io.printer.NoblesPrinter;
 import eos.io.printer.PersonsOfInterestPrinter;
 
 /**
- * Simulation (with an aristocracy): the homogeneous, single-bank colony of
- * {@link HomogeneousEconomy}, plus a small class of <b>nobles</b> who own the means of
- * production — the firms <i>and</i> the bank — and live off their profits. The
- * firms and laborers are unchanged; two noble households split ownership of all
- * the consumer and capital firms between them, and the senior noble also owns the
- * bank. Each draws a dividend every step — from its firms' surplus and, for the
- * bank owner, from the bank's retained interest spread — through the bank's
- * previously-dormant secondary-income channel, then spends it back into the
- * consumer-good markets. The bank is given a small {@value #BANK_SPREAD} interest
- * spread (the documented-safe level) so it actually turns a profit to distribute;
- * the noble owner skims that profit out of the bank's equity, leaving the
- * inheritance / external-funds buffer untouched.
+ * Simulation (with an aristocracy): the homogeneous colony of {@link
+ * HomogeneousEconomy}, plus a small class of <b>nobles</b> who own the means of
+ * production — the firms <i>and</i> a bank — and live off their profits. It uses
+ * the default tiered banking (see {@link SimulationHarness#getCopperBank()}):
+ * commoners (the firms and laborers, unchanged) bank in copper, the nobles in
+ * silver. Two noble households split ownership of all the consumer and capital
+ * firms between them, and the senior noble also owns the silver bank. Each draws a
+ * dividend every step — from its firms' surplus and, for the bank owner, from the
+ * silver bank's retained profit — through the bank's secondary-income channel,
+ * then spends it back into the (copper-priced) consumer-good markets. The silver
+ * bank is a <b>money-changer</b>: it profits from the FX fee it skims whenever a
+ * noble's money crosses the copper boundary (its dividends in, its purchases out),
+ * so it has a real profit to distribute; the noble owner skims that out of the
+ * bank's equity, leaving the inheritance / external-funds buffer untouched. (The
+ * copper bank stays the zero-profit base-currency intermediary.)
  * <p>
  * This is the "option A" design: nobles are rentier owners, not workers — they
  * never enter the labor market, and influence it only on the demand side via
@@ -41,9 +43,6 @@ public class AristocraticEconomy {
 	/** Each noble's opening savings (its seed fortune). */
 	static final double NOBLE_INITIAL_SAVINGS = 1000;
 
-	/** Interest spread given to the (noble-owned) bank so it earns a profit. */
-	static final double BANK_SPREAD = 0.005;
-
 	/**
 	 * Build and run the simulation.
 	 *
@@ -55,12 +54,15 @@ public class AristocraticEconomy {
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		Settlement colony = h.getColony();
 		h.createMarkets();
-		Bank bank = h.addBank(
-				BankConfig.DEFAULT.toBuilder().spread(BANK_SPREAD).build());
-		h.createFirms(bank, i -> bank,
+		// the default tiered banking: commoners (laborers + firms) bank in copper,
+		// the nobles in silver — a money-changer that profits from the FX fee on
+		// their copper-quoted dividends and purchases
+		Bank copper = h.getCopperBank();
+		Bank silver = h.getSilverBank();
+		h.createFirms(copper, i -> copper,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
-		h.createLaborers(i -> bank, i -> 15, i -> cfg.laborer().savings());
-		h.enableExternalInflow(bank);
+		h.createLaborers(i -> copper, i -> 15, i -> cfg.laborer().savings());
+		h.enableExternalInflow(copper);
 
 		// gather every firm and divide ownership round-robin among the nobles
 		List<Firm> allFirms = new ArrayList<>();
@@ -72,10 +74,11 @@ public class AristocraticEconomy {
 			List<Firm> owned = new ArrayList<>();
 			for (int i = n; i < allFirms.size(); i += NUM_NOBLES)
 				owned.add(allFirms.get(i));
-			// the senior noble (n == 0) also owns the bank
-			List<Bank> ownedBanks = (n == 0) ? List.of(bank) : List.<Bank>of();
+			// the senior noble (n == 0) also owns the silver bank, drawing its FX
+			// profit as a bank dividend
+			List<Bank> ownedBanks = (n == 0) ? List.of(silver) : List.<Bank>of();
 			Noble noble = new Noble(0, NOBLE_INITIAL_SAVINGS, owned, ownedBanks,
-					NobleConfig.DEFAULT, bank, colony);
+					NobleConfig.DEFAULT, silver, colony);
 			colony.addAgent(noble);
 		}
 
@@ -86,7 +89,8 @@ public class AristocraticEconomy {
 				: null);
 
 		h.addCommonPrinters();
-		h.addBankPrinter("Bank", bank);
+		h.addBankPrinter("Copper", copper);
+		h.addBankPrinter("Silver", silver);
 		colony.addPrinter(new NoblesPrinter("Nobles"));
 		colony.addPrinter(new PersonsOfInterestPrinter("PersonsOfInterest"));
 		h.run();

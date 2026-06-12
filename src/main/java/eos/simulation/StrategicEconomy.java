@@ -7,7 +7,6 @@ import eos.agent.firm.StrategicFirmConfig;
 import eos.agent.noble.Noble;
 import eos.agent.noble.NobleConfig;
 import eos.bank.Bank;
-import eos.bank.BankConfig;
 import eos.io.printer.NoblesPrinter;
 import eos.io.printer.PersonsOfInterestPrinter;
 import eos.io.printer.StrategicPrinter;
@@ -15,7 +14,7 @@ import eos.settlement.Settlement;
 
 /**
  * Simulation (with a strategic export sector worked by the aristocracy): the
- * homogeneous, single-bank colony of {@link HomogeneousEconomy}, plus a class of
+ * homogeneous colony of {@link HomogeneousEconomy}, plus a class of
  * <b>nobles</b> and the settlement's single {@link StrategicFirm}. Unlike the
  * consumer and capital firms (staffed by laborers), the export firm's labor pool
  * is constrained to the nobles: they alone are the employees of a dedicated
@@ -27,10 +26,13 @@ import eos.settlement.Settlement;
  * <p>
  * The nobles here own no firms or banks; they live off the wages the strategic
  * firm pays them (plus their seed fortunes), so their income is the export
- * sector's labor share. They age, die and are succeeded by same-dynasty heirs who
- * keep working the export sector. Unlike the closed default runs (whose bank is a
- * zero-profit, ~zero-equity intermediary), here the bank's equity grows
- * monotonically with cumulative net exports — the defining observable.
+ * sector's labor share. Under the default tiered banking they bank in <b>silver</b>
+ * while the export firm banks in copper, so the wages they earn cross the
+ * copper → silver boundary and the silver money-changer skims its FX fee on them.
+ * They age, die and are succeeded by same-dynasty heirs who keep working the
+ * export sector. Unlike the closed default runs (whose copper bank is a
+ * zero-profit, ~zero-equity intermediary), here the <b>copper</b> bank's equity
+ * grows monotonically with cumulative net exports — the defining observable.
  */
 public class StrategicEconomy {
 
@@ -53,18 +55,24 @@ public class StrategicEconomy {
 		Settlement colony = h.getColony();
 
 		h.createMarkets();
-		Bank bank = h.addBank(BankConfig.DEFAULT);
+		// the default tiered banking: commoners (laborers, firms, the export firm)
+		// in copper, the nobles in silver. The export firm banks copper, so its
+		// export earnings still accrue to copper equity (the defining observable);
+		// the nobles' export wages cross copper -> silver, so the silver
+		// money-changer skims its FX fee on them.
+		Bank copper = h.getCopperBank();
+		Bank silver = h.getSilverBank();
 		// the noble-only labor market must exist before the export firm and the
 		// nobles are created (both look it up)
 		h.createNobleLaborMarket();
-		h.createFirms(bank, i -> bank,
+		h.createFirms(copper, i -> copper,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
-		h.createStrategicFirm(bank, StrategicFirmConfig.DEFAULT);
+		h.createStrategicFirm(copper, StrategicFirmConfig.DEFAULT);
 
 		// the nobles who work the export sector (they own no firms or banks here)
 		for (int n = 0; n < NUM_NOBLES; n++) {
 			Noble noble = new Noble(0, NOBLE_INITIAL_SAVINGS, List.of(), List.of(),
-					NobleConfig.DEFAULT, bank, colony);
+					NobleConfig.DEFAULT, silver, colony);
 			colony.addAgent(noble);
 		}
 		// when a noble's head dies, a same-dynasty successor inherits its estate
@@ -77,12 +85,13 @@ public class StrategicEconomy {
 		// in step 0 (mirrors the pre-run clearing of the general labor market)
 		h.primeNobleLabor();
 
-		h.createLaborers(i -> bank, i -> 15, i -> cfg.laborer().savings());
-		h.enableExternalInflow(bank);
+		h.createLaborers(i -> copper, i -> 15, i -> cfg.laborer().savings());
+		h.enableExternalInflow(copper);
 		h.addCommonPrinters();
-		h.addBankPrinter("Bank", bank);
+		h.addBankPrinter("Copper", copper);
+		h.addBankPrinter("Silver", silver);
 		StrategicFirm firm = h.getStrategicFirm();
-		colony.addPrinter(new StrategicPrinter("Strategic", firm, bank));
+		colony.addPrinter(new StrategicPrinter("Strategic", firm, copper));
 		colony.addPrinter(new NoblesPrinter("Nobles"));
 		colony.addPrinter(new PersonsOfInterestPrinter("PersonsOfInterest"));
 		h.run();

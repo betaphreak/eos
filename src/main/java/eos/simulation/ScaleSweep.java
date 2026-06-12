@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import eos.bank.Bank;
-import eos.bank.BankConfig;
 
 /**
  * Simulation (scale sweep): explores <b>how small the colony can be and still
@@ -97,7 +96,7 @@ public class ScaleSweep {
 				.build();
 		SimulationHarness h = SimulationHarness.create(cfg, SEED);
 		h.createMarkets();
-		Bank bank = h.addBank(BankConfig.DEFAULT);
+		Bank bank = h.getCopperBank();
 		h.createFirms(bank, i -> bank,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createLaborers(i -> bank, i -> 15, i -> cfg.laborer().savings());

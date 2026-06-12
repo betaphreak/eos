@@ -14,10 +14,12 @@ import eos.bank.Bank;
 /**
  * Smoke test for the colony with a strategic export sector worked by the nobles.
  * The shared {@code assertHealthy} does not apply: the export firm pumps external
- * money into the bank's equity, so the bank is deliberately <i>not</i> a
- * zero-equity intermediary. The invariants are checked directly: the colony stays
- * healthy (population sustained, prices finite/positive), the export firm
- * actually exported, the bank's equity grew on the back of those exports, and the
+ * money into the copper bank's equity, so it is deliberately <i>not</i> a
+ * zero-equity intermediary. Under the default tiered banking the export firm banks
+ * in copper and the nobles in silver, so their export wages also feed the silver
+ * money-changer's FX equity. The invariants are checked directly: the colony stays
+ * healthy (population sustained, prices finite/positive), the export firm actually
+ * exported, the copper bank's equity grew on the back of those exports, and the
  * nobles drew wages from the strategic sector.
  */
 class StrategicEconomyTest {
@@ -30,13 +32,19 @@ class StrategicEconomyTest {
 		// bank deposit/rates finite
 		SimulationAssertions.assertCoreHealthy(h, 401);
 
-		// exactly one bank, and it accumulated equity from the export earnings
-		// (the closed default runs sit at ~zero equity)
-		assertEquals(1, h.getBanks().size(), "StrategicEconomy uses one bank");
-		Bank bank = h.getBanks().get(0);
-		assertTrue(bank.getEquity() > 0,
-				"expected the bank to accumulate equity from exports, got "
-						+ bank.getEquity());
+		// two banks under the default tiered system: the copper bank accumulated
+		// equity from the export earnings (the export firm banks copper), and the
+		// silver money-changer skimmed FX fees from the nobles' export wages
+		assertEquals(2, h.getBanks().size(),
+				"StrategicEconomy uses two banks (copper + silver)");
+		Bank copper = h.getBanks().get(0);
+		assertTrue(copper.getEquity() > 0,
+				"expected the copper bank to accumulate equity from exports, got "
+						+ copper.getEquity());
+		Bank silver = h.getBanks().get(1);
+		assertTrue(silver.getEquity() > 0,
+				"expected the silver bank to profit from FX on the nobles' wages, got "
+						+ silver.getEquity());
 
 		// the colony has its single export firm and it exported a positive amount
 		StrategicFirm firm = h.getColony().getStrategicFirm();

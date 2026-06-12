@@ -9,7 +9,6 @@ import eos.agent.noble.Noble;
 import eos.agent.noble.NobleConfig;
 import eos.agent.ruler.Ruler;
 import eos.bank.Bank;
-import eos.bank.BankConfig;
 import eos.bank.CurrencyType;
 import eos.io.printer.NoblesPrinter;
 import eos.io.printer.PersonsOfInterestPrinter;
@@ -43,7 +42,7 @@ import eos.settlement.Settlement;
  * Currency exchange carries <b>friction</b>. The three metals convert at a fixed
  * rate (see {@link CurrencyType}), but because every price is quoted in copper
  * (the base unit), a noble banking in silver must convert on <em>every</em>
- * payment — losing {@value #EXCHANGE_FEE_RATE} of it — when a dividend is credited
+ * payment — losing {@value SimulationHarness#DEFAULT_EXCHANGE_FEE_RATE} of it — when a dividend is credited
  * to its silver account (copper → silver) and again when it spends into the
  * copper consumer markets (silver → copper). The silver bank is the nobles'
  * money-changer and retains that fee as equity; the <b>senior noble owns the
@@ -70,14 +69,6 @@ public class BimetallicEconomy {
 	static final double RULER_INITIAL_GOLD = 10;
 
 	/**
-	 * Currency-exchange (FX) fee the non-copper banks charge their clients to
-	 * convert to/from copper (the quote currency) on each payment — the friction
-	 * that makes the currency split bite. The copper bank charges nothing (it is
-	 * the base currency).
-	 */
-	static final double EXCHANGE_FEE_RATE = 0.02;
-
-	/**
 	 * Fraction of its treasury the ruler spends on enjoyment each step — a small
 	 * rate, so the sovereign's luxury habit draws the reserves down gradually over
 	 * the run rather than exhausting them.
@@ -96,17 +87,12 @@ public class BimetallicEconomy {
 		Settlement colony = h.getColony();
 
 		h.createMarkets();
-		// the default first bank is copper (commoners); the nobles' bank is silver;
-		// the ruler's is gold
-		// the non-copper banks act as money-changers: they charge an FX fee to
-		// convert their clients' payments to/from copper (the quote currency)
-		Bank copper = h.addBank(BankConfig.DEFAULT);
-		Bank silver = h.addBank(BankConfig.DEFAULT.toBuilder()
-				.currency(CurrencyType.SILVER)
-				.exchangeFeeRate(EXCHANGE_FEE_RATE).build());
-		Bank gold = h.addBank(BankConfig.DEFAULT.toBuilder()
-				.currency(CurrencyType.GOLD)
-				.exchangeFeeRate(EXCHANGE_FEE_RATE).build());
+		// the default tiered banking system: commoners (laborers + firms) in copper,
+		// nobles in silver, the ruler in gold; silver and gold are money-changers
+		// that charge the FX fee on payments crossing the copper boundary
+		Bank copper = h.getCopperBank();
+		Bank silver = h.getSilverBank();
+		Bank gold = h.getGoldBank();
 
 		// every firm and laborer banks in copper
 		h.createFirms(copper, i -> copper,

@@ -1,7 +1,6 @@
 package eos.simulation;
 
 import eos.bank.Bank;
-import eos.bank.BankConfig;
 
 /**
  * Simulation (homogeneous case): every agent of a type starts identical, all
@@ -22,7 +21,7 @@ public class HomogeneousEconomy {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
-		Bank bank = h.addBank(BankConfig.DEFAULT);
+		Bank bank = h.getCopperBank();
 		h.createFirms(bank, i -> bank,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createLaborers(i -> bank, i -> 15, i -> cfg.laborer().savings());

@@ -16,11 +16,13 @@ import eos.agent.laborer.Laborer;
 import eos.agent.laborer.LaborerConfig;
 import eos.bank.Bank;
 import eos.bank.BankConfig;
+import eos.bank.CurrencyType;
 import eos.settlement.Settlement;
 import eos.settlement.GameSession;
 import eos.io.SimLog;
 import eos.io.printer.*;
 import eos.market.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 
 /**
@@ -42,9 +44,27 @@ public class SimulationHarness {
 	// fixed necessity stock granted to a replacement household
 	private static final int REPLACEMENT_NECESSITY_STOCK = 15;
 
+	/**
+	 * Currency-exchange (FX) fee charged by the default non-copper money-changer
+	 * banks ({@link #getSilverBank()} / {@link #getGoldBank()}) on every payment
+	 * crossing the copper boundary; the copper bank, being the base currency,
+	 * charges nothing.
+	 */
+	public static final double DEFAULT_EXCHANGE_FEE_RATE = 0.02;
+
 	private final SimulationConfig cfg;
 	private final Settlement colony;
 	private final List<Bank> banks = new ArrayList<>();
+
+	// the default tiered banks, created lazily on first request (so a commoner-only
+	// settlement that never asks for silver/gold carries neither). Excluded from
+	// the class-level @Getter — the accessors below add the lazy construction.
+	@Getter(AccessLevel.NONE)
+	private Bank copperBank;
+	@Getter(AccessLevel.NONE)
+	private Bank silverBank;
+	@Getter(AccessLevel.NONE)
+	private Bank goldBank;
 
 	// behavioral parameters for the consumer-good firms; defaults to the
 	// canonical values with the run's labor-share applied (see constructor).
@@ -117,6 +137,59 @@ public class SimulationHarness {
 		banks.add(bank);
 		colony.addBank(bank);
 		return bank;
+	}
+
+	/*
+	 * The default tiered banking system, mirroring the social hierarchy: commoners
+	 * (laborers and firms) bank in copper, nobles in silver, the ruler in gold.
+	 * Copper is the base currency (prices are quoted in it) and charges no FX fee;
+	 * silver and gold are money-changers that skim DEFAULT_EXCHANGE_FEE_RATE on
+	 * every payment crossing the copper boundary. Each is created on first request
+	 * and shared thereafter, so a settlement carries only the tiers its classes
+	 * need (a commoner-only colony never creates silver or gold). Request copper
+	 * before silver/gold so the banks are numbered/ordered copper, silver, gold.
+	 */
+
+	/**
+	 * The colony's default <b>copper</b> bank — the base-currency, zero-profit
+	 * intermediary where commoners (laborers and firms) hold their accounts.
+	 *
+	 * @return the shared copper bank (created on first call)
+	 */
+	public Bank getCopperBank() {
+		if (copperBank == null)
+			copperBank = addBank(BankConfig.DEFAULT);
+		return copperBank;
+	}
+
+	/**
+	 * The colony's default <b>silver</b> bank — the nobles' money-changer, charging
+	 * the {@value #DEFAULT_EXCHANGE_FEE_RATE} FX fee on payments crossing the copper
+	 * boundary (so it profits from the nobles' copper-quoted dividends and
+	 * purchases).
+	 *
+	 * @return the shared silver bank (created on first call)
+	 */
+	public Bank getSilverBank() {
+		if (silverBank == null)
+			silverBank = addBank(BankConfig.DEFAULT.toBuilder()
+					.currency(CurrencyType.SILVER)
+					.exchangeFeeRate(DEFAULT_EXCHANGE_FEE_RATE).build());
+		return silverBank;
+	}
+
+	/**
+	 * The colony's default <b>gold</b> bank — the ruler's money-changer (same FX
+	 * fee as silver).
+	 *
+	 * @return the shared gold bank (created on first call)
+	 */
+	public Bank getGoldBank() {
+		if (goldBank == null)
+			goldBank = addBank(BankConfig.DEFAULT.toBuilder()
+					.currency(CurrencyType.GOLD)
+					.exchangeFeeRate(DEFAULT_EXCHANGE_FEE_RATE).build());
+		return goldBank;
 	}
 
 	/**

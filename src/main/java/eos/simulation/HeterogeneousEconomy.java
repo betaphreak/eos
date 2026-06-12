@@ -1,7 +1,6 @@
 package eos.simulation;
 
 import eos.bank.Bank;
-import eos.bank.BankConfig;
 import eos.util.Rng;
 
 /**
@@ -24,7 +23,7 @@ public class HeterogeneousEconomy {
 		SimulationHarness h = SimulationHarness.create(cfg, 2345);
 		Rng rng = h.getColony().getRng();
 		h.createMarkets();
-		Bank bank = h.addBank(BankConfig.DEFAULT);
+		Bank bank = h.getCopperBank();
 		h.createFirms(bank, i -> bank,
 				i -> rng.uniform(cfg.eFirm().savings() * 1.1,
 						cfg.eFirm().savings() * 0.9),
