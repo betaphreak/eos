@@ -1,7 +1,7 @@
 package eos.io.printer;
 
 import eos.market.*;
-import eos.economy.*;
+import eos.settlement.*;
 
 /**
  * This printer tracks the price of a consumer market (e.g. enjoyment market or
@@ -12,13 +12,13 @@ import eos.economy.*;
  * <p>
  * 2. Call <tt>printTitles()</tt> to print column titles.
  * <p>
- * 3. Add the printer to the Economy by calling <tt>Economy.addPrinter()</tt>.
+ * 3. Add the printer to the Settlement by calling <tt>Settlement.addPrinter()</tt>.
  * <p>
- * 4. Call <tt>print()</tt> of this printer in <tt>Economy.newDay()</tt> to print
+ * 4. Call <tt>print()</tt> of this printer in <tt>Settlement.newDay()</tt> to print
  * data.
  * <p>
  * 5. Include <tt>cleanup()</tt> of this printer in
- * <tt>Economy.cleanUpPrinters()</tt>, and call that method to clean up the
+ * <tt>Settlement.cleanUpPrinters()</tt>, and call that method to clean up the
  * printers.
  * <p>
  * The output of the printer is a CSV file. If you have closely followed the
@@ -193,11 +193,11 @@ public class ConsumerMktPricePrinter extends Printer {
 	}
 
 	/**
-	 * Print data, called by Economy.newDay() at each time step
+	 * Print data, called by Settlement.newDay() at each time step
 	 */
-	public void print(Economy economy) {
-		if (shouldPrint(economy))
-			printWriter.println(economy.getDate(), mkt.getLastMktPrice());
+	public void print(Settlement colony) {
+		if (shouldPrint(colony))
+			printWriter.println(colony.getDate(), mkt.getLastMktPrice());
 	}
 
 	/**

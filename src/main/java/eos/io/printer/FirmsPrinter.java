@@ -1,7 +1,7 @@
 package eos.io.printer;
 
 import eos.agent.firm.Firm;
-import eos.economy.*;
+import eos.settlement.*;
 
 /**
  * This printer tracks statistics of a group of firms. To use it:
@@ -11,13 +11,13 @@ import eos.economy.*;
  * <p>
  * 2. Call <tt>printTitles()</tt> to print column titles.
  * <p>
- * 3. Add the printer to the Economy by calling <tt>Economy.addPrinter()</tt>.
+ * 3. Add the printer to the Settlement by calling <tt>Settlement.addPrinter()</tt>.
  * <p>
- * 4. Call <tt>print()</tt> of this printer in <tt>Economy.newDay()</tt> to print
+ * 4. Call <tt>print()</tt> of this printer in <tt>Settlement.newDay()</tt> to print
  * data.
  * <p>
  * 5. Include <tt>cleanup()</tt> of this printer in
- * <tt>Economy.cleanUpPrinters()</tt>, and call that method to clean up the
+ * <tt>Settlement.cleanUpPrinters()</tt>, and call that method to clean up the
  * printers.
  * <p>
  * The output of the printer is a CSV file. If you have closely followed the
@@ -196,10 +196,10 @@ public class FirmsPrinter extends Printer {
 	}
 
 	/**
-	 * Print data, called by Economy.newDay() at each time step
+	 * Print data, called by Settlement.newDay() at each time step
 	 */
-	public void print(Economy economy) {
-		if (shouldPrint(economy)) {
+	public void print(Settlement colony) {
+		if (shouldPrint(colony)) {
 			double totRevenue = 0;
 			double avgRevenue = 0;
 			double totOutput = 0;
@@ -232,7 +232,7 @@ public class FirmsPrinter extends Printer {
 			avgLabor /= firms.length;
 			avgMarginalProfit /= firms.length;
 
-			printWriter.println(economy.getDate(), totRevenue, totOutput, totLoan,
+			printWriter.println(colony.getDate(), totRevenue, totOutput, totLoan,
 					avgRevenue, avgOutput, avgLoan, avgProfit, avgLabor,
 					avgMarginalProfit, totCost, totLaborCost, totCapitalCost);
 		}

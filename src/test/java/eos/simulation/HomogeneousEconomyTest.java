@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Smoke test for the homogeneous, single-bank simulation. Runs the full
- * economy (assertions enabled via Surefire) and checks it stays healthy. A
+ * colony (assertions enabled via Surefire) and checks it stays healthy. A
  * fresh JVM is forked per test class, so the process-global {@code SimLog}
  * logging handler starts clean.
  */

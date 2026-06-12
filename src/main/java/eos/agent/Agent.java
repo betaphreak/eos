@@ -1,7 +1,7 @@
 package eos.agent;
 
 import eos.bank.Bank;
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 import eos.good.Good;
 import lombok.Getter;
 
@@ -21,9 +21,9 @@ public abstract class Agent {
 	@Getter
 	private final Bank bank;
 
-	// the economy this agent belongs to
+	// the colony this agent belongs to
 	@Getter
-	private final Economy economy;
+	private final Settlement colony;
 
 	// is the agent alive?
 	@Getter
@@ -37,14 +37,14 @@ public abstract class Agent {
 	 *
 	 * @param bank
 	 *            the bank at which this agent holds its accounts
-	 * @param economy
-	 *            the economy this agent belongs to
+	 * @param colony
+	 *            the colony this agent belongs to
 	 */
-	public Agent(Bank bank, Economy economy) {
+	public Agent(Bank bank, Settlement colony) {
 		isAlive = true;
 		this.bank = bank;
-		this.economy = economy;
-		ID = economy.nextAgentID();
+		this.colony = colony;
+		ID = colony.nextAgentID();
 	}
 
 	/**
@@ -85,7 +85,7 @@ public abstract class Agent {
 	}
 
 	/**
-	 * Called by Economy.newDay() in each simulation step.
+	 * Called by Settlement.newDay() in each simulation step.
 	 */
 	public abstract void act();
 

@@ -1,7 +1,7 @@
 package eos.io.printer;
 
 import eos.bank.Bank;
-import eos.economy.*;
+import eos.settlement.*;
 
 /**
  * This printer tracks the loan, deposit and interest rates of the bank. To use
@@ -12,13 +12,13 @@ import eos.economy.*;
  * <p>
  * 2. Call <tt>printTitles()</tt> to print column titles.
  * <p>
- * 3. Add the printer to the Economy by calling <tt>Economy.addPrinter()</tt>.
+ * 3. Add the printer to the Settlement by calling <tt>Settlement.addPrinter()</tt>.
  * <p>
- * 4. Call <tt>print()</tt> of this printer in <tt>Economy.newDay()</tt> to print
+ * 4. Call <tt>print()</tt> of this printer in <tt>Settlement.newDay()</tt> to print
  * data.
  * <p>
  * 5. Include <tt>cleanup()</tt> of this printer in
- * <tt>Economy.cleanUpPrinters()</tt>, and call that method to clean up the
+ * <tt>Settlement.cleanUpPrinters()</tt>, and call that method to clean up the
  * printers.
  * <p>
  * The output of the printer is a CSV file. If you have closely followed the
@@ -45,7 +45,7 @@ import eos.economy.*;
  * Col7: equity (cumulative retained profit)<br>
  * Col8: CPI (consumer price index — mean of consumer-good market prices), to
  * two decimals<br>
- * Col9: inflation (economy-wide smoothed average inflation, formatted as a
+ * Col9: inflation (colony-wide smoothed average inflation, formatted as a
  * percent truncated to two decimals; the real rate is the deposit/loan rate
  * less this)<br>
  *
@@ -168,16 +168,16 @@ public class BankPrinter extends Printer {
 	}
 
 	/**
-	 * Print data, called by Economy.newDay() at each time step
+	 * Print data, called by Settlement.newDay() at each time step
 	 */
-	public void print(Economy economy) {
-		if (shouldPrint(economy))
-			printWriter.println(economy.getDate(),
+	public void print(Settlement colony) {
+		if (shouldPrint(colony))
+			printWriter.println(colony.getDate(),
 					formatPercent(bank.getLoanIR()), formatPercent(bank.getLTLoanIR()),
 					formatPercent(bank.getDepositIR()), formatPercent(bank.getLTDepositIR()),
 					bank.getTotalLoan(), bank.getTotalDeposit(),
-					bank.getEquity(), economy.getCPI(),
-					formatPercent(economy.getInflation()));
+					bank.getEquity(), colony.getCPI(),
+					formatPercent(colony.getInflation()));
 	}
 
 	/**

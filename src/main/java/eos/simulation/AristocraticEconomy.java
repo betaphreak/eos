@@ -9,13 +9,13 @@ import eos.agent.noble.Noble;
 import eos.agent.noble.NobleConfig;
 import eos.bank.Bank;
 import eos.bank.BankConfig;
-import eos.economy.Economy;
-import eos.economy.GameSession;
+import eos.settlement.Settlement;
+import eos.settlement.GameSession;
 import eos.io.SimLog;
 import eos.io.printer.NoblesPrinter;
 
 /**
- * Simulation (with an aristocracy): the homogeneous, single-bank economy of
+ * Simulation (with an aristocracy): the homogeneous, single-bank colony of
  * {@link HomogeneousEconomy}, plus a small class of <b>nobles</b> who own the means of
  * production — the firms <i>and</i> the bank — and live off their profits. The
  * firms and laborers are unchanged; two noble households split ownership of all
@@ -49,16 +49,16 @@ public class AristocraticEconomy {
 	 * Build and run the simulation.
 	 *
 	 * @return the harness, exposing the constructed markets, bank, firms and
-	 *         laborers (the nobles are reachable via {@code getEconomy()})
+	 *         laborers (the nobles are reachable via {@code getColony()})
 	 */
 	public static SimulationHarness run() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		GameSession session = new GameSession(7654321);
-		Economy economy = session.newEconomy(cfg.startDate(),
+		Settlement colony = session.newSettlement(cfg.startDate(),
 				cfg.meanInitAgeYears(), cfg.targetNStock());
-		SimLog.init(economy);
+		SimLog.init(colony);
 
-		SimulationHarness h = new SimulationHarness(cfg, economy);
+		SimulationHarness h = new SimulationHarness(cfg, colony);
 		h.createMarkets();
 		Bank bank = h.addBank(
 				BankConfig.DEFAULT.toBuilder().spread(BANK_SPREAD).build());
@@ -80,19 +80,19 @@ public class AristocraticEconomy {
 			// the senior noble (n == 0) also owns the bank
 			List<Bank> ownedBanks = (n == 0) ? List.of(bank) : List.<Bank>of();
 			Noble noble = new Noble(0, NOBLE_INITIAL_SAVINGS, owned, ownedBanks,
-					NobleConfig.DEFAULT, bank, economy);
-			economy.addAgent(noble);
+					NobleConfig.DEFAULT, bank, colony);
+			colony.addAgent(noble);
 		}
 
 		// when a noble's head dies, a successor of the same dynasty inherits its
 		// estate, firms and banks, so the aristocracy persists
-		economy.addReplacementPolicy(dead -> dead instanceof Noble n
-				? new Noble(n, NobleConfig.DEFAULT, economy)
+		colony.addReplacementPolicy(dead -> dead instanceof Noble n
+				? new Noble(n, NobleConfig.DEFAULT, colony)
 				: null);
 
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);
-		economy.addPrinter(new NoblesPrinter("Nobles"));
+		colony.addPrinter(new NoblesPrinter("Nobles"));
 		h.run();
 		return h;
 	}

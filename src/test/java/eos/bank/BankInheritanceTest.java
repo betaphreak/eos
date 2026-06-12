@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 import eos.util.Rng;
 
 /**
@@ -18,13 +18,13 @@ import eos.util.Rng;
  */
 class BankInheritanceTest {
 
-	// Bank only needs the economy for its bank number; the name/demography
+	// Bank only needs the colony for its bank number; the name/demography
 	// services, the founding-age mean and the target necessity stock are
 	// irrelevant to account settlement, so they can be null/zero here.
 	private Bank newBank() {
-		Economy economy = new Economy(LocalDate.of(1444, 12, 11), new Rng(1L),
+		Settlement colony = new Settlement(LocalDate.of(1444, 12, 11), new Rng(1L),
 				null, null, 0, 0);
-		return new Bank(BankConfig.DEFAULT, economy);
+		return new Bank(BankConfig.DEFAULT, colony);
 	}
 
 	@Test

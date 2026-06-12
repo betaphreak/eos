@@ -2,12 +2,12 @@ package eos.bank;
 
 import java.util.HashMap;
 
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 import eos.util.Averager;
 import lombok.Getter;
 
 /**
- * Bank. The economy may contain more than one bank; each agent holds its
+ * Bank. The colony may contain more than one bank; each agent holds its
  * accounts at a specific bank instance and payments are routed through the
  * payer's and payee's banks. Each agent has a checking account and a savings
  * account. A positive balance in the savings account signifies deposit and
@@ -42,10 +42,10 @@ public class Bank {
 	// tunable model parameters
 	private final BankConfig config;
 
-	// the economy this bank belongs to
-	private final Economy economy;
+	// the colony this bank belongs to
+	private final Settlement colony;
 
-	// display name, defaulted from the economy's bank sequence (e.g. "Bank 1")
+	// display name, defaulted from the colony's bank sequence (e.g. "Bank 1")
 	@Getter
 	private final String name;
 
@@ -100,13 +100,13 @@ public class Bank {
 	 *
 	 * @param config
 	 *            tunable model parameters
-	 * @param economy
-	 *            the economy this bank belongs to
+	 * @param colony
+	 *            the colony this bank belongs to
 	 */
-	public Bank(BankConfig config, Economy economy) {
+	public Bank(BankConfig config, Settlement colony) {
 		this.config = config;
-		this.economy = economy;
-		this.name = "Bank " + economy.nextBankNumber();
+		this.colony = colony;
+		this.name = "Bank " + colony.nextBankNumber();
 		this.tao = config.tao();
 		this.loanIR = config.initLoanIR();
 		this.depositIRAvger = new Averager(config.ltIRWin());
@@ -179,9 +179,9 @@ public class Bank {
 	}
 
 	/**
-	 * Inject money from outside the economy into the bank's equity. Unlike
+	 * Inject money from outside the colony into the bank's equity. Unlike
 	 * retained interest spread or fees (which capture money already inside the
-	 * economy), this is genuinely new money entering an open economy; it
+	 * colony), this is genuinely new money entering an open colony; it
 	 * bankrolls externally-funded household formation. The counterpart drawdown
 	 * happens in {@link #openInheritedAcct(int, double, double)} when the new
 	 * household's account is opened out of equity.
@@ -199,7 +199,7 @@ public class Bank {
 	 * slice of {@link #getEquity() equity} attributable to profit (as opposed to
 	 * estates in transit or injected external funds, which also pass through
 	 * equity), so a noble owner can skim it as a dividend without disturbing
-	 * inheritance or the open-economy money buffer. Zero for a default
+	 * inheritance or the open-colony money buffer. Zero for a default
 	 * zero-profit bank ({@code spread == 0} and {@code feeRate == 0}).
 	 *
 	 * @return the distributable retained profit
@@ -328,7 +328,7 @@ public class Bank {
 	}
 
 	/**
-	 * Called by Economy.newDay() in every time step
+	 * Called by Settlement.newDay() in every time step
 	 */
 	public void act() {
 		totalLoan = 0;
@@ -344,7 +344,7 @@ public class Bank {
 			acct.interest = 0;
 		}
 
-		if (economy.getTimeStep() == 0) {
+		if (colony.getTimeStep() == 0) {
 			tao /= Math.max(1, Math.abs(totalDeposit - totalLoan));
 			targetIR = loanIR;
 		}

@@ -27,11 +27,11 @@ import lombok.Builder;
  *                     the center of the normal distribution their ages are
  *                     drawn from
  * @param targetNStock target necessity stock every laborer tries to accumulate
- *                     (in real units); an economy-wide constant rather than a
- *                     per-laborer preference, so it is set on the {@code Economy}
- * @param externalInflowPerStep money entering the economy from outside each
+ *                     (in real units); a colony-wide constant rather than a
+ *                     per-laborer preference, so it is set on the {@code Settlement}
+ * @param externalInflowPerStep money entering the colony from outside each
  *                     step, injected into the bank's equity; 0 leaves the
- *                     economy closed (no inflow, no immigration)
+ *                     colony closed (no inflow, no immigration)
  * @param immigrationThreshold equity level at which the bank funds one new
  *                     immigrant household out of equity (and the household's
  *                     opening checking balance); only fires when
@@ -39,7 +39,7 @@ import lombok.Builder;
  * @param laborShare   fraction of its revenue each consumer-good firm budgets
  *                     for wages (the labor-share wage-budget rule), so total
  *                     wage spending — and the market wage totalBudget/N —
- *                     scales with the economy as population grows; 0 falls back
+ *                     scales with the colony as population grows; 0 falls back
  *                     to the legacy cash-flow-gap rule
  */
 @Builder(toBuilder = true)

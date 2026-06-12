@@ -1,4 +1,4 @@
-package eos.economy;
+package eos.settlement;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -21,17 +21,17 @@ import eos.util.Rng;
 import lombok.Getter;
 
 /**
- * Economy provides a container to hold all agents and markets together. It is
+ * Settlement provides a container to hold all agents and markets together. It is
  * an instance (no longer a static singleton): a {@link GameSession} owns the
- * random-number seed and creates economies from it, so several independent
- * economies may coexist in one JVM. Agents, banks and markets hold a reference
- * to the economy they belong to; printers receive it in {@link
- * Printer#print(Economy)}.
+ * random-number seed and creates colonies from it, so several independent
+ * colonies may coexist in one JVM. Agents, banks and markets hold a reference
+ * to the colony they belong to; printers receive it in {@link
+ * Printer#print(Settlement)}.
  *
  * @author zhihongx
  *
  */
-public class Economy {
+public class Settlement {
 
 	/****************** constants *****************************/
 
@@ -42,10 +42,10 @@ public class Economy {
 
 	/********************************************************/
 
-	// banks in the economy
+	// banks in the colony
 	private final LinkedHashSet<Bank> banks = new LinkedHashSet<Bank>();
 
-	// agents in the economy (who are still alive)
+	// agents in the colony (who are still alive)
 	private final LinkedHashSet<Agent> agents = new LinkedHashSet<Agent>();
 
 	// agents who die in the current step
@@ -63,10 +63,10 @@ public class Economy {
 	// current time step
 	private int timeStep = 0;
 
-	// ID for the next agent created in this economy
+	// ID for the next agent created in this colony
 	private int nextAvailableID = 1;
 
-	// sequence number for the next bank's default name in this economy
+	// sequence number for the next bank's default name in this colony
 	private int nextBankNo = 1;
 
 	// in-game date of step 0; each step advances one day
@@ -89,8 +89,8 @@ public class Economy {
 	@Getter
 	private final double meanInitAgeYears;
 
-	// target necessity stock every laborer in this economy tries to accumulate
-	// (in real units): an economy-wide environmental constant, not a per-laborer
+	// target necessity stock every laborer in this colony tries to accumulate
+	// (in real units): a colony-wide environmental constant, not a per-laborer
 	// preference. A laborer directs its consumption budget toward necessity in
 	// proportion to how far its stock sits below this target (see Laborer.act).
 	@Getter
@@ -116,7 +116,7 @@ public class Economy {
 
 	// per-step side effects run once each newDay after deaths/replacements
 	// settle (e.g. injecting external money into a bank's equity in an open
-	// economy); default: none
+	// colony); default: none
 	private final List<Runnable> stepActions = new ArrayList<Runnable>();
 
 	// policy admitting brand-new households each newDay (e.g. externally-funded
@@ -125,25 +125,25 @@ public class Economy {
 	private Supplier<List<Agent>> immigrationPolicy = () -> List.of();
 
 	/**
-	 * Create a new economy whose step 0 falls on <tt>startDate</tt>, drawing
+	 * Create a new colony whose step 0 falls on <tt>startDate</tt>, drawing
 	 * randomness from <tt>rng</tt>. Each step advances one day. Use {@link
-	 * GameSession#newEconomy(LocalDate, double, double)} to create an economy
+	 * GameSession#newSettlement(LocalDate, double, double)} to create a colony
 	 * with a reproducible random-number seed.
 	 *
 	 * @param startDate
 	 *            the in-game date of step 0
 	 * @param rng
-	 *            the random-number generator for this economy
+	 *            the random-number generator for this colony
 	 * @param names
-	 *            the name sets for this economy
+	 *            the name sets for this colony
 	 * @param demography
-	 *            the demographic service for this economy
+	 *            the demographic service for this colony
 	 * @param meanInitAgeYears
 	 *            mean initial age (years) of founding household heads
 	 * @param targetNStock
 	 *            target necessity stock every laborer tries to accumulate
 	 */
-	public Economy(LocalDate startDate, Rng rng, NameRegistry names,
+	public Settlement(LocalDate startDate, Rng rng, NameRegistry names,
 			Demography demography, double meanInitAgeYears, double targetNStock) {
 		this.startDate = startDate;
 		this.rng = rng;
@@ -154,8 +154,8 @@ public class Economy {
 	}
 
 	/**
-	 * Return a fresh unique agent ID within this economy (also used as the
-	 * agent's bank account number). IDs are per-economy, so two economies have
+	 * Return a fresh unique agent ID within this colony (also used as the
+	 * agent's bank account number). IDs are per-colony, so two colonies have
 	 * independent ID spaces.
 	 *
 	 * @return a fresh unique agent ID
@@ -165,8 +165,8 @@ public class Economy {
 	}
 
 	/**
-	 * Return the next sequence number for a bank's default name in this economy
-	 * (1, 2, ...), so banks are numbered independently per economy.
+	 * Return the next sequence number for a bank's default name in this colony
+	 * (1, 2, ...), so banks are numbered independently per colony.
 	 *
 	 * @return the next bank sequence number
 	 */
@@ -315,14 +315,14 @@ public class Economy {
 	}
 
 	/**
-	 * Add <tt>market</tt> to the economy
+	 * Add <tt>market</tt> to the colony
 	 *
 	 * @param market
 	 */
 	public void addMarket(Market market) {
 		assert (market != null);
 		if (markets.containsKey(market.getGood()))
-			throw new RuntimeException("Economy already contains a market for "
+			throw new RuntimeException("Settlement already contains a market for "
 					+ market.getGood());
 		markets.put(market.getGood(), market);
 		if (market instanceof ConsumerGoodMarket)
@@ -330,7 +330,7 @@ public class Economy {
 	}
 
 	/**
-	 * Add <tt>bank</tt> to the economy
+	 * Add <tt>bank</tt> to the colony
 	 *
 	 * @param bank
 	 */
@@ -340,7 +340,7 @@ public class Economy {
 	}
 
 	/**
-	 * Add <tt>agent</tt> to the economy
+	 * Add <tt>agent</tt> to the colony
 	 *
 	 * @param agent
 	 */
@@ -366,7 +366,7 @@ public class Economy {
 
 	/**
 	 * Register a side effect to run once each step, after the dead are removed
-	 * and replacements admitted but before markets clear. Used for open-economy
+	 * and replacements admitted but before markets clear. Used for open-colony
 	 * effects such as injecting external money into a bank's equity. Multiple
 	 * actions run in registration order.
 	 *

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import eos.simulation.ScaleSweep.ScaleResult;
 
 /**
- * Tests for the scale-sweep simulation. The full sweep runs many economies, so
+ * Tests for the scale-sweep simulation. The full sweep runs many colonies, so
  * the heavy run-to-completion check covers only the default scale (a regression
  * guard equivalent to the other smoke tests); the minimum-selection logic is
  * checked as a pure function over synthetic results to stay fast.

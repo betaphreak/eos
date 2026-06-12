@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Smoke test for the heterogeneous, single-bank simulation (randomized initial
- * state). Runs the full economy and checks it stays healthy.
+ * state). Runs the full colony and checks it stays healthy.
  */
 class HeterogeneousEconomyTest {
 

@@ -21,9 +21,9 @@ final class SimulationAssertions {
 	private SimulationAssertions() {
 	}
 
-	/** Assert the post-run economy is healthy. */
+	/** Assert the post-run colony is healthy. */
 	static void assertHealthy(SimulationHarness h) {
-		// the economy did not collapse: the population is sustained. This counts
+		// the colony did not collapse: the population is sustained. This counts
 		// heirs that succeeded the founding cohort (the founders themselves age
 		// and die of old age, each replaced by a successor household).
 		long alive = h.currentLaborerCount();

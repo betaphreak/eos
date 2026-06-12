@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import eos.agent.firm.CFirm;
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 import eos.good.Capital;
 import lombok.Getter;
 
@@ -54,11 +54,11 @@ public class CapitalMarket extends Market {
 	/**
 	 * Create a new capital market
 	 *
-	 * @param economy
-	 *            the economy this market belongs to
+	 * @param colony
+	 *            the colony this market belongs to
 	 */
-	public CapitalMarket(Economy economy) {
-		super("Capital", economy);
+	public CapitalMarket(Settlement colony) {
+		super("Capital", colony);
 		buyOffers = new ArrayList<BuyOffer>();
 		sellOffers = new LinkedHashSet<SellOffer>();
 		totalMetric = 0;
@@ -109,13 +109,13 @@ public class CapitalMarket extends Market {
 	 */
 	public void clear() {
 		mktGoodVol = 0;
-		Collections.shuffle(buyOffers, economy.getRng().getRandom());
+		Collections.shuffle(buyOffers, colony.getRng().getRandom());
 		for (BuyOffer buyOffer : buyOffers) {
 			if (supply == 0)
 				return;
 			SellOffer picked = null;
 			while (picked == null) {
-				double winner = economy.getRng().uniform();
+				double winner = colony.getRng().uniform();
 				double val = 0;
 				for (SellOffer sellOffer : sellOffers) {
 					val += 1 / sellOffer.price / totalMetric;

@@ -14,15 +14,15 @@ import eos.agent.laborer.Laborer;
 import eos.agent.laborer.LaborerConfig;
 import eos.bank.Bank;
 import eos.bank.BankConfig;
-import eos.economy.Economy;
-import eos.economy.GameSession;
+import eos.settlement.Settlement;
+import eos.settlement.GameSession;
 import eos.io.printer.*;
 import eos.market.*;
 import lombok.Getter;
 
 /**
  * Shared construction and run logic for the bundled simulations. Each
- * {@code Simulation} creates an {@link Economy} from a {@link GameSession}
+ * {@code Simulation} creates an {@link Settlement} from a {@link GameSession}
  * (which owns the seed) and populates it through this harness, supplying only
  * what differs between runs: which bank each agent uses, and how each agent's
  * initial state is drawn. After {@link #run()} the harness exposes the
@@ -40,7 +40,7 @@ public class SimulationHarness {
 	private static final int REPLACEMENT_NECESSITY_STOCK = 15;
 
 	private final SimulationConfig cfg;
-	private final Economy economy;
+	private final Settlement colony;
 	private final List<Bank> banks = new ArrayList<>();
 
 	// behavioral parameters for the consumer-good firms; defaults to the
@@ -58,9 +58,9 @@ public class SimulationHarness {
 	private NFirm[] nFirms;
 	private Laborer[] laborers;
 
-	public SimulationHarness(SimulationConfig cfg, Economy economy) {
+	public SimulationHarness(SimulationConfig cfg, Settlement colony) {
 		this.cfg = cfg;
-		this.economy = economy;
+		this.colony = colony;
 		// seed the firm parameters with the run's labor-share (the rest are the
 		// canonical defaults); setFirmConfig can override before createFirms
 		this.firmConfig =
@@ -70,24 +70,24 @@ public class SimulationHarness {
 	/** Create the four markets and register them (labor market first). */
 	public void createMarkets() {
 		enjoymentMkt = new ConsumerGoodMarket("Enjoyment", cfg.ePrice().min(),
-				cfg.ePrice().max(), economy);
+				cfg.ePrice().max(), colony);
 		necessityMkt = new ConsumerGoodMarket("Necessity", cfg.nPrice().min(),
-				cfg.nPrice().max(), economy);
-		laborMkt = new LaborMarket(economy);
-		capitalMkt = new CapitalMarket(economy);
-		economy.addMarket(laborMkt);
-		economy.addMarket(enjoymentMkt);
-		economy.addMarket(necessityMkt);
-		economy.addMarket(capitalMkt);
+				cfg.nPrice().max(), colony);
+		laborMkt = new LaborMarket(colony);
+		capitalMkt = new CapitalMarket(colony);
+		colony.addMarket(laborMkt);
+		colony.addMarket(enjoymentMkt);
+		colony.addMarket(necessityMkt);
+		colony.addMarket(capitalMkt);
 	}
 
 	/**
 	 * Create a bank from <tt>bankConfig</tt>, register it, and return it.
 	 */
 	public Bank addBank(BankConfig bankConfig) {
-		Bank bank = new Bank(bankConfig, economy);
+		Bank bank = new Bank(bankConfig, colony);
 		banks.add(bank);
-		economy.addBank(bank);
+		colony.addBank(bank);
 		return bank;
 	}
 
@@ -105,14 +105,14 @@ public class SimulationHarness {
 
 	/**
 	 * Create the capital firm (banking at <tt>capitalFirmBank</tt>) and the
-	 * consumer-good firms, then add them to the economy. The bank and initial
+	 * consumer-good firms, then add them to the colony. The bank and initial
 	 * savings of each consumer-good firm are supplied by the caller (by index);
 	 * everything else comes from the config.
 	 */
 	public void createFirms(Bank capitalFirmBank, IntFunction<Bank> firmBank,
 			IntToDoubleFunction eSavings, IntToDoubleFunction nSavings) {
 		CFirm cFirm = new CFirm(cfg.cFirm().checking(), cfg.cFirm().savings(),
-				cfg.cFirm().wageBudget(), capitalFirmBank, economy);
+				cfg.cFirm().wageBudget(), capitalFirmBank, colony);
 		capitalFirms = new CFirm[] { cFirm };
 
 		eFirms = new EFirm[cfg.numEFirms()];
@@ -120,24 +120,24 @@ public class SimulationHarness {
 			eFirms[i] = new EFirm(cfg.eFirm().checking(),
 					eSavings.applyAsDouble(i), cfg.eFirm().output(),
 					cfg.eFirm().wageBudget(), cfg.eFirm().capital(),
-					capitalFirms, firmConfig, firmBank.apply(i), economy);
+					capitalFirms, firmConfig, firmBank.apply(i), colony);
 
 		nFirms = new NFirm[cfg.numNFirms()];
 		for (int i = 0; i < cfg.numNFirms(); i++)
 			nFirms[i] = new NFirm(cfg.nFirm().checking(),
 					nSavings.applyAsDouble(i), cfg.nFirm().output(),
 					cfg.nFirm().wageBudget(), cfg.nFirm().capital(),
-					capitalFirms, firmConfig, firmBank.apply(i), economy);
+					capitalFirms, firmConfig, firmBank.apply(i), colony);
 
-		economy.addAgent(cFirm);
+		colony.addAgent(cFirm);
 		for (NFirm f : nFirms)
-			economy.addAgent(f);
+			colony.addAgent(f);
 		for (EFirm f : eFirms)
-			economy.addAgent(f);
+			colony.addAgent(f);
 	}
 
 	/**
-	 * Create the laborers and add them to the economy, then clear the labor
+	 * Create the laborers and add them to the colony, then clear the labor
 	 * market once so firms have workers before step 0. The bank, initial
 	 * necessity stock and initial savings of each laborer are supplied by the
 	 * caller (by index).
@@ -149,47 +149,47 @@ public class SimulationHarness {
 			laborers[i] = new Laborer(cfg.laborer().e(), initN.applyAsDouble(i),
 					cfg.laborer().checking(), savings.applyAsDouble(i),
 					cfg.laborer().savingsRate(), LaborerConfig.DEFAULT,
-					laborerBank.apply(i), economy);
-			economy.addAgent(laborers[i]);
+					laborerBank.apply(i), colony);
+			colony.addAgent(laborers[i]);
 		}
 
 		// when a household's head dies, a successor household continues the same
 		// dynasty at the same bank, inheriting the estate (so money and the
 		// labor force stay roughly constant)
-		economy.addReplacementPolicy(dead -> {
+		colony.addReplacementPolicy(dead -> {
 			if (!(dead instanceof Laborer))
 				return null;
 			return new Laborer((Laborer) dead, cfg.laborer().e(),
 					REPLACEMENT_NECESSITY_STOCK, cfg.laborer().savingsRate(),
-					LaborerConfig.DEFAULT, economy);
+					LaborerConfig.DEFAULT, colony);
 		});
 
 		laborMkt.clear();
 	}
 
 	/**
-	 * Open the economy through <tt>gatewayBank</tt>: external money flows into
-	 * that bank's equity each step (a standalone per-step economy action), and
+	 * Open the colony through <tt>gatewayBank</tt>: external money flows into
+	 * that bank's equity each step (a standalone per-step colony action), and
 	 * the immigration policy funds one brand-new immigrant household out of
 	 * equity for every {@code immigrationThreshold} accumulated — population
 	 * growth bankrolled from outside. The simulation chooses which bank is the
-	 * gateway. A no-op when {@code externalInflowPerStep} is 0 (closed economy).
+	 * gateway. A no-op when {@code externalInflowPerStep} is 0 (closed colony).
 	 *
 	 * @param gatewayBank
-	 *            the bank through which external money enters the economy
+	 *            the bank through which external money enters the colony
 	 */
 	public void enableExternalInflow(Bank gatewayBank) {
 		if (cfg.externalInflowPerStep() <= 0)
 			return;
-		economy.addStepAction(() -> gatewayBank
+		colony.addStepAction(() -> gatewayBank
 				.injectExternalFunds(cfg.externalInflowPerStep()));
-		economy.setImmigrationPolicy(() -> {
+		colony.setImmigrationPolicy(() -> {
 			List<Agent> immigrants = new ArrayList<>();
 			while (gatewayBank.getEquity() >= cfg.immigrationThreshold()) {
 				immigrants.add(new Laborer(cfg.laborer().e(),
 						REPLACEMENT_NECESSITY_STOCK, cfg.immigrationThreshold(),
 						0, cfg.laborer().savingsRate(), LaborerConfig.DEFAULT,
-						gatewayBank, economy, true));
+						gatewayBank, colony, true));
 			}
 			return immigrants;
 		});
@@ -197,28 +197,28 @@ public class SimulationHarness {
 
 	/** Register the printers common to every simulation. */
 	public void addCommonPrinters() {
-		economy.addPrinter(new LaborersPrinter("Laborer"));
-		economy.addPrinter(
+		colony.addPrinter(new LaborersPrinter("Laborer"));
+		colony.addPrinter(
 				new ConsumerMktPricePrinter("EPrice", enjoymentMkt));
-		economy.addPrinter(
+		colony.addPrinter(
 				new ConsumerMktVolPrinter("EVol", enjoymentMkt));
-		economy.addPrinter(new FirmsPrinter("EFirms", eFirms));
-		economy.addPrinter(
+		colony.addPrinter(new FirmsPrinter("EFirms", eFirms));
+		colony.addPrinter(
 				new ConsumerMktPricePrinter("NPrice", necessityMkt));
-		economy.addPrinter(
+		colony.addPrinter(
 				new ConsumerMktVolPrinter("NVol", necessityMkt));
-		economy.addPrinter(new FirmsPrinter("NFirms", nFirms));
+		colony.addPrinter(new FirmsPrinter("NFirms", nFirms));
 	}
 
 	/** Register a {@link BankPrinter} writing to <tt>fileName</tt>. */
 	public void addBankPrinter(String fileName, Bank bank) {
-		economy.addPrinter(new BankPrinter(fileName, bank));
+		colony.addPrinter(new BankPrinter(fileName, bank));
 	}
 
 	/** Run the simulation for the configured number of steps, then clean up. */
 	public void run() {
-		economy.run(cfg.numStep());
-		economy.cleanUpPrinters();
+		colony.run(cfg.numStep());
+		colony.cleanUpPrinters();
 	}
 
 	/** Number of the <em>initial</em> laborers still alive after the run. */
@@ -231,11 +231,11 @@ public class SimulationHarness {
 	}
 
 	/**
-	 * Number of laborers (households) currently alive in the economy, including
+	 * Number of laborers (households) currently alive in the colony, including
 	 * replacements that succeeded the initial cohort.
 	 */
 	public long currentLaborerCount() {
-		return economy.getAgents().stream().filter(a -> a instanceof Laborer)
+		return colony.getAgents().stream().filter(a -> a instanceof Laborer)
 				.count();
 	}
 }

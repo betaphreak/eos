@@ -5,7 +5,7 @@ import eos.util.Rng;
 /**
  * The complete sets of names for a game session, with the random-number
  * generator used to draw from them. Owned by a {@code GameSession} and shared
- * with the economies it creates, so naming is independent of (and does not
+ * with the colonies it creates, so naming is independent of (and does not
  * perturb) the economic random stream.
  * <p>
  * Dynasty surnames are drawn <b>without replacement</b>, so every household in

@@ -4,16 +4,16 @@ import java.util.function.IntFunction;
 
 import eos.bank.Bank;
 import eos.bank.BankConfig;
-import eos.economy.Economy;
-import eos.economy.GameSession;
+import eos.settlement.Settlement;
+import eos.settlement.GameSession;
 import eos.io.SimLog;
 
 /**
- * Simulation (small open economy): the minimum stable scale found by
+ * Simulation (small open colony): the minimum stable scale found by
  * {@link ScaleSweep} — 2 enjoyment firms, 2 necessity firms, 1 capital firm and
  * 90 laborers — run with <b>two banks</b> (agents split A/B by index, as in
  * {@link TwoBankEconomy}), <b>mortality</b> on (households age, die and are
- * succeeded), and an <b>open economy</b> that grows the population: external
+ * succeeded), and an <b>open colony</b> that grows the population: external
  * money flows into bank A's equity each step and bankrolls a stream of immigrant
  * households. The labor-share wage rule (default {@code laborShare = 0.5}) lets
  * wages scale with the growing labor pool, so 2 consumer firms of each type keep
@@ -29,7 +29,7 @@ import eos.io.SimLog;
  */
 public class SmallOpenEconomy {
 
-	/** Net new money entering the economy (into bank A's equity) each step. */
+	/** Net new money entering the colony (into bank A's equity) each step. */
 	static final double EXTERNAL_INFLOW_PER_STEP = 1.0;
 
 	/** Equity accumulated per admitted immigrant household (its opening funds). */
@@ -50,11 +50,11 @@ public class SmallOpenEconomy {
 				.build();
 
 		GameSession session = new GameSession(7654321);
-		Economy economy = session.newEconomy(cfg.startDate(),
+		Settlement colony = session.newSettlement(cfg.startDate(),
 				cfg.meanInitAgeYears(), cfg.targetNStock());
-		SimLog.init(economy);
+		SimLog.init(colony);
 
-		SimulationHarness h = new SimulationHarness(cfg, economy);
+		SimulationHarness h = new SimulationHarness(cfg, colony);
 		h.createMarkets();
 		Bank bankA = h.addBank(BankConfig.DEFAULT);
 		Bank bankB = h.addBank(BankConfig.DEFAULT);
@@ -63,7 +63,7 @@ public class SmallOpenEconomy {
 		h.createFirms(bankA, alternate,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createLaborers(alternate, i -> 15, i -> cfg.laborer().savings());
-		// open the economy through bank A: external inflow + immigration grow the
+		// open the colony through bank A: external inflow + immigration grow the
 		// population (a no-op only when externalInflowPerStep is 0, which it isn't)
 		h.enableExternalInflow(bankA);
 		h.addCommonPrinters();

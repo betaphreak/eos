@@ -5,7 +5,7 @@ import eos.util.Rng;
 /**
  * The demographic service for a game session: a {@link LifeTable} plus the
  * random-number generator used for mortality draws. Owned by a
- * {@code GameSession} and shared with its economies, on a generator separate
+ * {@code GameSession} and shared with its colonies, on a generator separate
  * from the economic one so mortality is deterministic yet does not perturb the
  * economic random stream.
  */

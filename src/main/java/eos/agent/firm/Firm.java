@@ -2,7 +2,7 @@ package eos.agent.firm;
 
 import eos.agent.Agent;
 import eos.bank.Bank;
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 import eos.good.Labor;
 import lombok.Getter;
 
@@ -87,12 +87,12 @@ public abstract class Firm extends Agent {
 	 *            intial savings account balance
 	 * @param bank
 	 *            the bank at which this firm holds its accounts
-	 * @param economy
-	 *            the economy this firm belongs to
+	 * @param colony
+	 *            the colony this firm belongs to
 	 */
 	public Firm(double initCheckingBal, double initSavingsBal, Bank bank,
-			Economy economy) {
-		super(bank, economy);
+			Settlement colony) {
+		super(bank, colony);
 
 		// open a checking account and a savings account
 		bank.openAcct(getID(), initCheckingBal, initSavingsBal);

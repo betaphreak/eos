@@ -12,11 +12,11 @@ import eos.bank.Bank;
 import eos.market.ConsumerGoodMarket;
 
 /**
- * Smoke test for the economy with an aristocracy that owns the firms <i>and</i>
+ * Smoke test for the colony with an aristocracy that owns the firms <i>and</i>
  * the bank. The bank is deliberately profitable (it has an interest spread and
  * pays dividends to its owner), so the shared {@code assertHealthy} — which
  * assumes a zero-profit bank — does not apply; the invariants are checked
- * directly. Beyond a sustained, finite-price economy it verifies that the firms
+ * directly. Beyond a sustained, finite-price colony it verifies that the firms
  * <em>and</em> the bank actually paid dividends to the nobles, that the nobles
  * grew their fortunes, and that a noble succession occurred (heir inherited the
  * holdings).
@@ -58,7 +58,7 @@ class AristocraticEconomyTest {
 		double totalDividends = 0;
 		double totalWealth = 0;
 		boolean anyHeir = false;
-		for (Agent agent : h.getEconomy().getAgents())
+		for (Agent agent : h.getColony().getAgents())
 			if (agent instanceof Noble noble) {
 				nobleCount++;
 				totalDividends += noble.getDividends();

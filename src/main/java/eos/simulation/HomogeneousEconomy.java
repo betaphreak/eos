@@ -2,8 +2,8 @@ package eos.simulation;
 
 import eos.bank.Bank;
 import eos.bank.BankConfig;
-import eos.economy.Economy;
-import eos.economy.GameSession;
+import eos.settlement.Settlement;
+import eos.settlement.GameSession;
 import eos.io.SimLog;
 
 /**
@@ -24,11 +24,11 @@ public class HomogeneousEconomy {
 	public static SimulationHarness run() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		GameSession session = new GameSession(7654321);
-		Economy economy = session.newEconomy(cfg.startDate(),
+		Settlement colony = session.newSettlement(cfg.startDate(),
 				cfg.meanInitAgeYears(), cfg.targetNStock());
-		SimLog.init(economy);
+		SimLog.init(colony);
 
-		SimulationHarness h = new SimulationHarness(cfg, economy);
+		SimulationHarness h = new SimulationHarness(cfg, colony);
 		h.createMarkets();
 		Bank bank = h.addBank(BankConfig.DEFAULT);
 		h.createFirms(bank, i -> bank,

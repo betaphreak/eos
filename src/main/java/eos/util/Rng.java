@@ -6,7 +6,7 @@ import java.util.Random;
  * Minimal seedable random-number generator. Each instance wraps its own
  * {@link java.util.Random}, so a run is fully determined by the seed passed at
  * construction — the same seed yields an identical sequence. A {@link
- * eos.economy.GameSession} owns one {@code Rng} and shares it with the economies
+ * eos.settlement.GameSession} owns one {@code Rng} and shares it with the colonies
  * it creates, so distinct sessions draw from independent generators.
  */
 public final class Rng {

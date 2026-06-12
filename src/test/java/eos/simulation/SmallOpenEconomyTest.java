@@ -10,10 +10,10 @@ import eos.bank.Bank;
 import eos.market.ConsumerGoodMarket;
 
 /**
- * Smoke test for the small open economy (two banks, the minimum stable firm
+ * Smoke test for the small open colony (two banks, the minimum stable firm
  * count, mortality and immigration-driven growth). The shared {@code
  * assertHealthy} does not apply: this run sustains far fewer than 400 laborers
- * and bank A intentionally carries equity (the open-economy money buffer), so
+ * and bank A intentionally carries equity (the open-colony money buffer), so
  * the invariants are checked directly here. The defining property is that the
  * population <i>grows</i> past its starting size rather than holding flat.
  */

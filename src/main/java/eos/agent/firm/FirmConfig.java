@@ -17,13 +17,13 @@ import lombok.Builder;
  *                       revenue for wages (newWageBudget = laborShare ·
  *                       revenue) instead of the cash-flow-gap rule, so total
  *                       wage spending — and the uniform market wage
- *                       totalBudget/N — scales with the economy as population
+ *                       totalBudget/N — scales with the colony as population
  *                       and nominal demand grow; 0 keeps the legacy rule
  * @param eUtilThreshold minimal capacity utilization to allow capital expansion
  * @param rUtilThreshold minimal capacity utilization to allow capital
  *                       replacement
  * @param avgProfitWin   time window within which average profit is computed
- * @param warmupDays     number of initial steps (days) the economy is given to
+ * @param warmupDays     number of initial steps (days) the colony is given to
  *                       reach steady state before the aggressive
  *                       capital-purchase nudges below are allowed to fire; until
  *                       then the rolling average profit they key off of is not

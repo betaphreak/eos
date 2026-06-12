@@ -2,7 +2,7 @@ package eos.agent.firm;
 
 import eos.bank.Bank;
 import eos.bank.Account;
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 import eos.good.Good;
 import eos.market.CapitalMarket;
 import eos.market.LaborMarket;
@@ -62,12 +62,12 @@ public class CFirm extends Firm {
 	 *            initial wage budget
 	 * @param bank
 	 *            the bank at which this firm holds its accounts
-	 * @param economy
-	 *            the economy this firm belongs to
+	 * @param colony
+	 *            the colony this firm belongs to
 	 */
 	public CFirm(double initCheckingBal, double initSavingsBal,
-			double initWageBudget, Bank bank, Economy economy) {
-		super(initCheckingBal, initSavingsBal, bank, economy);
+			double initWageBudget, Bank bank, Settlement colony) {
+		super(initCheckingBal, initSavingsBal, bank, colony);
 		setName("Capital Firm");
 
 		// we assume infinite capacity here
@@ -77,13 +77,13 @@ public class CFirm extends Firm {
 		beta = 0.5;
 		this.price = INIT_CAPITAL_PRICE;
 		wageBudget = initWageBudget;
-		cMkt = (CapitalMarket) economy.getMarket("Capital");
-		lMkt = (LaborMarket) economy.getMarket("Labor");
+		cMkt = (CapitalMarket) colony.getMarket("Capital");
+		lMkt = (LaborMarket) colony.getMarket("Labor");
 		lMkt.addEmployer(this, labor, initWageBudget);
 	}
 
 	/**
-	 * Called by Economy.newDay() in each step
+	 * Called by Settlement.newDay() in each step
 	 */
 	public void act() {
 		Bank bank = getBank();

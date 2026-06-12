@@ -1,6 +1,6 @@
 package eos.io.printer;
 
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 import lombok.Getter;
 
 /**
@@ -62,14 +62,14 @@ public abstract class Printer {
 	 * month is 1), provided the step is within the printer's [{@code start},
 	 * {@code end}] bounds.
 	 *
-	 * @param economy
-	 *            the economy being printed (source of the in-game date and step)
+	 * @param colony
+	 *            the colony being printed (source of the in-game date and step)
 	 * @return {@code true} if a data row should be written this step
 	 */
-	protected boolean shouldPrint(Economy economy) {
-		int step = economy.getTimeStep();
+	protected boolean shouldPrint(Settlement colony) {
+		int step = colony.getTimeStep();
 		return step >= start && step <= end
-				&& economy.getDate().getDayOfMonth() == 1;
+				&& colony.getDate().getDayOfMonth() == 1;
 	}
 
 	/**
@@ -78,13 +78,13 @@ public abstract class Printer {
 	public abstract void printTitles();
 
 	/**
-	 * Print data, called by {@link Economy#newDay()} at each time step.
+	 * Print data, called by {@link Settlement#newDay()} at each time step.
 	 *
-	 * @param economy
-	 *            the economy being printed (source of the in-game date and time
+	 * @param colony
+	 *            the colony being printed (source of the in-game date and time
 	 *            step)
 	 */
-	public abstract void print(Economy economy);
+	public abstract void print(Settlement colony);
 
 	/**
 	 * Clean up the printer

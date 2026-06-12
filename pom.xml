@@ -88,7 +88,7 @@
             </plugin>
 
             <!--
-              Each simulation test runs the full economy. Economy state is
+              Each simulation test runs the full colony. Settlement state is
               per-instance now, but the SimLog logging handler is still a
               process-global static, so a fresh JVM is forked per test class
               (reuseForks=false) to isolate it. Assertions stay on, matching

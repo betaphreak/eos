@@ -1,4 +1,4 @@
-package eos.economy;
+package eos.settlement;
 
 import java.time.LocalDate;
 
@@ -9,7 +9,7 @@ import lombok.Getter;
 
 /**
  * A game session owns the random-number seed and its {@link Rng}, and creates
- * {@link Economy} instances from it. The economies it creates share this
+ * {@link Settlement} instances from it. The colonies it creates share this
  * session's generator, so distinct sessions draw from independent generators
  * and run fully independently. The same seed yields an identical run.
  * <p>
@@ -17,7 +17,7 @@ import lombok.Getter;
  * demographic service ({@link Demography}), each drawn from its own
  * <em>separate</em> generator (a salted copy of the seed) so naming and
  * mortality are deterministic yet never perturb the economic random stream.
- * Because these are shared across the session's economies, dynasty surnames are
+ * Because these are shared across the session's colonies, dynasty surnames are
  * unique for the whole session.
  *
  * @author zhihongx
@@ -33,7 +33,7 @@ public class GameSession {
 	@Getter
 	private final long seed;
 
-	// random-number generator shared with the economies this session creates
+	// random-number generator shared with the colonies this session creates
 	@Getter
 	private final Rng rng;
 
@@ -59,7 +59,7 @@ public class GameSession {
 	}
 
 	/**
-	 * Create a new economy whose step 0 falls on <tt>startDate</tt>, drawing
+	 * Create a new colony whose step 0 falls on <tt>startDate</tt>, drawing
 	 * economic randomness from this session's {@link Rng}, names from its
 	 * {@link NameRegistry} and mortality from its {@link Demography}.
 	 *
@@ -69,11 +69,11 @@ public class GameSession {
 	 *            mean initial age (years) of founding household heads
 	 * @param targetNStock
 	 *            target necessity stock every laborer tries to accumulate
-	 * @return a fresh economy
+	 * @return a fresh colony
 	 */
-	public Economy newEconomy(LocalDate startDate, double meanInitAgeYears,
+	public Settlement newSettlement(LocalDate startDate, double meanInitAgeYears,
 			double targetNStock) {
-		return new Economy(startDate, rng, names, demography, meanInitAgeYears,
+		return new Settlement(startDate, rng, names, demography, meanInitAgeYears,
 				targetNStock);
 	}
 }

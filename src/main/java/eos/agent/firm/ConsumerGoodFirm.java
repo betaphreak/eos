@@ -2,7 +2,7 @@ package eos.agent.firm;
 
 import eos.bank.Bank;
 import eos.bank.Account;
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 import eos.good.Capital;
 import eos.good.Good;
 import eos.market.CapitalMarket;
@@ -85,21 +85,21 @@ public abstract class ConsumerGoodFirm extends Firm {
 	 *            tunable model parameters
 	 * @param bank
 	 *            the bank at which this firm holds its accounts
-	 * @param economy
-	 *            the economy this firm belongs to
+	 * @param colony
+	 *            the colony this firm belongs to
 	 */
 	public ConsumerGoodFirm(String productName, double initCheckingBal,
 			double initSavingsBal, double initOutput, double initWageBudget,
 			int initCapital, CFirm[] capitalProducers, FirmConfig config,
-			Bank bank, Economy economy) {
-		super(initCheckingBal, initSavingsBal, bank, economy);
+			Bank bank, Settlement colony) {
+		super(initCheckingBal, initSavingsBal, bank, colony);
 		setName(productName + " Firm");
 		this.config = config;
 		capital = new Capital(initCapital, getID(), bank, capitalProducers,
-				economy.getRng());
-		pMkt = (ConsumerGoodMarket) economy.getMarket(productName);
-		cMkt = (CapitalMarket) economy.getMarket("Capital");
-		lMkt = (LaborMarket) economy.getMarket("Labor");
+				colony.getRng());
+		pMkt = (ConsumerGoodMarket) colony.getMarket(productName);
+		cMkt = (CapitalMarket) colony.getMarket("Capital");
+		lMkt = (LaborMarket) colony.getMarket("Labor");
 		output = initOutput;
 		wageBudget = initWageBudget;
 		loan = 0;
@@ -112,7 +112,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 	}
 
 	/**
-	 * Called by Economy.newDay() in each step.
+	 * Called by Settlement.newDay() in each step.
 	 */
 	public void act() {
 		double newOutput, newWageBudget, pPrice;
@@ -129,7 +129,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 		wage = labor.getQuantity() > 0 ? wageBudget / labor.getQuantity() : 0;
 
 		if (labor.getQuantity() > 0) {
-			if (getEconomy().getTimeStep() == 0) {
+			if (getColony().getTimeStep() == 0) {
 				// initial step
 				newOutput = output;
 				newWageBudget = wageBudget;
@@ -138,7 +138,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 				if (config.laborShare() > 0) {
 					// labor-share rule: budget a fixed share of revenue, so
 					// total wage spending — and the uniform market wage
-					// totalBudget/N — scales with the economy instead of being
+					// totalBudget/N — scales with the colony instead of being
 					// outrun by a growing labor pool
 					newWageBudget = config.laborShare() * revenue;
 				} else {
@@ -193,7 +193,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 												// capital
 		capitalCost = capital.useCapital(); // cost of capital in this step
 
-		if (getEconomy().getTimeStep() > 0) {
+		if (getColony().getTimeStep() > 0) {
 			int capitalToBuy = 0; // number of machines to purchase
 			double capitalPrice = cMkt.getAvgPrice();
 			double IR = bank.getLoanIR(); // interest rate
@@ -215,12 +215,12 @@ public abstract class ConsumerGoodFirm extends Firm {
 			/* The following steps are considered hacks, use with discretion. */
 			/*
 			 * These nudges key off the rolling average profit, which is only
-			 * meaningful once the economy has reached steady state, so they
+			 * meaningful once the colony has reached steady state, so they
 			 * stay off for the first config.warmupDays() steps. The magic
 			 * numbers (warm-up length, the profit-spike multiple, and the
 			 * lowered utilization bar) live in FirmConfig.
 			 */
-			boolean warmedUp = getEconomy().getTimeStep() > config.warmupDays();
+			boolean warmedUp = getColony().getTimeStep() > config.warmupDays();
 
 			/*
 			 * Spur firms to buy capital when profit is really high (more than

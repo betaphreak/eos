@@ -5,12 +5,12 @@ import java.util.List;
 
 import eos.bank.Bank;
 import eos.bank.BankConfig;
-import eos.economy.Economy;
-import eos.economy.GameSession;
+import eos.settlement.Settlement;
+import eos.settlement.GameSession;
 import eos.io.SimLog;
 
 /**
- * Simulation (scale sweep): explores <b>how small the economy can be and still
+ * Simulation (scale sweep): explores <b>how small the colony can be and still
  * be stable</b>. It does not model a single fixed population like
  * {@link HomogeneousEconomy}; instead it scales the consumer-firm and laborer counts
  * <i>down together</i> at the default firms:laborers ratio and reports, for each
@@ -22,7 +22,7 @@ import eos.io.SimLog;
  * firms, {@code k} necessity firms (plus the single capital firm) and
  * {@code k * }{@value #LABORERS_PER_FIRM} laborers, so the composition matches
  * the calibrated default at every size. The sweep walks {@code k} from the
- * default down to 1, runs each as a homogeneous single-bank economy (like
+ * default down to 1, runs each as a homogeneous single-bank colony (like
  * {@link HomogeneousEconomy}), and scores stability.
  * <p>
  * A run is judged <b>stable</b> when, after the full horizon, (1) its laborer
@@ -30,7 +30,7 @@ import eos.io.SimLog;
  * count — in a closed run replacement keeps this pinned, so a shortfall means
  * the run blew up), (2) both consumer-good prices stay finite, positive and
  * below {@value #PRICE_RUNAWAY_FACTOR}x their initial ceiling (the real
- * discriminator: a too-small economy drives persistent excess demand and the
+ * discriminator: a too-small colony drives persistent excess demand and the
  * price compounds toward infinity — and a runaway stays a finite double for a
  * long time, so the bound, not mere finiteness, is what catches it), and (3) the
  * bank's pools and rates stay finite. A run that throws (e.g. an {@code -ea}
@@ -66,7 +66,7 @@ public class ScaleSweep {
 
 	/**
 	 * A consumer-good price above this multiple of its market's initial price
-	 * ceiling is treated as a runaway (the economy is collapsing into
+	 * ceiling is treated as a runaway (the colony is collapsing into
 	 * hyperinflation even though the price is still a finite, positive double).
 	 * Healthy runs sit a few times the initial ceiling; a broken one compounds to
 	 * many orders of magnitude beyond it — so any factor between the two
@@ -81,7 +81,7 @@ public class ScaleSweep {
 	}
 
 	/**
-	 * Build and run a single homogeneous, single-bank economy at the given scale
+	 * Build and run a single homogeneous, single-bank colony at the given scale
 	 * (mirrors {@link HomogeneousEconomy#run()} but with the firm/laborer counts varied
 	 * and no printers registered). Returns the finished harness so the caller can
 	 * inspect the final state.
@@ -99,11 +99,11 @@ public class ScaleSweep {
 				.numLaborers(numLaborers)
 				.build();
 		GameSession session = new GameSession(SEED);
-		Economy economy = session.newEconomy(cfg.startDate(),
+		Settlement colony = session.newSettlement(cfg.startDate(),
 				cfg.meanInitAgeYears(), cfg.targetNStock());
-		SimLog.init(economy);
+		SimLog.init(colony);
 
-		SimulationHarness h = new SimulationHarness(cfg, economy);
+		SimulationHarness h = new SimulationHarness(cfg, colony);
 		h.createMarkets();
 		Bank bank = h.addBank(BankConfig.DEFAULT);
 		h.createFirms(bank, i -> bank,
@@ -117,7 +117,7 @@ public class ScaleSweep {
 	}
 
 	/**
-	 * Judge a finished run. Returns {@code null} if the economy is stable, else a
+	 * Judge a finished run. Returns {@code null} if the colony is stable, else a
 	 * short human-readable reason it is not.
 	 *
 	 * @param h
@@ -187,7 +187,7 @@ public class ScaleSweep {
 						h.getNecessityMkt().getLastMktPrice());
 			} catch (Throwable t) {
 				// a thrown error (e.g. an -ea invariant tripping in a broken
-				// small economy) counts as unstable, not a crash of the sweep
+				// small colony) counts as unstable, not a crash of the sweep
 				r = new ScaleResult(k, labs, false,
 						"threw " + t.getClass().getSimpleName() + ": "
 								+ t.getMessage(),
@@ -220,7 +220,7 @@ public class ScaleSweep {
 	}
 
 	/**
-	 * Convention hook: build and run a single default-scale economy and return
+	 * Convention hook: build and run a single default-scale colony and return
 	 * its harness. The sweep itself runs from {@link #main}.
 	 *
 	 * @return the finished default-scale harness

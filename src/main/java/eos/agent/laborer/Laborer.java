@@ -6,7 +6,7 @@ import java.time.temporal.ChronoUnit;
 import eos.agent.Agent;
 import eos.bank.Bank;
 import eos.bank.Account;
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 import eos.good.Enjoyment;
 import eos.good.Good;
 import eos.good.Necessity;
@@ -36,7 +36,7 @@ public class Laborer extends Agent {
 
 	// in-game birth date of the household head: the date of construction less a
 	// sampled initial age. The source of truth for the head's age (derived as
-	// the days from here to the economy's current date).
+	// the days from here to the colony's current date).
 	@Getter
 	private final LocalDate birthDate;
 
@@ -123,21 +123,21 @@ public class Laborer extends Agent {
 	 *            tunable model parameters
 	 * @param bank
 	 *            the bank at which this laborer holds its accounts
-	 * @param economy
-	 *            the economy this laborer belongs to
+	 * @param colony
+	 *            the colony this laborer belongs to
 	 */
 	public Laborer(double initEQty, double initNQty, double initCheckingBal,
 			double initSavingsBal, double initSavingsRate, LaborerConfig config,
-			Bank bank, Economy economy) {
+			Bank bank, Settlement colony) {
 		this(initEQty, initNQty, initCheckingBal, initSavingsBal, false,
-				initSavingsRate, config, bank, economy,
-				economy.getNames().nextHead());
+				initSavingsRate, config, bank, colony,
+				colony.getNames().nextHead());
 	}
 
 	/**
 	 * Create a brand-new household funded out of the bank's equity rather than a
 	 * fresh endowment — an externally-bankrolled immigrant settling in an open
-	 * economy. It starts a new dynasty (a fresh working-age head with a unique
+	 * colony. It starts a new dynasty (a fresh working-age head with a unique
 	 * surname); its opening balances are drawn from equity (so the external
 	 * money that fed equity now circulates), as for a successor household.
 	 *
@@ -155,18 +155,18 @@ public class Laborer extends Agent {
 	 *            tunable model parameters
 	 * @param bank
 	 *            the bank at which this laborer holds its accounts
-	 * @param economy
-	 *            the economy this laborer belongs to
+	 * @param colony
+	 *            the colony this laborer belongs to
 	 * @param fundedFromEquity
 	 *            must be true; selects equity funding over a fresh endowment
 	 *            (distinguishes this constructor from the founding one)
 	 */
 	public Laborer(double initEQty, double initNQty, double initCheckingBal,
 			double initSavingsBal, double initSavingsRate, LaborerConfig config,
-			Bank bank, Economy economy, boolean fundedFromEquity) {
+			Bank bank, Settlement colony, boolean fundedFromEquity) {
 		this(initEQty, initNQty, initCheckingBal, initSavingsBal,
-				fundedFromEquity, initSavingsRate, config, bank, economy,
-				economy.getNames().nextHead());
+				fundedFromEquity, initSavingsRate, config, bank, colony,
+				colony.getNames().nextHead());
 	}
 
 	/**
@@ -186,15 +186,15 @@ public class Laborer extends Agent {
 	 *            initial savings rate
 	 * @param config
 	 *            tunable model parameters
-	 * @param economy
-	 *            the economy this laborer belongs to
+	 * @param colony
+	 *            the colony this laborer belongs to
 	 */
 	public Laborer(Laborer predecessor, double initEQty, double initNQty,
-			double initSavingsRate, LaborerConfig config, Economy economy) {
+			double initSavingsRate, LaborerConfig config, Settlement colony) {
 		this(initEQty, initNQty, predecessor.estateChecking,
 				predecessor.estateSavings, true, initSavingsRate, config,
-				predecessor.getBank(), economy,
-				economy.getNames()
+				predecessor.getBank(), colony,
+				colony.getNames()
 						.nextHeadInDynasty(predecessor.head.surname()));
 	}
 
@@ -206,8 +206,8 @@ public class Laborer extends Agent {
 	 */
 	private Laborer(double initEQty, double initNQty, double initCheckingBal,
 			double initSavingsBal, boolean inherited, double initSavingsRate,
-			LaborerConfig config, Bank bank, Economy economy, Person head) {
-		super(bank, economy);
+			LaborerConfig config, Bank bank, Settlement colony, Person head) {
+		super(bank, colony);
 
 		// open a checking account and a savings account
 		if (inherited)
@@ -219,21 +219,21 @@ public class Laborer extends Agent {
 		// mortality RNG; neither perturbs the economic random stream). The birth
 		// date is the current in-game date less a sampled initial age.
 		this.head = head;
-		this.birthDate = economy.getDate().minusDays(economy.getDemography()
-				.sampleInitialAgeDays(economy.getMeanInitAgeYears()));
+		this.birthDate = colony.getDate().minusDays(colony.getDemography()
+				.sampleInitialAgeDays(colony.getMeanInitAgeYears()));
 
 		this.config = config;
 		enjoyment = new Enjoyment(initEQty);
 		necessity = new Necessity(initNQty);
-		eMkt = (ConsumerGoodMarket) economy.getMarket("Enjoyment");
-		nMkt = (ConsumerGoodMarket) economy.getMarket("Necessity");
-		lMkt = (LaborMarket) economy.getMarket("Labor");
+		eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
+		nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
+		lMkt = (LaborMarket) colony.getMarket("Labor");
 		this.savingsRate = initSavingsRate;
 		lMkt.addEmployee(this);
 	}
 
 	/**
-	 * Called by Economy.newDay() in each step.
+	 * Called by Settlement.newDay() in each step.
 	 */
 	public void act() {
 		Bank bank = getBank();
@@ -241,7 +241,7 @@ public class Laborer extends Agent {
 
 		// the household head may die of old age; its age in days is the span
 		// from its birth date to today
-		if (getEconomy().getDemography().diesOfOldAge(ageDays())) {
+		if (getColony().getDemography().diesOfOldAge(ageDays())) {
 			die();
 			log.info(String.format(
 					"%s (household %d, b. %s) died of old age at %d",
@@ -256,7 +256,7 @@ public class Laborer extends Agent {
 		income = wage + acct.secIC + acct.interest;
 
 		// should have used real interest rate i.e. Bank.getDepositIR() -
-		// Economy.getInflation(). But that seems to produce some instability
+		// Settlement.getInflation(). But that seems to produce some instability
 		// need further testing!!!
 		double RR = bank.getDepositIR();
 
@@ -313,7 +313,7 @@ public class Laborer extends Agent {
 
 		// compute consumption of necessity (in $)
 		nConsumption = consumption * Math.max(0,
-				1 - necessity.getQuantity() / getEconomy().getTargetNStock());
+				1 - necessity.getQuantity() / getColony().getTargetNStock());
 
 		// compute consumption of enjoyment (in $)
 		eConsumption = consumption - nConsumption;
@@ -358,12 +358,12 @@ public class Laborer extends Agent {
 
 	/**
 	 * Return the household head's age in days: the span from its birth date to
-	 * the economy's current date.
+	 * the colony's current date.
 	 *
 	 * @return the head's age in days
 	 */
 	private int ageDays() {
-		return (int) ChronoUnit.DAYS.between(birthDate, getEconomy().getDate());
+		return (int) ChronoUnit.DAYS.between(birthDate, getColony().getDate());
 	}
 
 	/**

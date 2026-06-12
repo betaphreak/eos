@@ -1,6 +1,6 @@
 package eos.market;
 
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 import lombok.Getter;
 
 /**
@@ -24,26 +24,26 @@ public abstract class Market {
 	protected final String name;
 
 	/**
-	 * the economy this market belongs to
+	 * the colony this market belongs to
 	 */
-	protected final Economy economy;
+	protected final Settlement colony;
 
 	/**
 	 * Create a new market trading good
 	 *
 	 * @param good
 	 *            name of good to be traded in the market
-	 * @param economy
-	 *            the economy this market belongs to
+	 * @param colony
+	 *            the colony this market belongs to
 	 */
-	public Market(String good, Economy economy) {
+	public Market(String good, Settlement colony) {
 		this.good = good;
 		this.name = good + " Market";
-		this.economy = economy;
+		this.colony = colony;
 	}
 
 	/**
-	 * Clear the market. Called by Economy.newDay() in each step.
+	 * Clear the market. Called by Settlement.newDay() in each step.
 	 */
 	public abstract void clear();
 }

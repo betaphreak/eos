@@ -1,7 +1,7 @@
 package eos.agent.firm;
 
 import eos.bank.Bank;
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 import eos.good.Good;
 import eos.good.Necessity;
 
@@ -32,16 +32,16 @@ public class NFirm extends ConsumerGoodFirm {
 	 *            tunable model parameters
 	 * @param bank
 	 *            the bank at which this firm holds its accounts
-	 * @param economy
-	 *            the economy this firm belongs to
+	 * @param colony
+	 *            the colony this firm belongs to
 	 */
 	public NFirm(double initCheckingBal, double initSavingsBal,
 			double initOutput, double initWageBudget, int initCapital,
 			CFirm[] capitalProducers, FirmConfig config, Bank bank,
-			Economy economy) {
+			Settlement colony) {
 		super("Necessity", initCheckingBal, initSavingsBal, initOutput,
 				initWageBudget, initCapital, capitalProducers, config, bank,
-				economy);
+				colony);
 		product = new Necessity(0);
 	}
 

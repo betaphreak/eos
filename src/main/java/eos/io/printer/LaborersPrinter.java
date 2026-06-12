@@ -2,27 +2,27 @@ package eos.io.printer;
 
 import eos.agent.Agent;
 import eos.agent.laborer.Laborer;
-import eos.economy.*;
+import eos.settlement.*;
 
 /**
- * This printer tracks statistics of the economy's laborer population. To use it:
+ * This printer tracks statistics of the colony's laborer population. To use it:
  * <p>
  * 1. Create a new <tt>LaborersPrinter</tt>. See
  * {@link #LaborersPrinter(String fileName, int start, int end)}.
  * <p>
  * 2. Call <tt>printTitles()</tt> to print column titles.
  * <p>
- * 3. Add the printer to the Economy by calling <tt>Economy.addPrinter()</tt>.
+ * 3. Add the printer to the Settlement by calling <tt>Settlement.addPrinter()</tt>.
  * <p>
- * 4. Call <tt>print()</tt> of this printer in <tt>Economy.newDay()</tt> to print
+ * 4. Call <tt>print()</tt> of this printer in <tt>Settlement.newDay()</tt> to print
  * data.
  * <p>
  * 5. Include <tt>cleanup()</tt> of this printer in
- * <tt>Economy.cleanUpPrinters()</tt>, and call that method to clean up the
+ * <tt>Settlement.cleanUpPrinters()</tt>, and call that method to clean up the
  * printers.
  * <p>
- * Each row aggregates over <em>all laborers currently alive in the economy</em>
- * (read from {@link Economy#getAgents()} at print time), so it reflects the
+ * Each row aggregates over <em>all laborers currently alive in the colony</em>
+ * (read from {@link Settlement#getAgents()} at print time), so it reflects the
  * living population as it changes — the founding cohort plus any replacement and
  * immigrant households — not a fixed initial set. Averages are over the living
  * count.
@@ -177,10 +177,10 @@ public class LaborersPrinter extends Printer {
 	}
 
 	/**
-	 * Print data, called by Economy at each time step
+	 * Print data, called by Settlement at each time step
 	 */
-	public void print(Economy economy) {
-		if (shouldPrint(economy)) {
+	public void print(Settlement colony) {
+		if (shouldPrint(colony)) {
 			double avgWage = 0;
 			double avgIC = 0;
 			double avgConsumption = 0;
@@ -196,7 +196,7 @@ public class LaborersPrinter extends Printer {
 
 			// aggregate over the living laborer population, which grows and is
 			// replenished over the run (founders, replacements and immigrants)
-			for (Agent agent : economy.getAgents())
+			for (Agent agent : colony.getAgents())
 				if (agent instanceof Laborer laborer) {
 					avgWage += laborer.getWage();
 					avgIC += laborer.getIncome();
@@ -222,7 +222,7 @@ public class LaborersPrinter extends Printer {
 				avgEConsumption /= count;
 				avgAge /= count;
 			}
-			printWriter.println(economy.getDate(), avgWage, avgIC, avgConsumption,
+			printWriter.println(colony.getDate(), avgWage, avgIC, avgConsumption,
 					avgSavings, totSavings, avgSavingsRate, avgNStock, avgEStock,
 					avgNConsumption, avgEConsumption, avgAge, count);
 		}

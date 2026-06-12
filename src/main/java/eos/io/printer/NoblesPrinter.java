@@ -2,14 +2,14 @@ package eos.io.printer;
 
 import eos.agent.Agent;
 import eos.agent.noble.Noble;
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 
 /**
  * Writes a CSV time-series of the noble population: how many nobles are alive
  * and their average dividends, income, consumption and wealth. Aggregates over
- * the living nobles read from {@link Economy#getAgents()} each step (mirroring
- * {@link LaborersPrinter}). Register with {@link Economy#addPrinter} and finalize
- * with {@link Economy#cleanUpPrinters}.
+ * the living nobles read from {@link Settlement#getAgents()} each step (mirroring
+ * {@link LaborersPrinter}). Register with {@link Settlement#addPrinter} and finalize
+ * with {@link Settlement#cleanUpPrinters}.
  * <p>
  * Columns: Date, Count, AvgDividends, AvgIncome, AvgConsumption, AvgWealth,
  * TotalWealth, AvgAge.
@@ -30,14 +30,14 @@ public class NoblesPrinter extends Printer {
 	}
 
 	@Override
-	public void print(Economy economy) {
-		if (!shouldPrint(economy))
+	public void print(Settlement colony) {
+		if (!shouldPrint(colony))
 			return;
 
 		double totDividends = 0, totIncome = 0, totConsumption = 0, totWealth = 0;
 		double totAge = 0;
 		int count = 0;
-		for (Agent agent : economy.getAgents())
+		for (Agent agent : colony.getAgents())
 			if (agent instanceof Noble noble) {
 				totDividends += noble.getDividends();
 				totIncome += noble.getIncome();
@@ -48,7 +48,7 @@ public class NoblesPrinter extends Printer {
 			}
 
 		double inv = count > 0 ? 1.0 / count : 0;
-		printWriter.println(economy.getDate(), count, totDividends * inv,
+		printWriter.println(colony.getDate(), count, totDividends * inv,
 				totIncome * inv, totConsumption * inv, totWealth * inv, totWealth,
 				totAge * inv);
 	}

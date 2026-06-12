@@ -4,12 +4,12 @@ import java.util.function.IntFunction;
 
 import eos.bank.Bank;
 import eos.bank.BankConfig;
-import eos.economy.Economy;
-import eos.economy.GameSession;
+import eos.settlement.Settlement;
+import eos.settlement.GameSession;
 import eos.io.SimLog;
 
 /**
- * Simulation (two-bank case): the same economy as {@link HomogeneousEconomy}, but with
+ * Simulation (two-bank case): the same colony as {@link HomogeneousEconomy}, but with
  * <b>two</b> banks and every agent type split across them (the capital firm
  * banks at A; enjoyment firms, necessity firms and laborers alternate A/B by
  * index). Wages, purchases and capital payments therefore cross bank
@@ -28,11 +28,11 @@ public class TwoBankEconomy {
 	public static SimulationHarness run() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		GameSession session = new GameSession(7654321);
-		Economy economy = session.newEconomy(cfg.startDate(),
+		Settlement colony = session.newSettlement(cfg.startDate(),
 				cfg.meanInitAgeYears(), cfg.targetNStock());
-		SimLog.init(economy);
+		SimLog.init(colony);
 
-		SimulationHarness h = new SimulationHarness(cfg, economy);
+		SimulationHarness h = new SimulationHarness(cfg, colony);
 		h.createMarkets();
 		Bank bankA = h.addBank(BankConfig.DEFAULT);
 		Bank bankB = h.addBank(BankConfig.DEFAULT);

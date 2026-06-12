@@ -9,7 +9,7 @@ import eos.agent.Agent;
 import eos.agent.firm.Firm;
 import eos.bank.Account;
 import eos.bank.Bank;
-import eos.economy.Economy;
+import eos.settlement.Settlement;
 import eos.good.Enjoyment;
 import eos.good.Good;
 import eos.good.Necessity;
@@ -22,21 +22,21 @@ import lombok.extern.java.Log;
 /**
  * A noble: the owner of one or more firms (and, in principle, banks), who lives
  * off the surplus they produce rather than off wages. A noble does <b>not</b>
- * sell labor — it is a pure rentier that participates in the economy on the
+ * sell labor — it is a pure rentier that participates in the colony on the
  * demand side, exactly as sketched in "option A": its dividend income is spent
  * back into the consumer-good markets, so it influences the labor market only
  * indirectly (consumption → firm revenue → the labor-share wage budget).
  * <p>
  * Like a {@link eos.agent.laborer.Laborer}, a noble is a household identified by
  * a {@link Person} {@code head} drawn the same way — {@code
- * economy.getNames().nextHead()} — so it carries a male given name and a unique
+ * colony.getNames().nextHead()} — so it carries a male given name and a unique
  * dynasty surname from the session's name pool (on the separate naming RNG, so
  * naming a noble never perturbs the economic random stream). It also ages and
  * dies on the same schedule: the head carries a {@code birthDate} and may die
  * of old age each step against the {@code mortality/} life table, whereupon a
  * <b>successor of the same dynasty</b>
  * inherits the estate <i>and the ownership of the firms</i> (wired via {@link
- * Economy#addReplacementPolicy}), so the aristocracy persists across generations.
+ * Settlement#addReplacementPolicy}), so the aristocracy persists across generations.
  * <p>
  * Each step the noble <em>pulls</em> a dividend from every owned firm: a share
  * of the firm's positive profit, moved from the firm's account to the noble's
@@ -116,14 +116,14 @@ public class Noble extends Agent {
 	 *            tunable model parameters
 	 * @param bank
 	 *            the bank at which this noble holds its accounts
-	 * @param economy
-	 *            the economy this noble belongs to
+	 * @param colony
+	 *            the colony this noble belongs to
 	 */
 	public Noble(double initCheckingBal, double initSavingsBal,
 			List<Firm> ownedFirms, List<Bank> ownedBanks, NobleConfig config,
-			Bank bank, Economy economy) {
+			Bank bank, Settlement colony) {
 		this(initCheckingBal, initSavingsBal, false, ownedFirms, ownedBanks,
-				config, bank, economy, economy.getNames().nextHead());
+				config, bank, colony, colony.getNames().nextHead());
 	}
 
 	/**
@@ -138,14 +138,14 @@ public class Noble extends Agent {
 	 *            inherited
 	 * @param config
 	 *            tunable model parameters
-	 * @param economy
-	 *            the economy this noble belongs to
+	 * @param colony
+	 *            the colony this noble belongs to
 	 */
-	public Noble(Noble predecessor, NobleConfig config, Economy economy) {
+	public Noble(Noble predecessor, NobleConfig config, Settlement colony) {
 		this(predecessor.estateChecking, predecessor.estateSavings, true,
 				predecessor.firms, predecessor.banks, config,
-				predecessor.getBank(), economy,
-				economy.getNames()
+				predecessor.getBank(), colony,
+				colony.getNames()
 						.nextHeadInDynasty(predecessor.head.surname()));
 	}
 
@@ -157,8 +157,8 @@ public class Noble extends Agent {
 	 */
 	private Noble(double initCheckingBal, double initSavingsBal,
 			boolean inherited, List<Firm> ownedFirms, List<Bank> ownedBanks,
-			NobleConfig config, Bank bank, Economy economy, Person head) {
-		super(bank, economy);
+			NobleConfig config, Bank bank, Settlement colony, Person head) {
+		super(bank, colony);
 		if (inherited)
 			bank.openInheritedAcct(getID(), initCheckingBal, initSavingsBal);
 		else
@@ -167,20 +167,20 @@ public class Noble extends Agent {
 		// named the same way as a laborer household head, and aged the same way:
 		// a working-age birth date sampled on the separate mortality RNG
 		this.head = head;
-		this.birthDate = economy.getDate().minusDays(economy.getDemography()
-				.sampleInitialAgeDays(economy.getMeanInitAgeYears()));
+		this.birthDate = colony.getDate().minusDays(colony.getDemography()
+				.sampleInitialAgeDays(colony.getMeanInitAgeYears()));
 
 		this.config = config;
 		this.firms = new ArrayList<>(ownedFirms);
 		this.banks = new ArrayList<>(ownedBanks);
 		this.enjoyment = new Enjoyment(0);
 		this.necessity = new Necessity(0);
-		this.eMkt = (ConsumerGoodMarket) economy.getMarket("Enjoyment");
-		this.nMkt = (ConsumerGoodMarket) economy.getMarket("Necessity");
+		this.eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
+		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
 	}
 
 	/**
-	 * Called by Economy.newDay() in each step.
+	 * Called by Settlement.newDay() in each step.
 	 */
 	public void act() {
 		Bank bank = getBank();
@@ -189,7 +189,7 @@ public class Noble extends Agent {
 		// the head may die of old age; its estate folds into the bank's equity,
 		// and a successor of the same dynasty inherits both the estate and the
 		// firms (see addReplacementPolicy)
-		if (getEconomy().getDemography().diesOfOldAge(ageDays())) {
+		if (getColony().getDemography().diesOfOldAge(ageDays())) {
 			die();
 			log.info(String.format(
 					"%s (noble %d, b. %s) died of old age at %d",
@@ -271,7 +271,7 @@ public class Noble extends Agent {
 
 	/** The head's age in days: the span from its birth date to today. */
 	private int ageDays() {
-		return (int) ChronoUnit.DAYS.between(birthDate, getEconomy().getDate());
+		return (int) ChronoUnit.DAYS.between(birthDate, getColony().getDate());
 	}
 
 	/**
