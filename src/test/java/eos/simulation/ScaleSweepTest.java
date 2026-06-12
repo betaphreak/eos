@@ -1,9 +1,6 @@
 package eos.simulation;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
@@ -12,22 +9,14 @@ import org.junit.jupiter.api.Test;
 import eos.simulation.ScaleSweep.ScaleResult;
 
 /**
- * Tests for the scale-sweep simulation. The full sweep runs many colonies, so
- * the heavy run-to-completion check covers only the default scale (a regression
- * guard equivalent to the other smoke tests); the minimum-selection logic is
- * checked as a pure function over synthetic results to stay fast.
+ * Tests for the scale-sweep's minimum-selection logic, checked as a pure function
+ * over synthetic results so they stay fast (the full sweep runs many colonies).
+ * A healthy default-scale run is no longer exercised here: its economy is the
+ * same as {@code HomogeneousEconomy}'s, whose smoke test (in {@link
+ * ClosedColonySmokeTest}) now also asserts {@link ScaleSweep#diagnose} judges it
+ * stable.
  */
 class ScaleSweepTest {
-
-	@Test
-	void defaultScaleIsStable() {
-		SimulationHarness h = assertDoesNotThrow(() -> ScaleSweep
-				.runScale(ScaleSweep.DEFAULT_FIRMS, ScaleSweep.DEFAULT_LABORERS));
-		assertNull(ScaleSweep.diagnose(h),
-				"default scale should be judged stable");
-		assertTrue(h.currentLaborerCount() > 400,
-				"expected >400 laborers alive, got " + h.currentLaborerCount());
-	}
 
 	@Test
 	void minimumStablePicksFewestStableFirms() {
