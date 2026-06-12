@@ -79,10 +79,6 @@ public class Noble extends Agent {
 	private final ConsumerGoodMarket eMkt;
 	private final ConsumerGoodMarket nMkt;
 
-	// demand strategies posted to those markets
-	private final DemandForE demandForE = new DemandForE();
-	private final DemandForN demandForN = new DemandForN();
-
 	// dividends collected in the last step
 	@Getter
 	private double dividends;
@@ -99,19 +95,10 @@ public class Noble extends Agent {
 	@Getter
 	private double eConsumption;
 
-	/* demand for enjoyment: spend the enjoyment budget at the going price */
-	private class DemandForE implements Demand {
-		public double getDemand(double price) {
-			return eConsumption / price;
-		}
-	}
-
-	/* demand for necessity: spend the necessity budget at the going price */
-	private class DemandForN implements Demand {
-		public double getDemand(double price) {
-			return nConsumption / price;
-		}
-	}
+	// demand strategies posted to those markets: spend each budget at the going
+	// price (nobles have no minimum-necessity floor — they never starve)
+	private final Demand demandForE = price -> eConsumption / price;
+	private final Demand demandForN = price -> nConsumption / price;
 
 	/**
 	 * Create a new (founding) noble owning <tt>ownedFirms</tt>, endowed with a

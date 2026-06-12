@@ -100,7 +100,7 @@ public class ScaleSweep {
 				.build();
 		GameSession session = new GameSession(SEED);
 		Economy economy = session.newEconomy(cfg.startDate(),
-				cfg.meanInitAgeYears());
+				cfg.meanInitAgeYears(), cfg.targetNStock());
 		SimLog.init(economy);
 
 		SimulationHarness h = new SimulationHarness(cfg, economy);

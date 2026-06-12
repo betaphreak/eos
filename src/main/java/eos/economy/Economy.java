@@ -89,6 +89,13 @@ public class Economy {
 	@Getter
 	private final double meanInitAgeYears;
 
+	// target necessity stock every laborer in this economy tries to accumulate
+	// (in real units): an economy-wide environmental constant, not a per-laborer
+	// preference. A laborer directs its consumption budget toward necessity in
+	// proportion to how far its stock sits below this target (see Laborer.act).
+	@Getter
+	private final double targetNStock;
+
 	// CPI in the last step
 	private double lastCPI;
 
@@ -120,8 +127,8 @@ public class Economy {
 	/**
 	 * Create a new economy whose step 0 falls on <tt>startDate</tt>, drawing
 	 * randomness from <tt>rng</tt>. Each step advances one day. Use {@link
-	 * GameSession#newEconomy(LocalDate, double)} to create an economy with a
-	 * reproducible random-number seed.
+	 * GameSession#newEconomy(LocalDate, double, double)} to create an economy
+	 * with a reproducible random-number seed.
 	 *
 	 * @param startDate
 	 *            the in-game date of step 0
@@ -133,14 +140,17 @@ public class Economy {
 	 *            the demographic service for this economy
 	 * @param meanInitAgeYears
 	 *            mean initial age (years) of founding household heads
+	 * @param targetNStock
+	 *            target necessity stock every laborer tries to accumulate
 	 */
 	public Economy(LocalDate startDate, Rng rng, NameRegistry names,
-			Demography demography, double meanInitAgeYears) {
+			Demography demography, double meanInitAgeYears, double targetNStock) {
 		this.startDate = startDate;
 		this.rng = rng;
 		this.names = names;
 		this.demography = demography;
 		this.meanInitAgeYears = meanInitAgeYears;
+		this.targetNStock = targetNStock;
 	}
 
 	/**

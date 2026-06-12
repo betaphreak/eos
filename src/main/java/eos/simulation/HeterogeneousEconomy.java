@@ -26,7 +26,7 @@ public class HeterogeneousEconomy {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		GameSession session = new GameSession(2345);
 		Economy economy = session.newEconomy(cfg.startDate(),
-				cfg.meanInitAgeYears());
+				cfg.meanInitAgeYears(), cfg.targetNStock());
 		SimLog.init(economy);
 
 		SimulationHarness h = new SimulationHarness(cfg, economy);

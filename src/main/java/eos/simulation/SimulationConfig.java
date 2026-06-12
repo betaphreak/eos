@@ -26,6 +26,9 @@ import lombok.Builder;
  * @param meanInitAgeYears mean initial age (years) of founding household heads,
  *                     the center of the normal distribution their ages are
  *                     drawn from
+ * @param targetNStock target necessity stock every laborer tries to accumulate
+ *                     (in real units); an economy-wide constant rather than a
+ *                     per-laborer preference, so it is set on the {@code Economy}
  * @param externalInflowPerStep money entering the economy from outside each
  *                     step, injected into the bank's equity; 0 leaves the
  *                     economy closed (no inflow, no immigration)
@@ -53,6 +56,7 @@ public record SimulationConfig(
 		CFirmInit cFirm,
 		LaborerInit laborer,
 		double meanInitAgeYears,
+		double targetNStock,
 		double externalInflowPerStep,
 		double immigrationThreshold,
 		double laborShare) {
@@ -118,6 +122,7 @@ public record SimulationConfig(
 			new CFirmInit(500, 500, 0),            // cFirm
 			new LaborerInit(0, 0, 100, 0.9),       // laborer
 			35,                                    // meanInitAgeYears
+			26,                                    // targetNStock
 			0,                                     // externalInflowPerStep (closed)
 			100,                                   // immigrationThreshold
 			0.5);                                  // laborShare

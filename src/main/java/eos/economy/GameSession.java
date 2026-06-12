@@ -67,9 +67,13 @@ public class GameSession {
 	 *            the in-game date of step 0
 	 * @param meanInitAgeYears
 	 *            mean initial age (years) of founding household heads
+	 * @param targetNStock
+	 *            target necessity stock every laborer tries to accumulate
 	 * @return a fresh economy
 	 */
-	public Economy newEconomy(LocalDate startDate, double meanInitAgeYears) {
-		return new Economy(startDate, rng, names, demography, meanInitAgeYears);
+	public Economy newEconomy(LocalDate startDate, double meanInitAgeYears,
+			double targetNStock) {
+		return new Economy(startDate, rng, names, demography, meanInitAgeYears,
+				targetNStock);
 	}
 }

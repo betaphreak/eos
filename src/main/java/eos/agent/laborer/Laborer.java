@@ -91,11 +91,12 @@ public class Laborer extends Agent {
 	// highest real interest rate seen
 	private double highRR;
 
-	// demand for enjoyment
-	private DemandForE demandForE;
+	// demand for enjoyment: spend the enjoyment budget at the going price
+	private final Demand demandForE = price -> eConsumption / price;
 
-	// demand for necessity
-	private DemandForN demandForN;
+	// demand for necessity: spend the necessity budget, but never below the
+	// minimum real quantity needed to eat
+	private final Demand demandForN = price -> Math.max(nConsumption / price, minN);
 
 	// total income
 	@Getter
@@ -104,20 +105,6 @@ public class Laborer extends Agent {
 	// wage from employment
 	@Getter
 	private double wage;
-
-	/* demand for enjoyment */
-	private class DemandForE implements Demand {
-		public double getDemand(double price) {
-			return eConsumption / price;
-		}
-	}
-
-	/* demand for necessity */
-	private class DemandForN implements Demand {
-		public double getDemand(double price) {
-			return Math.max(nConsumption / price, minN);
-		}
-	}
 
 	/**
 	 * Create a new laborer
@@ -242,8 +229,6 @@ public class Laborer extends Agent {
 		nMkt = (ConsumerGoodMarket) economy.getMarket("Necessity");
 		lMkt = (LaborMarket) economy.getMarket("Labor");
 		this.savingsRate = initSavingsRate;
-		demandForE = new DemandForE();
-		demandForN = new DemandForN();
 		lMkt.addEmployee(this);
 	}
 
@@ -327,8 +312,8 @@ public class Laborer extends Agent {
 		savingsRate = (savings + new_deposit) / (checking + savings);
 
 		// compute consumption of necessity (in $)
-		nConsumption = consumption
-				* Math.max(0, 1 - necessity.getQuantity() / config.targetNStock());
+		nConsumption = consumption * Math.max(0,
+				1 - necessity.getQuantity() / getEconomy().getTargetNStock());
 
 		// compute consumption of enjoyment (in $)
 		eConsumption = consumption - nConsumption;

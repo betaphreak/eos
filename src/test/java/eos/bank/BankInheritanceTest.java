@@ -19,11 +19,11 @@ import eos.util.Rng;
 class BankInheritanceTest {
 
 	// Bank only needs the economy for its bank number; the name/demography
-	// services and the founding-age mean are irrelevant to account settlement,
-	// so they can be null/zero here.
+	// services, the founding-age mean and the target necessity stock are
+	// irrelevant to account settlement, so they can be null/zero here.
 	private Bank newBank() {
 		Economy economy = new Economy(LocalDate.of(1444, 12, 11), new Rng(1L),
-				null, null, 0);
+				null, null, 0, 0);
 		return new Bank(BankConfig.DEFAULT, economy);
 	}
 
