@@ -1,5 +1,10 @@
 package eos.name;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import eos.util.Rng;
 
 /**
@@ -8,10 +13,17 @@ import eos.util.Rng;
  * with the colonies it creates, so naming is independent of (and does not
  * perturb) the economic random stream.
  * <p>
- * Dynasty surnames are drawn <b>without replacement</b>, so every household in
- * the session gets a unique surname; given names are drawn <b>with
- * replacement</b> and may repeat. Draws are weighted by the source tables, so
- * common names are picked first.
+ * Dynasty surnames are drawn <b>without replacement</b>, so every household
+ * <em>in use</em> across the session — in any colony — gets a unique surname;
+ * given names are drawn <b>with replacement</b> and may repeat. Draws are
+ * weighted by the source tables, so common names are picked first.
+ * <p>
+ * Because the pool of surnames is finite, an extinct dynasty's surname is
+ * <b>recycled</b>: when a household dies with no successor, the colony returns
+ * its surname via {@link #releaseDynastyName(String)} and it becomes drawable
+ * again. So the invariant is uniqueness among <em>living</em> households, not
+ * permanent consumption — letting a long run (or many colonies) reuse the names
+ * of bygone dynasties without ever colliding with a current one.
  */
 public final class NameRegistry {
 
@@ -25,12 +37,22 @@ public final class NameRegistry {
 	private final NameTable male;
 	private final NameTable female;
 
-	// consumable dynasty pool (drawn without replacement): a flat weighted list
-	// that shrinks by swap-remove as surnames are handed out
+	// consumable dynasty pool (drawn without replacement): a flat weighted list,
+	// drawable in [0, dynastySize). A draw swap-removes the picked entry; a
+	// release appends it back at the boundary. Capacity is the full set, so a
+	// recycled surname always has a slot.
 	private final String[] dynastyNames;
 	private final double[] dynastyWeights;
 	private double dynastyTotal;
 	private int dynastySize;
+
+	// every surname's original weight, so a recycled one re-enters the pool with
+	// the weight it was loaded with
+	private final Map<String, Double> dynastyWeightByName;
+
+	// surnames currently handed out (in use by a living dynasty); a surname is in
+	// exactly one of {the drawable pool, this set} at any time
+	private final Set<String> inUse = new HashSet<>();
 
 	/**
 	 * Load the complete name sets and bind them to <tt>nameRng</tt>.
@@ -48,6 +70,10 @@ public final class NameRegistry {
 		this.dynastyWeights = dynasty.weightsCopy();
 		this.dynastyTotal = dynasty.total();
 		this.dynastySize = dynastyNames.length;
+
+		this.dynastyWeightByName = new HashMap<>(dynastyNames.length * 2);
+		for (int i = 0; i < dynastyNames.length; i++)
+			dynastyWeightByName.put(dynastyNames[i], dynastyWeights[i]);
 	}
 
 	/**
@@ -70,14 +96,41 @@ public final class NameRegistry {
 			}
 		}
 		String name = dynastyNames[picked];
-		// swap-remove the picked entry so it can't be drawn again
+		// swap-remove the picked entry so it can't be drawn again while in use
 		int last = dynastySize - 1;
 		dynastyTotal -= dynastyWeights[picked];
 		dynastyNames[picked] = dynastyNames[last];
 		dynastyWeights[picked] = dynastyWeights[last];
 		dynastyNames[last] = null;
 		dynastySize--;
+		inUse.add(name);
 		return name;
+	}
+
+	/**
+	 * Return an extinct dynasty's surname to the drawable pool so it can be
+	 * reused. Called when a household dies with no successor, so the surname is no
+	 * longer in use by any living dynasty; it then becomes eligible to be drawn
+	 * again (with its original weight) by a future founding or immigrant
+	 * household. Surnames still in use are never released, so the uniqueness of
+	 * living households is preserved.
+	 *
+	 * @param surname
+	 *            a surname previously handed out by this registry and not yet
+	 *            released
+	 * @throws IllegalStateException
+	 *             if the surname is not currently in use (never drawn, already
+	 *             released, or not from this registry)
+	 */
+	public void releaseDynastyName(String surname) {
+		if (!inUse.remove(surname))
+			throw new IllegalStateException(
+					"surname not in use, cannot release: " + surname);
+		double weight = dynastyWeightByName.get(surname);
+		dynastyNames[dynastySize] = surname;
+		dynastyWeights[dynastySize] = weight;
+		dynastyTotal += weight;
+		dynastySize++;
 	}
 
 	/** Draw a male given name (weighted, with replacement). */

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import eos.agent.Agent;
+import eos.agent.Household;
 import eos.agent.firm.Firm;
 import eos.bank.Account;
 import eos.bank.Bank;
@@ -47,7 +48,7 @@ import lombok.extern.java.Log;
  * no nobles is byte-identical to before.
  */
 @Log
-public class Noble extends Agent {
+public class Noble extends Agent implements Household {
 
 	// tunable model parameters
 	private final NobleConfig config;

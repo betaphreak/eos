@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 import eos.agent.Agent;
+import eos.agent.Household;
 import eos.bank.Bank;
 import eos.bank.Account;
 import eos.settlement.Settlement;
@@ -24,7 +25,7 @@ import lombok.extern.java.Log;
  *
  */
 @Log
-public class Laborer extends Agent {
+public class Laborer extends Agent implements Household {
 
 	// tunable model parameters
 	private final LaborerConfig config;

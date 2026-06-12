@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import eos.agent.Agent;
+import eos.agent.Household;
 import eos.bank.Bank;
 import eos.io.printer.Printer;
 import eos.market.ConsumerGoodMarket;
@@ -242,8 +243,14 @@ public class Settlement {
 				if (replacement != null)
 					break;
 			}
-			if (replacement != null)
+			if (replacement != null) {
 				replacements.add(replacement);
+			} else if (agent instanceof Household h) {
+				// no successor: this dynasty is extinct, so recycle its surname
+				// back into the session-wide pool (successors keep the surname,
+				// so they never reach here and the name stays in use)
+				names.releaseDynastyName(h.getHead().surname());
+			}
 		}
 		deadAgents.clear();
 		agents.addAll(replacements);
