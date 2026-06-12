@@ -250,11 +250,14 @@ public class Laborer extends Agent implements Household {
 				? colony.getNames().nextHead(nameRarity)
 				: colony.getNames().nextHeadInDynasty(surname, nameRarity);
 
-		// a notable arrival (skill above the threshold) is worth recording by name
-		if (isNotable())
+		// a notable arrival (skill above the threshold) is worth recording by name,
+		// and is a person of interest the colony tracks (and logs yearly)
+		if (isNotable()) {
 			log.info(String.format(
 					"%s founded a household in the colony — notable (skill %d)",
 					head.fullName(), skill));
+			colony.addPersonOfInterest(this);
+		}
 
 		this.config = config;
 		enjoyment = new Enjoyment(initEQty);
@@ -277,9 +280,6 @@ public class Laborer extends Agent implements Household {
 		// from its birth date to today
 		if (getColony().getDemography().diesOfOldAge(ageDays())) {
 			die();
-			log.info(String.format(
-					"%s (household %d, b. %s) died of old age at %d",
-					head.fullName(), getID(), birthDate, getAgeYears()));
 			estateChecking = acct.getChecking();
 			estateSavings = acct.getSavings();
 			bank.inheritAndClose(getID());
@@ -294,13 +294,10 @@ public class Laborer extends Agent implements Household {
 		// need further testing!!!
 		double RR = bank.getDepositIR();
 
-		// not enough to eat; die
+		// not enough to eat; die (a successor household of the same dynasty
+		// inherits the estate)
 		if (necessity.decrease(config.eatAmt()) < config.eatAmt()) {
 			die();
-			log.info(String.format(
-					"%s (household %d) died with %.2f checking and %.2f savings",
-					head.fullName(), getID(), acct.getChecking(), acct.getSavings()));
-			// a successor household of the same dynasty inherits the estate
 			estateChecking = acct.getChecking();
 			estateSavings = acct.getSavings();
 			bank.inheritAndClose(getID());
@@ -388,6 +385,17 @@ public class Laborer extends Agent implements Household {
 	 */
 	public double getSavings() {
 		return getBank().getSavings(getID());
+	}
+
+	/**
+	 * A one-line persons-of-interest summary: the head's name and this notable
+	 * household's current skill, age and economic state.
+	 */
+	@Override
+	public String poiSummary() {
+		return String.format(
+				"%s - notable laborer, skill %d, age %d, wage %.2f, income %.2f, savings %.2f",
+				head.fullName(), skill, getAgeYears(), wage, income, getSavings());
 	}
 
 	/**

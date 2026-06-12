@@ -56,6 +56,12 @@ public class Settlement {
 	// agents who die in the current step
 	private final LinkedHashSet<Agent> deadAgents = new LinkedHashSet<Agent>();
 
+	// the colony's persons of interest: every noble and every notable household
+	// (skill above the threshold). Registered at creation, removed on death; their
+	// names and statistics are logged at the start of each year (see
+	// logPersonsOfInterest) instead of logging every individual death.
+	private final LinkedHashSet<Household> personsOfInterest = new LinkedHashSet<Household>();
+
 	// symbol table mapping good names to their markets
 	private final LinkedHashMap<String, Market> markets = new LinkedHashMap<String, Market>();
 
@@ -274,8 +280,10 @@ public class Settlement {
 		start();
 		for (int i = 0; i < steps; i++) {
 			LocalDate date = getDate();
-			if (date.getMonthValue() == 1 && date.getDayOfMonth() == 1)
+			if (date.getMonthValue() == 1 && date.getDayOfMonth() == 1) {
 				System.out.println(date);
+				logPersonsOfInterest();
+			}
 			newDay();
 		}
 	}
@@ -317,6 +325,10 @@ public class Settlement {
 		ArrayList<Agent> replacements = new ArrayList<Agent>();
 		for (Agent agent : deadAgents) {
 			agents.remove(agent);
+			// a dead person of interest leaves the roster (a successor, if any,
+			// registers itself afresh in its constructor)
+			if (agent instanceof Household h)
+				personsOfInterest.remove(h);
 			Agent replacement = null;
 			for (UnaryOperator<Agent> policy : replacementPolicies) {
 				replacement = policy.apply(agent);
@@ -437,6 +449,41 @@ public class Settlement {
 	 */
 	public void addAgent(Agent agent) {
 		agents.add(agent);
+	}
+
+	/**
+	 * Register a <b>person of interest</b> — a noble or a notable household — so
+	 * the colony can log its name and statistics in the yearly roster. Households
+	 * register themselves at creation; the entry is removed when the household
+	 * dies. Idempotent (a set).
+	 *
+	 * @param household
+	 *            the noble or notable household to track
+	 */
+	public void addPersonOfInterest(Household household) {
+		personsOfInterest.add(household);
+	}
+
+	/**
+	 * Return the colony's persons of interest — its living nobles and notable
+	 * households.
+	 *
+	 * @return the persons of interest
+	 */
+	public Collection<Household> getPersonsOfInterest() {
+		return personsOfInterest;
+	}
+
+	// log the names and statistics of the colony's persons of interest (nobles and
+	// notable households) at the start of a year, in place of logging every death;
+	// a no-op when there are none
+	private void logPersonsOfInterest() {
+		if (personsOfInterest.isEmpty())
+			return;
+		log.info("Persons of interest (" + personsOfInterest.size()
+				+ ") at the start of " + getDate().getYear() + ":");
+		for (Household h : personsOfInterest)
+			log.info("  " + h.poiSummary());
 	}
 
 	/**

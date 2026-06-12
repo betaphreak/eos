@@ -61,6 +61,10 @@ class LaborerSkillTest {
 			public int getSkill() {
 				return skill;
 			}
+
+			public String poiSummary() {
+				return "skill " + skill;
+			}
 		};
 	}
 }

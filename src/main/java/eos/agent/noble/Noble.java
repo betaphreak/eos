@@ -209,7 +209,10 @@ public class Noble extends Agent implements Household {
 				? colony.getNames().nextHead(nameRarity)
 				: colony.getNames().nextHeadInDynasty(surname, nameRarity);
 
-		// a notable noble (skill above the threshold) is worth recording by name
+		// every noble is a person of interest the colony tracks (and logs in its
+		// yearly roster); a notable one (skill above the threshold) is also worth
+		// recording by name at its founding
+		colony.addPersonOfInterest(this);
 		if (isNotable())
 			log.info(String.format(
 					"%s founded a noble house in the colony — notable (skill %d)",
@@ -245,9 +248,6 @@ public class Noble extends Agent implements Household {
 		// firms (see addReplacementPolicy)
 		if (getColony().getDemography().diesOfOldAge(ageDays())) {
 			die();
-			log.info(String.format(
-					"%s (noble %d, b. %s) died of old age at %d",
-					head.fullName(), getID(), birthDate, getAgeYears()));
 			estateChecking = acct.getChecking();
 			estateSavings = acct.getSavings();
 			bank.inheritAndClose(getID());
@@ -326,6 +326,18 @@ public class Noble extends Agent implements Household {
 		if (goodName.equals("Necessity"))
 			return necessity;
 		return null;
+	}
+
+	/**
+	 * A one-line persons-of-interest summary: the head's name and this noble's
+	 * current skill, age and economic state.
+	 */
+	@Override
+	public String poiSummary() {
+		return String.format(
+				"%s - noble, skill %d, age %d, dividends %.2f, wage %.2f, income %.2f, wealth %.2f",
+				head.fullName(), skill, getAgeYears(), dividends, wage, income,
+				getWealth());
 	}
 
 	/** Liquid wealth: checking plus savings (savings negative for a loan). */

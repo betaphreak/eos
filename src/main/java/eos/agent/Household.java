@@ -44,6 +44,16 @@ public interface Household {
 	int getSkill();
 
 	/**
+	 * A one-line summary of this household's identity and current statistics, for
+	 * the colony's yearly <b>persons-of-interest</b> roster (see {@link
+	 * eos.settlement.Settlement#getPersonsOfInterest()}). Each household type
+	 * reports the statistics relevant to it.
+	 *
+	 * @return a concise name-and-statistics summary
+	 */
+	String poiSummary();
+
+	/**
 	 * Whether this is a <b>notable</b> household: its skill exceeds
 	 * {@value #NOTABLE_SKILL}. Such a household's head is worth logging by name
 	 * when the household is created.

@@ -61,5 +61,12 @@ class StrategicEconomyTest {
 		assertTrue(totalWage > 0,
 				"expected nobles to draw wages from the export sector, got "
 						+ totalWage);
+
+		// the colony tracks every living noble as a person of interest
+		var poi = h.getColony().getPersonsOfInterest();
+		for (Agent agent : h.getColony().getAgents())
+			if (agent instanceof Noble noble)
+				assertTrue(poi.contains(noble),
+						"expected every living noble to be a person of interest");
 	}
 }
