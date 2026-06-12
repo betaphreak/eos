@@ -328,18 +328,6 @@ public class Noble extends Agent implements Household {
 		return null;
 	}
 
-	/**
-	 * A one-line persons-of-interest summary: the head's name and this noble's
-	 * current skill, age and economic state.
-	 */
-	@Override
-	public String poiSummary() {
-		return String.format(
-				"%s - noble, skill %d, age %d, dividends %.2f, wage %.2f, income %.2f, wealth %.2f",
-				head.fullName(), skill, getAgeYears(), dividends, wage, income,
-				getWealth());
-	}
-
 	/** Liquid wealth: checking plus savings (savings negative for a loan). */
 	public double getWealth() {
 		return getBank().getChecking(getID()) + getBank().getSavings(getID());

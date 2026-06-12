@@ -11,6 +11,7 @@ import eos.bank.Bank;
 import eos.bank.BankConfig;
 import eos.settlement.Settlement;
 import eos.io.printer.NoblesPrinter;
+import eos.io.printer.PersonsOfInterestPrinter;
 
 /**
  * Simulation (with an aristocracy): the homogeneous, single-bank colony of
@@ -87,6 +88,7 @@ public class AristocraticEconomy {
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);
 		colony.addPrinter(new NoblesPrinter("Nobles"));
+		colony.addPrinter(new PersonsOfInterestPrinter("PersonsOfInterest"));
 		h.run();
 		return h;
 	}

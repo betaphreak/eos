@@ -62,8 +62,8 @@ class LaborerSkillTest {
 				return skill;
 			}
 
-			public String poiSummary() {
-				return "skill " + skill;
+			public int getAgeYears() {
+				return 0;
 			}
 		};
 	}

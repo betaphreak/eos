@@ -9,6 +9,7 @@ import eos.agent.noble.NobleConfig;
 import eos.bank.Bank;
 import eos.bank.BankConfig;
 import eos.io.printer.NoblesPrinter;
+import eos.io.printer.PersonsOfInterestPrinter;
 import eos.io.printer.StrategicPrinter;
 import eos.settlement.Settlement;
 
@@ -83,6 +84,7 @@ public class StrategicEconomy {
 		StrategicFirm firm = h.getStrategicFirm();
 		colony.addPrinter(new StrategicPrinter("Strategic", firm, bank));
 		colony.addPrinter(new NoblesPrinter("Nobles"));
+		colony.addPrinter(new PersonsOfInterestPrinter("PersonsOfInterest"));
 		h.run();
 		return h;
 	}

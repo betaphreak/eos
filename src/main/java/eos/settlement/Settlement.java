@@ -13,6 +13,7 @@ import eos.agent.Agent;
 import eos.agent.Household;
 import eos.agent.firm.StrategicFirm;
 import eos.agent.laborer.Laborer;
+import eos.agent.noble.Noble;
 import eos.bank.Bank;
 import eos.io.printer.Printer;
 import eos.market.ConsumerGoodMarket;
@@ -280,10 +281,8 @@ public class Settlement {
 		start();
 		for (int i = 0; i < steps; i++) {
 			LocalDate date = getDate();
-			if (date.getMonthValue() == 1 && date.getDayOfMonth() == 1) {
+			if (date.getMonthValue() == 1 && date.getDayOfMonth() == 1)
 				System.out.println(date);
-				logPersonsOfInterest();
-			}
 			newDay();
 		}
 	}
@@ -326,9 +325,13 @@ public class Settlement {
 		for (Agent agent : deadAgents) {
 			agents.remove(agent);
 			// a dead person of interest leaves the roster (a successor, if any,
-			// registers itself afresh in its constructor)
-			if (agent instanceof Household h)
-				personsOfInterest.remove(h);
+			// registers itself afresh in its constructor); log its passing once —
+			// the only per-death logging the colony does
+			if (agent instanceof Household h && personsOfInterest.remove(h))
+				log.info(h.getHead().fullName() + " ("
+						+ (h instanceof Noble ? "noble" : "notable laborer")
+						+ ", skill " + h.getSkill() + ") died at age "
+						+ h.getAgeYears());
 			Agent replacement = null;
 			for (UnaryOperator<Agent> policy : replacementPolicies) {
 				replacement = policy.apply(agent);
@@ -466,24 +469,13 @@ public class Settlement {
 
 	/**
 	 * Return the colony's persons of interest — its living nobles and notable
-	 * households.
+	 * households. A {@link eos.io.printer.PersonsOfInterestPrinter} writes their
+	 * names and statistics to CSV once a year.
 	 *
 	 * @return the persons of interest
 	 */
 	public Collection<Household> getPersonsOfInterest() {
 		return personsOfInterest;
-	}
-
-	// log the names and statistics of the colony's persons of interest (nobles and
-	// notable households) at the start of a year, in place of logging every death;
-	// a no-op when there are none
-	private void logPersonsOfInterest() {
-		if (personsOfInterest.isEmpty())
-			return;
-		log.info("Persons of interest (" + personsOfInterest.size()
-				+ ") at the start of " + getDate().getYear() + ":");
-		for (Household h : personsOfInterest)
-			log.info("  " + h.poiSummary());
 	}
 
 	/**

@@ -387,15 +387,9 @@ public class Laborer extends Agent implements Household {
 		return getBank().getSavings(getID());
 	}
 
-	/**
-	 * A one-line persons-of-interest summary: the head's name and this notable
-	 * household's current skill, age and economic state.
-	 */
-	@Override
-	public String poiSummary() {
-		return String.format(
-				"%s - notable laborer, skill %d, age %d, wage %.2f, income %.2f, savings %.2f",
-				head.fullName(), skill, getAgeYears(), wage, income, getSavings());
+	/** Liquid wealth: checking plus savings (savings negative for a loan). */
+	public double getWealth() {
+		return getBank().getChecking(getID()) + getBank().getSavings(getID());
 	}
 
 	/**
