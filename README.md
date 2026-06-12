@@ -46,6 +46,19 @@ bounded to ±10% of yesterday's price; `LaborMarket` allocates workers in
 proportion to each firm's wage budget; `CapitalMarket` matches firms buying
 machines against capital producers.
 
+### Settlement size and slots
+
+A settlement occupies a disc of radius `size` with a fixed number of build
+**slots** that hold its firms (and, later, housing). A precalculated table maps
+each size to its slot counts: of the total slots (≈ `π·size²`), a
+linearly-growing share goes to **roads** (congestion) and a circumference-sized
+share to **walls**, leaving the **effective** slots that firms occupy. A colony
+is founded at size 3 (15 effective slots) and **grows just enough to fit its
+firms** — the 22-firm default colonies reach size 4, the smaller ones stay at 3.
+The table is loaded once and held on the `GameSession`, shared by every colony,
+since it is pure geometry (independent of seed and location). Placing a firm on
+a slot moves no money and draws no randomness, so it leaves runs reproducible.
+
 ## Build & run
 
 Requirements: **JDK 21** and **Maven**. (Lombok is pulled in as a build-time

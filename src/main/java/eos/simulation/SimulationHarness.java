@@ -6,6 +6,8 @@ import java.util.function.IntFunction;
 import java.util.function.IntToDoubleFunction;
 
 import eos.agent.Agent;
+import eos.agent.firm.BuilderConfig;
+import eos.agent.firm.BuilderFirm;
 import eos.agent.firm.CFirm;
 import eos.agent.firm.EFirm;
 import eos.agent.firm.FirmConfig;
@@ -104,6 +106,7 @@ public class SimulationHarness {
 	private NFirm[] nFirms;
 	private Laborer[] laborers;
 	private StrategicFirm strategicFirm;
+	private BuilderFirm builderFirm;
 
 	/**
 	 * Build an empty harness for {@code cfg} from a fresh {@link GameSession}
@@ -360,12 +363,45 @@ public class SimulationHarness {
 	 */
 	public Bank createDefaultRuler() {
 		Bank gold = getGoldBank();
-		colony.addAgent(new Ruler(CurrencyType.GOLD.toCopper(DEFAULT_RULER_GOLD),
-				DEFAULT_RULER_CONSUMPTION_RATE, gold, colony));
-		colony.addReplacementPolicy(dead -> dead instanceof Ruler r
-				? new Ruler(r, colony)
-				: null);
+		Ruler ruler = new Ruler(CurrencyType.GOLD.toCopper(DEFAULT_RULER_GOLD),
+				DEFAULT_RULER_CONSUMPTION_RATE, gold, colony);
+		colony.addAgent(ruler);
+		// record the sovereign so a builder can bill it for public works (the roads
+		// and walls of a growth ring); a no-op for any colony that never grows
+		colony.setRuler(ruler);
+		colony.addReplacementPolicy(dead -> {
+			if (!(dead instanceof Ruler r))
+				return null;
+			Ruler heir = new Ruler(r, colony);
+			// keep the colony's ruler reference current, so anything that bills the
+			// ruler (e.g. a builder's public works) bills the heir, not the dead
+			// sovereign's closed account
+			colony.setRuler(heir);
+			return heir;
+		});
 		return gold;
+	}
+
+	/**
+	 * Give the colony a <b>builder</b> (banking at <tt>bank</tt>) and place it on an
+	 * effective slot at founding, like the other firms. Registering a builder
+	 * changes how the colony grows: once it is running, the builder is the only way
+	 * it gets bigger — a slot demand it cannot satisfy is built (firm-funded land,
+	 * ruler-funded roads and walls) rather than granted instantly. A colony with a
+	 * builder therefore also needs a ruler (its public-works sponsor; see {@link
+	 * #createDefaultRuler()}).
+	 *
+	 * @param bank
+	 *            the bank at which the builder holds its account
+	 * @param config
+	 *            the builder's parameters
+	 * @return the created builder
+	 */
+	public BuilderFirm createBuilder(Bank bank, BuilderConfig config) {
+		builderFirm = new BuilderFirm(config, bank, colony);
+		colony.addAgent(builderFirm);
+		colony.claimSlot(builderFirm);
+		return builderFirm;
 	}
 
 	/**
@@ -458,6 +494,18 @@ public class SimulationHarness {
 	/** Register a {@link BankPrinter} writing to <tt>fileName</tt>. */
 	public void addBankPrinter(String fileName, Bank bank) {
 		colony.addPrinter(new BankPrinter(fileName, bank));
+	}
+
+	/**
+	 * Register a {@link BuilderPrinter} for the colony's builder, charting the
+	 * colony's size and the builder's construction activity. The builder must
+	 * already exist (see {@link #createBuilder}).
+	 *
+	 * @param fileName
+	 *            the CSV output file name
+	 */
+	public void addBuilderPrinter(String fileName) {
+		colony.addPrinter(new BuilderPrinter(fileName, builderFirm));
 	}
 
 	/**

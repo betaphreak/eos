@@ -15,6 +15,8 @@ import java.util.function.UnaryOperator;
 
 import eos.agent.Agent;
 import eos.agent.Household;
+import eos.agent.firm.BuilderConfig;
+import eos.agent.firm.BuilderFirm;
 import eos.agent.firm.StrategicFirm;
 import eos.agent.laborer.Laborer;
 import eos.agent.noble.Noble;
@@ -188,6 +190,27 @@ public class Settlement {
 	// per colony; set via setStrategicFirm, which guards against a second.
 	@Getter
 	private StrategicFirm strategicFirm;
+
+	// the colony's builder, if any (see BuilderFirm). At most one per colony; set
+	// via setBuilder. Once a colony is live (started), this is the *only* way it
+	// can grow: claimSlot routes a slot demand it cannot satisfy through the
+	// builder. A colony without one cannot grow during the run.
+	@Getter
+	private BuilderFirm builder;
+
+	// the colony's sovereign, if any (see Ruler). Recorded so the builder can bill
+	// it for the public works (roads and walls) of a growth ring.
+	@Getter
+	private Ruler ruler;
+
+	// outstanding construction tasks the builder is working through, in the order
+	// rings were demanded (lowest ring first). Empty unless a live colony has
+	// outgrown its slots; see claimSlot / requestGrowth / completeFinishedRings.
+	private final List<BuildProject> buildQueue = new ArrayList<BuildProject>();
+
+	// occupants that demanded a slot a live colony could not yet supply: they are
+	// seated as the builder finishes the rings being built for them.
+	private final List<Agent> pendingOccupants = new ArrayList<Agent>();
 
 	// CPI in the last step
 	private double lastCPI;
@@ -396,31 +419,66 @@ public class Settlement {
 	}
 
 	/**
-	 * Place <tt>occupant</tt> on the colony's first vacant effective slot,
-	 * <b>growing the colony one size at a time</b> until a slot is free (or it
-	 * reaches the table's maximum size). This is how a colony sizes itself to its
-	 * occupants: founded at {@link SlotTable#MIN_SIZE}, it grows just enough to
-	 * hold every firm placed on it. Slot placement moves no money and consumes no
-	 * randomness.
+	 * Place <tt>occupant</tt> on a vacant effective slot. How the colony makes room
+	 * when none is free depends on its lifecycle:
+	 * <ul>
+	 * <li><b>At founding</b> (before {@link #start()}) it lays out its initial
+	 * footprint, growing one size at a time until the occupant fits — a one-time
+	 * genesis sizing, not live growth — and returns the slot it took.</li>
+	 * <li><b>While live</b> (after {@code start()}) it does <em>not</em> grow
+	 * itself: the only way a running colony gets bigger is through its {@link
+	 * BuilderFirm}. The demand is queued for the builder (firm-funded land plus
+	 * ruler-funded roads and walls; see {@link #requestGrowth(Agent)}), the
+	 * occupant is held pending, and this returns {@code null} — the occupant is
+	 * seated once the builder finishes the ring. A live colony with no builder
+	 * cannot grow, so this throws.</li>
+	 * </ul>
+	 * Either way, slot placement moves no money and consumes no randomness.
 	 *
 	 * @param occupant
 	 *            the occupant to place (today, a firm)
-	 * @return the slot it was placed on
+	 * @return the slot it was placed on, or {@code null} if a live colony has
+	 *         queued the demand for its builder to build
 	 * @throws IllegalStateException
-	 *             if the colony is already full at the maximum size
+	 *             if the colony cannot make room (full at max size while founding,
+	 *             or full with no builder while live)
 	 */
 	public Slot claimSlot(Agent occupant) {
 		Slot slot = firstVacantSlot();
+		if (slot != null) {
+			slot.occupy(occupant);
+			return slot;
+		}
+		if (started)
+			return requestBuild(occupant);
+		return foundOnto(occupant);
+	}
+
+	// founding (pre-run genesis): extend the colony's initial footprint one size at
+	// a time until the occupant fits, and seat it. Not the live-growth path.
+	private Slot foundOnto(Agent occupant) {
+		Slot slot = null;
 		while (slot == null && size < slotTable.maxSize()) {
 			setSize(size + 1);
 			slot = firstVacantSlot();
 		}
 		if (slot == null)
 			throw new IllegalStateException(name
-					+ " has no free slot at its maximum size " + size + " for "
-					+ occupant);
+					+ " cannot seat " + occupant + " even at its maximum size "
+					+ size);
 		slot.occupy(occupant);
 		return slot;
+	}
+
+	// live colony: only the builder can make room. Queue the next ring's work and
+	// hold the occupant pending; it is seated when the builder finishes the ring.
+	private Slot requestBuild(Agent occupant) {
+		if (builder == null)
+			throw new IllegalStateException(name
+					+ " is full and has no builder to grow it for " + occupant);
+		requestGrowth(occupant);
+		pendingOccupants.add(occupant);
+		return null;
 	}
 
 	// the first vacant slot, or null if every effective slot is occupied
@@ -429,6 +487,138 @@ public class Settlement {
 			if (slot.isVacant())
 				return slot;
 		return null;
+	}
+
+	/**
+	 * Register the colony's builder (the firm that grows a live colony). A colony
+	 * has at most one; this throws if one is already registered. The {@link
+	 * BuilderFirm} constructor calls this — the firm must still be added via {@link
+	 * #addAgent(Agent)} to take part in the step loop, like any other agent.
+	 *
+	 * @param builder
+	 *            the colony's builder
+	 * @throws IllegalStateException
+	 *             if the colony already has a builder
+	 */
+	public void setBuilder(BuilderFirm builder) {
+		if (this.builder != null)
+			throw new IllegalStateException("Settlement already has a builder");
+		this.builder = builder;
+	}
+
+	/**
+	 * Record the colony's sovereign, so the builder can bill it for public works
+	 * (the roads and walls of each growth ring). Set by the harness when it creates
+	 * the default ruler. Storing the reference moves no money and is a no-op for any
+	 * colony that never grows, so it leaves runs byte-identical.
+	 *
+	 * @param ruler
+	 *            the colony's ruler
+	 */
+	public void setRuler(Ruler ruler) {
+		this.ruler = ruler;
+	}
+
+	// queue construction work for the next ring (size -> size+1) on behalf of one
+	// occupant. The occupant funds the LAND for the single slot it will stand on
+	// (so each firm pays its own land clearance); the ring's ROAD and WALL public
+	// works are queued once, on the ruler's account. The wall work is scaled by the
+	// wall build-speed factor (walls go up fast while the colony is small, slower as
+	// its circumference grows). The sponsor stored for the public works is the
+	// current ruler; the builder bills whoever is ruler when it does the work, so a
+	// succession mid-build does not strand the task on a closed account.
+	private void requestGrowth(Agent requester) {
+		int next = size + 1;
+		if (next > slotTable.maxSize())
+			throw new IllegalStateException(
+					name + " cannot grow past its maximum size " + size);
+		BuilderConfig c = builder.getConfig();
+
+		// the requester funds its own slot's land
+		buildQueue.add(new BuildProject(next, BuildProject.Kind.LAND,
+				c.landWorkPerSlot(), requester));
+
+		// queue the ring's public works once (the ruler funds roads and walls)
+		if (!ringHasPublicWorks(next)) {
+			if (ruler == null)
+				throw new IllegalStateException(name
+						+ " has no ruler to fund the public works of its growth");
+			SlotInfo cur = slotTable.forSize(size);
+			SlotInfo nxt = slotTable.forSize(next);
+			int dRoad = nxt.road() - cur.road();
+			int dWall = nxt.wall() - cur.wall();
+			// wallBuildTimePercent is a build-*speed* percentage (100% = parity);
+			// invert it to a work multiplier (a faster wall costs less work)
+			double wallFactor = 100.0 / Math.max(1e-9, nxt.wallBuildTimePercent());
+			buildQueue.add(new BuildProject(next, BuildProject.Kind.ROAD,
+					dRoad * c.roadWorkPerSlot(), ruler));
+			buildQueue.add(new BuildProject(next, BuildProject.Kind.WALL,
+					dWall * c.wallWorkPerSlot() * wallFactor, ruler));
+		}
+	}
+
+	// whether the ring of the given size already has its road/wall tasks queued
+	private boolean ringHasPublicWorks(int ringSize) {
+		for (BuildProject p : buildQueue)
+			if (p.getRingSize() == ringSize
+					&& p.getKind() != BuildProject.Kind.LAND)
+				return true;
+		return false;
+	}
+
+	/**
+	 * The unfinished construction tasks of the ring the builder is currently
+	 * building — the lowest-numbered ring still in the queue. The {@link
+	 * BuilderFirm} applies its build-units to these each step. Empty when there is
+	 * nothing to build.
+	 *
+	 * @return the active ring's outstanding tasks (an empty list when idle)
+	 */
+	public List<BuildProject> activeProjects() {
+		int next = size + 1;
+		List<BuildProject> active = new ArrayList<BuildProject>();
+		for (BuildProject p : buildQueue)
+			if (p.getRingSize() == next && !p.isComplete())
+				active.add(p);
+		return active;
+	}
+
+	/**
+	 * If the ring being built is fully done — its land, road and wall tasks all
+	 * complete — grow the colony into it and seat the occupants that were waiting on
+	 * it. Called by the {@link BuilderFirm} each step after it applies its work. A
+	 * no-op until a ring finishes.
+	 */
+	public void completeFinishedRings() {
+		int next = size + 1;
+		boolean hasRing = false;
+		for (BuildProject p : buildQueue) {
+			if (p.getRingSize() != next)
+				continue;
+			hasRing = true;
+			if (!p.isComplete())
+				return; // this ring is not finished yet
+		}
+		if (!hasRing)
+			return;
+		buildQueue.removeIf(p -> p.getRingSize() == next);
+		setSize(next); // appends the ring's now-built effective slots
+		placePending();
+	}
+
+	// seat the waiting occupants onto newly-built slots; if any still do not fit,
+	// queue the next ring for them (funded by the first one still waiting)
+	private void placePending() {
+		java.util.Iterator<Agent> it = pendingOccupants.iterator();
+		while (it.hasNext()) {
+			Slot slot = firstVacantSlot();
+			if (slot == null)
+				break;
+			slot.occupy(it.next());
+			it.remove();
+		}
+		if (!pendingOccupants.isEmpty())
+			requestGrowth(pendingOccupants.get(0));
 	}
 
 	/**
