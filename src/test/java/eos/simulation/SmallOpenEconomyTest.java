@@ -6,9 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-import eos.bank.Bank;
-import eos.market.ConsumerGoodMarket;
-
 /**
  * Smoke test for the small open colony (two banks, the minimum stable firm
  * count, mortality and immigration-driven growth). The shared {@code
@@ -28,31 +25,14 @@ class SmallOpenEconomyTest {
 
 		assertEquals(2, h.getBanks().size(), "SmallOpenEconomy uses two banks");
 
-		// immigration grows the population beyond its starting size (mortality's
-		// 1:1 replacement alone would only hold it flat)
-		long alive = h.currentLaborerCount();
-		assertTrue(alive > INITIAL_LABORERS,
+		// core health, with the defining property that immigration grows the
+		// population *past* its starting size (mortality's 1:1 replacement alone
+		// would only hold it flat): require at least INITIAL_LABORERS + 1 alive.
+		// This also covers finite/positive prices and both banks staying finite,
+		// active intermediaries — so cross-bank settlement works.
+		SimulationAssertions.assertCoreHealthy(h, INITIAL_LABORERS + 1);
+		assertTrue(h.currentLaborerCount() > INITIAL_LABORERS,
 				"expected population to grow past " + INITIAL_LABORERS
-						+ ", got " + alive);
-
-		// consumer-good prices stay finite and positive (no runaway)
-		assertFinitePositivePrice(h.getEnjoymentMkt());
-		assertFinitePositivePrice(h.getNecessityMkt());
-
-		// both banks are active intermediaries, so cross-bank settlement works
-		for (Bank bank : h.getBanks()) {
-			assertTrue(Double.isFinite(bank.getTotalDeposit())
-					&& bank.getTotalDeposit() > 0,
-					"expected positive finite total deposit on each bank");
-			assertTrue(Double.isFinite(bank.getLoanIR())
-					&& Double.isFinite(bank.getDepositIR()),
-					"expected finite interest rates on each bank");
-		}
-	}
-
-	private static void assertFinitePositivePrice(ConsumerGoodMarket m) {
-		double p = m.getLastMktPrice();
-		assertTrue(Double.isFinite(p) && p > 0,
-				"expected finite positive price, got " + p);
+						+ ", got " + h.currentLaborerCount());
 	}
 }

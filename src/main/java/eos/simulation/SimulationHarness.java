@@ -16,6 +16,7 @@ import eos.bank.Bank;
 import eos.bank.BankConfig;
 import eos.settlement.Settlement;
 import eos.settlement.GameSession;
+import eos.io.SimLog;
 import eos.io.printer.*;
 import eos.market.*;
 import lombok.Getter;
@@ -57,6 +58,28 @@ public class SimulationHarness {
 	private EFirm[] eFirms;
 	private NFirm[] nFirms;
 	private Laborer[] laborers;
+
+	/**
+	 * Build an empty harness for {@code cfg} from a fresh {@link GameSession}
+	 * seeded with {@code seed}: create the session, a {@link Settlement} from it
+	 * (using the config's calendar and demographic constants), and initialize
+	 * logging. This is the prologue every simulation's {@code run()} shares; the
+	 * caller then populates the colony (markets, banks, agents, printers) and
+	 * calls {@link #run()}.
+	 *
+	 * @param cfg
+	 *            the run configuration
+	 * @param seed
+	 *            the random-number seed for this run
+	 * @return an empty harness ready to be populated
+	 */
+	public static SimulationHarness create(SimulationConfig cfg, long seed) {
+		GameSession session = new GameSession(seed);
+		Settlement colony = session.newSettlement(cfg.startDate(),
+				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkill());
+		SimLog.init(colony);
+		return new SimulationHarness(cfg, colony);
+	}
 
 	public SimulationHarness(SimulationConfig cfg, Settlement colony) {
 		this.cfg = cfg;

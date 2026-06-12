@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import eos.agent.Agent;
 import eos.agent.noble.Noble;
 import eos.bank.Bank;
-import eos.market.ConsumerGoodMarket;
 
 /**
  * Smoke test for the colony with an aristocracy that owns the firms <i>and</i>
@@ -27,21 +26,15 @@ class AristocraticEconomyTest {
 	void runsHealthyAndPaysFirmAndBankDividends() {
 		SimulationHarness h = assertDoesNotThrow(AristocraticEconomy::run);
 
-		// population sustained and consumer-good prices finite/positive
-		assertTrue(h.currentLaborerCount() > 400,
-				"expected >400 laborers alive, got " + h.currentLaborerCount());
-		assertFinitePositivePrice(h.getEnjoymentMkt());
-		assertFinitePositivePrice(h.getNecessityMkt());
+		// core health: population sustained (>400), consumer prices
+		// finite/positive, bank deposit/rates finite (shared with the closed runs)
+		SimulationAssertions.assertCoreHealthy(h, 401);
 
-		// the single bank stays a finite, active intermediary, but now turns a
-		// profit (positive equity) and has paid part of it out as dividends
+		// the single bank stays a finite, active intermediary, but unlike the
+		// default runs turns a profit (positive equity) and has paid part of it
+		// out as dividends
 		assertEquals(1, h.getBanks().size(), "AristocraticEconomy uses one bank");
 		Bank bank = h.getBanks().get(0);
-		assertTrue(Double.isFinite(bank.getTotalDeposit())
-				&& bank.getTotalDeposit() > 0, "expected positive total deposit");
-		assertTrue(Double.isFinite(bank.getLoanIR())
-				&& Double.isFinite(bank.getDepositIR()),
-				"expected finite interest rates");
 		assertTrue(bank.getEquity() > 0,
 				"expected the profitable bank to retain equity");
 		assertTrue(bank.getDistributedProfit() > 0,
@@ -78,11 +71,5 @@ class AristocraticEconomyTest {
 						+ totalWealth);
 		assertTrue(anyHeir,
 				"expected at least one noble succession (heir inherited the holdings)");
-	}
-
-	private static void assertFinitePositivePrice(ConsumerGoodMarket m) {
-		double p = m.getLastMktPrice();
-		assertTrue(Double.isFinite(p) && p > 0,
-				"expected finite positive price, got " + p);
 	}
 }

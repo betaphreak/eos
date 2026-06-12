@@ -2,9 +2,6 @@ package eos.simulation;
 
 import eos.bank.Bank;
 import eos.bank.BankConfig;
-import eos.settlement.Settlement;
-import eos.settlement.GameSession;
-import eos.io.SimLog;
 import eos.util.Rng;
 
 /**
@@ -24,13 +21,8 @@ public class HeterogeneousEconomy {
 	 */
 	public static SimulationHarness run() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
-		GameSession session = new GameSession(2345);
-		Settlement colony = session.newSettlement(cfg.startDate(),
-				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkill());
-		SimLog.init(colony);
-
-		SimulationHarness h = new SimulationHarness(cfg, colony);
-		Rng rng = colony.getRng();
+		SimulationHarness h = SimulationHarness.create(cfg, 2345);
+		Rng rng = h.getColony().getRng();
 		h.createMarkets();
 		Bank bank = h.addBank(BankConfig.DEFAULT);
 		h.createFirms(bank, i -> bank,

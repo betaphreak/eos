@@ -5,9 +5,6 @@ import java.util.List;
 
 import eos.bank.Bank;
 import eos.bank.BankConfig;
-import eos.settlement.Settlement;
-import eos.settlement.GameSession;
-import eos.io.SimLog;
 
 /**
  * Simulation (scale sweep): explores <b>how small the colony can be and still
@@ -98,12 +95,7 @@ public class ScaleSweep {
 				.numNFirms(firmsPerType)
 				.numLaborers(numLaborers)
 				.build();
-		GameSession session = new GameSession(SEED);
-		Settlement colony = session.newSettlement(cfg.startDate(),
-				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkill());
-		SimLog.init(colony);
-
-		SimulationHarness h = new SimulationHarness(cfg, colony);
+		SimulationHarness h = SimulationHarness.create(cfg, SEED);
 		h.createMarkets();
 		Bank bank = h.addBank(BankConfig.DEFAULT);
 		h.createFirms(bank, i -> bank,
@@ -125,34 +117,26 @@ public class ScaleSweep {
 	 * @return {@code null} if stable, otherwise why it is not
 	 */
 	static String diagnose(SimulationHarness h) {
-		long alive = h.currentLaborerCount();
+		// shared core invariants: population sustained, prices finite/positive,
+		// bank pools/rates finite (the survival floor is MIN_SURVIVAL of N0)
 		int n0 = h.getCfg().numLaborers();
-		if (alive < MIN_SURVIVAL * n0)
-			return "population collapsed (" + alive + "/" + n0 + " alive)";
+		String core = ColonyHealth.diagnose(h, (long) Math.ceil(MIN_SURVIVAL * n0));
+		if (core != null)
+			return core;
 
+		// sweep-specific extra: a too-small colony drives persistent excess
+		// demand and the price compounds toward infinity — still a finite double
+		// for a long time, so the runaway ceiling, not mere finiteness, catches it
 		double ep = h.getEnjoymentMkt().getLastMktPrice();
 		double np = h.getNecessityMkt().getLastMktPrice();
 		double eCeil = PRICE_RUNAWAY_FACTOR * h.getCfg().ePrice().max();
 		double nCeil = PRICE_RUNAWAY_FACTOR * h.getCfg().nPrice().max();
-		if (!(Double.isFinite(ep) && ep > 0))
-			return "enjoyment price not finite/positive (" + ep + ")";
-		if (!(Double.isFinite(np) && np > 0))
-			return "necessity price not finite/positive (" + np + ")";
 		if (ep > eCeil)
 			return String.format("enjoyment price runaway (%.3g > %.0f)", ep,
 					eCeil);
 		if (np > nCeil)
 			return String.format("necessity price runaway (%.3g > %.0f)", np,
 					nCeil);
-
-		for (Bank bank : h.getBanks()) {
-			if (!(Double.isFinite(bank.getTotalDeposit())
-					&& bank.getTotalDeposit() > 0))
-				return "bank deposit not finite/positive";
-			if (!Double.isFinite(bank.getLoanIR())
-					|| !Double.isFinite(bank.getDepositIR()))
-				return "bank rate not finite";
-		}
 		return null;
 	}
 

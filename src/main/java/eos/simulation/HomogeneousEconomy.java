@@ -2,9 +2,6 @@ package eos.simulation;
 
 import eos.bank.Bank;
 import eos.bank.BankConfig;
-import eos.settlement.Settlement;
-import eos.settlement.GameSession;
-import eos.io.SimLog;
 
 /**
  * Simulation (homogeneous case): every agent of a type starts identical, all
@@ -23,12 +20,7 @@ public class HomogeneousEconomy {
 	 */
 	public static SimulationHarness run() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
-		GameSession session = new GameSession(7654321);
-		Settlement colony = session.newSettlement(cfg.startDate(),
-				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkill());
-		SimLog.init(colony);
-
-		SimulationHarness h = new SimulationHarness(cfg, colony);
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
 		Bank bank = h.addBank(BankConfig.DEFAULT);
 		h.createFirms(bank, i -> bank,

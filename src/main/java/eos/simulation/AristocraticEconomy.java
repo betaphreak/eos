@@ -10,8 +10,6 @@ import eos.agent.noble.NobleConfig;
 import eos.bank.Bank;
 import eos.bank.BankConfig;
 import eos.settlement.Settlement;
-import eos.settlement.GameSession;
-import eos.io.SimLog;
 import eos.io.printer.NoblesPrinter;
 
 /**
@@ -53,12 +51,8 @@ public class AristocraticEconomy {
 	 */
 	public static SimulationHarness run() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
-		GameSession session = new GameSession(7654321);
-		Settlement colony = session.newSettlement(cfg.startDate(),
-				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkill());
-		SimLog.init(colony);
-
-		SimulationHarness h = new SimulationHarness(cfg, colony);
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		Settlement colony = h.getColony();
 		h.createMarkets();
 		Bank bank = h.addBank(
 				BankConfig.DEFAULT.toBuilder().spread(BANK_SPREAD).build());

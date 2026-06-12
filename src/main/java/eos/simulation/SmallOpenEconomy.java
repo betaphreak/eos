@@ -4,9 +4,6 @@ import java.util.function.IntFunction;
 
 import eos.bank.Bank;
 import eos.bank.BankConfig;
-import eos.settlement.Settlement;
-import eos.settlement.GameSession;
-import eos.io.SimLog;
 
 /**
  * Simulation (small open colony): the minimum stable scale found by
@@ -49,12 +46,7 @@ public class SmallOpenEconomy {
 				.immigrationThreshold(IMMIGRATION_THRESHOLD)
 				.build();
 
-		GameSession session = new GameSession(7654321);
-		Settlement colony = session.newSettlement(cfg.startDate(),
-				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkill());
-		SimLog.init(colony);
-
-		SimulationHarness h = new SimulationHarness(cfg, colony);
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
 		Bank bankA = h.addBank(BankConfig.DEFAULT);
 		Bank bankB = h.addBank(BankConfig.DEFAULT);

@@ -1,17 +1,24 @@
 package eos.simulation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eos.bank.Bank;
-import eos.market.ConsumerGoodMarket;
 
 /**
- * Shared invariant checks for the simulation smoke tests. A healthy run sustains
- * its laborer population, leaves market prices finite and positive, and leaves
- * each default bank a finite, zero-profit intermediary.
+ * Shared invariant checks for the simulation smoke tests. The core "healthy
+ * finished colony" definition — population sustained, prices finite and
+ * positive, banks finite intermediaries — lives in the production helper {@link
+ * ColonyHealth} (also used by {@link ScaleSweep}), so it is defined once; this
+ * class adapts it to JUnit assertions and layers the test-only bank
+ * zero-profit check for the closed default runs on top.
  */
 final class SimulationAssertions {
+
+	// the closed default runs sustain a large population (the founding 450
+	// laborers, replaced 1:1 as heads die of old age)
+	private static final long MIN_DEFAULT_LABORERS = 401;
 
 	// estate inheritance routes a deceased household's net worth through the
 	// bank's equity (in on its death step, back out when the heir is funded);
@@ -21,40 +28,32 @@ final class SimulationAssertions {
 	private SimulationAssertions() {
 	}
 
-	/** Assert the post-run colony is healthy. */
+	/**
+	 * Assert the core colony-health invariants (via {@link ColonyHealth}) hold,
+	 * with at least {@code minLaborers} laborers still alive. Used by the runs
+	 * whose population floor or bank-equity expectations differ from the closed
+	 * default, which layer their own extra checks on top.
+	 */
+	static void assertCoreHealthy(SimulationHarness h, long minLaborers) {
+		String reason = ColonyHealth.diagnose(h, minLaborers);
+		assertNull(reason, () -> "unhealthy colony: " + reason);
+	}
+
+	/** Assert the post-run closed default colony is healthy. */
 	static void assertHealthy(SimulationHarness h) {
-		// the colony did not collapse: the population is sustained. This counts
-		// heirs that succeeded the founding cohort (the founders themselves age
-		// and die of old age, each replaced by a successor household).
-		long alive = h.currentLaborerCount();
-		assertTrue(alive > 400,
-				"expected >400 laborers alive, got " + alive);
+		// the colony did not collapse and its banks are finite intermediaries.
+		// The population count includes heirs that succeeded the founding cohort
+		// (founders age and die of old age, each replaced by a successor).
+		assertCoreHealthy(h, MIN_DEFAULT_LABORERS);
 
-		// consumer-good prices are finite and positive
-		assertFinitePositivePrice(h.getEnjoymentMkt());
-		assertFinitePositivePrice(h.getNecessityMkt());
-
-		// every (default) bank is a finite, zero-profit intermediary
+		// additionally, every default bank is a zero-profit intermediary with a
+		// finite loan pool (ColonyHealth already covers deposits and rates)
 		assertTrue(!h.getBanks().isEmpty(), "expected at least one bank");
 		for (Bank bank : h.getBanks()) {
 			assertEquals(0.0, bank.getEquity(), EQUITY_EPS,
 					"default bank must make zero profit");
-			assertFinite(bank.getTotalDeposit(), "totalDeposit");
-			assertFinite(bank.getTotalLoan(), "totalLoan");
-			assertFinite(bank.getLoanIR(), "loanIR");
-			assertFinite(bank.getDepositIR(), "depositIR");
-			assertTrue(bank.getTotalDeposit() > 0,
-					"expected positive total deposit");
+			assertTrue(Double.isFinite(bank.getTotalLoan()),
+					"totalLoan not finite: " + bank.getTotalLoan());
 		}
-	}
-
-	private static void assertFinitePositivePrice(ConsumerGoodMarket m) {
-		double p = m.getLastMktPrice();
-		assertTrue(Double.isFinite(p) && p > 0,
-				"expected finite positive price, got " + p);
-	}
-
-	private static void assertFinite(double v, String name) {
-		assertTrue(Double.isFinite(v), name + " not finite: " + v);
 	}
 }
