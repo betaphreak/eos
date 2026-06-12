@@ -342,17 +342,30 @@ public class SimulationHarness {
 
 	/** Register the printers common to every simulation. */
 	public void addCommonPrinters() {
-		colony.addPrinter(new LaborersPrinter("Laborer"));
+		addCommonPrinters("");
+	}
+
+	/**
+	 * Register the common printers with <tt>prefix</tt> prepended to every output
+	 * filename. Several colonies in one session write to the same {@code output/}
+	 * directory, so a per-settlement prefix (e.g. {@code "Lubeck-"}) keeps their
+	 * CSVs from colliding.
+	 *
+	 * @param prefix
+	 *            prepended to each printer's filename ({@code ""} for the default)
+	 */
+	public void addCommonPrinters(String prefix) {
+		colony.addPrinter(new LaborersPrinter(prefix + "Laborer"));
 		colony.addPrinter(
-				new ConsumerMktPricePrinter("EPrice", enjoymentMkt));
+				new ConsumerMktPricePrinter(prefix + "EPrice", enjoymentMkt));
 		colony.addPrinter(
-				new ConsumerMktVolPrinter("EVol", enjoymentMkt));
-		colony.addPrinter(new FirmsPrinter("EFirms", eFirms));
+				new ConsumerMktVolPrinter(prefix + "EVol", enjoymentMkt));
+		colony.addPrinter(new FirmsPrinter(prefix + "EFirms", eFirms));
 		colony.addPrinter(
-				new ConsumerMktPricePrinter("NPrice", necessityMkt));
+				new ConsumerMktPricePrinter(prefix + "NPrice", necessityMkt));
 		colony.addPrinter(
-				new ConsumerMktVolPrinter("NVol", necessityMkt));
-		colony.addPrinter(new FirmsPrinter("NFirms", nFirms));
+				new ConsumerMktVolPrinter(prefix + "NVol", necessityMkt));
+		colony.addPrinter(new FirmsPrinter(prefix + "NFirms", nFirms));
 	}
 
 	/** Register a {@link BankPrinter} writing to <tt>fileName</tt>. */

@@ -9,6 +9,7 @@ import eos.agent.Agent;
 import eos.agent.Household;
 import eos.agent.firm.Firm;
 import eos.agent.firm.StrategicFirm;
+import eos.agent.laborer.Laborer;
 import eos.bank.Account;
 import eos.bank.Bank;
 import eos.settlement.Settlement;
@@ -123,10 +124,16 @@ public class Noble extends Agent implements Household {
 	@Getter
 	private double eConsumption;
 
+	// remaining necessity to buy this step to reach the stockpile target (set in
+	// act); +inf means uncapped, so the noble spends its whole necessity budget as
+	// before (the default when it does not stockpile)
+	private double nGap = Double.POSITIVE_INFINITY;
+
 	// demand strategies posted to those markets: spend each budget at the going
-	// price (nobles have no minimum-necessity floor — they never starve)
+	// price (nobles have no minimum-necessity floor — they never starve). The
+	// necessity demand is additionally capped at nGap when the noble stockpiles.
 	private final Demand demandForE = price -> eConsumption / price;
-	private final Demand demandForN = price -> nConsumption / price;
+	private final Demand demandForN = price -> Math.min(nGap, nConsumption / price);
 
 	/**
 	 * Create a new (founding) noble owning <tt>ownedFirms</tt>, endowed with a
@@ -301,6 +308,14 @@ public class Noble extends Agent implements Household {
 		eConsumption = consumption - nConsumption;
 		bank.deposit(getID(), checking - consumption);
 
+		// if the noble keeps a necessity reserve, cap this step's necessity buying
+		// at the gap to its target stock so it fills toward the target "if possible"
+		// and then holds; otherwise leave it uncapped (spend the whole necessity
+		// budget, as before)
+		nGap = config.necessityReserveDays() > 0
+				? Math.max(0, necessityStockTarget() - necessity.getQuantity())
+				: Double.POSITIVE_INFINITY;
+
 		// post buy offers; the markets settle them in clear()
 		eMkt.addBuyOffer(this, demandForE);
 		nMkt.addBuyOffer(this, demandForN);
@@ -318,6 +333,28 @@ public class Noble extends Agent implements Household {
 	}
 
 	/**
+	 * The noble's necessity-stockpile target, in units: {@code
+	 * necessityReserveDays × (living laborers / living nobles)}. Each stockpiling
+	 * noble aims to hold this many units, so the nobles <b>collectively</b> hold
+	 * {@code necessityReserveDays × laborers} units — that many days of the whole
+	 * population's necessity consumption, a reserve for later use. Returns 0 if
+	 * there are no nobles.
+	 *
+	 * @return the per-noble necessity stockpile target in units
+	 */
+	private double necessityStockTarget() {
+		long laborers = 0, nobles = 0;
+		for (Agent a : getColony().getAgents()) {
+			if (a instanceof Laborer)
+				laborers++;
+			else if (a instanceof Noble)
+				nobles++;
+		}
+		return nobles == 0 ? 0
+				: config.necessityReserveDays() * laborers / nobles;
+	}
+
+	/**
 	 * Return a reference to the good with name <tt>goodName</tt>.
 	 */
 	public Good getGood(String goodName) {
@@ -331,6 +368,12 @@ public class Noble extends Agent implements Household {
 	/** Liquid wealth: checking plus savings (savings negative for a loan). */
 	public double getWealth() {
 		return getBank().getChecking(getID()) + getBank().getSavings(getID());
+	}
+
+	/** Units of necessity the noble currently holds (its reserve, see {@link
+	 * NobleConfig#necessityReserveDays()}). */
+	public double getNecessityStock() {
+		return necessity.getQuantity();
 	}
 
 	/** The head's age in days: the span from its birth date to today. */

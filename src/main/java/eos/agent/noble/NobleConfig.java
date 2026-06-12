@@ -20,13 +20,23 @@ import lombok.Builder;
  * @param necessityShare
  *            fraction of that consumption budget spent on necessity (the
  *            remainder on enjoyment)
+ * @param necessityReserveDays
+ *            if positive, the noble builds a necessity <b>reserve</b> toward a
+ *            per-noble target of {@code necessityReserveDays ×
+ *            (laborers/nobles)} units — so the nobles collectively hold {@code
+ *            necessityReserveDays × laborers} units, i.e. that many days of the
+ *            whole population's necessity consumption — buying toward it "if
+ *            possible" and then holding. 0 (the default) means no reserve: the
+ *            noble spends its whole necessity budget each step, as before
  */
 @Builder(toBuilder = true)
 public record NobleConfig(
 		double dividendRate,
 		double consumptionRate,
-		double necessityShare) {
+		double necessityShare,
+		double necessityReserveDays) {
 
 	/** The canonical noble parameters. */
-	public static final NobleConfig DEFAULT = new NobleConfig(0.25, 0.05, 0.3);
+	public static final NobleConfig DEFAULT =
+			new NobleConfig(0.25, 0.05, 0.3, 0);
 }
