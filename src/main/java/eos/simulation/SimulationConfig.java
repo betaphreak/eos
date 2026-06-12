@@ -33,6 +33,11 @@ import lombok.Builder;
  *                     a colony-start property (set on the {@code Settlement}) that
  *                     centers the skill spread of its founding and successor
  *                     households, hence their labor productivity
+ * @param latitude     the colony's geographic latitude in decimal degrees (north
+ *                     positive), a colony-start property used for daylight
+ *                     calculations (see {@code Settlement.getSunrise})
+ * @param longitude    the colony's geographic longitude in decimal degrees (east
+ *                     positive)
  * @param externalInflowPerStep money entering the colony from outside each
  *                     step, injected into the bank's equity; 0 leaves the
  *                     colony closed (no inflow, no immigration)
@@ -62,6 +67,8 @@ public record SimulationConfig(
 		double meanInitAgeYears,
 		double targetNStock,
 		double meanSkill,
+		double latitude,
+		double longitude,
 		double externalInflowPerStep,
 		double immigrationThreshold,
 		double laborShare) {
@@ -129,6 +136,8 @@ public record SimulationConfig(
 			35,                                    // meanInitAgeYears
 			26,                                    // targetNStock
 			5,                                     // meanSkill
+			51.5074,                               // latitude (London)
+			-0.1278,                               // longitude (London)
 			0,                                     // externalInflowPerStep (closed)
 			100,                                   // immigrationThreshold
 			0.5);                                  // laborShare

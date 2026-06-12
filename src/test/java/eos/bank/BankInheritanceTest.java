@@ -23,7 +23,7 @@ class BankInheritanceTest {
 	// skill are irrelevant to account settlement, so they can be null/zero here.
 	private Bank newBank() {
 		Settlement colony = new Settlement(LocalDate.of(1444, 12, 11), new Rng(1L),
-				null, null, 0, 0, 0);
+				null, null, 0, 0, 0, 0, 0);
 		return new Bank(BankConfig.DEFAULT, colony);
 	}
 

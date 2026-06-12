@@ -80,7 +80,8 @@ public class SimulationHarness {
 	public static SimulationHarness create(SimulationConfig cfg, long seed) {
 		GameSession session = new GameSession(seed);
 		Settlement colony = session.newSettlement(cfg.startDate(),
-				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkill());
+				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkill(),
+				cfg.latitude(), cfg.longitude());
 		SimLog.init(colony);
 		return new SimulationHarness(cfg, colony);
 	}

@@ -17,6 +17,27 @@ import eos.good.Labor;
  */
 public class LaborMarket extends Market {
 
+	// hours of daylight at which a laborer delivers 100% of its skill-scaled
+	// output; longer days scale output up proportionally, shorter days down
+	private static final double FULL_OUTPUT_DAYLIGHT_HOURS = 8;
+
+	// the daylight effect is penalized at high latitudes: no penalty up to this
+	// latitude (full sensitivity), ramping to a 100% penalty (no sensitivity) at
+	// the poles
+	private static final double PENALTY_START_LATITUDE = 45;
+	private static final double POLE_LATITUDE = 90;
+
+	// how strongly daylight modulates this colony's output (1 + sensitivity*(ratio
+	// - 1), so output is always 100% at the reference daylight): full below
+	// PENALTY_START_LATITUDE, falling linearly to 0 at the poles
+	private double daylightSensitivity() {
+		double absLat = Math.abs(colony.getLatitude());
+		double penalty = (absLat - PENALTY_START_LATITUDE)
+				/ (POLE_LATITUDE - PENALTY_START_LATITUDE);
+		penalty = Math.min(1, Math.max(0, penalty));
+		return 1 - penalty;
+	}
+
 	/* employer */
 	private class Employer {
 		private Labor labor;
@@ -90,14 +111,28 @@ public class LaborMarket extends Market {
 
 	/**
 	 * Add a laborer to the market as an employee, supplying its skill-scaled
-	 * productivity.
+	 * productivity adjusted for the length of the day: the laborer delivers 100%
+	 * of its output at {@value #FULL_OUTPUT_DAYLIGHT_HOURS} hours of daylight, more
+	 * on longer days and less on shorter ones (so output rises in summer and falls
+	 * in winter). The strength of that adjustment is itself penalized at high
+	 * latitudes (see {@link #daylightSensitivity()}): full effect up to
+	 * {@value #PENALTY_START_LATITUDE}°, fading to none at the poles, which keeps
+	 * the extreme high-latitude daylight swings from destabilizing the economy.
+	 * This applies only to laborers — nobles supplying labor to the strategic
+	 * sector use the {@link #addEmployee(int, Bank, double)} primitive directly and
+	 * are unaffected.
 	 *
 	 * @param laborer
 	 *            the laborer seeking employment
 	 */
 	public void addEmployee(Laborer laborer) {
+		double ratio = colony.getDaylightHours() / FULL_OUTPUT_DAYLIGHT_HOURS;
+		double daylightFactor = 1 + daylightSensitivity() * (ratio - 1);
+		// polar day/night leaves daylight undefined; fall back to unscaled output
+		if (!Double.isFinite(daylightFactor))
+			daylightFactor = 1;
 		addEmployee(laborer.getID(), laborer.getBank(),
-				laborer.getProductivity());
+				laborer.getProductivity() * daylightFactor);
 	}
 
 	/**

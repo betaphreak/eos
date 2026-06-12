@@ -1,11 +1,14 @@
 package eos.settlement;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -22,6 +25,9 @@ import eos.market.ConsumerGoodMarket;
 import eos.market.Market;
 import eos.mortality.Demography;
 import eos.name.NameRegistry;
+import eos.solar.GeoLocation;
+import eos.solar.SolarEventCalculator;
+import eos.solar.Zenith;
 import eos.util.Averager;
 import eos.util.Rng;
 import lombok.Getter;
@@ -116,6 +122,40 @@ public class Settlement {
 	@Getter
 	private final double meanSkill;
 
+	// the colony's geographic location in decimal degrees (north/east positive),
+	// fixed at colony start. Used for daylight calculations (see getSunrise): the
+	// SolarEventCalculator turns this location plus the current in-game date into
+	// sunrise/sunset times.
+	@Getter
+	private final double latitude;
+	@Getter
+	private final double longitude;
+
+	// solar calculator for this colony's location, built lazily on first use (its
+	// inputs — latitude/longitude — are fixed for the colony's life). Times are
+	// computed in UTC.
+	private SolarEventCalculator solarCalculator;
+
+	// the day's solar times (UTC), recomputed for the current in-game date at the
+	// top of every newDay (and seeded in the constructor). sunrise/sunset are the
+	// official (disc-on-the-horizon) times; dawn/dusk are the astronomical ones,
+	// when the sun is 18° below the horizon. dawn/dusk are null on days with no
+	// astronomical twilight — at this latitude that happens around midsummer, when
+	// twilight lasts all night and the event is undefined.
+	@Getter
+	private LocalTime dawn;
+	@Getter
+	private LocalTime sunrise;
+	@Getter
+	private LocalTime sunset;
+	@Getter
+	private LocalTime dusk;
+
+	// hours of daylight (sunrise to sunset) on the current in-game date, recomputed
+	// with the times above; NaN when sunrise/sunset are undefined (polar day/night)
+	@Getter
+	private double daylightHours;
+
 	// lifecycle: a colony is "started" once it begins running (start()) and
 	// "dies" the step its last laborer is gone (no workforce left). deathDate
 	// records when, and the transition is terminal.
@@ -160,8 +200,8 @@ public class Settlement {
 	/**
 	 * Create a new colony whose step 0 falls on <tt>startDate</tt>, drawing
 	 * randomness from <tt>rng</tt>. Each step advances one day. Use {@link
-	 * GameSession#newSettlement(LocalDate, double, double)} to create a colony
-	 * with a reproducible random-number seed.
+	 * GameSession#newSettlement(LocalDate, double, double, double, double, double)}
+	 * to create a colony with a reproducible random-number seed.
 	 *
 	 * @param startDate
 	 *            the in-game date of step 0
@@ -177,10 +217,14 @@ public class Settlement {
 	 *            target necessity stock every laborer tries to accumulate
 	 * @param meanSkill
 	 *            mean of this colony's household skill distribution
+	 * @param latitude
+	 *            the colony's geographic latitude in decimal degrees (north positive)
+	 * @param longitude
+	 *            the colony's geographic longitude in decimal degrees (east positive)
 	 */
 	public Settlement(LocalDate startDate, Rng rng, NameRegistry names,
 			Demography demography, double meanInitAgeYears, double targetNStock,
-			double meanSkill) {
+			double meanSkill, double latitude, double longitude) {
 		this.startDate = startDate;
 		this.rng = rng;
 		this.names = names;
@@ -188,6 +232,11 @@ public class Settlement {
 		this.meanInitAgeYears = meanInitAgeYears;
 		this.targetNStock = targetNStock;
 		this.meanSkill = meanSkill;
+		this.latitude = latitude;
+		this.longitude = longitude;
+		// seed the starting day's solar times so they are valid before the first
+		// newDay (e.g. for inspection at step 0); newDay recomputes them each day
+		updateSolarTimes();
 	}
 
 	/**
@@ -327,10 +376,66 @@ public class Settlement {
 		return startDate.plusDays(timeStep);
 	}
 
+	// the solar calculator for this colony's location, built once on first use
+	private SolarEventCalculator solarCalculator() {
+		if (solarCalculator == null)
+			solarCalculator = new SolarEventCalculator(
+					new GeoLocation(latitude, longitude),
+					TimeZone.getTimeZone("UTC"));
+		return solarCalculator;
+	}
+
+	// the current in-game date as a UTC java.util.Calendar, the input the
+	// SolarEventCalculator (legacy Calendar-based) expects
+	private Calendar currentDateAsCalendar() {
+		Calendar c = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		c.clear();
+		LocalDate d = getDate();
+		c.set(d.getYear(), d.getMonthValue() - 1, d.getDayOfMonth());
+		return c;
+	}
+
+	/**
+	 * Recompute the day's solar times — {@link #getDawn() dawn}, {@link
+	 * #getSunrise() sunrise}, {@link #getSunset() sunset} and {@link #getDusk()
+	 * dusk} — for the current in-game date at the colony's location. Called at the
+	 * top of every {@link #newDay()} (and once from the constructor to seed the
+	 * starting day). A solar event that does not occur on the date (e.g. no
+	 * astronomical twilight at this latitude in high summer) is stored as null.
+	 */
+	private void updateSolarTimes() {
+		dawn = computeSolarTime(Zenith.ASTRONOMICAL, true);
+		sunrise = computeSolarTime(Zenith.OFFICIAL, true);
+		sunset = computeSolarTime(Zenith.OFFICIAL, false);
+		dusk = computeSolarTime(Zenith.ASTRONOMICAL, false);
+		daylightHours = (sunrise == null || sunset == null) ? Double.NaN
+				: java.time.Duration.between(sunrise, sunset).toMinutes() / 60.0;
+	}
+
+	// compute one solar event (UTC) for the current in-game date, or null when the
+	// event does not occur (the calculator throws for an undefined event — e.g. the
+	// sun never reaching the zenith at extreme latitudes/dates)
+	private LocalTime computeSolarTime(Zenith zenith, boolean isSunrise) {
+		try {
+			Calendar date = currentDateAsCalendar();
+			var hm = isSunrise
+					? solarCalculator().computeSunriseTime(zenith, date)
+					: solarCalculator().computeSunsetTime(zenith, date);
+			return LocalTime.of(hm.getKey(), hm.getValue());
+		} catch (UnsupportedOperationException noEvent) {
+			return null;
+		}
+	}
+
+
 	/**
 	 * Advance the simulation by one day (one step).
 	 */
 	public void newDay() {
+		// compute this day's dawn/sunrise/sunset/dusk before agents act, so they
+		// can read the day's daylight when they act
+		updateSolarTimes();
+
 		for (Agent agent : agents) {
 			agent.act();
 			if (!agent.isAlive())

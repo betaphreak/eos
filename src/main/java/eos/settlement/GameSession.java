@@ -79,15 +79,20 @@ public class GameSession {
 	 *            target necessity stock every laborer tries to accumulate
 	 * @param meanSkill
 	 *            mean of the colony's household skill distribution
+	 * @param latitude
+	 *            the colony's geographic latitude in decimal degrees (north positive)
+	 * @param longitude
+	 *            the colony's geographic longitude in decimal degrees (east positive)
 	 * @return a fresh colony
 	 */
 	public Settlement newSettlement(LocalDate startDate, double meanInitAgeYears,
-			double targetNStock, double meanSkill) {
+			double targetNStock, double meanSkill, double latitude,
+			double longitude) {
 		// index 0 -> bare seed (byte-identical to the old single shared rng);
 		// later colonies get a distinct, decorrelated seed
 		Rng colonyRng = new Rng(seed ^ (COLONY_SEED_SALT * colonyCount));
 		colonyCount++;
 		return new Settlement(startDate, colonyRng, names, demography,
-				meanInitAgeYears, targetNStock, meanSkill);
+				meanInitAgeYears, targetNStock, meanSkill, latitude, longitude);
 	}
 }
