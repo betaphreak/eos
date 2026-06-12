@@ -252,11 +252,19 @@ public class SimulationHarness {
 					cfg.nFirm().wageBudget(), cfg.nFirm().capital(),
 					capitalFirms, firmConfig, firmBank.apply(i), colony);
 
+		// add each firm to the colony and place it on an effective build slot; the
+		// colony grows itself just enough to hold them all (founded at the floor
+		// size). Slot placement is pure bookkeeping, so runs stay byte-identical.
 		colony.addAgent(cFirm);
-		for (NFirm f : nFirms)
+		colony.claimSlot(cFirm);
+		for (NFirm f : nFirms) {
 			colony.addAgent(f);
-		for (EFirm f : eFirms)
+			colony.claimSlot(f);
+		}
+		for (EFirm f : eFirms) {
 			colony.addAgent(f);
+			colony.claimSlot(f);
+		}
 	}
 
 	/**
@@ -300,6 +308,7 @@ public class SimulationHarness {
 			StrategicFirmConfig config) {
 		strategicFirm = new StrategicFirm(config, bank, colony);
 		colony.addAgent(strategicFirm);
+		colony.claimSlot(strategicFirm);
 		return strategicFirm;
 	}
 

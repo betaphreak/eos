@@ -47,6 +47,11 @@ public class GameSession {
 	@Getter
 	private final Demography demography;
 
+	// the precalculated slot table, loaded once at session start and shared by
+	// every colony (it is pure geometry — independent of seed and location)
+	@Getter
+	private final SlotTable slotTable;
+
 	// number of colonies created so far; each gets an economic generator seeded
 	// from (seed, index), so colonies don't share an economic random stream
 	private int colonyCount = 0;
@@ -62,6 +67,7 @@ public class GameSession {
 		this.names = new NameRegistry(new Rng(seed ^ NAME_SEED_SALT));
 		this.demography = new Demography(new Rng(seed ^ MORTALITY_SEED_SALT),
 				new Rng(seed ^ SKILL_SEED_SALT));
+		this.slotTable = SlotTable.load();
 	}
 
 	/**
@@ -95,6 +101,7 @@ public class GameSession {
 		Rng colonyRng = new Rng(seed ^ (COLONY_SEED_SALT * colonyCount));
 		colonyCount++;
 		return new Settlement(name, startDate, colonyRng, names, demography,
-				meanInitAgeYears, targetNStock, meanSkill, latitude, longitude);
+				slotTable, meanInitAgeYears, targetNStock, meanSkill, latitude,
+				longitude);
 	}
 }

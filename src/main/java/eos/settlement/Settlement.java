@@ -5,6 +5,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -108,6 +109,20 @@ public class Settlement {
 	// demographic service (shared with the owning game session)
 	@Getter
 	private final Demography demography;
+
+	// the precalculated slot table (shared with the owning game session): a
+	// size -> SlotInfo lookup the colony reads its current geometry from
+	private final SlotTable slotTable;
+
+	// the colony's current size (disc radius). Founded at SlotTable.MIN_SIZE and
+	// grows upward as it needs more slots (see claimSlot); the slot table maps it
+	// to the total/road/wall/effective counts.
+	private int size;
+
+	// the colony's effective build slots (occupied and vacant), one per effective
+	// slot at the current size, in a fixed order. Rebuilt — extended — whenever the
+	// size grows; an occupant keeps its slot. Today only firms occupy slots.
+	private final List<Slot> slots = new ArrayList<Slot>();
 
 	// mean of the normal distribution from which founding household heads draw
 	// their initial age, in years (see Demography.sampleInitialAgeDays)
@@ -219,6 +234,8 @@ public class Settlement {
 	 *            the name sets for this colony
 	 * @param demography
 	 *            the demographic service for this colony
+	 * @param slotTable
+	 *            the precalculated slot table (shared across the session)
 	 * @param meanInitAgeYears
 	 *            mean initial age (years) of founding household heads
 	 * @param targetNStock
@@ -231,19 +248,22 @@ public class Settlement {
 	 *            the colony's geographic longitude in decimal degrees (east positive)
 	 */
 	public Settlement(String name, LocalDate startDate, Rng rng,
-			NameRegistry names, Demography demography, double meanInitAgeYears,
-			double targetNStock, double meanSkill, double latitude,
-			double longitude) {
+			NameRegistry names, Demography demography, SlotTable slotTable,
+			double meanInitAgeYears, double targetNStock, double meanSkill,
+			double latitude, double longitude) {
 		this.name = name;
 		this.startDate = startDate;
 		this.rng = rng;
 		this.names = names;
 		this.demography = demography;
+		this.slotTable = slotTable;
 		this.meanInitAgeYears = meanInitAgeYears;
 		this.targetNStock = targetNStock;
 		this.meanSkill = meanSkill;
 		this.latitude = latitude;
 		this.longitude = longitude;
+		// found the colony at the floor size, building its initial effective slots
+		setSize(SlotTable.MIN_SIZE);
 		// seed the starting day's solar times so they are valid before the first
 		// newDay (e.g. for inspection at step 0); newDay recomputes them each day
 		updateSolarTimes();
@@ -320,6 +340,95 @@ public class Settlement {
 	 */
 	public int nextBankNumber() {
 		return nextBankNo++;
+	}
+
+	/**
+	 * The colony's current size (its disc radius). Colonies are founded at {@link
+	 * SlotTable#MIN_SIZE} and grow upward as they need more slots.
+	 *
+	 * @return the current size
+	 */
+	public int getSize() {
+		return size;
+	}
+
+	/**
+	 * The slot geometry (total/road/wall/effective counts and unlocked special
+	 * sites) at the colony's current {@link #getSize() size}.
+	 *
+	 * @return the current slot info
+	 */
+	public SlotInfo getSlotInfo() {
+		return slotTable.forSize(size);
+	}
+
+	/**
+	 * The colony's effective build slots — occupied and vacant — in a fixed
+	 * order, as an unmodifiable view. Its length is {@code getSlotInfo().effective()}.
+	 *
+	 * @return the colony's slots
+	 */
+	public List<Slot> getSlots() {
+		return Collections.unmodifiableList(slots);
+	}
+
+	/**
+	 * Set the colony's size to <tt>newSize</tt>, extending its effective-slot list
+	 * to match (new slots are vacant; existing slots and their occupants are kept).
+	 * Used to <b>grow</b> the colony; shrinking below the number of slots already
+	 * in existence is unsupported (it would orphan occupants). In the colony's
+	 * normal operating range effective slots increase with size, so growth only
+	 * appends.
+	 *
+	 * @param newSize
+	 *            the new size, in {@code [0, slotTable.maxSize()]}
+	 * @throws IllegalStateException
+	 *             if the new size would have fewer effective slots than already exist
+	 */
+	public void setSize(int newSize) {
+		int newEffective = slotTable.forSize(newSize).effective();
+		if (newEffective < slots.size())
+			throw new IllegalStateException(name + " cannot shrink from "
+					+ slots.size() + " to " + newEffective + " effective slots");
+		this.size = newSize;
+		while (slots.size() < newEffective)
+			slots.add(new Slot());
+	}
+
+	/**
+	 * Place <tt>occupant</tt> on the colony's first vacant effective slot,
+	 * <b>growing the colony one size at a time</b> until a slot is free (or it
+	 * reaches the table's maximum size). This is how a colony sizes itself to its
+	 * occupants: founded at {@link SlotTable#MIN_SIZE}, it grows just enough to
+	 * hold every firm placed on it. Slot placement moves no money and consumes no
+	 * randomness.
+	 *
+	 * @param occupant
+	 *            the occupant to place (today, a firm)
+	 * @return the slot it was placed on
+	 * @throws IllegalStateException
+	 *             if the colony is already full at the maximum size
+	 */
+	public Slot claimSlot(Agent occupant) {
+		Slot slot = firstVacantSlot();
+		while (slot == null && size < slotTable.maxSize()) {
+			setSize(size + 1);
+			slot = firstVacantSlot();
+		}
+		if (slot == null)
+			throw new IllegalStateException(name
+					+ " has no free slot at its maximum size " + size + " for "
+					+ occupant);
+		slot.occupy(occupant);
+		return slot;
+	}
+
+	// the first vacant slot, or null if every effective slot is occupied
+	private Slot firstVacantSlot() {
+		for (Slot slot : slots)
+			if (slot.isVacant())
+				return slot;
+		return null;
 	}
 
 	/**

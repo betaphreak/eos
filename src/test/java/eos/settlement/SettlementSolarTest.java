@@ -29,8 +29,8 @@ class SettlementSolarTest {
 	// a colony whose step 0 (and thus current date) falls on the given date, so
 	// its stored solar times are those of that date
 	private Settlement colonyOn(LocalDate date) {
-		return new Settlement("Test Colony", date, new Rng(1L), null, null, 35, 26,
-				5, LAT, LON);
+		return new Settlement("Test Colony", date, new Rng(1L), null, null,
+				SlotTable.load(), 35, 26, 5, LAT, LON);
 	}
 
 	@Test

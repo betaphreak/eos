@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 
 import eos.settlement.Settlement;
+import eos.settlement.SlotTable;
 import eos.util.Rng;
 
 /**
@@ -23,7 +24,7 @@ class BankInheritanceTest {
 	// skill are irrelevant to account settlement, so they can be null/zero here.
 	private Bank newBank() {
 		Settlement colony = new Settlement("Test", LocalDate.of(1444, 12, 11),
-				new Rng(1L), null, null, 0, 0, 0, 0, 0);
+				new Rng(1L), null, null, SlotTable.load(), 0, 0, 0, 0, 0);
 		return new Bank(BankConfig.DEFAULT, colony);
 	}
 
