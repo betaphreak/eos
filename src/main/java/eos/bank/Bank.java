@@ -49,6 +49,10 @@ public class Bank {
 	@Getter
 	private final String name;
 
+	// the currency this bank denominates its accounts in
+	@Getter
+	private final CurrencyType currency;
+
 	// working copy of the loan-sensitivity parameter; normalized at step 0
 	private double tao;
 
@@ -107,6 +111,7 @@ public class Bank {
 		this.config = config;
 		this.colony = colony;
 		this.name = "Bank " + colony.nextBankNumber();
+		this.currency = config.currency();
 		this.tao = config.tao();
 		this.loanIR = config.initLoanIR();
 		this.depositIRAvger = new Averager(config.ltIRWin());
@@ -439,8 +444,8 @@ public class Bank {
 	@Override
 	public String toString() {
 		return String.format(
-				"%s [accounts=%d loan=%.1f deposit=%.1f loanIR=%.4f depositIR=%.4f equity=%.2f]",
-				name, accounts.size(), totalLoan, totalDeposit, loanIR,
+				"%s [%s accounts=%d loan=%.1f deposit=%.1f loanIR=%.4f depositIR=%.4f equity=%.2f]",
+				name, currency, accounts.size(), totalLoan, totalDeposit, loanIR,
 				depositIR, equity);
 	}
 }

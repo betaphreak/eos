@@ -22,6 +22,8 @@ import lombok.Builder;
  * @param feeRate    transaction fee charged to the payer on each withdrawal,
  *                   as a fraction of the amount, retained as profit (0 = no
  *                   fee)
+ * @param currency   the {@link CurrencyType} the bank denominates its accounts
+ *                   in (default {@link CurrencyType#COPPER})
  */
 @Builder(toBuilder = true)
 public record BankConfig(
@@ -32,9 +34,11 @@ public record BankConfig(
 		double maxLoanIR,
 		double minLoanIR,
 		double spread,
-		double feeRate) {
+		double feeRate,
+		CurrencyType currency) {
 
-	/** The original hard-coded parameter values (zero-profit bank). */
+	/** The original hard-coded parameter values (zero-profit copper bank). */
 	public static final BankConfig DEFAULT =
-			new BankConfig(0.01, 0.01, 0.005, 100, 0.01, 0.0005, 0, 0);
+			new BankConfig(0.01, 0.01, 0.005, 100, 0.01, 0.0005, 0, 0,
+					CurrencyType.COPPER);
 }
