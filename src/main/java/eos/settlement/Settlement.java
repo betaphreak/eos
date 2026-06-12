@@ -14,6 +14,7 @@ import eos.agent.Household;
 import eos.agent.firm.StrategicFirm;
 import eos.agent.laborer.Laborer;
 import eos.agent.noble.Noble;
+import eos.agent.ruler.Ruler;
 import eos.bank.Bank;
 import eos.bank.CurrencyType;
 import eos.io.printer.Printer;
@@ -347,11 +348,12 @@ public class Settlement {
 			// a dead person of interest leaves the roster (a successor, if any,
 			// registers itself afresh in its constructor); log its passing once —
 			// the only per-death logging the colony does
-			if (agent instanceof Household h && personsOfInterest.remove(h))
-				log.info(h.getHead().fullName() + " ("
-						+ (h instanceof Noble ? "noble" : "notable laborer")
-						+ ", skill " + h.getSkill() + ") died at age "
-						+ h.getAgeYears());
+			if (agent instanceof Household h && personsOfInterest.remove(h)) {
+				String role = h instanceof Noble ? "noble"
+						: h instanceof Ruler ? "ruler" : "notable laborer";
+				log.info(h.getHead().fullName() + " (" + role + ", skill "
+						+ h.getSkill() + ") died at age " + h.getAgeYears());
+			}
 			Agent replacement = null;
 			for (UnaryOperator<Agent> policy : replacementPolicies) {
 				replacement = policy.apply(agent);

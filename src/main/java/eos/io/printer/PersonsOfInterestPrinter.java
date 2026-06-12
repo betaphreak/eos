@@ -3,6 +3,7 @@ package eos.io.printer;
 import eos.agent.Household;
 import eos.agent.laborer.Laborer;
 import eos.agent.noble.Noble;
+import eos.agent.ruler.Ruler;
 import eos.bank.CurrencyType;
 import eos.settlement.Settlement;
 
@@ -52,6 +53,11 @@ public class PersonsOfInterestPrinter extends Printer {
 				income = noble.getIncome();
 				wealth = noble.getWealth();
 				currency = noble.getBank().getCurrency();
+			} else if (h instanceof Ruler ruler) {
+				type = "Ruler";
+				income = ruler.getIncome();
+				wealth = ruler.getWealth();
+				currency = ruler.getBank().getCurrency();
 			} else {
 				Laborer laborer = (Laborer) h;
 				type = "Notable laborer";

@@ -7,6 +7,7 @@ import java.util.List;
 import eos.agent.firm.Firm;
 import eos.agent.noble.Noble;
 import eos.agent.noble.NobleConfig;
+import eos.agent.ruler.Ruler;
 import eos.bank.Bank;
 import eos.bank.BankConfig;
 import eos.bank.CurrencyType;
@@ -31,6 +32,14 @@ import eos.settlement.Settlement;
  * intermediaries (no spread), so each settles interest over its own pool of
  * accounts.
  * <p>
+ * Above them sits the settlement's <b>ruler</b> ({@link Ruler}), who owns a third
+ * bank denominated in <b>gold</b> and holds his fortune ({@value
+ * #RULER_INITIAL_GOLD} gold) there as its sole client — the gold bank has no
+ * other clients. The ruler is a passive treasury: it neither earns nor spends, so
+ * its gold stays put (it does, like everyone, age and pass to a heir). The colony
+ * thus mirrors its class structure in metal: commoners in copper, nobles in
+ * silver, the ruler in gold.
+ * <p>
  * Currency is, for now, a label: cross-currency payments move nominal amounts
  * one-for-one (there is no exchange rate). This wires the two-currency split a
  * later exchange-rate mechanism would build on.
@@ -47,6 +56,9 @@ public class BimetallicEconomy {
 	 */
 	static final double NOBLE_INITIAL_SAVINGS = 1000;
 
+	/** The ruler's opening fortune, in <b>gold</b> (held in copper internally). */
+	static final double RULER_INITIAL_GOLD = 10;
+
 	/**
 	 * Build and run the simulation.
 	 *
@@ -59,10 +71,13 @@ public class BimetallicEconomy {
 		Settlement colony = h.getColony();
 
 		h.createMarkets();
-		// the default first bank is copper (commoners); the nobles' bank is silver
+		// the default first bank is copper (commoners); the nobles' bank is silver;
+		// the ruler's is gold
 		Bank copper = h.addBank(BankConfig.DEFAULT);
 		Bank silver = h.addBank(BankConfig.DEFAULT.toBuilder()
 				.currency(CurrencyType.SILVER).build());
+		Bank gold = h.addBank(BankConfig.DEFAULT.toBuilder()
+				.currency(CurrencyType.GOLD).build());
 
 		// every firm and laborer banks in copper
 		h.createFirms(copper, i -> copper,
@@ -92,9 +107,21 @@ public class BimetallicEconomy {
 				? new Noble(n, NobleConfig.DEFAULT, colony)
 				: null);
 
+		// the ruler owns the gold bank and holds its fortune there as its sole
+		// client; a passive treasury, it neither earns nor spends. Created last so
+		// its demographic draws do not perturb the commoners' or nobles'. When it
+		// dies of old age a same-dynasty heir succeeds it.
+		Ruler ruler = new Ruler(CurrencyType.GOLD.toCopper(RULER_INITIAL_GOLD),
+				gold, colony);
+		colony.addAgent(ruler);
+		colony.addReplacementPolicy(dead -> dead instanceof Ruler r
+				? new Ruler(r, colony)
+				: null);
+
 		h.addCommonPrinters();
 		h.addBankPrinter("Copper", copper);
 		h.addBankPrinter("Silver", silver);
+		h.addBankPrinter("Gold", gold);
 		colony.addPrinter(new NoblesPrinter("Nobles"));
 		colony.addPrinter(new PersonsOfInterestPrinter("PersonsOfInterest"));
 		h.run();
