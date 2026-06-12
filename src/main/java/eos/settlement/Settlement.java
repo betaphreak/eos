@@ -11,6 +11,7 @@ import java.util.function.UnaryOperator;
 
 import eos.agent.Agent;
 import eos.agent.Household;
+import eos.agent.firm.StrategicFirm;
 import eos.agent.laborer.Laborer;
 import eos.bank.Bank;
 import eos.io.printer.Printer;
@@ -113,6 +114,11 @@ public class Settlement {
 	private boolean died = false;
 	@Getter
 	private LocalDate deathDate;
+
+	// the colony's single export firm, if any (see StrategicFirm). At most one
+	// per colony; set via setStrategicFirm, which guards against a second.
+	@Getter
+	private StrategicFirm strategicFirm;
 
 	// CPI in the last step
 	private double lastCPI;
@@ -431,6 +437,25 @@ public class Settlement {
 	 */
 	public void addAgent(Agent agent) {
 		agents.add(agent);
+	}
+
+	/**
+	 * Register the colony's single export firm. A colony has at most one {@link
+	 * StrategicFirm}; this throws if one is already registered. Registration only
+	 * records the firm (and enforces uniqueness) — the firm must still be added to
+	 * the colony via {@link #addAgent(Agent)} like any other agent to take part in
+	 * the step loop.
+	 *
+	 * @param firm
+	 *            the colony's export firm
+	 * @throws IllegalStateException
+	 *             if the colony already has a strategic firm
+	 */
+	public void setStrategicFirm(StrategicFirm firm) {
+		if (strategicFirm != null)
+			throw new IllegalStateException(
+					"Settlement already has a StrategicFirm");
+		strategicFirm = firm;
 	}
 
 	/**

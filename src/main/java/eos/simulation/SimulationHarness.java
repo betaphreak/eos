@@ -10,6 +10,8 @@ import eos.agent.firm.CFirm;
 import eos.agent.firm.EFirm;
 import eos.agent.firm.FirmConfig;
 import eos.agent.firm.NFirm;
+import eos.agent.firm.StrategicFirm;
+import eos.agent.firm.StrategicFirmConfig;
 import eos.agent.laborer.Laborer;
 import eos.agent.laborer.LaborerConfig;
 import eos.bank.Bank;
@@ -52,12 +54,14 @@ public class SimulationHarness {
 	private ConsumerGoodMarket enjoymentMkt;
 	private ConsumerGoodMarket necessityMkt;
 	private LaborMarket laborMkt;
+	private LaborMarket nobleLaborMkt;
 	private CapitalMarket capitalMkt;
 
 	private CFirm[] capitalFirms;
 	private EFirm[] eFirms;
 	private NFirm[] nFirms;
 	private Laborer[] laborers;
+	private StrategicFirm strategicFirm;
 
 	/**
 	 * Build an empty harness for {@code cfg} from a fresh {@link GameSession}
@@ -157,6 +161,50 @@ public class SimulationHarness {
 			colony.addAgent(f);
 		for (EFirm f : eFirms)
 			colony.addAgent(f);
+	}
+
+	/**
+	 * Create the dedicated noble-only labor market the {@link StrategicFirm}
+	 * employs from, and register it. Must be called <em>before</em> the strategic
+	 * firm and the nobles are created (both look it up by name), and before
+	 * {@link #primeNobleLabor()}.
+	 *
+	 * @return the created noble labor market
+	 */
+	public LaborMarket createNobleLaborMarket() {
+		nobleLaborMkt = new LaborMarket(StrategicFirm.LABOR_MARKET, colony);
+		colony.addMarket(nobleLaborMkt);
+		return nobleLaborMkt;
+	}
+
+	/**
+	 * Clear the noble labor market once before the run, so the strategic firm has
+	 * its noble workers in step 0 (the analogue of the pre-run labor clearing in
+	 * {@link #createLaborers}). Call after the strategic firm and all nobles have
+	 * been created (so their constructor-time postings are present).
+	 */
+	public void primeNobleLabor() {
+		nobleLaborMkt.clear();
+	}
+
+	/**
+	 * Create the colony's single export firm (banking at <tt>bank</tt>) and add
+	 * it to the colony. Must be called <em>before</em> {@link #createLaborers} so
+	 * the firm is a registered employer for the one pre-run labor clearing (and
+	 * thus has workers in step 0, like the other firms).
+	 *
+	 * @param bank
+	 *            the bank at which the export firm holds its accounts and into
+	 *            whose equity its export earnings flow
+	 * @param config
+	 *            the export firm's parameters
+	 * @return the created strategic firm
+	 */
+	public StrategicFirm createStrategicFirm(Bank bank,
+			StrategicFirmConfig config) {
+		strategicFirm = new StrategicFirm(config, bank, colony);
+		colony.addAgent(strategicFirm);
+		return strategicFirm;
 	}
 
 	/**

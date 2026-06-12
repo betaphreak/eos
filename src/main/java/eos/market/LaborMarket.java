@@ -39,13 +39,29 @@ public class LaborMarket extends Market {
 	private double totalBudget; // sum of wage budgets of all employers
 
 	/**
-	 * Create a new labor market
+	 * Create a new labor market for the default {@code "Labor"} good.
 	 *
 	 * @param colony
 	 *            the colony this market belongs to
 	 */
 	public LaborMarket(Settlement colony) {
-		super("Labor", colony);
+		this("Labor", colony);
+	}
+
+	/**
+	 * Create a new labor market trading <tt>good</tt>. A colony may run more than
+	 * one labor market over distinct goods — e.g. the general {@code "Labor"}
+	 * market and a separate {@code "NobleLabor"} market whose employee pool is the
+	 * nobles and whose sole employer is the
+	 * {@link eos.agent.firm.StrategicFirm} — so the two pools never mix.
+	 *
+	 * @param good
+	 *            name of the labor good this market trades
+	 * @param colony
+	 *            the colony this market belongs to
+	 */
+	public LaborMarket(String good, Settlement colony) {
+		super(good, colony);
 		employers = new ArrayList<Employer>();
 		employees = new ArrayList<Employee>();
 		totalBudget = 0;
@@ -73,15 +89,37 @@ public class LaborMarket extends Market {
 	}
 
 	/**
-	 * Add an employee to the market
-	 * 
+	 * Add a laborer to the market as an employee, supplying its skill-scaled
+	 * productivity.
+	 *
 	 * @param laborer
+	 *            the laborer seeking employment
 	 */
 	public void addEmployee(Laborer laborer) {
+		addEmployee(laborer.getID(), laborer.getBank(),
+				laborer.getProductivity());
+	}
+
+	/**
+	 * Add an employee to the market by its account details and the skill-scaled
+	 * labor it supplies when employed. The general primitive behind {@link
+	 * #addEmployee(Laborer)}, it lets non-laborer households — e.g. a
+	 * {@link eos.agent.noble.Noble} supplying labor to the strategic sector —
+	 * join a labor market while delivering labor scaled by their own
+	 * productivity.
+	 *
+	 * @param bankID
+	 *            the employee's account number
+	 * @param bank
+	 *            the bank at which the employee holds its accounts
+	 * @param productivity
+	 *            labor delivered to the employer per head when employed
+	 */
+	public void addEmployee(int bankID, Bank bank, double productivity) {
 		Employee employee = new Employee();
-		employee.bankID = laborer.getID();
-		employee.bank = laborer.getBank();
-		employee.productivity = laborer.getProductivity();
+		employee.bankID = bankID;
+		employee.bank = bank;
+		employee.productivity = productivity;
 		employees.add(employee);
 	}
 

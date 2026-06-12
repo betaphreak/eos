@@ -8,6 +8,7 @@ import java.util.List;
 import eos.agent.Agent;
 import eos.agent.Household;
 import eos.agent.firm.Firm;
+import eos.agent.firm.StrategicFirm;
 import eos.bank.Account;
 import eos.bank.Bank;
 import eos.settlement.Settlement;
@@ -16,6 +17,7 @@ import eos.good.Good;
 import eos.good.Necessity;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Demand;
+import eos.market.LaborMarket;
 import eos.name.Person;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -68,9 +70,19 @@ public class Noble extends Agent implements Household {
 	private final LocalDate foundingDate;
 
 	// this household's skill (0..20), drawn around the colony's mean skill like a
-	// laborer's. A noble sells no labor today, so it is carried for later use.
+	// laborer's. It sets the noble's labor productivity if the colony runs a
+	// strategic sector (see nobleLaborMkt); otherwise the noble sells no labor.
 	@Getter
 	private final int skill;
+
+	// labor produced per step when employed by the strategic firm, derived from
+	// skill by the same productivity curve laborers use (skill 10 -> 1 unit)
+	private final double productivity;
+
+	// the noble-only labor market the strategic firm employs from, or null when
+	// the colony has no strategic sector (then the noble sells no labor and is
+	// byte-identical to the pure-rentier design)
+	private final LaborMarket nobleLaborMkt;
 
 	// estate (checking, savings) snapshot taken at death so a successor noble can
 	// inherit it; savings is negative for an outstanding loan
@@ -89,6 +101,11 @@ public class Noble extends Agent implements Household {
 	// consumer-good markets the noble buys from
 	private final ConsumerGoodMarket eMkt;
 	private final ConsumerGoodMarket nMkt;
+
+	// wage earned from strategic-sector labor in the last step (0 if the noble
+	// does not work — no strategic sector)
+	@Getter
+	private double wage;
 
 	// dividends collected in the last step
 	@Getter
@@ -180,8 +197,10 @@ public class Noble extends Agent implements Household {
 		this.foundingDate = colony.getDate();
 
 		// skill is drawn around the colony mean exactly as for a laborer (each
-		// head re-rolls); unused for now, as nobles sell no labor
+		// head re-rolls), and sets the noble's labor productivity for the
+		// strategic sector
 		this.skill = colony.getDemography().sampleSkill(colony.getMeanSkill());
+		this.productivity = Household.productivityOf(skill);
 
 		// the head is named on the naming RNG with the given name's rarity tracking
 		// skill, like a laborer; a null surname starts a new dynasty, else continue
@@ -203,6 +222,15 @@ public class Noble extends Agent implements Household {
 		this.necessity = new Necessity(0);
 		this.eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
 		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
+
+		// if the colony runs a strategic sector, the noble works it: join the
+		// noble-only labor market now so the strategic firm has workers before
+		// step 0 (like a laborer posts in its constructor). Absent that market the
+		// noble is a pure rentier and this is a no-op.
+		this.nobleLaborMkt =
+				(LaborMarket) colony.getMarket(StrategicFirm.LABOR_MARKET);
+		if (nobleLaborMkt != null)
+			nobleLaborMkt.addEmployee(getID(), bank, productivity);
 	}
 
 	/**
@@ -225,6 +253,10 @@ public class Noble extends Agent implements Household {
 			bank.inheritAndClose(getID());
 			return;
 		}
+
+		// wage earned from strategic-sector labor last step (0 if the noble does
+		// not work — no strategic sector, so priIC is never credited)
+		wage = acct.priIC;
 
 		// collect dividends: draw a share of each owned firm's positive profit,
 		// moving retained earnings from the firm to this noble via the secondary-
@@ -255,8 +287,8 @@ public class Noble extends Agent implements Household {
 			}
 		}
 
-		// income this step is the dividends just credited plus interest earned
-		income = acct.secIC + acct.interest;
+		// income this step is the wage and dividends just credited plus interest
+		income = wage + acct.secIC + acct.interest;
 
 		double checking = acct.getChecking();
 		double savings = acct.getSavings();
@@ -272,6 +304,12 @@ public class Noble extends Agent implements Household {
 		// post buy offers; the markets settle them in clear()
 		eMkt.addBuyOffer(this, demandForE);
 		nMkt.addBuyOffer(this, demandForN);
+
+		// supply labor to the strategic sector for next round (if the colony has
+		// one); the strategic firm pays a wage and takes the noble's skill-scaled
+		// labor when the noble-labor market clears
+		if (nobleLaborMkt != null)
+			nobleLaborMkt.addEmployee(getID(), getBank(), productivity);
 
 		// reset income accumulators so next step's income is counted fresh
 		acct.priIC = 0;

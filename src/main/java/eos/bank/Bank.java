@@ -194,6 +194,28 @@ public class Bank {
 	}
 
 	/**
+	 * Move <tt>amount</tt> from the bank's equity into <tt>agentID</tt>'s checking
+	 * account. This is the counterpart to {@link #injectExternalFunds(double)} for
+	 * an agent that spends <em>out of</em> equity rather than out of its own
+	 * income — namely the {@link eos.agent.firm.StrategicFirm}, whose export
+	 * earnings are injected into equity and whose wage bill is then funded back
+	 * out of it, leaving the firm a pure conduit that turns exported goods into
+	 * retained equity. It does not touch {@code cumulativeProfit} /
+	 * {@code distributedProfit}, so the distributable-profit accounting (noble
+	 * dividends) is unaffected.
+	 *
+	 * @param agentID
+	 *            the account to fund
+	 * @param amount
+	 *            the amount to move from equity into the account's checking
+	 */
+	public void payFromEquity(int agentID, double amount) {
+		Account acct = accounts.get(agentID);
+		acct.checking += amount;
+		equity -= amount;
+	}
+
+	/**
 	 * The bank's retained profit not yet paid out to owners: cumulative interest
 	 * spread and transaction fees, less dividends already distributed. This is the
 	 * slice of {@link #getEquity() equity} attributable to profit (as opposed to
