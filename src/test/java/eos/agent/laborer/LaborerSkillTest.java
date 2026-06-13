@@ -54,8 +54,8 @@ class LaborerSkillTest {
 
 	private static Household householdWithSkill(int skill) {
 		return new Household() {
-			public Person getHead() {
-				return null;
+			public java.util.List<Person> getMembers() {
+				return java.util.Collections.singletonList(null);
 			}
 
 			public int getSkill() {

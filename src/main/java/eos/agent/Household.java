@@ -1,5 +1,7 @@
 package eos.agent;
 
+import java.util.List;
+
 import eos.bank.Bank;
 import eos.name.Person;
 import eos.settlement.Settlement;
@@ -32,11 +34,33 @@ public interface Household {
 	int NOTABLE_SKILL = 15;
 
 	/**
-	 * The head of this household, whose surname names the dynasty.
+	 * The people who make up this household; the first member is the
+	 * {@linkplain #getHead() head}, whose surname names the dynasty. For now every
+	 * household has exactly one member (its head), set at colony creation; the list
+	 * is the seam for households to grow past size 1 later.
+	 *
+	 * @return the household's members, head first
+	 */
+	List<Person> getMembers();
+
+	/**
+	 * The head of this household — its first {@linkplain #getMembers() member},
+	 * whose surname names the dynasty.
 	 *
 	 * @return the household head
 	 */
-	Person getHead();
+	default Person getHead() {
+		return getMembers().get(0);
+	}
+
+	/**
+	 * The number of people in this household.
+	 *
+	 * @return the household size (currently always 1)
+	 */
+	default int getMemberCount() {
+		return getMembers().size();
+	}
 
 	/**
 	 * This household's skill, an integer in {@code [0, 20]}.

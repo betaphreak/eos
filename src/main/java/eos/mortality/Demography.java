@@ -1,6 +1,13 @@
 package eos.mortality;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 import eos.agent.Household;
+import eos.skill.Passion;
+import eos.skill.Skill;
+import eos.skill.SkillRecord;
+import eos.skill.SkillTracker;
 import eos.util.Rng;
 
 /**
@@ -27,6 +34,12 @@ public final class Demography {
 	// colony-start property), sd SKILL_STDDEV, clamped to the range — a natural
 	// spread of mostly low-to-middling skill with the occasional adept
 	private static final double SKILL_STDDEV = 3;
+
+	// per-skill passion is assigned at random (placeholder weights): below the
+	// first threshold NONE, below the second MINOR, else MAJOR — so roughly
+	// 60% / 30% / 10% NONE / MINOR / MAJOR
+	private static final double PASSION_NONE_BELOW = 0.6;
+	private static final double PASSION_MINOR_BELOW = 0.9;
 
 	private final Rng rng;
 	private final Rng skillRng;
@@ -115,6 +128,36 @@ public final class Demography {
 		int skill = (int) Math.round(skillRng.gaussian(meanSkill, SKILL_STDDEV));
 		return Math.max(Household.MIN_SKILL,
 				Math.min(Household.MAX_SKILL, skill));
+	}
+
+	/**
+	 * Build a fresh {@link SkillTracker} for a new person: one randomized
+	 * {@link SkillRecord} per {@link Skill}, drawn on the skill RNG. Each skill's
+	 * starting level is drawn around <tt>meanSkill</tt> (as {@link
+	 * #sampleSkill(double)}) and its {@link Passion} is assigned at random
+	 * (roughly 60/30/10 NONE/MINOR/MAJOR) — a RimWorld-style spread, minus the
+	 * genetic aptitudes and traits this model omits.
+	 *
+	 * @param meanSkill
+	 *            center of each skill's starting-level distribution (the colony's
+	 *            mean skill)
+	 * @return a new tracker holding all twelve randomized records
+	 */
+	public SkillTracker newSkillTracker(double meanSkill) {
+		Map<Skill, SkillRecord> records = new EnumMap<>(Skill.class);
+		for (Skill s : Skill.values())
+			records.put(s, new SkillRecord(sampleSkill(meanSkill), samplePassion()));
+		return new SkillTracker(records);
+	}
+
+	// draw a passion on the skill RNG using the placeholder weights
+	private Passion samplePassion() {
+		double r = skillRng.uniform();
+		if (r < PASSION_NONE_BELOW)
+			return Passion.NONE;
+		if (r < PASSION_MINOR_BELOW)
+			return Passion.MINOR;
+		return Passion.MAJOR;
 	}
 
 	/**

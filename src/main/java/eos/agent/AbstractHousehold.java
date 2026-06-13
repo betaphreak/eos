@@ -2,12 +2,16 @@ package eos.agent;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import eos.bank.Account;
 import eos.bank.Bank;
 import eos.mortality.Demography;
 import eos.name.Person;
 import eos.settlement.Settlement;
+import eos.skill.SkillTracker;
 import lombok.Getter;
 
 /**
@@ -17,10 +21,11 @@ import lombok.Getter;
  * {@link eos.agent.noble.Noble} and {@link eos.agent.ruler.Ruler} previously
  * each carried verbatim:
  * <ul>
- * <li>the household <b>identity</b> — a {@link Person} {@code head} (drawn with a
- * given-name rarity tracking skill), the head's {@code birthDate}, the
- * household's {@code foundingDate}, and its {@code skill} — all sampled at
- * construction on the demographic / naming RNGs (never the economic stream);</li>
+ * <li>the household <b>identity</b> — its {@link #getMembers() members} (for now
+ * a single {@link Person}, the {@code head}, drawn with a given-name rarity
+ * tracking skill), the head's {@code birthDate}, the household's
+ * {@code foundingDate}, and its {@code skill} — all sampled at construction on
+ * the demographic / naming RNGs (never the economic stream);</li>
  * <li><b>account opening</b>, either as a fresh endowment or funded out of the
  * bank's equity (a successor's inheritance or an open-colony immigrant);</li>
  * <li><b>age</b> ({@link #ageDays()} / {@link #getAgeYears()}) and liquid
@@ -38,10 +43,11 @@ import lombok.Getter;
  */
 public abstract class AbstractHousehold extends Agent implements Household {
 
-	// head of this household: a male given name plus a (unique, for a new
-	// dynasty) dynasty surname drawn from the colony's name pool
-	@Getter
-	private final Person head;
+	// the people who make up this household; members.get(0) is the head, whose
+	// (unique, for a new dynasty) surname names the dynasty. For now every
+	// household is founded with a single member — the head — set at construction;
+	// the list is the seam for a household to grow past size 1 later.
+	private final List<Person> members = new ArrayList<>();
 
 	// in-game birth date of the head (the source of truth for its age)
 	@Getter
@@ -51,10 +57,6 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	// arrived and founded it); distinct from the head's birthDate
 	@Getter
 	private final LocalDate foundingDate;
-
-	// this household's skill (0..20), drawn around the colony's mean skill
-	@Getter
-	private final int skill;
 
 	// estate (checking, savings) snapshot taken at death so a successor can
 	// inherit it; savings is negative for an outstanding loan
@@ -98,17 +100,60 @@ public abstract class AbstractHousehold extends Agent implements Household {
 				demography.sampleInitialAgeDays(colony.getMeanInitAgeYears()));
 		this.foundingDate = colony.getDate();
 
-		// skill is a fresh draw for every head (founders, immigrants, and each
-		// successor), centered on the colony's mean skill, on the demographic
-		// skill RNG — drawn before the head so the given name's rarity can track it
-		this.skill = demography.sampleSkill(colony.getMeanSkill());
+		// build the head's skills — one randomized record per skill — on the
+		// demographic skill RNG (a separate stream), a fresh draw for every head
+		// (founders, immigrants, and each successor), so skill is not inherited.
+		// Done before the head is named so the given name's rarity can track the
+		// head's overall skill, exactly as the single scalar skill did before.
+		SkillTracker skills = demography.newSkillTracker(colony.getMeanSkill());
 
 		// draw the head on the naming RNG with the given name's rarity tracking
-		// skill; a null surname starts a new dynasty, else continue the given one
-		double nameRarity = (double) skill / Household.MAX_SKILL;
-		this.head = (surname == null)
-				? colony.getNames().nextHead(nameRarity)
-				: colony.getNames().nextHeadInDynasty(surname, nameRarity);
+		// its overall skill; a null surname starts a new dynasty, else continue the
+		// given one. The named person carries its skills, and is the household's
+		// sole member for now.
+		double nameRarity = (double) skills.overallLevel() / Household.MAX_SKILL;
+		Person head = (surname == null)
+				? colony.getNames().nextHead(nameRarity).withSkills(skills)
+				: colony.getNames().nextHeadInDynasty(surname, nameRarity)
+						.withSkills(skills);
+		members.add(head);
+	}
+
+	/**
+	 * The people who make up this household. The first member is the
+	 * {@linkplain #getHead() head}, whose surname names the dynasty; the returned
+	 * list is an unmodifiable view, head first. For now a household always has
+	 * exactly one member.
+	 *
+	 * @return an unmodifiable view of the household's members, head first
+	 */
+	@Override
+	public List<Person> getMembers() {
+		return Collections.unmodifiableList(members);
+	}
+
+	/**
+	 * The head of this household — its first {@linkplain #getMembers() member}.
+	 *
+	 * @return the household head
+	 */
+	@Override
+	public Person getHead() {
+		return members.get(0);
+	}
+
+	/**
+	 * This household's skill scalar in {@code [Household.MIN_SKILL, MAX_SKILL]}:
+	 * the {@linkplain SkillTracker#overallLevel() overall level} of the head's
+	 * skills. Drives labor productivity, notability and given-name rarity — the
+	 * single skill number the economy reads, now derived from the head's
+	 * twelve-skill tracker rather than stored on the household.
+	 *
+	 * @return the head's overall skill level
+	 */
+	@Override
+	public int getSkill() {
+		return getHead().skills().overallLevel();
 	}
 
 	/**
