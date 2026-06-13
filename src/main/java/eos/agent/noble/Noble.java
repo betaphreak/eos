@@ -18,6 +18,7 @@ import eos.good.Necessity;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Demand;
 import eos.market.LaborMarket;
+import eos.skill.Skill;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
@@ -327,11 +328,14 @@ public class Noble extends AbstractHousehold {
 		return necessity.getQuantity();
 	}
 
-	// the noble's current strategic-labor productivity, derived live from the
-	// head's skills (so it rises as the noble gains INTELLECTUAL experience),
-	// using the same productivity curve laborers use (skill 10 -> 1 unit)
+	// the noble's current strategic-labor productivity, hence its contribution to
+	// export output. The export sector is intellectual work, so it is driven by
+	// the noble's INTELLECTUAL skill specifically (which the noble trains by
+	// working the sector — a feedback loop) rather than its overall skill, using
+	// the same productivity curve laborers use (skill 10 -> 1 unit)
 	private double productivity() {
-		return Household.productivityOf(getSkill());
+		return Household.productivityOf(
+				getHead().skills().level(Skill.INTELLECTUAL));
 	}
 
 	/**

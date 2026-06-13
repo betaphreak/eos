@@ -10,6 +10,7 @@ import eos.agent.Agent;
 import eos.agent.firm.StrategicFirm;
 import eos.agent.noble.Noble;
 import eos.bank.Bank;
+import eos.skill.Skill;
 
 /**
  * Smoke test for the colony with a strategic export sector worked by the nobles.
@@ -60,16 +61,26 @@ class StrategicEconomyTest {
 		// succession and they draw positive wages from it
 		int nobleCount = 0;
 		double totalWage = 0;
+		double intellectual = 0, medicine = 0;
 		for (Agent agent : h.getColony().getAgents())
 			if (agent instanceof Noble noble) {
 				nobleCount++;
 				totalWage += noble.getWage();
+				// working the export sector trains INTELLECTUAL (which now drives
+				// the noble's export productivity); a skill no noble works
+				// (MEDICINE) stays at its birth level
+				intellectual += noble.getHead().skills().level(Skill.INTELLECTUAL);
+				medicine += noble.getHead().skills().level(Skill.MEDICINE);
 			}
 		assertEquals(StrategicEconomy.NUM_NOBLES, nobleCount,
 				"expected the noble workforce sustained by succession");
 		assertTrue(totalWage > 0,
 				"expected nobles to draw wages from the export sector, got "
 						+ totalWage);
+		assertTrue(intellectual > medicine,
+				"expected nobles to have trained INTELLECTUAL (the export skill, mean "
+						+ intellectual / nobleCount + ") above an untrained skill (mean "
+						+ medicine / nobleCount + ")");
 
 		// the colony tracks every living noble as a person of interest
 		var poi = h.getColony().getPersonsOfInterest();

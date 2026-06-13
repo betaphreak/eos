@@ -52,6 +52,18 @@ public final class SkillTracker {
 	}
 
 	/**
+	 * The current level of <tt>skill</tt> — shorthand for
+	 * {@code getSkill(skill).getLevel()}.
+	 *
+	 * @param skill
+	 *            the skill
+	 * @return its current level, in {@code [SkillRecord.MIN_LEVEL, MAX_LEVEL]}
+	 */
+	public int level(Skill skill) {
+		return records.get(skill).getLevel();
+	}
+
+	/**
 	 * Gain <tt>xp</tt> experience in <tt>skill</tt> (see
 	 * {@link SkillRecord#learn(double)}).
 	 *
