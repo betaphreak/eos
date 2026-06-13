@@ -1,7 +1,6 @@
 package eos.agent.laborer;
 
 import eos.agent.AbstractHousehold;
-import eos.agent.Household;
 import eos.bank.Bank;
 import eos.bank.Account;
 import eos.settlement.Settlement;
@@ -324,19 +323,6 @@ public class Laborer extends AbstractHousehold {
 	 */
 	public double getSavings() {
 		return getBank().getSavings(getID());
-	}
-
-	/**
-	 * This laborer's current labor productivity, derived <b>live</b> from the
-	 * head's skills as {@code Household.productivityOf(getSkill())}. Because skills
-	 * improve through work (see {@link eos.market.LaborMarket}), a laborer's labor
-	 * output rises over its life as it gains experience, rather than being pinned
-	 * to its birth skill.
-	 *
-	 * @return labor produced per step when employed (before daylight scaling)
-	 */
-	public double getProductivity() {
-		return Household.productivityOf(getSkill());
 	}
 
 	/**

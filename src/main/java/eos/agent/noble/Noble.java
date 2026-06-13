@@ -5,7 +5,6 @@ import java.util.List;
 
 import eos.agent.AbstractHousehold;
 import eos.agent.Agent;
-import eos.agent.Household;
 import eos.agent.firm.Firm;
 import eos.agent.firm.StrategicFirm;
 import eos.agent.laborer.Laborer;
@@ -18,7 +17,6 @@ import eos.good.Necessity;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Demand;
 import eos.market.LaborMarket;
-import eos.skill.Skill;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
@@ -186,8 +184,7 @@ public class Noble extends AbstractHousehold {
 		this.nobleLaborMkt =
 				(LaborMarket) colony.getMarket(StrategicFirm.LABOR_MARKET);
 		if (nobleLaborMkt != null)
-			nobleLaborMkt.addEmployee(getID(), bank, productivity(),
-					getHead().skills());
+			nobleLaborMkt.addEmployee(getID(), bank, 1.0, getHead().skills());
 	}
 
 	/**
@@ -266,8 +263,7 @@ public class Noble extends AbstractHousehold {
 		// one); the strategic firm pays a wage and takes the noble's skill-scaled
 		// labor when the noble-labor market clears
 		if (nobleLaborMkt != null)
-			nobleLaborMkt.addEmployee(getID(), getBank(), productivity(),
-					getHead().skills());
+			nobleLaborMkt.addEmployee(getID(), getBank(), 1.0, getHead().skills());
 
 		// reset income accumulators so next step's income is counted fresh
 		resetIncomeAccumulators(acct);
@@ -326,16 +322,6 @@ public class Noble extends AbstractHousehold {
 	 * NobleConfig#necessityReserveDays()}). */
 	public double getNecessityStock() {
 		return necessity.getQuantity();
-	}
-
-	// the noble's current strategic-labor productivity, hence its contribution to
-	// export output. The export sector is intellectual work, so it is driven by
-	// the noble's INTELLECTUAL skill specifically (which the noble trains by
-	// working the sector — a feedback loop) rather than its overall skill, using
-	// the same productivity curve laborers use (skill 10 -> 1 unit)
-	private double productivity() {
-		return Household.productivityOf(
-				getHead().skills().level(Skill.INTELLECTUAL));
 	}
 
 	/**

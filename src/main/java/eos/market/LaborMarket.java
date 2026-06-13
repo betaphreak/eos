@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import eos.bank.Bank;
+import eos.agent.Household;
 import eos.agent.firm.Firm;
 import eos.agent.laborer.Laborer;
 import eos.settlement.Settlement;
@@ -59,8 +60,8 @@ public class LaborMarket extends Market {
 	private class Employee {
 		private int bankID; // account number of the employee
 		private Bank bank; // bank of the employee
-		private double productivity; // labor produced when employed (by skill)
-		private SkillTracker skills; // the worker's skills (gains XP), may be null
+		private SkillTracker skills; // worker's skills: drive labor + gain XP (may be null)
+		private double laborMultiplier; // non-skill scaling (day length); 1 for nobles
 	}
 
 	private ArrayList<Employer> employers;
@@ -120,17 +121,18 @@ public class LaborMarket extends Market {
 	}
 
 	/**
-	 * Add a laborer to the market as an employee, supplying its skill-scaled
-	 * productivity adjusted for the length of the day: the laborer delivers 100%
-	 * of its output at {@value #FULL_OUTPUT_DAYLIGHT_HOURS} hours of daylight, more
-	 * on longer days and less on shorter ones (so output rises in summer and falls
-	 * in winter). The strength of that adjustment is itself penalized at high
-	 * latitudes (see {@link #daylightSensitivity()}): full effect up to
-	 * {@value #PENALTY_START_LATITUDE}°, fading to none at the poles, which keeps
-	 * the extreme high-latitude daylight swings from destabilizing the economy.
-	 * This applies only to laborers — nobles supplying labor to the strategic
-	 * sector use the {@link #addEmployee(int, Bank, double)} primitive directly and
-	 * are unaffected.
+	 * Add a laborer to the market as an employee. The labor it delivers is
+	 * computed when the market clears, from its proficiency in the employer's work
+	 * (see {@link #clear()}), then adjusted for the length of the day: a laborer
+	 * delivers 100% of its output at {@value #FULL_OUTPUT_DAYLIGHT_HOURS} hours of
+	 * daylight, more on longer days and less on shorter ones (so output rises in
+	 * summer and falls in winter). The strength of that adjustment is itself
+	 * penalized at high latitudes (see {@link #daylightSensitivity()}): full effect
+	 * up to {@value #PENALTY_START_LATITUDE}°, fading to none at the poles, which
+	 * keeps the extreme high-latitude daylight swings from destabilizing the
+	 * economy. This day-length scaling applies only to laborers — nobles supplying
+	 * labor to the strategic sector use the {@link #addEmployee(int, Bank, double,
+	 * SkillTracker)} primitive with a multiplier of 1 and are unaffected.
 	 *
 	 * @param laborer
 	 *            the laborer seeking employment
@@ -141,35 +143,38 @@ public class LaborMarket extends Market {
 		// polar day/night leaves daylight undefined; fall back to unscaled output
 		if (!Double.isFinite(daylightFactor))
 			daylightFactor = 1;
-		addEmployee(laborer.getID(), laborer.getBank(),
-				laborer.getProductivity() * daylightFactor,
+		addEmployee(laborer.getID(), laborer.getBank(), daylightFactor,
 				laborer.getHead().skills());
 	}
 
 	/**
-	 * Add an employee to the market by its account details and the skill-scaled
-	 * labor it supplies when employed. The general primitive behind {@link
-	 * #addEmployee(Laborer)}, it lets non-laborer households — e.g. a
-	 * {@link eos.agent.noble.Noble} supplying labor to the strategic sector —
-	 * join a labor market while delivering labor scaled by their own
-	 * productivity.
+	 * Add an employee to the market by its account details, the skills that both
+	 * drive its delivered labor and gain experience, and a non-skill labor
+	 * multiplier. The general primitive behind {@link #addEmployee(Laborer)}, it
+	 * lets non-laborer households — e.g. a {@link eos.agent.noble.Noble} supplying
+	 * labor to the strategic sector — join a labor market; the actual labor is
+	 * {@code productivityOf(level in the employer's skills) × laborMultiplier},
+	 * computed when the market clears.
 	 *
 	 * @param bankID
 	 *            the employee's account number
 	 * @param bank
 	 *            the bank at which the employee holds its accounts
-	 * @param productivity
-	 *            labor delivered to the employer per head when employed
+	 * @param laborMultiplier
+	 *            a non-skill scaling of delivered labor (e.g. day length); pass 1
+	 *            for no scaling
 	 * @param skills
-	 *            the worker's skills, which gain experience for the labor
-	 *            performed (may be null to gain none)
+	 *            the worker's skills — drive its delivered labor (via its level in
+	 *            the employer's skills) and gain experience for the labor
+	 *            performed; may be null (then it delivers {@code laborMultiplier}
+	 *            and learns nothing)
 	 */
-	public void addEmployee(int bankID, Bank bank, double productivity,
+	public void addEmployee(int bankID, Bank bank, double laborMultiplier,
 			SkillTracker skills) {
 		Employee employee = new Employee();
 		employee.bankID = bankID;
 		employee.bank = bank;
-		employee.productivity = productivity;
+		employee.laborMultiplier = laborMultiplier;
 		employee.skills = skills;
 		employees.add(employee);
 	}
@@ -191,10 +196,16 @@ public class LaborMarket extends Market {
 				Employee employee = employees.get(i);
 				employer.bank.withdraw(employer.bankID, wage);
 				employee.bank.credit(employee.bankID, wage, Bank.PRIIC);
-				// the firm gets this worker's skill-scaled labor (a skill-10
-				// worker produces 1, as in the old homogeneous case); the wage,
-				// though, is still split per head, not by skill
-				employer.labor.increase(employee.productivity);
+				// the labor the firm gets is the worker's proficiency in the firm's
+				// own work — productivityOf its level in the employer's skills (a
+				// skill-10 worker produces 1, as in the old homogeneous case) —
+				// times any non-skill scaling (day length). The wage, though, is
+				// still split per head, not by skill.
+				double base = employee.skills != null
+						? Household.productivityOf(
+								relevantLevel(employee.skills, employer.skills))
+						: 1.0;
+				employer.labor.increase(base * employee.laborMultiplier);
 				// performing this labor trains the worker: one unit of experience
 				// in each skill the employer's work develops
 				if (employee.skills != null)
@@ -206,6 +217,19 @@ public class LaborMarket extends Market {
 		employers.clear();
 		employees.clear();
 		totalBudget = 0;
+	}
+
+	// the worker's effective skill level for an employer: the (rounded) mean of
+	// its levels in the employer's labor skills — so a necessity firm reads PLANTS,
+	// a capital firm CRAFTING, etc. — or its overall level when the employer trains
+	// no specific skill. Package-private for direct unit testing.
+	static int relevantLevel(SkillTracker skills, Set<Skill> firmSkills) {
+		if (firmSkills == null || firmSkills.isEmpty())
+			return skills.overallLevel();
+		int sum = 0;
+		for (Skill skill : firmSkills)
+			sum += skills.level(skill);
+		return Math.round((float) sum / firmSkills.size());
 	}
 
 	@Override
