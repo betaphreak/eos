@@ -65,11 +65,13 @@ public final class SkillTracker {
 	}
 
 	/**
-	 * Periodic per-person hook. Decay is intentionally excluded from this model,
-	 * so this does nothing today; it is the seam for future periodic behaviour.
+	 * Advance every skill by one day: applies {@linkplain SkillRecord#decay()
+	 * decay} ("forgetting") to each record. Called once per day per living person
+	 * by the step loop ({@link eos.settlement.Settlement#newDay()}).
 	 */
 	public void tick() {
-		// no-op: no decay in this spec
+		for (SkillRecord r : records.values())
+			r.decay();
 	}
 
 	/**

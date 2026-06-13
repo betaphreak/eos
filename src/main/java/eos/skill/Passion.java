@@ -7,14 +7,14 @@ package eos.skill;
  */
 public enum Passion {
 
-	/** No passion: learns slowly. */
-	NONE(0.35),
+	/** No passion: learns slowly and forgets fastest. */
+	NONE(0.35, 1.0),
 
-	/** Minor passion: the baseline learn rate. */
-	MINOR(1.0),
+	/** Minor passion: the baseline learn rate; forgets more slowly. */
+	MINOR(1.0, 0.5),
 
-	/** Major passion: learns fastest. */
-	MAJOR(1.5);
+	/** Major passion: learns fastest and never forgets. */
+	MAJOR(1.5, 0.0);
 
 	/** Learn-rate factor for {@link #NONE}. */
 	public static final double LEARN_FACTOR_PASSION_NONE = 0.35;
@@ -26,9 +26,11 @@ public enum Passion {
 	public static final double LEARN_FACTOR_PASSION_MAJOR = 1.5;
 
 	private final double learnRateFactor;
+	private final double decayRateFactor;
 
-	Passion(double learnRateFactor) {
+	Passion(double learnRateFactor, double decayRateFactor) {
 		this.learnRateFactor = learnRateFactor;
+		this.decayRateFactor = decayRateFactor;
 	}
 
 	/**
@@ -41,5 +43,17 @@ public enum Passion {
 	 */
 	public double learnRateFactor() {
 		return learnRateFactor;
+	}
+
+	/**
+	 * The factor by which this passion scales skill <b>decay</b> (forgetting): 1.0
+	 * for {@link #NONE} (forgets at the full rate), 0.5 for {@link #MINOR}, and 0.0
+	 * for {@link #MAJOR} (a passionately-held skill never fades). Higher passion
+	 * both learns faster and decays slower.
+	 *
+	 * @return the decay-rate factor
+	 */
+	public double decayRateFactor() {
+		return decayRateFactor;
 	}
 }

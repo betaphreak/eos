@@ -87,6 +87,45 @@ class SkillSystemTest {
 	}
 
 	@Test
+	void decayErodesMasteryButNotBasicCompetence() {
+		// a skill at or below the floor (10) never decays
+		SkillRecord basic = new SkillRecord(10, Passion.NONE);
+		for (int day = 0; day < 1000; day++)
+			basic.decay();
+		assertEquals(10, basic.getLevel(), "skills at the floor do not fade");
+
+		// a high skill with no passion erodes over time and drops below its
+		// starting level (but never below the floor)
+		SkillRecord mastery = new SkillRecord(18, Passion.NONE);
+		for (int day = 0; day < 5000; day++)
+			mastery.decay();
+		assertTrue(mastery.getLevel() < 18, "unpracticed mastery should fade");
+		assertTrue(mastery.getLevel() >= 10, "decay never drops below the floor");
+	}
+
+	@Test
+	void majorPassionNeverForgets() {
+		SkillRecord r = new SkillRecord(20, Passion.MAJOR);
+		for (int day = 0; day < 5000; day++)
+			r.decay();
+		assertEquals(20, r.getLevel(), "a major-passion skill does not decay");
+	}
+
+	@Test
+	void trackerTickDecaysRecords() {
+		SkillTracker t = new SkillTracker();
+		// push one skill well above the floor, then let it sit idle through ticks
+		t.getSkill(Skill.MINING).setPassion(Passion.NONE);
+		t.learn(Skill.MINING, 100_000); // drive to max
+		int before = t.getSkill(Skill.MINING).getLevel();
+		// enough idle days to erode the full top-level XP bucket and drop a level
+		for (int day = 0; day < 10_000; day++)
+			t.tick();
+		assertTrue(t.getSkill(Skill.MINING).getLevel() < before,
+				"tick() should decay an idle high skill");
+	}
+
+	@Test
 	void trackerHoldsOneRecordPerSkill() {
 		SkillTracker t = new SkillTracker();
 		assertEquals(Skill.values().length, t.getRecords().size());

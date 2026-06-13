@@ -15,6 +15,15 @@ public final class SkillRecord {
 	/** Highest attainable level. */
 	public static final int MAX_LEVEL = 20;
 
+	// Decay ("forgetting") applies only above this level: basic competence is
+	// permanent, but mastery erodes without practice. (Calibration placeholder.)
+	private static final int DECAY_FLOOR_LEVEL = 10;
+
+	// Per-day experience lost above the floor, per level: a higher skill decays
+	// faster (so each skill settles at a level where work balances forgetting),
+	// further scaled by passion (see Passion.decayRateFactor). (Placeholder.)
+	private static final double DECAY_XP_PER_LEVEL_PER_DAY = 0.05;
+
 	// Control points of the piecewise-linear XP-to-level-up curve, each {level,
 	// xp}: the experience needed to advance *from* that level. Interpolated
 	// linearly between points and clamped to the endpoints outside the range.
@@ -94,6 +103,31 @@ public final class SkillRecord {
 		if (level >= MAX_LEVEL)
 			xpSinceLastLevel =
 					Math.min(xpSinceLastLevel, xpRequiredForLevelUp(MAX_LEVEL));
+	}
+
+	/**
+	 * Apply one day of <b>decay</b> ("forgetting"): a skill above
+	 * {@value #DECAY_FLOOR_LEVEL} loses experience each day — more at higher
+	 * levels, scaled by the passion's {@linkplain Passion#decayRateFactor() decay
+	 * factor} — possibly dropping a level. Skills at or below the floor (basic
+	 * competence) never fade, and decay can never push a skill below the floor.
+	 * Called once per day by {@link SkillTracker#tick()}.
+	 */
+	public void decay() {
+		if (level <= DECAY_FLOOR_LEVEL)
+			return;
+		double loss = level * DECAY_XP_PER_LEVEL_PER_DAY * passion.decayRateFactor();
+		if (loss <= 0)
+			return;
+		xpSinceLastLevel -= loss;
+		// underflow drops one or more levels, carrying the deficit into the lower
+		// level's bucket (the inverse of a level-up), but not past the floor
+		while (xpSinceLastLevel < 0 && level > DECAY_FLOOR_LEVEL) {
+			level--;
+			xpSinceLastLevel += xpRequiredForLevelUp(level);
+		}
+		if (xpSinceLastLevel < 0)
+			xpSinceLastLevel = 0; // reached the floor; cannot fade further
 	}
 
 	/**

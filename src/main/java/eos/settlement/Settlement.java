@@ -25,6 +25,7 @@ import eos.market.ConsumerGoodMarket;
 import eos.market.Market;
 import eos.mortality.Demography;
 import eos.name.NameRegistry;
+import eos.name.Person;
 import eos.util.Rng;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -719,8 +720,15 @@ public class Settlement {
 
 		for (Agent agent : agents) {
 			agent.act();
-			if (!agent.isAlive())
+			if (!agent.isAlive()) {
 				deadAgents.add(agent);
+			} else if (agent instanceof Household h) {
+				// age each living household member's skills once per day: decay
+				// ("forgetting") runs whether or not they worked this step
+				for (Person member : h.getMembers())
+					if (member.skills() != null)
+						member.skills().tick();
+			}
 		}
 
 		for (Bank bank : banks)
