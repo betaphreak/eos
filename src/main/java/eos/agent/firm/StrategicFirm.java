@@ -1,10 +1,13 @@
 package eos.agent.firm;
 
+import java.util.Set;
+
 import eos.bank.Bank;
 import eos.settlement.Settlement;
 import eos.good.Good;
 import eos.good.Strategic;
 import eos.market.LaborMarket;
+import eos.skill.Skill;
 import lombok.Getter;
 
 /**
@@ -146,5 +149,11 @@ public class StrategicFirm extends Firm {
 		if (good.equals("Strategic"))
 			return product;
 		return null;
+	}
+
+	/** The nobles who work the export sector train {@link Skill#INTELLECTUAL}. */
+	@Override
+	public Set<Skill> laborSkills() {
+		return Set.of(Skill.INTELLECTUAL);
 	}
 }

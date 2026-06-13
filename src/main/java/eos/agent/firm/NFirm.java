@@ -1,9 +1,12 @@
 package eos.agent.firm;
 
+import java.util.Set;
+
 import eos.bank.Bank;
 import eos.settlement.Settlement;
 import eos.good.Good;
 import eos.good.Necessity;
+import eos.skill.Skill;
 
 /**
  * Necessity Firm
@@ -53,5 +56,12 @@ public class NFirm extends ConsumerGoodFirm {
 			return product;
 		else
 			return null;
+	}
+
+	/** Necessity production is subsistence agriculture: it trains {@link
+	 * Skill#PLANTS}. */
+	@Override
+	public Set<Skill> laborSkills() {
+		return Set.of(Skill.PLANTS);
 	}
 }

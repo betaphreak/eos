@@ -2,12 +2,15 @@ package eos.market;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Set;
 
 import eos.bank.Bank;
 import eos.agent.firm.Firm;
 import eos.agent.laborer.Laborer;
 import eos.settlement.Settlement;
 import eos.good.Labor;
+import eos.skill.Skill;
+import eos.skill.SkillTracker;
 
 /**
  * A labor market
@@ -20,6 +23,10 @@ public class LaborMarket extends Market {
 	// hours of daylight at which a laborer delivers 100% of its skill-scaled
 	// output; longer days scale output up proportionally, shorter days down
 	private static final double FULL_OUTPUT_DAYLIGHT_HOURS = 8;
+
+	// raw experience a worker gains in each of its employer's labor skills for
+	// each step it is employed (one "labor performed")
+	private static final double XP_PER_LABOR = 1;
 
 	// the daylight effect is penalized at high latitudes: no penalty up to this
 	// latitude (full sensitivity), ramping to a 100% penalty (no sensitivity) at
@@ -45,6 +52,7 @@ public class LaborMarket extends Market {
 		private String name; // name of the employer
 		private int bankID; // account number of the employer
 		private Bank bank; // bank of the employer
+		private Set<Skill> skills; // skills this employer's labor trains
 	}
 
 	/* employee */
@@ -52,6 +60,7 @@ public class LaborMarket extends Market {
 		private int bankID; // account number of the employee
 		private Bank bank; // bank of the employee
 		private double productivity; // labor produced when employed (by skill)
+		private SkillTracker skills; // the worker's skills (gains XP), may be null
 	}
 
 	private ArrayList<Employer> employers;
@@ -105,6 +114,7 @@ public class LaborMarket extends Market {
 		employer.name = firm.getName();
 		employer.bankID = firm.getID();
 		employer.bank = firm.getBank();
+		employer.skills = firm.laborSkills();
 		employers.add(employer);
 		totalBudget += wageBudget;
 	}
@@ -132,7 +142,8 @@ public class LaborMarket extends Market {
 		if (!Double.isFinite(daylightFactor))
 			daylightFactor = 1;
 		addEmployee(laborer.getID(), laborer.getBank(),
-				laborer.getProductivity() * daylightFactor);
+				laborer.getProductivity() * daylightFactor,
+				laborer.getHead().skills());
 	}
 
 	/**
@@ -149,12 +160,17 @@ public class LaborMarket extends Market {
 	 *            the bank at which the employee holds its accounts
 	 * @param productivity
 	 *            labor delivered to the employer per head when employed
+	 * @param skills
+	 *            the worker's skills, which gain experience for the labor
+	 *            performed (may be null to gain none)
 	 */
-	public void addEmployee(int bankID, Bank bank, double productivity) {
+	public void addEmployee(int bankID, Bank bank, double productivity,
+			SkillTracker skills) {
 		Employee employee = new Employee();
 		employee.bankID = bankID;
 		employee.bank = bank;
 		employee.productivity = productivity;
+		employee.skills = skills;
 		employees.add(employee);
 	}
 
@@ -179,6 +195,11 @@ public class LaborMarket extends Market {
 				// worker produces 1, as in the old homogeneous case); the wage,
 				// though, is still split per head, not by skill
 				employer.labor.increase(employee.productivity);
+				// performing this labor trains the worker: one unit of experience
+				// in each skill the employer's work develops
+				if (employee.skills != null)
+					for (Skill skill : employer.skills)
+						employee.skills.learn(skill, XP_PER_LABOR);
 			}
 			low = high;
 		}

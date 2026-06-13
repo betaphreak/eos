@@ -1,9 +1,13 @@
 package eos.agent.firm;
 
+import java.util.Collections;
+import java.util.Set;
+
 import eos.agent.Agent;
 import eos.bank.Bank;
 import eos.settlement.Settlement;
 import eos.good.Labor;
+import eos.skill.Skill;
 import lombok.Getter;
 
 /**
@@ -101,11 +105,25 @@ public abstract class Firm extends Agent {
 
 	/**
 	 * Return amount of labor owned by the firm
-	 * 
+	 *
 	 * @return amount of labor owned by the firm
 	 */
 	public double getLabor() {
 		return labor.getQuantity();
+	}
+
+	/**
+	 * The skills a worker trains by performing this firm's labor: each step a
+	 * worker is employed here, it gains experience in every skill returned (see
+	 * {@link eos.market.LaborMarket#clear()}). Defaults to none — a firm whose
+	 * work is not mapped to a skill grants no experience. Concrete firms override
+	 * this (e.g. a necessity firm, subsistence agriculture, trains
+	 * {@link Skill#PLANTS}).
+	 *
+	 * @return the skills this firm's labor trains (possibly empty)
+	 */
+	public Set<Skill> laborSkills() {
+		return Collections.emptySet();
 	}
 
 	/**

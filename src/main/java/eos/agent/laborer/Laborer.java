@@ -26,11 +26,6 @@ public class Laborer extends AbstractHousehold {
 	// tunable model parameters
 	private final LaborerConfig config;
 
-	// labor produced per step when employed, derived from skill by the
-	// productivity curve (skill 10 -> 1 unit, the legacy homogeneous case)
-	@Getter
-	private final double productivity;
-
 	// true until this household's first act(): seeds consumption and the
 	// interest-rate window. A successor born after step 0 must bootstrap just
 	// like the founding cohort did, otherwise its multiplicative consumption
@@ -192,10 +187,6 @@ public class Laborer extends AbstractHousehold {
 			LaborerConfig config, Bank bank, Settlement colony, String surname) {
 		super(initCheckingBal, initSavingsBal, inherited, surname, bank, colony);
 
-		// skill (drawn in the base constructor) fixes this household's labor
-		// productivity for life
-		this.productivity = Household.productivityOf(getSkill());
-
 		// a notable arrival (skill above the threshold) is worth recording by name,
 		// and is a person of interest the colony tracks (and logs yearly)
 		if (isNotable()) {
@@ -333,6 +324,19 @@ public class Laborer extends AbstractHousehold {
 	 */
 	public double getSavings() {
 		return getBank().getSavings(getID());
+	}
+
+	/**
+	 * This laborer's current labor productivity, derived <b>live</b> from the
+	 * head's skills as {@code Household.productivityOf(getSkill())}. Because skills
+	 * improve through work (see {@link eos.market.LaborMarket}), a laborer's labor
+	 * output rises over its life as it gains experience, rather than being pinned
+	 * to its birth skill.
+	 *
+	 * @return labor produced per step when employed (before daylight scaling)
+	 */
+	public double getProductivity() {
+		return Household.productivityOf(getSkill());
 	}
 
 	/**

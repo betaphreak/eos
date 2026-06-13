@@ -51,9 +51,6 @@ public class Noble extends AbstractHousehold {
 	// tunable model parameters
 	private final NobleConfig config;
 
-	// labor produced per step when employed by the strategic firm, derived from
-	// skill by the same productivity curve laborers use (skill 10 -> 1 unit)
-	private final double productivity;
 
 	// the noble-only labor market the strategic firm employs from, or null when
 	// the colony has no strategic sector (then the noble sells no labor and is
@@ -164,10 +161,6 @@ public class Noble extends AbstractHousehold {
 			NobleConfig config, Bank bank, Settlement colony, String surname) {
 		super(initCheckingBal, initSavingsBal, inherited, surname, bank, colony);
 
-		// skill (drawn in the base constructor) sets the noble's labor
-		// productivity for the strategic sector
-		this.productivity = Household.productivityOf(getSkill());
-
 		// every noble is a person of interest the colony tracks (and logs in its
 		// yearly roster); a notable one (skill above the threshold) is also worth
 		// recording by name at its founding
@@ -192,7 +185,8 @@ public class Noble extends AbstractHousehold {
 		this.nobleLaborMkt =
 				(LaborMarket) colony.getMarket(StrategicFirm.LABOR_MARKET);
 		if (nobleLaborMkt != null)
-			nobleLaborMkt.addEmployee(getID(), bank, productivity);
+			nobleLaborMkt.addEmployee(getID(), bank, productivity(),
+					getHead().skills());
 	}
 
 	/**
@@ -271,7 +265,8 @@ public class Noble extends AbstractHousehold {
 		// one); the strategic firm pays a wage and takes the noble's skill-scaled
 		// labor when the noble-labor market clears
 		if (nobleLaborMkt != null)
-			nobleLaborMkt.addEmployee(getID(), getBank(), productivity);
+			nobleLaborMkt.addEmployee(getID(), getBank(), productivity(),
+					getHead().skills());
 
 		// reset income accumulators so next step's income is counted fresh
 		resetIncomeAccumulators(acct);
@@ -330,6 +325,13 @@ public class Noble extends AbstractHousehold {
 	 * NobleConfig#necessityReserveDays()}). */
 	public double getNecessityStock() {
 		return necessity.getQuantity();
+	}
+
+	// the noble's current strategic-labor productivity, derived live from the
+	// head's skills (so it rises as the noble gains INTELLECTUAL experience),
+	// using the same productivity curve laborers use (skill 10 -> 1 unit)
+	private double productivity() {
+		return Household.productivityOf(getSkill());
 	}
 
 	/**

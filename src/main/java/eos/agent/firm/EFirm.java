@@ -1,9 +1,12 @@
 package eos.agent.firm;
 
+import java.util.Set;
+
 import eos.bank.Bank;
 import eos.settlement.Settlement;
 import eos.good.Enjoyment;
 import eos.good.Good;
+import eos.skill.Skill;
 
 /**
  * Enjoyment Firm
@@ -53,5 +56,12 @@ public class EFirm extends ConsumerGoodFirm {
 			return product;
 		else
 			return null;
+	}
+
+	/** Producing enjoyment goods trains a mix of {@link Skill#ARTISTIC},
+	 * {@link Skill#CRAFTING} and {@link Skill#SOCIAL}. */
+	@Override
+	public Set<Skill> laborSkills() {
+		return Set.of(Skill.ARTISTIC, Skill.CRAFTING, Skill.SOCIAL);
 	}
 }

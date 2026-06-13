@@ -1,6 +1,7 @@
 package eos.agent.firm;
 
 import java.util.List;
+import java.util.Set;
 
 import eos.agent.Agent;
 import eos.bank.Bank;
@@ -8,6 +9,7 @@ import eos.good.Good;
 import eos.market.LaborMarket;
 import eos.settlement.BuildProject;
 import eos.settlement.Settlement;
+import eos.skill.Skill;
 import lombok.Getter;
 
 /**
@@ -171,5 +173,11 @@ public class BuilderFirm extends Firm {
 		if (good.equals("Labor"))
 			return labor;
 		return null;
+	}
+
+	/** Building (land clearance, roads, walls) trains {@link Skill#CONSTRUCTION}. */
+	@Override
+	public Set<Skill> laborSkills() {
+		return Set.of(Skill.CONSTRUCTION);
 	}
 }

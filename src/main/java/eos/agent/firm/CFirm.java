@@ -1,11 +1,14 @@
 package eos.agent.firm;
 
+import java.util.Set;
+
 import eos.bank.Bank;
 import eos.bank.Account;
 import eos.settlement.Settlement;
 import eos.good.Good;
 import eos.market.CapitalMarket;
 import eos.market.LaborMarket;
+import eos.skill.Skill;
 
 /**
  * Capital firm
@@ -131,5 +134,11 @@ public class CFirm extends Firm {
 		if (good.equals("Labor"))
 			return labor;
 		return null;
+	}
+
+	/** Producing capital goods (machines/tools) trains {@link Skill#CRAFTING}. */
+	@Override
+	public Set<Skill> laborSkills() {
+		return Set.of(Skill.CRAFTING);
 	}
 }
