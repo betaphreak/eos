@@ -3,13 +3,11 @@ package eos.settlement;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -28,10 +26,6 @@ import eos.market.ConsumerGoodMarket;
 import eos.market.Market;
 import eos.mortality.Demography;
 import eos.name.NameRegistry;
-import eos.solar.GeoLocation;
-import eos.solar.SolarEventCalculator;
-import eos.solar.Zenith;
-import eos.util.Averager;
 import eos.util.Rng;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -153,30 +147,12 @@ public class Settlement {
 	@Getter
 	private final double longitude;
 
-	// solar calculator for this colony's location, built lazily on first use (its
-	// inputs — latitude/longitude — are fixed for the colony's life). Times are
-	// computed in UTC.
-	private SolarEventCalculator solarCalculator;
-
-	// the day's solar times (UTC), recomputed for the current in-game date at the
-	// top of every newDay (and seeded in the constructor). sunrise/sunset are the
-	// official (disc-on-the-horizon) times; dawn/dusk are the astronomical ones,
-	// when the sun is 18° below the horizon. dawn/dusk are null on days with no
-	// astronomical twilight — at this latitude that happens around midsummer, when
-	// twilight lasts all night and the event is undefined.
-	@Getter
-	private LocalTime dawn;
-	@Getter
-	private LocalTime sunrise;
-	@Getter
-	private LocalTime sunset;
-	@Getter
-	private LocalTime dusk;
-
-	// hours of daylight (sunrise to sunset) on the current in-game date, recomputed
-	// with the times above; NaN when sunrise/sunset are undefined (polar day/night)
-	@Getter
-	private double daylightHours;
+	// the colony's solar clock for its (fixed) location: computes the day's
+	// dawn/sunrise/sunset/dusk and daylight length, refreshed for the current
+	// in-game date at the top of every newDay (and seeded in the constructor).
+	// See getDawn/getSunrise/getSunset/getDusk/getDaylightHours, which delegate
+	// to it.
+	private final SolarClock solarClock;
 
 	// lifecycle: a colony is "started" once it begins running (start()) and
 	// "dies" the step its last laborer is gone (no workforce left). deathDate
@@ -212,17 +188,9 @@ public class Settlement {
 	// seated as the builder finishes the rings being built for them.
 	private final List<Agent> pendingOccupants = new ArrayList<Agent>();
 
-	// CPI in the last step
-	private double lastCPI;
-
-	// inflation in the current step
-	private double inflation;
-
-	// average inflation within <tt>INFLATION_TIME_WIN</tt>
-	private double avgInflation;
-
-	// an averager used to compute average inflation
-	private final Averager inflationAvger = new Averager(INFLATION_TIME_WIN);
+	// tracks the colony's CPI and inflation, recomputed once per newDay. Reads
+	// the live consumerGoodMarkets set, so markets added later are included.
+	private final InflationTracker inflationTracker = new InflationTracker(consumerGoodMarkets);
 
 	// policies producing a replacement agent when one dies, tried in registration
 	// order until one returns non-null (default: none, so the population shrinks).
@@ -285,6 +253,7 @@ public class Settlement {
 		this.meanSkill = meanSkill;
 		this.latitude = latitude;
 		this.longitude = longitude;
+		this.solarClock = new SolarClock(latitude, longitude);
 		// found the colony at the floor size, building its initial effective slots
 		setSize(SlotTable.MIN_SIZE);
 		// seed the starting day's solar times so they are valid before the first
@@ -685,55 +654,49 @@ public class Settlement {
 		return startDate.plusDays(timeStep);
 	}
 
-	// the solar calculator for this colony's location, built once on first use
-	private SolarEventCalculator solarCalculator() {
-		if (solarCalculator == null)
-			solarCalculator = new SolarEventCalculator(
-					new GeoLocation(latitude, longitude),
-					TimeZone.getTimeZone("UTC"));
-		return solarCalculator;
-	}
-
-	// the current in-game date as a UTC java.util.Calendar, the input the
-	// SolarEventCalculator (legacy Calendar-based) expects
-	private Calendar currentDateAsCalendar() {
-		Calendar c = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-		c.clear();
-		LocalDate d = getDate();
-		c.set(d.getYear(), d.getMonthValue() - 1, d.getDayOfMonth());
-		return c;
-	}
-
 	/**
 	 * Recompute the day's solar times — {@link #getDawn() dawn}, {@link
 	 * #getSunrise() sunrise}, {@link #getSunset() sunset} and {@link #getDusk()
 	 * dusk} — for the current in-game date at the colony's location. Called at the
 	 * top of every {@link #newDay()} (and once from the constructor to seed the
-	 * starting day). A solar event that does not occur on the date (e.g. no
-	 * astronomical twilight at this latitude in high summer) is stored as null.
+	 * starting day). Delegates to the colony's {@link SolarClock}.
 	 */
 	private void updateSolarTimes() {
-		dawn = computeSolarTime(Zenith.ASTRONOMICAL, true);
-		sunrise = computeSolarTime(Zenith.OFFICIAL, true);
-		sunset = computeSolarTime(Zenith.OFFICIAL, false);
-		dusk = computeSolarTime(Zenith.ASTRONOMICAL, false);
-		daylightHours = (sunrise == null || sunset == null) ? Double.NaN
-				: java.time.Duration.between(sunrise, sunset).toMinutes() / 60.0;
+		solarClock.update(getDate());
 	}
 
-	// compute one solar event (UTC) for the current in-game date, or null when the
-	// event does not occur (the calculator throws for an undefined event — e.g. the
-	// sun never reaching the zenith at extreme latitudes/dates)
-	private LocalTime computeSolarTime(Zenith zenith, boolean isSunrise) {
-		try {
-			Calendar date = currentDateAsCalendar();
-			var hm = isSunrise
-					? solarCalculator().computeSunriseTime(zenith, date)
-					: solarCalculator().computeSunsetTime(zenith, date);
-			return LocalTime.of(hm.getKey(), hm.getValue());
-		} catch (UnsupportedOperationException noEvent) {
-			return null;
-		}
+	/**
+	 * The current day's astronomical dawn (UTC), or null when there is no
+	 * astronomical twilight on this date (e.g. midsummer at high latitude).
+	 */
+	public LocalTime getDawn() {
+		return solarClock.getDawn();
+	}
+
+	/** The current day's official sunrise (UTC). */
+	public LocalTime getSunrise() {
+		return solarClock.getSunrise();
+	}
+
+	/** The current day's official sunset (UTC). */
+	public LocalTime getSunset() {
+		return solarClock.getSunset();
+	}
+
+	/**
+	 * The current day's astronomical dusk (UTC), or null when there is no
+	 * astronomical twilight on this date (e.g. midsummer at high latitude).
+	 */
+	public LocalTime getDusk() {
+		return solarClock.getDusk();
+	}
+
+	/**
+	 * Hours of daylight (sunrise to sunset) on the current in-game date; NaN when
+	 * sunrise/sunset are undefined (polar day/night).
+	 */
+	public double getDaylightHours() {
+		return solarClock.getDaylightHours();
 	}
 
 
@@ -809,23 +772,11 @@ public class Settlement {
 	}
 
 	/**
-	 * Update inflation value
+	 * Recompute the colony's CPI and inflation for this step (delegates to the
+	 * {@link InflationTracker}).
 	 */
 	private void updateInflation() {
-		double cpi = 0;
-		for (ConsumerGoodMarket mkt : consumerGoodMarkets) {
-			cpi += mkt.getLastMktPrice();
-		}
-		cpi /= consumerGoodMarkets.size();
-
-		if (timeStep == 0) {
-			inflation = 0;
-			avgInflation = 0;
-		} else {
-			inflation = (cpi - lastCPI) / lastCPI;
-			avgInflation = inflationAvger.update(inflation);
-		}
-		lastCPI = cpi;
+		inflationTracker.update(timeStep == 0);
 	}
 
 	/**
@@ -834,7 +785,7 @@ public class Settlement {
 	 * @return the average inflation within <tt>INFLATION_TIME_WIN</tt>
 	 */
 	public double getInflation() {
-		return avgInflation;
+		return inflationTracker.getAvgInflation();
 	}
 
 	/**
@@ -844,7 +795,7 @@ public class Settlement {
 	 * @return the latest CPI
 	 */
 	public double getCPI() {
-		return lastCPI;
+		return inflationTracker.getCPI();
 	}
 
 	/**
