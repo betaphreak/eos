@@ -1,17 +1,13 @@
 package eos.agent.ruler;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-
+import eos.agent.AbstractHousehold;
 import eos.agent.Agent;
-import eos.agent.Household;
 import eos.bank.Account;
 import eos.bank.Bank;
 import eos.good.Enjoyment;
 import eos.good.Good;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Demand;
-import eos.name.Person;
 import eos.settlement.Settlement;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -28,32 +24,14 @@ import lombok.extern.java.Log;
  * the otherwise-idle gold bank transact). There is one ruler per settlement; it
  * never buys necessity and never starves.
  * <p>
- * Like the other households the ruler is a named {@link Person} that ages on the
- * mortality schedule and, when its head dies of old age, is succeeded by a heir
- * of the same dynasty who inherits the treasury (so the line endures). It is a
- * {@link Household} — named, skilled and tracked as a person of interest — but
- * sells no labor and owns no firms.
+ * Like the other households the ruler is a named {@link AbstractHousehold} that
+ * ages on the mortality schedule and, when its head dies of old age, is
+ * succeeded by a heir of the same dynasty who inherits the treasury (so the line
+ * endures). It is skilled and tracked as a person of interest, but sells no
+ * labor and owns no firms.
  */
 @Log
-public class Ruler extends Agent implements Household {
-
-	// head of the ruling house: a male given name plus a unique dynasty surname
-	@Getter
-	private final Person head;
-
-	// in-game birth date of the head (the source of truth for its age)
-	@Getter
-	private final LocalDate birthDate;
-
-	// in-game date this ruling house came into being (its head acceded)
-	@Getter
-	private final LocalDate foundingDate;
-
-	// this household's skill (0..20), drawn around the colony's mean skill like a
-	// laborer's; carried for consistency with the other households (unused — the
-	// ruler sells no labor)
-	@Getter
-	private final int skill;
+public class Ruler extends AbstractHousehold {
 
 	// fraction of the treasury (checking + savings) spent on enjoyment each step
 	private final double consumptionRate;
@@ -69,10 +47,6 @@ public class Ruler extends Agent implements Household {
 	// demand strategy posted to the enjoyment market: spend the whole enjoyment
 	// budget at the going price (the ruler never starves, so it has no floor)
 	private final Demand demandForE = price -> consumption / price;
-
-	// estate (checking, savings) snapshot taken at death so a successor ruler can
-	// inherit it; savings is negative for an outstanding loan
-	private double estateChecking, estateSavings;
 
 	/**
 	 * Create the settlement's founding ruler, holding <tt>initSavingsBal</tt> at
@@ -104,40 +78,26 @@ public class Ruler extends Agent implements Household {
 	 *            the colony this ruler belongs to
 	 */
 	public Ruler(Ruler predecessor, Settlement colony) {
-		this(predecessor.estateChecking, predecessor.estateSavings,
+		this(predecessor.getEstateChecking(), predecessor.getEstateSavings(),
 				predecessor.consumptionRate, true, predecessor.getBank(), colony,
-				predecessor.head.surname());
+				predecessor.getHead().surname());
 	}
 
 	private Ruler(double initCheckingBal, double initSavingsBal,
 			double consumptionRate, boolean inherited, Bank goldBank,
 			Settlement colony, String surname) {
-		super(goldBank, colony);
+		super(initCheckingBal, initSavingsBal, inherited, surname, goldBank,
+				colony);
 		this.consumptionRate = consumptionRate;
 		this.enjoyment = new Enjoyment(0);
 		this.eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
-		if (inherited)
-			goldBank.openInheritedAcct(getID(), initCheckingBal, initSavingsBal);
-		else
-			goldBank.openAcct(getID(), initCheckingBal, initSavingsBal);
-
-		// aged like any household head: a working-age birth date on the mortality
-		// RNG; the house accedes now
-		this.birthDate = colony.getDate().minusDays(colony.getDemography()
-				.sampleInitialAgeDays(colony.getMeanInitAgeYears()));
-		this.foundingDate = colony.getDate();
-		this.skill = colony.getDemography().sampleSkill(colony.getMeanSkill());
-
-		double nameRarity = (double) skill / Household.MAX_SKILL;
-		this.head = (surname == null)
-				? colony.getNames().nextHead(nameRarity)
-				: colony.getNames().nextHeadInDynasty(surname, nameRarity);
 		setName("Ruler");
 
 		// the ruler is always a person of interest the colony tracks
 		colony.addPersonOfInterest(this);
-		log.info(head.fullName() + (surname == null ? " founded the ruling house"
-				: " succeeded as ruler") + " of the settlement.");
+		log.info(getHead().fullName() + (surname == null
+				? " founded the ruling house" : " succeeded as ruler")
+				+ " of the settlement.");
 	}
 
 	/**
@@ -150,13 +110,8 @@ public class Ruler extends Agent implements Household {
 		// the head may die of old age; its estate folds into the gold bank's
 		// equity and a successor of the same dynasty inherits it (see the ruler
 		// replacement policy)
-		if (getColony().getDemography().diesOfOldAge(ageDays())) {
-			die();
-			estateChecking = acct.getChecking();
-			estateSavings = acct.getSavings();
-			bank.inheritAndClose(getID());
+		if (checkOldAgeDeath())
 			return;
-		}
 
 		// a sovereign indulgence: spend a small fraction of the treasury on
 		// enjoyment, posting a buy offer the market settles in clear(). Buying
@@ -169,9 +124,7 @@ public class Ruler extends Agent implements Household {
 		eMkt.addBuyOffer(this, demandForE);
 
 		// the ruler earns nothing. Reset the income accumulators each step.
-		acct.priIC = 0;
-		acct.secIC = 0;
-		acct.interest = 0;
+		resetIncomeAccumulators(acct);
 	}
 
 	/**
@@ -184,28 +137,29 @@ public class Ruler extends Agent implements Household {
 		return null;
 	}
 
-	/** Liquid wealth: checking plus savings (in copper, the base unit). */
-	public double getWealth() {
-		return getBank().getChecking(getID()) + getBank().getSavings(getID());
-	}
-
 	/** The ruler's income: always zero (a passive treasury). */
 	public double getIncome() {
 		return 0;
 	}
 
-	/** The head's age in days: the span from its birth date to today. */
-	private int ageDays() {
-		return (int) ChronoUnit.DAYS.between(birthDate, getColony().getDate());
+	/** Role label used in the persons-of-interest roster and death log. */
+	@Override
+	public String role() {
+		return "Ruler";
 	}
 
 	/**
-	 * Return the head's age in whole years.
-	 *
-	 * @return the head's age in years
+	 * The heir who succeeds this ruler: a same-dynasty sovereign inheriting the
+	 * treasury. Also updates the colony's ruler reference, so anything that bills
+	 * the ruler (e.g. a builder's public works) bills the heir, not the dead
+	 * sovereign's closed account. The colony's built-in replacement policy calls
+	 * this, so no simulation need wire a ruler rule.
 	 */
-	public int getAgeYears() {
-		return ageDays() / 365;
+	@Override
+	public Agent successor(Settlement colony) {
+		Ruler heir = new Ruler(this, colony);
+		colony.setRuler(heir);
+		return heir;
 	}
 
 	/**
@@ -215,7 +169,7 @@ public class Ruler extends Agent implements Household {
 	@Override
 	public String toString() {
 		return String.format("Ruler#%d %s [%s skill=%d age=%d]", getID(),
-				head.fullName(), isAlive() ? "alive" : "dead", skill,
+				getHead().fullName(), isAlive() ? "alive" : "dead", getSkill(),
 				getAgeYears());
 	}
 }

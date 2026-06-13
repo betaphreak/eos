@@ -1,9 +1,6 @@
 package eos.io.printer;
 
 import eos.agent.Household;
-import eos.agent.laborer.Laborer;
-import eos.agent.noble.Noble;
-import eos.agent.ruler.Ruler;
 import eos.bank.CurrencyType;
 import eos.settlement.Settlement;
 
@@ -45,32 +42,15 @@ public class PersonsOfInterestPrinter extends Printer {
 			return;
 
 		for (Household h : colony.getPersonsOfInterest()) {
-			String type;
-			double income, wealth;
-			CurrencyType currency;
-			if (h instanceof Noble noble) {
-				type = "Noble";
-				income = noble.getIncome();
-				wealth = noble.getWealth();
-				currency = noble.getBank().getCurrency();
-			} else if (h instanceof Ruler ruler) {
-				type = "Ruler";
-				income = ruler.getIncome();
-				wealth = ruler.getWealth();
-				currency = ruler.getBank().getCurrency();
-			} else {
-				Laborer laborer = (Laborer) h;
-				type = "Notable laborer";
-				income = laborer.getIncome();
-				wealth = laborer.getWealth();
-				currency = laborer.getBank().getCurrency();
-			}
+			// every household reports its own role, income, wealth and currency, so
+			// a new population type needs no case added here
+			CurrencyType currency = h.getBank().getCurrency();
 			// income/wealth are copper internally; display each person's in their
 			// own bank's currency at the colony's fixed exchange rate
-			printWriter.println(colony.getDate(), h.getHead().fullName(), type,
+			printWriter.println(colony.getDate(), h.getHead().fullName(), h.role(),
 					h.getSkill(), h.getAgeYears(),
-					colony.convert(income, CurrencyType.COPPER, currency),
-					colony.convert(wealth, CurrencyType.COPPER, currency),
+					colony.convert(h.getIncome(), CurrencyType.COPPER, currency),
+					colony.convert(h.getWealth(), CurrencyType.COPPER, currency),
 					currency);
 		}
 	}

@@ -1,10 +1,9 @@
 package eos.agent.noble;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
+import eos.agent.AbstractHousehold;
 import eos.agent.Agent;
 import eos.agent.Household;
 import eos.agent.firm.Firm;
@@ -19,28 +18,24 @@ import eos.good.Necessity;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Demand;
 import eos.market.LaborMarket;
-import eos.name.Person;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
 /**
  * A noble: the owner of one or more firms (and, in principle, banks), who lives
  * off the surplus they produce rather than off wages. A noble does <b>not</b>
- * sell labor — it is a pure rentier that participates in the colony on the
- * demand side, exactly as sketched in "option A": its dividend income is spent
- * back into the consumer-good markets, so it influences the labor market only
- * indirectly (consumption → firm revenue → the labor-share wage budget).
+ * sell labor on the general market — it is a pure rentier that participates in
+ * the colony on the demand side, exactly as sketched in "option A": its dividend
+ * income is spent back into the consumer-good markets, so it influences the
+ * labor market only indirectly (consumption → firm revenue → the labor-share
+ * wage budget).
  * <p>
- * Like a {@link eos.agent.laborer.Laborer}, a noble is a household identified by
- * a {@link Person} {@code head} drawn the same way — {@code
- * colony.getNames().nextHead()} — so it carries a male given name and a unique
- * dynasty surname from the session's name pool (on the separate naming RNG, so
- * naming a noble never perturbs the economic random stream). It also ages and
- * dies on the same schedule: the head carries a {@code birthDate} and may die
- * of old age each step against the {@code mortality/} life table, whereupon a
- * <b>successor of the same dynasty</b>
- * inherits the estate <i>and the ownership of the firms</i> (wired via {@link
- * Settlement#addReplacementPolicy}), so the aristocracy persists across generations.
+ * Like a {@link eos.agent.laborer.Laborer}, a noble is a {@link AbstractHousehold
+ * household} identified by a named head drawn the same way, ages and dies on the
+ * same mortality schedule, and on death is succeeded by a <b>heir of the same
+ * dynasty</b> who inherits the estate <i>and the ownership of the firms and
+ * banks</i> (wired via {@link Settlement#addReplacementPolicy}), so the
+ * aristocracy persists across generations.
  * <p>
  * Each step the noble <em>pulls</em> a dividend from every owned firm: a share
  * of the firm's positive profit, moved from the firm's account to the noble's
@@ -51,30 +46,10 @@ import lombok.extern.java.Log;
  * no nobles is byte-identical to before.
  */
 @Log
-public class Noble extends Agent implements Household {
+public class Noble extends AbstractHousehold {
 
 	// tunable model parameters
 	private final NobleConfig config;
-
-	// head of this noble household: a male given name plus a dynasty surname,
-	// drawn exactly as a laborer household's head is
-	@Getter
-	private final Person head;
-
-	// in-game birth date of the head (the source of truth for its age)
-	@Getter
-	private final LocalDate birthDate;
-
-	// in-game date this noble house came into being in the colony (its head
-	// arrived and founded it); distinct from the head's birthDate
-	@Getter
-	private final LocalDate foundingDate;
-
-	// this household's skill (0..20), drawn around the colony's mean skill like a
-	// laborer's. It sets the noble's labor productivity if the colony runs a
-	// strategic sector (see nobleLaborMkt); otherwise the noble sells no labor.
-	@Getter
-	private final int skill;
 
 	// labor produced per step when employed by the strategic firm, derived from
 	// skill by the same productivity curve laborers use (skill 10 -> 1 unit)
@@ -84,10 +59,6 @@ public class Noble extends Agent implements Household {
 	// the colony has no strategic sector (then the noble sells no labor and is
 	// byte-identical to the pure-rentier design)
 	private final LaborMarket nobleLaborMkt;
-
-	// estate (checking, savings) snapshot taken at death so a successor noble can
-	// inherit it; savings is negative for an outstanding loan
-	private double estateChecking, estateSavings;
 
 	// the firms this noble owns and draws dividends from
 	private final List<Firm> firms;
@@ -177,9 +148,9 @@ public class Noble extends Agent implements Household {
 	 *            the colony this noble belongs to
 	 */
 	public Noble(Noble predecessor, NobleConfig config, Settlement colony) {
-		this(predecessor.estateChecking, predecessor.estateSavings, true,
-				predecessor.firms, predecessor.banks, config,
-				predecessor.getBank(), colony, predecessor.head.surname());
+		this(predecessor.getEstateChecking(), predecessor.getEstateSavings(),
+				true, predecessor.firms, predecessor.banks, config,
+				predecessor.getBank(), colony, predecessor.getHead().surname());
 	}
 
 	/**
@@ -191,30 +162,11 @@ public class Noble extends Agent implements Household {
 	private Noble(double initCheckingBal, double initSavingsBal,
 			boolean inherited, List<Firm> ownedFirms, List<Bank> ownedBanks,
 			NobleConfig config, Bank bank, Settlement colony, String surname) {
-		super(bank, colony);
-		if (inherited)
-			bank.openInheritedAcct(getID(), initCheckingBal, initSavingsBal);
-		else
-			bank.openAcct(getID(), initCheckingBal, initSavingsBal);
+		super(initCheckingBal, initSavingsBal, inherited, surname, bank, colony);
 
-		// aged the same way as a laborer household head: a working-age birth date
-		// sampled on the separate mortality RNG. The house is founded now.
-		this.birthDate = colony.getDate().minusDays(colony.getDemography()
-				.sampleInitialAgeDays(colony.getMeanInitAgeYears()));
-		this.foundingDate = colony.getDate();
-
-		// skill is drawn around the colony mean exactly as for a laborer (each
-		// head re-rolls), and sets the noble's labor productivity for the
-		// strategic sector
-		this.skill = colony.getDemography().sampleSkill(colony.getMeanSkill());
-		this.productivity = Household.productivityOf(skill);
-
-		// the head is named on the naming RNG with the given name's rarity tracking
-		// skill, like a laborer; a null surname starts a new dynasty, else continue
-		double nameRarity = (double) skill / Household.MAX_SKILL;
-		this.head = (surname == null)
-				? colony.getNames().nextHead(nameRarity)
-				: colony.getNames().nextHeadInDynasty(surname, nameRarity);
+		// skill (drawn in the base constructor) sets the noble's labor
+		// productivity for the strategic sector
+		this.productivity = Household.productivityOf(getSkill());
 
 		// every noble is a person of interest the colony tracks (and logs in its
 		// yearly roster); a notable one (skill above the threshold) is also worth
@@ -223,7 +175,7 @@ public class Noble extends Agent implements Household {
 		if (isNotable())
 			log.info(String.format(
 					"%s founded a noble house in the colony — notable (skill %d)",
-					head.fullName(), skill));
+					getHead().fullName(), getSkill()));
 
 		this.config = config;
 		this.firms = new ArrayList<>(ownedFirms);
@@ -253,13 +205,8 @@ public class Noble extends Agent implements Household {
 		// the head may die of old age; its estate folds into the bank's equity,
 		// and a successor of the same dynasty inherits both the estate and the
 		// firms (see addReplacementPolicy)
-		if (getColony().getDemography().diesOfOldAge(ageDays())) {
-			die();
-			estateChecking = acct.getChecking();
-			estateSavings = acct.getSavings();
-			bank.inheritAndClose(getID());
+		if (checkOldAgeDeath())
 			return;
-		}
 
 		// wage earned from strategic-sector labor last step (0 if the noble does
 		// not work — no strategic sector, so priIC is never credited)
@@ -327,9 +274,7 @@ public class Noble extends Agent implements Household {
 			nobleLaborMkt.addEmployee(getID(), getBank(), productivity);
 
 		// reset income accumulators so next step's income is counted fresh
-		acct.priIC = 0;
-		acct.secIC = 0;
-		acct.interest = 0;
+		resetIncomeAccumulators(acct);
 	}
 
 	/**
@@ -354,6 +299,22 @@ public class Noble extends Agent implements Household {
 				: config.necessityReserveDays() * laborers / nobles;
 	}
 
+	/** Role label used in the persons-of-interest roster and death log. */
+	@Override
+	public String role() {
+		return "Noble";
+	}
+
+	/**
+	 * The heir who succeeds this noble: a same-dynasty household inheriting the
+	 * estate and the ownership of the firms and banks (the colony's built-in
+	 * replacement policy calls this, so no simulation need wire a noble rule).
+	 */
+	@Override
+	public Agent successor(Settlement colony) {
+		return new Noble(this, config, colony);
+	}
+
 	/**
 	 * Return a reference to the good with name <tt>goodName</tt>.
 	 */
@@ -365,29 +326,10 @@ public class Noble extends Agent implements Household {
 		return null;
 	}
 
-	/** Liquid wealth: checking plus savings (savings negative for a loan). */
-	public double getWealth() {
-		return getBank().getChecking(getID()) + getBank().getSavings(getID());
-	}
-
 	/** Units of necessity the noble currently holds (its reserve, see {@link
 	 * NobleConfig#necessityReserveDays()}). */
 	public double getNecessityStock() {
 		return necessity.getQuantity();
-	}
-
-	/** The head's age in days: the span from its birth date to today. */
-	private int ageDays() {
-		return (int) ChronoUnit.DAYS.between(birthDate, getColony().getDate());
-	}
-
-	/**
-	 * Return the head's age in whole years.
-	 *
-	 * @return the head's age in years
-	 */
-	public int getAgeYears() {
-		return ageDays() / 365;
 	}
 
 	/**
@@ -399,7 +341,7 @@ public class Noble extends Agent implements Household {
 	public String toString() {
 		return String.format(
 				"Noble#%d %s [%s age=%d firms=%d banks=%d dividends=%.2f income=%.2f consumption=%.2f]",
-				getID(), head.fullName(), isAlive() ? "alive" : "dead",
+				getID(), getHead().fullName(), isAlive() ? "alive" : "dead",
 				getAgeYears(), firms.size(), banks.size(), dividends, income,
 				consumption);
 	}

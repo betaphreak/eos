@@ -99,10 +99,8 @@ public class AristocraticEconomy {
 		}
 
 		// when a noble's head dies, a successor of the same dynasty inherits its
-		// estate, firms and banks, so the aristocracy persists
-		colony.addReplacementPolicy(dead -> dead instanceof Noble n
-				? new Noble(n, NobleConfig.DEFAULT, colony)
-				: null);
+		// estate, firms and banks (so the aristocracy persists) — produced by the
+		// colony's built-in household-succession policy (see Noble.successor)
 
 		// the nobles posted to the noble labor market in their constructors; clear
 		// it once so the export firm has workers in step 0

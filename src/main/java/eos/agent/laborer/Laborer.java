@@ -1,9 +1,6 @@
 package eos.agent.laborer;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-
-import eos.agent.Agent;
+import eos.agent.AbstractHousehold;
 import eos.agent.Household;
 import eos.bank.Bank;
 import eos.bank.Account;
@@ -14,54 +11,25 @@ import eos.good.Necessity;
 import eos.market.ConsumerGoodMarket;
 import eos.market.LaborMarket;
 import eos.market.Demand;
-import eos.name.Person;
 import lombok.Getter;
 import lombok.extern.java.Log;
 
 /**
  * Laborer
- * 
+ *
  * @author zhihongx
  *
  */
 @Log
-public class Laborer extends Agent implements Household {
+public class Laborer extends AbstractHousehold {
 
 	// tunable model parameters
 	private final LaborerConfig config;
-
-	// head of this household (each laborer represents one household): a male
-	// given name plus a unique dynasty surname
-	@Getter
-	private final Person head;
-
-	// in-game birth date of the household head: the date of construction less a
-	// sampled initial age. The source of truth for the head's age (derived as
-	// the days from here to the colony's current date).
-	@Getter
-	private final LocalDate birthDate;
-
-	// in-game date this household came into being in the colony — the moment its
-	// head (an already-grown person, born back on birthDate) arrived and founded
-	// it. Distinct from birthDate: a working-age adult founds the household now.
-	@Getter
-	private final LocalDate foundingDate;
-
-	// this household's skill (an integer in [0, 20]): the source of its labor
-	// productivity. Drawn at birth from the demographic skill distribution and
-	// re-rolled for a successor head, so skill is not inherited across
-	// generations.
-	@Getter
-	private final int skill;
 
 	// labor produced per step when employed, derived from skill by the
 	// productivity curve (skill 10 -> 1 unit, the legacy homogeneous case)
 	@Getter
 	private final double productivity;
-
-	// estate (checking, savings) snapshot taken at death so a successor
-	// household can inherit it; savings is negative for an outstanding loan
-	private double estateChecking, estateSavings;
 
 	// true until this household's first act(): seeds consumption and the
 	// interest-rate window. A successor born after step 0 must bootstrap just
@@ -127,7 +95,7 @@ public class Laborer extends Agent implements Household {
 
 	/**
 	 * Create a new laborer
-	 * 
+	 *
 	 * @param initEQty
 	 *            initial enjoyment quantity
 	 * @param initNQty
@@ -208,9 +176,9 @@ public class Laborer extends Agent implements Household {
 	 */
 	public Laborer(Laborer predecessor, double initEQty, double initNQty,
 			double initSavingsRate, LaborerConfig config, Settlement colony) {
-		this(initEQty, initNQty, predecessor.estateChecking,
-				predecessor.estateSavings, true, initSavingsRate, config,
-				predecessor.getBank(), colony, predecessor.head.surname());
+		this(initEQty, initNQty, predecessor.getEstateChecking(),
+				predecessor.getEstateSavings(), true, initSavingsRate, config,
+				predecessor.getBank(), colony, predecessor.getHead().surname());
 	}
 
 	/**
@@ -222,40 +190,18 @@ public class Laborer extends Agent implements Household {
 	private Laborer(double initEQty, double initNQty, double initCheckingBal,
 			double initSavingsBal, boolean inherited, double initSavingsRate,
 			LaborerConfig config, Bank bank, Settlement colony, String surname) {
-		super(bank, colony);
+		super(initCheckingBal, initSavingsBal, inherited, surname, bank, colony);
 
-		// open a checking account and a savings account
-		if (inherited)
-			bank.openInheritedAcct(this.getID(), initCheckingBal, initSavingsBal);
-		else
-			bank.openAcct(this.getID(), initCheckingBal, initSavingsBal);
-
-		// the head is aged on a separate mortality RNG: its birth date is today
-		// less a sampled initial age. The household itself is founded now.
-		this.birthDate = colony.getDate().minusDays(colony.getDemography()
-				.sampleInitialAgeDays(colony.getMeanInitAgeYears()));
-		this.foundingDate = colony.getDate();
-
-		// skill is a fresh draw for every head (founders, immigrants, and each
-		// successor), centered on the colony's mean skill, on the demographic
-		// skill RNG; it fixes this household's labor productivity for life
-		this.skill = colony.getDemography().sampleSkill(colony.getMeanSkill());
-		this.productivity = Household.productivityOf(skill);
-
-		// draw the head on the naming RNG with the given name's rarity tracking
-		// skill — abler households get rarer, more distinctive names. A null
-		// surname starts a new dynasty; otherwise the head continues the given one.
-		double nameRarity = (double) skill / Household.MAX_SKILL;
-		this.head = (surname == null)
-				? colony.getNames().nextHead(nameRarity)
-				: colony.getNames().nextHeadInDynasty(surname, nameRarity);
+		// skill (drawn in the base constructor) fixes this household's labor
+		// productivity for life
+		this.productivity = Household.productivityOf(getSkill());
 
 		// a notable arrival (skill above the threshold) is worth recording by name,
 		// and is a person of interest the colony tracks (and logs yearly)
 		if (isNotable()) {
 			log.info(String.format(
 					"%s founded a household in the colony — notable (skill %d)",
-					head.fullName(), skill));
+					getHead().fullName(), getSkill()));
 			colony.addPersonOfInterest(this);
 		}
 
@@ -270,21 +216,16 @@ public class Laborer extends Agent implements Household {
 	}
 
 	/**
-	 * Called by Settlement.newDay() in each step.
+	 * Called by Settlement.newDay() in each simulation step.
 	 */
 	public void act() {
 		Bank bank = getBank();
 		Account acct = bank.getAcct(this.getID());
 
-		// the household head may die of old age; its age in days is the span
-		// from its birth date to today
-		if (getColony().getDemography().diesOfOldAge(ageDays())) {
-			die();
-			estateChecking = acct.getChecking();
-			estateSavings = acct.getSavings();
-			bank.inheritAndClose(getID());
+		// the household head may die of old age; its estate folds into the bank's
+		// equity, and a successor of the same dynasty inherits it
+		if (checkOldAgeDeath())
 			return;
-		}
 
 		wage = acct.priIC;
 		income = wage + acct.secIC + acct.interest;
@@ -297,10 +238,7 @@ public class Laborer extends Agent implements Household {
 		// not enough to eat; die (a successor household of the same dynasty
 		// inherits the estate)
 		if (necessity.decrease(config.eatAmt()) < config.eatAmt()) {
-			die();
-			estateChecking = acct.getChecking();
-			estateSavings = acct.getSavings();
-			bank.inheritAndClose(getID());
+			dieAndSettleEstate();
 			return;
 		}
 
@@ -361,10 +299,20 @@ public class Laborer extends Agent implements Household {
 		// post to labor market
 		lMkt.addEmployee(this);
 
-		acct.priIC = 0;
-		acct.secIC = 0;
-		acct.interest = 0;
+		resetIncomeAccumulators(acct);
 		firstAct = false;
+	}
+
+	/** A laborer is the colony's workforce: its labor sustains the colony. */
+	@Override
+	public boolean isWorkforce() {
+		return true;
+	}
+
+	/** Role label used in the persons-of-interest roster and death log. */
+	@Override
+	public String role() {
+		return "Notable laborer";
 	}
 
 	/**
@@ -387,30 +335,6 @@ public class Laborer extends Agent implements Household {
 		return getBank().getSavings(getID());
 	}
 
-	/** Liquid wealth: checking plus savings (savings negative for a loan). */
-	public double getWealth() {
-		return getBank().getChecking(getID()) + getBank().getSavings(getID());
-	}
-
-	/**
-	 * Return the household head's age in days: the span from its birth date to
-	 * the colony's current date.
-	 *
-	 * @return the head's age in days
-	 */
-	private int ageDays() {
-		return (int) ChronoUnit.DAYS.between(birthDate, getColony().getDate());
-	}
-
-	/**
-	 * Return the household head's age in whole years.
-	 *
-	 * @return the head's age in years
-	 */
-	public int getAgeYears() {
-		return ageDays() / 365;
-	}
-
 	/**
 	 * A concise, debug-friendly summary: id, household head, alive status and
 	 * the latest economic snapshot. Uses only cached fields (no bank lookup),
@@ -421,7 +345,7 @@ public class Laborer extends Agent implements Household {
 	public String toString() {
 		return String.format(
 				"Laborer#%d %s [%s b=%s age=%d wage=%.2f income=%.2f consumption=%.2f savingsRate=%.2f]",
-				getID(), head.fullName(), isAlive() ? "alive" : "dead",
-				birthDate, getAgeYears(), wage, income, consumption, savingsRate);
+				getID(), getHead().fullName(), isAlive() ? "alive" : "dead",
+				getBirthDate(), getAgeYears(), wage, income, consumption, savingsRate);
 	}
 }

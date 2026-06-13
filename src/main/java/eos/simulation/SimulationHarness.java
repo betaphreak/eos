@@ -340,11 +340,9 @@ public class SimulationHarness {
 		for (int n = 0; n < DEFAULT_NUM_NOBLES; n++)
 			colony.addAgent(new Noble(0, DEFAULT_NOBLE_SAVINGS, List.of(),
 					List.of(), NobleConfig.DEFAULT, bank, colony));
-		// when a noble's head dies, a same-dynasty successor keeps working the
-		// export sector
-		colony.addReplacementPolicy(dead -> dead instanceof Noble n
-				? new Noble(n, NobleConfig.DEFAULT, colony)
-				: null);
+		// a noble's same-dynasty successor (which keeps working the export sector)
+		// is produced by the colony's built-in household-succession policy (see
+		// Noble.successor), so no rule is wired here
 		primeNobleLabor();
 	}
 
@@ -369,16 +367,9 @@ public class SimulationHarness {
 		// record the sovereign so a builder can bill it for public works (the roads
 		// and walls of a growth ring); a no-op for any colony that never grows
 		colony.setRuler(ruler);
-		colony.addReplacementPolicy(dead -> {
-			if (!(dead instanceof Ruler r))
-				return null;
-			Ruler heir = new Ruler(r, colony);
-			// keep the colony's ruler reference current, so anything that bills the
-			// ruler (e.g. a builder's public works) bills the heir, not the dead
-			// sovereign's closed account
-			colony.setRuler(heir);
-			return heir;
-		});
+		// a same-dynasty heir succeeds the ruler via the colony's built-in
+		// household-succession policy (see Ruler.successor, which also keeps the
+		// colony's ruler reference current); no rule is wired here
 		return gold;
 	}
 

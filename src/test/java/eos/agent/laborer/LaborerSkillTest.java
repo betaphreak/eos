@@ -65,6 +65,18 @@ class LaborerSkillTest {
 			public int getAgeYears() {
 				return 0;
 			}
+
+			public double getIncome() {
+				return 0;
+			}
+
+			public double getWealth() {
+				return 0;
+			}
+
+			public eos.bank.Bank getBank() {
+				return null;
+			}
 		};
 	}
 }

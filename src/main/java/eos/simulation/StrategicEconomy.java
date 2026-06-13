@@ -75,11 +75,9 @@ public class StrategicEconomy {
 					NobleConfig.DEFAULT, silver, colony);
 			colony.addAgent(noble);
 		}
-		// when a noble's head dies, a same-dynasty successor inherits its estate
-		// and keeps working the export sector
-		colony.addReplacementPolicy(dead -> dead instanceof Noble n
-				? new Noble(n, NobleConfig.DEFAULT, colony)
-				: null);
+		// a same-dynasty successor (which inherits the estate and keeps working the
+		// export sector) is produced by the colony's built-in household-succession
+		// policy (see Noble.successor), so no rule is wired here
 
 		// clear the noble labor market once so the export firm has noble workers
 		// in step 0 (mirrors the pre-run clearing of the general labor market)

@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -16,8 +17,6 @@ import eos.agent.Household;
 import eos.agent.firm.BuilderConfig;
 import eos.agent.firm.BuilderFirm;
 import eos.agent.firm.StrategicFirm;
-import eos.agent.laborer.Laborer;
-import eos.agent.noble.Noble;
 import eos.agent.ruler.Ruler;
 import eos.bank.Bank;
 import eos.bank.CurrencyType;
@@ -45,6 +44,7 @@ import lombok.extern.java.Log;
 public class Settlement {
 
 	/****************** constants *****************************/
+
 
 	/**
 	 * time window within which average inflation is computed
@@ -254,6 +254,14 @@ public class Settlement {
 		this.latitude = latitude;
 		this.longitude = longitude;
 		this.solarClock = new SolarClock(latitude, longitude);
+		// every household knows how to produce its own heir; register one built-in
+		// policy that asks each dead household to do so, tried before any the
+		// simulation adds. Self-replacing types (nobles, the ruler) are succeeded
+		// automatically with no per-simulation wiring; a household that needs
+		// colony-level seeding the colony does not hold (a laborer's replacement
+		// stock) returns null here and is covered by a policy the harness registers.
+		addReplacementPolicy(dead -> dead instanceof Household h
+				? h.successor(this) : null);
 		// found the colony at the floor size, building its initial effective slots
 		setSize(SlotTable.MIN_SIZE);
 		// seed the starting day's solar times so they are valid before the first
@@ -293,11 +301,12 @@ public class Settlement {
 		return died;
 	}
 
-	// number of living laborer households in this colony (the workforce)
+	// number of living workforce households in this colony (the laborers whose
+	// labor sustains the colony; see Household.isWorkforce)
 	private long livingLaborerCount() {
 		long n = 0;
 		for (Agent agent : agents)
-			if (agent instanceof Laborer)
+			if (agent instanceof Household h && h.isWorkforce())
 				n++;
 		return n;
 	}
@@ -726,9 +735,8 @@ public class Settlement {
 			// registers itself afresh in its constructor); log its passing once —
 			// the only per-death logging the colony does
 			if (agent instanceof Household h && personsOfInterest.remove(h)) {
-				String role = h instanceof Noble ? "noble"
-						: h instanceof Ruler ? "ruler" : "notable laborer";
-				log.info(h.getHead().fullName() + " (" + role + ", skill "
+				log.info(h.getHead().fullName() + " ("
+						+ h.role().toLowerCase(Locale.ROOT) + ", skill "
 						+ h.getSkill() + ") died at age " + h.getAgeYears());
 			}
 			Agent replacement = null;

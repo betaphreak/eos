@@ -187,9 +187,9 @@ public class HanseaticEconomy {
 			colony.addAgent(new Noble(0,
 					CurrencyType.SILVER.toCopper(NOBLE_INITIAL_SILVER),
 					List.of(), List.of(), NOBLE_CONFIG, silver, colony));
-		colony.addReplacementPolicy(dead -> dead instanceof Noble n
-				? new Noble(n, NOBLE_CONFIG, colony)
-				: null);
+		// a same-dynasty successor is produced by the colony's built-in household-
+		// succession policy (see Noble.successor), which reuses each noble's own
+		// NobleConfig — so the stockpiling reserve carries across generations
 
 		// clear the noble labor market once so the export firm has workers in step 0
 		h.primeNobleLabor();

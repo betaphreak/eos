@@ -1,6 +1,8 @@
 package eos.agent;
 
+import eos.bank.Bank;
 import eos.name.Person;
+import eos.settlement.Settlement;
 
 /**
  * An agent that is a <b>household</b> headed by a named {@link Person} carrying a
@@ -60,6 +62,73 @@ public interface Household {
 	default boolean isNotable() {
 		return getSkill() > NOTABLE_SKILL;
 	}
+
+	/**
+	 * Whether this household belongs to the colony's <b>workforce</b> — the
+	 * population whose total disappearance ends the colony's life (see
+	 * {@link Settlement#isDead()}). A laborer is workforce; rentier households
+	 * such as nobles and the ruler are not. Defaults to false, so a new
+	 * population type does not silently prop the colony up.
+	 *
+	 * @return true if this household counts toward the colony's workforce
+	 */
+	default boolean isWorkforce() {
+		return false;
+	}
+
+	/**
+	 * A short, human-readable label for this household's population role, used in
+	 * logs and the persons-of-interest roster (e.g. "Noble", "Ruler", "Notable
+	 * laborer"). Defaults to the class simple name, which a type may override.
+	 *
+	 * @return the household's role label
+	 */
+	default String role() {
+		return getClass().getSimpleName();
+	}
+
+	/**
+	 * Produce the heir that succeeds this household when its head dies: a new
+	 * household of the same dynasty, banking at the same bank, that inherits this
+	 * one's estate (and any holdings). Return {@code null} if the household cannot
+	 * replace itself from its own state — then a replacement policy registered
+	 * with the colony (e.g. by the simulation harness, which holds the seeding
+	 * constants a laborer's successor needs) must supply the heir instead.
+	 * <p>
+	 * The colony registers a built-in policy that calls this for every dead
+	 * household, so a self-replacing population type (most rentier/owner types)
+	 * is succeeded automatically with no per-simulation wiring.
+	 *
+	 * @param colony
+	 *            the colony the heir will belong to
+	 * @return the successor household, or {@code null} if none
+	 */
+	default Agent successor(Settlement colony) {
+		return null;
+	}
+
+	/**
+	 * This household's latest income, in copper, for reporting.
+	 *
+	 * @return the latest income
+	 */
+	double getIncome();
+
+	/**
+	 * This household's liquid wealth (checking plus savings), in copper, for
+	 * reporting.
+	 *
+	 * @return the liquid wealth
+	 */
+	double getWealth();
+
+	/**
+	 * The bank at which this household holds its accounts (its currency is the
+	 * household's denomination for display).
+	 *
+	 * @return the household's bank
+	 */
+	Bank getBank();
 
 	/**
 	 * Labor productivity of a household with the given skill: a quadratic curve
