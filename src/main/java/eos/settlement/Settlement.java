@@ -19,6 +19,7 @@ import eos.calendar.DayType;
 import eos.calendar.LiturgicalCalendar;
 import eos.agent.firm.BuilderConfig;
 import eos.agent.firm.BuilderFirm;
+import eos.agent.firm.FirmFactory;
 import eos.agent.firm.StrategicFirm;
 import eos.agent.ruler.Ruler;
 import eos.bank.Bank;
@@ -220,6 +221,17 @@ public class Settlement {
 	// immigration), run after the step actions so it sees their effects;
 	// default: none
 	private Supplier<List<Agent>> immigrationPolicy = () -> List.of();
+
+	// firms chartered / dissolved mid-step by the ruler's dynamic firm provisioning,
+	// applied at the end of newDay (see applyScheduledAgentChanges) so the agent set
+	// is never mutated while it is being iterated in the act phase.
+	private final List<Agent> agentsToAdd = new ArrayList<Agent>();
+	private final List<Agent> agentsToRemove = new ArrayList<Agent>();
+
+	// the colony's dynamic firm provisioning service, if installed (see FirmFactory
+	// and the ruler's monthly sector review); null leaves the firm count fixed.
+	@Getter
+	private FirmFactory firmFactory;
 
 	/**
 	 * Create a new colony named <tt>name</tt> whose step 0 falls on
@@ -555,6 +567,62 @@ public class Settlement {
 		return ruler;
 	}
 
+	/**
+	 * Install the colony's <b>dynamic firm provisioning</b> service: how the ruler's
+	 * monthly sector review charters and dissolves consumer-good firms. Absent one,
+	 * the review is a no-op and the firm count stays fixed. Set by the harness.
+	 *
+	 * @param firmFactory
+	 *            the provisioning service (see {@link FirmFactory})
+	 */
+	public void setFirmFactory(FirmFactory firmFactory) {
+		this.firmFactory = firmFactory;
+	}
+
+	/**
+	 * Schedule <tt>agent</tt> to join the colony at the <em>end</em> of the current
+	 * step. Safe to call mid-step (e.g. from another agent's {@code act()}), unlike
+	 * {@link #addAgent(Agent)} which mutates the live agent set immediately and so
+	 * would corrupt the in-progress act-phase iteration. Used to seat a firm the
+	 * ruler charters during its own turn.
+	 *
+	 * @param agent
+	 *            the agent to admit at end of step
+	 */
+	public void scheduleAddAgent(Agent agent) {
+		agentsToAdd.add(agent);
+	}
+
+	/**
+	 * Schedule <tt>agent</tt>'s removal from the colony at the <em>end</em> of the
+	 * current step: its slot is freed and its account settled into the bank's equity
+	 * (debt absorbed), as for a deceased estate. Deferred so the agent's final
+	 * market offers still clear this step and the agent set is not mutated mid-act.
+	 *
+	 * @param agent
+	 *            the agent to remove at end of step
+	 */
+	public void scheduleRemoveAgent(Agent agent) {
+		agentsToRemove.add(agent);
+	}
+
+	/**
+	 * Free the build slot occupied by <tt>occupant</tt> (or drop it from the pending
+	 * queue if it was awaiting a slot a growing colony had not yet built). A no-op
+	 * if the occupant holds no slot.
+	 *
+	 * @param occupant
+	 *            the occupant whose slot to vacate
+	 */
+	public void vacateSlot(Agent occupant) {
+		for (Slot slot : slots)
+			if (slot.getOccupant() == occupant) {
+				slot.vacate();
+				return;
+			}
+		pendingOccupants.remove(occupant);
+	}
+
 	// queue construction work for the next ring (size -> size+1) on behalf of one
 	// occupant. The occupant funds the LAND for the single slot it will stand on
 	// (so each firm pays its own land clearance); the ring's ROAD and WALL public
@@ -872,7 +940,34 @@ public class Settlement {
 			printer.print(this);
 
 		updateInflation();
+
+		// apply any firms the ruler chartered or dissolved this step (deferred from
+		// mid-act so the agent set was not mutated during iteration)
+		applyScheduledAgentChanges();
+
 		timeStep++;
+	}
+
+	// admit firms chartered this step (active from their constructor already; they
+	// now join the step loop and first act() next step) and remove firms dissolved
+	// this step (their final offers have cleared; free the slot and settle the
+	// account into equity). Run at the end of newDay, after this step's market
+	// clearing and printing.
+	private void applyScheduledAgentChanges() {
+		if (!agentsToAdd.isEmpty()) {
+			agents.addAll(agentsToAdd);
+			agentsToAdd.clear();
+		}
+		if (!agentsToRemove.isEmpty()) {
+			for (Agent a : agentsToRemove) {
+				agents.remove(a);
+				vacateSlot(a);
+				// fold the firm's net worth into the bank's equity and close its
+				// account, exactly as a deceased household's estate is settled
+				a.getBank().inheritAndClose(a.getID());
+			}
+			agentsToRemove.clear();
+		}
 	}
 
 	/**

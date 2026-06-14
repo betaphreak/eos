@@ -7,6 +7,7 @@ import eos.agent.AbstractHousehold;
 import eos.agent.Agent;
 import eos.agent.firm.ConsumerGoodFirm;
 import eos.agent.firm.EFirm;
+import eos.agent.firm.FirmFactory;
 import eos.agent.firm.NFirm;
 import eos.agent.noble.Noble;
 import eos.bank.Account;
@@ -59,18 +60,36 @@ public class Ruler extends AbstractHousehold {
 	private static final int NECESSITY_RESERVE_DAYS = 30;
 
 	// --- dynamic firm provisioning thresholds (see reviewSectors) ---
-	// charter another firm once demand pressure — the short-run unmet fraction above
-	// its own long-run baseline — rises this far over the colony's norm
+	// a sector is supply-constrained — a reason to charter — when its firms run at or
+	// above this smoothed utilization while demand still goes unfilled. This is the
+	// price-bias-free capacity signal, and the one that cold-starts a 1-firm sector.
+	private static final double OPEN_UTIL_THRESHOLD = 0.85;
+	private static final double MIN_UNMET_TO_OPEN = 0.02;
+	// ...or charter when demand pressure (short-run unmet above its long-run baseline)
+	// surges this far above the colony's norm — the steady-state demand-growth trigger
 	private static final double OPEN_PRESSURE_THRESHOLD = 0.05;
-	// necessity is inelastic (every mouth eats daily), so react to a smaller rise —
+	// necessity is inelastic (every mouth eats daily), so react to a smaller surge —
 	// the colony errs toward over-provisioning food
 	private static final double INELASTIC_OPEN_PRESSURE_THRESHOLD = 0.03;
-	// once pressure falls this far below the norm the sector is easing (a glut)
-	private static final double CLOSE_PRESSURE_THRESHOLD = -0.05;
-	// only dissolve a firm running below this capacity utilization
-	private static final double CLOSE_UTIL_THRESHOLD = 0.6;
-	// never cut the necessity sector below this many firms (food is existential)
+	// a sector is overbuilt — a reason to dissolve a firm — below this smoothed util
+	private static final double CLOSE_UTIL_THRESHOLD = 0.55;
+	// never cut a sector below this many firms (food and leisure both need a floor)
 	private static final int MIN_NECESSITY_FIRMS = 1;
+	private static final int MIN_ENJOYMENT_FIRMS = 1;
+	// hysteresis against the seasonal charter/dissolve oscillation: a firm younger
+	// than this is never dissolved (so a winter-chartered firm survives the spring
+	// utilization dip), and a sector waits this long after an action of one kind
+	// before taking the opposite kind (no charter↔dissolve flip-flop)
+	private static final int MIN_FIRM_LIFETIME_DAYS = 365;
+	private static final int REENTRY_COOLDOWN_DAYS = 365;
+
+	// per-sector record of the last charter/dissolve step, for the re-entry cooldown
+	private static final class SectorMemory {
+		int lastCharterStep = Integer.MIN_VALUE / 2;
+		int lastDissolveStep = Integer.MIN_VALUE / 2;
+	}
+	private final SectorMemory eMemory = new SectorMemory();
+	private final SectorMemory nMemory = new SectorMemory();
 
 	// the enjoyment and necessity the ruler buys, and the markets it buys from
 	private final Enjoyment enjoyment;
@@ -257,29 +276,30 @@ public class Ruler extends AbstractHousehold {
 	}
 
 	/**
-	 * <b>Dynamic firm provisioning (trigger wired; actions still log-only).</b>
-	 * Survey each consumer-good sector and decide whether the colony is short of
-	 * firms (chronic unmet demand while the sector is profitable → charter another)
-	 * or carrying idle capacity (no shortage plus a money-losing, under-used firm →
-	 * dissolve the weakest). Necessity, whose demand is inelastic, is reviewed on a
-	 * lower shortage threshold and never cut below {@link #MIN_NECESSITY_FIRMS}, so
-	 * the colony errs toward over- rather than under-provisioning food.
+	 * <b>Dynamic firm provisioning.</b> Survey each consumer-good sector and, through
+	 * the colony's {@link FirmFactory}, charter a firm where the colony is short of
+	 * capacity or dissolve one where it is overbuilt — so the firm count tracks
+	 * demand rather than being fixed at founding. A no-op when no factory is installed
+	 * (the firm count then stays fixed) or a sector has no firms.
 	 * <p>
 	 * Called once a month — gated on the first of the month in {@link #act()} — a
-	 * cadence slow relative to the production and revenue-smoothing lags, so reading
-	 * the signal does not provoke an entry/exit hog cycle. For now it only
-	 * <em>logs</em> the decision it would take; the actual chartering (ruler funds
-	 * seed capital from the treasury, gold→copper firing the FX fee, then assigns
-	 * the firm to a noble owner via the existing dividend channel and {@link
-	 * Settlement#claimSlot}, which queues a builder ring when the colony is full)
-	 * and dissolution (liquidate capital, lay off, vacate the slot) are the next
-	 * step. Until those land it moves no money and draws no randomness, so runs stay
-	 * byte-identical; it is a no-op for a colony with no consumer firms. Reads the
-	 * demand signal from {@link ConsumerGoodMarket#getUnmetPressure()} — the
-	 * short-run shortfall relative to the sector's own long-run baseline, so the
-	 * chronic band-limited-price bias cancels rather than firing every month.
+	 * cadence slow relative to the production and revenue-smoothing lags, which (with
+	 * the minimum-firm-lifetime and re-entry-cooldown hysteresis below) keeps the
+	 * entry/exit from oscillating into a hog cycle.
+	 * <p>
+	 * The open rule is a hybrid of two demand signals: a <b>capacity</b> signal
+	 * (smoothed utilization at/above {@link #OPEN_UTIL_THRESHOLD} with demand still
+	 * unfilled), which is free of the band-limited-price bias and is what lets a
+	 * one-firm sector cold-start, OR a <b>demand-growth</b> signal ({@link
+	 * ConsumerGoodMarket#getUnmetPressure() pressure} — the short-run shortfall risen
+	 * above the sector's own long-run baseline). Either, gated by the sector turning
+	 * a profit (so a new entrant can be sustained), charters a firm. The close rule
+	 * fires when the sector is overbuilt (smoothed utilization below {@link
+	 * #CLOSE_UTIL_THRESHOLD}) and cuts the weakest firm old enough to be eligible.
 	 */
 	public void reviewSectors() {
+		if (getColony().getFirmFactory() == null)
+			return; // nothing to act with — the colony keeps a fixed firm count
 		List<ConsumerGoodFirm> eFirms = new ArrayList<>();
 		List<ConsumerGoodFirm> nFirms = new ArrayList<>();
 		for (Agent a : getColony().getAgents()) {
@@ -288,63 +308,75 @@ public class Ruler extends AbstractHousehold {
 			else if (a instanceof NFirm f && f.isAlive())
 				nFirms.add(f);
 		}
-		reviewSector("enjoyment", eMkt, eFirms, OPEN_PRESSURE_THRESHOLD, 0);
-		reviewSector("necessity", nMkt, nFirms, INELASTIC_OPEN_PRESSURE_THRESHOLD,
-				MIN_NECESSITY_FIRMS);
+		reviewSector("enjoyment", eMkt, eFirms, false, eMemory);
+		reviewSector("necessity", nMkt, nFirms, true, nMemory);
 	}
 
 	/**
-	 * Review one consumer-good sector and log the firm it would open or close. The
-	 * entry test pairs a demand signal (unmet-demand pressure past
-	 * {@code openThreshold} — the short-run shortfall risen above its own long-run
-	 * baseline) with a viability gate (the sector currently turns a profit, so a new
-	 * entrant can be both filled and sustained); the exit test fires only as
-	 * pressure eases below the norm and targets the weakest loss-making,
-	 * under-utilized firm, never cutting below {@code minFirms}.
-	 * <p>
-	 * The profit gate is a stand-in for the design's return-on-capital-vs-interest
-	 * margin — exposing each firm's capital value would let it compare ROC to
-	 * {@code getBank().getLoanIR()} directly; sector profit uses only existing
-	 * getters and keeps this skeleton self-contained.
+	 * Review one consumer-good sector and charter or dissolve at most one firm. See
+	 * {@link #reviewSectors()} for the open/close rules; {@code necessity} selects
+	 * the inelastic-good thresholds and sector floor, and {@code mem} carries the
+	 * per-sector re-entry cooldown state.
 	 */
 	private void reviewSector(String label, ConsumerGoodMarket mkt,
-			List<ConsumerGoodFirm> firms, double openThreshold, int minFirms) {
+			List<ConsumerGoodFirm> firms, boolean necessity, SectorMemory mem) {
 		if (firms.isEmpty())
 			return;
-		double pressure = mkt.getUnmetPressure();
-		double unmet = mkt.getSmoothedUnmetFraction();
-		double sectorProfit = 0;
-		for (ConsumerGoodFirm f : firms)
-			sectorProfit += f.getProfit();
+		int now = getColony().getTimeStep();
+		FirmFactory factory = getColony().getFirmFactory();
 
-		// short of capacity: demand pressure has risen above the colony's norm while
-		// the sector is still profitable, so another firm can both be filled and
-		// survive
-		if (pressure > openThreshold && sectorProfit > 0) {
-			log.info(String.format(
-					"sector review: would charter a new %s firm (pressure=+%.1f%% unmet=%.1f%% sectorProfit=%.1f over %d firms)",
-					label, pressure * 100, unmet * 100, sectorProfit, firms.size()));
+		double unmet = mkt.getSmoothedUnmetFraction();
+		double pressure = mkt.getUnmetPressure();
+		double sectorProfit = 0, sumUtil = 0;
+		for (ConsumerGoodFirm f : firms) {
+			sectorProfit += f.getSmoothedProfit();
+			sumUtil += f.getSmoothedUtilization();
+		}
+		double avgUtil = sumUtil / firms.size();
+
+		// charter? sector profitable AND (supply-constrained OR demand surging), and
+		// not within the re-entry cooldown after a recent dissolution in this sector
+		double openPressure = necessity
+				? INELASTIC_OPEN_PRESSURE_THRESHOLD : OPEN_PRESSURE_THRESHOLD;
+		boolean supplyConstrained =
+				avgUtil >= OPEN_UTIL_THRESHOLD && unmet > MIN_UNMET_TO_OPEN;
+		boolean demandSurging = pressure > openPressure;
+		boolean canCharter = now - mem.lastDissolveStep >= REENTRY_COOLDOWN_DAYS;
+		if (sectorProfit > 0 && (supplyConstrained || demandSurging) && canCharter) {
+			ConsumerGoodFirm f = factory.charter(necessity);
+			if (f != null) {
+				mem.lastCharterStep = now;
+				log.info(String.format(
+						"chartered a new %s firm (util=%.0f%% unmet=%.1f%% pressure=%+.1f%% sectorProfit=%.1f; now %d firms)",
+						label, avgUtil * 100, unmet * 100, pressure * 100,
+						sectorProfit, firms.size() + 1));
+			}
 			return;
 		}
 
-		// easing: demand pressure has fallen below the norm — dissolve the weakest
-		// firm if it is losing money and running well below capacity (keeping the
-		// sector floor)
-		if (pressure < CLOSE_PRESSURE_THRESHOLD && firms.size() > minFirms) {
+		// dissolve? sector overbuilt (idle capacity), above the floor, and not within
+		// the cooldown after a recent charter; cut the weakest firm old enough to be
+		// eligible (the minimum-lifetime rule spares a just-chartered firm)
+		int minFirms = necessity ? MIN_NECESSITY_FIRMS : MIN_ENJOYMENT_FIRMS;
+		boolean canDissolve = now - mem.lastCharterStep >= REENTRY_COOLDOWN_DAYS
+				&& firms.size() > minFirms;
+		if (avgUtil < CLOSE_UTIL_THRESHOLD && canDissolve) {
 			ConsumerGoodFirm weakest = null;
 			for (ConsumerGoodFirm f : firms) {
-				double util = f.getCapacity() > 0 ? f.getOutput() / f.getCapacity() : 0;
-				if (f.getProfit() < 0 && util < CLOSE_UTIL_THRESHOLD
-						&& (weakest == null || f.getProfit() < weakest.getProfit()))
+				if (f.getAgeDays() < MIN_FIRM_LIFETIME_DAYS)
+					continue; // too young to cut (hysteresis against seasonal churn)
+				if (f.getSmoothedProfit() < 0 && (weakest == null
+						|| f.getSmoothedProfit() < weakest.getSmoothedProfit()))
 					weakest = f;
 			}
 			if (weakest != null) {
-				double util = weakest.getCapacity() > 0
-						? weakest.getOutput() / weakest.getCapacity() : 0;
+				factory.dissolve(weakest);
+				mem.lastDissolveStep = now;
 				log.info(String.format(
-						"sector review: would dissolve %s (profit=%.1f util=%.0f%%); %s easing, pressure=%.1f%%",
-						weakest.getName(), weakest.getProfit(), util * 100, label,
-						pressure * 100));
+						"dissolved %s (profit=%.1f age=%dd); %s overbuilt at util=%.0f%%, now %d firms",
+						weakest.getName(), weakest.getSmoothedProfit(),
+						weakest.getAgeDays(), label, avgUtil * 100,
+						firms.size() - 1));
 			}
 		}
 	}

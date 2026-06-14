@@ -19,7 +19,10 @@ public class HeterogeneousEconomy {
 	 * @return the harness, exposing the constructed markets, bank and agents
 	 */
 	public static SimulationHarness run() {
-		SimulationConfig cfg = SimulationConfig.DEFAULT;
+		// start with one enjoyment and one necessity firm; the ruler's dynamic
+		// provisioning grows the count to fit demand (see enableDynamicFirmProvisioning)
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				.numEFirms(1).numNFirms(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 2345);
 		Rng rng = h.getColony().getRng();
 		h.createMarkets();
@@ -34,6 +37,7 @@ public class HeterogeneousEconomy {
 		// the ruler (founding cash) and the pool precede the labor force, which the
 		// ruler promotes out of the pool on day 0
 		Bank gold = h.createDefaultRuler();
+		h.enableDynamicFirmProvisioning(bank);
 		h.createDefaultPeasantPool();
 		h.foundLaborersFromPool(i -> bank, i -> rng.gaussian(15, 3));
 		h.enableExternalInflow(bank);

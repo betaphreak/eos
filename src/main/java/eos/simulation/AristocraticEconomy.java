@@ -62,7 +62,11 @@ public class AristocraticEconomy {
 	 *         laborers (the nobles are reachable via {@code getColony()})
 	 */
 	public static SimulationHarness run() {
-		SimulationConfig cfg = SimulationConfig.DEFAULT;
+		// start with one enjoyment and one necessity firm (plus the capital firm) and
+		// let the ruler's dynamic provisioning grow the consumer sectors; new firms are
+		// granted to the least-encumbered noble, so the aristocracy still owns them
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				.numEFirms(1).numNFirms(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		Settlement colony = h.getColony();
 		h.createMarkets();
@@ -107,6 +111,7 @@ public class AristocraticEconomy {
 		// every settlement has a ruler, banking in gold; it holds the founding cash
 		// and founds/replaces the labor force by promotion from the pool
 		Bank gold = h.createDefaultRuler();
+		h.enableDynamicFirmProvisioning(copper);
 		h.createDefaultPeasantPool();
 		h.foundLaborersFromPool(i -> copper, i -> 15);
 		h.enableExternalInflow(copper);

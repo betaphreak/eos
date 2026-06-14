@@ -23,7 +23,10 @@ public class TwoBankEconomy {
 	 * @return the harness, exposing the constructed markets, banks and agents
 	 */
 	public static SimulationHarness run() {
-		SimulationConfig cfg = SimulationConfig.DEFAULT;
+		// start with one enjoyment and one necessity firm; the ruler's dynamic
+		// provisioning grows the count to fit demand (new firms bank at A)
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				.numEFirms(1).numNFirms(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
 		Bank bankA = h.addBank(BankConfig.DEFAULT);
@@ -39,6 +42,7 @@ public class TwoBankEconomy {
 		// ruler founds and replaces by promotion from the pool (the pool banks at A,
 		// so the colony keeps its two copper banks)
 		Bank gold = h.createDefaultRuler();
+		h.enableDynamicFirmProvisioning(bankA);
 		h.createDefaultPeasantPool(bankA);
 		h.foundLaborersFromPool(alternate, i -> 15);
 		h.enableExternalInflow(bankA);

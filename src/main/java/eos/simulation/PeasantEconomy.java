@@ -33,7 +33,7 @@ public class PeasantEconomy {
 	 */
 	public static SimulationHarness run() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.promotionRatio(PROMOTION_RATIO).build();
+				.promotionRatio(PROMOTION_RATIO).numEFirms(1).numNFirms(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
@@ -43,6 +43,7 @@ public class PeasantEconomy {
 		// the ruler (founding cash) and the pool precede the labor force, which the
 		// ruler founds and replaces by promotion from the pool
 		Bank gold = h.createDefaultRuler();
+		h.enableDynamicFirmProvisioning(bank);
 		h.createDefaultPeasantPool();
 		h.foundLaborersFromPool(i -> bank, i -> 15);
 		h.enableExternalInflow(bank);

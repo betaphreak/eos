@@ -42,11 +42,10 @@ import eos.settlement.Settlement;
  * Each noble opens with 10 silver and <b>stockpiles a necessity reserve</b> of
  * {@value #NECESSITY_RESERVE_DAYS} days of the whole population's consumption
  * (collectively) — a reserve for a later feature to draw on. Building that reserve
- * needs spare necessity output, supplied here by splitting the consumer firms with
- * <b>fewer enjoyment than necessity firms</b> ({@link #NUM_EFIRMS} &lt; {@link
- * #NUM_NFIRMS}): that gives the necessity sector the headroom to absorb the
- * reserve buying without a price runaway, so the colony holds at the minimum
- * stable scale.
+ * needs spare necessity output; rather than a fixed firm split, each colony now
+ * starts with one enjoyment and one necessity firm and the ruler's <b>dynamic firm
+ * provisioning</b> grows the necessity sector to whatever the reserve buying and the
+ * population demand.
  * <p>
  * The two colonies write to the same {@code output/} directory, so each colony's
  * CSVs are prefixed with its name ({@code Lubeck-}/{@code Schwartau-}). Because
@@ -66,19 +65,19 @@ public class HanseaticEconomy {
 	 * nobles, the strategic export firm, the necessity reserve) stays healthy on
 	 * <em>both</em> colony streams down to ~12 laborers, with the necessity market
 	 * running away (and the near-cliff "passes" turning degenerate) below ~10. This
-	 * sits a clean 2x above that erratic cliff. The consumer firms are still split
-	 * with <b>fewer enjoyment than necessity firms</b> ({@link #NUM_EFIRMS} &lt;
-	 * {@link #NUM_NFIRMS}) so the necessity sector keeps the headroom to absorb the
-	 * nobles' reserve buying (see {@link #NECESSITY_RESERVE_DAYS}) without a price
-	 * spike.
+	 * sits a clean 2x above that erratic cliff. The necessity headroom the nobles'
+	 * reserve buying (see {@link #NECESSITY_RESERVE_DAYS}) needs is now supplied by
+	 * the ruler's dynamic firm provisioning rather than a fixed firm split.
 	 */
 	static final int NUM_LABORERS = 20;
 
-	/** Enjoyment firms per settlement (fewer than necessity firms). */
+	/** Enjoyment firms each settlement is <em>founded</em> with (the ruler's dynamic
+	 * provisioning grows the sector from here). */
 	static final int NUM_EFIRMS = 1;
 
-	/** Necessity firms per settlement (more, for necessity-reserve headroom). */
-	static final int NUM_NFIRMS = 2;
+	/** Necessity firms each settlement is <em>founded</em> with (dynamic provisioning
+	 * adds more as demand — including the nobles' necessity reserve — warrants). */
+	static final int NUM_NFIRMS = 1;
 
 	/**
 	 * Noble households per settlement that staff the export sector (the strategic
@@ -216,6 +215,10 @@ public class HanseaticEconomy {
 		// the ruler (founding cash) and the pool precede the labor force, which the
 		// ruler founds and replaces by promotion from the pool
 		Bank gold = h.createDefaultRuler();
+		// grow the consumer sectors dynamically (the nobles stay firm-less, as in
+		// StrategicEconomy — they live on export wages), so the necessity sector can
+		// add the headroom the nobles' reserve buying needs instead of a fixed split
+		h.enableDynamicFirmProvisioning(copper, false);
 		h.createDefaultPeasantPool();
 		h.foundLaborersFromPool(i -> copper, i -> 15);
 		h.enableExternalInflow(copper);

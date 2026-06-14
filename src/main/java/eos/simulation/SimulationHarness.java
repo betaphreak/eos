@@ -9,8 +9,10 @@ import eos.agent.Agent;
 import eos.agent.firm.BuilderConfig;
 import eos.agent.firm.BuilderFirm;
 import eos.agent.firm.CFirm;
+import eos.agent.firm.ConsumerGoodFirm;
 import eos.agent.firm.EFirm;
 import eos.agent.firm.FirmConfig;
+import eos.agent.firm.FirmFactory;
 import eos.agent.firm.NFirm;
 import eos.agent.firm.StrategicFirm;
 import eos.agent.firm.StrategicFirmConfig;
@@ -105,6 +107,11 @@ public class SimulationHarness {
 	// canonical values with the run's labor-share applied (see constructor).
 	// Replace via setFirmConfig before createFirms to vary other firm params.
 	private FirmConfig firmConfig;
+
+	// the necessity firms' config (firmConfig with the necessity tech factor
+	// applied), set in createFirms and reused when the dynamic provisioning
+	// charters a new necessity firm so it matches the founding ones.
+	private FirmConfig nFirmConfig;
 
 	// parameters for the wedding market; defaults to the canonical values.
 	// Replace via setWeddingConfig before createMarkets (e.g. capacity 0 to
@@ -294,7 +301,8 @@ public class SimulationHarness {
 		// necessity firms get a higher technology coefficient (see
 		// NECESSITY_TECH_FACTOR) so food output on working days covers the rest
 		// days when production stops; everything else matches the other firms.
-		FirmConfig nFirmConfig = firmConfig.toBuilder()
+		// Stored on the harness so the dynamic provisioning can charter matching ones.
+		nFirmConfig = firmConfig.toBuilder()
 				.A(firmConfig.A() * NECESSITY_TECH_FACTOR).build();
 		nFirms = new NFirm[cfg.numNFirms()];
 		for (int i = 0; i < cfg.numNFirms(); i++)
@@ -420,6 +428,108 @@ public class SimulationHarness {
 		// household-succession policy (see Ruler.successor, which also keeps the
 		// colony's ruler reference current); no rule is wired here
 		return gold;
+	}
+
+	/**
+	 * Turn on <b>dynamic firm provisioning</b>: install a {@link FirmFactory} so the
+	 * ruler's monthly sector review can charter and dissolve consumer-good firms as
+	 * demand warrants, rather than the colony carrying a fixed founding count. A new
+	 * firm banks at <tt>firmBank</tt>, is built with the run's standard initial
+	 * parameters, has its seed capital funded out of the ruler's treasury, and is
+	 * granted to the least-encumbered living noble; a dissolved firm is detached from
+	 * its owner, its slot freed and its account settled into equity. Requires the
+	 * firms (see {@link #createFirms}) and a ruler (see {@link #createDefaultRuler()})
+	 * to exist first.
+	 *
+	 * @param firmBank
+	 *            the bank a dynamically chartered firm holds its accounts at
+	 */
+	public void enableDynamicFirmProvisioning(Bank firmBank) {
+		enableDynamicFirmProvisioning(firmBank, true);
+	}
+
+	/**
+	 * As {@link #enableDynamicFirmProvisioning(Bank)}, but <tt>assignToNoble</tt>
+	 * controls whether a chartered firm is granted to a noble owner. Pass {@code
+	 * false} for a colony whose nobles are deliberately firm-less (e.g. {@link
+	 * StrategicEconomy}, where they live purely on export wages): the firm is then
+	 * unowned and its profit simply accrues.
+	 *
+	 * @param firmBank
+	 *            the bank a dynamically chartered firm holds its accounts at
+	 * @param assignToNoble
+	 *            whether to grant each chartered firm to the least-encumbered noble
+	 */
+	public void enableDynamicFirmProvisioning(Bank firmBank, boolean assignToNoble) {
+		colony.setFirmFactory(new FirmFactory() {
+			@Override
+			public ConsumerGoodFirm charter(boolean necessity) {
+				Ruler ruler = colony.getRuler();
+				if (ruler == null || !ruler.isAlive())
+					return null;
+
+				double seed;
+				ConsumerGoodFirm firm;
+				if (necessity) {
+					seed = cfg.nFirm().checking() + cfg.nFirm().savings();
+					firm = new NFirm(cfg.nFirm().checking(), cfg.nFirm().savings(),
+							cfg.nFirm().output(), cfg.nFirm().wageBudget(),
+							cfg.nFirm().capital(), capitalFirms, nFirmConfig,
+							firmBank, colony);
+				} else {
+					seed = cfg.eFirm().checking() + cfg.eFirm().savings();
+					firm = new EFirm(cfg.eFirm().checking(), cfg.eFirm().savings(),
+							cfg.eFirm().output(), cfg.eFirm().wageBudget(),
+							cfg.eFirm().capital(), capitalFirms, firmConfig,
+							firmBank, colony);
+				}
+
+				// the crown funds the firm's seed money out of its treasury, so the
+				// money the firm opened with has a counterparty (the firm's account
+				// was credited from nothing; this destroys an equal sum). Gold→copper
+				// fires the gold bank's FX fee; a short treasury borrows.
+				ruler.getBank().withdraw(ruler.getID(), seed);
+
+				// grant it to the noble with the fewest holdings (spreading ownership),
+				// unless this colony keeps its nobles firm-less; if there is no noble
+				// it stays unowned and its profit simply accrues
+				if (assignToNoble) {
+					Noble owner = leastLoadedNoble();
+					if (owner != null)
+						owner.addFirm(firm);
+				}
+
+				// claim a slot — a live colony queues a builder growth ring and holds
+				// the firm pending, but it is economically active from its constructor
+				// (which posted a labor demand) regardless — then admit it to the step
+				// loop at end of step (so the agent set is not mutated mid-iteration)
+				colony.claimSlot(firm);
+				colony.scheduleAddAgent(firm);
+				return firm;
+			}
+
+			@Override
+			public void dissolve(ConsumerGoodFirm firm) {
+				// detach from its owner so no dividend is drawn next step
+				for (Agent a : colony.getAgents())
+					if (a instanceof Noble noble && noble.removeFirm(firm))
+						break;
+				// mark it dissolved and remove it at end of step; its slot is freed and
+				// its account settled into equity there (its final offers clear first)
+				firm.markDissolved();
+				colony.scheduleRemoveAgent(firm);
+			}
+
+			// the living noble currently owning the fewest firms, or null if none
+			private Noble leastLoadedNoble() {
+				Noble best = null;
+				for (Agent a : colony.getAgents())
+					if (a instanceof Noble noble && noble.isAlive() && (best == null
+							|| noble.getFirmCount() < best.getFirmCount()))
+						best = noble;
+				return best;
+			}
+		});
 	}
 
 	/**
@@ -686,12 +796,14 @@ public class SimulationHarness {
 				new ConsumerMktPricePrinter(prefix + "EPrice", enjoymentMkt));
 		colony.addPrinter(
 				new ConsumerMktVolPrinter(prefix + "EVol", enjoymentMkt));
-		colony.addPrinter(new FirmsPrinter(prefix + "EFirms", eFirms));
+		colony.addPrinter(
+				new DynamicFirmsPrinter(prefix + "EFirms", EFirm.class));
 		colony.addPrinter(
 				new ConsumerMktPricePrinter(prefix + "NPrice", necessityMkt));
 		colony.addPrinter(
 				new ConsumerMktVolPrinter(prefix + "NVol", necessityMkt));
-		colony.addPrinter(new FirmsPrinter(prefix + "NFirms", nFirms));
+		colony.addPrinter(
+				new DynamicFirmsPrinter(prefix + "NFirms", NFirm.class));
 		colony.addPrinter(new WeddingPrinter(prefix + "Weddings", weddingMkt));
 	}
 

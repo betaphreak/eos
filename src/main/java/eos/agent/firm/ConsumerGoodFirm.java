@@ -80,6 +80,24 @@ public abstract class ConsumerGoodFirm extends Firm {
 	private Averager revAvger;
 
 	/**
+	 * Trailing-averaged profit and capacity utilization (over
+	 * {@code REVENUE_SMOOTH_WIN} days), the firm-level signals the ruler's dynamic
+	 * provisioning reads to pick a dissolution victim and gauge whether a sector is
+	 * supply-constrained. Smoothed so a single day's snapshot (e.g. a rest day with
+	 * no output) does not drive an open/close decision. Utilization is averaged
+	 * only over days the firm actually operated, so the rest-day calendar does not
+	 * bias it downward.
+	 */
+	private final Averager profitAvger = new Averager(REVENUE_SMOOTH_WIN);
+	private final Averager utilAvger = new Averager(REVENUE_SMOOTH_WIN);
+	private double smoothedProfit;
+	private double smoothedUtilization;
+
+	/** The colony time step at which this firm was founded (for the dynamic
+	 * provisioning's minimum-firm-lifetime hysteresis). */
+	private final int foundedStep;
+
+	/**
 	 * Create a new consumer good firm
 	 * 
 	 * @param productName
@@ -121,6 +139,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 		capitalCost = 0;
 		pfAvger = new Averager(config.avgProfitWin());
 		revAvger = new Averager(REVENUE_SMOOTH_WIN);
+		foundedStep = colony.getTimeStep();
 
 		// post wage to the labor market so that the firm
 		// gets employees before the first round begins
@@ -149,6 +168,15 @@ public abstract class ConsumerGoodFirm extends Firm {
 
 		capacity = convertToProduct(labor.getQuantity(), capital.getQuantity());
 		wage = labor.getQuantity() > 0 ? wageBudget / labor.getQuantity() : 0;
+
+		// update the trailing firm-level signals the ruler's dynamic provisioning
+		// reads (smoothed over REVENUE_SMOOTH_WIN). Profit is fed every step;
+		// utilization only on days the firm operated (capacity > 0), so the rest-day
+		// calendar's closed days do not drag the average down.
+		smoothedProfit = profitAvger.update(profit);
+		if (capacity > 0)
+			smoothedUtilization =
+					utilAvger.update(Math.min(1.0, output / capacity));
 
 		if (labor.getQuantity() > 0) {
 			if (getColony().getTimeStep() == 0) {
@@ -293,6 +321,51 @@ public abstract class ConsumerGoodFirm extends Firm {
 		acct.priIC = 0;
 		labor.decrease(labor.getQuantity()); // clear unused labor
 		loan = -acct.getSavings();
+	}
+
+	/**
+	 * The firm's profit averaged over {@link #REVENUE_SMOOTH_WIN} days — the signed
+	 * trailing profitability the ruler's dynamic provisioning reads (rather than the
+	 * noisy single-day {@link #getProfit()}) to judge a sector's health and pick a
+	 * dissolution victim.
+	 *
+	 * @return trailing-averaged profit (may be negative)
+	 */
+	public double getSmoothedProfit() {
+		return smoothedProfit;
+	}
+
+	/**
+	 * The firm's capacity utilization (output / capacity) averaged over the days it
+	 * operated within {@link #REVENUE_SMOOTH_WIN} — near 1 when the firm is
+	 * supply-constrained (running flat out, a signal the sector needs another firm),
+	 * low when it carries idle capacity (a signal the sector is overbuilt).
+	 *
+	 * @return trailing-averaged utilization in {@code [0, 1]}
+	 */
+	public double getSmoothedUtilization() {
+		return smoothedUtilization;
+	}
+
+	/**
+	 * Mark this firm <b>dissolved</b> (no longer alive): it stops drawing a dividend
+	 * for its owner and drops out of the firm reports immediately, before the colony
+	 * frees its slot and settles its account at the end of the step. Called by the
+	 * dynamic firm provisioning (see {@link FirmFactory#dissolve}).
+	 */
+	public void markDissolved() {
+		die();
+	}
+
+	/**
+	 * The firm's age in days (colony steps) since it was founded — used by the
+	 * dynamic provisioning's minimum-lifetime rule, so a freshly chartered firm is
+	 * not dissolved on the next seasonal dip.
+	 *
+	 * @return days since founding
+	 */
+	public int getAgeDays() {
+		return getColony().getTimeStep() - foundedStep;
 	}
 
 	/**

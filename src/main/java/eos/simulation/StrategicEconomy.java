@@ -50,7 +50,10 @@ public class StrategicEconomy {
 	 *         via {@code getColony().getAgents()})
 	 */
 	public static SimulationHarness run() {
-		SimulationConfig cfg = SimulationConfig.DEFAULT;
+		// start with one enjoyment and one necessity firm; the ruler's dynamic
+		// provisioning grows the consumer sectors to fit demand
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				.numEFirms(1).numNFirms(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		Settlement colony = h.getColony();
 
@@ -86,6 +89,9 @@ public class StrategicEconomy {
 		// the ruler (founding cash) and the pool precede the labor force, which the
 		// ruler founds and replaces by promotion from the pool
 		Bank gold = h.createDefaultRuler();
+		// grow the consumer sectors dynamically, but keep the nobles firm-less (they
+		// live purely on export wages here) — chartered firms stay unowned
+		h.enableDynamicFirmProvisioning(copper, false);
 		h.createDefaultPeasantPool();
 		h.foundLaborersFromPool(i -> copper, i -> 15);
 		h.enableExternalInflow(copper);

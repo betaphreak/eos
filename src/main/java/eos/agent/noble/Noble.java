@@ -327,6 +327,36 @@ public class Noble extends AbstractHousehold {
 	}
 
 	/**
+	 * Take ownership of <tt>firm</tt> (e.g. a firm the ruler has just chartered and
+	 * granted to this noble): from the next step it draws a dividend from the firm
+	 * like any it owns. The colony's dynamic firm provisioning uses this.
+	 *
+	 * @param firm
+	 *            the firm to add to this noble's holdings
+	 */
+	public void addFirm(Firm firm) {
+		firms.add(firm);
+	}
+
+	/**
+	 * Relinquish ownership of <tt>firm</tt> (e.g. when it is dissolved), so the
+	 * noble stops drawing a dividend from it.
+	 *
+	 * @param firm
+	 *            the firm to remove from this noble's holdings
+	 * @return whether this noble owned the firm
+	 */
+	public boolean removeFirm(Firm firm) {
+		return firms.remove(firm);
+	}
+
+	/** Number of firms this noble currently owns (used to spread newly chartered
+	 * firms across owners). */
+	public int getFirmCount() {
+		return firms.size();
+	}
+
+	/**
 	 * Return a reference to the good with name <tt>goodName</tt>.
 	 */
 	public Good getGood(String goodName) {
