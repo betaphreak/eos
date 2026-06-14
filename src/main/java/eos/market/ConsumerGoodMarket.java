@@ -23,10 +23,15 @@ public class ConsumerGoodMarket extends Market {
 	// price is flagged once it exceeds this multiple of its initial level
 	private static final int PRICE_SKYROCKET_FACTOR = 10;
 
-	// window (days) over which the unmet-demand fraction is smoothed. Long enough
-	// to span the rest-day calendar so a single closed day's zero-supply spike does
-	// not read as a chronic shortage — the signal the ruler's sector review reads.
+	// window (days) over which the unmet-demand fraction is smoothed for the
+	// short-run pressure reading. Long enough to span the rest-day calendar so a
+	// single closed day's zero-supply spike does not read as a chronic shortage.
 	private static final int RATIONING_WIN = 30;
+
+	// window (days) for the long-run baseline the short-run reading is measured
+	// against — a year, so seasonal and rest-day structure averages out and only a
+	// rise above the colony's own norm registers as demand pressure.
+	private static final int BASELINE_WIN = 365;
 
 	/**********************************************************/
 
@@ -67,12 +72,18 @@ public class ConsumerGoodMarket extends Market {
 	// filled volume), recorded so the unmet-demand fraction can be derived
 	private double mktDemand;
 
-	// smoothed fraction of demand left unfilled because supply fell short
-	// (max(0, (demand - supply) / demand)), averaged over RATIONING_WIN days. A
-	// persistent positive value means the sector's firms cannot meet demand — the
-	// entry signal for the ruler's dynamic-firm review (see Ruler.reviewSectors).
+	// fraction of demand left unfilled because supply fell short
+	// (max(0, (demand - supply) / demand)), smoothed two ways: a short window
+	// (RATIONING_WIN) tracks current pressure, a long window (BASELINE_WIN) the
+	// structural level. Their difference — getUnmetPressure() — is the entry/exit
+	// signal the ruler's dynamic-firm review reads, so the chronic band-limited-
+	// price bias (in an inflating colony the sticky price always lags demand) and
+	// the rest-day supply gaps, which inflate both windows equally, cancel out:
+	// only a *rise* in unmet demand above the colony's own norm registers.
 	private final Averager unmetAvger = new Averager(RATIONING_WIN);
+	private final Averager baselineAvger = new Averager(BASELINE_WIN);
 	private double smoothedUnmet;
+	private double unmetBaseline;
 
 	// whether the price is currently flagged as skyrocketed
 	private boolean priceSkyrocketed = false;
@@ -239,6 +250,7 @@ public class ConsumerGoodMarket extends Market {
 		// a chronic shortage. Pure bookkeeping — moves no money, draws no randomness.
 		double unmet = demand > 0 ? Math.max(0, (demand - supply) / demand) : 0;
 		smoothedUnmet = unmetAvger.update(unmet);
+		unmetBaseline = baselineAvger.update(unmet);
 
 		buyOffers.clear();
 		sellOffers.clear();
@@ -291,16 +303,31 @@ public class ConsumerGoodMarket extends Market {
 	}
 
 	/**
-	 * Return the smoothed fraction of demand left unfilled for want of supply,
-	 * averaged over {@link #RATIONING_WIN} days — {@code 0} when supply met demand,
-	 * approaching {@code 1} as the shortfall grows. This is the "demand for the
-	 * product exceeds what the current firms can supply" signal the ruler's dynamic
-	 * firm review reads to decide whether to charter another firm in the sector.
+	 * Return the short-run smoothed fraction of demand left unfilled for want of
+	 * supply, averaged over {@link #RATIONING_WIN} days — {@code 0} when supply met
+	 * demand, approaching {@code 1} as the shortfall grows. This is the raw level;
+	 * the ruler's review reads {@link #getUnmetPressure()} (this minus its long-run
+	 * baseline) so the chronic structural component cancels.
 	 *
 	 * @return smoothed unmet-demand fraction in {@code [0, 1)}
 	 */
 	public double getSmoothedUnmetFraction() {
 		return smoothedUnmet;
+	}
+
+	/**
+	 * Return the <b>demand pressure</b>: the short-run unmet fraction
+	 * ({@link #getSmoothedUnmetFraction()}) minus its long-run baseline (averaged
+	 * over {@link #BASELINE_WIN} days). Positive means unmet demand has risen above
+	 * the colony's own norm — a genuine shortage the current firms cannot meet,
+	 * net of the structural band-limited-price and rest-day bias that inflates the
+	 * raw level; negative means it has eased below the norm. This relative signal,
+	 * not the absolute level, drives the ruler's charter/dissolve decisions.
+	 *
+	 * @return short-run unmet fraction minus its long-run baseline (may be negative)
+	 */
+	public double getUnmetPressure() {
+		return smoothedUnmet - unmetBaseline;
 	}
 
 	@Override

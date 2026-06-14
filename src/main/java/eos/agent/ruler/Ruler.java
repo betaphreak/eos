@@ -59,13 +59,14 @@ public class Ruler extends AbstractHousehold {
 	private static final int NECESSITY_RESERVE_DAYS = 30;
 
 	// --- dynamic firm provisioning thresholds (see reviewSectors) ---
-	// charter another firm once this fraction of demand goes chronically unfilled
-	private static final double OPEN_UNMET_THRESHOLD = 0.05;
-	// necessity is inelastic (every mouth eats daily), so react to a smaller
-	// shortfall — the colony errs toward over-provisioning food
-	private static final double INELASTIC_OPEN_UNMET_THRESHOLD = 0.02;
-	// below this unmet fraction the sector is effectively glutted
-	private static final double CLOSE_UNMET_THRESHOLD = 0.005;
+	// charter another firm once demand pressure — the short-run unmet fraction above
+	// its own long-run baseline — rises this far over the colony's norm
+	private static final double OPEN_PRESSURE_THRESHOLD = 0.05;
+	// necessity is inelastic (every mouth eats daily), so react to a smaller rise —
+	// the colony errs toward over-provisioning food
+	private static final double INELASTIC_OPEN_PRESSURE_THRESHOLD = 0.03;
+	// once pressure falls this far below the norm the sector is easing (a glut)
+	private static final double CLOSE_PRESSURE_THRESHOLD = -0.05;
 	// only dissolve a firm running below this capacity utilization
 	private static final double CLOSE_UTIL_THRESHOLD = 0.6;
 	// never cut the necessity sector below this many firms (food is existential)
@@ -274,7 +275,9 @@ public class Ruler extends AbstractHousehold {
 	 * and dissolution (liquidate capital, lay off, vacate the slot) are the next
 	 * step. Until those land it moves no money and draws no randomness, so runs stay
 	 * byte-identical; it is a no-op for a colony with no consumer firms. Reads the
-	 * demand signal from {@link ConsumerGoodMarket#getSmoothedUnmetFraction()}.
+	 * demand signal from {@link ConsumerGoodMarket#getUnmetPressure()} — the
+	 * short-run shortfall relative to the sector's own long-run baseline, so the
+	 * chronic band-limited-price bias cancels rather than firing every month.
 	 */
 	public void reviewSectors() {
 		List<ConsumerGoodFirm> eFirms = new ArrayList<>();
@@ -285,18 +288,19 @@ public class Ruler extends AbstractHousehold {
 			else if (a instanceof NFirm f && f.isAlive())
 				nFirms.add(f);
 		}
-		reviewSector("enjoyment", eMkt, eFirms, OPEN_UNMET_THRESHOLD, 0);
-		reviewSector("necessity", nMkt, nFirms, INELASTIC_OPEN_UNMET_THRESHOLD,
+		reviewSector("enjoyment", eMkt, eFirms, OPEN_PRESSURE_THRESHOLD, 0);
+		reviewSector("necessity", nMkt, nFirms, INELASTIC_OPEN_PRESSURE_THRESHOLD,
 				MIN_NECESSITY_FIRMS);
 	}
 
 	/**
 	 * Review one consumer-good sector and log the firm it would open or close. The
-	 * entry test pairs a demand signal (smoothed unmet fraction past
-	 * {@code openThreshold}) with a viability gate (the sector currently turns a
-	 * profit, so a new entrant can be both filled and sustained); the exit test
-	 * fires only in a glut and targets the weakest loss-making, under-utilized firm,
-	 * never cutting below {@code minFirms}.
+	 * entry test pairs a demand signal (unmet-demand pressure past
+	 * {@code openThreshold} — the short-run shortfall risen above its own long-run
+	 * baseline) with a viability gate (the sector currently turns a profit, so a new
+	 * entrant can be both filled and sustained); the exit test fires only as
+	 * pressure eases below the norm and targets the weakest loss-making,
+	 * under-utilized firm, never cutting below {@code minFirms}.
 	 * <p>
 	 * The profit gate is a stand-in for the design's return-on-capital-vs-interest
 	 * margin — exposing each firm's capital value would let it compare ROC to
@@ -307,23 +311,26 @@ public class Ruler extends AbstractHousehold {
 			List<ConsumerGoodFirm> firms, double openThreshold, int minFirms) {
 		if (firms.isEmpty())
 			return;
+		double pressure = mkt.getUnmetPressure();
 		double unmet = mkt.getSmoothedUnmetFraction();
 		double sectorProfit = 0;
 		for (ConsumerGoodFirm f : firms)
 			sectorProfit += f.getProfit();
 
-		// short of capacity: demand persistently outruns supply while the sector is
-		// still profitable, so another firm can both be filled and survive
-		if (unmet > openThreshold && sectorProfit > 0) {
+		// short of capacity: demand pressure has risen above the colony's norm while
+		// the sector is still profitable, so another firm can both be filled and
+		// survive
+		if (pressure > openThreshold && sectorProfit > 0) {
 			log.info(String.format(
-					"sector review: would charter a new %s firm (unmet=%.1f%% sectorProfit=%.1f over %d firms)",
-					label, unmet * 100, sectorProfit, firms.size()));
+					"sector review: would charter a new %s firm (pressure=+%.1f%% unmet=%.1f%% sectorProfit=%.1f over %d firms)",
+					label, pressure * 100, unmet * 100, sectorProfit, firms.size()));
 			return;
 		}
 
-		// glutted: no shortage to speak of — dissolve the weakest firm if it is
-		// losing money and running well below capacity (keeping the sector floor)
-		if (unmet < CLOSE_UNMET_THRESHOLD && firms.size() > minFirms) {
+		// easing: demand pressure has fallen below the norm — dissolve the weakest
+		// firm if it is losing money and running well below capacity (keeping the
+		// sector floor)
+		if (pressure < CLOSE_PRESSURE_THRESHOLD && firms.size() > minFirms) {
 			ConsumerGoodFirm weakest = null;
 			for (ConsumerGoodFirm f : firms) {
 				double util = f.getCapacity() > 0 ? f.getOutput() / f.getCapacity() : 0;
@@ -335,9 +342,9 @@ public class Ruler extends AbstractHousehold {
 				double util = weakest.getCapacity() > 0
 						? weakest.getOutput() / weakest.getCapacity() : 0;
 				log.info(String.format(
-						"sector review: would dissolve %s (profit=%.1f util=%.0f%%); %s glut, unmet=%.1f%%",
+						"sector review: would dissolve %s (profit=%.1f util=%.0f%%); %s easing, pressure=%.1f%%",
 						weakest.getName(), weakest.getProfit(), util * 100, label,
-						unmet * 100));
+						pressure * 100));
 			}
 		}
 	}
