@@ -67,6 +67,10 @@ public class PeasantPool extends Agent {
 	@Getter
 	private double totalBilledToRuler;
 
+	// peasants promoted out of the pool into laborer households over its life
+	@Getter
+	private long promotedCount;
+
 	// buy enough to refill the larder toward BUFFER_DAYS of food for the current
 	// head-count (price-inelastic: peasant food is essential and Ruler-funded)
 	private final Demand demandForN = price -> Math
@@ -180,6 +184,27 @@ public class PeasantPool extends Agent {
 	@Override
 	public Good getGood(String goodName) {
 		return "Necessity".equals(goodName) ? necessity : null;
+	}
+
+	/**
+	 * Remove and return the highest-overall-skill peasant — the one a {@link
+	 * eos.agent.ruler.Ruler} promotes into a laborer household (merit-based social
+	 * mobility). Returns {@code null} when the pool is empty (then no replacement is
+	 * produced and the labor force shrinks — the pool drains with no inflow yet).
+	 *
+	 * @return the ablest peasant, removed from the pool, or {@code null} if empty
+	 */
+	public Member promoteHighestSkilled() {
+		Member best = null;
+		for (Member m : peasants)
+			if (best == null
+					|| m.skills().overallLevel() > best.skills().overallLevel())
+				best = m;
+		if (best != null) {
+			peasants.remove(best);
+			promotedCount++;
+		}
+		return best;
 	}
 
 	/** @return the number of peasants currently in the pool */

@@ -14,6 +14,7 @@ import eos.agent.firm.FirmConfig;
 import eos.agent.firm.NFirm;
 import eos.agent.firm.StrategicFirm;
 import eos.agent.firm.StrategicFirmConfig;
+import eos.agent.Member;
 import eos.agent.PeasantPool;
 import eos.agent.laborer.Laborer;
 import eos.agent.laborer.LaborerConfig;
@@ -23,6 +24,7 @@ import eos.agent.ruler.Ruler;
 import eos.bank.Bank;
 import eos.bank.BankConfig;
 import eos.bank.CurrencyType;
+import eos.name.Person;
 import eos.settlement.Settlement;
 import eos.settlement.GameSession;
 import eos.io.SimLog;
@@ -465,18 +467,64 @@ public class SimulationHarness {
 			colony.addAgent(laborers[i]);
 		}
 
-		// when a household's head dies, a successor household continues the same
-		// dynasty at the same bank, inheriting the estate (so money and the
-		// labor force stay roughly constant)
-		colony.addReplacementPolicy(dead -> {
-			if (!(dead instanceof Laborer))
-				return null;
-			return new Laborer((Laborer) dead, cfg.laborer().e(),
-					REPLACEMENT_NECESSITY_STOCK, cfg.laborer().savingsRate(),
-					LaborerConfig.DEFAULT, colony);
-		});
+		// register how a dead laborer is replaced. By default a successor household
+		// continues the same dynasty at the same bank, inheriting the estate (so
+		// money and the labor force stay roughly constant). When the run opts into
+		// pool promotion, the ruler instead elevates the ablest peasant into a fresh
+		// laborer household — merit-based mobility — and an empty pool yields no
+		// replacement, so the labor force declines as the reserve drains.
+		if (cfg.promoteLaborersFromPool())
+			colony.addReplacementPolicy(dead -> {
+				if (!(dead instanceof Laborer) || peasantPool == null)
+					return null;
+				Member peasant = peasantPool.promoteHighestSkilled();
+				return peasant == null ? null
+						: promoteToLaborer(peasant, ((Laborer) dead).getBank());
+			});
+		else
+			colony.addReplacementPolicy(dead -> {
+				if (!(dead instanceof Laborer))
+					return null;
+				return new Laborer((Laborer) dead, cfg.laborer().e(),
+						REPLACEMENT_NECESSITY_STOCK, cfg.laborer().savingsRate(),
+						LaborerConfig.DEFAULT, colony);
+			});
 
 		laborMkt.clear();
+	}
+
+	/**
+	 * Build a laborer household for a peasant promoted out of the pool: it adopts
+	 * the peasant as its head (keeping its given name, skills and age) under a
+	 * freshly-drawn dynasty surname, opens with the laborer config's balances, and
+	 * those balances are <b>funded by the ruler</b> (debited from the treasury,
+	 * borrowing if short — so the money has a counterparty rather than appearing from
+	 * nowhere; the dead laborer's estate stays folded into equity as before).
+	 *
+	 * @param peasant
+	 *            the promoted peasant to adopt as the new household's head
+	 * @param bank
+	 *            the bank the new laborer holds its accounts at (the dead one's)
+	 * @return the promoted laborer household
+	 */
+	private Laborer promoteToLaborer(Member peasant, Bank bank) {
+		// keep the peasant's given name, skills and age; give it a fresh dynasty
+		// surname (it carried none while pooled)
+		String surname = colony.getNames().nextDynastyName();
+		Member head = new Member(
+				new Person(peasant.person().givenName(), surname, peasant.skills()),
+				peasant.getBirthDate());
+		double checking = cfg.laborer().checking();
+		double savings = cfg.laborer().savings();
+		Laborer laborer = new Laborer(head, cfg.laborer().e(),
+				REPLACEMENT_NECESSITY_STOCK, checking, savings,
+				cfg.laborer().savingsRate(), LaborerConfig.DEFAULT, bank, colony);
+		// the ruler capitalizes the new household (borrowing if its treasury is
+		// short); skip only during an interregnum (a dead ruler has no account)
+		Ruler ruler = colony.getRuler();
+		if (ruler != null && ruler.isAlive())
+			ruler.getBank().withdraw(ruler.getID(), checking + savings);
+		return laborer;
 	}
 
 	/**

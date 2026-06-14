@@ -249,13 +249,28 @@ borrowing).
   rather than killing anyone; (b) a Ruler driven into debt by relief now floors its
   luxury consumption at 0 (a broke sovereign stops indulging) instead of posting a
   negative demand.
-- **Phase 3 — promotion, and founding through the pool.** Add `Ruler.promoteFromPool()`
-  and use it in both places: swap the laborer replacement policy to promote the
-  highest-skill peasant (fresh endowment, fresh surname; `null` on an empty pool),
-  **and** retire `createLaborers`' construction by seeding the pool with
-  `numLaborers + reserve` and having the Ruler create the initial labor force the
-  same way. Log promotions. This is the step that changes colony dynamics and unifies
-  the founding/replacement code path.
+- **Phase 3 — promotion. (Implemented — `MeritocraticEconomy`; unified founding
+  deferred.)** A dead laborer is replaced by the Ruler promoting the
+  highest-overall-skill peasant into a fresh laborer household: the promoted peasant
+  *becomes* the head (keeping its name, skills and age — via an "adopt an existing
+  `Member`" household constructor), takes a freshly-drawn dynasty surname, and is
+  capitalized by the Ruler (the dead estate stays folded into equity). An empty pool
+  yields no replacement. Opt-in via `SimulationConfig.promoteLaborersFromPool`
+  (default false, so the standard sims keep same-dynasty succession); `PeasantPool.
+  promoteHighestSkilled()` does the selection, the harness's replacement policy and
+  `promoteToLaborer()` the rest.
+  - **Key finding — promotion alone is not sustainable.** A finite reserve drains
+    (by promotion *and* old age), and once it is dry, deaths go unreplaced, the
+    workforce shrinks, food production falls, and the colony **spirals to collapse**
+    — faster and harder than the "gradual decline" the accepted limitation assumed,
+    because food output depends on the workforce. `MeritocraticEconomy` therefore
+    runs a short, summer-started horizon (no founding-winter death cluster) so it
+    demonstrates promotion firing while the labor force visibly declines but the
+    colony stays alive. **A sustainable promotion economy needs the Phase-4 refill.**
+  - **Unified founding deferred.** Routing the *initial* labor force through the
+    pool (retiring `createLaborers`' construction) is the larger, riskier half and is
+    left for a follow-up; founding still uses `createLaborers`, and only the
+    *replacement* path goes through promotion.
 - **Phase 4 — future (separate notes).** The *dependents* refill (a dead head's
   household members fall into the pool — requires multi-member households) and
   possibly peasant reproduction, to make the pool self-sustaining.

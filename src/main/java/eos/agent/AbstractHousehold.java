@@ -119,6 +119,43 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	}
 
 	/**
+	 * Open this household's accounts and <b>adopt an already-built head</b> — e.g. a
+	 * peasant promoted out of the {@link eos.agent.PeasantPool} — rather than drawing
+	 * a fresh one. The adopted head keeps its identity (its name, skills and age, all
+	 * already sampled when it was created), so promotion is meritocratic. Account
+	 * funding follows {@code fundedFromEquity} exactly as in the drawing constructor;
+	 * the household is founded now. No demographic or naming RNG is consumed here (the
+	 * head was drawn earlier), so this neither perturbs those streams nor the
+	 * economic one.
+	 *
+	 * @param initCheckingBal
+	 *            initial checking account balance
+	 * @param initSavingsBal
+	 *            initial savings account balance (negative for an opening loan)
+	 * @param fundedFromEquity
+	 *            true to open the account out of the bank's equity instead of as a
+	 *            fresh endowment
+	 * @param head
+	 *            the already-built head this household adopts
+	 * @param bank
+	 *            the bank at which this household holds its accounts
+	 * @param colony
+	 *            the colony this household belongs to
+	 */
+	protected AbstractHousehold(double initCheckingBal, double initSavingsBal,
+			boolean fundedFromEquity, Member head, Bank bank, Settlement colony) {
+		super(bank, colony);
+
+		if (fundedFromEquity)
+			bank.openInheritedAcct(getID(), initCheckingBal, initSavingsBal);
+		else
+			bank.openAcct(getID(), initCheckingBal, initSavingsBal);
+
+		this.foundingDate = colony.getDate();
+		members.add(head);
+	}
+
+	/**
 	 * The {@link Member people} who make up this household. The first member is the
 	 * {@linkplain #getHead() head}, whose surname names the dynasty; the returned
 	 * list is an unmodifiable view, head first. For now a household always has

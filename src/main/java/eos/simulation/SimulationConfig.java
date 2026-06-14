@@ -61,6 +61,11 @@ import lombok.Builder;
  * @param peasantReserveSize number of peasants the colony's pool is seeded with
  *                     (the standing reserve the Ruler feeds); 0 creates no pool
  *                     (the default), so the feature is opt-in per simulation
+ * @param promoteLaborersFromPool when true, a dead laborer is replaced by the
+ *                     Ruler promoting the highest-skilled peasant from the pool
+ *                     (merit-based social mobility) rather than by a same-dynasty
+ *                     heir; an empty pool yields no replacement (the labor force
+ *                     then shrinks). Default false (same-dynasty succession)
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -86,7 +91,8 @@ public record SimulationConfig(
 		double laborShare,
 		double bankProfitTaxRate,
 		double nobleIncomeTaxRate,
-		int peasantReserveSize) {
+		int peasantReserveSize,
+		boolean promoteLaborersFromPool) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -159,5 +165,6 @@ public record SimulationConfig(
 			0.5,                                   // laborShare
 			0.05,                                  // bankProfitTaxRate
 			0.02,                                  // nobleIncomeTaxRate
-			0);                                    // peasantReserveSize (no pool)
+			0,                                     // peasantReserveSize (no pool)
+			false);                                // promoteLaborersFromPool
 }

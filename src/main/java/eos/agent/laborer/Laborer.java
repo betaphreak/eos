@@ -1,6 +1,7 @@
 package eos.agent.laborer;
 
 import eos.agent.AbstractHousehold;
+import eos.agent.Member;
 import eos.bank.Bank;
 import eos.bank.Account;
 import eos.settlement.Settlement;
@@ -205,6 +206,56 @@ public class Laborer extends AbstractHousehold {
 		lMkt = (LaborMarket) colony.getMarket("Labor");
 		this.savingsRate = initSavingsRate;
 		lMkt.addEmployee(this);
+	}
+
+	/**
+	 * Create a laborer household by <b>adopting a promoted peasant</b> as its head:
+	 * the {@code head} keeps its name, skills and age (so promotion is meritocratic),
+	 * the household opens with the given config balances (a fresh endowment its
+	 * sponsor — the ruler — funds externally), and it starts a new dynasty (the head
+	 * carries a freshly-drawn surname). Used by the pool-promotion replacement policy
+	 * (see {@code SimulationHarness}).
+	 *
+	 * @param head
+	 *            the promoted peasant this household adopts as its head
+	 * @param initEQty
+	 *            initial enjoyment quantity
+	 * @param initNQty
+	 *            initial necessity quantity
+	 * @param initCheckingBal
+	 *            initial checking account balance
+	 * @param initSavingsBal
+	 *            initial savings account balance
+	 * @param initSavingsRate
+	 *            initial savings rate
+	 * @param config
+	 *            tunable model parameters
+	 * @param bank
+	 *            the bank at which this laborer holds its accounts
+	 * @param colony
+	 *            the colony this laborer belongs to
+	 */
+	public Laborer(Member head, double initEQty, double initNQty,
+			double initCheckingBal, double initSavingsBal, double initSavingsRate,
+			LaborerConfig config, Bank bank, Settlement colony) {
+		super(initCheckingBal, initSavingsBal, false, head, bank, colony);
+		this.config = config;
+		enjoyment = new Enjoyment(initEQty);
+		necessity = new Necessity(initNQty);
+		eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
+		nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
+		lMkt = (LaborMarket) colony.getMarket("Labor");
+		this.savingsRate = initSavingsRate;
+		lMkt.addEmployee(this);
+		// a notable promoted head is recorded by name, like any notable arrival
+		if (isNotable()) {
+			var skills = getHead().skills();
+			log.info(String.format(
+					"%s was promoted from the peasantry — notable in %s (level %d); %s",
+					getHead().fullName(), skills.peakSkill(), skills.peakLevel(),
+					skills));
+			colony.addPersonOfInterest(this);
+		}
 	}
 
 	/**
