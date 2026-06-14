@@ -173,4 +173,14 @@ public final class SkillRecord {
 	private static int clampLevel(int level) {
 		return Math.max(MIN_LEVEL, Math.min(MAX_LEVEL, level));
 	}
+
+	/**
+	 * A compact debug rendering: the level followed by the passion
+	 * {@linkplain Passion#symbol() glyph} (e.g. {@code "14!"} for a major-passion
+	 * level 14, {@code "8~"} for minor, {@code "3"} for no passion).
+	 */
+	@Override
+	public String toString() {
+		return level + passion.symbol();
+	}
 }

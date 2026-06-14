@@ -50,6 +50,74 @@ class SkillSystemTest {
 	}
 
 	@Test
+	void passionSymbolGlyphs() {
+		assertEquals("", Passion.NONE.symbol());
+		assertEquals("~", Passion.MINOR.symbol());
+		assertEquals("!", Passion.MAJOR.symbol());
+	}
+
+	@Test
+	void recordToStringShowsLevelAndPassionGlyph() {
+		assertEquals("14!", new SkillRecord(14, Passion.MAJOR).toString());
+		assertEquals("8~", new SkillRecord(8, Passion.MINOR).toString());
+		assertEquals("3", new SkillRecord(3, Passion.NONE).toString());
+	}
+
+	@Test
+	void peakLevelIsTheHighestSingleSkill() {
+		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
+		recs.put(Skill.SOCIAL, new SkillRecord(18, Passion.NONE));
+		recs.put(Skill.PLANTS, new SkillRecord(7, Passion.NONE));
+		SkillTracker t = new SkillTracker(recs);
+		// peak is the single best skill (18), well above the all-round mean
+		assertEquals(18, t.peakLevel());
+		assertTrue(t.peakLevel() > t.overallLevel());
+		// an all-default tracker peaks at the minimum level
+		assertEquals(SkillRecord.MIN_LEVEL, new SkillTracker().peakLevel());
+	}
+
+	@Test
+	void skillIndicesAreConsecutiveZeroToEleven() {
+		Skill[] all = Skill.values();
+		assertEquals(12, all.length);
+		for (int i = 0; i < all.length; i++)
+			assertEquals(i, all[i].index(), all[i] + " index");
+	}
+
+	@Test
+	void peakSkillIsTheIndexOfTheHighestSkill() {
+		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
+		recs.put(Skill.MEDICINE, new SkillRecord(17, Passion.NONE));
+		recs.put(Skill.SOCIAL, new SkillRecord(9, Passion.NONE));
+		SkillTracker t = new SkillTracker(recs);
+		assertEquals(Skill.MEDICINE.index(), t.peakSkill());
+		// peakSkill identifies WHICH skill; peakLevel gives how good it is
+		assertEquals(17, t.peakLevel());
+	}
+
+	@Test
+	void peakSkillBreaksTiesTowardTheLowestIndex() {
+		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
+		recs.put(Skill.INTELLECTUAL, new SkillRecord(12, Passion.NONE)); // index 2
+		recs.put(Skill.CRAFTING, new SkillRecord(12, Passion.NONE)); // index 11
+		assertEquals(Skill.INTELLECTUAL.index(), new SkillTracker(recs).peakSkill());
+	}
+
+	@Test
+	void trackerToStringListsOverallAndAllTwelveSkills() {
+		SkillTracker t = new SkillTracker();
+		String s = t.toString();
+		// the overall scalar leads, then every one of the twelve skills appears
+		assertTrue(s.startsWith("overall=" + t.overallLevel()), s);
+		for (Skill skill : Skill.values())
+			assertTrue(s.contains(skill + "="), "missing " + skill + " in " + s);
+		// a known record renders with its glyph inside the dump
+		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
+		recs.put(Skill.PLANTS, new SkillRecord(14, Passion.MAJOR));
+		assertTrue(new SkillTracker(recs).toString().contains("PLANTS=14!"));
+	}
+
+	@Test
 	void learnLevelsUpWhenThresholdMet() {
 		// MINOR (factor 1.0): exactly the level-0 threshold of 100 advances to 1
 		SkillRecord r = new SkillRecord(0, Passion.MINOR);

@@ -70,6 +70,17 @@ public interface Household {
 	int getSkill();
 
 	/**
+	 * This household's <b>peak</b> skill: the head's single highest skill level,
+	 * in {@code [0, 20]}. Unlike {@link #getSkill()} (the all-round average across
+	 * the twelve skills) this captures mastery of one specialty, and is what
+	 * {@link #isNotable()} reads — a master of one craft is notable even if
+	 * unremarkable on average.
+	 *
+	 * @return the head's highest single skill level
+	 */
+	int getPeakSkill();
+
+	/**
 	 * The household head's age in whole years.
 	 *
 	 * @return the head's age in years
@@ -77,14 +88,17 @@ public interface Household {
 	int getAgeYears();
 
 	/**
-	 * Whether this is a <b>notable</b> household: its skill exceeds
-	 * {@value #NOTABLE_SKILL}. Such a household's head is worth logging by name
-	 * when the household is created.
+	 * Whether this is a <b>notable</b> household: its {@linkplain #getPeakSkill()
+	 * peak} (single highest) skill exceeds {@value #NOTABLE_SKILL} — i.e. the head
+	 * has mastered some specialty. Such a household's head is worth logging by name
+	 * when the household is created. (Notability reads the peak, not the all-round
+	 * {@link #getSkill() average}: averaging twelve skills around a low colony mean
+	 * can never reach the threshold, so a master would otherwise never register.)
 	 *
 	 * @return true if the household is notable
 	 */
 	default boolean isNotable() {
-		return getSkill() > NOTABLE_SKILL;
+		return getPeakSkill() > NOTABLE_SKILL;
 	}
 
 	/**

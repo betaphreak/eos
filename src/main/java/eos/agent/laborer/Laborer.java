@@ -190,8 +190,8 @@ public class Laborer extends AbstractHousehold {
 		// and is a person of interest the colony tracks (and logs yearly)
 		if (isNotable()) {
 			log.info(String.format(
-					"%s founded a household in the colony — notable (skill %d)",
-					getHead().fullName(), getSkill()));
+					"%s founded a household in the colony — notable (%s)",
+					getHead().fullName(), getHead().skills()));
 			colony.addPersonOfInterest(this);
 		}
 

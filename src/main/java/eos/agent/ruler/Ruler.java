@@ -168,8 +168,8 @@ public class Ruler extends AbstractHousehold {
 	 */
 	@Override
 	public String toString() {
-		return String.format("Ruler#%d %s [%s skill=%d age=%d]", getID(),
-				getHead().fullName(), isAlive() ? "alive" : "dead", getSkill(),
-				getAgeYears());
+		return String.format("Ruler#%d %s [%s %s age=%d]", getID(),
+				getHead().fullName(), isAlive() ? "alive" : "dead",
+				getHead().skills(), getAgeYears());
 	}
 }

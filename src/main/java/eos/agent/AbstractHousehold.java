@@ -145,15 +145,28 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	/**
 	 * This household's skill scalar in {@code [Household.MIN_SKILL, MAX_SKILL]}:
 	 * the {@linkplain SkillTracker#overallLevel() overall level} of the head's
-	 * skills. Drives labor productivity, notability and given-name rarity — the
-	 * single skill number the economy reads, now derived from the head's
-	 * twelve-skill tracker rather than stored on the household.
+	 * skills. Drives labor productivity and given-name rarity — the single skill
+	 * number the economy reads, now derived from the head's twelve-skill tracker
+	 * rather than stored on the household. ({@linkplain #getPeakSkill() Notability}
+	 * reads the peak skill instead.)
 	 *
 	 * @return the head's overall skill level
 	 */
 	@Override
 	public int getSkill() {
 		return getHead().skills().overallLevel();
+	}
+
+	/**
+	 * This household's peak skill: the {@linkplain SkillTracker#peakLevel() highest
+	 * single level} among the head's twelve skills. Read by {@link
+	 * Household#isNotable()} so a master of one specialty registers as notable.
+	 *
+	 * @return the head's highest single skill level
+	 */
+	@Override
+	public int getPeakSkill() {
+		return getHead().skills().peakLevel();
 	}
 
 	/**

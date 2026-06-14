@@ -65,6 +65,10 @@ class LaborerSkillTest {
 				return skill;
 			}
 
+			public int getPeakSkill() {
+				return skill;
+			}
+
 			public int getAgeYears() {
 				return 0;
 			}

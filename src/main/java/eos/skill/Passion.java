@@ -56,4 +56,19 @@ public enum Passion {
 	public double decayRateFactor() {
 		return decayRateFactor;
 	}
+
+	/**
+	 * A compact glyph for debug output: {@code ""} for {@link #NONE}, {@code "~"}
+	 * for {@link #MINOR}, {@code "!"} for {@link #MAJOR} — so a skill's passion
+	 * reads at a glance in a {@link SkillRecord}/{@link SkillTracker} dump.
+	 *
+	 * @return the passion's debug glyph
+	 */
+	public String symbol() {
+		return switch (this) {
+			case NONE -> "";
+			case MINOR -> "~";
+			case MAJOR -> "!";
+		};
+	}
 }

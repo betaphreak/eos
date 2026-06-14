@@ -102,11 +102,74 @@ public final class SkillTracker {
 	}
 
 	/**
+	 * The person's highest single skill level: the maximum across the twelve
+	 * skills. Where {@link #overallLevel()} measures all-round competence (the
+	 * mean), this captures <b>mastery of one specialty</b> — used to decide
+	 * whether a person is notable, since averaging twelve skills hides a single
+	 * exceptional one.
+	 *
+	 * @return the maximum level across all skills
+	 */
+	public int peakLevel() {
+		int max = SkillRecord.MIN_LEVEL;
+		for (SkillRecord r : records.values())
+			max = Math.max(max, r.getLevel());
+		return max;
+	}
+
+	/**
+	 * The {@linkplain Skill#index() index} (0..11) of the person's strongest
+	 * skill — the skill with the highest level, ties broken toward the lowest
+	 * index. Companion to {@link #peakLevel()} (which gives that skill's level):
+	 * {@code peakLevel} is <em>how good</em> the best skill is, {@code peakSkill}
+	 * is <em>which</em> skill it is, identified by its stable index.
+	 *
+	 * @return the index of the highest-level skill
+	 */
+	public int peakSkill() {
+		int bestLevel = -1;
+		int bestIndex = -1;
+		for (Skill s : Skill.values()) {
+			int level = records.get(s).getLevel();
+			// strict >, with an explicit index tie-break, so the result depends on
+			// the skill's index rather than the enum's iteration order
+			if (level > bestLevel
+					|| (level == bestLevel && s.index() < bestIndex)) {
+				bestLevel = level;
+				bestIndex = s.index();
+			}
+		}
+		return bestIndex;
+	}
+
+	/**
 	 * An unmodifiable view of all records, by skill.
 	 *
 	 * @return the records
 	 */
 	public Map<Skill, SkillRecord> getRecords() {
 		return Collections.unmodifiableMap(records);
+	}
+
+	/**
+	 * A debug-friendly rendering of all twelve skills: the {@linkplain
+	 * #overallLevel() overall level} followed by every skill's
+	 * {@code Name=level<passion glyph>} in {@link Skill} order, e.g.
+	 * {@code overall=7 {Construction=3, Plants=14!, Intellectual=8~, ...}} — so a
+	 * person's whole skill profile (not just the scalar) shows in stderr logs and
+	 * agent {@code toString}s.
+	 */
+	@Override
+	public String toString() {
+		StringBuilder sb =
+				new StringBuilder("overall=").append(overallLevel()).append(" {");
+		boolean first = true;
+		for (Skill s : Skill.values()) {
+			if (!first)
+				sb.append(", ");
+			sb.append(s).append('=').append(records.get(s));
+			first = false;
+		}
+		return sb.append('}').toString();
 	}
 }

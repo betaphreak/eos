@@ -166,8 +166,8 @@ public class Noble extends AbstractHousehold {
 		colony.addPersonOfInterest(this);
 		if (isNotable())
 			log.info(String.format(
-					"%s founded a noble house in the colony — notable (skill %d)",
-					getHead().fullName(), getSkill()));
+					"%s founded a noble house in the colony — notable (%s)",
+					getHead().fullName(), getHead().skills()));
 
 		this.config = config;
 		this.firms = new ArrayList<>(ownedFirms);

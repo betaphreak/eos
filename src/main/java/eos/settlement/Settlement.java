@@ -799,8 +799,8 @@ public class Settlement {
 			// the only per-death logging the colony does
 			if (agent instanceof Household h && personsOfInterest.remove(h)) {
 				log.info(h.getHead().fullName() + " ("
-						+ h.role().toLowerCase(Locale.ROOT) + ", skill "
-						+ h.getSkill() + ") died at age " + h.getAgeYears());
+						+ h.role().toLowerCase(Locale.ROOT) + ", "
+						+ h.getHead().skills() + ") died at age " + h.getAgeYears());
 			}
 			Agent replacement = null;
 			for (UnaryOperator<Agent> policy : replacementPolicies) {
