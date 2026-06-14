@@ -28,6 +28,7 @@ import eos.bank.BankConfig;
 import eos.bank.CurrencyType;
 import eos.name.Person;
 import eos.settlement.Settlement;
+import eos.skill.Skill;
 import eos.settlement.GameSession;
 import eos.io.SimLog;
 import eos.io.printer.*;
@@ -489,10 +490,23 @@ public class SimulationHarness {
 				ruler.getBank().withdraw(ruler.getID(), seed);
 
 				// grant it to the noble with the fewest holdings (spreading ownership);
-				// if the colony has no noble it stays unowned and its profit accrues
+				// if the colony has no noble, ennoble the ablest laborer to own it —
+				// deferred to end of step, once that laborer's offers have cleared so
+				// its account can be moved (see ennobleBestLaborer). Re-check for a
+				// noble inside the deferred action, so a second charter the same step
+				// (e.g. both sectors) reuses the one just raised rather than raising
+				// another from the same laborer.
 				Noble owner = leastLoadedNoble();
 				if (owner != null)
 					owner.addFirm(firm);
+				else
+					colony.scheduleEndOfStepAction(() -> {
+						Noble raised = leastLoadedNoble();
+						if (raised == null)
+							raised = ennobleBestLaborer();
+						if (raised != null)
+							raised.addFirm(firm);
+					});
 
 				// claim a slot — a live colony queues a builder growth ring and holds
 				// the firm pending, but it is economically active from its constructor
@@ -525,6 +539,63 @@ public class SimulationHarness {
 				return best;
 			}
 		});
+	}
+
+	/**
+	 * Ennoble the colony's ablest laborer household so it can own a firm chartered
+	 * when no noble yet exists: the laborer with the highest head {@link
+	 * Skill#INTELLECTUAL} (the youngest breaking a tie) is <b>elevated to a {@link
+	 * Noble}</b> banking in <b>silver</b>, adopting its head and members and carrying
+	 * its (copper) balances over into a fresh silver account; the old copper account
+	 * is then closed, so the colony's money is conserved. The laborer leaves the
+	 * workforce and the new noble joins the step loop at end of step.
+	 * <p>
+	 * Called only as a deferred end-of-step action (see the charter path), so the
+	 * laborer's buy offers have already cleared and its account is safe to move.
+	 *
+	 * @return the new noble, or {@code null} if the colony has no laborer to raise
+	 */
+	private Noble ennobleBestLaborer() {
+		Laborer best = null;
+		for (Agent a : colony.getAgents())
+			if (a instanceof Laborer lab && lab.isAlive()
+					&& (best == null || moreEnnoblable(lab, best)))
+				best = lab;
+		if (best == null)
+			return null;
+
+		// carry the household's (copper) balances over, then re-bank it in silver
+		Bank oldBank = best.getBank();
+		double checking = oldBank.getChecking(best.getID());
+		double savings = oldBank.getSavings(best.getID());
+		Member head = best.getHead();
+		Noble noble = new Noble(head, checking, savings, NobleConfig.DEFAULT,
+				getSilverBank(), colony);
+		// carry any further members (e.g. a spouse) across to the noble household
+		for (Member m : best.getMembers())
+			if (m != head)
+				noble.addMember(m);
+		// close the old account (its balances now live in the silver account — money
+		// is conserved) and retire the laborer; its surname stays in use with the
+		// noble that adopted its head, so it is not recycled
+		oldBank.closeAcct(best.getID());
+
+		// add the new noble directly (safe here — the act phase is over) so a second
+		// charter the same step sees it via leastLoadedNoble; the laborer leaves at
+		// end of step (its account already closed, so the removal's settle is a no-op)
+		colony.addAgent(noble);
+		colony.scheduleRemoveAgent(best);
+		return noble;
+	}
+
+	// the more ennoblable of two laborers: higher head INTELLECTUAL, the younger
+	// (smaller age) breaking a tie
+	private static boolean moreEnnoblable(Laborer candidate, Laborer incumbent) {
+		int ci = candidate.getHead().skills().level(Skill.INTELLECTUAL);
+		int ii = incumbent.getHead().skills().level(Skill.INTELLECTUAL);
+		if (ci != ii)
+			return ci > ii;
+		return candidate.getAgeYears() < incumbent.getAgeYears();
 	}
 
 	/**

@@ -228,6 +228,11 @@ public class Settlement {
 	private final List<Agent> agentsToAdd = new ArrayList<Agent>();
 	private final List<Agent> agentsToRemove = new ArrayList<Agent>();
 
+	// arbitrary actions deferred to the end of newDay (after this step's market
+	// clearing), e.g. ennobling a laborer to own a freshly chartered firm — which
+	// must wait until the laborer's offers have cleared before its account can move.
+	private final List<Runnable> endOfStepActions = new ArrayList<Runnable>();
+
 	// the colony's dynamic firm provisioning service, if installed (see FirmFactory
 	// and the ruler's monthly sector review); null leaves the firm count fixed.
 	@Getter
@@ -607,6 +612,21 @@ public class Settlement {
 	}
 
 	/**
+	 * Schedule <tt>action</tt> to run at the <em>end</em> of the current step, after
+	 * this step's market clearing and printing (and so after every agent's offers
+	 * have settled). Used for changes that must wait for the market to clear — e.g.
+	 * ennobling a laborer, whose account can only be moved once its buy offers have
+	 * been paid. The action may itself call {@link #scheduleAddAgent}/{@link
+	 * #scheduleRemoveAgent}; those are processed immediately after.
+	 *
+	 * @param action
+	 *            the deferred action
+	 */
+	public void scheduleEndOfStepAction(Runnable action) {
+		endOfStepActions.add(action);
+	}
+
+	/**
 	 * Free the build slot occupied by <tt>occupant</tt> (or drop it from the pending
 	 * queue if it was awaiting a slot a growing colony had not yet built). A no-op
 	 * if the occupant holds no slot.
@@ -954,6 +974,16 @@ public class Settlement {
 	// account into equity). Run at the end of newDay, after this step's market
 	// clearing and printing.
 	private void applyScheduledAgentChanges() {
+		// run any deferred end-of-step actions first (e.g. ennobling a laborer to own
+		// a freshly chartered firm); they may schedule agent adds/removes themselves,
+		// which the two loops below then apply
+		if (!endOfStepActions.isEmpty()) {
+			// copy first, so an action that schedules another does not disturb this pass
+			List<Runnable> due = new ArrayList<Runnable>(endOfStepActions);
+			endOfStepActions.clear();
+			for (Runnable action : due)
+				action.run();
+		}
 		if (!agentsToAdd.isEmpty()) {
 			agents.addAll(agentsToAdd);
 			agentsToAdd.clear();
@@ -962,8 +992,13 @@ public class Settlement {
 			for (Agent a : agentsToRemove) {
 				agents.remove(a);
 				vacateSlot(a);
-				// fold the firm's net worth into the bank's equity and close its
-				// account, exactly as a deceased household's estate is settled
+				// a Household leaving this way (e.g. a laborer ennobled into a noble)
+				// is no longer a person of interest; its successor re-registers itself
+				if (a instanceof Household h)
+					personsOfInterest.remove(h);
+				// fold the agent's net worth into the bank's equity and close its
+				// account, as a deceased estate is settled (a no-op if the caller has
+				// already closed the account, e.g. a promoted laborer's)
 				a.getBank().inheritAndClose(a.getID());
 			}
 			agentsToRemove.clear();

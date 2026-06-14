@@ -151,6 +151,51 @@ public class Noble extends AbstractHousehold {
 	}
 
 	/**
+	 * Create a noble by <b>elevating an existing commoner household</b> — e.g. a
+	 * laborer the colony's dynamic firm provisioning ennobles to own a chartered firm
+	 * when the colony has no noble yet. The new noble <b>adopts the household's
+	 * head</b> (the caller transfers any further members afterwards), keeping its
+	 * identity — name, skills and age — so the rise is meritocratic, and opens a fresh
+	 * account at <tt>bank</tt> (the silver bank) with the balances carried over from
+	 * its former commoner account. It owns no firms or banks at first (the caller
+	 * grants it the firm it was raised to own).
+	 *
+	 * @param head
+	 *            the elevated household's head, adopted as this noble's head
+	 * @param initCheckingBal
+	 *            checking balance carried over from the former account
+	 * @param initSavingsBal
+	 *            savings balance carried over (negative for a loan)
+	 * @param config
+	 *            tunable model parameters
+	 * @param bank
+	 *            the (silver) bank at which this noble now holds its accounts
+	 * @param colony
+	 *            the colony this noble belongs to
+	 */
+	public Noble(Member head, double initCheckingBal, double initSavingsBal,
+			NobleConfig config, Bank bank, Settlement colony) {
+		super(initCheckingBal, initSavingsBal, false, head, bank, colony);
+
+		// the new noble is a person of interest the colony tracks
+		colony.addPersonOfInterest(this);
+		log.info(String.format(
+				"%s was ennobled — risen from commoner to noble, now banking in %s.",
+				getHead().fullName(), bank.getCurrency()));
+
+		this.config = config;
+		this.firms = new ArrayList<>();
+		this.banks = new ArrayList<>();
+		this.enjoyment = new Enjoyment(0);
+		this.necessity = new Necessity(0);
+		this.eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
+		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
+		this.nobleLaborMkt =
+				(LaborMarket) colony.getMarket(StrategicFirm.LABOR_MARKET);
+		postNobleLabor();
+	}
+
+	/**
 	 * Shared constructor. Opens the account either as a fresh endowment
 	 * ({@code inherited == false}) or out of the bank's equity
 	 * ({@code inherited == true}, for a successor noble), then initializes the
