@@ -140,10 +140,13 @@ mvn exec:exec -Dsim.main=eos.simulation.HeterogeneousEconomy   # heterogeneous a
 mvn exec:exec -Dsim.main=eos.simulation.MeritocraticEconomy    # pool promotion + 3 currencies
 ```
 
-Every standard colony carries a default **export sector** (a strategic firm
-staffed by nobles, whose earnings build the holding bank's equity) and a default
-**ruler** banking in gold. Each is **founded with a single enjoyment and a single
-necessity firm**, and the ruler's **dynamic firm provisioning** (on by default for
+Every standard colony carries a default **export sector** (a strategic firm whose
+earnings build the holding bank's equity) and a default **ruler** banking in gold.
+**No nobles are created at founding**: the export aristocracy is **raised from the
+laborers by ennoblement** (the ablest rise into silver-banking nobles, up to a
+target) over the first weeks, and the **ruler works the strategic firm** itself
+meanwhile so it is never unstaffed. Each colony is **founded with a single enjoyment
+and a single necessity firm**, and the ruler's **dynamic firm provisioning** (on by default for
 every ruler-bearing colony) charters and dissolves consumer-good firms each month
 so the count tracks demand. The entry points are:
 

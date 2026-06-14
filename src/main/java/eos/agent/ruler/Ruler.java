@@ -9,6 +9,7 @@ import eos.agent.firm.ConsumerGoodFirm;
 import eos.agent.firm.EFirm;
 import eos.agent.firm.FirmFactory;
 import eos.agent.firm.NFirm;
+import eos.agent.firm.StrategicFirm;
 import eos.agent.noble.Noble;
 import eos.bank.Account;
 import eos.bank.Bank;
@@ -18,6 +19,7 @@ import eos.good.Necessity;
 import eos.good.RationSize;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Demand;
+import eos.market.LaborMarket;
 import eos.settlement.Settlement;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -97,6 +99,13 @@ public class Ruler extends AbstractHousehold {
 	private final ConsumerGoodMarket eMkt;
 	private final ConsumerGoodMarket nMkt;
 
+	// the noble-only labor market the strategic export firm employs from, or null if
+	// the colony has no export sector. The ruler works the strategic firm every step
+	// (its head's INTELLECTUAL drives the output, like a noble's), so the export
+	// sector is never unstaffed — the aristocracy that normally staffs it is built up
+	// over the first weeks by ennoblement (see SimulationHarness.topUpAristocracy).
+	private final LaborMarket nobleLaborMkt;
+
 	// enjoyment spending ($) in the last step
 	@Getter
 	private double consumption;
@@ -166,6 +175,8 @@ public class Ruler extends AbstractHousehold {
 		this.necessity = new Necessity(0);
 		this.eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
 		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
+		this.nobleLaborMkt =
+				(LaborMarket) colony.getMarket(StrategicFirm.LABOR_MARKET);
 		setName("Ruler");
 
 		// the ruler is always a person of interest the colony tracks
@@ -191,8 +202,8 @@ public class Ruler extends AbstractHousehold {
 		// tax the colony's accumulated wealth into the treasury before spending
 		collectTaxes();
 
-		// once a month, review each consumer-good sector for under- or
-		// over-provisioning (log-only for now — see reviewSectors)
+		// once a month, review each consumer-good sector and charter/dissolve firms
+		// so their count tracks demand (see reviewSectors)
 		if (getColony().getDate().getDayOfMonth() == 1)
 			reviewSectors();
 
@@ -226,8 +237,18 @@ public class Ruler extends AbstractHousehold {
 		// first of all, from its own wards — see WeddingMarket)
 		seekSpouseIfSingle();
 
-		// the ruler earns no wage/dividends; tax revenue enters via collectTaxes
-		// (as OTHER, not income), so reset the income accumulators each step.
+		// work the strategic export firm: post the ruler to the noble-only labor
+		// market every step (its head's INTELLECTUAL drives its export output, exactly
+		// like a noble's — see LaborMarket), so the export sector is never unstaffed
+		// while the aristocracy is still being built up by ennoblement. A no-op for a
+		// colony with no export sector. The export wage credits the gold treasury (FX
+		// fee fires); the ruler does not draw dividends, and its reported income stays
+		// 0 (getIncome) — the wage simply tops up the treasury.
+		if (nobleLaborMkt != null)
+			nobleLaborMkt.addEmployee(getID(), bank, 1.0, getHead().skills());
+
+		// tax revenue enters via collectTaxes (as OTHER, not income); reset the income
+		// accumulators each step (the export wage is left to settle into the treasury).
 		resetIncomeAccumulators(acct);
 	}
 

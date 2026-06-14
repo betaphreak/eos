@@ -15,8 +15,9 @@ import org.junit.jupiter.api.TestFactory;
  * horizon without tripping an {@code -ea} invariant and then <b>collapses</b> once
  * the reserve drains (the {@code -ea} checks in the agents/markets run throughout,
  * so a clean run exercises them). Each case asserts its expected bank count (the
- * banks persist past the colony's death) and that the colony ended collapsed. The
- * open/aristocratic/strategic runs keep their own dedicated tests.
+ * banks persist past the colony's death) and that the colony ended collapsed. Every
+ * colony now also populates the silver bank, since its export nobles are raised by
+ * ennoblement (and re-bank in silver). The open run keeps its own dedicated test.
  */
 class ClosedColonySmokeTest {
 
@@ -26,11 +27,12 @@ class ClosedColonySmokeTest {
 
 	private static Stream<Case> simulations() {
 		return Stream.of(
-				// 2 banks: the commoner copper bank and the ruler's gold bank
-				new Case("HomogeneousEconomy", HomogeneousEconomy::run, 2),
-				new Case("HeterogeneousEconomy", HeterogeneousEconomy::run, 2),
-				// 3 banks: the two commoner copper banks plus the ruler's gold bank
-				new Case("TwoBankEconomy", TwoBankEconomy::run, 3));
+				// 3 banks: the commoner copper bank, the silver bank the export nobles
+				// (raised by ennoblement) hold, and the ruler's gold bank
+				new Case("HomogeneousEconomy", HomogeneousEconomy::run, 3),
+				new Case("HeterogeneousEconomy", HeterogeneousEconomy::run, 3),
+				// 4 banks: the two commoner copper banks plus the silver and gold banks
+				new Case("TwoBankEconomy", TwoBankEconomy::run, 4));
 	}
 
 	@TestFactory

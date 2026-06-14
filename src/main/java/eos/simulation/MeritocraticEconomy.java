@@ -1,11 +1,8 @@
 package eos.simulation;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import eos.agent.firm.StrategicFirmConfig;
-import eos.agent.noble.Noble;
-import eos.agent.noble.NobleConfig;
 import eos.bank.Bank;
 
 /**
@@ -64,12 +61,12 @@ public class MeritocraticEconomy {
 		// nobles in silver, the ruler in gold. The strategic firm banks copper (its
 		// export earnings accrue to copper equity), so the nobles' export wages cross
 		// copper -> silver and the silver money-changer skims its FX fee.
+		// reserve the silver tier the export nobles will bank in (ordering: copper,
+		// silver, gold); the nobles themselves are raised from the laborers by
+		// ennoblement up to cfg.targetNobles() (see createDefaultRuler)
 		Bank silver = h.getSilverBank();
 		h.createNobleLaborMarket();
 		h.createStrategicFirm(bank, StrategicFirmConfig.DEFAULT);
-		for (int n = 0; n < SimulationHarness.DEFAULT_NUM_NOBLES; n++)
-			h.getColony().addAgent(new Noble(0, SimulationHarness.DEFAULT_NOBLE_SAVINGS,
-					List.of(), List.of(), NobleConfig.DEFAULT, silver, h.getColony()));
 		h.primeNobleLabor();
 		// the ruler (founding cash) and the pool precede the labor force, which the
 		// ruler founds and replaces by promotion from the pool

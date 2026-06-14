@@ -1,12 +1,8 @@
 package eos.simulation;
 
-import java.util.List;
-
 import eos.agent.firm.StrategicFirmConfig;
-import eos.agent.noble.Noble;
 import eos.agent.noble.NobleConfig;
 import eos.bank.Bank;
-import eos.bank.CurrencyType;
 import eos.io.SimLog;
 import eos.io.printer.NoblesPrinter;
 import eos.io.printer.PersonsOfInterestPrinter;
@@ -40,7 +36,8 @@ import eos.settlement.Settlement;
  * minimum needed to make the strategic sector function — tune {@link #NUM_NOBLES}
  * or drop the strategic firm to remove it.)
  * <p>
- * Each noble opens with 10 silver and <b>stockpiles a necessity reserve</b> of
+ * The nobles (raised from laborers by ennoblement) <b>stockpile a necessity
+ * reserve</b> of
  * {@value #NECESSITY_RESERVE_DAYS} days of the whole population's consumption
  * (collectively) — a reserve for a later feature to draw on. Building that reserve
  * needs spare necessity output; rather than a fixed firm split, each colony now
@@ -82,9 +79,6 @@ public class HanseaticEconomy {
 	 */
 	static final int NUM_NOBLES = 5;
 
-	/** Each noble's opening fortune, in <b>silver</b> (held in copper internally). */
-	static final double NOBLE_INITIAL_SILVER = 10;
-
 	/**
 	 * Fraction of each colony's seeded pool ({@code 2 * }{@link #NUM_LABORERS}
 	 * peasants) the ruler promotes into laborer households on day 0. Both colonies replace dead
@@ -125,6 +119,7 @@ public class HanseaticEconomy {
 		SimulationConfig base = SimulationConfig.DEFAULT.toBuilder()
 				.peasantPoolSize(2 * NUM_LABORERS)
 				.promotionRatio(PROMOTION_RATIO)
+				.targetNobles(NUM_NOBLES)
 				.build();
 		SimulationConfig lubeckCfg = base.toBuilder()
 				.settlementName("Lübeck Altstadt")
@@ -190,18 +185,14 @@ public class HanseaticEconomy {
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createStrategicFirm(copper, StrategicFirmConfig.DEFAULT);
 
-		// the nobles who work the export sector (the dynamic provisioning may later
-		// grant them chartered consumer firms), opening with 10 silver and stockpiling
-		// a necessity reserve (NOBLE_CONFIG)
-		for (int n = 0; n < NUM_NOBLES; n++)
-			colony.addAgent(new Noble(0,
-					CurrencyType.SILVER.toCopper(NOBLE_INITIAL_SILVER),
-					List.of(), List.of(), NOBLE_CONFIG, silver, colony));
-		// a same-dynasty successor is produced by the colony's built-in household-
-		// succession policy (see Noble.successor), which reuses each noble's own
-		// NobleConfig — so the stockpiling reserve carries across generations
+		// the nobles who work the export sector are raised from the laborers by
+		// ennoblement (up to NUM_NOBLES — see createDefaultRuler / topUpAristocracy);
+		// they stockpile a necessity reserve (NOBLE_CONFIG), and a same-dynasty
+		// successor inherits that config, so the reserve carries across generations.
+		// The ruler works the strategic firm meanwhile, so it is never unstaffed.
+		h.setNobleConfig(NOBLE_CONFIG);
 
-		// clear the noble labor market once so the export firm has workers in step 0
+		// clear the (still empty) noble labor market once before the run
 		h.primeNobleLabor();
 
 		// the ruler (founding cash) and the pool precede the labor force, which the

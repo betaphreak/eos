@@ -192,7 +192,11 @@ public class Noble extends AbstractHousehold {
 		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
 		this.nobleLaborMkt =
 				(LaborMarket) colony.getMarket(StrategicFirm.LABOR_MARKET);
-		postNobleLabor();
+		// this noble works the strategic firm if one exists, exactly like any other —
+		// but it is created mid-run, so (unlike a founding noble, whose constructor
+		// posting is consumed by the pre-run primeNobleLabor clear) it does NOT post
+		// labor here: it posts in its first act() instead, which avoids a duplicate
+		// posting that would otherwise have it hired twice on its first working step.
 	}
 
 	/**
@@ -299,8 +303,10 @@ public class Noble extends AbstractHousehold {
 
 		// spend a steady fraction of liquid wealth on consumer goods so dividend
 		// income flows back into the markets; deposit the remainder (a negative
-		// remainder draws on savings to fund consumption, as for a laborer)
-		consumption = config.consumptionRate() * (checking + savings);
+		// remainder draws on savings to fund consumption, as for a laborer). Floor the
+		// wealth at 0 so a noble in debt (e.g. one just ennobled from an indebted
+		// laborer) spends nothing rather than posting a negative consumption demand.
+		consumption = config.consumptionRate() * Math.max(0, checking + savings);
 		nConsumption = consumption * config.necessityShare();
 		eConsumption = consumption - nConsumption;
 		bank.deposit(getID(), checking - consumption);

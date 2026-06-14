@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 import eos.agent.Agent;
+import eos.agent.firm.StrategicFirmConfig;
 import eos.agent.noble.Noble;
 import eos.bank.Bank;
 import eos.bank.CurrencyType;
@@ -56,6 +57,47 @@ class LaborerEnnoblementTest {
 				"an ennobled household re-banks in silver");
 		assertTrue(raised.getFirmCount() >= 1,
 				"the new noble owns the firm it was raised to own");
+	}
+
+	/**
+	 * When the colony <em>does</em> have a strategic export firm (but still no
+	 * initial nobles), the laborer ennobled to own a chartered firm also <b>works
+	 * the strategic firm</b> — it joins the noble-only labor market like any noble
+	 * and earns an export wage on top of its dividends.
+	 */
+	@Test
+	void anEnnobledNobleAlsoWorksTheStrategicFirmWhenOneExists() {
+		SimulationConfig cfg = SimulationConfig.DEFAULT;
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		Settlement colony = h.getColony();
+		h.createMarkets();
+		Bank copper = h.getCopperBank();
+		// a strategic export sector — the noble-only labor market and the export firm
+		// — but deliberately NO initial nobles, so a chartered firm has no owner and
+		// the ablest laborer is ennobled to both own it and staff the export firm
+		h.createNobleLaborMarket();
+		h.createFirms(copper, i -> copper,
+				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+		h.createStrategicFirm(copper, StrategicFirmConfig.DEFAULT);
+		h.primeNobleLabor();
+		h.createDefaultRuler();
+		h.createDefaultPeasantPool();
+		h.foundLaborersFromPool(i -> copper, i -> 15);
+
+		assertEquals(0, countNobles(colony), "colony should start with no nobles");
+
+		colony.run(150);
+
+		Noble raised = firstNoble(colony);
+		assertNotNull(raised, "a laborer should have been ennobled");
+		assertEquals(CurrencyType.SILVER, raised.getBank().getCurrency(),
+				"an ennobled household re-banks in silver");
+		assertTrue(raised.getFirmCount() >= 1, "the new noble owns its chartered firm");
+		// the payoff: it also works the export sector, so it draws a wage from the
+		// strategic firm (it never starves regardless, but here it has export income)
+		assertTrue(raised.getWage() > 0,
+				"the ennobled noble should earn an export wage from the strategic firm, got "
+						+ raised.getWage());
 	}
 
 	private static long countNobles(Settlement colony) {

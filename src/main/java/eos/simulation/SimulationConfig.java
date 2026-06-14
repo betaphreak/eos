@@ -71,6 +71,12 @@ import lombok.Builder;
  *                     laborer households, and replaces later deaths from the
  *                     remaining reserve until it drains (see {@link
  *                     SimulationHarness#foundLaborersFromPool})
+ * @param targetNobles the size of the aristocracy the colony maintains by
+ *                     ennoblement. No nobles are created at founding; the ruler
+ *                     elevates the ablest laborers (highest INTELLECTUAL) into
+ *                     silver-banking nobles up to this count over the first weeks,
+ *                     working the strategic firm itself meanwhile so it is never
+ *                     unstaffed. Default {@code 5}; does not scale with colony size
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -97,7 +103,8 @@ public record SimulationConfig(
 		double bankProfitTaxRate,
 		double nobleIncomeTaxRate,
 		int peasantPoolSize,
-		double promotionRatio) {
+		double promotionRatio,
+		int targetNobles) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -173,5 +180,6 @@ public record SimulationConfig(
 			0.05,                                  // bankProfitTaxRate
 			0.02,                                  // nobleIncomeTaxRate
 			900,                                   // peasantPoolSize
-			0.45);                                 // promotionRatio
+			0.45,                                  // promotionRatio
+			5);                                    // targetNobles
 }

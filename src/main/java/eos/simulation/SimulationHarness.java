@@ -1,5 +1,6 @@
 package eos.simulation;
 
+import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntFunction;
@@ -123,6 +124,12 @@ public class SimulationHarness {
 	// Replace via setWeddingConfig before createMarkets (e.g. capacity 0 to
 	// disable weddings in a test that isolates another mechanism).
 	private WeddingConfig weddingConfig = WeddingConfig.DEFAULT;
+
+	// parameters for nobles raised by ennoblement (the export aristocracy is now
+	// built from laborers, not created up front); defaults to the canonical values.
+	// Replace via setNobleConfig before createDefaultRuler (e.g. to give a colony's
+	// nobles a necessity reserve, as HanseaticEconomy does).
+	private NobleConfig nobleConfig = NobleConfig.DEFAULT;
 
 	// necessity (food) firms run a higher technology coefficient than the other
 	// consumer firms: because production stops on the weekly day of rest and on
@@ -286,6 +293,18 @@ public class SimulationHarness {
 	}
 
 	/**
+	 * Override the parameters of nobles raised by ennoblement (default {@link
+	 * NobleConfig#DEFAULT}). Must be called before {@link #createDefaultRuler()} (which
+	 * registers the aristocracy top-up) to take effect.
+	 *
+	 * @param nobleConfig
+	 *            the parameters for ennobled nobles
+	 */
+	public void setNobleConfig(NobleConfig nobleConfig) {
+		this.nobleConfig = nobleConfig;
+	}
+
+	/**
 	 * Create the capital firm (banking at <tt>capitalFirmBank</tt>) and the
 	 * consumer-good firms, then add them to the colony. The bank and initial
 	 * savings of each consumer-good firm are supplied by the caller (by index);
@@ -381,31 +400,25 @@ public class SimulationHarness {
 	}
 
 	/**
-	 * Give the colony its default <b>export sector</b>, so every settlement has
-	 * one: the noble-only labor market, the single {@link StrategicFirm} (banking
-	 * at <tt>bank</tt>, into whose equity its export earnings flow), the {@value
-	 * #DEFAULT_NUM_NOBLES} worker-nobles that staff it (banking at the same
-	 * <tt>bank</tt>), and the primed noble labor market. Call this after {@link
-	 * #createFirms} and <em>before</em> {@link #createLaborers}.
-	 * <p>
-	 * This creates fresh nobles. A colony that already has its own nobles should
-	 * instead call the granular {@link #createNobleLaborMarket()} / {@link
-	 * #createStrategicFirm} before its nobles and {@link #primeNobleLabor()} after
-	 * them — its existing nobles then staff the export firm (a {@link Noble}
-	 * automatically works any noble labor market present).
+	 * Give the colony its default <b>export sector</b>, so every settlement has one:
+	 * the noble-only labor market and the single {@link StrategicFirm} (banking at
+	 * <tt>bank</tt>, into whose equity its export earnings flow). <b>No nobles are
+	 * created up front</b> — the ruler works the strategic firm from day 0 (so it is
+	 * never unstaffed) and the ablest laborers are ennobled up to {@code
+	 * cfg.targetNobles()} over the first weeks (see {@link #createDefaultRuler()} /
+	 * {@code topUpAristocracy}). Call this after {@link #createFirms} and
+	 * <em>before</em> {@link #createDefaultRuler()}.
 	 *
 	 * @param bank
-	 *            the bank at which the export firm and its nobles hold accounts
+	 *            the bank at which the export firm holds its accounts
 	 */
 	public void createDefaultStrategicSector(Bank bank) {
 		createNobleLaborMarket();
 		createStrategicFirm(bank, StrategicFirmConfig.DEFAULT);
-		for (int n = 0; n < DEFAULT_NUM_NOBLES; n++)
-			colony.addAgent(new Noble(0, DEFAULT_NOBLE_SAVINGS, List.of(),
-					List.of(), NobleConfig.DEFAULT, bank, colony));
-		// a noble's same-dynasty successor (which keeps working the export sector)
-		// is produced by the colony's built-in household-succession policy (see
-		// Noble.successor), so no rule is wired here
+		// the nobles who staff the export firm are raised from the laborers by
+		// ennoblement (they bank in silver); reserve the silver tier now so the banks
+		// stay ordered copper, silver, gold even though no noble exists yet
+		getSilverBank();
 		primeNobleLabor();
 	}
 
@@ -440,6 +453,13 @@ public class SimulationHarness {
 		// (the firms were created with a representative bank captured in createFirms)
 		if (charteredFirmBank != null)
 			enableDynamicFirmProvisioning(charteredFirmBank);
+
+		// a colony with an export sector staffs it by ennoblement: while it has fewer
+		// than cfg.targetNobles() living nobles, the ruler raises the ablest laborer
+		// into a silver-banking noble (the ruler works the strategic firm meanwhile —
+		// see Ruler.act — so it is never unstaffed)
+		if (colony.getMarket(StrategicFirm.LABOR_MARKET) != null)
+			colony.addStepAction(this::topUpAristocracy);
 		return gold;
 	}
 
@@ -568,7 +588,7 @@ public class SimulationHarness {
 		double checking = oldBank.getChecking(best.getID());
 		double savings = oldBank.getSavings(best.getID());
 		Member head = best.getHead();
-		Noble noble = new Noble(head, checking, savings, NobleConfig.DEFAULT,
+		Noble noble = new Noble(head, checking, savings, nobleConfig,
 				getSilverBank(), colony);
 		// carry any further members (e.g. a spouse) across to the noble household
 		for (Member m : best.getMembers())
@@ -585,6 +605,27 @@ public class SimulationHarness {
 		colony.addAgent(noble);
 		colony.scheduleRemoveAgent(best);
 		return noble;
+	}
+
+	/**
+	 * Maintain the aristocracy at {@code cfg.targetNobles()} by ennoblement: a step
+	 * action (registered by {@link #createDefaultRuler()} for colonies with an export
+	 * sector) that, once a week, raises the ablest laborer into a noble while the
+	 * colony has too few. Weekly so the class forms gradually over the first weeks
+	 * (the ruler staffs the export firm meanwhile). The actual ennoblement is deferred
+	 * to end of step (the laborer's offers must clear before its account moves).
+	 */
+	private void topUpAristocracy() {
+		if (colony.getDate().getDayOfWeek() != DayOfWeek.MONDAY)
+			return;
+		long nobles = colony.getAgents().stream()
+				.filter(a -> a instanceof Noble n && n.isAlive()).count();
+		if (nobles >= cfg.targetNobles())
+			return;
+		boolean hasLaborer = colony.getAgents().stream()
+				.anyMatch(a -> a instanceof Laborer l && l.isAlive());
+		if (hasLaborer)
+			colony.scheduleEndOfStepAction(this::ennobleBestLaborer);
 	}
 
 	// the more ennoblable of two laborers: higher head INTELLECTUAL, the younger
