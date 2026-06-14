@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import eos.agent.Agent;
 import eos.bank.Bank;
 import eos.settlement.Settlement;
+import eos.util.Averager;
 import lombok.extern.java.Log;
 
 /**
@@ -21,6 +22,11 @@ public class ConsumerGoodMarket extends Market {
 
 	// price is flagged once it exceeds this multiple of its initial level
 	private static final int PRICE_SKYROCKET_FACTOR = 10;
+
+	// window (days) over which the unmet-demand fraction is smoothed. Long enough
+	// to span the rest-day calendar so a single closed day's zero-supply spike does
+	// not read as a chronic shortage — the signal the ruler's sector review reads.
+	private static final int RATIONING_WIN = 30;
 
 	/**********************************************************/
 
@@ -56,6 +62,17 @@ public class ConsumerGoodMarket extends Market {
 
 	// total supply of good
 	private double mktSupply;
+
+	// total demand at the clearing price (the matched demand curve, not just the
+	// filled volume), recorded so the unmet-demand fraction can be derived
+	private double mktDemand;
+
+	// smoothed fraction of demand left unfilled because supply fell short
+	// (max(0, (demand - supply) / demand)), averaged over RATIONING_WIN days. A
+	// persistent positive value means the sector's firms cannot meet demand — the
+	// entry signal for the ruler's dynamic-firm review (see Ruler.reviewSectors).
+	private final Averager unmetAvger = new Averager(RATIONING_WIN);
+	private double smoothedUnmet;
 
 	// whether the price is currently flagged as skyrocketed
 	private boolean priceSkyrocketed = false;
@@ -215,6 +232,13 @@ public class ConsumerGoodMarket extends Market {
 		mktGoodVol = vol;
 		mktMoneyVol = price * mktGoodVol;
 		mktSupply = supply;
+		mktDemand = demand;
+
+		// the fraction of this step's demand that supply could not cover; smoothed
+		// over the rest-day calendar so closed-day supply gaps do not masquerade as
+		// a chronic shortage. Pure bookkeeping — moves no money, draws no randomness.
+		double unmet = demand > 0 ? Math.max(0, (demand - supply) / demand) : 0;
+		smoothedUnmet = unmetAvger.update(unmet);
 
 		buyOffers.clear();
 		sellOffers.clear();
@@ -249,11 +273,34 @@ public class ConsumerGoodMarket extends Market {
 
 	/**
 	 * Return total supply
-	 * 
+	 *
 	 * @return total supply
 	 */
 	public double getLastMktSupply() {
 		return mktSupply;
+	}
+
+	/**
+	 * Return the total demand at the last clearing price (the matched demand, which
+	 * may exceed the filled volume when supply fell short).
+	 *
+	 * @return total demand at the last clearing price
+	 */
+	public double getLastMktDemand() {
+		return mktDemand;
+	}
+
+	/**
+	 * Return the smoothed fraction of demand left unfilled for want of supply,
+	 * averaged over {@link #RATIONING_WIN} days — {@code 0} when supply met demand,
+	 * approaching {@code 1} as the shortfall grows. This is the "demand for the
+	 * product exceeds what the current firms can supply" signal the ruler's dynamic
+	 * firm review reads to decide whether to charter another firm in the sector.
+	 *
+	 * @return smoothed unmet-demand fraction in {@code [0, 1)}
+	 */
+	public double getSmoothedUnmetFraction() {
+		return smoothedUnmet;
 	}
 
 	@Override

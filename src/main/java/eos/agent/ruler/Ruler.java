@@ -1,7 +1,13 @@
 package eos.agent.ruler;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import eos.agent.AbstractHousehold;
 import eos.agent.Agent;
+import eos.agent.firm.ConsumerGoodFirm;
+import eos.agent.firm.EFirm;
+import eos.agent.firm.NFirm;
 import eos.agent.noble.Noble;
 import eos.bank.Account;
 import eos.bank.Bank;
@@ -51,6 +57,19 @@ public class Ruler extends AbstractHousehold {
 
 	// days of its GOURMET ration the ruler keeps as a stocked larder
 	private static final int NECESSITY_RESERVE_DAYS = 30;
+
+	// --- dynamic firm provisioning thresholds (see reviewSectors) ---
+	// charter another firm once this fraction of demand goes chronically unfilled
+	private static final double OPEN_UNMET_THRESHOLD = 0.05;
+	// necessity is inelastic (every mouth eats daily), so react to a smaller
+	// shortfall — the colony errs toward over-provisioning food
+	private static final double INELASTIC_OPEN_UNMET_THRESHOLD = 0.02;
+	// below this unmet fraction the sector is effectively glutted
+	private static final double CLOSE_UNMET_THRESHOLD = 0.005;
+	// only dissolve a firm running below this capacity utilization
+	private static final double CLOSE_UTIL_THRESHOLD = 0.6;
+	// never cut the necessity sector below this many firms (food is existential)
+	private static final int MIN_NECESSITY_FIRMS = 1;
 
 	// the enjoyment and necessity the ruler buys, and the markets it buys from
 	private final Enjoyment enjoyment;
@@ -152,6 +171,11 @@ public class Ruler extends AbstractHousehold {
 		// tax the colony's accumulated wealth into the treasury before spending
 		collectTaxes();
 
+		// once a month, review each consumer-good sector for under- or
+		// over-provisioning (log-only for now — see reviewSectors)
+		if (getColony().getDate().getDayOfMonth() == 1)
+			reviewSectors();
+
 		// a sovereign indulgence: spend a small fraction of the treasury on
 		// enjoyment, posting a buy offer the market settles in clear(). Buying
 		// copper-quoted enjoyment converts gold -> copper, so the gold bank skims
@@ -227,6 +251,93 @@ public class Ruler extends AbstractHousehold {
 						taxCollected += tax;
 					}
 				}
+			}
+		}
+	}
+
+	/**
+	 * <b>Dynamic firm provisioning (trigger wired; actions still log-only).</b>
+	 * Survey each consumer-good sector and decide whether the colony is short of
+	 * firms (chronic unmet demand while the sector is profitable → charter another)
+	 * or carrying idle capacity (no shortage plus a money-losing, under-used firm →
+	 * dissolve the weakest). Necessity, whose demand is inelastic, is reviewed on a
+	 * lower shortage threshold and never cut below {@link #MIN_NECESSITY_FIRMS}, so
+	 * the colony errs toward over- rather than under-provisioning food.
+	 * <p>
+	 * Called once a month — gated on the first of the month in {@link #act()} — a
+	 * cadence slow relative to the production and revenue-smoothing lags, so reading
+	 * the signal does not provoke an entry/exit hog cycle. For now it only
+	 * <em>logs</em> the decision it would take; the actual chartering (ruler funds
+	 * seed capital from the treasury, gold→copper firing the FX fee, then assigns
+	 * the firm to a noble owner via the existing dividend channel and {@link
+	 * Settlement#claimSlot}, which queues a builder ring when the colony is full)
+	 * and dissolution (liquidate capital, lay off, vacate the slot) are the next
+	 * step. Until those land it moves no money and draws no randomness, so runs stay
+	 * byte-identical; it is a no-op for a colony with no consumer firms. Reads the
+	 * demand signal from {@link ConsumerGoodMarket#getSmoothedUnmetFraction()}.
+	 */
+	public void reviewSectors() {
+		List<ConsumerGoodFirm> eFirms = new ArrayList<>();
+		List<ConsumerGoodFirm> nFirms = new ArrayList<>();
+		for (Agent a : getColony().getAgents()) {
+			if (a instanceof EFirm f && f.isAlive())
+				eFirms.add(f);
+			else if (a instanceof NFirm f && f.isAlive())
+				nFirms.add(f);
+		}
+		reviewSector("enjoyment", eMkt, eFirms, OPEN_UNMET_THRESHOLD, 0);
+		reviewSector("necessity", nMkt, nFirms, INELASTIC_OPEN_UNMET_THRESHOLD,
+				MIN_NECESSITY_FIRMS);
+	}
+
+	/**
+	 * Review one consumer-good sector and log the firm it would open or close. The
+	 * entry test pairs a demand signal (smoothed unmet fraction past
+	 * {@code openThreshold}) with a viability gate (the sector currently turns a
+	 * profit, so a new entrant can be both filled and sustained); the exit test
+	 * fires only in a glut and targets the weakest loss-making, under-utilized firm,
+	 * never cutting below {@code minFirms}.
+	 * <p>
+	 * The profit gate is a stand-in for the design's return-on-capital-vs-interest
+	 * margin — exposing each firm's capital value would let it compare ROC to
+	 * {@code getBank().getLoanIR()} directly; sector profit uses only existing
+	 * getters and keeps this skeleton self-contained.
+	 */
+	private void reviewSector(String label, ConsumerGoodMarket mkt,
+			List<ConsumerGoodFirm> firms, double openThreshold, int minFirms) {
+		if (firms.isEmpty())
+			return;
+		double unmet = mkt.getSmoothedUnmetFraction();
+		double sectorProfit = 0;
+		for (ConsumerGoodFirm f : firms)
+			sectorProfit += f.getProfit();
+
+		// short of capacity: demand persistently outruns supply while the sector is
+		// still profitable, so another firm can both be filled and survive
+		if (unmet > openThreshold && sectorProfit > 0) {
+			log.info(String.format(
+					"sector review: would charter a new %s firm (unmet=%.1f%% sectorProfit=%.1f over %d firms)",
+					label, unmet * 100, sectorProfit, firms.size()));
+			return;
+		}
+
+		// glutted: no shortage to speak of — dissolve the weakest firm if it is
+		// losing money and running well below capacity (keeping the sector floor)
+		if (unmet < CLOSE_UNMET_THRESHOLD && firms.size() > minFirms) {
+			ConsumerGoodFirm weakest = null;
+			for (ConsumerGoodFirm f : firms) {
+				double util = f.getCapacity() > 0 ? f.getOutput() / f.getCapacity() : 0;
+				if (f.getProfit() < 0 && util < CLOSE_UTIL_THRESHOLD
+						&& (weakest == null || f.getProfit() < weakest.getProfit()))
+					weakest = f;
+			}
+			if (weakest != null) {
+				double util = weakest.getCapacity() > 0
+						? weakest.getOutput() / weakest.getCapacity() : 0;
+				log.info(String.format(
+						"sector review: would dissolve %s (profit=%.1f util=%.0f%%); %s glut, unmet=%.1f%%",
+						weakest.getName(), weakest.getProfit(), util * 100, label,
+						unmet * 100));
 			}
 		}
 	}
