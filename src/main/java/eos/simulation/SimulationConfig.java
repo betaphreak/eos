@@ -58,6 +58,9 @@ import lombok.Builder;
  * @param nobleIncomeTaxRate fraction of each noble's per-step income the Ruler
  *                     skims into its treasury each step (the noble income tax);
  *                     0 disables it (the default, pending calibration)
+ * @param peasantReserveSize number of peasants the colony's pool is seeded with
+ *                     (the standing reserve the Ruler feeds); 0 creates no pool
+ *                     (the default), so the feature is opt-in per simulation
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -82,7 +85,8 @@ public record SimulationConfig(
 		double immigrationThreshold,
 		double laborShare,
 		double bankProfitTaxRate,
-		double nobleIncomeTaxRate) {
+		double nobleIncomeTaxRate,
+		int peasantReserveSize) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -154,5 +158,6 @@ public record SimulationConfig(
 			100,                                   // immigrationThreshold
 			0.5,                                   // laborShare
 			0.05,                                  // bankProfitTaxRate
-			0.02);                                 // nobleIncomeTaxRate
+			0.02,                                  // nobleIncomeTaxRate
+			0);                                    // peasantReserveSize (no pool)
 }

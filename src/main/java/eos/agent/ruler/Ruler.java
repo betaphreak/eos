@@ -141,8 +141,11 @@ public class Ruler extends AbstractHousehold {
 		// copper-quoted enjoyment converts gold -> copper, so the gold bank skims
 		// its FX fee. Move the budget into checking (drawing on savings) so the
 		// purchase is funded; the rest stays on deposit.
+		// indulge only out of a positive treasury; a ruler driven into debt (e.g.
+		// borrowing to feed the peasant pool) stops buying luxuries rather than
+		// posting a negative demand
 		double wealth = acct.getChecking() + acct.getSavings();
-		consumption = consumptionRate * wealth;
+		consumption = consumptionRate * Math.max(0, wealth);
 		bank.deposit(getID(), acct.getChecking() - consumption);
 		eMkt.addBuyOffer(this, demandForE);
 

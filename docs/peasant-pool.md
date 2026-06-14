@@ -236,12 +236,19 @@ borrowing).
   (the Ruler's gold balance rises; the `Bank` and persons-of-interest printers show
   the take), so it can land and be calibrated first. This is the first slice of the
   broader taxation feature.
-- **Phase 2 — the pool exists and is fed.** `PeasantPool` agent + `Member` reuse,
-  seeding the **reserve** (size 10), aging/old-age death, skill decay, eating, and
-  Ruler-billed restocking with the Ruler borrowing to cover it. Add the
-  `PeasantPrinter`. No promotion yet, so founding still uses the current
-  `createLaborers` and the reserve simply drains by death. Self-contained; does not
-  touch the replacement policy.
+- **Phase 2 — the pool exists and is fed. (Implemented — `PeasantEconomy`.)**
+  `PeasantPool` agent + `Member` reuse, seeding the **reserve** (size 10),
+  aging/old-age death, skill decay, eating, and Ruler-billed restocking with the
+  Ruler borrowing to cover it, plus the `PeasantPrinter`. No promotion yet, so
+  founding still uses the current `createLaborers` and the reserve drains by old
+  age. Opt-in via `peasantReserveSize` (default 0); `PeasantEconomy` is the only
+  bundled sim that seeds a pool. Two realities that surfaced in implementation:
+  (a) the pool keeps a **food buffer** (`BUFFER_DAYS` of larder) and starves only
+  *whole* unfed peasants, so a transient market shortfall — the necessity sector
+  takes a few steps to raise output for the new mouths — draws the buffer down
+  rather than killing anyone; (b) a Ruler driven into debt by relief now floors its
+  luxury consumption at 0 (a broke sovereign stops indulging) instead of posting a
+  negative demand.
 - **Phase 3 — promotion, and founding through the pool.** Add `Ruler.promoteFromPool()`
   and use it in both places: swap the laborer replacement policy to promote the
   highest-skill peasant (fresh endowment, fresh surname; `null` on an empty pool),

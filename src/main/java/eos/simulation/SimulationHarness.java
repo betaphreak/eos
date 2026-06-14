@@ -14,6 +14,7 @@ import eos.agent.firm.FirmConfig;
 import eos.agent.firm.NFirm;
 import eos.agent.firm.StrategicFirm;
 import eos.agent.firm.StrategicFirmConfig;
+import eos.agent.PeasantPool;
 import eos.agent.laborer.Laborer;
 import eos.agent.laborer.LaborerConfig;
 import eos.agent.noble.Noble;
@@ -115,6 +116,7 @@ public class SimulationHarness {
 	private Laborer[] laborers;
 	private StrategicFirm strategicFirm;
 	private BuilderFirm builderFirm;
+	private PeasantPool peasantPool;
 
 	/**
 	 * Build an empty harness for {@code cfg} from a fresh {@link GameSession}
@@ -385,6 +387,37 @@ public class SimulationHarness {
 		// household-succession policy (see Ruler.successor, which also keeps the
 		// colony's ruler reference current); no rule is wired here
 		return gold;
+	}
+
+	/**
+	 * Give the colony its <b>peasant pool</b> (banking in copper), seeded with
+	 * {@code cfg.peasantReserveSize()} peasants the {@link eos.agent.ruler.Ruler}
+	 * feeds. A no-op (returns {@code null}) when the reserve size is 0, so the pool
+	 * is opt-in per simulation. Requires the necessity market (see {@link
+	 * #createMarkets()}) and a ruler (see {@link #createDefaultRuler()}) to exist
+	 * first; create it <em>last</em> (after the laborers and the ruler) so its
+	 * demographic/naming draws don't perturb theirs.
+	 *
+	 * @return the created peasant pool, or {@code null} if none was configured
+	 */
+	public PeasantPool createDefaultPeasantPool() {
+		if (cfg.peasantReserveSize() <= 0)
+			return null;
+		peasantPool = new PeasantPool(cfg.peasantReserveSize(), getCopperBank(),
+				colony);
+		colony.addAgent(peasantPool);
+		return peasantPool;
+	}
+
+	/**
+	 * Register a {@link PeasantPrinter} for the colony's peasant pool. The pool must
+	 * already exist (see {@link #createDefaultPeasantPool()}).
+	 *
+	 * @param fileName
+	 *            the CSV output file name
+	 */
+	public void addPeasantPrinter(String fileName) {
+		colony.addPrinter(new PeasantPrinter(fileName, peasantPool));
 	}
 
 	/**
