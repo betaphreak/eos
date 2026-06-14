@@ -2,6 +2,7 @@ package eos.agent.ruler;
 
 import eos.agent.AbstractHousehold;
 import eos.agent.Agent;
+import eos.agent.noble.Noble;
 import eos.bank.Account;
 import eos.bank.Bank;
 import eos.good.Enjoyment;
@@ -36,6 +37,15 @@ public class Ruler extends AbstractHousehold {
 	// fraction of the treasury (checking + savings) spent on enjoyment each step
 	private final double consumptionRate;
 
+	// per-step tax rates: a fraction of each bank's distributable profit and of
+	// each noble's income, skimmed into the treasury (0 disables — the default)
+	private final double bankProfitTaxRate;
+	private final double nobleIncomeTaxRate;
+
+	// cumulative tax collected over the ruler's life (for reporting/tests)
+	@Getter
+	private double taxCollected;
+
 	// the enjoyment the ruler buys and the market it buys it from
 	private final Enjoyment enjoyment;
 	private final ConsumerGoodMarket eMkt;
@@ -56,14 +66,20 @@ public class Ruler extends AbstractHousehold {
 	 *            the ruler's opening fortune, in copper (the base unit)
 	 * @param consumptionRate
 	 *            fraction of the treasury spent on enjoyment each step
+	 * @param bankProfitTaxRate
+	 *            fraction of each bank's distributable profit taxed each step
+	 * @param nobleIncomeTaxRate
+	 *            fraction of each noble's income taxed each step
 	 * @param goldBank
 	 *            the gold bank the ruler owns and banks at
 	 * @param colony
 	 *            the colony this ruler belongs to
 	 */
-	public Ruler(double initSavingsBal, double consumptionRate, Bank goldBank,
+	public Ruler(double initSavingsBal, double consumptionRate,
+			double bankProfitTaxRate, double nobleIncomeTaxRate, Bank goldBank,
 			Settlement colony) {
-		this(0, initSavingsBal, consumptionRate, false, goldBank, colony, null);
+		this(0, initSavingsBal, consumptionRate, bankProfitTaxRate,
+				nobleIncomeTaxRate, false, goldBank, colony, null);
 	}
 
 	/**
@@ -79,16 +95,20 @@ public class Ruler extends AbstractHousehold {
 	 */
 	public Ruler(Ruler predecessor, Settlement colony) {
 		this(predecessor.getEstateChecking(), predecessor.getEstateSavings(),
-				predecessor.consumptionRate, true, predecessor.getBank(), colony,
+				predecessor.consumptionRate, predecessor.bankProfitTaxRate,
+				predecessor.nobleIncomeTaxRate, true, predecessor.getBank(), colony,
 				predecessor.getHead().surname());
 	}
 
 	private Ruler(double initCheckingBal, double initSavingsBal,
-			double consumptionRate, boolean inherited, Bank goldBank,
+			double consumptionRate, double bankProfitTaxRate,
+			double nobleIncomeTaxRate, boolean inherited, Bank goldBank,
 			Settlement colony, String surname) {
 		super(initCheckingBal, initSavingsBal, inherited, surname, goldBank,
 				colony);
 		this.consumptionRate = consumptionRate;
+		this.bankProfitTaxRate = bankProfitTaxRate;
+		this.nobleIncomeTaxRate = nobleIncomeTaxRate;
 		this.enjoyment = new Enjoyment(0);
 		this.eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
 		setName("Ruler");
@@ -113,6 +133,9 @@ public class Ruler extends AbstractHousehold {
 		if (checkOldAgeDeath())
 			return;
 
+		// tax the colony's accumulated wealth into the treasury before spending
+		collectTaxes();
+
 		// a sovereign indulgence: spend a small fraction of the treasury on
 		// enjoyment, posting a buy offer the market settles in clear(). Buying
 		// copper-quoted enjoyment converts gold -> copper, so the gold bank skims
@@ -123,8 +146,53 @@ public class Ruler extends AbstractHousehold {
 		bank.deposit(getID(), acct.getChecking() - consumption);
 		eMkt.addBuyOffer(this, demandForE);
 
-		// the ruler earns nothing. Reset the income accumulators each step.
+		// the ruler earns no wage/dividends; tax revenue enters via collectTaxes
+		// (as OTHER, not income), so reset the income accumulators each step.
 		resetIncomeAccumulators(acct);
+	}
+
+	/**
+	 * Tax the colony's accumulated wealth into the treasury (the first slice of
+	 * the taxation feature): a fraction ({@code bankProfitTaxRate}) of each bank's
+	 * {@linkplain Bank#getDistributableProfit() distributable profit} — skimmed out
+	 * of the bank's equity exactly as a noble dividend is, leaving estates-in-transit
+	 * and injected funds alone — and a fraction ({@code nobleIncomeTaxRate}) of each
+	 * living noble's income this step, withdrawn from the noble's account. A no-op
+	 * when both rates are 0 (the default), so an untaxed colony is unchanged.
+	 * <p>
+	 * Run before the ruler's own spending; because the ruler acts last each step,
+	 * every noble's income field already holds this step's value, and the bank
+	 * profit reflects what owners have already drawn. The revenue lands in the
+	 * (gold) treasury, so copper-quoted taxes fire the gold bank's FX fee.
+	 */
+	private void collectTaxes() {
+		if (bankProfitTaxRate <= 0 && nobleIncomeTaxRate <= 0)
+			return;
+		Bank treasury = getBank();
+
+		if (bankProfitTaxRate > 0) {
+			for (Bank b : getColony().getBanks()) {
+				double tax = bankProfitTaxRate * b.getDistributableProfit();
+				if (tax > 0) {
+					b.payDividend(tax);
+					treasury.credit(getID(), tax, Bank.OTHER);
+					taxCollected += tax;
+				}
+			}
+		}
+
+		if (nobleIncomeTaxRate > 0) {
+			for (Agent a : getColony().getAgents()) {
+				if (a instanceof Noble noble && noble.isAlive()) {
+					double tax = nobleIncomeTaxRate * noble.getIncome();
+					if (tax > 0) {
+						noble.getBank().withdraw(noble.getID(), tax);
+						treasury.credit(getID(), tax, Bank.OTHER);
+						taxCollected += tax;
+					}
+				}
+			}
+		}
 	}
 
 	/**

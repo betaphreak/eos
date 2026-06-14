@@ -375,7 +375,8 @@ public class SimulationHarness {
 	public Bank createDefaultRuler() {
 		Bank gold = getGoldBank();
 		Ruler ruler = new Ruler(CurrencyType.GOLD.toCopper(DEFAULT_RULER_GOLD),
-				DEFAULT_RULER_CONSUMPTION_RATE, gold, colony);
+				DEFAULT_RULER_CONSUMPTION_RATE, cfg.bankProfitTaxRate(),
+				cfg.nobleIncomeTaxRate(), gold, colony);
 		colony.addAgent(ruler);
 		// record the sovereign so a builder can bill it for public works (the roads
 		// and walls of a growth ring); a no-op for any colony that never grows

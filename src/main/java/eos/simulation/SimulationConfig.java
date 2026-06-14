@@ -52,6 +52,12 @@ import lombok.Builder;
  *                     wage spending — and the market wage totalBudget/N —
  *                     scales with the colony as population grows; 0 falls back
  *                     to the legacy cash-flow-gap rule
+ * @param bankProfitTaxRate fraction of each bank's distributable profit the
+ *                     Ruler skims into its treasury each step (the bank-profit
+ *                     tax); 0 disables it (the default, pending calibration)
+ * @param nobleIncomeTaxRate fraction of each noble's per-step income the Ruler
+ *                     skims into its treasury each step (the noble income tax);
+ *                     0 disables it (the default, pending calibration)
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -74,7 +80,9 @@ public record SimulationConfig(
 		double longitude,
 		double externalInflowPerStep,
 		double immigrationThreshold,
-		double laborShare) {
+		double laborShare,
+		double bankProfitTaxRate,
+		double nobleIncomeTaxRate) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -144,5 +152,7 @@ public record SimulationConfig(
 			-0.1278,                               // longitude (London)
 			0,                                     // externalInflowPerStep (closed)
 			100,                                   // immigrationThreshold
-			0.5);                                  // laborShare
+			0.5,                                   // laborShare
+			0,                                     // bankProfitTaxRate (off)
+			0);                                    // nobleIncomeTaxRate (off)
 }

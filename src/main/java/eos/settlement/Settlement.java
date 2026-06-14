@@ -523,6 +523,16 @@ public class Settlement {
 		this.ruler = ruler;
 	}
 
+	/**
+	 * The colony's current sovereign (the founding ruler or the heir who has since
+	 * succeeded it), or {@code null} if the colony has no ruler.
+	 *
+	 * @return the colony's ruler, or {@code null}
+	 */
+	public Ruler getRuler() {
+		return ruler;
+	}
+
 	// queue construction work for the next ring (size -> size+1) on behalf of one
 	// occupant. The occupant funds the LAND for the single slot it will stand on
 	// (so each firm pays its own land clearance); the ring's ROAD and WALL public
@@ -875,6 +885,16 @@ public class Settlement {
 	 */
 	public Collection<Agent> getAgents() {
 		return agents;
+	}
+
+	/**
+	 * Return the colony's banks (insertion-ordered), e.g. for the Ruler to tax
+	 * each bank's distributable profit.
+	 *
+	 * @return the colony's banks
+	 */
+	public Collection<Bank> getBanks() {
+		return banks;
 	}
 
 	/**
