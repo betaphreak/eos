@@ -14,6 +14,8 @@ import java.util.function.UnaryOperator;
 
 import eos.agent.Agent;
 import eos.agent.Household;
+import eos.calendar.DayType;
+import eos.calendar.LiturgicalCalendar;
 import eos.agent.firm.BuilderConfig;
 import eos.agent.firm.BuilderFirm;
 import eos.agent.firm.StrategicFirm;
@@ -110,6 +112,11 @@ public class Settlement {
 	// the precalculated slot table (shared with the owning game session): a
 	// size -> SlotInfo lookup the colony reads its current geometry from
 	private final SlotTable slotTable;
+
+	// the liturgical calendar (shared with the owning game session): classifies
+	// the current in-game date as a workday/weekend/holiday. A pure date lookup,
+	// independent of seed and location. See getDayType.
+	private final LiturgicalCalendar liturgicalCalendar;
 
 	// the colony's current size (disc radius). Founded at SlotTable.MIN_SIZE and
 	// grows upward as it needs more slots (see claimSlot); the slot table maps it
@@ -228,6 +235,8 @@ public class Settlement {
 	 *            the demographic service for this colony
 	 * @param slotTable
 	 *            the precalculated slot table (shared across the session)
+	 * @param liturgicalCalendar
+	 *            the liturgical calendar (shared across the session)
 	 * @param meanInitAgeYears
 	 *            mean initial age (years) of founding household heads
 	 * @param targetNStock
@@ -241,14 +250,16 @@ public class Settlement {
 	 */
 	public Settlement(String name, LocalDate startDate, Rng rng,
 			NameRegistry names, Demography demography, SlotTable slotTable,
-			double meanInitAgeYears, double targetNStock, double meanSkill,
-			double latitude, double longitude) {
+			LiturgicalCalendar liturgicalCalendar, double meanInitAgeYears,
+			double targetNStock, double meanSkill, double latitude,
+			double longitude) {
 		this.name = name;
 		this.startDate = startDate;
 		this.rng = rng;
 		this.names = names;
 		this.demography = demography;
 		this.slotTable = slotTable;
+		this.liturgicalCalendar = liturgicalCalendar;
 		this.meanInitAgeYears = meanInitAgeYears;
 		this.targetNStock = targetNStock;
 		this.meanSkill = meanSkill;
@@ -281,6 +292,20 @@ public class Settlement {
 			return;
 		started = true;
 		log.info(name + " was founded on " + getDate() + ".");
+	}
+
+	/**
+	 * Whether the colony has been started (its life has begun via {@link
+	 * #start()}). Distinct from {@link #isAlive()}: a started colony that has
+	 * since died is no longer alive but is still started. Used to apply the
+	 * operating calendar only to a live colony — the pre-run seeding (before
+	 * {@code start()}) hires every firm so step 0 has a workforce regardless of
+	 * what kind of day it falls on.
+	 *
+	 * @return true once {@link #start()} has been called
+	 */
+	public boolean isStarted() {
+		return started;
 	}
 
 	/**
@@ -662,6 +687,36 @@ public class Settlement {
 	 */
 	public LocalDate getDate() {
 		return startDate.plusDays(timeStep);
+	}
+
+	/**
+	 * The {@link DayType} of the current in-game date — whether today is an
+	 * ordinary workday, the weekly day of rest (Sunday), or a liturgical feast
+	 * day. Delegates to the colony's shared {@link LiturgicalCalendar}.
+	 * <p>
+	 * This is presently a <em>tag</em> only: nothing in the economy reads it yet
+	 * (wiring labor output to the day type is a later step).
+	 *
+	 * @return the current date's day type
+	 */
+	public DayType getDayType() {
+		return liturgicalCalendar.dayType(getDate());
+	}
+
+	/**
+	 * The {@link DayType} of an arbitrary date under this colony's calendar.
+	 *
+	 * @param date
+	 *            the date to classify
+	 * @return that date's day type
+	 */
+	public DayType getDayType(LocalDate date) {
+		return liturgicalCalendar.dayType(date);
+	}
+
+	/** The colony's liturgical calendar (shared across the session). */
+	public LiturgicalCalendar getLiturgicalCalendar() {
+		return liturgicalCalendar;
 	}
 
 	/**

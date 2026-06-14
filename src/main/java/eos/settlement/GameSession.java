@@ -2,6 +2,7 @@ package eos.settlement;
 
 import java.time.LocalDate;
 
+import eos.calendar.LiturgicalCalendar;
 import eos.mortality.Demography;
 import eos.name.NameRegistry;
 import eos.util.Rng;
@@ -52,6 +53,12 @@ public class GameSession {
 	@Getter
 	private final SlotTable slotTable;
 
+	// the liturgical calendar (curated universal feast list), loaded once and
+	// shared by every colony — like the slot table it is independent of seed and
+	// location, classifying any date as workday/weekend/holiday
+	@Getter
+	private final LiturgicalCalendar liturgicalCalendar;
+
 	// number of colonies created so far; each gets an economic generator seeded
 	// from (seed, index), so colonies don't share an economic random stream
 	private int colonyCount = 0;
@@ -68,6 +75,7 @@ public class GameSession {
 		this.demography = new Demography(new Rng(seed ^ MORTALITY_SEED_SALT),
 				new Rng(seed ^ SKILL_SEED_SALT));
 		this.slotTable = SlotTable.load();
+		this.liturgicalCalendar = LiturgicalCalendar.load();
 	}
 
 	/**
@@ -101,7 +109,7 @@ public class GameSession {
 		Rng colonyRng = new Rng(seed ^ (COLONY_SEED_SALT * colonyCount));
 		colonyCount++;
 		return new Settlement(name, startDate, colonyRng, names, demography,
-				slotTable, meanInitAgeYears, targetNStock, meanSkill, latitude,
-				longitude);
+				slotTable, liturgicalCalendar, meanInitAgeYears, targetNStock,
+				meanSkill, latitude, longitude);
 	}
 }

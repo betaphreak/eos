@@ -54,6 +54,7 @@ public class LaborMarket extends Market {
 		private int bankID; // account number of the employer
 		private Bank bank; // bank of the employer
 		private Set<Skill> skills; // skills this employer's labor trains
+		private boolean operating; // whether the firm hires today (see Firm.operatesOn)
 	}
 
 	/* employee */
@@ -99,8 +100,18 @@ public class LaborMarket extends Market {
 	}
 
 	/**
-	 * Add an employer to the market
-	 * 
+	 * Add an employer to the market. The firm is <b>always registered</b> — so its
+	 * wage budget counts toward the total against which every firm's share of the
+	 * workforce is sized — but it only actually hires on the days it {@link
+	 * Firm#operatesOn operates}: every firm on workdays, on the weekly day of rest
+	 * only enjoyment firms, and on feast days only the noble-staffed export firm. A
+	 * firm closed today still <em>reserves</em> its budget-proportional share of
+	 * the workforce, but is allocated no one (see {@link #clear()}); those workers
+	 * simply rest, rather than flooding into the firms that are open. The operating
+	 * calendar applies only once the colony is {@link Settlement#isStarted() live}
+	 * — the pre-run seeding clear (before {@code start()}) hires every firm so step
+	 * 0 has a workforce no matter what kind of day it falls on.
+	 *
 	 * @param firm
 	 *            <p>
 	 * @param labor
@@ -116,6 +127,8 @@ public class LaborMarket extends Market {
 		employer.bankID = firm.getID();
 		employer.bank = firm.getBank();
 		employer.skills = firm.laborSkills();
+		employer.operating = !colony.isStarted()
+				|| firm.operatesOn(colony.getDayType());
 		employers.add(employer);
 		totalBudget += wageBudget;
 	}
@@ -189,28 +202,38 @@ public class LaborMarket extends Market {
 		double sum = 0;
 		for (Employer employer : employers) {
 			sum += employer.wageBudget;
-			int high = (int) (Math.min(1, sum / totalBudget) * employees.size());
+			// each firm's contiguous slice of the (shuffled) workforce is sized by
+			// its share of the total wage budget — including firms that are closed
+			// today, so an open firm gets only its own share instead of the whole
+			// pool. With no budget at all (an empty/all-zero market) no one is hired.
+			int high = totalBudget > 0
+					? (int) (Math.min(1, sum / totalBudget) * employees.size())
+					: low;
 
-			double wage = employer.wageBudget / (high - low);
-			for (int i = low; i < high; i++) {
-				Employee employee = employees.get(i);
-				employer.bank.withdraw(employer.bankID, wage);
-				employee.bank.credit(employee.bankID, wage, Bank.PRIIC);
-				// the labor the firm gets is the worker's proficiency in the firm's
-				// own work — productivityOf its level in the employer's skills (a
-				// skill-10 worker produces 1, as in the old homogeneous case) —
-				// times any non-skill scaling (day length). The wage, though, is
-				// still split per head, not by skill.
-				double base = employee.skills != null
-						? Household.productivityOf(
-								relevantLevel(employee.skills, employer.skills))
-						: 1.0;
-				employer.labor.increase(base * employee.laborMultiplier);
-				// performing this labor trains the worker: one unit of experience
-				// in each skill the employer's work develops
-				if (employee.skills != null)
-					for (Skill skill : employer.skills)
-						employee.skills.learn(skill, XP_PER_LABOR);
+			// a firm closed today reserves its slice but hires no one: those workers
+			// rest (no wage, no labor delivered, no experience gained)
+			if (employer.operating && high > low) {
+				double wage = employer.wageBudget / (high - low);
+				for (int i = low; i < high; i++) {
+					Employee employee = employees.get(i);
+					employer.bank.withdraw(employer.bankID, wage);
+					employee.bank.credit(employee.bankID, wage, Bank.PRIIC);
+					// the labor the firm gets is the worker's proficiency in the
+					// firm's own work — productivityOf its level in the employer's
+					// skills (a skill-10 worker produces 1, as in the old homogeneous
+					// case) — times any non-skill scaling (day length). The wage,
+					// though, is still split per head, not by skill.
+					double base = employee.skills != null
+							? Household.productivityOf(
+									relevantLevel(employee.skills, employer.skills))
+							: 1.0;
+					employer.labor.increase(base * employee.laborMultiplier);
+					// performing this labor trains the worker: one unit of experience
+					// in each skill the employer's work develops
+					if (employee.skills != null)
+						for (Skill skill : employer.skills)
+							employee.skills.learn(skill, XP_PER_LABOR);
+				}
 			}
 			low = high;
 		}

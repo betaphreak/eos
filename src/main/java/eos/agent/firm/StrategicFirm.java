@@ -3,6 +3,7 @@ package eos.agent.firm;
 import java.util.Set;
 
 import eos.bank.Bank;
+import eos.calendar.DayType;
 import eos.settlement.Settlement;
 import eos.good.Good;
 import eos.good.Strategic;
@@ -114,7 +115,8 @@ public class StrategicFirm extends Firm {
 
 		// 3. bid a fixed wage budget for next step's labor, funded back out of
 		// equity so the labor market can pay the workers; the export earnings net
-		// of this budget are what stays in equity
+		// of this budget are what stays in equity. The export sector runs every
+		// day (see operatesOn), so it always bids.
 		double newWageBudget = config.wageBudget();
 		bank.payFromEquity(getID(), newWageBudget);
 
@@ -155,5 +157,19 @@ public class StrategicFirm extends Firm {
 	@Override
 	public Set<Skill> laborSkills() {
 		return Set.of(Skill.INTELLECTUAL);
+	}
+
+	/**
+	 * The export sector runs <b>every day</b>. It is the colony's strategic
+	 * lifeline, worked by a dedicated noble class rather than by the laboring
+	 * population, so it does not observe the rest-day calendar the consumer firms
+	 * follow. In particular it keeps running on feast days when the laborer firms
+	 * are shut — so the nobles are the only ones working then, as required — and
+	 * on the weekly day of rest, so its noble workers keep building their export
+	 * skill instead of idling every Sunday.
+	 */
+	@Override
+	public boolean operatesOn(DayType day) {
+		return true;
 	}
 }

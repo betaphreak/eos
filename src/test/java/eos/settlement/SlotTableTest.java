@@ -122,7 +122,8 @@ class SlotTableTest {
 
 	private Settlement colony() {
 		return new Settlement("Test", LocalDate.of(1444, 12, 11), new eos.util.Rng(1L),
-				null, null, table, 35, 26, 5, 51.5074, -0.1278);
+				null, null, table, eos.calendar.LiturgicalCalendar.load(), 35, 26,
+				5, 51.5074, -0.1278);
 	}
 
 	// a minimal Agent usable only as a slot occupant (it never acts)

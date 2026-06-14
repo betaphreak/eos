@@ -3,6 +3,7 @@ package eos.agent.firm;
 import java.util.Set;
 
 import eos.bank.Bank;
+import eos.calendar.DayType;
 import eos.settlement.Settlement;
 import eos.good.Enjoyment;
 import eos.good.Good;
@@ -63,5 +64,15 @@ public class EFirm extends ConsumerGoodFirm {
 	@Override
 	public Set<Skill> laborSkills() {
 		return Set.of(Skill.ARTISTIC, Skill.CRAFTING, Skill.SOCIAL);
+	}
+
+	/**
+	 * Enjoyment firms run on workdays <b>and</b> on the weekly day of rest
+	 * (Sunday) — the leisure trade keeps going on the day off — but not on feast
+	 * days.
+	 */
+	@Override
+	public boolean operatesOn(DayType day) {
+		return day == DayType.WORKDAY || day == DayType.WEEKEND;
 	}
 }

@@ -155,12 +155,20 @@ public interface Household {
 	Bank getBank();
 
 	/**
-	 * Labor productivity of a household with the given skill: a quadratic curve
-	 * through the anchors skill&nbsp;0&nbsp;&rarr;&nbsp;0.01,
-	 * skill&nbsp;10&nbsp;&rarr;&nbsp;1 (the legacy homogeneous unit), and
-	 * skill&nbsp;20&nbsp;&rarr;&nbsp;4. Productivity rises with the square of skill
-	 * ({@code (skill/10)^2}), floored at 0.01 so even an unskilled (skill&nbsp;0)
-	 * household produces a sliver of labor.
+	 * Labor productivity of a household with the given skill, anchored at
+	 * skill&nbsp;0&nbsp;&rarr;&nbsp;0.01, skill&nbsp;10&nbsp;&rarr;&nbsp;1 (the
+	 * legacy homogeneous unit) and skill&nbsp;20&nbsp;&rarr;&nbsp;8. The curve is
+	 * <b>piecewise</b>, steepening once past the reference level so that mastery
+	 * is disproportionately rewarded:
+	 * <ul>
+	 * <li>up to skill&nbsp;10 it rises with the square of skill
+	 * ({@code (skill/10)^2}), floored at 0.01 — so an ordinary skill-5 worker
+	 * still produces 0.25, unchanged;</li>
+	 * <li>above skill&nbsp;10 it rises with the cube ({@code (skill/10)^3}),
+	 * reaching 8 at skill&nbsp;20 (a specialist far outproduces a journeyman)
+	 * rather than the 4 a pure square would give.</li>
+	 * </ul>
+	 * The two pieces meet continuously at skill&nbsp;10 (both equal 1).
 	 *
 	 * @param skill
 	 *            a skill level (expected in {@code [0, 20]})
@@ -168,6 +176,8 @@ public interface Household {
 	 */
 	static double productivityOf(int skill) {
 		double s = skill / 10.0;
-		return Math.max(0.01, s * s);
+		if (skill <= 10)
+			return Math.max(0.01, s * s);
+		return s * s * s;
 	}
 }

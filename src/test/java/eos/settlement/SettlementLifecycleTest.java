@@ -23,7 +23,8 @@ class SettlementLifecycleTest {
 	private Settlement bareColony() {
 		// no name/demography services needed for the lifecycle state machine
 		return new Settlement("Test Colony", START, new Rng(1L), null, null,
-				SlotTable.load(), 35, 26, 5, 51.5074, -0.1278);
+				SlotTable.load(), eos.calendar.LiturgicalCalendar.load(), 35, 26,
+				5, 51.5074, -0.1278);
 	}
 
 	@Test

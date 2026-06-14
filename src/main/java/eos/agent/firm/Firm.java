@@ -5,6 +5,7 @@ import java.util.Set;
 
 import eos.agent.Agent;
 import eos.bank.Bank;
+import eos.calendar.DayType;
 import eos.settlement.Settlement;
 import eos.good.Labor;
 import eos.skill.Skill;
@@ -124,6 +125,26 @@ public abstract class Firm extends Agent {
 	 */
 	public Set<Skill> laborSkills() {
 		return Collections.emptySet();
+	}
+
+	/**
+	 * Whether this firm operates — hires labor and so produces — on the given
+	 * kind of day. By default a firm runs only on {@link DayType#WORKDAY
+	 * workdays}; the weekly day of rest (Sunday) and feast days are days off.
+	 * Subclasses widen this: an {@link EFirm enjoyment firm} also runs on the
+	 * {@link DayType#WEEKEND weekend}, and the noble-staffed {@link StrategicFirm
+	 * export firm} also runs on {@link DayType#HOLIDAY feast days} (its nobles
+	 * keep working when the commoners rest). On a day it does not operate, the
+	 * firm posts no wage demand to the labor market (see {@link
+	 * eos.market.LaborMarket#addEmployer}), so it hires no one, pays no wages and
+	 * produces nothing that step.
+	 *
+	 * @param day
+	 *            the kind of day
+	 * @return true if the firm operates on that kind of day
+	 */
+	public boolean operatesOn(DayType day) {
+		return day == DayType.WORKDAY;
 	}
 
 	/**

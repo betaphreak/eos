@@ -95,6 +95,14 @@ public class SimulationHarness {
 	// Replace via setFirmConfig before createFirms to vary other firm params.
 	private FirmConfig firmConfig;
 
+	// necessity (food) firms run a higher technology coefficient than the other
+	// consumer firms: because production stops on the weekly day of rest and on
+	// feast days (~79 days/year) while the population eats every day, food output
+	// on the ~286 working days must cover all 365 days' consumption. This factor
+	// lifts the necessity firms' Cobb-Douglas A so the colony can feed itself
+	// across the rest-day calendar (see Firm.operatesOn / the day-type wiring).
+	public static final double NECESSITY_TECH_FACTOR = 1.4;
+
 	private ConsumerGoodMarket enjoymentMkt;
 	private ConsumerGoodMarket necessityMkt;
 	private LaborMarket laborMkt;
@@ -248,12 +256,17 @@ public class SimulationHarness {
 					cfg.eFirm().wageBudget(), cfg.eFirm().capital(),
 					capitalFirms, firmConfig, firmBank.apply(i), colony);
 
+		// necessity firms get a higher technology coefficient (see
+		// NECESSITY_TECH_FACTOR) so food output on working days covers the rest
+		// days when production stops; everything else matches the other firms.
+		FirmConfig nFirmConfig = firmConfig.toBuilder()
+				.A(firmConfig.A() * NECESSITY_TECH_FACTOR).build();
 		nFirms = new NFirm[cfg.numNFirms()];
 		for (int i = 0; i < cfg.numNFirms(); i++)
 			nFirms[i] = new NFirm(cfg.nFirm().checking(),
 					nSavings.applyAsDouble(i), cfg.nFirm().output(),
 					cfg.nFirm().wageBudget(), cfg.nFirm().capital(),
-					capitalFirms, firmConfig, firmBank.apply(i), colony);
+					capitalFirms, nFirmConfig, firmBank.apply(i), colony);
 
 		// add each firm to the colony and place it on an effective build slot; the
 		// colony grows itself just enough to hold them all (founded at the floor

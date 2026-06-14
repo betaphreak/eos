@@ -65,6 +65,21 @@ public abstract class ConsumerGoodFirm extends Firm {
 	private Averager pfAvger;
 
 	/**
+	 * Window (days) over which revenue is smoothed for the labor-share wage
+	 * budget. Long enough to span the rest-day calendar — the weekly day of rest
+	 * and the feast clusters — so a run of days on which the firm is closed (and
+	 * sells nothing) does not collapse its wage budget to zero and starve it of
+	 * labor on the days it reopens. See {@link #act()}.
+	 */
+	private static final int REVENUE_SMOOTH_WIN = 30;
+
+	/**
+	 * smoothed revenue used to size the labor-share wage budget (see
+	 * {@code REVENUE_SMOOTH_WIN})
+	 */
+	private Averager revAvger;
+
+	/**
 	 * Create a new consumer good firm
 	 * 
 	 * @param productName
@@ -105,6 +120,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 		loan = 0;
 		capitalCost = 0;
 		pfAvger = new Averager(config.avgProfitWin());
+		revAvger = new Averager(REVENUE_SMOOTH_WIN);
 
 		// post wage to the labor market so that the firm
 		// gets employees before the first round begins
@@ -121,6 +137,12 @@ public abstract class ConsumerGoodFirm extends Firm {
 		// get firm finance information
 		Account acct = bank.getAcct(getID());
 		revenue = acct.priIC;
+		// smooth revenue over the rest-day calendar: the labor-share wage budget
+		// is sized off this average, not the single day's revenue, so that the
+		// days the firm is closed (and earns nothing) do not zero its budget and
+		// leave it unable to hire when it reopens (which would oscillate into a
+		// production collapse)
+		double avgRevenue = revAvger.update(revenue);
 		loan = -acct.getSavings();
 		totalCost = wageBudget + capitalCost - acct.interest;
 		profit = revenue - totalCost;
@@ -139,8 +161,9 @@ public abstract class ConsumerGoodFirm extends Firm {
 					// labor-share rule: budget a fixed share of revenue, so
 					// total wage spending — and the uniform market wage
 					// totalBudget/N — scales with the colony instead of being
-					// outrun by a growing labor pool
-					newWageBudget = config.laborShare() * revenue;
+					// outrun by a growing labor pool. Uses smoothed revenue so a
+					// closed-day run (no sales) does not collapse the budget.
+					newWageBudget = config.laborShare() * avgRevenue;
 				} else {
 					// legacy rule: nudge the budget by the firm's cash-flow gap
 					double moneyFlowGap = acct.getChecking() - totalCost;

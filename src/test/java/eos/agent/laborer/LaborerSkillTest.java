@@ -11,9 +11,10 @@ import eos.name.Person;
 
 /**
  * Verifies the skill &rarr; labor-productivity curve
- * ({@link Household#productivityOf(int)}): it passes through the three anchor
- * points (skill 0 &rarr; 0.01, skill 10 &rarr; 1, skill 20 &rarr; 4), follows
- * the quadratic {@code (skill/10)^2} with a 0.01 floor, and is non-decreasing.
+ * ({@link Household#productivityOf(int)}): it passes through the anchor points
+ * (skill 0 &rarr; 0.01, skill 10 &rarr; 1, skill 20 &rarr; 8), follows the
+ * <b>piecewise</b> shape — quadratic {@code (skill/10)^2} with a 0.01 floor up
+ * to skill 10, then cubic {@code (skill/10)^3} above it — and is non-decreasing.
  */
 class LaborerSkillTest {
 
@@ -23,16 +24,18 @@ class LaborerSkillTest {
 	void curveHitsTheAnchorPoints() {
 		assertEquals(0.01, Household.productivityOf(0), EPS, "skill 0");
 		assertEquals(1.0, Household.productivityOf(10), EPS, "skill 10");
-		assertEquals(4.0, Household.productivityOf(20), EPS, "skill 20");
+		assertEquals(8.0, Household.productivityOf(20), EPS, "skill 20");
 	}
 
 	@Test
-	void curveIsQuadraticWithAFloor() {
-		// (skill/10)^2 above the floor; skill 1 sits exactly on the 0.01 floor
+	void curveIsPiecewiseWithAFloor() {
+		// (skill/10)^2 up to skill 10, with skill 1 on the 0.01 floor; the typical
+		// skill-5 worker is unchanged at 0.25
 		assertEquals(0.01, Household.productivityOf(1), EPS, "skill 1");
 		assertEquals(0.04, Household.productivityOf(2), EPS, "skill 2");
 		assertEquals(0.25, Household.productivityOf(5), EPS, "skill 5");
-		assertEquals(2.25, Household.productivityOf(15), EPS, "skill 15");
+		// (skill/10)^3 above skill 10: steeper, rewarding mastery
+		assertEquals(3.375, Household.productivityOf(15), EPS, "skill 15");
 	}
 
 	@Test
