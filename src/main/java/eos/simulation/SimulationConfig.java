@@ -31,10 +31,13 @@ import lombok.Builder;
  * @param targetNStock target necessity stock every laborer tries to accumulate
  *                     (in real units); a colony-wide constant rather than a
  *                     per-laborer preference, so it is set on the {@code Settlement}
- * @param meanSkill    mean of the household skill distribution at colony start;
+ * @param meanSkillMale mean of the <b>male</b> skill distribution at colony start;
  *                     a colony-start property (set on the {@code Settlement}) that
- *                     centers the skill spread of its founding and successor
- *                     households, hence their labor productivity
+ *                     centers the skill spread of its male people, hence their labor
+ *                     productivity
+ * @param meanSkillFemale mean of the <b>female</b> skill distribution at colony
+ *                     start (currently lower than the male mean); see {@code
+ *                     Settlement.getMeanSkill(Gender)}
  * @param latitude     the colony's geographic latitude in decimal degrees (north
  *                     positive), a colony-start property used for daylight
  *                     calculations (see {@code Settlement.getSunrise})
@@ -58,12 +61,16 @@ import lombok.Builder;
  * @param nobleIncomeTaxRate fraction of each noble's per-step income the Ruler
  *                     skims into its treasury each step (the noble income tax);
  *                     0 disables it (the default, pending calibration)
- * @param peasantReserveSize the <b>standing reserve</b> held beyond the employed
- *                     labor force; a colony with a pool is seeded with {@code
- *                     numLaborers + peasantReserveSize} peasants, founds its labor
- *                     force by promoting {@code numLaborers} of them on day 0, and
- *                     replaces later deaths from the remaining reserve until it
- *                     drains (see {@link SimulationHarness#foundLaborersFromPool})
+ * @param peasantPoolSize number of peasants a colony with a pool is seeded with (the
+ *                     full pool — founding cohort plus standing reserve). Default
+ *                     {@code 900} (≈ {@code 2 * numLaborers} at the default scale); a
+ *                     colony with a different {@code numLaborers} sets this to match.
+ * @param promotionRatio the fraction of its peasant pool a colony promotes into
+ *                     laborer households. On day 0 the ruler promotes the ablest
+ *                     {@code round(promotionRatio * peasantPoolSize)} peasants into
+ *                     laborer households, and replaces later deaths from the
+ *                     remaining reserve until it drains (see {@link
+ *                     SimulationHarness#foundLaborersFromPool})
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -81,7 +88,8 @@ public record SimulationConfig(
 		LaborerInit laborer,
 		double meanInitAgeYears,
 		double targetNStock,
-		double meanSkill,
+		double meanSkillMale,
+		double meanSkillFemale,
 		double latitude,
 		double longitude,
 		double externalInflowPerStep,
@@ -89,7 +97,8 @@ public record SimulationConfig(
 		double laborShare,
 		double bankProfitTaxRate,
 		double nobleIncomeTaxRate,
-		int peasantReserveSize) {
+		int peasantPoolSize,
+		double promotionRatio) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -145,7 +154,7 @@ public record SimulationConfig(
 			25,                                    // durationYears
 			450,                                   // numLaborers
 			10,                                    // numEFirms
-			10,                                    // numNFirms
+			12,                                    // numNFirms
 			new PriceRange(0.1, 5),                // ePrice
 			new PriceRange(0.1, 5),                // nPrice
 			new FirmInit(100, -1000, 40, 100, 30), // eFirm
@@ -154,7 +163,8 @@ public record SimulationConfig(
 			new LaborerInit(0, 0, 100, 0.9),       // laborer
 			35,                                    // meanInitAgeYears
 			26,                                    // targetNStock
-			5,                                     // meanSkill
+			5,                                     // meanSkillMale
+			2,                                     // meanSkillFemale
 			51.5074,                               // latitude (London)
 			-0.1278,                               // longitude (London)
 			0,                                     // externalInflowPerStep (closed)
@@ -162,5 +172,6 @@ public record SimulationConfig(
 			0.5,                                   // laborShare
 			0.05,                                  // bankProfitTaxRate
 			0.02,                                  // nobleIncomeTaxRate
-			0);                                    // peasantReserveSize (no pool)
+			900,                                   // peasantPoolSize (≈ 2 * numLaborers)
+			0.45);                                 // promotionRatio
 }

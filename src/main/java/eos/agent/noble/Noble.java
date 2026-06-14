@@ -7,13 +7,13 @@ import eos.agent.AbstractHousehold;
 import eos.agent.Agent;
 import eos.agent.firm.Firm;
 import eos.agent.firm.StrategicFirm;
-import eos.agent.laborer.Laborer;
 import eos.bank.Account;
 import eos.bank.Bank;
 import eos.settlement.Settlement;
 import eos.good.Enjoyment;
 import eos.good.Good;
 import eos.good.Necessity;
+import eos.good.RationSize;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Demand;
 import eos.market.LaborMarket;
@@ -250,6 +250,11 @@ public class Noble extends AbstractHousehold {
 		eConsumption = consumption - nConsumption;
 		bank.deposit(getID(), checking - consumption);
 
+		// the noble eats the LAVISH ration each step from its larder (it never
+		// starves — it simply draws its table down, then refills it toward the
+		// reserve target below)
+		necessity.decrease(RationSize.LAVISH.perDay());
+
 		// if the noble keeps a necessity reserve, cap this step's necessity buying
 		// at the gap to its target stock so it fills toward the target "if possible"
 		// and then holds; otherwise leave it uncapped (spend the whole necessity
@@ -273,25 +278,18 @@ public class Noble extends AbstractHousehold {
 	}
 
 	/**
-	 * The noble's necessity-stockpile target, in units: {@code
-	 * necessityReserveDays × (living laborers / living nobles)}. Each stockpiling
-	 * noble aims to hold this many units, so the nobles <b>collectively</b> hold
-	 * {@code necessityReserveDays × laborers} units — that many days of the whole
-	 * population's necessity consumption, a reserve for later use. Returns 0 if
-	 * there are no nobles.
+	 * The noble's necessity-stockpile target, in units: {@code necessityReserveDays
+	 * × (own household size)} — that many days of necessity for its <b>own</b>
+	 * household (a member eats one unit a day), not the population. So the noble buys
+	 * a modest larder, then holds; it does not hoard food in proportion to the labor
+	 * force (which starved the workforce out of the necessity market — a noble buys
+	 * necessity every step but never eats it, so an uncapped target accumulates
+	 * without bound).
 	 *
-	 * @return the per-noble necessity stockpile target in units
+	 * @return the noble's own-household necessity stockpile target in units
 	 */
 	private double necessityStockTarget() {
-		long laborers = 0, nobles = 0;
-		for (Agent a : getColony().getAgents()) {
-			if (a instanceof Laborer)
-				laborers++;
-			else if (a instanceof Noble)
-				nobles++;
-		}
-		return nobles == 0 ? 0
-				: config.necessityReserveDays() * laborers / nobles;
+		return config.necessityReserveDays() * getMemberCount();
 	}
 
 	/** Role label used in the persons-of-interest roster and death log. */

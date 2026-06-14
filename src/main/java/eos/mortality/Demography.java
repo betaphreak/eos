@@ -4,6 +4,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import eos.agent.Household;
+import eos.name.Gender;
 import eos.skill.Passion;
 import eos.skill.Skill;
 import eos.skill.SkillRecord;
@@ -148,6 +149,18 @@ public final class Demography {
 		for (Skill s : Skill.values())
 			records.put(s, new SkillRecord(sampleSkill(meanSkill), samplePassion()));
 		return new SkillTracker(records);
+	}
+
+	/**
+	 * Draw a {@link Gender} at random (50/50 MALE/FEMALE) on the skill RNG — the
+	 * same stream the gendered skill mean feeds into, kept off the mortality and
+	 * economic streams. Used when generating people into the {@link
+	 * eos.agent.PeasantPool}.
+	 *
+	 * @return a randomly drawn gender
+	 */
+	public Gender sampleGender() {
+		return skillRng.uniform() < 0.5 ? Gender.MALE : Gender.FEMALE;
 	}
 
 	// draw a passion on the skill RNG using the placeholder weights

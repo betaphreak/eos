@@ -103,7 +103,9 @@ public abstract class AbstractHousehold extends Agent implements Household {
 		// (founders, immigrants, and each successor), so skill is not inherited.
 		// Done before the head is named so the given name's rarity can track the
 		// head's overall skill, exactly as the single scalar skill did before.
-		SkillTracker skills = demography.newSkillTracker(colony.getMeanSkill());
+		// a directly-drawn head (noble, ruler, or pool-less laborer) is male
+		SkillTracker skills = demography
+				.newSkillTracker(colony.getMeanSkill(eos.name.Gender.MALE));
 
 		// draw the head on the naming RNG with the given name's rarity tracking
 		// its overall skill; a null surname starts a new dynasty, else continue the

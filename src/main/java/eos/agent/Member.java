@@ -59,6 +59,11 @@ public final class Member {
 		return person.surname();
 	}
 
+	/** @return the member's gender */
+	public eos.name.Gender gender() {
+		return person.gender();
+	}
+
 	/** @return the member's skills */
 	public SkillTracker skills() {
 		return person.skills();

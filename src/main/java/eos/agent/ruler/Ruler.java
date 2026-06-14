@@ -7,6 +7,8 @@ import eos.bank.Account;
 import eos.bank.Bank;
 import eos.good.Enjoyment;
 import eos.good.Good;
+import eos.good.Necessity;
+import eos.good.RationSize;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Demand;
 import eos.settlement.Settlement;
@@ -21,9 +23,10 @@ import lombok.extern.java.Log;
  * and earns nothing, but each step it spends a small fraction of the treasury on
  * <b>enjoyment</b> — a sovereign luxury habit that slowly draws the reserves down.
  * Because enjoyment is priced in copper, that spending converts gold to copper, so
- * the gold bank skims its currency-exchange fee (the only thing that ever makes
- * the otherwise-idle gold bank transact). There is one ruler per settlement; it
- * never buys necessity and never starves.
+ * the gold bank skims its currency-exchange fee. It also keeps a lavish table —
+ * eating the {@link eos.good.RationSize#GOURMET} ration each step and restocking
+ * necessity toward a reserve (also copper-quoted, so it likewise fires the FX fee).
+ * There is one ruler per settlement; it never starves.
  * <p>
  * Like the other households the ruler is a named {@link AbstractHousehold} that
  * ages on the mortality schedule and, when its head dies of old age, is
@@ -46,17 +49,28 @@ public class Ruler extends AbstractHousehold {
 	@Getter
 	private double taxCollected;
 
-	// the enjoyment the ruler buys and the market it buys it from
+	// days of its GOURMET ration the ruler keeps as a stocked larder
+	private static final int NECESSITY_RESERVE_DAYS = 30;
+
+	// the enjoyment and necessity the ruler buys, and the markets it buys from
 	private final Enjoyment enjoyment;
+	private final Necessity necessity;
 	private final ConsumerGoodMarket eMkt;
+	private final ConsumerGoodMarket nMkt;
 
 	// enjoyment spending ($) in the last step
 	@Getter
 	private double consumption;
 
-	// demand strategy posted to the enjoyment market: spend the whole enjoyment
-	// budget at the going price (the ruler never starves, so it has no floor)
+	// necessity units to buy this step (the gap to the reserve target, set in act)
+	private double nGap;
+
+	// demand strategies: spend the whole enjoyment budget at the going price, and
+	// restock necessity toward the reserve (the ruler never starves, so no floor).
+	// The ruler's necessity draw is tiny (its own household), so price-inelastic
+	// restocking does not move the market.
 	private final Demand demandForE = price -> consumption / price;
+	private final Demand demandForN = price -> nGap;
 
 	/**
 	 * Create the settlement's founding ruler, holding <tt>initSavingsBal</tt> at
@@ -110,7 +124,9 @@ public class Ruler extends AbstractHousehold {
 		this.bankProfitTaxRate = bankProfitTaxRate;
 		this.nobleIncomeTaxRate = nobleIncomeTaxRate;
 		this.enjoyment = new Enjoyment(0);
+		this.necessity = new Necessity(0);
 		this.eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
+		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
 		setName("Ruler");
 
 		// the ruler is always a person of interest the colony tracks
@@ -146,8 +162,20 @@ public class Ruler extends AbstractHousehold {
 		// posting a negative demand
 		double wealth = acct.getChecking() + acct.getSavings();
 		consumption = consumptionRate * Math.max(0, wealth);
-		bank.deposit(getID(), acct.getChecking() - consumption);
+
+		// the ruler keeps a lavish table: eat the GOURMET ration each step (it never
+		// starves) and restock necessity toward its reserve. Necessity is copper-quoted
+		// like enjoyment, so the purchase converts gold -> copper and fires the gold
+		// bank's FX fee.
+		necessity.decrease(RationSize.GOURMET.perDay());
+		double nReserve = NECESSITY_RESERVE_DAYS * RationSize.GOURMET.perDay();
+		nGap = Math.max(0, nReserve - necessity.getQuantity());
+		double nCost = nGap * Math.max(nMkt.getLastMktPrice(), 0.01);
+
+		// fund both purchases from the treasury (the rest stays on deposit)
+		bank.deposit(getID(), acct.getChecking() - consumption - nCost);
 		eMkt.addBuyOffer(this, demandForE);
+		nMkt.addBuyOffer(this, demandForN);
 
 		// the ruler earns no wage/dividends; tax revenue enters via collectTaxes
 		// (as OTHER, not income), so reset the income accumulators each step.
@@ -205,6 +233,8 @@ public class Ruler extends AbstractHousehold {
 	public Good getGood(String goodName) {
 		if (goodName.equals("Enjoyment"))
 			return enjoyment;
+		if (goodName.equals("Necessity"))
+			return necessity;
 		return null;
 	}
 

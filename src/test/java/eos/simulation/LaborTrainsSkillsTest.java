@@ -7,26 +7,33 @@ import org.junit.jupiter.api.Test;
 
 import eos.agent.Agent;
 import eos.agent.laborer.Laborer;
-import eos.simulation.tools.ScaleSweep;
+import eos.bank.Bank;
 import eos.skill.Skill;
 import eos.skill.SkillTracker;
 
 /**
- * Verifies that performing labor trains the worker's skills. After a full run,
+ * Verifies that performing labor trains the worker's skills. After a few years,
  * the laborers who staff the necessity firms (subsistence agriculture) have
  * accumulated {@link Skill#PLANTS} experience, while a skill no firm in the run
  * trains ({@link Skill#MEDICINE}) stays near its birth level — confirming the
  * {@link eos.market.LaborMarket} grants per-skill XP for the labor performed.
  * <p>
- * Uses the bare {@link ScaleSweep} colony (no ruler/pool, so its labor force is
- * sustained by same-dynasty succession) rather than a ruler-bearing run, which now
- * founds from a finite pool and collapses — leaving no living laborers to inspect.
+ * Runs a {@link HomogeneousEconomy}-style <b>pool colony</b> over a <b>short
+ * horizon</b> (so it is inspected while its labor force is still alive, before the
+ * finite pool drains and the colony collapses) and made deliberately
+ * <b>necessity-heavy</b> (few enjoyment firms, many necessity firms) so most
+ * laborers farm. Both choices serve the same end: at the modest {@link
+ * eos.good.RationSize#FINE} ration a worker eats, necessity is otherwise too small a
+ * sector to move the population's {@code PLANTS} above the noise of an untrained
+ * skill — concentrating labor on farming makes the training signal clear. (The
+ * production default firm mix is unchanged; this colony is configured only to
+ * exercise the training mechanism.)
  */
 class LaborTrainsSkillsTest {
 
 	@Test
 	void laborTrainsTheFirmsSkillButNotUntrainedSkills() {
-		SimulationHarness h = assertDoesNotThrow(ScaleSweep::run);
+		SimulationHarness h = assertDoesNotThrow(LaborTrainsSkillsTest::runShort);
 
 		double plants = 0, medicine = 0;
 		int n = 0;
@@ -38,11 +45,32 @@ class LaborTrainsSkillsTest {
 				n++;
 			}
 
-		assertTrue(n > 0, "expected living laborers");
+		assertTrue(n > 0, "expected living laborers (the short run ends before collapse)");
 		// PLANTS is trained by the necessity firms the laborers staff; MEDICINE is
 		// trained by no firm in this run, so it stays at its birth level
 		assertTrue(plants > medicine,
 				"expected trained PLANTS (mean " + plants / n
 						+ ") to exceed untrained MEDICINE (mean " + medicine / n + ")");
+	}
+
+	/**
+	 * Build the {@link HomogeneousEconomy} pool colony over a short (3-year) horizon
+	 * — long enough to train skills, short enough that the labor force is still alive
+	 * (the pool has not yet drained) — with no printers.
+	 */
+	private static SimulationHarness runShort() {
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				.durationYears(4).numEFirms(2).numNFirms(20).build();
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		h.createMarkets();
+		Bank bank = h.getCopperBank();
+		h.createFirms(bank, i -> bank,
+				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+		h.createDefaultStrategicSector(bank);
+		h.createDefaultRuler();
+		h.createDefaultPeasantPool();
+		h.foundLaborersFromPool(i -> bank, i -> 15);
+		h.run();
+		return h;
 	}
 }

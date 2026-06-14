@@ -31,7 +31,7 @@ class SettlementSolarTest {
 	private Settlement colonyOn(LocalDate date) {
 		return new Settlement("Test Colony", date, new Rng(1L), null, null,
 				SlotTable.load(), eos.calendar.LiturgicalCalendar.load(), 35, 26,
-				5, LAT, LON);
+				5, 2, LAT, LON);
 	}
 
 	@Test

@@ -26,16 +26,15 @@ import eos.bank.Bank;
 public class MeritocraticEconomy {
 
 	/**
-	 * Peasants seeded into the pool — the reserve promotions draw from. A balance:
-	 * large enough to absorb the run's deaths so promotion can sustain the labor
-	 * force for the (short) horizon, but small relative to the labor force, since the
-	 * pool's mouths compete with laborers for necessity. The reserve only drains (by
-	 * promotion and old age); once dry, deaths go unreplaced, the workforce shrinks,
-	 * food production falls, and the colony spirals to collapse — so the run is short
-	 * and starts in summer to avoid a founding-winter death cluster exhausting the
-	 * reserve at once. The refill that would make this sustainable is a later phase.
+	 * Fraction of the seeded pool the ruler promotes into laborer households on day
+	 * 0. The pool is seeded with {@code 2 * numLaborers} peasants, so a high ratio
+	 * here promotes most of them and leaves a small standing reserve — foregrounding
+	 * promotion while keeping the reserve modest enough that it drains (by promotion
+	 * and old age) within the run, after which deaths go unreplaced, the workforce
+	 * shrinks, food production falls, and the colony spirals to collapse. The refill
+	 * that would make this sustainable is a later phase.
 	 */
-	static final int PEASANT_RESERVE = 40;
+	static final double PROMOTION_RATIO = 0.8;
 
 	/**
 	 * Build and run the simulation.
@@ -54,7 +53,7 @@ public class MeritocraticEconomy {
 				.settlementName("Siena")
 				.startDate(LocalDate.of(1444, 12, 11))
 				.durationYears(25)
-				.peasantReserveSize(PEASANT_RESERVE)
+				.promotionRatio(PROMOTION_RATIO)
 				.build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		Bank bank = h.getCopperBank();

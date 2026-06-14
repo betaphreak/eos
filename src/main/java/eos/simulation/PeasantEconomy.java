@@ -11,14 +11,19 @@ import eos.bank.Bank;
  * peasants age, can die of old age, and their skills decay, so with no inflow yet
  * the pool simply drains over the run. See {@code docs/peasant-pool.md}.
  * <p>
- * This is the only bundled simulation that seeds a pool (the others leave
- * {@code peasantReserveSize} at its 0 default), so the feature stays opt-in until a
- * later phase makes it a standard colony fixture.
+ * It charts the pool's relief spending (the ruler is billed) before the colony
+ * collapses; it keeps a <b>larger reserve</b> than the default by promoting a
+ * smaller fraction of the seeded pool.
  */
 public class PeasantEconomy {
 
-	/** Number of peasants the colony's pool is seeded with. */
-	static final int PEASANT_RESERVE = 10;
+	/**
+	 * Fraction of the seeded pool promoted into laborer households on day 0 — kept
+	 * low so a large reserve remains (the pool is seeded with {@code 2 *
+	 * numLaborers} peasants), foregrounding the relief the ruler funds for the
+	 * standing reserve before the pool drains and the colony collapses.
+	 */
+	static final double PROMOTION_RATIO = 0.3;
 
 	/**
 	 * Build and run the simulation.
@@ -28,7 +33,7 @@ public class PeasantEconomy {
 	 */
 	public static SimulationHarness run() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.peasantReserveSize(PEASANT_RESERVE).build();
+				.promotionRatio(PROMOTION_RATIO).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
 		Bank bank = h.getCopperBank();

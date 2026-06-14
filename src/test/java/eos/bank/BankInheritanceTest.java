@@ -25,7 +25,7 @@ class BankInheritanceTest {
 	private Bank newBank() {
 		Settlement colony = new Settlement("Test", LocalDate.of(1444, 12, 11),
 				new Rng(1L), null, null, SlotTable.load(),
-				eos.calendar.LiturgicalCalendar.load(), 0, 0, 0, 0, 0);
+				eos.calendar.LiturgicalCalendar.load(), 0, 0, 0, 0, 0, 0);
 		return new Bank(BankConfig.DEFAULT, colony);
 	}
 

@@ -93,8 +93,10 @@ public class GameSession {
 	 *            mean initial age (years) of founding household heads
 	 * @param targetNStock
 	 *            target necessity stock every laborer tries to accumulate
-	 * @param meanSkill
-	 *            mean of the colony's household skill distribution
+	 * @param meanSkillMale
+	 *            mean of the colony's male skill distribution
+	 * @param meanSkillFemale
+	 *            mean of the colony's female skill distribution
 	 * @param latitude
 	 *            the colony's geographic latitude in decimal degrees (north positive)
 	 * @param longitude
@@ -102,14 +104,14 @@ public class GameSession {
 	 * @return a fresh colony
 	 */
 	public Settlement newSettlement(String name, LocalDate startDate,
-			double meanInitAgeYears, double targetNStock, double meanSkill,
-			double latitude, double longitude) {
+			double meanInitAgeYears, double targetNStock, double meanSkillMale,
+			double meanSkillFemale, double latitude, double longitude) {
 		// index 0 -> bare seed (byte-identical to the old single shared rng);
 		// later colonies get a distinct, decorrelated seed
 		Rng colonyRng = new Rng(seed ^ (COLONY_SEED_SALT * colonyCount));
 		colonyCount++;
 		return new Settlement(name, startDate, colonyRng, names, demography,
 				slotTable, liturgicalCalendar, meanInitAgeYears, targetNStock,
-				meanSkill, latitude, longitude);
+				meanSkillMale, meanSkillFemale, latitude, longitude);
 	}
 }

@@ -9,10 +9,12 @@ import eos.agent.ruler.Ruler;
 import eos.bank.Bank;
 import eos.good.Good;
 import eos.good.Necessity;
+import eos.good.RationSize;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Demand;
 import eos.market.LaborMarket;
 import eos.mortality.Demography;
+import eos.name.Gender;
 import eos.name.Person;
 import eos.settlement.Settlement;
 import eos.skill.SkillTracker;
@@ -41,10 +43,27 @@ import lombok.extern.java.Log;
 @Log
 public class PeasantPool extends Agent {
 
-	// days of food the pool tries to keep in its larder, so a transient necessity
-	// shortfall (the sector takes a few steps to raise output/price for the new
-	// mouths) draws the buffer down rather than starving peasants outright
-	private static final int BUFFER_DAYS = 30;
+	// days of food the pool keeps in its larder per peasant — a proper personal
+	// larder. The larder is sized at BUFFER_DAYS per pooled peasant; when a peasant
+	// is promoted into a laborer household it takes this much necessity with it (see
+	// drawPromotionStock), so the food is conserved rather than created.
+	private static final int BUFFER_DAYS = 15;
+
+	// peasants on relief eat a reduced ration, not a working laborer's full
+	// (LAVISH) unit a day: the standing reserve is relief, not a wage. Keeping the
+	// reserve's consumption modest is part of what lets a colony feed a reserve on
+	// top of its labor force without the extra mouths starving the workforce out of
+	// the food market (the other part is enough necessity firms to supply it).
+	private static final RationSize RELIEF_RATION = RationSize.SIMPLE;
+
+	// relief food the pool buys per peasant per step, expressed as a money budget so
+	// the pool's necessity demand is price-sensitive (quantity = budget/price), like
+	// a laborer's. Unlike a laborer the pool has no guaranteed minimum, so as food
+	// grows scarce (and its price climbs) the pool buys less and yields it to the
+	// working population — the reserve subsists on the surplus rather than out-bidding
+	// the workforce into starvation. Sized so that at a normal necessity price the
+	// pool can buy roughly the relief ration.
+	private static final double RELIEF_BUDGET_PER_PEASANT = 0.6;
 
 	private final List<Member> peasants = new ArrayList<>();
 
@@ -71,14 +90,26 @@ public class PeasantPool extends Agent {
 	@Getter
 	private long promotedCount;
 
-	// buy enough to refill the larder toward BUFFER_DAYS of food for the current
-	// head-count (price-inelastic: peasant food is essential and Ruler-funded)
-	private final Demand demandForN = price -> Math
-			.max(0, peasants.size() * BUFFER_DAYS - necessity.getQuantity());
+	// buy relief food for the pool: refill the larder toward a BUFFER_DAYS buffer at
+	// the reduced relief ration, but only up to a price-sensitive money budget, so
+	// the pool defers to the working population when food is scarce (see
+	// RELIEF_BUDGET_PER_PEASANT)
+	private final Demand demandForN = price -> {
+		// refill toward a full BUFFER_DAYS-per-peasant larder (the ration a promoted
+		// peasant carries out), so the pool buys daily to replace what is eaten...
+		double larderRoom = Math.max(0,
+				peasants.size() * BUFFER_DAYS - necessity.getQuantity());
+		// ...but only up to a price-sensitive money budget, so it defers to the
+		// working population when food is scarce
+		double reliefBudget = peasants.size() * RELIEF_BUDGET_PER_PEASANT;
+		return Math.min(reliefBudget / price, larderRoom);
+	};
 
 	/**
 	 * Create the pool, open its (copper) account, and seed it with
-	 * {@code initialSize} peasants plus a day's food so they can eat on step 0.
+	 * {@code initialSize} peasants plus a {@value #BUFFER_DAYS}-day larder per
+	 * peasant so they can eat from step 0 (and carry their ration with them when
+	 * promoted).
 	 *
 	 * @param initialSize
 	 *            number of peasants to seed
@@ -96,24 +127,11 @@ public class PeasantPool extends Agent {
 		// builder, in which case the pool supplies no labor)
 		this.builderLaborMkt =
 				(LaborMarket) colony.getMarket(BuilderFirm.LABOR_MARKET);
-		// seed the larder with a full buffer (like a laborer's starting necessity
-		// stock), so the pool can feed its peasants from step 0 and ride out the
-		// necessity sector's adjustment to the new demand
+		// seed the larder with a full per-peasant buffer, so the pool can feed its
+		// peasants from step 0 and ride out the necessity sector's adjustment to the
+		// new demand (and a promoted peasant takes its BUFFER_DAYS ration with it)
 		this.necessity = new Necessity((double) initialSize * BUFFER_DAYS);
 		seed(initialSize);
-	}
-
-	/**
-	 * Seed {@code n} more peasants into the pool — the founding population the ruler
-	 * promotes into laborer households on day 0 (added after construction so the
-	 * pool's larder is sized for the standing reserve, not the whole founding cohort
-	 * that is immediately promoted out).
-	 *
-	 * @param n
-	 *            number of peasants to add
-	 */
-	public void seedMore(int n) {
-		seed(n);
 	}
 
 	private void seed(int n) {
@@ -121,14 +139,36 @@ public class PeasantPool extends Agent {
 		Demography demography = colony.getDemography();
 		for (int i = 0; i < n; i++) {
 			// all on the demographic / naming RNGs (never the economic stream)
+			Gender gender = demography.sampleGender();
 			int ageDays =
 					demography.sampleInitialAgeDays(colony.getMeanInitAgeYears());
-			SkillTracker skills = demography.newSkillTracker(colony.getMeanSkill());
-			// surname-less while pooled; a dynasty surname is drawn at promotion
-			Person p = new Person(colony.getNames().nextMaleName(), "")
-					.withSkills(skills);
+			SkillTracker skills =
+					demography.newSkillTracker(colony.getMeanSkill(gender));
+			// surname-less while pooled; a dynasty surname is drawn at promotion. The
+			// given name is drawn from the table matching the rolled gender.
+			String givenName = gender == Gender.FEMALE
+					? colony.getNames().nextFemaleName()
+					: colony.getNames().nextMaleName();
+			Person p = new Person(givenName, "", gender, skills);
 			peasants.add(new Member(p, colony.getDate().minusDays(ageDays)));
 		}
+	}
+
+	/**
+	 * Remove up to {@code requested} units of necessity from the pool's larder — the
+	 * ration a peasant carries with it when promoted into a laborer household — and
+	 * return the amount actually drawn (less than requested only if the larder is
+	 * short). Conserves food: the promoted laborer's opening stock comes out of the
+	 * pool rather than being created.
+	 *
+	 * @param requested
+	 *            necessity units the promoted peasant should take
+	 * @return the amount actually removed from the larder
+	 */
+	public double drawPromotionStock(double requested) {
+		double drawn = Math.min(Math.max(0, requested), necessity.getQuantity());
+		necessity.decrease(drawn);
+		return drawn;
 	}
 
 	/** Called by Settlement.newDay() in each step. */
@@ -167,10 +207,14 @@ public class PeasantPool extends Agent {
 
 	private void feed() {
 		int alive = peasants.size();
-		lastConsumed = necessity.decrease(alive);
-		// a peasant starves only when its whole ration is missing; fractional
+		// peasants eat the relief ration, not a full unit each
+		double ration = RELIEF_RATION.perDay();
+		double wanted = alive * ration;
+		lastConsumed = necessity.decrease(wanted);
+		// a peasant starves only when even its relief ration is missing; fractional
 		// shortfalls are absorbed (the larder/buffer carries them)
-		lastStarved = Math.max(0, (long) Math.floor(alive - lastConsumed));
+		double shortfall = wanted - lastConsumed;
+		lastStarved = Math.max(0, (long) Math.floor(shortfall / ration));
 		if (lastStarved > 0) {
 			// the least skilled starve first; the abler are kept for promotion
 			peasants.sort(Comparator.comparingInt(m -> m.skills().overallLevel()));

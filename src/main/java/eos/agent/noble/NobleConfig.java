@@ -21,13 +21,15 @@ import lombok.Builder;
  *            fraction of that consumption budget spent on necessity (the
  *            remainder on enjoyment)
  * @param necessityReserveDays
- *            if positive, the noble builds a necessity <b>reserve</b> toward a
- *            per-noble target of {@code necessityReserveDays ×
- *            (laborers/nobles)} units — so the nobles collectively hold {@code
- *            necessityReserveDays × laborers} units, i.e. that many days of the
- *            whole population's necessity consumption — buying toward it "if
- *            possible" and then holding. 0 (the default) means no reserve: the
- *            noble spends its whole necessity budget each step, as before
+ *            if positive, the noble builds a necessity <b>reserve</b> for its
+ *            <b>own household</b> toward a target of {@code necessityReserveDays ×
+ *            (household size)} units — that many days of its own consumption (a
+ *            member eats one unit a day) — buying toward it "if possible" and then
+ *            holding. The default {@code 30} keeps a noble from hoarding food: a
+ *            noble buys necessity but never eats it, so without a cap it would
+ *            accumulate without bound and starve the working population out of the
+ *            necessity market. 0 means no cap (spend the whole necessity budget
+ *            each step)
  */
 @Builder(toBuilder = true)
 public record NobleConfig(
@@ -38,5 +40,5 @@ public record NobleConfig(
 
 	/** The canonical noble parameters. */
 	public static final NobleConfig DEFAULT =
-			new NobleConfig(0.25, 0.05, 0.3, 0);
+			new NobleConfig(0.25, 0.05, 0.3, 30);
 }

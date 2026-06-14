@@ -77,18 +77,31 @@ exactly like a laborer's. `PeasantPool.act()` each step:
 2. **Decay skills:** `member.skills().tick()` for each survivor. (Household members
    are ticked in `Settlement.newDay`; pool members are ticked here instead, since
    they are not in a household.)
-3. **Eat:** consume one necessity per peasant from the pool's stock; any peasant
-   that cannot be fed **starves** and is removed.
-4. **Restock, billed to the Ruler:** post a buy offer to the necessity market for
-   the pool's shortfall, funded by debiting the **Ruler's account** at cost (the
-   `BuilderFirm`-bills-its-sponsor pattern — `Bank.withdraw(rulerID, cost)`). The
-   Ruler **overdraws into a loan** if its treasury is short, so the bill is always
-   met from the money side; peasants starve (step 3) only when the **market** can't
-   supply the necessity. No enjoyment is ever bought.
+3. **Eat:** consume the **`RationSize.SIMPLE` relief ration** (`RELIEF_RATION`, 0.25
+   units/day — the poor-relief tier, not a wage; a worker eats `FINE` = 0.5, a noble
+   `LAVISH` = 1) per peasant from the pool's larder; any peasant that cannot be fed
+   even that ration **starves** and is
+   removed. Each peasant has a `BUFFER_DAYS` (15-unit) larder — the ration it carries
+   out on promotion — which buffers transient shortages.
+4. **Restock, billed to the Ruler:** post a buy offer to the necessity market to
+   refill the larder toward its full per-peasant size, funded by debiting the
+   **Ruler's account** at cost. Crucially the offer is **price-sensitive** — capped by
+   a money budget (`RELIEF_BUDGET_PER_PEASANT`) so its quantity falls as the price
+   rises, and the pool has no guaranteed minimum (laborers do). So as food grows
+   scarce the pool **yields it to the working laborers** instead of out-bidding them;
+   the standing reserve subsists on the surplus. Without this the doubled population
+   starves the workforce out of the market and the colony collapses in weeks. (Refill
+   toward the *full* larder, not a ration-scaled target — the latter left the pool
+   idling on its seed larder until it drained, then crashing.) The Ruler **overdraws
+   into a loan** if its treasury is short, so the bill is always met from the money
+   side; peasants starve (step 3) only when the **market** can't supply the necessity
+   at the pool's budget. No enjoyment is ever bought.
 
-All peasant **draws** (skills via `Demography.newSkillTracker`, ages via
-`Demography.sampleInitialAgeDays`, old-age rolls, names) run on the **demographic /
-naming RNGs**, never the economic stream — the project's reproducibility rule. The
+All peasant **draws** (gender via `Demography.sampleGender`, skills via
+`Demography.newSkillTracker` around the gender-specific colony mean, ages via
+`Demography.sampleInitialAgeDays`, old-age rolls, names from the gender's table) run
+on the **demographic / naming RNGs**, never the economic stream — the project's
+reproducibility rule. The
 pool's **market purchases**, however, are genuine economic activity (they add
 necessity demand), so this feature **changes the economic dynamics**: runs are
 **not** byte-identical to today (unlike the `Member` refactor, which was). That is
@@ -96,18 +109,20 @@ expected for a behavioural feature.
 
 ### Seeding and founding
 
-`SimulationHarness` creates the `PeasantPool` and seeds it with
-`numLaborers + peasantReserveSize` (reserve default **10**) members at founding,
-each drawn like a household head (skill on the skill RNG around
-`colony.getMeanSkill()`, age on the mortality RNG). Peasants are **not** given a
-dynasty surname while pooled — surnames are drawn without replacement and reserved
-for living *households*. A peasant carries a given name (and skills) only; its
-unique dynasty surname is drawn at **promotion**, when it founds a household.
+`SimulationHarness` creates the `PeasantPool` and seeds it with `cfg.peasantPoolSize()`
+members at founding (default 900 ≈ `2 · numLaborers` at the default scale), each drawn like a household head (gender 50/50 on the skill RNG,
+skill around the gender-specific `colony.getMeanSkill(gender)`, age on the mortality
+RNG). It also creates a default `BuilderFirm` (staffed from the pool) so the colony
+can grow. Peasants are **not** given a dynasty surname while pooled — surnames are
+drawn without replacement and reserved for living *households*. A peasant carries a
+given name, gender and skills only; its unique dynasty surname is drawn at
+**promotion**, when it founds a household.
 
 The **initial labor force is then created through the same promotion path** (see
-below): the Ruler promotes the top `numLaborers` peasants into laborer households,
-leaving the reserve pooled. This retires the bespoke household construction in
-`createLaborers`. Two ordering consequences:
+below): the Ruler promotes the ablest `round(promotionRatio · poolSize)` peasants
+(default ratio **0.4**) into laborer households — each carrying its larder ration out
+of the pool — leaving the rest as the standing reserve. This retires the bespoke
+household construction in `createLaborers`. Two ordering consequences:
 
 - The **Ruler must be created before** the founding promotions (today it is created
   last so its demographic draws don't perturb the commoners'; that ordering rule
@@ -186,9 +201,10 @@ pool's market buying, does not itself perturb the economic random stream.
 
 ### Configuration
 
-`SimulationConfig` gains `peasantReserveSize` (default **10**) — the standing
-reserve held *beyond* the employed labor force; the pool is seeded with
-`numLaborers + peasantReserveSize` at founding. It also gains the per-step tax rates
+`SimulationConfig` carries `peasantPoolSize` (default **900**) — the peasants the
+pool is seeded with — and `promotionRatio` (default **0.4**) — the fraction promoted
+into laborer households; on day 0 the ablest `round(promotionRatio · poolSize)` are
+promoted, the rest held as the standing reserve. It also gains the per-step tax rates
 `bankProfitTaxRate` and `nobleIncomeTaxRate`. **Calibrated and enabled**: defaults
 0.05 and 0.02, validated stable across a full Strategic-style run and the whole
 test suite (the only behavioural change was the now-accumulating Ruler). The Ruler's existing `DEFAULT_RULER_GOLD` / `consumptionRate` are

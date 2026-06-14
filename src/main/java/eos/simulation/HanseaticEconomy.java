@@ -94,13 +94,14 @@ public class HanseaticEconomy {
 	static final double NOBLE_INITIAL_SILVER = 10;
 
 	/**
-	 * Peasants seeded into each colony's pool. Both colonies enable <b>promotion</b>
-	 * (a dead laborer is replaced by the ruler elevating the ablest peasant, not a
+	 * Fraction of each colony's seeded pool ({@code 2 * numLaborers} peasants) the
+	 * ruler promotes into laborer households on day 0. Both colonies replace dead
+	 * laborers by promotion (the ruler elevates the ablest peasant, not a
 	 * same-dynasty heir), so with only this finite reserve and no inflow the labor
 	 * force declines once it drains and the colony spirals to collapse — this run
 	 * exists to watch how long that takes at the minimum stable scale.
 	 */
-	static final int PEASANT_RESERVE = 10;
+	static final double PROMOTION_RATIO = 0.8;
 
 	/**
 	 * Days of population necessity the nobles collectively stockpile as a reserve.
@@ -133,7 +134,8 @@ public class HanseaticEconomy {
 				.numLaborers(NUM_LABORERS)
 				.numEFirms(NUM_EFIRMS)
 				.numNFirms(NUM_NFIRMS)
-				.peasantReserveSize(PEASANT_RESERVE)
+				.peasantPoolSize(2 * NUM_LABORERS)
+				.promotionRatio(PROMOTION_RATIO)
 				.build();
 		SimulationConfig lubeckCfg = base.toBuilder()
 				.settlementName("Lübeck Altstadt")
@@ -144,12 +146,14 @@ public class HanseaticEconomy {
 
 		Settlement lubeck = session.newSettlement(lubeckCfg.settlementName(),
 				lubeckCfg.startDate(), lubeckCfg.meanInitAgeYears(),
-				lubeckCfg.targetNStock(), lubeckCfg.meanSkill(),
-				lubeckCfg.latitude(), lubeckCfg.longitude());
+				lubeckCfg.targetNStock(), lubeckCfg.meanSkillMale(),
+				lubeckCfg.meanSkillFemale(), lubeckCfg.latitude(),
+				lubeckCfg.longitude());
 		Settlement schwartau = session.newSettlement(schwartauCfg.settlementName(),
 				schwartauCfg.startDate(), schwartauCfg.meanInitAgeYears(),
-				schwartauCfg.targetNStock(), schwartauCfg.meanSkill(),
-				schwartauCfg.latitude(), schwartauCfg.longitude());
+				schwartauCfg.targetNStock(), schwartauCfg.meanSkillMale(),
+				schwartauCfg.meanSkillFemale(), schwartauCfg.latitude(),
+				schwartauCfg.longitude());
 
 		// route logging through the in-game date before any agent is constructed
 		SimLog.init(lubeck);

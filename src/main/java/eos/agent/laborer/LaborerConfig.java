@@ -1,5 +1,6 @@
 package eos.agent.laborer;
 
+import eos.good.RationSize;
 import lombok.Builder;
 
 /**
@@ -8,7 +9,8 @@ import lombok.Builder;
  * heterogeneous one.
  *
  * @param baseSavingsToIncomeRatio base savings to wage ratio
- * @param eatAmt                   quantity of necessity consumed in each step
+ * @param eatAmt                   quantity of necessity consumed in each step — a
+ *                                 worker eats the {@link RationSize#FINE} ration
  * @param epsilon                  sensitivity of target savings to real interest
  *                                 rate
  * @param upsilon                  max percentage change in consumption allowed in
@@ -21,7 +23,7 @@ public record LaborerConfig(
 		double epsilon,
 		double upsilon) {
 
-	/** The original hard-coded parameter values. */
+	/** The canonical parameter values (a worker eats the {@link RationSize#FINE} ration). */
 	public static final LaborerConfig DEFAULT =
-			new LaborerConfig(10, 1.0, 0.1, 0.04);
+			new LaborerConfig(10, RationSize.FINE.perDay(), 0.1, 0.04);
 }

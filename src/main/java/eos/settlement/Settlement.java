@@ -27,6 +27,7 @@ import eos.io.printer.Printer;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Market;
 import eos.mortality.Demography;
+import eos.name.Gender;
 import eos.name.NameRegistry;
 import eos.util.Rng;
 import lombok.Getter;
@@ -140,11 +141,15 @@ public class Settlement {
 	@Getter
 	private final double targetNStock;
 
-	// mean of this colony's household skill distribution, fixed at colony start:
-	// the center of the spread from which every household (founding and successor)
-	// draws its skill, hence the colony's labor productivity (see Demography)
+	// mean of this colony's skill distribution, fixed at colony start: the center
+	// of the spread from which a person draws its skill, hence the colony's labor
+	// productivity (see Demography). Split by gender — males average meanSkillMale,
+	// females meanSkillFemale — so the gendered skill gap is a colony-start
+	// property; see getMeanSkill(Gender).
 	@Getter
-	private final double meanSkill;
+	private final double meanSkillMale;
+	@Getter
+	private final double meanSkillFemale;
 
 	// the colony's geographic location in decimal degrees (north/east positive),
 	// fixed at colony start. Used for daylight calculations (see getSunrise): the
@@ -241,8 +246,10 @@ public class Settlement {
 	 *            mean initial age (years) of founding household heads
 	 * @param targetNStock
 	 *            target necessity stock every laborer tries to accumulate
-	 * @param meanSkill
-	 *            mean of this colony's household skill distribution
+	 * @param meanSkillMale
+	 *            mean of this colony's male skill distribution
+	 * @param meanSkillFemale
+	 *            mean of this colony's female skill distribution
 	 * @param latitude
 	 *            the colony's geographic latitude in decimal degrees (north positive)
 	 * @param longitude
@@ -251,8 +258,8 @@ public class Settlement {
 	public Settlement(String name, LocalDate startDate, Rng rng,
 			NameRegistry names, Demography demography, SlotTable slotTable,
 			LiturgicalCalendar liturgicalCalendar, double meanInitAgeYears,
-			double targetNStock, double meanSkill, double latitude,
-			double longitude) {
+			double targetNStock, double meanSkillMale, double meanSkillFemale,
+			double latitude, double longitude) {
 		this.name = name;
 		this.startDate = startDate;
 		this.rng = rng;
@@ -262,7 +269,8 @@ public class Settlement {
 		this.liturgicalCalendar = liturgicalCalendar;
 		this.meanInitAgeYears = meanInitAgeYears;
 		this.targetNStock = targetNStock;
-		this.meanSkill = meanSkill;
+		this.meanSkillMale = meanSkillMale;
+		this.meanSkillFemale = meanSkillFemale;
 		this.latitude = latitude;
 		this.longitude = longitude;
 		this.solarClock = new SolarClock(latitude, longitude);
@@ -279,6 +287,20 @@ public class Settlement {
 		// seed the starting day's solar times so they are valid before the first
 		// newDay (e.g. for inspection at step 0); newDay recomputes them each day
 		updateSolarTimes();
+	}
+
+	/**
+	 * The mean skill of the colony's distribution for a person of the given
+	 * {@code gender} — the center of the spread {@code Demography} draws its skills
+	 * around. Males average {@link #getMeanSkillMale()}, females {@link
+	 * #getMeanSkillFemale()}.
+	 *
+	 * @param gender
+	 *            the person's gender
+	 * @return the colony's mean skill for that gender
+	 */
+	public double getMeanSkill(Gender gender) {
+		return gender == Gender.FEMALE ? meanSkillFemale : meanSkillMale;
 	}
 
 	/**
@@ -653,7 +675,9 @@ public class Settlement {
 	 */
 	public void run(int steps) {
 		start();
-		for (int i = 0; i < steps; i++) {
+		// stop early once the colony has died (its last laborer is gone): a dead
+		// colony produces nothing more of interest, so running on only burns compute
+		for (int i = 0; i < steps && !died; i++) {
 			LocalDate date = getDate();
 			if (date.getMonthValue() == 1 && date.getDayOfMonth() == 1)
 				System.out.println(date);

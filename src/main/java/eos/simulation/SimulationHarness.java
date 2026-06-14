@@ -66,8 +66,9 @@ public class SimulationHarness {
 	 * #createDefaultRuler()}). Sized so the sovereign can capitalize the whole
 	 * initial labor force on day 0 when founding through the pool (each laborer's
 	 * skill-sum endowment, ~60 copper), with surplus left as its standing treasury:
-	 * 50 gold = 60 000 copper comfortably covers the default 450-laborer founding
-	 * (~27 000 copper).
+	 * 50 gold = 60 000 copper comfortably covers the default founding (with the
+	 * default promotionRatio the ruler promotes ~405 of the 900-peasant pool, ~24 300
+	 * copper).
 	 */
 	public static final double DEFAULT_RULER_GOLD = 50;
 
@@ -145,7 +146,8 @@ public class SimulationHarness {
 		GameSession session = new GameSession(seed);
 		Settlement colony = session.newSettlement(cfg.settlementName(),
 				cfg.startDate(), cfg.meanInitAgeYears(), cfg.targetNStock(),
-				cfg.meanSkill(), cfg.latitude(), cfg.longitude());
+				cfg.meanSkillMale(), cfg.meanSkillFemale(), cfg.latitude(),
+				cfg.longitude());
 		SimLog.init(colony);
 		return new SimulationHarness(cfg, colony);
 	}
@@ -400,33 +402,39 @@ public class SimulationHarness {
 
 	/**
 	 * Give the colony its <b>peasant pool</b> (banking in copper), seeded with
-	 * {@code cfg.peasantReserveSize()} peasants the {@link eos.agent.ruler.Ruler}
-	 * feeds. A no-op (returns {@code null}) when the reserve size is 0, so the pool
-	 * is opt-in per simulation. Requires the necessity market (see {@link
+	 * {@code 2 * cfg.numLaborers()} peasants the {@link eos.agent.ruler.Ruler}
+	 * feeds, and — so every pool-bearing colony can grow — a default {@link
+	 * BuilderFirm} staffed from that pool. Requires the necessity market (see {@link
 	 * #createMarkets()}) and a ruler (see {@link #createDefaultRuler()}) to exist
 	 * first; create it <em>last</em> (after the laborers and the ruler) so its
 	 * demographic/naming draws don't perturb theirs.
 	 *
-	 * @return the created peasant pool, or {@code null} if none was configured
+	 * @return the created peasant pool
 	 */
 	public PeasantPool createDefaultPeasantPool() {
 		return createDefaultPeasantPool(getCopperBank());
 	}
 
 	/**
-	 * As {@link #createDefaultPeasantPool()}, but the pool banks at <tt>bank</tt>
-	 * (for colonies whose commoners do not use {@link #getCopperBank()} — e.g.
-	 * {@link TwoBankEconomy}, so the pool does not add a third copper bank).
+	 * As {@link #createDefaultPeasantPool()}, but the pool (and the builder it
+	 * staffs) bank at <tt>bank</tt> (for colonies whose commoners do not use {@link
+	 * #getCopperBank()} — e.g. {@link TwoBankEconomy}, so the pool does not add a
+	 * third copper bank).
 	 *
 	 * @param bank
 	 *            the (copper) bank the pool transacts through
 	 * @return the created peasant pool
 	 */
 	public PeasantPool createDefaultPeasantPool(Bank bank) {
-		// seed the pool with the standing reserve only (so its larder is sized for
-		// the reserve, not the founding cohort); foundLaborersFromPool adds the
-		// numLaborers to be promoted on day 0
-		peasantPool = new PeasantPool(cfg.peasantReserveSize(), bank, colony);
+		// every pool-bearing colony gets a builder (the only thing that can grow a
+		// live colony), staffed from this pool. Create it first so the dedicated
+		// PeasantLabor market exists when the pool's constructor looks it up.
+		if (colony.getBuilder() == null)
+			createBuilder(bank, BuilderConfig.DEFAULT);
+		// seed the whole pool with cfg.peasantPoolSize() peasants, each with a
+		// BUFFER_DAYS larder. foundLaborersFromPool then promotes promotionRatio of
+		// them on day 0, the rest stay as the standing reserve.
+		peasantPool = new PeasantPool(cfg.peasantPoolSize(), bank, colony);
 		colony.addAgent(peasantPool);
 		return peasantPool;
 	}
@@ -492,30 +500,31 @@ public class SimulationHarness {
 
 	/**
 	 * Found the initial labor force <b>through the pool</b>: the ruler promotes the
-	 * top {@code numLaborers} peasants (highest skill first) into laborer households,
-	 * each capitalized by the ruler with its skill-sum endowment (see {@link
-	 * #promoteToLaborer}). The peasant pool must already be seeded with at least
-	 * {@code numLaborers} members (see {@link #createDefaultPeasantPool()} with
-	 * {@code foundLaborersFromPool} on) and a ruler must exist (the sovereign holds
-	 * the founding cash). Used in place of {@link #createLaborers} by the
-	 * pool-founding sims; the unpromoted remainder stays as the standing reserve.
+	 * ablest {@code round(promotionRatio * poolSize)} peasants (highest skill first)
+	 * into laborer households, each capitalized by the ruler with its skill-sum
+	 * endowment and carrying its larder ration out of the pool (see {@link
+	 * #promoteToLaborer}). The peasant pool must already be seeded (see {@link
+	 * #createDefaultPeasantPool()}) and a ruler must exist (the sovereign holds the
+	 * founding cash). Used in place of {@link #createLaborers} by the pool-founding
+	 * sims; the unpromoted remainder stays as the standing reserve.
 	 *
 	 * @param laborerBank
 	 *            the bank each new laborer holds its accounts at (by index)
 	 * @param initN
-	 *            the initial necessity stock of each new laborer (by index)
+	 *            the initial necessity stock of each new laborer (by index) — drawn
+	 *            from the pool's larder, so it is conserved, not created
 	 */
 	public void foundLaborersFromPool(IntFunction<Bank> laborerBank,
 			IntToDoubleFunction initN) {
-		// add the founding cohort to the reserve already pooled, then promote the
-		// ablest numLaborers of the combined pool into households (the rest, the
-		// least skilled, remain as the standing reserve)
-		peasantPool.seedMore(cfg.numLaborers());
-		laborers = new Laborer[cfg.numLaborers()];
-		for (int i = 0; i < cfg.numLaborers(); i++) {
+		// promote promotionRatio of the seeded pool into households (highest skill
+		// first); the rest — the least skilled — remain as the standing reserve
+		int promoted =
+				(int) Math.round(cfg.promotionRatio() * peasantPool.size());
+		laborers = new Laborer[promoted];
+		for (int i = 0; i < promoted; i++) {
 			Member peasant = peasantPool.promoteHighestSkilled();
-			laborers[i] = promoteToLaborer(peasant, laborerBank.apply(i),
-					initN.applyAsDouble(i));
+			double stock = peasantPool.drawPromotionStock(initN.applyAsDouble(i));
+			laborers[i] = promoteToLaborer(peasant, laborerBank.apply(i), stock);
 			colony.addAgent(laborers[i]);
 		}
 		registerLaborerReplacementPolicy();
@@ -539,8 +548,12 @@ public class SimulationHarness {
 				if (!(dead instanceof Laborer) || peasantPool == null)
 					return null;
 				Member peasant = peasantPool.promoteHighestSkilled();
-				return peasant == null ? null : promoteToLaborer(peasant,
-						((Laborer) dead).getBank(), REPLACEMENT_NECESSITY_STOCK);
+				if (peasant == null)
+					return null;
+				// the promoted peasant carries its larder ration out of the pool
+				double stock = peasantPool
+						.drawPromotionStock(REPLACEMENT_NECESSITY_STOCK);
+				return promoteToLaborer(peasant, ((Laborer) dead).getBank(), stock);
 			});
 		else
 			colony.addReplacementPolicy(dead -> {
@@ -571,11 +584,12 @@ public class SimulationHarness {
 	 * @return the promoted laborer household
 	 */
 	private Laborer promoteToLaborer(Member peasant, Bank bank, double initNQty) {
-		// keep the peasant's given name, skills and age; give it a fresh dynasty
-		// surname (it carried none while pooled)
+		// keep the peasant's given name, gender, skills and age; give it a fresh
+		// dynasty surname (it carried none while pooled)
 		String surname = colony.getNames().nextDynastyName();
 		Member head = new Member(
-				new Person(peasant.person().givenName(), surname, peasant.skills()),
+				new Person(peasant.person().givenName(), surname,
+						peasant.gender(), peasant.skills()),
 				peasant.getBirthDate());
 		// skill-based endowment: the sum of the head's twelve skill levels, in copper
 		double savings = peasant.skills().totalLevel();

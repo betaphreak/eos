@@ -24,7 +24,7 @@ class GameSessionTest {
 	private static final LocalDate START = LocalDate.of(1444, 12, 11);
 
 	private Settlement newColony(GameSession s) {
-		return s.newSettlement("Test Colony", START, 35, 26, 5, 51.5074, -0.1278);
+		return s.newSettlement("Test Colony", START, 35, 26, 5, 2, 51.5074, -0.1278);
 	}
 
 	@Test
