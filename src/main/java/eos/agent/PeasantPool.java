@@ -4,12 +4,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import eos.agent.firm.BuilderFirm;
 import eos.agent.ruler.Ruler;
 import eos.bank.Bank;
 import eos.good.Good;
 import eos.good.Necessity;
 import eos.market.ConsumerGoodMarket;
 import eos.market.Demand;
+import eos.market.LaborMarket;
 import eos.mortality.Demography;
 import eos.name.Person;
 import eos.settlement.Settlement;
@@ -52,6 +54,10 @@ public class PeasantPool extends Agent {
 	private Necessity necessity;
 	private final ConsumerGoodMarket nMkt;
 
+	// the builder's dedicated labor market, if the colony has a builder (else null):
+	// the pool supplies its peasants here, with their wages routed to the ruler
+	private final LaborMarket builderLaborMkt;
+
 	// necessity eaten last step, peasants lost to starvation last step, and the
 	// cumulative relief cost billed to the Ruler — all for reporting
 	@Getter
@@ -82,6 +88,10 @@ public class PeasantPool extends Agent {
 		setName("Peasant Pool");
 		bank.openAcct(getID(), 0, 0);
 		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
+		// the builder hires peasants from this market (null if the colony has no
+		// builder, in which case the pool supplies no labor)
+		this.builderLaborMkt =
+				(LaborMarket) colony.getMarket(BuilderFirm.LABOR_MARKET);
 		// seed the larder with a full buffer (like a laborer's starting necessity
 		// stock), so the pool can feed its peasants from step 0 and ride out the
 		// necessity sector's adjustment to the new demand
@@ -107,10 +117,17 @@ public class PeasantPool extends Agent {
 	/** Called by Settlement.newDay() in each step. */
 	public void act() {
 		Settlement colony = getColony();
-		// the Ruler reimburses the pool's necessity spend so far (borrowing as
-		// needed), landing the relief cost on the Ruler and returning the pool's
-		// account to ~0 before interest is assessed this step
-		billRuler();
+		// the ruler may have died of old age earlier in this step's agent loop (the
+		// pool acts after it) and not yet been succeeded; with no live patron the
+		// pool neither bills nor supplies labor this step (deficit/work carry over)
+		Ruler ruler = colony.getRuler();
+		boolean rulerLive = ruler != null && ruler.isAlive();
+
+		// the ruler reimburses the pool's necessity spend so far (borrowing as
+		// needed), landing the relief cost on it and returning the pool's account to
+		// ~0 before interest is assessed this step
+		if (rulerLive)
+			billRuler(ruler);
 		// old-age mortality, then skill decay for the survivors
 		peasants.removeIf(
 				m -> m.rollOldAgeDeath(colony.getDemography(), colony.getDate()));
@@ -118,6 +135,13 @@ public class PeasantPool extends Agent {
 			m.skills().tick();
 		// eat one necessity per peasant; the unfed starve
 		feed();
+		// supply the surviving peasants to the builder as its exclusive workforce,
+		// routing their wages to the ruler (their patron); the builder hires as many
+		// as its budget allows and none when idle
+		if (builderLaborMkt != null && rulerLive)
+			for (Member m : peasants)
+				builderLaborMkt.addEmployee(ruler.getID(), ruler.getBank(), 1.0,
+						m.skills());
 		// buy enough to feed the pool next step (funded by the overdraft billRuler
 		// reconciles); peasants never buy enjoyment
 		if (!peasants.isEmpty())
@@ -140,13 +164,7 @@ public class PeasantPool extends Agent {
 		}
 	}
 
-	private void billRuler() {
-		Ruler ruler = getColony().getRuler();
-		// the ruler may have died of old age earlier in this step's agent loop (the
-		// pool acts after it) and not yet been succeeded; skip billing — the deficit
-		// carries to next step, when the heir holds the colony's ruler reference
-		if (ruler == null || !ruler.isAlive())
-			return;
+	private void billRuler(Ruler ruler) {
 		Bank bank = getBank();
 		double deficit = -(bank.getChecking(getID()) + bank.getSavings(getID()));
 		if (deficit > 1e-9) {

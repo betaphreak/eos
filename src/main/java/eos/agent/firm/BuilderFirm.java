@@ -14,24 +14,36 @@ import lombok.Getter;
 
 /**
  * The settlement's <b>builder</b>: a labor-only firm that physically expands the
- * colony. It hires on the general {@code Labor} market like the other firms and
- * converts that labor into <i>build-units</i> (its output is capped by the {@link
- * BuilderConfig#scaffoldCap() scaffold cap}), which it applies to the {@link
- * BuildProject}s in the colony's build queue — land clearance, road building and
- * wall raising. The work it delivers is <b>billed to each task's sponsor</b> at
- * cost: the firm that requested a slot pays for the land it will occupy, and the
- * {@link eos.agent.ruler.Ruler ruler} pays for the ring's roads and walls. When a
- * ring's land, road and wall tasks are all complete the colony grows by one size
- * (see {@link Settlement#completeFinishedRings()}) and seats the firms that were
- * waiting on it.
+ * colony. It is staffed <b>exclusively by peasants</b> — it hires on a dedicated
+ * {@value #LABOR_MARKET} market whose only workers are the {@link
+ * eos.agent.PeasantPool}'s peasants (the corvée labor of the poor), mirroring how
+ * {@link StrategicFirm} draws on a noble-only market — and converts that labor into
+ * <i>build-units</i> (its output is capped by the {@link BuilderConfig#scaffoldCap()
+ * scaffold cap}), which it applies to the {@link BuildProject}s in the colony's
+ * build queue — land clearance, road building and wall raising. The work it
+ * delivers is <b>billed to each task's sponsor</b> at cost: the firm that requested
+ * a slot pays for the land it will occupy, and the {@link eos.agent.ruler.Ruler
+ * ruler} pays for the ring's roads and walls. When a ring's land, road and wall
+ * tasks are all complete the colony grows by one size (see {@link
+ * Settlement#completeFinishedRings()}) and seats the firms that were waiting on it.
  * <p>
- * Because it bills the wage cost of the work it does, the builder is close to a
- * zero-profit conduit (like {@link StrategicFirm}): sponsors fund the wages, the
- * builder pays the workers. It registers itself as the colony's sole builder in
- * its constructor; a colony with a builder grows only through it (a live colony
- * without one cannot grow at all).
+ * Because the peasants are the ruler's wards (it feeds the pool), the wage the
+ * builder pays for their labor is <b>reimbursed to the ruler</b>: the pool registers
+ * each peasant with the ruler's account as the wage target, so the builder's wage
+ * budget flows to the ruler when the labor market clears. The builder remains a
+ * near zero-profit conduit (like {@link StrategicFirm}): sponsors fund the wages,
+ * which the ruler — the peasants' patron — collects. It registers itself as the
+ * colony's sole builder in its constructor; a colony with a builder grows only
+ * through it (a live colony without one cannot grow at all).
  */
 public class BuilderFirm extends Firm {
+
+	/**
+	 * Name of the dedicated labor market the builder hires from, whose only workers
+	 * are the colony's peasants (see {@link eos.agent.PeasantPool}). Kept separate
+	 * from the general {@code "Labor"} market so the two pools never mix.
+	 */
+	public static final String LABOR_MARKET = "PeasantLabor";
 
 	@Getter
 	private final BuilderConfig config;
@@ -39,7 +51,7 @@ public class BuilderFirm extends Firm {
 	// the colony this firm builds for (Agent keeps its own colony reference private)
 	private final Settlement colony;
 
-	// the general labor market the builder hires its workers from
+	// the dedicated peasant labor market the builder hires its workers from
 	private final LaborMarket lMkt;
 
 	// build-units delivered in the last step, and cumulatively over the firm's life
@@ -69,7 +81,7 @@ public class BuilderFirm extends Firm {
 		setName("Builder Firm");
 		this.config = config;
 		this.colony = colony;
-		this.lMkt = (LaborMarket) colony.getMarket("Labor");
+		this.lMkt = (LaborMarket) colony.getMarket(LABOR_MARKET);
 		this.wageBudget = 0; // nothing to build yet, so hire no one at founding
 		colony.setBuilder(this); // register as the colony's sole builder (throws on a second)
 	}

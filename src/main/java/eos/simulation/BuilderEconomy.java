@@ -44,6 +44,9 @@ public class BuilderEconomy {
 	/** Necessity firms at founding. */
 	static final int NUM_NFIRMS = 6;
 
+	/** Peasants seeded into the pool that staffs the builder (its exclusive workforce). */
+	static final int PEASANT_RESERVE = 10;
+
 	/** Years after founding the colony expands its industry (and so must build to grow). */
 	static final int EXPANSION_YEARS = 5;
 
@@ -65,6 +68,7 @@ public class BuilderEconomy {
 				.numLaborers(NUM_LABORERS)
 				.numEFirms(NUM_EFIRMS)
 				.numNFirms(NUM_NFIRMS)
+				.peasantReserveSize(PEASANT_RESERVE)
 				.build();
 		SimulationHarness h = SimulationHarness.create(cfg, SEED);
 		Settlement colony = h.getColony();
@@ -79,7 +83,10 @@ public class BuilderEconomy {
 		h.createBuilder(copper, BuilderConfig.DEFAULT);
 		h.createLaborers(i -> copper, i -> 15, i -> cfg.laborer().savings());
 		// every settlement has a ruler; here it also funds the builder's public works
+		// and is reimbursed the wages of the peasants who do the building
 		Bank gold = h.createDefaultRuler();
+		// the peasant pool that staffs the builder (created last, after the ruler)
+		h.createDefaultPeasantPool();
 
 		// industry expansion: once, EXPANSION_YEARS in, plant a balanced batch of new
 		// consumer firms. The colony is nearly full, so the ones that do not fit have
@@ -113,6 +120,7 @@ public class BuilderEconomy {
 		h.addBankPrinter("Copper", copper);
 		h.addBankPrinter("Gold", gold);
 		h.addBuilderPrinter("Builder");
+		h.addPeasantPrinter("Peasants");
 		h.run();
 		return h;
 	}

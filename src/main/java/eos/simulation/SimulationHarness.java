@@ -436,6 +436,12 @@ public class SimulationHarness {
 	 * @return the created builder
 	 */
 	public BuilderFirm createBuilder(Bank bank, BuilderConfig config) {
+		// the builder is staffed exclusively by peasants, on a dedicated labor
+		// market (its workers are supplied by the colony's peasant pool); create it
+		// before the builder, which looks it up. A builder colony therefore also
+		// needs a peasant pool (see createDefaultPeasantPool).
+		if (colony.getMarket(BuilderFirm.LABOR_MARKET) == null)
+			colony.addMarket(new LaborMarket(BuilderFirm.LABOR_MARKET, colony));
 		builderFirm = new BuilderFirm(config, bank, colony);
 		colony.addAgent(builderFirm);
 		colony.claimSlot(builderFirm);

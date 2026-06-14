@@ -43,14 +43,22 @@ public final class ColonyHealth {
 		if (np != null)
 			return np;
 
+		// every bank's pools and rates must stay finite, and the banking system as a
+		// whole must hold deposits (a collapse drains them). An individual
+		// specialized bank may legitimately hold none — e.g. a ruler's gold bank
+		// that is purely its borrowing facility while it funds peasant relief — so
+		// the positive-deposit check is at the system level, not per bank.
+		double totalDeposits = 0;
 		for (Bank bank : h.getBanks()) {
-			if (!(Double.isFinite(bank.getTotalDeposit())
-					&& bank.getTotalDeposit() > 0))
-				return "bank deposit not finite/positive";
+			if (!Double.isFinite(bank.getTotalDeposit()))
+				return "bank deposit not finite";
 			if (!Double.isFinite(bank.getLoanIR())
 					|| !Double.isFinite(bank.getDepositIR()))
 				return "bank rate not finite";
+			totalDeposits += bank.getTotalDeposit();
 		}
+		if (!(totalDeposits > 0))
+			return "no bank deposits (banking collapsed)";
 		return null;
 	}
 

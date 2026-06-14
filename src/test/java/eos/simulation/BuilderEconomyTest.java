@@ -35,6 +35,12 @@ class BuilderEconomyTest {
 		assertSame(builder, colony.getBuilder(),
 				"harness and colony should expose the same builder");
 
+		// the builder is staffed exclusively by peasants, so a builder colony must
+		// have a peasant pool; the colony's growth below is proof those peasants
+		// actually supplied the construction labor (the builder has no other source)
+		assertNotNull(h.getPeasantPool(),
+				"a builder colony needs a peasant pool as its workforce");
+
 		// the builder actually did construction work over the run
 		assertTrue(builder.getTotalDelivered() > 0,
 				"expected the builder to have delivered build-units, got "
