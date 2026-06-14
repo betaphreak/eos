@@ -164,10 +164,13 @@ public class Noble extends AbstractHousehold {
 		// yearly roster); a notable one (skill above the threshold) is also worth
 		// recording by name at its founding
 		colony.addPersonOfInterest(this);
-		if (isNotable())
+		if (isNotable()) {
+			var skills = getHead().skills();
 			log.info(String.format(
-					"%s founded a noble house in the colony — notable (%s)",
-					getHead().fullName(), getHead().skills()));
+					"%s founded a noble house in the colony — notable in %s (level %d); %s",
+					getHead().fullName(), skills.peakSkill(), skills.peakLevel(),
+					skills));
+		}
 
 		this.config = config;
 		this.firms = new ArrayList<>(ownedFirms);

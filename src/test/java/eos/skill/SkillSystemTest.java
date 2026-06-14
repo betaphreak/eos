@@ -85,12 +85,12 @@ class SkillSystemTest {
 	}
 
 	@Test
-	void peakSkillIsTheIndexOfTheHighestSkill() {
+	void peakSkillIsTheHighestSkill() {
 		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
 		recs.put(Skill.MEDICINE, new SkillRecord(17, Passion.NONE));
 		recs.put(Skill.SOCIAL, new SkillRecord(9, Passion.NONE));
 		SkillTracker t = new SkillTracker(recs);
-		assertEquals(Skill.MEDICINE.index(), t.peakSkill());
+		assertEquals(Skill.MEDICINE, t.peakSkill());
 		// peakSkill identifies WHICH skill; peakLevel gives how good it is
 		assertEquals(17, t.peakLevel());
 	}
@@ -100,7 +100,7 @@ class SkillSystemTest {
 		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
 		recs.put(Skill.INTELLECTUAL, new SkillRecord(12, Passion.NONE)); // index 2
 		recs.put(Skill.CRAFTING, new SkillRecord(12, Passion.NONE)); // index 11
-		assertEquals(Skill.INTELLECTUAL.index(), new SkillTracker(recs).peakSkill());
+		assertEquals(Skill.INTELLECTUAL, new SkillTracker(recs).peakSkill());
 	}
 
 	@Test

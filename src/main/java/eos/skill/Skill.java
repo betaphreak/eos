@@ -30,8 +30,8 @@ public enum Skill {
 
 	/**
 	 * This skill's stable index in {@code [0, 11]} — its identity independent of
-	 * declaration order, used where a skill must be referred to by number (e.g.
-	 * {@link SkillTracker#peakSkill()}).
+	 * declaration order, used where a skill must be referred to by number (and as
+	 * the deterministic tie-break in {@link SkillTracker#peakSkill()}).
 	 *
 	 * @return the skill's index
 	 */

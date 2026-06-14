@@ -118,28 +118,27 @@ public final class SkillTracker {
 	}
 
 	/**
-	 * The {@linkplain Skill#index() index} (0..11) of the person's strongest
-	 * skill — the skill with the highest level, ties broken toward the lowest
-	 * index. Companion to {@link #peakLevel()} (which gives that skill's level):
-	 * {@code peakLevel} is <em>how good</em> the best skill is, {@code peakSkill}
-	 * is <em>which</em> skill it is, identified by its stable index.
+	 * The person's strongest skill — the {@link Skill} with the highest level,
+	 * ties broken toward the lowest {@linkplain Skill#index() index}. Companion to
+	 * {@link #peakLevel()} (that skill's level): {@code peakLevel} is <em>how
+	 * good</em> the best skill is, {@code peakSkill} is <em>which</em> skill it is.
 	 *
-	 * @return the index of the highest-level skill
+	 * @return the highest-level skill
 	 */
-	public int peakSkill() {
+	public Skill peakSkill() {
+		Skill best = null;
 		int bestLevel = -1;
-		int bestIndex = -1;
 		for (Skill s : Skill.values()) {
 			int level = records.get(s).getLevel();
 			// strict >, with an explicit index tie-break, so the result depends on
 			// the skill's index rather than the enum's iteration order
 			if (level > bestLevel
-					|| (level == bestLevel && s.index() < bestIndex)) {
+					|| (level == bestLevel && s.index() < best.index())) {
 				bestLevel = level;
-				bestIndex = s.index();
+				best = s;
 			}
 		}
-		return bestIndex;
+		return best;
 	}
 
 	/**

@@ -189,9 +189,11 @@ public class Laborer extends AbstractHousehold {
 		// a notable arrival (skill above the threshold) is worth recording by name,
 		// and is a person of interest the colony tracks (and logs yearly)
 		if (isNotable()) {
+			var skills = getHead().skills();
 			log.info(String.format(
-					"%s founded a household in the colony — notable (%s)",
-					getHead().fullName(), getHead().skills()));
+					"%s founded a household in the colony — notable in %s (level %d); %s",
+					getHead().fullName(), skills.peakSkill(), skills.peakLevel(),
+					skills));
 			colony.addPersonOfInterest(this);
 		}
 
