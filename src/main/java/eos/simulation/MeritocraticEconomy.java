@@ -55,7 +55,6 @@ public class MeritocraticEconomy {
 				.startDate(LocalDate.of(1444, 12, 11))
 				.durationYears(25)
 				.peasantReserveSize(PEASANT_RESERVE)
-				.promoteLaborersFromPool(true)
 				.build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		Bank bank = h.getCopperBank();
@@ -73,11 +72,12 @@ public class MeritocraticEconomy {
 			h.getColony().addAgent(new Noble(0, SimulationHarness.DEFAULT_NOBLE_SAVINGS,
 					List.of(), List.of(), NobleConfig.DEFAULT, silver, h.getColony()));
 		h.primeNobleLabor();
-		// createLaborers registers the promotion replacement policy (cfg flag is on)
-		h.createLaborers(i -> bank, i -> 15, i -> cfg.laborer().savings());
-		h.enableExternalInflow(bank);
+		// the ruler (founding cash) and the pool precede the labor force, which the
+		// ruler founds and replaces by promotion from the pool
 		Bank gold = h.createDefaultRuler();
 		h.createDefaultPeasantPool();
+		h.foundLaborersFromPool(i -> bank, i -> 15);
+		h.enableExternalInflow(bank);
 		h.addCommonPrinters();
 		h.addBankPrinter("Copper", bank);
 		h.addBankPrinter("Silver", silver);

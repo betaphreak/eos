@@ -58,14 +58,12 @@ import lombok.Builder;
  * @param nobleIncomeTaxRate fraction of each noble's per-step income the Ruler
  *                     skims into its treasury each step (the noble income tax);
  *                     0 disables it (the default, pending calibration)
- * @param peasantReserveSize number of peasants the colony's pool is seeded with
- *                     (the standing reserve the Ruler feeds); 0 creates no pool
- *                     (the default), so the feature is opt-in per simulation
- * @param promoteLaborersFromPool when true, a dead laborer is replaced by the
- *                     Ruler promoting the highest-skilled peasant from the pool
- *                     (merit-based social mobility) rather than by a same-dynasty
- *                     heir; an empty pool yields no replacement (the labor force
- *                     then shrinks). Default false (same-dynasty succession)
+ * @param peasantReserveSize the <b>standing reserve</b> held beyond the employed
+ *                     labor force; a colony with a pool is seeded with {@code
+ *                     numLaborers + peasantReserveSize} peasants, founds its labor
+ *                     force by promoting {@code numLaborers} of them on day 0, and
+ *                     replaces later deaths from the remaining reserve until it
+ *                     drains (see {@link SimulationHarness#foundLaborersFromPool})
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -91,8 +89,7 @@ public record SimulationConfig(
 		double laborShare,
 		double bankProfitTaxRate,
 		double nobleIncomeTaxRate,
-		int peasantReserveSize,
-		boolean promoteLaborersFromPool) {
+		int peasantReserveSize) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -165,6 +162,5 @@ public record SimulationConfig(
 			0.5,                                   // laborShare
 			0.05,                                  // bankProfitTaxRate
 			0.02,                                  // nobleIncomeTaxRate
-			0,                                     // peasantReserveSize (no pool)
-			false);                                // promoteLaborersFromPool
+			0);                                    // peasantReserveSize (no pool)
 }

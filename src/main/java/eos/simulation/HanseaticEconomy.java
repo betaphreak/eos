@@ -134,7 +134,6 @@ public class HanseaticEconomy {
 				.numEFirms(NUM_EFIRMS)
 				.numNFirms(NUM_NFIRMS)
 				.peasantReserveSize(PEASANT_RESERVE)
-				.promoteLaborersFromPool(true)
 				.build();
 		SimulationConfig lubeckCfg = base.toBuilder()
 				.settlementName("Lübeck Altstadt")
@@ -211,13 +210,12 @@ public class HanseaticEconomy {
 		// clear the noble labor market once so the export firm has workers in step 0
 		h.primeNobleLabor();
 
-		h.createLaborers(i -> copper, i -> 15, i -> cfg.laborer().savings());
-		h.enableExternalInflow(copper);
-
-		// every settlement has a ruler, banking in gold (created last)
+		// the ruler (founding cash) and the pool precede the labor force, which the
+		// ruler founds and replaces by promotion from the pool
 		Bank gold = h.createDefaultRuler();
-		// the peasant pool the ruler feeds and promotes laborers from (created last)
 		h.createDefaultPeasantPool();
+		h.foundLaborersFromPool(i -> copper, i -> 15);
+		h.enableExternalInflow(copper);
 
 		h.addCommonPrinters(prefix);
 		h.addPeasantPrinter(prefix + "Peasants");

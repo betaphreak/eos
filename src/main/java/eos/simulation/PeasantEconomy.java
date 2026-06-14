@@ -35,12 +35,12 @@ public class PeasantEconomy {
 		h.createFirms(bank, i -> bank,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createDefaultStrategicSector(bank);
-		h.createLaborers(i -> bank, i -> 15, i -> cfg.laborer().savings());
-		h.enableExternalInflow(bank);
-		// the ruler (the pool's sponsor) is created before the pool, and the pool
-		// last of all so its demographic/naming draws don't perturb the others
+		// the ruler (founding cash) and the pool precede the labor force, which the
+		// ruler founds and replaces by promotion from the pool
 		Bank gold = h.createDefaultRuler();
 		h.createDefaultPeasantPool();
+		h.foundLaborersFromPool(i -> bank, i -> 15);
+		h.enableExternalInflow(bank);
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);
 		h.addBankPrinter("Gold", gold);

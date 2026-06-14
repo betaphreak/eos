@@ -35,10 +35,13 @@ public class TwoBankEconomy {
 		// every settlement has an export sector; its firm and nobles bank at A (so
 		// the colony keeps its two banks rather than gaining a third)
 		h.createDefaultStrategicSector(bankA);
-		h.createLaborers(alternate, i -> 15, i -> cfg.laborer().savings());
-		h.enableExternalInflow(bankA);
-		// every settlement has a ruler, banking in gold (created last)
+		// the ruler (founding cash) and the pool precede the labor force, which the
+		// ruler founds and replaces by promotion from the pool (the pool banks at A,
+		// so the colony keeps its two copper banks)
 		Bank gold = h.createDefaultRuler();
+		h.createDefaultPeasantPool(bankA);
+		h.foundLaborersFromPool(alternate, i -> 15);
+		h.enableExternalInflow(bankA);
 		h.addCommonPrinters();
 		h.addBankPrinter("BankA", bankA);
 		h.addBankPrinter("BankB", bankB);

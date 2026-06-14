@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import eos.agent.Agent;
 import eos.agent.laborer.Laborer;
+import eos.simulation.tools.ScaleSweep;
 import eos.skill.Skill;
 import eos.skill.SkillTracker;
 
@@ -16,12 +17,16 @@ import eos.skill.SkillTracker;
  * accumulated {@link Skill#PLANTS} experience, while a skill no firm in the run
  * trains ({@link Skill#MEDICINE}) stays near its birth level — confirming the
  * {@link eos.market.LaborMarket} grants per-skill XP for the labor performed.
+ * <p>
+ * Uses the bare {@link ScaleSweep} colony (no ruler/pool, so its labor force is
+ * sustained by same-dynasty succession) rather than a ruler-bearing run, which now
+ * founds from a finite pool and collapses — leaving no living laborers to inspect.
  */
 class LaborTrainsSkillsTest {
 
 	@Test
 	void laborTrainsTheFirmsSkillButNotUntrainedSkills() {
-		SimulationHarness h = assertDoesNotThrow(HomogeneousEconomy::run);
+		SimulationHarness h = assertDoesNotThrow(ScaleSweep::run);
 
 		double plants = 0, medicine = 0;
 		int n = 0;

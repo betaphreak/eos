@@ -77,8 +77,6 @@ public class AristocraticEconomy {
 		h.createFirms(copper, i -> copper,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createStrategicFirm(copper, StrategicFirmConfig.DEFAULT);
-		h.createLaborers(i -> copper, i -> 15, i -> cfg.laborer().savings());
-		h.enableExternalInflow(copper);
 
 		// gather every firm and divide ownership round-robin among the nobles
 		List<Firm> allFirms = new ArrayList<>();
@@ -106,9 +104,12 @@ public class AristocraticEconomy {
 		// it once so the export firm has workers in step 0
 		h.primeNobleLabor();
 
-		// every settlement has a ruler, banking in gold; created last so its
-		// demographic draws don't perturb the commoners' or nobles'
+		// every settlement has a ruler, banking in gold; it holds the founding cash
+		// and founds/replaces the labor force by promotion from the pool
 		Bank gold = h.createDefaultRuler();
+		h.createDefaultPeasantPool();
+		h.foundLaborersFromPool(i -> copper, i -> 15);
+		h.enableExternalInflow(copper);
 
 		h.addCommonPrinters();
 		h.addBankPrinter("Copper", copper);

@@ -1,5 +1,6 @@
 package eos.simulation;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -31,6 +32,26 @@ final class SimulationAssertions {
 	static void assertCoreHealthy(SimulationHarness h, long minLaborers) {
 		String reason = ColonyHealth.diagnose(h, minLaborers);
 		assertNull(reason, () -> "unhealthy colony: " + reason);
+	}
+
+	/**
+	 * Assert the colony <b>collapsed</b>: it ran to completion (no {@code -ea}
+	 * invariant thrown — checked by the caller) and ended with its labor force gone.
+	 * This is the contract for every ruler-bearing colony now that the labor force is
+	 * founded and replaced by promotion from a finite peasant pool: once the reserve
+	 * drains, deaths go unreplaced and the colony spirals to death (the refill that
+	 * would prevent this is a later phase — see {@code docs/peasant-pool.md}).
+	 *
+	 * @param h
+	 *            a finished harness
+	 */
+	static void assertCollapsed(SimulationHarness h) {
+		assertTrue(h.getColony().isDead(),
+				"expected the colony to have collapsed (its labor force is replaced "
+						+ "from a finite pool that drains)");
+		assertEquals(0, h.currentLaborerCount(),
+				"a collapsed colony has no laborers left, got "
+						+ h.currentLaborerCount());
 	}
 
 	/** Assert the post-run closed default colony is healthy. */

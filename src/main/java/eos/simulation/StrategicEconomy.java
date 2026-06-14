@@ -83,10 +83,12 @@ public class StrategicEconomy {
 		// in step 0 (mirrors the pre-run clearing of the general labor market)
 		h.primeNobleLabor();
 
-		h.createLaborers(i -> copper, i -> 15, i -> cfg.laborer().savings());
-		h.enableExternalInflow(copper);
-		// every settlement has a ruler, banking in gold (created last)
+		// the ruler (founding cash) and the pool precede the labor force, which the
+		// ruler founds and replaces by promotion from the pool
 		Bank gold = h.createDefaultRuler();
+		h.createDefaultPeasantPool();
+		h.foundLaborersFromPool(i -> copper, i -> 15);
+		h.enableExternalInflow(copper);
 		h.addCommonPrinters();
 		h.addBankPrinter("Copper", copper);
 		h.addBankPrinter("Silver", silver);

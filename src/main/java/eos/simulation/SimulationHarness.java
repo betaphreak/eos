@@ -61,8 +61,15 @@ public class SimulationHarness {
 	/** Opening savings (seed fortune) of each default-sector noble. */
 	public static final double DEFAULT_NOBLE_SAVINGS = 1000;
 
-	/** The default ruler's opening fortune, in <b>gold</b> (see {@link #createDefaultRuler()}). */
-	public static final double DEFAULT_RULER_GOLD = 10;
+	/**
+	 * The default ruler's opening fortune, in <b>gold</b> (see {@link
+	 * #createDefaultRuler()}). Sized so the sovereign can capitalize the whole
+	 * initial labor force on day 0 when founding through the pool (each laborer's
+	 * skill-sum endowment, ~60 copper), with surplus left as its standing treasury:
+	 * 50 gold = 60 000 copper comfortably covers the default 450-laborer founding
+	 * (~27 000 copper).
+	 */
+	public static final double DEFAULT_RULER_GOLD = 50;
 
 	/**
 	 * Fraction of its treasury the default ruler spends on enjoyment each step — a
@@ -403,10 +410,23 @@ public class SimulationHarness {
 	 * @return the created peasant pool, or {@code null} if none was configured
 	 */
 	public PeasantPool createDefaultPeasantPool() {
-		if (cfg.peasantReserveSize() <= 0)
-			return null;
-		peasantPool = new PeasantPool(cfg.peasantReserveSize(), getCopperBank(),
-				colony);
+		return createDefaultPeasantPool(getCopperBank());
+	}
+
+	/**
+	 * As {@link #createDefaultPeasantPool()}, but the pool banks at <tt>bank</tt>
+	 * (for colonies whose commoners do not use {@link #getCopperBank()} — e.g.
+	 * {@link TwoBankEconomy}, so the pool does not add a third copper bank).
+	 *
+	 * @param bank
+	 *            the (copper) bank the pool transacts through
+	 * @return the created peasant pool
+	 */
+	public PeasantPool createDefaultPeasantPool(Bank bank) {
+		// seed the pool with the standing reserve only (so its larder is sized for
+		// the reserve, not the founding cohort); foundLaborersFromPool adds the
+		// numLaborers to be promoted on day 0
+		peasantPool = new PeasantPool(cfg.peasantReserveSize(), bank, colony);
 		colony.addAgent(peasantPool);
 		return peasantPool;
 	}
@@ -466,20 +486,61 @@ public class SimulationHarness {
 					laborerBank.apply(i), colony);
 			colony.addAgent(laborers[i]);
 		}
+		registerLaborerReplacementPolicy();
+		laborMkt.clear();
+	}
 
-		// register how a dead laborer is replaced. By default a successor household
-		// continues the same dynasty at the same bank, inheriting the estate (so
-		// money and the labor force stay roughly constant). When the run opts into
-		// pool promotion, the ruler instead elevates the ablest peasant into a fresh
-		// laborer household — merit-based mobility — and an empty pool yields no
-		// replacement, so the labor force declines as the reserve drains.
-		if (cfg.promoteLaborersFromPool())
+	/**
+	 * Found the initial labor force <b>through the pool</b>: the ruler promotes the
+	 * top {@code numLaborers} peasants (highest skill first) into laborer households,
+	 * each capitalized by the ruler with its skill-sum endowment (see {@link
+	 * #promoteToLaborer}). The peasant pool must already be seeded with at least
+	 * {@code numLaborers} members (see {@link #createDefaultPeasantPool()} with
+	 * {@code foundLaborersFromPool} on) and a ruler must exist (the sovereign holds
+	 * the founding cash). Used in place of {@link #createLaborers} by the
+	 * pool-founding sims; the unpromoted remainder stays as the standing reserve.
+	 *
+	 * @param laborerBank
+	 *            the bank each new laborer holds its accounts at (by index)
+	 * @param initN
+	 *            the initial necessity stock of each new laborer (by index)
+	 */
+	public void foundLaborersFromPool(IntFunction<Bank> laborerBank,
+			IntToDoubleFunction initN) {
+		// add the founding cohort to the reserve already pooled, then promote the
+		// ablest numLaborers of the combined pool into households (the rest, the
+		// least skilled, remain as the standing reserve)
+		peasantPool.seedMore(cfg.numLaborers());
+		laborers = new Laborer[cfg.numLaborers()];
+		for (int i = 0; i < cfg.numLaborers(); i++) {
+			Member peasant = peasantPool.promoteHighestSkilled();
+			laborers[i] = promoteToLaborer(peasant, laborerBank.apply(i),
+					initN.applyAsDouble(i));
+			colony.addAgent(laborers[i]);
+		}
+		registerLaborerReplacementPolicy();
+		laborMkt.clear();
+	}
+
+	/**
+	 * Register how a dead laborer is replaced. By default a successor household
+	 * continues the same dynasty at the same bank, inheriting the estate (so money
+	 * and the labor force stay roughly constant). When the run opts into pool
+	 * promotion, the ruler instead elevates the ablest peasant into a fresh laborer
+	 * household — merit-based mobility — and an empty pool yields no replacement, so
+	 * the labor force declines as the reserve drains.
+	 */
+	private void registerLaborerReplacementPolicy() {
+		// a colony with a peasant pool replaces dead laborers by promotion from it
+		// (and collapses once the reserve drains); a pool-less colony (the bare
+		// analytical sims) keeps same-dynasty succession
+		if (peasantPool != null)
 			colony.addReplacementPolicy(dead -> {
 				if (!(dead instanceof Laborer) || peasantPool == null)
 					return null;
 				Member peasant = peasantPool.promoteHighestSkilled();
-				return peasant == null ? null
-						: promoteToLaborer(peasant, ((Laborer) dead).getBank());
+				return peasant == null ? null : promoteToLaborer(peasant,
+						((Laborer) dead).getBank(), REPLACEMENT_NECESSITY_STOCK);
 			});
 		else
 			colony.addReplacementPolicy(dead -> {
@@ -489,41 +550,42 @@ public class SimulationHarness {
 						REPLACEMENT_NECESSITY_STOCK, cfg.laborer().savingsRate(),
 						LaborerConfig.DEFAULT, colony);
 			});
-
-		laborMkt.clear();
 	}
 
 	/**
 	 * Build a laborer household for a peasant promoted out of the pool: it adopts
 	 * the peasant as its head (keeping its given name, skills and age) under a
-	 * freshly-drawn dynasty surname, opens with the laborer config's balances, and
-	 * those balances are <b>funded by the ruler</b> (debited from the treasury,
-	 * borrowing if short — so the money has a counterparty rather than appearing from
-	 * nowhere; the dead laborer's estate stays folded into equity as before).
+	 * freshly-drawn dynasty surname, and opens with the <b>sum of the head's twelve
+	 * skill levels</b> as its savings (in copper — an abler peasant starts richer).
+	 * That endowment is <b>funded by the ruler</b> (debited from the treasury,
+	 * borrowing if short — so the money has a counterparty; the dead laborer's estate
+	 * stays folded into equity). The ruler banks gold, so the copper-quoted endowment
+	 * crosses gold→copper and fires the gold bank's FX fee.
 	 *
 	 * @param peasant
 	 *            the promoted peasant to adopt as the new household's head
 	 * @param bank
-	 *            the bank the new laborer holds its accounts at (the dead one's)
+	 *            the bank the new laborer holds its accounts at
+	 * @param initNQty
+	 *            the new laborer's initial necessity stock
 	 * @return the promoted laborer household
 	 */
-	private Laborer promoteToLaborer(Member peasant, Bank bank) {
+	private Laborer promoteToLaborer(Member peasant, Bank bank, double initNQty) {
 		// keep the peasant's given name, skills and age; give it a fresh dynasty
 		// surname (it carried none while pooled)
 		String surname = colony.getNames().nextDynastyName();
 		Member head = new Member(
 				new Person(peasant.person().givenName(), surname, peasant.skills()),
 				peasant.getBirthDate());
-		double checking = cfg.laborer().checking();
-		double savings = cfg.laborer().savings();
-		Laborer laborer = new Laborer(head, cfg.laborer().e(),
-				REPLACEMENT_NECESSITY_STOCK, checking, savings,
+		// skill-based endowment: the sum of the head's twelve skill levels, in copper
+		double savings = peasant.skills().totalLevel();
+		Laborer laborer = new Laborer(head, cfg.laborer().e(), initNQty, 0, savings,
 				cfg.laborer().savingsRate(), LaborerConfig.DEFAULT, bank, colony);
-		// the ruler capitalizes the new household (borrowing if its treasury is
+		// the ruler capitalizes the new household out of its treasury (borrowing if
 		// short); skip only during an interregnum (a dead ruler has no account)
 		Ruler ruler = colony.getRuler();
 		if (ruler != null && ruler.isAlive())
-			ruler.getBank().withdraw(ruler.getID(), checking + savings);
+			ruler.getBank().withdraw(ruler.getID(), savings);
 		return laborer;
 	}
 

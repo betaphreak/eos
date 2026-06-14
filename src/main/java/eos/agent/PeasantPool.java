@@ -103,6 +103,19 @@ public class PeasantPool extends Agent {
 		seed(initialSize);
 	}
 
+	/**
+	 * Seed {@code n} more peasants into the pool — the founding population the ruler
+	 * promotes into laborer households on day 0 (added after construction so the
+	 * pool's larder is sized for the standing reserve, not the whole founding cohort
+	 * that is immediately promoted out).
+	 *
+	 * @param n
+	 *            number of peasants to add
+	 */
+	public void seedMore(int n) {
+		seed(n);
+	}
+
 	private void seed(int n) {
 		Settlement colony = getColony();
 		Demography demography = colony.getDemography();

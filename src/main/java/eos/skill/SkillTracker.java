@@ -102,6 +102,21 @@ public final class SkillTracker {
 	}
 
 	/**
+	 * The sum of all twelve skill levels (0..240). Where {@link #overallLevel()} is
+	 * the mean, this is the total — used as a person's skill-based founding
+	 * endowment when the ruler promotes it out of the pool (an abler person starts
+	 * with proportionally more).
+	 *
+	 * @return the sum of the twelve skill levels
+	 */
+	public int totalLevel() {
+		int sum = 0;
+		for (SkillRecord r : records.values())
+			sum += r.getLevel();
+		return sum;
+	}
+
+	/**
 	 * The person's highest single skill level: the maximum across the twelve
 	 * skills. Where {@link #overallLevel()} measures all-round competence (the
 	 * mean), this captures <b>mastery of one specialty</b> — used to decide

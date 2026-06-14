@@ -81,12 +81,13 @@ public class BuilderEconomy {
 		h.createDefaultStrategicSector(copper);
 		// the builder that will grow the colony when it outgrows its footprint
 		h.createBuilder(copper, BuilderConfig.DEFAULT);
-		h.createLaborers(i -> copper, i -> 15, i -> cfg.laborer().savings());
 		// every settlement has a ruler; here it also funds the builder's public works
-		// and is reimbursed the wages of the peasants who do the building
+		// and is reimbursed the wages of the peasants who do the building. It holds
+		// the founding cash and founds/replaces the labor force from the pool; the
+		// unpromoted reserve is the builder's peasant workforce.
 		Bank gold = h.createDefaultRuler();
-		// the peasant pool that staffs the builder (created last, after the ruler)
 		h.createDefaultPeasantPool();
+		h.foundLaborersFromPool(i -> copper, i -> 15);
 
 		// industry expansion: once, EXPANSION_YEARS in, plant a balanced batch of new
 		// consumer firms. The colony is nearly full, so the ones that do not fit have

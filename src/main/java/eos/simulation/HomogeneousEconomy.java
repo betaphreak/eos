@@ -20,6 +20,9 @@ public class HomogeneousEconomy {
 	 * @return the harness, exposing the constructed markets, bank and agents
 	 */
 	public static SimulationHarness run() {
+		// the labor force is founded through the pool: the ruler promotes peasants
+		// into laborer households on day 0 (see foundLaborersFromPool), and dead
+		// laborers are likewise replaced by promotion until the reserve drains
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
@@ -29,10 +32,12 @@ public class HomogeneousEconomy {
 		// every settlement has an export sector: the strategic firm and the nobles
 		// who staff it, all banking at the single bank
 		h.createDefaultStrategicSector(bank);
-		h.createLaborers(i -> bank, i -> 15, i -> cfg.laborer().savings());
-		h.enableExternalInflow(bank);
-		// every settlement has a ruler, banking in gold (created last)
+		// the ruler (holding the founding cash) and the pool are created before the
+		// labor force, which the ruler then promotes out of the pool on day 0
 		Bank gold = h.createDefaultRuler();
+		h.createDefaultPeasantPool();
+		h.foundLaborersFromPool(i -> bank, i -> 15);
+		h.enableExternalInflow(bank);
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);
 		h.addBankPrinter("Gold", gold);
