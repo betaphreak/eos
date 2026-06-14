@@ -14,6 +14,7 @@ import java.util.function.UnaryOperator;
 
 import eos.agent.Agent;
 import eos.agent.Household;
+import eos.agent.Member;
 import eos.calendar.DayType;
 import eos.calendar.LiturgicalCalendar;
 import eos.agent.firm.BuilderConfig;
@@ -27,7 +28,6 @@ import eos.market.ConsumerGoodMarket;
 import eos.market.Market;
 import eos.mortality.Demography;
 import eos.name.NameRegistry;
-import eos.name.Person;
 import eos.util.Rng;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -780,9 +780,8 @@ public class Settlement {
 			} else if (agent instanceof Household h) {
 				// age each living household member's skills once per day: decay
 				// ("forgetting") runs whether or not they worked this step
-				for (Person member : h.getMembers())
-					if (member.skills() != null)
-						member.skills().tick();
+				for (Member member : h.getMembers())
+					member.skills().tick();
 			}
 		}
 

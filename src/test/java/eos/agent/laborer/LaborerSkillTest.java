@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 import eos.agent.Household;
-import eos.name.Person;
+import eos.agent.Member;
 
 /**
  * Verifies the skill &rarr; labor-productivity curve
@@ -57,7 +57,7 @@ class LaborerSkillTest {
 
 	private static Household householdWithSkill(int skill) {
 		return new Household() {
-			public java.util.List<Person> getMembers() {
+			public java.util.List<Member> getMembers() {
 				return java.util.Collections.singletonList(null);
 			}
 

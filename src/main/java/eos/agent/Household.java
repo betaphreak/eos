@@ -34,14 +34,16 @@ public interface Household {
 	int NOTABLE_SKILL = 15;
 
 	/**
-	 * The people who make up this household; the first member is the
+	 * The {@link Member people} who make up this household; the first member is the
 	 * {@linkplain #getHead() head}, whose surname names the dynasty. For now every
 	 * household has exactly one member (its head), set at colony creation; the list
-	 * is the seam for households to grow past size 1 later.
+	 * is the seam for households to grow past size 1 later. Each {@code Member}
+	 * wraps a {@link Person} (its name and skills) with its own birth date, age and
+	 * old-age mortality, so members can age and die independently as households grow.
 	 *
 	 * @return the household's members, head first
 	 */
-	List<Person> getMembers();
+	List<Member> getMembers();
 
 	/**
 	 * The head of this household — its first {@linkplain #getMembers() member},
@@ -49,7 +51,7 @@ public interface Household {
 	 *
 	 * @return the household head
 	 */
-	default Person getHead() {
+	default Member getHead() {
 		return getMembers().get(0);
 	}
 

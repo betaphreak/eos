@@ -1,7 +1,6 @@
 package eos.agent;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,11 +27,11 @@ import lombok.Getter;
  * the demographic / naming RNGs (never the economic stream);</li>
  * <li><b>account opening</b>, either as a fresh endowment or funded out of the
  * bank's equity (a successor's inheritance or an open-colony immigrant);</li>
- * <li><b>age</b> ({@link #ageDays()} / {@link #getAgeYears()}) and liquid
+ * <li><b>age</b> ({@link #getAgeYears()}) and liquid
  * {@link #getWealth() wealth};</li>
  * <li><b>death settlement</b> — snapshotting the estate so a successor of the
  * same dynasty can inherit it, then closing the account
- * ({@link #dieAndSettleEstate()}), with the common old-age check
+ * ({@link #dieAndSettleEstate()}), with the per-member old-age check
  * ({@link #checkOldAgeDeath()}) on top.</li>
  * </ul>
  * Subclasses supply only what differs: how the household earns and spends in
@@ -46,15 +45,14 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	// the people who make up this household; members.get(0) is the head, whose
 	// (unique, for a new dynasty) surname names the dynasty. For now every
 	// household is founded with a single member — the head — set at construction;
-	// the list is the seam for a household to grow past size 1 later.
-	private final List<Person> members = new ArrayList<>();
-
-	// in-game birth date of the head (the source of truth for its age)
-	@Getter
-	private final LocalDate birthDate;
+	// the list is the seam for a household to grow past size 1 later. Each Member
+	// wraps a Person (name + skills) with its own birth date, age and old-age
+	// mortality, so members can age and die independently as households grow.
+	private final List<Member> members = new ArrayList<>();
 
 	// in-game date this household came into being (its already-grown head
-	// arrived and founded it); distinct from the head's birthDate
+	// arrived and founded it); distinct from the head's birthDate (held on its
+	// Member)
 	@Getter
 	private final LocalDate foundingDate;
 
@@ -96,7 +94,7 @@ public abstract class AbstractHousehold extends Agent implements Household {
 		// the head is aged on the separate mortality RNG: its birth date is today
 		// less a sampled working-age span. The household itself is founded now.
 		Demography demography = colony.getDemography();
-		this.birthDate = colony.getDate().minusDays(
+		LocalDate birthDate = colony.getDate().minusDays(
 				demography.sampleInitialAgeDays(colony.getMeanInitAgeYears()));
 		this.foundingDate = colony.getDate();
 
@@ -109,18 +107,19 @@ public abstract class AbstractHousehold extends Agent implements Household {
 
 		// draw the head on the naming RNG with the given name's rarity tracking
 		// its overall skill; a null surname starts a new dynasty, else continue the
-		// given one. The named person carries its skills, and is the household's
-		// sole member for now.
+		// given one. The named person carries its skills.
 		double nameRarity = (double) skills.overallLevel() / Household.MAX_SKILL;
 		Person head = (surname == null)
 				? colony.getNames().nextHead(nameRarity).withSkills(skills)
 				: colony.getNames().nextHeadInDynasty(surname, nameRarity)
 						.withSkills(skills);
-		members.add(head);
+		// wrap the head as the household's sole member (for now), carrying its own
+		// birth date so members can age and die independently as households grow
+		members.add(new Member(head, birthDate));
 	}
 
 	/**
-	 * The people who make up this household. The first member is the
+	 * The {@link Member people} who make up this household. The first member is the
 	 * {@linkplain #getHead() head}, whose surname names the dynasty; the returned
 	 * list is an unmodifiable view, head first. For now a household always has
 	 * exactly one member.
@@ -128,18 +127,17 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	 * @return an unmodifiable view of the household's members, head first
 	 */
 	@Override
-	public List<Person> getMembers() {
+	public List<Member> getMembers() {
 		return Collections.unmodifiableList(members);
 	}
 
 	/**
-	 * The head of this household — its first {@linkplain #getMembers() member}.
+	 * The head's in-game birth date — the source of truth for the household's age.
 	 *
-	 * @return the household head
+	 * @return the head member's birth date
 	 */
-	@Override
-	public Person getHead() {
-		return members.get(0);
+	public LocalDate getBirthDate() {
+		return getHead().getBirthDate();
 	}
 
 	/**
@@ -188,19 +186,9 @@ public abstract class AbstractHousehold extends Agent implements Household {
 		return estateSavings;
 	}
 
-	/**
-	 * The head's age in days: the span from its birth date to the colony's
-	 * current date.
-	 *
-	 * @return the head's age in days
-	 */
-	protected final int ageDays() {
-		return (int) ChronoUnit.DAYS.between(birthDate, getColony().getDate());
-	}
-
 	@Override
 	public final int getAgeYears() {
-		return ageDays() / 365;
+		return getHead().getAgeYears(getColony().getDate());
 	}
 
 	/** Liquid wealth: checking plus savings (savings negative for a loan). */
@@ -223,18 +211,50 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	}
 
 	/**
-	 * If the head dies of old age this step, settle the estate
-	 * ({@link #dieAndSettleEstate()}) and return true so the caller can stop its
-	 * step early; otherwise return false.
+	 * Roll each member's old-age mortality for this step and resolve the result at
+	 * the household level:
+	 * <ul>
+	 * <li>a dead <b>non-head</b> member simply leaves the household, which lives on;</li>
+	 * <li>a dead <b>head</b> with a surviving member is succeeded by <b>promotion</b>
+	 * — the next member in line becomes head — and the household lives on;</li>
+	 * <li>a dead head with <b>no</b> survivor <b>dissolves</b> the household: its
+	 * estate is settled ({@link #dieAndSettleEstate()}) and {@code true} is
+	 * returned so the caller can stop its step early. The dead head is kept as the
+	 * sole member, so it remains the {@linkplain #getHead() head} for the death
+	 * log, succession and surname recycling that run after the agent is removed.</li>
+	 * </ul>
+	 * With today's one-member households only the last case can fire, so this is a
+	 * single mortality roll on the head, exactly as before.
 	 *
-	 * @return true if the head died of old age this step
+	 * @return true if the household dissolved (its last member died) this step
 	 */
 	protected final boolean checkOldAgeDeath() {
-		if (getColony().getDemography().diesOfOldAge(ageDays())) {
-			dieAndSettleEstate();
-			return true;
+		Demography demography = getColony().getDemography();
+		LocalDate today = getColony().getDate();
+		Member head = getHead();
+
+		// roll every member (head first, preserving the single-draw order the
+		// one-member case has always used)
+		for (Member m : members)
+			m.rollOldAgeDeath(demography, today);
+
+		// dead non-head members leave the household; the head is kept for now
+		members.removeIf(m -> m != head && !m.isAlive());
+
+		if (head.isAlive())
+			return false; // head survived; household lives on
+
+		// the head died: promote the next surviving member if there is one (it
+		// sits behind the head in the list, so dropping the head makes it the head)
+		if (members.size() > 1) {
+			members.remove(head);
+			return false;
 		}
-		return false;
+
+		// no survivor — the household dissolves (its dead head stays as the
+		// identity for the death log, succession and surname recycling)
+		dieAndSettleEstate();
+		return true;
 	}
 
 	/**
