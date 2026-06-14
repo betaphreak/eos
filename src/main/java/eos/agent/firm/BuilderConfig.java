@@ -5,10 +5,10 @@ import lombok.Builder;
 /**
  * Tunable model parameters for a {@link BuilderFirm}. Immutable.
  * <p>
- * The numbers in {@link #DEFAULT} are placeholders: they keep building stable and
- * visibly time-consuming in the bundled {@code BuilderEconomy}, but — like the
- * firm-calibration constants — they need re-validating against the test invariants
- * and {@code ScaleSweep} before being treated as canonical.
+ * The numbers in {@link #DEFAULT} are placeholders. No bundled simulation currently
+ * exercises the builder (the {@code BuilderEconomy} worked example was removed once
+ * universal pool-founding made every ruler-bearing colony collapse before it could
+ * grow); the mechanism remains, but these would need re-validating before use.
  *
  * @param A               technology coefficient in the build curve {@code A · L^beta}
  *                        (build-units produced per step from {@code L} units of labor)

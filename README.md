@@ -153,7 +153,8 @@ staffed by nobles, whose earnings build the holding bank's equity) and a default
 | `AristocraticEconomy`  | The default colony plus five noble owner households and a silver bank — the full 3-currency hierarchy. |
 | `StrategicEconomy`     | Nobles bank in silver while the export firm banks in copper, so their export wages cross currencies.  |
 | `HanseaticEconomy`     | Two neighbouring colonies near Lübeck in one session — independent economies, shared name pool.       |
-| `BuilderEconomy`       | A colony founded at the floor size with a builder, which grows it a ring at a time during the run.    |
+| `PeasantEconomy`       | The default colony with a larger peasant pool, charting relief spending before the colony collapses.  |
+| `MeritocraticEconomy`  | The three-currency colony foregrounding promotion: the ruler elevates the ablest peasants to laborers. |
 
 These scenario entry points are the simulation *product*. Two analytical
 **tools** live apart from them, in the `eos.simulation.tools` sub-package:
