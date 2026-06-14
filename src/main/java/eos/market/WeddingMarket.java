@@ -40,6 +40,18 @@ import lombok.extern.java.Log;
  * The match is fully deterministic (a skill/age sort, no RNG), so a colony
  * without a pool or a living ruler — the bare analytical sims — clears this market
  * to nothing and is left undisturbed.
+ * <p>
+ * <b>Recruitment.</b> When a weekend's wedding demand goes <em>unmet</em> —
+ * households sought spouses but none could be wed (the pool ran out of
+ * opposite-gender candidates, or none were affordable) — the colony recruits a
+ * single <b>immigrant</b> into the pool for next time (a young, fresh adult of
+ * random gender; see {@link PeasantPool#addImmigrant()}). It is paid for in gold
+ * that <b>leaves the economy</b> (an uncredited withdrawal from the ruler's
+ * treasury; see {@link Bank#extractExternalFunds}), and only when the ruler can
+ * afford the cost ({@link WeddingConfig#immigrantCost()}) from a positive
+ * treasury — otherwise the recruitment waits. This keeps weddings from stalling
+ * permanently once the founding reserve drains, at the cost of a slow gold
+ * outflow.
  */
 @Log
 public class WeddingMarket extends Market {
@@ -140,6 +152,19 @@ public class WeddingMarket extends Market {
 
 			marry(h, candidate, ruler, isRuler ? 0 : cost);
 			weddings++;
+		}
+
+		// demand went unmet (households sought spouses but none could be wed): the
+		// colony recruits one immigrant into the pool for next weekend, paid for in
+		// gold that *leaves the economy* — but only if the ruler can afford it from a
+		// positive treasury (else the recruitment waits for a richer weekend). Gated
+		// on capacity > 0 so disabling weddings (capacity 0) disables recruitment too.
+		if (config.capacity() > 0 && weddings == 0 && !queue.isEmpty()) {
+			double cost = config.immigrantCost();
+			if (ruler.getWealth() >= cost) {
+				ruler.getBank().extractExternalFunds(ruler.getID(), cost);
+				pool.addImmigrant();
+			}
 		}
 	}
 

@@ -33,6 +33,20 @@ class WeddingMarketTest {
 		assertEquals(c.baseCost(), c.costFor(0), 1e-9, "level-0 spouse = base cost");
 		assertTrue(c.costFor(4) > 2 * c.costFor(2),
 				"bride-price should be super-linear in skill");
+		// the immigrant recruitment cost is tied to the bride-price scale
+		assertEquals(c.immigrantCostFactor() * c.baseCost(), c.immigrantCost(), 1e-9,
+				"immigrant cost should be immigrantCostFactor x baseCost");
+	}
+
+	@Test
+	void unmetWeddingDemandRecruitsImmigrants() {
+		SimulationHarness h =
+				assertDoesNotThrow(WeddingMarketTest::runHighPromotionColony);
+		// a tiny founding reserve is wed out within a couple of weekends; thereafter
+		// single households keep seeking but find no opposite-gender candidate, so the
+		// colony recruits gold-funded immigrants into the pool
+		assertTrue(h.getPeasantPool().getImmigrantCount() > 0,
+				"unmet wedding demand should recruit immigrants into the pool");
 	}
 
 	@Test
@@ -73,6 +87,29 @@ class WeddingMarketTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(1).numEFirms(2).numNFirms(10)
 				.peasantPoolSize(120).promotionRatio(0.4).build();
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		h.createMarkets();
+		Bank bank = h.getCopperBank();
+		h.createFirms(bank, i -> bank,
+				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+		h.createDefaultStrategicSector(bank);
+		h.createDefaultRuler();
+		h.createDefaultPeasantPool();
+		h.foundLaborersFromPool(i -> bank, i -> 15);
+		h.run();
+		return h;
+	}
+
+	/**
+	 * A small pool colony with a <b>high promotion ratio</b> (so the standing
+	 * reserve is tiny and is wed out within a few weekends) over a two-year horizon.
+	 * Once the reserve is gone, single households keep seeking spouses with no
+	 * candidate to match, triggering gold-funded immigrant recruitment.
+	 */
+	private static SimulationHarness runHighPromotionColony() {
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				.durationYears(2).numEFirms(2).numNFirms(10)
+				.peasantPoolSize(60).promotionRatio(0.8).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
 		Bank bank = h.getCopperBank();

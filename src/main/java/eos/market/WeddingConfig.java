@@ -20,12 +20,21 @@ import lombok.Builder;
  * @param skillExponent
  *            exponent of the skill term ({@code > 1} makes the price super-linear
  *            in skill)
+ * @param immigrantCostFactor
+ *            multiple of {@link #baseCost} the colony pays (in gold, destroyed) to
+ *            recruit one immigrant into the peasant pool on a weekend whose wedding
+ *            demand went unmet (see {@link #immigrantCost()}); ties the recruitment
+ *            cost to the bride-price scale
  */
 @Builder(toBuilder = true)
-public record WeddingConfig(int capacity, double baseCost, double skillExponent) {
+public record WeddingConfig(int capacity, double baseCost, double skillExponent,
+		double immigrantCostFactor) {
 
-	/** Canonical defaults: 4 weddings/weekend, a gently quadratic bride-price. */
-	public static final WeddingConfig DEFAULT = new WeddingConfig(4, 2.0, 2.0);
+	/**
+	 * Canonical defaults: 4 weddings/weekend, a gently quadratic bride-price, and an
+	 * immigrant recruitment cost of {@code 100 × baseCost} (200 copper ≈ 0.17 gold).
+	 */
+	public static final WeddingConfig DEFAULT = new WeddingConfig(4, 2.0, 2.0, 100.0);
 
 	/**
 	 * The bride-price of a spouse with the given overall skill level, in copper.
@@ -38,5 +47,16 @@ public record WeddingConfig(int capacity, double baseCost, double skillExponent)
 	 */
 	public double costFor(int spouseOverallLevel) {
 		return baseCost * Math.pow(1 + spouseOverallLevel, skillExponent);
+	}
+
+	/**
+	 * The cost, in copper, of recruiting one immigrant into the peasant pool —
+	 * {@link #immigrantCostFactor} × {@link #baseCost}. Paid (and destroyed) from
+	 * the ruler's gold treasury when a weekend's wedding demand goes unmet.
+	 *
+	 * @return the immigrant recruitment cost in copper
+	 */
+	public double immigrantCost() {
+		return immigrantCostFactor * baseCost;
 	}
 }

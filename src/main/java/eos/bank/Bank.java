@@ -199,6 +199,32 @@ public class Bank {
 	}
 
 	/**
+	 * Remove money from the colony: debit <tt>amount</tt> from <tt>agentID</tt>'s
+	 * account and <b>destroy the principal</b> — it is not credited anywhere and
+	 * does not enter equity, so the colony's total money supply falls by
+	 * {@code amount}. The counterpart to {@link #injectExternalFunds(double)} for
+	 * money that <em>leaves</em> the colony (e.g. the {@link
+	 * eos.market.WeddingMarket} paying gold abroad to recruit an immigrant). Pulls
+	 * from savings only if checking is short; callers that must not let the payer
+	 * borrow should gate on the balance first. No transaction or FX fee is charged
+	 * (the whole {@code amount} leaves), so the figure is the exact outflow.
+	 *
+	 * @param agentID
+	 *            the account the money leaves from
+	 * @param amount
+	 *            the amount to remove from the colony (in copper)
+	 */
+	public void extractExternalFunds(int agentID, double amount) {
+		Account acct = accounts.get(agentID);
+		if (acct.checking < amount) {
+			double diff = amount - acct.checking;
+			acct.checking += diff;
+			acct.savings -= diff;
+		}
+		acct.checking -= amount;
+	}
+
+	/**
 	 * Move <tt>amount</tt> from the bank's equity into <tt>agentID</tt>'s checking
 	 * account. This is the counterpart to {@link #injectExternalFunds(double)} for
 	 * an agent that spends <em>out of</em> equity rather than out of its own

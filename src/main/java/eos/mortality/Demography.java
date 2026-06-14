@@ -30,6 +30,11 @@ public final class Demography {
 	private static final double INIT_AGE_STDDEV_YEARS = 10;
 	private static final int MIN_INIT_AGE_YEARS = 15;
 
+	// a "young and fresh" immigrant's age is drawn uniformly in this inclusive
+	// year range (a young working adult — a long-lived addition to the pool)
+	private static final int YOUNG_ADULT_MIN_YEARS = 16;
+	private static final int YOUNG_ADULT_MAX_YEARS = 25;
+
 	// a household's skill is an integer in [Household.MIN_SKILL, MAX_SKILL] drawn
 	// from a normal distribution centered on a caller-supplied mean (a
 	// colony-start property), sd SKILL_STDDEV, clamped to the range — a natural
@@ -107,6 +112,21 @@ public final class Demography {
 			years = (int) Math.round(
 					rng.gaussian(meanYears, INIT_AGE_STDDEV_YEARS));
 		} while (years < MIN_INIT_AGE_YEARS);
+		return years * DAYS_PER_YEAR + rng.uniform(DAYS_PER_YEAR);
+	}
+
+	/**
+	 * Draw the age (in days) of a <b>young, fresh</b> adult — a working age drawn
+	 * uniformly in [{@value #YOUNG_ADULT_MIN_YEARS},
+	 * {@value #YOUNG_ADULT_MAX_YEARS}] years — on the age/mortality RNG. Used for an
+	 * immigrant recruited into the {@link eos.agent.PeasantPool}, so a recruit is a
+	 * long-lived addition rather than drawn from the older founding-age spread.
+	 *
+	 * @return a young-adult age in days
+	 */
+	public int sampleYoungAdultAgeDays() {
+		int span = YOUNG_ADULT_MAX_YEARS - YOUNG_ADULT_MIN_YEARS + 1;
+		int years = YOUNG_ADULT_MIN_YEARS + rng.uniform(span);
 		return years * DAYS_PER_YEAR + rng.uniform(DAYS_PER_YEAR);
 	}
 

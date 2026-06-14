@@ -9,7 +9,8 @@ import eos.settlement.Settlement;
  * last step, and the cumulative relief cost billed to the Ruler. Register with
  * {@link Settlement#addPrinter} and finalize with {@link Settlement#cleanUpPrinters}.
  * <p>
- * Columns: Date, Count, AvgSkill, AvgAge, Consumed, Starved, BilledTotal.
+ * Columns: Date, Count, AvgSkill, AvgAge, Consumed, Starved, BilledTotal,
+ * Imported (cumulative gold-funded immigrants recruited into the pool).
  */
 public class PeasantPrinter extends Printer {
 
@@ -36,13 +37,13 @@ public class PeasantPrinter extends Printer {
 			return;
 		printWriter.println(colony.getDate(), pool.size(), pool.avgSkill(),
 				pool.avgAgeYears(), pool.getLastConsumed(), pool.getLastStarved(),
-				pool.getTotalBilledToRuler());
+				pool.getTotalBilledToRuler(), pool.getImmigrantCount());
 	}
 
 	@Override
 	public void printTitles() {
 		printWriter.println("Date", "Count", "AvgSkill", "AvgAge", "Consumed",
-				"Starved", "BilledTotal");
+				"Starved", "BilledTotal", "Imported");
 	}
 
 	@Override

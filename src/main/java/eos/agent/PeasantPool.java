@@ -94,6 +94,11 @@ public class PeasantPool extends Agent {
 	@Getter
 	private long marriedOutCount;
 
+	// immigrants recruited into the pool (gold-funded, when wedding demand goes
+	// unmet) over its life
+	@Getter
+	private long immigrantCount;
+
 	// buy relief food for the pool: refill the larder toward a BUFFER_DAYS buffer at
 	// the reduced relief ration, but only up to a price-sensitive money budget, so
 	// the pool defers to the working population when food is scarce (see
@@ -145,23 +150,48 @@ public class PeasantPool extends Agent {
 	}
 
 	private void seed(int n) {
+		for (int i = 0; i < n; i++)
+			peasants.add(newPeasant(false));
+	}
+
+	// build one pooled peasant (not yet added to the list): roll its gender, age,
+	// skills and given name on the demographic / naming RNGs (never the economic
+	// stream). A founding/relief peasant draws a founding-age spread; an immigrant
+	// recruit (young == true) draws a young working age (see addImmigrant). The
+	// draw order — gender, age, skills, name — matches the original seed loop, so
+	// the founding pool stays reproducible.
+	private Member newPeasant(boolean young) {
 		Settlement colony = getColony();
 		Demography demography = colony.getDemography();
-		for (int i = 0; i < n; i++) {
-			// all on the demographic / naming RNGs (never the economic stream)
-			Gender gender = demography.sampleGender();
-			int ageDays =
-					demography.sampleInitialAgeDays(colony.getMeanInitAgeYears());
-			SkillTracker skills =
-					demography.newSkillTracker(colony.getMeanSkill(gender));
-			// surname-less while pooled; a dynasty surname is drawn at promotion. The
-			// given name is drawn from the table matching the rolled gender.
-			String givenName = gender == Gender.FEMALE
-					? colony.getNames().nextFemaleName()
-					: colony.getNames().nextMaleName();
-			Person p = new Person(givenName, "", gender, skills);
-			peasants.add(new Member(p, colony.getDate().minusDays(ageDays)));
-		}
+		Gender gender = demography.sampleGender();
+		int ageDays = young
+				? demography.sampleYoungAdultAgeDays()
+				: demography.sampleInitialAgeDays(colony.getMeanInitAgeYears());
+		SkillTracker skills =
+				demography.newSkillTracker(colony.getMeanSkill(gender));
+		// surname-less while pooled; a dynasty surname is drawn at promotion (or the
+		// household surname at marriage). The given name matches the rolled gender.
+		String givenName = gender == Gender.FEMALE
+				? colony.getNames().nextFemaleName()
+				: colony.getNames().nextMaleName();
+		Person p = new Person(givenName, "", gender, skills);
+		return new Member(p, colony.getDate().minusDays(ageDays));
+	}
+
+	/**
+	 * Recruit one <b>immigrant</b> into the pool — a young, fresh adult (random
+	 * gender, skills around the gendered colony mean) drawn on the demographic /
+	 * naming RNGs. Called by the {@link eos.market.WeddingMarket} when a weekend's
+	 * wedding demand goes unmet, so the pool has an opposite-gender candidate next
+	 * time; the gold that pays for it leaves the colony (see the market).
+	 *
+	 * @return the recruited peasant, now in the pool
+	 */
+	public Member addImmigrant() {
+		Member m = newPeasant(true);
+		peasants.add(m);
+		immigrantCount++;
+		return m;
 	}
 
 	/**
