@@ -27,8 +27,8 @@ public class MeritocraticEconomy {
 
 	/**
 	 * Fraction of the seeded pool the ruler promotes into laborer households on day
-	 * 0. The pool is seeded with {@code 2 * numLaborers} peasants, so a high ratio
-	 * here promotes most of them and leaves a small standing reserve — foregrounding
+	 * 0. The pool is seeded with the default {@code peasantPoolSize} (900) peasants,
+	 * so a high ratio here promotes most of them and leaves a small standing reserve — foregrounding
 	 * promotion while keeping the reserve modest enough that it drains (by promotion
 	 * and old age) within the run, after which deaths go unreplaced, the workforce
 	 * shrinks, food production falls, and the colony spirals to collapse. The refill

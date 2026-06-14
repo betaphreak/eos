@@ -16,7 +16,6 @@ import lombok.Builder;
  *                     {@code Settlement.getName()})
  * @param startDate    in-game date of step 0; each step advances one day
  * @param durationYears number of in-game years the simulation runs
- * @param numLaborers  number of laborers
  * @param numEFirms    number of enjoyment firms
  * @param numNFirms    number of necessity firms
  * @param ePrice       initial price bounds for the enjoyment market
@@ -63,8 +62,9 @@ import lombok.Builder;
  *                     0 disables it (the default, pending calibration)
  * @param peasantPoolSize number of peasants a colony with a pool is seeded with (the
  *                     full pool — founding cohort plus standing reserve). Default
- *                     {@code 900} (≈ {@code 2 * numLaborers} at the default scale); a
- *                     colony with a different {@code numLaborers} sets this to match.
+ *                     {@code 900}; the number of laborer households a pool colony
+ *                     founds is {@code round(promotionRatio * peasantPoolSize)}, so
+ *                     this and {@code promotionRatio} together set the labor force.
  * @param promotionRatio the fraction of its peasant pool a colony promotes into
  *                     laborer households. On day 0 the ruler promotes the ablest
  *                     {@code round(promotionRatio * peasantPoolSize)} peasants into
@@ -77,7 +77,6 @@ public record SimulationConfig(
 		String settlementName,
 		LocalDate startDate,
 		int durationYears,
-		int numLaborers,
 		int numEFirms,
 		int numNFirms,
 		PriceRange ePrice,
@@ -152,7 +151,6 @@ public record SimulationConfig(
 			"Eos",                                 // settlementName
 			LocalDate.of(1444, 12, 11),            // startDate
 			25,                                    // durationYears
-			450,                                   // numLaborers
 			10,                                    // numEFirms
 			12,                                    // numNFirms
 			new PriceRange(0.1, 5),                // ePrice
@@ -172,6 +170,6 @@ public record SimulationConfig(
 			0.5,                                   // laborShare
 			0.05,                                  // bankProfitTaxRate
 			0.02,                                  // nobleIncomeTaxRate
-			900,                                   // peasantPoolSize (≈ 2 * numLaborers)
+			900,                                   // peasantPoolSize
 			0.45);                                 // promotionRatio
 }

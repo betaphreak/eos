@@ -94,8 +94,8 @@ public class HanseaticEconomy {
 	static final double NOBLE_INITIAL_SILVER = 10;
 
 	/**
-	 * Fraction of each colony's seeded pool ({@code 2 * numLaborers} peasants) the
-	 * ruler promotes into laborer households on day 0. Both colonies replace dead
+	 * Fraction of each colony's seeded pool ({@code 2 * }{@link #NUM_LABORERS}
+	 * peasants) the ruler promotes into laborer households on day 0. Both colonies replace dead
 	 * laborers by promotion (the ruler elevates the ablest peasant, not a
 	 * same-dynasty heir), so with only this finite reserve and no inflow the labor
 	 * force declines once it drains and the colony spirals to collapse — this run
@@ -131,7 +131,6 @@ public class HanseaticEconomy {
 		// the two colonies share the session's name pool and demography but each has
 		// its own economic random stream and its own location
 		SimulationConfig base = SimulationConfig.DEFAULT.toBuilder()
-				.numLaborers(NUM_LABORERS)
 				.numEFirms(NUM_EFIRMS)
 				.numNFirms(NUM_NFIRMS)
 				.peasantPoolSize(2 * NUM_LABORERS)

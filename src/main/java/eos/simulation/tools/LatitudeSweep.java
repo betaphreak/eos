@@ -73,7 +73,8 @@ public class LatitudeSweep {
 		Bank bank = h.getCopperBank();
 		h.createFirms(bank, i -> bank,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
-		h.createLaborers(i -> bank, i -> 15, i -> cfg.laborer().savings());
+		h.createLaborers(ScaleSweep.DEFAULT_LABORERS, i -> bank, i -> 15,
+				i -> cfg.laborer().savings());
 		h.enableExternalInflow(bank);
 		// no printers: the sweep evaluates the final state in memory and reports a
 		// table on stdout (and many latitudes would otherwise collide on filenames)
@@ -108,7 +109,7 @@ public class LatitudeSweep {
 		System.out.printf(
 				"Latitude sweep (standard %d-laborer closed colony, daylight-scaled "
 						+ "labor):%n%n",
-				SimulationConfig.DEFAULT.numLaborers());
+				ScaleSweep.DEFAULT_LABORERS);
 		System.out.printf("%-8s %-9s %-10s %-10s %-10s %s%n",
 				"lat", "survives", "laborers", "ePrice", "nPrice", "detail");
 

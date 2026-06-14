@@ -27,6 +27,7 @@ import eos.settlement.Settlement;
 class RulerTaxationTest {
 
 	private static final long SEED = 7654321L;
+	private static final int NUM_LABORERS = 450;
 	private static final int NUM_NOBLES = 5;
 	private static final double NOBLE_INITIAL_SAVINGS = 1000;
 	private static final double RULER_START_COPPER =
@@ -51,7 +52,8 @@ class RulerTaxationTest {
 			colony.addAgent(new Noble(0, NOBLE_INITIAL_SAVINGS, List.of(), List.of(),
 					NobleConfig.DEFAULT, silver, colony));
 		h.primeNobleLabor();
-		h.createLaborers(i -> copper, i -> 15, i -> cfg.laborer().savings());
+		h.createLaborers(NUM_LABORERS, i -> copper, i -> 15,
+				i -> cfg.laborer().savings());
 		h.createDefaultRuler();
 		h.run();
 		return h;
@@ -87,7 +89,7 @@ class RulerTaxationTest {
 				"taxation should leave the Ruler richer than the untaxed control");
 
 		// taxation must not have wrecked the colony
-		assertTrue(taxed.currentLaborerCount() >= 0.85 * taxed.getCfg().numLaborers(),
+		assertTrue(taxed.currentLaborerCount() >= 0.85 * NUM_LABORERS,
 				"the taxed colony should keep its population");
 		assertTrue(Double.isFinite(taxed.getNecessityMkt().getLastMktPrice())
 				&& taxed.getNecessityMkt().getLastMktPrice() > 0,

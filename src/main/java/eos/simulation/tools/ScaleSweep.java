@@ -50,8 +50,8 @@ public class ScaleSweep {
 	/** Number of enjoyment firms (== necessity firms) at the default scale. */
 	static final int DEFAULT_FIRMS = SimulationConfig.DEFAULT.numEFirms();
 
-	/** Number of laborers at the default scale. */
-	static final int DEFAULT_LABORERS = SimulationConfig.DEFAULT.numLaborers();
+	/** Number of laborers at the default scale (the legacy direct-founding count). */
+	static final int DEFAULT_LABORERS = 450;
 
 	/**
 	 * Laborers per consumer firm of each type, fixed across the sweep (default
@@ -96,14 +96,14 @@ public class ScaleSweep {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.numEFirms(firmsPerType)
 				.numNFirms(firmsPerType)
-				.numLaborers(numLaborers)
 				.build();
 		SimulationHarness h = SimulationHarness.create(cfg, SEED);
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
 		h.createFirms(bank, i -> bank,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
-		h.createLaborers(i -> bank, i -> 15, i -> cfg.laborer().savings());
+		h.createLaborers(numLaborers, i -> bank, i -> 15,
+				i -> cfg.laborer().savings());
 		h.enableExternalInflow(bank);
 		// no printers: the sweep evaluates the final state in memory and reports a
 		// table on stdout (and many scales would otherwise collide on filenames)
@@ -121,8 +121,9 @@ public class ScaleSweep {
 	 */
 	public static String diagnose(SimulationHarness h) {
 		// shared core invariants: population sustained, prices finite/positive,
-		// bank pools/rates finite (the survival floor is MIN_SURVIVAL of N0)
-		int n0 = h.getCfg().numLaborers();
+		// bank pools/rates finite (the survival floor is MIN_SURVIVAL of N0, the
+		// count actually founded — read off the laborer array createLaborers sized)
+		int n0 = h.getLaborers().length;
 		String core = ColonyHealth.diagnose(h, (long) Math.ceil(MIN_SURVIVAL * n0));
 		if (core != null)
 			return core;

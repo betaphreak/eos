@@ -19,9 +19,9 @@ public class PeasantEconomy {
 
 	/**
 	 * Fraction of the seeded pool promoted into laborer households on day 0 — kept
-	 * low so a large reserve remains (the pool is seeded with {@code 2 *
-	 * numLaborers} peasants), foregrounding the relief the ruler funds for the
-	 * standing reserve before the pool drains and the colony collapses.
+	 * low so a large reserve remains (the pool is seeded with the default {@code
+	 * peasantPoolSize} of 900 peasants), foregrounding the relief the ruler funds
+	 * for the standing reserve before the pool drains and the colony collapses.
 	 */
 	static final double PROMOTION_RATIO = 0.3;
 

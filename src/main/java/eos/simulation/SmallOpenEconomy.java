@@ -26,6 +26,9 @@ import eos.bank.BankConfig;
  */
 public class SmallOpenEconomy {
 
+	/** Laborer households the colony is founded with (the minimum stable scale). */
+	static final int NUM_LABORERS = 90;
+
 	/** Net new money entering the colony (into bank A's equity) each step. */
 	static final double EXTERNAL_INFLOW_PER_STEP = 1.0;
 
@@ -41,7 +44,6 @@ public class SmallOpenEconomy {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.numEFirms(2)
 				.numNFirms(2)
-				.numLaborers(90)
 				.externalInflowPerStep(EXTERNAL_INFLOW_PER_STEP)
 				.immigrationThreshold(IMMIGRATION_THRESHOLD)
 				.build();
@@ -54,7 +56,8 @@ public class SmallOpenEconomy {
 
 		h.createFirms(bankA, alternate,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
-		h.createLaborers(alternate, i -> 15, i -> cfg.laborer().savings());
+		h.createLaborers(NUM_LABORERS, alternate, i -> 15,
+				i -> cfg.laborer().savings());
 		// open the colony through bank A: external inflow + immigration grow the
 		// population (a no-op only when externalInflowPerStep is 0, which it isn't)
 		h.enableExternalInflow(bankA);

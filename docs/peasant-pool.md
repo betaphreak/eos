@@ -47,7 +47,7 @@ hereditary, and funds that obligation by **taxing the colony's accumulated wealt
   succession (the colony's built-in `Household.successor` policy), so the Ruler
   persists to run the pool and the export sector keeps its nobles.
 - **The initial labor force is born from the pool.** At founding the pool is seeded
-  with the whole starting population (`numLaborers` to be employed **plus** the
+  with the whole starting population (the cohort to be employed **plus** the
   standing reserve), and the Ruler creates the initial laborer households by the
   **same promotion logic** used for replacements — one code path for making a
   laborer household, at founding and ever after, retiring the harness's bespoke
@@ -110,7 +110,7 @@ expected for a behavioural feature.
 ### Seeding and founding
 
 `SimulationHarness` creates the `PeasantPool` and seeds it with `cfg.peasantPoolSize()`
-members at founding (default 900 ≈ `2 · numLaborers` at the default scale), each drawn like a household head (gender 50/50 on the skill RNG,
+members at founding (default 900), each drawn like a household head (gender 50/50 on the skill RNG,
 skill around the gender-specific `colony.getMeanSkill(gender)`, age on the mortality
 RNG). It also creates a default `BuilderFirm` (staffed from the pool) so the colony
 can grow. Peasants are **not** given a dynasty surname while pooled — surnames are
@@ -129,8 +129,8 @@ household construction in `createLaborers`. Two ordering consequences:
   changes — acceptable, since the feature is behavioural and not byte-identical
   anyway).
 - Founding order becomes: markets/banks/firms → seed pool → Ruler promotes
-  `numLaborers` households → register the (now promotion-based) replacement policy →
-  the one pre-run labor-market clear → `run()`.
+  `round(promotionRatio · peasantPoolSize)` households → register the (now
+  promotion-based) replacement policy → the one pre-run labor-market clear → `run()`.
 
 Because promotion endows fresh from the Ruler, **the Ruler capitalizes the whole
 initial labor force on day 0** — a large opening loan. This is not new money versus
@@ -143,7 +143,7 @@ Ruler rather than appearing directly in the account.
 ### Promotion = the single laborer-household factory
 
 There is one `Ruler.promoteFromPool()` operation, used in **two** places: in bulk at
-founding (to create the initial `numLaborers` households) and one at a time as the
+founding (to create the initial labor force) and one at a time as the
 replacement policy. It **promotes the highest-overall-skill peasant**: remove it
 from the pool and construct a **new `Laborer` household** for it, with the config
 opening balances/necessity **funded from the Ruler's treasury** (borrowed if

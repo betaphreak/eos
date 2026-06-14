@@ -424,7 +424,7 @@ public class SimulationHarness {
 
 	/**
 	 * Give the colony its <b>peasant pool</b> (banking in copper), seeded with
-	 * {@code 2 * cfg.numLaborers()} peasants the {@link eos.agent.ruler.Ruler}
+	 * {@code cfg.peasantPoolSize()} peasants the {@link eos.agent.ruler.Ruler}
 	 * feeds, and — so every pool-bearing colony can grow — a default {@link
 	 * BuilderFirm} staffed from that pool. Requires the necessity market (see {@link
 	 * #createMarkets()}) and a ruler (see {@link #createDefaultRuler()}) to exist
@@ -501,15 +501,28 @@ public class SimulationHarness {
 	}
 
 	/**
-	 * Create the laborers and add them to the colony, then clear the labor
-	 * market once so firms have workers before step 0. The bank, initial
-	 * necessity stock and initial savings of each laborer are supplied by the
-	 * caller (by index).
+	 * Create <tt>numLaborers</tt> laborers <b>directly</b> (same-dynasty founding,
+	 * not through a pool) and add them to the colony, then clear the labor market
+	 * once so firms have workers before step 0. The bank, initial necessity stock
+	 * and initial savings of each laborer are supplied by the caller (by index).
+	 * Used by the bare, pool-less colonies (the analytical sweeps, the small open
+	 * colony); a pool-bearing colony instead founds its labor force from the pool
+	 * (see {@link #foundLaborersFromPool}), which sets the count as {@code
+	 * round(promotionRatio * peasantPoolSize)}.
+	 *
+	 * @param numLaborers
+	 *            the number of laborer households to found
+	 * @param laborerBank
+	 *            the bank each laborer holds its accounts at (by index)
+	 * @param initN
+	 *            the initial necessity stock of each laborer (by index)
+	 * @param savings
+	 *            the initial savings of each laborer (by index)
 	 */
-	public void createLaborers(IntFunction<Bank> laborerBank,
+	public void createLaborers(int numLaborers, IntFunction<Bank> laborerBank,
 			IntToDoubleFunction initN, IntToDoubleFunction savings) {
-		laborers = new Laborer[cfg.numLaborers()];
-		for (int i = 0; i < cfg.numLaborers(); i++) {
+		laborers = new Laborer[numLaborers];
+		for (int i = 0; i < numLaborers; i++) {
 			laborers[i] = new Laborer(cfg.laborer().e(), initN.applyAsDouble(i),
 					cfg.laborer().checking(), savings.applyAsDouble(i),
 					cfg.laborer().savingsRate(), LaborerConfig.DEFAULT,
