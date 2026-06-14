@@ -1,9 +1,12 @@
-package eos.simulation;
+package eos.simulation.tools;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import eos.bank.Bank;
+import eos.simulation.HomogeneousEconomy;
+import eos.simulation.SimulationConfig;
+import eos.simulation.SimulationHarness;
 
 /**
  * Simulation (latitude sweep): finds the <b>highest latitude at which a colony

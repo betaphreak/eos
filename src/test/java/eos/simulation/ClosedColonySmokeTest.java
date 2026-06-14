@@ -14,6 +14,7 @@ import org.junit.jupiter.api.TestFactory;
 
 import eos.bank.Bank;
 import eos.bank.CurrencyType;
+import eos.simulation.tools.ScaleSweep;
 
 /**
  * Smoke tests for the bundled <b>closed colonies</b> that share the standard

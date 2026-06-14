@@ -154,13 +154,20 @@ staffed by nobles, whose earnings build the holding bank's equity) and a default
 | `StrategicEconomy`     | Nobles bank in silver while the export firm banks in copper, so their export wages cross currencies.  |
 | `HanseaticEconomy`     | Two neighbouring colonies near Lübeck in one session — independent economies, shared name pool.       |
 | `BuilderEconomy`       | A colony founded at the floor size with a builder, which grows it a ring at a time during the run.    |
+
+These scenario entry points are the simulation *product*. Two analytical
+**tools** live apart from them, in the `eos.simulation.tools` sub-package:
+
+| Class                  | Description                                                                                          |
+|------------------------|------------------------------------------------------------------------------------------------------|
 | `ScaleSweep`           | Scales the firm/laborer counts down together to find the smallest colony that stays stable.          |
 | `LatitudeSweep`        | Places the standard colony across latitudes to find the highest one where it still feeds itself.      |
 
-Each consists of a `static run()` that builds and runs the colony via
+Each scenario consists of a `static run()` that builds and runs the colony via
 `SimulationHarness`, plus a `main()` that calls it — except the sweeps
-`ScaleSweep` and `LatitudeSweep`, whose `main()` runs a multi-colony sweep and
-prints a stability/survival table to stdout.
+`eos.simulation.tools.ScaleSweep` and `LatitudeSweep`, whose `main()` runs a
+multi-colony sweep and prints a stability/survival table to stdout (their
+`run()` is just the convention hook returning one default harness).
 
 ## Configuration
 

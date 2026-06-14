@@ -1,9 +1,13 @@
-package eos.simulation;
+package eos.simulation.tools;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import eos.bank.Bank;
+import eos.simulation.ColonyHealth;
+import eos.simulation.HomogeneousEconomy;
+import eos.simulation.SimulationConfig;
+import eos.simulation.SimulationHarness;
 
 /**
  * Simulation (scale sweep): explores <b>how small the colony can be and still
@@ -115,7 +119,7 @@ public class ScaleSweep {
 	 *            a finished harness
 	 * @return {@code null} if stable, otherwise why it is not
 	 */
-	static String diagnose(SimulationHarness h) {
+	public static String diagnose(SimulationHarness h) {
 		// shared core invariants: population sustained, prices finite/positive,
 		// bank pools/rates finite (the survival floor is MIN_SURVIVAL of N0)
 		int n0 = h.getCfg().numLaborers();

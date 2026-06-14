@@ -60,7 +60,7 @@ public class HanseaticEconomy {
 
 	/**
 	 * Laborer households per settlement — the minimum stable closed scale (k=4; see
-	 * {@link ScaleSweep}). The consumer firms are split with <b>fewer enjoyment than
+	 * {@link eos.simulation.tools.ScaleSweep}). The consumer firms are split with <b>fewer enjoyment than
 	 * necessity firms</b> ({@link #NUM_EFIRMS} &lt; {@link #NUM_NFIRMS}) so the
 	 * necessity sector has the production headroom to absorb the nobles' reserve
 	 * buying (see {@link #NECESSITY_RESERVE_DAYS}) without a price spike — which lets

@@ -6,7 +6,8 @@ import eos.market.ConsumerGoodMarket;
 /**
  * Shared definition of a <b>healthy finished colony</b>, factored out so the
  * same invariants are not maintained twice. The model's stability criteria were
- * previously encoded once in production ({@link ScaleSweep#diagnose}) and again,
+ * previously encoded once in production ({@link
+ * eos.simulation.tools.ScaleSweep#diagnose}) and again,
  * in parallel, in the test smoke-check helper — two copies that could drift. The
  * core checks now live here; each caller layers its run-specific extras on top
  * (price-runaway ceiling for the sweep, zero-profit bank equity for the closed

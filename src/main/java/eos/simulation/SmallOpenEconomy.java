@@ -7,7 +7,7 @@ import eos.bank.BankConfig;
 
 /**
  * Simulation (small open colony): the minimum stable scale found by
- * {@link ScaleSweep} — 2 enjoyment firms, 2 necessity firms, 1 capital firm and
+ * {@link eos.simulation.tools.ScaleSweep} — 2 enjoyment firms, 2 necessity firms, 1 capital firm and
  * 90 laborers — run with <b>two banks</b> (agents split A/B by index, as in
  * {@link TwoBankEconomy}), <b>mortality</b> on (households age, die and are
  * succeeded), and an <b>open colony</b> that grows the population: external

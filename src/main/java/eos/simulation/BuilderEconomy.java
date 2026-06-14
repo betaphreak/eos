@@ -35,7 +35,7 @@ public class BuilderEconomy {
 	/** Seed for the game session, so the run is reproducible. */
 	static final long SEED = 13572468L;
 
-	/** Laborer households — the minimum stable closed scale (see {@link ScaleSweep}). */
+	/** Laborer households — the minimum stable closed scale (see {@link eos.simulation.tools.ScaleSweep}). */
 	static final int NUM_LABORERS = 180;
 
 	/** Enjoyment firms at founding. */

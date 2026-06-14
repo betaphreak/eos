@@ -1,4 +1,4 @@
-package eos.simulation;
+package eos.simulation.tools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -6,15 +6,15 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import eos.simulation.ScaleSweep.ScaleResult;
+import eos.simulation.tools.ScaleSweep.ScaleResult;
 
 /**
  * Tests for the scale-sweep's minimum-selection logic, checked as a pure function
  * over synthetic results so they stay fast (the full sweep runs many colonies).
  * A healthy default-scale run is no longer exercised here: its economy is the
  * same as {@code HomogeneousEconomy}'s, whose smoke test (in {@link
- * ClosedColonySmokeTest}) now also asserts {@link ScaleSweep#diagnose} judges it
- * stable.
+ * eos.simulation.ClosedColonySmokeTest}) now also asserts {@link
+ * ScaleSweep#diagnose} judges it stable.
  */
 class ScaleSweepTest {
 
