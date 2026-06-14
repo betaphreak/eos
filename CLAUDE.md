@@ -28,7 +28,7 @@ mvn test                   # run the JUnit 5 suite (each Simulation runs full as
 - `SmallOpenEconomy` — opened to external inflow + immigration, growing past its starting 90 laborers (2E + 2N + 1C, two copper banks); bare, with no export sector or ruler.
 - `AristocraticEconomy` — the default colony plus **five** `Noble` owner households (the senior noble owns the **silver** bank); the full three-currency hierarchy (copper/silver/gold) with FX friction on dividends. See *Agents → Nobles*.
 - `StrategicEconomy` — nobles bank in silver while the export firm banks in copper, so their export _wages_ cross currencies (FX friction on primary income).
-- `HanseaticEconomy` — two colonies near Lübeck in one `GameSession`: independent economies but a shared name pool (surnames unique across both); nobles stockpile a necessity reserve, so firms are split 4E + 6N. `run()` returns the first.
+- `HanseaticEconomy` — two colonies near Lübeck in one `GameSession`: independent economies but a shared name pool (surnames unique across both); nobles stockpile a necessity reserve, so firms keep fewer enjoyment than necessity firms (1E + 2N) for the headroom. Shrunk to its empirical minimum (20 laborers, 1E + 2N, 5 nobles) now that firms carry their wage budget through zero-activity rest days — a sweep stays stable on both colony streams to ~12 laborers, so 20 is a 2× margin above the cliff. `run()` returns the first.
 - `BuilderEconomy` — founded at the floor size with a `BuilderFirm`; a step action five years in plants new firms, growing the colony size 3 → 4 ring by ring. See *Settlement size and build slots*.
 - `ScaleSweep` / `LatitudeSweep` — analytical sweeps in `eos.simulation.tools` (see below).
 

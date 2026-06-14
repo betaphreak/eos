@@ -59,20 +59,26 @@ public class HanseaticEconomy {
 	static final long SEED = 7654321L;
 
 	/**
-	 * Laborer households per settlement — the minimum stable closed scale (k=4; see
-	 * {@link eos.simulation.tools.ScaleSweep}). The consumer firms are split with <b>fewer enjoyment than
-	 * necessity firms</b> ({@link #NUM_EFIRMS} &lt; {@link #NUM_NFIRMS}) so the
-	 * necessity sector has the production headroom to absorb the nobles' reserve
-	 * buying (see {@link #NECESSITY_RESERVE_DAYS}) without a price spike — which lets
-	 * the colony stay at this minimum scale rather than having to be enlarged.
+	 * Laborer households per settlement — the empirical minimum for this
+	 * composition with a safety margin. Once firms could carry their wage budget
+	 * through zero-activity rest days, the stable region widened far below the old
+	 * {@code ScaleSweep} k=4 (=180): a sweep of this Hanseatic composition (5
+	 * nobles, the strategic export firm, the necessity reserve) stays healthy on
+	 * <em>both</em> colony streams down to ~12 laborers, with the necessity market
+	 * running away (and the near-cliff "passes" turning degenerate) below ~10. This
+	 * sits a clean 2x above that erratic cliff. The consumer firms are still split
+	 * with <b>fewer enjoyment than necessity firms</b> ({@link #NUM_EFIRMS} &lt;
+	 * {@link #NUM_NFIRMS}) so the necessity sector keeps the headroom to absorb the
+	 * nobles' reserve buying (see {@link #NECESSITY_RESERVE_DAYS}) without a price
+	 * spike.
 	 */
-	static final int NUM_LABORERS = 180;
+	static final int NUM_LABORERS = 20;
 
 	/** Enjoyment firms per settlement (fewer than necessity firms). */
-	static final int NUM_EFIRMS = 4;
+	static final int NUM_EFIRMS = 1;
 
 	/** Necessity firms per settlement (more, for necessity-reserve headroom). */
-	static final int NUM_NFIRMS = 6;
+	static final int NUM_NFIRMS = 2;
 
 	/**
 	 * Noble households per settlement that staff the export sector (the strategic
