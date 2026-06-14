@@ -189,8 +189,9 @@ pool's market buying, does not itself perturb the economic random stream.
 `SimulationConfig` gains `peasantReserveSize` (default **10**) — the standing
 reserve held *beyond* the employed labor force; the pool is seeded with
 `numLaborers + peasantReserveSize` at founding. It also gains the per-step tax rates
-`bankProfitTaxRate` and `nobleIncomeTaxRate` (small defaults, e.g. 0.01–0.05, to be
-calibrated). The Ruler's existing `DEFAULT_RULER_GOLD` / `consumptionRate` are
+`bankProfitTaxRate` and `nobleIncomeTaxRate`. **Calibrated and enabled**: defaults
+0.05 and 0.02, validated stable across a full Strategic-style run and the whole
+test suite (the only behavioural change was the now-accumulating Ruler). The Ruler's existing `DEFAULT_RULER_GOLD` / `consumptionRate` are
 unchanged for now (its day-0 capitalization of the labor force is covered by
 borrowing).
 

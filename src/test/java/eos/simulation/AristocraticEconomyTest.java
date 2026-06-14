@@ -96,8 +96,10 @@ class AristocraticEconomyTest {
 				"expected at least one noble succession (heir inherited the holdings)");
 
 		// the settlement's ruler: exactly one, banking in gold, sustained by
-		// succession, having spent some of its opening 10 gold on enjoyment (so its
-		// treasury sits below 10 gold but stays solvent — it never starves)
+		// succession. With taxation enabled it now skims a share of bank profit and
+		// noble income into its treasury, so its gold reserve grows past the opening
+		// 10 gold (and is inherited intact across succession) rather than being spent
+		// down on enjoyment as the old passive ruler was
 		int rulerCount = 0;
 		for (Agent agent : h.getColony().getAgents())
 			if (agent instanceof Ruler ruler) {
@@ -105,8 +107,8 @@ class AristocraticEconomyTest {
 				assertEquals(gold, ruler.getBank(), "the ruler banks in gold");
 				double rulerGold = h.getColony().convert(ruler.getWealth(),
 						CurrencyType.COPPER, CurrencyType.GOLD);
-				assertTrue(rulerGold > 0 && rulerGold < 10,
-						"the ruler should have spent down its treasury, got "
+				assertTrue(rulerGold > 10,
+						"the ruler should accumulate tax revenue past its opening 10 gold, got "
 								+ rulerGold + " gold");
 			}
 		assertEquals(1, rulerCount, "exactly one ruler, sustained by succession");

@@ -153,6 +153,6 @@ public record SimulationConfig(
 			0,                                     // externalInflowPerStep (closed)
 			100,                                   // immigrationThreshold
 			0.5,                                   // laborShare
-			0,                                     // bankProfitTaxRate (off)
-			0);                                    // nobleIncomeTaxRate (off)
+			0.05,                                  // bankProfitTaxRate
+			0.02);                                 // nobleIncomeTaxRate
 }
