@@ -19,9 +19,10 @@ import eos.settlement.Settlement;
  * Phase-1 Ruler taxation: the sovereign skims a fraction of each bank's
  * distributable profit and of each noble's income into its treasury each step.
  * <p>
- * The scenario mirrors {@link StrategicEconomy} (nobles bank in silver and earn
- * export wages, so the silver money-changer accrues FX profit and the nobles have
- * taxable income), built at a short horizon with no printers. A taxed run is
+ * The scenario uses a strategic export sector with nobles banking in silver and
+ * earning export wages, so the silver money-changer accrues FX profit and the
+ * nobles have taxable income, built at a short horizon with no printers. A taxed
+ * run is
  * compared against an otherwise identical untaxed control on the same seed.
  */
 class RulerTaxationTest {

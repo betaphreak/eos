@@ -22,12 +22,11 @@ public class HomogeneousEconomy {
 	public static SimulationHarness run() {
 		// the labor force is founded through the pool: the ruler promotes peasants
 		// into laborer households on day 0 (see foundLaborersFromPool), and dead
-		// laborers are likewise replaced by promotion until the reserve drains.
-		// The colony starts with a single enjoyment and a single necessity firm and
-		// lets the ruler's dynamic provisioning grow the count to fit demand (see
-		// enableDynamicFirmProvisioning) rather than founding a fixed sector.
-		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.numEFirms(1).numNFirms(1).build();
+		// laborers are likewise replaced by promotion until the reserve drains. The
+		// colony is founded with a single enjoyment and a single necessity firm (the
+		// config default) and the ruler's dynamic provisioning — on by default for
+		// every ruler-bearing colony — grows the count to fit demand.
+		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
@@ -39,8 +38,6 @@ public class HomogeneousEconomy {
 		// the ruler (holding the founding cash) and the pool are created before the
 		// labor force, which the ruler then promotes out of the pool on day 0
 		Bank gold = h.createDefaultRuler();
-		// let the ruler charter/dissolve consumer-good firms as demand warrants
-		h.enableDynamicFirmProvisioning(bank);
 		h.createDefaultPeasantPool();
 		h.foundLaborersFromPool(i -> bank, i -> 15);
 		h.enableExternalInflow(bank);

@@ -30,10 +30,11 @@ import eos.settlement.Settlement;
  * colonies can run in one session reproducibly.
  * <p>
  * Both colonies have the same composition and the default tiered banking
- * ({@link SimulationHarness#getCopperBank()}): {@value #NUM_LABORERS} laborers,
- * {@value #NUM_EFIRMS} enjoyment firms, {@value #NUM_NFIRMS} necessity firms, one
- * capital firm and one {@link eos.agent.firm.StrategicFirm export firm}. The export
- * firm is worked by <b>nobles</b> (its labor pool is the aristocracy), so each
+ * ({@link SimulationHarness#getCopperBank()}): {@value #NUM_LABORERS} laborers, one
+ * enjoyment and one necessity firm at founding (the ruler's dynamic provisioning
+ * grows them), one capital firm and one {@link eos.agent.firm.StrategicFirm export
+ * firm}. The export firm is worked by <b>nobles</b> (its labor pool is the
+ * aristocracy), so each
  * colony also has a small noble class of {@value #NUM_NOBLES} households who staff
  * the export sector and bank in silver. (The spec named no nobles; this is the
  * minimum needed to make the strategic sector function — tune {@link #NUM_NOBLES}
@@ -71,21 +72,13 @@ public class HanseaticEconomy {
 	 */
 	static final int NUM_LABORERS = 20;
 
-	/** Enjoyment firms each settlement is <em>founded</em> with (the ruler's dynamic
-	 * provisioning grows the sector from here). */
-	static final int NUM_EFIRMS = 1;
-
-	/** Necessity firms each settlement is <em>founded</em> with (dynamic provisioning
-	 * adds more as demand — including the nobles' necessity reserve — warrants). */
-	static final int NUM_NFIRMS = 1;
-
 	/**
 	 * Noble households per settlement that staff the export sector (the strategic
 	 * firm employs nobles, so it needs some). Not named in the spec. The strategic
 	 * firm pays a fixed wage budget regardless of output, so when its nobles are
 	 * unproductive it injects money without earning exports — inflationary; enough
-	 * nobles ({@link StrategicEconomy}'s count) keeps the per-colony skill draw
-	 * reliable so both settlements' export sectors stay productive.
+	 * nobles ({@link SimulationHarness#DEFAULT_NUM_NOBLES}) keeps the per-colony skill
+	 * draw reliable so both settlements' export sectors stay productive.
 	 */
 	static final int NUM_NOBLES = 5;
 
@@ -130,8 +123,6 @@ public class HanseaticEconomy {
 		// the two colonies share the session's name pool and demography but each has
 		// its own economic random stream and its own location
 		SimulationConfig base = SimulationConfig.DEFAULT.toBuilder()
-				.numEFirms(NUM_EFIRMS)
-				.numNFirms(NUM_NFIRMS)
 				.peasantPoolSize(2 * NUM_LABORERS)
 				.promotionRatio(PROMOTION_RATIO)
 				.build();
@@ -172,7 +163,7 @@ public class HanseaticEconomy {
 	 * Populate one settlement: the default tiered banking (commoners in copper,
 	 * nobles in silver), the consumer/capital/export firms, the noble export
 	 * workforce, the laborers, and the (name-prefixed) printers. Mirrors the
-	 * construction order of {@link StrategicEconomy}. The colony is not yet run.
+	 * construction order of the other strategic-sector sims. The colony is not yet run.
 	 *
 	 * @param cfg
 	 *            this settlement's configuration (with its own latitude/longitude)
@@ -199,8 +190,9 @@ public class HanseaticEconomy {
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createStrategicFirm(copper, StrategicFirmConfig.DEFAULT);
 
-		// the nobles who work the export sector (they own no firms or banks here),
-		// opening with 10 silver and stockpiling a necessity reserve (NOBLE_CONFIG)
+		// the nobles who work the export sector (the dynamic provisioning may later
+		// grant them chartered consumer firms), opening with 10 silver and stockpiling
+		// a necessity reserve (NOBLE_CONFIG)
 		for (int n = 0; n < NUM_NOBLES; n++)
 			colony.addAgent(new Noble(0,
 					CurrencyType.SILVER.toCopper(NOBLE_INITIAL_SILVER),
@@ -215,10 +207,6 @@ public class HanseaticEconomy {
 		// the ruler (founding cash) and the pool precede the labor force, which the
 		// ruler founds and replaces by promotion from the pool
 		Bank gold = h.createDefaultRuler();
-		// grow the consumer sectors dynamically (the nobles stay firm-less, as in
-		// StrategicEconomy — they live on export wages), so the necessity sector can
-		// add the headroom the nobles' reserve buying needs instead of a fixed split
-		h.enableDynamicFirmProvisioning(copper, false);
 		h.createDefaultPeasantPool();
 		h.foundLaborersFromPool(i -> copper, i -> 15);
 		h.enableExternalInflow(copper);

@@ -151,8 +151,10 @@ public record SimulationConfig(
 			"Eos",                                 // settlementName
 			LocalDate.of(1444, 12, 11),            // startDate
 			25,                                    // durationYears
-			10,                                    // numEFirms
-			12,                                    // numNFirms
+			1,                                     // numEFirms (founding count; the
+			                                       //   ruler's dynamic provisioning
+			                                       //   grows the sector from here)
+			1,                                     // numNFirms (founding count)
 			new PriceRange(0.1, 5),                // ePrice
 			new PriceRange(0.1, 5),                // nPrice
 			new FirmInit(100, -1000, 40, 100, 30), // eFirm

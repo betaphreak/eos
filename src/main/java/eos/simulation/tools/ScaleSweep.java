@@ -47,8 +47,14 @@ public class ScaleSweep {
 	/** Seed shared by every scale, so the runs are comparable and reproducible. */
 	static final long SEED = 7654321L;
 
-	/** Number of enjoyment firms (== necessity firms) at the default scale. */
-	static final int DEFAULT_FIRMS = SimulationConfig.DEFAULT.numEFirms();
+	/**
+	 * Number of enjoyment firms (== necessity firms) at the default scale. This is
+	 * the sweep's own analytical baseline, decoupled from {@link
+	 * SimulationConfig#DEFAULT} (whose founding count is now 1, since the scenario
+	 * economies grow their firms dynamically — the bare sweep colonies have no ruler
+	 * and so keep a fixed, directly-founded firm count).
+	 */
+	static final int DEFAULT_FIRMS = 10;
 
 	/** Number of laborers at the default scale (the legacy direct-founding count). */
 	static final int DEFAULT_LABORERS = 450;

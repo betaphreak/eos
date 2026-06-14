@@ -142,7 +142,10 @@ mvn exec:exec -Dsim.main=eos.simulation.AristocraticEconomy    # noble owners + 
 
 Every standard colony carries a default **export sector** (a strategic firm
 staffed by nobles, whose earnings build the holding bank's equity) and a default
-**ruler** banking in gold. The entry points are:
+**ruler** banking in gold. Each is **founded with a single enjoyment and a single
+necessity firm**, and the ruler's **dynamic firm provisioning** (on by default for
+every ruler-bearing colony) charters and dissolves consumer-good firms each month
+so the count tracks demand. The entry points are:
 
 | Class                  | Description                                                                                          |
 |------------------------|------------------------------------------------------------------------------------------------------|
@@ -151,7 +154,6 @@ staffed by nobles, whose earnings build the holding bank's equity) and a default
 | `TwoBankEconomy`       | Two copper banks, with agents split across them (a multi-bank example).                              |
 | `SmallOpenEconomy`     | An economy opened to external money inflow + immigration, growing past its starting size.            |
 | `AristocraticEconomy`  | The default colony plus five noble owner households and a silver bank — the full 3-currency hierarchy. |
-| `StrategicEconomy`     | Nobles bank in silver while the export firm banks in copper, so their export wages cross currencies.  |
 | `HanseaticEconomy`     | Two neighbouring colonies near Lübeck in one session — independent economies, shared name pool.       |
 | `PeasantEconomy`       | The default colony with a larger peasant pool, charting relief spending before the colony collapses.  |
 | `MeritocraticEconomy`  | The three-currency colony foregrounding promotion: the ruler elevates the ablest peasants to laborers. |

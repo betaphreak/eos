@@ -113,6 +113,11 @@ public class SimulationHarness {
 	// charters a new necessity firm so it matches the founding ones.
 	private FirmConfig nFirmConfig;
 
+	// the bank a dynamically chartered firm holds its accounts at, captured from
+	// createFirms; createDefaultRuler installs the dynamic provisioning factory with
+	// it, so every ruler-bearing colony grows its firms by default.
+	private Bank charteredFirmBank;
+
 	// parameters for the wedding market; defaults to the canonical values.
 	// Replace via setWeddingConfig before createMarkets (e.g. capacity 0 to
 	// disable weddings in a test that isolates another mechanism).
@@ -287,6 +292,9 @@ public class SimulationHarness {
 	 */
 	public void createFirms(Bank capitalFirmBank, IntFunction<Bank> firmBank,
 			IntToDoubleFunction eSavings, IntToDoubleFunction nSavings) {
+		// a representative firm bank for any firm the dynamic provisioning charters
+		// later (createDefaultRuler installs the factory with it)
+		charteredFirmBank = firmBank.apply(0);
 		CFirm cFirm = new CFirm(cfg.cFirm().checking(), cfg.cFirm().savings(),
 				cfg.cFirm().wageBudget(), capitalFirmBank, colony);
 		capitalFirms = new CFirm[] { cFirm };
@@ -376,9 +384,8 @@ public class SimulationHarness {
 	 * one: the noble-only labor market, the single {@link StrategicFirm} (banking
 	 * at <tt>bank</tt>, into whose equity its export earnings flow), the {@value
 	 * #DEFAULT_NUM_NOBLES} worker-nobles that staff it (banking at the same
-	 * <tt>bank</tt>), and the primed noble labor market — bundling the steps {@link
-	 * StrategicEconomy} performs by hand. Mirror that simulation's order: call this
-	 * after {@link #createFirms} and <em>before</em> {@link #createLaborers}.
+	 * <tt>bank</tt>), and the primed noble labor market. Call this after {@link
+	 * #createFirms} and <em>before</em> {@link #createLaborers}.
 	 * <p>
 	 * This creates fresh nobles. A colony that already has its own nobles (e.g.
 	 * {@link AristocraticEconomy}) should instead call the granular {@link
@@ -427,6 +434,12 @@ public class SimulationHarness {
 		// a same-dynasty heir succeeds the ruler via the colony's built-in
 		// household-succession policy (see Ruler.successor, which also keeps the
 		// colony's ruler reference current); no rule is wired here
+
+		// dynamic firm provisioning is the default for every ruler-bearing colony: the
+		// ruler's monthly sector review grows/shrinks the firm count to fit demand
+		// (the firms were created with a representative bank captured in createFirms)
+		if (charteredFirmBank != null)
+			enableDynamicFirmProvisioning(charteredFirmBank);
 		return gold;
 	}
 
@@ -436,31 +449,16 @@ public class SimulationHarness {
 	 * demand warrants, rather than the colony carrying a fixed founding count. A new
 	 * firm banks at <tt>firmBank</tt>, is built with the run's standard initial
 	 * parameters, has its seed capital funded out of the ruler's treasury, and is
-	 * granted to the least-encumbered living noble; a dissolved firm is detached from
-	 * its owner, its slot freed and its account settled into equity. Requires the
-	 * firms (see {@link #createFirms}) and a ruler (see {@link #createDefaultRuler()})
-	 * to exist first.
+	 * granted to the least-encumbered living noble (or left unowned if the colony has
+	 * no noble); a dissolved firm is detached from its owner, its slot freed and its
+	 * account settled into equity. Called automatically by {@link
+	 * #createDefaultRuler()} (so every ruler-bearing colony grows its firms by
+	 * default), after the firms (see {@link #createFirms}) exist.
 	 *
 	 * @param firmBank
 	 *            the bank a dynamically chartered firm holds its accounts at
 	 */
 	public void enableDynamicFirmProvisioning(Bank firmBank) {
-		enableDynamicFirmProvisioning(firmBank, true);
-	}
-
-	/**
-	 * As {@link #enableDynamicFirmProvisioning(Bank)}, but <tt>assignToNoble</tt>
-	 * controls whether a chartered firm is granted to a noble owner. Pass {@code
-	 * false} for a colony whose nobles are deliberately firm-less (e.g. {@link
-	 * StrategicEconomy}, where they live purely on export wages): the firm is then
-	 * unowned and its profit simply accrues.
-	 *
-	 * @param firmBank
-	 *            the bank a dynamically chartered firm holds its accounts at
-	 * @param assignToNoble
-	 *            whether to grant each chartered firm to the least-encumbered noble
-	 */
-	public void enableDynamicFirmProvisioning(Bank firmBank, boolean assignToNoble) {
 		colony.setFirmFactory(new FirmFactory() {
 			@Override
 			public ConsumerGoodFirm charter(boolean necessity) {
@@ -490,14 +488,11 @@ public class SimulationHarness {
 				// fires the gold bank's FX fee; a short treasury borrows.
 				ruler.getBank().withdraw(ruler.getID(), seed);
 
-				// grant it to the noble with the fewest holdings (spreading ownership),
-				// unless this colony keeps its nobles firm-less; if there is no noble
-				// it stays unowned and its profit simply accrues
-				if (assignToNoble) {
-					Noble owner = leastLoadedNoble();
-					if (owner != null)
-						owner.addFirm(firm);
-				}
+				// grant it to the noble with the fewest holdings (spreading ownership);
+				// if the colony has no noble it stays unowned and its profit accrues
+				Noble owner = leastLoadedNoble();
+				if (owner != null)
+					owner.addFirm(firm);
 
 				// claim a slot — a live colony queues a builder growth ring and holds
 				// the firm pending, but it is economically active from its constructor
