@@ -1,7 +1,11 @@
 package eos.simulation;
 
 import java.time.LocalDate;
+import java.util.List;
 
+import eos.agent.firm.StrategicFirmConfig;
+import eos.agent.noble.Noble;
+import eos.agent.noble.NobleConfig;
 import eos.bank.Bank;
 
 /**
@@ -48,8 +52,8 @@ public class MeritocraticEconomy {
 		// so the run ends before the reserve is exhausted.
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.settlementName("Siena")
-				.startDate(LocalDate.of(1444, 6, 11)) // summer: no founding-winter death cluster
-				.durationYears(2)
+				.startDate(LocalDate.of(1444, 12, 11))
+				.durationYears(25)
 				.peasantReserveSize(PEASANT_RESERVE)
 				.promoteLaborersFromPool(true)
 				.build();
@@ -58,14 +62,25 @@ public class MeritocraticEconomy {
 		h.createMarkets();
 		h.createFirms(bank, i -> bank,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
-		h.createDefaultStrategicSector(bank);
+		// the full three-currency hierarchy: commoners/firms in copper, the export
+		// nobles in silver, the ruler in gold. The strategic firm banks copper (its
+		// export earnings accrue to copper equity), so the nobles' export wages cross
+		// copper -> silver and the silver money-changer skims its FX fee.
+		Bank silver = h.getSilverBank();
+		h.createNobleLaborMarket();
+		h.createStrategicFirm(bank, StrategicFirmConfig.DEFAULT);
+		for (int n = 0; n < SimulationHarness.DEFAULT_NUM_NOBLES; n++)
+			h.getColony().addAgent(new Noble(0, SimulationHarness.DEFAULT_NOBLE_SAVINGS,
+					List.of(), List.of(), NobleConfig.DEFAULT, silver, h.getColony()));
+		h.primeNobleLabor();
 		// createLaborers registers the promotion replacement policy (cfg flag is on)
 		h.createLaborers(i -> bank, i -> 15, i -> cfg.laborer().savings());
 		h.enableExternalInflow(bank);
 		Bank gold = h.createDefaultRuler();
 		h.createDefaultPeasantPool();
 		h.addCommonPrinters();
-		h.addBankPrinter("Bank", bank);
+		h.addBankPrinter("Copper", bank);
+		h.addBankPrinter("Silver", silver);
 		h.addBankPrinter("Gold", gold);
 		h.addStrategicSectorPrinters("", bank);
 		h.addPeasantPrinter("Peasants");

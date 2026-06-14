@@ -1,5 +1,6 @@
 package eos.simulation;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,14 +13,14 @@ import eos.agent.PeasantPool;
  * laborer is replaced by the ruler elevating the ablest peasant from the pool into
  * a fresh laborer household. This checks the mechanism fires — peasants <em>are</em>
  * promoted — and the documented consequence: with only a finite reserve and no
- * inflow, the labor force <b>declines</b> once the pool drains (promotion alone
- * cannot sustain the colony; the refill is a later phase). The run is short so the
- * colony is still alive at the horizon.
+ * inflow, promotion cannot sustain the colony. The reserve drains, deaths go
+ * unreplaced, the shrinking workforce produces less food, and the colony
+ * <b>collapses</b> (the refill that would prevent this is a later phase).
  */
 class MeritocraticEconomyTest {
 
 	@Test
-	void promotionReplacesDeadLaborersAndTheReserveDrains() {
+	void promotionFiresThenTheFiniteReserveDrainsAndTheColonyCollapses() {
 		SimulationHarness h = MeritocraticEconomy.run();
 		PeasantPool pool = h.getPeasantPool();
 		assertNotNull(pool, "MeritocraticEconomy should create a peasant pool");
@@ -29,18 +30,16 @@ class MeritocraticEconomyTest {
 				"expected peasants to have been promoted, got "
 						+ pool.getPromotedCount());
 
-		// the finite reserve cannot sustain the labor force, so it declines (the
-		// depletion a later phase's refill will address) — but the colony is still
-		// alive at this short horizon
-		long pop = h.currentLaborerCount();
-		assertTrue(pop < h.getCfg().numLaborers(),
-				"expected the labor force to have declined from "
-						+ h.getCfg().numLaborers() + ", got " + pop);
-		assertTrue(pop > 0, "the colony should still be alive, got " + pop);
+		// the full three-currency hierarchy is present (commoners copper, nobles
+		// silver, ruler gold)
+		assertEquals(3, h.getBanks().size(),
+				"expected three banks (copper, silver, gold)");
 
-		// no price runaway over the short horizon
-		double np = h.getNecessityMkt().getLastMktPrice();
-		assertTrue(Double.isFinite(np) && np > 0,
-				"necessity price should stay finite and positive, got " + np);
+		// the finite reserve cannot sustain the colony: it drains, deaths go
+		// unreplaced, and the colony collapses (no inflow yet)
+		assertTrue(h.getColony().isDead(),
+				"expected the colony to have collapsed once the reserve ran dry");
+		assertEquals(0, h.currentLaborerCount(),
+				"a collapsed colony has no laborers left");
 	}
 }
