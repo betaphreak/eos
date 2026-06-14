@@ -388,12 +388,11 @@ public class SimulationHarness {
 	 * <tt>bank</tt>), and the primed noble labor market. Call this after {@link
 	 * #createFirms} and <em>before</em> {@link #createLaborers}.
 	 * <p>
-	 * This creates fresh nobles. A colony that already has its own nobles (e.g.
-	 * {@link AristocraticEconomy}) should instead call the granular {@link
-	 * #createNobleLaborMarket()} / {@link #createStrategicFirm} before its nobles
-	 * and {@link #primeNobleLabor()} after them — its existing nobles then staff
-	 * the export firm (a {@link Noble} automatically works any noble labor market
-	 * present).
+	 * This creates fresh nobles. A colony that already has its own nobles should
+	 * instead call the granular {@link #createNobleLaborMarket()} / {@link
+	 * #createStrategicFirm} before its nobles and {@link #primeNobleLabor()} after
+	 * them — its existing nobles then staff the export firm (a {@link Noble}
+	 * automatically works any noble labor market present).
 	 *
 	 * @param bank
 	 *            the bank at which the export firm and its nobles hold accounts

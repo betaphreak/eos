@@ -137,7 +137,7 @@ invariant checks. Select a different entry point with the `sim.main` property:
 
 ```bash
 mvn exec:exec -Dsim.main=eos.simulation.HeterogeneousEconomy   # heterogeneous agents
-mvn exec:exec -Dsim.main=eos.simulation.AristocraticEconomy    # noble owners + 3 currencies
+mvn exec:exec -Dsim.main=eos.simulation.MeritocraticEconomy    # pool promotion + 3 currencies
 ```
 
 Every standard colony carries a default **export sector** (a strategic firm
@@ -153,7 +153,6 @@ so the count tracks demand. The entry points are:
 | `HeterogeneousEconomy` | Heterogeneous agents (randomized initial state).                                                     |
 | `TwoBankEconomy`       | Two copper banks, with agents split across them (a multi-bank example).                              |
 | `SmallOpenEconomy`     | An economy opened to external money inflow + immigration, growing past its starting size.            |
-| `AristocraticEconomy`  | The default colony plus five noble owner households and a silver bank — the full 3-currency hierarchy. |
 | `HanseaticEconomy`     | Two neighbouring colonies near Lübeck in one session — independent economies, shared name pool.       |
 | `PeasantEconomy`       | The default colony with a larger peasant pool, charting relief spending before the colony collapses.  |
 | `MeritocraticEconomy`  | The three-currency colony foregrounding promotion: the ruler elevates the ablest peasants to laborers. |
