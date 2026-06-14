@@ -106,6 +106,11 @@ public class SimulationHarness {
 	// Replace via setFirmConfig before createFirms to vary other firm params.
 	private FirmConfig firmConfig;
 
+	// parameters for the wedding market; defaults to the canonical values.
+	// Replace via setWeddingConfig before createMarkets (e.g. capacity 0 to
+	// disable weddings in a test that isolates another mechanism).
+	private WeddingConfig weddingConfig = WeddingConfig.DEFAULT;
+
 	// necessity (food) firms run a higher technology coefficient than the other
 	// consumer firms: because production stops on the weekly day of rest and on
 	// feast days (~79 days/year) while the population eats every day, food output
@@ -119,6 +124,7 @@ public class SimulationHarness {
 	private LaborMarket laborMkt;
 	private LaborMarket nobleLaborMkt;
 	private CapitalMarket capitalMkt;
+	private WeddingMarket weddingMkt;
 
 	private CFirm[] capitalFirms;
 	private EFirm[] eFirms;
@@ -161,7 +167,7 @@ public class SimulationHarness {
 				FirmConfig.DEFAULT.toBuilder().laborShare(cfg.laborShare()).build();
 	}
 
-	/** Create the four markets and register them (labor market first). */
+	/** Create the markets and register them (labor market first). */
 	public void createMarkets() {
 		enjoymentMkt = new ConsumerGoodMarket("Enjoyment", cfg.ePrice().min(),
 				cfg.ePrice().max(), colony);
@@ -169,10 +175,14 @@ public class SimulationHarness {
 				cfg.nPrice().max(), colony);
 		laborMkt = new LaborMarket(colony);
 		capitalMkt = new CapitalMarket(colony);
+		// the wedding market is harmless without a pool (it then clears to nothing),
+		// so every colony carries one; the pool registers with it when created
+		weddingMkt = new WeddingMarket(colony, weddingConfig);
 		colony.addMarket(laborMkt);
 		colony.addMarket(enjoymentMkt);
 		colony.addMarket(necessityMkt);
 		colony.addMarket(capitalMkt);
+		colony.addMarket(weddingMkt);
 	}
 
 	/**
@@ -248,6 +258,18 @@ public class SimulationHarness {
 	 */
 	public void setFirmConfig(FirmConfig firmConfig) {
 		this.firmConfig = firmConfig;
+	}
+
+	/**
+	 * Override the wedding-market parameters (default {@link WeddingConfig#DEFAULT}).
+	 * Must be called before {@link #createMarkets()} to take effect. Pass a config
+	 * with {@code capacity == 0} to disable weddings entirely.
+	 *
+	 * @param weddingConfig
+	 *            the wedding parameters to use
+	 */
+	public void setWeddingConfig(WeddingConfig weddingConfig) {
+		this.weddingConfig = weddingConfig;
 	}
 
 	/**
@@ -657,6 +679,7 @@ public class SimulationHarness {
 		colony.addPrinter(
 				new ConsumerMktVolPrinter(prefix + "NVol", necessityMkt));
 		colony.addPrinter(new FirmsPrinter(prefix + "NFirms", nFirms));
+		colony.addPrinter(new WeddingPrinter(prefix + "Weddings", weddingMkt));
 	}
 
 	/** Register a {@link BankPrinter} writing to <tt>fileName</tt>. */

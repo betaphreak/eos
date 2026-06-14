@@ -60,6 +60,11 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	// inherit it; savings is negative for an outstanding loan
 	private double estateChecking, estateSavings;
 
+	// the colony's wedding market, if it has one (cached at construction; null
+	// for a colony without one, e.g. the bare analytical sims). An unmarried
+	// household posts itself here each step via seekSpouseIfSingle().
+	private final eos.market.WeddingMarket weddingMkt;
+
 	/**
 	 * Open this household's accounts and draw its identity (age, skill, named
 	 * head). Account funding follows {@code fundedFromEquity}: a fresh endowment
@@ -90,6 +95,8 @@ public abstract class AbstractHousehold extends Agent implements Household {
 			bank.openInheritedAcct(getID(), initCheckingBal, initSavingsBal);
 		else
 			bank.openAcct(getID(), initCheckingBal, initSavingsBal);
+
+		this.weddingMkt = (eos.market.WeddingMarket) colony.getMarket("Wedding");
 
 		// the head is aged on the separate mortality RNG: its birth date is today
 		// less a sampled working-age span. The household itself is founded now.
@@ -153,6 +160,7 @@ public abstract class AbstractHousehold extends Agent implements Household {
 		else
 			bank.openAcct(getID(), initCheckingBal, initSavingsBal);
 
+		this.weddingMkt = (eos.market.WeddingMarket) colony.getMarket("Wedding");
 		this.foundingDate = colony.getDate();
 		members.add(head);
 	}
@@ -168,6 +176,44 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	@Override
 	public List<Member> getMembers() {
 		return Collections.unmodifiableList(members);
+	}
+
+	/**
+	 * Add a member to this household (head-first order is preserved: the head is
+	 * member 0, so an added spouse follows it). The new member ages, eats and
+	 * works alongside the head.
+	 */
+	@Override
+	public void addMember(Member member) {
+		members.add(member);
+	}
+
+	/**
+	 * Remove and return the last non-head member (e.g. the spouse), or
+	 * {@code null} if the household has only its head. Used when the household
+	 * cannot feed everyone: the non-head members starve off before the head (see
+	 * {@link eos.agent.laborer.Laborer#act()}). The head is never removed here —
+	 * its death dissolves the household through {@link #checkOldAgeDeath()} /
+	 * {@link #dieAndSettleEstate()} instead.
+	 *
+	 * @return the removed member, or {@code null} if only the head remains
+	 */
+	protected final Member removeNonHeadMember() {
+		if (members.size() <= 1)
+			return null;
+		return members.remove(members.size() - 1);
+	}
+
+	/**
+	 * If this household has no spouse (just its head) and the colony runs a
+	 * {@link eos.market.WeddingMarket}, post the household to it so it can be
+	 * matched with a spouse from the peasant pool when the market clears (on
+	 * weekends). A no-op for a colony without a wedding market, or once the
+	 * household is married. Call from {@link #act()}.
+	 */
+	protected final void seekSpouseIfSingle() {
+		if (weddingMkt != null && isAlive() && getMemberCount() == 1)
+			weddingMkt.addSeeker(this);
 	}
 
 	/**

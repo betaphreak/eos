@@ -1,0 +1,88 @@
+package eos.market;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
+
+import eos.agent.Agent;
+import eos.agent.laborer.Laborer;
+import eos.agent.ruler.Ruler;
+import eos.bank.Bank;
+import eos.name.Gender;
+import eos.simulation.SimulationConfig;
+import eos.simulation.SimulationHarness;
+
+/**
+ * Verifies the {@link WeddingMarket}: unmarried households take a spouse of the
+ * opposite gender out of the peasant pool on weekends. Runs a small pool colony
+ * over a short horizon and checks that weddings occurred, that the spouse really
+ * is the opposite gender of the head, and that the ruler (who weds first of all)
+ * has acquired a spouse. The non-linear bride-price curve is checked directly as
+ * a pure function.
+ */
+class WeddingMarketTest {
+
+	@Test
+	void bridePriceIsSuperLinearInSkill() {
+		WeddingConfig c = WeddingConfig.DEFAULT;
+		// the unskilled floor is the base cost, and the curve is convex: a level-4
+		// spouse costs more than twice a level-2 spouse (a linear price would cost
+		// exactly twice as much per unit of skill)
+		assertEquals(c.baseCost(), c.costFor(0), 1e-9, "level-0 spouse = base cost");
+		assertTrue(c.costFor(4) > 2 * c.costFor(2),
+				"bride-price should be super-linear in skill");
+	}
+
+	@Test
+	void householdsWedOppositeGenderSpousesFromThePool() {
+		SimulationHarness h =
+				assertDoesNotThrow(WeddingMarketTest::runSmallPoolColony);
+
+		// weddings happened: peasants were wed out of the pool
+		assertTrue(h.getPeasantPool().getMarriedOutCount() > 0,
+				"expected peasants to be wed out of the pool");
+
+		// the sovereign weds first of all (free, from its own wards), so after a
+		// year it has taken a spouse of the opposite gender
+		Ruler ruler = h.getColony().getRuler();
+		assertEquals(2, ruler.getMemberCount(), "ruler should have wed a spouse");
+		assertEquals(ruler.getHead().gender().opposite(),
+				ruler.getMembers().get(1).gender(),
+				"ruler's spouse should be the opposite gender");
+
+		// every married household's spouse is the opposite gender of its head
+		int married = 0;
+		for (Agent a : h.getColony().getAgents())
+			if (a instanceof Laborer l && l.getMemberCount() == 2) {
+				married++;
+				Gender head = l.getHead().gender();
+				assertEquals(head.opposite(), l.getMembers().get(1).gender(),
+						"a laborer's spouse should be the opposite gender of the head");
+			}
+		assertTrue(married > 0, "expected at least one married laborer alive");
+	}
+
+	/**
+	 * A small {@link eos.simulation.HomogeneousEconomy}-style pool colony over a
+	 * one-year horizon — enough to reach several weekends and wed many households,
+	 * short enough that the labor force is still alive — with no printers.
+	 */
+	private static SimulationHarness runSmallPoolColony() {
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				.durationYears(1).numEFirms(2).numNFirms(10)
+				.peasantPoolSize(120).promotionRatio(0.4).build();
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		h.createMarkets();
+		Bank bank = h.getCopperBank();
+		h.createFirms(bank, i -> bank,
+				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+		h.createDefaultStrategicSector(bank);
+		h.createDefaultRuler();
+		h.createDefaultPeasantPool();
+		h.foundLaborersFromPool(i -> bank, i -> 15);
+		h.run();
+		return h;
+	}
+}

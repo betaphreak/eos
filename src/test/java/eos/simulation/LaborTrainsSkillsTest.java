@@ -62,6 +62,11 @@ class LaborTrainsSkillsTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(4).numEFirms(2).numNFirms(20).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		// weddings are orthogonal to skill training and only add noise here (female
+		// ex-spouses becoming heads via widowhood with short training histories), so
+		// disable them to isolate the training mechanism this test measures
+		h.setWeddingConfig(eos.market.WeddingConfig.DEFAULT.toBuilder()
+				.capacity(0).build());
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
 		h.createFirms(bank, i -> bank,

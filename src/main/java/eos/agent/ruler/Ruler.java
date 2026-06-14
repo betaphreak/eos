@@ -163,12 +163,13 @@ public class Ruler extends AbstractHousehold {
 		double wealth = acct.getChecking() + acct.getSavings();
 		consumption = consumptionRate * Math.max(0, wealth);
 
-		// the ruler keeps a lavish table: eat the GOURMET ration each step (it never
-		// starves) and restock necessity toward its reserve. Necessity is copper-quoted
-		// like enjoyment, so the purchase converts gold -> copper and fires the gold
-		// bank's FX fee.
-		necessity.decrease(RationSize.GOURMET.perDay());
-		double nReserve = NECESSITY_RESERVE_DAYS * RationSize.GOURMET.perDay();
+		// the ruler keeps a lavish table: eat the GOURMET ration per member each step
+		// (it never starves) and restock necessity toward its reserve. Necessity is
+		// copper-quoted like enjoyment, so the purchase converts gold -> copper and
+		// fires the gold bank's FX fee.
+		necessity.decrease(RationSize.GOURMET.perDay() * getMemberCount());
+		double nReserve = NECESSITY_RESERVE_DAYS * RationSize.GOURMET.perDay()
+				* getMemberCount();
 		nGap = Math.max(0, nReserve - necessity.getQuantity());
 		double nCost = nGap * Math.max(nMkt.getLastMktPrice(), 0.01);
 
@@ -176,6 +177,10 @@ public class Ruler extends AbstractHousehold {
 		bank.deposit(getID(), acct.getChecking() - consumption - nCost);
 		eMkt.addBuyOffer(this, demandForE);
 		nMkt.addBuyOffer(this, demandForN);
+
+		// if unmarried, seek a spouse on the wedding market (the sovereign weds
+		// first of all, from its own wards — see WeddingMarket)
+		seekSpouseIfSingle();
 
 		// the ruler earns no wage/dividends; tax revenue enters via collectTaxes
 		// (as OTHER, not income), so reset the income accumulators each step.
@@ -247,6 +252,12 @@ public class Ruler extends AbstractHousehold {
 	@Override
 	public String role() {
 		return "Ruler";
+	}
+
+	/** The sovereign weds first of all (above nobles and laborers). */
+	@Override
+	public int weddingPriority() {
+		return 2;
 	}
 
 	/**

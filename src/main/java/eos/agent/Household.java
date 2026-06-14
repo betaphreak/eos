@@ -56,12 +56,45 @@ public interface Household {
 	}
 
 	/**
-	 * The number of people in this household.
+	 * The number of people in this household. A household with exactly one member
+	 * (just its head) has no spouse and so seeks one on the {@link
+	 * eos.market.WeddingMarket}; a married household has two.
 	 *
-	 * @return the household size (currently always 1)
+	 * @return the household size
 	 */
 	default int getMemberCount() {
 		return getMembers().size();
+	}
+
+	/**
+	 * Add a member to this household — e.g. a spouse wed off the {@link
+	 * eos.market.WeddingMarket} (a peasant taken out of the pool and given this
+	 * household's surname). The new member ages, eats and works as part of the
+	 * household.
+	 *
+	 * @param member
+	 *            the member to add
+	 */
+	void addMember(Member member);
+
+	/**
+	 * This household's unique agent ID (also its bank account number); every
+	 * household is an {@link Agent}, so the {@link eos.market.WeddingMarket} can
+	 * route the bride-price through its account.
+	 *
+	 * @return the household's agent ID
+	 */
+	int getID();
+
+	/**
+	 * This household's rank in the {@link eos.market.WeddingMarket}'s priority
+	 * order — higher weds first, so a higher-ranked household gets first pick of
+	 * the ablest spouses. The ruler outranks nobles, who outrank laborers.
+	 *
+	 * @return the wedding priority (higher = weds first; default 0)
+	 */
+	default int weddingPriority() {
+		return 0;
 	}
 
 	/**

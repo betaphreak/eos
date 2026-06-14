@@ -5,6 +5,7 @@ import java.util.List;
 
 import eos.agent.AbstractHousehold;
 import eos.agent.Agent;
+import eos.agent.Member;
 import eos.agent.firm.Firm;
 import eos.agent.firm.StrategicFirm;
 import eos.bank.Account;
@@ -186,8 +187,17 @@ public class Noble extends AbstractHousehold {
 		// noble is a pure rentier and this is a no-op.
 		this.nobleLaborMkt =
 				(LaborMarket) colony.getMarket(StrategicFirm.LABOR_MARKET);
-		if (nobleLaborMkt != null)
-			nobleLaborMkt.addEmployee(getID(), bank, 1.0, getHead().skills());
+		postNobleLabor();
+	}
+
+	// supply every household member (head and any spouse) to the strategic
+	// sector's noble-only labor market, each with its own skills; a no-op when the
+	// colony has no strategic sector. All wages credit the one household account.
+	private void postNobleLabor() {
+		if (nobleLaborMkt == null)
+			return;
+		for (Member member : getMembers())
+			nobleLaborMkt.addEmployee(getID(), getBank(), 1.0, member.skills());
 	}
 
 	/**
@@ -250,10 +260,10 @@ public class Noble extends AbstractHousehold {
 		eConsumption = consumption - nConsumption;
 		bank.deposit(getID(), checking - consumption);
 
-		// the noble eats the LAVISH ration each step from its larder (it never
-		// starves — it simply draws its table down, then refills it toward the
-		// reserve target below)
-		necessity.decrease(RationSize.LAVISH.perDay());
+		// the noble household eats the LAVISH ration per member each step from its
+		// larder (it never starves — it simply draws its table down, then refills it
+		// toward the reserve target below)
+		necessity.decrease(RationSize.LAVISH.perDay() * getMemberCount());
 
 		// if the noble keeps a necessity reserve, cap this step's necessity buying
 		// at the gap to its target stock so it fills toward the target "if possible"
@@ -268,10 +278,12 @@ public class Noble extends AbstractHousehold {
 		nMkt.addBuyOffer(this, demandForN);
 
 		// supply labor to the strategic sector for next round (if the colony has
-		// one); the strategic firm pays a wage and takes the noble's skill-scaled
+		// one); the strategic firm pays a wage and takes each member's skill-scaled
 		// labor when the noble-labor market clears
-		if (nobleLaborMkt != null)
-			nobleLaborMkt.addEmployee(getID(), getBank(), 1.0, getHead().skills());
+		postNobleLabor();
+
+		// if unmarried, seek a spouse on the wedding market (it weds on weekends)
+		seekSpouseIfSingle();
 
 		// reset income accumulators so next step's income is counted fresh
 		resetIncomeAccumulators(acct);
@@ -296,6 +308,12 @@ public class Noble extends AbstractHousehold {
 	@Override
 	public String role() {
 		return "Noble";
+	}
+
+	/** Nobles wed after the ruler but before laborers. */
+	@Override
+	public int weddingPriority() {
+		return 1;
 	}
 
 	/**

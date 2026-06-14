@@ -12,4 +12,14 @@ package eos.name;
 public enum Gender {
 	MALE,
 	FEMALE;
+
+	/**
+	 * The opposite gender — used by the {@link eos.market.WeddingMarket} to match
+	 * a household head with a spouse of the opposite gender.
+	 *
+	 * @return {@link #FEMALE} for {@link #MALE} and vice versa
+	 */
+	public Gender opposite() {
+		return this == MALE ? FEMALE : MALE;
+	}
 }

@@ -84,6 +84,13 @@ class LaborerSkillTest {
 			public eos.bank.Bank getBank() {
 				return null;
 			}
+
+			public int getID() {
+				return 0;
+			}
+
+			public void addMember(Member member) {
+			}
 		};
 	}
 }

@@ -90,6 +90,10 @@ public class PeasantPool extends Agent {
 	@Getter
 	private long promotedCount;
 
+	// peasants wed out of the pool into households as spouses over its life
+	@Getter
+	private long marriedOutCount;
+
 	// buy relief food for the pool: refill the larder toward a BUFFER_DAYS buffer at
 	// the reduced relief ration, but only up to a price-sensitive money budget, so
 	// the pool defers to the working population when food is scarce (see
@@ -127,6 +131,12 @@ public class PeasantPool extends Agent {
 		// builder, in which case the pool supplies no labor)
 		this.builderLaborMkt =
 				(LaborMarket) colony.getMarket(BuilderFirm.LABOR_MARKET);
+		// the wedding market draws its spouses from this pool; register so it can
+		// (a no-op for a colony without one)
+		eos.market.WeddingMarket weddingMkt =
+				(eos.market.WeddingMarket) colony.getMarket("Wedding");
+		if (weddingMkt != null)
+			weddingMkt.setPool(this);
 		// seed the larder with a full per-peasant buffer, so the pool can feed its
 		// peasants from step 0 and ride out the necessity sector's adjustment to the
 		// new demand (and a promoted peasant takes its BUFFER_DAYS ration with it)
@@ -262,6 +272,50 @@ public class PeasantPool extends Agent {
 			promotedCount++;
 		}
 		return best;
+	}
+
+	/**
+	 * The best peasant of the given gender to take as a spouse — the highest
+	 * {@linkplain SkillTracker#overallLevel() overall skill}, the younger one (the
+	 * more recent birth date) breaking a tie — without removing it. Returns {@code
+	 * null} when no peasant of that gender remains. Used by the {@link
+	 * eos.market.WeddingMarket} to choose (and price) a match before committing.
+	 *
+	 * @param gender
+	 *            the gender of spouse sought (the opposite of the head's)
+	 * @return the ablest, then youngest, peasant of that gender, or {@code null}
+	 */
+	public Member bestSpouseCandidate(Gender gender) {
+		Member best = null;
+		for (Member m : peasants) {
+			if (m.gender() != gender)
+				continue;
+			if (best == null) {
+				best = m;
+				continue;
+			}
+			int level = m.skills().overallLevel();
+			int bestLevel = best.skills().overallLevel();
+			if (level > bestLevel || (level == bestLevel
+					&& m.getBirthDate().isAfter(best.getBirthDate())))
+				best = m;
+		}
+		return best;
+	}
+
+	/**
+	 * Remove a peasant wed out of the pool as a spouse (see {@link
+	 * #bestSpouseCandidate(Gender)}); the household keeps the {@link Member}.
+	 *
+	 * @param peasant
+	 *            the peasant to remove
+	 * @return true if it was in the pool and removed
+	 */
+	public boolean removeForMarriage(Member peasant) {
+		boolean removed = peasants.remove(peasant);
+		if (removed)
+			marriedOutCount++;
+		return removed;
 	}
 
 	/** @return the number of peasants currently in the pool */

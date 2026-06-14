@@ -6,6 +6,7 @@ import java.util.Set;
 
 import eos.bank.Bank;
 import eos.agent.Household;
+import eos.agent.Member;
 import eos.agent.firm.Firm;
 import eos.agent.laborer.Laborer;
 import eos.settlement.Settlement;
@@ -156,8 +157,13 @@ public class LaborMarket extends Market {
 		// polar day/night leaves daylight undefined; fall back to unscaled output
 		if (!Double.isFinite(daylightFactor))
 			daylightFactor = 1;
-		addEmployee(laborer.getID(), laborer.getBank(), daylightFactor,
-				laborer.getHead().skills());
+		// every working member of the household is a separate earner: each is
+		// placed on the market with its own skills (so head and spouse may end up
+		// at different firms and train different skills), but all wages credit the
+		// one household account. At founding a household has only its head.
+		for (Member member : laborer.getMembers())
+			addEmployee(laborer.getID(), laborer.getBank(), daylightFactor,
+					member.skills());
 	}
 
 	/**

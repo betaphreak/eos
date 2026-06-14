@@ -278,12 +278,19 @@ public class Laborer extends AbstractHousehold {
 		// need further testing!!!
 		double RR = bank.getDepositIR();
 
-		// not enough to eat; die (a successor household of the same dynasty
-		// inherits the estate)
-		if (necessity.decrease(config.eatAmt()) < config.eatAmt()) {
+		// the household eats one ration per member (head plus any spouse). If it
+		// cannot feed even the head it dies (a successor of the same dynasty
+		// inherits the estate); if it can feed the head but not everyone, the
+		// non-head members (the spouse) starve off and the household lives on.
+		double ration = config.eatAmt();
+		double ate = necessity.decrease(ration * getMemberCount());
+		if (ate < ration) {
 			dieAndSettleEstate();
 			return;
 		}
+		int fed = (int) Math.floor(ate / ration + 1e-9);
+		while (getMemberCount() > Math.max(1, fed))
+			removeNonHeadMember();
 
 		if (!firstAct) {
 			if (RR < lowRR)
@@ -323,15 +330,18 @@ public class Laborer extends AbstractHousehold {
 		// compute savings rate
 		savingsRate = (savings + new_deposit) / (checking + savings);
 
-		// compute consumption of necessity (in $)
-		nConsumption = consumption * Math.max(0,
-				1 - necessity.getQuantity() / getColony().getTargetNStock());
+		// compute consumption of necessity (in $). The stock target scales with the
+		// household size, so a married household keeps the same per-member food buffer
+		double dailyNeed = config.eatAmt() * getMemberCount();
+		nConsumption = consumption * Math.max(0, 1 - necessity.getQuantity()
+				/ (getColony().getTargetNStock() * getMemberCount()));
 
 		// compute consumption of enjoyment (in $)
 		eConsumption = consumption - nConsumption;
 
-		// if laborer has only 1 unit of necessity left, buy at least 1
-		minN = necessity.getQuantity() < 2 * config.eatAmt() ? config.eatAmt() : 0;
+		// if the household has under two days' food, buy at least a day's worth for
+		// everyone
+		minN = necessity.getQuantity() < 2 * dailyNeed ? dailyNeed : 0;
 
 		// post buy offer to enjoyment market
 		eMkt.addBuyOffer(this, demandForE);
@@ -339,8 +349,11 @@ public class Laborer extends AbstractHousehold {
 		// post buy offer to necessity market
 		nMkt.addBuyOffer(this, demandForN);
 
-		// post to labor market
+		// post every household member to the labor market (head and any spouse)
 		lMkt.addEmployee(this);
+
+		// if unmarried, seek a spouse on the wedding market (it weds on weekends)
+		seekSpouseIfSingle();
 
 		resetIncomeAccumulators(acct);
 		firstAct = false;
