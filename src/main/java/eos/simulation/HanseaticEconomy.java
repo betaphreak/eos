@@ -94,6 +94,15 @@ public class HanseaticEconomy {
 	static final double NOBLE_INITIAL_SILVER = 10;
 
 	/**
+	 * Peasants seeded into each colony's pool. Both colonies enable <b>promotion</b>
+	 * (a dead laborer is replaced by the ruler elevating the ablest peasant, not a
+	 * same-dynasty heir), so with only this finite reserve and no inflow the labor
+	 * force declines once it drains and the colony spirals to collapse — this run
+	 * exists to watch how long that takes at the minimum stable scale.
+	 */
+	static final int PEASANT_RESERVE = 10;
+
+	/**
 	 * Days of population necessity the nobles collectively stockpile as a reserve.
 	 * Each noble aims for {@value #NECESSITY_RESERVE_DAYS} × (laborers/nobles)
 	 * units, so the nobles together hold {@value #NECESSITY_RESERVE_DAYS} days of
@@ -124,6 +133,8 @@ public class HanseaticEconomy {
 				.numLaborers(NUM_LABORERS)
 				.numEFirms(NUM_EFIRMS)
 				.numNFirms(NUM_NFIRMS)
+				.peasantReserveSize(PEASANT_RESERVE)
+				.promoteLaborersFromPool(true)
 				.build();
 		SimulationConfig lubeckCfg = base.toBuilder()
 				.settlementName("Lübeck Altstadt")
@@ -205,8 +216,11 @@ public class HanseaticEconomy {
 
 		// every settlement has a ruler, banking in gold (created last)
 		Bank gold = h.createDefaultRuler();
+		// the peasant pool the ruler feeds and promotes laborers from (created last)
+		h.createDefaultPeasantPool();
 
 		h.addCommonPrinters(prefix);
+		h.addPeasantPrinter(prefix + "Peasants");
 		h.addBankPrinter(prefix + "Copper", copper);
 		h.addBankPrinter(prefix + "Silver", silver);
 		h.addBankPrinter(prefix + "Gold", gold);

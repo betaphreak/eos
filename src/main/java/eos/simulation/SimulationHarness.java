@@ -104,7 +104,7 @@ public class SimulationHarness {
 	// on the ~286 working days must cover all 365 days' consumption. This factor
 	// lifts the necessity firms' Cobb-Douglas A so the colony can feed itself
 	// across the rest-day calendar (see Firm.operatesOn / the day-type wiring).
-	public static final double NECESSITY_TECH_FACTOR = 1.4;
+	public static final double NECESSITY_TECH_FACTOR = 2.0;
 
 	private ConsumerGoodMarket enjoymentMkt;
 	private ConsumerGoodMarket necessityMkt;
