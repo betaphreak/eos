@@ -563,7 +563,7 @@ public class SimulationHarness {
 	/**
 	 * Ennoble the colony's ablest laborer household so it can own a firm chartered
 	 * when no noble yet exists: the laborer with the highest head {@link
-	 * Skill#INTELLECTUAL} (the youngest breaking a tie) is <b>elevated to a {@link
+	 * Skill#SOCIAL} (the youngest breaking a tie) is <b>elevated to a {@link
 	 * Noble}</b> banking in <b>silver</b>, adopting its head and members and carrying
 	 * its (copper) balances over into a fresh silver account; the old copper account
 	 * is then closed, so the colony's money is conserved. The laborer leaves the
@@ -628,11 +628,11 @@ public class SimulationHarness {
 			colony.scheduleEndOfStepAction(this::ennobleBestLaborer);
 	}
 
-	// the more ennoblable of two laborers: higher head INTELLECTUAL, the younger
+	// the more ennoblable of two laborers: higher head SOCIAL, the younger
 	// (smaller age) breaking a tie
 	private static boolean moreEnnoblable(Laborer candidate, Laborer incumbent) {
-		int ci = candidate.getHead().skills().level(Skill.INTELLECTUAL);
-		int ii = incumbent.getHead().skills().level(Skill.INTELLECTUAL);
+		int ci = candidate.getHead().skills().level(Skill.SOCIAL);
+		int ii = incumbent.getHead().skills().level(Skill.SOCIAL);
 		if (ci != ii)
 			return ci > ii;
 		return candidate.getAgeYears() < incumbent.getAgeYears();

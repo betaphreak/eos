@@ -101,7 +101,7 @@ public class Ruler extends AbstractHousehold {
 
 	// the noble-only labor market the strategic export firm employs from, or null if
 	// the colony has no export sector. The ruler works the strategic firm every step
-	// (its head's INTELLECTUAL drives the output, like a noble's), so the export
+	// (its head's SOCIAL drives the output, like a noble's), so the export
 	// sector is never unstaffed — the aristocracy that normally staffs it is built up
 	// over the first weeks by ennoblement (see SimulationHarness.topUpAristocracy).
 	private final LaborMarket nobleLaborMkt;
@@ -238,7 +238,7 @@ public class Ruler extends AbstractHousehold {
 		seekSpouseIfSingle();
 
 		// work the strategic export firm: post the ruler to the noble-only labor
-		// market every step (its head's INTELLECTUAL drives its export output, exactly
+		// market every step (its head's SOCIAL drives its export output, exactly
 		// like a noble's — see LaborMarket), so the export sector is never unstaffed
 		// while the aristocracy is still being built up by ennoblement. A no-op for a
 		// colony with no export sector. The export wage credits the gold treasury (FX

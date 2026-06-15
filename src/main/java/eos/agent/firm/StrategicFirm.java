@@ -153,10 +153,10 @@ public class StrategicFirm extends Firm {
 		return null;
 	}
 
-	/** The nobles who work the export sector train {@link Skill#INTELLECTUAL}. */
+	/** The nobles who work the export sector train {@link Skill#SOCIAL}. */
 	@Override
 	public Set<Skill> laborSkills() {
-		return Set.of(Skill.INTELLECTUAL);
+		return Set.of(Skill.SOCIAL);
 	}
 
 	/**

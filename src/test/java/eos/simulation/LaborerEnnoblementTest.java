@@ -16,7 +16,7 @@ import eos.settlement.Settlement;
 /**
  * When the dynamic firm provisioning charters a firm in a ruler-bearing colony
  * that has <b>no noble</b>, it ennobles the ablest laborer (highest head
- * INTELLECTUAL, the youngest breaking a tie) to own it — re-banking that household
+ * SOCIAL, the youngest breaking a tie) to own it — re-banking that household
  * in silver.
  * <p>
  * No bundled simulation reaches this path (each carries the default export sector,
