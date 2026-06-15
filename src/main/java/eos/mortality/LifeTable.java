@@ -33,17 +33,39 @@ public final class LifeTable {
 	// probability of dying within each age group
 	private final double[] nqx;
 
+	// group index by whole-year age, for ages [0, ageStart[last]] (ages above
+	// clamp to the open-ended top group); precomputed so the per-step mortality
+	// draw is an O(1) lookup rather than a scan of the age bands
+	private final int[] groupByAge;
+
+	// per-day death probability by whole-year age, same range and clamping;
+	// precomputed so dailyDeathProb avoids the per-call log/exp on the hot path
+	private final double[] dailyByAge;
+
 	private LifeTable(int[] ageStart, double[] nqx) {
 		this.ageStart = ageStart;
 		this.nqx = nqx;
+		int topAge = ageStart[ageStart.length - 1];
+		groupByAge = new int[topAge + 1];
+		for (int age = 0, i = 0; age <= topAge; age++) {
+			while (i + 1 < ageStart.length && age >= ageStart[i + 1])
+				i++;
+			groupByAge[age] = i;
+		}
+		dailyByAge = new double[topAge + 1];
+		for (int age = 0; age <= topAge; age++)
+			dailyByAge[age] =
+					1 - Math.exp(-annualHazard(age) / DAYS_PER_YEAR);
 	}
 
-	// index of the age group containing ageYears
+	// index of the age group containing ageYears (O(1); ages outside the
+	// precomputed range clamp to the first/last group)
 	private int groupIndex(int ageYears) {
-		for (int i = ageStart.length - 1; i >= 0; i--)
-			if (ageYears >= ageStart[i])
-				return i;
-		return 0;
+		if (ageYears <= 0)
+			return 0;
+		if (ageYears >= groupByAge.length)
+			return groupByAge[groupByAge.length - 1];
+		return groupByAge[ageYears];
 	}
 
 	/**
@@ -71,6 +93,10 @@ public final class LifeTable {
 	 * @return the per-day death probability
 	 */
 	public double dailyDeathProb(int ageYears) {
-		return 1 - Math.exp(-annualHazard(ageYears) / DAYS_PER_YEAR);
+		if (ageYears <= 0)
+			return dailyByAge[0];
+		if (ageYears >= dailyByAge.length)
+			return dailyByAge[dailyByAge.length - 1];
+		return dailyByAge[ageYears];
 	}
 }

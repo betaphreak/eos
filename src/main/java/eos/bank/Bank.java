@@ -1,7 +1,5 @@
 package eos.bank;
 
-import java.util.HashMap;
-
 import eos.settlement.Settlement;
 import eos.util.Averager;
 import lombok.Getter;
@@ -56,8 +54,10 @@ public class Bank {
 	// working copy of the loan-sensitivity parameter; normalized at step 0
 	private double tao;
 
-	// map from agentID to the corresponding account
-	private final HashMap<Integer, Account> accounts = new HashMap<Integer, Account>();
+	// map from agentID to the corresponding account (int-keyed to avoid the
+	// boxing/hash-bucket cost of the per-payment lookups that dominate the step
+	// loop; see IntAccountMap)
+	private final IntAccountMap accounts = new IntAccountMap();
 
 	// total amount of loans
 	@Getter
@@ -413,14 +413,14 @@ public class Bank {
 		totalDeposit = 0;
 
 		/* compute total loan and total deposit */
-		for (Account acct : accounts.values()) {
+		accounts.forEachValue(acct -> {
 			double bal = acct.savings;
 			if (bal < 0)
 				totalLoan -= bal;
 			else
 				totalDeposit += bal;
 			acct.interest = 0;
-		}
+		});
 
 		if (colony.getTimeStep() == 0) {
 			tao /= Math.max(1, Math.abs(totalDeposit - totalLoan));
@@ -454,7 +454,7 @@ public class Bank {
 			cumulativeProfit += spreadProfit;
 
 			/* pay interest and collect interest payment */
-			for (Account acct : accounts.values()) {
+			accounts.forEachValue(acct -> {
 				if (acct.savings > 0) {
 					acct.interest = acct.savings * depositIR;
 					acct.checking += acct.interest;
@@ -462,7 +462,7 @@ public class Bank {
 					acct.interest = acct.savings * loanIR;
 					acct.savings += acct.interest;
 				}
-			}
+			});
 		}
 
 		/* update long-term interest rates */
