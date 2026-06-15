@@ -3,6 +3,7 @@ package eos.simulation;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
+import eos.era.Era;
 import lombok.Builder;
 
 /**
@@ -73,7 +74,7 @@ import lombok.Builder;
  *                     SimulationHarness#foundLaborersFromPool})
  * @param targetNobles the size of the aristocracy the colony maintains by
  *                     ennoblement. No nobles are created at founding; the ruler
- *                     elevates the ablest laborers (highest INTELLECTUAL) into
+ *                     elevates the ablest laborers (highest SOCIAL) into
  *                     silver-banking nobles up to this count over the first weeks,
  *                     working the strategic firm itself meanwhile so it is never
  *                     unstaffed. Default {@code 5}; does not scale with colony size
@@ -153,6 +154,13 @@ public record SimulationConfig(
 		return startDate.plusDays(step);
 	}
 
+	/**
+	 * The era whose {@link Era.Economy economic tuning} seeds {@link #DEFAULT}.
+	 * The colony starts Medieval, so its economy supplies the era-specific
+	 * defaults (prices, taxes, immigration, firm/laborer init, pool/nobles).
+	 */
+	private static final Era.Economy MEDIEVAL = Era.MEDIEVAL.economy();
+
 	/** The original canonical run configuration. */
 	public static final SimulationConfig DEFAULT = new SimulationConfig(
 			"Eos",                                 // settlementName
@@ -162,24 +170,24 @@ public record SimulationConfig(
 			                                       //   ruler's dynamic provisioning
 			                                       //   grows the sector from here)
 			1,                                     // numNFirms (founding count)
-			new PriceRange(0.1, 5),                // ePrice
-			new PriceRange(0.1, 5),                // nPrice
-			new FirmInit(100, -1000, 40, 100, 30), // eFirm
-			new FirmInit(100, -1000, 50, 100, 30), // nFirm
-			new CFirmInit(500, 500, 0),            // cFirm
-			new LaborerInit(0, 0, 100, 0.9),       // laborer
+			MEDIEVAL.ePrice(),
+			MEDIEVAL.nPrice(),
+			MEDIEVAL.eFirm(),
+			MEDIEVAL.nFirm(),
+			MEDIEVAL.cFirm(),
+			MEDIEVAL.laborer(),
 			35,                                    // meanInitAgeYears
-			26,                                    // targetNStock
+			MEDIEVAL.targetNStock(),
 			5,                                     // meanSkillMale
 			2,                                     // meanSkillFemale
 			51.5074,                               // latitude (London)
 			-0.1278,                               // longitude (London)
-			0,                                     // externalInflowPerStep (closed)
-			100,                                   // immigrationThreshold
-			0.5,                                   // laborShare
-			0.05,                                  // bankProfitTaxRate
-			0.02,                                  // nobleIncomeTaxRate
-			900,                                   // peasantPoolSize
-			0.45,                                  // promotionRatio
-			5);                                    // targetNobles
+			MEDIEVAL.externalInflowPerStep(),
+			MEDIEVAL.immigrationThreshold(),
+			MEDIEVAL.laborShare(),
+			MEDIEVAL.bankProfitTaxRate(),
+			MEDIEVAL.nobleIncomeTaxRate(),
+			MEDIEVAL.peasantPoolSize(),
+			MEDIEVAL.promotionRatio(),
+			MEDIEVAL.targetNobles());
 }
