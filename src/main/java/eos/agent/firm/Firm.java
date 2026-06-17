@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import eos.agent.Agent;
+import eos.agent.Holding;
 import eos.bank.Bank;
 import eos.calendar.DayType;
 import eos.settlement.Settlement;
@@ -12,12 +13,13 @@ import eos.skill.Skill;
 import lombok.Getter;
 
 /**
- * Parent class of all firms.
- * 
+ * Parent class of all firms. A firm is a {@link Holding}: its owner (a noble)
+ * draws a dividend from its positive profit each step.
+ *
  * @author zhihongx
- * 
+ *
  */
-public abstract class Firm extends Agent {
+public abstract class Firm extends Agent implements Holding {
 
 	/**
 	 *  labor owned by the firm
@@ -154,6 +156,24 @@ public abstract class Firm extends Agent {
 	 */
 	public double getLaborCost() {
 		return wageBudget;
+	}
+
+	// --- Holding: the firm is an asset its owner draws a dividend from ---
+
+	/**
+	 * {@inheritDoc} A firm's distributable profit is its last step's profit floored
+	 * at 0 — and 0 once it is dissolved (dead), so a defunct firm pays no dividend
+	 * and its (closed) account is never touched.
+	 */
+	@Override
+	public double distributableProfit() {
+		return isAlive() ? Math.max(0, profit) : 0;
+	}
+
+	/** {@inheritDoc} A firm pays a dividend out of its own checking account. */
+	@Override
+	public void disburse(double amount) {
+		getBank().withdraw(getID(), amount);
 	}
 
 	/**

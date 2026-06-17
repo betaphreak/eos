@@ -1,5 +1,6 @@
 package eos.bank;
 
+import eos.agent.Holding;
 import eos.settlement.Settlement;
 import eos.util.Averager;
 import lombok.Getter;
@@ -18,7 +19,7 @@ import lombok.Getter;
  * @author zhihongx
  *
  */
-public class Bank {
+public class Bank implements Holding {
 
 	/* payment purposes (shared across all banks) */
 
@@ -274,6 +275,22 @@ public class Bank {
 				: "dividend exceeds distributable profit";
 		equity -= amt;
 		distributedProfit += amt;
+	}
+
+	// --- Holding: the bank is an asset its owner draws a dividend from ---
+
+	/** {@inheritDoc} A bank's distributable profit is its retained spread and fees
+	 * not yet paid out — see {@link #getDistributableProfit()}. */
+	@Override
+	public double distributableProfit() {
+		return getDistributableProfit();
+	}
+
+	/** {@inheritDoc} A bank pays a dividend by skimming it from its retained equity
+	 * — see {@link #payDividend(double)}. */
+	@Override
+	public void disburse(double amount) {
+		payDividend(amount);
 	}
 
 	/**
