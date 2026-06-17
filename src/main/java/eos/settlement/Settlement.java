@@ -130,6 +130,14 @@ public class Settlement {
 	// size grows; an occupant keeps its slot. Today only firms occupy slots.
 	private final List<Slot> slots = new ArrayList<Slot>();
 
+	// the colony's special sites: out-of-band build sites for enormous civic
+	// buildings/projects (a village hall, later) NOT subject to the effective-slot
+	// limit and NOT raised by the builder — their count is unlocked purely by size
+	// (SlotInfo.maxSpecialSites, 1 at the founding floor rising to 6). Extended by
+	// setSize as larger sizes unlock more; nothing occupies them until civic
+	// buildings arrive, so like effective slots they are pure spatial bookkeeping.
+	private final List<Slot> specialSites = new ArrayList<Slot>();
+
 	// mean of the normal distribution from which founding household heads draw
 	// their initial age, in years (see Demography.sampleInitialAgeDays)
 	@Getter
@@ -439,6 +447,44 @@ public class Settlement {
 	}
 
 	/**
+	 * The colony's <b>special sites</b> — occupied and vacant — in a fixed order, as
+	 * an unmodifiable view. Its length is the current size's {@link
+	 * SlotInfo#maxSpecialSites()} (1 at the founding floor, rising to 6). These are
+	 * out-of-band sites for civic buildings (a village hall, later); nothing occupies
+	 * them yet.
+	 *
+	 * @return the colony's special sites
+	 */
+	public List<Slot> getSpecialSites() {
+		return Collections.unmodifiableList(specialSites);
+	}
+
+	/**
+	 * Place <tt>occupant</tt> on a vacant special site. Unlike {@link #claimSlot},
+	 * special sites are not raised by the builder and not grown on demand — their
+	 * count is fixed by the current size's {@link SlotInfo#maxSpecialSites()} — so
+	 * this throws when every unlocked special site is taken (the colony must grow to
+	 * a size that unlocks another). Placement moves no money and consumes no
+	 * randomness, exactly like {@link #claimSlot}.
+	 *
+	 * @param occupant
+	 *            the occupant to place (e.g. a civic building)
+	 * @return the special site it was placed on
+	 * @throws IllegalStateException
+	 *             if no special site is free at the current size
+	 */
+	public Slot claimSpecialSite(SlotOccupant occupant) {
+		for (Slot site : specialSites)
+			if (site.isVacant()) {
+				site.occupy(occupant);
+				return site;
+			}
+		throw new IllegalStateException(name + " has no free special site for "
+				+ occupant + " (all " + specialSites.size()
+				+ " unlocked at size " + size + " are taken)");
+	}
+
+	/**
 	 * Set the colony's size to <tt>newSize</tt>, extending its effective-slot list
 	 * to match (new slots are vacant; existing slots and their occupants are kept).
 	 * Used to <b>grow</b> the colony; shrinking below the number of slots already
@@ -452,13 +498,18 @@ public class Settlement {
 	 *             if the new size would have fewer effective slots than already exist
 	 */
 	public void setSize(int newSize) {
-		int newEffective = slotTable.forSize(newSize).effective();
+		SlotInfo info = slotTable.forSize(newSize);
+		int newEffective = info.effective();
 		if (newEffective < slots.size())
 			throw new IllegalStateException(name + " cannot shrink from "
 					+ slots.size() + " to " + newEffective + " effective slots");
 		this.size = newSize;
 		while (slots.size() < newEffective)
 			slots.add(new Slot());
+		// unlock any special sites this size grants (maxSpecialSites rises with size,
+		// so this only ever appends — special sites, once unlocked, stay unlocked)
+		while (specialSites.size() < info.maxSpecialSites())
+			specialSites.add(new Slot());
 	}
 
 	/**
@@ -627,17 +678,22 @@ public class Settlement {
 	}
 
 	/**
-	 * Free the build slot occupied by <tt>occupant</tt> (or drop it from the pending
-	 * queue if it was awaiting a slot a growing colony had not yet built). A no-op
-	 * if the occupant holds no slot.
+	 * Free the build slot or special site occupied by <tt>occupant</tt> (or drop it
+	 * from the pending queue if it was awaiting a slot a growing colony had not yet
+	 * built). A no-op if the occupant holds neither.
 	 *
 	 * @param occupant
-	 *            the occupant whose slot to vacate
+	 *            the occupant whose slot or special site to free
 	 */
 	public void vacateSlot(SlotOccupant occupant) {
 		for (Slot slot : slots)
 			if (slot.getOccupant() == occupant) {
 				slot.vacate();
+				return;
+			}
+		for (Slot site : specialSites)
+			if (site.getOccupant() == occupant) {
+				site.vacate();
 				return;
 			}
 		pendingOccupants.remove(occupant);

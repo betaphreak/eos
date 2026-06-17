@@ -100,6 +100,40 @@ class SlotTableTest {
 	}
 
 	@Test
+	void specialSitesAreOccupiableAndUnlockWithSize() {
+		Settlement colony = colony();
+		// the founding floor (size 3) unlocks exactly one special site, vacant
+		assertEquals(1, colony.getSpecialSites().size(),
+				"size 3 unlocks one special site");
+		assertTrue(colony.getSpecialSites().get(0).isVacant());
+
+		// occupy it (a civic building, e.g. a future village hall)
+		Agent hall = stubAgent(colony);
+		Slot site = colony.claimSpecialSite(hall);
+		assertSame(hall, site.getOccupant());
+		assertFalse(colony.getSpecialSites().get(0).isVacant());
+
+		// the lone special site is taken — there is no auto-grow, so a second claim
+		// throws until the colony grows to a size that unlocks another
+		Agent other = stubAgent(colony);
+		assertThrows(IllegalStateException.class,
+				() -> colony.claimSpecialSite(other));
+
+		// growing to size 4 unlocks a second special site; the first occupant stays
+		colony.setSize(4);
+		assertEquals(2, colony.getSpecialSites().size(),
+				"size 4 unlocks a second special site");
+		assertSame(hall, colony.getSpecialSites().get(0).getOccupant());
+		assertTrue(colony.getSpecialSites().get(1).isVacant());
+		Slot site2 = colony.claimSpecialSite(other);
+		assertSame(other, site2.getOccupant());
+
+		// vacating frees the special site (e.g. the occupant is removed)
+		colony.vacateSlot(hall);
+		assertTrue(colony.getSpecialSites().get(0).isVacant());
+	}
+
+	@Test
 	void occupyingAnOccupiedSlotThrows() {
 		Settlement colony = colony();
 		Slot slot = new Slot();
