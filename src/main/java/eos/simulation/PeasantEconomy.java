@@ -35,17 +35,12 @@ public class PeasantEconomy {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.promotionRatio(PROMOTION_RATIO).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
-		h.createMarkets();
+		// the standard single-copper-bank colony, but the lower promotionRatio (above)
+		// leaves a larger standing reserve in the pool — the relief the ruler funds for
+		// it is what this run charts (via the peasant printer) before the pool drains
+		Bank gold = h.foundStandardColony(
+				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
 		Bank bank = h.getCopperBank();
-		h.createFirms(bank, i -> bank,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
-		h.createDefaultStrategicSector(bank);
-		// the ruler (founding cash) and the pool precede the labor force, which the
-		// ruler founds and replaces by promotion from the pool
-		Bank gold = h.createDefaultRuler();
-		h.createDefaultPeasantPool();
-		h.foundLaborersFromPool(i -> bank, i -> 15);
-		h.enableExternalInflow(bank);
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);
 		h.addBankPrinter("Gold", gold);

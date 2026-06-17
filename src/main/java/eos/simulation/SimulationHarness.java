@@ -994,6 +994,49 @@ public class SimulationHarness {
 		});
 	}
 
+	/**
+	 * Found a standard colony on a <b>single copper bank</b> — the canonical
+	 * founding sequence the standard single-bank simulations share, packaged as one
+	 * reusable operation: create the markets, open the copper bank, found the seed
+	 * firms, raise the default export sector, install the ruler (and its gold bank),
+	 * seed the peasant pool, promote the initial labor force out of it, and open the
+	 * colony to any external inflow — in exactly that order. Commoners (firms,
+	 * laborers, pool) all bank at the copper bank; the export aristocracy re-banks in
+	 * silver by ennoblement and the ruler in gold, as in every standard run.
+	 * <p>
+	 * This is the first cut of the <b>foundry</b> (see {@code docs/village-founding.md}):
+	 * a colony's whole founding behind a single call, the seam a future runtime
+	 * founder (a wandering retinue chartering a village mid-run) will build on. It
+	 * reproduces the hand-written sequence the migrated sims used verbatim — same
+	 * calls, same order — so those runs stay byte-identical. Simulations whose
+	 * founding diverges (multiple or non-copper commoner banks, a different
+	 * market/bank ordering) keep composing the granular methods this orchestrates.
+	 * <p>
+	 * Any config overrides (e.g. {@code setNobleConfig}/{@code setWeddingConfig}) must
+	 * be applied before this call, since it creates the markets and ruler.
+	 *
+	 * @param eFirmSavings
+	 *            initial savings of each enjoyment firm, by index
+	 * @param nFirmSavings
+	 *            initial savings of each necessity firm, by index
+	 * @param laborerNStock
+	 *            initial necessity stock of each promoted laborer household, by index
+	 * @return the colony's gold bank (the ruler's treasury), for printer wiring; the
+	 *         copper bank is available from {@link #getCopperBank()}
+	 */
+	public Bank foundStandardColony(IntToDoubleFunction eFirmSavings,
+			IntToDoubleFunction nFirmSavings, IntToDoubleFunction laborerNStock) {
+		createMarkets();
+		Bank copper = getCopperBank();
+		createFirms(copper, i -> copper, eFirmSavings, nFirmSavings);
+		createDefaultStrategicSector(copper);
+		Bank gold = createDefaultRuler();
+		createDefaultPeasantPool();
+		foundLaborersFromPool(i -> copper, laborerNStock);
+		enableExternalInflow(copper);
+		return gold;
+	}
+
 	/** Register the printers common to every simulation. */
 	public void addCommonPrinters() {
 		addCommonPrinters("");

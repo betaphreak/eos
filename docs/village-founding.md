@@ -246,10 +246,20 @@ next colony index, so "same seed → identical run" still holds.
   analytical sweeps run ruler-less colonies, so taxation does not touch them).
   Covered by an added `RulerTaxationTest` assertion (gold bank's `distributedProfit`
   stays 0 while the silver bank is skimmed).
-- **Phase 2 — the foundry.** Extract the harness founding sequence into a
-  runtime-callable operation; the standard sims found "pre-chartered" (zero-length
-  `HOLDING`) through it, behaviour preserved. The structural refactor, no new
-  mechanic yet.
+- **Phase 2 — the foundry. (First cut implemented.)** The canonical single-copper-bank
+  founding sequence is packaged as `SimulationHarness.foundStandardColony(...)` —
+  markets, firms, export sector, ruler + gold treasury, peasant pool, labor force
+  promoted from it, external inflow, in one call. The standard single-bank sims
+  (`HomogeneousEconomy`, `HeterogeneousEconomy`, `PeasantEconomy`) found through it;
+  it reproduces their hand-written sequence verbatim, so they stay **byte-identical**
+  (verified by a CSV-checksum diff of a full `HomogeneousEconomy` run, all files
+  matching, plus the green suite). Sims whose founding diverges in **ordering** (e.g.
+  `MeritocraticEconomy` opens the copper bank before the markets and the silver bank
+  at a different point; `TwoBankEconomy` uses two copper banks; the bare sweeps and
+  `SmallOpenEconomy` have no ruler/pool) keep composing the granular methods this
+  orchestrates. This is the seam a runtime founder will build on; the runtime
+  founding of a *new* colony mid-run (via `GameSession.newSettlement`) arrives with
+  the Retinue in Phase 3.
 - **Phase 3 — the Retinue + the dwell-able `HOLDING` phase.** The `Retinue` entity,
   the founder/holder config, `RETINUE → HOLDING` establishing the hall + banks, the
   chartering threshold, `HOLDING → VILLAGE` distributing assets and seating the

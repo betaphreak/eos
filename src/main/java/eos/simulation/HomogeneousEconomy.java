@@ -28,19 +28,13 @@ public class HomogeneousEconomy {
 		// every ruler-bearing colony — grows the count to fit demand.
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
-		h.createMarkets();
+		// found a standard single-copper-bank colony: markets, firms, export sector,
+		// ruler + gold treasury, peasant pool, and the labor force promoted from it on
+		// day 0 (see foundStandardColony). The ruler's dynamic provisioning — on by
+		// default — grows the firm count from the 1E+1N seed to fit demand.
+		Bank gold = h.foundStandardColony(
+				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
 		Bank bank = h.getCopperBank();
-		h.createFirms(bank, i -> bank,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
-		// every settlement has an export sector: the strategic firm and the nobles
-		// who staff it, all banking at the single bank
-		h.createDefaultStrategicSector(bank);
-		// the ruler (holding the founding cash) and the pool are created before the
-		// labor force, which the ruler then promotes out of the pool on day 0
-		Bank gold = h.createDefaultRuler();
-		h.createDefaultPeasantPool();
-		h.foundLaborersFromPool(i -> bank, i -> 15);
-		h.enableExternalInflow(bank);
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);
 		h.addBankPrinter("Gold", gold);

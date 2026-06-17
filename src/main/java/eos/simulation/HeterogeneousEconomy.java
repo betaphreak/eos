@@ -22,21 +22,17 @@ public class HeterogeneousEconomy {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		SimulationHarness h = SimulationHarness.create(cfg, 2345);
 		Rng rng = h.getColony().getRng();
-		h.createMarkets();
-		Bank bank = h.getCopperBank();
-		h.createFirms(bank, i -> bank,
+		// found a standard single-copper-bank colony, but with each agent's initial
+		// state randomized around the configured values (the init functions consume
+		// the economic RNG lazily, as they are applied inside the founding sequence —
+		// see foundStandardColony)
+		Bank gold = h.foundStandardColony(
 				i -> rng.uniform(cfg.eFirm().savings() * 1.1,
 						cfg.eFirm().savings() * 0.9),
 				i -> rng.uniform(cfg.nFirm().savings() * 1.1,
-						cfg.nFirm().savings() * 0.9));
-		// every settlement has an export sector (the strategic firm + its nobles)
-		h.createDefaultStrategicSector(bank);
-		// the ruler (founding cash) and the pool precede the labor force, which the
-		// ruler promotes out of the pool on day 0
-		Bank gold = h.createDefaultRuler();
-		h.createDefaultPeasantPool();
-		h.foundLaborersFromPool(i -> bank, i -> rng.gaussian(15, 3));
-		h.enableExternalInflow(bank);
+						cfg.nFirm().savings() * 0.9),
+				i -> rng.gaussian(15, 3));
+		Bank bank = h.getCopperBank();
 		h.addCommonPrinters();
 		h.addBankPrinter("Bank", bank);
 		h.addBankPrinter("Gold", gold);
