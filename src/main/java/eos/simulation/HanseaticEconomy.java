@@ -176,7 +176,10 @@ public class HanseaticEconomy {
 		// default tiered banking: commoners (laborers + firms, incl. the export
 		// firm) in copper, the nobles in silver
 		Bank copper = h.getCopperBank();
-		Bank silver = h.getSilverBank();
+		// create the silver tier now (before the ruler's gold) so the banks order
+		// copper, silver, gold; the export aristocracy raised by ennoblement re-banks
+		// into it. The nobles are raised later, so nothing assigns it here.
+		h.getSilverBank();
 
 		// the noble-only labor market must exist before the export firm and the
 		// nobles are created (both look it up)
@@ -197,16 +200,14 @@ public class HanseaticEconomy {
 
 		// the ruler (founding cash) and the pool precede the labor force, which the
 		// ruler founds and replaces by promotion from the pool
-		Bank gold = h.createDefaultRuler();
+		h.createDefaultRuler();
 		h.createDefaultPeasantPool();
 		h.foundLaborersFromPool(i -> copper, i -> 15);
 		h.enableExternalInflow(copper);
 
 		h.addCommonPrinters(prefix);
 		h.addPeasantPrinter(prefix + "Peasants");
-		h.addBankPrinter(prefix + "Copper", copper);
-		h.addBankPrinter(prefix + "Silver", silver);
-		h.addBankPrinter(prefix + "Gold", gold);
+		h.addBanksPrinter(prefix + "Banks");
 		colony.addPrinter(new StrategicPrinter(prefix + "Strategic",
 				h.getStrategicFirm(), copper));
 		colony.addPrinter(new NoblesPrinter(prefix + "Nobles"));

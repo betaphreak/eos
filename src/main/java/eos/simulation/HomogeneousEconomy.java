@@ -32,12 +32,11 @@ public class HomogeneousEconomy {
 		// ruler + gold treasury, peasant pool, and the labor force promoted from it on
 		// day 0 (see foundStandardColony). The ruler's dynamic provisioning — on by
 		// default — grows the firm count from the 1E+1N seed to fit demand.
-		Bank gold = h.foundStandardColony(
+		h.foundStandardColony(
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
 		Bank bank = h.getCopperBank();
 		h.addCommonPrinters();
-		h.addBankPrinter("Bank", bank);
-		h.addBankPrinter("Gold", gold);
+		h.addBanksPrinter("Banks");
 		h.addStrategicSectorPrinters("", bank);
 		h.run();
 		return h;

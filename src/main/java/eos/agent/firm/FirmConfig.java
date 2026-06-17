@@ -22,19 +22,6 @@ import lombok.Builder;
  * @param eUtilThreshold minimal capacity utilization to allow capital expansion
  * @param rUtilThreshold minimal capacity utilization to allow capital
  *                       replacement
- * @param avgProfitWin   time window within which average profit is computed
- * @param warmupDays     number of initial steps (days) the colony is given to
- *                       reach steady state before the aggressive
- *                       capital-purchase nudges below are allowed to fire; until
- *                       then the rolling average profit they key off of is not
- *                       yet meaningful
- * @param capitalNudgeProfitFactor multiple of average (absolute) profit beyond
- *                       which a firm is nudged to buy one extra machine on a
- *                       profit spike, or to buy one fewer on a deep loss; only
- *                       after {@code warmupDays}
- * @param capitalNudgeUtilThreshold lowered capacity-utilization bar (vs. the
- *                       normal {@code eUtilThreshold}) at which the profit-spike
- *                       nudge is allowed to add capital
  */
 @Builder(toBuilder = true)
 public record FirmConfig(
@@ -44,13 +31,9 @@ public record FirmConfig(
 		double lambda,
 		double laborShare,
 		double eUtilThreshold,
-		double rUtilThreshold,
-		int avgProfitWin,
-		int warmupDays,
-		double capitalNudgeProfitFactor,
-		double capitalNudgeUtilThreshold) {
+		double rUtilThreshold) {
 
 	/** The original hard-coded parameter values (legacy wage-budget rule). */
 	public static final FirmConfig DEFAULT =
-			new FirmConfig(2, 0.5, 0.5, 0.2, 0, 0.9, 0.75, 1000, 2000, 5, 0.8);
+			new FirmConfig(2, 0.5, 0.5, 0.2, 0, 0.9, 0.75);
 }

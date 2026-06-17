@@ -60,11 +60,6 @@ public abstract class ConsumerGoodFirm extends Firm {
 	private double capitalVal;
 
 	/**
-	 * used to calculate average profit
-	 */
-	private Averager pfAvger;
-
-	/**
 	 * Window (days) over which revenue is smoothed for the labor-share wage
 	 * budget. Long enough to span the rest-day calendar — the weekly day of rest
 	 * and the feast clusters — so a run of days on which the firm is closed (and
@@ -137,7 +132,6 @@ public abstract class ConsumerGoodFirm extends Firm {
 		wageBudget = initWageBudget;
 		loan = 0;
 		capitalCost = 0;
-		pfAvger = new Averager(config.avgProfitWin());
 		revAvger = new Averager(REVENUE_SMOOTH_WIN);
 		foundedStep = colony.getTimeStep();
 
@@ -259,39 +253,6 @@ public abstract class ConsumerGoodFirm extends Firm {
 			// marginal revenue >= capital price
 			if (IK >= IR && utilization >= config.eUtilThreshold() && MR >= capitalPrice)
 				capitalToBuy += 1;
-
-			double avgProfit = pfAvger.update(Math.abs(profit));
-
-			/***************************************************************/
-			/* The following steps are considered hacks, use with discretion. */
-			/*
-			 * These nudges key off the rolling average profit, which is only
-			 * meaningful once the colony has reached steady state, so they
-			 * stay off for the first config.warmupDays() steps. The magic
-			 * numbers (warm-up length, the profit-spike multiple, and the
-			 * lowered utilization bar) live in FirmConfig.
-			 */
-			boolean warmedUp = getColony().getTimeStep() > config.warmupDays();
-
-			/*
-			 * Spur firms to buy capital when profit is really high (more than
-			 * capitalNudgeProfitFactor times the average). In this case the
-			 * capacity-utilization requirement is lowered from eUtilThreshold
-			 * to capitalNudgeUtilThreshold.
-			 */
-			if (warmedUp && IK >= IR
-					&& utilization > config.capitalNudgeUtilThreshold()
-					&& profit > config.capitalNudgeProfitFactor() * avgProfit)
-				capitalToBuy += 1;
-
-			/*
-			 * Buy less capital when it is making a lot of losses (if the firm
-			 * still decides to expand in this case, which does not really make
-			 * sense)
-			 */
-			if (warmedUp && profit < -config.capitalNudgeProfitFactor() * avgProfit)
-				capitalToBuy -= 1;
-			/***************************************************************/
 
 			// number of machines that are written off
 			double scrapped = capitalQty - capital.getQuantity();

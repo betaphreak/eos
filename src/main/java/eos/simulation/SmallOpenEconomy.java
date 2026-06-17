@@ -61,8 +61,7 @@ public class SmallOpenEconomy {
 		// population (a no-op only when externalInflowPerStep is 0, which it isn't)
 		h.enableExternalInflow(bankA);
 		h.addCommonPrinters();
-		h.addBankPrinter("BankA", bankA);
-		h.addBankPrinter("BankB", bankB);
+		h.addBanksPrinter("Banks");
 		h.run();
 		return h;
 	}

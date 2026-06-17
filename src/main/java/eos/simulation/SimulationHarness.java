@@ -447,8 +447,8 @@ public class SimulationHarness {
 	 * (after the commoners and any nobles) so its demographic draws don't perturb
 	 * theirs.
 	 *
-	 * @return the gold bank the ruler owns and banks at (so the caller can register
-	 *         a {@link BankPrinter} for it)
+	 * @return the gold bank the ruler owns and banks at (the colony's banks are all
+	 *         reported together by {@link #addBanksPrinter})
 	 */
 	public Bank createDefaultRuler() {
 		Bank gold = getGoldBank();
@@ -1068,9 +1068,17 @@ public class SimulationHarness {
 		colony.addPrinter(new WeddingPrinter(prefix + "Weddings", weddingMkt));
 	}
 
-	/** Register a {@link BankPrinter} writing to <tt>fileName</tt>. */
-	public void addBankPrinter(String fileName, Bank bank) {
-		colony.addPrinter(new BankPrinter(fileName, bank));
+	/**
+	 * Register a {@link BanksPrinter} writing <b>all</b> of the colony's banks to a
+	 * single <tt>fileName</tt> (one row per bank per cycle, told apart by the Bank
+	 * and Currency columns). Replaces the former per-bank printer, so a colony with
+	 * several banks needs only this one call.
+	 *
+	 * @param fileName
+	 *            name of the consolidated CSV (e.g. {@code "Banks"})
+	 */
+	public void addBanksPrinter(String fileName) {
+		colony.addPrinter(new BanksPrinter(fileName));
 	}
 
 	/**
