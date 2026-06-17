@@ -1,14 +1,12 @@
 package eos.settlement;
 
-import eos.agent.Agent;
-
 /**
  * One <b>effective</b> build slot in a {@link Settlement}: a place a single
- * occupant can stand on. Today the only occupants are firms (which are {@link
- * Agent}s), so the occupant is typed as an {@code Agent}; when permanent
- * housing and other buildings arrive this will widen to a common occupant
- * interface. A slot is either <b>vacant</b> ({@code occupant == null}) or taken
- * by exactly one occupant.
+ * {@link SlotOccupant occupant} can stand on. Today the only occupants are firms
+ * (which are {@link eos.agent.Agent}s, hence {@code SlotOccupant}s); the interface
+ * is the seam for housing, a village hall and other buildings to occupy slots
+ * later. A slot is either <b>vacant</b> ({@code occupant == null}) or taken by
+ * exactly one occupant.
  * <p>
  * Slots are pure spatial bookkeeping — claiming or vacating one moves no money
  * and consumes no randomness — so adding them leaves the economic simulation
@@ -17,7 +15,7 @@ import eos.agent.Agent;
 public final class Slot {
 
 	// the occupant standing on this slot, or null if the slot is vacant
-	private Agent occupant;
+	private SlotOccupant occupant;
 
 	/** Whether the slot is unoccupied. */
 	public boolean isVacant() {
@@ -25,7 +23,7 @@ public final class Slot {
 	}
 
 	/** The occupant on this slot, or {@code null} if it is vacant. */
-	public Agent getOccupant() {
+	public SlotOccupant getOccupant() {
 		return occupant;
 	}
 
@@ -37,7 +35,7 @@ public final class Slot {
 	 * @throws IllegalStateException
 	 *             if the slot is already occupied
 	 */
-	public void occupy(Agent occupant) {
+	public void occupy(SlotOccupant occupant) {
 		if (occupant == null)
 			throw new IllegalArgumentException("occupant must be non-null");
 		if (this.occupant != null)

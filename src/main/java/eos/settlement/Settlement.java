@@ -200,7 +200,7 @@ public class Settlement {
 
 	// occupants that demanded a slot a live colony could not yet supply: they are
 	// seated as the builder finishes the rings being built for them.
-	private final List<Agent> pendingOccupants = new ArrayList<Agent>();
+	private final List<SlotOccupant> pendingOccupants = new ArrayList<SlotOccupant>();
 
 	// tracks the colony's CPI and inflation, recomputed once per newDay. Reads
 	// the live consumerGoodMarkets set, so markets added later are included.
@@ -486,7 +486,7 @@ public class Settlement {
 	 *             if the colony cannot make room (full at max size while founding,
 	 *             or full with no builder while live)
 	 */
-	public Slot claimSlot(Agent occupant) {
+	public Slot claimSlot(SlotOccupant occupant) {
 		Slot slot = firstVacantSlot();
 		if (slot != null) {
 			slot.occupy(occupant);
@@ -499,7 +499,7 @@ public class Settlement {
 
 	// founding (pre-run genesis): extend the colony's initial footprint one size at
 	// a time until the occupant fits, and seat it. Not the live-growth path.
-	private Slot foundOnto(Agent occupant) {
+	private Slot foundOnto(SlotOccupant occupant) {
 		Slot slot = null;
 		while (slot == null && size < slotTable.maxSize()) {
 			setSize(size + 1);
@@ -515,7 +515,7 @@ public class Settlement {
 
 	// live colony: only the builder can make room. Queue the next ring's work and
 	// hold the occupant pending; it is seated when the builder finishes the ring.
-	private Slot requestBuild(Agent occupant) {
+	private Slot requestBuild(SlotOccupant occupant) {
 		if (builder == null)
 			throw new IllegalStateException(name
 					+ " is full and has no builder to grow it for " + occupant);
@@ -634,7 +634,7 @@ public class Settlement {
 	 * @param occupant
 	 *            the occupant whose slot to vacate
 	 */
-	public void vacateSlot(Agent occupant) {
+	public void vacateSlot(SlotOccupant occupant) {
 		for (Slot slot : slots)
 			if (slot.getOccupant() == occupant) {
 				slot.vacate();
@@ -651,16 +651,19 @@ public class Settlement {
 	// its circumference grows). The sponsor stored for the public works is the
 	// current ruler; the builder bills whoever is ruler when it does the work, so a
 	// succession mid-build does not strand the task on a closed account.
-	private void requestGrowth(Agent requester) {
+	private void requestGrowth(SlotOccupant requester) {
 		int next = size + 1;
 		if (next > slotTable.maxSize())
 			throw new IllegalStateException(
 					name + " cannot grow past its maximum size " + size);
 		BuilderConfig c = builder.getConfig();
 
-		// the requester funds its own slot's land
+		// the requester funds its own slot's land. An effective-slot occupant must be
+		// billable, which today means it is an Agent (the sole SlotOccupant); this is
+		// the one bridge where the slot machinery still assumes that, and where billing
+		// must generalize once a non-agent occupant can take an effective slot.
 		buildQueue.add(new BuildProject(next, BuildProject.Kind.LAND,
-				c.landWorkPerSlot(), requester));
+				c.landWorkPerSlot(), (Agent) requester));
 
 		// queue the ring's public works once (the ruler funds roads and walls)
 		if (!ringHasPublicWorks(next)) {
@@ -733,7 +736,7 @@ public class Settlement {
 	// seat the waiting occupants onto newly-built slots; if any still do not fit,
 	// queue the next ring for them (funded by the first one still waiting)
 	private void placePending() {
-		java.util.Iterator<Agent> it = pendingOccupants.iterator();
+		java.util.Iterator<SlotOccupant> it = pendingOccupants.iterator();
 		while (it.hasNext()) {
 			Slot slot = firstVacantSlot();
 			if (slot == null)

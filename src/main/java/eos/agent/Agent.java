@@ -2,16 +2,19 @@ package eos.agent;
 
 import eos.bank.Bank;
 import eos.settlement.Settlement;
+import eos.settlement.SlotOccupant;
 import eos.good.Good;
 import lombok.Getter;
 
 /**
- * Parent class of all agents
+ * Parent class of all agents. Agents are the only things that occupy build slots
+ * today (firms do), so {@code Agent} is the model's sole {@link SlotOccupant} —
+ * see that interface for the seam future non-agent occupants will use.
  *
  * @author zhihongx
  *
  */
-public abstract class Agent {
+public abstract class Agent implements SlotOccupant {
 
 	// each agent has an unique ID that is also used as the bank account number
 	@Getter
