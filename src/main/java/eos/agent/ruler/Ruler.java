@@ -5,6 +5,7 @@ import java.util.List;
 
 import eos.agent.AbstractHousehold;
 import eos.agent.Agent;
+import eos.agent.Rank;
 import eos.agent.firm.ConsumerGoodFirm;
 import eos.agent.firm.EFirm;
 import eos.agent.firm.FirmFactory;
@@ -423,6 +424,12 @@ public class Ruler extends AbstractHousehold {
 	@Override
 	public String role() {
 		return "Ruler";
+	}
+
+	/** A ruler commands a {@link Rank#VILLAGE} — the settlement it leads. */
+	@Override
+	public Rank rank() {
+		return Rank.VILLAGE;
 	}
 
 	/** The sovereign weds first of all (above nobles and laborers). */

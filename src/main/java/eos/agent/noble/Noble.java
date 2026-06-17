@@ -6,6 +6,7 @@ import java.util.List;
 import eos.agent.AbstractHousehold;
 import eos.agent.Agent;
 import eos.agent.Member;
+import eos.agent.Rank;
 import eos.agent.firm.Firm;
 import eos.agent.firm.StrategicFirm;
 import eos.bank.Account;
@@ -359,6 +360,12 @@ public class Noble extends AbstractHousehold {
 	@Override
 	public String role() {
 		return "Noble";
+	}
+
+	/** A noble commands a {@link Rank#HOLDING} — the firms and estates it owns. */
+	@Override
+	public Rank rank() {
+		return Rank.HOLDING;
 	}
 
 	/** Nobles wed after the ruler but before laborers. */

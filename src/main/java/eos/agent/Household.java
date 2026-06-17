@@ -137,6 +137,21 @@ public interface Household {
 	}
 
 	/**
+	 * This household's {@link Rank} — the scope of what it commands in the realm's
+	 * hierarchy. Defaults to {@link Rank#HOUSEHOLD} (a household commanding only its
+	 * own family, what a laborer is); types that command more override it (a
+	 * {@link eos.agent.noble.Noble} commands a {@link Rank#HOLDING}, a
+	 * {@link eos.agent.ruler.Ruler} a {@link Rank#VILLAGE}). The rank ladder's
+	 * promotion/demotion (see {@code docs/rank-ladder.md}) reads this to find the
+	 * adjacent rank to reform a household into.
+	 *
+	 * @return the household's rank
+	 */
+	default Rank rank() {
+		return Rank.HOUSEHOLD;
+	}
+
+	/**
 	 * Whether this household belongs to the colony's <b>workforce</b> — the
 	 * population whose total disappearance ends the colony's life (see
 	 * {@link Settlement#isDead()}). A laborer is workforce; rentier households

@@ -7,6 +7,7 @@ import java.util.function.IntFunction;
 import java.util.function.IntToDoubleFunction;
 
 import eos.agent.Agent;
+import eos.agent.Household;
 import eos.agent.firm.BuilderConfig;
 import eos.agent.firm.BuilderFirm;
 import eos.agent.firm.CFirm;
@@ -19,6 +20,8 @@ import eos.agent.firm.StrategicFirm;
 import eos.agent.firm.StrategicFirmConfig;
 import eos.agent.Member;
 import eos.agent.PeasantPool;
+import eos.agent.Rank;
+import eos.agent.RankLadder;
 import eos.agent.laborer.Laborer;
 import eos.agent.laborer.LaborerConfig;
 import eos.agent.noble.Noble;
@@ -130,6 +133,11 @@ public class SimulationHarness {
 	// Replace via setNobleConfig before createDefaultRuler (e.g. to give a colony's
 	// nobles a necessity reserve, as HanseaticEconomy does).
 	private NobleConfig nobleConfig = NobleConfig.DEFAULT;
+
+	// the social-mobility engine for this colony (promotion/demotion across ranks),
+	// built lazily on first use with the realized ranks' factories registered (see
+	// rankLadder()). Today only ennoblement (HOUSEHOLD -> HOLDING) uses it.
+	private RankLadder rankLadder;
 
 	// necessity (food) firms run a higher technology coefficient than the other
 	// consumer firms: because production stops on the weekly day of rest and on
@@ -582,29 +590,80 @@ public class SimulationHarness {
 				best = lab;
 		if (best == null)
 			return null;
+		// reform the chosen laborer up the rank ladder: HOUSEHOLD -> HOLDING (the
+		// reserved RETINUE rung in between has no factory, so it is skipped). The
+		// HOLDING factory re-banks it in silver, carries its balances and members
+		// over, and the ladder closes the old account and swaps the agent — money
+		// conserved, the laborer's surname staying in use with the noble that adopted
+		// its head. Safe here: this runs only as a deferred end-of-step action (the
+		// laborer's offers have cleared), exactly as before.
+		return (Noble) rankLadder().promote(best);
+	}
 
-		// carry the household's (copper) balances over, then re-bank it in silver
-		Bank oldBank = best.getBank();
-		double checking = oldBank.getChecking(best.getID());
-		double savings = oldBank.getSavings(best.getID());
-		Member head = best.getHead();
-		Noble noble = new Noble(head, checking, savings, nobleConfig,
-				getSilverBank(), colony);
-		// carry any further members (e.g. a spouse) across to the noble household
-		for (Member m : best.getMembers())
-			if (m != head)
-				noble.addMember(m);
-		// close the old account (its balances now live in the silver account — money
-		// is conserved) and retire the laborer; its surname stays in use with the
-		// noble that adopted its head, so it is not recycled
-		oldBank.closeAcct(best.getID());
+	/**
+	 * Demote <tt>household</tt> one realized rank down the {@link RankLadder} — e.g.
+	 * a ruined {@link Noble} ({@link Rank#HOLDING}) reformed back into a
+	 * copper-banking {@link Laborer} ({@link Rank#HOUSEHOLD}), adopting its head and
+	 * members and carrying its (copper) balances over so the colony's money is
+	 * conserved. This is the capability the rank ladder unlocks; <b>no automatic
+	 * trigger fires it yet</b> (a bankruptcy/attainder rule is future work — see
+	 * {@code docs/rank-ladder.md}). Like ennoblement it must run from an
+	 * <em>end-of-step</em> context (the household's offers must have cleared).
+	 *
+	 * @param household
+	 *            the household to demote
+	 * @return the reformed (lower-ranked) household, or {@code null} if there is no
+	 *         realized rank below it
+	 */
+	public Household demote(Household household) {
+		return rankLadder().demote(household);
+	}
 
-		// add the new noble directly (safe here — the act phase is over) so a second
-		// charter the same step sees it via leastLoadedNoble; the laborer leaves at
-		// end of step (its account already closed, so the removal's settle is a no-op)
-		colony.addAgent(noble);
-		colony.scheduleRemoveAgent(best);
-		return noble;
+	/**
+	 * The colony's {@link RankLadder}, built lazily with the realized ranks'
+	 * factories. Two ranks are realized:
+	 * <ul>
+	 * <li>{@link Rank#HOLDING} — a silver-banking {@link Noble} (ennoblement, a
+	 * laborer reformed upward, adopting its head, members and balances);</li>
+	 * <li>{@link Rank#HOUSEHOLD} — a copper-banking {@link Laborer} (demotion, a
+	 * noble reformed downward, mirroring the pool-promotion construction).</li>
+	 * </ul>
+	 * The unrealized {@code RETINUE} rung between them has no factory, so promoting a
+	 * {@code HOUSEHOLD} laborer skips it and lands on {@code HOLDING}, and demoting a
+	 * {@code HOLDING} noble skips it and lands on {@code HOUSEHOLD}.
+	 *
+	 * @return the colony's rank ladder
+	 */
+	private RankLadder rankLadder() {
+		if (rankLadder == null) {
+			rankLadder = new RankLadder(colony);
+			// HOLDING: a laborer ennobled into a silver-banking noble
+			rankLadder.register(Rank.HOLDING, (estate, c) -> {
+				Member head = estate.head();
+				Noble noble = new Noble(head, estate.checking(), estate.savings(),
+						nobleConfig, getSilverBank(), c);
+				// carry any further members (e.g. a spouse) across
+				for (Member m : estate.members())
+					if (m != head)
+						noble.addMember(m);
+				return noble;
+			});
+			// HOUSEHOLD: a noble demoted into a copper-banking laborer, built like a
+			// pool-promoted laborer (same init template) but adopting the carried
+			// balances rather than a fresh ruler-funded endowment
+			rankLadder.register(Rank.HOUSEHOLD, (estate, c) -> {
+				Member head = estate.head();
+				Laborer laborer = new Laborer(head, cfg.laborer().e(),
+						REPLACEMENT_NECESSITY_STOCK, estate.checking(),
+						estate.savings(), cfg.laborer().savingsRate(),
+						LaborerConfig.DEFAULT, getCopperBank(), c);
+				for (Member m : estate.members())
+					if (m != head)
+						laborer.addMember(m);
+				return laborer;
+			});
+		}
+		return rankLadder;
 	}
 
 	/**
