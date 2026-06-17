@@ -1,6 +1,6 @@
 package eos.bank;
 
-import eos.agent.Holding;
+import eos.agent.Property;
 import eos.settlement.Settlement;
 import eos.util.Averager;
 import lombok.Getter;
@@ -19,7 +19,7 @@ import lombok.Getter;
  * @author zhihongx
  *
  */
-public class Bank implements Holding {
+public class Bank implements Property {
 
 	/* payment purposes (shared across all banks) */
 
@@ -277,7 +277,7 @@ public class Bank implements Holding {
 		distributedProfit += amt;
 	}
 
-	// --- Holding: the bank is an asset its owner draws a dividend from ---
+	// --- Property: the bank is an asset its owner draws a dividend from ---
 
 	/** {@inheritDoc} A bank's distributable profit is its retained spread and fees
 	 * not yet paid out — see {@link #getDistributableProfit()}. */

@@ -11,7 +11,7 @@ import eos.settlement.Settlement;
  * The factory owns its rank's particulars — which bank tier the reformed
  * household banks at, and any funding rule — so the ladder itself never branches
  * on rank. A rank with no registered factory is an <b>unrealized</b> rung (no
- * agent type fills it yet, e.g. {@code RETINUE} or {@code CITY}); the ladder skips
+ * agent type fills it yet, e.g. {@code CARAVAN} or {@code CITY}); the ladder skips
  * past such rungs to the next realized rank (see {@code docs/rank-ladder.md}).
  */
 @FunctionalInterface

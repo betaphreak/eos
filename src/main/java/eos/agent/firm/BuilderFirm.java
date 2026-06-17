@@ -16,7 +16,7 @@ import lombok.Getter;
  * The settlement's <b>builder</b>: a labor-only firm that physically expands the
  * colony. It is staffed <b>exclusively by peasants</b> — it hires on a dedicated
  * {@value #LABOR_MARKET} market whose only workers are the {@link
- * eos.agent.PeasantPool}'s peasants (the corvée labor of the poor), mirroring how
+ * eos.agent.Retinue}'s peasants (the corvée labor of the poor), mirroring how
  * {@link StrategicFirm} draws on a noble-only market — and converts that labor into
  * <i>build-units</i> (its output is capped by the {@link BuilderConfig#scaffoldCap()
  * scaffold cap}), which it applies to the {@link BuildProject}s in the colony's
@@ -40,7 +40,7 @@ public class BuilderFirm extends Firm {
 
 	/**
 	 * Name of the dedicated labor market the builder hires from, whose only workers
-	 * are the colony's peasants (see {@link eos.agent.PeasantPool}). Kept separate
+	 * are the colony's peasants (see {@link eos.agent.Retinue}). Kept separate
 	 * from the general {@code "Labor"} market so the two pools never mix.
 	 */
 	public static final String LABOR_MARKET = "PeasantLabor";

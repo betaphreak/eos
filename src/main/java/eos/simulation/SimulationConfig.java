@@ -61,17 +61,17 @@ import lombok.Builder;
  * @param nobleIncomeTaxRate fraction of each noble's per-step income the Ruler
  *                     skims into its treasury each step (the noble income tax);
  *                     0 disables it (the default, pending calibration)
- * @param peasantPoolSize number of peasants a colony with a pool is seeded with (the
+ * @param retinueSize number of peasants a colony with a pool is seeded with (the
  *                     full pool — founding cohort plus standing reserve). Default
  *                     {@code 900}; the number of laborer households a pool colony
- *                     founds is {@code round(promotionRatio * peasantPoolSize)}, so
+ *                     founds is {@code round(promotionRatio * retinueSize)}, so
  *                     this and {@code promotionRatio} together set the labor force.
  * @param promotionRatio the fraction of its peasant pool a colony promotes into
  *                     laborer households. On day 0 the ruler promotes the ablest
- *                     {@code round(promotionRatio * peasantPoolSize)} peasants into
+ *                     {@code round(promotionRatio * retinueSize)} peasants into
  *                     laborer households, and replaces later deaths from the
  *                     remaining reserve until it drains (see {@link
- *                     SimulationHarness#foundLaborersFromPool})
+ *                     SimulationHarness#foundLaborersFromRetinue})
  * @param targetNobles the size of the aristocracy the colony maintains by
  *                     ennoblement. No nobles are created at founding; the ruler
  *                     elevates the ablest laborers (highest SOCIAL) into
@@ -103,7 +103,7 @@ public record SimulationConfig(
 		double laborShare,
 		double bankProfitTaxRate,
 		double nobleIncomeTaxRate,
-		int peasantPoolSize,
+		int retinueSize,
 		double promotionRatio,
 		int targetNobles) {
 
@@ -187,7 +187,7 @@ public record SimulationConfig(
 			MEDIEVAL.laborShare(),
 			MEDIEVAL.bankProfitTaxRate(),
 			MEDIEVAL.nobleIncomeTaxRate(),
-			MEDIEVAL.peasantPoolSize(),
+			MEDIEVAL.retinueSize(),
 			MEDIEVAL.promotionRatio(),
 			MEDIEVAL.targetNobles());
 }

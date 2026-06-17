@@ -45,7 +45,7 @@ class WeddingMarketTest {
 		// a tiny founding reserve is wed out within a couple of weekends; thereafter
 		// single households keep seeking but find no opposite-gender candidate, so the
 		// colony recruits gold-funded immigrants into the pool
-		assertTrue(h.getPeasantPool().getImmigrantCount() > 0,
+		assertTrue(h.getRetinue().getImmigrantCount() > 0,
 				"unmet wedding demand should recruit immigrants into the pool");
 	}
 
@@ -55,7 +55,7 @@ class WeddingMarketTest {
 				assertDoesNotThrow(WeddingMarketTest::runSmallPoolColony);
 
 		// weddings happened: peasants were wed out of the pool
-		assertTrue(h.getPeasantPool().getMarriedOutCount() > 0,
+		assertTrue(h.getRetinue().getMarriedOutCount() > 0,
 				"expected peasants to be wed out of the pool");
 
 		// the sovereign weds first of all (free, from its own wards), so after a
@@ -86,7 +86,7 @@ class WeddingMarketTest {
 	private static SimulationHarness runSmallPoolColony() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(1).numEFirms(2).numNFirms(10)
-				.peasantPoolSize(120).promotionRatio(0.4).build();
+				.retinueSize(120).promotionRatio(0.4).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
@@ -94,8 +94,8 @@ class WeddingMarketTest {
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createDefaultStrategicSector(bank);
 		h.createDefaultRuler();
-		h.createDefaultPeasantPool();
-		h.foundLaborersFromPool(i -> bank, i -> 15);
+		h.createDefaultRetinue();
+		h.foundLaborersFromRetinue(i -> bank, i -> 15);
 		h.run();
 		return h;
 	}
@@ -109,7 +109,7 @@ class WeddingMarketTest {
 	private static SimulationHarness runHighPromotionColony() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(2).numEFirms(2).numNFirms(10)
-				.peasantPoolSize(60).promotionRatio(0.8).build();
+				.retinueSize(60).promotionRatio(0.8).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
@@ -117,8 +117,8 @@ class WeddingMarketTest {
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createDefaultStrategicSector(bank);
 		h.createDefaultRuler();
-		h.createDefaultPeasantPool();
-		h.foundLaborersFromPool(i -> bank, i -> 15);
+		h.createDefaultRetinue();
+		h.foundLaborersFromRetinue(i -> bank, i -> 15);
 		h.run();
 		return h;
 	}

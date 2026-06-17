@@ -56,9 +56,9 @@ hereditary, and funds that obligation by **taxing the colony's accumulated wealt
 
 ## Architecture mapping
 
-### `PeasantPool` — a new `Agent`
+### `Retinue` — a new `Agent`
 
-A new `eos.agent.PeasantPool extends Agent`, registered with the colony via
+A new `eos.agent.Retinue extends Agent`, registered with the colony via
 `colony.addAgent(...)` like any other agent, holding a `List<Member>`. The
 `Member` type from the household split is an exact fit: a peasant is precisely a
 `Person` (name + skills) with its own birth date, age and old-age mortality, minus
@@ -70,7 +70,7 @@ sponsor) and the necessity `ConsumerGoodMarket`.
 
 The pool acts in the normal agent phase of `Settlement.newDay()` (phase 1,
 `agent.act()`), and its necessity purchases settle in phase 4 (`market.clear()`),
-exactly like a laborer's. `PeasantPool.act()` each step:
+exactly like a laborer's. `Retinue.act()` each step:
 
 1. **Age + die:** for each peasant, `member.rollOldAgeDeath(demography, today)`;
    remove the dead. (Reuses the per-member mortality added for households.)
@@ -109,7 +109,7 @@ expected for a behavioural feature.
 
 ### Seeding and founding
 
-`SimulationHarness` creates the `PeasantPool` and seeds it with `cfg.peasantPoolSize()`
+`SimulationHarness` creates the `Retinue` and seeds it with `cfg.retinueSize()`
 members at founding (default 900), each drawn like a household head (gender 50/50 on the skill RNG,
 skill around the gender-specific `colony.getMeanSkill(gender)`, age on the mortality
 RNG). It also creates a default `BuilderFirm` (staffed from the pool) so the colony
@@ -129,7 +129,7 @@ household construction in `createLaborers`. Two ordering consequences:
   changes — acceptable, since the feature is behavioural and not byte-identical
   anyway).
 - Founding order becomes: markets/banks/firms → seed pool → Ruler promotes
-  `round(promotionRatio · peasantPoolSize)` households → register the (now
+  `round(promotionRatio · retinueSize)` households → register the (now
   promotion-based) replacement policy → the one pre-run labor-market clear → `run()`.
 
 Because promotion endows fresh from the Ruler, **the Ruler capitalizes the whole
@@ -201,7 +201,7 @@ pool's market buying, does not itself perturb the economic random stream.
 
 ### Configuration
 
-`SimulationConfig` carries `peasantPoolSize` (default **900**) — the peasants the
+`SimulationConfig` carries `retinueSize` (default **900**) — the peasants the
 pool is seeded with — and `promotionRatio` (default **0.4**) — the fraction promoted
 into laborer households; on day 0 the ablest `round(promotionRatio · poolSize)` are
 promoted, the rest held as the standing reserve. It also gains the per-step tax rates
@@ -213,7 +213,7 @@ borrowing).
 
 ### Reporting
 
-- A `PeasantPrinter` writing `Peasants.csv`: count, average overall skill, average
+- A `RetinuePrinter` writing `Retinue.csv`: count, average overall skill, average
   age, necessity consumed, starvation deaths, total billed to the Ruler.
 - `SimLog` events: a **promotion** (the elevated peasant logged by name + skill,
   mirroring the notable-arrival log) and, in aggregate, **starvation** in the pool
@@ -252,7 +252,7 @@ borrowing).
 > **retired** in a simulation-roster cleanup. The peasant pool is now the **universal
 > labor model** — every ruler-bearing colony founds and replaces its labor force from
 > it (see `CLAUDE.md`) — and its mechanics (promotion fires, relief is billed) are
-> covered by `PeasantPoolTest` on the standard `foundStandardColony` path.
+> covered by `RetinueTest` on the standard `foundStandardColony` path.
 
 - **Phase 1 — Ruler taxation.** The per-step bank-profit and noble-income levies
   into the Ruler's treasury. Independent of the peasants and observable on its own
@@ -260,9 +260,9 @@ borrowing).
   the take), so it can land and be calibrated first. This is the first slice of the
   broader taxation feature.
 - **Phase 2 — the pool exists and is fed. (Implemented — `PeasantEconomy`.)**
-  `PeasantPool` agent + `Member` reuse, seeding the **reserve** (size 10),
+  `Retinue` agent + `Member` reuse, seeding the **reserve** (size 10),
   aging/old-age death, skill decay, eating, and Ruler-billed restocking with the
-  Ruler borrowing to cover it, plus the `PeasantPrinter`. No promotion yet, so
+  Ruler borrowing to cover it, plus the `RetinuePrinter`. No promotion yet, so
   founding still uses the current `createLaborers` and the reserve drains by old
   age. Opt-in via `peasantReserveSize` (default 0); `PeasantEconomy` is the only
   bundled sim that seeds a pool. Two realities that surfaced in implementation:
@@ -279,7 +279,7 @@ borrowing).
   `Member`" household constructor), takes a freshly-drawn dynasty surname, and is
   capitalized by the Ruler (the dead estate stays folded into equity). An empty pool
   yields no replacement. Opt-in via `SimulationConfig.promoteLaborersFromPool`
-  (default false, so the standard sims keep same-dynasty succession); `PeasantPool.
+  (default false, so the standard sims keep same-dynasty succession); `Retinue.
   promoteHighestSkilled()` does the selection, the harness's replacement policy and
   `promoteToLaborer()` the rest.
   - **Key finding — promotion alone is not sustainable.** A finite reserve drains

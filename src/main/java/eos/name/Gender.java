@@ -6,7 +6,7 @@ package eos.name;
  * distribution (see {@code Demography.sampleGender} and {@code
  * Settlement.getMeanSkill(Gender)}). Households whose heads are drawn directly
  * (nobles, the ruler, and laborers founded without a pool) are {@link #MALE} by
- * default; only people generated into the {@link eos.agent.PeasantPool} currently
+ * default; only people generated into the {@link eos.agent.Retinue} currently
  * roll a random gender.
  */
 public enum Gender {

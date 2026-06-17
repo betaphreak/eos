@@ -19,7 +19,7 @@ import eos.agent.firm.NFirm;
 import eos.agent.firm.StrategicFirm;
 import eos.agent.firm.StrategicFirmConfig;
 import eos.agent.Member;
-import eos.agent.PeasantPool;
+import eos.agent.Retinue;
 import eos.agent.Rank;
 import eos.agent.RankLadder;
 import eos.agent.laborer.Laborer;
@@ -167,7 +167,7 @@ public class SimulationHarness {
 	private Laborer[] laborers;
 	private StrategicFirm strategicFirm;
 	private BuilderFirm builderFirm;
-	private PeasantPool peasantPool;
+	private Retinue retinue;
 
 	/**
 	 * Build an empty harness for {@code cfg} from a fresh {@link GameSession}
@@ -604,7 +604,7 @@ public class SimulationHarness {
 		if (best == null)
 			return null;
 		// reform the chosen laborer up the rank ladder: HOUSEHOLD -> HOLDING (the
-		// reserved RETINUE rung in between has no factory, so it is skipped). The
+		// reserved CARAVAN rung in between has no factory, so it is skipped). The
 		// HOLDING factory re-banks it in silver, carries its balances and members
 		// over, and the ladder closes the old account and swaps the agent — money
 		// conserved, the laborer's surname staying in use with the noble that adopted
@@ -641,7 +641,7 @@ public class SimulationHarness {
 	 * <li>{@link Rank#HOUSEHOLD} — a copper-banking {@link Laborer} (demotion, a
 	 * noble reformed downward, mirroring the pool-promotion construction).</li>
 	 * </ul>
-	 * The unrealized {@code RETINUE} rung between them has no factory, so promoting a
+	 * The unrealized {@code CARAVAN} rung between them has no factory, so promoting a
 	 * {@code HOUSEHOLD} laborer skips it and lands on {@code HOLDING}, and demoting a
 	 * {@code HOLDING} noble skips it and lands on {@code HOUSEHOLD}.
 	 *
@@ -716,7 +716,7 @@ public class SimulationHarness {
 
 	// demote one ruined noble (deferred to end of step): hand its holdings to another
 	// living noble first (a laborer owns none), then reform it down the rank ladder
-	// HOLDING -> HOUSEHOLD (skipping the unrealized RETINUE rung). If it is the
+	// HOLDING -> HOUSEHOLD (skipping the unrealized CARAVAN rung). If it is the
 	// colony's only noble its firms go unowned until the next charter's no-owner
 	// fallback re-ennobles an owner. Re-checks the trigger in case state changed
 	// between the schedule and end of step.
@@ -726,7 +726,7 @@ public class SimulationHarness {
 			return;
 		Noble heir = leastLoadedNobleExcept(ruined);
 		if (heir != null)
-			ruined.transferHoldingsTo(heir);
+			ruined.transferPropertyTo(heir);
 		demote(ruined);
 	}
 
@@ -752,7 +752,7 @@ public class SimulationHarness {
 
 	/**
 	 * Give the colony its <b>peasant pool</b> (banking in copper), seeded with
-	 * {@code cfg.peasantPoolSize()} peasants the {@link eos.agent.ruler.Ruler}
+	 * {@code cfg.retinueSize()} peasants the {@link eos.agent.ruler.Ruler}
 	 * feeds, and — so every pool-bearing colony can grow — a default {@link
 	 * BuilderFirm} staffed from that pool. Requires the necessity market (see {@link
 	 * #createMarkets()}) and a ruler (see {@link #createDefaultRuler()}) to exist
@@ -761,12 +761,12 @@ public class SimulationHarness {
 	 *
 	 * @return the created peasant pool
 	 */
-	public PeasantPool createDefaultPeasantPool() {
-		return createDefaultPeasantPool(getCopperBank());
+	public Retinue createDefaultRetinue() {
+		return createDefaultRetinue(getCopperBank());
 	}
 
 	/**
-	 * As {@link #createDefaultPeasantPool()}, but the pool (and the builder it
+	 * As {@link #createDefaultRetinue()}, but the pool (and the builder it
 	 * staffs) bank at <tt>bank</tt> (for colonies whose commoners do not use {@link
 	 * #getCopperBank()} — e.g. a multi-bank colony, so the pool does not add a
 	 * third copper bank).
@@ -775,29 +775,29 @@ public class SimulationHarness {
 	 *            the (copper) bank the pool transacts through
 	 * @return the created peasant pool
 	 */
-	public PeasantPool createDefaultPeasantPool(Bank bank) {
+	public Retinue createDefaultRetinue(Bank bank) {
 		// every pool-bearing colony gets a builder (the only thing that can grow a
 		// live colony), staffed from this pool. Create it first so the dedicated
 		// PeasantLabor market exists when the pool's constructor looks it up.
 		if (colony.getBuilder() == null)
 			createBuilder(bank, BuilderConfig.DEFAULT);
-		// seed the whole pool with cfg.peasantPoolSize() peasants, each with a
-		// BUFFER_DAYS larder. foundLaborersFromPool then promotes promotionRatio of
+		// seed the whole pool with cfg.retinueSize() peasants, each with a
+		// BUFFER_DAYS larder. foundLaborersFromRetinue then promotes promotionRatio of
 		// them on day 0, the rest stay as the standing reserve.
-		peasantPool = new PeasantPool(cfg.peasantPoolSize(), bank, colony);
-		colony.addAgent(peasantPool);
-		return peasantPool;
+		retinue = new Retinue(cfg.retinueSize(), bank, colony);
+		colony.addAgent(retinue);
+		return retinue;
 	}
 
 	/**
-	 * Register a {@link PeasantPrinter} for the colony's peasant pool. The pool must
-	 * already exist (see {@link #createDefaultPeasantPool()}).
+	 * Register a {@link RetinuePrinter} for the colony's peasant pool. The pool must
+	 * already exist (see {@link #createDefaultRetinue()}).
 	 *
 	 * @param fileName
 	 *            the CSV output file name
 	 */
-	public void addPeasantPrinter(String fileName) {
-		colony.addPrinter(new PeasantPrinter(fileName, peasantPool));
+	public void addRetinuePrinter(String fileName) {
+		colony.addPrinter(new RetinuePrinter(fileName, retinue));
 	}
 
 	/**
@@ -819,7 +819,7 @@ public class SimulationHarness {
 		// the builder is staffed exclusively by peasants, on a dedicated labor
 		// market (its workers are supplied by the colony's peasant pool); create it
 		// before the builder, which looks it up. A builder colony therefore also
-		// needs a peasant pool (see createDefaultPeasantPool).
+		// needs a peasant pool (see createDefaultRetinue).
 		if (colony.getMarket(BuilderFirm.LABOR_MARKET) == null)
 			colony.addMarket(new LaborMarket(BuilderFirm.LABOR_MARKET, colony));
 		builderFirm = new BuilderFirm(config, bank, colony);
@@ -835,8 +835,8 @@ public class SimulationHarness {
 	 * and initial savings of each laborer are supplied by the caller (by index).
 	 * Used by the bare, pool-less colonies (the analytical sweeps, the small open
 	 * colony); a pool-bearing colony instead founds its labor force from the pool
-	 * (see {@link #foundLaborersFromPool}), which sets the count as {@code
-	 * round(promotionRatio * peasantPoolSize)}.
+	 * (see {@link #foundLaborersFromRetinue}), which sets the count as {@code
+	 * round(promotionRatio * retinueSize)}.
 	 *
 	 * @param numLaborers
 	 *            the number of laborer households to found
@@ -867,7 +867,7 @@ public class SimulationHarness {
 	 * into laborer households, each capitalized by the ruler with its skill-sum
 	 * endowment and carrying its larder ration out of the pool (see {@link
 	 * #promoteToLaborer}). The peasant pool must already be seeded (see {@link
-	 * #createDefaultPeasantPool()}) and a ruler must exist (the sovereign holds the
+	 * #createDefaultRetinue()}) and a ruler must exist (the sovereign holds the
 	 * founding cash). Used in place of {@link #createLaborers} by the pool-founding
 	 * sims; the unpromoted remainder stays as the standing reserve.
 	 *
@@ -877,16 +877,16 @@ public class SimulationHarness {
 	 *            the initial necessity stock of each new laborer (by index) — drawn
 	 *            from the pool's larder, so it is conserved, not created
 	 */
-	public void foundLaborersFromPool(IntFunction<Bank> laborerBank,
+	public void foundLaborersFromRetinue(IntFunction<Bank> laborerBank,
 			IntToDoubleFunction initN) {
 		// promote promotionRatio of the seeded pool into households (highest skill
 		// first); the rest — the least skilled — remain as the standing reserve
 		int promoted =
-				(int) Math.round(cfg.promotionRatio() * peasantPool.size());
+				(int) Math.round(cfg.promotionRatio() * retinue.size());
 		laborers = new Laborer[promoted];
 		for (int i = 0; i < promoted; i++) {
-			Member peasant = peasantPool.promoteHighestSkilled();
-			double stock = peasantPool.drawPromotionStock(initN.applyAsDouble(i));
+			Member peasant = retinue.promoteHighestSkilled();
+			double stock = retinue.drawPromotionStock(initN.applyAsDouble(i));
 			laborers[i] = promoteToLaborer(peasant, laborerBank.apply(i), stock);
 			colony.addAgent(laborers[i]);
 		}
@@ -906,15 +906,15 @@ public class SimulationHarness {
 		// a colony with a peasant pool replaces dead laborers by promotion from it
 		// (and collapses once the reserve drains); a pool-less colony (the bare
 		// analytical sims) keeps same-dynasty succession
-		if (peasantPool != null)
+		if (retinue != null)
 			colony.addReplacementPolicy(dead -> {
-				if (!(dead instanceof Laborer) || peasantPool == null)
+				if (!(dead instanceof Laborer) || retinue == null)
 					return null;
-				Member peasant = peasantPool.promoteHighestSkilled();
+				Member peasant = retinue.promoteHighestSkilled();
 				if (peasant == null)
 					return null;
 				// the promoted peasant carries its larder ration out of the pool
-				double stock = peasantPool
+				double stock = retinue
 						.drawPromotionStock(REPLACEMENT_NECESSITY_STOCK);
 				return promoteToLaborer(peasant, ((Laborer) dead).getBank(), stock);
 			});
@@ -1031,8 +1031,8 @@ public class SimulationHarness {
 		createFirms(copper, i -> copper, eFirmSavings, nFirmSavings);
 		createDefaultStrategicSector(copper);
 		Bank gold = createDefaultRuler();
-		createDefaultPeasantPool();
-		foundLaborersFromPool(i -> copper, laborerNStock);
+		createDefaultRetinue();
+		foundLaborersFromRetinue(i -> copper, laborerNStock);
 		enableExternalInflow(copper);
 		return gold;
 	}

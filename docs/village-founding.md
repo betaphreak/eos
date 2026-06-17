@@ -1,4 +1,4 @@
-# Design note: founding a village (RETINUE → HOLDING → VILLAGE)
+# Design note: founding a village (CARAVAN → HOLDING → VILLAGE)
 
 **Status:** proposed (design only — not yet implemented)
 **Date:** 2026-06-17
@@ -6,7 +6,7 @@
 `RankFactory` — see `docs/rank-ladder.md`), the peasant pool
 (`docs/peasant-pool.md`), `GameSession`'s multi-colony support, `SlotTable`'s
 special sites, and the holder machinery a `Noble` already carries (`firms`/`banks`
-lists, `getDistributableProfit`/`payDividend`, `transferHoldingsTo`).
+lists, `getDistributableProfit`/`payDividend`, `transferPropertyTo`).
 
 ## Motivation
 
@@ -18,7 +18,7 @@ top promotion (`HOLDING → VILLAGE`) is unrealized precisely because founding l
 outside it.
 
 This note designs the missing transition the long way round: a **wandering
-Retinue** whose leader rises `RETINUE → HOLDING → VILLAGE`, the settlement
+Caravan** whose leader rises `CARAVAN → HOLDING → VILLAGE`, the settlement
 accreting around it as it climbs. Crucially, founding is modelled as **two ordinary
 single-rung promotes**, not one rung-skipping leap — so the ladder never needs a
 "promote more than one rung" generalization (the `docs/rank-ladder.md` open question
@@ -30,18 +30,17 @@ lets us give every colony's banks a principled owner from day 0 (see *Scope*).
 
 Founding is a **staged ascent** up the ladder, each step a real single-rung reform:
 
-### `RETINUE` — the wandering band
+### `CARAVAN` — the wandering band
 
-A leader household at `RETINUE` rank commands a **following**: a `PeasantPool`
-detached from any settlement (no markets, no firms, no fixed economy). While
-wandering it can only *consume* from a carried larder — it cannot restock on a
-market — so a band is a **decaying asset** that must settle (or trade) before it
-starves. The leader carries a **treasury** (a gold war-chest), the founding capital
-that will capitalize the new colony's labor force. (How a marketless band stays fed
-and accumulates that hoard is the open economic problem — see *Limitations*; it
-points at caravan trade.)
+A leader household (the **Captain**) at `CARAVAN` rank commands a **following** — a
+detached `Retinue` — plus a carried hoard and larder; a marketless **decaying
+asset** that must settle (or trade) before it starves. The Caravan entity, and the
+*downward* journey that produces one (a failing settlement declining back into a
+band), are defined in **[`docs/caravan.md`](caravan.md)**; this note uses the Caravan
+only as the band that *settles*. The leader's hoard is the founding capital that
+capitalizes the new colony's labor force.
 
-### `RETINUE → HOLDING` — the leader becomes a landed holder
+### `CARAVAN → HOLDING` — the leader becomes a landed holder
 
 On the day the band settles, the leader reforms **one rung up** and establishes its
 initial **holdings**:
@@ -84,25 +83,25 @@ social order**:
 - the **hall and the gold bank stay crown**.
 
 So the narrative is clean and uses machinery that already exists
-(`transferHoldingsTo`, `addFirm`, ennoblement, `payDividend`): **`HOLDING` = the
+(`transferPropertyTo`, `addFirm`, ennoblement, `payDividend`): **`HOLDING` = the
 founder holds everything nascent; `VILLAGE` = the founder becomes sovereign and
 hands the assets down to the emerging classes, keeping the seat and the gold.**
 
 ## Architecture mapping
 
-### The `Holding` abstraction (firms are already holdings; banks join them)
+### The `Property` abstraction (firms are already holdings; banks join them)
 
 **Firms are already holdings.** A `Noble` owns a `List<Firm>`, draws a dividend from
-each (`dividendRate · max(0, firm.getProfit())`), and `transferHoldingsTo` already
+each (`dividendRate · max(0, firm.getProfit())`), and `transferPropertyTo` already
 moves them. The asymmetry is that **banks are not** — they are ownerless harness
 infrastructure. So "banks as holdings" brings banks *up* to the status firms already
 have; it does not change firms.
 
-The two are unified behind a `Holding` interface — something owned by a household
+The two are unified behind a `Property` interface — something owned by a household
 that anchors rank, can be transferred, and may yield distributable profit:
 
 ```
-interface Holding {
+interface Property {
     double distributableProfit();   // Firm: max(0, getProfit());  Bank: getDistributableProfit()
     void disburse(double amount);   // Firm: getBank().withdraw(getID(), amt);  Bank: payDividend(amt)
 }
@@ -111,24 +110,24 @@ interface Holding {
 `Firm` and `Bank` implement `disburse` differently (a firm moves cash from its
 account, a bank skims equity), and the interface hides exactly that difference, so
 the owner's dividend loop collapses from two near-identical loops over two lists to
-one polymorphic loop over a single `List<Holding>` (the owner-side `credit(...,
+one polymorphic loop over a single `List<Property>` (the owner-side `credit(...,
 SECIC)` stays put).
 
 **Decisions taken** (see the design discussion):
 
-- **The hall is a non-income `Holding`** — one interface, no `IncomeHolding` split:
+- **The hall is a non-income `Property`** — one interface, no `IncomeHolding` split:
   it returns `distributableProfit() == 0` and a no-op `disburse()`, yields no
   dividend, but still counts as something owned. So "lose your last holding →
   demote" is a single `holdings` check.
 - **Holdings stay concrete on `Noble` for the byte-identical cut.** The first step
-  just collapses `Noble`'s `firms`/`banks` into one `List<Holding>` — pure
+  just collapses `Noble`'s `firms`/`banks` into one `List<Property>` — pure
   restructuring of the same arithmetic, so it is **byte-identical**. A shared
   `Holder` role (so the `Ruler` can own holdings too) is introduced later, when the
   `Ruler` actually needs it (with banks-as-holdings).
-- **`Holding` is not `Estate`.** The rank-ladder `Estate` is the household's *liquid*
-  identity carried across a reform (members + balances); `Holding`s are the
+- **`Property` is not `Estate`.** The rank-ladder `Estate` is the household's *liquid*
+  identity carried across a reform (members + balances); `Property`s are the
   *productive assets* owned. On a reform the ladder carries the `Estate`; the
-  holdings are transferred separately (`transferHoldingsTo`). Complementary concepts.
+  holdings are transferred separately (`transferPropertyTo`). Complementary concepts.
 
 ### Banks as holdings — applied to *all* founding
 
@@ -163,23 +162,22 @@ bank-as-holding wiring, which every colony gets.
 ### The foundry — founding as a runtime operation
 
 The harness's founding sequence is extracted into a reentrant **foundry** —
-something like `foundHolding(Retinue band, GeoLocation where)` and
+something like `foundHolding(Caravan band, GeoLocation where)` and
 `charterVillage(holder)` — that, between them, do what the harness does today but
 callable mid-run: `session.newSettlement(where, …)`, build the E/N/labor/capital/
 wedding markets, charter the banks as the founder's holdings, found the seed firms
-and claim their slots at `MIN_SIZE`, seed the new colony's `PeasantPool` from the
+and claim their slots at `MIN_SIZE`, seed the new colony's `Retinue` from the
 band's surviving `Member`s, and promote the ablest into laborer households
-(reusing `foundLaborersFromPool` / `promoteToLaborer` wholesale). Multi-colony
+(reusing `foundLaborersFromRetinue` / `promoteToLaborer` wholesale). Multi-colony
 support already exists (Hanseatic), so a founded village is just colony *N+1* in the
 session.
 
-### The Retinue entity
+### The Caravan entity
 
-A `Retinue` = a detached `PeasantPool` (tolerating `null` markets — larder-only
-consumption while wandering) + a `RETINUE`-rank **leader household** + a mutable
-**position** + the carried **treasury**. The pool re-binds to the new settlement at
-founding. The leader is the currently-unrealized `RETINUE` rung; the founder/holder
-config governs it (and the `HOLDING` phase).
+The `Caravan` (a detached `Retinue` + a `CARAVAN`-rank Captain + a position + a
+carried hoard) is defined in **[`docs/caravan.md`](caravan.md)**. For founding, the
+relevant facts: its pool **re-binds to the new settlement** at founding, and the
+founder/holder config governs the Captain through the `HOLDING` phase.
 
 ### The village hall — a civic seat (only)
 
@@ -203,27 +201,27 @@ seat — the converse direction of the insolvency demotion already built).
 
 "Wandering" needs a map and movement, which do not exist (settlements are isolated
 points). This is why the feature **rides on caravan trade** (the near-term roadmap
-item that first forces inter-settlement geography and travel): the Retinue reuses
+item that first forces inter-settlement geography and travel): the Caravan reuses
 that position/movement machinery rather than inventing it. Once the band picks a
 spot, its `lat/long` flows into `newSettlement` and the solar/latitude system gives
 the new village its climate for free.
 
 Determinism needs care: every colony's economic `Rng` is derived from `session seed
-+ colony index` at `newSettlement`. A colony-less Retinue needs a deterministic
++ colony index` at `newSettlement`. A colony-less Caravan needs a deterministic
 stream too (session-level or pre-allocated), and the founded village must take the
 next colony index, so "same seed → identical run" still holds.
 
 ## Accepted limitations (explicitly out of scope for this cut)
 
-1. **Geography/movement is deferred to caravan trade.** Until that lands, a Retinue
+1. **Geography/movement is deferred to caravan trade.** Until that lands, a Caravan
    founds *in place* at a hardcoded location with no real wandering.
 2. **The self-funding wandering economy is unsolved.** A band with no markets must
    stay fed and accumulate founding capital somehow (a carried hoard, foraging,
-   trade). The first cut gives the Retinue a starting treasury and a larder, and
+   trade). The first cut gives the Caravan a starting treasury and a larder, and
    leaves genuine sustenance-while-wandering to the trade feature.
 3. **The bank-as-holding refactor disturbs calibrated runs.** Excluding the gold bank
    from the tax base (its equity becomes the treasury directly) is a behavioural
-   change needing re-validation; it is not byte-identical. (The `Holding`-interface
+   change needing re-validation; it is not byte-identical. (The `Property`-interface
    *restructuring* — collapsing `Noble`'s two lists — is separate and byte-identical.)
 4. **The hall has no economic function yet.** It is a seat and a rank marker only;
    governance/taxation tied to the hall is future work.
@@ -232,10 +230,10 @@ next colony index, so "same seed → identical run" still holds.
 
 ## Phased implementation plan
 
-- **Phase 0 — the `Holding` interface (byte-identical).** Introduce `Holding`
+- **Phase 0 — the `Property` interface (byte-identical).** Introduce `Property`
   (`distributableProfit()` + `disburse()`), have `Firm` and `Bank` implement it, and
   collapse `Noble`'s `firms`/`banks` lists and its two dividend loops into one
-  `List<Holding>`. Pure restructuring of the same arithmetic — byte-identical — and
+  `List<Property>`. Pure restructuring of the same arithmetic — byte-identical — and
   the foundation the next phase and the hall sit on. Holdings stay concrete on
   `Noble` (no shared `Holder` role yet).
 - **Phase 1 — banks as holdings, for existing founding. (Implemented.)** The crown's
@@ -261,17 +259,27 @@ next colony index, so "same seed → identical run" still holds.
   orchestrates — its divergent market/bank ordering is why a single rigid foundry
   cannot absorb every founding. This is the seam a runtime founder will build on; the runtime
   founding of a *new* colony mid-run (via `GameSession.newSettlement`) arrives with
-  the Retinue in Phase 3.
-- **Phase 3 — the Retinue + the dwell-able `HOLDING` phase.** The `Retinue` entity,
-  the founder/holder config, `RETINUE → HOLDING` establishing the hall + banks, the
+  the Caravan in Phase 3.
+- **Phase 3 — the Caravan + the dwell-able `HOLDING` phase.** The `Caravan` entity,
+  the founder/holder config, `CARAVAN → HOLDING` establishing the hall + banks, the
   chartering threshold, `HOLDING → VILLAGE` distributing assets and seating the
   ruler. Founds *in place* (hardcoded location), no movement. A test: a seeded
-  Retinue with enough members and gold founds a viable colony that then sustains
+  Caravan with enough members and gold founds a viable colony that then sustains
   itself.
 - **Phase 4 — geography & wandering (after caravan trade).** Real position,
   movement, a settle decision, and trade-fed sustenance/hoarding for the band.
 - **Phase 5 — hall-loss demotion.** Wire `VILLAGE → HOLDING` (and lower) when the
   seat/last holding is lost, completing the symmetric ladder.
+
+## Decided since (see `docs/city-and-league.md`)
+
+- **`VILLAGE` is now a promotion target.** This note's ascent tops out at `VILLAGE`,
+  but the rung above it is realized in `docs/city-and-league.md`: `VILLAGE → CITY`
+  urbanizes a village into a **permanent** settlement (a `Ruler → Mayor` reform that
+  flips the colony onto the open-economy immigration inflow, so it no longer
+  collapses), and `CITY → LEAGUE` federates cities into a bloc. So `CITY` (and the
+  federation idea an earlier draft mis-assigned to it) is no longer a reserved rung —
+  see that note for the corrected taxonomy.
 
 ## Open questions deferred to later
 
@@ -280,5 +288,5 @@ next colony index, so "same seed → identical run" still holds.
 - The **founder/holder config** values (consumption while building, what it buys).
 - Whether the standard sims should visibly pass through a zero-length `HOLDING`
   phase or bypass it entirely while still sharing the bank-as-holding wiring.
-- The deterministic RNG stream for a colony-less Retinue, and how it composes with
+- The deterministic RNG stream for a colony-less Caravan, and how it composes with
   per-colony streams when the village is founded.

@@ -73,8 +73,8 @@ class LaborTrainsSkillsTest {
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createDefaultStrategicSector(bank);
 		h.createDefaultRuler();
-		h.createDefaultPeasantPool();
-		h.foundLaborersFromPool(i -> bank, i -> 15);
+		h.createDefaultRetinue();
+		h.foundLaborersFromRetinue(i -> bank, i -> 15);
 		h.run();
 		return h;
 	}

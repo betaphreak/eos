@@ -7,13 +7,17 @@ package eos.agent;
  * of these and skims a share of each one's profit each step, so the dividend
  * pathway need not branch on the concrete kind of asset.
  * <p>
- * A holding is <b>distinct from an {@link Estate}</b>: an {@code Estate} is a
+ * Named {@code Property} to keep the owned-asset concept distinct from the
+ * {@link Rank#HOLDING} rung (a landed holder), which it would otherwise collide
+ * with.
+ * <p>
+ * A property is <b>distinct from an {@link Estate}</b>: an {@code Estate} is a
  * household's <em>liquid</em> identity (its members and account balances) carried
- * across a rank change, whereas a holding is the <em>productive property</em> it
- * owns. A rank reform carries the {@code Estate}; the holdings move separately
- * (see {@code Noble.transferHoldingsTo}). See {@code docs/village-founding.md}.
+ * across a rank change, whereas a property is the <em>productive asset</em> it
+ * owns. A rank reform carries the {@code Estate}; the properties move separately
+ * (see {@code Noble.transferPropertyTo}). See {@code docs/village-founding.md}.
  */
-public interface Holding {
+public interface Property {
 
 	/**
 	 * The profit available to distribute to the owner this step, in copper — never
@@ -25,7 +29,7 @@ public interface Holding {
 	double distributableProfit();
 
 	/**
-	 * Pay <tt>amount</tt> out of this holding — the counterpart the owner then
+	 * Pay <tt>amount</tt> out of this property — the counterpart the owner then
 	 * credits to itself. A firm moves it out of its account; a bank skims it from
 	 * its retained equity. The owner is responsible for crediting the matching sum.
 	 *

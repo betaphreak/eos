@@ -39,8 +39,8 @@ class LaborerEnnoblementTest {
 		// no strategic sector, so no nobles — createDefaultRuler still installs the
 		// dynamic provisioning factory
 		h.createDefaultRuler();
-		h.createDefaultPeasantPool();
-		h.foundLaborersFromPool(i -> copper, i -> 15);
+		h.createDefaultRetinue();
+		h.foundLaborersFromRetinue(i -> copper, i -> 15);
 
 		assertEquals(0, countNobles(colony), "colony should start with no nobles");
 		assertTrue(countLaborers(colony) > 0, "colony should start with laborers");
@@ -81,8 +81,8 @@ class LaborerEnnoblementTest {
 		h.createStrategicFirm(copper, StrategicFirmConfig.DEFAULT);
 		h.primeNobleLabor();
 		h.createDefaultRuler();
-		h.createDefaultPeasantPool();
-		h.foundLaborersFromPool(i -> copper, i -> 15);
+		h.createDefaultRetinue();
+		h.foundLaborersFromRetinue(i -> copper, i -> 15);
 
 		assertEquals(0, countNobles(colony), "colony should start with no nobles");
 

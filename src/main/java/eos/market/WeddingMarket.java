@@ -8,7 +8,7 @@ import java.util.List;
 import eos.agent.Agent;
 import eos.agent.Household;
 import eos.agent.Member;
-import eos.agent.PeasantPool;
+import eos.agent.Retinue;
 import eos.agent.ruler.Ruler;
 import eos.bank.Bank;
 import eos.calendar.DayType;
@@ -20,7 +20,7 @@ import lombok.extern.java.Log;
 
 /**
  * The <b>wedding market</b>: where an unmarried household takes a spouse out of
- * the {@link PeasantPool}. Unlike the goods markets it clears <b>only on the
+ * the {@link Retinue}. Unlike the goods markets it clears <b>only on the
  * weekly day of rest</b> ({@link DayType#WEEKEND}); on any other day the seekers
  * it collected simply disperse (they re-post each step they remain single).
  * <p>
@@ -45,7 +45,7 @@ import lombok.extern.java.Log;
  * households sought spouses but none could be wed (the pool ran out of
  * opposite-gender candidates, or none were affordable) — the colony recruits a
  * single <b>immigrant</b> into the pool for next time (a young, fresh adult of
- * random gender; see {@link PeasantPool#addImmigrant()}). It is paid for in gold
+ * random gender; see {@link Retinue#addImmigrant()}). It is paid for in gold
  * that <b>leaves the economy</b> (an uncredited withdrawal from the ruler's
  * treasury; see {@link Bank#extractExternalFunds}), and only when the ruler can
  * afford the cost ({@link WeddingConfig#immigrantCost()}) from a positive
@@ -60,7 +60,7 @@ public class WeddingMarket extends Market {
 
 	// the pool spouses are drawn from; set when the pool registers itself (null
 	// for a colony with no pool, in which case no wedding can occur)
-	private PeasantPool pool;
+	private Retinue retinue;
 
 	// households seeking a spouse this step (collected in act(), matched in clear())
 	private final List<Household> seekers = new ArrayList<Household>();
@@ -91,8 +91,8 @@ public class WeddingMarket extends Market {
 	 * @param pool
 	 *            the colony's peasant pool
 	 */
-	public void setPool(PeasantPool pool) {
-		this.pool = pool;
+	public void setRetinue(Retinue retinue) {
+		this.retinue = retinue;
 	}
 
 	/**
@@ -117,7 +117,7 @@ public class WeddingMarket extends Market {
 		// weddings happen only on the weekly day of rest, only in a live colony
 		// with a pool to draw from and a living ruler to receive the bride-price
 		if (!colony.isStarted() || colony.getDayType() != DayType.WEEKEND
-				|| pool == null)
+				|| retinue == null)
 			return;
 		Ruler ruler = colony.getRuler();
 		if (ruler == null || !ruler.isAlive())
@@ -139,7 +139,7 @@ public class WeddingMarket extends Market {
 				continue;
 
 			Gender wanted = h.getHead().gender().opposite();
-			Member candidate = pool.bestSpouseCandidate(wanted);
+			Member candidate = retinue.bestSpouseCandidate(wanted);
 			if (candidate == null)
 				continue; // no peasant of the needed gender remains
 
@@ -163,7 +163,7 @@ public class WeddingMarket extends Market {
 			double cost = config.immigrantCost();
 			if (ruler.getWealth() >= cost) {
 				ruler.getBank().extractExternalFunds(ruler.getID(), cost);
-				pool.addImmigrant();
+				retinue.addImmigrant();
 			}
 		}
 	}
@@ -172,7 +172,7 @@ public class WeddingMarket extends Market {
 	// surname and add it as a member, move the bride-price to the ruler, and
 	// record the event for the printer
 	private void marry(Household h, Member candidate, Ruler ruler, double charge) {
-		pool.removeForMarriage(candidate);
+		retinue.removeForMarriage(candidate);
 		Member spouse = new Member(
 				new Person(candidate.person().givenName(), h.getHead().surname(),
 						candidate.gender(), candidate.skills()),

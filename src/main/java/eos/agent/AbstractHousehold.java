@@ -129,7 +129,7 @@ public abstract class AbstractHousehold extends Agent implements Household {
 
 	/**
 	 * Open this household's accounts and <b>adopt an already-built head</b> — e.g. a
-	 * peasant promoted out of the {@link eos.agent.PeasantPool} — rather than drawing
+	 * peasant promoted out of the {@link eos.agent.Retinue} — rather than drawing
 	 * a fresh one. The adopted head keeps its identity (its name, skills and age, all
 	 * already sampled when it was created), so promotion is meritocratic. Account
 	 * funding follows {@code fundedFromEquity} exactly as in the drawing constructor;

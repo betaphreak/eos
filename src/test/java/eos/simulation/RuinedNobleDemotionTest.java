@@ -43,8 +43,8 @@ class RuinedNobleDemotionTest {
 		h.createFirms(copper, i -> copper,
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
 		h.createDefaultRuler();
-		h.createDefaultPeasantPool();
-		h.foundLaborersFromPool(i -> copper, i -> 15);
+		h.createDefaultRetinue();
+		h.foundLaborersFromRetinue(i -> copper, i -> 15);
 
 		// inject a noble drowning in debt: a huge opening loan it can never repay, so
 		// it is insolvent every step regardless of any dividends it might collect

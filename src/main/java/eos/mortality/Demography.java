@@ -119,7 +119,7 @@ public final class Demography {
 	 * Draw the age (in days) of a <b>young, fresh</b> adult — a working age drawn
 	 * uniformly in [{@value #YOUNG_ADULT_MIN_YEARS},
 	 * {@value #YOUNG_ADULT_MAX_YEARS}] years — on the age/mortality RNG. Used for an
-	 * immigrant recruited into the {@link eos.agent.PeasantPool}, so a recruit is a
+	 * immigrant recruited into the {@link eos.agent.Retinue}, so a recruit is a
 	 * long-lived addition rather than drawn from the older founding-age spread.
 	 *
 	 * @return a young-adult age in days
@@ -175,7 +175,7 @@ public final class Demography {
 	 * Draw a {@link Gender} at random (50/50 MALE/FEMALE) on the skill RNG — the
 	 * same stream the gendered skill mean feeds into, kept off the mortality and
 	 * economic streams. Used when generating people into the {@link
-	 * eos.agent.PeasantPool}.
+	 * eos.agent.Retinue}.
 	 *
 	 * @return a randomly drawn gender
 	 */

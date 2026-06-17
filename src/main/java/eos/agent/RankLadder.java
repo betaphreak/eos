@@ -15,7 +15,7 @@ import eos.settlement.Settlement;
  * for promotion (a step up the ladder) and demotion (a step down).
  * <p>
  * A {@link RankFactory} is registered per rank that has a concrete household type;
- * a rank with no factory is an <b>unrealized</b> rung (e.g. {@code RETINUE},
+ * a rank with no factory is an <b>unrealized</b> rung (e.g. {@code CARAVAN},
  * {@code CITY}…{@code HEGEMONY}), which {@link #promote}/{@link #demote} skip past
  * to the next realized rank in the direction of travel. Off the end of the ladder
  * (or with no realized rank beyond), they reform nothing and return {@code null}.

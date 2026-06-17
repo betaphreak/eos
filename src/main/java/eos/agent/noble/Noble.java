@@ -5,7 +5,7 @@ import java.util.List;
 
 import eos.agent.AbstractHousehold;
 import eos.agent.Agent;
-import eos.agent.Holding;
+import eos.agent.Property;
 import eos.agent.Member;
 import eos.agent.Rank;
 import eos.agent.firm.Firm;
@@ -59,11 +59,11 @@ public class Noble extends AbstractHousehold {
 	// byte-identical to the pure-rentier design)
 	private final LaborMarket nobleLaborMkt;
 
-	// the holdings this noble owns and draws dividends from — firms and banks, in
+	// the properties this noble owns and draws dividends from — firms and banks, in
 	// one list. Iterated in insertion order; the constructors seat firms before
 	// banks so the dividend collection order matches the two separate loops this
 	// replaced (see act).
-	private final List<Holding> holdings;
+	private final List<Property> properties;
 
 	// enjoyment and necessity the noble consumes
 	private final Enjoyment enjoyment;
@@ -139,12 +139,12 @@ public class Noble extends AbstractHousehold {
 				combine(ownedFirms, ownedBanks), config, bank, colony, null);
 	}
 
-	// firms first, then banks, into one holdings list — preserving the historical
+	// firms first, then banks, into one properties list — preserving the historical
 	// dividend-collection order (all firms before all banks)
-	private static List<Holding> combine(List<Firm> firms, List<Bank> banks) {
-		List<Holding> holdings = new ArrayList<>(firms);
-		holdings.addAll(banks);
-		return holdings;
+	private static List<Property> combine(List<Firm> firms, List<Bank> banks) {
+		List<Property> properties = new ArrayList<>(firms);
+		properties.addAll(banks);
+		return properties;
 	}
 
 	/**
@@ -164,7 +164,7 @@ public class Noble extends AbstractHousehold {
 	 */
 	public Noble(Noble predecessor, NobleConfig config, Settlement colony) {
 		this(predecessor.getEstateChecking(), predecessor.getEstateSavings(),
-				true, predecessor.holdings, config,
+				true, predecessor.properties, config,
 				predecessor.getBank(), colony, predecessor.getHead().surname());
 	}
 
@@ -202,7 +202,7 @@ public class Noble extends AbstractHousehold {
 				getHead().fullName(), bank.getCurrency()));
 
 		this.config = config;
-		this.holdings = new ArrayList<>();
+		this.properties = new ArrayList<>();
 		this.enjoyment = new Enjoyment(0);
 		this.necessity = new Necessity(0);
 		this.eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
@@ -223,7 +223,7 @@ public class Noble extends AbstractHousehold {
 	 * rest of the household identically.
 	 */
 	private Noble(double initCheckingBal, double initSavingsBal,
-			boolean inherited, List<Holding> ownedHoldings,
+			boolean inherited, List<Property> ownedProperties,
 			NobleConfig config, Bank bank, Settlement colony, String surname) {
 		super(initCheckingBal, initSavingsBal, inherited, surname, bank, colony);
 
@@ -240,7 +240,7 @@ public class Noble extends AbstractHousehold {
 		}
 
 		this.config = config;
-		this.holdings = new ArrayList<>(ownedHoldings);
+		this.properties = new ArrayList<>(ownedProperties);
 		this.enjoyment = new Enjoyment(0);
 		this.necessity = new Necessity(0);
 		this.eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
@@ -282,18 +282,18 @@ public class Noble extends AbstractHousehold {
 		// not work — no strategic sector, so priIC is never credited)
 		wage = acct.priIC;
 
-		// collect dividends: draw a share of each holding's distributable profit and
-		// move it from the holding to this noble via the secondary-income channel. A
+		// collect dividends: draw a share of each property's distributable profit and
+		// move it from the property to this noble via the secondary-income channel. A
 		// firm reports max(0, profit) and disburses from its own account (which may
 		// differ from the noble's, so disburse + credit is split, as elsewhere); a
 		// bank reports its retained profit and disburses by skimming its equity,
 		// leaving the inheritance / external-funds buffer untouched. A dead firm
 		// reports 0, so it is skipped (its closed account is never touched).
 		dividends = 0;
-		for (Holding holding : holdings) {
-			double share = config.dividendRate() * holding.distributableProfit();
+		for (Property property : properties) {
+			double share = config.dividendRate() * property.distributableProfit();
 			if (share > 0) {
-				holding.disburse(share);
+				property.disburse(share);
 				bank.credit(getID(), share, Bank.SECIC);
 				dividends += share;
 			}
@@ -400,10 +400,10 @@ public class Noble extends AbstractHousehold {
 	 * like any it owns. The colony's dynamic firm provisioning uses this.
 	 *
 	 * @param firm
-	 *            the firm to add to this noble's holdings
+	 *            the firm to add to this noble's property
 	 */
 	public void addFirm(Firm firm) {
-		holdings.add(firm);
+		properties.add(firm);
 	}
 
 	/**
@@ -411,32 +411,32 @@ public class Noble extends AbstractHousehold {
 	 * noble stops drawing a dividend from it.
 	 *
 	 * @param firm
-	 *            the firm to remove from this noble's holdings
+	 *            the firm to remove from this noble's property
 	 * @return whether this noble owned the firm
 	 */
 	public boolean removeFirm(Firm firm) {
-		return holdings.remove(firm);
+		return properties.remove(firm);
 	}
 
 	/** Number of firms this noble currently owns (used to spread newly chartered
 	 * firms across owners; counts firms specifically, not any owned banks). */
 	public int getFirmCount() {
-		return (int) holdings.stream().filter(h -> h instanceof Firm).count();
+		return (int) properties.stream().filter(h -> h instanceof Firm).count();
 	}
 
 	/**
-	 * Hand all of this noble's holdings — its owned {@link Firm firms} and {@link
+	 * Hand all of this noble's property — its owned {@link Firm firms} and {@link
 	 * Bank banks} — to <tt>heir</tt>, after which this noble owns nothing. Used
-	 * before a ruined noble is demoted to a laborer (which owns no holdings), so its
+	 * before a ruined noble is demoted to a laborer (which owns no property), so its
 	 * firms and banks keep a rentier owner drawing their dividends rather than being
 	 * orphaned.
 	 *
 	 * @param heir
-	 *            the noble that takes over this one's holdings
+	 *            the noble that takes over this one's property
 	 */
-	public void transferHoldingsTo(Noble heir) {
-		heir.holdings.addAll(holdings);
-		holdings.clear();
+	public void transferPropertyTo(Noble heir) {
+		heir.properties.addAll(properties);
+		properties.clear();
 	}
 
 	/**
@@ -467,7 +467,7 @@ public class Noble extends AbstractHousehold {
 		return String.format(
 				"Noble#%d %s [%s age=%d firms=%d banks=%d dividends=%.2f income=%.2f consumption=%.2f]",
 				getID(), getHead().fullName(), isAlive() ? "alive" : "dead",
-				getAgeYears(), firmCount, holdings.size() - firmCount, dividends,
+				getAgeYears(), firmCount, properties.size() - firmCount, dividends,
 				income, consumption);
 	}
 }

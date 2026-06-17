@@ -19,7 +19,7 @@ import eos.settlement.Settlement;
  * Phase 3 of the rank ladder (see {@code docs/rank-ladder.md}): the reverse of
  * ennoblement. A {@link Noble} ({@link eos.agent.Rank#HOLDING}) demoted down the
  * ladder is reformed into a copper-banking {@link Laborer}
- * ({@link eos.agent.Rank#HOUSEHOLD}) — skipping the unrealized {@code RETINUE}
+ * ({@link eos.agent.Rank#HOUSEHOLD}) — skipping the unrealized {@code CARAVAN}
  * rung — adopting the same head and carrying its balances over, so the colony's
  * money is conserved across the re-bank.
  * <p>
@@ -45,8 +45,8 @@ class NobleDemotionTest {
 		h.createStrategicFirm(copper, eos.agent.firm.StrategicFirmConfig.DEFAULT);
 		h.primeNobleLabor();
 		h.createDefaultRuler();
-		h.createDefaultPeasantPool();
-		h.foundLaborersFromPool(i -> copper, i -> 15);
+		h.createDefaultRetinue();
+		h.foundLaborersFromRetinue(i -> copper, i -> 15);
 
 		// run until a noble has been raised by ennoblement
 		colony.run(150);
@@ -60,7 +60,7 @@ class NobleDemotionTest {
 		double checkingBefore = silver.getChecking(noble.getID());
 		double savingsBefore = silver.getSavings(noble.getID());
 
-		// demote it: HOLDING -> HOUSEHOLD (skipping the unrealized RETINUE rung)
+		// demote it: HOLDING -> HOUSEHOLD (skipping the unrealized CARAVAN rung)
 		Household reformed = h.demote(noble);
 
 		assertNotNull(reformed, "demoting a HOLDING noble should reform it to HOUSEHOLD");

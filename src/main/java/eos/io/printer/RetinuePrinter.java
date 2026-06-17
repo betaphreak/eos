@@ -1,10 +1,10 @@
 package eos.io.printer;
 
-import eos.agent.PeasantPool;
+import eos.agent.Retinue;
 import eos.settlement.Settlement;
 
 /**
- * Writes a CSV time-series of the {@link PeasantPool}: how many peasants remain,
+ * Writes a CSV time-series of the {@link Retinue}: how many peasants remain,
  * their average skill and age, the necessity they ate and the number that starved
  * last step, and the cumulative relief cost billed to the Ruler. Register with
  * {@link Settlement#addPrinter} and finalize with {@link Settlement#cleanUpPrinters}.
@@ -12,32 +12,32 @@ import eos.settlement.Settlement;
  * Columns: Date, Count, AvgSkill, AvgAge, Consumed, Starved, BilledTotal,
  * Imported (cumulative gold-funded immigrants recruited into the pool).
  */
-public class PeasantPrinter extends Printer {
+public class RetinuePrinter extends Printer {
 
 	private final CSVPrintWriter printWriter;
-	private final PeasantPool pool;
+	private final Retinue retinue;
 
 	/**
-	 * Create a new {@code PeasantPrinter}.
+	 * Create a new {@code RetinuePrinter}.
 	 *
 	 * @param fileName
 	 *            name of the CSV output file
-	 * @param pool
+	 * @param retinue
 	 *            the peasant pool to report on
 	 */
-	public PeasantPrinter(String fileName, PeasantPool pool) {
+	public RetinuePrinter(String fileName, Retinue retinue) {
 		super();
 		this.printWriter = new CSVPrintWriter(fileName);
-		this.pool = pool;
+		this.retinue = retinue;
 	}
 
 	@Override
 	public void print(Settlement colony) {
 		if (!shouldPrint(colony))
 			return;
-		printWriter.println(colony.getDate(), pool.size(), pool.avgSkill(),
-				pool.avgAgeYears(), pool.getLastConsumed(), pool.getLastStarved(),
-				pool.getTotalBilledToRuler(), pool.getImmigrantCount());
+		printWriter.println(colony.getDate(), retinue.size(), retinue.avgSkill(),
+				retinue.avgAgeYears(), retinue.getLastConsumed(), retinue.getLastStarved(),
+				retinue.getTotalBilledToRuler(), retinue.getImmigrantCount());
 	}
 
 	@Override

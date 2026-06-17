@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import eos.agent.Agent;
-import eos.agent.Holding;
+import eos.agent.Property;
 import eos.bank.Bank;
 import eos.calendar.DayType;
 import eos.settlement.Settlement;
@@ -13,13 +13,13 @@ import eos.skill.Skill;
 import lombok.Getter;
 
 /**
- * Parent class of all firms. A firm is a {@link Holding}: its owner (a noble)
+ * Parent class of all firms. A firm is a {@link Property}: its owner (a noble)
  * draws a dividend from its positive profit each step.
  *
  * @author zhihongx
  *
  */
-public abstract class Firm extends Agent implements Holding {
+public abstract class Firm extends Agent implements Property {
 
 	/**
 	 *  labor owned by the firm
@@ -158,7 +158,7 @@ public abstract class Firm extends Agent implements Holding {
 		return wageBudget;
 	}
 
-	// --- Holding: the firm is an asset its owner draws a dividend from ---
+	// --- Property: the firm is an asset its owner draws a dividend from ---
 
 	/**
 	 * {@inheritDoc} A firm's distributable profit is its last step's profit floored

@@ -41,7 +41,7 @@ import lombok.extern.java.Log;
  * surname is drawn only when a peasant is promoted into a household.
  */
 @Log
-public class PeasantPool extends Agent {
+public class Retinue extends Agent {
 
 	// days of food the pool keeps in its larder per peasant — a proper personal
 	// larder. The larder is sized at BUFFER_DAYS per pooled peasant; when a peasant
@@ -66,6 +66,11 @@ public class PeasantPool extends Agent {
 	private static final double RELIEF_BUDGET_PER_PEASANT = 0.6;
 
 	private final List<Member> peasants = new ArrayList<>();
+
+	// how this retinue is sustained each step — swapped on detach()/settle(). Composed
+	// (Strategy) so the settled-relief and wandering behaviours stay separate rather
+	// than branching a mode flag through act(); defaults to the settled colony reserve.
+	private Provisioning provisioning = new Relief();
 
 	// the pool's larder: a stock of necessity it eats from and refills on the
 	// market (assigned once in the constructor; not final only so the demandForN
@@ -127,9 +132,9 @@ public class PeasantPool extends Agent {
 	 * @param colony
 	 *            the colony this pool belongs to
 	 */
-	public PeasantPool(int initialSize, Bank bank, Settlement colony) {
+	public Retinue(int initialSize, Bank bank, Settlement colony) {
 		super(bank, colony);
-		setName("Peasant Pool");
+		setName("Retinue");
 		bank.openAcct(getID(), 0, 0);
 		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
 		// the builder hires peasants from this market (null if the colony has no
@@ -141,7 +146,7 @@ public class PeasantPool extends Agent {
 		eos.market.WeddingMarket weddingMkt =
 				(eos.market.WeddingMarket) colony.getMarket("Wedding");
 		if (weddingMkt != null)
-			weddingMkt.setPool(this);
+			weddingMkt.setRetinue(this);
 		// seed the larder with a full per-peasant buffer, so the pool can feed its
 		// peasants from step 0 and ride out the necessity sector's adjustment to the
 		// new demand (and a promoted peasant takes its BUFFER_DAYS ration with it)
@@ -214,41 +219,50 @@ public class PeasantPool extends Agent {
 	/** Called by Settlement.newDay() in each step. */
 	public void act() {
 		Settlement colony = getColony();
-		// the ruler may have died of old age earlier in this step's agent loop (the
-		// pool acts after it) and not yet been succeeded; with no live patron the
-		// pool neither bills nor supplies labor this step (deficit/work carry over)
-		Ruler ruler = colony.getRuler();
-		boolean rulerLive = ruler != null && ruler.isAlive();
-
-		// the ruler reimburses the pool's necessity spend so far (borrowing as
-		// needed), landing the relief cost on it and returning the pool's account to
-		// ~0 before interest is assessed this step
-		if (rulerLive)
-			billRuler(ruler);
-		// old-age mortality, then skill decay for the survivors
+		// before feeding: settled mode bills the ruler for last step's relief spend;
+		// wandering mode has no patron, so nothing (see the Provisioning strategies)
+		provisioning.beforeFeeding(this);
+		// old-age mortality, then skill decay for the survivors (both modes)
 		peasants.removeIf(
 				m -> m.rollOldAgeDeath(colony.getDemography(), colony.getDate()));
 		for (Member m : peasants)
 			m.skills().tick();
-		// eat one necessity per peasant; the unfed starve
+		// eat the current ration; the unfed starve
 		feed();
-		// supply the surviving peasants to the builder as its exclusive workforce,
-		// routing their wages to the ruler (their patron); the builder hires as many
-		// as its budget allows and none when idle
-		if (builderLaborMkt != null && rulerLive)
-			for (Member m : peasants)
-				builderLaborMkt.addEmployee(ruler.getID(), ruler.getBank(), 1.0,
-						m.skills());
-		// buy enough to feed the pool next step (funded by the overdraft billRuler
-		// reconciles); peasants never buy enjoyment
-		if (!peasants.isEmpty())
-			nMkt.addBuyOffer(this, demandForN);
+		// after feeding: settled mode lends the builder its corvée labor and posts the
+		// market buy offer for next step; wandering mode is marketless and idle
+		provisioning.afterFeeding(this);
+	}
+
+	/**
+	 * Switch this retinue to the detached <b>wandering</b> mode — a {@link Caravan} on
+	 * the move: it eats the lean {@link Caravan#WANDERING_RATION} from its carried
+	 * larder, with no market to restock on, no patron to bill, and no labor to lend
+	 * (see {@code docs/caravan.md}). A decaying asset until it settles or trades.
+	 */
+	public void detach() {
+		this.provisioning = new Foraging();
+	}
+
+	/** Switch this retinue back to the settled <b>relief</b> mode (a colony's reserve). */
+	public void settle() {
+		this.provisioning = new Relief();
+	}
+
+	/** Whether this retinue is in the detached wandering mode. */
+	public boolean isWandering() {
+		return provisioning instanceof Foraging;
+	}
+
+	/** The daily ration each member currently eats (settled relief vs. wandering). */
+	public RationSize getRation() {
+		return provisioning.ration();
 	}
 
 	private void feed() {
 		int alive = peasants.size();
-		// peasants eat the relief ration, not a full unit each
-		double ration = RELIEF_RATION.perDay();
+		// members eat the mode's ration (settled relief, or the leaner wandering ration)
+		double ration = provisioning.ration().perDay();
 		double wanted = alive * ration;
 		lastConsumed = necessity.decrease(wanted);
 		// a peasant starves only when even its relief ration is missing; fractional
@@ -371,5 +385,83 @@ public class PeasantPool extends Agent {
 		for (Member m : peasants)
 			sum += m.getAgeYears(getColony().getDate());
 		return sum / peasants.size();
+	}
+
+	/**
+	 * How a {@link Retinue} is sustained each step — the slice of behavior that differs
+	 * between a settled relief reserve and a detached wandering band. The Retinue
+	 * <b>composes</b> one of these and swaps it on {@link #detach()}/{@link #settle()},
+	 * so the two modes stay cleanly separated instead of a flag branched through
+	 * {@link #act()} (composition over a settled-vs-wandering subclass).
+	 */
+	private interface Provisioning {
+
+		/** The daily ration each member eats in this mode. */
+		RationSize ration();
+
+		/** Hook run before the members are fed. */
+		void beforeFeeding(Retinue r);
+
+		/** Hook run after the members are fed. */
+		void afterFeeding(Retinue r);
+	}
+
+	/**
+	 * Settled mode (the colony's <b>relief reserve</b>, and the default): the ruler
+	 * funds its market food — reconciled each step by {@link Retinue#billRuler} — and
+	 * its peasants serve as the builder's corvée labor; it eats the
+	 * {@link RationSize#SIMPLE} relief ration. This is exactly the behavior the
+	 * Retinue had before the wandering mode was introduced.
+	 */
+	private static final class Relief implements Provisioning {
+
+		public RationSize ration() {
+			return RELIEF_RATION;
+		}
+
+		public void beforeFeeding(Retinue r) {
+			// the ruler reimburses the relief spend so far (borrowing as needed),
+			// returning the account to ~0 before interest is assessed this step; the
+			// ruler may have died earlier this step and not yet been succeeded, in
+			// which case the deficit simply carries over
+			Ruler ruler = r.getColony().getRuler();
+			if (ruler != null && ruler.isAlive())
+				r.billRuler(ruler);
+		}
+
+		public void afterFeeding(Retinue r) {
+			Ruler ruler = r.getColony().getRuler();
+			boolean rulerLive = ruler != null && ruler.isAlive();
+			// supply the survivors to the builder as its exclusive workforce, wages
+			// routed to the ruler (their patron); none when there is no builder/ruler
+			if (r.builderLaborMkt != null && rulerLive)
+				for (Member m : r.peasants)
+					r.builderLaborMkt.addEmployee(ruler.getID(), ruler.getBank(), 1.0,
+							m.skills());
+			// buy enough to feed next step (funded by the overdraft billRuler reconciles)
+			if (!r.peasants.isEmpty())
+				r.nMkt.addBuyOffer(r, r.demandForN);
+		}
+	}
+
+	/**
+	 * Detached <b>wandering</b> mode (a {@link Caravan} on the move): the band eats the
+	 * lean {@link Caravan#WANDERING_RATION} from its carried larder and does nothing
+	 * else — no market to restock on, no patron to bill, no labor to lend. A decaying
+	 * asset that must settle (or trade) before the larder runs out.
+	 */
+	private static final class Foraging implements Provisioning {
+
+		public RationSize ration() {
+			return Caravan.WANDERING_RATION;
+		}
+
+		public void beforeFeeding(Retinue r) {
+			// no patron while wandering — nothing to bill
+		}
+
+		public void afterFeeding(Retinue r) {
+			// marketless and idle — consume the carried larder, restock nothing
+		}
 	}
 }

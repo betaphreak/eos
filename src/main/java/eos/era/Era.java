@@ -38,7 +38,7 @@ public enum Era {
 			0.5,                                   // laborShare
 			0.05,                                  // bankProfitTaxRate
 			0.02,                                  // nobleIncomeTaxRate
-			900,                                   // peasantPoolSize
+			900,                                   // retinueSize
 			0.45,                                  // promotionRatio
 			5)),                                   // targetNobles
 	RENAISSANCE(4, null),
@@ -102,7 +102,7 @@ public enum Era {
 	 *                             Ruler taxes each step
 	 * @param nobleIncomeTaxRate   fraction of each noble's per-step income the Ruler
 	 *                             taxes each step
-	 * @param peasantPoolSize      number of peasants a pooled colony is seeded with
+	 * @param retinueSize      number of peasants a pooled colony is seeded with
 	 * @param promotionRatio       fraction of the pool promoted into laborer households
 	 * @param targetNobles         size of the aristocracy maintained by ennoblement
 	 */
@@ -120,7 +120,7 @@ public enum Era {
 			double laborShare,
 			double bankProfitTaxRate,
 			double nobleIncomeTaxRate,
-			int peasantPoolSize,
+			int retinueSize,
 			double promotionRatio,
 			int targetNobles) {
 	}

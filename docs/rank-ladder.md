@@ -27,7 +27,7 @@ there is no **demotion** at all) costs a factory registration rather than a new
 bespoke method.
 
 The unifying lens is the `Rank` enum: each rung names **what an entity commands**,
-not what it is — `SPECTATOR` commands nothing, `HOUSEHOLD` a family, `RETINUE` a
+not what it is — `HOUSEHOLD` (the bottom rung) commands a family, `CARAVAN` a
 following, `HOLDING` firms/estates, `VILLAGE` a settlement, on up to `HEGEMONY`.
 Promotion is a step up that ladder; demotion a step down; both are the same
 machinery in opposite directions.
@@ -37,28 +37,28 @@ machinery in opposite directions.
 - **Every rung on the household ladder is a real `Agent`.** A household's rank is a
   property of the household (`Household.rank()`), and a transition turns one
   household agent into another. There is no rung occupied by a non-agent.
-- **`RETINUE` is a *command* rung, not a population.** A pooled peasant is **not**
-  rank `RETINUE`; it commands nothing, so it is unranked raw population (morally
-  `SPECTATOR` — passive, fed by a patron, no agency). `RETINUE` is the rung of
+- **`CARAVAN` is a *command* rung, not a population.** A pooled peasant is **not**
+  rank `CARAVAN`; it commands nothing, so it is unranked raw population (no rung at
+  all — passive, fed by a patron, no agency). `CARAVAN` is the rung of
   *whoever owns a following*. The peasant pool is therefore an **asset** attached
-  to a `RETINUE`-or-higher household — modelled like a `Noble`'s `firms` list —
+  to a `CARAVAN`-or-higher household — modelled like a `Noble`'s `firms` list —
   not a parallel ranked population the transition engine must special-case.
 - **"Promotion out of the pool" is recruitment, not a rank-step.** It is a
-  `RETINUE`+ entity founding a *new* `HOUSEHOLD` agent from its following (raw
+  `CARAVAN`+ entity founding a *new* `HOUSEHOLD` agent from its following (raw
   population → a new household). It is a creation event, exactly what
   `promoteToLaborer` already does; it is not a peasant climbing a rung, so it needs
-  no `RETINUE` source rank and stays outside the rank engine (it remains the
+  no `CARAVAN` source rank and stays outside the rank engine (it remains the
   pool/recruitment mechanism it is today).
 - **The rank engine is uniformly `Household ↔ Household`.** `promote(h)` reforms a
   household into the next rank up; `demote(h)` into the next rank down. Money is
   conserved (the old account is closed into equity and the carried balances reopen
   the new one, possibly at a different bank tier), members carry across, and the
   agent swap is deferred to end of step.
-- **`RETINUE` and `CITY`→`HEGEMONY` are reserved rungs.** No concrete agent type
+- **`CARAVAN` and `CITY`→`HEGEMONY` are reserved rungs.** No concrete agent type
   realizes them yet (the ruler today jumps straight to commanding both a following
   *and* a settlement, i.e. `VILLAGE`). The ladder registers **no factory** for an
   unrealized rung, so `promote()`/`demote()` skip past it cleanly. When a future
-  entity fills `RETINUE` (a warband leader who has gathered followers but holds no
+  entity fills `CARAVAN` (a warband leader who has gathered followers but holds no
   land), it slots in with the pool as its backing asset — no engine change.
 - **Scope of the first cut.** Only the three realized rungs and the transitions
   between them: `HOUSEHOLD` (`Laborer`), `HOLDING` (`Noble`), `VILLAGE` (`Ruler`).
@@ -70,25 +70,25 @@ machinery in opposite directions.
 
 ### `Rank` learns its neighbours
 
-The enum already carries a stable `seq()` (its position in the hierarchy). Add the
+The enum already carries a stable `level()` (its position in the hierarchy). Add the
 two adjacency helpers — pure, no dependencies:
 
 ```java
-private static final Rank[] BY_SEQ = values(); // seq == ordinal today
+private static final Rank[] BY_LEVEL = values(); // level == ordinal today
 
 /** The next rank up, or empty at {@link #HEGEMONY}. */
 public Optional<Rank> promoted() {
-    return seq + 1 < BY_SEQ.length ? Optional.of(BY_SEQ[seq + 1]) : Optional.empty();
+    return level + 1 < BY_LEVEL.length ? Optional.of(BY_LEVEL[level + 1]) : Optional.empty();
 }
 
-/** The next rank down, or empty at {@link #SPECTATOR}. */
+/** The next rank down, or empty at {@link #HOUSEHOLD}. */
 public Optional<Rank> demoted() {
-    return seq > 0 ? Optional.of(BY_SEQ[seq - 1]) : Optional.empty();
+    return level > 0 ? Optional.of(BY_LEVEL[level - 1]) : Optional.empty();
 }
 ```
 
-(If `seq` ever diverges from declaration order, replace the index arithmetic with a
-lookup over a `seq`-sorted array; the signatures stay the same.)
+(If `level` ever diverges from declaration order, replace the index arithmetic with a
+lookup over a `level`-sorted array; the signatures stay the same.)
 
 ### `Household` exposes its rank
 
@@ -139,7 +139,7 @@ engine never branches on rank:
   colony)` adopting the estate at the **silver** bank, carrying the remaining
   members across. This is exactly today's `ennobleBestLaborer` body.
 
-No factory is registered for `RETINUE`, `CITY`…`HEGEMONY`, or for `VILLAGE` in the
+No factory is registered for `CARAVAN`, `CITY`…`HEGEMONY`, or for `VILLAGE` in the
 first cut (the ruler is created at founding, not promoted into).
 
 ### `RankLadder` — the registry + the engine
@@ -180,12 +180,12 @@ the swap and the re-bank.
 - `promoteToLaborer` / the pool is **untouched** — it is recruitment, not a rank
   step, and stays the pool's own concern.
 
-### Why `RETINUE`-as-asset removes the only asymmetry
+### Why `CARAVAN`-as-asset removes the only asymmetry
 
-In the first sketch of this design `RETINUE` was "the pooled peasant's rank," which
+In the first sketch of this design `CARAVAN` was "the pooled peasant's rank," which
 forced an asymmetric branch: the bottom transition crossed the `Member`-in-a-pool /
 `Agent` boundary, so the engine needed a special pool hook. Re-reading the ladder as
-*what an entity commands* relocates the pool to an **asset** of a `RETINUE`+
+*what an entity commands* relocates the pool to an **asset** of a `CARAVAN`+
 household (like `Noble.firms`). The result: every `Estate` is the estate of a
 genuine agent, every swap is `scheduleRemoveAgent`/`scheduleAddAgent`, and the
 engine has **no** special case. The pool is drawn from for recruitment (creating
@@ -194,7 +194,7 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
 ## Accepted limitations (explicitly out of scope for this cut)
 
 1. **Most rungs are unrealized.** Only `HOUSEHOLD`/`HOLDING`/`VILLAGE` have agent
-   types. `RETINUE` and `CITY`→`HEGEMONY` are reserved: `promote()`/`demote()`
+   types. `CARAVAN` and `CITY`→`HEGEMONY` are reserved: `promote()`/`demote()`
    return empty there. This is intentional — the ladder is the seam those entities
    will plug into, not a promise they exist now.
 2. **`VILLAGE` is not yet a promotion target.** A ruler is created at founding, and
@@ -217,7 +217,7 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
 ## Phased implementation plan
 
 - **Phase 1 — `Rank` adjacency + `Household.rank()`. (Implemented.)** The
-  `Rank.promoted()`/`demoted()` helpers (single-step walk over a `seq`-indexed
+  `Rank.promoted()`/`demoted()` helpers (single-step walk over a `level`-indexed
   array, empty at the ends) and the per-type `rank()` overrides (`Laborer` inherits
   the default `HOUSEHOLD`, `Noble` → `HOLDING`, `Ruler` → `VILLAGE`). Pure, additive,
   byte-identical. Unit-tested by `eos.agent.RankTest` (the ladder walk, the empty
@@ -230,7 +230,7 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
   fallback are unchanged (they still call `ennobleBestLaborer`). Behaviour-preserving
   — the full suite stays green, including the ennoblement/Hanseatic/meritocratic
   smoke runs. **Realized subtlety:** a `Laborer` is `HOUSEHOLD` and ennoblement
-  targets `HOLDING`, so `promote` had to *skip* the unrealized `RETINUE` rung; the
+  targets `HOLDING`, so `promote` had to *skip* the unrealized `CARAVAN` rung; the
   ladder walks to the nearest rank with a registered factory rather than the
   immediate neighbour.
 - **Phase 3 — demotion capability. (Implemented.)** The `HOUSEHOLD` factory (noble →
@@ -250,24 +250,24 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
   `createDefaultRuler`, demotes (end of step, like ennoblement) any noble insolvent
   for ≥ `NOBLE_INSOLVENCY_GRACE_DAYS` (365, a placeholder matching
   `MIN_FIRM_LIFETIME_DAYS`). Before demoting, the noble's holdings are reassigned to
-  the least-loaded other noble (`Noble.transferHoldingsTo`) so its firms/banks are
+  the least-loaded other noble (`Noble.transferPropertyTo`) so its firms/banks are
   not orphaned; if it is the colony's only noble they go unowned until the next
   charter's no-owner fallback re-ennobles an owner. Standard nobles work the export
   firm and stay solvent, so the trigger is a no-op there and the full suite stays
   green; covered by `eos.simulation.RuinedNobleDemotionTest` (a noble crushed under
   an unpayable debt is demoted to a copper-banking laborer past the grace window).
 - **Phase 5 — future (separate notes).** Further demotion triggers (attainder, loss
-  of last holding); realizing `RETINUE` as an entity with the pool as its asset; the
+  of last holding); realizing `CARAVAN` as an entity with the pool as its asset; the
   `HOLDING` → `VILLAGE` promotion once settlements can be founded/seized.
 
 ## Decided since (see `docs/village-founding.md`)
 
-- **No multi-rung `promote`/`demote`.** Founding (`RETINUE → HOLDING → VILLAGE`) is
+- **No multi-rung `promote`/`demote`.** Founding (`CARAVAN → HOLDING → VILLAGE`) is
   modelled as two ordinary single-rung reforms by giving the middle rung real content
   (a holder of a village hall + banks), so the ladder never needs to move more than
   one rung. The helpers stay single-step.
 - **The `RankLadder` is global, and lives on `GameSession`** — *not* on `Settlement`.
-  Rank spans the colony-less (a wandering `RETINUE`) and the supra-settlement
+  Rank spans the colony-less (a wandering `CARAVAN`) and the supra-settlement
   (`CITY`…`HEGEMONY`) states, so it cannot belong to one colony. The current
   implementation is colony-bound (it works because every existing reform is
   within-colony); the move to `GameSession` happens as part of founding, after
@@ -275,8 +275,8 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
   than capturing per-colony harness state).
 - **Holdings are a first-class concept, distinct from `Estate`.** `Estate` is the
   household's *liquid* identity carried across a reform (members + balances);
-  *holdings* (firms, banks, the hall — unified behind a `Holding` interface) are the
-  *productive assets* owned, transferred separately (`transferHoldingsTo`). A reform
+  *holdings* (firms, banks, the hall — unified behind a `Property` interface) are the
+  *productive assets* owned, transferred separately (`transferPropertyTo`). A reform
   carries the `Estate`; the holdings move on their own.
 
 ## Open questions deferred to later

@@ -21,7 +21,7 @@ public class HomogeneousEconomy {
 	 */
 	public static SimulationHarness run() {
 		// the labor force is founded through the pool: the ruler promotes peasants
-		// into laborer households on day 0 (see foundLaborersFromPool), and dead
+		// into laborer households on day 0 (see foundLaborersFromRetinue), and dead
 		// laborers are likewise replaced by promotion until the reserve drains. The
 		// colony is founded with a single enjoyment and a single necessity firm (the
 		// config default) and the ruler's dynamic provisioning — on by default for

@@ -58,8 +58,8 @@ class NobleOwnedBankDividendTest {
 		colony.addAgent(senior);
 
 		h.createDefaultRuler();
-		h.createDefaultPeasantPool();
-		h.foundLaborersFromPool(i -> copper, i -> 15);
+		h.createDefaultRetinue();
+		h.foundLaborersFromRetinue(i -> copper, i -> 15);
 
 		// long enough for firm profit -> noble dividends/purchases (FX) -> bank profit
 		// -> the owner's bank dividend to flow

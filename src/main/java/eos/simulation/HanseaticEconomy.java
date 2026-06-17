@@ -117,7 +117,7 @@ public class HanseaticEconomy {
 		// the two colonies share the session's name pool and demography but each has
 		// its own economic random stream and its own location
 		SimulationConfig base = SimulationConfig.DEFAULT.toBuilder()
-				.peasantPoolSize(2 * NUM_LABORERS)
+				.retinueSize(2 * NUM_LABORERS)
 				.promotionRatio(PROMOTION_RATIO)
 				.targetNobles(NUM_NOBLES)
 				.build();
@@ -201,12 +201,12 @@ public class HanseaticEconomy {
 		// the ruler (founding cash) and the pool precede the labor force, which the
 		// ruler founds and replaces by promotion from the pool
 		h.createDefaultRuler();
-		h.createDefaultPeasantPool();
-		h.foundLaborersFromPool(i -> copper, i -> 15);
+		h.createDefaultRetinue();
+		h.foundLaborersFromRetinue(i -> copper, i -> 15);
 		h.enableExternalInflow(copper);
 
 		h.addCommonPrinters(prefix);
-		h.addPeasantPrinter(prefix + "Peasants");
+		h.addRetinuePrinter(prefix + "Retinue");
 		h.addBanksPrinter(prefix + "Banks");
 		colony.addPrinter(new StrategicPrinter(prefix + "Strategic",
 				h.getStrategicFirm(), copper));
