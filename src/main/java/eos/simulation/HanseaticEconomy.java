@@ -59,7 +59,7 @@ public class HanseaticEconomy {
 	 * Laborer households per settlement — the empirical minimum for this
 	 * composition with a safety margin. Once firms could carry their wage budget
 	 * through zero-activity rest days, the stable region widened far below the old
-	 * {@code ScaleSweep} k=4 (=180): a sweep of this Hanseatic composition (5
+	 * scale-sweep k=4 (=180): a sweep of this Hanseatic composition (5
 	 * nobles, the strategic export firm, the necessity reserve) stays healthy on
 	 * <em>both</em> colony streams down to ~12 laborers, with the necessity market
 	 * running away (and the near-cliff "passes" turning degenerate) below ~10. This

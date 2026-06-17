@@ -768,7 +768,7 @@ public class SimulationHarness {
 	/**
 	 * As {@link #createDefaultPeasantPool()}, but the pool (and the builder it
 	 * staffs) bank at <tt>bank</tt> (for colonies whose commoners do not use {@link
-	 * #getCopperBank()} — e.g. {@link TwoBankEconomy}, so the pool does not add a
+	 * #getCopperBank()} — e.g. a multi-bank colony, so the pool does not add a
 	 * third copper bank).
 	 *
 	 * @param bank

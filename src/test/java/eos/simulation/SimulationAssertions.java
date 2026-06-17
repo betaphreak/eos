@@ -10,9 +10,9 @@ import eos.bank.Bank;
  * Shared invariant checks for the simulation smoke tests. The core "healthy
  * finished colony" definition — population sustained, prices finite and
  * positive, banks finite intermediaries — lives in the production helper {@link
- * ColonyHealth} (also used by {@link eos.simulation.tools.ScaleSweep}), so it is defined once; this
- * class adapts it to JUnit assertions and layers the test-only check that the
- * default runs' banks stay finite intermediaries on top.
+ * ColonyHealth}, so it is defined once; this class adapts it to JUnit assertions
+ * and layers the test-only check that the default runs' banks stay finite
+ * intermediaries on top.
  */
 final class SimulationAssertions {
 

@@ -249,15 +249,15 @@ next colony index, so "same seed → identical run" still holds.
 - **Phase 2 — the foundry. (First cut implemented.)** The canonical single-copper-bank
   founding sequence is packaged as `SimulationHarness.foundStandardColony(...)` —
   markets, firms, export sector, ruler + gold treasury, peasant pool, labor force
-  promoted from it, external inflow, in one call. The standard single-bank sims
-  (`HomogeneousEconomy`, `HeterogeneousEconomy`, `PeasantEconomy`) found through it;
-  it reproduces their hand-written sequence verbatim, so they stay **byte-identical**
-  (verified by a CSV-checksum diff of a full `HomogeneousEconomy` run, all files
-  matching, plus the green suite). Sims whose founding diverges in **ordering** (e.g.
-  `MeritocraticEconomy` opens the copper bank before the markets and the silver bank
-  at a different point; `TwoBankEconomy` uses two copper banks; the bare sweeps and
-  `SmallOpenEconomy` have no ruler/pool) keep composing the granular methods this
-  orchestrates. This is the seam a runtime founder will build on; the runtime
+  promoted from it, external inflow, in one call. The default `HomogeneousEconomy`
+  founds through it; it reproduces the hand-written sequence verbatim, so the run
+  stays **byte-identical** (verified by a CSV-checksum diff of a full run, all files
+  matching, plus the green suite). (At the time of writing, the single-copper-bank
+  demos `HeterogeneousEconomy`/`PeasantEconomy` were also migrated through it, before
+  they were retired in a simulation-roster cleanup.) The bare `SmallOpenEconomy`
+  (two copper banks, no ruler/pool) keeps composing the granular methods this
+  orchestrates — its divergent market/bank ordering is why a single rigid foundry
+  cannot absorb every founding. This is the seam a runtime founder will build on; the runtime
   founding of a *new* colony mid-run (via `GameSession.newSettlement`) arrives with
   the Retinue in Phase 3.
 - **Phase 3 — the Retinue + the dwell-able `HOLDING` phase.** The `Retinue` entity,

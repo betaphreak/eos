@@ -247,6 +247,13 @@ borrowing).
 
 ## Phased implementation plan
 
+> **Status note (later).** This phased plan is a historical record; the worked-example
+> simulations it names (`PeasantEconomy`, `MeritocraticEconomy`) have since been
+> **retired** in a simulation-roster cleanup. The peasant pool is now the **universal
+> labor model** — every ruler-bearing colony founds and replaces its labor force from
+> it (see `CLAUDE.md`) — and its mechanics (promotion fires, relief is billed) are
+> covered by `PeasantPoolTest` on the standard `foundStandardColony` path.
+
 - **Phase 1 — Ruler taxation.** The per-step bank-profit and noble-income levies
   into the Ruler's treasury. Independent of the peasants and observable on its own
   (the Ruler's gold balance rises; the `Bank` and persons-of-interest printers show

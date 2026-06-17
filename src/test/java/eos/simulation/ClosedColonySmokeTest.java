@@ -29,10 +29,7 @@ class ClosedColonySmokeTest {
 		return Stream.of(
 				// 3 banks: the commoner copper bank, the silver bank the export nobles
 				// (raised by ennoblement) hold, and the ruler's gold bank
-				new Case("HomogeneousEconomy", HomogeneousEconomy::run, 3),
-				new Case("HeterogeneousEconomy", HeterogeneousEconomy::run, 3),
-				// 4 banks: the two commoner copper banks plus the silver and gold banks
-				new Case("TwoBankEconomy", TwoBankEconomy::run, 4));
+				new Case("HomogeneousEconomy", HomogeneousEconomy::run, 3));
 	}
 
 	@TestFactory

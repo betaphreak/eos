@@ -5,13 +5,10 @@ import eos.market.ConsumerGoodMarket;
 
 /**
  * Shared definition of a <b>healthy finished colony</b>, factored out so the
- * same invariants are not maintained twice. The model's stability criteria were
- * previously encoded once in production ({@link
- * eos.simulation.tools.ScaleSweep#diagnose}) and again,
- * in parallel, in the test smoke-check helper — two copies that could drift. The
- * core checks now live here; each caller layers its run-specific extras on top
- * (price-runaway ceiling for the sweep, zero-profit bank equity for the closed
- * default runs, dividend/equity checks for the aristocratic run).
+ * same stability invariants are not maintained twice. The core checks live here;
+ * each caller layers its run-specific extras on top (e.g. a price-runaway ceiling,
+ * or zero-profit bank equity for the closed default runs). Used by the test
+ * smoke-check helper ({@code SimulationAssertions}).
  */
 public final class ColonyHealth {
 

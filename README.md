@@ -136,8 +136,8 @@ mvn package                # build the jar
 invariant checks. Select a different entry point with the `sim.main` property:
 
 ```bash
-mvn exec:exec -Dsim.main=eos.simulation.HeterogeneousEconomy   # heterogeneous agents
-mvn exec:exec -Dsim.main=eos.simulation.MeritocraticEconomy    # pool promotion + 3 currencies
+mvn exec:exec -Dsim.main=eos.simulation.SmallOpenEconomy   # open colony + immigration
+mvn exec:exec -Dsim.main=eos.simulation.HanseaticEconomy   # two colonies, shared name pool
 ```
 
 Every standard colony carries a default **export sector** (a strategic firm whose
@@ -152,27 +152,12 @@ so the count tracks demand. The entry points are:
 
 | Class                  | Description                                                                                          |
 |------------------------|------------------------------------------------------------------------------------------------------|
-| `HomogeneousEconomy`   | Homogeneous agents, a single copper bank (plus the gold ruler) — the default run.                    |
-| `HeterogeneousEconomy` | Heterogeneous agents (randomized initial state).                                                     |
-| `TwoBankEconomy`       | Two copper banks, with agents split across them (a multi-bank example).                              |
-| `SmallOpenEconomy`     | An economy opened to external money inflow + immigration, growing past its starting size.            |
+| `HomogeneousEconomy`   | Homogeneous agents, a single copper bank (plus the silver nobles and the gold ruler) — the default run, founded via `SimulationHarness.foundStandardColony`. |
+| `SmallOpenEconomy`     | An economy opened to external money inflow + immigration, growing past its starting size; bare, with no ruler/pool. |
 | `HanseaticEconomy`     | Two neighbouring colonies near Lübeck in one session — independent economies, shared name pool.       |
-| `PeasantEconomy`       | The default colony with a larger peasant pool, charting relief spending before the colony collapses.  |
-| `MeritocraticEconomy`  | The three-currency colony foregrounding promotion: the ruler elevates the ablest peasants to laborers. |
-
-These scenario entry points are the simulation *product*. Two analytical
-**tools** live apart from them, in the `eos.simulation.tools` sub-package:
-
-| Class                  | Description                                                                                          |
-|------------------------|------------------------------------------------------------------------------------------------------|
-| `ScaleSweep`           | Scales the firm/laborer counts down together to find the smallest colony that stays stable.          |
-| `LatitudeSweep`        | Places the standard colony across latitudes to find the highest one where it still feeds itself.      |
 
 Each scenario consists of a `static run()` that builds and runs the colony via
-`SimulationHarness`, plus a `main()` that calls it — except the sweeps
-`eos.simulation.tools.ScaleSweep` and `LatitudeSweep`, whose `main()` runs a
-multi-colony sweep and prints a stability/survival table to stdout (their
-`run()` is just the convention hook returning one default harness).
+`SimulationHarness`, plus a `main()` that calls it.
 
 ## Configuration
 
