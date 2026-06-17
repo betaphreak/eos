@@ -186,10 +186,12 @@ config governs it (and the `HOLDING` phase).
 The hall is the **first special site**. The size table lines up: `maxSpecialSites`
 unlocks at sizes `{0,4,10,19,31,57}`, so a village founded at `MIN_SIZE` (3) has
 **exactly one** special site — the hall — occupying reserved out-of-band capacity
-that does not crowd the 15 effective slots the seed firms need. It is the **first
-non-firm occupant** of a build site, so it motivates widening `Slot`'s occupant type
-from `Agent` to an occupant interface (the same seam housing will use — the code
-already flags this).
+that does not crowd the 15 effective slots the seed firms need. The slot machinery
+it sits on already exists (see [`settlement-slots.md`](settlement-slots.md)): the
+`SlotOccupant` interface (`Agent` implements it) and occupiable special sites
+(`claimSpecialSite`/`getSpecialSites`) were built as pre-work; the hall will be the
+**first non-firm occupant** of a special site (and likely the first non-`Agent`
+`SlotOccupant`, which is where the land-funding bridge will need to generalize).
 
 The hall is **civic only**: it marks the holding and the rank and has **no economic
 function yet** (no taxation/governance gating). Its one mechanical consequence is as
