@@ -260,12 +260,27 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
   of last holding); realizing `RETINUE` as an entity with the pool as its asset; the
   `HOLDING` → `VILLAGE` promotion once settlements can be founded/seized.
 
+## Decided since (see `docs/village-founding.md`)
+
+- **No multi-rung `promote`/`demote`.** Founding (`RETINUE → HOLDING → VILLAGE`) is
+  modelled as two ordinary single-rung reforms by giving the middle rung real content
+  (a holder of a village hall + banks), so the ladder never needs to move more than
+  one rung. The helpers stay single-step.
+- **The `RankLadder` is global, and lives on `GameSession`** — *not* on `Settlement`.
+  Rank spans the colony-less (a wandering `RETINUE`) and the supra-settlement
+  (`CITY`…`HEGEMONY`) states, so it cannot belong to one colony. The current
+  implementation is colony-bound (it works because every existing reform is
+  within-colony); the move to `GameSession` happens as part of founding, after
+  banks-as-holdings (so factories resolve their banks from the passed scope rather
+  than capturing per-colony harness state).
+- **Holdings are a first-class concept, distinct from `Estate`.** `Estate` is the
+  household's *liquid* identity carried across a reform (members + balances);
+  *holdings* (firms, banks, the hall — unified behind a `Holding` interface) are the
+  *productive assets* owned, transferred separately (`transferHoldingsTo`). A reform
+  carries the `Estate`; the holdings move on their own.
+
 ## Open questions deferred to later
 
-- Whether `promote`/`demote` should ever move **more than one rung** at a time, or
-  always step adjacent ranks (the helpers are single-step today).
-- Where the `RankLadder` is installed and who calls it — harness-registered like
-  `FirmFactory`, vs. owned by the ruler as an instrument of policy (taxation-adjacent).
 - Whether selection (who gets promoted/demoted) belongs in the ladder or stays with
   the caller (the harness/ruler), as the ennoblement selection does today.
 - How a multi-member household's **spouse** is handled when only the head's rank
