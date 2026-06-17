@@ -85,6 +85,14 @@ public class Noble extends AbstractHousehold {
 	@Getter
 	private double income;
 
+	// consecutive days this noble has been insolvent (a net debtor: wealth < 0),
+	// reset to 0 on any solvent step. The rank-ladder demotion trigger reads this:
+	// a noble ruined (insolvent) past a grace period is demoted back to a laborer
+	// (see SimulationHarness). Only *sustained* insolvency counts, so a noble that
+	// earns its way back into the black keeps its rank.
+	@Getter
+	private int consecutiveInsolventDays = 0;
+
 	// consumption ($) in the last step, and its necessity/enjoyment split
 	@Getter
 	private double consumption;
@@ -302,6 +310,13 @@ public class Noble extends AbstractHousehold {
 		double checking = acct.getChecking();
 		double savings = acct.getSavings();
 
+		// track sustained insolvency for the demotion trigger: a net-debtor step
+		// (wealth < 0) advances the counter; any solvent step resets it
+		if (checking + savings < 0)
+			consecutiveInsolventDays++;
+		else
+			consecutiveInsolventDays = 0;
+
 		// spend a steady fraction of liquid wealth on consumer goods so dividend
 		// income flows back into the markets; deposit the remainder (a negative
 		// remainder draws on savings to fund consumption, as for a laborer). Floor the
@@ -412,6 +427,23 @@ public class Noble extends AbstractHousehold {
 	 * firms across owners). */
 	public int getFirmCount() {
 		return firms.size();
+	}
+
+	/**
+	 * Hand all of this noble's holdings — its owned {@link Firm firms} and {@link
+	 * Bank banks} — to <tt>heir</tt>, after which this noble owns nothing. Used
+	 * before a ruined noble is demoted to a laborer (which owns no holdings), so its
+	 * firms and banks keep a rentier owner drawing their dividends rather than being
+	 * orphaned.
+	 *
+	 * @param heir
+	 *            the noble that takes over this one's holdings
+	 */
+	public void transferHoldingsTo(Noble heir) {
+		heir.firms.addAll(firms);
+		heir.banks.addAll(banks);
+		firms.clear();
+		banks.clear();
 	}
 
 	/**

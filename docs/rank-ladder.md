@@ -1,6 +1,6 @@
 # Design note: the rank ladder (promotion & demotion)
 
-**Status:** implemented (phases 1–3); phase 4 (triggers, further rungs) is future work
+**Status:** implemented (phases 1–4); phase 5 (further triggers, further rungs) is future work
 **Date:** 2026-06-17
 **Depends on:** the `eos.agent.Rank` enum, the `eos.agent.Household` interface and
 its three implementors (`Laborer`, `Noble`, `Ruler`), the adopt-style household
@@ -201,10 +201,14 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
    no factory reforms a noble into a ruler. Promoting `HOLDING` → `VILLAGE` (a noble
    founding/seizing a settlement) is left for when multi-settlement politics arrives;
    the rung is realized, the *transition into it* is not.
-3. **Demotion has no triggers yet.** The engine supports `demote()` symmetrically,
-   but nothing *calls* it — there is no bankruptcy/attainder rule that ruins a noble
-   back to a laborer. The capability lands with this abstraction; the policy that
-   fires it is a separate decision.
+3. **Demotion has one trigger (insolvency); others are future.** Phase 4 wired the
+   first: a noble insolvent (a net debtor) past a one-year grace period is "ruined"
+   and demoted (see the phased plan). Other policies that might fire `demote()` —
+   attainder, losing one's last holding, conquest — are not modelled. A
+   ruined-noble re-ennoblement oscillation is possible in principle (demote drops the
+   noble count below `targetNobles`, the weekly top-up re-ennobles the ablest
+   laborer), but the one-year grace on each side damps it and standard nobles stay
+   solvent (export wage), so it is not observed in practice.
 4. **Money-supply drift on demotion mirrors promotion's.** Re-banking conserves the
    carried balances, but if a demotion (like ennoblement) is funded fresh rather
    than purely carrying balances, the same equity-strand caveat as the pool note
@@ -239,8 +243,21 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
   carried across, balances unchanged). **No automatic trigger yet** — nothing in a
   live run calls `demote`, so registering the `HOUSEHOLD` factory leaves every run
   byte-identical.
-- **Phase 4 — future (separate notes).** Triggers for demotion (insolvency,
-  attainder); realizing `RETINUE` as an entity with the pool as its asset; the
+- **Phase 4 — the insolvency demotion trigger. (Implemented.)** A `Noble` tracks its
+  `consecutiveInsolventDays` (a net-debtor step advances it, any solvent step resets
+  it — no RNG or money, so byte-identical to the economic stream). A
+  `demoteRuinedNobles` step action, registered for every ruler-bearing colony by
+  `createDefaultRuler`, demotes (end of step, like ennoblement) any noble insolvent
+  for ≥ `NOBLE_INSOLVENCY_GRACE_DAYS` (365, a placeholder matching
+  `MIN_FIRM_LIFETIME_DAYS`). Before demoting, the noble's holdings are reassigned to
+  the least-loaded other noble (`Noble.transferHoldingsTo`) so its firms/banks are
+  not orphaned; if it is the colony's only noble they go unowned until the next
+  charter's no-owner fallback re-ennobles an owner. Standard nobles work the export
+  firm and stay solvent, so the trigger is a no-op there and the full suite stays
+  green; covered by `eos.simulation.RuinedNobleDemotionTest` (a noble crushed under
+  an unpayable debt is demoted to a copper-banking laborer past the grace window).
+- **Phase 5 — future (separate notes).** Further demotion triggers (attainder, loss
+  of last holding); realizing `RETINUE` as an entity with the pool as its asset; the
   `HOLDING` → `VILLAGE` promotion once settlements can be founded/seized.
 
 ## Open questions deferred to later

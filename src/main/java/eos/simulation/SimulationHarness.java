@@ -59,6 +59,13 @@ public class SimulationHarness {
 	// fixed necessity stock granted to a replacement household
 	private static final int REPLACEMENT_NECESSITY_STOCK = 15;
 
+	// a noble insolvent (a net debtor) for this many consecutive days is "ruined"
+	// and demoted back to a laborer (see demoteRuinedNobles). A one-year grace (as
+	// for MIN_FIRM_LIFETIME_DAYS) lets a cash-poor noble — e.g. one just ennobled
+	// from an indebted laborer — earn its way back into the black before then.
+	// A placeholder pending calibration.
+	private static final int NOBLE_INSOLVENCY_GRACE_DAYS = 365;
+
 	/**
 	 * Number of noble households the default export sector creates to staff its
 	 * {@link StrategicFirm} (see {@link #createDefaultStrategicSector(Bank)}).
@@ -468,6 +475,12 @@ public class SimulationHarness {
 		// see Ruler.act — so it is never unstaffed)
 		if (colony.getMarket(StrategicFirm.LABOR_MARKET) != null)
 			colony.addStepAction(this::topUpAristocracy);
+
+		// the converse of ennoblement: a noble ruined (insolvent past a grace period)
+		// is demoted back to a laborer. Registered for every ruler-bearing colony,
+		// since nobles can arise even without an export sector (the no-owner charter
+		// fallback); a no-op while every noble is solvent.
+		colony.addStepAction(this::demoteRuinedNobles);
 		return gold;
 	}
 
@@ -685,6 +698,46 @@ public class SimulationHarness {
 				.anyMatch(a -> a instanceof Laborer l && l.isAlive());
 		if (hasLaborer)
 			colony.scheduleEndOfStepAction(this::ennobleBestLaborer);
+	}
+
+	/**
+	 * Demote every <b>ruined</b> noble — one insolvent (a net debtor) for at least
+	 * {@value #NOBLE_INSOLVENCY_GRACE_DAYS} consecutive days — back to a laborer, the
+	 * converse of ennoblement. A step action registered by {@link #createDefaultRuler()};
+	 * the actual demotion is deferred to end of step (the noble's offers must clear
+	 * before its account moves), exactly as ennoblement is.
+	 */
+	private void demoteRuinedNobles() {
+		for (Agent a : colony.getAgents())
+			if (a instanceof Noble n && n.isAlive() && n
+					.getConsecutiveInsolventDays() >= NOBLE_INSOLVENCY_GRACE_DAYS)
+				colony.scheduleEndOfStepAction(() -> demoteRuinedNoble(n));
+	}
+
+	// demote one ruined noble (deferred to end of step): hand its holdings to another
+	// living noble first (a laborer owns none), then reform it down the rank ladder
+	// HOLDING -> HOUSEHOLD (skipping the unrealized RETINUE rung). If it is the
+	// colony's only noble its firms go unowned until the next charter's no-owner
+	// fallback re-ennobles an owner. Re-checks the trigger in case state changed
+	// between the schedule and end of step.
+	private void demoteRuinedNoble(Noble ruined) {
+		if (!ruined.isAlive() || ruined
+				.getConsecutiveInsolventDays() < NOBLE_INSOLVENCY_GRACE_DAYS)
+			return;
+		Noble heir = leastLoadedNobleExcept(ruined);
+		if (heir != null)
+			ruined.transferHoldingsTo(heir);
+		demote(ruined);
+	}
+
+	// the living noble other than `excluded` owning the fewest firms, or null if none
+	private Noble leastLoadedNobleExcept(Noble excluded) {
+		Noble best = null;
+		for (Agent a : colony.getAgents())
+			if (a instanceof Noble n && n != excluded && n.isAlive() && (best == null
+					|| n.getFirmCount() < best.getFirmCount()))
+				best = n;
+		return best;
 	}
 
 	// the more ennoblable of two laborers: higher head SOCIAL, the younger
