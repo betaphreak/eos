@@ -82,6 +82,11 @@ class RulerTaxationTest {
 		assertTrue(taxed.getSilverBank().getDistributedProfit() > 0,
 				"the bank-profit tax should have skimmed the silver bank");
 
+		// ...but the crown's own gold bank is exempt — it is a crown holding whose
+		// retained profit IS the treasury, never taxed into the Ruler's account
+		assertEquals(0, taxed.getGoldBank().getDistributedProfit(), 1e-9,
+				"the crown's own gold bank is exempt from the bank-profit tax");
+
 		// the levies enrich the treasury: an untaxed Ruler only spends its fortune
 		// down, while a taxed one accumulates past its 10-gold start
 		assertTrue(untaxedRuler.getWealth() < RULER_START_COPPER,

@@ -236,12 +236,16 @@ next colony index, so "same seed → identical run" still holds.
   `List<Holding>`. Pure restructuring of the same arithmetic — byte-identical — and
   the foundation the next phase and the hall sit on. Holdings stay concrete on
   `Noble` (no shared `Holder` role yet).
-- **Phase 1 — banks as holdings, for existing founding.** Refactor the harness so
-  the three banks are owned (gold crown-owned, copper/silver taxed public
-  institutions), and adjust `Ruler.collectTaxes` to exclude the gold bank — whose
-  equity now *is* the treasury (no dividend draw). No wandering, no new rungs.
-  Re-validate against the full suite and the sweeps. Independent and observable on
-  its own.
+- **Phase 1 — banks as holdings, for existing founding. (Implemented.)** The crown's
+  own (gold) bank is now exempt from `Ruler.collectTaxes` — it is a crown holding
+  whose retained profit *is* the treasury, so taxing it would be the crown skimming
+  its own bank into its own account; only the public copper/silver institutions are
+  taxed. The decided minimal cut: no `Holder` role on the `Ruler`, no dividend draw —
+  the gold bank's equity simply stays the crown's (and blurs into the treasury).
+  Behavioural (not byte-identical) — re-validated against the full suite (the
+  analytical sweeps run ruler-less colonies, so taxation does not touch them).
+  Covered by an added `RulerTaxationTest` assertion (gold bank's `distributedProfit`
+  stays 0 while the silver bank is skimmed).
 - **Phase 2 — the foundry.** Extract the harness founding sequence into a
   runtime-callable operation; the standard sims found "pre-chartered" (zero-length
   `HOLDING`) through it, behaviour preserved. The structural refactor, no new

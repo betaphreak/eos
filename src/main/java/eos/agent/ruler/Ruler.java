@@ -255,12 +255,19 @@ public class Ruler extends AbstractHousehold {
 
 	/**
 	 * Tax the colony's accumulated wealth into the treasury (the first slice of
-	 * the taxation feature): a fraction ({@code bankProfitTaxRate}) of each bank's
-	 * {@linkplain Bank#getDistributableProfit() distributable profit} — skimmed out
-	 * of the bank's equity exactly as a noble dividend is, leaving estates-in-transit
-	 * and injected funds alone — and a fraction ({@code nobleIncomeTaxRate}) of each
-	 * living noble's income this step, withdrawn from the noble's account. A no-op
-	 * when both rates are 0 (the default), so an untaxed colony is unchanged.
+	 * the taxation feature): a fraction ({@code bankProfitTaxRate}) of each
+	 * <b>public</b> bank's {@linkplain Bank#getDistributableProfit() distributable
+	 * profit} — skimmed out of the bank's equity exactly as a noble dividend is,
+	 * leaving estates-in-transit and injected funds alone — and a fraction
+	 * ({@code nobleIncomeTaxRate}) of each living noble's income this step, withdrawn
+	 * from the noble's account. A no-op when both rates are 0 (the default), so an
+	 * untaxed colony is unchanged.
+	 * <p>
+	 * The crown's <b>own</b> (gold) bank is <b>not</b> taxed: it is a crown holding,
+	 * so its retained profit <em>is</em> the treasury rather than tax revenue — taxing
+	 * it would be the crown skimming its own bank into its own account (and double-dip
+	 * against money it already owns). Only the public copper/silver institutions are
+	 * taxed (see {@code docs/village-founding.md}).
 	 * <p>
 	 * Run before the ruler's own spending; because the ruler acts last each step,
 	 * every noble's income field already holds this step's value, and the bank
@@ -274,6 +281,10 @@ public class Ruler extends AbstractHousehold {
 
 		if (bankProfitTaxRate > 0) {
 			for (Bank b : getColony().getBanks()) {
+				// skip the crown's own (gold) bank: its equity is the treasury, not a
+				// taxable public institution
+				if (b == treasury)
+					continue;
 				double tax = bankProfitTaxRate * b.getDistributableProfit();
 				if (tax > 0) {
 					b.payDividend(tax);
