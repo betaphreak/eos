@@ -5,10 +5,13 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -32,6 +35,8 @@ import eos.market.Market;
 import eos.mortality.Demography;
 import eos.name.Gender;
 import eos.name.NameRegistry;
+import eos.tech.Sector;
+import eos.tech.TechEffect;
 import eos.util.Rng;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -161,6 +166,18 @@ public class Settlement {
 	// proportion to how far its stock sits below this target (see Laborer.act).
 	@Getter
 	private final double targetNStock;
+
+	// per-sector technology multiplier: the live total-factor-productivity scaling a
+	// researched SectorProductivity tech effect raises (see applyTechEffect and the
+	// firms' effective-A production). Every sector starts at 1.0 — no tech effect
+	// applied — so production is unchanged until something raises it. A firm with no
+	// sector (the builder) reads 1.0 via getTechMultiplier(null).
+	private final Map<Sector, Double> techMultiplier = new EnumMap<>(Sector.class);
+
+	// tokens granted by researched Unlock / SocialGate tech effects (e.g. GOOD_PAPER,
+	// CLASS_BURGHER). Recorded here so future consumers (new content, the rank ladder,
+	// SocialClass) can read them; nothing reads them yet (see applyTechEffect).
+	private final Set<String> grantedTechTokens = new LinkedHashSet<>();
 
 	// mean of this colony's skill distribution, fixed at colony start: the center
 	// of the spread from which a person draws its skill, hence the colony's labor
@@ -1145,6 +1162,61 @@ public class Settlement {
 			}
 			agentsToRemove.clear();
 		}
+	}
+
+	/**
+	 * The colony's technology multiplier for a given {@link Sector} — the live
+	 * total-factor-productivity scaling that researched {@link
+	 * TechEffect.SectorProductivity} effects accumulate. Defaults to {@code 1.0} (no
+	 * effect applied), and returns {@code 1.0} for a {@code null} sector (a firm
+	 * without one, e.g. the builder), so a firm's effective {@code A} equals its
+	 * configured {@code A} until a tech raises this.
+	 *
+	 * @param sector
+	 *            the sector to read, or {@code null} for "no sector"
+	 * @return the sector's tech multiplier (1.0 if unset or {@code null})
+	 */
+	public double getTechMultiplier(Sector sector) {
+		if (sector == null)
+			return 1.0;
+		return techMultiplier.getOrDefault(sector, 1.0);
+	}
+
+	/**
+	 * Apply a researched {@link TechEffect} to this colony:
+	 * <ul>
+	 * <li>a {@link TechEffect.SectorProductivity} multiplies its sector's
+	 *     {@linkplain #getTechMultiplier(Sector) tech multiplier} (cumulative);</li>
+	 * <li>an {@link TechEffect.Unlock} or {@link TechEffect.SocialGate} records its
+	 *     token in {@link #getGrantedTechTokens()} (read by nothing yet — the seam
+	 *     for future content / rank / class consumers).</li>
+	 * </ul>
+	 * Called when a tech completes (the research that drives this is a later phase —
+	 * see {@code docs/tech-tree.md}); nothing calls it during a normal run yet, so
+	 * runs are unchanged.
+	 *
+	 * @param effect
+	 *            the effect to apply
+	 */
+	public void applyTechEffect(TechEffect effect) {
+		switch (effect) {
+		case TechEffect.SectorProductivity sp -> techMultiplier.merge(sp.sector(),
+				sp.factor(), (cur, f) -> cur * f);
+		case TechEffect.Unlock u -> grantedTechTokens.add(u.target());
+		case TechEffect.SocialGate g -> grantedTechTokens.add(g.capability());
+		}
+	}
+
+	/**
+	 * The tokens granted by researched {@link TechEffect.Unlock} / {@link
+	 * TechEffect.SocialGate} effects (e.g. {@code "GOOD_PAPER"},
+	 * {@code "CLASS_BURGHER"}). An unmodifiable view; empty until such an effect is
+	 * applied.
+	 *
+	 * @return the granted tech tokens
+	 */
+	public Set<String> getGrantedTechTokens() {
+		return Collections.unmodifiableSet(grantedTechTokens);
 	}
 
 	/**

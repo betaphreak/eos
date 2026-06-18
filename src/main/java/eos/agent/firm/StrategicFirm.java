@@ -139,7 +139,14 @@ public class StrategicFirm extends Firm {
 	 * @return output produced, {@code A · labor^beta}
 	 */
 	public double convertToProduct(double labor) {
-		return config.A() * Math.pow(labor, config.beta());
+		return config.A() * getColony().getTechMultiplier(sector())
+				* Math.pow(labor, config.beta());
+	}
+
+	/** The export firm produces in the {@link eos.tech.Sector#EXPORT} sector. */
+	@Override
+	public eos.tech.Sector sector() {
+		return eos.tech.Sector.EXPORT;
 	}
 
 	/**

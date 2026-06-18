@@ -124,7 +124,13 @@ public class CFirm extends Firm {
 	 * @return output given <tt>labor</tt> amount of labor
 	 */
 	public double convertToProduct(double labor) {
-		return A * Math.pow(labor, beta);
+		return A * getColony().getTechMultiplier(sector()) * Math.pow(labor, beta);
+	}
+
+	/** A capital firm produces in the {@link eos.tech.Sector#CAPITAL} sector. */
+	@Override
+	public eos.tech.Sector sector() {
+		return eos.tech.Sector.CAPITAL;
 	}
 
 	/**

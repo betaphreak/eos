@@ -40,6 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public final class TechTree {
 
 	private static final String RESOURCE = "/techs.json";
+	private static final String EFFECTS_RESOURCE = "/tech-effects.json";
 
 	private static final ObjectMapper MAPPER = new ObjectMapper()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -53,7 +54,11 @@ public final class TechTree {
 	// fast lookup by type id; also the set of kept ids the validator checks against
 	private final Map<String, Tech> byType;
 
-	private TechTree(List<Tech> techs) {
+	// eos-native effects per tech id, from the overlay (empty list when a tech has
+	// none); see TechEffects and effectsOf
+	private final Map<String, List<TechEffect>> effects;
+
+	private TechTree(List<Tech> techs, Map<String, List<TechEffect>> effects) {
 		this.techs = List.copyOf(techs);
 
 		Map<String, Tech> byType = new LinkedHashMap<>();
@@ -70,6 +75,15 @@ public final class TechTree {
 			validatePrereqs(t, t.orPrereqs());
 			validatePrereqs(t, t.andPrereqs());
 		}
+
+		// fail-fast: every overlay key must name a kept tech (so an effect authored
+		// for a mistyped or out-of-scope id surfaces immediately rather than silently
+		// applying to nothing)
+		for (String type : effects.keySet())
+			if (!byType.containsKey(type))
+				throw new IllegalStateException(
+						"tech-effect overlay names an unknown tech: " + type);
+		this.effects = Map.copyOf(effects);
 	}
 
 	private void validatePrereqs(Tech t, List<String> prereqs) {
@@ -109,7 +123,7 @@ public final class TechTree {
 						Integer.parseInt(r.cost()), prereqList(r.orPreReqs()),
 						prereqList(r.andPreReqs())));
 			}
-			return new TechTree(kept);
+			return new TechTree(kept, TechEffects.load(EFFECTS_RESOURCE));
 		} catch (IOException e) {
 			throw new UncheckedIOException(
 					"Failed to load tech tree resource: " + RESOURCE, e);
@@ -147,6 +161,19 @@ public final class TechTree {
 	/** @return the number of kept techs */
 	public int size() {
 		return techs.size();
+	}
+
+	/**
+	 * The eos-native effects a tech grants when researched, from the overlay — an
+	 * empty list if the tech has no authored effects (the common case while the
+	 * overlay is unpopulated).
+	 *
+	 * @param type
+	 *            the tech id
+	 * @return the tech's effects (never {@code null}; empty if none)
+	 */
+	public List<TechEffect> effectsOf(String type) {
+		return effects.getOrDefault(type, List.of());
 	}
 
 	/**

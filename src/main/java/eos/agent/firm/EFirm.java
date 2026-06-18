@@ -66,6 +66,12 @@ public class EFirm extends ConsumerGoodFirm {
 		return Set.of(Skill.ARTISTIC, Skill.CRAFTING, Skill.SOCIAL);
 	}
 
+	/** An enjoyment firm produces in the {@link eos.tech.Sector#ENJOYMENT} sector. */
+	@Override
+	public eos.tech.Sector sector() {
+		return eos.tech.Sector.ENJOYMENT;
+	}
+
 	/**
 	 * Enjoyment firms run on workdays <b>and</b> on the weekly day of rest
 	 * (Sunday) — the leisure trade keeps going on the day off — but not on feast

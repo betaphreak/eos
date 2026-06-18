@@ -130,6 +130,19 @@ public abstract class Firm extends Agent implements Property {
 	}
 
 	/**
+	 * The productive {@link eos.tech.Sector} this firm's output belongs to, used to
+	 * scale its production by the colony's per-sector tech multiplier (see
+	 * {@link eos.settlement.Settlement#getTechMultiplier} and the firms' effective-A
+	 * production). Defaults to {@code null} — no sector, so no tech scaling — which is
+	 * correct for the labor-only {@link BuilderFirm}; the production firms override it.
+	 *
+	 * @return this firm's sector, or {@code null} if it has none
+	 */
+	public eos.tech.Sector sector() {
+		return null;
+	}
+
+	/**
 	 * Whether this firm operates — hires labor and so produces — on the given
 	 * kind of day. By default a firm runs only on {@link DayType#WORKDAY
 	 * workdays}; the weekly day of rest (Sunday) and feast days are days off.

@@ -1,0 +1,9 @@
+{
+  "TECH_MERCANTILISM": [
+    { "kind": "SECTOR_PRODUCTIVITY", "sector": "EXPORT", "factor": 1.1 },
+    { "kind": "UNLOCK", "target": "FIRM_TRADING_HOUSE" }
+  ],
+  "TECH_CORPORATION": [
+    { "kind": "SOCIAL_GATE", "capability": "CLASS_BURGHER" }
+  ]
+}

@@ -64,4 +64,10 @@ public class NFirm extends ConsumerGoodFirm {
 	public Set<Skill> laborSkills() {
 		return Set.of(Skill.PLANTS);
 	}
+
+	/** A necessity firm produces in the {@link eos.tech.Sector#NECESSITY} sector. */
+	@Override
+	public eos.tech.Sector sector() {
+		return eos.tech.Sector.NECESSITY;
+	}
 }

@@ -1,7 +1,9 @@
 # Design note: the tech tree (research, effects, social gating)
 
-**Status:** phase 1 implemented (the `eos.tech` graph + queries, lazily on
-`GameSession`, read by nothing yet); phases 2–4 are future work
+**Status:** phases 1–2 implemented (the `eos.tech` graph + queries on `GameSession`;
+the `TechEffect` schema + overlay loader + per-colony sector multiplier and firms'
+effective-A hook — inert at runtime, nothing accrues research yet); phases 3–4 are
+future work
 **Date:** 2026-06-18
 **Depends on:** the imported `src/main/resources/techs.json` (a Caveman2Cosmos /
 Civ4 tech graph), the firm production functions (`ConsumerGoodFirm`, `CFirm`,
@@ -232,11 +234,24 @@ before the first completion) stays **byte-identical**.
   integrity: 365 kept techs, the era partition counts (99/94/59/54/59), every prereq
   resolves, and a Medieval-complete start's frontier is exactly the single Renaissance
   entry tech (`TECH_RENAISSANCE_LIFESTYLE`).
-- **Phase 2 — the effect schema + overlay.** `TechEffect` (the three kinds) and the
-  `tech-effects.json` loader; the per-colony `techMultiplier` and the
-  `config.A() * multiplier` production hook (with `NECESSITY_TECH_FACTOR` reconciled).
-  Still inert at runtime (no research accrues), so byte-identical; tested by applying
-  an effect directly and asserting a sector's output scales.
+- **Phase 2 — the effect schema + overlay. (Implemented.)** `TechEffect` is a
+  sealed interface with three records — `SectorProductivity(sector, factor)`,
+  `Unlock(target)`, `SocialGate(capability)` — Jackson-polymorphic on a `"kind"`
+  discriminator; `Sector` is `{NECESSITY, ENJOYMENT, CAPITAL, EXPORT}` (the builder
+  has none). `TechEffects` loads the overlay (`/tech-effects.json`, **shipped empty**
+  — schema and plumbing without coverage) keyed by tech id; `TechTree` merges it and
+  validates every key resolves, exposing `effectsOf(type)`. The colony holds a
+  per-`Sector` `techMultiplier` (default 1.0) with `getTechMultiplier` /
+  `applyTechEffect` (a `SectorProductivity` multiplies its sector cumulatively;
+  `Unlock`/`SocialGate` record a granted token, read by nothing yet). Each production
+  firm declares `sector()`; `ConsumerGoodFirm` / `CFirm` / `StrategicFirm` read an
+  **effective A** = `config.A() · colony.getTechMultiplier(sector())` at every
+  A-use site (output **and** marginal cost). `NECESSITY_TECH_FACTOR` is left as the
+  founding A baseline with the multiplier riding on top — so at the default 1.0
+  multiplier production is byte-identical and the full smoke suite stays green.
+  Covered by `eos.tech.TechEffectTest` (schema + overlay parsing) and
+  `eos.simulation.TechProductivityTest` (a directly-applied effect scales exactly its
+  sector's firm output, cumulatively, leaving other sectors untouched).
 - **Phase 3 — research production + completion + ruler selection.** RP accrual from
   intellectual labor, focus accumulation/completion applying effects, ruler's
   cheapest-researchable pick in the monthly review, a `researchCostScale` knob, and a

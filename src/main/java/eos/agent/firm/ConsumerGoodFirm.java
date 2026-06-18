@@ -199,7 +199,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 
 				// compute marginal cost
 				double beta = config.beta();
-				double MC = wage / beta * Math.pow(config.A(), -1 / beta)
+				double MC = wage / beta * Math.pow(effectiveA(), -1 / beta)
 						* Math.pow(output, 1 / beta - 1)
 						* Math.pow(capital.getQuantity(), 1 - 1 / beta);
 
@@ -365,7 +365,21 @@ public abstract class ConsumerGoodFirm extends Firm {
 	 *         amount of capital
 	 */
 	public double convertToProduct(double labor, double K) {
-		return config.A() * Math.pow(labor, config.beta())
+		return effectiveA() * Math.pow(labor, config.beta())
 				* Math.pow(K, 1 - config.beta());
+	}
+
+	/**
+	 * This firm's <b>effective</b> total-factor productivity: its configured
+	 * {@code A} scaled by the colony's tech multiplier for its {@link #sector()}.
+	 * With no tech researched the multiplier is 1, so this equals {@code config.A()}
+	 * and production is unchanged; a {@link eos.tech.TechEffect.SectorProductivity}
+	 * effect raises it. Read everywhere {@code A} enters the firm's economics
+	 * (output and marginal cost) so they stay consistent.
+	 *
+	 * @return the configured A scaled by the sector's tech multiplier
+	 */
+	protected double effectiveA() {
+		return config.A() * getColony().getTechMultiplier(sector());
 	}
 }
