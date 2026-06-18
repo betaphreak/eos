@@ -168,9 +168,55 @@ public final class NameRegistry {
 				break;
 			}
 		}
+		// swap-remove the picked entry so it can't be drawn again while in use
+		return removeAndReserve(picked);
+	}
+
+	/**
+	 * Draw and reserve a unique dynasty surname from the <b>rarest tier</b> — the
+	 * drawable surnames carrying the smallest loaded weight (the most distinctive
+	 * houses; for the Harimari pool these are the grand clan-names). Among that
+	 * rarest set the pick is uniform. Like {@link #nextDynastyName} this is a draw
+	 * without replacement (pulling a fresh slice if the drawable pool is empty), so
+	 * the surname stays unique to one living dynasty. Used for nobles, who carry rare
+	 * dynasties rather than the common surnames the commoners draw.
+	 *
+	 * @return a rare surname not currently in use by this colony
+	 * @throws IllegalStateException
+	 *             if the drawable pool is empty and cannot be refilled
+	 */
+	public String nextRarestDynastyName() {
+		if (dynastySize == 0) {
+			if (pool == null)
+				throw new IllegalStateException("dynasty name pool exhausted");
+			addSlice(pool.deal(refillSize));
+		}
+		// find the smallest drawable weight (the rarest tier), then pick uniformly
+		// among the entries sharing it — same-tier weights are identical, so an
+		// exact-min match collects exactly the rarest tier
+		double min = Double.POSITIVE_INFINITY;
+		for (int i = 0; i < dynastySize; i++)
+			if (dynastyWeights[i] < min)
+				min = dynastyWeights[i];
+		int count = 0;
+		for (int i = 0; i < dynastySize; i++)
+			if (dynastyWeights[i] == min)
+				count++;
+		int target = rng.uniform(count); // 0-based index within the rarest tier
+		int picked = dynastySize - 1;
+		for (int i = 0, k = 0; i < dynastySize; i++)
+			if (dynastyWeights[i] == min && k++ == target) {
+				picked = i;
+				break;
+			}
+		return removeAndReserve(picked);
+	}
+
+	// swap-remove the drawable entry at {@code picked}, reserve it as in-use, and
+	// return its surname; shared by the weighted and rarest dynasty draws
+	private String removeAndReserve(int picked) {
 		String name = dynastyNames[picked];
 		double weight = dynastyWeights[picked];
-		// swap-remove the picked entry so it can't be drawn again while in use
 		int last = dynastySize - 1;
 		dynastyNames[picked] = dynastyNames[last];
 		dynastyWeights[picked] = dynastyWeights[last];
@@ -240,6 +286,22 @@ public final class NameRegistry {
 	 */
 	public Person nextHead(double nameRarity) {
 		String surname = nextDynastyName();
+		String givenName = male.pickAtRarity(rng, nameRarity);
+		return new Person(givenName, surname);
+	}
+
+	/**
+	 * Create the head of a new household whose <b>dynasty surname is drawn from the
+	 * rarest tier</b> (see {@link #nextRarestDynastyName}), with a given name whose
+	 * rarity tracks {@code nameRarity} exactly as {@link #nextHead(double)}. Used for
+	 * nobles, who carry a rare, distinctive dynasty (e.g. a Harimari clan-name).
+	 *
+	 * @param nameRarity
+	 *            target rarity of the given name in {@code [0, 1]}
+	 * @return the household head
+	 */
+	public Person nextHeadRareDynasty(double nameRarity) {
+		String surname = nextRarestDynastyName();
 		String givenName = male.pickAtRarity(rng, nameRarity);
 		return new Person(givenName, surname);
 	}

@@ -408,6 +408,17 @@ public class Noble extends AbstractHousehold {
 	}
 
 	/**
+	 * A noble founding a new dynasty draws its surname from the rarest tier, so it
+	 * carries a rare, distinctive house name (e.g. a Harimari clan-name). (Ennobled
+	 * nobles keep the commoner surname they rose with, and a successor continues its
+	 * dynasty's surname — this governs only a noble that starts a fresh dynasty.)
+	 */
+	@Override
+	protected boolean drawsRareDynasty() {
+		return true;
+	}
+
+	/**
 	 * Take ownership of <tt>firm</tt> (e.g. a firm the ruler has just chartered and
 	 * granted to this noble): from the next step it draws a dividend from the firm
 	 * like any it owns. The colony's dynamic firm provisioning uses this.

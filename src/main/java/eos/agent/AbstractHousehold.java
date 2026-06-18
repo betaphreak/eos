@@ -114,17 +114,40 @@ public abstract class AbstractHousehold extends Agent implements Household {
 		SkillTracker skills = demography
 				.newSkillTracker(colony.getMeanSkill(eos.name.Gender.MALE));
 
-		// draw the head on the naming RNG with the given name's rarity tracking
-		// its overall skill; a null surname starts a new dynasty, else continue the
-		// given one. The named person carries its skills.
+		// draw the head on the naming RNG with the given name's rarity tracking its
+		// overall skill. A null surname starts a new dynasty — drawn from the rarest
+		// (most distinctive) tier for a household type that elects it (see
+		// drawsRareDynasty; nobles do, so they carry rare clan-names), else a plain
+		// weighted surname; a non-null surname continues an existing dynasty. The
+		// named person carries its skills.
+		eos.name.NameRegistry names = colony.getNames();
 		double nameRarity = (double) skills.overallLevel() / Household.MAX_SKILL;
-		Person head = (surname == null)
-				? colony.getNames().nextHead(nameRarity).withSkills(skills)
-				: colony.getNames().nextHeadInDynasty(surname, nameRarity)
-						.withSkills(skills);
+		Person named;
+		if (surname == null)
+			named = drawsRareDynasty()
+					? names.nextHeadRareDynasty(nameRarity)
+					: names.nextHead(nameRarity);
+		else
+			named = names.nextHeadInDynasty(surname, nameRarity);
+		Person head = named.withSkills(skills);
 		// wrap the head as the household's sole member (for now), carrying its own
 		// birth date so members can age and die independently as households grow
 		members.add(new Member(head, birthDate));
+	}
+
+	/**
+	 * Whether a <b>new</b> household of this type (one founding a fresh dynasty) takes
+	 * its dynasty surname from the rarest tier rather than the common weighted draw.
+	 * The default is the common draw; {@link eos.agent.noble.Noble} overrides this to
+	 * draw rare, distinctive dynasties (e.g. Harimari clan-names). Has no effect on a
+	 * household continuing an existing surname. Called from the drawing constructor, so
+	 * an override must not read subclass instance fields (none are set yet) — return a
+	 * constant.
+	 *
+	 * @return true to draw a new dynasty's surname from the rarest tier
+	 */
+	protected boolean drawsRareDynasty() {
+		return false;
 	}
 
 	/**
