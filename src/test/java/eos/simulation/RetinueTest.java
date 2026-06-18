@@ -65,7 +65,8 @@ class RetinueTest {
 		assertEquals(RationSize.SIMPLE, retinue.getRation());
 
 		// forming a Caravan around it detaches it into the wandering mode
-		new Caravan(retinue, 51.5, -0.13);
+		eos.agent.Member leader = h.getColony().getRuler().getHead();
+		new Caravan(leader, retinue, 0, 51.5, -0.13);
 		assertTrue(retinue.isWandering(), "a caravan's following wanders");
 		assertEquals(RationSize.SNACK, retinue.getRation());
 

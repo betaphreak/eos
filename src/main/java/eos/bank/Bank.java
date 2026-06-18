@@ -277,6 +277,41 @@ public class Bank implements Property {
 		distributedProfit += amt;
 	}
 
+	/**
+	 * The total money this bank holds for the colony: the net of every account
+	 * (checking + savings, a negative savings being a loan) plus the bank's
+	 * {@link #getEquity() equity}. In a closed colony the sum of this across all
+	 * banks is the conserved circulating-money stock — the basis for a dissolving
+	 * colony's carried hoard (see {@code docs/caravan.md}).
+	 *
+	 * @return the bank's total money (account balances net of loans, plus equity)
+	 */
+	public double getTotalMoney() {
+		double[] sum = { equity };
+		accounts.forEachValue(a -> sum[0] += a.getChecking() + a.getSavings());
+		return sum[0];
+	}
+
+	/**
+	 * Drain every account and the bank's equity into a single returned amount,
+	 * zeroing them — the <b>money-conserving teardown</b> a dissolving colony uses to
+	 * net its circulating money into a carried hoard (see {@code docs/caravan.md}).
+	 * After this the bank holds nothing ({@link #getTotalMoney()} is 0); the colony is
+	 * expected to be discarded, so the now-empty accounts are never touched again.
+	 *
+	 * @return the total money drained (equal to the pre-drain {@link #getTotalMoney()})
+	 */
+	public double drainAllMoney() {
+		double[] sum = { equity };
+		accounts.forEachValue(a -> {
+			sum[0] += a.getChecking() + a.getSavings();
+			a.checking = 0;
+			a.savings = 0;
+		});
+		equity = 0;
+		return sum[0];
+	}
+
 	// --- Property: the bank is an asset its owner draws a dividend from ---
 
 	/** {@inheritDoc} A bank's distributable profit is its retained spread and fees

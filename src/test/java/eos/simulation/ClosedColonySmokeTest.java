@@ -12,12 +12,15 @@ import org.junit.jupiter.api.TestFactory;
 /**
  * Smoke tests for the bundled <b>closed colonies</b>. Each now founds and replaces
  * its labor force by promotion from a finite peasant pool, so each runs the full
- * horizon without tripping an {@code -ea} invariant and then <b>collapses</b> once
- * the reserve drains (the {@code -ea} checks in the agents/markets run throughout,
- * so a clean run exercises them). Each case asserts its expected bank count (the
- * banks persist past the colony's death) and that the colony ended collapsed. Every
- * colony now also populates the silver bank, since its export nobles are raised by
- * ennoblement (and re-bank in silver). The open run keeps its own dedicated test.
+ * horizon without tripping an {@code -ea} invariant and then — once the reserve drains
+ * and the workforce falls past the dissolution floor — <b>departs as a Caravan</b>: the
+ * settled colony dissolves and its survivors take to the road (see {@code
+ * docs/caravan.md}). (The {@code -ea} checks in the agents/markets run throughout, so a
+ * clean run exercises them.) Each case asserts its expected bank count (the banks
+ * persist past the colony's dissolution) and that the colony ended by departing as a
+ * band. Every colony now also populates the silver bank, since its export nobles are
+ * raised by ennoblement (and re-bank in silver). The open run keeps its own dedicated
+ * test.
  */
 class ClosedColonySmokeTest {
 
@@ -38,7 +41,7 @@ class ClosedColonySmokeTest {
 			SimulationHarness h = assertDoesNotThrow(() -> c.run().get());
 			assertEquals(c.banks(), h.getBanks().size(),
 					c.name() + " bank count");
-			SimulationAssertions.assertCollapsed(h);
+			SimulationAssertions.assertDepartedAsCaravan(h);
 		}));
 	}
 }

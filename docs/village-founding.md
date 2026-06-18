@@ -174,10 +174,57 @@ session.
 
 ### The Caravan entity
 
-The `Caravan` (a detached `Retinue` + a `CARAVAN`-rank Captain + a position + a
-carried hoard) is defined in **[`docs/caravan.md`](caravan.md)**. For founding, the
-relevant facts: its pool **re-binds to the new settlement** at founding, and the
-founder/holder config governs the Captain through the `HOLDING` phase.
+The `Caravan` — a colony-less **aggregate** holding a **leader `Member`** (the band's
+Captain, *not* a household class), its **following**, a carried **hoard** (`double`)
+and a **position** — is defined in **[`docs/caravan.md`](caravan.md)**. For founding,
+the relevant facts: the band's people seed the new colony's `Retinue`, the hoard is the
+founding capital, the leader becomes the holder (→ `Ruler`), and the founder/holder
+config governs the leader through the `HOLDING` phase.
+
+**The colony-bound-`Retinue` refinement.** A live `Retinue` is an `Agent`, and
+`Agent.colony` is `final`, so a `Retinue` object **cannot exist before a `Settlement`
+does**, nor be re-bound from one colony to another. This is invisible for a *dissolving*
+band (it wraps its dying colony's existing `Retinue`), but it bites a band that was
+**never settled** — e.g. a fresh start that begins life as a Caravan (see the worked
+example below). The resolution: while wandering, the `Caravan` holds its band as
+**data** — the leader `Member`, a `List<Member>` following, a larder amount, the hoard —
+*not* a colony-bound `Retinue` Agent. The `Retinue` Agent is **settled-only**: built
+when the band settles (seeded from that data, via `foundLaborersFromRetinue` /
+`promoteToLaborer`), drained back to data on dissolution. So "the `Retinue` is the
+persistent thread" (`docs/caravan.md`) holds at the *data* level — the same `Member`s
+and larder flow across the hinge — with a fresh `Retinue` Agent per settled colony.
+
+### Worked example: founding from two caravans (a Caravan-first Hanseatic start)
+
+`HanseaticEconomy` today raises two villages near Lübeck by calling
+`session.newSettlement(...)` twice and running the full founding sequence (`build()`)
+per colony — i.e. it is **already "two bands that settle at `t=0`,"** with the settle
+operation unrolled inline. Recast as two caravans, the *destination* is identical; the
+caravan framing buys the *path*:
+
+1. **Session unchanged** — `new GameSession(SEED)` still owns the shared
+   `NameRegistry`/`Demography`, so dynasty surnames stay unique across both bands.
+2. **Two `Caravan`s at the session level**, each carrying what the foundry conjures
+   today: a **leader `Member`** (the future `Ruler`'s dynasty), a following of
+   `2 · NUM_LABORERS` founder `Member`s (the future pool + labor force), a **hoard** =
+   the founding gold (today `DEFAULT_RULER_GOLD`), a larder, and a **position** (the
+   Lübeck / Schwartau coordinates).
+3. **Each settles via the seam already built** — `session.newSettlement(caravan, …)`
+   raises colony 0 / colony 1 at the band's position; the foundry then seeds that
+   colony's `Retinue` from the caravan's `Member`s, deposits the hoard into the
+   chartered banks (gold→copper FX, as today), promotes the ablest into laborer
+   households, ennobles the export aristocracy over the first weeks, and the leader
+   `Member` becomes holder → `Ruler`.
+
+What this surfaces (beyond today's behaviour): the **colony-bound-`Retinue`
+refinement** above (the two bands have no colony to host a `Retinue` until they settle),
+a **session-level deterministic RNG** for the caravans' pre-settlement draws (separate
+from the per-colony economic streams, which don't exist until settle), and the **settle
+operation** itself (the `GameSession` seam is in; seeding the new colony from band data
+is the remaining work). Determinism holds: the two colonies still take indices 0 and 1
+in settle order. This is purely the **upward** journey — no collapse — and is the
+symmetric inverse of the dissolution in `docs/caravan.md`; running both in one session
+(a band settles, drains, dissolves, and re-founds) would exercise the whole cycle.
 
 ### The village hall — a civic seat (only)
 

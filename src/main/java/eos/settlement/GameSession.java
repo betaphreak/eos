@@ -1,7 +1,11 @@
 package eos.settlement;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
+import eos.agent.Caravan;
 import eos.calendar.LiturgicalCalendar;
 import eos.mortality.Demography;
 import eos.name.NameRegistry;
@@ -24,6 +28,14 @@ import lombok.Getter;
  * Unlike the economic generator these are <b>shared</b> across the session's
  * colonies — that sharing is what makes dynasty surnames unique across every
  * colony in the session (the name pool is a single session-wide resource).
+ * <p>
+ * The session is also the home of the realm's <b>colony-less</b> bands: a {@link
+ * Caravan} (a wandering following with a leader but no settlement) belongs to no
+ * {@code Settlement}, so the session tracks it (see {@link #addCaravan} / {@link
+ * #getCaravans()}) and is where a band <b>re-founds</b> — {@link
+ * #newSettlement(Caravan, String, LocalDate, double, double, double, double)}
+ * raises a fresh colony at the band's position, taking the next colony index so the
+ * run stays deterministic (see {@code docs/caravan.md}).
  *
  * @author zhihongx
  */
@@ -62,6 +74,10 @@ public class GameSession {
 	// number of colonies created so far; each gets an economic generator seeded
 	// from (seed, index), so colonies don't share an economic random stream
 	private int colonyCount = 0;
+
+	// the session's wandering bands — colony-less Caravans that belong to no
+	// Settlement (a band on the road after a collapse, or before it re-founds)
+	private final List<Caravan> caravans = new ArrayList<>();
 
 	/**
 	 * Create a new game session with the given random-number seed.
@@ -110,8 +126,74 @@ public class GameSession {
 		// later colonies get a distinct, decorrelated seed
 		Rng colonyRng = new Rng(seed ^ (COLONY_SEED_SALT * colonyCount));
 		colonyCount++;
-		return new Settlement(name, startDate, colonyRng, names, demography,
-				slotTable, liturgicalCalendar, meanInitAgeYears, targetNStock,
-				meanSkillMale, meanSkillFemale, latitude, longitude);
+		Settlement colony = new Settlement(name, startDate, colonyRng, names,
+				demography, slotTable, liturgicalCalendar, meanInitAgeYears,
+				targetNStock, meanSkillMale, meanSkillFemale, latitude, longitude);
+		// the colony knows its session, so on dissolution it can register the band it
+		// departs as (colony-less bands live at the session level — see docs/caravan.md)
+		colony.setSession(this);
+		return colony;
+	}
+
+	/**
+	 * Re-found a colony for a wandering {@link Caravan band}: a fresh colony at the
+	 * band's current {@linkplain Caravan#getLatitude() position}, taking the next
+	 * colony index exactly as any {@link #newSettlement} call (so the band's new home
+	 * runs on its own deterministic economic stream and "same seed → identical run"
+	 * still holds). The geography is the band's — its latitude/longitude flow into the
+	 * new settlement, giving it the climate of wherever the band chose to settle — and
+	 * everything else is supplied by the caller as for a settlement founded from
+	 * scratch.
+	 * <p>
+	 * This only raises the bare {@code Settlement}; binding the band's surviving people
+	 * and carried hoard into it (seeding the new colony's {@link eos.agent.Retinue} from
+	 * the band) is the foundry's job (see {@code docs/caravan.md} — the re-founding
+	 * ascent {@code CARAVAN → HOLDING → VILLAGE}).
+	 *
+	 * @param band
+	 *            the wandering band re-founding; its position becomes the new colony's
+	 * @param name
+	 *            the new settlement's name (a display label)
+	 * @param startDate
+	 *            the in-game date of the new colony's step 0
+	 * @param meanInitAgeYears
+	 *            mean initial age (years) of founding household heads
+	 * @param targetNStock
+	 *            target necessity stock every laborer tries to accumulate
+	 * @param meanSkillMale
+	 *            mean of the colony's male skill distribution
+	 * @param meanSkillFemale
+	 *            mean of the colony's female skill distribution
+	 * @return a fresh colony positioned where the band settled
+	 */
+	public Settlement newSettlement(Caravan band, String name, LocalDate startDate,
+			double meanInitAgeYears, double targetNStock, double meanSkillMale,
+			double meanSkillFemale) {
+		return newSettlement(name, startDate, meanInitAgeYears, targetNStock,
+				meanSkillMale, meanSkillFemale, band.getLatitude(),
+				band.getLongitude());
+	}
+
+	/**
+	 * Register a colony-less {@link Caravan} with the session — a band that has left
+	 * (or not yet founded) a settlement, so it has no {@code Settlement} to live on.
+	 * The session is the home of such wandering bands (the level at which they re-found;
+	 * see {@link #newSettlement(Caravan, String, LocalDate, double, double, double, double)}).
+	 *
+	 * @param band
+	 *            the wandering band to track
+	 */
+	public void addCaravan(Caravan band) {
+		caravans.add(band);
+	}
+
+	/**
+	 * The session's wandering bands — the colony-less {@link Caravan}s it tracks (see
+	 * {@link #addCaravan}). The returned list is unmodifiable.
+	 *
+	 * @return an unmodifiable view of the session's caravans
+	 */
+	public List<Caravan> getCaravans() {
+		return Collections.unmodifiableList(caravans);
 	}
 }

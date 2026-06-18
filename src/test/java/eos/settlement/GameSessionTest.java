@@ -6,10 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import eos.agent.Caravan;
+import eos.agent.Retinue;
+import eos.bank.Bank;
+import eos.bank.BankConfig;
 import eos.util.Rng;
 
 /**
@@ -65,5 +70,37 @@ class GameSessionTest {
 		for (int i = 0; i < 200; i++)
 			assertTrue(surnames.add(b.getNames().nextHead().surname()),
 					"surname in colony B collided with one already in use");
+	}
+
+	@Test
+	void aBandReFoundsAtItsOwnPositionTakingTheNextColonyIndex() {
+		GameSession s = new GameSession(2024);
+		Settlement origin = newColony(s); // colony 0
+
+		// a wandering band positioned away from the origin (its Retinue is built on
+		// the origin colony; re-founding raises a fresh colony, not rebinds this one)
+		Bank bank = new Bank(BankConfig.DEFAULT, origin);
+		Retinue following = new Retinue(2, bank, origin);
+		Caravan band = new Caravan(following.promoteHighestSkilled(), following, 0,
+				48.85, 2.35);
+		s.addCaravan(band);
+		assertEquals(List.of(band), s.getCaravans(), "the band should be tracked");
+
+		// re-founding places the new colony at the band's position...
+		Settlement reborn =
+				s.newSettlement(band, "New Home", START, 35, 26, 5, 2);
+		assertEquals(48.85, reborn.getLatitude(),
+				"the re-founded colony sits where the band settled");
+		assertEquals(2.35, reborn.getLongitude(),
+				"the re-founded colony sits where the band settled");
+
+		// ...and takes the next colony index, so it runs on its own economic stream
+		assertNotSame(origin.getRng(), reborn.getRng(),
+				"a re-founded colony needs its own economic generator");
+		boolean differs = false;
+		for (int i = 0; i < 64 && !differs; i++)
+			differs = origin.getRng().uniform() != reborn.getRng().uniform();
+		assertTrue(differs,
+				"the re-founded colony must run on an independent stream");
 	}
 }

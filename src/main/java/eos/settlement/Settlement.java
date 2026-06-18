@@ -13,8 +13,10 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import eos.agent.Agent;
+import eos.agent.Caravan;
 import eos.agent.Household;
 import eos.agent.Member;
+import eos.agent.Retinue;
 import eos.calendar.DayType;
 import eos.calendar.LiturgicalCalendar;
 import eos.agent.firm.BuilderConfig;
@@ -55,6 +57,16 @@ public class Settlement {
 	 * time window within which average inflation is computed
 	 */
 	public static final int INFLATION_TIME_WIN = 100;
+
+	/**
+	 * Workforce floor below which a ruler-bearing colony <b>dissolves into a
+	 * Caravan</b> (the {@code HOLDING → CARAVAN} hinge — see {@code docs/caravan.md}):
+	 * once fewer than this many laborer households remain, the colony's settled life
+	 * ends and its survivors depart as a wandering band. Kept {@code > 0} so survivors
+	 * always remain to form a viable band. An <b>uncalibrated placeholder</b> (the
+	 * per-rung floors are a deferred design question).
+	 */
+	public static final int DISSOLUTION_WORKFORCE_FLOOR = 10;
 
 	/********************************************************/
 
@@ -176,13 +188,32 @@ public class Settlement {
 	// to it.
 	private final SolarClock solarClock;
 
-	// lifecycle: a colony is "started" once it begins running (start()) and
-	// "dies" the step its last laborer is gone (no workforce left). deathDate
-	// records when, and the transition is terminal.
+	// lifecycle: a colony is "started" once it begins running (start()) and ends
+	// its settled life ("dies") when its workforce drains. deathDate records when,
+	// and the transition is terminal. A ruler-bearing colony does not simply vanish:
+	// once its workforce falls below DISSOLUTION_WORKFORCE_FLOOR it crosses the
+	// HOLDING -> CARAVAN hinge and the survivors depart as a wandering Caravan
+	// (see docs/caravan.md); a pool-less colony (no ruler/Retinue to form a band)
+	// still dies terminally when its last laborer is gone.
 	private boolean started = false;
 	private boolean died = false;
 	@Getter
 	private LocalDate deathDate;
+
+	// the wandering band a dissolved colony departed as (null until then; only a
+	// ruler-bearing colony produces one — see dissolveIntoCaravan / updateLifecycle)
+	@Getter
+	private Caravan departedBand;
+	// flagged by updateLifecycle when the workforce floor is crossed, so run()
+	// performs the dissolution after the step's market clearing/printing (the
+	// dissolution drains banks and folds households, so it must not run mid-step)
+	private boolean dissolving = false;
+
+	// the session that owns this colony, set by GameSession.newSettlement; a colony
+	// constructed directly (some tests) has none, and then a dissolved band is held
+	// only on the colony (getDepartedBand), not registered session-wide. Package
+	// private: only GameSession sets it.
+	private GameSession session;
 
 	// the colony's single export firm, if any (see StrategicFirm). At most one
 	// per colony; set via setStrategicFirm, which guards against a second.
@@ -384,15 +415,48 @@ public class Settlement {
 		return n;
 	}
 
-	// detect colony death: a started, still-living colony that has lost its last
-	// laborer dies now (terminal). Called each newDay once the population settles.
+	// detect the end of the colony's settled life, called each newDay once the
+	// population settles. A ruler-bearing colony that can form a band dissolves into
+	// a Caravan once its workforce falls below DISSOLUTION_WORKFORCE_FLOOR (the
+	// HOLDING -> CARAVAN hinge): it is flagged here and the band departs in run(),
+	// after the step's market clearing. A pool-less colony (no ruler/Retinue) instead
+	// dies terminally when its last laborer is gone, as before.
 	void updateLifecycle() {
-		if (started && !died && livingLaborerCount() == 0) {
+		if (!started || died)
+			return;
+		long workforce = livingLaborerCount();
+		if (canDissolve()) {
+			if (workforce < DISSOLUTION_WORKFORCE_FLOOR) {
+				died = true;
+				dissolving = true;
+				deathDate = getDate();
+				log.info(name + " is dissolving into a Caravan on " + deathDate
+						+ " (workforce " + workforce + " < floor "
+						+ DISSOLUTION_WORKFORCE_FLOOR + ")");
+			}
+		} else if (workforce == 0) {
 			died = true;
 			deathDate = getDate();
 			log.info(name + " died on " + deathDate
 					+ " (its last laborer is gone)");
 		}
+	}
+
+	// whether this colony can dissolve into a Caravan rather than dying terminally:
+	// it needs a living ruler to lead the band and a Retinue to be its following.
+	private boolean canDissolve() {
+		if (ruler == null || !ruler.isAlive())
+			return false;
+		for (Agent a : agents)
+			if (a instanceof Retinue)
+				return true;
+		return false;
+	}
+
+	// set the session that owns this colony (only GameSession calls this, when it
+	// creates the colony), so a dissolved band can be registered session-wide.
+	void setSession(GameSession session) {
+		this.session = session;
 	}
 
 	/**
@@ -822,14 +886,33 @@ public class Settlement {
 	 */
 	public void run(int steps) {
 		start();
-		// stop early once the colony has died (its last laborer is gone): a dead
-		// colony produces nothing more of interest, so running on only burns compute
+		// stop early once the colony's settled life has ended (workforce drained): a
+		// dead colony produces nothing more of interest, so running on only burns compute
 		for (int i = 0; i < steps && !died; i++) {
 			LocalDate date = getDate();
 			if (date.getMonthValue() == 1 && date.getDayOfMonth() == 1)
 				System.out.println(date);
 			newDay();
 		}
+		// a ruler-bearing colony that crossed the workforce floor departs as a Caravan
+		// (the survivors take to the road) rather than simply vanishing — done here,
+		// after the last step's clearing/printing, since the dissolution drains the
+		// banks and folds the households (it must not run mid-step)
+		if (dissolving && departedBand == null)
+			dissolveIntoCaravan();
+	}
+
+	// cross the HOLDING -> CARAVAN hinge: dissolve this colony into a wandering band
+	// (money -> hoard, households -> following) and, if the colony belongs to a
+	// session, register the band there (colony-less bands live at the session level —
+	// see docs/caravan.md). The settlement is now gone; its people persist in the band.
+	private void dissolveIntoCaravan() {
+		departedBand = Caravan.dissolve(this);
+		if (session != null)
+			session.addCaravan(departedBand);
+		log.info(name + " departed as a Caravan (" + departedBand.getFollowing().size()
+				+ " in the following, hoard " + (long) departedBand.getHoard()
+				+ " copper)");
 	}
 
 	/**

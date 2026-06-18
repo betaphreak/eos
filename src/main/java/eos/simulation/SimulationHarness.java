@@ -7,6 +7,7 @@ import java.util.function.IntFunction;
 import java.util.function.IntToDoubleFunction;
 
 import eos.agent.Agent;
+import eos.agent.Caravan;
 import eos.agent.Household;
 import eos.agent.firm.BuilderConfig;
 import eos.agent.firm.BuilderFirm;
@@ -452,9 +453,36 @@ public class SimulationHarness {
 	 */
 	public Bank createDefaultRuler() {
 		Bank gold = getGoldBank();
-		Ruler ruler = new Ruler(CurrencyType.GOLD.toCopper(DEFAULT_RULER_GOLD),
+		return installRuler(new Ruler(CurrencyType.GOLD.toCopper(DEFAULT_RULER_GOLD),
 				DEFAULT_RULER_CONSUMPTION_RATE, cfg.bankProfitTaxRate(),
-				cfg.nobleIncomeTaxRate(), gold, colony);
+				cfg.nobleIncomeTaxRate(), gold, colony));
+	}
+
+	/**
+	 * Install the band's leader as the ruler of a <b>re-founded</b> colony (the
+	 * {@code CARAVAN → HOLDING} settle, see {@code docs/caravan.md}): the {@link
+	 * Ruler} adopts <tt>leader</tt> as its head — so the same dynasty that led the band
+	 * out rules the new settlement — and opens its gold treasury with the band's carried
+	 * <tt>hoard</tt> (the founding capital that capitalizes the labor force). Wired
+	 * exactly like {@link #createDefaultRuler()} otherwise (dynamic firm provisioning,
+	 * the ennoblement top-up, the ruin demotion).
+	 *
+	 * @param leader
+	 *            the band's leader, adopted as the new colony's sovereign head
+	 * @param hoard
+	 *            the band's carried money (copper), the ruler's opening treasury
+	 * @return the gold bank the ruler owns and banks at
+	 */
+	public Bank createRulerFromLeader(Member leader, double hoard) {
+		Bank gold = getGoldBank();
+		return installRuler(new Ruler(leader, hoard, DEFAULT_RULER_CONSUMPTION_RATE,
+				cfg.bankProfitTaxRate(), cfg.nobleIncomeTaxRate(), gold, colony));
+	}
+
+	// register a freshly-built ruler with the colony and wire the standard sovereign
+	// behaviours, shared by the founding (createDefaultRuler) and re-founding
+	// (createRulerFromLeader) paths.
+	private Bank installRuler(Ruler ruler) {
 		colony.addAgent(ruler);
 		// record the sovereign so a builder can bill it for public works (the roads
 		// and walls of a growth ring); a no-op for any colony that never grows
@@ -481,7 +509,7 @@ public class SimulationHarness {
 		// since nobles can arise even without an export sector (the no-owner charter
 		// fallback); a no-op while every noble is solvent.
 		colony.addStepAction(this::demoteRuinedNobles);
-		return gold;
+		return ruler.getBank();
 	}
 
 	/**
@@ -790,6 +818,31 @@ public class SimulationHarness {
 	}
 
 	/**
+	 * Seed this colony's pool from a re-founding <b>band</b> (the {@code CARAVAN →
+	 * HOLDING} settle, see {@code docs/caravan.md}): a fresh {@link Retinue} adopts the
+	 * {@link Caravan}'s following — its surviving people (with their skills and ages)
+	 * and its carried larder — rather than drawing peasants anew. As with {@link
+	 * #createDefaultRetinue(Bank)} the colony also gets a builder (staffed from the
+	 * pool). A <em>fresh</em> Retinue is built because a band's own Retinue is bound to
+	 * its old (vanished) colony; the band's people thread across at the data level.
+	 *
+	 * @param band
+	 *            the wandering band re-founding here; its following seeds the pool
+	 * @param bank
+	 *            the (copper) bank the pool transacts through
+	 * @return the created peasant pool, seeded from the band
+	 */
+	public Retinue createRetinueFromBand(Caravan band, Bank bank) {
+		if (colony.getBuilder() == null)
+			createBuilder(bank, BuilderConfig.DEFAULT);
+		Retinue following = band.getFollowing();
+		retinue = new Retinue(following.getMembers(), following.getLarder(), bank,
+				colony);
+		colony.addAgent(retinue);
+		return retinue;
+	}
+
+	/**
 	 * Register a {@link RetinuePrinter} for the colony's peasant pool. The pool must
 	 * already exist (see {@link #createDefaultRetinue()}).
 	 *
@@ -1032,6 +1085,44 @@ public class SimulationHarness {
 		createDefaultStrategicSector(copper);
 		Bank gold = createDefaultRuler();
 		createDefaultRetinue();
+		foundLaborersFromRetinue(i -> copper, laborerNStock);
+		enableExternalInflow(copper);
+		return gold;
+	}
+
+	/**
+	 * <b>Re-found</b> a standard colony from a wandering <b>band</b> — the {@code
+	 * CARAVAN → HOLDING} settle that closes the rise-fall-rise cycle (see {@code
+	 * docs/caravan.md}): the same {@link #foundStandardColony founding sequence}, but
+	 * the colony is seeded <em>from the band</em> rather than from scratch — its
+	 * leader becomes the gold-banking ruler (its hoard the founding treasury, see {@link
+	 * #createRulerFromLeader}), and its following seeds the peasant pool (see {@link
+	 * #createRetinueFromBand}) the initial labor force is then promoted out of. A band
+	 * that fell can rise again.
+	 * <p>
+	 * The colony itself must already have been raised at the band's position via {@link
+	 * eos.settlement.GameSession#newSettlement(Caravan, String, java.time.LocalDate,
+	 * double, double, double, double)} and wrapped in this harness. Any config overrides
+	 * must be applied before this call (it creates the markets and ruler).
+	 *
+	 * @param band
+	 *            the wandering band re-founding here
+	 * @param eFirmSavings
+	 *            initial savings of each enjoyment firm, by index
+	 * @param nFirmSavings
+	 *            initial savings of each necessity firm, by index
+	 * @param laborerNStock
+	 *            initial necessity stock of each promoted laborer household, by index
+	 * @return the colony's gold bank (the ruler's treasury)
+	 */
+	public Bank reFoundStandardColony(Caravan band, IntToDoubleFunction eFirmSavings,
+			IntToDoubleFunction nFirmSavings, IntToDoubleFunction laborerNStock) {
+		createMarkets();
+		Bank copper = getCopperBank();
+		createFirms(copper, i -> copper, eFirmSavings, nFirmSavings);
+		createDefaultStrategicSector(copper);
+		Bank gold = createRulerFromLeader(band.getLeader(), band.getHoard());
+		createRetinueFromBand(band, copper);
 		foundLaborersFromRetinue(i -> copper, laborerNStock);
 		enableExternalInflow(copper);
 		return gold;

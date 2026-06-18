@@ -133,6 +133,41 @@ public class Retinue extends Agent {
 	 *            the colony this pool belongs to
 	 */
 	public Retinue(int initialSize, Bank bank, Settlement colony) {
+		// seed the larder with a full per-peasant buffer, so the pool can feed its
+		// peasants from step 0 and ride out the necessity sector's adjustment to the
+		// new demand (and a promoted peasant takes its BUFFER_DAYS ration with it)
+		this(bank, colony, (double) initialSize * BUFFER_DAYS);
+		seed(initialSize);
+	}
+
+	/**
+	 * Create the pool by <b>adopting an existing band's people and larder</b> — the
+	 * re-founding seam: a wandering {@link Caravan}'s following becomes a fresh
+	 * settlement's labour reserve (see {@code docs/caravan.md}). The {@link Member}s
+	 * carry over with their skills and ages; the larder is the band's carried food. A
+	 * fresh {@code Retinue} is built (rather than re-binding the band's, whose colony
+	 * is fixed at construction), so the people thread across the settle/unsettle hinge
+	 * at the data level.
+	 *
+	 * @param members
+	 *            the band's following, adopted as the new pool's peasants
+	 * @param larder
+	 *            the band's carried necessity, the new pool's opening larder
+	 * @param bank
+	 *            the (copper) bank the pool transacts through
+	 * @param colony
+	 *            the colony this pool belongs to
+	 */
+	public Retinue(List<Member> members, double larder, Bank bank,
+			Settlement colony) {
+		this(bank, colony, larder);
+		peasants.addAll(members);
+	}
+
+	// shared construction: open the account, look up the markets the pool uses, and
+	// size the larder. The two public constructors differ only in how the pool is
+	// peopled (fresh draws vs. an adopted band) and its larder.
+	private Retinue(Bank bank, Settlement colony, double larder) {
 		super(bank, colony);
 		setName("Retinue");
 		bank.openAcct(getID(), 0, 0);
@@ -147,11 +182,7 @@ public class Retinue extends Agent {
 				(eos.market.WeddingMarket) colony.getMarket("Wedding");
 		if (weddingMkt != null)
 			weddingMkt.setRetinue(this);
-		// seed the larder with a full per-peasant buffer, so the pool can feed its
-		// peasants from step 0 and ride out the necessity sector's adjustment to the
-		// new demand (and a promoted peasant takes its BUFFER_DAYS ration with it)
-		this.necessity = new Necessity((double) initialSize * BUFFER_DAYS);
-		seed(initialSize);
+		this.necessity = new Necessity(larder);
 	}
 
 	private void seed(int n) {
@@ -298,6 +329,31 @@ public class Retinue extends Agent {
 	}
 
 	/**
+	 * Fold a person into the following as a peasant — the <b>inverse of promotion</b>
+	 * (a disbanding household's member joining the pool). Used at <b>dissolution</b>,
+	 * when a failing colony's surviving households collapse back into the band's
+	 * following (see {@code docs/caravan.md}).
+	 *
+	 * @param person
+	 *            the person to add to the pool
+	 */
+	public void absorb(Member person) {
+		peasants.add(person);
+	}
+
+	/**
+	 * Add {@code amount} of necessity to the pool's larder — e.g. a disbanding
+	 * household's food folded into the band's carried larder at dissolution (the food
+	 * side of {@link #absorb(Member)}).
+	 *
+	 * @param amount
+	 *            necessity units to add to the larder
+	 */
+	public void stockLarder(double amount) {
+		necessity.increase(amount);
+	}
+
+	/**
 	 * Remove and return the highest-overall-skill peasant — the one a {@link
 	 * eos.agent.ruler.Ruler} promotes into a laborer household (merit-based social
 	 * mobility). Returns {@code null} when the pool is empty (then no replacement is
@@ -365,6 +421,22 @@ public class Retinue extends Agent {
 	/** @return the number of peasants currently in the pool */
 	public int size() {
 		return peasants.size();
+	}
+
+	/**
+	 * The pool's people — an unmodifiable snapshot, for re-seeding a fresh pool when a
+	 * band re-founds (see the adopting {@link #Retinue(List, double, Bank, Settlement)
+	 * constructor} and {@code docs/caravan.md}).
+	 *
+	 * @return an unmodifiable copy of the pooled peasants
+	 */
+	public List<Member> getMembers() {
+		return List.copyOf(peasants);
+	}
+
+	/** @return the pool's current larder (necessity units it carries) */
+	public double getLarder() {
+		return necessity.getQuantity();
 	}
 
 	/** @return the average overall skill of the pooled peasants (0 if empty) */

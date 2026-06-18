@@ -5,6 +5,7 @@ import java.util.List;
 
 import eos.agent.AbstractHousehold;
 import eos.agent.Agent;
+import eos.agent.Member;
 import eos.agent.Rank;
 import eos.agent.firm.ConsumerGoodFirm;
 import eos.agent.firm.EFirm;
@@ -143,6 +144,47 @@ public class Ruler extends AbstractHousehold {
 			Settlement colony) {
 		this(0, initSavingsBal, consumptionRate, bankProfitTaxRate,
 				nobleIncomeTaxRate, false, goldBank, colony, null);
+	}
+
+	/**
+	 * Create the ruler of a <b>re-founded</b> colony by <b>adopting a band's leader</b>
+	 * as its head (the {@link eos.agent.Caravan Caravan}'s Captain becomes the
+	 * sovereign — see {@code docs/caravan.md}): the head keeps its identity (name,
+	 * skills, age, dynasty), and the band's carried hoard seeds the gold treasury. So
+	 * the same bloodline that led the band out rules the colony it founds.
+	 *
+	 * @param head
+	 *            the band's leader, adopted as the ruling head
+	 * @param initSavingsBal
+	 *            the opening treasury, in copper — the band's carried hoard
+	 * @param consumptionRate
+	 *            fraction of the treasury spent on enjoyment each step
+	 * @param bankProfitTaxRate
+	 *            fraction of each bank's distributable profit taxed each step
+	 * @param nobleIncomeTaxRate
+	 *            fraction of each noble's income taxed each step
+	 * @param goldBank
+	 *            the gold bank the ruler owns and banks at
+	 * @param colony
+	 *            the colony this ruler belongs to
+	 */
+	public Ruler(Member head, double initSavingsBal, double consumptionRate,
+			double bankProfitTaxRate, double nobleIncomeTaxRate, Bank goldBank,
+			Settlement colony) {
+		super(0, initSavingsBal, false, head, goldBank, colony);
+		this.consumptionRate = consumptionRate;
+		this.bankProfitTaxRate = bankProfitTaxRate;
+		this.nobleIncomeTaxRate = nobleIncomeTaxRate;
+		this.enjoyment = new Enjoyment(0);
+		this.necessity = new Necessity(0);
+		this.eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
+		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
+		this.nobleLaborMkt =
+				(LaborMarket) colony.getMarket(StrategicFirm.LABOR_MARKET);
+		setName("Ruler");
+		colony.addPersonOfInterest(this);
+		log.info(getHead().fullName()
+				+ " led the band to found a new settlement and rules it.");
 	}
 
 	/**

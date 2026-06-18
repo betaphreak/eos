@@ -1,10 +1,12 @@
 package eos.simulation;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eos.agent.Caravan;
 import eos.bank.Bank;
+import eos.settlement.Settlement;
 
 /**
  * Shared invariant checks for the simulation smoke tests. The core "healthy
@@ -35,23 +37,31 @@ final class SimulationAssertions {
 	}
 
 	/**
-	 * Assert the colony <b>collapsed</b>: it ran to completion (no {@code -ea}
-	 * invariant thrown — checked by the caller) and ended with its labor force gone.
-	 * This is the contract for every ruler-bearing colony now that the labor force is
-	 * founded and replaced by promotion from a finite peasant pool: once the reserve
-	 * drains, deaths go unreplaced and the colony spirals to death (the refill that
-	 * would prevent this is a later phase — see {@code docs/peasant-pool.md}).
+	 * Assert the colony <b>departed as a Caravan</b>: it ran to completion (no
+	 * {@code -ea} invariant thrown — checked by the caller) and, once its workforce
+	 * drained below the dissolution floor, crossed the {@code HOLDING → CARAVAN} hinge
+	 * — its settled life ended and the survivors took to the road as a wandering band
+	 * (see {@code docs/caravan.md}). This is the contract for every ruler-bearing colony
+	 * now that the labor force is founded and replaced by promotion from a finite peasant
+	 * pool: once the reserve drains, deaths go unreplaced, the workforce falls past the
+	 * floor, and the colony dissolves rather than simply vanishing.
 	 *
 	 * @param h
 	 *            a finished harness
 	 */
-	static void assertCollapsed(SimulationHarness h) {
-		assertTrue(h.getColony().isDead(),
-				"expected the colony to have collapsed (its labor force is replaced "
-						+ "from a finite pool that drains)");
-		assertEquals(0, h.currentLaborerCount(),
-				"a collapsed colony has no laborers left, got "
-						+ h.currentLaborerCount());
+	static void assertDepartedAsCaravan(SimulationHarness h) {
+		Settlement colony = h.getColony();
+		assertTrue(colony.isDead(),
+				"expected the colony's settled life to have ended (it dissolved)");
+		Caravan band = colony.getDepartedBand();
+		assertNotNull(band, "a dissolved ruler-bearing colony departs as a Caravan");
+		assertTrue(band.getFollowing().isWandering(),
+				"the departed band's following wanders");
+		assertTrue(band.getFollowing().size() > 0,
+				"the band carries its surviving people, got "
+						+ band.getFollowing().size());
+		assertTrue(Double.isFinite(band.getHoard()) && band.getHoard() > 0,
+				"the band carries a conserved hoard, got " + band.getHoard());
 	}
 
 	/** Assert the post-run closed default colony is healthy. */
