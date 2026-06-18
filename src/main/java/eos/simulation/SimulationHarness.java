@@ -3,8 +3,11 @@ package eos.simulation;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntFunction;
 import java.util.function.IntToDoubleFunction;
+
+import eos.race.Race;
 
 import eos.agent.Agent;
 import eos.agent.Caravan;
@@ -192,6 +195,34 @@ public class SimulationHarness {
 				cfg.startDate(), cfg.meanInitAgeYears(), cfg.targetNStock(),
 				cfg.meanSkillMale(), cfg.meanSkillFemale(), cfg.latitude(),
 				cfg.longitude());
+		SimLog.init(colony);
+		return new SimulationHarness(cfg, colony);
+	}
+
+	/**
+	 * Build an empty harness as {@link #create(SimulationConfig, long)} but with an
+	 * explicit {@link Race founding race} (selecting the colony's calendar and tech
+	 * overlay) and a per-person {@code raceMix} (the weights each generated person —
+	 * pool peasants, immigrants — is rolled against). A mono-cultural human run uses
+	 * the other overload; see {@code docs/race.md}.
+	 *
+	 * @param cfg
+	 *            the run configuration
+	 * @param seed
+	 *            the random-number seed for this run
+	 * @param foundingRace
+	 *            the colony's founding (ruler's) race
+	 * @param raceMix
+	 *            race &rarr; weight every generated person is rolled against
+	 * @return an empty harness ready to be populated
+	 */
+	public static SimulationHarness create(SimulationConfig cfg, long seed,
+			Race foundingRace, Map<Race, Double> raceMix) {
+		GameSession session = new GameSession(seed);
+		Settlement colony = session.newSettlement(cfg.settlementName(),
+				cfg.startDate(), cfg.meanInitAgeYears(), cfg.targetNStock(),
+				cfg.meanSkillMale(), cfg.meanSkillFemale(), cfg.latitude(),
+				cfg.longitude(), foundingRace, raceMix);
 		SimLog.init(colony);
 		return new SimulationHarness(cfg, colony);
 	}
@@ -448,9 +479,12 @@ public class SimulationHarness {
 		// the session's era sets the research baseline: a colony founding in era E
 		// knows every tech up to E-below and warm-starts E's entry tech (TECH_E_LIFESTYLE)
 		eos.era.Era era = colony.getSession().getEra();
+		// the colony researches on its founding race's tech tree — the shared graph
+		// under that race's effect overlay (human gets the default empty overlay), so a
+		// Harimari colony's research applies the Harimari effects (see docs/race.md)
 		eos.tech.ResearchState research = new eos.tech.ResearchState(
-				colony.getSession().getTechTree(), colony, era.below(),
-				cfg.researchCostScale());
+				colony.getSession().getTechTree(colony.getFoundingRace()), colony,
+				era.below(), cfg.researchCostScale());
 		research.seedInitialFocus("TECH_" + era.name() + "_LIFESTYLE",
 				cfg.researchInitialFraction());
 		colony.setResearch(research);
@@ -1040,12 +1074,13 @@ public class SimulationHarness {
 	 * @return the promoted laborer household
 	 */
 	private Laborer promoteToLaborer(Member peasant, Bank bank, double initNQty) {
-		// keep the peasant's given name, gender, skills and age; give it a fresh
-		// dynasty surname (it carried none while pooled)
-		String surname = colony.getNames().nextDynastyName();
+		// keep the peasant's given name, gender, skills, race and age; give it a fresh
+		// dynasty surname from its own race's pool (it carried none while pooled)
+		eos.race.Race race = peasant.race();
+		String surname = colony.getNames().nextDynastyName(race);
 		Member head = new Member(
 				new Person(peasant.person().givenName(), surname,
-						peasant.gender(), peasant.skills()),
+						peasant.gender(), peasant.skills(), race),
 				peasant.getBirthDate());
 		// skill-based endowment: the sum of the head's twelve skill levels, in copper
 		double savings = peasant.skills().totalLevel();
@@ -1165,8 +1200,8 @@ public class SimulationHarness {
 		// strategic sector just installed), re-applying its researched techs' effects
 		if (band.getResearch() != null)
 			colony.setResearch(eos.tech.ResearchState.restore(
-					colony.getSession().getTechTree(), colony, band.getResearch(),
-					cfg.researchCostScale()));
+					colony.getSession().getTechTree(colony.getFoundingRace()), colony,
+					band.getResearch(), cfg.researchCostScale()));
 		Bank gold = createRulerFromLeader(band.getLeader(), band.getHoard());
 		createRetinueFromBand(band, copper);
 		foundLaborersFromRetinue(i -> copper, laborerNStock);

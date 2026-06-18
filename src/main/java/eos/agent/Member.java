@@ -64,6 +64,11 @@ public final class Member {
 		return person.gender();
 	}
 
+	/** @return the member's ancestry */
+	public eos.race.Race race() {
+		return person.race();
+	}
+
 	/** @return the member's skills */
 	public SkillTracker skills() {
 		return person.skills();
@@ -115,7 +120,7 @@ public final class Member {
 	 * @return true if the member died of old age this step
 	 */
 	public boolean rollOldAgeDeath(Demography demography, LocalDate today) {
-		if (alive && demography.diesOfOldAge(ageDays(today))) {
+		if (alive && demography.diesOfOldAge(ageDays(today), person.race())) {
 			alive = false;
 			return true;
 		}

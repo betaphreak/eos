@@ -148,8 +148,10 @@ public class Ruler extends AbstractHousehold {
 	public Ruler(double initSavingsBal, double consumptionRate,
 			double bankProfitTaxRate, double nobleIncomeTaxRate, Bank goldBank,
 			Settlement colony) {
+		// the founding ruler takes the colony's founding race
 		this(0, initSavingsBal, consumptionRate, bankProfitTaxRate,
-				nobleIncomeTaxRate, false, goldBank, colony, null);
+				nobleIncomeTaxRate, false, goldBank, colony, null,
+				colony.getFoundingRace());
 	}
 
 	/**
@@ -207,17 +209,18 @@ public class Ruler extends AbstractHousehold {
 	 *            the colony this ruler belongs to
 	 */
 	public Ruler(Ruler predecessor, Settlement colony) {
+		// an heir continues its dynasty, so it keeps the line's race (no re-roll)
 		this(predecessor.getEstateChecking(), predecessor.getEstateSavings(),
 				predecessor.consumptionRate, predecessor.bankProfitTaxRate,
 				predecessor.nobleIncomeTaxRate, true, predecessor.getBank(), colony,
-				predecessor.getHead().surname());
+				predecessor.getHead().surname(), predecessor.getHead().race());
 	}
 
 	private Ruler(double initCheckingBal, double initSavingsBal,
 			double consumptionRate, double bankProfitTaxRate,
 			double nobleIncomeTaxRate, boolean inherited, Bank goldBank,
-			Settlement colony, String surname) {
-		super(initCheckingBal, initSavingsBal, inherited, surname, goldBank,
+			Settlement colony, String surname, eos.race.Race race) {
+		super(initCheckingBal, initSavingsBal, inherited, surname, race, goldBank,
 				colony);
 		this.consumptionRate = consumptionRate;
 		this.bankProfitTaxRate = bankProfitTaxRate;

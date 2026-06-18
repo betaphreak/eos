@@ -68,12 +68,12 @@ class SkillSystemTest {
 		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
 		recs.put(Skill.SOCIAL, new SkillRecord(18, Passion.NONE));
 		recs.put(Skill.PLANTS, new SkillRecord(7, Passion.NONE));
-		SkillTracker t = new SkillTracker(recs);
+		SkillTracker t = SkillTracker.of(recs);
 		// peak is the single best skill (18), well above the all-round mean
 		assertEquals(18, t.peakLevel());
 		assertTrue(t.peakLevel() > t.overallLevel());
 		// an all-default tracker peaks at the minimum level
-		assertEquals(SkillRecord.MIN_LEVEL, new SkillTracker().peakLevel());
+		assertEquals(SkillRecord.MIN_LEVEL, SkillTracker.empty().peakLevel());
 	}
 
 	@Test
@@ -89,7 +89,7 @@ class SkillSystemTest {
 		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
 		recs.put(Skill.MEDICINE, new SkillRecord(17, Passion.NONE));
 		recs.put(Skill.SOCIAL, new SkillRecord(9, Passion.NONE));
-		SkillTracker t = new SkillTracker(recs);
+		SkillTracker t = SkillTracker.of(recs);
 		assertEquals(Skill.MEDICINE, t.peakSkill());
 		// peakSkill identifies WHICH skill; peakLevel gives how good it is
 		assertEquals(17, t.peakLevel());
@@ -100,12 +100,12 @@ class SkillSystemTest {
 		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
 		recs.put(Skill.INTELLECTUAL, new SkillRecord(12, Passion.NONE)); // index 2
 		recs.put(Skill.CRAFTING, new SkillRecord(12, Passion.NONE)); // index 11
-		assertEquals(Skill.INTELLECTUAL, new SkillTracker(recs).peakSkill());
+		assertEquals(Skill.INTELLECTUAL, SkillTracker.of(recs).peakSkill());
 	}
 
 	@Test
 	void trackerToStringListsOverallAndAllTwelveSkills() {
-		SkillTracker t = new SkillTracker();
+		SkillTracker t = SkillTracker.empty();
 		String s = t.toString();
 		// the overall scalar leads, then every one of the twelve skills appears
 		assertTrue(s.startsWith("overall=" + t.overallLevel()), s);
@@ -114,7 +114,7 @@ class SkillSystemTest {
 		// a known record renders with its glyph inside the dump
 		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
 		recs.put(Skill.PLANTS, new SkillRecord(14, Passion.MAJOR));
-		assertTrue(new SkillTracker(recs).toString().contains("PLANTS=14!"));
+		assertTrue(SkillTracker.of(recs).toString().contains("PLANTS=14!"));
 	}
 
 	@Test
@@ -181,7 +181,7 @@ class SkillSystemTest {
 
 	@Test
 	void trackerTickDecaysRecords() {
-		SkillTracker t = new SkillTracker();
+		SkillTracker t = SkillTracker.empty();
 		// push one skill well above the floor, then let it sit idle through ticks
 		t.getSkill(Skill.MINING).setPassion(Passion.NONE);
 		t.learn(Skill.MINING, 100_000); // drive to max
@@ -195,7 +195,7 @@ class SkillSystemTest {
 
 	@Test
 	void trackerHoldsOneRecordPerSkill() {
-		SkillTracker t = new SkillTracker();
+		SkillTracker t = SkillTracker.empty();
 		assertEquals(Skill.values().length, t.getRecords().size());
 		for (Skill s : Skill.values())
 			assertNotNull(t.getSkill(s), "missing record for " + s);
@@ -207,12 +207,12 @@ class SkillSystemTest {
 		Map<Skill, SkillRecord> records = new EnumMap<>(Skill.class);
 		for (Skill s : Skill.values())
 			records.put(s, new SkillRecord(10, Passion.NONE));
-		assertEquals(10, new SkillTracker(records).overallLevel());
+		assertEquals(10, SkillTracker.of(records).overallLevel());
 	}
 
 	@Test
 	void trackerLearnRoutesToRecord() {
-		SkillTracker t = new SkillTracker();
+		SkillTracker t = SkillTracker.empty();
 		t.getSkill(Skill.MINING).setPassion(Passion.MINOR);
 		t.learn(Skill.MINING, 100);
 		assertEquals(1, t.getSkill(Skill.MINING).getLevel());

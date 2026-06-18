@@ -140,8 +140,10 @@ public class Noble extends AbstractHousehold {
 	public Noble(double initCheckingBal, double initSavingsBal,
 			List<Firm> ownedFirms, List<Bank> ownedBanks, NobleConfig config,
 			Bank bank, Settlement colony) {
+		// a founding noble takes the colony's founding race
 		this(initCheckingBal, initSavingsBal, false,
-				combine(ownedFirms, ownedBanks), config, bank, colony, null);
+				combine(ownedFirms, ownedBanks), config, bank, colony, null,
+				colony.getFoundingRace());
 	}
 
 	// firms first, then banks, into one properties list — preserving the historical
@@ -168,9 +170,11 @@ public class Noble extends AbstractHousehold {
 	 *            the colony this noble belongs to
 	 */
 	public Noble(Noble predecessor, NobleConfig config, Settlement colony) {
+		// an heir continues its dynasty, so it keeps the line's race (no re-roll)
 		this(predecessor.getEstateChecking(), predecessor.getEstateSavings(),
 				true, predecessor.properties, config,
-				predecessor.getBank(), colony, predecessor.getHead().surname());
+				predecessor.getBank(), colony, predecessor.getHead().surname(),
+				predecessor.getHead().race());
 	}
 
 	/**
@@ -231,8 +235,9 @@ public class Noble extends AbstractHousehold {
 	 */
 	private Noble(double initCheckingBal, double initSavingsBal,
 			boolean inherited, List<Property> ownedProperties,
-			NobleConfig config, Bank bank, Settlement colony, String surname) {
-		super(initCheckingBal, initSavingsBal, inherited, surname, bank, colony);
+			NobleConfig config, Bank bank, Settlement colony, String surname,
+			eos.race.Race race) {
+		super(initCheckingBal, initSavingsBal, inherited, surname, race, bank, colony);
 
 		// every noble is a person of interest the colony tracks (and logs in its
 		// yearly roster); a notable one (skill above the threshold) is also worth

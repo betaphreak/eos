@@ -36,7 +36,7 @@ class LifeTableTest {
 		int n = 10000;
 		long sumYears = 0;
 		for (int i = 0; i < n; i++) {
-			int years = demo.sampleInitialAgeDays(35) / 365;
+			int years = demo.sampleInitialAgeDays(35, eos.race.Race.HUMAN) / 365;
 			assertTrue(years >= 15 && years < 100,
 					"unexpected starting age: " + years);
 			sumYears += years;
@@ -52,7 +52,8 @@ class LifeTableTest {
 		Demography a = new Demography(new Rng(9));
 		Demography b = new Demography(new Rng(9));
 		for (int i = 0; i < 200; i++)
-			assertEquals(a.sampleInitialAgeDays(35), b.sampleInitialAgeDays(35));
+			assertEquals(a.sampleInitialAgeDays(35, eos.race.Race.HUMAN),
+					b.sampleInitialAgeDays(35, eos.race.Race.HUMAN));
 	}
 
 	@Test

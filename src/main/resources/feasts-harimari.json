@@ -1,0 +1,18 @@
+[
+  { "month": 1,  "day": 15, "name": "Feast of the First Light (New Year)" },
+  { "month": 2,  "day": 2,  "name": "Day of Ancestors" },
+  { "month": 2,  "day": 20, "name": "Festival of Stripes" },
+  { "month": 3,  "day": 15, "name": "Rite of the Waking Jungle" },
+  { "month": 4,  "day": 8,  "name": "Hunt of Spring" },
+  { "month": 5,  "day": 1,  "name": "Feast of the Verdant Moon" },
+  { "month": 5,  "day": 23, "name": "Day of the Elders" },
+  { "month": 6,  "day": 21, "name": "Sunhigh" },
+  { "month": 7,  "day": 12, "name": "Festival of the Jade Claw" },
+  { "month": 8,  "day": 3,  "name": "Feast of the Long Grass" },
+  { "month": 8,  "day": 28, "name": "Day of the Pouncing Tower" },
+  { "month": 9,  "day": 14, "name": "Harvest of the Plains" },
+  { "month": 10, "day": 10, "name": "Night of the Silver Lash" },
+  { "month": 11, "day": 1,  "name": "Feast of the Fallen" },
+  { "month": 12, "day": 6,  "name": "Festival of the White Stripe" },
+  { "month": 12, "day": 21, "name": "Longnight" }
+]

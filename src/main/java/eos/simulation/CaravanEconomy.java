@@ -109,7 +109,8 @@ public class CaravanEconomy {
 		// when the band settles, and leads the band again when the colony collapses
 		Member raw = following.promoteHighestSkilled();
 		Member leader = new Member(new Person(raw.person().givenName(),
-				muster.getNames().nextDynastyName(), raw.gender(), raw.skills()),
+				muster.getNames().nextDynastyName(raw.race()), raw.gender(),
+				raw.skills(), raw.race()),
 				raw.getBirthDate());
 		return new Caravan(leader, following, CurrencyType.GOLD.toCopper(b.gold()),
 				b.lat(), b.lon());

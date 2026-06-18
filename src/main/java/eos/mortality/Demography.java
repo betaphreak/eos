@@ -5,6 +5,7 @@ import java.util.Map;
 
 import eos.agent.Household;
 import eos.name.Gender;
+import eos.race.Race;
 import eos.skill.Passion;
 import eos.skill.Skill;
 import eos.skill.SkillRecord;
@@ -26,14 +27,10 @@ public final class Demography {
 
 	// founding-cohort initial ages are drawn from a normal distribution centered
 	// on a caller-supplied mean, truncated below so every founding head is of
-	// working age
+	// working age. The working-age floor is per race (see Race.minInitAgeYears) —
+	// faster-maturing races start younger — so it is read from the person's race,
+	// not a shared constant; the spread is shared.
 	private static final double INIT_AGE_STDDEV_YEARS = 10;
-	private static final int MIN_INIT_AGE_YEARS = 15;
-
-	// a "young and fresh" immigrant's age is drawn uniformly in this inclusive
-	// year range (a young working adult — a long-lived addition to the pool)
-	private static final int YOUNG_ADULT_MIN_YEARS = 16;
-	private static final int YOUNG_ADULT_MAX_YEARS = 25;
 
 	// a household's skill is an integer in [Household.MIN_SKILL, MAX_SKILL] drawn
 	// from a normal distribution centered on a caller-supplied mean (a
@@ -49,7 +46,13 @@ public final class Demography {
 
 	private final Rng rng;
 	private final Rng skillRng;
-	private final LifeTable table;
+
+	// each race ages and dies on its own mortality schedule (see Race.lifeTable());
+	// the HUMAN entry is overridable via the constructor's table param so a test (or
+	// a session) can supply a custom human schedule. A non-degenerate colony rolls
+	// each person's race (sampleRace) and the old-age check reads the dying head's
+	// race's table; a single-race human colony only ever touches HUMAN, unchanged.
+	private final Map<Race, LifeTable> lifeTables;
 
 	/**
 	 * Create a demographic service drawing both age/mortality and skill from
@@ -93,40 +96,53 @@ public final class Demography {
 	public Demography(Rng rng, Rng skillRng, LifeTable table) {
 		this.rng = rng;
 		this.skillRng = skillRng;
-		this.table = table;
+		// each race carries its own schedule; the human one is the supplied table
+		// (so the WEST_LEVEL_3 default — or a test's custom table — applies to humans)
+		this.lifeTables = new EnumMap<>(Race.class);
+		for (Race r : Race.values())
+			lifeTables.put(r, r.lifeTable());
+		lifeTables.put(Race.HUMAN, table);
 	}
 
 	/**
-	 * Draw an initial age (in days) for a founding household head from a normal
-	 * distribution centered on <tt>meanYears</tt> (sd
-	 * {@value #INIT_AGE_STDDEV_YEARS} years), truncated below at
-	 * {@value #MIN_INIT_AGE_YEARS} so every founding head is of working age.
+	 * Draw an initial age (in days) for a founding household head of the given race
+	 * from a normal distribution centered on <tt>meanYears</tt> (sd
+	 * {@value #INIT_AGE_STDDEV_YEARS} years), truncated below at the race's
+	 * {@link Race#minInitAgeYears() working-age floor} so every founding head is of
+	 * working age.
 	 *
 	 * @param meanYears
 	 *            mean of the age distribution, in years
+	 * @param race
+	 *            the head's race (sets the working-age floor)
 	 * @return an age in days
 	 */
-	public int sampleInitialAgeDays(double meanYears) {
+	public int sampleInitialAgeDays(double meanYears, Race race) {
+		int minYears = race.minInitAgeYears();
 		int years;
 		do {
 			years = (int) Math.round(
 					rng.gaussian(meanYears, INIT_AGE_STDDEV_YEARS));
-		} while (years < MIN_INIT_AGE_YEARS);
+		} while (years < minYears);
 		return years * DAYS_PER_YEAR + rng.uniform(DAYS_PER_YEAR);
 	}
 
 	/**
-	 * Draw the age (in days) of a <b>young, fresh</b> adult — a working age drawn
-	 * uniformly in [{@value #YOUNG_ADULT_MIN_YEARS},
-	 * {@value #YOUNG_ADULT_MAX_YEARS}] years — on the age/mortality RNG. Used for an
-	 * immigrant recruited into the {@link eos.agent.Retinue}, so a recruit is a
-	 * long-lived addition rather than drawn from the older founding-age spread.
+	 * Draw the age (in days) of a <b>young, fresh</b> adult of the given race — a
+	 * working age drawn uniformly in the race's young-adult range
+	 * [{@link Race#youngAdultMinYears()}, {@link Race#youngAdultMaxYears()}] years —
+	 * on the age/mortality RNG. Used for an immigrant recruited into the
+	 * {@link eos.agent.Retinue}, so a recruit is a long-lived addition rather than
+	 * drawn from the older founding-age spread.
 	 *
+	 * @param race
+	 *            the recruit's race (sets the young-adult age range)
 	 * @return a young-adult age in days
 	 */
-	public int sampleYoungAdultAgeDays() {
-		int span = YOUNG_ADULT_MAX_YEARS - YOUNG_ADULT_MIN_YEARS + 1;
-		int years = YOUNG_ADULT_MIN_YEARS + rng.uniform(span);
+	public int sampleYoungAdultAgeDays(Race race) {
+		int min = race.youngAdultMinYears();
+		int span = race.youngAdultMaxYears() - min + 1;
+		int years = min + rng.uniform(span);
 		return years * DAYS_PER_YEAR + rng.uniform(DAYS_PER_YEAR);
 	}
 
@@ -168,7 +184,7 @@ public final class Demography {
 		Map<Skill, SkillRecord> records = new EnumMap<>(Skill.class);
 		for (Skill s : Skill.values())
 			records.put(s, new SkillRecord(sampleSkill(meanSkill), samplePassion()));
-		return new SkillTracker(records);
+		return SkillTracker.of(records);
 	}
 
 	/**
@@ -183,6 +199,47 @@ public final class Demography {
 		return skillRng.uniform() < 0.5 ? Gender.MALE : Gender.FEMALE;
 	}
 
+	/**
+	 * Roll a person's {@link Race} against a colony's race-mix weight map, on the
+	 * skill RNG (the same demographic stream {@link #sampleGender}/{@link
+	 * #newSkillTracker} use, kept off the mortality and economic streams).
+	 * <p>
+	 * The roll is <b>gated on a non-degenerate mix</b>: a {@code null}, empty, or
+	 * single-entry map draws <b>no</b> randomness and returns the lone race (or
+	 * {@link Race#HUMAN}). This is what keeps a single-race colony — every current
+	 * scenario — byte-identical: the human-only mix never touches the RNG. Only a
+	 * genuine multi-race mix rolls, weighted by the map's values.
+	 *
+	 * @param raceMix
+	 *            race &rarr; weight (need not be normalized); degenerate maps skip
+	 *            the roll
+	 * @return the rolled race
+	 */
+	public Race sampleRace(Map<Race, Double> raceMix) {
+		if (raceMix == null || raceMix.isEmpty())
+			return Race.HUMAN;
+		if (raceMix.size() == 1)
+			return raceMix.keySet().iterator().next();
+		double total = 0;
+		for (double w : raceMix.values())
+			total += w;
+		double r = skillRng.uniform() * total;
+		// iterate in a fixed Race.values() order (NOT the map's, whose iteration order
+		// is unspecified — e.g. Map.of randomizes it per JVM) so the weighted draw is
+		// reproducible across runs for a given seed
+		Race last = Race.HUMAN;
+		for (Race race : Race.values()) {
+			Double w = raceMix.get(race);
+			if (w == null)
+				continue;
+			last = race;
+			r -= w;
+			if (r < 0)
+				return race;
+		}
+		return last; // floating-point slack: fall back to the last entry
+	}
+
 	// draw a passion on the skill RNG using the placeholder weights
 	private Passion samplePassion() {
 		double r = skillRng.uniform();
@@ -194,13 +251,17 @@ public final class Demography {
 	}
 
 	/**
-	 * Decide whether a household head of the given age dies of old age today.
+	 * Decide whether a person of the given age and race dies of old age today, on
+	 * its race's mortality schedule.
 	 *
 	 * @param ageDays
-	 *            the head's age in days
-	 * @return true if the head dies of old age this step
+	 *            the person's age in days
+	 * @param race
+	 *            the person's ancestry (selects the mortality schedule)
+	 * @return true if the person dies of old age this step
 	 */
-	public boolean diesOfOldAge(int ageDays) {
-		return rng.uniform() < table.dailyDeathProb(ageDays / DAYS_PER_YEAR);
+	public boolean diesOfOldAge(int ageDays, Race race) {
+		return rng.uniform() < lifeTables.get(race)
+				.dailyDeathProb(ageDays / DAYS_PER_YEAR);
 	}
 }

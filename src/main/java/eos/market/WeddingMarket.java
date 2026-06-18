@@ -173,9 +173,10 @@ public class WeddingMarket extends Market {
 	// record the event for the printer
 	private void marry(Household h, Member candidate, Ruler ruler, double charge) {
 		retinue.removeForMarriage(candidate);
+		// the spouse takes the household surname but keeps its own line's ancestry
 		Member spouse = new Member(
 				new Person(candidate.person().givenName(), h.getHead().surname(),
-						candidate.gender(), candidate.skills()),
+						candidate.gender(), candidate.skills(), candidate.race()),
 				candidate.getBirthDate());
 
 		// snapshot both parties' stats before the head's age/skill could change

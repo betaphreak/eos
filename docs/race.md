@@ -1,7 +1,9 @@
 # Design note: Race (per-person ancestry)
 
-**Status:** proposed (design only — the `Race` type and its plumbing are not yet
-implemented; some groundwork is already in tree, see *Groundwork already laid*).
+**Status:** Implemented (Phases 1–3). The `Race` type and its plumbing, the
+machinery that makes ancestry *vary*, and the authored Harimari content (names,
+calendar, tech overlay) plus a demo scenario and tests are all in tree. Remaining
+items are the *Open questions / future* below. See *Suggested phasing*.
 **Date:** 2026-06-18
 **Depends on:** the per-session services owned by `eos.settlement.GameSession`
 (the `NameRegistry` given-name tables + `DynastyPool`, the `LiturgicalCalendar`,
@@ -53,14 +55,26 @@ A small `eos.race.Race` enum, each value carrying the metadata the services need
 
 ```java
 public enum Race {
-    HUMAN("human", LifeTable.WEST_LEVEL_3),
-    HARIMARI("harimari", LifeTable.WEST_LEVEL_3); // own life table later
+    //     id          life table            minInitAge  youngAdult[min,max]
+    HUMAN   ("human",   LifeTable.WEST_LEVEL_3, 15,        16, 25),
+    HARIMARI("harimari",LifeTable.WEST_LEVEL_3,  9,         9, 16); // own life table later
 
     private final String id;          // resource-file slug
     private final LifeTable lifeTable; // mortality schedule
+    private final int minInitAgeYears;                 // founding working-age floor
+    private final int youngAdultMinYears, youngAdultMaxYears; // immigrant recruit range
     // ...
 }
 ```
+
+Besides the mortality schedule, the enum carries the **age demographics** that vary
+by race: the founding-age floor (`minInitAgeYears`) the founding-age draw is
+truncated below, and the inclusive `[min, max]` age range of a young-adult immigrant
+recruit. The faster-maturing Harimari start at 9 and recruit 9–16, versus the human
+15 and 16–25. `Demography.sampleInitialAgeDays(meanYears, race)` and
+`sampleYoungAdultAgeDays(race)` read these from the person's race; the age *spread*
+(`INIT_AGE_STDDEV_YEARS`) stays shared. (Skill and gender means remain colony-level —
+see *Open questions*.)
 
 `id()` drives the resource-file convention `/{male,female,dynasty}-<id>.json`,
 `/feasts-<id>.json`, `/tech-effects-<id>.json`. **Every per-race resource falls back
@@ -77,8 +91,10 @@ given names — see *Groundwork*).
   old-age check takes the dying head's race. It gains `sampleRace(raceMix)` — rolled
   on the demographic RNG exactly like `sampleGender`, and **only when the colony's mix
   is non-degenerate** (a single-race colony draws nothing, preserving the human RNG
-  stream and byte-identical output). Skill/gender means stay colony-level for v1; a
-  race may shift them later.
+  stream and byte-identical output). Its **age draws are race-keyed** too —
+  `sampleInitialAgeDays(meanYears, race)` and `sampleYoungAdultAgeDays(race)` read the
+  founding floor and young-adult range from the person's `Race`. Skill/gender means
+  stay colony-level for v1; a race may shift them later.
 - **`NameRegistry` / `DynastyPool`** become race-keyed: the registry holds a
   `Race → NameTable` for given names and a `Race → DynastySlice` for surnames, and the
   draw methods (`nextHead`, `nextDynastyName`, `nextRarestDynastyName`, …) take the
@@ -137,11 +153,15 @@ Two pieces are already in tree ahead of the plumbing:
 - **Harimari name resources.** `src/main/resources/dynasty-harimari.json` holds 278
   surnames on the standard 0–99 rarity scale: 212 real South-Asian surnames carved out
   of the human dynasty table (rarity bands conserved), plus the **66 *Anbennar* clan
-  epithets** ("of the White Stripe", "of the Jade Claw", …) as the single **rarest
-  tier** (the grand houses). `male-harimari.json` / `female-harimari.json` are
-  placeholder copies of the human given names until distinctive ones are authored.
-  Nothing loads these yet — the loader is still hard-wired to the human files pending
-  this note's plumbing.
+  epithets** ("of the White Stripe", "of the Jade Claw", …) as the **rarest tier** (the
+  grand houses). `male-harimari.json` / `female-harimari.json` now carry **distinctive
+  South-Asian/Sanskrit given names** (Phase 3 replaced the placeholder human copies).
+  All three are loaded per race by `GameSession` (with human fallback). *(Note: the
+  rarest tier by NameTable **weight** is not the clan-epithet tier — the loader's
+  zero-width-band clamp lifts that 66-name tier's weight, so `nextRarestDynastyName`
+  does not specifically return an epithet. The epithets are still drawn by the ordinary
+  weighted `nextDynastyName`. Making nobles reliably draw clan epithets is a future
+  tweak to the rarity model.)*
 - **Nobles draw rare dynasties.** A noble founding a *new* dynasty now draws its
   surname from the rarest tier (`Noble.drawsRareDynasty()` →
   `NameRegistry.nextRarestDynastyName()`), so once the Harimari pool is loaded a
@@ -152,16 +172,53 @@ Two pieces are already in tree ahead of the plumbing:
 
 ## Suggested phasing
 
-1. **Plumbing, all human.** Add the `Race` enum, `Person.race`, the race-keyed maps
-   in `Demography` / `NameRegistry` / `GameSession`, and `Settlement.foundingRace` /
-   `raceMix`; everything defaults to `HUMAN`. Zero behaviour change; the suite stays
-   green and output byte-identical.
-2. **Make it vary.** Wire the race-mix roll into pool seeding and founding; per-person
-   life table and names actually differ; founding race selects the calendar and tech
-   overlay.
-3. **Author the Harimari.** Their `feasts-harimari.json`, distinctive given names, and
-   `tech-effects-harimari.json` (naval techs inert), plus a demo scenario and a test
-   asserting a mixed-race colony founds, names, ages, and researches correctly.
+1. **Plumbing, all human.** *(implemented)* Added the `eos.race.Race` enum (`id()` +
+   `lifeTable()`), `Person.race` (default `HUMAN`, threaded through `withSkills` and
+   the household/peasant/wedding/caravan person-creators), the race-keyed maps in
+   `Demography` (`Race → LifeTable`; `diesOfOldAge(ageDays, race)`; `sampleRace(raceMix)`
+   gated on a non-degenerate mix so a human-only colony draws no RNG), `NameRegistry`
+   (per-race given-name tables + per-race `DynastyDraw` surname state, race-param draw
+   overloads defaulting to `HUMAN`, plus `registerRace`), and `GameSession` (per-race
+   lazy name-table / `DynastyPool` / calendar caches with human fallback,
+   `getTechTree(Race)` / `getLiturgicalCalendar(Race)`, and a `newSettlement(…,
+   foundingRace, raceMix)` overload), and `Settlement.foundingRace` / `raceMix`
+   (defaults `HUMAN` / `{HUMAN: 1.0}`). Everything defaults to `HUMAN`; the suite stays
+   green and the human path consumes RNG in the same order (byte-identical). The
+   per-line race of heirs/spouses still resolves to the colony's founding race — Phase 2
+   threads a succeeding line's own ancestry through succession/marriage.
+2. **Make it vary.** *(implemented)* The race-mix roll is wired into pool seeding
+   (`Retinue.newPeasant`) and immigration (the equity-funded `Laborer`), reproducibly
+   on the demographic RNG (iterated in fixed `Race.values()` order so a multi-race
+   draw is deterministic regardless of map order); per-person names are drawn from the
+   roller's race's tables and the old-age check reads its race's life table. **Heirs
+   and wedding spouses keep their own line's race** — succession threads
+   `predecessor.getHead().race()` through the `Laborer`/`Noble`/`Ruler` constructors
+   (via a new `Race` parameter on the `AbstractHousehold` drawing constructor), and the
+   wedding spouse keeps the candidate's race; only *generated* people (pool, immigrants)
+   roll, and founders take the colony's founding race. The founding-race calendar/tech
+   seam (`GameSession.getLiturgicalCalendar(Race)` / `getTechTree(Race)`) is in place but
+   still resolves to the shared human resources until Phase 3 authors per-race files.
+   Covered by `eos.race.RaceTest` (the roll's reproducibility & coverage, the degenerate
+   mix drawing no RNG, per-race naming with the Harimari clan epithets, the calendar/tech
+   seam). The full mixed-race economy smoke test ships with the Harimari content in
+   Phase 3.
+3. **Author the Harimari.** *(implemented)* The per-race resource loading is wired:
+   `GameSession.getLiturgicalCalendar(Race)` loads `/feasts-<id>.json` when present
+   (else the human calendar) and `getTechTree(Race)` loads the shared graph under
+   `/tech-effects-<id>.json` when present (else the shared empty overlay); the harness
+   wires a colony's research to `getTechTree(foundingRace)`. The Harimari content
+   ships: distinctive South-Asian/Sanskrit given names (`male-harimari.json` /
+   `female-harimari.json`), a thematic `feasts-harimari.json` (festivals of the hunt,
+   the stripe, the ancestors — echoing the clan epithets), and a
+   `tech-effects-harimari.json` that leans bonuses toward export/scholarship
+   (TECH_HUMANISM, TECH_PRINTING_PRESS) and food (TECH_THEOLOGY) and gives the naval
+   techs nothing (present-but-inert by omission). `HarimariEconomy` is the demo
+   scenario — a Harimari-founded, ~70/30 mixed colony — and `MixedRaceColonyTest`
+   asserts such a colony founds, names people of both races, ages them on their race's
+   floor, keeps the Harimari calendar, and researches on the Harimari overlay. (The
+   Harimari given-name pool is small, and the dynasty pool is 278; a Harimari-majority
+   colony must be sized so promotions don't exhaust it — the demo/test use a 200-peasant
+   pool. A larger Harimari colony would need a larger surname table.)
 
 ## Open questions / future
 

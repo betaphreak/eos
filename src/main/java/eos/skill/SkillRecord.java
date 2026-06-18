@@ -54,6 +54,25 @@ public final class SkillRecord {
 		this.passion = passion;
 	}
 
+	/**
+	 * Create a record at the given level, passion and accumulated experience —
+	 * the full per-skill state. Used to <b>materialize</b> a record from a
+	 * columnar store (see {@link SkillColumns}) so a person's skills carry their
+	 * exact level <em>and</em> in-progress XP when they leave the store.
+	 *
+	 * @param level
+	 *            the initial level (clamped to {@code [MIN_LEVEL, MAX_LEVEL]})
+	 * @param passion
+	 *            the passion
+	 * @param xpSinceLastLevel
+	 *            experience already accumulated toward the next level-up
+	 */
+	public SkillRecord(int level, Passion passion, double xpSinceLastLevel) {
+		this.level = clampLevel(level);
+		this.passion = passion;
+		this.xpSinceLastLevel = xpSinceLastLevel;
+	}
+
 	/** @return the current level, in {@code [MIN_LEVEL, MAX_LEVEL]} */
 	public int getLevel() {
 		return level;

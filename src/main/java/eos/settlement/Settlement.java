@@ -35,6 +35,7 @@ import eos.market.Market;
 import eos.mortality.Demography;
 import eos.name.Gender;
 import eos.name.NameRegistry;
+import eos.race.Race;
 import eos.tech.Sector;
 import eos.tech.TechEffect;
 import eos.util.Rng;
@@ -127,6 +128,22 @@ public class Settlement {
 	// demographic service (shared with the owning game session)
 	@Getter
 	private final Demography demography;
+
+	// the colony's founding race — its ruler's race (default HUMAN). Used *only* to
+	// pick the colony-wide mechanics that have no per-person form: the liturgical
+	// calendar and the tech effect overlay (see docs/race.md). Individuals vary
+	// freely per person via raceMix; this is the single race those colony-wide
+	// systems key off.
+	@Getter
+	private final Race foundingRace;
+
+	// the race-mix weights every *generated* person is rolled against (pool seeding,
+	// founding draws, immigration), on the demographic RNG (see Demography.sampleRace).
+	// Default {HUMAN: 1.0} — a degenerate distribution that skips the roll entirely,
+	// so a mono-cultural colony draws no extra randomness and stays byte-identical.
+	// Inherited and married-in people keep their own line's race (not rolled).
+	@Getter
+	private final Map<Race, Double> raceMix;
 
 	// the precalculated slot table (shared with the owning game session): a
 	// size -> SlotInfo lookup the colony reads its current geometry from
@@ -340,11 +357,62 @@ public class Settlement {
 			LiturgicalCalendar liturgicalCalendar, double meanInitAgeYears,
 			double targetNStock, double meanSkillMale, double meanSkillFemale,
 			double latitude, double longitude) {
+		this(name, startDate, rng, names, demography, slotTable, liturgicalCalendar,
+				meanInitAgeYears, targetNStock, meanSkillMale, meanSkillFemale,
+				latitude, longitude, Race.HUMAN, Map.of(Race.HUMAN, 1.0));
+	}
+
+	/**
+	 * Create a colony as {@link #Settlement(String, LocalDate, Rng, NameRegistry,
+	 * Demography, SlotTable, LiturgicalCalendar, double, double, double, double,
+	 * double, double)} but with an explicit {@link Race founding race} and
+	 * per-person race-mix (see {@code docs/race.md}). The other overload defaults
+	 * both to human, so a mono-cultural colony is unaffected.
+	 *
+	 * @param name
+	 *            the settlement's name (a display label)
+	 * @param startDate
+	 *            the in-game date of step 0
+	 * @param rng
+	 *            the random-number generator for this colony
+	 * @param names
+	 *            the name sets for this colony
+	 * @param demography
+	 *            the demographic service for this colony
+	 * @param slotTable
+	 *            the precalculated slot table (shared across the session)
+	 * @param liturgicalCalendar
+	 *            the founding race's liturgical calendar (shared across the session)
+	 * @param meanInitAgeYears
+	 *            mean initial age (years) of founding household heads
+	 * @param targetNStock
+	 *            target necessity stock every laborer tries to accumulate
+	 * @param meanSkillMale
+	 *            mean of this colony's male skill distribution
+	 * @param meanSkillFemale
+	 *            mean of this colony's female skill distribution
+	 * @param latitude
+	 *            the colony's geographic latitude in decimal degrees (north positive)
+	 * @param longitude
+	 *            the colony's geographic longitude in decimal degrees (east positive)
+	 * @param foundingRace
+	 *            the colony's founding (ruler's) race
+	 * @param raceMix
+	 *            race &rarr; weight every generated person is rolled against
+	 */
+	public Settlement(String name, LocalDate startDate, Rng rng,
+			NameRegistry names, Demography demography, SlotTable slotTable,
+			LiturgicalCalendar liturgicalCalendar, double meanInitAgeYears,
+			double targetNStock, double meanSkillMale, double meanSkillFemale,
+			double latitude, double longitude, Race foundingRace,
+			Map<Race, Double> raceMix) {
 		this.name = name;
 		this.startDate = startDate;
 		this.rng = rng;
 		this.names = names;
 		this.demography = demography;
+		this.foundingRace = foundingRace;
+		this.raceMix = raceMix;
 		this.slotTable = slotTable;
 		this.liturgicalCalendar = liturgicalCalendar;
 		this.meanInitAgeYears = meanInitAgeYears;

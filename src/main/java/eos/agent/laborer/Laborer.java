@@ -111,8 +111,10 @@ public class Laborer extends AbstractHousehold {
 	public Laborer(double initEQty, double initNQty, double initCheckingBal,
 			double initSavingsBal, double initSavingsRate, LaborerConfig config,
 			Bank bank, Settlement colony) {
+		// a founding (pool-less) laborer takes the colony's founding race
 		this(initEQty, initNQty, initCheckingBal, initSavingsBal, false,
-				initSavingsRate, config, bank, colony, null);
+				initSavingsRate, config, bank, colony, null,
+				colony.getFoundingRace());
 	}
 
 	/**
@@ -145,8 +147,11 @@ public class Laborer extends AbstractHousehold {
 	public Laborer(double initEQty, double initNQty, double initCheckingBal,
 			double initSavingsBal, double initSavingsRate, LaborerConfig config,
 			Bank bank, Settlement colony, boolean fundedFromEquity) {
+		// an immigrant is a freshly-generated person, so it rolls its ancestry against
+		// the colony's race-mix (a mono-cultural colony draws nothing and gets HUMAN)
 		this(initEQty, initNQty, initCheckingBal, initSavingsBal,
-				fundedFromEquity, initSavingsRate, config, bank, colony, null);
+				fundedFromEquity, initSavingsRate, config, bank, colony, null,
+				colony.getDemography().sampleRace(colony.getRaceMix()));
 	}
 
 	/**
@@ -171,9 +176,11 @@ public class Laborer extends AbstractHousehold {
 	 */
 	public Laborer(Laborer predecessor, double initEQty, double initNQty,
 			double initSavingsRate, LaborerConfig config, Settlement colony) {
+		// an heir continues its dynasty, so it keeps the line's race (no re-roll)
 		this(initEQty, initNQty, predecessor.getEstateChecking(),
 				predecessor.getEstateSavings(), true, initSavingsRate, config,
-				predecessor.getBank(), colony, predecessor.getHead().surname());
+				predecessor.getBank(), colony, predecessor.getHead().surname(),
+				predecessor.getHead().race());
 	}
 
 	/**
@@ -184,8 +191,9 @@ public class Laborer extends AbstractHousehold {
 	 */
 	private Laborer(double initEQty, double initNQty, double initCheckingBal,
 			double initSavingsBal, boolean inherited, double initSavingsRate,
-			LaborerConfig config, Bank bank, Settlement colony, String surname) {
-		super(initCheckingBal, initSavingsBal, inherited, surname, bank, colony);
+			LaborerConfig config, Bank bank, Settlement colony, String surname,
+			eos.race.Race race) {
+		super(initCheckingBal, initSavingsBal, inherited, surname, race, bank, colony);
 
 		// a notable arrival (skill above the threshold) is worth recording by name,
 		// and is a person of interest the colony tracks (and logs yearly)

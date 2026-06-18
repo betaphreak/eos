@@ -1,0 +1,11 @@
+{
+  "TECH_THEOLOGY": [
+    { "kind": "SECTOR_PRODUCTIVITY", "sector": "NECESSITY", "factor": 1.05 }
+  ],
+  "TECH_HUMANISM": [
+    { "kind": "SECTOR_PRODUCTIVITY", "sector": "EXPORT", "factor": 1.08 }
+  ],
+  "TECH_PRINTING_PRESS": [
+    { "kind": "SECTOR_PRODUCTIVITY", "sector": "EXPORT", "factor": 1.05 }
+  ]
+}

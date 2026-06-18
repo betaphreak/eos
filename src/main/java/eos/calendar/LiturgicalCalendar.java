@@ -73,18 +73,34 @@ public final class LiturgicalCalendar {
 	 *             if the resource is missing or lists two feasts on one date
 	 */
 	public static LiturgicalCalendar load() {
+		return load(RESOURCE);
+	}
+
+	/**
+	 * Load a liturgical calendar from a specific classpath resource — used for the
+	 * per-race feast calendars ({@code /feasts-<id>.json}; see {@code docs/race.md}),
+	 * a colony keying its rest calendar off its founding race. The shipped
+	 * {@code /feasts.json} is the default (human) calendar.
+	 *
+	 * @param resource
+	 *            the feast-list classpath resource (e.g. {@code "/feasts-harimari.json"})
+	 * @return the loaded calendar
+	 * @throws IllegalStateException
+	 *             if the resource is missing or lists two feasts on one date
+	 */
+	public static LiturgicalCalendar load(String resource) {
 		try (InputStream in =
-				LiturgicalCalendar.class.getResourceAsStream(RESOURCE)) {
+				LiturgicalCalendar.class.getResourceAsStream(resource)) {
 			if (in == null)
 				throw new IllegalStateException(
-						"Feast calendar resource not found: " + RESOURCE);
+						"Feast calendar resource not found: " + resource);
 			List<Feast> rows = MAPPER.readValue(in,
 					new TypeReference<List<Feast>>() {
 					});
 			return new LiturgicalCalendar(rows);
 		} catch (IOException e) {
 			throw new UncheckedIOException(
-					"Failed to load feast calendar resource: " + RESOURCE, e);
+					"Failed to load feast calendar resource: " + resource, e);
 		}
 	}
 

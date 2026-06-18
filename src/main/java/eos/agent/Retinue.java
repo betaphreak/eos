@@ -2,6 +2,7 @@ package eos.agent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 import eos.agent.firm.BuilderFirm;
@@ -17,6 +18,8 @@ import eos.mortality.Demography;
 import eos.name.Gender;
 import eos.name.Person;
 import eos.settlement.Settlement;
+import eos.skill.ColumnSkillTracker;
+import eos.skill.SkillColumns;
 import eos.skill.SkillTracker;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -66,6 +69,16 @@ public class Retinue extends Agent {
 	private static final double RELIEF_BUDGET_PER_PEASANT = 0.6;
 
 	private final List<Member> peasants = new ArrayList<>();
+
+	// the pool's skills, stored struct-of-arrays (one row per peasant) rather than
+	// twelve scattered objects per person: the daily decay sweep (tickAll) and the
+	// skill reductions run over contiguous memory. Each peasant's Person carries a
+	// ColumnSkillTracker view over its row; on the peasant leaving the pool the view
+	// materializes into a standalone record-backed copy (see SkillColumns.remove),
+	// so its skills travel intact into the household it is promoted or wed into. The
+	// store stays in lockstep with `peasants`: every add to one adds to the other,
+	// every removal frees the row.
+	private final SkillColumns skillStore;
 
 	// how this retinue is sustained each step — swapped on detach()/settle(). Composed
 	// (Strategy) so the settled-relief and wandering behaviours stay separate rather
@@ -136,7 +149,7 @@ public class Retinue extends Agent {
 		// seed the larder with a full per-peasant buffer, so the pool can feed its
 		// peasants from step 0 and ride out the necessity sector's adjustment to the
 		// new demand (and a promoted peasant takes its BUFFER_DAYS ration with it)
-		this(bank, colony, (double) initialSize * BUFFER_DAYS);
+		this(bank, colony, (double) initialSize * BUFFER_DAYS, initialSize);
 		seed(initialSize);
 	}
 
@@ -160,15 +173,19 @@ public class Retinue extends Agent {
 	 */
 	public Retinue(List<Member> members, double larder, Bank bank,
 			Settlement colony) {
-		this(bank, colony, larder);
-		peasants.addAll(members);
+		this(bank, colony, larder, members.size());
+		// re-home each adopted person's skills in this pool's columnar store
+		for (Member m : members)
+			peasants.add(adopt(m));
 	}
 
-	// shared construction: open the account, look up the markets the pool uses, and
-	// size the larder. The two public constructors differ only in how the pool is
-	// peopled (fresh draws vs. an adopted band) and its larder.
-	private Retinue(Bank bank, Settlement colony, double larder) {
+	// shared construction: open the account, look up the markets the pool uses, size
+	// the larder, and create the columnar skill store. The two public constructors
+	// differ only in how the pool is peopled (fresh draws vs. an adopted band) and
+	// its larder.
+	private Retinue(Bank bank, Settlement colony, double larder, int capacity) {
 		super(bank, colony);
+		this.skillStore = new SkillColumns(capacity);
 		setName("Retinue");
 		bank.openAcct(getID(), 0, 0);
 		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
@@ -200,18 +217,43 @@ public class Retinue extends Agent {
 		Settlement colony = getColony();
 		Demography demography = colony.getDemography();
 		Gender gender = demography.sampleGender();
+		// roll the peasant's ancestry against the colony's race-mix; a mono-cultural
+		// colony (every current scenario) has a degenerate mix, so this draws no RNG
+		// and returns HUMAN — the gender/age/skills/name draw order is unchanged
+		eos.race.Race race = demography.sampleRace(colony.getRaceMix());
 		int ageDays = young
-				? demography.sampleYoungAdultAgeDays()
-				: demography.sampleInitialAgeDays(colony.getMeanInitAgeYears());
-		SkillTracker skills =
-				demography.newSkillTracker(colony.getMeanSkill(gender));
+				? demography.sampleYoungAdultAgeDays(race)
+				: demography.sampleInitialAgeDays(colony.getMeanInitAgeYears(), race);
+		// draw the skills, then move them into the columnar store (consuming no RNG,
+		// so the gender/age/skills/name draw order is unchanged and reproducible)
+		SkillTracker seed = demography.newSkillTracker(colony.getMeanSkill(gender));
+		ColumnSkillTracker view = skillStore.add(seed);
 		// surname-less while pooled; a dynasty surname is drawn at promotion (or the
-		// household surname at marriage). The given name matches the rolled gender.
+		// household surname at marriage). The given name matches the rolled gender and
+		// is drawn from the peasant's own race's table.
 		String givenName = gender == Gender.FEMALE
-				? colony.getNames().nextFemaleName()
-				: colony.getNames().nextMaleName();
-		Person p = new Person(givenName, "", gender, skills);
+				? colony.getNames().nextFemaleName(race)
+				: colony.getNames().nextMaleName(race);
+		Person p = new Person(givenName, "", gender, view, race);
 		return new Member(p, colony.getDate().minusDays(ageDays));
+	}
+
+	// re-home an existing person's skills into this pool's columnar store, returning
+	// a Member identical in name, gender and age but whose skills are now a
+	// column-backed view (its prior tracker is snapshotted in, so its level/XP carry
+	// over). Used when a person enters the pool already formed — an adopted band at
+	// re-founding, or a disbanding household's member at dissolution.
+	private Member adopt(Member m) {
+		ColumnSkillTracker view = skillStore.add(m.skills());
+		Person p = new Person(m.person().givenName(), m.surname(), m.gender(), view,
+				m.race());
+		return new Member(p, m.getBirthDate());
+	}
+
+	// the column-backed skill view of a pooled peasant (every pooled peasant has
+	// one); used to free its row from the store when it leaves the pool
+	private static ColumnSkillTracker viewOf(Member m) {
+		return (ColumnSkillTracker) m.skills();
 	}
 
 	/**
@@ -253,11 +295,17 @@ public class Retinue extends Agent {
 		// before feeding: settled mode bills the ruler for last step's relief spend;
 		// wandering mode has no patron, so nothing (see the Provisioning strategies)
 		provisioning.beforeFeeding(this);
-		// old-age mortality, then skill decay for the survivors (both modes)
-		peasants.removeIf(
-				m -> m.rollOldAgeDeath(colony.getDemography(), colony.getDate()));
-		for (Member m : peasants)
-			m.skills().tick();
+		// old-age mortality (freeing each dead peasant's row), then a single columnar
+		// decay sweep over the survivors' skills (both modes)
+		Iterator<Member> it = peasants.iterator();
+		while (it.hasNext()) {
+			Member m = it.next();
+			if (m.rollOldAgeDeath(colony.getDemography(), colony.getDate())) {
+				skillStore.remove(viewOf(m));
+				it.remove();
+			}
+		}
+		skillStore.tickAll();
 		// eat the current ration; the unfed starve
 		feed();
 		// after feeding: settled mode lends the builder its corvée labor and posts the
@@ -304,7 +352,7 @@ public class Retinue extends Agent {
 			// the least skilled starve first; the abler are kept for promotion
 			peasants.sort(Comparator.comparingInt(m -> m.skills().overallLevel()));
 			for (long i = 0; i < lastStarved && !peasants.isEmpty(); i++)
-				peasants.remove(0);
+				skillStore.remove(viewOf(peasants.remove(0)));
 			log.info(lastStarved + " peasant(s) starved (pool now "
 					+ peasants.size() + ")");
 		}
@@ -338,7 +386,7 @@ public class Retinue extends Agent {
 	 *            the person to add to the pool
 	 */
 	public void absorb(Member person) {
-		peasants.add(person);
+		peasants.add(adopt(person));
 	}
 
 	/**
@@ -368,6 +416,9 @@ public class Retinue extends Agent {
 					|| m.skills().overallLevel() > best.skills().overallLevel())
 				best = m;
 		if (best != null) {
+			// frees its row and materializes its skills into a standalone copy, which
+			// travels with the Member into the laborer household it heads
+			skillStore.remove(viewOf(best));
 			peasants.remove(best);
 			promotedCount++;
 		}
@@ -413,8 +464,11 @@ public class Retinue extends Agent {
 	 */
 	public boolean removeForMarriage(Member peasant) {
 		boolean removed = peasants.remove(peasant);
-		if (removed)
+		if (removed) {
+			// materialize its skills so they survive into the household as a spouse
+			skillStore.remove(viewOf(peasant));
 			marriedOutCount++;
+		}
 		return removed;
 	}
 

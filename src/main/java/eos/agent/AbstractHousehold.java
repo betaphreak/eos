@@ -81,13 +81,17 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	 * @param surname
 	 *            an existing dynasty surname to continue, or {@code null} to
 	 *            start a new dynasty with a fresh unique surname
+	 * @param race
+	 *            the head's ancestry — its dynasty's race for a successor, the
+	 *            colony's founding race for a founder, or a freshly-rolled race for
+	 *            an immigrant; selects which name tables the head is drawn from
 	 * @param bank
 	 *            the bank at which this household holds its accounts
 	 * @param colony
 	 *            the colony this household belongs to
 	 */
 	protected AbstractHousehold(double initCheckingBal, double initSavingsBal,
-			boolean fundedFromEquity, String surname, Bank bank,
+			boolean fundedFromEquity, String surname, eos.race.Race race, Bank bank,
 			Settlement colony) {
 		super(bank, colony);
 
@@ -99,10 +103,11 @@ public abstract class AbstractHousehold extends Agent implements Household {
 		this.weddingMkt = (eos.market.WeddingMarket) colony.getMarket("Wedding");
 
 		// the head is aged on the separate mortality RNG: its birth date is today
-		// less a sampled working-age span. The household itself is founded now.
+		// less a sampled working-age span (the working-age floor is the head's race's).
+		// The household itself is founded now.
 		Demography demography = colony.getDemography();
 		LocalDate birthDate = colony.getDate().minusDays(
-				demography.sampleInitialAgeDays(colony.getMeanInitAgeYears()));
+				demography.sampleInitialAgeDays(colony.getMeanInitAgeYears(), race));
 		this.foundingDate = colony.getDate();
 
 		// build the head's skills — one randomized record per skill — on the
@@ -122,13 +127,17 @@ public abstract class AbstractHousehold extends Agent implements Household {
 		// named person carries its skills.
 		eos.name.NameRegistry names = colony.getNames();
 		double nameRarity = (double) skills.overallLevel() / Household.MAX_SKILL;
+		// the head's race is supplied by the caller: a successor passes its dynasty's
+		// race (so an heir keeps its line's ancestry), a founder the colony's founding
+		// race, an immigrant a freshly-rolled race — and the head is named from that
+		// race's tables.
 		Person named;
 		if (surname == null)
 			named = drawsRareDynasty()
-					? names.nextHeadRareDynasty(nameRarity)
-					: names.nextHead(nameRarity);
+					? names.nextHeadRareDynasty(nameRarity, race)
+					: names.nextHead(nameRarity, race);
 		else
-			named = names.nextHeadInDynasty(surname, nameRarity);
+			named = names.nextHeadInDynasty(surname, nameRarity, race);
 		Person head = named.withSkills(skills);
 		// wrap the head as the household's sole member (for now), carrying its own
 		// birth date so members can age and die independently as households grow

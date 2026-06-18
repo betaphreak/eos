@@ -26,7 +26,7 @@ class LaborMarketTest {
 		Map<Skill, SkillRecord> records = new EnumMap<>(Skill.class);
 		for (Skill s : Skill.values())
 			records.put(s, new SkillRecord(levels.getOrDefault(s, 5), Passion.NONE));
-		return new SkillTracker(records);
+		return SkillTracker.of(records);
 	}
 
 	@Test

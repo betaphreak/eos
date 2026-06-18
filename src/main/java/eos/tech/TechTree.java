@@ -122,7 +122,7 @@ public final class TechTree {
 	 *            the effect-overlay classpath resource
 	 * @return the loaded tech tree with that overlay
 	 */
-	static TechTree load(String effectsResource) {
+	public static TechTree load(String effectsResource) {
 		try (InputStream in = TechTree.class.getResourceAsStream(RESOURCE)) {
 			if (in == null)
 				throw new IllegalStateException(
