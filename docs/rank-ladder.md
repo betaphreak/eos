@@ -7,6 +7,10 @@ its three implementors (`Laborer`, `Noble`, `Ruler`), the adopt-style household
 constructors (`Noble(Member head, …)`, the adopt-a-`Member` `Laborer`), and the
 colony's deferred-mutation hooks (`Settlement.scheduleEndOfStepAction`,
 `scheduleAddAgent`, `scheduleRemoveAgent`).
+**Related:** `Rank` (command scope, this note) is the deliberately-separate sibling of
+**`SocialClass`** (standing & standard of living, `docs/social-class.md`) — collinear
+today but independent axes; and the **tech tree** (`docs/tech-tree.md`) gates the
+`HOLDING → VILLAGE → CITY` ascent behind researched techs (its `SOCIAL_GATE` effect).
 
 ## Motivation
 
