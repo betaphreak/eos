@@ -9,7 +9,9 @@ import eos.agent.Caravan;
 import eos.calendar.LiturgicalCalendar;
 import eos.era.Era;
 import eos.mortality.Demography;
+import eos.name.DynastyPool;
 import eos.name.NameRegistry;
+import eos.name.NameTable;
 import eos.tech.TechTree;
 import eos.util.Rng;
 import lombok.Getter;
@@ -23,13 +25,17 @@ import lombok.Getter;
  * (index 0) uses the bare seed, so a single-colony run is byte-identical to one
  * with a single shared generator.
  * <p>
- * The session also owns the complete name sets ({@link NameRegistry}) and the
- * demographic service ({@link Demography}), each drawn from its own
- * <em>separate</em> generator (a salted copy of the seed) so naming and
- * mortality are deterministic yet never perturb the economic random stream.
- * Unlike the economic generator these are <b>shared</b> across the session's
- * colonies — that sharing is what makes dynasty surnames unique across every
- * colony in the session (the name pool is a single session-wide resource).
+ * The session owns the shared, immutable given-name tables and the session-wide
+ * {@link DynastyPool} of surnames, but each colony it creates gets its <b>own</b>
+ * {@link NameRegistry} and {@link Demography}, on per-colony naming/mortality/skill
+ * generators (salted copies of the seed) so these draws are deterministic yet
+ * never perturb the economic random stream. This per-colony partitioning is what
+ * lets the colonies run on <b>separate threads</b>: each draws and recycles
+ * surnames only within its own disjoint slice of the {@code DynastyPool} (so they
+ * stay unique across the whole session) and rolls its own mortality/skill, without
+ * sharing mutable state. Colony 0's mortality and skill generators reuse the bare
+ * salted seeds, so a single-colony run's economics are unchanged by the
+ * partitioning (only which surnames land where shifts — surnames are cosmetic).
  * <p>
  * The session is also the home of the realm's <b>colony-less</b> bands: a {@link
  * Caravan} (a wandering following with a leader but no settlement) belongs to no
@@ -49,6 +55,14 @@ public class GameSession {
 	private static final long MORTALITY_SEED_SALT = 0xD1B54A32D192ED03L;
 	private static final long SKILL_SEED_SALT = 0xBF58476D1CE4E5B9L;
 	private static final long COLONY_SEED_SALT = 0xA24BAED4963EE407L;
+	// decorrelate the one-time master-pool shuffle from any colony's name draws
+	private static final long DYNASTY_SHUFFLE_SALT = 0x2545F4914F6CDD1DL;
+
+	// surnames dealt to each colony's NameRegistry as its initial slice (and the
+	// size of each refill). Sized well above a colony's peak living-household count
+	// (a default colony peaks at a few hundred) so a colony rarely needs a refill,
+	// while leaving the 151k-surname master pool enough for many colonies.
+	private static final int DYNASTY_SLICE_SIZE = 4096;
 
 	// random-number seed for this session
 	@Getter
@@ -61,13 +75,14 @@ public class GameSession {
 	@Getter
 	private final Era era;
 
-	// the complete name sets for this session, with their own generator
-	@Getter
-	private final NameRegistry names;
+	// the shared, immutable given-name tables (stateless to draw from, so safe to
+	// share across colonies — only the generator differs per colony)
+	private final NameTable maleNames;
+	private final NameTable femaleNames;
 
-	// the demographic service for this session, with its own generator
-	@Getter
-	private final Demography demography;
+	// the session-wide surname pool each colony's NameRegistry draws a disjoint
+	// slice from (so surnames stay unique across colonies on separate threads)
+	private final DynastyPool dynastyPool;
 
 	// the precalculated slot table, loaded once at session start and shared by
 	// every colony (it is pure geometry — independent of seed and location)
@@ -117,9 +132,10 @@ public class GameSession {
 	public GameSession(long seed, Era era) {
 		this.seed = seed;
 		this.era = era;
-		this.names = new NameRegistry(new Rng(seed ^ NAME_SEED_SALT));
-		this.demography = new Demography(new Rng(seed ^ MORTALITY_SEED_SALT),
-				new Rng(seed ^ SKILL_SEED_SALT));
+		this.maleNames = NameTable.load("/male-human.json");
+		this.femaleNames = NameTable.load("/female-human.json");
+		this.dynastyPool = new DynastyPool(NameTable.load("/dynasty-human.json"),
+				new Rng(seed ^ NAME_SEED_SALT ^ DYNASTY_SHUFFLE_SALT));
 		this.slotTable = SlotTable.load();
 		this.liturgicalCalendar = LiturgicalCalendar.load();
 	}
@@ -132,7 +148,7 @@ public class GameSession {
 	 *
 	 * @return the shared tech tree
 	 */
-	public TechTree getTechTree() {
+	public synchronized TechTree getTechTree() {
 		if (techTree == null)
 			techTree = TechTree.load();
 		return techTree;
@@ -163,15 +179,29 @@ public class GameSession {
 	 *            the colony's geographic longitude in decimal degrees (east positive)
 	 * @return a fresh colony
 	 */
-	public Settlement newSettlement(String name, LocalDate startDate,
+	public synchronized Settlement newSettlement(String name, LocalDate startDate,
 			double meanInitAgeYears, double targetNStock, double meanSkillMale,
 			double meanSkillFemale, double latitude, double longitude) {
 		// index 0 -> bare seed (byte-identical to the old single shared rng);
-		// later colonies get a distinct, decorrelated seed
-		Rng colonyRng = new Rng(seed ^ (COLONY_SEED_SALT * colonyCount));
-		colonyCount++;
-		Settlement colony = new Settlement(name, startDate, colonyRng, names,
-				demography, slotTable, liturgicalCalendar, meanInitAgeYears,
+		// later colonies get a distinct, decorrelated seed. synchronized so several
+		// threads founding/re-founding colonies don't race on the colony index or the
+		// dynasty pool.
+		int idx = colonyCount++;
+		long colonySalt = COLONY_SEED_SALT * idx; // 0 for colony 0
+		Rng colonyRng = new Rng(seed ^ colonySalt);
+		// each colony gets its own NameRegistry (a disjoint surname slice + shared
+		// immutable given-name tables, on its own naming generator) and its own
+		// Demography (own mortality/skill generators). Colony 0 reuses the bare salted
+		// seeds, so a single-colony run's mortality/skill — hence its economics — is
+		// unchanged; only which surnames land where shifts.
+		NameRegistry colonyNames = new NameRegistry(maleNames, femaleNames,
+				dynastyPool, dynastyPool.deal(DYNASTY_SLICE_SIZE), DYNASTY_SLICE_SIZE,
+				new Rng(seed ^ NAME_SEED_SALT ^ colonySalt));
+		Demography colonyDemography = new Demography(
+				new Rng(seed ^ MORTALITY_SEED_SALT ^ colonySalt),
+				new Rng(seed ^ SKILL_SEED_SALT ^ colonySalt));
+		Settlement colony = new Settlement(name, startDate, colonyRng, colonyNames,
+				colonyDemography, slotTable, liturgicalCalendar, meanInitAgeYears,
 				targetNStock, meanSkillMale, meanSkillFemale, latitude, longitude);
 		// the colony knows its session, so on dissolution it can register the band it
 		// departs as (colony-less bands live at the session level — see docs/caravan.md)
@@ -227,7 +257,9 @@ public class GameSession {
 	 * @param band
 	 *            the wandering band to track
 	 */
-	public void addCaravan(Caravan band) {
+	public synchronized void addCaravan(Caravan band) {
+		// synchronized: colonies on different threads can dissolve into bands in the
+		// same lockstep day and register them concurrently
 		caravans.add(band);
 	}
 
@@ -237,7 +269,8 @@ public class GameSession {
 	 *
 	 * @return an unmodifiable view of the session's caravans
 	 */
-	public List<Caravan> getCaravans() {
-		return Collections.unmodifiableList(caravans);
+	public synchronized List<Caravan> getCaravans() {
+		// a snapshot copy, so a caller can iterate it while another thread adds a band
+		return Collections.unmodifiableList(new ArrayList<>(caravans));
 	}
 }

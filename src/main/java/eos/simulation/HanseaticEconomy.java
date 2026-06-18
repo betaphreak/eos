@@ -1,5 +1,7 @@
 package eos.simulation;
 
+import java.util.List;
+
 import eos.agent.firm.StrategicFirmConfig;
 import eos.agent.noble.NobleConfig;
 import eos.bank.Bank;
@@ -19,11 +21,13 @@ import eos.settlement.Settlement;
  * <li><b>Bad Schwartau</b> — 53.91992°N, 10.69753°E</li>
  * </ul>
  * Each colony gets its <b>own</b> economic random stream (seeded from the session
- * seed and the colony's index) and its own markets, banks and agents, but the two
- * <b>share</b> the session's {@link eos.name.NameRegistry} and {@link
- * eos.mortality.Demography} — so dynasty surnames are unique across <em>both</em>
- * settlements. They do not trade with each other; the point is that independent
- * colonies can run in one session reproducibly.
+ * seed and the colony's index) and its own markets, banks, agents, {@link
+ * eos.name.NameRegistry} surname slice and {@link eos.mortality.Demography} — so
+ * the two run independently, yet dynasty surnames stay unique across <em>both</em>
+ * settlements (their surname slices are disjoint). The two colonies run
+ * <b>concurrently, one thread each</b>, in lockstep (see {@link SessionRunner}).
+ * They do not trade with each other; the point is that independent colonies can
+ * run in one session, in parallel, reproducibly per colony.
  * <p>
  * Both colonies have the same composition and the default tiered banking
  * ({@link SimulationHarness#getCopperBank()}): {@value #NUM_LABORERS} laborers, one
@@ -46,9 +50,9 @@ import eos.settlement.Settlement;
  * population demand.
  * <p>
  * The two colonies write to the same {@code output/} directory, so each colony's
- * CSVs are prefixed with its name ({@code Lubeck-}/{@code Schwartau-}). Because
- * {@link SimLog} is process-global it tracks one colony's date at a time; it is
- * pointed at each colony in turn as that colony runs.
+ * CSVs are prefixed with its name ({@code Lubeck-}/{@code Schwartau-}). The
+ * {@link SimLog} handler is process-global but its date source is per-thread, so
+ * each colony's worker thread logs its own in-game date with no cross-talk.
  */
 public class HanseaticEconomy {
 
@@ -139,17 +143,18 @@ public class HanseaticEconomy {
 				schwartauCfg.meanSkillFemale(), schwartauCfg.latitude(),
 				schwartauCfg.longitude());
 
-		// route logging through the in-game date before any agent is constructed
+		// install the log handler and bind this thread to Lübeck before building it
 		SimLog.init(lubeck);
-
 		SimulationHarness hLubeck = build(lubeckCfg, lubeck, "Lubeck-");
+		// bind to Bad Schwartau while building it, so its construction-time records
+		// carry the right colony
+		SimLog.bind(schwartau);
 		SimulationHarness hSchwartau = build(schwartauCfg, schwartau, "Schwartau-");
 
-		// run each colony to completion in turn, pointing the global log at the one
-		// currently running so its records carry the right date
-		hLubeck.run();
-		SimLog.init(schwartau);
-		hSchwartau.run();
+		// run both colonies concurrently — one thread each — in lockstep: every
+		// colony advances one in-game day, then they rendezvous before the next. Each
+		// colony's worker thread binds its own colony to the log (see SessionRunner).
+		SessionRunner.runConcurrently(List.of(hLubeck, hSchwartau));
 
 		return hLubeck;
 	}

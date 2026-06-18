@@ -1,5 +1,6 @@
 package eos.name;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -74,16 +75,27 @@ class NameRegistryTest {
 	}
 
 	@Test
-	void releasingASurnameNotInUseThrows() {
+	void releasingASurnameNotInUseIsIgnored() {
+		// releasing a surname this registry isn't currently lending is a tolerated
+		// no-op — it may be a double release, or one a migrating band carried in from
+		// another colony's disjoint slice. Tolerating it keeps the cross-colony
+		// migration path working without a single shared registry, and (slices being
+		// disjoint) it can never collide with a surname this registry would draw.
 		NameRegistry names = new NameRegistry(new Rng(9));
 		String s = names.nextDynastyName();
-		names.releaseDynastyName(s); // ok: it was in use
-		// double release: it is no longer in use
-		assertThrows(IllegalStateException.class,
-				() -> names.releaseDynastyName(s));
-		// a surname this registry never handed out
-		assertThrows(IllegalStateException.class,
-				() -> names.releaseDynastyName("NotARealSurnameXYZ"));
+		names.releaseDynastyName(s); // ok: it was in use, now back in the pool
+		// double release: no-op
+		assertDoesNotThrow(() -> names.releaseDynastyName(s));
+		// a surname this registry never handed out: also a no-op
+		assertDoesNotThrow(() -> names.releaseDynastyName("NotARealSurnameXYZ"));
+		// the no-ops did not corrupt the pool: further draws stay unique and non-blank
+		// (a phantom entry from a tolerated release would show up as a duplicate)
+		Set<String> seen = new HashSet<>();
+		for (int i = 0; i < 500; i++) {
+			String d = names.nextDynastyName();
+			assertFalse(d.isBlank(), "blank surname after a no-op release");
+			assertTrue(seen.add(d), "duplicate surname after a no-op release: " + d);
+		}
 	}
 
 	@Test

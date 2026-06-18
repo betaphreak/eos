@@ -936,15 +936,33 @@ public class Settlement {
 		// stop early once the colony's settled life has ended (workforce drained): a
 		// dead colony produces nothing more of interest, so running on only burns compute
 		for (int i = 0; i < steps && !died; i++) {
-			LocalDate date = getDate();
-			if (date.getMonthValue() == 1 && date.getDayOfMonth() == 1)
-				System.out.println(date);
+			printAnnualProgress();
 			newDay();
 		}
-		// a ruler-bearing colony that crossed the workforce floor departs as a Caravan
-		// (the survivors take to the road) rather than simply vanishing — done here,
-		// after the last step's clearing/printing, since the dissolution drains the
-		// banks and folds the households (it must not run mid-step)
+		finishRun();
+	}
+
+	/**
+	 * Print the current in-game year to stdout on January 1st — a once-a-year
+	 * progress tick (kept off the event log, which goes to stderr). Exposed so a
+	 * concurrent multi-colony runner can drive the day loop itself yet keep the
+	 * same progress output.
+	 */
+	public void printAnnualProgress() {
+		LocalDate date = getDate();
+		if (date.getMonthValue() == 1 && date.getDayOfMonth() == 1)
+			System.out.println(date);
+	}
+
+	/**
+	 * Finalize a finished run. A ruler-bearing colony that crossed the workforce
+	 * floor departs as a {@link Caravan} (the survivors take to the road) rather
+	 * than simply vanishing — done here, after the last step's clearing/printing,
+	 * since the dissolution drains the banks and folds the households (it must not
+	 * run mid-step). Exposed so a concurrent runner can call it once its day loop
+	 * ends, exactly as {@link #run(int)} does.
+	 */
+	public void finishRun() {
 		if (dissolving && departedBand == null)
 			dissolveIntoCaravan();
 	}

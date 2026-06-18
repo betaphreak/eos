@@ -20,29 +20,36 @@ import eos.settlement.Settlement;
  * and <tt>log.warning(...)</tt> for anomalies (e.g. a price skyrocketing).
  * Output goes to stderr and is flushed per record, so it appears immediately.
  * <p>
- * Logging is process-global, so the date prefix is taken from the colony
- * passed to the most recent {@link #init(Settlement)} call.
+ * The handler is process-global (installed once), but the colony whose in-game
+ * date prefixes a record is held <b>per thread</b>: a record is prefixed with
+ * the date of the colony {@linkplain #bind(Settlement) bound} on the thread that
+ * emitted it. So when several colonies run concurrently — one thread each — each
+ * thread's records carry its own colony's date, with no cross-talk.
  */
 public final class SimLog {
 
 	private static boolean initialized = false;
 
-	// colony whose in-game date prefixes each log record
-	private static Settlement colony;
+	// the colony whose in-game date prefixes each log record, per emitting thread.
+	// per-thread so concurrent colonies (a thread each) don't overwrite a single
+	// shared reference and prefix each other's records with the wrong date.
+	private static final ThreadLocal<Settlement> CURRENT = new ThreadLocal<>();
 
 	private SimLog() {
 	}
 
 	/**
-	 * Route all logging through a handler that prefixes each record with the
-	 * in-game date of <tt>colony</tt>. The handler is installed once; repeat
-	 * calls only update which colony supplies the date.
+	 * Install the date-prefixing log handler (once per process) and bind
+	 * <tt>colony</tt> to the calling thread. Call once at the start of a
+	 * simulation's <tt>main</tt>; a worker thread that did not call this should
+	 * {@link #bind(Settlement)} its colony instead (the handler is already
+	 * installed).
 	 *
 	 * @param colony
-	 *            the colony whose in-game date prefixes each log record
+	 *            the colony whose in-game date prefixes records on this thread
 	 */
 	public static synchronized void init(Settlement colony) {
-		SimLog.colony = colony;
+		bind(colony);
 		if (initialized)
 			return;
 		Logger root = Logger.getLogger("");
@@ -56,13 +63,30 @@ public final class SimLog {
 		initialized = true;
 	}
 
+	/**
+	 * Bind <tt>colony</tt> as the source of the in-game date for log records
+	 * emitted on the calling thread. Used by each colony's worker thread when the
+	 * session runs colonies concurrently (the handler is installed separately by
+	 * {@link #init(Settlement)}).
+	 *
+	 * @param colony
+	 *            the colony whose in-game date prefixes records on this thread
+	 */
+	public static void bind(Settlement colony) {
+		CURRENT.set(colony);
+	}
+
 	/** Prefixes each message with the in-game date and a level label. */
 	private static final class DateFormatter extends Formatter {
 		@Override
 		public String format(LogRecord record) {
 			String level = record.getLevel() == Level.WARNING ? "WARN"
 					: record.getLevel().getName();
-			return colony.getDate() + ": " + level + " "
+			Settlement colony = CURRENT.get();
+			// a record from a thread that never bound a colony (defensive): emit it
+			// without a date rather than NPE
+			String date = (colony == null) ? "----------" : colony.getDate().toString();
+			return date + ": " + level + " "
 					+ formatMessage(record) + System.lineSeparator();
 		}
 	}
