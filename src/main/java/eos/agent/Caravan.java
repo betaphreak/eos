@@ -65,6 +65,12 @@ public class Caravan {
 	@Getter
 	private double longitude;
 
+	// the tech tree the band carries out of its abandoned settlement (null if it never
+	// had research): what it knows and was researching, restored onto the colony it
+	// re-founds so progress is not lost (see Caravan.dissolve / ResearchState.restore)
+	@Getter
+	private eos.tech.ResearchSnapshot research;
+
 	/**
 	 * Create a wandering band.
 	 *
@@ -164,8 +170,13 @@ public class Caravan {
 			}
 		}
 
-		return new Caravan(leader, following, hoard, colony.getLatitude(),
+		Caravan band = new Caravan(leader, following, hoard, colony.getLatitude(),
 				colony.getLongitude());
+		// the band carries its tech tree out with it, so a re-founded colony resumes
+		// research where this one left off rather than starting over
+		if (colony.getResearch() != null)
+			band.research = colony.getResearch().snapshot();
+		return band;
 	}
 
 	/**

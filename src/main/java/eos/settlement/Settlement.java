@@ -232,6 +232,13 @@ public class Settlement {
 	// private: only GameSession sets it.
 	private GameSession session;
 
+	// the colony's research progress (the tech tree it is climbing), or null when
+	// research is disabled — e.g. a bare colony with no export sector to fuel it. Set
+	// by the harness when it enables research (see SimulationHarness). Fed by the
+	// strategic sector's intellectual labor and reviewed monthly by the ruler.
+	@Getter
+	private eos.tech.ResearchState research;
+
 	// the colony's single export firm, if any (see StrategicFirm). At most one
 	// per colony; set via setStrategicFirm, which guards against a second.
 	@Getter
@@ -474,6 +481,29 @@ public class Settlement {
 	// creates the colony), so a dissolved band can be registered session-wide.
 	void setSession(GameSession session) {
 		this.session = session;
+	}
+
+	/**
+	 * The {@link GameSession} that owns this colony (holds the shared name pool,
+	 * demography, calendar and tech tree), or {@code null} for a colony constructed
+	 * directly without one (some tests).
+	 *
+	 * @return the owning session, or {@code null}
+	 */
+	public GameSession getSession() {
+		return session;
+	}
+
+	/**
+	 * Enable research on this colony with the given {@link eos.tech.ResearchState}.
+	 * Called by the harness when a colony has the strategic export sector that fuels
+	 * research; leaves {@link #getResearch()} non-null thereafter.
+	 *
+	 * @param research
+	 *            the colony's research state
+	 */
+	public void setResearch(eos.tech.ResearchState research) {
+		this.research = research;
 	}
 
 	/**

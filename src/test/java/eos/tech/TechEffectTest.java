@@ -55,7 +55,7 @@ class TechEffectTest {
 		// a test overlay (real schema, sample data) under src/test/resources
 		Map<String, List<TechEffect>> overlay =
 				TechEffects.load("/tech-effects-sample.json");
-		assertEquals(2, overlay.size());
+		assertEquals(3, overlay.size());
 		List<TechEffect> merc = overlay.get("TECH_MERCANTILISM");
 		assertEquals(2, merc.size());
 		assertInstanceOf(TechEffect.SectorProductivity.class, merc.get(0));

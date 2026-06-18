@@ -7,6 +7,7 @@ import java.util.List;
 
 import eos.agent.Caravan;
 import eos.calendar.LiturgicalCalendar;
+import eos.era.Era;
 import eos.mortality.Demography;
 import eos.name.NameRegistry;
 import eos.tech.TechTree;
@@ -53,6 +54,13 @@ public class GameSession {
 	@Getter
 	private final long seed;
 
+	// the era every colony in this session founds in — the session's place on the
+	// civilizational ladder. Drives the economic tuning and the research baseline (a
+	// colony knows every tech up to the era below this and researches this era's
+	// frontier). Medieval by default, so all simulations start Medieval.
+	@Getter
+	private final Era era;
+
 	// the complete name sets for this session, with their own generator
 	@Getter
 	private final NameRegistry names;
@@ -87,13 +95,28 @@ public class GameSession {
 	private final List<Caravan> caravans = new ArrayList<>();
 
 	/**
-	 * Create a new game session with the given random-number seed.
+	 * Create a new game session with the given random-number seed, founding in the
+	 * {@link Era#MEDIEVAL Medieval} era (the default for all simulations).
 	 *
 	 * @param seed
 	 *            the random-number seed for runs created from this session
 	 */
 	public GameSession(long seed) {
+		this(seed, Era.MEDIEVAL);
+	}
+
+	/**
+	 * Create a new game session with the given random-number seed and founding
+	 * {@link Era}.
+	 *
+	 * @param seed
+	 *            the random-number seed for runs created from this session
+	 * @param era
+	 *            the era every colony in this session founds in
+	 */
+	public GameSession(long seed, Era era) {
 		this.seed = seed;
+		this.era = era;
 		this.names = new NameRegistry(new Rng(seed ^ NAME_SEED_SALT));
 		this.demography = new Demography(new Rng(seed ^ MORTALITY_SEED_SALT),
 				new Rng(seed ^ SKILL_SEED_SALT));

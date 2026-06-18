@@ -95,6 +95,10 @@ household type — holding:
   outside any bank (see *The bankless rung*);
 - a **carried larder** — the `Retinue` already holds this (its `necessity` store);
   while wandering it simply consumes from it without restocking;
+- a **carried tech tree** — a `ResearchSnapshot` of the abandoned colony's research
+  (what it knew, the techs it had researched, and its in-progress focus/buffered
+  points), restored onto the colony the band re-founds so progress is not lost (see
+  `docs/tech-tree.md`);
 - a **position** — deferred to the caravan-trade geography work.
 
 So the only thing the `Retinue` itself needs to gain is **tolerance of being

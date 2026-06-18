@@ -1,9 +1,18 @@
 # Design note: the tech tree (research, effects, social gating)
 
-**Status:** phases 1–2 implemented (the `eos.tech` graph + queries on `GameSession`;
-the `TechEffect` schema + overlay loader + per-colony sector multiplier and firms'
-effective-A hook — inert at runtime, nothing accrues research yet); phases 3–4 are
-future work
+**Status:** phases 1–3 implemented (the `eos.tech` graph + queries; the `TechEffect`
+schema + per-sector multiplier hook; and live research — a dedicated ruler-funded
+`ScienceFirm` produces the research points, monthly ruler selection with RP buffering,
+completion applying effects, always on for export colonies, founding in the
+`GameSession`'s `Era` (Medieval by default — knowing up to Classical and warm-started
+90% through the Medieval entry tech), per-era research cost via `EraModifiers.researchPercent`,
+and the whole tree persisting across a band's abandonment/re-founding). The era ladder
+is now a **single `eos.era.Era`** (the former `eos.tech.Era` was merged in). Because the
+shipped effect overlay is still **empty**,
+completed techs carry no effects yet, so a standard run advances research but its only
+economic footprint is the science firm (slot + ruler-funded scholar wages) until the
+overlay is populated (a coverage pass) — that authoring, plus wiring
+`UNLOCK`/`SOCIAL_GATE` to real consumers, is phase 4.
 **Date:** 2026-06-18
 **Depends on:** the imported `src/main/resources/techs.json` (a Caveman2Cosmos /
 Civ4 tech graph), the firm production functions (`ConsumerGoodFirm`, `CFirm`,
@@ -46,15 +55,25 @@ imported file stays pristine — it is read-only reference data.
    sector's Cobb-Douglas `A`), (b) **unlocks content** (new goods / firm types /
    buildings), (c) **gates social/political progression** (rank rungs, social
    classes, features). The effect schema must express all three.
-2. **Research is fueled by INTELLECTUAL / export output** — the intellectual labor
-   the ruler and nobles already supply to the strategic export sector.
-3. **Scope is up to Renaissance.** The colony **begins knowing every
-   Prehistoric→Medieval tech** (free historical baseline, fitting the 1444 start)
-   and researches only the **~59 Renaissance** nodes live. The lone Industrial node
-   is dropped.
+2. **Research is fueled by INTELLECTUAL labor** — supplied by the ruler and nobles
+   (the scholarly aristocracy), via a dedicated science firm (see below). It is
+   **always on** for an export colony (no enable flag).
+3. **The founding era lives on the `GameSession`** (`eos.era.Era`, default `MEDIEVAL`
+   — so all simulations start Medieval). A colony founding in era E knows every tech up
+   to `E.below()` for free and researches E's frontier, founding 90% through E's entry
+   tech (`TECH_E_LIFESTYLE`). At the `MEDIEVAL` default that's Prehistoric→Classical
+   pre-known, warm-started 90% into `TECH_MEDIEVAL_LIFESTYLE`. The tech tree's modeled
+   ceiling is the Renaissance, so the lone Industrial node (and later eras) are dropped
+   at load.
 4. **One research focus at a time, ruler-chosen.** A single colony research pool
-   accumulates toward the current focus's `iCost`; on completion the ruler auto-picks
-   the next researchable tech.
+   accumulates toward the current focus's `iCost`; on completion the ruler picks the
+   next researchable tech at its monthly review. Research points are **never wasted** —
+   any produced while there is no focus (or beyond a focus's cost) buffer and carry to
+   the next focus.
+4b. **The tech tree persists across abandonment.** When a colony is abandoned its
+   research (known set, researched techs, focus, buffered progress) is carried out by
+   the wandering band and restored onto the colony it re-founds (see
+   {@code docs/caravan.md}).
 5. **Advisor → firm sector** mapping drives the default productivity effect:
 
    | Advisor | eos sector |
@@ -143,43 +162,58 @@ The parsed `techs.json` plus the `tech-effects.json` overlay, loaded once via Ja
 (already the project's one runtime dep, used by `NameRegistry`). Immutable; holds the
 nodes, prereq edges, costs, eras, advisor→sector map, and each tech's resolved
 `List<TechEffect>`. Lives on `GameSession` beside the other shared services, since the
-graph is identical across colonies in a session. Filters out the Industrial node and
-exposes the era partition so "pre-known up to Medieval" is a simple era predicate.
+graph is identical across colonies in a session. Eras are the single `eos.era.Era`
+ladder (the former `eos.tech.Era` merged in): `TechTree` maps each row via
+`Era.fromTechKey` and drops anything past its `MAX_TECH_ERA = Era.RENAISSANCE` ceiling
+(the lone Industrial node and later eras), and exposes the era partition so "pre-known
+up to the start era" is a simple `isAtOrBefore` predicate. The `GameSession` also owns
+the founding `Era` itself (default `MEDIEVAL`), from which `ResearchState`'s baseline
+and warm-start derive.
 
 ### `ResearchState` — per-colony progress
 
 Each colony keeps its own research progress (colonies research independently, like
 they bank and age independently):
 
-- the **known set** — seeded at founding with every Prehistoric→Medieval tech;
-- the **current focus** (a single Renaissance tech) and **accumulated research
-  points** toward its `iCost`;
-- the per-sector **`techMultiplier`** and the set of granted **capabilities/unlocks**.
+- the **known set** — seeded at founding with every Prehistoric→Classical tech;
+- the **completed set** — the techs it researched itself (a subset of known, beyond
+  the pre-known baseline), so a re-founded colony can re-apply their effects;
+- the **current focus** (a Medieval-then-Renaissance tech, warm-started at the Medieval
+  entry) and **buffered research points** toward its scaled cost;
+- the per-sector **`techMultiplier`** and the set of granted capability/unlock tokens
+  live on the `Settlement` (raised via `applyTechEffect`).
 
 A tech is **researchable** when it is unknown and its prereqs are satisfied (all
 `AndPreReqs` known **and** at least one `OrPreReqs` known). Because all
 pre-Renaissance techs are pre-known, Renaissance nodes whose prereqs lie in earlier
 eras are immediately available; intra-Renaissance prereqs order the rest.
 
-### Research production — where the points come from
+### Research production — the science firm
 
-Research points (RP) are a **side yield of intellectual labor**, computed from the
-same INTELLECTUAL-scaled output the strategic sector's workers (ruler + nobles)
-already deliver to the noble-only labor market — *without moving any money*. So the
-export-earnings flow is untouched and the economic random stream is unperturbed; RP
-is a new, purely-additive quantity. Each step the colony's RP accrue to its current
-focus; when `accumulated ≥ focus.iCost`, the tech completes, its effects apply, and
-the ruler picks the next focus.
+Research points (RP) are produced by a dedicated **`ScienceFirm`** — a labor-only firm
+modeled on `BuilderFirm`/`StrategicFirm`. It hires on its own **`ScholarLabor`**
+market and converts the scholarly labor it gets into RP by `A · L^β` (a
+`ScienceConfig`), delivering them to the colony's `ResearchState` each step (no money
+moves for the RP itself). The firm sells nothing, so research is a **crown-funded
+public good**: its wage budget is funded each step out of the **ruler's treasury**,
+and those wages flow to the scholars when the market clears — a near zero-profit
+conduit (ruler → firm → scholars), exactly as the builder is for its peasants. A
+colony with no ruler funds no scholars, so research never advances.
 
-- **Alternative considered:** splitting the strategic firm's output *between* export
-  earnings and RP (research competes with trade income). Rejected for the first cut —
-  it perturbs the calibrated export/treasury flow; the additive byproduct is cleaner.
-- **Pacing caveat (calibration).** Renaissance `iCost`s run to the thousands while a
-  handful of INTELLECTUAL≈5–15 workers deliver only a few productivity-units/step, and
-  a colony lives ~5–7 years (~2000 steps) before the pool drains. So a colony will
-  realistically complete only **a few** techs in its life — plausibly fine (tech is a
-  slow background force), but a `researchCostScale` knob on `SimulationConfig` should
-  let runs tune the pace. Flag, don't pre-calibrate.
+- **Who staffs it (the scholars).** The same **aristocracy**: nobles post their
+  INTELLECTUAL labor to `ScholarLabor` (and the ruler does too during the early
+  ennoblement ramp, so research is staffed before the nobles are raised — mirroring how
+  the ruler works the export firm meanwhile). Because `ScholarLabor` is a *separate*
+  market from the export `NobleLabor`, a noble supplies full labor to **both** — a
+  scholar-merchant doing double duty — so adding research leaves export output
+  unchanged rather than competing with it.
+- **Relation to the export sector.** Research no longer rides on the strategic firm at
+  all (an earlier cut accrued RP from export labor; that was removed). The strategic
+  firm is pure export again; the `ScienceFirm` is the single research source.
+- **Pacing.** RP yield is the science firm's `A · L^β`; with ~5 nobles + the ruler at
+  INTELLECTUAL≈5–15 a default colony completes its first Renaissance tech (cost ~2,200)
+  well before collapse. The `ScienceConfig` curve and `SimulationConfig.researchCostScale`
+  (a cost multiplier) tune the pace.
 
 ### Research selection — the ruler picks
 
@@ -196,12 +230,16 @@ third option. Default cheapest; the heuristic is a knob.
 | Concern | Hook | Neutral until… |
 | --- | --- | --- |
 | Productivity | `config.A() * colony.techMultiplier(sector)` at each produce site | a `SECTOR_PRODUCTIVITY` tech completes (mult = 1.0 before) |
-| Research yield | new RP accrual when the noble-labor market clears | always additive (no money moved) |
+| Research yield | a dedicated `ScienceFirm` produces RP from scholar labor, funded by the ruler | adds the firm's slot + ruler-funded wages (no RP-side money move) |
 | Selection | a branch in the ruler's monthly review | no focus ⇒ no-op |
 | Unlock / gate | colony capability flags read by content / ladder / class code | no gating tech researched ⇒ flags unset, today's behaviour |
 
-Every hook defaults to the current behaviour, so a run with research disabled (or
-before the first completion) stays **byte-identical**.
+A run with research **disabled** (`researchEnabled = false`, or any colony without a
+strategic sector) is byte-identical. With research **enabled** the productivity /
+unlock / gate hooks stay neutral until a completed tech carries an effect (the overlay
+is empty today), but the `ScienceFirm` itself is a real agent — it occupies a slot and
+draws ruler-funded scholar wages — so an enabled run is *not* byte-identical, only
+economically near-neutral (the existing smoke suite stays green).
 
 ## Accepted limitations (out of scope for this cut)
 
@@ -252,13 +290,36 @@ before the first completion) stays **byte-identical**.
   Covered by `eos.tech.TechEffectTest` (schema + overlay parsing) and
   `eos.simulation.TechProductivityTest` (a directly-applied effect scales exactly its
   sector's firm output, cumulatively, leaving other sectors untouched).
-- **Phase 3 — research production + completion + ruler selection.** RP accrual from
-  intellectual labor, focus accumulation/completion applying effects, ruler's
-  cheapest-researchable pick in the monthly review, a `researchCostScale` knob, and a
-  `ResearchPrinter` (`Research.csv`: focus, progress, completed count, per-sector
-  multipliers). This is where a standard run first diverges — covered by a smoke test
-  that a default colony completes ≥1 tech before collapse and that the affected
-  sector's productivity rises.
+- **Phase 3 — research production + completion + ruler selection. (Implemented.)**
+  A per-colony `eos.tech.ResearchState` (on `Settlement`, via `getResearch()`/
+  `setResearch`). The baseline and warm-start derive from the `GameSession`'s `Era`
+  (default `MEDIEVAL`): pre-known = `preKnownThrough(era.below())` (Classical), warm-start
+  = `seedInitialFocus("TECH_" + era + "_LIFESTYLE", 0.9)` (90% through the Medieval entry
+  tech). A focus's cost is scaled by its era's `EraModifiers.researchPercent` (Medieval
+  250%, Renaissance 300% — research grows costlier as eras advance) times
+  `researchCostScale`. A dedicated **`ScienceFirm`** (labor-only, on
+  its own **`ScholarLabor`** market, staffed by the nobles + ruler, funded each step
+  from the ruler's treasury) produces RP by `A · L^β` and calls `research.accrue(rp)`
+  each step. RP **buffer** in `progress` (even with no focus, and carrying the overflow
+  past a completion, so none is wasted) and advance a single focus the ruler picks
+  **monthly** (cheapest researchable, in `Ruler.act`'s first-of-month block); on
+  reaching the focus's `cost · researchCostScale` the tech **completes**,
+  `colony.applyTechEffect` runs each of its overlay effects, the tech is added to a
+  `completed` set, and the colony goes focus-less until the next monthly pick. Research
+  is created unconditionally in `createDefaultStrategicSector` (no enable flag); a
+  `ResearchPrinter` (`Research.csv`: focus, progress, cost, RP/step, completed/known
+  counts, per-sector multipliers) charts it. The RP yield is set by `ScienceConfig`
+  (`A·L^β`); `researchCostScale` (default 1.0) tunes pace. **Persistence:**
+  `ResearchState.snapshot()`/`restore()` carry the whole tree (known, completed, focus,
+  buffered progress) onto a wandering `Caravan` on abandonment and back onto the
+  re-founded colony (`reFoundStandardColony`), re-applying the researched techs' effects
+  so productivity is recovered. Covered by `eos.tech.ResearchStateTest` (pick / buffer
+  / warm-start / complete-with-overflow / snapshot-restore, deterministic via the
+  sample overlay) and `eos.simulation.TechResearchTest` (a standard run completes ≥1
+  tech before collapse). **Note:** with the overlay empty those completions apply no
+  effects, so a standard run *advances* research (counters, `Research.csv`) but its only
+  economic footprint is the science firm (slot + ruler-funded scholar wages); the
+  productivity divergence proper arrives with overlay coverage (phase 4).
 - **Phase 4 — wire `UNLOCK` / `SOCIAL_GATE` to real consumers (future, separate
   notes).** As `BURGHER`, `CITY`, caravan trade, and any new goods/firms land, give
   them tech preconditions through the gate flags. No schema change expected.

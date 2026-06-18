@@ -59,6 +59,11 @@ public class Noble extends AbstractHousehold {
 	// byte-identical to the pure-rentier design)
 	private final LaborMarket nobleLaborMkt;
 
+	// the scholar labor market the science firm employs from, or null when the colony
+	// has no science firm. A noble supplies its intellectual labor to both this and
+	// the export market (scholar-merchant double duty); see postNobleLabor.
+	private final LaborMarket scholarLaborMkt;
+
 	// the properties this noble owns and draws dividends from — firms and banks, in
 	// one list. Iterated in insertion order; the constructors seat firms before
 	// banks so the dividend collection order matches the two separate loops this
@@ -209,6 +214,8 @@ public class Noble extends AbstractHousehold {
 		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
 		this.nobleLaborMkt =
 				(LaborMarket) colony.getMarket(StrategicFirm.LABOR_MARKET);
+		this.scholarLaborMkt =
+				(LaborMarket) colony.getMarket(eos.agent.firm.ScienceFirm.LABOR_MARKET);
 		// this noble works the strategic firm if one exists, exactly like any other —
 		// but it is created mid-run, so (unlike a founding noble, whose constructor
 		// posting is consumed by the pre-run primeNobleLabor clear) it does NOT post
@@ -252,17 +259,23 @@ public class Noble extends AbstractHousehold {
 		// noble is a pure rentier and this is a no-op.
 		this.nobleLaborMkt =
 				(LaborMarket) colony.getMarket(StrategicFirm.LABOR_MARKET);
+		this.scholarLaborMkt =
+				(LaborMarket) colony.getMarket(eos.agent.firm.ScienceFirm.LABOR_MARKET);
 		postNobleLabor();
 	}
 
-	// supply every household member (head and any spouse) to the strategic
-	// sector's noble-only labor market, each with its own skills; a no-op when the
-	// colony has no strategic sector. All wages credit the one household account.
+	// supply every household member (head and any spouse) to the noble labor markets,
+	// each with its own skills; all wages credit the one household account. A noble
+	// supplies its intellectual labor to BOTH the export sector (NobleLabor) and the
+	// science firm (ScholarLabor) — a scholar-merchant doing double duty — so it posts
+	// to each market that exists (a no-op for one the colony lacks).
 	private void postNobleLabor() {
-		if (nobleLaborMkt == null)
-			return;
-		for (Member member : getMembers())
-			nobleLaborMkt.addEmployee(getID(), getBank(), 1.0, member.skills());
+		for (Member member : getMembers()) {
+			if (nobleLaborMkt != null)
+				nobleLaborMkt.addEmployee(getID(), getBank(), 1.0, member.skills());
+			if (scholarLaborMkt != null)
+				scholarLaborMkt.addEmployee(getID(), getBank(), 1.0, member.skills());
+		}
 	}
 
 	/**

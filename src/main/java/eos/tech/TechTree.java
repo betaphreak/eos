@@ -17,6 +17,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eos.era.Era;
+
 /**
  * The technology graph: the set of researchable {@link Tech} nodes and the
  * prerequisite edges between them, loaded once from {@code /techs.json} (a
@@ -41,6 +43,11 @@ public final class TechTree {
 
 	private static final String RESOURCE = "/techs.json";
 	private static final String EFFECTS_RESOURCE = "/tech-effects.json";
+
+	// the highest era the tech tree models; techs beyond it (the lone Industrial node
+	// and any later) are dropped at load. The scope is expressed here rather than by
+	// which Era values exist, since Era is now the full ladder (see eos.era.Era).
+	private static final Era MAX_TECH_ERA = Era.RENAISSANCE;
 
 	private static final ObjectMapper MAPPER = new ObjectMapper()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -103,6 +110,19 @@ public final class TechTree {
 	 *             prerequisite does not resolve to a kept tech
 	 */
 	public static TechTree load() {
+		return load(EFFECTS_RESOURCE);
+	}
+
+	/**
+	 * Load the tech tree with a specific effect overlay resource (instead of the
+	 * shipped {@code /tech-effects.json}). Package-private — used by tests to load a
+	 * tree whose techs carry effects, since the shipped overlay is empty.
+	 *
+	 * @param effectsResource
+	 *            the effect-overlay classpath resource
+	 * @return the loaded tech tree with that overlay
+	 */
+	static TechTree load(String effectsResource) {
 		try (InputStream in = TechTree.class.getResourceAsStream(RESOURCE)) {
 			if (in == null)
 				throw new IllegalStateException(
@@ -112,9 +132,9 @@ public final class TechTree {
 					});
 			List<Tech> kept = new ArrayList<>();
 			for (Row r : rows) {
-				Optional<Era> era = Era.fromKey(r.era());
-				if (era.isEmpty())
-					continue; // out-of-scope era (e.g. Industrial) — dropped
+				Optional<Era> era = Era.fromTechKey(r.era());
+				if (era.isEmpty() || !era.get().isAtOrBefore(MAX_TECH_ERA))
+					continue; // unknown era, or past the modeled ceiling (e.g. Industrial)
 				Advisor advisor = Advisor.fromKey(r.advisor())
 						.orElseThrow(() -> new IllegalStateException(
 								"tech " + r.type() + " has an unknown advisor: "
@@ -123,7 +143,7 @@ public final class TechTree {
 						Integer.parseInt(r.cost()), prereqList(r.orPreReqs()),
 						prereqList(r.andPreReqs())));
 			}
-			return new TechTree(kept, TechEffects.load(EFFECTS_RESOURCE));
+			return new TechTree(kept, TechEffects.load(effectsResource));
 		} catch (IOException e) {
 			throw new UncheckedIOException(
 					"Failed to load tech tree resource: " + RESOURCE, e);

@@ -1,4 +1,7 @@
 {
+  "TECH_RENAISSANCE_LIFESTYLE": [
+    { "kind": "SECTOR_PRODUCTIVITY", "sector": "EXPORT", "factor": 1.2 }
+  ],
   "TECH_MERCANTILISM": [
     { "kind": "SECTOR_PRODUCTIVITY", "sector": "EXPORT", "factor": 1.1 },
     { "kind": "UNLOCK", "target": "FIRM_TRADING_HOUSE" }

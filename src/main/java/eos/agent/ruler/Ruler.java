@@ -108,6 +108,12 @@ public class Ruler extends AbstractHousehold {
 	// over the first weeks by ennoblement (see SimulationHarness.topUpAristocracy).
 	private final LaborMarket nobleLaborMkt;
 
+	// the scholar labor market the science firm employs from, or null if the colony
+	// has no science firm. Like the export sector above, the ruler works it during the
+	// early weeks so research is staffed before the aristocracy is raised; the wages
+	// it bids are funded from its own treasury (see ScienceFirm).
+	private final LaborMarket scholarLaborMkt;
+
 	// enjoyment spending ($) in the last step
 	@Getter
 	private double consumption;
@@ -181,6 +187,8 @@ public class Ruler extends AbstractHousehold {
 		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
 		this.nobleLaborMkt =
 				(LaborMarket) colony.getMarket(StrategicFirm.LABOR_MARKET);
+		this.scholarLaborMkt = (LaborMarket) colony
+				.getMarket(eos.agent.firm.ScienceFirm.LABOR_MARKET);
 		setName("Ruler");
 		colony.addPersonOfInterest(this);
 		log.info(getHead().fullName()
@@ -220,6 +228,8 @@ public class Ruler extends AbstractHousehold {
 		this.nMkt = (ConsumerGoodMarket) colony.getMarket("Necessity");
 		this.nobleLaborMkt =
 				(LaborMarket) colony.getMarket(StrategicFirm.LABOR_MARKET);
+		this.scholarLaborMkt = (LaborMarket) colony
+				.getMarket(eos.agent.firm.ScienceFirm.LABOR_MARKET);
 		setName("Ruler");
 
 		// the ruler is always a person of interest the colony tracks
@@ -246,9 +256,13 @@ public class Ruler extends AbstractHousehold {
 		collectTaxes();
 
 		// once a month, review each consumer-good sector and charter/dissolve firms
-		// so their count tracks demand (see reviewSectors)
-		if (getColony().getDate().getDayOfMonth() == 1)
+		// so their count tracks demand (see reviewSectors), and pick the colony's next
+		// research focus if it has none (the cheapest researchable tech)
+		if (getColony().getDate().getDayOfMonth() == 1) {
 			reviewSectors();
+			if (getColony().getResearch() != null)
+				getColony().getResearch().review();
+		}
 
 		// a sovereign indulgence: spend a small fraction of the treasury on
 		// enjoyment, posting a buy offer the market settles in clear(). Buying
@@ -289,6 +303,12 @@ public class Ruler extends AbstractHousehold {
 		// 0 (getIncome) — the wage simply tops up the treasury.
 		if (nobleLaborMkt != null)
 			nobleLaborMkt.addEmployee(getID(), bank, 1.0, getHead().skills());
+
+		// likewise work the science firm during the ramp, so research is staffed
+		// before the scholarly aristocracy is raised (the ruler funds the science
+		// wages from its treasury, so this returns part of that wage to itself)
+		if (scholarLaborMkt != null)
+			scholarLaborMkt.addEmployee(getID(), bank, 1.0, getHead().skills());
 
 		// tax revenue enters via collectTaxes (as OTHER, not income); reset the income
 		// accumulators each step (the export wage is left to settle into the treasury).

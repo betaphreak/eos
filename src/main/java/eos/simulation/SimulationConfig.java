@@ -78,6 +78,16 @@ import lombok.Builder;
  *                     silver-banking nobles up to this count over the first weeks,
  *                     working the strategic firm itself meanwhile so it is never
  *                     unstaffed. Default {@code 5}; does not scale with colony size
+ * @param researchInitialFraction the fraction of the warm-start focus's cost a fresh
+ *                     colony begins with (default {@code 0.9} — 90% complete). The
+ *                     warm-start <em>focus</em> and the pre-known baseline are derived
+ *                     from the {@link eos.settlement.GameSession}'s {@link eos.era.Era}
+ *                     (a colony knows up to the era below it and founds 90% through that
+ *                     era's entry tech), not configured here
+ * @param researchCostScale multiplier on each tech's authored research cost (the
+ *                     pacing knob); &lt;1 makes research faster, &gt;1 slower. The
+ *                     research-point yield itself is set by the {@link
+ *                     eos.agent.firm.ScienceConfig science firm's} production curve
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -105,7 +115,9 @@ public record SimulationConfig(
 		double nobleIncomeTaxRate,
 		int retinueSize,
 		double promotionRatio,
-		int targetNobles) {
+		int targetNobles,
+		double researchInitialFraction,
+		double researchCostScale) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -189,5 +201,7 @@ public record SimulationConfig(
 			MEDIEVAL.nobleIncomeTaxRate(),
 			MEDIEVAL.retinueSize(),
 			MEDIEVAL.promotionRatio(),
-			MEDIEVAL.targetNobles());
+			MEDIEVAL.targetNobles(),
+			0.9,                                   // researchInitialFraction (90%)
+			1.0);                                  // researchCostScale
 }

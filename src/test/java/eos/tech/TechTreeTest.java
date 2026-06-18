@@ -13,6 +13,8 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import eos.era.Era;
+
 /**
  * Phase 1 graph-integrity checks for the {@link TechTree}: that {@code techs.json}
  * loads into the expected in-scope node set, every prerequisite resolves, the era

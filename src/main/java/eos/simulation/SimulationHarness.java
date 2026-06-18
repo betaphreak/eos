@@ -17,6 +17,8 @@ import eos.agent.firm.EFirm;
 import eos.agent.firm.FirmConfig;
 import eos.agent.firm.FirmFactory;
 import eos.agent.firm.NFirm;
+import eos.agent.firm.ScienceConfig;
+import eos.agent.firm.ScienceFirm;
 import eos.agent.firm.StrategicFirm;
 import eos.agent.firm.StrategicFirmConfig;
 import eos.agent.Member;
@@ -436,6 +438,44 @@ public class SimulationHarness {
 		// stay ordered copper, silver, gold even though no noble exists yet
 		getSilverBank();
 		primeNobleLabor();
+		// every export colony researches the tech tree: it climbs from its start era,
+		// and a dedicated science firm — staffed by the same aristocracy, funded by the
+		// ruler — produces the research points (see ScienceFirm / ResearchState). The
+		// ruler picks the focus monthly; a colony with no ruler funds no scholars, so
+		// research simply never advances. A fresh colony gets a warm-start focus (e.g.
+		// founding 90% through the Medieval entry tech); a re-founded band overrides
+		// this with its carried research (see reFoundStandardColony).
+		// the session's era sets the research baseline: a colony founding in era E
+		// knows every tech up to E-below and warm-starts E's entry tech (TECH_E_LIFESTYLE)
+		eos.era.Era era = colony.getSession().getEra();
+		eos.tech.ResearchState research = new eos.tech.ResearchState(
+				colony.getSession().getTechTree(), colony, era.below(),
+				cfg.researchCostScale());
+		research.seedInitialFocus("TECH_" + era.name() + "_LIFESTYLE",
+				cfg.researchInitialFraction());
+		colony.setResearch(research);
+		createScienceFirm(bank, ScienceConfig.DEFAULT);
+	}
+
+	/**
+	 * Create the colony's single <b>science firm</b> (banking at <tt>bank</tt>) and
+	 * add it, creating its dedicated {@value ScienceFirm#LABOR_MARKET} market first.
+	 * The firm produces the colony's research points from the scholarly labor of the
+	 * nobles and ruler, funded out of the ruler's treasury (see {@link ScienceFirm}).
+	 *
+	 * @param bank
+	 *            the bank at which the science firm holds its account
+	 * @param config
+	 *            the science firm's parameters
+	 * @return the created science firm
+	 */
+	public ScienceFirm createScienceFirm(Bank bank, ScienceConfig config) {
+		if (colony.getMarket(ScienceFirm.LABOR_MARKET) == null)
+			colony.addMarket(new LaborMarket(ScienceFirm.LABOR_MARKET, colony));
+		ScienceFirm scienceFirm = new ScienceFirm(config, bank, colony);
+		colony.addAgent(scienceFirm);
+		colony.claimSlot(scienceFirm);
+		return scienceFirm;
 	}
 
 	/**
@@ -1121,6 +1161,12 @@ public class SimulationHarness {
 		Bank copper = getCopperBank();
 		createFirms(copper, i -> copper, eFirmSavings, nFirmSavings);
 		createDefaultStrategicSector(copper);
+		// resume the band's carried tech tree (overriding the fresh warm-start the
+		// strategic sector just installed), re-applying its researched techs' effects
+		if (band.getResearch() != null)
+			colony.setResearch(eos.tech.ResearchState.restore(
+					colony.getSession().getTechTree(), colony, band.getResearch(),
+					cfg.researchCostScale()));
 		Bank gold = createRulerFromLeader(band.getLeader(), band.getHoard());
 		createRetinueFromBand(band, copper);
 		foundLaborersFromRetinue(i -> copper, laborerNStock);
@@ -1209,6 +1255,9 @@ public class SimulationHarness {
 		colony.addPrinter(new NoblesPrinter(prefix + "Nobles"));
 		colony.addPrinter(
 				new PersonsOfInterestPrinter(prefix + "PersonsOfInterest"));
+		// chart the colony's research, if enabled (the strategic sector fuels it)
+		if (colony.getResearch() != null)
+			colony.addPrinter(new ResearchPrinter(prefix + "Research"));
 	}
 
 	/** Run the simulation for the configured number of steps, then clean up. */

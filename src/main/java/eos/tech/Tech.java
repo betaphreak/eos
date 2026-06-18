@@ -2,6 +2,8 @@ package eos.tech;
 
 import java.util.List;
 
+import eos.era.Era;
+
 /**
  * One node of the tech tree: a researchable technology, parsed from
  * {@code techs.json} (a Caveman2Cosmos tech graph) and reduced to the fields eos
