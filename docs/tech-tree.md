@@ -1,6 +1,7 @@
 # Design note: the tech tree (research, effects, social gating)
 
-**Status:** proposed (design only — not yet implemented)
+**Status:** phase 1 implemented (the `eos.tech` graph + queries, lazily on
+`GameSession`, read by nothing yet); phases 2–4 are future work
 **Date:** 2026-06-18
 **Depends on:** the imported `src/main/resources/techs.json` (a Caveman2Cosmos /
 Civ4 tech graph), the firm production functions (`ConsumerGoodFirm`, `CFirm`,
@@ -218,11 +219,19 @@ before the first completion) stays **byte-identical**.
 
 ## Phased implementation plan
 
-- **Phase 1 — load the graph + research nothing.** `TechTree` on `GameSession`
-  (parse `techs.json`, drop Industrial, build prereq edges, seed the pre-known era
-  predicate). Pure data; nothing reads it. Unit-tested for graph integrity (every
-  prereq resolves, the era partition counts match, the researchable frontier from a
-  Medieval-complete start is the expected Renaissance set).
+- **Phase 1 — load the graph + research nothing. (Implemented.)** The `eos.tech`
+  package: `Era` (the five in-scope eras, chronologically ordered) and `Advisor`
+  enums, the `Tech` record (type / era / advisor / cost / or-prereqs / and-prereqs —
+  all Civ4 effect and asset fields discarded), and `TechTree.load()` (parses
+  `/techs.json`, drops the out-of-scope Industrial node by era, and fail-fast
+  validates that every prerequisite resolves). `GameSession.getTechTree()` exposes it,
+  loaded **lazily** so tech-less runs and tests pay no parse cost — nothing reads it,
+  so the full suite stays green and behaviour is unchanged. The graph queries
+  (`preKnownThrough(era)`, `prereqsSatisfied(tech, known)`, `researchableFrontier(known)`)
+  land here as pure functions of a known set. `eos.tech.TechTreeTest` covers graph
+  integrity: 365 kept techs, the era partition counts (99/94/59/54/59), every prereq
+  resolves, and a Medieval-complete start's frontier is exactly the single Renaissance
+  entry tech (`TECH_RENAISSANCE_LIFESTYLE`).
 - **Phase 2 — the effect schema + overlay.** `TechEffect` (the three kinds) and the
   `tech-effects.json` loader; the per-colony `techMultiplier` and the
   `config.A() * multiplier` production hook (with `NECESSITY_TECH_FACTOR` reconciled).

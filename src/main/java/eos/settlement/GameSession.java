@@ -9,6 +9,7 @@ import eos.agent.Caravan;
 import eos.calendar.LiturgicalCalendar;
 import eos.mortality.Demography;
 import eos.name.NameRegistry;
+import eos.tech.TechTree;
 import eos.util.Rng;
 import lombok.Getter;
 
@@ -71,6 +72,12 @@ public class GameSession {
 	@Getter
 	private final LiturgicalCalendar liturgicalCalendar;
 
+	// the technology graph, shared by every colony (pure reference data). Loaded
+	// lazily on first request rather than in the constructor: the ~428KB parse is
+	// only paid by a session that actually uses tech, so tech-less runs and tests
+	// are unaffected. See getTechTree().
+	private TechTree techTree;
+
 	// number of colonies created so far; each gets an economic generator seeded
 	// from (seed, index), so colonies don't share an economic random stream
 	private int colonyCount = 0;
@@ -92,6 +99,20 @@ public class GameSession {
 				new Rng(seed ^ SKILL_SEED_SALT));
 		this.slotTable = SlotTable.load();
 		this.liturgicalCalendar = LiturgicalCalendar.load();
+	}
+
+	/**
+	 * The session's shared {@link TechTree}, loaded from {@code /techs.json} on first
+	 * request and cached thereafter. Loaded lazily (not in the constructor) so a
+	 * session that never touches tech does not pay the parse cost — every existing
+	 * run and test is unaffected until something reads the tree.
+	 *
+	 * @return the shared tech tree
+	 */
+	public TechTree getTechTree() {
+		if (techTree == null)
+			techTree = TechTree.load();
+		return techTree;
 	}
 
 	/**
