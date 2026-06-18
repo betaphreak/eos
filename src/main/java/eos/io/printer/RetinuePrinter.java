@@ -5,12 +5,14 @@ import eos.settlement.Settlement;
 
 /**
  * Writes a CSV time-series of the {@link Retinue}: how many peasants remain,
- * their average skill and age, the necessity they ate and the number that starved
- * last step, and the cumulative relief cost billed to the Ruler. Register with
- * {@link Settlement#addPrinter} and finalize with {@link Settlement#cleanUpPrinters}.
+ * their average skill and age, the food it carries in its larder, the necessity it
+ * ate and the number that starved last step, and the cumulative relief cost billed
+ * to the Ruler. Register with {@link Settlement#addPrinter} and finalize with {@link
+ * Settlement#cleanUpPrinters}.
  * <p>
- * Columns: Date, Count, AvgSkill, AvgAge, Consumed, Starved, BilledTotal,
- * Imported (cumulative gold-funded immigrants recruited into the pool).
+ * Columns: Date, Count, AvgSkill, AvgAge, Larder (necessity the pool holds — what a
+ * collapsing colony's abandoned food stores fold into), Consumed, Starved,
+ * BilledTotal, Imported (cumulative gold-funded immigrants recruited into the pool).
  */
 public class RetinuePrinter extends Printer {
 
@@ -36,14 +38,15 @@ public class RetinuePrinter extends Printer {
 		if (!shouldPrint(colony))
 			return;
 		printWriter.println(colony.getDate(), retinue.size(), retinue.avgSkill(),
-				retinue.avgAgeYears(), retinue.getLastConsumed(), retinue.getLastStarved(),
-				retinue.getTotalBilledToRuler(), retinue.getImmigrantCount());
+				retinue.avgAgeYears(), retinue.getLarder(), retinue.getLastConsumed(),
+				retinue.getLastStarved(), retinue.getTotalBilledToRuler(),
+				retinue.getImmigrantCount());
 	}
 
 	@Override
 	public void printTitles() {
-		printWriter.println("Date", "Count", "AvgSkill", "AvgAge", "Consumed",
-				"Starved", "BilledTotal", "Imported");
+		printWriter.println("Date", "Count", "AvgSkill", "AvgAge", "Larder",
+				"Consumed", "Starved", "BilledTotal", "Imported");
 	}
 
 	@Override

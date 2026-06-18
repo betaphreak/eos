@@ -138,6 +138,7 @@ invariant checks. Select a different entry point with the `sim.main` property:
 ```bash
 mvn exec:exec -Dsim.main=eos.simulation.SmallOpenEconomy   # open colony + immigration
 mvn exec:exec -Dsim.main=eos.simulation.HanseaticEconomy   # two colonies, shared name pool
+mvn exec:exec -Dsim.main=eos.simulation.CaravanEconomy     # three caravans found, fall, and reform
 ```
 
 Every standard colony carries a default **export sector** (a strategic firm whose
@@ -155,6 +156,7 @@ so the count tracks demand. The entry points are:
 | `HomogeneousEconomy`   | Homogeneous agents, a single copper bank (plus the silver nobles and the gold ruler) — the default run, founded via `SimulationHarness.foundStandardColony`. |
 | `SmallOpenEconomy`     | An economy opened to external money inflow + immigration, growing past its starting size; bare, with no ruler/pool. |
 | `HanseaticEconomy`     | Two neighbouring colonies near Lübeck in one session — independent economies, shared name pool.       |
+| `CaravanEconomy`       | Three wandering bands (hoards of 50/100/200 gold, lean→ample larders) each **re-found** a settlement that runs until its reserve drains and it **collapses back into a Caravan**; uncapped, ending once all three have reformed. |
 
 Each scenario consists of a `static run()` that builds and runs the colony via
 `SimulationHarness`, plus a `main()` that calls it.

@@ -1,264 +1,98 @@
 package eos.io.printer;
 
-import eos.agent.firm.Firm;
-import eos.settlement.*;
+import eos.agent.Agent;
+import eos.agent.firm.ConsumerGoodFirm;
+import eos.market.ConsumerGoodMarket;
+import eos.settlement.Settlement;
 
 /**
- * This printer tracks statistics of a group of firms. To use it:
+ * Tracks the colony's living consumer-good firms of <b>every sector</b> (enjoyment,
+ * necessity) in a single CSV — the way {@link BanksPrinter} reports all banks in one
+ * file. Each print cycle it writes one row per consumer sector (in {@link
+ * Settlement#getConsumerGoodMarkets()} order), aggregating over <em>all firms of that
+ * sector currently alive</em> read from {@link Settlement#getAgents()} — so it follows
+ * the count as the ruler's dynamic firm provisioning charters and dissolves firms. The
+ * rows are told apart by a <b>Good</b> column (the sector's product, e.g. {@code
+ * "Necessity"}); a sector with no living firm still gets a row (count 0).
  * <p>
- * 1. Create a new <tt>FirmsPrinter</tt>. See
- * {@link #FirmsPrinter(String fileName, int start, int end, Firm[] firms)}.
- * <p>
- * 2. Call <tt>printTitles()</tt> to print column titles.
- * <p>
- * 3. Add the printer to the Settlement by calling <tt>Settlement.addPrinter()</tt>.
- * <p>
- * 4. Call <tt>print()</tt> of this printer in <tt>Settlement.newDay()</tt> to print
- * data.
- * <p>
- * 5. Include <tt>cleanup()</tt> of this printer in
- * <tt>Settlement.cleanUpPrinters()</tt>, and call that method to clean up the
- * printers.
- * <p>
- * The output of the printer is a CSV file. If you have closely followed the
- * above steps, the first line of the file should be the column titles, and the
- * first column is the in-game date. All entries are comma-delimited (without
- * space). The file could be directly used as an input file for <tt>Grapher</tt>
- * and <tt>MultiAxisGrapher</tt>. You could also open the file with most
- * spreadsheet softwares like Microsoft Excel and OpenOffice Spreadsheet, and
- * perform any data processing you wish.
- * <p>
- * If you omit the file name or provide a simple file name in the constructor,
- * the output file will be saved in a folder called "output". If on the other
- * hand, you specify a directory in the file name, the output file will be saved
- * in your specified directory.
- * <p>
- * The default columns to be printed are: <br>
- * Col0: in-game date<br>
- * Col1: total revenue<br>
- * Col2: total output<br>
- * Col3: total loan<br>
- * Col4: average revenue<br>
- * Col5: average output<br>
- * Col6: average loan<br>
- * Col7: average profit<br>
- * Col8: average labor<br>
- * Col9: average marginal profit<br>
- * Col10: total cost<br>
- * Col11: total labor cost<br>
- * Col12: total capital cost<br>
- * 
+ * One row per sector is written on the first day of each in-game month (see {@link
+ * Printer#shouldPrint}). Columns: Date, Good, Count, TotalRevenue, TotalOutput,
+ * TotalStock, TotalProfit, AvgUtilization, TotalLoan, TotalLaborCost, TotalCapitalCost.
+ * {@code TotalStock} is the firms' unsold inventory of their product (the necessity
+ * firms' food being what a collapsing colony hands to its departing band — see
+ * {@link eos.agent.Caravan#dissolve}).
  */
 public class FirmsPrinter extends Printer {
 
-	// print writer that writes output to a CSV file
 	private final CSVPrintWriter printWriter;
 
-	// firms to be tracked
-	private final Firm[] firms;
-
 	/**
-	 * Create a new <tt>FirmsPrinter</tt>.
-	 * <p>
-	 * 
+	 * Create a printer writing every consumer sector's firms to <tt>fileName</tt>,
+	 * over the whole run.
+	 *
 	 * @param fileName
-	 *            name of the CSV output file. A default name will be used if it
-	 *            is omitted
-	 *            <p>
-	 * 
-	 * @param start
-	 *            starting time step, no data will be printed before this
-	 *            <p>
-	 * @param end
-	 *            ending step, no data will be printed after this. If
-	 *            <tt>end</tt> is omitted, it will be taken to be the last step
-	 *            of the simulation. If both <tt>start</tt> and <tt>end</tt> are
-	 *            omitted, they will be taken to be the first and last step of
-	 *            the simulation respectively.
-	 *            <p>
-	 * @param firms
-	 *            firms to be tracked
-	 *            <p>
-	 * 
+	 *            name of the CSV output file
 	 */
-	public FirmsPrinter(String fileName, int start, int end,
-			Firm[] firms) {
-		super(start, end);
-		this.printWriter = new CSVPrintWriter(fileName);
-		this.firms = firms;
-	}
-
-	/**
-	 * Create a new <tt>FirmsPrinter</tt>. See
-	 * {@link #FirmsPrinter(String fileName, int start, int end, Firm[] firms)}
-	 * . <tt>end</tt> is set to the end of the simulation.
-	 * <p>
-	 * 
-	 * @param fileName
-	 *            name of the CSV output file. A default name will be used if it
-	 *            is omitted
-	 *            <p>
-	 * 
-	 * @param start
-	 *            starting time step, no data will be printed before this
-	 *            <p>
-	 * @param firms
-	 *            firms to be tracked
-	 *            <p>
-	 * 
-	 */
-	public FirmsPrinter(String fileName, int start, Firm[] firms) {
-		this(fileName, start, Integer.MAX_VALUE, firms);
-	}
-
-	/**
-	 * Create a new <tt>FirmsPrinter</tt>. See
-	 * {@link #FirmsPrinter(String fileName, int start, int end, Firm[] firms)}
-	 * . <tt>start</tt> is set to 0. <tt>end</tt> is set to the end of the
-	 * simulation.
-	 * <p>
-	 * 
-	 * @param fileName
-	 *            name of the CSV output file. A default name will be used if it
-	 *            is omitted
-	 *            <p>
-	 * 
-	 * @param firms
-	 *            firms to be tracked
-	 *            <p>
-	 * 
-	 */
-	public FirmsPrinter(String fileName, Firm[] firms) {
-		this(fileName, 0, firms);
-	}
-
-	/**
-	 * Create a new <tt>FirmsPrinter</tt>. See
-	 * {@link #FirmsPrinter(String fileName, int start, int end, Firm[] firms)}
-	 * . A default <tt>fileName</tt> is used.
-	 * <p>
-	 * 
-	 * @param start
-	 *            starting time step, no data will be printed before this
-	 *            <p>
-	 * @param end
-	 *            ending step, no data will be printed after this. If
-	 *            <tt>end</tt> is omitted, it will be taken to be the last step
-	 *            of the simulation. If both <tt>start</tt> and <tt>end</tt> are
-	 *            omitted, they will be taken to be the first and last step of
-	 *            the simulation respectively.
-	 *            <p>
-	 * @param firms
-	 *            firms to be tracked
-	 *            <p>
-	 * 
-	 */
-	public FirmsPrinter(int start, int end, Firm[] firms) {
-		super(start, end);
-		this.firms = firms;
-		String fileName = "firms";
+	public FirmsPrinter(String fileName) {
+		super(0, Integer.MAX_VALUE);
 		this.printWriter = new CSVPrintWriter(fileName);
 	}
 
 	/**
-	 * Create a new <tt>FirmsPrinter</tt>. See
-	 * {@link #FirmsPrinter(String fileName, int start, int end, Firm[] firms)}
-	 * . A default <tt>fileName</tt> is used. <tt>end</tt> is set to the end of
-	 * the simulation.
-	 * <p>
-	 * 
-	 * @param start
-	 *            starting time step, no data will be printed before this
-	 *            <p>
-	 * @param firms
-	 *            firms to be tracked
-	 *            <p>
-	 * 
-	 */
-	public FirmsPrinter(int start, Firm[] firms) {
-		this(start, Integer.MAX_VALUE, firms);
-	}
-
-	/**
-	 * Create a new <tt>FirmsPrinter</tt>. See
-	 * {@link #FirmsPrinter(String fileName, int start, int end, Firm[] firms)}
-	 * . A default <tt>fileName</tt> is used. <tt>start</tt> is set to 0.
-	 * <tt>end</tt> is set to the end of the simulation.
-	 * <p>
-	 * 
-	 * @param firms
-	 *            firms to be tracked
-	 *            <p>
-	 * 
-	 */
-	public FirmsPrinter(Firm[] firms) {
-		this(0, firms);
-	}
-
-	/**
-	 * Print data, called by Settlement.newDay() at each time step
+	 * Print one row per consumer sector, called by {@link Settlement#newDay()} each
+	 * step.
 	 */
 	public void print(Settlement colony) {
-		if (shouldPrint(colony)) {
+		if (!shouldPrint(colony))
+			return;
+		for (ConsumerGoodMarket mkt : colony.getConsumerGoodMarkets()) {
+			String good = mkt.getGood();
+			int count = 0;
 			double totRevenue = 0;
-			double avgRevenue = 0;
 			double totOutput = 0;
-			double avgOutput = 0;
+			double totStock = 0;
+			double totProfit = 0;
+			double totUtil = 0;
 			double totLoan = 0;
-			double avgLoan = 0;
-			double avgLabor = 0;
-			double avgProfit = 0;
-			double avgMarginalProfit = 0;
-			double totCost = 0;
 			double totLaborCost = 0;
 			double totCapitalCost = 0;
 
-			for (int i = 0; i < firms.length; i++)
-				if (firms[i].isAlive()) {
-					totRevenue += firms[i].getRevenue();
-					totOutput += firms[i].getOutput();
-					totLoan += firms[i].getLoan();
-					avgProfit += firms[i].getProfit();
-					avgLabor += firms[i].getLabor();
-					avgMarginalProfit += firms[i].getMarginalProfit();
-					totCost += firms[i].getTotalCost();
-					totLaborCost += firms[i].getLaborCost();
-					totCapitalCost += firms[i].getCapitalCost();
+			for (Agent agent : colony.getAgents())
+				if (agent instanceof ConsumerGoodFirm f && f.isAlive()
+						&& f.getProductName().equals(good)) {
+					count++;
+					totRevenue += f.getRevenue();
+					totOutput += f.getOutput();
+					totStock += f.getStock();
+					totProfit += f.getProfit();
+					totUtil += f.getSmoothedUtilization();
+					totLoan += f.getLoan();
+					totLaborCost += f.getLaborCost();
+					totCapitalCost += f.getCapitalCost();
 				}
-			avgRevenue = totRevenue / firms.length;
-			avgOutput = totOutput / firms.length;
-			avgLoan = totLoan / firms.length;
-			avgProfit /= firms.length;
-			avgLabor /= firms.length;
-			avgMarginalProfit /= firms.length;
+			double avgUtil = count > 0 ? totUtil / count : 0;
 
-			printWriter.println(colony.getDate(), totRevenue, totOutput, totLoan,
-					avgRevenue, avgOutput, avgLoan, avgProfit, avgLabor,
-					avgMarginalProfit, totCost, totLaborCost, totCapitalCost);
+			printWriter.println(colony.getDate(), good, count, totRevenue,
+					totOutput, totStock, totProfit, avgUtil, totLoan, totLaborCost,
+					totCapitalCost);
 		}
 	}
 
-	/**
-	 * Print column titles
-	 */
+	/** Print column titles. */
 	public void printTitles() {
-		printWriter.println("Date", "TotalRevenue", "TotalOutput", "TotalLoan",
-				"AvgRevenue", "AvgOutput", "AvgLoan", "AvgProfit", "AvgLabor",
-				"AvgMarginalProfit", "TotalCost", "TotalLaborCost",
-				"TotalCapitalCost");
+		printWriter.println("Date", "Good", "Count", "TotalRevenue", "TotalOutput",
+				"TotalStock", "TotalProfit", "AvgUtilization", "TotalLoan",
+				"TotalLaborCost", "TotalCapitalCost");
 	}
 
-	/**
-	 * Clean up the printer
-	 */
+	/** Clean up the printer. */
 	public void cleanup() {
 		printWriter.cleanup();
-
 	}
 
 	/**
-	 * Returns the name of the output file.
-	 * 
+	 * Return the name of the output file.
+	 *
 	 * @return the name of the output file
 	 */
 	public String getFileName() {

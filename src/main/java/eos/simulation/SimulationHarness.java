@@ -1144,18 +1144,12 @@ public class SimulationHarness {
 	 */
 	public void addCommonPrinters(String prefix) {
 		colony.addPrinter(new LaborersPrinter(prefix + "Laborer"));
-		colony.addPrinter(
-				new ConsumerMktPricePrinter(prefix + "EPrice", enjoymentMkt));
-		colony.addPrinter(
-				new ConsumerMktVolPrinter(prefix + "EVol", enjoymentMkt));
-		colony.addPrinter(
-				new DynamicFirmsPrinter(prefix + "EFirms", EFirm.class));
-		colony.addPrinter(
-				new ConsumerMktPricePrinter(prefix + "NPrice", necessityMkt));
-		colony.addPrinter(
-				new ConsumerMktVolPrinter(prefix + "NVol", necessityMkt));
-		colony.addPrinter(
-				new DynamicFirmsPrinter(prefix + "NFirms", NFirm.class));
+		// the consumer sectors (enjoyment, necessity) each report into one consolidated
+		// CSV — a row per sector per cycle, told apart by a Good column — the way the
+		// banks report into one Banks.csv
+		colony.addPrinter(new PricesPrinter(prefix + "Prices"));
+		colony.addPrinter(new VolumesPrinter(prefix + "Volumes"));
+		colony.addPrinter(new FirmsPrinter(prefix + "Firms"));
 		colony.addPrinter(new WeddingPrinter(prefix + "Weddings", weddingMkt));
 	}
 

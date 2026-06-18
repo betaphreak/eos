@@ -1194,6 +1194,17 @@ public class Settlement {
 	}
 
 	/**
+	 * Return the colony's consumer-good markets (enjoyment, necessity — in
+	 * registration order), e.g. for a printer to report every consumer sector in a
+	 * single CSV (the way {@link #getBanks()} backs the consolidated banks report).
+	 *
+	 * @return the colony's consumer-good markets
+	 */
+	public Collection<ConsumerGoodMarket> getConsumerGoodMarkets() {
+		return consumerGoodMarkets;
+	}
+
+	/**
 	 * Add <tt>market</tt> to the colony
 	 *
 	 * @param market

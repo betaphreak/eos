@@ -297,6 +297,30 @@ public abstract class ConsumerGoodFirm extends Firm {
 	}
 
 	/**
+	 * The firm's <b>stock</b>: its unsold inventory of its product (enjoyment or
+	 * necessity), carried between steps. For a necessity firm this is the food that,
+	 * when its colony is abandoned, travels with the band into its larder rather than
+	 * being lost (see {@link eos.agent.Caravan#dissolve}); an enjoyment firm's stock is
+	 * simply lost. Reported by {@link eos.io.printer.FirmsPrinter}.
+	 *
+	 * @return the quantity of product the firm currently holds unsold
+	 */
+	public double getStock() {
+		return product.getQuantity();
+	}
+
+	/**
+	 * The name of the good this firm produces ({@code "Enjoyment"} or {@code
+	 * "Necessity"}) — the consumer sector it belongs to, used to group firms by sector
+	 * in the consolidated {@link eos.io.printer.FirmsPrinter}.
+	 *
+	 * @return the firm's product good name
+	 */
+	public String getProductName() {
+		return product.getName();
+	}
+
+	/**
 	 * The firm's capacity utilization (output / capacity) averaged over the days it
 	 * operated within {@link #REVENUE_SMOOTH_WIN} — near 1 when the firm is
 	 * supply-constrained (running flat out, a signal the sector needs another firm),

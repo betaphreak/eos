@@ -8,7 +8,8 @@ households→following, the band departs), and a band **re-founds** a fresh colo
 from its leader, people and hoard (Phase 4), the same bloodline ruling again. Still
 design-only: the gradual `Ruler → holder` lesser demotion (needs the standalone `holder`
 type), the dwell-able `HOLDING` founding phase, and the literal settlement teardown
-(disbanded colonies are marked gone but their stale agents/surnames are not yet pruned).
+(a disbanded colony is marked gone — and its households' dynasty surnames return to the
+pool — but its stale agent objects are not yet removed).
 **Date:** 2026-06-18
 **Depends on:** the rank ladder (`eos.agent.Rank`, `RankLadder`, `Estate`,
 `RankFactory` — see `docs/rank-ladder.md`), the founding ascent in
@@ -327,9 +328,11 @@ out).
   than collapsing terminally. **Deferred:** the gradual `VILLAGE → HOLDING` (`Ruler →
   holder`) lesser demotion — the colony crosses straight from settled to a band at the
   floor — which awaits the standalone `holder` type (`docs/village-founding.md`); and the
-  literal teardown — `dissolve` drains and folds, and the settlement is marked gone and
-  stops running, but its (now-stale) agent objects are not removed (nothing holds a
-  live-colony registry to remove it from yet).
+  literal teardown of the colony's stale agents — `dissolve` drains the banks, folds the
+  households (recycling their dynasty surnames back to the session pool, so a band can
+  re-found without exhausting the name table), and the settlement is marked gone and stops
+  running, but its now-stale agent objects are not removed (nothing holds a live-colony
+  registry to remove it from yet).
 - **Phase 4 — re-founding. (Implemented.)** The Caravan settles (`CARAVAN → HOLDING`)
   as a fresh colony (next index), reusing the founding foundry — a band that fell can
   rise again. The `GameSession` seam (`addCaravan`/`getCaravans`, and
@@ -343,11 +346,11 @@ out).
   of which the initial labor force is promoted as usual. So the same bloodline rules the
   colony it re-founds, on the wealth and people it carried. Covered by
   `CaravanRefoundTest` (a colony is dissolved into a band, which re-founds a viable colony
-  in the same session, led by its former sovereign at the band's site). **Deferred:** the
-  dwell-able `HOLDING` phase / `holder` type and the asset-distribution of
-  `docs/village-founding.md` (re-founding goes straight to a seated `Ruler`); pruning the
-  surnames of the disbanded households (they currently linger in-use — part of the
-  deferred literal teardown).
+  in the same session, led by its former sovereign at the band's site). The
+  `CaravanEconomy` sim exercises the whole arc start-to-finish: three bands with
+  different hoards muster, re-found, collapse, and reform. **Deferred:** the dwell-able
+  `HOLDING` phase / `holder` type and the asset-distribution of
+  `docs/village-founding.md` (re-founding goes straight to a seated `Ruler`).
 - **Phase 5 — (after caravan trade) movement, foraging, trade**, and the
   `HOUSEHOLD → CARAVAN` gather transition.
 

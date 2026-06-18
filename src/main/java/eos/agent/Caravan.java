@@ -1,5 +1,6 @@
 package eos.agent;
 
+import eos.agent.firm.NFirm;
 import eos.agent.ruler.Ruler;
 import eos.bank.Bank;
 import eos.good.Good;
@@ -134,17 +135,33 @@ public class Caravan {
 		for (Bank bank : colony.getBanks())
 			hoard += bank.drainAllMoney();
 
-		// every surviving household disbands into the following: its members (bar the
-		// leader) become pool peasants, its larder folds into the band's carried larder
+		// every surviving household disbands into the following, and the colony's
+		// remaining food travels with the band into its larder
 		for (Agent a : colony.getAgents()) {
-			if (!(a instanceof Household h) || !a.isAlive())
+			if (!a.isAlive())
 				continue;
-			for (Member m : h.getMembers())
-				if (m != leader)
-					following.absorb(m);
-			Good food = a.getGood("Necessity");
-			if (food != null)
-				following.stockLarder(food.decrease(food.getQuantity()));
+			if (a instanceof Household h) {
+				// the household's members (bar the leader) become pool peasants, and
+				// its larder folds into the band's carried larder
+				for (Member m : h.getMembers())
+					if (m != leader)
+						following.absorb(m);
+				Good food = a.getGood("Necessity");
+				if (food != null)
+					following.stockLarder(food.decrease(food.getQuantity()));
+				// a disbanded household's dynasty surname returns to the session-wide
+				// pool (it is a household no longer — its people are now unranked
+				// following). Only the leader's dynasty survives, leading the band.
+				if (a != ruler)
+					colony.getNames().releaseDynastyName(h.getHead().surname());
+			} else if (a instanceof NFirm) {
+				// an abandoned necessity firm's unsold food stores travel with the band
+				// rather than being lost (its enjoyment counterpart, an EFirm's stock,
+				// is simply abandoned — see docs/caravan.md)
+				Good food = a.getGood("Necessity");
+				if (food != null)
+					following.stockLarder(food.decrease(food.getQuantity()));
+			}
 		}
 
 		return new Caravan(leader, following, hoard, colony.getLatitude(),

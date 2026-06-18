@@ -7,11 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
+import eos.agent.Agent;
 import eos.agent.Caravan;
 import eos.agent.Household;
 import eos.agent.Member;
 import eos.agent.Retinue;
+import eos.agent.firm.NFirm;
 import eos.bank.Bank;
+import eos.good.Good;
 import eos.settlement.Settlement;
 
 /**
@@ -47,6 +50,22 @@ class CaravanDissolutionTest {
 				.filter(a -> a instanceof Household && a.isAlive())
 				.mapToLong(a -> ((Household) a).getMemberCount()).sum();
 
+		// total necessity in the colony before dissolution: the pool's larder, plus
+		// every household's larder, plus every necessity firm's unsold stock — all of
+		// which should fold into the band's larder (the food travels with the band)
+		double foodBefore = retinue.getLarder();
+		for (Agent a : colony.getAgents()) {
+			if (!a.isAlive())
+				continue;
+			if (a instanceof Household) {
+				Good food = a.getGood("Necessity");
+				if (food != null)
+					foodBefore += food.getQuantity();
+			} else if (a instanceof NFirm f) {
+				foodBefore += f.getStock();
+			}
+		}
+
 		Caravan band = Caravan.dissolve(colony);
 
 		// money conserved: the whole stock is now the band's hoard, the banks drained
@@ -55,6 +74,11 @@ class CaravanDissolutionTest {
 		assertEquals(0,
 				colony.getBanks().stream().mapToDouble(Bank::getTotalMoney).sum(),
 				1e-6, "the banks are drained into the hoard");
+
+		// food conserved: the household larders and the abandoned necessity firms' stock
+		// fold into the band's carried larder (nothing is lost)
+		assertEquals(foodBefore, band.getFollowing().getLarder(), 1e-6,
+				"the colony's food is conserved into the band's larder");
 
 		// the sovereign leads the band; every other household member joins the following
 		assertSame(rulerHead, band.getLeader(), "the ruler leads the band as its Captain");
