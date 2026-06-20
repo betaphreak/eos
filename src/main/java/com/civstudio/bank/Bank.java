@@ -519,9 +519,16 @@ public class Bank implements Property {
 			});
 		}
 
-		/* update long-term interest rates */
-		ltLoanIR = loanIRAvger.update(loanIR);
-		ltDepositIR = depositIRAvger.update(depositIR);
+		/*
+		 * Update long-term interest rates. loanIR/depositIR are non-negative by
+		 * construction, so their rolling averages are too; the floor only sweeps up
+		 * the tiny (~1e-16) negative residue the Averager's running sum accumulates
+		 * from floating-point round-off when a series sits at zero (e.g. a bank with
+		 * no loans). These long-term rates are report-only (nothing reads them back
+		 * into the economy), so this purely cleans the reported value.
+		 */
+		ltLoanIR = Math.max(0, loanIRAvger.update(loanIR));
+		ltDepositIR = Math.max(0, depositIRAvger.update(depositIR));
 	}
 
 	/**
