@@ -136,9 +136,9 @@ mvn package                # build the jar
 invariant checks. Select a different entry point with the `sim.main` property:
 
 ```bash
-mvn exec:exec -Dsim.main=eos.simulation.SmallOpenEconomy   # open colony + immigration
-mvn exec:exec -Dsim.main=eos.simulation.HanseaticEconomy   # two colonies, shared name pool
-mvn exec:exec -Dsim.main=eos.simulation.CaravanEconomy     # three caravans found, fall, and reform
+mvn exec:exec -Dsim.main=simulation.com.civstudio.SmallOpenEconomy   # open colony + immigration
+mvn exec:exec -Dsim.main=simulation.com.civstudio.HanseaticEconomy   # two colonies, shared name pool
+mvn exec:exec -Dsim.main=simulation.com.civstudio.CaravanEconomy     # three caravans found, fall, and reform
 ```
 
 Every standard colony carries a default **export sector** (a strategic firm whose

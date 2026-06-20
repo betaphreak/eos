@@ -11,7 +11,7 @@ type), the dwell-able `HOLDING` founding phase, and the literal settlement teard
 (a disbanded colony is marked gone — and its households' dynasty surnames return to the
 pool — but its stale agent objects are not yet removed).
 **Date:** 2026-06-18
-**Depends on:** the rank ladder (`eos.agent.Rank`, `RankLadder`, `Estate`,
+**Depends on:** the rank ladder (`agent.com.civstudio.Rank`, `RankLadder`, `Estate`,
 `RankFactory` — see `docs/rank-ladder.md`), the founding ascent in
 `docs/village-founding.md` (CARAVAN is the band that note settles), the peasant pool
 (`docs/peasant-pool.md`), `CITY`/`LEAGUE` (`docs/city-and-league.md`), and

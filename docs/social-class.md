@@ -2,13 +2,13 @@
 
 **Status:** proposed (design only — not yet implemented)
 **Date:** 2026-06-18
-**Depends on:** the household stack (`eos.agent.Household`, `AbstractHousehold` and
+**Depends on:** the household stack (`agent.com.civstudio.Household`, `AbstractHousehold` and
 its three implementors `Laborer`, `Noble`, `Ruler`), the peasant pool
-(`eos.agent.Retinue` of `Member`s — see `docs/peasant-pool.md`), the ration tiers
-(`eos.good.RationSize`), the currency tiers (`eos.bank.CurrencyType` and the
+(`agent.com.civstudio.Retinue` of `Member`s — see `docs/peasant-pool.md`), the ration tiers
+(`good.com.civstudio.RationSize`), the currency tiers (`bank.com.civstudio.CurrencyType` and the
 copper/silver/gold banks `SimulationHarness` provides), the wedding market's
 priority order (`Household.weddingPriority()`, `market/WeddingMarket.java`), and —
-as its deliberately-separate sibling axis — the rank ladder (`eos.agent.Rank`,
+as its deliberately-separate sibling axis — the rank ladder (`agent.com.civstudio.Rank`,
 `docs/rank-ladder.md`).
 **Related:** the tech tree (`docs/tech-tree.md`) gates a future `BURGHER` tier behind
 a researched tech (its `SOCIAL_GATE` effect), so the two notes meet at the

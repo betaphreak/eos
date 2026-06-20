@@ -2,7 +2,7 @@
 
 **Status:** implemented (phases 1–4); phase 5 (further triggers, further rungs) is future work
 **Date:** 2026-06-17
-**Depends on:** the `eos.agent.Rank` enum, the `eos.agent.Household` interface and
+**Depends on:** the `agent.com.civstudio.Rank` enum, the `agent.com.civstudio.Household` interface and
 its three implementors (`Laborer`, `Noble`, `Ruler`), the adopt-style household
 constructors (`Noble(Member head, …)`, the adopt-a-`Member` `Laborer`), and the
 colony's deferred-mutation hooks (`Settlement.scheduleEndOfStepAction`,
@@ -96,7 +96,7 @@ lookup over a `level`-sorted array; the signatures stay the same.)
 
 ### `Household` exposes its rank
 
-One default method on the `eos.agent.Household` interface, overridden per type:
+One default method on the `agent.com.civstudio.Household` interface, overridden per type:
 
 ```java
 /** This household's rank — the scope of what it commands. */
@@ -224,7 +224,7 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
   `Rank.promoted()`/`demoted()` helpers (single-step walk over a `level`-indexed
   array, empty at the ends) and the per-type `rank()` overrides (`Laborer` inherits
   the default `HOUSEHOLD`, `Noble` → `HOLDING`, `Ruler` → `VILLAGE`). Pure, additive,
-  byte-identical. Unit-tested by `eos.agent.RankTest` (the ladder walk, the empty
+  byte-identical. Unit-tested by `agent.com.civstudio.RankTest` (the ladder walk, the empty
   ends, and that promote/demote are exact inverses in the interior).
 - **Phase 2 — `Estate` + `RankFactory` + `RankLadder`, refactor ennoblement.
   (Implemented.)** The engine lives in `eos.agent` (`Estate`, `RankFactory`,
@@ -243,7 +243,7 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
   `SimulationHarness.demote(Household)`. Money is conserved symmetrically because the
   ladder transcribes the copper balance directly (`openAcct` + plain `closeAcct`,
   neither touching equity), changing only the bank tier and type. Covered by
-  `eos.simulation.NobleDemotionTest` (a raised noble demoted re-banks in copper, head
+  `simulation.com.civstudio.NobleDemotionTest` (a raised noble demoted re-banks in copper, head
   carried across, balances unchanged). **No automatic trigger yet** — nothing in a
   live run calls `demote`, so registering the `HOUSEHOLD` factory leaves every run
   byte-identical.
@@ -258,7 +258,7 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
   not orphaned; if it is the colony's only noble they go unowned until the next
   charter's no-owner fallback re-ennobles an owner. Standard nobles work the export
   firm and stay solvent, so the trigger is a no-op there and the full suite stays
-  green; covered by `eos.simulation.RuinedNobleDemotionTest` (a noble crushed under
+  green; covered by `simulation.com.civstudio.RuinedNobleDemotionTest` (a noble crushed under
   an unpayable debt is demoted to a copper-banking laborer past the grace window).
 - **Phase 5 — future (separate notes).** Further demotion triggers (attainder, loss
   of last holding); realizing `CARAVAN` as an entity with the pool as its asset; the

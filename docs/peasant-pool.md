@@ -2,7 +2,7 @@
 
 **Status:** proposed (design only — not yet implemented)
 **Date:** 2026-06-14
-**Depends on:** the `Person`/`Member` split (`eos.agent.Member`) and the per-member
+**Depends on:** the `Person`/`Member` split (`agent.com.civstudio.Member`) and the per-member
 `AbstractHousehold.checkOldAgeDeath()` loop.
 
 ## Motivation
@@ -58,7 +58,7 @@ hereditary, and funds that obligation by **taxing the colony's accumulated wealt
 
 ### `Retinue` — a new `Agent`
 
-A new `eos.agent.Retinue extends Agent`, registered with the colony via
+A new `agent.com.civstudio.Retinue extends Agent`, registered with the colony via
 `colony.addAgent(...)` like any other agent, holding a `List<Member>`. The
 `Member` type from the household split is an exact fit: a peasant is precisely a
 `Person` (name + skills) with its own birth date, age and old-age mortality, minus

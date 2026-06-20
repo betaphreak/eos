@@ -5,14 +5,14 @@ machinery that makes ancestry *vary*, and the authored Harimari content (names,
 calendar, tech overlay) plus a demo scenario and tests are all in tree. Remaining
 items are the *Open questions / future* below. See *Suggested phasing*.
 **Date:** 2026-06-18
-**Depends on:** the per-session services owned by `eos.settlement.GameSession`
+**Depends on:** the per-session services owned by `settlement.com.civstudio.GameSession`
 (the `NameRegistry` given-name tables + `DynastyPool`, the `LiturgicalCalendar`,
-the lazy `TechTree`) and the per-colony services it mints (`eos.mortality.Demography`
-+ its `eos.mortality.LifeTable`, and the colony's `NameRegistry`); the person model
-(`eos.name.Person`, its `SkillTracker` and `Gender`); the household stack
-(`eos.agent.Household` / `AbstractHousehold` and its `Laborer` / `Noble` / `Ruler`
-implementors); the peasant pool (`eos.agent.Retinue`); and the tech effect overlay
-(`eos.tech.TechEffects`, `tech-effects.json`).
+the lazy `TechTree`) and the per-colony services it mints (`mortality.com.civstudio.Demography`
++ its `mortality.com.civstudio.LifeTable`, and the colony's `NameRegistry`); the person model
+(`name.com.civstudio.Person`, its `SkillTracker` and `Gender`); the household stack
+(`agent.com.civstudio.Household` / `AbstractHousehold` and its `Laborer` / `Noble` / `Ruler`
+implementors); the peasant pool (`agent.com.civstudio.Retinue`); and the tech effect overlay
+(`tech.com.civstudio.TechEffects`, `tech-effects.json`).
 **Related:** `docs/tech-tree.md` (per-race tech *effects*), `docs/calendar.md`
 (per-race feasts), `docs/social-class.md` and `docs/rank-ladder.md` (orthogonal axes
 — race is ancestry, not standing or command).
@@ -51,7 +51,7 @@ spouses of other races — vary freely.
 
 ## The `Race` enum
 
-A small `eos.race.Race` enum, each value carrying the metadata the services need:
+A small `race.com.civstudio.Race` enum, each value carrying the metadata the services need:
 
 ```java
 public enum Race {
@@ -172,7 +172,7 @@ Two pieces are already in tree ahead of the plumbing:
 
 ## Suggested phasing
 
-1. **Plumbing, all human.** *(implemented)* Added the `eos.race.Race` enum (`id()` +
+1. **Plumbing, all human.** *(implemented)* Added the `race.com.civstudio.Race` enum (`id()` +
    `lifeTable()`), `Person.race` (default `HUMAN`, threaded through `withSkills` and
    the household/peasant/wedding/caravan person-creators), the race-keyed maps in
    `Demography` (`Race → LifeTable`; `diesOfOldAge(ageDays, race)`; `sampleRace(raceMix)`
@@ -198,7 +198,7 @@ Two pieces are already in tree ahead of the plumbing:
    roll, and founders take the colony's founding race. The founding-race calendar/tech
    seam (`GameSession.getLiturgicalCalendar(Race)` / `getTechTree(Race)`) is in place but
    still resolves to the shared human resources until Phase 3 authors per-race files.
-   Covered by `eos.race.RaceTest` (the roll's reproducibility & coverage, the degenerate
+   Covered by `race.com.civstudio.RaceTest` (the roll's reproducibility & coverage, the degenerate
    mix drawing no RNG, per-race naming with the Harimari clan epithets, the calendar/tech
    seam). The full mixed-race economy smoke test ships with the Harimari content in
    Phase 3.

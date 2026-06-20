@@ -7,7 +7,7 @@ completion applying effects, always on for export colonies, founding in the
 `GameSession`'s `Era` (Medieval by default — knowing up to Classical and warm-started
 90% through the Medieval entry tech), per-era research cost via `EraModifiers.researchPercent`,
 and the whole tree persisting across a band's abandonment/re-founding). The era ladder
-is now a **single `eos.era.Era`** (the former `eos.tech.Era` was merged in). Because the
+is now a **single `era.com.civstudio.Era`** (the former `eos.tech.Era` was merged in). Because the
 shipped effect overlay is still **empty**,
 completed techs carry no effects yet, so a standard run advances research but its only
 economic footprint is the science firm (slot + ruler-funded scholar wages) until the
@@ -58,7 +58,7 @@ imported file stays pristine — it is read-only reference data.
 2. **Research is fueled by INTELLECTUAL labor** — supplied by the ruler and nobles
    (the scholarly aristocracy), via a dedicated science firm (see below). It is
    **always on** for an export colony (no enable flag).
-3. **The founding era lives on the `GameSession`** (`eos.era.Era`, default `MEDIEVAL`
+3. **The founding era lives on the `GameSession`** (`era.com.civstudio.Era`, default `MEDIEVAL`
    — so all simulations start Medieval). A colony founding in era E knows every tech up
    to `E.below()` for free and researches E's frontier, founding 90% through E's entry
    tech (`TECH_E_LIFESTYLE`). At the `MEDIEVAL` default that's Prehistoric→Classical
@@ -162,7 +162,7 @@ The parsed `techs.json` plus the `tech-effects.json` overlay, loaded once via Ja
 (already the project's one runtime dep, used by `NameRegistry`). Immutable; holds the
 nodes, prereq edges, costs, eras, advisor→sector map, and each tech's resolved
 `List<TechEffect>`. Lives on `GameSession` beside the other shared services, since the
-graph is identical across colonies in a session. Eras are the single `eos.era.Era`
+graph is identical across colonies in a session. Eras are the single `era.com.civstudio.Era`
 ladder (the former `eos.tech.Era` merged in): `TechTree` maps each row via
 `Era.fromTechKey` and drops anything past its `MAX_TECH_ERA = Era.RENAISSANCE` ceiling
 (the lone Industrial node and later eras), and exposes the era partition so "pre-known
@@ -268,7 +268,7 @@ economically near-neutral (the existing smoke suite stays green).
   loaded **lazily** so tech-less runs and tests pay no parse cost — nothing reads it,
   so the full suite stays green and behaviour is unchanged. The graph queries
   (`preKnownThrough(era)`, `prereqsSatisfied(tech, known)`, `researchableFrontier(known)`)
-  land here as pure functions of a known set. `eos.tech.TechTreeTest` covers graph
+  land here as pure functions of a known set. `tech.com.civstudio.TechTreeTest` covers graph
   integrity: 365 kept techs, the era partition counts (99/94/59/54/59), every prereq
   resolves, and a Medieval-complete start's frontier is exactly the single Renaissance
   entry tech (`TECH_RENAISSANCE_LIFESTYLE`).
@@ -287,11 +287,11 @@ economically near-neutral (the existing smoke suite stays green).
   A-use site (output **and** marginal cost). `NECESSITY_TECH_FACTOR` is left as the
   founding A baseline with the multiplier riding on top — so at the default 1.0
   multiplier production is byte-identical and the full smoke suite stays green.
-  Covered by `eos.tech.TechEffectTest` (schema + overlay parsing) and
-  `eos.simulation.TechProductivityTest` (a directly-applied effect scales exactly its
+  Covered by `tech.com.civstudio.TechEffectTest` (schema + overlay parsing) and
+  `simulation.com.civstudio.TechProductivityTest` (a directly-applied effect scales exactly its
   sector's firm output, cumulatively, leaving other sectors untouched).
 - **Phase 3 — research production + completion + ruler selection. (Implemented.)**
-  A per-colony `eos.tech.ResearchState` (on `Settlement`, via `getResearch()`/
+  A per-colony `tech.com.civstudio.ResearchState` (on `Settlement`, via `getResearch()`/
   `setResearch`). The baseline and warm-start derive from the `GameSession`'s `Era`
   (default `MEDIEVAL`): pre-known = `preKnownThrough(era.below())` (Classical), warm-start
   = `seedInitialFocus("TECH_" + era + "_LIFESTYLE", 0.9)` (90% through the Medieval entry
@@ -313,9 +313,9 @@ economically near-neutral (the existing smoke suite stays green).
   `ResearchState.snapshot()`/`restore()` carry the whole tree (known, completed, focus,
   buffered progress) onto a wandering `Caravan` on abandonment and back onto the
   re-founded colony (`reFoundStandardColony`), re-applying the researched techs' effects
-  so productivity is recovered. Covered by `eos.tech.ResearchStateTest` (pick / buffer
+  so productivity is recovered. Covered by `tech.com.civstudio.ResearchStateTest` (pick / buffer
   / warm-start / complete-with-overflow / snapshot-restore, deterministic via the
-  sample overlay) and `eos.simulation.TechResearchTest` (a standard run completes ≥1
+  sample overlay) and `simulation.com.civstudio.TechResearchTest` (a standard run completes ≥1
   tech before collapse). **Note:** with the overlay empty those completions apply no
   effects, so a standard run *advances* research (counters, `Research.csv`) but its only
   economic footprint is the science firm (slot + ruler-funded scholar wages); the

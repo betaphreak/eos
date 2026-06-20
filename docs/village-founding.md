@@ -2,7 +2,7 @@
 
 **Status:** proposed (design only — not yet implemented)
 **Date:** 2026-06-17
-**Depends on:** the rank ladder (`eos.agent.Rank`, `RankLadder`, `Estate`,
+**Depends on:** the rank ladder (`agent.com.civstudio.Rank`, `RankLadder`, `Estate`,
 `RankFactory` — see `docs/rank-ladder.md`), the peasant pool
 (`docs/peasant-pool.md`), `GameSession`'s multi-colony support, `SlotTable`'s
 special sites, and the holder machinery a `Noble` already carries (`firms`/`banks`

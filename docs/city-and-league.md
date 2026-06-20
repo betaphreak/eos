@@ -4,7 +4,7 @@
 **Date:** 2026-06-18
 **Supersedes:** the earlier `docs/city-rank.md` (which modelled CITY as a federation
 of village-quarters — the wrong rung; that federation is a LEAGUE, below).
-**Depends on:** the rank ladder (`eos.agent.Rank`, `RankLadder`, `Estate`,
+**Depends on:** the rank ladder (`agent.com.civstudio.Rank`, `RankLadder`, `Estate`,
 `RankFactory` — see `docs/rank-ladder.md`), the founding ascent
 `CARAVAN → HOLDING → VILLAGE` and the `Property` abstraction
 (`docs/village-founding.md`), `GameSession`'s multi-colony support (the
