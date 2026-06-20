@@ -358,9 +358,15 @@ explicit coordinates are unchanged.
   adjacent (`WorldMap.path(515, 519) == [515, 519]`, a one-step route) — the
   travel-network substrate caravan trade will route over. Full suite green (143
   tests).
-- **Phase 4 — hand off to the dependent features.** Expose the travel-network
-  queries to caravan trade and village founding (their notes own the movement);
-  geography itself is complete at Phase 3.
+- **Phase 4 — hand off to the dependent features. (Designed — see
+  [`docs/caravan-trade.md`](caravan-trade.md).)** Geography itself is complete at
+  Phase 3; the travel-network consumers are designed in their own note: a
+  `Caravan` superclass anchored to a province that moves along the neighbor graph,
+  with a **settler** subclass (the migration band wanders to a settleable province
+  and re-founds *into* it) and a **trade** subclass (a settlement-sponsored
+  merchant convoy that buys at one settlement's market and sells at a neighbour's,
+  arbitrage coupling the two economies). Phase A of that note (province-anchored
+  movement + the settler band) is the concrete realization of this hand-off.
 
 ## Decided (folded in above)
 

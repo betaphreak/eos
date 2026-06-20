@@ -355,8 +355,15 @@ out).
   different hoards muster, re-found, collapse, and reform. **Deferred:** the dwell-able
   `HOLDING` phase / `holder` type and the asset-distribution of
   `docs/village-founding.md` (re-founding goes straight to a seated `Ruler`).
-- **Phase 5 — (after caravan trade) movement, foraging, trade**, and the
-  `HOUSEHOLD → CARAVAN` gather transition.
+- **Phase 5 — movement, foraging, trade** (and, later, the `HOUSEHOLD → CARAVAN`
+  gather transition). **Designed in [`docs/caravan-trade.md`](caravan-trade.md):**
+  now that the province graph exists (`docs/geography.md`), the `Caravan` becomes a
+  province-anchored entity that moves along the neighbor graph — a `Caravan`
+  superclass with a **settler** subclass (this note's migration band, now wandering
+  the graph to a settleable province and re-founding *into* it) and a **trade**
+  subclass (a settlement-sponsored merchant convoy that couples two settlements'
+  economies through their real markets). The band's `position`/`moveTo` seam this
+  note deferred is realized there.
 
 ## Open questions deferred to later
 
