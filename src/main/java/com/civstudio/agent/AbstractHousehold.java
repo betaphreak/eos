@@ -57,6 +57,11 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	// mortality, so members can age and die independently as households grow.
 	private final List<Member> members = new ArrayList<>();
 
+	// a cached unmodifiable view over `members`, returned by getMembers(). The view
+	// tracks the backing list, so caching it once avoids allocating a fresh wrapper
+	// on every call (getMembers() is hit in the per-step labor-market loops).
+	private final List<Member> membersView = Collections.unmodifiableList(members);
+
 	// in-game date this household came into being (its already-grown head
 	// arrived and founded it); distinct from the head's birthDate (held on its
 	// Member)
@@ -214,7 +219,7 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	 */
 	@Override
 	public List<Member> getMembers() {
-		return Collections.unmodifiableList(members);
+		return membersView;
 	}
 
 	/**

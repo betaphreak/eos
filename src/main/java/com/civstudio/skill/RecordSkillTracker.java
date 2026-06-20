@@ -17,7 +17,7 @@ public final class RecordSkillTracker implements SkillTracker {
 	/** Create a tracker with every skill at {@link SkillRecord#MIN_LEVEL}. */
 	public RecordSkillTracker() {
 		Map<Skill, SkillRecord> m = new EnumMap<>(Skill.class);
-		for (Skill s : Skill.values())
+		for (Skill s : Skill.all())
 			m.put(s, new SkillRecord());
 		this.records = m;
 	}
@@ -32,7 +32,7 @@ public final class RecordSkillTracker implements SkillTracker {
 	 */
 	public RecordSkillTracker(Map<Skill, SkillRecord> records) {
 		Map<Skill, SkillRecord> m = new EnumMap<>(Skill.class);
-		for (Skill s : Skill.values()) {
+		for (Skill s : Skill.all()) {
 			SkillRecord r = records.get(s);
 			m.put(s, r != null ? r : new SkillRecord());
 		}
@@ -75,7 +75,7 @@ public final class RecordSkillTracker implements SkillTracker {
 		StringBuilder sb =
 				new StringBuilder("overall=").append(overallLevel()).append(" {");
 		boolean first = true;
-		for (Skill s : Skill.values()) {
+		for (Skill s : Skill.all()) {
 			if (!first)
 				sb.append(", ");
 			sb.append(s).append('=').append(records.get(s));

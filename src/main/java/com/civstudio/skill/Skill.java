@@ -40,4 +40,23 @@ public enum Skill {
 	public int index() {
 		return index;
 	}
+
+	// Skill.values() copies its backing array on every call; the hot paths
+	// (SkillTracker.overallLevel/totalLevel/peakLevel, tracker construction) iterate
+	// the twelve skills constantly, so cache one shared copy. Callers must not mutate
+	// the returned array.
+	private static final Skill[] VALUES = values();
+
+	/** The number of skills (12) — a non-allocating {@code values().length}. */
+	public static final int COUNT = VALUES.length;
+
+	/**
+	 * The twelve skills as a shared, cached array (a non-allocating {@link #values()}
+	 * for hot iteration). <b>Do not mutate</b> the returned array.
+	 *
+	 * @return the cached array of all skills, in declaration order
+	 */
+	public static Skill[] all() {
+		return VALUES;
+	}
 }

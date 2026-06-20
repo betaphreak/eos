@@ -97,9 +97,9 @@ public interface SkillTracker {
 	 */
 	default int overallLevel() {
 		int sum = 0;
-		for (Skill s : Skill.values())
+		for (Skill s : Skill.all())
 			sum += level(s);
-		return Math.round((float) sum / Skill.values().length);
+		return Math.round((float) sum / Skill.COUNT);
 	}
 
 	/**
@@ -110,7 +110,7 @@ public interface SkillTracker {
 	 */
 	default int totalLevel() {
 		int sum = 0;
-		for (Skill s : Skill.values())
+		for (Skill s : Skill.all())
 			sum += level(s);
 		return sum;
 	}
@@ -123,7 +123,7 @@ public interface SkillTracker {
 	 */
 	default int peakLevel() {
 		int max = SkillRecord.MIN_LEVEL;
-		for (Skill s : Skill.values())
+		for (Skill s : Skill.all())
 			max = Math.max(max, level(s));
 		return max;
 	}
@@ -137,7 +137,7 @@ public interface SkillTracker {
 	default Skill peakSkill() {
 		Skill best = null;
 		int bestLevel = -1;
-		for (Skill s : Skill.values()) {
+		for (Skill s : Skill.all()) {
 			int lvl = level(s);
 			// strict >, with an explicit index tie-break, so the result depends on
 			// the skill's index rather than the enum's iteration order
