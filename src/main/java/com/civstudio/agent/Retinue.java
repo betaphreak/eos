@@ -1,9 +1,13 @@
 package com.civstudio.agent;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import com.civstudio.agent.firm.BuilderFirm;
 import com.civstudio.agent.ruler.Ruler;
@@ -425,6 +429,51 @@ public class Retinue extends Agent {
 			promotedCount++;
 		}
 		return best;
+	}
+
+	/**
+	 * Remove and return the {@code k} highest-overall-skill peasants, in descending
+	 * skill order — the merit-based cohort a {@link Ruler} promotes into laborer
+	 * households when the colony is founded. Equivalent to calling {@link
+	 * #promoteHighestSkilled()} {@code k} times (the same members, in the same order,
+	 * with the same skill-store removals), but found with a single stable sort rather
+	 * than {@code k} linear scans of the pool: no skill changes during founding, so
+	 * the {@code k} sequential maxima are exactly the top {@code k} by overall level,
+	 * ties broken toward the earlier pool position (the "first maximum in list order"
+	 * each scan picks). Returns fewer than {@code k} only if the pool holds fewer.
+	 *
+	 * @param k the number of peasants to promote
+	 * @return the promoted peasants, highest skill first, removed from the pool
+	 */
+	public List<Member> promoteHighestSkilled(int k) {
+		int n = Math.min(Math.max(0, k), peasants.size());
+		List<Member> promoted = new ArrayList<>(n);
+		if (n == 0)
+			return promoted;
+		// compute each peasant's overall level once, then stably sort positions by
+		// level descending; equal levels keep their original (ascending) pool order,
+		// matching the first-maximum-in-list-order the repeated single scan picks
+		int size = peasants.size();
+		int[] level = new int[size];
+		Integer[] pos = new Integer[size];
+		for (int i = 0; i < size; i++) {
+			level[i] = peasants.get(i).skills().overallLevel();
+			pos[i] = i;
+		}
+		Arrays.sort(pos, (a, b) -> Integer.compare(level[b], level[a]));
+		Set<Member> chosen = Collections.newSetFromMap(new IdentityHashMap<>());
+		for (int i = 0; i < n; i++) {
+			Member m = peasants.get(pos[i]);
+			promoted.add(m);
+			chosen.add(m);
+		}
+		// free each chosen peasant's skill-store row in the same highest-first order
+		// the single-promote path uses, then drop them all in one O(size) pass
+		for (Member m : promoted)
+			skillStore.remove(viewOf(m));
+		peasants.removeAll(chosen);
+		promotedCount += n;
+		return promoted;
 	}
 
 	/**

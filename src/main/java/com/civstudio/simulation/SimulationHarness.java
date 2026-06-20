@@ -1019,8 +1019,13 @@ public class SimulationHarness {
 		int promoted =
 				(int) Math.round(cfg.promotionRatio() * retinue.size());
 		laborers = new Laborer[promoted];
+		// promote the whole highest-skill cohort in one batch (a single sort instead
+		// of `promoted` linear scans of the pool); the order is identical to taking
+		// the highest skilled one at a time, so the per-laborer endowment draws below
+		// are unchanged
+		List<Member> cohort = retinue.promoteHighestSkilled(promoted);
 		for (int i = 0; i < promoted; i++) {
-			Member peasant = retinue.promoteHighestSkilled();
+			Member peasant = cohort.get(i);
 			double stock = retinue.drawPromotionStock(initN.applyAsDouble(i));
 			laborers[i] = promoteToLaborer(peasant, laborerBank.apply(i), stock);
 			colony.addAgent(laborers[i]);
