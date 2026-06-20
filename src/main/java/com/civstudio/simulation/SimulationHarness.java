@@ -45,8 +45,8 @@ import com.civstudio.settlement.Settlement;
 import com.civstudio.skill.Skill;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.io.SimLog;
-import eos.io.printer.*;
-import eos.market.*;
+import com.civstudio.io.printer.*;
+import com.civstudio.market.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 

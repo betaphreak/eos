@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>eos</groupId>
+    <groupId>com.civstudio</groupId>
     <artifactId>civstudio</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -23,7 +23,7 @@
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- Which simulation `mvn exec:exec` runs; override with -Dsim.main=simulation.com.civstudio.SmallOpenEconomy -->
+        <!-- Which simulation `mvn exec:exec` runs; override with -Dsim.main=com.civstudio.simulation.SmallOpenEconomy -->
         <sim.main>com.civstudio.simulation.HomogeneousEconomy</sim.main>
         <lombok.version>1.18.34</lombok.version>
     </properties>
@@ -70,7 +70,7 @@
               Runs a simulation in a forked JVM with assertions enabled (-ea).
               The original code uses `assert` as real invariant checks, so we keep them on.
               Usage: mvn compile exec:exec   (HomogeneousEconomy by default)
-                     mvn compile exec:exec -Dsim.main=simulation.com.civstudio.SmallOpenEconomy
+                     mvn compile exec:exec -Dsim.main=com.civstudio.simulation.SmallOpenEconomy
             -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

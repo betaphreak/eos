@@ -3,7 +3,7 @@ package com.civstudio.io.printer;
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.settlement.Settlement;
-import eos.settlement.*;
+import com.civstudio.settlement.*;
 
 /**
  * This printer tracks statistics of the colony's laborer population. To use it:
