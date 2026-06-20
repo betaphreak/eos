@@ -32,6 +32,8 @@ import com.civstudio.tech.ResearchState;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.CurrencyType;
 import com.civstudio.io.printer.Printer;
+import com.civstudio.io.sink.CsvRowSinkFactory;
+import com.civstudio.io.sink.RowSinkFactory;
 import com.civstudio.market.ConsumerGoodMarket;
 import com.civstudio.market.Market;
 import com.civstudio.mortality.Demography;
@@ -101,6 +103,11 @@ public class Settlement {
 
 	// printers
 	private final ArrayList<Printer> printers = new ArrayList<Printer>();
+
+	// the factory that creates the sink each printer writes to; defaults to CSV
+	// (so plain main() runs and tests are unaffected), overridden by a launcher
+	// that wants database persistence
+	private RowSinkFactory sinkFactory = new CsvRowSinkFactory();
 
 	// current time step
 	private int timeStep = 0;
@@ -1521,7 +1528,21 @@ public class Settlement {
 	public void addPrinter(Printer printer) {
 		assert (printer != null);
 		printers.add(printer);
-		printer.printTitles();
+		printer.bind(sinkFactory);
+	}
+
+	/**
+	 * Set the factory that creates the {@link RowSink} each printer writes to.
+	 * Must be called <b>before</b> any printer is registered (the sink is created
+	 * at {@link #addPrinter} time). Defaults to a {@link CsvRowSinkFactory}; a
+	 * launcher installs a database- or composite-backed factory here to persist
+	 * the run.
+	 *
+	 * @param factory the sink factory
+	 */
+	public void setSinkFactory(RowSinkFactory factory) {
+		assert (factory != null);
+		this.sinkFactory = factory;
 	}
 
 	/**

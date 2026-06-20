@@ -9,3 +9,6 @@
 /.idea/vcs.xml
 /.idea/
 /full.log
+
+# Local DB credentials for the Spring Boot persistence backend (never committed)
+/src/main/resources/application-local.yml

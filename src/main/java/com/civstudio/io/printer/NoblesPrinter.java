@@ -1,16 +1,19 @@
 package com.civstudio.io.printer;
 
+import static com.civstudio.io.sink.ColumnSpec.*;
+
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.noble.Noble;
 import com.civstudio.bank.CurrencyType;
+import com.civstudio.io.sink.ColumnSpec;
 import com.civstudio.settlement.Settlement;
 
 /**
- * Writes a CSV time-series of the noble population: how many nobles are alive
- * and their average dividends, income, consumption and wealth. Aggregates over
- * the living nobles read from {@link Settlement#getAgents()} each step (mirroring
- * {@link LaborersPrinter}). Register with {@link Settlement#addPrinter} and finalize
- * with {@link Settlement#cleanUpPrinters}.
+ * Writes a time-series of the noble population: how many nobles are alive and their
+ * average dividends, income, consumption and wealth. Aggregates over the living
+ * nobles read from {@link Settlement#getAgents()} each step (mirroring {@link
+ * LaborersPrinter}). Register with {@link Settlement#addPrinter} and finalize with
+ * {@link Settlement#cleanUpPrinters}.
  * <p>
  * Columns: Date, Count, AvgDividends, AvgIncome, AvgConsumption, AvgWealth,
  * TotalWealth, AvgAge, AvgNStock, Currency. The four monetary columns are
@@ -20,17 +23,26 @@ import com.civstudio.settlement.Settlement;
  */
 public class NoblesPrinter extends Printer {
 
-	private final CSVPrintWriter printWriter;
-
 	/**
 	 * Create a new {@code NoblesPrinter}.
 	 *
-	 * @param fileName
-	 *            name of the CSV output file
+	 * @param fileName name of the CSV output file
 	 */
 	public NoblesPrinter(String fileName) {
-		super();
-		this.printWriter = new CSVPrintWriter(fileName);
+		super(fileName);
+	}
+
+	@Override
+	public String tableName() {
+		return "nobles";
+	}
+
+	@Override
+	public ColumnSpec[] columns() {
+		return new ColumnSpec[] { date("Date"), integer("Count"),
+				real("AvgDividends"), real("AvgIncome"), real("AvgConsumption"),
+				real("AvgWealth"), real("TotalWealth"), real("AvgAge"),
+				real("AvgNStock"), text("Currency") };
 	}
 
 	@Override
@@ -50,37 +62,20 @@ public class NoblesPrinter extends Printer {
 				currency = c;
 				totDividends += colony.convert(noble.getDividends(),
 						CurrencyType.COPPER, c);
-				totIncome += colony.convert(noble.getIncome(),
-						CurrencyType.COPPER, c);
+				totIncome += colony.convert(noble.getIncome(), CurrencyType.COPPER,
+						c);
 				totConsumption += colony.convert(noble.getConsumption(),
 						CurrencyType.COPPER, c);
-				totWealth += colony.convert(noble.getWealth(),
-						CurrencyType.COPPER, c);
+				totWealth += colony.convert(noble.getWealth(), CurrencyType.COPPER,
+						c);
 				totAge += noble.getAgeYears();
 				totNStock += noble.getNecessityStock();
 				count++;
 			}
 
 		double inv = count > 0 ? 1.0 / count : 0;
-		printWriter.println(colony.getDate(), count, totDividends * inv,
-				totIncome * inv, totConsumption * inv, totWealth * inv, totWealth,
-				totAge * inv, totNStock * inv, currency);
-	}
-
-	@Override
-	public void printTitles() {
-		printWriter.println("Date", "Count", "AvgDividends", "AvgIncome",
-				"AvgConsumption", "AvgWealth", "TotalWealth", "AvgAge", "AvgNStock",
-				"Currency");
-	}
-
-	@Override
-	public void cleanup() {
-		printWriter.cleanup();
-	}
-
-	@Override
-	public String getFileName() {
-		return printWriter.getFileName();
+		sink.writeRow(colony.getDate(), count, totDividends * inv, totIncome * inv,
+				totConsumption * inv, totWealth * inv, totWealth, totAge * inv,
+				totNStock * inv, currency);
 	}
 }

@@ -1,0 +1,30 @@
+# Spring Boot configuration for the database persistence backend
+# (com.civstudio.app.SimApplication). Non-secret defaults live here; the database
+# credentials live in the git-ignored application-local.yml, loaded via the "local"
+# profile activated below. This file is only read when the Boot app is launched
+# (mvn spring-boot:run); plain main() simulation runs and the test suite never start
+# Spring and write CSV as before.
+spring:
+  profiles:
+    # loads application-local.yml (git-ignored) for the DB username/password
+    active: local
+  main:
+    # no web server — this is a batch app that runs a simulation and exits
+    web-application-type: none
+    banner-mode: "off"
+  datasource:
+    url: jdbc:postgresql://localhost:5432/civstudio
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# Where printer output goes: CSV, DB, or BOTH (default). CSV-only means the Boot
+# app behaves like a plain run; DB/BOTH persist to Postgres.
+eos:
+  output-mode: BOTH
+
+logging:
+  level:
+    root: INFO

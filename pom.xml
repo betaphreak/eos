@@ -6,11 +6,10 @@
 
     <groupId>com.civstudio</groupId>
     <artifactId>civstudio</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>eos</name>
-    <description>Agent-based macroeconomic simulation (originally by Zhihong Xu)</description>
+    <name>civstudio</name>
 
     <licenses>
         <license>
@@ -26,7 +25,26 @@
         <!-- Which simulation `mvn exec:exec` runs; override with -Dsim.main=com.civstudio.simulation.SmallOpenEconomy -->
         <sim.main>com.civstudio.simulation.HomogeneousEconomy</sim.main>
         <lombok.version>1.18.34</lombok.version>
+        <spring.boot.version>3.3.5</spring.boot.version>
     </properties>
+
+    <!--
+      Spring Boot is used for the database persistence backend only (a pooled
+      DataSource, Flyway migrations, JdbcTemplate). The simulation domain stays
+      plain-constructed; see com.civstudio.app.SimApplication. Import the BOM so
+      the JDBC/Flyway/Postgres versions are managed by the Boot release.
+    -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring.boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -46,6 +64,27 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.18.2</version>
+        </dependency>
+
+        <!-- Database persistence backend: pooled DataSource (HikariCP) + JdbcTemplate. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <!-- Versioned schema migrations, run on startup. -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+        <!-- Postgres JDBC driver. -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 
@@ -101,6 +140,23 @@
                 <configuration>
                     <reuseForks>false</reuseForks>
                     <enableAssertions>true</enableAssertions>
+                </configuration>
+            </plugin>
+
+            <!--
+              Launches the Spring Boot app (com.civstudio.app.SimApplication) that
+              runs a simulation with database persistence enabled. Assertions stay
+              on (-ea), matching exec:exec and the test runs.
+              Usage: mvn spring-boot:run
+                     mvn spring-boot:run -Dspring-boot.run.arguments=-sim=SmallOpenEconomy
+            -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring.boot.version}</version>
+                <configuration>
+                    <mainClass>com.civstudio.app.SimApplication</mainClass>
+                    <jvmArguments>-ea</jvmArguments>
                 </configuration>
             </plugin>
         </plugins>

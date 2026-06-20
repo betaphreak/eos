@@ -1,37 +1,48 @@
 package com.civstudio.io.printer;
 
+import static com.civstudio.io.sink.ColumnSpec.*;
+
 import com.civstudio.agent.Household;
 import com.civstudio.bank.CurrencyType;
+import com.civstudio.io.sink.ColumnSpec;
 import com.civstudio.settlement.Settlement;
 
 /**
- * Writes a CSV roster of the colony's <b>persons of interest</b> — its living
- * nobles and notable households (skill above the threshold) — emitting one row
- * per person <b>once a year</b> (on the first day of each year), so the file is a
- * yearly snapshot of who the notable people are and how they are doing. Reads the
- * roster from {@link Settlement#getPersonsOfInterest()} each year (so it tracks
- * successors and new arrivals, not a fixed initial set). Register with {@link
- * Settlement#addPrinter} and finalize with {@link Settlement#cleanUpPrinters}.
+ * Writes a roster of the colony's <b>persons of interest</b> — its living nobles
+ * and notable households (skill above the threshold) — emitting one row per person
+ * <b>once a year</b> (on the first day of each year), a yearly snapshot of who the
+ * notable people are and how they are doing. Reads the roster from {@link
+ * Settlement#getPersonsOfInterest()} each year (so it tracks successors and new
+ * arrivals). Register with {@link Settlement#addPrinter} and finalize with {@link
+ * Settlement#cleanUpPrinters}.
  * <p>
- * Columns: Date, Name, Type, Skill, Age, Income, Wealth, Currency. {@code Type}
- * is "Noble" or "Notable laborer"; {@code Income} and {@code Wealth} are the
- * person's latest values, displayed in their own bank's {@code Currency}
- * (converted from the internal copper at the colony's fixed exchange rate). Years
- * with no persons of interest contribute no rows.
+ * Columns: Date, Name, Type, Skill, Age, Income, Wealth, Currency. {@code Type} is
+ * each household's role; {@code Income} and {@code Wealth} are the person's latest
+ * values, displayed in their own bank's {@code Currency} (converted from the
+ * internal copper at the colony's fixed exchange rate). Years with no persons of
+ * interest contribute no rows.
  */
 public class PersonsOfInterestPrinter extends Printer {
-
-	private final CSVPrintWriter printWriter;
 
 	/**
 	 * Create a new {@code PersonsOfInterestPrinter}.
 	 *
-	 * @param fileName
-	 *            name of the CSV output file
+	 * @param fileName name of the CSV output file
 	 */
 	public PersonsOfInterestPrinter(String fileName) {
-		super();
-		this.printWriter = new CSVPrintWriter(fileName);
+		super(fileName);
+	}
+
+	@Override
+	public String tableName() {
+		return "persons_of_interest";
+	}
+
+	@Override
+	public ColumnSpec[] columns() {
+		return new ColumnSpec[] { date("Date"), text("Name"), text("Type"),
+				integer("Skill"), integer("Age"), real("Income"), real("Wealth"),
+				text("Currency") };
 	}
 
 	@Override
@@ -47,27 +58,11 @@ public class PersonsOfInterestPrinter extends Printer {
 			CurrencyType currency = h.getBank().getCurrency();
 			// income/wealth are copper internally; display each person's in their
 			// own bank's currency at the colony's fixed exchange rate
-			printWriter.println(colony.getDate(), h.getHead().fullName(), h.role(),
+			sink.writeRow(colony.getDate(), h.getHead().fullName(), h.role(),
 					h.getSkill(), h.getAgeYears(),
 					colony.convert(h.getIncome(), CurrencyType.COPPER, currency),
 					colony.convert(h.getWealth(), CurrencyType.COPPER, currency),
 					currency);
 		}
-	}
-
-	@Override
-	public void printTitles() {
-		printWriter.println("Date", "Name", "Type", "Skill", "Age", "Income",
-				"Wealth", "Currency");
-	}
-
-	@Override
-	public void cleanup() {
-		printWriter.cleanup();
-	}
-
-	@Override
-	public String getFileName() {
-		return printWriter.getFileName();
 	}
 }
