@@ -1,9 +1,10 @@
 # Design note: geography (founding settlements into a province map)
 
-**Status:** Phases 1–2 implemented (export + model + load + session cache;
+**Status:** Phases 1–2.5 implemented (export + model + load + session cache;
 founding a colony into a province with province-sourced climate and a
-plots-derived size cap). Phases 3–4 proposed.
-**Date:** 2026-06-20 (Phases 1–2 landed 2026-06-21)
+plots-derived size cap; the dynamic provisioning respects that cap, and the
+default scenario founds into Dhenijansar). Phases 3–4 proposed.
+**Date:** 2026-06-20 (Phases 1–2.5 landed 2026-06-21)
 **Depends on:** `GameSession`'s multi-colony support and its per-session shared
 services (the `NameRegistry`/`DynastyPool`, the `LiturgicalCalendar`, the lazy
 `TechTree` — `com.civstudio.settlement.GameSession`); the `newSettlement(…,
@@ -246,13 +247,14 @@ Its geography:
 The 74-plot ceiling is **illustratively tight**, which is the point: a colony
 founds at `SlotTable.MIN_SIZE` (size 3, **28** total plots, 15 effective slots) —
 which fits — and may grow to **size 4** (50 plots, 29 effective slots) but **not
-size 5** (78 plots > 74). So founding the default scenario here would exercise the
-province plot ceiling, capping `HomogeneousEconomy` at a small settlement rather
-than letting it grow unbounded as it did at London. **This repoint is not yet
-live** — the capability exists (Phase 2), but the default still founds at London
-because the dynamic firm provisioning would overrun the size-4 cap and throw; see
-the Phase 2 caveat in the phasing plan. The analytical sweeps and any scenario
-that founds at explicit coordinates are unchanged.
+size 5** (78 plots > 74). So the default scenario exercises the province plot
+ceiling, capping `HomogeneousEconomy` at a small settlement rather than letting it
+grow unbounded as it did at London: the necessity sector ramps to ~22 food firms
+(plus the capital/builder/export firms, ≈27 of the 29 slots) and then the dynamic
+provisioning stops chartering — the size-4 cap holds. **This repoint is live**
+(Phase 2.5): the provisioning respects the cap (`Settlement.hasRoomToExpand`)
+instead of overrunning it. The analytical sweeps and any scenario that founds at
+explicit coordinates are unchanged.
 
 ### How the dependent features consume it
 
@@ -323,17 +325,25 @@ that founds at explicit coordinates are unchanged.
   uncapped, and that a too-small province is rejected. Existing scenarios found
   with `province == null`, so `maxSize == slotTable.maxSize()` — byte-identical
   (full suite green, 141 tests).
-  - **Caveat — the default scenario is *not* yet repointed to Dhenijansar.** The
-    capability is in, but `HomogeneousEconomy`/`ClosedColonySmokeTest` still found
-    at London coordinates. Dhenijansar caps the colony at size 4 (29 effective
-    slots), while the ruler's dynamic firm provisioning ramps to *dozens* of
-    firms before the pool drains — so a live colony there would hit
-    `requestGrowth`'s ceiling and throw. Making Dhenijansar the live default needs
-    **graceful over-cap handling** (provisioning that checks capacity before
-    chartering, rather than crashing) **plus recalibration** of the collapsing
-    run to a bounded footprint. That is a follow-up (a Phase 2.5 / provisioning
-    change), tracked here so the "default province: Dhenijansar" intent above is
-    not mistaken for already-live behaviour.
+- **Phase 2.5 — provisioning respects the cap; default founds into Dhenijansar.
+  (Implemented.)** Founding a *live* colony into a small province would otherwise
+  crash: the ruler's monthly provisioning ramps to many firms, and at the size
+  cap `requestGrowth` throws ("cannot grow past its maximum size"). The fix is a
+  capacity gate — `Settlement.hasRoomToExpand()` (a vacant slot now, or `size <
+  maxSize`) — that `Ruler.reviewSector` checks before chartering: a colony full at
+  its plots-capped maximum simply stops chartering (the sector stays
+  supply-constrained, but the province has no room), rather than failing to grow.
+  With the gate in place, `HomogeneousEconomy` is repointed to found into
+  Dhenijansar (`SimulationHarness.create(cfg, seed, provinceId)` resolving the
+  province from the session's world map): it ramps the food sector to ~22 firms,
+  fills the size-4 footprint, and runs cleanly to collapse. A colony with no
+  province cap never trips the gate (its `maxSize` is the slot table's own
+  ceiling), so the analytical sweeps and coordinate-founded scenarios are
+  byte-identical. Covered by `DefaultProvinceFoundingTest` (the default founds
+  into Dhenijansar, `maxSize` 4, no crash) and the existing
+  `ClosedColonySmokeTest` (the full run no longer throws and still departs as a
+  caravan). No recalibration of the macro parameters proved necessary — the
+  colony collapses cleanly under the tighter footprint.
 - **Phase 3 — multi-province session.** Reseat `HanseaticEconomy`'s two colonies
   onto two neighboring provinces; assert they found at the right latitudes and
   that `WorldMap.path` connects them. This is the substrate ready for caravan

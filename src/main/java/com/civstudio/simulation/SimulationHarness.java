@@ -254,6 +254,30 @@ public class SimulationHarness {
 		return new SimulationHarness(cfg, colony);
 	}
 
+	/**
+	 * Build an empty harness founded into the world-map province with this
+	 * {@code provinceId} (resolved from the fresh session's {@link
+	 * GameSession#getWorldMap() world map}) — the convenience used by a scenario
+	 * that founds into a known province (e.g. the default {@code HomogeneousEconomy}
+	 * into Dhenijansar). See {@link #create(SimulationConfig, long, Province)} and
+	 * {@code docs/geography.md}.
+	 *
+	 * @param cfg        the run configuration
+	 * @param seed       the random-number seed for this run
+	 * @param provinceId the {@code province_id} of the province to found into
+	 * @return an empty harness ready to be populated
+	 */
+	public static SimulationHarness create(SimulationConfig cfg, long seed,
+			int provinceId) {
+		GameSession session = new GameSession(seed);
+		Settlement colony = session.newSettlement(cfg.settlementName(),
+				cfg.startDate(), cfg.meanInitAgeYears(), cfg.targetNStock(),
+				cfg.meanSkillMale(), cfg.meanSkillFemale(),
+				session.getWorldMap().province(provinceId));
+		SimLog.init(colony);
+		return new SimulationHarness(cfg, colony);
+	}
+
 	public SimulationHarness(SimulationConfig cfg, Settlement colony) {
 		this.cfg = cfg;
 		this.colony = colony;

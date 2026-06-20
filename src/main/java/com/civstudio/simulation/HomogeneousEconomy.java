@@ -14,6 +14,12 @@ import com.civstudio.bank.Bank;
  */
 public class HomogeneousEconomy {
 
+	// the default founding province: Dhenijansar (province_id 4411), a small coastal
+	// LAND province in the Rahen Coast region. Its 74 plots cap the colony at size 4
+	// (29 effective slots); the dynamic provisioning respects that cap rather than
+	// overrunning it (see Settlement.hasRoomToExpand / docs/geography.md).
+	private static final int DHENIJANSAR = 4411;
+
 	/**
 	 * Build and run the simulation.
 	 *
@@ -27,7 +33,9 @@ public class HomogeneousEconomy {
 		// config default) and the ruler's dynamic provisioning — on by default for
 		// every ruler-bearing colony — grows the count to fit demand.
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
-		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		// founded into Dhenijansar: its latitude drives the daylight and its plots
+		// cap the settlement size, which the dynamic provisioning now respects
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321, DHENIJANSAR);
 		// found a standard single-copper-bank colony: markets, firms, export sector,
 		// ruler + gold treasury, peasant pool, and the labor force promoted from it on
 		// day 0 (see foundStandardColony). The ruler's dynamic provisioning — on by
