@@ -1,10 +1,11 @@
 # Design note: geography (founding settlements into a province map)
 
-**Status:** Phases 1–2.5 implemented (export + model + load + session cache;
+**Status:** Phases 1–3 implemented (export + model + load + session cache;
 founding a colony into a province with province-sourced climate and a
-plots-derived size cap; the dynamic provisioning respects that cap, and the
-default scenario founds into Dhenijansar). Phases 3–4 proposed.
-**Date:** 2026-06-20 (Phases 1–2.5 landed 2026-06-21)
+plots-derived size cap; the dynamic provisioning respects that cap; the default
+scenario founds into Dhenijansar; and a multi-province session founds two
+adjacent provinces). Phase 4 proposed.
+**Date:** 2026-06-20 (Phases 1–3 landed 2026-06-21)
 **Depends on:** `GameSession`'s multi-colony support and its per-session shared
 services (the `NameRegistry`/`DynastyPool`, the `LiturgicalCalendar`, the lazy
 `TechTree` — `com.civstudio.settlement.GameSession`); the `newSettlement(…,
@@ -344,10 +345,19 @@ explicit coordinates are unchanged.
   `ClosedColonySmokeTest` (the full run no longer throws and still departs as a
   caravan). No recalibration of the macro parameters proved necessary — the
   colony collapses cleanly under the tighter footprint.
-- **Phase 3 — multi-province session.** Reseat `HanseaticEconomy`'s two colonies
-  onto two neighboring provinces; assert they found at the right latitudes and
-  that `WorldMap.path` connects them. This is the substrate ready for caravan
-  routing.
+- **Phase 3 — multi-province session. (Implemented.)** `HanseaticEconomy`'s two
+  colonies are reseated from the old hardcoded Lübeck/Schwartau coordinates onto
+  two **adjacent world-map provinces** — **Withacen** (`province_id` 515, 55.97°N,
+  189 plots) and **Hopespeak** (519, 54.83°N, 255 plots), direct neighbours at a
+  northern ~55°N (Hanseatic-like) latitude — founded via the new province-aware
+  `newSettlement`. The colonies are renamed to their provinces; both still found
+  from one `GameSession` with disjoint surname slices and run concurrently in
+  lockstep to caravan departure (the size cap and the Phase 2.5 provisioning gate
+  apply per colony). `HanseaticEconomyTest` now also asserts the returned colony
+  was founded into Withacen at its latitude, and that the two provinces are
+  adjacent (`WorldMap.path(515, 519) == [515, 519]`, a one-step route) — the
+  travel-network substrate caravan trade will route over. Full suite green (143
+  tests).
 - **Phase 4 — hand off to the dependent features.** Expose the travel-network
   queries to caravan trade and village founding (their notes own the movement);
   geography itself is complete at Phase 3.

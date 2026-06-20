@@ -7,6 +7,7 @@ import com.civstudio.agent.firm.StrategicFirmConfig;
 import com.civstudio.agent.noble.NobleConfig;
 import com.civstudio.mortality.Demography;
 import com.civstudio.bank.Bank;
+import com.civstudio.geo.Province;
 import com.civstudio.name.NameRegistry;
 import com.civstudio.io.SimLog;
 import com.civstudio.io.printer.NoblesPrinter;
@@ -17,12 +18,17 @@ import com.civstudio.settlement.Settlement;
 
 /**
  * Simulation (two settlements in one game session): the worked example of several
- * colonies coexisting in a single {@link GameSession}. Two neighbouring Hanseatic
- * settlements near Lübeck are built from the same session and run independently:
+ * colonies coexisting in a single {@link GameSession}. Two <b>neighbouring world-map
+ * provinces</b> (adjacent on the province graph, ~55°N — a northern, Hanseatic-like
+ * climate) are founded from the same session and run independently:
  * <ul>
- * <li><b>Lübeck Altstadt</b> — 53.86730°N, 10.68744°E</li>
- * <li><b>Bad Schwartau</b> — 53.91992°N, 10.69753°E</li>
+ * <li><b>Withacen</b> — {@code province_id} 515, 55.97°N (189 plots)</li>
+ * <li><b>Hopespeak</b> — {@code province_id} 519, 54.83°N (255 plots)</li>
  * </ul>
+ * The two provinces are direct neighbours, so {@code WorldMap.path} connects them
+ * in a single step — the adjacency the future caravan trade will route over (see
+ * {@code docs/geography.md}). Each province supplies its colony's
+ * latitude/longitude and a plots-derived size cap.
  * Each colony gets its <b>own</b> economic random stream (seeded from the session
  * seed and the colony's index) and its own markets, banks, agents, {@link
  * NameRegistry} surname slice and {@link Demography} — so
@@ -53,7 +59,7 @@ import com.civstudio.settlement.Settlement;
  * population demand.
  * <p>
  * The two colonies write to the same {@code output/} directory, so each colony's
- * CSVs are prefixed with its name ({@code Lubeck-}/{@code Schwartau-}). The
+ * CSVs are prefixed with its name ({@code Withacen-}/{@code Hopespeak-}). The
  * {@link SimLog} handler is process-global but its date source is per-thread, so
  * each colony's worker thread logs its own in-game date with no cross-talk.
  */
@@ -61,6 +67,16 @@ public class HanseaticEconomy {
 
 	/** Seed for the shared game session, so the whole run is reproducible. */
 	static final long SEED = 7654321L;
+
+	/**
+	 * The two neighbouring provinces the colonies are founded into (adjacent on the
+	 * world map, ~55°N — a northern, Hanseatic-like climate). Withacen (189 plots)
+	 * and Hopespeak (255 plots) are direct neighbors, so {@code WorldMap.path}
+	 * connects them in one step — the substrate caravan trade will route over. See
+	 * {@code docs/geography.md}.
+	 */
+	static final int WITHACEN_PROVINCE_ID = 515;
+	static final int HOPESPEAK_PROVINCE_ID = 519;
 
 	/**
 	 * Laborer households per settlement — the empirical minimum for this
@@ -113,53 +129,53 @@ public class HanseaticEconomy {
 			.necessityReserveDays(NECESSITY_RESERVE_DAYS).build();
 
 	/**
-	 * Build and run both settlements, returning the first ({@code Lübeck}) harness
+	 * Build and run both settlements, returning the first ({@code Withacen}) harness
 	 * as the convention hook; both colonies are fully built and run.
 	 *
-	 * @return the Lübeck Altstadt harness (Bad Schwartau is also built and run)
+	 * @return the Withacen harness (Hopespeak is also built and run)
 	 */
 	public static SimulationHarness run() {
 		GameSession session = new GameSession(SEED);
 
-		// the two colonies share the session's name pool and demography but each has
-		// its own economic random stream and its own location
+		// the two colonies are founded into two neighbouring world-map provinces
+		// (Withacen and Hopespeak; adjacent, ~55°N) — each supplies its colony's
+		// latitude/longitude and a plots-derived size cap. They share the session's
+		// name pool and demography but each has its own economic random stream.
+		Province withacenProvince = session.getWorldMap().province(WITHACEN_PROVINCE_ID);
+		Province hopespeakProvince = session.getWorldMap().province(HOPESPEAK_PROVINCE_ID);
 		SimulationConfig base = SimulationConfig.DEFAULT.toBuilder()
 				.retinueSize(2 * NUM_LABORERS)
 				.promotionRatio(PROMOTION_RATIO)
 				.targetNobles(NUM_NOBLES)
 				.build();
-		SimulationConfig lubeckCfg = base.toBuilder()
-				.settlementName("Lübeck Altstadt")
-				.latitude(53.86730).longitude(10.68744).build();
-		SimulationConfig schwartauCfg = base.toBuilder()
-				.settlementName("Bad Schwartau")
-				.latitude(53.91992).longitude(10.69753).build();
+		SimulationConfig withacenCfg = base.toBuilder()
+				.settlementName(withacenProvince.name()).build();
+		SimulationConfig hopespeakCfg = base.toBuilder()
+				.settlementName(hopespeakProvince.name()).build();
 
-		Settlement lubeck = session.newSettlement(lubeckCfg.settlementName(),
-				lubeckCfg.startDate(), lubeckCfg.meanInitAgeYears(),
-				lubeckCfg.targetNStock(), lubeckCfg.meanSkillMale(),
-				lubeckCfg.meanSkillFemale(), lubeckCfg.latitude(),
-				lubeckCfg.longitude());
-		Settlement schwartau = session.newSettlement(schwartauCfg.settlementName(),
-				schwartauCfg.startDate(), schwartauCfg.meanInitAgeYears(),
-				schwartauCfg.targetNStock(), schwartauCfg.meanSkillMale(),
-				schwartauCfg.meanSkillFemale(), schwartauCfg.latitude(),
-				schwartauCfg.longitude());
+		Settlement withacen = session.newSettlement(withacenCfg.settlementName(),
+				withacenCfg.startDate(), withacenCfg.meanInitAgeYears(),
+				withacenCfg.targetNStock(), withacenCfg.meanSkillMale(),
+				withacenCfg.meanSkillFemale(), withacenProvince);
+		Settlement hopespeak = session.newSettlement(hopespeakCfg.settlementName(),
+				hopespeakCfg.startDate(), hopespeakCfg.meanInitAgeYears(),
+				hopespeakCfg.targetNStock(), hopespeakCfg.meanSkillMale(),
+				hopespeakCfg.meanSkillFemale(), hopespeakProvince);
 
-		// install the log handler and bind this thread to Lübeck before building it
-		SimLog.init(lubeck);
-		SimulationHarness hLubeck = build(lubeckCfg, lubeck, "Lubeck-");
-		// bind to Bad Schwartau while building it, so its construction-time records
+		// install the log handler and bind this thread to Withacen before building it
+		SimLog.init(withacen);
+		SimulationHarness hWithacen = build(withacenCfg, withacen, "Withacen-");
+		// bind to Hopespeak while building it, so its construction-time records
 		// carry the right colony
-		SimLog.bind(schwartau);
-		SimulationHarness hSchwartau = build(schwartauCfg, schwartau, "Schwartau-");
+		SimLog.bind(hopespeak);
+		SimulationHarness hHopespeak = build(hopespeakCfg, hopespeak, "Hopespeak-");
 
 		// run both colonies concurrently — one thread each — in lockstep: every
 		// colony advances one in-game day, then they rendezvous before the next. Each
 		// colony's worker thread binds its own colony to the log (see SessionRunner).
-		SessionRunner.runConcurrently(List.of(hLubeck, hSchwartau));
+		SessionRunner.runConcurrently(List.of(hWithacen, hHopespeak));
 
-		return hLubeck;
+		return hWithacen;
 	}
 
 	/**
@@ -173,7 +189,7 @@ public class HanseaticEconomy {
 	 * @param colony
 	 *            the colony to populate (already created from the session)
 	 * @param prefix
-	 *            the per-settlement CSV filename prefix (e.g. {@code "Lubeck-"})
+	 *            the per-settlement CSV filename prefix (e.g. {@code "Withacen-"})
 	 * @return the populated harness
 	 */
 	private static SimulationHarness build(SimulationConfig cfg, Settlement colony,
