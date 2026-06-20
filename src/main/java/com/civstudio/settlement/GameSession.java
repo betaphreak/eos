@@ -13,6 +13,7 @@ import com.civstudio.agent.Retinue;
 import com.civstudio.agent.Caravan;
 import com.civstudio.calendar.LiturgicalCalendar;
 import com.civstudio.era.Era;
+import com.civstudio.geo.WorldMap;
 import com.civstudio.mortality.Demography;
 import com.civstudio.name.DynastyPool;
 import com.civstudio.name.NameRegistry;
@@ -121,6 +122,11 @@ public class GameSession {
 	// are unaffected. See getTechTree().
 	private TechTree techTree;
 
+	// the world map (province graph), shared by every colony (pure reference data).
+	// Loaded lazily on first request like the tech tree, so geography-less runs and
+	// tests do not pay the ~1MB parse. See getWorldMap() and docs/geography.md.
+	private WorldMap worldMap;
+
 	// per-race tech trees: the same graph (techs.json) under a race's effect overlay
 	// (/tech-effects-<id>.json). A race with no overlay file reuses the shared techTree
 	// (the default empty overlay), so the human path is unchanged. See getTechTree(Race).
@@ -181,6 +187,21 @@ public class GameSession {
 		if (techTree == null)
 			techTree = TechTree.load();
 		return techTree;
+	}
+
+	/**
+	 * The session's shared {@link WorldMap}, loaded from {@code /provinces.json}
+	 * on first request and cached thereafter. Loaded lazily (not in the
+	 * constructor), like the tech tree, so a session that never touches geography
+	 * does not pay the ~1MB parse cost — every existing run and test is unaffected
+	 * until something reads the map. See {@code docs/geography.md}.
+	 *
+	 * @return the shared world map
+	 */
+	public synchronized WorldMap getWorldMap() {
+		if (worldMap == null)
+			worldMap = WorldMap.load();
+		return worldMap;
 	}
 
 	/**
