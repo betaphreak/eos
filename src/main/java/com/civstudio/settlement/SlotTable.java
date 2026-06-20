@@ -87,6 +87,29 @@ public final class SlotTable {
 	}
 
 	/**
+	 * The largest size whose total plot footprint fits within {@code plots} — the
+	 * ceiling a province of that many plots imposes on a settlement. Build slots
+	 * <em>are</em> plots, so a colony's {@link SlotInfo#total() total} at its size
+	 * may not exceed the province's plot count (see {@code docs/geography.md}).
+	 * Because {@code total} increases monotonically with size, this is the last
+	 * size before the footprint exceeds {@code plots}.
+	 *
+	 * @param plots
+	 *            the available plots (a province's land plots)
+	 * @return the largest size that fits, {@link #maxSize()} if even the largest
+	 *         fits, or {@code -1} if {@code plots} cannot hold even size 0
+	 */
+	public int maxSizeForPlots(int plots) {
+		int best = -1;
+		for (SlotInfo row : bySize) {
+			if (row.total() > plots)
+				break;
+			best = row.size();
+		}
+		return best;
+	}
+
+	/**
 	 * The slot geometry at <tt>size</tt>.
 	 *
 	 * @param size

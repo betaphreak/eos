@@ -13,6 +13,7 @@ import com.civstudio.agent.Retinue;
 import com.civstudio.agent.Caravan;
 import com.civstudio.calendar.LiturgicalCalendar;
 import com.civstudio.era.Era;
+import com.civstudio.geo.Province;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.mortality.Demography;
 import com.civstudio.name.DynastyPool;
@@ -347,6 +348,72 @@ public class GameSession {
 			double meanInitAgeYears, double targetNStock, double meanSkillMale,
 			double meanSkillFemale, double latitude, double longitude,
 			Race foundingRace, Map<Race, Double> raceMix) {
+		return buildSettlement(name, startDate, meanInitAgeYears, targetNStock,
+				meanSkillMale, meanSkillFemale, latitude, longitude, foundingRace,
+				raceMix, null);
+	}
+
+	/**
+	 * Create a colony founded <b>into a {@link Province}</b> of the session's
+	 * {@link #getWorldMap() world map}: the province supplies the colony's
+	 * geography — its {@link Province#latitude() latitude}/{@link
+	 * Province#longitude() longitude} drive the solar/daylight system and its
+	 * {@link Province#plots() plots} cap how large the settlement may grow (see
+	 * {@code docs/geography.md}). Otherwise identical to {@link #newSettlement(
+	 * String, LocalDate, double, double, double, double, double, double, Race,
+	 * Map)}.
+	 *
+	 * @param name             the settlement's name
+	 * @param startDate        the in-game date of step 0
+	 * @param meanInitAgeYears mean initial age (years) of founding heads
+	 * @param targetNStock     target necessity stock every laborer accumulates
+	 * @param meanSkillMale    mean of the male skill distribution
+	 * @param meanSkillFemale  mean of the female skill distribution
+	 * @param province         the province to found into (its lat/long/plots are used)
+	 * @param foundingRace     the colony's founding (ruler's) race
+	 * @param raceMix          race &rarr; weight every generated person is rolled against
+	 * @return a fresh colony seated in {@code province}
+	 */
+	public synchronized Settlement newSettlement(String name, LocalDate startDate,
+			double meanInitAgeYears, double targetNStock, double meanSkillMale,
+			double meanSkillFemale, Province province, Race foundingRace,
+			Map<Race, Double> raceMix) {
+		return buildSettlement(name, startDate, meanInitAgeYears, targetNStock,
+				meanSkillMale, meanSkillFemale, province.latitude(),
+				province.longitude(), foundingRace, raceMix, province);
+	}
+
+	/**
+	 * Create a mono-cultural human colony founded into a {@link Province} (see
+	 * {@link #newSettlement(String, LocalDate, double, double, double, double,
+	 * Province, Race, Map)}); the human path registers no extra race and rolls
+	 * nothing.
+	 *
+	 * @param name             the settlement's name
+	 * @param startDate        the in-game date of step 0
+	 * @param meanInitAgeYears mean initial age (years) of founding heads
+	 * @param targetNStock     target necessity stock every laborer accumulates
+	 * @param meanSkillMale    mean of the male skill distribution
+	 * @param meanSkillFemale  mean of the female skill distribution
+	 * @param province         the province to found into
+	 * @return a fresh human colony seated in {@code province}
+	 */
+	public synchronized Settlement newSettlement(String name, LocalDate startDate,
+			double meanInitAgeYears, double targetNStock, double meanSkillMale,
+			double meanSkillFemale, Province province) {
+		return newSettlement(name, startDate, meanInitAgeYears, targetNStock,
+				meanSkillMale, meanSkillFemale, province, Race.HUMAN,
+				Map.of(Race.HUMAN, 1.0));
+	}
+
+	// the shared founding body: builds the colony's per-colony Rng / NameRegistry /
+	// Demography and the Settlement itself, optionally into a province (null = bare
+	// coordinates). Every newSettlement overload funnels through here; callers hold
+	// the monitor (the public overloads are synchronized).
+	private Settlement buildSettlement(String name, LocalDate startDate,
+			double meanInitAgeYears, double targetNStock, double meanSkillMale,
+			double meanSkillFemale, double latitude, double longitude,
+			Race foundingRace, Map<Race, Double> raceMix, Province province) {
 		// index 0 -> bare seed (byte-identical to the old single shared rng);
 		// later colonies get a distinct, decorrelated seed. synchronized so several
 		// threads founding/re-founding colonies don't race on the colony index or the
@@ -381,7 +448,7 @@ public class GameSession {
 		Settlement colony = new Settlement(name, startDate, colonyRng, colonyNames,
 				colonyDemography, slotTable, getLiturgicalCalendar(foundingRace),
 				meanInitAgeYears, targetNStock, meanSkillMale, meanSkillFemale,
-				latitude, longitude, foundingRace, raceMix);
+				latitude, longitude, foundingRace, raceMix, province);
 		// the colony knows its session, so on dissolution it can register the band it
 		// departs as (colony-less bands live at the session level — see docs/caravan.md)
 		colony.setSession(this);

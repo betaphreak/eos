@@ -18,6 +18,7 @@ import java.util.function.UnaryOperator;
 import com.civstudio.io.printer.PersonsOfInterestPrinter;
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.Caravan;
+import com.civstudio.geo.Province;
 import com.civstudio.agent.Household;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.Retinue;
@@ -224,6 +225,20 @@ public class Settlement {
 	@Getter
 	private final double longitude;
 
+	// the province this colony was founded into, or null if it was founded at bare
+	// coordinates (every scenario that does not opt into the world map). When set, it
+	// is the source of the colony's latitude/longitude and bounds its growth (see
+	// maxSize). Carried for the dependent geography features (caravan/founding).
+	@Getter
+	private final Province province;
+
+	// the largest size this colony may grow to: the slot table's own ceiling, lowered
+	// to what the province's plots can hold (build slots are plots, so the footprint
+	// cannot exceed province.plots). Equal to slotTable.maxSize() when there is no
+	// province. See docs/geography.md and foundOnto/requestGrowth.
+	@Getter
+	private final int maxSize;
+
 	// the colony's solar clock for its (fixed) location: computes the day's
 	// dawn/sunrise/sunset/dusk and daylight length, refreshed for the current
 	// in-game date at the top of every newDay (and seeded in the constructor).
@@ -368,7 +383,7 @@ public class Settlement {
 			double latitude, double longitude) {
 		this(name, startDate, rng, names, demography, slotTable, liturgicalCalendar,
 				meanInitAgeYears, targetNStock, meanSkillMale, meanSkillFemale,
-				latitude, longitude, Race.HUMAN, Map.of(Race.HUMAN, 1.0));
+				latitude, longitude, Race.HUMAN, Map.of(Race.HUMAN, 1.0), null);
 	}
 
 	/**
@@ -414,7 +429,7 @@ public class Settlement {
 			LiturgicalCalendar liturgicalCalendar, double meanInitAgeYears,
 			double targetNStock, double meanSkillMale, double meanSkillFemale,
 			double latitude, double longitude, Race foundingRace,
-			Map<Race, Double> raceMix) {
+			Map<Race, Double> raceMix, Province province) {
 		this.name = name;
 		this.startDate = startDate;
 		this.rng = rng;
@@ -430,6 +445,18 @@ public class Settlement {
 		this.meanSkillFemale = meanSkillFemale;
 		this.latitude = latitude;
 		this.longitude = longitude;
+		this.province = province;
+		// the province's plots cap growth (slots are plots); no province -> the slot
+		// table's own ceiling. A province too small to hold even the founding floor is
+		// rejected outright (it could never seat a viable settlement).
+		this.maxSize = province == null ? slotTable.maxSize()
+				: Math.min(slotTable.maxSize(),
+						slotTable.maxSizeForPlots(province.plots()));
+		if (province != null && maxSize < SlotTable.MIN_SIZE)
+			throw new IllegalArgumentException(name
+					+ " cannot be founded in province " + province.name() + ": its "
+					+ province.plots() + " plots cannot hold the minimum settlement size "
+					+ SlotTable.MIN_SIZE);
 		this.solarClock = new SolarClock(latitude, longitude);
 		// every household knows how to produce its own heir; register one built-in
 		// policy that asks each dead household to do so, tried before any the
@@ -740,7 +767,7 @@ public class Settlement {
 	// a time until the occupant fits, and seat it. Not the live-growth path.
 	private Slot foundOnto(SlotOccupant occupant) {
 		Slot slot = null;
-		while (slot == null && size < slotTable.maxSize()) {
+		while (slot == null && size < maxSize) {
 			setSize(size + 1);
 			slot = firstVacantSlot();
 		}
@@ -897,7 +924,7 @@ public class Settlement {
 	// succession mid-build does not strand the task on a closed account.
 	private void requestGrowth(SlotOccupant requester) {
 		int next = size + 1;
-		if (next > slotTable.maxSize())
+		if (next > maxSize)
 			throw new IllegalStateException(
 					name + " cannot grow past its maximum size " + size);
 		BuilderConfig c = builder.getConfig();

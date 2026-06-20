@@ -10,6 +10,7 @@ import java.util.function.IntToDoubleFunction;
 import com.civstudio.era.Era;
 import com.civstudio.io.printer.*;
 import com.civstudio.market.*;
+import com.civstudio.geo.Province;
 import com.civstudio.race.Race;
 
 import com.civstudio.agent.Agent;
@@ -227,6 +228,28 @@ public class SimulationHarness {
 				cfg.startDate(), cfg.meanInitAgeYears(), cfg.targetNStock(),
 				cfg.meanSkillMale(), cfg.meanSkillFemale(), cfg.latitude(),
 				cfg.longitude(), foundingRace, raceMix);
+		SimLog.init(colony);
+		return new SimulationHarness(cfg, colony);
+	}
+
+	/**
+	 * Build an empty harness as {@link #create(SimulationConfig, long)} but founded
+	 * <b>into a {@link Province}</b> of the session's world map: the province
+	 * supplies the colony's latitude/longitude (its climate) and its {@code plots}
+	 * cap the settlement's size (see {@code docs/geography.md}). The config's
+	 * {@code latitude}/{@code longitude} are ignored in favour of the province's.
+	 *
+	 * @param cfg      the run configuration
+	 * @param seed     the random-number seed for this run
+	 * @param province the province to found the colony into
+	 * @return an empty harness ready to be populated
+	 */
+	public static SimulationHarness create(SimulationConfig cfg, long seed,
+			Province province) {
+		GameSession session = new GameSession(seed);
+		Settlement colony = session.newSettlement(cfg.settlementName(),
+				cfg.startDate(), cfg.meanInitAgeYears(), cfg.targetNStock(),
+				cfg.meanSkillMale(), cfg.meanSkillFemale(), province);
 		SimLog.init(colony);
 		return new SimulationHarness(cfg, colony);
 	}

@@ -1,8 +1,9 @@
 # Design note: geography (founding settlements into a province map)
 
-**Status:** Phase 1 implemented (export + model + load + session cache + test);
-Phases 2–4 proposed.
-**Date:** 2026-06-20 (Phase 1 landed 2026-06-21)
+**Status:** Phases 1–2 implemented (export + model + load + session cache;
+founding a colony into a province with province-sourced climate and a
+plots-derived size cap). Phases 3–4 proposed.
+**Date:** 2026-06-20 (Phases 1–2 landed 2026-06-21)
 **Depends on:** `GameSession`'s multi-colony support and its per-session shared
 services (the `NameRegistry`/`DynastyPool`, the `LiturgicalCalendar`, the lazy
 `TechTree` — `com.civstudio.settlement.GameSession`); the `newSettlement(…,
@@ -245,10 +246,13 @@ Its geography:
 The 74-plot ceiling is **illustratively tight**, which is the point: a colony
 founds at `SlotTable.MIN_SIZE` (size 3, **28** total plots, 15 effective slots) —
 which fits — and may grow to **size 4** (50 plots, 29 effective slots) but **not
-size 5** (78 plots > 74). So the default scenario now actually exercises the
+size 5** (78 plots > 74). So founding the default scenario here would exercise the
 province plot ceiling, capping `HomogeneousEconomy` at a small settlement rather
-than letting it grow unbounded as it did at London. The analytical sweeps and any
-scenario that still founds at explicit coordinates are unchanged.
+than letting it grow unbounded as it did at London. **This repoint is not yet
+live** — the capability exists (Phase 2), but the default still founds at London
+because the dynamic firm provisioning would overrun the size-4 cap and throw; see
+the Phase 2 caveat in the phasing plan. The analytical sweeps and any scenario
+that founds at explicit coordinates are unchanged.
 
 ### How the dependent features consume it
 
@@ -302,11 +306,34 @@ scenario that still founds at explicit coordinates are unchanged.
   duplicates (Gate Islands 1058, Leliathail 2161) whose relationships were split
   across the copies, merged in the DB so the key is unique (5266 → 5264 rows).
   **167 open-ocean provinces have no region** (exported as `null`).
-- **Phase 2 — found a colony into a province.** The `newSettlement(…, Province,
-  …)` overload; `Settlement.province`; province `latitude` → solar and `plots` →
-  size cap. A single scenario (or a new demo) founds into a real province and
-  runs; the solar times match the province's latitude. Existing
-  coordinate-founded scenarios untouched.
+- **Phase 2 — found a colony into a province. (Implemented.)**
+  `GameSession.newSettlement(…, Province, …)` (and a mono-human overload) resolve
+  the province's `latitude`/`longitude` and thread the `Province` through the
+  shared `buildSettlement` body into `Settlement.province` (nullable —
+  coordinate-founded colonies keep `null`). `Settlement` computes a `maxSize`
+  ceiling = `min(slotTable.maxSize(), slotTable.maxSizeForPlots(province.plots()))`
+  (new `SlotTable.maxSizeForPlots` — the largest size whose `total` plots fit),
+  and the two growth paths (`foundOnto` genesis, `requestGrowth` live) cap on it;
+  a province too small for the founding floor (`MIN_SIZE`) is rejected.
+  `SimulationHarness.create(cfg, seed, Province)` lets a scenario found into a
+  province. `com.civstudio.settlement.SettlementProvinceTest` founds into
+  Dhenijansar and asserts the province-sourced lat/long, the size cap (`maxSize`
+  4; the 30th occupant cannot be seated past size 4's 29 slots), a milder
+  tropical winter daylight than London, that a coordinate-founded colony stays
+  uncapped, and that a too-small province is rejected. Existing scenarios found
+  with `province == null`, so `maxSize == slotTable.maxSize()` — byte-identical
+  (full suite green, 141 tests).
+  - **Caveat — the default scenario is *not* yet repointed to Dhenijansar.** The
+    capability is in, but `HomogeneousEconomy`/`ClosedColonySmokeTest` still found
+    at London coordinates. Dhenijansar caps the colony at size 4 (29 effective
+    slots), while the ruler's dynamic firm provisioning ramps to *dozens* of
+    firms before the pool drains — so a live colony there would hit
+    `requestGrowth`'s ceiling and throw. Making Dhenijansar the live default needs
+    **graceful over-cap handling** (provisioning that checks capacity before
+    chartering, rather than crashing) **plus recalibration** of the collapsing
+    run to a bounded footprint. That is a follow-up (a Phase 2.5 / provisioning
+    change), tracked here so the "default province: Dhenijansar" intent above is
+    not mistaken for already-live behaviour.
 - **Phase 3 — multi-province session.** Reseat `HanseaticEconomy`'s two colonies
   onto two neighboring provinces; assert they found at the right latitudes and
   that `WorldMap.path` connects them. This is the substrate ready for caravan
