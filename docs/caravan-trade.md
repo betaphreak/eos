@@ -1,10 +1,11 @@
 # Design note: caravans on the map — movement, settling, and trade
 
-**Status:** proposed (design only — not yet implemented). Phase A (the `Caravan`
-superclass + province-anchored movement + the settler band wandering and
-re-founding *into a province*) is the near-term cut; Phase B (the settlement-
-sponsored `TradeCaravan` that couples two economies) is the larger follow-on.
-**Date:** 2026-06-21
+**Status:** Phase A **implemented** (the `Caravan` superclass + `MigrantCaravan`,
+province-anchored movement, and the settler band wandering the graph and re-founding
+*into a province*); Phase B (the settlement-sponsored `TradeCaravan` that couples two
+economies) and Phase C remain proposed. See the implementation plan in
+`docs/caravan-trade-phase-a-plan.md`.
+**Date:** 2026-06-21 (Phase A landed 2026-06-22)
 **Depends on:** the world map (`com.civstudio.geo.WorldMap` / `Province`, the
 neighbor adjacency and `path` query — see `docs/geography.md`, Phases 1–3); the
 existing `Caravan` machinery (`com.civstudio.agent.Caravan`, its dissolve→wander→
@@ -186,7 +187,9 @@ ruler/treasury + ownership machinery:
 ## Phased implementation plan
 
 - **Phase A — `Caravan` superclass + province-anchored movement + the settler band
-  migrates.** Extract the `Caravan` base (leader + hoard + `provinceId` + movement
+  migrates.** ✅ **Implemented** (2026-06-22; `MigrantCaravan`, the session band RNG,
+  the `SessionRunner` band tick, the wander/settle decision, and the reworked
+  `CaravanEconomy`). Extract the `Caravan` base (leader + hoard + `provinceId` + movement
   + tick); move `following`/`research`/dissolve/re-found into `MigrantCaravan`;
   anchor position to a province and validate `moveTo` against `WorldMap`
   adjacency; drive a per-day band tick from `SessionRunner` on the session RNG;

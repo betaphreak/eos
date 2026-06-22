@@ -15,6 +15,7 @@ import com.civstudio.race.Race;
 
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.Caravan;
+import com.civstudio.agent.MigrantCaravan;
 import com.civstudio.agent.Household;
 import com.civstudio.agent.firm.BuilderConfig;
 import com.civstudio.agent.firm.BuilderFirm;
@@ -961,7 +962,7 @@ public class SimulationHarness {
 	 *            the (copper) bank the pool transacts through
 	 * @return the created peasant pool, seeded from the band
 	 */
-	public Retinue createRetinueFromBand(Caravan band, Bank bank) {
+	public Retinue createRetinueFromBand(MigrantCaravan band, Bank bank) {
 		if (colony.getBuilder() == null)
 			createBuilder(bank, BuilderConfig.DEFAULT);
 		Retinue following = band.getFollowing();
@@ -1250,7 +1251,7 @@ public class SimulationHarness {
 	 *            initial necessity stock of each promoted laborer household, by index
 	 * @return the colony's gold bank (the ruler's treasury)
 	 */
-	public Bank reFoundStandardColony(Caravan band, IntToDoubleFunction eFirmSavings,
+	public Bank reFoundStandardColony(MigrantCaravan band, IntToDoubleFunction eFirmSavings,
 			IntToDoubleFunction nFirmSavings, IntToDoubleFunction laborerNStock) {
 		createMarkets();
 		Bank copper = getCopperBank();

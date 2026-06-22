@@ -17,7 +17,7 @@ import java.util.function.UnaryOperator;
 
 import com.civstudio.io.printer.PersonsOfInterestPrinter;
 import com.civstudio.agent.Agent;
-import com.civstudio.agent.Caravan;
+import com.civstudio.agent.MigrantCaravan;
 import com.civstudio.geo.Province;
 import com.civstudio.agent.Household;
 import com.civstudio.agent.Member;
@@ -261,7 +261,7 @@ public class Settlement {
 	// the wandering band a dissolved colony departed as (null until then; only a
 	// ruler-bearing colony produces one — see dissolveIntoCaravan / updateLifecycle)
 	@Getter
-	private Caravan departedBand;
+	private MigrantCaravan departedBand;
 	// flagged by updateLifecycle when the workforce floor is crossed, so run()
 	// performs the dissolution after the step's market clearing/printing (the
 	// dissolution drains banks and folds households, so it must not run mid-step)
@@ -1075,7 +1075,7 @@ public class Settlement {
 
 	/**
 	 * Finalize a finished run. A ruler-bearing colony that crossed the workforce
-	 * floor departs as a {@link Caravan} (the survivors take to the road) rather
+	 * floor departs as a {@link MigrantCaravan} (the survivors take to the road) rather
 	 * than simply vanishing — done here, after the last step's clearing/printing,
 	 * since the dissolution drains the banks and folds the households (it must not
 	 * run mid-step). Exposed so a concurrent runner can call it once its day loop
@@ -1091,7 +1091,7 @@ public class Settlement {
 	// session, register the band there (colony-less bands live at the session level —
 	// see docs/caravan.md). The settlement is now gone; its people persist in the band.
 	private void dissolveIntoCaravan() {
-		departedBand = Caravan.dissolve(this);
+		departedBand = MigrantCaravan.dissolve(this);
 		if (session != null)
 			session.addCaravan(departedBand);
 		log.info(name + " departed as a Caravan (" + departedBand.getFollowing().size()

@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.civstudio.agent.Member;
 import org.junit.jupiter.api.Test;
 
-import com.civstudio.agent.Caravan;
+import com.civstudio.agent.MigrantCaravan;
 import com.civstudio.agent.Retinue;
 import com.civstudio.good.RationSize;
 
@@ -67,7 +67,7 @@ class RetinueTest {
 
 		// forming a Caravan around it detaches it into the wandering mode
 		Member leader = h.getColony().getRuler().getHead();
-		new Caravan(leader, retinue, 0, 51.5, -0.13);
+		new MigrantCaravan(leader, retinue, 0, 51.5, -0.13);
 		assertTrue(retinue.isWandering(), "a caravan's following wanders");
 		assertEquals(RationSize.SNACK, retinue.getRation());
 

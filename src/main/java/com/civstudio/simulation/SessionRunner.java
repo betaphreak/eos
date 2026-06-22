@@ -5,10 +5,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Phaser;
 
+import com.civstudio.agent.Caravan;
 import com.civstudio.mortality.Demography;
 import com.civstudio.name.NameRegistry;
 import com.civstudio.io.SimLog;
+import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
+import com.civstudio.util.Rng;
 
 /**
  * Runs several colonies of one {@code GameSession} <b>concurrently</b> — one
@@ -48,10 +51,23 @@ public final class SessionRunner {
 	 *            the colonies to run together (built but not yet run)
 	 */
 	public static void runConcurrently(List<SimulationHarness> harnesses) {
-		// one party for this (coordinating) thread, so the phaser stays alive while
-		// we register and start the colony threads
-		Phaser barrier = new Phaser(1);
 		List<Throwable> failures = Collections.synchronizedList(new ArrayList<>());
+		// the colonies all belong to one session — the home of the realm's wandering
+		// bands, which advance once per lockstep day (see the barrier below)
+		GameSession session = harnesses.isEmpty() ? null
+				: harnesses.get(0).getColony().getSession();
+		// one party for this (coordinating) thread, so the phaser stays alive while
+		// we register and start the colony threads. The day-barrier also drives the
+		// session's bands: onAdvance runs once, single-threaded, each time every
+		// still-running colony has finished the day and before any starts the next —
+		// the natural deterministic point to move bands on the session band RNG.
+		Phaser barrier = new Phaser(1) {
+			@Override
+			protected boolean onAdvance(int phase, int registeredParties) {
+				tickBands(session, failures);
+				return registeredParties == 0; // terminate exactly as the default would
+			}
+		};
 		List<Thread> threads = new ArrayList<>(harnesses.size());
 
 		for (SimulationHarness h : harnesses) {
@@ -78,6 +94,25 @@ public final class SessionRunner {
 			Throwable first = failures.get(0);
 			throw new RuntimeException("a colony thread failed: " + first.getMessage(),
 					first);
+		}
+	}
+
+	// advance the session's wandering bands by one day — run from the day-barrier's
+	// onAdvance, so it executes once on a single thread with every colony paused. Draws
+	// nothing when there are no bands, so band-free runs are byte-identical; a band that
+	// misbehaves is recorded as a failure rather than left to corrupt the barrier.
+	private static void tickBands(GameSession session, List<Throwable> failures) {
+		if (session == null)
+			return;
+		List<Caravan> bands = session.getCaravans();
+		if (bands.isEmpty())
+			return;
+		try {
+			Rng rng = session.getBandRng();
+			for (Caravan band : bands)
+				band.tick(rng);
+		} catch (Throwable t) {
+			failures.add(t);
 		}
 	}
 

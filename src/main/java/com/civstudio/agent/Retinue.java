@@ -321,7 +321,7 @@ public class Retinue extends Agent {
 
 	/**
 	 * Switch this retinue to the detached <b>wandering</b> mode — a {@link Caravan} on
-	 * the move: it eats the lean {@link Caravan#WANDERING_RATION} from its carried
+	 * the move: it eats the lean {@link MigrantCaravan#WANDERING_RATION} from its carried
 	 * larder, with no market to restock on, no patron to bill, and no labor to lend
 	 * (see {@code docs/caravan.md}). A decaying asset until it settles or trades.
 	 */
@@ -623,14 +623,14 @@ public class Retinue extends Agent {
 
 	/**
 	 * Detached <b>wandering</b> mode (a {@link Caravan} on the move): the band eats the
-	 * lean {@link Caravan#WANDERING_RATION} from its carried larder and does nothing
+	 * lean {@link MigrantCaravan#WANDERING_RATION} from its carried larder and does nothing
 	 * else — no market to restock on, no patron to bill, no labor to lend. A decaying
 	 * asset that must settle (or trade) before the larder runs out.
 	 */
 	private static final class Foraging implements Provisioning {
 
 		public RationSize ration() {
-			return Caravan.WANDERING_RATION;
+			return MigrantCaravan.WANDERING_RATION;
 		}
 
 		public void beforeFeeding(Retinue r) {

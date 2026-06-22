@@ -69,6 +69,10 @@ public class GameSession {
 	// from each other), scaled by the race's ordinal; HUMAN (ordinal 0) uses no salt,
 	// so its pool is built exactly as before — keeping mono-cultural runs byte-identical
 	private static final long RACE_POOL_SALT = 0x3C79AC492BA7B653L;
+	// decorrelate the session-level band stream (caravan movement/settle decisions) from
+	// every per-colony economic stream and from the naming/mortality/skill streams, so a
+	// session with bands on the map stays reproducible without perturbing the economies
+	private static final long SESSION_BAND_SEED_SALT = 0x94D049BB133111EBL;
 
 	// surnames dealt to each colony's NameRegistry as its initial slice (and the
 	// size of each refill). Sized well above a colony's peak living-household count
@@ -141,6 +145,12 @@ public class GameSession {
 	// Settlement (a band on the road after a collapse, or before it re-founds)
 	private final List<Caravan> caravans = new ArrayList<>();
 
+	// the session-level random stream all bands draw on for movement and settle
+	// decisions (see getBandRng). Built lazily on first request and never advanced
+	// until a band actually ticks, so a session with no bands draws nothing — keeping
+	// runs without caravans on the map byte-identical to before.
+	private Rng bandRng;
+
 	/**
 	 * Create a new game session with the given random-number seed, founding in the
 	 * {@link Era#MEDIEVAL Medieval} era (the default for all simulations).
@@ -203,6 +213,24 @@ public class GameSession {
 		if (worldMap == null)
 			worldMap = WorldMap.load();
 		return worldMap;
+	}
+
+	/**
+	 * The session-level random stream the realm's {@link Caravan wandering bands}
+	 * draw on for movement and settle decisions — a single shared stream salted
+	 * <b>distinct</b> from every per-colony economic stream and from the
+	 * naming/mortality/skill streams, so bands on the map are deterministic per seed
+	 * yet never perturb any colony's economics. Built lazily on first request and
+	 * advanced only when a band ticks, so a session with no bands draws nothing (runs
+	 * without caravans on the map stay byte-identical). Synchronized: bands on
+	 * different colony threads may register and be ticked around the same day.
+	 *
+	 * @return the shared band RNG for this session
+	 */
+	public synchronized Rng getBandRng() {
+		if (bandRng == null)
+			bandRng = new Rng(seed ^ SESSION_BAND_SEED_SALT);
+		return bandRng;
 	}
 
 	/**
@@ -456,14 +484,17 @@ public class GameSession {
 	}
 
 	/**
-	 * Re-found a colony for a wandering {@link Caravan band}: a fresh colony at the
-	 * band's current {@linkplain Caravan#getLatitude() position}, taking the next
-	 * colony index exactly as any {@link #newSettlement} call (so the band's new home
-	 * runs on its own deterministic economic stream and "same seed → identical run"
-	 * still holds). The geography is the band's — its latitude/longitude flow into the
-	 * new settlement, giving it the climate of wherever the band chose to settle — and
-	 * everything else is supplied by the caller as for a settlement founded from
-	 * scratch.
+	 * Re-found a colony for a wandering {@link Caravan band}: a fresh colony where the
+	 * band settled, taking the next colony index exactly as any {@link #newSettlement}
+	 * call (so the band's new home runs on its own deterministic economic stream and
+	 * "same seed → identical run" still holds). The geography is the band's — an
+	 * {@linkplain Caravan#onGraph() on-graph} band re-founds <b>into its current
+	 * {@link Province}</b> (Phase A of {@code docs/caravan-trade.md}), so the new colony
+	 * inherits that province's latitude/longitude <em>and</em> its {@code plots} cap on
+	 * settlement size, exactly like any province-founded colony; an off-graph band (born
+	 * from a bare-coordinate colony) instead re-founds at its raw latitude/longitude with
+	 * no province cap. Everything else is supplied by the caller as for a settlement
+	 * founded from scratch.
 	 * <p>
 	 * This only raises the bare {@code Settlement}; binding the band's surviving people
 	 * and carried hoard into it (seeding the new colony's {@link Retinue} from
@@ -489,6 +520,12 @@ public class GameSession {
 	public Settlement newSettlement(Caravan band, String name, LocalDate startDate,
 			double meanInitAgeYears, double targetNStock, double meanSkillMale,
 			double meanSkillFemale) {
+		// an on-graph band re-founds into its province (inheriting its lat/long and
+		// plots cap); an off-graph band re-founds at its raw coordinates as before
+		if (band.onGraph())
+			return newSettlement(name, startDate, meanInitAgeYears, targetNStock,
+					meanSkillMale, meanSkillFemale,
+					getWorldMap().province(band.getProvinceId()));
 		return newSettlement(name, startDate, meanInitAgeYears, targetNStock,
 				meanSkillMale, meanSkillFemale, band.getLatitude(),
 				band.getLongitude());

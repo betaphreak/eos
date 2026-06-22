@@ -11,7 +11,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import com.civstudio.agent.Caravan;
+import com.civstudio.agent.MigrantCaravan;
 import com.civstudio.agent.Retinue;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.BankConfig;
@@ -81,7 +81,7 @@ class GameSessionTest {
 		// the origin colony; re-founding raises a fresh colony, not rebinds this one)
 		Bank bank = new Bank(BankConfig.DEFAULT, origin);
 		Retinue following = new Retinue(2, bank, origin);
-		Caravan band = new Caravan(following.promoteHighestSkilled(), following, 0,
+		MigrantCaravan band = new MigrantCaravan(following.promoteHighestSkilled(), following, 0,
 				48.85, 2.35);
 		s.addCaravan(band);
 		assertEquals(List.of(band), s.getCaravans(), "the band should be tracked");

@@ -1,39 +1,50 @@
 package com.civstudio.simulation;
 
-import com.civstudio.mortality.Demography;
-import com.civstudio.agent.Caravan;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.civstudio.agent.MigrantCaravan;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.Retinue;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.BankConfig;
 import com.civstudio.bank.CurrencyType;
+import com.civstudio.geo.Province;
+import com.civstudio.geo.WorldMap;
 import com.civstudio.good.Good;
 import com.civstudio.name.NameRegistry;
 import com.civstudio.io.SimLog;
 import com.civstudio.name.Person;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
+import com.civstudio.settlement.SlotTable;
+import com.civstudio.util.Rng;
 
 /**
- * Simulation (three caravans in one game session): a <b>Caravan-first</b> run that
- * exercises the whole rise-and-fall cycle (see {@code docs/caravan.md}). Three
- * wandering bands set out with <b>different endowments</b> — a carried hoard of
- * {@code 50}, {@code 100} and {@code 200} gold, and lean/middling/ample larders —
- * and each <b>re-founds a settlement</b> at its own location (London, Paris, Rome).
- * Each colony then runs until its peasant reserve drains and it <b>collapses back
- * into a Caravan</b> (the {@code HOLDING → CARAVAN} dissolution): the survivors take
- * to the road again, their dynasty surnames returning to the pool.
+ * Simulation (three caravans on the world map, in one game session): a
+ * <b>Caravan-first</b> run that exercises the whole rise-and-fall cycle with the
+ * province graph underneath it (see {@code docs/caravan.md},
+ * {@code docs/caravan-trade.md}). Three wandering bands set out with <b>different
+ * endowments</b> — a carried hoard of {@code 50}, {@code 100} and {@code 200} gold,
+ * and lean/middling/ample larders — each anchored to a <b>starting province</b> on
+ * the {@link WorldMap}. Each band then <b>wanders the graph</b> (one hop per day, on
+ * the session band RNG, eating its carried larder) to the nearest viable site and
+ * <b>re-founds a settlement into that province</b> — so the new colony inherits the
+ * province's climate and its {@code plots} cap on size, not just bare coordinates.
+ * Each colony then runs until its peasant reserve drains and it <b>collapses back into
+ * a Caravan</b> (the {@code HOLDING → CARAVAN} dissolution): the survivors take to the
+ * road again, their dynasty surnames returning to the pool.
  * <p>
  * Unlike the bounded sims this one is <b>not capped by a horizon</b>: each colony is
  * run until it dissolves, and the run ends once <b>all three bands have reformed</b>.
  * The three colonies share the session's {@link NameRegistry} and {@link
- * Demography} (so dynasty surnames are unique across all of them) but
- * each has its own economic stream, markets, banks and agents; they are built and run
- * in turn (like {@link HanseaticEconomy}), each writing name-prefixed CSVs.
+ * Demography} (so dynasty surnames are unique across all of them) but each has its own
+ * economic stream, markets, banks and agents; they are built and run in turn (like
+ * {@link HanseaticEconomy}), each writing name-prefixed CSVs.
  * <p>
  * Because a band's {@link Retinue following} must live on <em>some</em> colony, the
  * three bands are first mustered on a throwaway colony (never run) that only mints
- * their people; each band then re-founds a real colony of its own.
+ * their people; each band then wanders off and re-founds a real colony of its own.
  */
 public class CaravanEconomy {
 
@@ -43,17 +54,20 @@ public class CaravanEconomy {
 	/** People in each band's following (the pool the labor force is promoted from). */
 	static final int FOLLOWERS = 900;
 
-	/** One band's starting endowment and where it settles. */
-	private record Band(String name, double gold, double larder, double lat,
-			double lon) {
+	// a runaway guard on the wander: a band reaches the nearest viable site in a few
+	// hops, well under this, so this only stops a pathological band from looping forever
+	private static final int MAX_WANDER_DAYS = 365 * 5;
+
+	/** One band's starting endowment (where it settles is found by wandering). */
+	private record Band(String name, double gold, double larder) {
 	}
 
 	// the three bands: ascending hoard (50/100/200 gold) paired with ascending food
-	// (lean/middling/ample larders), each founding at a different latitude
+	// (lean/middling/ample larders)
 	private static final Band[] BANDS = {
-			new Band("Aurelia", 50, FOLLOWERS * 13.0, 51.5074, -0.1278), // London
-			new Band("Belmonte", 100, FOLLOWERS * 22.0, 48.8566, 2.3522), // Paris
-			new Band("Cortona", 200, FOLLOWERS * 35.0, 41.9028, 12.4964), // Rome
+			new Band("Aurelia", 50, FOLLOWERS * 13.0),
+			new Band("Belmonte", 100, FOLLOWERS * 22.0),
+			new Band("Cortona", 200, FOLLOWERS * 35.0),
 	};
 
 	// a runaway guard, not a real horizon: each colony drains and dissolves in a few
@@ -61,15 +75,21 @@ public class CaravanEconomy {
 	private static final int MAX_STEPS = 365 * 200;
 
 	/**
-	 * Muster three bands, have each re-found and run to collapse, and return the first
-	 * ({@code Aurelia}) harness; all three colonies are fully built and run, and end
-	 * reformed as Caravans (registered with the session).
+	 * Muster three bands, have each wander to a viable site, re-found and run to
+	 * collapse, and return the first ({@code Aurelia}) harness; all three colonies are
+	 * fully built and run, and end reformed as Caravans (registered with the session).
 	 *
 	 * @return the Aurelia harness (Belmonte and Cortona are also built and run)
 	 */
 	public static SimulationHarness run() {
 		GameSession session = new GameSession(SEED);
 		SimulationConfig cfg = SimulationConfig.DEFAULT; // closed → the colonies collapse
+		WorldMap map = session.getWorldMap();
+		SlotTable slots = session.getSlotTable();
+
+		// the bands set out from distinct viable starting provinces, each with a viable
+		// neighbour to wander to (so the settle decision always succeeds)
+		List<Integer> starts = pickStartProvinces(map, slots, BANDS.length);
 
 		// 1) muster the three bands on a throwaway colony (it is never run; it only
 		// hosts the bands' followings while they are mustered)
@@ -78,14 +98,16 @@ public class CaravanEconomy {
 				cfg.meanSkillFemale(), 0, 0);
 		SimLog.init(muster);
 		Bank musterBank = new Bank(BankConfig.DEFAULT, muster);
-		Caravan[] caravans = new Caravan[BANDS.length];
+		MigrantCaravan[] caravans = new MigrantCaravan[BANDS.length];
 		for (int i = 0; i < BANDS.length; i++)
-			caravans[i] = musterBand(BANDS[i], musterBank, muster);
+			caravans[i] = musterBand(BANDS[i], starts.get(i), musterBank, muster, map,
+					slots);
 
-		// 2) each band re-founds a colony of its own and runs until it dissolves back
-		// into a Caravan; the run ends once all three have reformed
+		// 2) each band wanders to a viable site, re-founds a colony there, and runs
+		// until it dissolves back into a Caravan; the run ends once all three reform
 		SimulationHarness first = null;
 		for (int i = 0; i < BANDS.length; i++) {
+			wander(caravans[i], session.getBandRng());
 			SimulationHarness h = settleAndRun(session, cfg, BANDS[i], caravans[i]);
 			if (first == null)
 				first = h;
@@ -95,8 +117,41 @@ public class CaravanEconomy {
 		return first;
 	}
 
-	// build one Caravan with the band's own hoard, larder and following
-	private static Caravan musterBand(Band b, Bank bank, Settlement muster) {
+	// the first n settleable provinces that each have at least one viable settleable
+	// neighbour — so a band starting there can wander one hop and settle. Deterministic
+	// (settleableProvinces() is in load order).
+	private static List<Integer> pickStartProvinces(WorldMap map, SlotTable slots,
+			int n) {
+		List<Integer> starts = new ArrayList<>();
+		for (Province p : map.settleableProvinces()) {
+			if (!isViable(slots, p))
+				continue;
+			for (int nb : p.neighbors()) {
+				if (nb != p.id() && isViable(slots, map.province(nb))) {
+					starts.add(p.id());
+					break;
+				}
+			}
+			if (starts.size() == n)
+				break;
+		}
+		if (starts.size() < n)
+			throw new IllegalStateException(
+					"the map has fewer than " + n + " viable starting provinces");
+		return starts;
+	}
+
+	// whether a province can be founded into: settleable land with enough plots for the
+	// founding floor size
+	private static boolean isViable(SlotTable slots, Province p) {
+		return p.isSettleable()
+				&& slots.maxSizeForPlots(p.plots()) >= SlotTable.MIN_SIZE;
+	}
+
+	// build one Caravan with the band's own hoard, larder and following, anchored at its
+	// starting province on the graph
+	private static MigrantCaravan musterBand(Band b, int startProvinceId, Bank bank,
+			Settlement muster, WorldMap map, SlotTable slots) {
 		Retinue following = new Retinue(FOLLOWERS, bank, muster);
 		// the int constructor sized the larder to FOLLOWERS·BUFFER_DAYS; set it to the
 		// band's own food (lean/middling/ample)
@@ -114,13 +169,28 @@ public class CaravanEconomy {
 				muster.getNames().nextDynastyName(raw.race()), raw.gender(),
 				raw.skills(), raw.race()),
 				raw.getBirthDate());
-		return new Caravan(leader, following, CurrencyType.GOLD.toCopper(b.gold()),
-				b.lat(), b.lon());
+		return new MigrantCaravan(leader, following, CurrencyType.GOLD.toCopper(b.gold()),
+				startProvinceId, map, slots);
 	}
 
-	// re-found a colony from the band, wire its printers, and run it until it dissolves
+	// wander the band over the province graph until it reaches a viable site and marks
+	// itself ready to settle (one hop per day, eating its carried larder)
+	private static void wander(MigrantCaravan band, Rng rng) {
+		int days = 0;
+		while (!band.isReadyToSettle() && days < MAX_WANDER_DAYS) {
+			band.tick(rng);
+			days++;
+		}
+		if (!band.isReadyToSettle())
+			throw new IllegalStateException(
+					"a band failed to reach a viable site within " + MAX_WANDER_DAYS
+							+ " days");
+	}
+
+	// re-found a colony from the band into the province it settled in, wire its
+	// printers, and run it until it dissolves
 	private static SimulationHarness settleAndRun(GameSession session,
-			SimulationConfig cfg, Band b, Caravan band) {
+			SimulationConfig cfg, Band b, MigrantCaravan band) {
 		Settlement colony = session.newSettlement(band, b.name(), cfg.startDate(),
 				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkillMale(),
 				cfg.meanSkillFemale());
