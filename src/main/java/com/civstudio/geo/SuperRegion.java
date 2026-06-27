@@ -34,10 +34,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record SuperRegion(
 		@JsonProperty("key") String rawKey,
 		String name,
-		@JsonProperty("regions") List<String> regionKeys) {
+		@JsonProperty("regions") List<String> regionKeys) implements GeoTier {
 
 	/** Defensive copy so a loaded super-region's region list cannot be mutated. */
 	public SuperRegion {
 		regionKeys = regionKeys == null ? List.of() : List.copyOf(regionKeys);
+	}
+
+	/** {@inheritDoc} The super-region's {@link #name()}. */
+	@Override
+	public String displayName() {
+		return name;
 	}
 }

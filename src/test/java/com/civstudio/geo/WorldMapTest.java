@@ -101,13 +101,15 @@ class WorldMapTest {
 		assertEquals(1570, map.areas().size());
 		assertEquals(178, map.regions().size());
 		assertEquals(31, map.superRegions().size());
+		// the 7 geographic continents (a fixed enum; utility blocks excluded)
+		assertEquals(7, Continent.values().length);
 		assertEquals(7, map.continents().size());
-		assertFalse(map.hasContinent("debug_continent"));
-		assertFalse(map.hasContinent("new_world"));
 		assertThrows(IllegalArgumentException.class, () -> map.area("nope"));
 		assertThrows(IllegalArgumentException.class, () -> map.region("nope"));
 		assertThrows(IllegalArgumentException.class, () -> map.superRegion("nope"));
-		assertThrows(IllegalArgumentException.class, () -> map.continent("nope"));
+		// the utility pseudo-continents are not enum values
+		assertThrows(IllegalArgumentException.class,
+				() -> Continent.fromKey("debug_continent"));
 	}
 
 	@Test
@@ -131,13 +133,14 @@ class WorldMapTest {
 	void dhenijansarSitsOnItsContinent() {
 		WorldMap map = WorldMap.load();
 		Province d = map.findByName("Dhenijansar").orElseThrow();
-		assertEquals("asia", d.continentKey());
+		assertEquals(Continent.ASIA, d.continent());
 		Continent c = map.continentOf(d.id()).orElseThrow();
+		assertEquals(Continent.ASIA, c);
 		assertEquals("asia", c.rawKey());
-		assertEquals("Asia", c.name());
-		assertTrue(map.provincesInContinent("asia").contains(d));
+		assertEquals("Asia", c.displayName());
+		assertTrue(map.provincesInContinent(Continent.ASIA).contains(d));
 		assertThrows(UnsupportedOperationException.class,
-				() -> map.provincesInContinent("asia").clear());
+				() -> map.provincesInContinent(Continent.ASIA).clear());
 	}
 
 	@Test
@@ -157,6 +160,19 @@ class WorldMapTest {
 		assertTrue(map.areasInRegion("rahen_coast_region").contains(area));
 		// region membership is the union of its areas' provinces
 		assertTrue(map.provincesInRegion("rahen_coast_region").contains(d));
+	}
+
+	@Test
+	void provinceRegionKeyMatchesTheAreaTier() {
+		WorldMap map = WorldMap.load();
+		// the exporter re-derives each province's region from its area, so the
+		// committed region_key must equal what the area tier resolves (no stale
+		// DB-derived values remain — e.g. province 5726 was reconciled)
+		for (Province p : map.provinces()) {
+			String viaArea = map.regionOf(p.id()).map(Region::rawKey).orElse(null);
+			assertEquals(viaArea, p.regionKey(),
+					"province " + p.id() + " region_key disagrees with its area tier");
+		}
 	}
 
 	@Test

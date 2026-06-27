@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class ProvinceExporter {
 
-	private static final String OUTPUT = "src/main/resources/provinces.json";
+	private static final String OUTPUT = "src/main/resources/map/provinces.json";
 
 	// The world content is a single equirectangular-ish image: latitude is
 	// precomputed per province; longitude is a linear map of the bounding-box

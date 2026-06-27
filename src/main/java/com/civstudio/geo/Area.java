@@ -35,10 +35,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record Area(
 		@JsonProperty("key") String rawKey,
 		String name,
-		@JsonProperty("provinces") List<Integer> provinceIds) {
+		@JsonProperty("provinces") List<Integer> provinceIds) implements GeoTier {
 
 	/** Defensive copy so a loaded area's province list cannot be mutated. */
 	public Area {
 		provinceIds = provinceIds == null ? List.of() : List.copyOf(provinceIds);
+	}
+
+	/** {@inheritDoc} The area's {@link #name()}. */
+	@Override
+	public String displayName() {
+		return name;
 	}
 }

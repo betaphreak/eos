@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -21,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * The world map: the {@link Province} graph imported from the Strapi world
- * content and loaded once from {@code /provinces.json}. It is pure reference
+ * content and loaded once from {@code /map/provinces.json}. It is pure reference
  * data — independent of seed and run — so a single instance is shared by every
  * colony in a {@link com.civstudio.settlement.GameSession}, which loads it
  * lazily on first request (the ~1MB parse is only paid by a session that uses
@@ -30,46 +31,47 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * The map provides province lookup, the (undirected) neighbor adjacency, and a
  * shortest-path query over that adjacency — the travel-network primitive the
  * caravan and village-founding features build on. It also carries the coarser
- * geographic tiers loaded from {@code /areas.json} and {@code /regions.json} —
- * the province&nbsp;&rarr;&nbsp;{@link Area area}&nbsp;&rarr;&nbsp;{@link Region
- * region} hierarchy — and the membership queries over it ({@link
- * #provincesInRegion(String)}, {@link #areaOf(int)}, …), with areas the source of
- * truth for a region's provinces. It does not itself move anything: founding a
- * colony into a province (Phase 2) and routing over the graph (caravan trade) are
- * the dependent features. See {@code docs/geography.md}.
+ * geographic tiers — the province&nbsp;&rarr;&nbsp;{@link Area area}&nbsp;&rarr;&nbsp;{@link
+ * Region region}&nbsp;&rarr;&nbsp;{@link SuperRegion super-region} nesting (loaded
+ * from {@code /map/areas.json}, {@code /map/regions.json}, {@code
+ * /map/superregions.json}) plus
+ * the parallel {@link Continent} partition (a fixed enum; per-province membership
+ * lives on {@link Province#continent()}) — and the membership queries over them
+ * ({@link #provincesInRegion(String)}, {@link #areaOf(int)}, {@link
+ * #provincesInContinent(Continent)}, …), with areas the source of truth for a
+ * region's provinces. It does not itself move anything: founding a colony into a
+ * province (Phase 2) and routing over the graph (caravan trade) are the dependent
+ * features. See {@code docs/geography.md}.
  */
 public final class WorldMap {
 
-	private static final String PROVINCES_RESOURCE = "/provinces.json";
-	private static final String AREAS_RESOURCE = "/areas.json";
-	private static final String REGIONS_RESOURCE = "/regions.json";
-	private static final String SUPERREGIONS_RESOURCE = "/superregions.json";
-	private static final String CONTINENTS_RESOURCE = "/continents.json";
+	private static final String PROVINCES_RESOURCE = "/map/provinces.json";
+	private static final String AREAS_RESOURCE = "/map/areas.json";
+	private static final String REGIONS_RESOURCE = "/map/regions.json";
+	private static final String SUPERREGIONS_RESOURCE = "/map/superregions.json";
 
 	private static final ObjectMapper MAPPER = new ObjectMapper()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 	// provinces keyed by id, in load order (deterministic iteration)
 	private final Map<Integer, Province> byId;
-	// areas, regions, super-regions and continents keyed by their raw_key, in
-	// load order
+	// areas, regions and super-regions keyed by their raw_key, in load order
+	// (continents are a fixed enum, not loaded)
 	private final Map<String, Area> areasByKey;
 	private final Map<String, Region> regionsByKey;
 	private final Map<String, SuperRegion> superRegionsByKey;
-	private final Map<String, Continent> continentsByKey;
 	// derived membership indices (all values unmodifiable, deterministic order)
 	private final Map<String, List<Province>> provincesByArea;
 	private final Map<String, List<Province>> provincesByRegion;
 	private final Map<String, List<Province>> provincesBySuperRegion;
-	private final Map<String, List<Province>> provincesByContinent;
+	private final Map<Continent, List<Province>> provincesByContinent;
 	private final Map<String, List<Area>> areasByRegion;
 	private final Map<String, List<Region>> regionsBySuperRegion;
 	private final Map<String, String> regionKeyByArea;
 	private final Map<String, String> superRegionKeyByRegion;
 
 	private WorldMap(List<Province> provinces, List<Area> areas,
-			List<Region> regions, List<SuperRegion> superRegions,
-			List<Continent> continents) {
+			List<Region> regions, List<SuperRegion> superRegions) {
 		Map<Integer, Province> byId = new LinkedHashMap<>(provinces.size() * 2);
 		for (Province p : provinces)
 			if (byId.put(p.id(), p) != null)
@@ -166,39 +168,28 @@ public final class WorldMap {
 		this.provincesBySuperRegion = provBySuper;
 		this.superRegionKeyByRegion = superByRegion;
 
-		Map<String, Continent> continentsByKey = new LinkedHashMap<>(
-				continents.size() * 2);
-		for (Continent c : continents)
-			if (continentsByKey.put(c.rawKey(), c) != null)
-				throw new IllegalStateException(
-						"duplicate continent key " + c.rawKey());
-		this.continentsByKey = continentsByKey;
-
-		// continent -> its provinces present in the map (ids outside the map are
-		// skipped, as for areas)
-		Map<String, List<Province>> provByContinent = new LinkedHashMap<>();
-		for (Continent c : continents) {
-			List<Province> ps = new ArrayList<>();
-			for (int pid : c.provinceIds()) {
-				Province p = byId.get(pid);
-				if (p != null)
-					ps.add(p);
-			}
-			provByContinent.put(c.rawKey(), Collections.unmodifiableList(ps));
+		// continent -> its provinces, grouped from each province's own continent
+		// (the enum is the taxonomy; membership is the per-province key)
+		Map<Continent, List<Province>> provByContinent = new EnumMap<>(Continent.class);
+		for (Province p : byId.values()) {
+			Continent c = p.continent();
+			if (c != null)
+				provByContinent.computeIfAbsent(c, k -> new ArrayList<>()).add(p);
 		}
+		provByContinent.replaceAll((c, ps) -> Collections.unmodifiableList(ps));
 		this.provincesByContinent = provByContinent;
 	}
 
 	/**
-	 * Load the world map from its classpath resources ({@code /provinces.json},
-	 * {@code /areas.json}, {@code /regions.json}, {@code /superregions.json},
-	 * {@code /continents.json}).
+	 * Load the world map from its classpath resources ({@code /map/provinces.json},
+	 * {@code /map/areas.json}, {@code /map/regions.json}, {@code
+	 * /map/superregions.json}). Continents are a fixed {@link Continent} enum, not a
+	 * loaded resource.
 	 *
 	 * @return the loaded map
 	 * @throws IllegalStateException
-	 *             if a resource is missing, a province/area/region/super-region/
-	 *             continent key is duplicated, or a neighbor refers to an id not
-	 *             present in the map
+	 *             if a resource is missing, a province/area/region/super-region key
+	 *             is duplicated, or a neighbor refers to an id not present in the map
 	 */
 	public static WorldMap load() {
 		List<Province> provinces = loadList(PROVINCES_RESOURCE,
@@ -213,10 +204,7 @@ public final class WorldMap {
 		List<SuperRegion> superRegions = loadList(SUPERREGIONS_RESOURCE,
 				new TypeReference<List<SuperRegion>>() {
 				});
-		List<Continent> continents = loadList(CONTINENTS_RESOURCE,
-				new TypeReference<List<Continent>>() {
-				});
-		return new WorldMap(provinces, areas, regions, superRegions, continents);
+		return new WorldMap(provinces, areas, regions, superRegions);
 	}
 
 	private static <T> List<T> loadList(String resource,
@@ -321,10 +309,16 @@ public final class WorldMap {
 	 * @throws IllegalArgumentException if no area has that key
 	 */
 	public Area area(String key) {
-		Area a = areasByKey.get(key);
-		if (a == null)
-			throw new IllegalArgumentException("no area with key " + key);
-		return a;
+		return require(areasByKey, key, "area");
+	}
+
+	/** Look up a tier by key, or throw with a {@code "no <tier> with key …"} message. */
+	private static <T extends GeoTier> T require(Map<String, T> byKey, String key,
+			String tier) {
+		T value = byKey.get(key);
+		if (value == null)
+			throw new IllegalArgumentException("no " + tier + " with key " + key);
+		return value;
 	}
 
 	/**
@@ -335,10 +329,7 @@ public final class WorldMap {
 	 * @throws IllegalArgumentException if no region has that key
 	 */
 	public Region region(String key) {
-		Region r = regionsByKey.get(key);
-		if (r == null)
-			throw new IllegalArgumentException("no region with key " + key);
-		return r;
+		return require(regionsByKey, key, "region");
 	}
 
 	/** Whether an area with this key is loaded. */
@@ -431,10 +422,7 @@ public final class WorldMap {
 	 * @throws IllegalArgumentException if no super-region has that key
 	 */
 	public SuperRegion superRegion(String key) {
-		SuperRegion sr = superRegionsByKey.get(key);
-		if (sr == null)
-			throw new IllegalArgumentException("no super-region with key " + key);
-		return sr;
+		return require(superRegionsByKey, key, "super-region");
 	}
 
 	/** Whether a super-region with this key is loaded. */
@@ -482,55 +470,35 @@ public final class WorldMap {
 				.map(superRegionsByKey::get);
 	}
 
-	/** All continents, in load order (unmodifiable). */
+	/**
+	 * The continents that have at least one province in the map. The full fixed
+	 * taxonomy is {@link Continent#values()}; this is the subset actually present.
+	 *
+	 * @return the populated continents (unmodifiable)
+	 */
 	public Collection<Continent> continents() {
-		return Collections.unmodifiableCollection(continentsByKey.values());
+		return Collections.unmodifiableSet(provincesByContinent.keySet());
 	}
 
 	/**
-	 * The continent with this {@code raw_key}.
+	 * The provinces on this continent (in province-id load order).
 	 *
-	 * @param key a continent {@code raw_key} (e.g. {@code "asia"})
-	 * @return the continent
-	 * @throws IllegalArgumentException if no continent has that key
-	 */
-	public Continent continent(String key) {
-		Continent c = continentsByKey.get(key);
-		if (c == null)
-			throw new IllegalArgumentException("no continent with key " + key);
-		return c;
-	}
-
-	/** Whether a continent with this key is loaded. */
-	public boolean hasContinent(String key) {
-		return continentsByKey.containsKey(key);
-	}
-
-	/**
-	 * The provinces this continent contains (those present in the map, in source
-	 * order; ids referring outside the map are omitted).
-	 *
-	 * @param key a continent {@code raw_key}
+	 * @param continent a continent
 	 * @return the continent's provinces (unmodifiable, possibly empty)
-	 * @throws IllegalArgumentException if no continent has that key
 	 */
-	public List<Province> provincesInContinent(String key) {
-		continent(key); // validate
-		return provincesByContinent.get(key);
+	public List<Province> provincesInContinent(Continent continent) {
+		return provincesByContinent.getOrDefault(continent, List.of());
 	}
 
 	/**
-	 * The continent a province belongs to, via its {@link Province#continentKey()}.
+	 * The continent a province belongs to (its {@link Province#continent()}).
 	 *
 	 * @param provinceId a province id
-	 * @return the province's continent, or empty if it has none (or its key
-	 *         resolves to no loaded continent)
+	 * @return the province's continent, or empty if it has none
 	 * @throws IllegalArgumentException if no province has that id
 	 */
 	public Optional<Continent> continentOf(int provinceId) {
-		String key = province(provinceId).continentKey();
-		return key == null ? Optional.empty()
-				: Optional.ofNullable(continentsByKey.get(key));
+		return Optional.ofNullable(province(provinceId).continent());
 	}
 
 	/**

@@ -8454,7 +8454,7 @@
   "plots" : 291,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "alenic_reach_region",
+  "region" : null,
   "area" : "dinesck_area",
   "continent" : "europe",
   "neighbors" : [ 704, 723, 752, 1323, 1477 ]
@@ -8670,7 +8670,7 @@
   "plots" : 119,
   "waterPlots" : 9,
   "type" : "LAND",
-  "region" : "alenic_reach_region",
+  "region" : null,
   "area" : "dinesck_area",
   "continent" : "europe",
   "neighbors" : [ 705, 724, 752, 1323 ]
@@ -8682,7 +8682,7 @@
   "plots" : 467,
   "waterPlots" : 26,
   "type" : "LAND",
-  "region" : "alenic_reach_region",
+  "region" : null,
   "area" : "dinesck_area",
   "continent" : "europe",
   "neighbors" : [ 700, 703, 723, 752, 1323 ]
@@ -8766,7 +8766,7 @@
   "plots" : 592,
   "waterPlots" : 31,
   "type" : "LAND",
-  "region" : "alenic_reach_region",
+  "region" : null,
   "area" : "dinesck_area",
   "continent" : "europe",
   "neighbors" : [ 226, 702, 703, 704, 706, 752 ]
@@ -9018,7 +9018,7 @@
   "plots" : 223,
   "waterPlots" : 14,
   "type" : "LAND",
-  "region" : "alenic_reach_region",
+  "region" : null,
   "area" : "dinesck_area",
   "continent" : "europe",
   "neighbors" : [ 703, 704, 705, 723, 724, 731 ]
@@ -35130,7 +35130,7 @@
   "plots" : 739,
   "waterPlots" : 33,
   "type" : "LAND",
-  "region" : "titanoflora_forests_region",
+  "region" : null,
   "area" : "titanoflora_forest_1_area",
   "continent" : "oceania",
   "neighbors" : [ ]
@@ -43410,7 +43410,7 @@
   "plots" : 489,
   "waterPlots" : 10,
   "type" : "LAND",
-  "region" : "thidinkai_region",
+  "region" : null,
   "area" : "khom_ma_area",
   "continent" : "asia",
   "neighbors" : [ 4695, 4696, 4697, 4702, 4703, 4704, 4958 ]
@@ -43458,7 +43458,7 @@
   "plots" : 404,
   "waterPlots" : 37,
   "type" : "LAND",
-  "region" : "thidinkai_region",
+  "region" : null,
   "area" : "khom_ma_area",
   "continent" : "asia",
   "neighbors" : [ 4698, 4699, 4703, 4706, 4770, 4958, 4961 ]
@@ -43470,7 +43470,7 @@
   "plots" : 526,
   "waterPlots" : 18,
   "type" : "LAND",
-  "region" : "thidinkai_region",
+  "region" : null,
   "area" : "khom_ma_area",
   "continent" : "asia",
   "neighbors" : [ 4698, 4702, 4704, 4705, 4706 ]
@@ -46470,7 +46470,7 @@
   "plots" : 294,
   "waterPlots" : 3,
   "type" : "LAND",
-  "region" : "thidinkai_region",
+  "region" : null,
   "area" : "khom_ma_area",
   "continent" : "asia",
   "neighbors" : [ 4697, 4698, 4699, 4702 ]
@@ -49074,7 +49074,7 @@
   "plots" : 511,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "khaashalg_region",
+  "region" : null,
   "area" : "bazuniezar_area",
   "continent" : "asia",
   "neighbors" : [ 5214, 5422 ]
@@ -49374,7 +49374,7 @@
   "plots" : 672,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "khaashalg_region",
+  "region" : null,
   "area" : "bazuniezar_area",
   "continent" : "asia",
   "neighbors" : [ 2200, 6831 ]
@@ -51090,7 +51090,7 @@
   "plots" : 509,
   "waterPlots" : 37,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "suppiu_area",
   "continent" : "asia",
   "neighbors" : [ 5331, 5342, 5345, 5346, 5361 ]
@@ -51102,7 +51102,7 @@
   "plots" : 655,
   "waterPlots" : 14,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "suppiu_area",
   "continent" : "asia",
   "neighbors" : [ 5342, 5344, 5346, 5348, 5350 ]
@@ -51114,7 +51114,7 @@
   "plots" : 395,
   "waterPlots" : 19,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "suppiu_area",
   "continent" : "asia",
   "neighbors" : [ 5344, 5345, 5347, 5348, 5360, 5361 ]
@@ -51126,7 +51126,7 @@
   "plots" : 435,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "jongsijae_area",
   "continent" : "asia",
   "neighbors" : [ 5346, 5348, 5355, 5356, 5358, 5360 ]
@@ -51138,7 +51138,7 @@
   "plots" : 481,
   "waterPlots" : 27,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "suppiu_area",
   "continent" : "asia",
   "neighbors" : [ 5345, 5346, 5347, 5349, 5350, 5355 ]
@@ -51150,7 +51150,7 @@
   "plots" : 511,
   "waterPlots" : 32,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "segang_area",
   "continent" : "asia",
   "neighbors" : [ 5343, 5348, 5350, 5351, 5352, 5355 ]
@@ -51162,7 +51162,7 @@
   "plots" : 404,
   "waterPlots" : 1,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "suppiu_area",
   "continent" : "asia",
   "neighbors" : [ 5342, 5343, 5345, 5348, 5349 ]
@@ -51174,7 +51174,7 @@
   "plots" : 515,
   "waterPlots" : 59,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "segang_area",
   "continent" : "asia",
   "neighbors" : [ 5343, 5349, 5352, 5364, 5366, 5400 ]
@@ -51186,7 +51186,7 @@
   "plots" : 376,
   "waterPlots" : 46,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "segang_area",
   "continent" : "asia",
   "neighbors" : [ 5349, 5351, 5353, 5355, 5364 ]
@@ -51198,7 +51198,7 @@
   "plots" : 428,
   "waterPlots" : 25,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "jibojagi_area",
   "continent" : "asia",
   "neighbors" : [ 5352, 5354, 5355, 5363, 5364 ]
@@ -51210,7 +51210,7 @@
   "plots" : 367,
   "waterPlots" : 17,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "jibojagi_area",
   "continent" : "asia",
   "neighbors" : [ 1374, 4234, 5353, 5355, 5356, 5363 ]
@@ -51222,7 +51222,7 @@
   "plots" : 562,
   "waterPlots" : 26,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "jibojagi_area",
   "continent" : "asia",
   "neighbors" : [ 5347, 5348, 5349, 5352, 5353, 5354, 5356 ]
@@ -51234,7 +51234,7 @@
   "plots" : 563,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "jibojagi_area",
   "continent" : "asia",
   "neighbors" : [ 1374, 5347, 5354, 5355, 5357, 5358 ]
@@ -51246,7 +51246,7 @@
   "plots" : 709,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "chiluyonan_area",
   "continent" : "asia",
   "neighbors" : [ 1374, 5356, 5358, 5359 ]
@@ -51258,7 +51258,7 @@
   "plots" : 720,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "chiluyonan_area",
   "continent" : "asia",
   "neighbors" : [ 5347, 5356, 5357, 5359, 5360, 5362 ]
@@ -51270,7 +51270,7 @@
   "plots" : 438,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "chiluyonan_area",
   "continent" : "asia",
   "neighbors" : [ 1374, 1375, 5357, 5358, 5362 ]
@@ -51282,7 +51282,7 @@
   "plots" : 411,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "jongsijae_area",
   "continent" : "asia",
   "neighbors" : [ 5346, 5347, 5358, 5361, 5362 ]
@@ -51294,7 +51294,7 @@
   "plots" : 520,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "jongsijae_area",
   "continent" : "asia",
   "neighbors" : [ 5331, 5344, 5346, 5360, 5362 ]
@@ -51306,7 +51306,7 @@
   "plots" : 534,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "jongsijae_area",
   "continent" : "asia",
   "neighbors" : [ 1375, 5331, 5358, 5359, 5360, 5361 ]
@@ -51318,7 +51318,7 @@
   "plots" : 995,
   "waterPlots" : 9,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "ondeog_area",
   "continent" : "asia",
   "neighbors" : [ 4234, 5353, 5354, 5364, 5365, 5367 ]
@@ -51330,7 +51330,7 @@
   "plots" : 559,
   "waterPlots" : 11,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "ondeog_area",
   "continent" : "asia",
   "neighbors" : [ 5351, 5352, 5353, 5363, 5365, 5366 ]
@@ -51342,7 +51342,7 @@
   "plots" : 889,
   "waterPlots" : 27,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "ondeog_area",
   "continent" : "asia",
   "neighbors" : [ 5363, 5364, 5366, 5367, 5368, 5400 ]
@@ -51354,7 +51354,7 @@
   "plots" : 573,
   "waterPlots" : 35,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "ondeog_area",
   "continent" : "asia",
   "neighbors" : [ 5351, 5364, 5365, 5400 ]
@@ -51366,7 +51366,7 @@
   "plots" : 914,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "ondeog_area",
   "continent" : "asia",
   "neighbors" : [ 1373, 4234, 5363, 5365, 5368 ]
@@ -51798,7 +51798,7 @@
   "plots" : 585,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "somyonghon_area",
   "continent" : "asia",
   "neighbors" : [ 1375, 1389, 4233 ]
@@ -54954,7 +54954,7 @@
   "plots" : 564,
   "waterPlots" : 65,
   "type" : "LAND",
-  "region" : "dao_nako_region",
+  "region" : "kubaci_region",
   "area" : "misinson_area",
   "continent" : "africa",
   "neighbors" : [ 5740, 5752, 5807, 5808 ]
@@ -55110,7 +55110,7 @@
   "plots" : 497,
   "waterPlots" : 63,
   "type" : "LAND",
-  "region" : "janama_region",
+  "region" : "dao_nako_region",
   "area" : "jirad_area",
   "continent" : "africa",
   "neighbors" : [ 5738, 5748, 5750 ]
@@ -55122,7 +55122,7 @@
   "plots" : 480,
   "waterPlots" : 48,
   "type" : "LAND",
-  "region" : "dao_nako_region",
+  "region" : "janama_region",
   "area" : "cikela_jigin_area",
   "continent" : "africa",
   "neighbors" : [ 5726, 5749, 5752, 5806, 6321 ]
@@ -55338,7 +55338,7 @@
   "plots" : 403,
   "waterPlots" : 26,
   "type" : "LAND",
-  "region" : "dao_nako_region",
+  "region" : null,
   "area" : "asanbosom_tu_area",
   "continent" : "africa",
   "neighbors" : [ 3074, 5757, 5759, 6264, 6317 ]
@@ -55350,7 +55350,7 @@
   "plots" : 579,
   "waterPlots" : 27,
   "type" : "LAND",
-  "region" : "dao_nako_region",
+  "region" : null,
   "area" : "asanbosom_tu_area",
   "continent" : "africa",
   "neighbors" : [ 3074, 5757, 5758, 5761, 6264 ]
@@ -55374,7 +55374,7 @@
   "plots" : 468,
   "waterPlots" : 27,
   "type" : "LAND",
-  "region" : "dao_nako_region",
+  "region" : null,
   "area" : "asanbosom_tu_area",
   "continent" : "africa",
   "neighbors" : [ 3074, 3075, 5759, 5760, 5762 ]
@@ -57882,7 +57882,7 @@
   "plots" : 351,
   "waterPlots" : 9,
   "type" : "LAND",
-  "region" : "katala_raz_region",
+  "region" : null,
   "area" : "kapashan_area",
   "continent" : "africa",
   "neighbors" : [ 5962, 5964, 5965, 5969, 5977, 5978 ]
@@ -57894,7 +57894,7 @@
   "plots" : 580,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "katala_raz_region",
+  "region" : null,
   "area" : "kapashan_area",
   "continent" : "africa",
   "neighbors" : [ 5969, 5970, 5975, 5976, 5978, 5980 ]
@@ -57906,7 +57906,7 @@
   "plots" : 216,
   "waterPlots" : 1,
   "type" : "LAND",
-  "region" : "katala_raz_region",
+  "region" : null,
   "area" : "kapashan_area",
   "continent" : "africa",
   "neighbors" : [ 5961, 5962, 5976, 5977, 5979, 5980 ]
@@ -57930,7 +57930,7 @@
   "plots" : 395,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "katala_raz_region",
+  "region" : null,
   "area" : "kapashan_area",
   "continent" : "africa",
   "neighbors" : [ 5975, 5977, 5978, 5979, 5981 ]
@@ -57942,7 +57942,7 @@
   "plots" : 286,
   "waterPlots" : 27,
   "type" : "LAND",
-  "region" : "katala_raz_region",
+  "region" : null,
   "area" : "batal_area",
   "continent" : "africa",
   "neighbors" : [ 5972, 5975, 5979, 5980, 5982, 5983 ]
@@ -57954,7 +57954,7 @@
   "plots" : 397,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "katala_raz_region",
+  "region" : null,
   "area" : "batal_area",
   "continent" : "africa",
   "neighbors" : [ 5972, 5974, 5981, 5983, 5985 ]
@@ -57966,7 +57966,7 @@
   "plots" : 320,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "katala_raz_region",
+  "region" : null,
   "area" : "batal_area",
   "continent" : "africa",
   "neighbors" : [ 5956, 5979, 5981, 5982, 5984, 5985 ]
@@ -58062,7 +58062,7 @@
   "plots" : 353,
   "waterPlots" : 39,
   "type" : "LAND",
-  "region" : "odu_kherass_region",
+  "region" : null,
   "area" : "yospath_area",
   "continent" : "africa",
   "neighbors" : [ 5989, 5990, 5992, 5993, 5998, 5999 ]
@@ -58074,7 +58074,7 @@
   "plots" : 292,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "odu_kherass_region",
+  "region" : null,
   "area" : "yospath_area",
   "continent" : "africa",
   "neighbors" : [ 5657, 5658, 5991, 5993 ]
@@ -58086,7 +58086,7 @@
   "plots" : 317,
   "waterPlots" : 44,
   "type" : "LAND",
-  "region" : "odu_kherass_region",
+  "region" : null,
   "area" : "yospath_area",
   "continent" : "africa",
   "neighbors" : [ 5657, 5991, 5992, 5995, 5998 ]
@@ -58146,7 +58146,7 @@
   "plots" : 245,
   "waterPlots" : 1,
   "type" : "LAND",
-  "region" : "odu_kherass_region",
+  "region" : null,
   "area" : "yospath_area",
   "continent" : "africa",
   "neighbors" : [ 5991, 5993, 5995, 5997, 5999, 6002 ]
@@ -60174,7 +60174,7 @@
   "plots" : 55,
   "waterPlots" : 6,
   "type" : "LAND",
-  "region" : null,
+  "region" : "debug_region",
   "area" : "debug_area",
   "continent" : null,
   "neighbors" : [ 5757, 5758, 5759 ]
@@ -60330,7 +60330,7 @@
   "plots" : 471,
   "waterPlots" : 14,
   "type" : "LAND",
-  "region" : "dao_nako_region",
+  "region" : null,
   "area" : "asanbosom_tu_area",
   "continent" : "africa",
   "neighbors" : [ 3074, 5758, 5767 ]
@@ -60486,7 +60486,7 @@
   "plots" : 739,
   "waterPlots" : 0,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "somyonghon_area",
   "continent" : "asia",
   "neighbors" : [ 1668 ]
@@ -60498,7 +60498,7 @@
   "plots" : 505,
   "waterPlots" : 4,
   "type" : "LAND",
-  "region" : "gowon_region",
+  "region" : null,
   "area" : "somyonghon_area",
   "continent" : "asia",
   "neighbors" : [ 1668 ]
@@ -60522,7 +60522,7 @@
   "plots" : 141,
   "waterPlots" : 141,
   "type" : "LAKE",
-  "region" : null,
+  "region" : "debug_region",
   "area" : "debug_area",
   "continent" : null,
   "neighbors" : [ 5501, 5502, 5505, 5506, 5508, 5516, 5593, 5594, 6515, 6664, 6684 ]
@@ -60534,7 +60534,7 @@
   "plots" : 274,
   "waterPlots" : 274,
   "type" : "LAKE",
-  "region" : null,
+  "region" : "debug_region",
   "area" : "debug_area",
   "continent" : null,
   "neighbors" : [ 5496, 5497, 5498, 5501, 5594, 5688, 5689, 6514, 6689, 6735, 6741 ]

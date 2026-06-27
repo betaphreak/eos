@@ -46,7 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public final class SuperRegionExporter {
 
 	private static final String INPUT = "data/superregion.txt";
-	private static final String OUTPUT = "src/main/resources/superregions.json";
+	private static final String OUTPUT = "src/main/resources/map/superregions.json";
 
 	// superregion_key = { region_key region_key ... } (no nested braces)
 	private static final Pattern SUPERREGION = Pattern.compile(

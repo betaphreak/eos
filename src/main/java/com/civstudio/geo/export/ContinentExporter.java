@@ -15,14 +15,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Dev tool: flattens the Anbennar {@code data/continent.txt} (a Clausewitz file)
- * into the {@code /continents.json} resource the core {@link
- * com.civstudio.geo.WorldMap} loads alongside {@code provinces.json}, {@code
- * areas.json} and {@code regions.json}, and stamps the owning continent's key onto
- * each province in {@code provinces.json} (the {@code continent} field {@link
- * com.civstudio.geo.Province#continentKey()} reads). Like the sibling exporters
- * this is a build-time/manual step whose output is committed, so the running
- * simulation never parses Clausewitz.
+ * Dev tool: reads the Anbennar {@code data/continent.txt} (a Clausewitz file) and
+ * stamps each province's continent {@code raw_key} onto {@code provinces.json} (the
+ * {@code continent} field {@link com.civstudio.geo.Province#continent()} reads).
+ * Unlike the area/region exporters there is <em>no</em> {@code continents.json}:
+ * {@link Continent} is a fixed enum, so the only persisted continent data is the
+ * per-province key. Like the sibling exporters this is a build-time/manual step
+ * whose output is committed, so the running simulation never parses Clausewitz.
  * <p>
  * The source maps each continent to a flat list of province ids spanning many
  * lines, with {@code #} comments interspersed:
@@ -36,17 +35,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </pre>
  *
  * Comments are stripped first; a single regex then captures continent key + the
- * whole (multi-line) id list. There is <em>no</em> continent table in the Strapi
- * world content (no {@code ContinentImporter}), so this tier is file-only —
- * {@link ProvinceExporter}'s SQL does not emit {@code continent}; a full DB
- * regeneration must be followed by a rerun of this tool to restore it.
- * <p>
- * The file's non-geographic utility pseudo-continents ({@link #SKIP}) are skipped;
- * the geographic continents (including Anbennar's underground {@code serpentspine})
- * are kept. The continent key is the stable {@code raw_key}; the display name is
- * title-cased from it. Run after {@link ProvinceExporter} / {@link AreaExporter}
- * (it reads and re-stamps the committed {@code provinces.json}, preserving the
- * {@code region}/{@code area} fields):
+ * whole (multi-line) id list. The file's non-geographic utility pseudo-continents
+ * ({@link #SKIP}) are skipped; every other key must be a known {@link Continent}
+ * (a guard against the source drifting from the enum). There is no continent table
+ * in the Strapi world content, so this tier is file-only. Run after {@link
+ * ProvinceExporter} (it reads and re-stamps the committed {@code provinces.json},
+ * preserving the {@code region}/{@code area} fields):
  *
  * <pre>
  * mvn compile exec:exec -Dsim.main=com.civstudio.geo.export.ContinentExporter
@@ -57,8 +51,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public final class ContinentExporter {
 
 	private static final String INPUT = "data/continent.txt";
-	private static final String CONTINENTS_OUTPUT = "src/main/resources/continents.json";
-	private static final String PROVINCES = "src/main/resources/provinces.json";
+	private static final String PROVINCES = "src/main/resources/map/provinces.json";
 
 	/** Non-geographic utility blocks in {@code continent.txt} (not continents). */
 	private static final Set<String> SKIP = Set.of(
@@ -75,44 +68,34 @@ public final class ContinentExporter {
 
 	public static void main(String[] args) throws Exception {
 		ContinentExporter exporter = new ContinentExporter();
-		List<Continent> continents = exporter.parseContinents();
-		exporter.writeContinents(continents);
-		exporter.stampProvinces(continents);
+		Map<Integer, String> continentOf = exporter.parseProvinceContinents();
+		exporter.stampProvinces(continentOf);
 	}
 
-	/** Parse {@code continent.txt}, skipping the utility pseudo-continents. */
-	private List<Continent> parseContinents() throws Exception {
+	/** province_id -> continent raw_key, parsed from {@code continent.txt}. */
+	private Map<Integer, String> parseProvinceContinents() throws Exception {
 		String content = Files.readString(new File(INPUT).toPath());
 		content = content.replaceAll("#.*", ""); // strip line comments
 
 		Matcher m = CONTINENT.matcher(content);
-		List<Continent> continents = new ArrayList<>();
+		Map<Integer, String> continentOf = new LinkedHashMap<>();
 		while (m.find()) {
 			String rawKey = m.group(1).trim();
 			if (rawKey.isEmpty() || SKIP.contains(rawKey))
 				continue;
-			List<Integer> ids = new ArrayList<>();
+			// guard: every non-utility block must be a known continent
+			Continent.fromKey(rawKey);
 			for (String token : m.group(2).trim().split("\\s+")) {
 				if (token.isEmpty())
 					continue;
 				try {
-					ids.add(Integer.parseInt(token));
+					continentOf.putIfAbsent(Integer.parseInt(token), rawKey);
 				} catch (NumberFormatException ignored) {
 					// a stray non-numeric token; the file is province ids only
 				}
 			}
-			if (ids.isEmpty())
-				continue;
-			continents.add(new Continent(rawKey, displayName(rawKey), ids));
 		}
-		return continents;
-	}
-
-	private void writeContinents(List<Continent> continents) throws Exception {
-		File out = new File(CONTINENTS_OUTPUT);
-		mapper.writerWithDefaultPrettyPrinter().writeValue(out, continents);
-		System.out.println("wrote " + continents.size() + " continents to "
-				+ out.getAbsolutePath());
+		return continentOf;
 	}
 
 	/**
@@ -120,14 +103,7 @@ public final class ContinentExporter {
 	 * provinces.json}, inserting it after {@code area} (or {@code region}) so the
 	 * field order stays province &rarr; area &rarr; continent &rarr; neighbors.
 	 */
-	private void stampProvinces(List<Continent> continents) throws Exception {
-		// province_id -> continent raw_key (a province belongs to one continent;
-		// the geographic continents lead the file, so first-wins is correct)
-		Map<Integer, String> continentOf = new LinkedHashMap<>();
-		for (Continent c : continents)
-			for (int pid : c.provinceIds())
-				continentOf.putIfAbsent(pid, c.rawKey());
-
+	private void stampProvinces(Map<Integer, String> continentOf) throws Exception {
 		File file = new File(PROVINCES);
 		List<Map<String, Object>> rows = mapper.readValue(file,
 				new TypeReference<List<Map<String, Object>>>() {
@@ -140,8 +116,6 @@ public final class ContinentExporter {
 			String key = continentOf.get(id);
 			if (key != null)
 				stamped++;
-			// rebuild preserving order, inserting "continent" after "area" if
-			// present, else after "region", else at the end
 			boolean hasArea = row.containsKey("area");
 			boolean hasRegion = row.containsKey("region");
 			String anchor = hasArea ? "area" : (hasRegion ? "region" : null);
@@ -164,19 +138,5 @@ public final class ContinentExporter {
 		mapper.writerWithDefaultPrettyPrinter().writeValue(file, out);
 		System.out.println("stamped continent onto " + stamped + "/" + rows.size()
 				+ " provinces in " + file.getAbsolutePath());
-	}
-
-	/** "north_america" -&gt; "North America" (title-case; no suffix to drop). */
-	static String displayName(String rawKey) {
-		StringBuilder sb = new StringBuilder();
-		for (String word : rawKey.split("_")) {
-			if (word.isEmpty())
-				continue;
-			if (sb.length() > 0)
-				sb.append(' ');
-			sb.append(Character.toUpperCase(word.charAt(0)))
-					.append(word.substring(1).toLowerCase());
-		}
-		return sb.toString();
 	}
 }

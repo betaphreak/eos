@@ -163,7 +163,8 @@ Following `docs/race.md`'s import pattern and the project's Spring-free-core
 rule, the geographic tables are **exported to a committed JSON resource**, not
 read live. A small standalone JDBC exporter
 (`com.civstudio.geo.export.ProvinceExporter`, run via `mvn exec:exec`) flattens
-the four-level hierarchy and the adjacency into one `provinces.json`:
+the four-level hierarchy and the adjacency into one `map/provinces.json` (the map
+JSON resources live under `src/main/resources/map/`):
 
 ```json
 [
@@ -173,6 +174,10 @@ the four-level hierarchy and the adjacency into one `provinces.json`:
     "continent": "asia", "neighbors": [4385, 4405, 4410, 4412] }
 ]
 ```
+
+(The `continent` string deserializes to the `Continent` enum; the `region` shown
+is what `AreaExporter` re-derives through the area tier — see the package notes
+below.)
 
 The exporter keys each entry on `province_id`, resolves
 `province → province_area → region` to the area's and region's stable `raw_key`s
@@ -189,52 +194,59 @@ reproducible and offline-capable.
 - **`Province`** — an immutable record:
   `Province(int id, String name, double latitude, double longitude, int plots,
   int waterPlots, ProvinceType type, String regionKey, String areaKey,
-  String continentKey, List<Integer> neighbors)`
-  (`id` and `neighbors` are `province_id`s; `regionKey`/`areaKey`/`continentKey`
-  are the region, area and continent `raw_key`s, `null` if none). A `boolean
-  isSettleable()` (true for `LAND` only at this stage) and `boolean isCoastal()`
-  (`waterPlots > 0`) keep the policy on the type.
+  Continent continent, List<Integer> neighbors)`
+  (`id` and `neighbors` are `province_id`s; `regionKey`/`areaKey` are the region
+  and area `raw_key`s and `continent` is the {@link Continent} enum, `null` if
+  none). A `boolean isSettleable()` (true for `LAND` only at this stage) and
+  `boolean isCoastal()` (`waterPlots > 0`) keep the policy on the type.
 - **`ProvinceType`** — `LAND` / `SEA` / `LAKE`.
-- **`Region`** / **`Area`** / **`SuperRegion`** / **`Continent`** — the geographic
-  tiers above the province, immutable records loaded from committed `regions.json`
-  / `areas.json` / `superregions.json` / `continents.json`. `Area(String rawKey,
-  String name, List<Integer> provinceIds)` lists the provinces it contains;
+- **`GeoTier`** — the shared interface (`rawKey()`, `displayName()`) the tier types
+  below implement, so the `WorldMap` and callers can treat any tier uniformly.
+- **`Region`** / **`Area`** / **`SuperRegion`** — the geographic tiers above the
+  province, immutable records (implementing `GeoTier`) loaded from committed
+  `map/regions.json` / `map/areas.json` / `map/superregions.json`. `Area(String
+  rawKey, String name, List<Integer> provinceIds)` lists the provinces it contains;
   `Region(String rawKey, String name, List<String> areaKeys)` lists its areas; and
   `SuperRegion(String rawKey, String name, List<String> regionKeys)` lists its
   regions — so the nesting is **province → area → region → super-region**.
-  `Continent(String rawKey, String name, List<Integer> provinceIds)` is the
-  coarsest tier, but a **parallel partition** that groups provinces *directly* (the
-  source has no continent→region link), not a container of regions. All come from
-  the Anbennar Clausewitz sources (`data/area.txt`, `data/region.txt`,
-  `data/superregion.txt`, `data/continent.txt`) via four build-time exporters,
-  `AreaExporter` / `RegionExporter` / `SuperRegionExporter` / `ContinentExporter`:
-  `RegionExporter` and `SuperRegionExporter` write `regions.json` /
-  `superregions.json` (no province stamp — these tiers hold child keys, not
-  provinces); `AreaExporter` writes `areas.json` **and** stamps each province's
-  `area` key into `provinces.json` (the DB-free path; `ProvinceExporter`'s SQL
-  emits the same field on a full DB regeneration); `ContinentExporter` writes
-  `continents.json` **and** stamps the `continent` key — but **continents have no
-  Strapi table**, so unlike `area` they are file-only (a full DB regeneration of
-  `provinces.json` must be followed by a `ContinentExporter` rerun to restore the
-  field). Empty placeholder areas/regions/super-regions (voided EU4-vanilla
-  blocks), the `restrict_charter` keyword in super-region bodies, and the
-  non-geographic utility pseudo-continents (`debug_continent`,
-  `island_check_provinces`, `new_world`) are skipped.
-- **`WorldMap`** — loads all five resources (`provinces.json`, `areas.json`,
-  `regions.json`, `superregions.json`, `continents.json`), holds the province map
-  + adjacency graph **and** the area/region/super-region/continent membership
-  indices; exposes `province(id)`, `neighbors(id)`, `settleableProvinces()`,
+- **`Continent`** — the coarsest tier, but a **parallel partition** that groups
+  provinces *directly* (the source has no continent→region link). Unlike the
+  open-ended tiers above it is a small fixed taxonomy, so it is a **`GeoTier`
+  enum** (the 7 geographic continents, incl. the underground `serpentspine`) rather
+  than a loaded resource: per-province membership lives on `Province.continent`,
+  and there is **no `continents.json`**.
+- The committed resources come from the Anbennar Clausewitz sources (`data/area.txt`,
+  `data/region.txt`, `data/superregion.txt`, `data/continent.txt`) via four
+  build-time exporters, `AreaExporter` / `RegionExporter` / `SuperRegionExporter` /
+  `ContinentExporter`: `RegionExporter` and `SuperRegionExporter` write
+  `map/regions.json` / `map/superregions.json` (no province stamp — these tiers hold
+  child keys); `AreaExporter` writes `map/areas.json` **and** stamps each province's
+  `area` key into `map/provinces.json` — plus its `region`, **re-derived through the
+  area tier** so the committed `region` always matches `regionOf(id)` (overwriting
+  the value `ProvinceExporter` took from the DB, a few of which disagreed);
+  `ContinentExporter` stamps only the `continent` key (no resource), validating each
+  block against the `Continent` enum. Continents have **no Strapi table**, so that
+  field is file-only (a full DB regen of `provinces.json` must rerun
+  `ContinentExporter`). Empty placeholder areas/regions/super-regions (voided
+  EU4-vanilla blocks), the `restrict_charter` keyword in super-region bodies, and
+  the non-geographic utility pseudo-continents (`debug_continent`,
+  `island_check_provinces`, `new_world`) are skipped. The run order is
+  `ProvinceExporter → RegionExporter → SuperRegionExporter → AreaExporter →
+  ContinentExporter` (each later stamp reads the committed `map/*.json`).
+- **`WorldMap`** — loads the four `map/*.json` resources (`provinces`, `areas`,
+  `regions`, `superregions`; continents are the enum), holds the province map +
+  adjacency graph **and** the area/region/super-region/continent membership indices;
+  exposes `province(id)`, `neighbors(id)`, `settleableProvinces()`,
   `findByName(name)`, `path(from, to)` (the travel-network BFS), plus the tier
   queries `areas()`/`regions()`/`superRegions()`/`continents()`,
-  `area(key)`/`region(key)`/`superRegion(key)`/`continent(key)`,
+  `area(key)`/`region(key)`/`superRegion(key)`,
   `provincesInArea`/`areasInRegion`/`provincesInRegion`/`regionsInSuperRegion`/
-  `provincesInSuperRegion`/`provincesInContinent`, and
+  `provincesInSuperRegion`/`provincesInContinent(Continent)`, and
   `areaOf(id)`/`regionOf(id)`/`superRegionOf(id)`/`continentOf(id)`. **Areas are
   the source of truth for region membership** — `provincesInRegion`/`regionOf`
-  resolve through the area tier (the union of a region's areas' provinces), not the
-  per-province `regionKey` (a small number of DB-derived `regionKey`s are stale
-  where the two disagree); super-regions resolve on through the region tier, and
-  continents directly from their own province lists. Immutable after load.
+  resolve through the area tier (the union of a region's areas' provinces); super-
+  regions resolve on through the region tier, and continents directly from each
+  province's `continent`. Immutable after load.
 
 ### `GameSession` owns the map
 
@@ -332,7 +344,7 @@ explicit coordinates are unchanged.
 - **Phase 1 — export + model + load. (Implemented.)** The exporter
   (`com.civstudio.geo.export.ProvinceExporter`, a standalone JDBC `main` reading
   `GEO_DB_URL`/`GEO_DB_USER`/`PGPASSWORD`, run via `mvn exec:exec
-  -Dsim.main=…`) writes the committed `/provinces.json`; `com.civstudio.geo`
+  -Dsim.main=…`) writes the committed `/map/provinces.json`; `com.civstudio.geo`
   holds the `Province` record (Jackson, with `isSettleable()`/`isCoastal()`),
   the `ProvinceType` enum, and `WorldMap` (load + `province`/`neighbors`/
   `settleableProvinces`/`findByName`/`path` BFS); `GameSession.getWorldMap()`

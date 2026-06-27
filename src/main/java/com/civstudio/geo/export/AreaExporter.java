@@ -16,11 +16,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Dev tool: flattens the Anbennar {@code data/area.txt} (a Clausewitz file) into
  * the {@code /areas.json} resource the core {@link com.civstudio.geo.WorldMap}
- * loads alongside {@code provinces.json} and {@code regions.json}, and stamps the
- * owning area's key onto each province in {@code provinces.json} (the {@code
- * area} field {@link com.civstudio.geo.Province#areaKey()} reads). Like {@link
- * ProvinceExporter} and {@link RegionExporter} this is a build-time/manual step
- * whose output is committed, so the running simulation never parses Clausewitz.
+ * loads, and stamps each province's {@code area} <em>and</em> {@code region} keys
+ * onto {@code provinces.json}. Like the sibling exporters this is a
+ * build-time/manual step whose output is committed, so the running simulation
+ * never parses Clausewitz.
  * <p>
  * The source maps each area to its province ids:
  *
@@ -32,16 +31,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * A single regex captures area key + id list (the ids carry no nested braces);
  * comments are stripped first and empty placeholder areas ({@code key = { }},
- * voided vanilla areas) are skipped. The area key is the stable {@code raw_key}
- * {@link com.civstudio.geo.Province#areaKey()} and {@link
- * com.civstudio.geo.Region#areaKeys()} reference; the display name is title-cased
- * from it.
+ * voided vanilla areas) are skipped.
  * <p>
- * The province&rarr;area back-fill into {@code provinces.json} keeps that
- * committed snapshot's {@code area} field in sync without a database round-trip;
- * {@link ProvinceExporter}'s SQL emits the same field for a full regeneration
- * from the Strapi world content. Run after {@link ProvinceExporter} (it reads the
- * committed {@code provinces.json}):
+ * <b>Areas are the source of truth for region membership.</b> This exporter reads
+ * the committed {@code regions.json} (a region&rarr;areas map) to derive each
+ * province's region <em>through its area</em> ({@code province → area → region}),
+ * and stamps that region onto {@code provinces.json} — overwriting the value
+ * {@link ProvinceExporter} took straight from the Strapi DB, a few of which
+ * disagree with the file tier. So the committed {@code region} field always
+ * matches {@link com.civstudio.geo.WorldMap#regionOf(int)}. Run after {@link
+ * ProvinceExporter} and {@link RegionExporter} (it reads {@code provinces.json}
+ * and {@code regions.json}):
  *
  * <pre>
  * mvn compile exec:exec -Dsim.main=com.civstudio.geo.export.AreaExporter
@@ -52,8 +52,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public final class AreaExporter {
 
 	private static final String INPUT = "data/area.txt";
-	private static final String AREAS_OUTPUT = "src/main/resources/areas.json";
-	private static final String PROVINCES = "src/main/resources/provinces.json";
+	private static final String AREAS_OUTPUT = "src/main/resources/map/areas.json";
+	private static final String REGIONS = "src/main/resources/map/regions.json";
+	private static final String PROVINCES = "src/main/resources/map/provinces.json";
 
 	// area_key = { id id id ... } (ids only, no nested braces)
 	private static final Pattern AREA = Pattern.compile(
@@ -68,7 +69,7 @@ public final class AreaExporter {
 		AreaExporter exporter = new AreaExporter();
 		List<Area> areas = exporter.parseAreas();
 		exporter.writeAreas(areas);
-		exporter.stampProvinces(areas);
+		exporter.stampProvinces(areas, exporter.areaToRegion());
 	}
 
 	/** Parse {@code area.txt} into areas, skipping empty placeholder blocks. */
@@ -103,12 +104,31 @@ public final class AreaExporter {
 		System.out.println("wrote " + areas.size() + " areas to " + out.getAbsolutePath());
 	}
 
+	/** area raw_key -> region raw_key, inverted from the committed regions.json. */
+	private Map<String, String> areaToRegion() throws Exception {
+		List<Map<String, Object>> regions = mapper.readValue(new File(REGIONS),
+				new TypeReference<List<Map<String, Object>>>() {
+				});
+		Map<String, String> areaToRegion = new LinkedHashMap<>();
+		for (Map<String, Object> region : regions) {
+			String regionKey = (String) region.get("key");
+			@SuppressWarnings("unchecked")
+			List<String> areaKeys = (List<String>) region.get("areas");
+			if (areaKeys != null)
+				for (String areaKey : areaKeys)
+					areaToRegion.putIfAbsent(areaKey, regionKey);
+		}
+		return areaToRegion;
+	}
+
 	/**
-	 * Back-fill the {@code area} field onto each province in {@code
-	 * provinces.json}, inserting it right after {@code region} so the field order
-	 * matches {@link ProvinceExporter}'s SQL.
+	 * Back-fill the {@code area} and {@code region} fields onto each province in
+	 * {@code provinces.json}: {@code area} from {@code area.txt}, {@code region}
+	 * derived through that area (the area tier is authoritative). Field order stays
+	 * province &rarr; region &rarr; area &rarr; neighbors.
 	 */
-	private void stampProvinces(List<Area> areas) throws Exception {
+	private void stampProvinces(List<Area> areas, Map<String, String> areaToRegion)
+			throws Exception {
 		// province_id -> area raw_key (a province belongs to exactly one area)
 		Map<Integer, String> areaOf = new LinkedHashMap<>();
 		for (Area a : areas)
@@ -120,32 +140,37 @@ public final class AreaExporter {
 				new TypeReference<List<Map<String, Object>>>() {
 				});
 
-		int stamped = 0;
+		int areaStamped = 0, regionStamped = 0;
 		List<Map<String, Object>> out = new ArrayList<>(rows.size());
 		for (Map<String, Object> row : rows) {
 			int id = ((Number) row.get("id")).intValue();
 			String areaKey = areaOf.get(id);
+			String regionKey = areaKey == null ? null : areaToRegion.get(areaKey);
 			if (areaKey != null)
-				stamped++;
-			// rebuild preserving order, inserting "area" after "region"
+				areaStamped++;
+			if (regionKey != null)
+				regionStamped++;
+			// rebuild preserving order: overwrite region in place, overwrite area
+			// in place (or insert it right after region), keep everything else
+			boolean hasArea = row.containsKey("area");
 			Map<String, Object> rebuilt = new LinkedHashMap<>();
-			boolean inserted = false;
 			for (Map.Entry<String, Object> e : row.entrySet()) {
-				if (e.getKey().equals("area"))
-					continue; // drop any stale value; we re-add in canonical slot
-				rebuilt.put(e.getKey(), e.getValue());
-				if (e.getKey().equals("region")) {
-					rebuilt.put("area", areaKey);
-					inserted = true;
+				switch (e.getKey()) {
+					case "region" -> {
+						rebuilt.put("region", regionKey);
+						if (!hasArea)
+							rebuilt.put("area", areaKey);
+					}
+					case "area" -> rebuilt.put("area", areaKey);
+					default -> rebuilt.put(e.getKey(), e.getValue());
 				}
 			}
-			if (!inserted)
-				rebuilt.put("area", areaKey);
 			out.add(rebuilt);
 		}
 
 		mapper.writerWithDefaultPrettyPrinter().writeValue(file, out);
-		System.out.println("stamped area onto " + stamped + "/" + rows.size()
+		System.out.println("stamped area onto " + areaStamped + "/" + rows.size()
+				+ " and region onto " + regionStamped + "/" + rows.size()
 				+ " provinces in " + file.getAbsolutePath());
 	}
 
