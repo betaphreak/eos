@@ -286,10 +286,6 @@ public class SimulationHarness {
 		// canonical defaults); setFirmConfig can override before createFirms
 		this.firmConfig =
 				FirmConfig.DEFAULT.toBuilder().laborShare(cfg.laborShare()).build();
-		// offer the colony to a persistence backend (a no-op unless one is registered
-		// by the Spring Boot launcher), before any printer is added so a database sink
-		// factory can be installed in place of the default CSV one
-		Persistence.bind(colony, cfg);
 	}
 
 	/** Create the markets and register them (labor market first). */
