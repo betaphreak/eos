@@ -15,8 +15,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * the export is a build-time/manual step, its output committed to the repo (the
  * core never reads Postgres).
  * <p>
- * It flattens {@code province -> province_area -> region} to the region's stable
- * {@code raw_key} (a "used id", not a DB surrogate), derives a {@code longitude}
+ * It flattens {@code province -> province_area -> region} to the area's and
+ * region's stable {@code raw_key}s (a "used id", not a DB surrogate), derives a
+ * {@code longitude}
  * from the province's map bounding-box centroid (the table stores only
  * latitude), and materializes the {@code provinces_neighbors_lnk} edges into a
  * <em>symmetric</em> adjacency. Both the province key and the neighbor
@@ -72,6 +73,13 @@ public final class ProvinceExporter {
 			  JOIN province_areas_region_lnk parl ON parl.province_area_id = ppl.province_area_id
 			  JOIN regions rg ON rg.id = parl.region_id
 			  GROUP BY p.province_id
+			),
+			ar AS (
+			  SELECT p.province_id AS pid, min(pa.raw_key) AS area_key
+			  FROM provinces p
+			  JOIN provinces_province_area_lnk ppl ON ppl.province_id = p.id
+			  JOIN province_areas pa ON pa.id = ppl.province_area_id
+			  GROUP BY p.province_id
 			)
 			SELECT json_agg(
 			  json_build_object(
@@ -83,6 +91,7 @@ public final class ProvinceExporter {
 			    'waterPlots', p.water_plots,
 			    'type',       p.province_type,
 			    'region',     r.region_key,
+			    'area',       a.area_key,
 			    'neighbors',  COALESCE(n.neighbors, '[]'::json)
 			  ) ORDER BY p.province_id
 			)
@@ -90,6 +99,7 @@ public final class ProvinceExporter {
 			CROSS JOIN bounds b
 			LEFT JOIN nbr n ON n.pid = p.province_id
 			LEFT JOIN reg r ON r.pid = p.province_id
+			LEFT JOIN ar a ON a.pid = p.province_id
 			""";
 
 	private ProvinceExporter() {

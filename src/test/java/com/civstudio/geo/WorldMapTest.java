@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -90,6 +91,90 @@ class WorldMapTest {
 				assertFalse(key.isBlank(), "province " + p.id() + " has a blank region key");
 		}
 		assertTrue(sawNull, "some provinces have no region");
+	}
+
+	@Test
+	void loadsTheAreaRegionAndContinentTiers() {
+		WorldMap map = WorldMap.load();
+		// pins the committed snapshots (non-empty Anbennar blocks; the 7
+		// geographic continents, the utility pseudo-continents skipped)
+		assertEquals(1570, map.areas().size());
+		assertEquals(178, map.regions().size());
+		assertEquals(7, map.continents().size());
+		assertFalse(map.hasContinent("debug_continent"));
+		assertFalse(map.hasContinent("new_world"));
+		assertThrows(IllegalArgumentException.class, () -> map.area("nope"));
+		assertThrows(IllegalArgumentException.class, () -> map.region("nope"));
+		assertThrows(IllegalArgumentException.class, () -> map.continent("nope"));
+	}
+
+	@Test
+	void dhenijansarSitsOnItsContinent() {
+		WorldMap map = WorldMap.load();
+		Province d = map.findByName("Dhenijansar").orElseThrow();
+		assertEquals("asia", d.continentKey());
+		Continent c = map.continentOf(d.id()).orElseThrow();
+		assertEquals("asia", c.rawKey());
+		assertEquals("Asia", c.name());
+		assertTrue(map.provincesInContinent("asia").contains(d));
+		assertThrows(UnsupportedOperationException.class,
+				() -> map.provincesInContinent("asia").clear());
+	}
+
+	@Test
+	void dhenijansarSitsInItsAreaAndRegion() {
+		WorldMap map = WorldMap.load();
+		Province d = map.findByName("Dhenijansar").orElseThrow();
+		// province -> area -> region hierarchy resolves both ways
+		assertEquals("inner_rahen_area", d.areaKey());
+		Area area = map.areaOf(d.id()).orElseThrow();
+		assertEquals("inner_rahen_area", area.rawKey());
+		assertEquals("Inner Rahen", area.name());
+		assertTrue(map.provincesInArea("inner_rahen_area").contains(d));
+
+		Region region = map.regionOf(d.id()).orElseThrow();
+		assertEquals("rahen_coast_region", region.rawKey());
+		assertEquals("Rahen Coast", region.name());
+		assertTrue(map.areasInRegion("rahen_coast_region").contains(area));
+		// region membership is the union of its areas' provinces
+		assertTrue(map.provincesInRegion("rahen_coast_region").contains(d));
+	}
+
+	@Test
+	void hierarchyIsInternallyConsistent() {
+		WorldMap map = WorldMap.load();
+		// a province resolved up the tier must appear back in that tier's
+		// membership (areas are the source of truth — the province's own
+		// region_key is the legacy DB value and a handful are stale, so we check
+		// the area tier's internal consistency, not agreement with region_key)
+		boolean sawArea = false, sawRegion = false;
+		for (Province p : map.provinces()) {
+			Optional<Area> a = map.areaOf(p.id());
+			if (a.isPresent()) {
+				assertTrue(map.provincesInArea(a.get().rawKey()).contains(p),
+						"province " + p.id() + " missing from its area");
+				sawArea = true;
+			}
+			Optional<Region> r = map.regionOf(p.id());
+			if (r.isPresent()) {
+				assertTrue(map.provincesInRegion(r.get().rawKey()).contains(p),
+						"province " + p.id() + " missing from its region");
+				sawRegion = true;
+			}
+		}
+		assertTrue(sawArea, "some province resolves an area");
+		assertTrue(sawRegion, "some province resolves a region via its area");
+	}
+
+	@Test
+	void membershipListsAreImmutable() {
+		WorldMap map = WorldMap.load();
+		assertThrows(UnsupportedOperationException.class,
+				() -> map.provincesInRegion("rahen_coast_region").clear());
+		assertThrows(UnsupportedOperationException.class,
+				() -> map.areasInRegion("rahen_coast_region").clear());
+		assertThrows(UnsupportedOperationException.class,
+				() -> map.provincesInArea("inner_rahen_area").clear());
 	}
 
 	@Test

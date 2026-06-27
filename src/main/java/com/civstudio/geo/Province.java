@@ -32,6 +32,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @param regionKey  the stable {@code raw_key} of the region this province
  *                   belongs to (e.g. {@code "rahen_coast_region"}), or
  *                   {@code null} if it has none (some open-ocean provinces)
+ * @param areaKey    the stable {@code raw_key} of the area this province belongs
+ *                   to (e.g. {@code "inner_rahen_area"}), the finer tier nested
+ *                   inside the region, or {@code null} if it has none; see
+ *                   {@link Region} and {@link WorldMap#areaOf(int)}
+ * @param continentKey the stable {@code raw_key} of the continent this province
+ *                   belongs to (e.g. {@code "asia"}), the coarsest tier — a
+ *                   partition parallel to the region/area nesting — or
+ *                   {@code null} if it has none; see {@link Continent} and
+ *                   {@link WorldMap#continentOf(int)}
  * @param neighbors  the {@code province_id}s of the adjacent provinces (an
  *                   undirected graph; symmetry is materialized at export time)
  */
@@ -44,6 +53,8 @@ public record Province(
 		int waterPlots,
 		ProvinceType type,
 		@JsonProperty("region") String regionKey,
+		@JsonProperty("area") String areaKey,
+		@JsonProperty("continent") String continentKey,
 		List<Integer> neighbors) {
 
 	/** Defensive copy so a loaded province's neighbor list cannot be mutated. */

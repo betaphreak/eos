@@ -169,12 +169,13 @@ the four-level hierarchy and the adjacency into one `provinces.json`:
 [
   { "id": 4411, "name": "Dhenijansar", "lat": 23.16, "lon": 76.43,
     "plots": 74, "waterPlots": 16, "type": "LAND",
-    "region": "rahen_coast_region", "neighbors": [4385, 4405, 4410, 4412] }
+    "region": "rahen_coast_region", "area": "inner_rahen_area",
+    "continent": "asia", "neighbors": [4385, 4405, 4410, 4412] }
 ]
 ```
 
 The exporter keys each entry on `province_id`, resolves
-`province → province_area → region` to the region's stable `raw_key`
+`province → province_area → region` to the area's and region's stable `raw_key`s
 (`null` when absent), derives `lon` from the bounding-box centroid, and
 **materializes the `provinces_neighbors_lnk` edges symmetrically** (each stored
 edge emitted in both directions, since the table stores each undirected edge
@@ -187,15 +188,46 @@ reproducible and offline-capable.
 
 - **`Province`** — an immutable record:
   `Province(int id, String name, double latitude, double longitude, int plots,
-  int waterPlots, ProvinceType type, String regionKey, List<Integer> neighbors)`
-  (`id` and `neighbors` are `province_id`s; `regionKey` is the region `raw_key`,
-  `null` if none). A `boolean isSettleable()` (true for `LAND` only at this
-  stage) and `boolean isCoastal()` (`waterPlots > 0`) keep the policy on the type.
+  int waterPlots, ProvinceType type, String regionKey, String areaKey,
+  String continentKey, List<Integer> neighbors)`
+  (`id` and `neighbors` are `province_id`s; `regionKey`/`areaKey`/`continentKey`
+  are the region, area and continent `raw_key`s, `null` if none). A `boolean
+  isSettleable()` (true for `LAND` only at this stage) and `boolean isCoastal()`
+  (`waterPlots > 0`) keep the policy on the type.
 - **`ProvinceType`** — `LAND` / `SEA` / `LAKE`.
-- **`WorldMap`** — loads `provinces.json`, holds `Map<Integer, Province>` plus
-  the adjacency graph; exposes `province(id)`, `neighbors(id)`,
-  `settleableProvinces()`, `findByName(name)`, and a `path(from, to)` BFS over the
-  neighbor graph (the travel-network query). Immutable after load.
+- **`Region`** / **`Area`** / **`Continent`** — the geographic tiers above the
+  province, immutable records loaded from committed `regions.json` / `areas.json`
+  / `continents.json`. `Area(String rawKey, String name, List<Integer>
+  provinceIds)` lists the provinces it contains; `Region(String rawKey, String
+  name, List<String> areaKeys)` lists its areas — so the nesting is **province →
+  area → region**. `Continent(String rawKey, String name, List<Integer>
+  provinceIds)` is the coarsest tier, but a **parallel partition** that groups
+  provinces *directly* (the source has no continent→region link), not a container
+  of regions. All come from the Anbennar Clausewitz sources (`data/area.txt`,
+  `data/region.txt`, `data/continent.txt`) via three build-time exporters,
+  `AreaExporter` / `RegionExporter` / `ContinentExporter`: `RegionExporter` writes
+  `regions.json`; `AreaExporter` writes `areas.json` **and** stamps each
+  province's `area` key into `provinces.json` (the DB-free path; `ProvinceExporter`'s
+  SQL emits the same field on a full DB regeneration); `ContinentExporter` writes
+  `continents.json` **and** stamps the `continent` key — but **continents have no
+  Strapi table**, so unlike `area` they are file-only (a full DB regeneration of
+  `provinces.json` must be followed by a `ContinentExporter` rerun to restore the
+  field). Empty placeholder areas/regions (voided EU4-vanilla blocks) and the
+  non-geographic utility pseudo-continents (`debug_continent`,
+  `island_check_provinces`, `new_world`) are skipped.
+- **`WorldMap`** — loads all four resources (`provinces.json`, `areas.json`,
+  `regions.json`, `continents.json`), holds the province map + adjacency graph
+  **and** the area/region/continent membership indices; exposes `province(id)`,
+  `neighbors(id)`, `settleableProvinces()`, `findByName(name)`, `path(from, to)`
+  (the travel-network BFS), plus the tier queries `areas()`/`regions()`/
+  `continents()`, `area(key)`/`region(key)`/`continent(key)`,
+  `provincesInArea(key)`, `areasInRegion(key)`, `provincesInRegion(key)`,
+  `provincesInContinent(key)`, `areaOf(id)`, `regionOf(id)` and `continentOf(id)`.
+  **Areas are the source of truth for region membership** —
+  `provincesInRegion`/`regionOf` resolve through the area tier (the union of a
+  region's areas' provinces), not the per-province `regionKey` (a small number of
+  DB-derived `regionKey`s are stale where the two disagree); continents resolve
+  directly from their own province lists. Immutable after load.
 
 ### `GameSession` owns the map
 
