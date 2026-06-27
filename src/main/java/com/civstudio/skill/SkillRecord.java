@@ -5,7 +5,9 @@ package com.civstudio.skill;
  * {@code [MIN_LEVEL, MAX_LEVEL]} and a {@link Passion}. Experience is gained
  * through {@link #learn(double)}; when accumulated experience crosses the
  * {@linkplain #xpRequiredForLevelUp(int) level-up threshold} the level advances
- * (clamped at {@value #MAX_LEVEL}). Decay is intentionally excluded.
+ * (clamped at {@value #MAX_LEVEL}). {@link #decay()} is the inverse: a skill above
+ * {@link #DECAY_FLOOR_LEVEL} loses experience each day it goes unpracticed (passion
+ * eases it), so basic competence is permanent but mastery erodes without practice.
  */
 public final class SkillRecord {
 

@@ -4,7 +4,7 @@
 **Date:** 2026-06-18
 **Supersedes:** the earlier `docs/city-rank.md` (which modelled CITY as a federation
 of village-quarters — the wrong rung; that federation is a LEAGUE, below).
-**Depends on:** the rank ladder (`agent.com.civstudio.Rank`, `RankLadder`, `Estate`,
+**Depends on:** the rank ladder (`com.civstudio.agent.Rank`, `RankLadder`, `Estate`,
 `RankFactory` — see `docs/rank-ladder.md`), the founding ascent
 `CARAVAN → HOLDING → VILLAGE` and the `Property` abstraction
 (`docs/village-founding.md`), `GameSession`'s multi-colony support (the
@@ -128,6 +128,13 @@ own Mayor, economy and banks. The **Legate** sits above them as a session-level
 holder, **keeping the Mayor title in its home city** (a Mayor-superset, just as the
 Mayor is a Ruler-superset) while bearing the Legate title over the bloc.
 
+The member cities are **not bespoke state**: each is a `Property` the Legate *holds*
+(see *Cities as holdings*, below), exactly as a `Ruler` holds its one `VILLAGE`
+settlement once `Settlement implements Property`. The singular/plural alternation then
+falls straight out of the holdings count — a Ruler holds **one** settlement-Property,
+a Legate **several** — and there is no League-specific "members" container distinct
+from the holdings list every owning household already carries.
+
 ### The locked decisions, re-homed
 
 - **Currency / gold-only flows.** The Legate banks **gold**; every transfer that
@@ -138,8 +145,10 @@ Mayor is a Ruler-superset) while bearing the Legate title over the bloc.
   the gold banks profit from it. (Every price is copper-quoted, so gold crosses the
   copper boundary on each leg.)
 - **Federal taxation = each member city's gold-bank profit.** `Legate.collectTaxes()`
-  mirrors `Ruler.collectTaxes()` two tiers up: it skims a fraction of every *member*
-  city's gold-bank `getDistributableProfit()` into the league treasury (gold→gold, toll
+  mirrors `Ruler.collectTaxes()` two tiers up: **enumerating its held member-city
+  `Property`s** (the cross-colony analog of a Ruler enumerating the nobles in its one
+  colony), it skims a fraction of every *member* city's gold-bank
+  `getDistributableProfit()` into the league treasury (gold→gold, toll
   fires). Its own (home city's) gold bank is the treasury, hence skipped — the existing
   crown-bank exemption. The taxation chain now runs: commoner → noble (taxed by the
   ruler/mayor) → public bank (taxed) → **member city's gold bank (taxed by the
@@ -147,41 +156,80 @@ Mayor is a Ruler-superset) while bearing the Legate title over the bloc.
 - **The Legate keeps ruling its home city.** No member is vacated; the Legate's `act()`
   is a Mayor-superset, `rank()` is cleanly `LEAGUE`. Money-conserving with no minting.
 
-### Cities as holdings
+### Cities as holdings — the one primitive LEAGUE needs
 
 The `Property` abstraction from `docs/village-founding.md` (firms → banks →
 settlements) extends one more step: a **member `CITY` is a civic, non-income
 `Property`** the Legate owns (`distributableProfit() == 0`, no-op `disburse()`). The
-Legate holds a `List<Property>` of member cities; "lose your last member → demote" is
-the same single check.
+Legate holds a `List<Property>` of member cities — the **same holdings list** a
+`Noble` carries for its firms/banks, not a new container — so the LEAGUE reuses the
+existing ownership machinery wholesale and adds **no** League-specific verb:
 
-### Formation — explicit scenario wiring
+- **Annexation is `Property` acquisition.** Bringing a city into the bloc is the
+  ordinary holdings move (`transferPropertyTo`) a noble uses to gain a firm or bank —
+  not an "annex" operation of its own. The member's Mayor and economy are untouched;
+  only the ownership edge is added.
+- **"Lose your last member → demote" is the standard last-holding check** — the very
+  condition a ruined `Noble`'s demotion trips, applied one ladder-step up.
+- **Governance is in-place + tax**, the `Ruler`-over-nobles pattern: the Legate never
+  vacates or absorbs a member, it taxes each one's gold bank (above) while the Mayor
+  keeps ruling.
+
+### Formation — two existing primitives, explicitly wired
 
 A league forms by **explicit scenario wiring** (the earlier decision, now at LEAGUE):
-cities choose to federate. Compose single-rung primitives, no multi-rung leap: promote
-the senior city's `Mayor → Legate` (it keeps ruling its city, its gold bank becomes
-the league treasury, the league seat is claimed there); **annex** each remaining city
-(add its `Settlement` to the Legate's members; its Mayor stays, now taxed federally).
-No proximity detector or organic threshold yet.
+cities choose to federate. It composes the *same* two primitives every smaller rank
+already uses — the single-rung `Estate` reform and `Property` acquisition — with no
+new operation and no multi-rung leap:
+
+1. **Reform the senior Mayor one rung up**, through the session `RankLadder`:
+   `gameSession.rankLadder().promote(seniorMayor)` runs the registered `LEAGUE`
+   factory (`Mayor → Legate`, same gold bank, balances carried 1:1 — identical in
+   shape to `Ruler → Mayor`). It keeps ruling its home city, its gold bank becomes the
+   league treasury, and the league seat is claimed there.
+2. **Acquire each remaining city as a holding** (`transferPropertyTo`): the city
+   becomes a member `Property` of the Legate. Its Mayor stays and is now taxed
+   federally; nothing about that city is reformed or re-banked.
+
+No proximity detector or organic threshold yet. The consistency point: formation is
+`promote` + holdings-acquisition — the two verbs the noble/ruler machinery already
+exposes — not a bespoke League constructor.
 
 ### Demotion
 
 `LEAGUE → CITY` is clean (the Legate has a home city to fall back to): when the bloc
-shrinks to one member, the Legate reforms back into a plain Mayor. The trigger
-(loss of the league seat / last member) is deferred, like the other demotion triggers.
+shrinks to one member, the Legate reforms back into a plain Mayor — a single-rung
+`demote` through the session ladder, the exact inverse of the formation reform. The
+condition is the **standard last-holding check** (the bloc dropping to its home city
+alone), the same one a ruined `Noble`'s demotion uses one rung down; the wiring that
+fires it (loss of the league seat / last member) is deferred, like the other demotion
+triggers.
 
 ## Architecture mapping
 
 - **Types.** `Mayor extends Ruler` (CITY); `Legate extends Mayor` (LEAGUE). Each adds
-  one layer (Mayor: permanence/urban; Legate: federal taxation + the members list) and
-  overrides `rank()`/`role()`/`successor()`. The hierarchy mirrors scope: Ruler→one
+  one layer (Mayor: permanence/urban; Legate: federal taxation over its held member-city
+  `Property`s) and overrides `rank()`/`role()`/`successor()`. The hierarchy mirrors scope: Ruler→one
   village, Mayor→one permanent city, Legate→a bloc — all banking gold.
 - **`Settlement` is a `Property`** (Phase 0 of `village-founding.md`), civic and
-  zero-income — a member city is what a Legate holds.
+  zero-income — a member city is what a Legate holds. This is the **unifying frame**:
+  *every governing household holds its governed settlement(s) as `Property`* — a
+  `Ruler` holds its one `VILLAGE`, a `Legate` its several `CITY` members — so the
+  singular/plural rungs differ only in the holdings count, and "annex", a "members
+  list", and a League-specific formation path all collapse into the noble/ruler
+  ownership primitives.
 - **`RankLadder` moves to `GameSession`** (the forcing function `docs/rank-ladder.md`
   already named): a Legate commands several colonies, so its reform cannot belong to
   one. Factories resolve their bank tier from the passed scope; a session-level salted
   `Rng` covers any league-level draw.
+- **Session-scoped succession.** A transition reseats the governing reference — a
+  `Ruler`'s heir takes over *its colony's* ruler reference today — but a Legate spans
+  several colonies, so `Household.successor(colony)` is the wrong scope. The
+  reseat-the-governing-reference rule **generalizes from colony to `GameSession`**: the
+  Legate's successor reseats both its home-city Mayor reference and the league seat
+  through the session — the same cross-colony reason the `RankLadder` itself moved to
+  `GameSession`. (A `Mayor`, governing one settlement, still reseats via its colony
+  exactly like a `Ruler`.)
 - **Seats (special sites).** The **Rathaus** is the `CITY` seat (in the city); a
   **league hall / Kontor** is the `LEAGUE` seat (in the senior member). Both are civic
   `SlotOccupant`s with no economic function yet — rank markers whose loss feeds the
@@ -245,9 +293,11 @@ history:
   collapse smoke tests): a colony that would collapse as a village survives as a city.
 - **Phase 4 — `LEAGUE`: the `Legate` type + federation wiring.** `Legate extends
   Mayor`, the `LEAGUE` factory, cities-as-holdings, `Legate.collectTaxes`, the league
-  seat, and the promote+annex scenario — exercised by a `HanseaticLeague` test (two
-  cities federate; the treasury accrues from federal taxation; the FX toll fires;
-  succession reseats the home-city Mayor reference and the Legate).
+  seat, and the formation scenario — `rankLadder.promote(seniorMayor)` +
+  `transferPropertyTo` for each annexed city, the two existing primitives, no bespoke
+  verb — exercised by a `HanseaticLeague` test (two cities federate; the treasury
+  accrues from federal taxation; the FX toll fires; session-scoped succession reseats
+  the home-city Mayor reference and the Legate).
 - **Phase 5 — (after caravan trade) inter-city factor mobility**, and the demotion
   triggers (`CITY → VILLAGE` on depopulation, `LEAGUE → CITY` on loss of the seat/last
   member).

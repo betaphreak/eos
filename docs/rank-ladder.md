@@ -261,8 +261,12 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
   green; covered by `simulation.com.civstudio.RuinedNobleDemotionTest` (a noble crushed under
   an unpayable debt is demoted to a copper-banking laborer past the grace window).
 - **Phase 5 — future (separate notes).** Further demotion triggers (attainder, loss
-  of last holding); realizing `CARAVAN` as an entity with the pool as its asset; the
-  `HOLDING` → `VILLAGE` promotion once settlements can be founded/seized.
+  of last holding, **conquest** — see `docs/tribal-feudal-and-war.md`, which wires the
+  dormant `Rank` `CasusBelli`/`Relation` vocabulary to `promote`/`demote` so a resolved
+  war becomes a rank-change trigger); realizing `CARAVAN` as an entity with the pool as
+  its asset (the same note's tribal/feudal `Mode` overlay is what makes `CARAVAN` a
+  playable rung); the `HOLDING` → `VILLAGE` promotion once settlements can be
+  founded/seized.
 
 ## Decided since (see `docs/village-founding.md`)
 
