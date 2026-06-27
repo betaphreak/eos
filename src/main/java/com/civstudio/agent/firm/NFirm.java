@@ -71,4 +71,18 @@ public class NFirm extends ConsumerGoodFirm {
 	public Sector sector() {
 		return Sector.NECESSITY;
 	}
+
+	/**
+	 * Necessity is the colony's agriculture, so its effective total-factor
+	 * productivity is additionally scaled by the colony's {@linkplain
+	 * Settlement#getAgricultureClimateMultiplier() agricultural climate multiplier}
+	 * (climate band &times; winter &times; monsoon) on top of the base {@code A}
+	 * and the sector tech multiplier. Only necessity reads this — enjoyment and
+	 * capital firms are climate-independent — and a colony with no province leaves
+	 * it at {@code 1.0}.
+	 */
+	@Override
+	protected double effectiveA() {
+		return super.effectiveA() * getColony().getAgricultureClimateMultiplier();
+	}
 }

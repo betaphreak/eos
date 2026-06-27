@@ -211,8 +211,14 @@ reproducible and offline-capable.
   (`NONE`/`MILD`/`NORMAL`/`SEVERE`) / **`Monsoon`** (`NONE`/`MILD`/`NORMAL`/
   `SEVERE`) — per-province environmental attribute enums (peers of `ProvinceType`,
   not `GeoTier` places), overlaid from `data/climate.txt`. Each has
-  `rawKey()`/`displayName()` and the default the `Province` constructor falls back
-  to.
+  `rawKey()`/`displayName()`, the default the `Province` constructor falls back to,
+  and an **`agricultureFactor()`** — the multiplier the band/severity/intensity
+  applies to food (necessity) productivity (temperate/no-winter/no-monsoon = 1.0;
+  tropics 1.10, arid 0.70, arctic 0.60; winter down to 0.80; monsoon a boon up to
+  1.15). Their product is `Settlement.getAgricultureClimateMultiplier()` (1.0 for a
+  province-less colony), which **only `NFirm` folds into its effective `A`**
+  (`NFirm.effectiveA()`), so a colony's food TFP tracks its province's climate
+  while enjoyment/capital stay climate-independent.
 - **`GeoTier`** — the shared interface (`rawKey()`, `displayName()`) the tier types
   below implement, so the `WorldMap` and callers can treat any tier uniformly.
 - **`Region`** / **`Area`** / **`SuperRegion`** — the geographic tiers above the

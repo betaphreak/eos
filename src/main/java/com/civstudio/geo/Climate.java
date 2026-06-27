@@ -13,17 +13,32 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum Climate {
 
-	TROPICAL("tropical", "Tropical"),
-	ARID("arid", "Arid"),
-	ARCTIC("arctic", "Arctic"),
-	TEMPERATE("temperate", "Temperate");
+	TROPICAL("tropical", "Tropical", 1.10),
+	ARID("arid", "Arid", 0.70),
+	ARCTIC("arctic", "Arctic", 0.60),
+	TEMPERATE("temperate", "Temperate", 1.00);
 
 	private final String rawKey;
 	private final String displayName;
+	private final double agricultureFactor;
 
-	Climate(String rawKey, String displayName) {
+	Climate(String rawKey, String displayName, double agricultureFactor) {
 		this.rawKey = rawKey;
 		this.displayName = displayName;
+		this.agricultureFactor = agricultureFactor;
+	}
+
+	/**
+	 * The multiplier this climate band applies to agricultural (necessity/food)
+	 * total-factor productivity — temperate is the {@code 1.0} baseline, the
+	 * tropics farm best, arid and arctic land worst. Combined multiplicatively with
+	 * the {@link WinterSeverity} and {@link Monsoon} factors (see {@link
+	 * com.civstudio.settlement.Settlement#getAgricultureClimateMultiplier()}).
+	 *
+	 * @return the food-productivity multiplier for this band
+	 */
+	public double agricultureFactor() {
+		return agricultureFactor;
 	}
 
 	/** The stable {@code raw_key} (e.g. {@code "tropical"}); the persisted form. */

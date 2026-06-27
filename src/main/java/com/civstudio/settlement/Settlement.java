@@ -1350,6 +1350,28 @@ public class Settlement {
 	}
 
 	/**
+	 * The colony's <b>agricultural climate multiplier</b> — the combined effect of
+	 * its founding province's {@link com.civstudio.geo.Climate climate band},
+	 * {@link com.civstudio.geo.WinterSeverity winter} and {@link
+	 * com.civstudio.geo.Monsoon monsoon} on food (necessity) total-factor
+	 * productivity, as the product of their {@code agricultureFactor()}s. The
+	 * {@link com.civstudio.agent.firm.NFirm} reads it into its effective {@code A},
+	 * so a tropical, monsoon-fed colony grows more food per worker than an arid or
+	 * hard-winter one. A colony founded at bare coordinates (no province — the
+	 * analytical sims) has no climate, so this is {@code 1.0} and their economics
+	 * are unchanged.
+	 *
+	 * @return the necessity-productivity multiplier (1.0 when there is no province)
+	 */
+	public double getAgricultureClimateMultiplier() {
+		if (province == null)
+			return 1.0;
+		return province.climate().agricultureFactor()
+				* province.winter().agricultureFactor()
+				* province.monsoon().agricultureFactor();
+	}
+
+	/**
 	 * Apply a researched {@link TechEffect} to this colony:
 	 * <ul>
 	 * <li>a {@link TechEffect.SectorProductivity} multiplies its sector's

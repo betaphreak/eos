@@ -13,17 +13,32 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum Monsoon {
 
-	NONE("none", "None"),
-	MILD("mild", "Mild"),
-	NORMAL("normal", "Normal"),
-	SEVERE("severe", "Severe");
+	NONE("none", "None", 1.00),
+	MILD("mild", "Mild", 1.05),
+	NORMAL("normal", "Normal", 1.10),
+	SEVERE("severe", "Severe", 1.15);
 
 	private final String rawKey;
 	private final String displayName;
+	private final double agricultureFactor;
 
-	Monsoon(String rawKey, String displayName) {
+	Monsoon(String rawKey, String displayName, double agricultureFactor) {
 		this.rawKey = rawKey;
 		this.displayName = displayName;
+		this.agricultureFactor = agricultureFactor;
+	}
+
+	/**
+	 * The multiplier this monsoon intensity applies to agricultural (necessity/
+	 * food) total-factor productivity — the wet season is a boon to farming
+	 * (paddy/irrigated agriculture), so the factor rises with intensity above the
+	 * {@code 1.0} no-monsoon baseline. See {@link
+	 * com.civstudio.settlement.Settlement#getAgricultureClimateMultiplier()}.
+	 *
+	 * @return the food-productivity multiplier for this monsoon intensity
+	 */
+	public double agricultureFactor() {
+		return agricultureFactor;
 	}
 
 	/** The stable {@code raw_key} (e.g. {@code "severe"}); the persisted form. */

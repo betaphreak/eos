@@ -88,6 +88,19 @@ class SettlementProvinceTest {
 	}
 
 	@Test
+	void climateScalesTheAgricultureMultiplier() {
+		GameSession s = new GameSession(42);
+		Province dh = s.getWorldMap().findByName("Dhenijansar").orElseThrow();
+		Settlement c = found(s, dh);
+		// Dhenijansar: temperate (1.0) x no winter (1.0) x normal monsoon (1.10)
+		assertEquals(1.10, c.getAgricultureClimateMultiplier(), 1e-9);
+
+		// a coordinate-founded colony has no province, so the multiplier is neutral
+		Settlement bare = s.newSettlement("Bare", START, 30, 26, 5, 2, 51.5074, -0.1278);
+		assertEquals(1.0, bare.getAgricultureClimateMultiplier(), 1e-9);
+	}
+
+	@Test
 	void provinceTooSmallForTheFoundingFloorIsRejected() {
 		GameSession s = new GameSession(42);
 		// a synthetic province with fewer plots than size 3 needs (total 28)

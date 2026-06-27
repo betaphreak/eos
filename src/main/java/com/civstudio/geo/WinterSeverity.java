@@ -13,17 +13,33 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum WinterSeverity {
 
-	NONE("none", "None"),
-	MILD("mild", "Mild"),
-	NORMAL("normal", "Normal"),
-	SEVERE("severe", "Severe");
+	NONE("none", "None", 1.00),
+	MILD("mild", "Mild", 0.95),
+	NORMAL("normal", "Normal", 0.90),
+	SEVERE("severe", "Severe", 0.80);
 
 	private final String rawKey;
 	private final String displayName;
+	private final double agricultureFactor;
 
-	WinterSeverity(String rawKey, String displayName) {
+	WinterSeverity(String rawKey, String displayName, double agricultureFactor) {
 		this.rawKey = rawKey;
 		this.displayName = displayName;
+		this.agricultureFactor = agricultureFactor;
+	}
+
+	/**
+	 * The multiplier this winter severity applies to agricultural (necessity/food)
+	 * total-factor productivity — a flat, year-round growing-season penalty (frost,
+	 * shorter season) standing apart from the daylight-length scaling the labor
+	 * market already applies. {@code 1.0} for no winter, falling as winters
+	 * harden. See {@link
+	 * com.civstudio.settlement.Settlement#getAgricultureClimateMultiplier()}.
+	 *
+	 * @return the food-productivity multiplier for this winter severity
+	 */
+	public double agricultureFactor() {
+		return agricultureFactor;
 	}
 
 	/** The stable {@code raw_key} (e.g. {@code "severe"}); the persisted form. */
