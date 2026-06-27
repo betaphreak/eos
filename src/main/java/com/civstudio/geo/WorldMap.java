@@ -65,6 +65,9 @@ public final class WorldMap {
 	private final Map<String, List<Province>> provincesByRegion;
 	private final Map<String, List<Province>> provincesBySuperRegion;
 	private final Map<Continent, List<Province>> provincesByContinent;
+	private final Map<Climate, List<Province>> provincesByClimate;
+	private final Map<WinterSeverity, List<Province>> provincesByWinter;
+	private final Map<Monsoon, List<Province>> provincesByMonsoon;
 	private final Map<String, List<Area>> areasByRegion;
 	private final Map<String, List<Region>> regionsBySuperRegion;
 	private final Map<String, String> regionKeyByArea;
@@ -168,16 +171,27 @@ public final class WorldMap {
 		this.provincesBySuperRegion = provBySuper;
 		this.superRegionKeyByRegion = superByRegion;
 
-		// continent -> its provinces, grouped from each province's own continent
-		// (the enum is the taxonomy; membership is the per-province key)
+		// environmental-attribute partitions, grouped from each province's own
+		// enum value (continent may be null; climate/winter/monsoon never are)
 		Map<Continent, List<Province>> provByContinent = new EnumMap<>(Continent.class);
+		Map<Climate, List<Province>> provByClimate = new EnumMap<>(Climate.class);
+		Map<WinterSeverity, List<Province>> provByWinter = new EnumMap<>(WinterSeverity.class);
+		Map<Monsoon, List<Province>> provByMonsoon = new EnumMap<>(Monsoon.class);
 		for (Province p : byId.values()) {
-			Continent c = p.continent();
-			if (c != null)
-				provByContinent.computeIfAbsent(c, k -> new ArrayList<>()).add(p);
+			if (p.continent() != null)
+				provByContinent.computeIfAbsent(p.continent(), k -> new ArrayList<>()).add(p);
+			provByClimate.computeIfAbsent(p.climate(), k -> new ArrayList<>()).add(p);
+			provByWinter.computeIfAbsent(p.winter(), k -> new ArrayList<>()).add(p);
+			provByMonsoon.computeIfAbsent(p.monsoon(), k -> new ArrayList<>()).add(p);
 		}
 		provByContinent.replaceAll((c, ps) -> Collections.unmodifiableList(ps));
+		provByClimate.replaceAll((c, ps) -> Collections.unmodifiableList(ps));
+		provByWinter.replaceAll((w, ps) -> Collections.unmodifiableList(ps));
+		provByMonsoon.replaceAll((mo, ps) -> Collections.unmodifiableList(ps));
 		this.provincesByContinent = provByContinent;
+		this.provincesByClimate = provByClimate;
+		this.provincesByWinter = provByWinter;
+		this.provincesByMonsoon = provByMonsoon;
 	}
 
 	/**
@@ -501,11 +515,67 @@ public final class WorldMap {
 		return Optional.ofNullable(province(provinceId).continent());
 	}
 
+	/** The provinces in this {@link Climate} band (in province-id load order). */
+	public List<Province> provincesInClimate(Climate climate) {
+		return provincesByClimate.getOrDefault(climate, List.of());
+	}
+
+	/** The provinces at this {@link WinterSeverity} (in province-id load order). */
+	public List<Province> provincesInWinter(WinterSeverity winter) {
+		return provincesByWinter.getOrDefault(winter, List.of());
+	}
+
+	/** The provinces at this {@link Monsoon} intensity (in province-id load order). */
+	public List<Province> provincesInMonsoon(Monsoon monsoon) {
+		return provincesByMonsoon.getOrDefault(monsoon, List.of());
+	}
+
+	/**
+	 * The climate band of a province (its {@link Province#climate()} — never null,
+	 * {@link Climate#TEMPERATE} by default).
+	 *
+	 * @param provinceId a province id
+	 * @return the province's climate
+	 * @throws IllegalArgumentException if no province has that id
+	 */
+	public Climate climateOf(int provinceId) {
+		return province(provinceId).climate();
+	}
+
+	/**
+	 * The winter severity of a province (its {@link Province#winter()} — never null,
+	 * {@link WinterSeverity#NONE} by default).
+	 *
+	 * @param provinceId a province id
+	 * @return the province's winter severity
+	 * @throws IllegalArgumentException if no province has that id
+	 */
+	public WinterSeverity winterOf(int provinceId) {
+		return province(provinceId).winter();
+	}
+
+	/**
+	 * The monsoon intensity of a province (its {@link Province#monsoon()} — never
+	 * null, {@link Monsoon#NONE} by default).
+	 *
+	 * @param provinceId a province id
+	 * @return the province's monsoon intensity
+	 * @throws IllegalArgumentException if no province has that id
+	 */
+	public Monsoon monsoonOf(int provinceId) {
+		return province(provinceId).monsoon();
+	}
+
 	/**
 	 * A shortest path between two provinces over the neighbor graph (a
 	 * breadth-first walk, so each edge counts as one step). The returned list is
 	 * inclusive of both endpoints; a single-element list is returned when
 	 * {@code from == to}, and an empty list when {@code to} is unreachable.
+	 * <p>
+	 * The path routes only over <b>passable</b> provinces (see {@link
+	 * Province#isPassable()}): {@link ProvinceType#IMPASSABLE} wasteland is never
+	 * traversed, and an impassable {@code from}/{@code to} endpoint is unreachable
+	 * (empty result) — caravans cannot cross or enter wasteland.
 	 *
 	 * @param from the start province id
 	 * @param to   the goal province id
@@ -516,6 +586,8 @@ public final class WorldMap {
 	public List<Integer> path(int from, int to) {
 		province(from); // validate endpoints exist
 		province(to);
+		if (!byId.get(from).isPassable() || !byId.get(to).isPassable())
+			return List.of(); // cannot route into or out of impassable wasteland
 		if (from == to)
 			return List.of(from);
 		Map<Integer, Integer> cameFrom = new HashMap<>();
@@ -525,8 +597,8 @@ public final class WorldMap {
 		while (!queue.isEmpty()) {
 			int cur = queue.poll();
 			for (int next : byId.get(cur).neighbors()) {
-				if (cameFrom.containsKey(next))
-					continue;
+				if (cameFrom.containsKey(next) || !byId.get(next).isPassable())
+					continue; // skip visited and impassable provinces
 				cameFrom.put(next, cur);
 				if (next == to)
 					return reconstruct(cameFrom, from, to);

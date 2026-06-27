@@ -194,12 +194,25 @@ reproducible and offline-capable.
 - **`Province`** — an immutable record:
   `Province(int id, String name, double latitude, double longitude, int plots,
   int waterPlots, ProvinceType type, String regionKey, String areaKey,
-  Continent continent, List<Integer> neighbors)`
+  Continent continent, Climate climate, WinterSeverity winter, Monsoon monsoon,
+  List<Integer> neighbors)`
   (`id` and `neighbors` are `province_id`s; `regionKey`/`areaKey` are the region
-  and area `raw_key`s and `continent` is the {@link Continent} enum, `null` if
-  none). A `boolean isSettleable()` (true for `LAND` only at this stage) and
-  `boolean isCoastal()` (`waterPlots > 0`) keep the policy on the type.
-- **`ProvinceType`** — `LAND` / `SEA` / `LAKE`.
+  and area `raw_key`s, `continent` is the `Continent` enum (`null` if none), and
+  `climate`/`winter`/`monsoon` are the environmental-attribute enums — the
+  constructor coerces a `null` to the default `TEMPERATE`/`NONE`/`NONE`, so those
+  three are never null). `boolean isSettleable()` and `boolean isPassable()`
+  delegate to the `type`; `boolean isCoastal()` (`waterPlots > 0`) keeps the
+  coastal policy.
+- **`ProvinceType`** — `LAND` / `SEA` / `LAKE` / `IMPASSABLE`, each carrying
+  `isSettleable()` (only `LAND`) and `isPassable()` (all but `IMPASSABLE`).
+  `IMPASSABLE` (wasteland, overlaid from `climate.txt`) is neither settleable nor
+  routable — caravans can't found into it or cross it.
+- **`Climate`** (`TROPICAL`/`ARID`/`ARCTIC`/`TEMPERATE`) / **`WinterSeverity`**
+  (`NONE`/`MILD`/`NORMAL`/`SEVERE`) / **`Monsoon`** (`NONE`/`MILD`/`NORMAL`/
+  `SEVERE`) — per-province environmental attribute enums (peers of `ProvinceType`,
+  not `GeoTier` places), overlaid from `data/climate.txt`. Each has
+  `rawKey()`/`displayName()` and the default the `Province` constructor falls back
+  to.
 - **`GeoTier`** — the shared interface (`rawKey()`, `displayName()`) the tier types
   below implement, so the `WorldMap` and callers can treat any tier uniformly.
 - **`Region`** / **`Area`** / **`SuperRegion`** — the geographic tiers above the
@@ -225,14 +238,18 @@ reproducible and offline-capable.
   area tier** so the committed `region` always matches `regionOf(id)` (overwriting
   the value `ProvinceExporter` took from the DB, a few of which disagreed);
   `ContinentExporter` stamps only the `continent` key (no resource), validating each
-  block against the `Continent` enum. Continents have **no Strapi table**, so that
-  field is file-only (a full DB regen of `provinces.json` must rerun
-  `ContinentExporter`). Empty placeholder areas/regions/super-regions (voided
-  EU4-vanilla blocks), the `restrict_charter` keyword in super-region bodies, and
-  the non-geographic utility pseudo-continents (`debug_continent`,
-  `island_check_provinces`, `new_world`) are skipped. The run order is
-  `ProvinceExporter → RegionExporter → SuperRegionExporter → AreaExporter →
-  ContinentExporter` (each later stamp reads the committed `map/*.json`).
+  block against the `Continent` enum; `ClimateExporter` stamps the
+  `climate`/`winter`/`monsoon` keys (only the non-default values) and overrides
+  `type` to `IMPASSABLE` for the wasteland provinces (over `LAND` only). The
+  continent/climate fields have **no Strapi table**, so they are file-only (a full
+  DB regen of `provinces.json` must rerun `ContinentExporter`/`ClimateExporter`).
+  Empty placeholder areas/regions/super-regions (voided EU4-vanilla blocks), the
+  `restrict_charter` keyword in super-region bodies, the non-geographic utility
+  pseudo-continents (`debug_continent`, `island_check_provinces`, `new_world`), and
+  the `equator_y_on_province_image` scalar in `climate.txt` are skipped. The run
+  order is `ProvinceExporter → RegionExporter → SuperRegionExporter → AreaExporter
+  → ContinentExporter → ClimateExporter` (each later stamp reads the committed
+  `map/provinces.json`).
 - **`WorldMap`** — loads the four `map/*.json` resources (`provinces`, `areas`,
   `regions`, `superregions`; continents are the enum), holds the province map +
   adjacency graph **and** the area/region/super-region/continent membership indices;
@@ -242,11 +259,16 @@ reproducible and offline-capable.
   `area(key)`/`region(key)`/`superRegion(key)`,
   `provincesInArea`/`areasInRegion`/`provincesInRegion`/`regionsInSuperRegion`/
   `provincesInSuperRegion`/`provincesInContinent(Continent)`, and
-  `areaOf(id)`/`regionOf(id)`/`superRegionOf(id)`/`continentOf(id)`. **Areas are
-  the source of truth for region membership** — `provincesInRegion`/`regionOf`
+  `areaOf(id)`/`regionOf(id)`/`superRegionOf(id)`/`continentOf(id)`, plus the
+  environmental overlays `provincesInClimate`/`provincesInWinter`/
+  `provincesInMonsoon` and `climateOf(id)`/`winterOf(id)`/`monsoonOf(id)`. **Areas
+  are the source of truth for region membership** — `provincesInRegion`/`regionOf`
   resolve through the area tier (the union of a region's areas' provinces); super-
   regions resolve on through the region tier, and continents directly from each
-  province's `continent`. Immutable after load.
+  province's `continent`. The `path(from, to)` BFS routes only over **passable**
+  provinces (impassable wasteland is never crossed, and an impassable endpoint is
+  unreachable) — caravans likewise skip impassable provinces when seeking a site.
+  Immutable after load.
 
 ### `GameSession` owns the map
 

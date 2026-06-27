@@ -41,6 +41,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *                   {@code null} if it has none; deserialized from the continent
  *                   {@code raw_key} (e.g. {@code "asia"}). See {@link
  *                   WorldMap#continentOf(int)}
+ * @param climate    the {@link Climate} band ({@link Climate#TEMPERATE} if the
+ *                   source did not classify it — never {@code null})
+ * @param winter     the {@link WinterSeverity} ({@link WinterSeverity#NONE} by
+ *                   default — never {@code null})
+ * @param monsoon    the {@link Monsoon} intensity ({@link Monsoon#NONE} by
+ *                   default — never {@code null})
  * @param neighbors  the {@code province_id}s of the adjacent provinces (an
  *                   undirected graph; symmetry is materialized at export time)
  */
@@ -55,22 +61,44 @@ public record Province(
 		@JsonProperty("region") String regionKey,
 		@JsonProperty("area") String areaKey,
 		@JsonProperty("continent") Continent continent,
+		Climate climate,
+		WinterSeverity winter,
+		Monsoon monsoon,
 		List<Integer> neighbors) {
 
-	/** Defensive copy so a loaded province's neighbor list cannot be mutated. */
+	/**
+	 * Defensive copy of the neighbor list, and the environmental-attribute
+	 * defaults: an unclassified climate is {@link Climate#TEMPERATE}, and an
+	 * unlisted winter/monsoon is {@code NONE} (so these accessors never return
+	 * {@code null}).
+	 */
 	public Province {
 		neighbors = neighbors == null ? List.of() : List.copyOf(neighbors);
+		climate = climate == null ? Climate.TEMPERATE : climate;
+		winter = winter == null ? WinterSeverity.NONE : winter;
+		monsoon = monsoon == null ? Monsoon.NONE : monsoon;
 	}
 
 	/**
-	 * Whether a colony may be founded into this province. Only
-	 * {@link ProvinceType#LAND} is settleable at this stage; {@code SEA}/{@code
-	 * LAKE} are water the travel graph routes over.
+	 * Whether a colony may be founded into this province (its {@link
+	 * ProvinceType#isSettleable()}). Only {@link ProvinceType#LAND} qualifies at
+	 * this stage; water and {@link ProvinceType#IMPASSABLE} wasteland do not.
 	 *
 	 * @return {@code true} if this is land a settlement can occupy
 	 */
 	public boolean isSettleable() {
-		return type == ProvinceType.LAND;
+		return type.isSettleable();
+	}
+
+	/**
+	 * Whether the travel/trade graph may route through this province (its {@link
+	 * ProvinceType#isPassable()}). {@link ProvinceType#IMPASSABLE} wasteland is the
+	 * only impassable type — caravans can neither settle it nor cross it.
+	 *
+	 * @return {@code true} if caravans may route through
+	 */
+	public boolean isPassable() {
+		return type.isPassable();
 	}
 
 	/**

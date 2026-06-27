@@ -2,6 +2,7 @@ package com.civstudio.geo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -141,6 +142,41 @@ class WorldMapTest {
 		assertTrue(map.provincesInContinent(Continent.ASIA).contains(d));
 		assertThrows(UnsupportedOperationException.class,
 				() -> map.provincesInContinent(Continent.ASIA).clear());
+	}
+
+	@Test
+	void climateWinterMonsoonOverlays() {
+		WorldMap map = WorldMap.load();
+		Province d = map.findByName("Dhenijansar").orElseThrow();
+		// Dhenijansar: temperate (unclassified), no winter, normal monsoon
+		assertEquals(Climate.TEMPERATE, d.climate());
+		assertEquals(WinterSeverity.NONE, d.winter());
+		assertEquals(Monsoon.NORMAL, d.monsoon());
+		assertEquals(Climate.TEMPERATE, map.climateOf(d.id()));
+		assertEquals(Monsoon.NORMAL, map.monsoonOf(d.id()));
+		// the partitions are populated and the attributes are never null
+		assertFalse(map.provincesInClimate(Climate.TROPICAL).isEmpty());
+		assertFalse(map.provincesInMonsoon(Monsoon.NORMAL).isEmpty());
+		for (Province p : map.provinces()) {
+			assertNotNull(p.climate());
+			assertNotNull(p.winter());
+			assertNotNull(p.monsoon());
+		}
+	}
+
+	@Test
+	void impassableProvinceBlocksSettlingAndCaravans() {
+		WorldMap map = WorldMap.load();
+		// 1779 is wasteland in climate.txt -> ProvinceType.IMPASSABLE
+		Province waste = map.province(1779);
+		assertEquals(ProvinceType.IMPASSABLE, waste.type());
+		assertFalse(waste.isSettleable());
+		assertFalse(waste.isPassable());
+		assertFalse(map.settleableProvinces().contains(waste));
+		// caravans can neither route into nor out of impassable wasteland
+		Province d = map.findByName("Dhenijansar").orElseThrow();
+		assertTrue(map.path(d.id(), 1779).isEmpty());
+		assertTrue(map.path(1779, d.id()).isEmpty());
 	}
 
 	@Test
