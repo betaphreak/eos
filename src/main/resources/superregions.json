@@ -1,0 +1,125 @@
+[ {
+  "key" : "bulwar_superregion",
+  "name" : "Bulwar",
+  "regions" : [ "bahar_region", "bulwar_proper_region", "harpy_hills_region", "far_bulwar_region", "far_salahad_region" ]
+}, {
+  "key" : "kheionai_superregion",
+  "name" : "Kheionai",
+  "regions" : [ "alecand_region", "devand_region", "mteibas_valley_region", "andic_reach_region", "chendhya_region" ]
+}, {
+  "key" : "broken_lands_superregion",
+  "name" : "Broken Lands",
+  "regions" : [ "dalaire_region", "forest_of_the_cursed_ones_region", "broken_isles_region" ]
+}, {
+  "key" : "effelai_superregion",
+  "name" : "Effelai",
+  "regions" : [ "soruin_region", "leechdens_region", "south_effelai_region", "east_effelai_region", "west_effelai_region", "dry_coast_region", "mushroom_forest_region", "severed_coast_region", "turtleback_isle_region" ]
+}, {
+  "key" : "taychend_superregion",
+  "name" : "Taychend",
+  "regions" : [ "yodhanchend_region", "larankarha_highlands_region", "southern_coast_region", "kalavend_region", "gauraddhi_region" ]
+}, {
+  "key" : "ruin_proper_superregion",
+  "name" : "Ruin Proper",
+  "regions" : [ "north_ruined_isles_region", "trollsbay_region", "bloodgroves_region", "reapers_coast_region", "endralliande_region", "ravenous_isle_region", "ruined_isles_region" ]
+}, {
+  "key" : "gerudia_superregion",
+  "name" : "Gerudia",
+  "regions" : [ "alenic_reach_region", "dalr_region", "olavlund_region", "gerudian_frontier_region" ]
+}, {
+  "key" : "north_salahad_superregion",
+  "name" : "North Salahad",
+  "regions" : [ "akasik_region", "kheterata_region", "west_salahad_region" ]
+}, {
+  "key" : "south_salahad_superregion",
+  "name" : "South Salahad",
+  "regions" : [ "gol_region", "gazraak_region" ]
+}, {
+  "key" : "torn_gates_superregion",
+  "name" : "Torn Gates",
+  "regions" : [ "amadia_region", "tor_nayyi_region", "haraf_region" ]
+}, {
+  "key" : "ynn_superregion",
+  "name" : "Ynn",
+  "regions" : [ "epednan_expanse_region", "sarda_region", "dolindha_region", "rzenta_region", "veykoda_region", "ekyunimoy_region" ]
+}, {
+  "key" : "eordand_superregion",
+  "name" : "Eordand",
+  "regions" : [ "randrunnse_region", "glorelthir_region", "sarmadfar_region", "domandrod_region" ]
+}, {
+  "key" : "yanshen_superregion",
+  "name" : "Yanshen",
+  "regions" : [ "lower_yanshen_region", "upper_yanshen_region", "demon_hills_region", "north_yanshen_region" ]
+}, {
+  "key" : "east_serpentspine_superregion",
+  "name" : "East Serpentspine",
+  "regions" : [ "tree_of_stone_region", "jade_mines_region" ]
+}, {
+  "key" : "escann_superregion",
+  "name" : "Escann",
+  "regions" : [ "west_castanor_region", "south_castanor_region", "inner_castanor_region", "daravans_folly_region", "dostanor_region", "ourdia_region" ]
+}, {
+  "key" : "forbidden_lands_superregion",
+  "name" : "Forbidden Lands",
+  "regions" : [ "yyl_moista_region", "ogre_valley_region", "west_forbidden_plains_region", "east_forbidden_plains_region", "serpent_gift_region", "south_yarikhoi_region", "north_yarikhoi_region", "nuzurbokh_region" ]
+}, {
+  "key" : "rahen_superregion",
+  "name" : "Rahen",
+  "regions" : [ "rahen_coast_region", "rakhadesh_region", "dhujat_region", "shamakhad_region" ]
+}, {
+  "key" : "gozengun_superregion",
+  "name" : "Gozengun",
+  "regions" : [ "shuvuushudi_region", "odheongu_region", "khaashalg_region", "moduk_region", "nomsyulhan_region" ]
+}, {
+  "key" : "vimdatrong_superregion",
+  "name" : "Vimdatrong",
+  "regions" : [ "xianjie_region", "thidinkai_region", "bomdan_region", "ringlet_isles_region", "lupulan_rainforest_region" ]
+}, {
+  "key" : "western_cannor_superregion",
+  "name" : "Western Cannor",
+  "regions" : [ "dragon_coast_region", "small_country_region", "lencenor_region", "west_dameshead_region", "east_dameshead_region", "esmaria_region", "the_borders_region", "damescrown_region", "businor_region", "alenic_frontier_region", "forlorn_vale_region" ]
+}, {
+  "key" : "west_serpentspine_superregion",
+  "name" : "West Serpentspine",
+  "regions" : [ "west_dwarovar_region", "middle_dwarovar_region", "serpentreach_region", "serpents_vale_region", "northern_pass_region" ]
+}, {
+  "key" : "deepwoods_superregion",
+  "name" : "Deepwoods",
+  "regions" : [ "west_deepwoods_region", "east_deepwoods_region" ]
+}, {
+  "key" : "deepwoods_portal_superregion",
+  "name" : "Deepwoods Portal",
+  "regions" : [ "deepwoods_portal_region" ]
+}, {
+  "key" : "fangaula_superregion",
+  "name" : "Fangaula",
+  "regions" : [ "kubaci_region", "janama_region", "dao_nako_region" ]
+}, {
+  "key" : "tanib_dajek_superregion",
+  "name" : "Tanib Dajek",
+  "regions" : [ "horashesh_region", "khetapera_region", "fahvanosy_region" ]
+}, {
+  "key" : "east_sarhal_superregion",
+  "name" : "East Sarhal",
+  "regions" : [ "bamaliwuni_region", "ishyamtumu_region", "yetefesefi_region", "telekenid_region", "yezel_mora_region", "dreksaret_region", "denibari_region" ]
+}, {
+  "key" : "taneyas_superregion",
+  "name" : "Taneyas",
+  "regions" : [ "throden_gokad_region", "katala_raz_region", "odu_kherass_region" ]
+}, {
+  "key" : "djinnakah_superregion",
+  "name" : "Djinnakah",
+  "regions" : [ "jasiir_jadid_region", "ardimya_region" ]
+}, {
+  "key" : "kanolowele_superregion",
+  "name" : "Kanolowele",
+  "regions" : [ "cotlkae_region", "insyaan_mushroom_forest_region", "yanacotlele_region", "anakuele_region", "ankae_region", "great_plateau_region" ]
+}, {
+  "key" : "south_insyaa_superregion",
+  "name" : "South Insyaa",
+  "regions" : [ "horn_of_insyaa_region", "tagaala_mangroves_region", "west_insyaan_lowlands_region", "malogadin_coast_region", "central_charkuchar_region", "west_charkuchar_region", "east_charkuchar_region", "south_charkuchar_region", "titanoflora_valley_region", "titanoflora_savanna_region" ]
+}, {
+  "key" : "hinuilands_superregion",
+  "name" : "Hinuilands",
+  "regions" : [ "titanoflora_riverlands_region", "titanoflora_lakelands_region", "titanoflora_forests_region" ]
+} ]

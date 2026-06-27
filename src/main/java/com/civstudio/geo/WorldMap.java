@@ -43,6 +43,7 @@ public final class WorldMap {
 	private static final String PROVINCES_RESOURCE = "/provinces.json";
 	private static final String AREAS_RESOURCE = "/areas.json";
 	private static final String REGIONS_RESOURCE = "/regions.json";
+	private static final String SUPERREGIONS_RESOURCE = "/superregions.json";
 	private static final String CONTINENTS_RESOURCE = "/continents.json";
 
 	private static final ObjectMapper MAPPER = new ObjectMapper()
@@ -50,19 +51,25 @@ public final class WorldMap {
 
 	// provinces keyed by id, in load order (deterministic iteration)
 	private final Map<Integer, Province> byId;
-	// areas, regions and continents keyed by their raw_key, in load order
+	// areas, regions, super-regions and continents keyed by their raw_key, in
+	// load order
 	private final Map<String, Area> areasByKey;
 	private final Map<String, Region> regionsByKey;
+	private final Map<String, SuperRegion> superRegionsByKey;
 	private final Map<String, Continent> continentsByKey;
 	// derived membership indices (all values unmodifiable, deterministic order)
 	private final Map<String, List<Province>> provincesByArea;
 	private final Map<String, List<Province>> provincesByRegion;
+	private final Map<String, List<Province>> provincesBySuperRegion;
 	private final Map<String, List<Province>> provincesByContinent;
 	private final Map<String, List<Area>> areasByRegion;
+	private final Map<String, List<Region>> regionsBySuperRegion;
 	private final Map<String, String> regionKeyByArea;
+	private final Map<String, String> superRegionKeyByRegion;
 
 	private WorldMap(List<Province> provinces, List<Area> areas,
-			List<Region> regions, List<Continent> continents) {
+			List<Region> regions, List<SuperRegion> superRegions,
+			List<Continent> continents) {
 		Map<Integer, Province> byId = new LinkedHashMap<>(provinces.size() * 2);
 		for (Province p : provinces)
 			if (byId.put(p.id(), p) != null)
@@ -127,6 +134,38 @@ public final class WorldMap {
 		this.provincesByRegion = provByRegion;
 		this.regionKeyByArea = regionByArea;
 
+		Map<String, SuperRegion> superByKey = new LinkedHashMap<>(
+				superRegions.size() * 2);
+		for (SuperRegion sr : superRegions)
+			if (superByKey.put(sr.rawKey(), sr) != null)
+				throw new IllegalStateException(
+						"duplicate super-region key " + sr.rawKey());
+		this.superRegionsByKey = superByKey;
+
+		// super-region -> its regions / provinces, via the region tier (regions
+		// that resolve to no loaded region — empty placeholders — are skipped;
+		// provinces are the de-duplicated union over the resolved regions)
+		Map<String, List<Region>> regionsBySuper = new LinkedHashMap<>();
+		Map<String, List<Province>> provBySuper = new LinkedHashMap<>();
+		Map<String, String> superByRegion = new HashMap<>();
+		for (SuperRegion sr : superRegions) {
+			List<Region> rr = new ArrayList<>();
+			LinkedHashSet<Province> sp = new LinkedHashSet<>();
+			for (String rk : sr.regionKeys()) {
+				Region r = regionsByKey.get(rk);
+				if (r == null)
+					continue;
+				rr.add(r);
+				superByRegion.put(rk, sr.rawKey());
+				sp.addAll(provByRegion.get(rk));
+			}
+			regionsBySuper.put(sr.rawKey(), Collections.unmodifiableList(rr));
+			provBySuper.put(sr.rawKey(), List.copyOf(sp));
+		}
+		this.regionsBySuperRegion = regionsBySuper;
+		this.provincesBySuperRegion = provBySuper;
+		this.superRegionKeyByRegion = superByRegion;
+
 		Map<String, Continent> continentsByKey = new LinkedHashMap<>(
 				continents.size() * 2);
 		for (Continent c : continents)
@@ -152,12 +191,14 @@ public final class WorldMap {
 
 	/**
 	 * Load the world map from its classpath resources ({@code /provinces.json},
-	 * {@code /areas.json}, {@code /regions.json}, {@code /continents.json}).
+	 * {@code /areas.json}, {@code /regions.json}, {@code /superregions.json},
+	 * {@code /continents.json}).
 	 *
 	 * @return the loaded map
 	 * @throws IllegalStateException
-	 *             if a resource is missing, a province/area/region/continent key is
-	 *             duplicated, or a neighbor refers to an id not present in the map
+	 *             if a resource is missing, a province/area/region/super-region/
+	 *             continent key is duplicated, or a neighbor refers to an id not
+	 *             present in the map
 	 */
 	public static WorldMap load() {
 		List<Province> provinces = loadList(PROVINCES_RESOURCE,
@@ -169,10 +210,13 @@ public final class WorldMap {
 		List<Region> regions = loadList(REGIONS_RESOURCE,
 				new TypeReference<List<Region>>() {
 				});
+		List<SuperRegion> superRegions = loadList(SUPERREGIONS_RESOURCE,
+				new TypeReference<List<SuperRegion>>() {
+				});
 		List<Continent> continents = loadList(CONTINENTS_RESOURCE,
 				new TypeReference<List<Continent>>() {
 				});
-		return new WorldMap(provinces, areas, regions, continents);
+		return new WorldMap(provinces, areas, regions, superRegions, continents);
 	}
 
 	private static <T> List<T> loadList(String resource,
@@ -372,6 +416,70 @@ public final class WorldMap {
 		return areaOf(provinceId)
 				.map(a -> regionKeyByArea.get(a.rawKey()))
 				.map(regionsByKey::get);
+	}
+
+	/** All super-regions, in load order (unmodifiable). */
+	public Collection<SuperRegion> superRegions() {
+		return Collections.unmodifiableCollection(superRegionsByKey.values());
+	}
+
+	/**
+	 * The super-region with this {@code raw_key}.
+	 *
+	 * @param key a super-region {@code raw_key} (e.g. {@code "rahen_superregion"})
+	 * @return the super-region
+	 * @throws IllegalArgumentException if no super-region has that key
+	 */
+	public SuperRegion superRegion(String key) {
+		SuperRegion sr = superRegionsByKey.get(key);
+		if (sr == null)
+			throw new IllegalArgumentException("no super-region with key " + key);
+		return sr;
+	}
+
+	/** Whether a super-region with this key is loaded. */
+	public boolean hasSuperRegion(String key) {
+		return superRegionsByKey.containsKey(key);
+	}
+
+	/**
+	 * The regions this super-region is composed of (those that resolve to a loaded
+	 * region, in source order; empty placeholder regions are omitted).
+	 *
+	 * @param key a super-region {@code raw_key}
+	 * @return the super-region's regions (unmodifiable, possibly empty)
+	 * @throws IllegalArgumentException if no super-region has that key
+	 */
+	public List<Region> regionsInSuperRegion(String key) {
+		superRegion(key); // validate
+		return regionsBySuperRegion.get(key);
+	}
+
+	/**
+	 * The provinces in this super-region — the de-duplicated union of its regions'
+	 * provinces (resolved on through the region&rarr;area tier).
+	 *
+	 * @param key a super-region {@code raw_key}
+	 * @return the super-region's provinces (unmodifiable, possibly empty)
+	 * @throws IllegalArgumentException if no super-region has that key
+	 */
+	public List<Province> provincesInSuperRegion(String key) {
+		superRegion(key); // validate
+		return provincesBySuperRegion.get(key);
+	}
+
+	/**
+	 * The super-region a province belongs to, resolved through its {@link
+	 * #regionOf(int) region}.
+	 *
+	 * @param provinceId a province id
+	 * @return the province's super-region, or empty if its region maps to none
+	 * @throws IllegalArgumentException if no province has that id
+	 */
+	public Optional<SuperRegion> superRegionOf(int provinceId) {
+		return regionOf(provinceId)
+				.map(r -> superRegionKeyByRegion.get(r.rawKey()))
+				.map(superRegionsByKey::get);
 	}
 
 	/** All continents, in load order (unmodifiable). */

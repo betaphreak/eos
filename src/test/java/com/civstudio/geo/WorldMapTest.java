@@ -100,12 +100,31 @@ class WorldMapTest {
 		// geographic continents, the utility pseudo-continents skipped)
 		assertEquals(1570, map.areas().size());
 		assertEquals(178, map.regions().size());
+		assertEquals(31, map.superRegions().size());
 		assertEquals(7, map.continents().size());
 		assertFalse(map.hasContinent("debug_continent"));
 		assertFalse(map.hasContinent("new_world"));
 		assertThrows(IllegalArgumentException.class, () -> map.area("nope"));
 		assertThrows(IllegalArgumentException.class, () -> map.region("nope"));
+		assertThrows(IllegalArgumentException.class, () -> map.superRegion("nope"));
 		assertThrows(IllegalArgumentException.class, () -> map.continent("nope"));
+	}
+
+	@Test
+	void dhenijansarRollsUpToItsSuperRegion() {
+		WorldMap map = WorldMap.load();
+		Province d = map.findByName("Dhenijansar").orElseThrow();
+		SuperRegion sr = map.superRegionOf(d.id()).orElseThrow();
+		assertEquals("rahen_superregion", sr.rawKey());
+		assertEquals("Rahen", sr.name());
+		// restrict_charter must not have leaked in as a "region"
+		assertFalse(sr.regionKeys().contains("restrict_charter"));
+		// the super-region nests its region and (transitively) the province
+		Region region = map.regionOf(d.id()).orElseThrow();
+		assertTrue(map.regionsInSuperRegion("rahen_superregion").contains(region));
+		assertTrue(map.provincesInSuperRegion("rahen_superregion").contains(d));
+		assertThrows(UnsupportedOperationException.class,
+				() -> map.provincesInSuperRegion("rahen_superregion").clear());
 	}
 
 	@Test
