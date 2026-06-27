@@ -16,7 +16,7 @@ import com.civstudio.util.Rng;
 
 /**
  * An immutable, weighted table of names loaded from one of the JSON resources
- * in {@code src/main/resources} (e.g. {@code /male-human.json}). The source
+ * in {@code src/main/resources} (e.g. {@code /names/human/male.json}). The source
  * files are tiered: each tier owns the cumulative-weight band
  * {@code (prev, percent]} and lists the names sharing it, so a name in a tier
  * carries weight {@code (percent - prev) / namesInTier}. Common names sit in
@@ -46,7 +46,7 @@ public final class NameTable {
 	 * Load and flatten a name table from a classpath resource.
 	 *
 	 * @param resource
-	 *            absolute classpath resource path, e.g. {@code /male-human.json}
+	 *            absolute classpath resource path, e.g. {@code /names/human/male.json}
 	 * @return the loaded table
 	 */
 	public static NameTable load(String resource) {

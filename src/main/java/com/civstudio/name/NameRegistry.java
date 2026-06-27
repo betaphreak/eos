@@ -41,9 +41,9 @@ import com.civstudio.util.Rng;
  */
 public final class NameRegistry {
 
-	private static final String DYNASTY = "/dynasty-human.json";
-	private static final String MALE = "/male-human.json";
-	private static final String FEMALE = "/female-human.json";
+	private static final String DYNASTY = "/names/human/dynasty.json";
+	private static final String MALE = "/names/human/male.json";
+	private static final String FEMALE = "/names/human/female.json";
 
 	private final Rng rng;
 

@@ -176,10 +176,10 @@ public class GameSession {
 		this.era = era;
 		// human name tables / surname pool eager (built exactly as before, so a
 		// mono-cultural run is byte-identical); non-human races load lazily on demand
-		this.maleNamesByRace.put(Race.HUMAN, NameTable.load("/male-human.json"));
-		this.femaleNamesByRace.put(Race.HUMAN, NameTable.load("/female-human.json"));
+		this.maleNamesByRace.put(Race.HUMAN, NameTable.load("/names/human/male.json"));
+		this.femaleNamesByRace.put(Race.HUMAN, NameTable.load("/names/human/female.json"));
 		this.dynastyPoolByRace.put(Race.HUMAN,
-				new DynastyPool(NameTable.load("/dynasty-human.json"),
+				new DynastyPool(NameTable.load("/names/human/dynasty.json"),
 						new Rng(seed ^ NAME_SEED_SALT ^ DYNASTY_SHUFFLE_SALT)));
 		this.slotTable = SlotTable.load();
 		this.liturgicalCalendar = LiturgicalCalendar.load();
@@ -279,9 +279,9 @@ public class GameSession {
 		Map<Race, NameTable> by = male ? maleNamesByRace : femaleNamesByRace;
 		return by.computeIfAbsent(race, r -> {
 			String kind = male ? "male" : "female";
-			String racePath = "/" + kind + "-" + r.id() + ".json";
+			String racePath = "/names/" + r.id() + "/" + kind + ".json";
 			return NameTable.load(
-					resourceExists(racePath) ? racePath : "/" + kind + "-human.json");
+					resourceExists(racePath) ? racePath : "/names/human/" + kind + ".json");
 		});
 	}
 
@@ -290,8 +290,8 @@ public class GameSession {
 	// generator; HUMAN (ordinal 0) uses no race salt, so its pool is unchanged.
 	private synchronized DynastyPool dynastyPool(Race race) {
 		return dynastyPoolByRace.computeIfAbsent(race, r -> {
-			String racePath = "/dynasty-" + r.id() + ".json";
-			String path = resourceExists(racePath) ? racePath : "/dynasty-human.json";
+			String racePath = "/names/" + r.id() + "/dynasty.json";
+			String path = resourceExists(racePath) ? racePath : "/names/human/dynasty.json";
 			long raceSalt = RACE_POOL_SALT * r.ordinal(); // 0 for HUMAN
 			return new DynastyPool(NameTable.load(path),
 					new Rng(seed ^ NAME_SEED_SALT ^ DYNASTY_SHUFFLE_SALT ^ raceSalt));

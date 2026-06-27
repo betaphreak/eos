@@ -35,7 +35,7 @@ public enum Race {
 	 */
 	HARIMARI("harimari", LifeTable.WEST_LEVEL_3, 9, 9, 16);
 
-	// resource-file slug, e.g. "human" -> /male-human.json
+	// resource-file slug, e.g. "human" -> /names/human/male.json
 	private final String id;
 
 	// the race's mortality schedule
@@ -61,8 +61,8 @@ public enum Race {
 
 	/**
 	 * The resource-file slug for this race (e.g. {@code "human"}), used to build
-	 * the per-race resource paths {@code /male-<id>.json}, {@code /dynasty-<id>.json},
-	 * {@code /feasts-<id>.json}, etc.
+	 * the per-race resource paths {@code /names/<id>/male.json},
+	 * {@code /names/<id>/dynasty.json}, {@code /feasts-<id>.json}, etc.
 	 *
 	 * @return the resource slug
 	 */

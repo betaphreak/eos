@@ -17,7 +17,7 @@ class NameTableTest {
 
 	@Test
 	void higherRarityDrawsRarerNames() {
-		NameTable male = NameTable.load("/male-human.json");
+		NameTable male = NameTable.load("/names/human/male.json");
 		// index each name in the table's common -> rare order
 		String[] order = male.namesCopy();
 		Map<String, Integer> rank = new HashMap<>();
@@ -41,7 +41,7 @@ class NameTableTest {
 
 	@Test
 	void midRaritySitsBetweenExtremes() {
-		NameTable male = NameTable.load("/male-human.json");
+		NameTable male = NameTable.load("/names/human/male.json");
 		String[] order = male.namesCopy();
 		Map<String, Integer> rank = new HashMap<>();
 		for (int i = 0; i < order.length; i++)
