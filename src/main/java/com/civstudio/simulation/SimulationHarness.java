@@ -334,8 +334,11 @@ public class SimulationHarness {
 	 * @return the shared copper bank (created on first call)
 	 */
 	public Bank getCopperBank() {
-		if (copperBank == null)
+		if (copperBank == null) {
 			copperBank = addBank(BankConfig.DEFAULT);
+			// the commoners' bank has no single owner — name it for its clientele
+			copperBank.setName("Commoners' Bank");
+		}
 		return copperBank;
 	}
 
@@ -348,10 +351,14 @@ public class SimulationHarness {
 	 * @return the shared silver bank (created on first call)
 	 */
 	public Bank getSilverBank() {
-		if (silverBank == null)
+		if (silverBank == null) {
 			silverBank = addBank(BankConfig.DEFAULT.toBuilder()
 					.currency(CurrencyType.SILVER)
 					.exchangeFeeRate(DEFAULT_EXCHANGE_FEE_RATE).build());
+			// the nobles' shared money-changer; a noble that comes to own it is
+			// renamed after its house (see Noble's constructor)
+			silverBank.setName("Nobles' Bank");
+		}
 		return silverBank;
 	}
 
@@ -362,10 +369,14 @@ public class SimulationHarness {
 	 * @return the shared gold bank (created on first call)
 	 */
 	public Bank getGoldBank() {
-		if (goldBank == null)
+		if (goldBank == null) {
 			goldBank = addBank(BankConfig.DEFAULT.toBuilder()
 					.currency(CurrencyType.GOLD)
 					.exchangeFeeRate(DEFAULT_EXCHANGE_FEE_RATE).build());
+			// the crown's bank; renamed after the ruling house once the ruler exists
+			// (see installRuler), but named for the crown until then
+			goldBank.setName("Crown Bank");
+		}
 		return goldBank;
 	}
 
@@ -642,6 +653,9 @@ public class SimulationHarness {
 	// (createRulerFromLeader) paths.
 	private Bank installRuler(Ruler ruler) {
 		colony.addAgent(ruler);
+		// name the crown's gold bank after the ruling house (a same-dynasty heir keeps
+		// the surname, so the name carries across successions)
+		ruler.getBank().setName(ruler.getHead().surname() + " Bank");
 		// record the sovereign so a builder can bill it for public works (the roads
 		// and walls of a growth ring); a no-op for any colony that never grows
 		colony.setRuler(ruler);

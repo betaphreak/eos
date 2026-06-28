@@ -256,6 +256,12 @@ public class Noble extends AbstractHousehold {
 
 		this.config = config;
 		this.properties = new ArrayList<>(ownedProperties);
+		// a bank this noble owns is named after its house (a same-dynasty heir keeps
+		// the surname, so the name carries across successions); a shared bank the noble
+		// merely banks at, but does not own, is untouched
+		for (Property property : properties)
+			if (property instanceof Bank ownedBank)
+				ownedBank.setName(getHead().surname() + " Bank");
 		this.enjoyment = new Enjoyment(0);
 		this.necessity = new Necessity(0);
 		this.eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");

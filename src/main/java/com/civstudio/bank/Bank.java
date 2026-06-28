@@ -46,9 +46,11 @@ public class Bank implements Property {
 	// the colony this bank belongs to
 	private final Settlement colony;
 
-	// display name, defaulted from the colony's bank sequence (e.g. "Bank 1")
+	// display name, defaulted from the colony's bank sequence (e.g. "Bank 1") but
+	// usually overridden to name the bank after its owner/role (the commoners', the
+	// nobles', or the ruling house — see SimulationHarness.getCopperBank etc.)
 	@Getter
-	private final String name;
+	private String name;
 
 	// the currency this bank denominates its accounts in
 	@Getter
@@ -115,10 +117,22 @@ public class Bank implements Property {
 		this.colony = colony;
 		this.name = "Bank " + colony.nextBankNumber();
 		this.currency = config.currency();
+		// (name is usually overridden after construction to the bank's owner/role)
 		this.tao = config.tao();
 		this.loanIR = config.initLoanIR();
 		this.depositIRAvger = new Averager(config.ltIRWin());
 		this.loanIRAvger = new Averager(config.ltIRWin());
+	}
+
+	/**
+	 * Set the bank's display name (the {@code Bank} column in {@code Banks.csv}).
+	 * Used to name a bank after its owner or role — the commoners', the nobles', or
+	 * the ruling house — instead of the bare {@code "Bank N"} sequence default.
+	 *
+	 * @param name the bank's display name
+	 */
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	/**
