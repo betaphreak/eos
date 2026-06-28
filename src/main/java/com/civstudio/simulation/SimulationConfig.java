@@ -197,8 +197,8 @@ public record SimulationConfig(
 			MEDIEVAL.laborer(),
 			35,                                    // meanInitAgeYears
 			MEDIEVAL.targetNStock(),
-			5,                                     // meanSkillMale
-			2,                                     // meanSkillFemale
+			7,                                     // meanSkillMale
+			5,                                     // meanSkillFemale
 			51.5074,                               // latitude (London)
 			-0.1278,                               // longitude (London)
 			MEDIEVAL.externalInflowPerStep(),

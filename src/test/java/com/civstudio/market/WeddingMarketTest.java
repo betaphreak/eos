@@ -87,6 +87,10 @@ class WeddingMarketTest {
 	private static SimulationHarness runSmallPoolColony() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(1).numEFirms(2).numNFirms(10)
+				// pin the founding skill to the survival regime this test needs (the
+				// higher default destabilizes a small colony — see docs/food-balance.md);
+				// this test exercises weddings, not skill
+				.meanSkillMale(5).meanSkillFemale(2)
 				.retinueSize(120).promotionRatio(0.4).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
@@ -110,6 +114,9 @@ class WeddingMarketTest {
 	private static SimulationHarness runHighPromotionColony() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(2).numEFirms(2).numNFirms(10)
+				// pin the founding skill to the survival regime this test needs (see
+				// runSmallPoolColony); this test exercises immigrant recruitment, not skill
+				.meanSkillMale(5).meanSkillFemale(2)
 				.retinueSize(60).promotionRatio(0.8).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();

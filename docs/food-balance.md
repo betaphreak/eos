@@ -102,6 +102,21 @@ runs away to 44–72. Mechanism:
 - **More food firms / bigger reserve / younger founders / external inflow** each only
   shift the timing; none reaches the ~15-year survival the births payoff needs (swept
   in `docs/births.md` Phase 3).
+- **Narrowing the price band (`ConsumerGoodMarket.zeta`) does NOT help.** `zeta` caps
+  how far the market price can move per step (±10 %). Shrinking it to ±1 % to tame the
+  late-stage spiral was tried and is **counter-productive**: the default colony then
+  collapses in **~1 year** (vs ~7) — it can no longer raise the price fast enough to
+  *ration* its chronically scarce food, so food is mis-allocated and it starves almost
+  immediately. The narrow band only *helps* the high-skill deflationary glut (the price
+  can't crash, so wages don't collapse — that colony then holds ~400 laborers for 10 y),
+  but a normal colony never enters that regime. The two regimes need **opposite**
+  price-discovery speeds — scarcity wants fast price *rises*, a glut wants slow price
+  *falls* — so a single symmetric band cannot serve both, and the model lives in the
+  scarcity regime where ±10 % is load-bearing. (And it does not address the spiral's
+  root: with inelastic `minN` demand above supply no price clears, so ±1 % merely slows
+  the runaway ~10×.) If the high-productivity regime is ever wanted, an **asymmetric**
+  band — capping how fast price may *fall*, not how fast it may rise — is the lever to
+  explore, not a smaller symmetric one.
 
 ## The core blocker
 

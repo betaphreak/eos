@@ -93,6 +93,10 @@ class BirthsTest {
 	private static SimulationHarness runFertilePoolColony() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(1).numEFirms(2).numNFirms(10)
+				// pin the founding skill to the survival regime this wedding/births test
+				// needs (the higher default destabilizes a small colony — see
+				// docs/food-balance.md); this test exercises births, not skill
+				.meanSkillMale(5).meanSkillFemale(2)
 				.retinueSize(120).promotionRatio(0.4).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
