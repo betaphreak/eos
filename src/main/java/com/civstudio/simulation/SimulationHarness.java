@@ -1335,11 +1335,12 @@ public class SimulationHarness {
 	}
 
 	/**
-	 * Register the export sector's printers — the {@link StrategicPrinter}, the
-	 * {@link NoblesPrinter} and the {@link PersonsOfInterestPrinter} — for a colony
-	 * whose nobles are the default export workforce (and so has no other noble
-	 * printers). The filenames are prefixed with <tt>prefix</tt> (see {@link
-	 * #addCommonPrinters(String)}).
+	 * Register the export sector's printers — the {@link StrategicPrinter} and the
+	 * {@link NoblesPrinter} — for a colony whose nobles are the default export
+	 * workforce (and so has no other noble printers). The filenames are prefixed with
+	 * <tt>prefix</tt> (see {@link #addCommonPrinters(String)}). Persons-of-interest
+	 * creation and death are recorded in the event log (see {@link
+	 * com.civstudio.io.SimLog}), so there is no separate CSV roster.
 	 *
 	 * @param prefix
 	 *            prepended to each printer's filename ({@code ""} for the default)
@@ -1350,8 +1351,6 @@ public class SimulationHarness {
 		colony.addPrinter(
 				new StrategicPrinter(prefix + "Strategic", strategicFirm, bank));
 		colony.addPrinter(new NoblesPrinter(prefix + "Nobles"));
-		colony.addPrinter(
-				new PersonsOfInterestPrinter(prefix + "PersonsOfInterest"));
 		// chart the colony's research, if enabled (the strategic sector fuels it)
 		if (colony.getResearch() != null)
 			colony.addPrinter(new ResearchPrinter(prefix + "Research"));

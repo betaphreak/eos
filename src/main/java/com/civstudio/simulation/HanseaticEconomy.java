@@ -11,7 +11,6 @@ import com.civstudio.geo.Province;
 import com.civstudio.name.NameRegistry;
 import com.civstudio.io.SimLog;
 import com.civstudio.io.printer.NoblesPrinter;
-import com.civstudio.io.printer.PersonsOfInterestPrinter;
 import com.civstudio.io.printer.StrategicPrinter;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
@@ -235,7 +234,6 @@ public class HanseaticEconomy {
 		colony.addPrinter(new StrategicPrinter(prefix + "Strategic",
 				h.getStrategicFirm(), copper));
 		colony.addPrinter(new NoblesPrinter(prefix + "Nobles"));
-		colony.addPrinter(new PersonsOfInterestPrinter(prefix + "PersonsOfInterest"));
 		return h;
 	}
 

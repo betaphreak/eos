@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
-import com.civstudio.io.printer.PersonsOfInterestPrinter;
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.MigrantCaravan;
 import com.civstudio.geo.Province;
@@ -92,9 +91,9 @@ public class Settlement {
 	private final LinkedHashSet<Agent> deadAgents = new LinkedHashSet<Agent>();
 
 	// the colony's persons of interest: every noble and every notable household
-	// (skill above the threshold). Registered at creation, removed on death; their
-	// names and statistics are logged at the start of each year (see
-	// logPersonsOfInterest) instead of logging every individual death.
+	// (skill above the threshold). Registered at creation, removed on death; this
+	// roster confines death logging to them (a POI's death is logged at FINE, an
+	// ordinary laborer's not) and feeds the annual digest's POI-death count.
 	private final LinkedHashSet<Household> personsOfInterest = new LinkedHashSet<Household>();
 
 	// symbol table mapping good names to their markets
@@ -1562,8 +1561,9 @@ public class Settlement {
 
 	/**
 	 * Return the colony's persons of interest — its living nobles and notable
-	 * households. A {@link PersonsOfInterestPrinter} writes their
-	 * names and statistics to CSV once a year.
+	 * households. Their creation and death are recorded in the event log (see
+	 * {@link com.civstudio.io.SimLog}); this roster is what confines death logging to
+	 * them and is exposed for any caller that needs the living set.
 	 *
 	 * @return the persons of interest
 	 */
