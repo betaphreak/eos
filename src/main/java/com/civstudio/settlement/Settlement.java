@@ -802,17 +802,20 @@ public class Settlement {
 
 	/**
 	 * Whether the colony can seat another effective-slot occupant — either a slot
-	 * is vacant now, or it can still grow (its {@link #getSize() size} is below its
-	 * {@link #getMaxSize() maximum}). When this is {@code false} the colony is
-	 * physically full at its (plots-capped) maximum size, so the dynamic firm
+	 * is vacant now, or it can still grow into one: its {@link #getSize() size} is
+	 * below its {@link #getMaxSize() maximum} <em>and</em> it has a {@link
+	 * #setBuilder builder} to do the growing. When this is {@code false} the colony
+	 * cannot take another firm — it is physically full at its (plots-capped) maximum
+	 * size, or it is full and has no builder to enlarge it — so the dynamic firm
 	 * provisioning must not charter another firm: there is nowhere to put it and
-	 * {@link #claimSlot} would fail to grow. A colony with no province cap reaches
-	 * this only at the slot table's own ceiling. See {@code docs/geography.md}.
+	 * {@link #claimSlot} would fail (a builderless colony cannot grow, so its firm
+	 * count is capped at its founding slots). A colony with no province cap reaches
+	 * the size limit only at the slot table's own ceiling. See {@code docs/geography.md}.
 	 *
 	 * @return {@code true} if another occupant could be seated (now or after growth)
 	 */
 	public boolean hasRoomToExpand() {
-		return firstVacantSlot() != null || size < maxSize;
+		return firstVacantSlot() != null || (size < maxSize && builder != null);
 	}
 
 	// the first vacant slot, or null if every effective slot is occupied

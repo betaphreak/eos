@@ -521,26 +521,51 @@ public class SimulationHarness {
 		// stay ordered copper, silver, gold even though no noble exists yet
 		getSilverBank();
 		primeNobleLabor();
-		// every export colony researches the tech tree: it climbs from its start era,
-		// and a dedicated science firm — staffed by the same aristocracy, funded by the
-		// ruler — produces the research points (see ScienceFirm / ResearchState). The
-		// ruler picks the focus monthly; a colony with no ruler funds no scholars, so
-		// research simply never advances. A fresh colony gets a warm-start focus (e.g.
-		// founding 90% through the Medieval entry tech); a re-founded band overrides
-		// this with its carried research (see reFoundStandardColony).
-		// the session's era sets the research baseline: a colony founding in era E
-		// knows every tech up to E-below and warm-starts E's entry tech (TECH_E_LIFESTYLE)
-		Era era = colony.getSession().getEra();
-		// the colony researches on its founding race's tech tree — the shared graph
-		// under that race's effect overlay (human gets the default empty overlay), so a
-		// Harimari colony's research applies the Harimari effects (see docs/race.md)
-		ResearchState research = new ResearchState(
-				colony.getSession().getTechTree(colony.getFoundingRace()), colony,
-				era.below(), cfg.researchCostScale());
-		research.seedInitialFocus("TECH_" + era.name() + "_LIFESTYLE",
-				cfg.researchInitialFraction());
-		colony.setResearch(research);
-		createScienceFirm(bank, ScienceConfig.DEFAULT);
+		// install research + the science firm (see ensureResearchAndScience);
+		// createDefaultRuler calls it too, so even a colony reaching a ruler without
+		// going through this method (e.g. HanseaticEconomy) still researches.
+		ensureResearchAndScience(bank);
+	}
+
+	/**
+	 * Ensure the colony <b>researches the tech tree</b>: install a {@link ResearchState}
+	 * and a {@link ScienceFirm} if it has neither yet — so <b>every ruler-bearing colony
+	 * researches</b> (the ruler funds and directs research, the aristocracy staffs the
+	 * science firm). Idempotent: a colony that already has research (the strategic-sector
+	 * setup, or a re-founded band's carried research) is left untouched, so the call is
+	 * safe to make from more than one founding path. Called by {@link
+	 * #createDefaultStrategicSector} and, as the "if there are zero science firms the
+	 * ruler creates one" guarantee, by {@link #createDefaultRuler}/{@link
+	 * #createRulerFromLeader} before the {@link Ruler} is built (so the ruler finds the
+	 * scholar labor market to work during the ennoblement ramp).
+	 *
+	 * @param bank the bank at which the science firm holds its account
+	 */
+	public void ensureResearchAndScience(Bank bank) {
+		// the session's era sets the research baseline: a colony founding in era E knows
+		// every tech up to E-below and warm-starts E's entry tech (TECH_E_LIFESTYLE), on
+		// its founding race's tech tree (the shared graph under that race's effect
+		// overlay — see docs/race.md)
+		if (colony.getResearch() == null) {
+			Era era = colony.getSession().getEra();
+			ResearchState research = new ResearchState(
+					colony.getSession().getTechTree(colony.getFoundingRace()), colony,
+					era.below(), cfg.researchCostScale());
+			research.seedInitialFocus("TECH_" + era.name() + "_LIFESTYLE",
+					cfg.researchInitialFraction());
+			colony.setResearch(research);
+		}
+		if (!hasScienceFirm())
+			createScienceFirm(bank, ScienceConfig.DEFAULT);
+	}
+
+	// whether the colony already has a (living) science firm, so the research guarantee
+	// does not charter a second one
+	private boolean hasScienceFirm() {
+		for (Agent a : colony.getAgents())
+			if (a instanceof ScienceFirm)
+				return true;
+		return false;
 	}
 
 	/**
@@ -578,6 +603,10 @@ public class SimulationHarness {
 	 *         reported together by {@link #addBanksPrinter})
 	 */
 	public Bank createDefaultRuler() {
+		// every ruler-bearing colony researches: if the colony has no science firm yet
+		// (it did not go through createDefaultStrategicSector), the ruler founds one now,
+		// before it is built, so it finds the scholar labor market to work
+		ensureResearchAndScience(getCopperBank());
 		Bank gold = getGoldBank();
 		return installRuler(new Ruler(CurrencyType.GOLD.toCopper(DEFAULT_RULER_GOLD),
 				DEFAULT_RULER_CONSUMPTION_RATE, cfg.bankProfitTaxRate(),
@@ -600,6 +629,9 @@ public class SimulationHarness {
 	 * @return the gold bank the ruler owns and banks at
 	 */
 	public Bank createRulerFromLeader(Member leader, double hoard) {
+		// guarantee research (idempotent — the re-founding path's strategic sector
+		// already installed it), before the ruler is built so it finds the scholar market
+		ensureResearchAndScience(getCopperBank());
 		Bank gold = getGoldBank();
 		return installRuler(new Ruler(leader, hoard, DEFAULT_RULER_CONSUMPTION_RATE,
 				cfg.bankProfitTaxRate(), cfg.nobleIncomeTaxRate(), gold, colony));
