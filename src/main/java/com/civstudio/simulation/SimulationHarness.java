@@ -475,6 +475,23 @@ public class SimulationHarness {
 	 */
 	public void createFirms(Bank capitalFirmBank, IntFunction<Bank> firmBank,
 			IntToDoubleFunction eSavings, IntToDoubleFunction nSavings) {
+		createFirms(capitalFirmBank, firmBank, eSavings, nSavings, cfg.numEFirms(),
+				cfg.numNFirms());
+	}
+
+	/**
+	 * As {@link #createFirms(Bank, IntFunction, IntToDoubleFunction,
+	 * IntToDoubleFunction)}, but with explicit founding firm counts (overriding {@code
+	 * cfg.numEFirms()} / {@code cfg.numNFirms()}). Used by {@link #foundStandardColony}
+	 * to size the founding food sector to the labor force (see {@code
+	 * docs/food-balance.md}).
+	 *
+	 * @param numEFirms number of enjoyment firms to found
+	 * @param numNFirms number of necessity firms to found
+	 */
+	public void createFirms(Bank capitalFirmBank, IntFunction<Bank> firmBank,
+			IntToDoubleFunction eSavings, IntToDoubleFunction nSavings,
+			int numEFirms, int numNFirms) {
 		// a representative firm bank for any firm the dynamic provisioning charters
 		// later (createDefaultRuler installs the factory with it)
 		charteredFirmBank = firmBank.apply(0);
@@ -482,8 +499,8 @@ public class SimulationHarness {
 				cfg.cFirm().wageBudget(), capitalFirmBank, colony);
 		capitalFirms = new CFirm[] { cFirm };
 
-		eFirms = new EFirm[cfg.numEFirms()];
-		for (int i = 0; i < cfg.numEFirms(); i++)
+		eFirms = new EFirm[numEFirms];
+		for (int i = 0; i < numEFirms; i++)
 			eFirms[i] = new EFirm(cfg.eFirm().checking(),
 					eSavings.applyAsDouble(i), cfg.eFirm().output(),
 					cfg.eFirm().wageBudget(), cfg.eFirm().capital(),
@@ -495,8 +512,8 @@ public class SimulationHarness {
 		// Stored on the harness so the dynamic provisioning can charter matching ones.
 		nFirmConfig = firmConfig.toBuilder()
 				.A(firmConfig.A() * NECESSITY_TECH_FACTOR).build();
-		nFirms = new NFirm[cfg.numNFirms()];
-		for (int i = 0; i < cfg.numNFirms(); i++)
+		nFirms = new NFirm[numNFirms];
+		for (int i = 0; i < numNFirms; i++)
 			nFirms[i] = new NFirm(cfg.nFirm().checking(),
 					nSavings.applyAsDouble(i), cfg.nFirm().output(),
 					cfg.nFirm().wageBudget(), cfg.nFirm().capital(),
@@ -515,6 +532,37 @@ public class SimulationHarness {
 			colony.addAgent(f);
 			colony.claimSlot(f);
 		}
+	}
+
+	// the four non-consumer firms that each claim an effective build slot at founding
+	// (capital, strategic export, builder, science) — reserved when sizing the founding
+	// necessity sector so it never tries to seat more firms than the colony can hold
+	private static final int FOUNDING_SERVICE_SLOTS = 4;
+
+	/**
+	 * The number of <b>necessity</b> firms to found, sized to the labor force so food
+	 * production matches demand from day 0 rather than ramping from a single seed firm
+	 * (failure mode A in {@code docs/food-balance.md}). It is {@code
+	 * round(laborForce / cfg.foundingLaborersPerNFirm())} (laborForce =
+	 * {@code round(promotionRatio * retinueSize)}), floored at {@code cfg.numNFirms()}
+	 * and capped to what the colony can ever seat — its {@linkplain
+	 * Settlement#getMaxEffectiveSlots() maximum effective slots} less the enjoyment
+	 * firms and the {@value #FOUNDING_SERVICE_SLOTS} slot-claiming services — so {@code
+	 * foundOnto} never has to reject a firm. A configured ratio of {@code 0} keeps the
+	 * fixed {@code cfg.numNFirms()} (legacy behavior).
+	 *
+	 * @return the founding necessity-firm count
+	 */
+	private int foundingNFirmCount() {
+		int perFirm = cfg.foundingLaborersPerNFirm();
+		if (perFirm <= 0)
+			return cfg.numNFirms();
+		int laborForce = (int) Math.round(cfg.promotionRatio() * cfg.retinueSize());
+		int sized = Math.max(cfg.numNFirms(),
+				(int) Math.ceil((double) laborForce / perFirm));
+		int maxFit = colony.getMaxEffectiveSlots() - cfg.numEFirms()
+				- FOUNDING_SERVICE_SLOTS;
+		return Math.max(1, Math.min(sized, maxFit));
 	}
 
 	/**
@@ -1377,7 +1425,8 @@ public class SimulationHarness {
 			IntToDoubleFunction nFirmSavings, IntToDoubleFunction laborerNStock) {
 		createMarkets();
 		Bank copper = getCopperBank();
-		createFirms(copper, i -> copper, eFirmSavings, nFirmSavings);
+		createFirms(copper, i -> copper, eFirmSavings, nFirmSavings,
+				cfg.numEFirms(), foundingNFirmCount());
 		createDefaultStrategicSector(copper);
 		Bank gold = createDefaultRuler();
 		createDefaultRetinue();
@@ -1416,7 +1465,8 @@ public class SimulationHarness {
 			IntToDoubleFunction nFirmSavings, IntToDoubleFunction laborerNStock) {
 		createMarkets();
 		Bank copper = getCopperBank();
-		createFirms(copper, i -> copper, eFirmSavings, nFirmSavings);
+		createFirms(copper, i -> copper, eFirmSavings, nFirmSavings,
+				cfg.numEFirms(), foundingNFirmCount());
 		createDefaultStrategicSector(copper);
 		// resume the band's carried tech tree (overriding the fresh warm-start the
 		// strategic sector just installed), re-applying its researched techs' effects

@@ -128,10 +128,21 @@ survival fix.
 
 ## Recommended directions (each a calibration effort)
 
-1. **Fix founding provisioning (clearest win).** Found with necessity (and capital)
-   firms sized to the founding population rather than the single seed firm, so food
-   production matches demand from day 0. Demonstrated to remove failure mode A
-   (stable ~126 for 3 years). Lowest-risk, highest-confidence change.
+1. **Fix founding provisioning (clearest win) — DONE.** `foundStandardColony` now
+   founds the necessity sector **sized to the labor force** instead of the single seed
+   firm: `numNFirms = round(laborForce / cfg.foundingLaborersPerNFirm())` (default
+   `foundingLaborersPerNFirm` = 30), clamped to what the colony's (province-capped)
+   slots can ever seat (`Settlement.getMaxEffectiveSlots()` less the enjoyment firms
+   and the four slot-claiming services — so `foundOnto` never rejects a firm). The
+   default Dhenijansar colony founds **~14** necessity firms instead of 1; the founding
+   food crunch softens and lifespan rises from ~7.7 y to **~10 y** (births off; the
+   improvement is robust across `foundingLaborersPerNFirm` ≈ 25–50). The granular sims
+   (`Hanseatic`, `SmallOpen`) call `createFirms` directly and are unaffected; a ratio
+   of `0` keeps the fixed `numNFirms`. (Note: founding *already-full* over-provisions a
+   high-skill colony into a faster deflationary collapse — orthogonal to the normal
+   colony this helps; `GlutCloseTest` pins the ratio to 0 to study the glut-close in
+   isolation.) This removes failure mode A; the residual collapse is failure mode B
+   (the replacement ratchet), still open.
 2. **Diagnose the late-stage food-price spiral — DONE** (see *The late-stage price
    spiral — diagnosed*, above). It is labour-starved supply falling below the inelastic
    `minN` survival demand: with no clearing price, the bounded ±10 %/step search
@@ -160,14 +171,11 @@ survival fix.
    reacts on a lag and does not by itself save a high-skill colony whose wage economy
    the deflation has already damaged; it is the prerequisite that stops output-raising
    levers (skill, TFP) from backfiring into an uncorrected deflation.
-4. **Create a real per-worker food surplus** (after 3) — e.g. a higher food-sector TFP
-   (`NECESSITY_TECH_FACTOR` / a food tech multiplier) or lower per-capita consumption
-   (ration sizes), tuned against the price/wage calibration so it does not destabilize.
-5. **Extend survival to the maturation window** — slow the reserve drain (bigger
+4. **Extend survival to the maturation window** — slow the reserve drain (bigger
    reserve with adequate food), widen the founding-age spread (so the cohort does not
    age out together), or soften mortality — so the first home-grown generation (15y) can
    come online. Only then can the births mechanism (`docs/births.md`) deliver renewal.
 
-Fixes 1–5 together are the path from "collapses at ~7 years" to "survives long enough
+Fixes 1–4 together are the path from "collapses at ~7 years" to "survives long enough
 for births to sustain it." None is a single knob; this is the food-economy calibration
 program that the long-accepted colony collapse has been deferring.

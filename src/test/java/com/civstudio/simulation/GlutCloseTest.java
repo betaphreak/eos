@@ -31,6 +31,11 @@ class GlutCloseTest {
 				FertilityConfig.DEFAULT.toBuilder().dailyBirthProb(0).build();
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(5).fertility(noBirths)
+				// found with the single seed necessity firm (disable founding
+				// provisioning): this test exercises the glut-CLOSE rule, so it needs the
+				// sector to charter up and then contract; founding it already full would
+				// collapse the high-skill colony before the close rule can fire
+				.foundingLaborersPerNFirm(0)
 				.meanSkillMale(12).meanSkillFemale(9).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, 4411);
 		h.foundStandardColony(i -> cfg.eFirm().savings(),

@@ -673,6 +673,19 @@ public class Settlement {
 	}
 
 	/**
+	 * The number of effective build slots the colony has at its <b>maximum</b> size —
+	 * its hard firm-capacity ceiling, which a province-capped colony can never grow
+	 * past. Used to size founding provisioning so it does not try to seat more firms
+	 * than the colony can ever hold (which {@code foundOnto} would reject). See {@code
+	 * docs/food-balance.md}.
+	 *
+	 * @return effective slots at the colony's maximum size
+	 */
+	public int getMaxEffectiveSlots() {
+		return slotTable.forSize(maxSize).effective();
+	}
+
+	/**
 	 * The colony's effective build slots — occupied and vacant — in a fixed
 	 * order, as an unmodifiable view. Its length is {@code getSlotInfo().effective()}.
 	 *

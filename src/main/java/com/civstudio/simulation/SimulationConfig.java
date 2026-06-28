@@ -94,6 +94,15 @@ import lombok.Builder;
  * @param fertility    household fertility parameters (when a married laborer
  *                     household bears a child), applied to the {@code Settlement}.
  *                     Births are on by default (see {@link FertilityConfig#DEFAULT})
+ * @param foundingLaborersPerNFirm number of founding laborers per founding
+ *                     <b>necessity</b> firm — sizes the founding food sector to the
+ *                     labor force (round(promotionRatio*retinueSize)) so food
+ *                     production matches demand from day 0 instead of ramping from a
+ *                     single seed firm (see {@code docs/food-balance.md}). Applied by
+ *                     {@code SimulationHarness.foundStandardColony}, clamped to what
+ *                     the colony's (province-capped) slots can seat; {@code 0} keeps
+ *                     the fixed {@code numNFirms}. The granular-founding sims
+ *                     (Hanseatic, SmallOpen) bypass it
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -124,7 +133,8 @@ public record SimulationConfig(
 		int targetNobles,
 		double researchInitialFraction,
 		double researchCostScale,
-		FertilityConfig fertility) {
+		FertilityConfig fertility,
+		int foundingLaborersPerNFirm) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -211,5 +221,7 @@ public record SimulationConfig(
 			MEDIEVAL.targetNobles(),
 			0.9,                                   // researchInitialFraction (90%)
 			1.0,                                   // researchCostScale
-			FertilityConfig.DEFAULT);              // fertility (births on by default)
+			FertilityConfig.DEFAULT,               // fertility (births on by default)
+			30);                                   // foundingLaborersPerNFirm (size the
+			                                       //   founding food sector to demand)
 }
