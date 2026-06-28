@@ -30,10 +30,17 @@ class RetinueTest {
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.foundStandardColony(i -> cfg.eFirm().savings(),
 				i -> cfg.nFirm().savings(), i -> 15);
-		h.run();
 
 		Retinue retinue = h.getRetinue();
 		assertNotNull(retinue, "a standard colony founds its labor force from a pool");
+
+		// the pool opens with a deep larder (10× the per-peasant buffer — see
+		// Retinue.BUFFER_DAYS), so it would live off that food for over a year before
+		// touching the market. To exercise the relief-funding path on this short horizon,
+		// draw the larder down near the buy-threshold (leaving ~1 day per peasant) so the
+		// pool must restock on the market — which is what bills the ruler.
+		retinue.drawPromotionStock(retinue.getLarder() - retinue.size());
+		h.run();
 
 		// social mobility fired: the ruler promoted peasants into laborer households
 		// (the day-0 founding promotion, plus any death replacements)

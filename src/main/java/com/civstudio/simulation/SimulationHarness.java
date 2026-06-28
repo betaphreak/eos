@@ -31,6 +31,7 @@ import com.civstudio.agent.firm.StrategicFirm;
 import com.civstudio.agent.firm.StrategicFirmConfig;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.Retinue;
+import com.civstudio.agent.RetinueConfig;
 import com.civstudio.agent.Rank;
 import com.civstudio.agent.RankLadder;
 import com.civstudio.agent.laborer.Laborer;
@@ -70,6 +71,16 @@ public class SimulationHarness {
 
 	// fixed necessity stock granted to a replacement household
 	private static final int REPLACEMENT_NECESSITY_STOCK = 15;
+
+	// the peasant reserve an open colony's inflow maintains, as a fraction of the
+	// promoted workforce: a modest buffer so promotion always finds a peasant to replace
+	// a dead laborer, while keeping the extra relief mouths small enough not to overload
+	// the colony's food supply (refilling to the full founding reserve re-creates the
+	// overpopulation that starves the pool — see enablePoolImmigration)
+	private static final double IMMIGRATION_RESERVE_FRACTION = 0.15;
+
+	// a floor on that maintained reserve, so even a tiny workforce keeps a usable buffer
+	private static final int MIN_IMMIGRATION_RESERVE = 20;
 
 	// a noble insolvent (a net debtor) for this many consecutive days is "ruined"
 	// and demoted back to a laborer (see demoteRuinedNobles). A one-year grace (as
@@ -152,6 +163,11 @@ public class SimulationHarness {
 	// Replace via setNobleConfig before createDefaultRuler (e.g. to give a colony's
 	// nobles a necessity reserve, as HanseaticEconomy does).
 	private NobleConfig nobleConfig = NobleConfig.DEFAULT;
+
+	// parameters for the peasant pool (larder depth, relief budget, relief ration);
+	// defaults to the canonical values. Replace via setRetinueConfig before
+	// createDefaultRetinue / foundStandardColony to tune the reserve's food economics.
+	private RetinueConfig retinueConfig = RetinueConfig.DEFAULT;
 
 	// the social-mobility engine for this colony (promotion/demotion across ranks),
 	// built lazily on first use with the realized ranks' factories registered (see
@@ -414,6 +430,18 @@ public class SimulationHarness {
 	 */
 	public void setNobleConfig(NobleConfig nobleConfig) {
 		this.nobleConfig = nobleConfig;
+	}
+
+	/**
+	 * Override the peasant-pool parameters (default {@link RetinueConfig#DEFAULT}). Must
+	 * be called before {@link #createDefaultRetinue()} / {@link #foundStandardColony}
+	 * (which build the pool) to take effect.
+	 *
+	 * @param retinueConfig
+	 *            the pool's tunable parameters (larder depth, relief budget, ration)
+	 */
+	public void setRetinueConfig(RetinueConfig retinueConfig) {
+		this.retinueConfig = retinueConfig;
 	}
 
 	/**
@@ -981,10 +1009,10 @@ public class SimulationHarness {
 		// PeasantLabor market exists when the pool's constructor looks it up.
 		if (colony.getBuilder() == null)
 			createBuilder(bank, BuilderConfig.DEFAULT);
-		// seed the whole pool with cfg.retinueSize() peasants, each with a
-		// BUFFER_DAYS larder. foundLaborersFromRetinue then promotes promotionRatio of
-		// them on day 0, the rest stay as the standing reserve.
-		retinue = new Retinue(cfg.retinueSize(), bank, colony);
+		// seed the whole pool with cfg.retinueSize() peasants, each with a per-peasant
+		// larder (see retinueConfig). foundLaborersFromRetinue then promotes
+		// promotionRatio of them on day 0, the rest stay as the standing reserve.
+		retinue = new Retinue(cfg.retinueSize(), bank, colony, retinueConfig);
 		colony.addAgent(retinue);
 		return retinue;
 	}
@@ -1009,7 +1037,7 @@ public class SimulationHarness {
 			createBuilder(bank, BuilderConfig.DEFAULT);
 		Retinue following = band.getFollowing();
 		retinue = new Retinue(following.getMembers(), following.getLarder(), bank,
-				colony);
+				colony, retinueConfig);
 		colony.addAgent(retinue);
 		return retinue;
 	}
@@ -1211,6 +1239,18 @@ public class SimulationHarness {
 	public void enableExternalInflow(Bank gatewayBank) {
 		if (cfg.externalInflowPerStep() <= 0)
 			return;
+		// a pool-bearing colony renews its labor force through the peasant pool, so the
+		// open-colony inflow recruits settlers into the pool (which promotion then draws
+		// the workforce from) rather than minting laborer households directly. Without an
+		// inflow a closed pool colony spirals to collapse once the founding reserve drains
+		// (dead laborers go unreplaced — see docs/peasant-pool.md); refilling the reserve
+		// keeps promotion supplied, so the colony survives.
+		if (retinue != null) {
+			enablePoolImmigration(gatewayBank);
+			return;
+		}
+		// a bare (pool-less) colony has no reserve to refill, so external money instead
+		// bankrolls net-new laborer households opened straight from the gateway equity.
 		colony.addStepAction(() -> gatewayBank
 				.injectExternalFunds(cfg.externalInflowPerStep()));
 		colony.setImmigrationPolicy(() -> {
@@ -1222,6 +1262,45 @@ public class SimulationHarness {
 						gatewayBank, colony, true));
 			}
 			return immigrants;
+		});
+	}
+
+	/**
+	 * Refill the peasant pool from outside the colony toward a <b>modest standing
+	 * reserve</b>, bankrolled by the external inflow. Each step the reserve sits below
+	 * target, the inflow is injected into the gateway bank's equity (the recruitment
+	 * budget) and as many settlers as the accumulated budget affords are drawn into the
+	 * pool — each costing {@code immigrationThreshold}, destroyed via {@link
+	 * Bank#extractExternalEquity} since a pooled peasant opens no account of its own.
+	 * <p>
+	 * The target is a small buffer over the promoted workforce ({@link
+	 * #IMMIGRATION_RESERVE_FRACTION}), <b>not</b> the full founding reserve: a colony's
+	 * food supply can feed its workforce but not also a reserve as large again, so
+	 * refilling to the founding size would starve the pool right back down (the
+	 * overpopulation that drives collapse). A modest buffer is enough that promotion
+	 * always finds a peasant to replace a dead laborer — which is what keeps the colony
+	 * from collapsing — while staying light enough on the food market to be sustained.
+	 * Topping up <em>only when short</em> keeps the inflow self-limiting (no unbounded
+	 * equity, no overgrown pool).
+	 *
+	 * @param gatewayBank
+	 *            the bank through which external money enters the colony
+	 */
+	private void enablePoolImmigration(Bank gatewayBank) {
+		// a modest buffer over the promoted workforce — enough to always have a peasant
+		// to promote, small enough not to overload the food supply (see the constants)
+		int workforce = (laborers == null) ? 0 : laborers.length;
+		int reserveTarget = Math.max(MIN_IMMIGRATION_RESERVE,
+				(int) Math.round(workforce * IMMIGRATION_RESERVE_FRACTION));
+		colony.addStepAction(() -> {
+			if (retinue.size() >= reserveTarget)
+				return; // reserve full — no inflow needed this step
+			gatewayBank.injectExternalFunds(cfg.externalInflowPerStep());
+			while (retinue.size() < reserveTarget
+					&& gatewayBank.getEquity() >= cfg.immigrationThreshold()) {
+				gatewayBank.extractExternalEquity(cfg.immigrationThreshold());
+				retinue.addImmigrant();
+			}
 		});
 	}
 

@@ -25,7 +25,7 @@ public enum Race {
 	 * The default ancestry: the human name tables, calendar and tech graph, a
 	 * working-age floor of 15 and young-adult immigrants aged 16–25.
 	 */
-	HUMAN("human", LifeTable.WEST_LEVEL_3, 15, 16, 25),
+	HUMAN("human", LifeTable.LENIENT, 15, 16, 25),
 
 	/**
 	 * The tiger-folk of <i>Anbennar</i> — the first non-human race. Reuses the

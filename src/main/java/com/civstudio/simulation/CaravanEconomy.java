@@ -62,17 +62,17 @@ public class CaravanEconomy {
 	private record Band(String name, double gold, double larder) {
 	}
 
-	// the three bands: ascending hoard (50/100/200 gold) paired with ascending food
-	// (lean/middling/ample larders)
-	private static final Band[] BANDS = {
-			new Band("Aurelia", 50, FOLLOWERS * 13.0),
-			new Band("Belmonte", 100, FOLLOWERS * 22.0),
-			new Band("Cortona", 200, FOLLOWERS * 35.0),
-	};
+	// a band sets out with ten times the food of a steady-state larder, matching the
+	// generous opening cushion a freshly-founded colony gets (see Retinue.STARTING_FOOD_MULTIPLIER)
+	private static final double STARTING_FOOD_MULTIPLIER = 10.0;
 
-	// a runaway guard, not a real horizon: each colony drains and dissolves in a few
-	// years, well under this, so the run truly ends at collapse, not at a time cap
-	private static final int MAX_STEPS = 365 * 200;
+	// the three bands: ascending hoard (50/100/200 gold) paired with ascending food
+	// (lean/middling/ample larders), each carrying ten times the steady-state larder
+	private static final Band[] BANDS = {
+			new Band("Aurelia", 50, FOLLOWERS * 13.0 * STARTING_FOOD_MULTIPLIER),
+			new Band("Belmonte", 100, FOLLOWERS * 22.0 * STARTING_FOOD_MULTIPLIER),
+			new Band("Cortona", 200, FOLLOWERS * 35.0 * STARTING_FOOD_MULTIPLIER),
+	};
 
 	/**
 	 * Muster three bands, have each wander to a viable site, re-found and run to
@@ -206,9 +206,9 @@ public class CaravanEconomy {
 		h.addBanksPrinter(prefix + "Banks");
 		h.addStrategicSectorPrinters(prefix, h.getCopperBank());
 
-		// run unbounded: stops early when the colony's workforce drains and it crosses
-		// the HOLDING → CARAVAN hinge (the survivors depart as a new Caravan)
-		colony.run(MAX_STEPS);
+		// run unbounded by any end date: stops only when the colony's workforce drains
+		// and it crosses the HOLDING → CARAVAN hinge (the survivors depart as a new Caravan)
+		colony.run();
 		colony.cleanUpPrinters();
 		return h;
 	}

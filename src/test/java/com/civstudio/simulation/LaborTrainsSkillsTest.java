@@ -57,13 +57,13 @@ class LaborTrainsSkillsTest {
 	}
 
 	/**
-	 * Build the {@link HomogeneousEconomy} pool colony over a short (3-year) horizon
-	 * — long enough to train skills, short enough that the labor force is still alive
-	 * (the pool has not yet drained) — with no printers.
+	 * Build the {@link HomogeneousEconomy} pool colony over a short horizon — long
+	 * enough to train skills, short enough that the labor force is still alive (the
+	 * pool has not yet drained) — with no printers.
 	 */
 	private static SimulationHarness runShort() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.durationYears(4).numEFirms(2).numNFirms(20).build();
+				.durationYears(6).numEFirms(2).numNFirms(20).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		// weddings are orthogonal to skill training and only add noise here (female
 		// ex-spouses becoming heads via widowhood with short training histories), so

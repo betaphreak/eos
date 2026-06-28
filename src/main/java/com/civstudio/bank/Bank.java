@@ -216,6 +216,23 @@ public class Bank implements Property {
 	}
 
 	/**
+	 * Remove external funds from the colony <b>at the equity level</b> — the inverse of
+	 * {@link #injectExternalFunds(double)}: it destroys {@code amount} of equity, so the
+	 * colony's money supply falls without crediting any account. The equity-level
+	 * counterpart to {@link #extractExternalFunds(int, double)} (which debits an
+	 * account): it is for money that leaves the colony to fund an immigrant who opens
+	 * <em>no</em> account of its own — namely a peasant recruited into the {@link
+	 * com.civstudio.agent.Retinue pool}, whose recruitment budget is spent out of the
+	 * injected external funds rather than accumulating in equity without bound.
+	 *
+	 * @param amount
+	 *            the external funds to remove from equity (in copper)
+	 */
+	public void extractExternalEquity(double amount) {
+		equity -= amount;
+	}
+
+	/**
 	 * Remove money from the colony: debit <tt>amount</tt> from <tt>agentID</tt>'s
 	 * account and <b>destroy the principal</b> — it is not credited anywhere and
 	 * does not enter equity, so the colony's total money supply falls by

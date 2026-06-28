@@ -57,7 +57,7 @@ public final class Demography {
 
 	/**
 	 * Create a demographic service drawing both age/mortality and skill from
-	 * <tt>rng</tt> and the default {@link LifeTable#WEST_LEVEL_3} schedule.
+	 * <tt>rng</tt> and the default {@link LifeTable#LENIENT} schedule.
 	 * Convenience for callers that don't need the two draw streams decorrelated
 	 * (e.g. tests); the session uses {@link #Demography(Rng, Rng, LifeTable)}.
 	 *
@@ -65,13 +65,13 @@ public final class Demography {
 	 *            the generator used for all demographic draws
 	 */
 	public Demography(Rng rng) {
-		this(rng, rng, LifeTable.WEST_LEVEL_3);
+		this(rng, rng, LifeTable.LENIENT);
 	}
 
 	/**
 	 * Create a demographic service drawing age/mortality from <tt>rng</tt>, skill
 	 * from <tt>skillRng</tt>, and using the default
-	 * {@link LifeTable#WEST_LEVEL_3} schedule.
+	 * {@link LifeTable#LENIENT} schedule.
 	 *
 	 * @param rng
 	 *            the generator used for mortality and initial-age draws
@@ -80,7 +80,7 @@ public final class Demography {
 	 *            perturb the mortality stream)
 	 */
 	public Demography(Rng rng, Rng skillRng) {
-		this(rng, skillRng, LifeTable.WEST_LEVEL_3);
+		this(rng, skillRng, LifeTable.LENIENT);
 	}
 
 	/**
@@ -98,7 +98,7 @@ public final class Demography {
 		this.rng = rng;
 		this.skillRng = skillRng;
 		// each race carries its own schedule; the human one is the supplied table
-		// (so the WEST_LEVEL_3 default — or a test's custom table — applies to humans)
+		// (so the LENIENT default — or a test's custom table — applies to humans)
 		this.lifeTables = new EnumMap<>(Race.class);
 		for (Race r : Race.values())
 			lifeTables.put(r, r.lifeTable());

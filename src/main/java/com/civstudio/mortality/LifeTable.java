@@ -22,6 +22,24 @@ public final class LifeTable {
 					.0965, .1054, .1123, .1197, .1529, .1912, .2715, .3484,
 					.4713, .6081, .7349, .8650, .9513, 1.000 });
 
+	// each closed age group's death probability in LENIENT is this fraction of its
+	// WEST_LEVEL_3 value — a softer mortality regime for runs that need a more
+	// survivable population than the harsh historical e0 = 25 baseline
+	private static final double LENIENT_MORTALITY_FACTOR = 0.5;
+
+	/**
+	 * A gentler schedule derived from {@link #WEST_LEVEL_3} by scaling every closed age
+	 * group's death probability to {@value #LENIENT_MORTALITY_FACTOR} of its Level-3
+	 * value (the open-ended top group stays terminal). The historical Coale-Demeny
+	 * Level 3 regime (e0 = 25) drains a colony's workforce and peasant reserve faster
+	 * than a small, geographically-capped economy can replace them; roughly halving the
+	 * age-specific hazards materially raises life expectancy, so a colony can sustain
+	 * its population. This is the default human schedule (see {@link
+	 * com.civstudio.race.Race#HUMAN} and {@link com.civstudio.mortality.Demography}).
+	 */
+	public static final LifeTable LENIENT =
+			WEST_LEVEL_3.scaledBy(LENIENT_MORTALITY_FACTOR);
+
 	private static final double DAYS_PER_YEAR = 365.25;
 
 	// hazard for the open-ended top age group (nqx = 1): ~1 year of life left
@@ -56,6 +74,26 @@ public final class LifeTable {
 		for (int age = 0; age <= topAge; age++)
 			dailyByAge[age] =
 					1 - Math.exp(-annualHazard(age) / DAYS_PER_YEAR);
+	}
+
+	/**
+	 * Derive a new life table by scaling every closed age group's death probability by
+	 * {@code mortalityFactor} (the open-ended top group stays terminal at nqx = 1). A
+	 * factor below 1 softens mortality and raises life expectancy; above 1 hardens it.
+	 * The age-group boundaries are unchanged.
+	 *
+	 * @param mortalityFactor
+	 *            multiplier applied to each closed group's nqx (the result is clamped
+	 *            below 1 so a closed group never becomes terminal)
+	 * @return a new life table with the scaled schedule
+	 */
+	public LifeTable scaledBy(double mortalityFactor) {
+		double[] scaled = new double[nqx.length];
+		for (int i = 0; i < nqx.length; i++)
+			scaled[i] = nqx[i] >= 1.0
+					? 1.0
+					: Math.min(0.999999, Math.max(0, nqx[i] * mortalityFactor));
+		return new LifeTable(ageStart.clone(), scaled);
 	}
 
 	// index of the age group containing ageYears (O(1); ages outside the

@@ -1075,6 +1075,22 @@ public class Settlement {
 	}
 
 	/**
+	 * Run the simulation with <b>no step horizon</b> — until the colony's settled life
+	 * ends (its workforce drains and it dies / dissolves into a wandering band). Used
+	 * by scenarios that are bounded by collapse rather than an end date (e.g. {@code
+	 * CaravanEconomy}); a colony that never dies would loop forever, so this is only for
+	 * runs guaranteed to collapse (the closed default config).
+	 */
+	public void run() {
+		start();
+		while (!died) {
+			printAnnualProgress();
+			newDay();
+		}
+		finishRun();
+	}
+
+	/**
 	 * Print the current in-game year to stdout on January 1st — a once-a-year
 	 * progress tick (kept off the event log, which goes to stderr). Exposed so a
 	 * concurrent multi-colony runner can drive the day loop itself yet keep the
