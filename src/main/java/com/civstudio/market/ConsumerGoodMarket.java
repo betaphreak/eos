@@ -258,11 +258,26 @@ public class ConsumerGoodMarket extends Market {
 
 	/**
 	 * Return market price
-	 * 
+	 *
 	 * @return market price
 	 */
 	public double getLastMktPrice() {
 		return mktPrice;
+	}
+
+	/**
+	 * The market's <b>initial reference price</b> — the midpoint of its founding price
+	 * band ({@code (initLow + initHigh) / 2}). A stable anchor the price is expected to
+	 * hover around; a market price far below it signals a deflationary glut (supply has
+	 * outrun demand and crashed the price), which the dynamic provisioning's close rule
+	 * reads to tell a true oversupply from a merely loss-making but needed sector (the
+	 * rest-day-inflated unmet fraction cannot tell them apart). See {@code
+	 * docs/food-balance.md}.
+	 *
+	 * @return the midpoint of the founding price band
+	 */
+	public double getInitialPrice() {
+		return (initLow + initHigh) / 2;
 	}
 
 	/**

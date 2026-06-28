@@ -47,12 +47,27 @@ Even with adequate founding food, the colony still collapses by ~year 7–8:
   people), so any growth in mouths tips the balance and the **price spirals** (→ 44–72);
 - the workforce then declines monotonically to the dissolution floor.
 
-Critically, **the late-stage price spiral occurs while necessity *output* is high**
-(e.g. price 44 with output 500+, but supply *offered* to the market near zero). That
-points to a **monetary / market-clearing** component — laborers cannot *afford* food
-that is being produced (inflation / wage collapse / the inelastic `minN` minimum-buy
-floor bidding price up; possibly firms throttling supply offered) — i.e. starvation
-amid physical plenty, not only a physical shortage.
+**The late-stage price spiral — diagnosed.** In the death throes the necessity price
+runs away to 44–72. Mechanism:
+- It is **not** firms throttling supply. A firm offers its *entire* product stock
+  (`ConsumerGoodFirm.act` → `addSellOffer(product.getQuantity())`). The "high output"
+  that earlier looked like withheld supply was a **measurement artifact**:
+  `getOutput()` returns a *stale* figure for a firm that got no labour this step (it
+  only updates `output` when `newOutput > 0`), so idle firms report their last busy
+  output while producing nothing.
+- The real cause is **labour-starved supply meeting inelastic survival demand.** As the
+  workforce collapses, the (often over-chartered) necessity firms can't be staffed, so
+  actual production falls below demand. Laborer demand is floored at `minN` — a
+  household under two days' food must buy at least a day's ration *regardless of price*
+  — so aggregate demand is **inelastic** below supply. The market price is found by a
+  bounded binary search (±`zeta` = 10 %/step). When supply drops below the `minN`
+  floor, **no price clears** (demand ≥ `minN` > supply at every price), so the search
+  pins to its upper bound and the price ratchets +10 %/step **without bound** → 44, 72…
+- It is a **symptom and accelerant** of the workforce collapse, not an independent
+  cause: fewer workers → less food < survival demand → runaway price → the price spike
+  starves the buyers who can't pay → faster collapse. (So the dramatic 44–72 is real
+  starvation pricing, not "plenty"; the colony genuinely cannot produce enough food
+  once its workforce is gone.)
 
 ## Why the obvious levers don't work
 
@@ -102,24 +117,34 @@ survival fix.
    firms sized to the founding population rather than the single seed firm, so food
    production matches demand from day 0. Demonstrated to remove failure mode A
    (stable ~126 for 3 years). Lowest-risk, highest-confidence change.
-2. **Diagnose the late-stage food-price spiral.** Establish why the necessity price
-   reaches 44–72 while output is high and supply offered collapses — `minN` inelastic
-   demand, wage/CPI dynamics, or firms throttling market supply. This is likely the
-   true residual collapse driver and may be a market-microstructure/monetary issue, not
-   a physical food shortage. (Investigate `ConsumerGoodMarket.clear()` selling/▒supply
-   and the laborer affordability path.)
+2. **Diagnose the late-stage food-price spiral — DONE** (see *The late-stage price
+   spiral — diagnosed*, above). It is labour-starved supply falling below the inelastic
+   `minN` survival demand: with no clearing price, the bounded ±10 %/step search
+   ratchets the price away (→ 44–72). A symptom/accelerant of the workforce collapse,
+   not an independent cause. The follow-on lever is to soften the `minN` runaway (e.g.
+   ration the inelastic demand at a price cap, or let the price band widen) so the death
+   throes don't price-starve the last buyers — a refinement, not the root fix.
 3. **Make the supply-control loop price/profit-aware (prerequisite for any TFP gain) —
-   DONE.** `Ruler.reviewSector`'s close rule now fires on an **unprofitable glut**
-   (negative smoothed sector profit with no unmet-demand pressure) as well as on idle
-   capacity, so an over-supplied sector that has crashed its own price contracts instead
-   of running flat-out forever. The provisioning hysteresis was also shortened from a
-   1-year to a **3-month** window (`MIN_FIRM_LIFETIME_DAYS` / `REENTRY_COOLDOWN_DAYS` =
-   90) so the rule reacts within a quarter. Verified: a high-skill (deflationary) colony
-   now contracts its necessity sector (firm count rises then falls) and the crashed price
-   lifts off the floor (`GlutCloseTest`). *Caveat:* this is a control-loop fix, not a
-   cure — it reacts on a lag, so it does not by itself save a high-skill colony whose
-   wage economy the deflation has already damaged; it is the prerequisite that stops
-   output-raising levers (skill, TFP) from backfiring into an uncorrected deflation.
+   DONE.** `Ruler.reviewSector`'s close rule now fires on an **unprofitable glut** as
+   well as on idle capacity, so an over-supplied sector that has crashed its own price
+   contracts instead of running flat-out forever. The glut is detected by a **crashed
+   PRICE** (`sectorProfit < 0` AND market price below `GLUT_PRICE_FACTOR` = 0.3 × its
+   initial reference price), *not* by unmet demand: the rest-day calendar inflates the
+   smoothed unmet fraction to ~0.26 in **both** a true glut and a tight-but-needed
+   sector, so unmet/pressure cannot tell them apart — but the price can (a deflationary
+   glut sits far below its founding level, a needed sector hovers around it). An earlier
+   pressure-based version of this gate **regressed** the normal colony — it dissolved
+   productive necessity firms running at 96 % utilization merely for being loss-making,
+   cutting food output and roughly halving colony lifespan (~7 y → ~3 y); the price gate
+   removed that (lifespan restored to ~7 y) while still catching real deflation. The
+   provisioning hysteresis was set to a **6-month** window (`MIN_FIRM_LIFETIME_DAYS` /
+   `REENTRY_COOLDOWN_DAYS` = 180) — short enough to react within half a year, long
+   enough to damp the seasonal charter↔dissolve hog cycle a 3-month window reintroduced.
+   Verified: the high-skill glut still contracts its necessity sector (`GlutCloseTest`)
+   and the normal colony is undisturbed. *Caveat:* a control-loop fix, not a cure — it
+   reacts on a lag and does not by itself save a high-skill colony whose wage economy
+   the deflation has already damaged; it is the prerequisite that stops output-raising
+   levers (skill, TFP) from backfiring into an uncorrected deflation.
 4. **Create a real per-worker food surplus** (after 3) — e.g. a higher food-sector TFP
    (`NECESSITY_TECH_FACTOR` / a food tech multiplier) or lower per-capita consumption
    (ration sizes), tuned against the price/wage calibration so it does not destabilize.

@@ -76,14 +76,18 @@ public class Ruler extends AbstractHousehold {
 	// a sector is overbuilt — a reason to dissolve a firm — below this smoothed util
 	private static final double CLOSE_UTIL_THRESHOLD = 0.55;
 	// ...OR overbuilt by OVERSUPPLY: the sector is losing money (negative smoothed
-	// sector profit) while demand is met (no unmet-demand pressure above this) — it has
-	// over-produced and crashed its own price. This is the glut/deflation signal the
-	// utilization measure is blind to: flat-out firms flooding a satiated market run at
-	// HIGH utilization (busy machines), so the idle-capacity test never trips even as
-	// the price collapses. Reading the (relative) pressure keeps a genuine shortage —
-	// where the sector may also run a transient loss but demand is unmet — from being
-	// misread as a glut and wrongly contracted.
-	private static final double CLOSE_PRESSURE_THRESHOLD = 0.0;
+	// sector profit) AND its market price has collapsed below this fraction of its
+	// initial reference price — it has over-produced and crashed its own price. This is
+	// the glut/deflation signal the utilization measure is blind to: flat-out firms
+	// flooding a satiated market run at HIGH utilization (busy machines), so the
+	// idle-capacity test never trips even as the price collapses. The crashed-PRICE
+	// gate is what distinguishes a true glut from a merely loss-making but *needed*
+	// sector (food sold at a loss in a tight colony, price still near normal): the
+	// rest-day-inflated unmet/pressure signals cannot tell those apart (both ~0.26),
+	// but the price can — a deflationary glut sits far below its founding level while a
+	// needed sector hovers around it. Without this, the close rule wrongly dissolves
+	// productive necessity firms in a normal colony and accelerates its collapse.
+	private static final double GLUT_PRICE_FACTOR = 0.3;
 	// never cut a sector below this many firms (food and leisure both need a floor)
 	private static final int MIN_NECESSITY_FIRMS = 1;
 	private static final int MIN_ENJOYMENT_FIRMS = 1;
@@ -91,10 +95,11 @@ public class Ruler extends AbstractHousehold {
 	// than this is never dissolved (so a recently-chartered firm survives a transient
 	// utilization dip), and a sector waits this long after an action of one kind
 	// before taking the opposite kind (damping a charter↔dissolve flip-flop). A
-	// 3-month window — short enough that the (now glut-aware) close rule reacts to an
-	// over-supplied sector within a quarter rather than waiting out a full year.
-	private static final int MIN_FIRM_LIFETIME_DAYS = 90;
-	private static final int REENTRY_COOLDOWN_DAYS = 90;
+	// 6-month window — short enough that the (now glut-aware) close rule reacts to an
+	// over-supplied sector within half a year, but long enough to damp the seasonal
+	// charter↔dissolve hog cycle a quarter-long window reintroduced.
+	private static final int MIN_FIRM_LIFETIME_DAYS = 180;
+	private static final int REENTRY_COOLDOWN_DAYS = 180;
 
 	// per-sector record of the last charter/dissolve step, for the re-entry cooldown
 	private static final class SectorMemory {
@@ -480,8 +485,8 @@ public class Ruler extends AbstractHousehold {
 		boolean canDissolve = now - mem.lastCharterStep >= REENTRY_COOLDOWN_DAYS
 				&& firms.size() > minFirms;
 		boolean idleCapacity = avgUtil < CLOSE_UTIL_THRESHOLD;
-		boolean unprofitableGlut =
-				sectorProfit < 0 && pressure <= CLOSE_PRESSURE_THRESHOLD;
+		boolean unprofitableGlut = sectorProfit < 0
+				&& mkt.getLastMktPrice() < GLUT_PRICE_FACTOR * mkt.getInitialPrice();
 		if ((idleCapacity || unprofitableGlut) && canDissolve) {
 			ConsumerGoodFirm weakest = null;
 			for (ConsumerGoodFirm f : firms) {
