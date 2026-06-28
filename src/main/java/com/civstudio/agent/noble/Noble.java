@@ -209,7 +209,7 @@ public class Noble extends AbstractHousehold {
 
 		// the new noble is a person of interest the colony tracks
 		colony.addPersonOfInterest(this);
-		log.info(String.format(
+		log.fine(String.format(
 				"%s was ennobled — risen from commoner to noble, now banking in %s.",
 				getHead().fullName(), bank.getCurrency()));
 
@@ -248,7 +248,7 @@ public class Noble extends AbstractHousehold {
 		colony.addPersonOfInterest(this);
 		if (isNotable()) {
 			var skills = getHead().skills();
-			log.info(String.format(
+			log.fine(String.format(
 					"%s founded a noble house in the colony — notable in %s (level %d); %s",
 					getHead().fullName(), skills.peakSkill(), skills.peakLevel(),
 					skills));

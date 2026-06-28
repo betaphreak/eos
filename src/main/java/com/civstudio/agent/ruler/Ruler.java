@@ -191,7 +191,7 @@ public class Ruler extends AbstractHousehold {
 				.getMarket(ScienceFirm.LABOR_MARKET);
 		setName("Ruler");
 		colony.addPersonOfInterest(this);
-		log.info(getHead().fullName()
+		log.fine(getHead().fullName()
 				+ " led the band to found a new settlement and rules it.");
 	}
 
@@ -235,7 +235,7 @@ public class Ruler extends AbstractHousehold {
 
 		// the ruler is always a person of interest the colony tracks
 		colony.addPersonOfInterest(this);
-		log.info(getHead().fullName() + (surname == null
+		log.fine(getHead().fullName() + (surname == null
 				? " founded the ruling house" : " succeeded as ruler")
 				+ " of the settlement.");
 	}
@@ -448,7 +448,7 @@ public class Ruler extends AbstractHousehold {
 			ConsumerGoodFirm f = factory.charter(necessity);
 			if (f != null) {
 				mem.lastCharterStep = now;
-				log.info(String.format(
+				log.finer(String.format(
 						"chartered a new %s firm (util=%.0f%% unmet=%.1f%% pressure=%+.1f%% sectorProfit=%.1f; now %d firms)",
 						label, avgUtil * 100, unmet * 100, pressure * 100,
 						sectorProfit, firms.size() + 1));
@@ -474,7 +474,7 @@ public class Ruler extends AbstractHousehold {
 			if (weakest != null) {
 				factory.dissolve(weakest);
 				mem.lastDissolveStep = now;
-				log.info(String.format(
+				log.finer(String.format(
 						"dissolved %s (profit=%.1f age=%dd); %s overbuilt at util=%.0f%%, now %d firms",
 						weakest.getName(), weakest.getSmoothedProfit(),
 						weakest.getAgeDays(), label, avgUtil * 100,

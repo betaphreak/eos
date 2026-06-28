@@ -26,6 +26,7 @@ import com.civstudio.calendar.DayType;
 import com.civstudio.calendar.LiturgicalCalendar;
 import com.civstudio.agent.firm.BuilderConfig;
 import com.civstudio.agent.firm.BuilderFirm;
+import com.civstudio.agent.firm.Firm;
 import com.civstudio.agent.firm.FirmFactory;
 import com.civstudio.agent.firm.StrategicFirm;
 import com.civstudio.agent.ruler.Ruler;
@@ -257,6 +258,10 @@ public class Settlement {
 	private boolean died = false;
 	@Getter
 	private LocalDate deathDate;
+
+	// persons of interest who died since the last annual digest, summarized and reset
+	// once a year by logAnnualDigest (the per-death log itself is FINE, off by default)
+	private int poiDeathsThisYear = 0;
 
 	// the wandering band a dissolved colony departed as (null until then; only a
 	// ruler-bearing colony produces one — see dissolveIntoCaravan / updateLifecycle)
@@ -585,6 +590,12 @@ public class Settlement {
 	// creates the colony), so a dissolved band can be registered session-wide.
 	void setSession(GameSession session) {
 		this.session = session;
+		// scope this run's CSV output to output/<seed>/ so a whole session (every
+		// colony's files plus the shared event log) lands in one folder. Only when
+		// still on the default CSV backend — a launcher that installed its own sink
+		// factory keeps it (it carries its own run identity).
+		if (session != null && sinkFactory instanceof CsvRowSinkFactory)
+			this.sinkFactory = new CsvRowSinkFactory("output/" + session.getSeed());
 	}
 
 	/**
@@ -1073,6 +1084,37 @@ public class Settlement {
 			System.out.println(date);
 	}
 
+	// emit a once-a-year summary of the colony to the event log on January 1st: its
+	// population, aristocracy, firm count, peasant pool, the persons of interest lost
+	// over the year, and the CPI. At INFO it is the compact, always-on alternative to
+	// the high-frequency per-event logs (charters, promotions, POI deaths), which are
+	// demoted to FINE/FINER — so a run of many colonies can be followed at a glance.
+	// Resets the year's counters.
+	private void logAnnualDigest() {
+		LocalDate date = getDate();
+		if (date.getMonthValue() != 1 || date.getDayOfMonth() != 1)
+			return;
+		int laborers = 0, nobles = 0, firms = 0, pool = 0;
+		for (Agent a : agents) {
+			if (!a.isAlive())
+				continue;
+			if (a instanceof Retinue r)
+				pool += r.size();
+			else if (a instanceof Firm)
+				firms++;
+			else if (a instanceof Household h) {
+				if (h.isWorkforce())
+					laborers++;
+				else if ("Noble".equals(h.role()))
+					nobles++;
+			}
+		}
+		log.info(String.format(
+				"annual digest: pop=%d nobles=%d firms=%d pool=%d POI deaths=%d CPI=%.1f",
+				laborers, nobles, firms, pool, poiDeathsThisYear, getInflation()));
+		poiDeathsThisYear = 0;
+	}
+
 	/**
 	 * Finalize a finished run. A ruler-bearing colony that crossed the workforce
 	 * floor departs as a {@link MigrantCaravan} (the survivors take to the road) rather
@@ -1242,10 +1284,12 @@ public class Settlement {
 		for (Agent agent : deadAgents) {
 			agents.remove(agent);
 			// a dead person of interest leaves the roster (a successor, if any,
-			// registers itself afresh in its constructor); log its passing once —
-			// the only per-death logging the colony does
+			// registers itself afresh in its constructor); log its passing once — at
+			// FINE (per-death demographic detail, off by default), and count it for the
+			// year's digest
 			if (agent instanceof Household h && personsOfInterest.remove(h)) {
-				log.info(h.getHead().fullName() + " ("
+				poiDeathsThisYear++;
+				log.fine(h.getHead().fullName() + " ("
 						+ h.role().toLowerCase(Locale.ROOT) + ", "
 						+ h.getHead().skills() + ") died at age " + h.getAgeYears());
 			}
@@ -1290,6 +1334,10 @@ public class Settlement {
 		// apply any firms the ruler chartered or dissolved this step (deferred from
 		// mid-act so the agent set was not mutated during iteration)
 		applyScheduledAgentChanges();
+
+		// a once-a-year summary of the colony at INFO (the per-event chatter it
+		// replaces is demoted to FINE/FINER), so a many-colony run stays followable
+		logAnnualDigest();
 
 		timeStep++;
 	}

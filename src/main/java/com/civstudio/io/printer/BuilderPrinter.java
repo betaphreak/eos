@@ -8,17 +8,20 @@ import com.civstudio.settlement.BuildProject;
 import com.civstudio.settlement.Settlement;
 
 /**
- * Writes a time-series of the colony's construction: how big the colony is, how
- * much capacity it has, and what its {@link BuilderFirm} is doing. Register with
- * {@link Settlement#addPrinter} and finalize with {@link Settlement#cleanUpPrinters}.
+ * Writes a time-series of the <b>construction-specific</b> detail of the colony: how
+ * big it is, how much capacity it has, and the build-ring its {@link BuilderFirm} is
+ * raising. Register with {@link Settlement#addPrinter} and finalize with {@link
+ * Settlement#cleanUpPrinters}.
  * <p>
- * Columns: Date, Size, EffectiveSlots, Delivered, TotalDelivered, Revenue,
- * WageBudget, Labor, Wage, ActiveTasks, RemainingWork. {@code Size} and {@code
- * EffectiveSlots} are the colony's current size and usable slot count (they step up
- * as the builder finishes a ring); {@code Delivered} is the build-units the builder
- * applied this step and {@code TotalDelivered} the cumulative total; {@code
- * ActiveTasks} and {@code RemainingWork} are the count of, and outstanding
- * build-units across, the ring currently being built (both 0 when idle).
+ * Columns: Date, Size, EffectiveSlots, Delivered, TotalDelivered, ActiveTasks,
+ * RemainingWork. {@code Size} and {@code EffectiveSlots} are the colony's current size
+ * and usable slot count (they step up as the builder finishes a ring); {@code Delivered}
+ * is the build-units the builder applied this step and {@code TotalDelivered} the
+ * cumulative total; {@code ActiveTasks} and {@code RemainingWork} are the count of, and
+ * outstanding build-units across, the ring currently being built (both 0 when idle).
+ * The builder's <b>finance</b> (revenue, labor cost, …) is reported alongside every other
+ * firm type in the consolidated {@code Firms.csv} ({@code FirmsPrinter}, the {@code
+ * Builder} row), so it is not duplicated here.
  */
 public class BuilderPrinter extends Printer {
 
@@ -37,14 +40,13 @@ public class BuilderPrinter extends Printer {
 
 	@Override
 	public String tableName() {
-		return "builder";
+		return "construction";
 	}
 
 	@Override
 	public ColumnSpec[] columns() {
 		return new ColumnSpec[] { date("Date"), integer("Size"),
 				integer("EffectiveSlots"), real("Delivered"), real("TotalDelivered"),
-				real("Revenue"), real("WageBudget"), real("Labor"), real("Wage"),
 				integer("ActiveTasks"), real("RemainingWork") };
 	}
 
@@ -59,8 +61,7 @@ public class BuilderPrinter extends Printer {
 
 		sink.writeRow(colony.getDate(), colony.getSize(),
 				colony.getSlotInfo().effective(), builder.getBuildUnitsDelivered(),
-				builder.getTotalDelivered(), builder.getRevenue(),
-				builder.getLaborCost(), builder.getLabor(), builder.getWage(),
-				colony.activeProjects().size(), remainingWork);
+				builder.getTotalDelivered(), colony.activeProjects().size(),
+				remainingWork);
 	}
 }

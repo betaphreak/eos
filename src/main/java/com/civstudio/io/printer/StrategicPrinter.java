@@ -8,16 +8,18 @@ import com.civstudio.io.sink.ColumnSpec;
 import com.civstudio.settlement.Settlement;
 
 /**
- * Writes a time-series of the colony's strategic export sector: what the single
- * {@link StrategicFirm} exported and earned, the noble labor it employed, and the
+ * Writes a time-series of the <b>export-specific</b> detail of the colony's strategic
+ * sector: what the single {@link StrategicFirm} shipped out of the economy and the
  * resulting bank {@link Bank#getEquity() equity} the export earnings flow into.
  * Register with {@link Settlement#addPrinter} and finalize with {@link
  * Settlement#cleanUpPrinters}.
  * <p>
- * Columns: Date, Exported, TotalExported, Revenue, Profit, WageBudget, Labor, Wage,
- * Equity. {@code Exported} is the units shipped out of the economy this step;
- * {@code Labor} is the skill-scaled noble labor employed; {@code Equity} is the
- * bank's cumulative retained equity, which the export earnings build up.
+ * Columns: Date, Exported, TotalExported, Equity. {@code Exported} is the units shipped
+ * out of the economy this step and {@code TotalExported} the cumulative total; {@code
+ * Equity} is the bank's cumulative retained equity, which the export earnings build up.
+ * The firm's <b>finance</b> (revenue, profit, labor cost, …) is reported alongside every
+ * other firm type in the consolidated {@code Firms.csv} ({@code FirmsPrinter}, the
+ * {@code Strategic} row), so it is not duplicated here.
  */
 public class StrategicPrinter extends Printer {
 
@@ -45,8 +47,7 @@ public class StrategicPrinter extends Printer {
 	@Override
 	public ColumnSpec[] columns() {
 		return new ColumnSpec[] { date("Date"), real("Exported"),
-				real("TotalExported"), real("Revenue"), real("Profit"),
-				real("WageBudget"), real("Labor"), real("Wage"), real("Equity") };
+				real("TotalExported"), real("Equity") };
 	}
 
 	@Override
@@ -55,7 +56,6 @@ public class StrategicPrinter extends Printer {
 			return;
 
 		sink.writeRow(colony.getDate(), firm.getExported(), firm.getTotalExported(),
-				firm.getRevenue(), firm.getProfit(), firm.getLaborCost(),
-				firm.getLabor(), firm.getWage(), bank.getEquity());
+				bank.getEquity());
 	}
 }

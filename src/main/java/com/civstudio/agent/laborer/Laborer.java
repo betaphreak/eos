@@ -200,7 +200,7 @@ public class Laborer extends AbstractHousehold {
 		// and is a person of interest the colony tracks (and logs yearly)
 		if (isNotable()) {
 			var skills = getHead().skills();
-			log.info(String.format(
+			log.fine(String.format(
 					"%s founded a household in the colony — notable in %s (level %d); %s",
 					getHead().fullName(), skills.peakSkill(), skills.peakLevel(),
 					skills));
@@ -259,7 +259,7 @@ public class Laborer extends AbstractHousehold {
 		// a notable promoted head is recorded by name, like any notable arrival
 		if (isNotable()) {
 			var skills = getHead().skills();
-			log.info(String.format(
+			log.fine(String.format(
 					"%s was promoted from the peasantry — notable in %s (level %d); %s",
 					getHead().fullName(), skills.peakSkill(), skills.peakLevel(),
 					skills));

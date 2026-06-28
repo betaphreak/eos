@@ -1289,6 +1289,11 @@ public class SimulationHarness {
 		colony.addPrinter(new VolumesPrinter(prefix + "Volumes"));
 		colony.addPrinter(new FirmsPrinter(prefix + "Firms"));
 		colony.addPrinter(new WeddingPrinter(prefix + "Weddings", weddingMkt));
+		// the builder's construction-specific detail (size/slots/build-rings); its
+		// finance rides in Firms.csv with the other firms. Only colonies that grow —
+		// those with a builder (the pool colonies) — write it.
+		if (builderFirm != null)
+			colony.addPrinter(new BuilderPrinter(prefix + "Construction", builderFirm));
 	}
 
 	/**

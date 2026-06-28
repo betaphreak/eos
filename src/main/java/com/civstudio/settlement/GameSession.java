@@ -234,6 +234,18 @@ public class GameSession {
 	}
 
 	/**
+	 * The seed this session was created with — the single source of its
+	 * reproducibility. Used to scope a run's output: every colony of this session
+	 * writes its CSVs and the shared event log under {@code output/<seed>/} (see
+	 * {@code Settlement.setSession} / {@link com.civstudio.io.SimLog}).
+	 *
+	 * @return the session seed
+	 */
+	public long getSeed() {
+		return seed;
+	}
+
+	/**
 	 * The {@link TechTree} for a colony of the given founding {@code race}. The graph
 	 * itself is shared and identical for all races (so prerequisite routing is
 	 * unchanged); only the per-race <em>effects overlay</em> would differ (a race

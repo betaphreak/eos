@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.Phaser;
 
 import com.civstudio.agent.Caravan;
+import com.civstudio.io.CsvMerger;
 import com.civstudio.mortality.Demography;
 import com.civstudio.name.NameRegistry;
 import com.civstudio.io.SimLog;
@@ -56,6 +57,11 @@ public final class SessionRunner {
 		// bands, which advance once per lockstep day (see the barrier below)
 		GameSession session = harnesses.isEmpty() ? null
 				: harnesses.get(0).getColony().getSession();
+		// the session's colonies, so a band tick (which belongs to no single colony)
+		// can date its log from a representative one (see tickBands / SimLog.asRealm)
+		List<Settlement> colonies = new ArrayList<>(harnesses.size());
+		for (SimulationHarness h : harnesses)
+			colonies.add(h.getColony());
 		// one party for this (coordinating) thread, so the phaser stays alive while
 		// we register and start the colony threads. The day-barrier also drives the
 		// session's bands: onAdvance runs once, single-threaded, each time every
@@ -64,7 +70,7 @@ public final class SessionRunner {
 		Phaser barrier = new Phaser(1) {
 			@Override
 			protected boolean onAdvance(int phase, int registeredParties) {
-				tickBands(session, failures);
+				tickBands(session, colonies, failures);
 				return registeredParties == 0; // terminate exactly as the default would
 			}
 		};
@@ -95,25 +101,47 @@ public final class SessionRunner {
 			throw new RuntimeException("a colony thread failed: " + first.getMessage(),
 					first);
 		}
+
+		// every colony has finished and flushed its CSVs: fold the per-settlement
+		// files of each table into one tidy output/<seed>/<Table>.csv (with a leading
+		// Settlement column) and demote the raw files to by-settlement/, so a
+		// many-colony run is read as one file per table rather than N×tables loose
+		// files. Single-threaded here, so it stays deterministic at any colony count.
+		if (session != null && !colonies.isEmpty()) {
+			List<String> names = new ArrayList<>(colonies.size());
+			for (Settlement c : colonies)
+				names.add(c.getName());
+			CsvMerger.mergeSessionOutput(session.getSeed(), names);
+		}
 	}
 
 	// advance the session's wandering bands by one day — run from the day-barrier's
 	// onAdvance, so it executes once on a single thread with every colony paused. Draws
 	// nothing when there are no bands, so band-free runs are byte-identical; a band that
 	// misbehaves is recorded as a failure rather than left to corrupt the barrier.
-	private static void tickBands(GameSession session, List<Throwable> failures) {
+	private static void tickBands(GameSession session, List<Settlement> colonies,
+			List<Throwable> failures) {
 		if (session == null)
 			return;
 		List<Caravan> bands = session.getCaravans();
 		if (bands.isEmpty())
 			return;
-		try {
-			Rng rng = session.getBandRng();
-			for (Caravan band : bands)
-				band.tick(rng);
-		} catch (Throwable t) {
-			failures.add(t);
-		}
+		// date the band records from the furthest-advanced colony (in lockstep they
+		// share the day, but one that died early has a frozen date), and label them
+		// (realm) rather than that colony's name — the bands belong to no one colony
+		Settlement dateSource = colonies.isEmpty() ? null : colonies.get(0);
+		for (Settlement c : colonies)
+			if (dateSource == null || c.getTimeStep() > dateSource.getTimeStep())
+				dateSource = c;
+		SimLog.asRealm(dateSource, () -> {
+			try {
+				Rng rng = session.getBandRng();
+				for (Caravan band : bands)
+					band.tick(rng);
+			} catch (Throwable t) {
+				failures.add(t);
+			}
+		});
 	}
 
 	// drive one colony's day loop in lockstep with its peers

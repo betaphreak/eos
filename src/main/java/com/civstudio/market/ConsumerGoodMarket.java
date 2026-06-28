@@ -236,7 +236,7 @@ public class ConsumerGoodMarket extends Market {
 					good, mktPrice, PRICE_SKYROCKET_FACTOR));
 		} else if (priceSkyrocketed && mktPrice <= skyrocketThreshold) {
 			priceSkyrocketed = false;
-			log.info(String.format("%s back below threshold (%.2f)", good,
+			log.finer(String.format("%s back below threshold (%.2f)", good,
 					mktPrice));
 		}
 

@@ -359,7 +359,7 @@ public class Retinue extends Agent {
 			peasants.sort(Comparator.comparingInt(m -> m.skills().overallLevel()));
 			for (long i = 0; i < lastStarved && !peasants.isEmpty(); i++)
 				skillStore.remove(viewOf(peasants.remove(0)));
-			log.info(lastStarved + " peasant(s) starved (pool now "
+			log.finer(lastStarved + " peasant(s) starved (pool now "
 					+ peasants.size() + ")");
 		}
 	}
