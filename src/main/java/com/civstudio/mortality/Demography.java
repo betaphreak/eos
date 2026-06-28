@@ -3,10 +3,13 @@ package com.civstudio.mortality;
 import java.util.EnumMap;
 import java.util.Map;
 
+import com.civstudio.agent.Member;
 import com.civstudio.agent.Retinue;
 import com.civstudio.agent.Household;
 import com.civstudio.name.Gender;
+import com.civstudio.name.Person;
 import com.civstudio.race.Race;
+import com.civstudio.settlement.Settlement;
 import com.civstudio.skill.Passion;
 import com.civstudio.skill.Skill;
 import com.civstudio.skill.SkillRecord;
@@ -239,6 +242,67 @@ public final class Demography {
 				return race;
 		}
 		return last; // floating-point slack: fall back to the last entry
+	}
+
+	/**
+	 * Roll whether a household bears a child this step, on the skill / demographic
+	 * RNG (the same stream {@link #sampleGender}/{@link #newSkillTracker} use, kept
+	 * off the mortality and economic streams).
+	 *
+	 * @param dailyBirthProb
+	 *            the per-day birth probability
+	 * @return true if a child is born this step
+	 */
+	public boolean bearsChild(double dailyBirthProb) {
+		return skillRng.uniform() < dailyBirthProb;
+	}
+
+	/**
+	 * Build a <b>newborn</b> {@link Member} for a household: age 0 (born today), a
+	 * 50/50 gender, skills drawn fresh around the gender-specific colony mean (skill
+	 * is <b>not</b> inherited, exactly as every other head/member draw), and a given
+	 * name from the matching gender/race table carrying the household
+	 * {@code surname}. All draws run on the skill / naming RNGs, never the mortality
+	 * or economic streams. See {@code docs/births.md}.
+	 *
+	 * @param surname
+	 *            the household (dynasty) surname the child carries
+	 * @param race
+	 *            the child's ancestry (its head parent's race)
+	 * @param colony
+	 *            the colony the household belongs to
+	 * @param mother
+	 *            the bearing mother (the child records its parentage)
+	 * @param father
+	 *            the father (the child records its parentage)
+	 * @return a living newborn member, age 0
+	 */
+	public Member newChild(String surname, Race race, Settlement colony, Member mother,
+			Member father) {
+		Gender gender = sampleGender();
+		SkillTracker skills = newSkillTracker(colony.getMeanSkill(gender));
+		String givenName = gender == Gender.FEMALE
+				? colony.getNames().nextFemaleName(race)
+				: colony.getNames().nextMaleName(race);
+		Person child = new Person(givenName, surname, gender, skills, race);
+		return new Member(child, colony.getDate(), mother, father);
+	}
+
+	/**
+	 * Grant {@code xp} experience in <b>one randomly chosen skill</b> (of the twelve),
+	 * drawing the skill on the skill / demographic RNG (never the economic or mortality
+	 * streams). The gain is passion-scaled by the skill's own learn curve. Used by the
+	 * {@link com.civstudio.agent.firm.ChildrenFirm civic school} to advance an enrolled
+	 * child's skills each step. See {@code docs/births.md}.
+	 *
+	 * @param skills
+	 *            the person's skills to advance
+	 * @param xp
+	 *            the raw experience to grant in the chosen skill
+	 */
+	public void trainRandomSkill(SkillTracker skills, double xp) {
+		Skill skill = Skill.all()[skillRng.uniform(Skill.COUNT)];
+		skills.learn(skill, xp);
 	}
 
 	// draw a passion on the skill RNG using the placeholder weights

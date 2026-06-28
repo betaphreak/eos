@@ -44,7 +44,9 @@ import com.civstudio.race.Race;
 import com.civstudio.tech.Sector;
 import com.civstudio.tech.TechEffect;
 import com.civstudio.util.Rng;
+import com.civstudio.agent.laborer.FertilityConfig;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.java.Log;
 
 /**
@@ -193,6 +195,15 @@ public class Settlement {
 	// proportion to how far its stock sits below this target (see Laborer.act).
 	@Getter
 	private final double targetNStock;
+
+	// the colony's fertility parameters — when a married laborer household bears a
+	// child (see docs/births.md). A colony-wide demographic property read live each
+	// step by Laborer.act(); settable so a run can enable/tune births. The default
+	// (FertilityConfig.DEFAULT) leaves births off, so a colony is byte-identical
+	// until a run enables them.
+	@Getter
+	@Setter
+	private FertilityConfig fertilityConfig = FertilityConfig.DEFAULT;
 
 	// per-sector technology multiplier: the live total-factor-productivity scaling a
 	// researched SectorProductivity tech effect raises (see applyTechEffect and the

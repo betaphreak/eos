@@ -1,7 +1,10 @@
 package com.civstudio.agent.laborer;
 
+import java.time.LocalDate;
+
 import com.civstudio.agent.AbstractHousehold;
 import com.civstudio.agent.Member;
+import com.civstudio.name.Gender;
 import com.civstudio.race.Race;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.Account;
@@ -287,19 +290,56 @@ public class Laborer extends AbstractHousehold {
 		// need further testing!!!
 		double RR = bank.getDepositIR();
 
-		// the household eats one ration per member (head plus any spouse). If it
-		// cannot feed even the head it dies (a successor of the same dynasty
-		// inherits the estate); if it can feed the head but not everyone, the
-		// non-head members (the spouse) starve off and the household lives on.
-		double ration = config.eatAmt();
-		double ate = necessity.decrease(ration * getMemberCount());
-		if (ate < ration) {
+		// the household eats per member, in priority order (head, then other adults,
+		// then children): an adult eats the FINE worker ration, a child the SNACK
+		// ration. The head eats first — if even it cannot be fed the household dies
+		// (a successor of the same dynasty inherits the estate); a member that cannot
+		// be fed starves off, and because children are appended last the youngest go
+		// first. See docs/births.md.
+		LocalDate today = getColony().getDate();
+		var members = getMembers();
+		double available = necessity.getQuantity();
+		double headRation = rationFor(members.get(0), today);
+		if (available < headRation) {
 			dieAndSettleEstate();
 			return;
 		}
-		int fed = (int) Math.floor(ate / ration + 1e-9);
-		while (getMemberCount() > Math.max(1, fed))
+		double remaining = available - headRation;
+		int fed = 1;
+		for (int i = 1; i < members.size(); i++) {
+			double r = rationFor(members.get(i), today);
+			if (remaining < r)
+				break; // and every lower-priority (younger) member after it starves
+			remaining -= r;
+			fed++;
+		}
+		necessity.decrease(available - remaining);
+		while (getMemberCount() > fed)
 			removeNonHeadMember();
+
+		// bear a child: a married household (an adult couple) with a fertile female
+		// and a food cushion bears a child — a new SNACK-eating member — per the
+		// colony's fertility config. Gated on dailyBirthProb > 0 so births stay
+		// dormant (and the colony byte-identical) until enabled. The newborn is added
+		// now, so it counts toward this step's necessity buffer below. See
+		// docs/births.md.
+		FertilityConfig fertility = getColony().getFertilityConfig();
+		if (fertility.dailyBirthProb() > 0) {
+			Member mother = fertileFemaleMember(today, fertility);
+			Member father = adultMaleMember(today);
+			if (mother != null && father != null) {
+				double prospectiveNeed =
+						dailyRation(today) + fertility.childRation().perDay();
+				if (necessity.getQuantity() >= fertility.foodBufferDays() * prospectiveNeed
+						&& getColony().getDemography()
+								.bearsChild(fertility.dailyBirthProb())) {
+					Member child = getColony().getDemography().newChild(
+							getHead().surname(), getHead().race(), getColony(), mother,
+							father);
+					addMember(child);
+				}
+			}
+		}
 
 		if (!firstAct) {
 			if (RR < lowRR)
@@ -339,11 +379,16 @@ public class Laborer extends AbstractHousehold {
 		// compute savings rate
 		savingsRate = (savings + new_deposit) / (checking + savings);
 
-		// compute consumption of necessity (in $). The stock target scales with the
-		// household size, so a married household keeps the same per-member food buffer
-		double dailyNeed = config.eatAmt() * getMemberCount();
+		// compute consumption of necessity (in $). The food buffer / minimum-buy scale
+		// with the household's actual mouths, a child counting as its (smaller) SNACK
+		// ration rather than a full adult — so a married household keeps the same
+		// per-mouth buffer and newborns don't inflate it by a full unit each.
+		// `mouths` is the daily ration in adult-equivalents (an all-adult household
+		// equals its member count, preserving the prior behaviour exactly).
+		double dailyNeed = dailyRation(today);
+		double mouths = dailyNeed / config.eatAmt();
 		nConsumption = consumption * Math.max(0, 1 - necessity.getQuantity()
-				/ (getColony().getTargetNStock() * getMemberCount()));
+				/ (getColony().getTargetNStock() * mouths));
 
 		// compute consumption of enjoyment (in $)
 		eConsumption = consumption - nConsumption;
@@ -366,6 +411,46 @@ public class Laborer extends AbstractHousehold {
 
 		resetIncomeAccumulators(acct);
 		firstAct = false;
+	}
+
+	// the daily necessity ration a member eats: an adult the FINE worker ration
+	// (config.eatAmt()), a child the colony's configured child ration (SNACK)
+	private double rationFor(Member m, LocalDate today) {
+		return m.isAdult(today) ? config.eatAmt()
+				: getColony().getFertilityConfig().childRation().perDay();
+	}
+
+	// the household's total daily necessity need: the sum of every member's ration
+	// (adults at the worker ration, children at the smaller child ration)
+	private double dailyRation(LocalDate today) {
+		double sum = 0;
+		for (Member m : getMembers())
+			sum += rationFor(m, today);
+		return sum;
+	}
+
+	// the household's fertile female member — an adult female of childbearing age, the
+	// prospective mother — or null if there is none
+	private Member fertileFemaleMember(LocalDate today, FertilityConfig fertility) {
+		for (Member m : getMembers()) {
+			if (!m.isAdult(today) || m.gender() != Gender.FEMALE)
+				continue;
+			int age = m.getAgeYears(today);
+			if (age >= fertility.childbearingMinAge()
+					&& age <= fertility.childbearingMaxAge())
+				return m;
+		}
+		return null;
+	}
+
+	// an adult male member of the household — the prospective father — or null if none.
+	// Together with a fertile female it forms the breeding couple; a widowed lone
+	// parent, an as-yet-unwed single head, or an all-child remnant has no couple.
+	private Member adultMaleMember(LocalDate today) {
+		for (Member m : getMembers())
+			if (m.isAdult(today) && m.gender() == Gender.MALE)
+				return m;
+		return null;
 	}
 
 	/** A laborer is the colony's workforce: its labor sustains the colony. */

@@ -159,13 +159,16 @@ public class LaborMarket extends Market {
 		// polar day/night leaves daylight undefined; fall back to unscaled output
 		if (!Double.isFinite(daylightFactor))
 			daylightFactor = 1;
-		// every working member of the household is a separate earner: each is
+		// every working adult member of the household is a separate earner: each is
 		// placed on the market with its own skills (so head and spouse may end up
 		// at different firms and train different skills), but all wages credit the
-		// one household account. At founding a household has only its head.
+		// one household account. Children (members below working age) deliver no
+		// labour and earn no wage, so they are skipped (see docs/births.md). At
+		// founding a household has only its head.
 		for (Member member : laborer.getMembers())
-			addEmployee(laborer.getID(), laborer.getBank(), daylightFactor,
-					member.skills());
+			if (member.isAdult(colony.getDate()))
+				addEmployee(laborer.getID(), laborer.getBank(), daylightFactor,
+						member.skills());
 	}
 
 	/**

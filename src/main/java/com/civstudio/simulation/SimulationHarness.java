@@ -20,6 +20,8 @@ import com.civstudio.agent.Household;
 import com.civstudio.agent.firm.BuilderConfig;
 import com.civstudio.agent.firm.BuilderFirm;
 import com.civstudio.agent.firm.CFirm;
+import com.civstudio.agent.firm.ChildrenFirm;
+import com.civstudio.agent.firm.ChildrenFirmConfig;
 import com.civstudio.agent.firm.ConsumerGoodFirm;
 import com.civstudio.agent.firm.EFirm;
 import com.civstudio.agent.firm.FirmConfig;
@@ -169,6 +171,11 @@ public class SimulationHarness {
 	// createDefaultRetinue / foundStandardColony to tune the reserve's food economics.
 	private RetinueConfig retinueConfig = RetinueConfig.DEFAULT;
 
+	// parameters for the civic school (its capacity and per-step learning); defaults
+	// to the canonical values. Replace via setChildrenFirmConfig before the school is
+	// created (createDefaultChildrenFirm / foundStandardColony). See docs/births.md.
+	private ChildrenFirmConfig childrenFirmConfig = ChildrenFirmConfig.DEFAULT;
+
 	// the social-mobility engine for this colony (promotion/demotion across ranks),
 	// built lazily on first use with the realized ranks' factories registered (see
 	// rankLadder()). Today only ennoblement (HOUSEHOLD -> HOLDING) uses it.
@@ -196,6 +203,7 @@ public class SimulationHarness {
 	private StrategicFirm strategicFirm;
 	private BuilderFirm builderFirm;
 	private Retinue retinue;
+	private ChildrenFirm childrenFirm;
 
 	/**
 	 * Build an empty harness for {@code cfg} from a fresh {@link GameSession}
@@ -302,6 +310,9 @@ public class SimulationHarness {
 		// canonical defaults); setFirmConfig can override before createFirms
 		this.firmConfig =
 				FirmConfig.DEFAULT.toBuilder().laborShare(cfg.laborShare()).build();
+		// apply the run's fertility parameters to the colony (read live by Laborer.act);
+		// a test can still override via colony.setFertilityConfig before run()
+		colony.setFertilityConfig(cfg.fertility());
 	}
 
 	/** Create the markets and register them (labor market first). */
@@ -442,6 +453,18 @@ public class SimulationHarness {
 	 */
 	public void setRetinueConfig(RetinueConfig retinueConfig) {
 		this.retinueConfig = retinueConfig;
+	}
+
+	/**
+	 * Override the civic-school parameters (default {@link ChildrenFirmConfig#DEFAULT}).
+	 * Must be called before the school is created ({@link #createDefaultChildrenFirm()}
+	 * / {@link #foundStandardColony}) to take effect.
+	 *
+	 * @param childrenFirmConfig
+	 *            the school's tunable parameters (capacity, per-step learning)
+	 */
+	public void setChildrenFirmConfig(ChildrenFirmConfig childrenFirmConfig) {
+		this.childrenFirmConfig = childrenFirmConfig;
 	}
 
 	/**
@@ -1054,6 +1077,22 @@ public class SimulationHarness {
 	}
 
 	/**
+	 * Give the colony its civic <b>school</b> (the {@link ChildrenFirm}): an automatic
+	 * institution that trains the colony's children each step (see {@code
+	 * docs/births.md}). It produces no good, moves no money, and occupies no build
+	 * slot; a colony with no children simply enrolls no one. Part of the default civic
+	 * setup ({@link #foundStandardColony}), so every standard colony has a school. The
+	 * school references {@link #getCopperBank() the copper bank} but holds no account.
+	 *
+	 * @return the created school (also retained for {@link #addStrategicSectorPrinters})
+	 */
+	public ChildrenFirm createDefaultChildrenFirm() {
+		childrenFirm = new ChildrenFirm(getCopperBank(), colony, childrenFirmConfig);
+		colony.addAgent(childrenFirm);
+		return childrenFirm;
+	}
+
+	/**
 	 * Give the colony a <b>builder</b> (banking at <tt>bank</tt>) and place it on an
 	 * effective slot at founding, like the other firms. Registering a builder
 	 * changes how the colony grows: once it is running, the builder is the only way
@@ -1343,6 +1382,7 @@ public class SimulationHarness {
 		Bank gold = createDefaultRuler();
 		createDefaultRetinue();
 		foundLaborersFromRetinue(i -> copper, laborerNStock);
+		createDefaultChildrenFirm();
 		enableExternalInflow(copper);
 		return gold;
 	}
@@ -1387,6 +1427,7 @@ public class SimulationHarness {
 		Bank gold = createRulerFromLeader(band.getLeader(), band.getHoard());
 		createRetinueFromBand(band, copper);
 		foundLaborersFromRetinue(i -> copper, laborerNStock);
+		createDefaultChildrenFirm();
 		enableExternalInflow(copper);
 		return gold;
 	}
@@ -1447,6 +1488,10 @@ public class SimulationHarness {
 		colony.addPrinter(
 				new ServicesPrinter(prefix + "Services", strategicFirm, bank));
 		colony.addPrinter(new NoblesPrinter(prefix + "Nobles"));
+		// the child population + civic school (a ruler-bearing colony only); skipped
+		// when the colony has no school (see createDefaultChildrenFirm)
+		if (childrenFirm != null)
+			colony.addPrinter(new ChildrenPrinter(prefix + "Children", childrenFirm));
 	}
 
 	/** Run the simulation for the configured number of steps, then clean up. */

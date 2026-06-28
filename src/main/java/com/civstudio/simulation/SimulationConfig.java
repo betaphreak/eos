@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 import com.civstudio.agent.firm.ScienceConfig;
+import com.civstudio.agent.laborer.FertilityConfig;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.era.Era;
 import lombok.Builder;
@@ -90,6 +91,9 @@ import lombok.Builder;
  *                     pacing knob); &lt;1 makes research faster, &gt;1 slower. The
  *                     research-point yield itself is set by the {@link
  *                     ScienceConfig science firm's} production curve
+ * @param fertility    household fertility parameters (when a married laborer
+ *                     household bears a child), applied to the {@code Settlement}.
+ *                     Births are on by default (see {@link FertilityConfig#DEFAULT})
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -119,7 +123,8 @@ public record SimulationConfig(
 		double promotionRatio,
 		int targetNobles,
 		double researchInitialFraction,
-		double researchCostScale) {
+		double researchCostScale,
+		FertilityConfig fertility) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -205,5 +210,6 @@ public record SimulationConfig(
 			MEDIEVAL.promotionRatio(),
 			MEDIEVAL.targetNobles(),
 			0.9,                                   // researchInitialFraction (90%)
-			1.0);                                  // researchCostScale
+			1.0,                                   // researchCostScale
+			FertilityConfig.DEFAULT);              // fertility (births on by default)
 }

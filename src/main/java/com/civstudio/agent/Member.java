@@ -30,10 +30,21 @@ public final class Member {
 	private final Person person;
 	// this person's biological birth date — the source of truth for its age
 	private final LocalDate birthDate;
+	// this person's parents, set only at birth (see Demography.newChild). Null for
+	// every initially-generated individual — founding heads, seeded/promoted peasants,
+	// wed-in spouses, immigrants — whose forebears are outside the colony's knowledge,
+	// so parentage is populated only by in-colony births. Read-only after construction
+	// (a person's parents never change); the seam for lineage / incest avoidance /
+	// parent->child inheritance (nothing reads them yet). See docs/births.md.
+	private final Member mother;
+	private final Member father;
 	private boolean alive = true;
 
 	/**
-	 * Create a living member from a named, skilled person and its birth date.
+	 * Create a living, <b>parentless</b> member from a named, skilled person and its
+	 * birth date — an initially-generated individual (a founding head, a pooled
+	 * peasant, a wed-in spouse, an immigrant). Its {@link #getMother() mother} and
+	 * {@link #getFather() father} are {@code null}.
 	 *
 	 * @param person
 	 *            the member's name-and-skills identity
@@ -41,8 +52,29 @@ public final class Member {
 	 *            the member's biological birth date
 	 */
 	public Member(Person person, LocalDate birthDate) {
+		this(person, birthDate, null, null);
+	}
+
+	/**
+	 * Create a living member with known {@code mother} and {@code father} — a
+	 * newborn, the only individual whose parentage the colony knows (see
+	 * {@link com.civstudio.mortality.Demography#newChild}). Either parent may be
+	 * {@code null}.
+	 *
+	 * @param person
+	 *            the member's name-and-skills identity
+	 * @param birthDate
+	 *            the member's biological birth date
+	 * @param mother
+	 *            the member's mother, or {@code null} if unknown
+	 * @param father
+	 *            the member's father, or {@code null} if unknown
+	 */
+	public Member(Person person, LocalDate birthDate, Member mother, Member father) {
 		this.person = person;
 		this.birthDate = birthDate;
+		this.mother = mother;
+		this.father = father;
 	}
 
 	/** @return the underlying name-and-skills identity */
@@ -82,6 +114,16 @@ public final class Member {
 		return birthDate;
 	}
 
+	/** @return this member's mother, or {@code null} if unknown (not colony-born) */
+	public Member getMother() {
+		return mother;
+	}
+
+	/** @return this member's father, or {@code null} if unknown (not colony-born) */
+	public Member getFather() {
+		return father;
+	}
+
 	/** @return whether this member is still alive */
 	public boolean isAlive() {
 		return alive;
@@ -107,6 +149,21 @@ public final class Member {
 	 */
 	public int getAgeYears(LocalDate today) {
 		return ageDays(today) / 365;
+	}
+
+	/**
+	 * Whether this member has reached working age — its race's
+	 * {@linkplain Race#minInitAgeYears() working-age floor} (the same floor the model
+	 * uses when drawing founding/promoted heads). Below it the member is a
+	 * <b>child</b>: it eats the child ration, supplies no labour and trains no skills;
+	 * at or above it the member is an <b>adult</b> worker (see {@code docs/births.md}).
+	 *
+	 * @param today
+	 *            the colony's current date
+	 * @return true if the member is of working age (an adult)
+	 */
+	public boolean isAdult(LocalDate today) {
+		return getAgeYears(today) >= person.race().minInitAgeYears();
 	}
 
 	/**
