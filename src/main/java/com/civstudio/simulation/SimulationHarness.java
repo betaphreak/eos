@@ -1289,11 +1289,6 @@ public class SimulationHarness {
 		colony.addPrinter(new VolumesPrinter(prefix + "Volumes"));
 		colony.addPrinter(new FirmsPrinter(prefix + "Firms"));
 		colony.addPrinter(new WeddingPrinter(prefix + "Weddings", weddingMkt));
-		// the builder's construction-specific detail (size/slots/build-rings); its
-		// finance rides in Firms.csv with the other firms. Only colonies that grow —
-		// those with a builder (the pool colonies) — write it.
-		if (builderFirm != null)
-			colony.addPrinter(new BuilderPrinter(prefix + "Construction", builderFirm));
 	}
 
 	/**
@@ -1310,32 +1305,8 @@ public class SimulationHarness {
 	}
 
 	/**
-	 * Register a {@link BuilderPrinter} for the colony's builder, charting the
-	 * colony's size and the builder's construction activity. The builder must
-	 * already exist (see {@link #createBuilder}).
-	 *
-	 * @param fileName
-	 *            the CSV output file name
-	 */
-	public void addBuilderPrinter(String fileName) {
-		colony.addPrinter(new BuilderPrinter(fileName, builderFirm));
-	}
-
-	/**
-	 * Register a {@link StrategicPrinter} for the colony's export firm, reporting
-	 * equity in <tt>bank</tt>'s currency. The strategic firm must already exist.
-	 *
-	 * @param fileName
-	 *            the CSV output file name
-	 * @param bank
-	 *            the bank whose equity the export earnings flow into
-	 */
-	public void addStrategicPrinter(String fileName, Bank bank) {
-		colony.addPrinter(new StrategicPrinter(fileName, strategicFirm, bank));
-	}
-
-	/**
-	 * Register the export sector's printers — the {@link StrategicPrinter} and the
+	 * Register the export sector's printers — the {@link ServicesPrinter} (the
+	 * colony's crown services: export, construction and research in one CSV) and the
 	 * {@link NoblesPrinter} — for a colony whose nobles are the default export
 	 * workforce (and so has no other noble printers). The filenames are prefixed with
 	 * <tt>prefix</tt> (see {@link #addCommonPrinters(String)}). Persons-of-interest
@@ -1349,11 +1320,8 @@ public class SimulationHarness {
 	 */
 	public void addStrategicSectorPrinters(String prefix, Bank bank) {
 		colony.addPrinter(
-				new StrategicPrinter(prefix + "Strategic", strategicFirm, bank));
+				new ServicesPrinter(prefix + "Services", strategicFirm, bank));
 		colony.addPrinter(new NoblesPrinter(prefix + "Nobles"));
-		// chart the colony's research, if enabled (the strategic sector fuels it)
-		if (colony.getResearch() != null)
-			colony.addPrinter(new ResearchPrinter(prefix + "Research"));
 	}
 
 	/** Run the simulation for the configured number of steps, then clean up. */

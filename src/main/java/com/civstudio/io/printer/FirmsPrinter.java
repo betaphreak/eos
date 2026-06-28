@@ -41,10 +41,10 @@ import com.civstudio.settlement.Settlement;
  * exports, or build-units. {@code TotalStock} (unsold inventory) and {@code
  * AvgUtilization} are meaningful only for the consumer firms (the necessity firms' stock
  * is the food a collapsing colony hands its departing band — see {@code Caravan.dissolve});
- * the other types report {@code 0} for both. The genuinely type-specific detail lives in
- * its own file: the export firm's shipped/earned totals in {@code Strategic.csv}
- * ({@code StrategicPrinter}) and the builder's size/slots/build-ring progress in {@code
- * Construction.csv} ({@code BuilderPrinter}).
+ * the other types report {@code 0} for both. The genuinely type-specific detail — the
+ * export firm's shipped/earned totals and the builder's size/slots/build-ring progress —
+ * lives with the colony's research in the consolidated {@code Services.csv}
+ * ({@code ServicesPrinter}).
  * <p>
  * One row per present type is written on the first day of each in-game month (see {@link
  * Printer#shouldPrint}).
