@@ -1220,15 +1220,18 @@ public class SimulationHarness {
 	public void foundLaborersFromRetinue(IntFunction<Bank> laborerBank,
 			IntToDoubleFunction initN) {
 		// promote promotionRatio of the seeded pool into households (highest skill
-		// first); the rest — the least skilled — remain as the standing reserve
-		int promoted =
+		// first); the rest — the least skilled, plus every not-yet-grown child —
+		// remain as the standing reserve
+		int requested =
 				(int) Math.round(cfg.promotionRatio() * retinue.size());
-		laborers = new Laborer[promoted];
 		// promote the whole highest-skill cohort in one batch (a single sort instead
-		// of `promoted` linear scans of the pool); the order is identical to taking
+		// of `requested` linear scans of the pool); the order is identical to taking
 		// the highest skilled one at a time, so the per-laborer endowment draws below
-		// are unchanged
-		List<Member> cohort = retinue.promoteHighestSkilled(promoted);
+		// are unchanged. The cohort excludes pool children, so it may be smaller than
+		// requested if too few peasants are of working age — size the array off it.
+		List<Member> cohort = retinue.promoteHighestSkilled(requested);
+		int promoted = cohort.size();
+		laborers = new Laborer[promoted];
 		for (int i = 0; i < promoted; i++) {
 			Member peasant = cohort.get(i);
 			double stock = retinue.drawPromotionStock(initN.applyAsDouble(i));

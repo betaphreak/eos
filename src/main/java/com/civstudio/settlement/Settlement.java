@@ -1136,24 +1136,35 @@ public class Settlement {
 		LocalDate date = getDate();
 		if (date.getMonthValue() != 1 || date.getDayOfMonth() != 1)
 			return;
-		int laborers = 0, nobles = 0, firms = 0, pool = 0;
+		int laborers = 0, children = 0, nobles = 0, firms = 0, pool = 0, poolKids = 0;
 		for (Agent a : agents) {
 			if (!a.isAlive())
 				continue;
-			if (a instanceof Retinue r)
+			if (a instanceof Retinue r) {
 				pool += r.size();
-			else if (a instanceof Firm)
+				poolKids += r.childCount(date);
+			} else if (a instanceof Firm)
 				firms++;
 			else if (a instanceof Household h) {
-				if (h.isWorkforce())
+				if (h.isWorkforce()) {
 					laborers++;
-				else if ("Noble".equals(h.role()))
+					// home-grown children: non-adult household members (births, see
+					// docs/births.md) — counted across the head's whole household
+					for (Member m : h.getMembers())
+						if (!m.isAdult(date))
+							children++;
+				} else if ("Noble".equals(h.role()))
 					nobles++;
 			}
 		}
+		// pop is the workforce (laborer households); children breaks out the under-age
+		// members it does not count (household-born + pool wards), so the digest shows
+		// the next generation maturing toward the workforce
 		log.info(String.format(
-				"annual digest: pop=%d nobles=%d firms=%d pool=%d POI deaths=%d CPI=%.1f",
-				laborers, nobles, firms, pool, poiDeathsThisYear, getInflation()));
+				"annual digest: pop=%d children=%d nobles=%d firms=%d pool=%d poolKids=%d "
+						+ "POI deaths=%d CPI=%.1f",
+				laborers, children, nobles, firms, pool, poolKids, poiDeathsThisYear,
+				getInflation()));
 		poiDeathsThisYear = 0;
 	}
 

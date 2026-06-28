@@ -36,6 +36,13 @@ public final class Demography {
 	// not a shared constant; the spread is shared.
 	private static final double INIT_AGE_STDDEV_YEARS = 10;
 
+	// fraction of a freshly-seeded peasant pool that is below working age — children,
+	// who supply no labour and are neither promoted nor wed until they mature, but
+	// who give the founding cohort a genuine age pyramid so it does not all age out
+	// of the workforce together (see docs/food-balance.md item 4). The remainder of
+	// the pool draws the working-age founding spread.
+	private static final double FOUNDING_CHILD_FRACTION = 0.35;
+
 	// a household's skill is an integer in [Household.MIN_SKILL, MAX_SKILL] drawn
 	// from a normal distribution centered on a caller-supplied mean (a
 	// colony-start property), sd SKILL_STDDEV, clamped to the range — a natural
@@ -129,6 +136,30 @@ public final class Demography {
 					rng.gaussian(meanYears, INIT_AGE_STDDEV_YEARS));
 		} while (years < minYears);
 		return years * DAYS_PER_YEAR + rng.uniform(DAYS_PER_YEAR);
+	}
+
+	/**
+	 * Draw a founding age (in days) for a peasant seeded into the {@link Retinue}
+	 * pool, which — unlike a household head — <b>may be a child</b>. With probability
+	 * {@value #FOUNDING_CHILD_FRACTION} the peasant is a child, its age drawn
+	 * uniformly below the race's {@link Race#minInitAgeYears() working-age floor};
+	 * otherwise it draws the working-age founding spread of
+	 * {@link #sampleInitialAgeDays}. Including children gives the founding pool a real
+	 * age pyramid, so it matures into the workforce over time rather than the whole
+	 * cohort aging out together (see {@code docs/food-balance.md} item 4).
+	 *
+	 * @param meanYears
+	 *            mean of the adult age distribution, in years
+	 * @param race
+	 *            the peasant's race (sets the working-age floor)
+	 * @return an age in days (possibly below working age)
+	 */
+	public int samplePoolFoundingAgeDays(double meanYears, Race race) {
+		if (rng.uniform() < FOUNDING_CHILD_FRACTION) {
+			int childYears = rng.uniform(race.minInitAgeYears());
+			return childYears * DAYS_PER_YEAR + rng.uniform(DAYS_PER_YEAR);
+		}
+		return sampleInitialAgeDays(meanYears, race);
 	}
 
 	/**

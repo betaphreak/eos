@@ -118,6 +118,22 @@ drawn without replacement and reserved for living *households*. A peasant carrie
 given name, gender and skills only; its unique dynasty surname is drawn at
 **promotion**, when it founds a household.
 
+The founding pool is a **genuine age pyramid, not an adults-only working cohort**: its
+age draw is `Demography.samplePoolFoundingAgeDays`, which makes a fraction
+(`FOUNDING_CHILD_FRACTION` = 0.35) of the seeded peasants **children** (drawn uniformly
+below the race's working-age floor), the rest the usual working-age spread. A pool
+child supplies no labour, eats the smaller colony **child ration** (`SNACK`, capped at
+the relief ration; `Retinue.feed`), and is **excluded from promotion and marriage**
+(`promoteHighestSkilled`/`bestSpouseCandidate` skip any `Member` that is not yet
+`isAdult`) until it crosses the working-age floor — whereupon it replenishes the
+promotable reserve. This **staggers the cohort** so the workforce is renewed from
+within the pool as children mature, rather than the whole founding generation aging out
+together: on the default colony (births off) it keeps the reserve from draining to zero
+in year 1 and lifts the collapse horizon from ~9 to ~11.5 years (see
+`docs/food-balance.md` item 4). The labor-force *size* is unchanged — promotion still
+draws `round(promotionRatio · poolSize)` adults, and `foundLaborersFromRetinue` sizes
+the cohort off what it actually gets, so a child-heavy pool never over-promotes.
+
 The **initial labor force is then created through the same promotion path** (see
 below): the Ruler promotes the ablest `round(promotionRatio · poolSize)` peasants
 (default ratio **0.4**) into laborer households — each carrying its larder ration out

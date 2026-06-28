@@ -1,7 +1,7 @@
 package com.civstudio.agent;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
@@ -255,7 +255,7 @@ public class Retinue extends Agent {
 		Race race = demography.sampleRace(colony.getRaceMix());
 		int ageDays = young
 				? demography.sampleYoungAdultAgeDays(race)
-				: demography.sampleInitialAgeDays(colony.getMeanInitAgeYears(), race);
+				: demography.samplePoolFoundingAgeDays(colony.getMeanInitAgeYears(), race);
 		// draw the skills, then move them into the columnar store (consuming no RNG,
 		// so the gender/age/skills/name draw order is unchanged and reproducible)
 		SkillTracker seed = demography.newSkillTracker(colony.getMeanSkill(gender));
@@ -371,23 +371,47 @@ public class Retinue extends Agent {
 	}
 
 	private void feed() {
-		int alive = peasants.size();
-		// members eat the mode's ration (settled relief, or the leaner wandering ration)
-		double ration = provisioning.ration(this).perDay();
-		double wanted = alive * ration;
+		LocalDate today = getColony().getDate();
+		// adults eat the mode's ration (settled relief, or the leaner wandering ration);
+		// a pool child (an orphan ward the lord feeds) eats the smaller colony child
+		// ration, never more than the adult ration under a lean mode
+		double adultRation = provisioning.ration(this).perDay();
+		double childRation = Math.min(adultRation,
+				getColony().getFertilityConfig().childRation().perDay());
+		double wanted = 0;
+		for (Member m : peasants)
+			wanted += rationFor(m, adultRation, childRation, today);
 		lastConsumed = necessity.decrease(wanted);
-		// a peasant starves only when even its relief ration is missing; fractional
-		// shortfalls are absorbed (the larder/buffer carries them)
+		// a peasant starves only when even its ration is missing; fractional shortfalls
+		// are absorbed (the larder/buffer carries them). With mixed adult/child rations
+		// the least skilled starve first, each freeing its own ration, until the missing
+		// food is covered (the generalization of "floor(shortfall / ration)")
 		double shortfall = wanted - lastConsumed;
-		lastStarved = Math.max(0, (long) Math.floor(shortfall / ration));
-		if (lastStarved > 0) {
+		long starved = 0;
+		if (shortfall > 1e-9) {
 			// the least skilled starve first; the abler are kept for promotion
 			peasants.sort(Comparator.comparingInt(m -> m.skills().overallLevel()));
-			for (long i = 0; i < lastStarved && !peasants.isEmpty(); i++)
+			double freed = 0;
+			while (!peasants.isEmpty()) {
+				double r = rationFor(peasants.get(0), adultRation, childRation, today);
+				if (freed + r > shortfall) // remaining shortfall is sub-ration: absorbed
+					break;
+				freed += r;
 				skillStore.remove(viewOf(peasants.remove(0)));
-			log.finer(lastStarved + " peasant(s) starved (pool now "
-					+ peasants.size() + ")");
+				starved++;
+			}
+			if (starved > 0)
+				log.finer(starved + " peasant(s) starved (pool now "
+						+ peasants.size() + ")");
 		}
+		lastStarved = starved;
+	}
+
+	// the daily ration a pooled peasant eats: an adult its mode ration, a child the
+	// (smaller) colony child ration
+	private double rationFor(Member m, double adultRation, double childRation,
+			LocalDate today) {
+		return m.isAdult(today) ? adultRation : childRation;
 	}
 
 	private void billRuler(Ruler ruler) {
@@ -434,19 +458,27 @@ public class Retinue extends Agent {
 	}
 
 	/**
-	 * Remove and return the highest-overall-skill peasant — the one a {@link
-	 * Ruler} promotes into a laborer household (merit-based social
-	 * mobility). Returns {@code null} when the pool is empty (then no replacement is
-	 * produced and the labor force shrinks — the pool drains with no inflow yet).
+	 * Remove and return the highest-overall-skill <b>working-age</b> peasant — the one
+	 * a {@link Ruler} promotes into a laborer household (merit-based social
+	 * mobility). Children are skipped (they cannot head a working household until they
+	 * mature). Returns {@code null} when no working-age peasant remains (then no
+	 * replacement is produced and the labor force shrinks — the pool drains with no
+	 * inflow yet).
 	 *
-	 * @return the ablest peasant, removed from the pool, or {@code null} if empty
+	 * @return the ablest adult peasant, removed from the pool, or {@code null} if none
 	 */
 	public Member promoteHighestSkilled() {
+		LocalDate today = getColony().getDate();
 		Member best = null;
-		for (Member m : peasants)
+		// only working-age peasants are promotable; children stay in the pool until
+		// they mature (food-balance.md item 4)
+		for (Member m : peasants) {
+			if (!m.isAdult(today))
+				continue;
 			if (best == null
 					|| m.skills().overallLevel() > best.skills().overallLevel())
 				best = m;
+		}
 		if (best != null) {
 			// frees its row and materializes its skills into a standalone copy, which
 			// travels with the Member into the laborer household it heads
@@ -458,38 +490,44 @@ public class Retinue extends Agent {
 	}
 
 	/**
-	 * Remove and return the {@code k} highest-overall-skill peasants, in descending
-	 * skill order — the merit-based cohort a {@link Ruler} promotes into laborer
-	 * households when the colony is founded. Equivalent to calling {@link
-	 * #promoteHighestSkilled()} {@code k} times (the same members, in the same order,
-	 * with the same skill-store removals), but found with a single stable sort rather
-	 * than {@code k} linear scans of the pool: no skill changes during founding, so
-	 * the {@code k} sequential maxima are exactly the top {@code k} by overall level,
-	 * ties broken toward the earlier pool position (the "first maximum in list order"
-	 * each scan picks). Returns fewer than {@code k} only if the pool holds fewer.
+	 * Remove and return the {@code k} highest-overall-skill <b>working-age</b>
+	 * peasants, in descending skill order — the merit-based cohort a {@link Ruler}
+	 * promotes into laborer households when the colony is founded. Children are
+	 * excluded (they cannot head a working household until they mature). Equivalent to
+	 * calling {@link #promoteHighestSkilled()} {@code k} times (the same members, in
+	 * the same order, with the same skill-store removals), but found with a single
+	 * stable sort rather than {@code k} linear scans of the pool: no skill changes
+	 * during founding, so the {@code k} sequential maxima are exactly the top {@code k}
+	 * adults by overall level, ties broken toward the earlier pool position (the "first
+	 * maximum in list order" each scan picks). Returns fewer than {@code k} only if
+	 * fewer working-age peasants remain.
 	 *
 	 * @param k the number of peasants to promote
-	 * @return the promoted peasants, highest skill first, removed from the pool
+	 * @return the promoted adult peasants, highest skill first, removed from the pool
 	 */
 	public List<Member> promoteHighestSkilled(int k) {
-		int n = Math.min(Math.max(0, k), peasants.size());
+		LocalDate today = getColony().getDate();
+		// only working-age peasants are promotable; children stay in the pool until they
+		// mature (food-balance.md item 4), so the cohort is drawn from the adults alone
+		int size = peasants.size();
+		int[] level = new int[size];
+		List<Integer> adults = new ArrayList<>(size);
+		for (int i = 0; i < size; i++) {
+			level[i] = peasants.get(i).skills().overallLevel();
+			if (peasants.get(i).isAdult(today))
+				adults.add(i);
+		}
+		int n = Math.min(Math.max(0, k), adults.size());
 		List<Member> promoted = new ArrayList<>(n);
 		if (n == 0)
 			return promoted;
-		// compute each peasant's overall level once, then stably sort positions by
-		// level descending; equal levels keep their original (ascending) pool order,
-		// matching the first-maximum-in-list-order the repeated single scan picks
-		int size = peasants.size();
-		int[] level = new int[size];
-		Integer[] pos = new Integer[size];
-		for (int i = 0; i < size; i++) {
-			level[i] = peasants.get(i).skills().overallLevel();
-			pos[i] = i;
-		}
-		Arrays.sort(pos, (a, b) -> Integer.compare(level[b], level[a]));
+		// stably sort adult positions by level descending; equal levels keep their
+		// original (ascending) pool order, matching the first-maximum-in-list-order the
+		// repeated single scan picks
+		adults.sort((a, b) -> Integer.compare(level[b], level[a]));
 		Set<Member> chosen = Collections.newSetFromMap(new IdentityHashMap<>());
 		for (int i = 0; i < n; i++) {
-			Member m = peasants.get(pos[i]);
+			Member m = peasants.get(adults.get(i));
 			promoted.add(m);
 			chosen.add(m);
 		}
@@ -503,20 +541,24 @@ public class Retinue extends Agent {
 	}
 
 	/**
-	 * The best peasant of the given gender to take as a spouse — the highest
-	 * {@linkplain SkillTracker#overallLevel() overall skill}, the younger one (the
-	 * more recent birth date) breaking a tie — without removing it. Returns {@code
-	 * null} when no peasant of that gender remains. Used by the {@link
-	 * WeddingMarket} to choose (and price) a match before committing.
+	 * The best <b>working-age</b> peasant of the given gender to take as a spouse — the
+	 * highest {@linkplain SkillTracker#overallLevel() overall skill}, the younger one
+	 * (the more recent birth date) breaking a tie — without removing it. Children are
+	 * skipped (they cannot wed until they mature). Returns {@code null} when no
+	 * working-age peasant of that gender remains. Used by the {@link WeddingMarket} to
+	 * choose (and price) a match before committing.
 	 *
 	 * @param gender
 	 *            the gender of spouse sought (the opposite of the head's)
-	 * @return the ablest, then youngest, peasant of that gender, or {@code null}
+	 * @return the ablest, then youngest, adult peasant of that gender, or {@code null}
 	 */
 	public Member bestSpouseCandidate(Gender gender) {
+		LocalDate today = getColony().getDate();
 		Member best = null;
 		for (Member m : peasants) {
-			if (m.gender() != gender)
+			// only working-age peasants of the sought gender are weddable; children
+			// stay in the pool until they mature (food-balance.md item 4)
+			if (m.gender() != gender || !m.isAdult(today))
 				continue;
 			if (best == null) {
 				best = m;
@@ -552,6 +594,23 @@ public class Retinue extends Agent {
 	/** @return the number of peasants currently in the pool */
 	public int size() {
 		return peasants.size();
+	}
+
+	/**
+	 * The number of pooled peasants below working age (children) as of {@code today} —
+	 * the not-yet-promotable young who stagger the pool's age structure (see {@code
+	 * docs/food-balance.md} item 4). Reported in the colony's annual digest.
+	 *
+	 * @param today
+	 *            the colony's current date
+	 * @return the count of child peasants in the pool
+	 */
+	public int childCount(LocalDate today) {
+		int children = 0;
+		for (Member m : peasants)
+			if (!m.isAdult(today))
+				children++;
+		return children;
 	}
 
 	/**

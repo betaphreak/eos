@@ -175,6 +175,23 @@ survival fix.
    reserve with adequate food), widen the founding-age spread (so the cohort does not
    age out together), or soften mortality — so the first home-grown generation (15y) can
    come online. Only then can the births mechanism (`docs/births.md`) deliver renewal.
+   - **Founding-age spread now includes children — DONE (partial).** The seeded peasant
+     pool is no longer an adults-only working cohort: `Demography.samplePoolFoundingAgeDays`
+     draws a fraction (`FOUNDING_CHILD_FRACTION` = 0.35) of the founding pool **below
+     working age**, the rest from the usual working-age spread, so the pool is a genuine
+     age pyramid. Pool children supply no labour, eat the smaller colony **child ration**
+     (`SNACK`, capped at the relief ration; `Retinue.feed`), and are **excluded from
+     promotion and marriage** (`promoteHighestSkilled`/`bestSpouseCandidate` gate on
+     `Member.isAdult`) until they cross the working-age floor — at which point they
+     replenish the promotable reserve. The labor-force size is unchanged (promotion still
+     draws `round(promotionRatio · poolSize)` adults; `foundLaborersFromRetinue` sizes the
+     cohort off what it actually gets, so a child-heavy pool can't over-promote). Measured
+     on the default Dhenijansar colony (seed 7654321, births off): the **reserve no longer
+     drains to zero in year 1** — children maturing keep it populated (~85 at dissolution
+     vs. **0 by year 1** without children) — and the collapse horizon extends from
+     **~9 years to ~11.5 years**. A real gain on the maturation window, but still short of
+     the ~15y births needs; this is the *staggering* lever, to be combined with the others
+     (bigger reserve, softer mortality) — not a standalone cure.
 
 Fixes 1–4 together are the path from "collapses at ~7 years" to "survives long enough
 for births to sustain it." None is a single knob; this is the food-economy calibration
