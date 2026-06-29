@@ -374,15 +374,21 @@ public abstract class ConsumerGoodFirm extends Firm {
 
 	/**
 	 * This firm's <b>effective</b> total-factor productivity: its configured
-	 * {@code A} scaled by the colony's tech multiplier for its {@link #sector()}.
-	 * With no tech researched the multiplier is 1, so this equals {@code config.A()}
-	 * and production is unchanged; a {@link TechEffect.SectorProductivity}
-	 * effect raises it. Read everywhere {@code A} enters the firm's economics
-	 * (output and marginal cost) so they stay consistent.
+	 * {@code A} scaled by the colony's tech multiplier for its {@link #sector()} and
+	 * by the {@linkplain com.civstudio.settlement.Settlement#plotYieldFactor terrain
+	 * yield factor} of the plot it stands on. With no tech researched the tech
+	 * multiplier is 1, and the plot factor is 1 for a province-less colony, a
+	 * center-grouped firm, or any sector but food this cut (see {@code
+	 * docs/plots.md}), so this equals {@code config.A()} unless a coupling applies; a
+	 * {@link TechEffect.SectorProductivity} effect or richer/poorer land moves it.
+	 * Read everywhere {@code A} enters the firm's economics (output and marginal
+	 * cost) so they stay consistent.
 	 *
-	 * @return the configured A scaled by the sector's tech multiplier
+	 * @return the configured A scaled by the sector's tech multiplier and its plot's
+	 *         terrain yield factor
 	 */
 	protected double effectiveA() {
-		return config.A() * getColony().getTechMultiplier(sector());
+		return config.A() * getColony().getTechMultiplier(sector())
+				* getColony().plotYieldFactor(this, sector());
 	}
 }

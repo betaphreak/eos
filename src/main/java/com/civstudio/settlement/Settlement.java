@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -209,6 +210,13 @@ public class Settlement {
 	// builder (see claimPlot); an occupant keeps its plot. Today only firms occupy
 	// plots. Capped at maxPlots.
 	private final List<Plot> plots = new ArrayList<Plot>();
+
+	// reverse index from a seated occupant to the plot it stands on, so the terrain
+	// yield factor can be read by identity in O(1) (effectiveA reads it per firm per
+	// step). Kept in sync by seat()/vacatePlot; an occupant with no entry (a
+	// center-grouped or pending firm) reads the neutral factor 1.0.
+	private final Map<SlotOccupant, Plot> plotByOccupant =
+			new IdentityHashMap<SlotOccupant, Plot>();
 
 	// mean of the normal distribution from which founding household heads draw
 	// their initial age, in years (see Demography.sampleInitialAgeDays)
@@ -747,7 +755,7 @@ public class Settlement {
 	public Plot claimPlot(SlotOccupant occupant) {
 		Plot plot = firstVacantPlot();
 		if (plot != null) {
-			plot.occupy(occupant);
+			seat(plot, occupant);
 			return plot;
 		}
 		if (started)
@@ -762,8 +770,15 @@ public class Settlement {
 			throw new IllegalStateException(name + " cannot seat " + occupant
 					+ ": it is full at its maximum of " + maxPlots + " plots");
 		Plot plot = appendPlot();
-		plot.occupy(occupant);
+		seat(plot, occupant);
 		return plot;
+	}
+
+	// place an occupant on a plot and index it (so its terrain yield can be read by
+	// identity — see plotYieldFactor)
+	private void seat(Plot plot, SlotOccupant occupant) {
+		plot.occupy(occupant);
+		plotByOccupant.put(occupant, plot);
 	}
 
 	// live colony: only the builder can make room. Queue one plot's clearance and
@@ -933,12 +948,41 @@ public class Settlement {
 	 *            the occupant whose plot to free
 	 */
 	public void vacatePlot(SlotOccupant occupant) {
-		for (Plot plot : plots)
-			if (plot.getOccupant() == occupant) {
-				plot.vacate();
-				return;
-			}
+		Plot plot = plotByOccupant.remove(occupant);
+		if (plot != null) {
+			plot.vacate();
+			return;
+		}
 		pendingOccupants.remove(occupant);
+	}
+
+	/**
+	 * The <b>terrain yield factor</b> the given occupant's plot applies to its TFP in
+	 * the given sector — the channel by which land quality varies a firm's
+	 * productivity per plot (see {@code docs/plots.md}). Returns the neutral
+	 * {@code 1.0} when the coupling does not apply:
+	 * <ul>
+	 * <li>a <b>province-less</b> colony bypasses the whole plot coupling (its plots
+	 * are uniform baseline anyway);</li>
+	 * <li>only <b>food</b> ({@link Sector#NECESSITY}) is live this cut — production
+	 * and commerce are fully plumbed but dormant until a mine / trading-post firm
+	 * actually sits on a plot (Phase 3+);</li>
+	 * <li>a <b>center-grouped or not-yet-seated</b> occupant (no plot) is
+	 * land-independent.</li>
+	 * </ul>
+	 * Folded into {@link com.civstudio.agent.firm.ConsumerGoodFirm#effectiveA()} (and
+	 * stacked with the retained climate multiplier for {@link
+	 * com.civstudio.agent.firm.NFirm}).
+	 *
+	 * @param occupant the firm whose plot to read
+	 * @param sector   the firm's sector
+	 * @return the plot's yield factor (1.0 when the coupling does not apply)
+	 */
+	public double plotYieldFactor(SlotOccupant occupant, Sector sector) {
+		if (province == null || sector != Sector.NECESSITY)
+			return 1.0;
+		Plot plot = plotByOccupant.get(occupant);
+		return plot == null ? 1.0 : plot.yieldFactor(sector);
 	}
 
 	// queue the land-clearance work to open one more plot on behalf of one occupant.
@@ -995,7 +1039,7 @@ public class Settlement {
 			Plot plot = firstVacantPlot();
 			if (plot == null)
 				break;
-			plot.occupy(it.next());
+			seat(plot, it.next());
 			it.remove();
 		}
 	}

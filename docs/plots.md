@@ -1,6 +1,6 @@
 # Design note: Civ4-style plots for settlement slots
 
-**Status:** Phases 0–1 implemented; Phases 2–4 proposed
+**Status:** Phases 0–2 implemented; Phases 2b–4 proposed
 **Date:** 2026-06-29
 **Depends on:** the occupant seam (`SlotOccupant`, which `Agent` implements) and the build
 queue (`BuildProject`, `BuilderFirm`) — this note **removes** the disc geometry it replaces
@@ -524,10 +524,18 @@ near its current food TFP. The plan therefore:
   uniformly baseline).
   - *Deferred to Phase 2b cleanup:* `FOUNDING_SERVICE_SLOTS` and the per-firm plot reservation
     stay until center-grouping lands (every firm still occupies a plot this cut).
-- **Phase 2 — terrain yield → TFP (behavioural; needs re-validation).** Wire
-  `plotYieldFactor` into the on-plot firms' `effectiveA` (food first, via `NFirm`); **keep**
-  the climate multiplier as a residual layer; tune `REFERENCE` so the plot factor is ≈ 1.0
-  at the baseline plot+farm. Re-run the suite + sweep; document the default colony's shift.
+- **Phase 2 — terrain yield → TFP (behavioural). ✅ Implemented.** `Plot.yieldFactor(Sector)`
+  maps the plot's raw terrain yield through a per-index `YIELD_REFERENCE` (food `1.4`,
+  production/commerce placeholders) floored at `YIELD_FLOOR` (`0.1`); `Settlement.plotYieldFactor`
+  applies the staging gates (province-less → 1.0; only food/`NECESSITY` live this cut; a
+  center-grouped/unseated firm → 1.0) and `ConsumerGoodFirm.effectiveA()` folds it in (`NFirm`
+  still stacks the retained climate multiplier on top, both channels). `REFERENCE[food] = 1.4`
+  is **Dhenijansar's expected terrain food yield** (its temperate + normal-monsoon pool), so the
+  default colony's mean food factor ≈ 1.0 — its aggregate food TFP stays near its pre-rework
+  value, with per-plot variation (grassland → 1.43, plains → 0.71) around the mean. Production
+  and commerce are plumbed but dormant (gated off until a mine / trading-post firm sits on a
+  plot). Re-validated against the full suite. Tests: `PlotYieldTest` (mean food factor ≈ 1.0;
+  non-food gated; province-less/unseated → 1.0).
 - **Phase 2b — the travel-time ladder → labor (behavioural).** Give each `Plot` its ladder
   index; compute `N` and `D` in `LaborMarket.clear()`; scale each worker's delivered labor
   by `workFactor`. Center-grouped firms feel only `N`; farms feel `N` + commute. Re-validate

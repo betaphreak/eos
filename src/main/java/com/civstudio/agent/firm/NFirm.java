@@ -76,10 +76,13 @@ public class NFirm extends ConsumerGoodFirm {
 	 * Necessity is the colony's agriculture, so its effective total-factor
 	 * productivity is additionally scaled by the colony's {@linkplain
 	 * Settlement#getAgricultureClimateMultiplier() agricultural climate multiplier}
-	 * (climate band &times; winter &times; monsoon) on top of the base {@code A}
-	 * and the sector tech multiplier. Only necessity reads this — enjoyment and
-	 * capital firms are climate-independent — and a colony with no province leaves
-	 * it at {@code 1.0}.
+	 * (climate band &times; winter &times; monsoon) on top of the base {@code A}, the
+	 * sector tech multiplier, and the plot's terrain yield factor (which {@code
+	 * super.effectiveA()} already folds in — food is the live sector this cut). Both
+	 * climate channels stack: climate acts through which terrains are generated
+	 * <em>and</em> as this direct multiplier. Only necessity reads the climate
+	 * multiplier — enjoyment and capital firms are climate-independent — and a colony
+	 * with no province leaves both at {@code 1.0}.
 	 */
 	@Override
 	protected double effectiveA() {
