@@ -1,0 +1,71 @@
+package com.civstudio.geo.export;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import com.civstudio.geo.Terrain;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+/**
+ * Dev tool: parses {@code data/CIV4TerrainInfos.xml} and emits the curated
+ * settleable-land subset to the committed {@code /terrains.json} resource the
+ * core {@link com.civstudio.geo.TerrainRegistry} loads. The curation (which
+ * terrains to keep) and the XML&rarr;record field mapping live here; the running
+ * simulation never touches the XML. Run manually, like the geo exporters:
+ *
+ * <pre>
+ * mvn compile exec:exec -Dsim.main=com.civstudio.geo.export.TerrainExporter
+ * </pre>
+ *
+ * Hills and peaks are deliberately excluded — they are a per-plot {@code PlotType}
+ * axis, not a terrain (see {@code docs/plots.md}). Water/polar/ice terrains are
+ * deferred (coastal fishing is future work).
+ */
+public final class TerrainExporter {
+
+	private static final String INPUT = "data/CIV4TerrainInfos.xml";
+	private static final String OUTPUT = "src/main/resources/terrains.json";
+
+	/** The curated land subset, in the order they appear in {@code docs/plots.md}. */
+	private static final Set<String> KEEP = new LinkedHashSet<>(List.of(
+			"TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_PLAINS", "TERRAIN_SCRUB",
+			"TERRAIN_MARSH", "TERRAIN_MUDDY", "TERRAIN_ROCKY", "TERRAIN_BADLAND",
+			"TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_DUNES",
+			"TERRAIN_SALT_FLATS", "TERRAIN_TAIGA", "TERRAIN_TUNDRA",
+			"TERRAIN_PERMAFROST"));
+
+	private TerrainExporter() {
+	}
+
+	public static void main(String[] args) throws Exception {
+		Document doc = Civ4Xml.parse(INPUT);
+		List<Terrain> out = new ArrayList<>();
+		Set<String> seen = new LinkedHashSet<>();
+		for (Element info : Civ4Xml.infos(doc, "TerrainInfo")) {
+			String type = Civ4Xml.text(info, "Type");
+			if (type == null || !KEEP.contains(type))
+				continue;
+			out.add(new Terrain(
+					type,
+					Civ4Xml.yields(info, "Yields", "iYield"),
+					Civ4Xml.boolVal(info, "bFound"),
+					Civ4Xml.intVal(info, "iBuildModifier", 0),
+					Civ4Xml.intVal(info, "iHealthPercent", 0)));
+			seen.add(type);
+		}
+		Set<String> missing = new LinkedHashSet<>(KEEP);
+		missing.removeAll(seen);
+		if (!missing.isEmpty())
+			throw new IllegalStateException("curated terrains not found in XML: " + missing);
+
+		File f = new File(OUTPUT);
+		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(f, out);
+		System.out.println("wrote " + out.size() + " terrains to " + f.getAbsolutePath());
+	}
+}

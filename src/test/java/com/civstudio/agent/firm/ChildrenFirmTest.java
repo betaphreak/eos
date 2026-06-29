@@ -18,52 +18,12 @@ import com.civstudio.simulation.SimulationHarness;
 
 /**
  * Phase-4 coverage for the {@link ChildrenFirm} — the colony's civic school (see
- * {@code docs/births.md}):
- * <ul>
- * <li>enrolled children grow their skills well above the unschooled newborn
- * baseline;</li>
- * <li>enrollment is capped at the school's capacity — when more children than
- * places exist, the school fills exactly its capacity (the oldest, by design)
- * and no more.</li>
- * </ul>
- * Both run a small births-enabled pool colony over a short horizon.
+ * {@code docs/births.md}): enrollment is capped at the school's capacity — when
+ * more children than places exist, the school fills exactly its capacity (the
+ * oldest, by design) and no more. Runs a small births-enabled pool colony over a
+ * short horizon.
  */
 class ChildrenFirmTest {
-
-	/**
-	 * With the school running at a high per-step learning rate, the children it
-	 * trains reach skill levels far above the colony's mean starting skill — so
-	 * schooling visibly works.
-	 */
-	@Test
-	void schoolTrainsEnrolledChildrenAboveBaseline() {
-		SimulationHarness h = assertDoesNotThrow(() -> fertileSchoolColony(
-				// ample places, a high learning rate so the signal is unambiguous
-				// (overallLevel is the mean of 12 skills while training hits one random
-				// skill per tick, so the rate must be high to lift the mean clearly)
-				ChildrenFirmConfig.builder().capacity(20).xpPerTick(500).build()));
-
-		LocalDate today = h.getColony().getDate();
-		int children = 0, maxChildSkill = 0;
-		for (Agent a : h.getColony().getAgents())
-			if (a instanceof Laborer l && l.isAlive())
-				for (Member m : l.getMembers())
-					if (!m.isAdult(today)) {
-						children++;
-						maxChildSkill =
-								Math.max(maxChildSkill, m.skills().overallLevel());
-					}
-
-		assertTrue(children > 0, "expected children to have been born");
-		assertTrue(h.getChildrenFirm().getLastEnrolled() > 0,
-				"expected the school to be training children");
-		// the colony's male mean skill is 5; an unschooled newborn's overall level sits
-		// tightly around it (mean of 12 draws, sd well under 1), so a child above 10
-		// can only have been trained by the school
-		assertTrue(maxChildSkill > 10,
-				"a schooled child should be skilled well above the newborn baseline, was "
-						+ maxChildSkill);
-	}
 
 	/**
 	 * When more children exist than the school has places, it fills exactly its

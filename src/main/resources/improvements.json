@@ -1,0 +1,121 @@
+[ {
+  "type" : "IMPROVEMENT_HUNTING_CAMP",
+  "yieldChanges" : [ 1, 0, 0 ],
+  "prereqTech" : "TECH_SEDENTARY_LIFESTYLE",
+  "hillsMakesValid" : false,
+  "freshWaterMakesValid" : false,
+  "validTerrains" : [ ],
+  "validFeatures" : [ ],
+  "buildCost" : 24,
+  "healthPercent" : 0
+}, {
+  "type" : "IMPROVEMENT_PASTURE",
+  "yieldChanges" : [ 0, 0, 0 ],
+  "prereqTech" : "TECH_SEDENTARY_LIFESTYLE",
+  "hillsMakesValid" : false,
+  "freshWaterMakesValid" : false,
+  "validTerrains" : [ ],
+  "validFeatures" : [ ],
+  "buildCost" : 24,
+  "healthPercent" : 0
+}, {
+  "type" : "IMPROVEMENT_WINERY",
+  "yieldChanges" : [ 1, 0, 1 ],
+  "prereqTech" : "TECH_FERMENTATION",
+  "hillsMakesValid" : false,
+  "freshWaterMakesValid" : false,
+  "validTerrains" : [ ],
+  "validFeatures" : [ ],
+  "buildCost" : 30,
+  "healthPercent" : 0
+}, {
+  "type" : "IMPROVEMENT_PLANTATION",
+  "yieldChanges" : [ 0, 0, 4 ],
+  "prereqTech" : "TECH_CALENDAR",
+  "hillsMakesValid" : false,
+  "freshWaterMakesValid" : false,
+  "validTerrains" : [ ],
+  "validFeatures" : [ ],
+  "buildCost" : 30,
+  "healthPercent" : 0
+}, {
+  "type" : "IMPROVEMENT_FARM",
+  "yieldChanges" : [ 2, 0, 0 ],
+  "prereqTech" : "TECH_AGRICULTURE",
+  "hillsMakesValid" : false,
+  "freshWaterMakesValid" : true,
+  "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_MARSH", "TERRAIN_LUSH", "TERRAIN_SCRUB", "TERRAIN_MUDDY" ],
+  "validFeatures" : [ ],
+  "buildCost" : 30,
+  "healthPercent" : 0
+}, {
+  "type" : "IMPROVEMENT_MINE",
+  "yieldChanges" : [ 0, 4, 0 ],
+  "prereqTech" : "TECH_MINING",
+  "hillsMakesValid" : true,
+  "freshWaterMakesValid" : false,
+  "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED" ],
+  "validFeatures" : [ ],
+  "buildCost" : 24,
+  "healthPercent" : -50
+}, {
+  "type" : "IMPROVEMENT_QUARRY",
+  "yieldChanges" : [ 0, 5, 1 ],
+  "prereqTech" : "TECH_MASONRY",
+  "hillsMakesValid" : false,
+  "freshWaterMakesValid" : false,
+  "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED" ],
+  "validFeatures" : [ "FEATURE_POLAR_ROCK_ARCH", "FEATURE_POLAR_ROCK_ARCH2", "FEATURE_POLAR_ROCK_FORM1", "FEATURE_POLAR_ROCK_FORM2", "FEATURE_POLAR_ROCK_FORM3", "FEATURE_POLAR_ROCK_FORM4", "FEATURE_DARK_ROCK_ARCH", "FEATURE_DARK_ROCK_ARCH2", "FEATURE_DARK_ROCK_FORM1", "FEATURE_DARK_ROCK_FORM2", "FEATURE_DARK_ROCK_FORM3", "FEATURE_DARK_ROCK_FORM4", "FEATURE_ROCK_ARCH", "FEATURE_ROCK_ARCH2", "FEATURE_ROCK_FORM1", "FEATURE_ROCK_FORM2", "FEATURE_ROCK_FORM3", "FEATURE_ROCK_FORM4" ],
+  "buildCost" : 36,
+  "healthPercent" : 0
+}, {
+  "type" : "IMPROVEMENT_LUMBERMILL",
+  "yieldChanges" : [ 0, 6, 4 ],
+  "prereqTech" : "TECH_MACHINERY",
+  "hillsMakesValid" : false,
+  "freshWaterMakesValid" : false,
+  "validTerrains" : [ ],
+  "validFeatures" : [ "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_BAMBOO", "FEATURE_MANGROVE", "FEATURE_JUNGLE" ],
+  "buildCost" : 48,
+  "healthPercent" : 0
+}, {
+  "type" : "IMPROVEMENT_TOWN",
+  "yieldChanges" : [ 0, 4, 11 ],
+  "prereqTech" : "TECH_GUILDS",
+  "hillsMakesValid" : false,
+  "freshWaterMakesValid" : true,
+  "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_SCRUB", "TERRAIN_MUDDY" ],
+  "validFeatures" : [ ],
+  "buildCost" : -1,
+  "healthPercent" : -100
+}, {
+  "type" : "IMPROVEMENT_VILLAGE",
+  "yieldChanges" : [ 0, 3, 9 ],
+  "prereqTech" : "TECH_CITY_PLANNING",
+  "hillsMakesValid" : false,
+  "freshWaterMakesValid" : true,
+  "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_SCRUB", "TERRAIN_MUDDY" ],
+  "validFeatures" : [ ],
+  "buildCost" : -1,
+  "healthPercent" : -50
+}, {
+  "type" : "IMPROVEMENT_HAMLET",
+  "yieldChanges" : [ 0, 1, 7 ],
+  "prereqTech" : "TECH_MASONRY",
+  "hillsMakesValid" : false,
+  "freshWaterMakesValid" : true,
+  "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_SCRUB", "TERRAIN_MUDDY" ],
+  "validFeatures" : [ ],
+  "buildCost" : -1,
+  "healthPercent" : 0
+}, {
+  "type" : "IMPROVEMENT_COTTAGE",
+  "yieldChanges" : [ 0, 0, 3 ],
+  "prereqTech" : "TECH_CARPENTRY",
+  "hillsMakesValid" : false,
+  "freshWaterMakesValid" : true,
+  "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_SCRUB", "TERRAIN_MUDDY" ],
+  "validFeatures" : [ ],
+  "buildCost" : 24,
+  "healthPercent" : 0
+} ]
