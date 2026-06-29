@@ -150,6 +150,12 @@ the food-price spiral, and the obvious surplus lever (skill) destabilizes the ec
 Births are necessary but **insufficient**; the prerequisite is a food-economy /
 survival fix.
 
+**The redesign that follows from all of this** — assembling the already-built pieces
+(fission, glut-close, founding children) with a new ruler-run **ever-normal granary**
+that lets a food surplus exist without deflating wages, then spending that surplus on
+child survival and home-grown household renewal — is proposed concretely in
+[`docs/food-economy-redesign.md`](food-economy-redesign.md).
+
 ## Recommended directions (each a calibration effort)
 
 1. **Fix founding provisioning (clearest win) — DONE.** `foundStandardColony` now
