@@ -20,10 +20,7 @@ import lombok.Builder;
  *                        first round of building labor before billing recoups it
  * @param targetWageBudget wage budget the firm bids while it has work queued (it
  *                        bids nothing — and so lays its workers off — when idle)
- * @param landWorkPerSlot build-units to clear one effective slot (firm-funded land)
- * @param roadWorkPerSlot build-units to lay one road slot (ruler-funded)
- * @param wallWorkPerSlot build-units to raise one wall slot before the wall
- *                        build-speed factor is applied (ruler-funded)
+ * @param landWorkPerPlot build-units to open one plot (firm-funded land clearance)
  */
 @Builder(toBuilder = true)
 public record BuilderConfig(
@@ -32,9 +29,7 @@ public record BuilderConfig(
 		double scaffoldCap,
 		double initWageBudget,
 		double targetWageBudget,
-		double landWorkPerSlot,
-		double roadWorkPerSlot,
-		double wallWorkPerSlot) {
+		double landWorkPerPlot) {
 
 	/** Canonical parameter values (placeholders pending calibration). */
 	public static final BuilderConfig DEFAULT = new BuilderConfig(
@@ -42,6 +37,6 @@ public record BuilderConfig(
 			40,        // scaffold cap: at most 40 build-units per step
 			200, 80,   // seed checking buffer, and a working wage budget that wins
 			           // a few workers without starving the consumer firms
-			20, 20, 20 // ~20 build-units per slot of land / road / wall
+			20         // ~20 build-units to open one plot
 	);
 }

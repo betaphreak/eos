@@ -8,8 +8,8 @@ import java.time.LocalDate;
 import com.civstudio.calendar.LiturgicalCalendar;
 import org.junit.jupiter.api.Test;
 
+import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.settlement.Settlement;
-import com.civstudio.settlement.SlotTable;
 import com.civstudio.util.Rng;
 
 /**
@@ -25,7 +25,7 @@ class BankInheritanceTest {
 	// skill are irrelevant to account settlement, so they can be null/zero here.
 	private Bank newBank() {
 		Settlement colony = new Settlement("Test", LocalDate.of(1444, 12, 11),
-				new Rng(1L), null, null, SlotTable.load(),
+				new Rng(1L), null, null, TerrainRegistry.load(), new Rng(2L),
 				LiturgicalCalendar.load(), 0, 0, 0, 0, 0, 0);
 		return new Bank(BankConfig.DEFAULT, colony);
 	}

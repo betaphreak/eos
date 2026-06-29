@@ -14,6 +14,7 @@ import com.civstudio.agent.Caravan;
 import com.civstudio.calendar.LiturgicalCalendar;
 import com.civstudio.era.Era;
 import com.civstudio.geo.Province;
+import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.mortality.Demography;
 import com.civstudio.name.DynastyPool;
@@ -62,6 +63,7 @@ public class GameSession {
 	private static final long NAME_SEED_SALT = 0x9E3779B97F4A7C15L;
 	private static final long MORTALITY_SEED_SALT = 0xD1B54A32D192ED03L;
 	private static final long SKILL_SEED_SALT = 0xBF58476D1CE4E5B9L;
+	private static final long TERRAIN_SEED_SALT = 0x6A09E667F3BCC909L;
 	private static final long COLONY_SEED_SALT = 0xA24BAED4963EE407L;
 	// decorrelate the one-time master-pool shuffle from any colony's name draws
 	private static final long DYNASTY_SHUFFLE_SALT = 0x2545F4914F6CDD1DL;
@@ -110,10 +112,12 @@ public class GameSession {
 	// race falls back to the shared human calendar. HUMAN seeded eagerly below.
 	private final Map<Race, LiturgicalCalendar> calendarByRace = new EnumMap<>(Race.class);
 
-	// the precalculated slot table, loaded once at session start and shared by
-	// every colony (it is pure geometry — independent of seed and location)
+	// the curated terrain/feature/improvement definitions, loaded once at session
+	// start and shared by every colony (pure reference data — independent of seed
+	// and location). A colony generates its plot terrain through it (see Plot /
+	// TerrainGenerator / docs/plots.md).
 	@Getter
-	private final SlotTable slotTable;
+	private final TerrainRegistry terrainRegistry;
 
 	// the liturgical calendar (curated universal feast list), loaded once and
 	// shared by every colony — like the slot table it is independent of seed and
@@ -181,7 +185,7 @@ public class GameSession {
 		this.dynastyPoolByRace.put(Race.HUMAN,
 				new DynastyPool(NameTable.load("/names/human/dynasty.json"),
 						new Rng(seed ^ NAME_SEED_SALT ^ DYNASTY_SHUFFLE_SALT)));
-		this.slotTable = SlotTable.load();
+		this.terrainRegistry = TerrainRegistry.load();
 		this.liturgicalCalendar = LiturgicalCalendar.load();
 		this.calendarByRace.put(Race.HUMAN, liturgicalCalendar);
 	}
@@ -485,10 +489,14 @@ public class GameSession {
 		Demography colonyDemography = new Demography(
 				new Rng(seed ^ MORTALITY_SEED_SALT ^ colonySalt),
 				new Rng(seed ^ SKILL_SEED_SALT ^ colonySalt));
+		// the terrain stream is salted apart from the economic/naming/mortality/skill
+		// streams, so plot generation is deterministic per seed yet perturbs none of them
+		Rng terrainRng = new Rng(seed ^ TERRAIN_SEED_SALT ^ colonySalt);
 		Settlement colony = new Settlement(name, startDate, colonyRng, colonyNames,
-				colonyDemography, slotTable, getLiturgicalCalendar(foundingRace),
-				meanInitAgeYears, targetNStock, meanSkillMale, meanSkillFemale,
-				latitude, longitude, foundingRace, raceMix, province);
+				colonyDemography, terrainRegistry, terrainRng,
+				getLiturgicalCalendar(foundingRace), meanInitAgeYears, targetNStock,
+				meanSkillMale, meanSkillFemale, latitude, longitude, foundingRace,
+				raceMix, province);
 		// the colony knows its session, so on dissolution it can register the band it
 		// departs as (colony-less bands live at the session level — see docs/caravan.md)
 		colony.setSession(this);

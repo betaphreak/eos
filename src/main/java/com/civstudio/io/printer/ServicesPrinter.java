@@ -17,8 +17,8 @@ import com.civstudio.tech.Tech;
  * <ul>
  * <li><b>export</b> — what the {@link StrategicFirm} shipped out and the bank equity
  * its earnings build up ({@code Exported}, {@code TotalExported}, {@code Equity});</li>
- * <li><b>construction</b> — the colony's size and capacity and the build-ring its
- * builder is raising ({@code Size}, {@code EffectiveSlots}, {@code ActiveTasks},
+ * <li><b>construction</b> — the colony's plot count and capacity and the plots its
+ * builder is opening ({@code Plots}, {@code MaxPlots}, {@code ActiveTasks},
  * {@code RemainingWork}); all read from the colony, so present even before any
  * builder works;</li>
  * <li><b>research</b> — the tech being researched and progress toward it ({@code
@@ -65,7 +65,7 @@ public class ServicesPrinter extends Printer {
 				// export
 				real("Exported"), real("TotalExported"), real("Equity"),
 				// construction
-				integer("Size"), integer("EffectiveSlots"), integer("ActiveTasks"),
+				integer("Plots"), integer("MaxPlots"), integer("ActiveTasks"),
 				real("RemainingWork"),
 				// research
 				text("Focus"), real("Progress"), real("Cost"), real("RP"),
@@ -102,7 +102,7 @@ public class ServicesPrinter extends Printer {
 		}
 
 		sink.writeRow(colony.getDate(), exported, totalExported, equity,
-				colony.getSize(), colony.getSlotInfo().effective(),
+				colony.getPlotCount(), colony.getMaxPlots(),
 				colony.activeProjects().size(), remainingWork, focus, progress, cost,
 				rp, completed);
 	}

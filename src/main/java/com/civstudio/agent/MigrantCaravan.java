@@ -16,7 +16,6 @@ import com.civstudio.geo.WorldMap;
 import com.civstudio.good.Good;
 import com.civstudio.good.RationSize;
 import com.civstudio.settlement.Settlement;
-import com.civstudio.settlement.SlotTable;
 import com.civstudio.tech.ResearchSnapshot;
 import com.civstudio.util.Rng;
 import lombok.Getter;
@@ -65,11 +64,6 @@ public class MigrantCaravan extends Caravan {
 	@Getter
 	private final Retinue following;
 
-	// the slot-table geometry (session-shared, pure geometry), to judge whether a
-	// province has enough plots to found into; null for an off-graph band (which never
-	// moves or settles on its own).
-	private final SlotTable slotTable;
-
 	// the province the band set out from (the one its colony just abandoned): it will
 	// not re-found here, only at a fresh site. OFF_GRAPH for an off-graph band.
 	private final int originProvinceId;
@@ -98,13 +92,11 @@ public class MigrantCaravan extends Caravan {
 	 * @param hoard      the band's carried money, in copper, held outside any bank
 	 * @param provinceId the band's starting node on the province graph
 	 * @param worldMap   the province graph the band moves on
-	 * @param slotTable  the slot-table geometry, to judge a province's plot capacity
 	 */
 	public MigrantCaravan(Member leader, Retinue following, double hoard, int provinceId,
-			WorldMap worldMap, SlotTable slotTable) {
+			WorldMap worldMap) {
 		super(leader, hoard, provinceId, worldMap);
 		this.following = following;
-		this.slotTable = slotTable;
 		this.originProvinceId = provinceId;
 		// a band on the move eats from its larder, marketless — put the following into
 		// its wandering mode (the WANDERING_RATION) for as long as it is a caravan
@@ -126,7 +118,6 @@ public class MigrantCaravan extends Caravan {
 			double longitude) {
 		super(leader, hoard, latitude, longitude);
 		this.following = following;
-		this.slotTable = null;
 		this.originProvinceId = OFF_GRAPH;
 		following.detach();
 	}
@@ -215,8 +206,7 @@ public class MigrantCaravan extends Caravan {
 		Province province = colony.getProvince();
 		MigrantCaravan band = (province != null && colony.getSession() != null)
 				? new MigrantCaravan(leader, following, hoard, province.id(),
-						colony.getSession().getWorldMap(),
-						colony.getSession().getSlotTable())
+						colony.getSession().getWorldMap())
 				: new MigrantCaravan(leader, following, hoard, colony.getLatitude(),
 						colony.getLongitude());
 		// the band carries its tech tree out with it, so a re-founded colony resumes
@@ -262,11 +252,10 @@ public class MigrantCaravan extends Caravan {
 		step(worldMap().path(getProvinceId(), targetProvinceId));
 	}
 
-	// whether a province can be founded into: settleable land with enough plots to hold
-	// at least the founding floor size (build slots are plots — see SlotTable).
+	// whether a province can be founded into: settleable land with at least the
+	// minimum founding footprint of plots (build slots are plots — see docs/plots.md).
 	private boolean isViable(Province p) {
-		return p.isSettleable()
-				&& slotTable.maxSizeForPlots(p.plots()) >= SlotTable.MIN_SIZE;
+		return p.isSettleable() && p.plots() >= Settlement.MIN_FOUNDING_PLOTS;
 	}
 
 	// the nearest viable site to settle: a layered breadth-first walk out from the

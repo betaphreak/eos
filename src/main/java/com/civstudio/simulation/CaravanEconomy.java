@@ -17,7 +17,6 @@ import com.civstudio.io.SimLog;
 import com.civstudio.name.Person;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
-import com.civstudio.settlement.SlotTable;
 import com.civstudio.util.Rng;
 
 /**
@@ -85,11 +84,10 @@ public class CaravanEconomy {
 		GameSession session = new GameSession(SEED);
 		SimulationConfig cfg = SimulationConfig.DEFAULT; // closed → the colonies collapse
 		WorldMap map = session.getWorldMap();
-		SlotTable slots = session.getSlotTable();
 
 		// the bands set out from distinct viable starting provinces, each with a viable
 		// neighbour to wander to (so the settle decision always succeeds)
-		List<Integer> starts = pickStartProvinces(map, slots, BANDS.length);
+		List<Integer> starts = pickStartProvinces(map, BANDS.length);
 
 		// 1) muster the three bands on a throwaway colony (it is never run; it only
 		// hosts the bands' followings while they are mustered)
@@ -100,8 +98,7 @@ public class CaravanEconomy {
 		Bank musterBank = new Bank(BankConfig.DEFAULT, muster);
 		MigrantCaravan[] caravans = new MigrantCaravan[BANDS.length];
 		for (int i = 0; i < BANDS.length; i++)
-			caravans[i] = musterBand(BANDS[i], starts.get(i), musterBank, muster, map,
-					slots);
+			caravans[i] = musterBand(BANDS[i], starts.get(i), musterBank, muster, map);
 
 		// 2) each band wanders to a viable site, re-founds a colony there, and runs
 		// until it dissolves back into a Caravan; the run ends once all three reform
@@ -120,14 +117,13 @@ public class CaravanEconomy {
 	// the first n settleable provinces that each have at least one viable settleable
 	// neighbour — so a band starting there can wander one hop and settle. Deterministic
 	// (settleableProvinces() is in load order).
-	private static List<Integer> pickStartProvinces(WorldMap map, SlotTable slots,
-			int n) {
+	private static List<Integer> pickStartProvinces(WorldMap map, int n) {
 		List<Integer> starts = new ArrayList<>();
 		for (Province p : map.settleableProvinces()) {
-			if (!isViable(slots, p))
+			if (!isViable(p))
 				continue;
 			for (int nb : p.neighbors()) {
-				if (nb != p.id() && isViable(slots, map.province(nb))) {
+				if (nb != p.id() && isViable(map.province(nb))) {
 					starts.add(p.id());
 					break;
 				}
@@ -141,17 +137,16 @@ public class CaravanEconomy {
 		return starts;
 	}
 
-	// whether a province can be founded into: settleable land with enough plots for the
-	// founding floor size
-	private static boolean isViable(SlotTable slots, Province p) {
-		return p.isSettleable()
-				&& slots.maxSizeForPlots(p.plots()) >= SlotTable.MIN_SIZE;
+	// whether a province can be founded into: settleable land with at least the
+	// minimum founding footprint of plots
+	private static boolean isViable(Province p) {
+		return p.isSettleable() && p.plots() >= Settlement.MIN_FOUNDING_PLOTS;
 	}
 
 	// build one Caravan with the band's own hoard, larder and following, anchored at its
 	// starting province on the graph
 	private static MigrantCaravan musterBand(Band b, int startProvinceId, Bank bank,
-			Settlement muster, WorldMap map, SlotTable slots) {
+			Settlement muster, WorldMap map) {
 		Retinue following = new Retinue(FOLLOWERS, bank, muster);
 		// the int constructor sized the larder to FOLLOWERS·BUFFER_DAYS; set it to the
 		// band's own food (lean/middling/ample)
@@ -170,7 +165,7 @@ public class CaravanEconomy {
 				raw.skills(), raw.race()),
 				raw.getBirthDate());
 		return new MigrantCaravan(leader, following, CurrencyType.GOLD.toCopper(b.gold()),
-				startProvinceId, map, slots);
+				startProvinceId, map);
 	}
 
 	// wander the band over the province graph until it reaches a viable site and marks

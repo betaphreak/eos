@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import com.civstudio.calendar.LiturgicalCalendar;
 import org.junit.jupiter.api.Test;
 
+import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.util.Rng;
 
 /**
@@ -24,7 +25,7 @@ class SettlementLifecycleTest {
 	private Settlement bareColony() {
 		// no name/demography services needed for the lifecycle state machine
 		return new Settlement("Test Colony", START, new Rng(1L), null, null,
-				SlotTable.load(), LiturgicalCalendar.load(), 35, 26,
+				TerrainRegistry.load(), new Rng(2L), LiturgicalCalendar.load(), 35, 26,
 				5, 2, 51.5074, -0.1278);
 	}
 

@@ -590,23 +590,22 @@ public class SimulationHarness {
 					cfg.nFirm().wageBudget(), cfg.nFirm().capital(),
 					capitalFirms, nFirmConfig, firmBank.apply(i), colony);
 
-		// add each firm to the colony and place it on an effective build slot; the
-		// colony grows itself just enough to hold them all (founded at the floor
-		// size). Slot placement is pure bookkeeping, so runs stay byte-identical.
+		// add each firm to the colony and place it on a plot; the colony appends one
+		// plot per founding firm (genesis sizing). Plot placement is pure bookkeeping.
 		colony.addAgent(cFirm);
-		colony.claimSlot(cFirm);
+		colony.claimPlot(cFirm);
 		for (NFirm f : nFirms) {
 			colony.addAgent(f);
-			colony.claimSlot(f);
+			colony.claimPlot(f);
 		}
 		for (EFirm f : eFirms) {
 			colony.addAgent(f);
-			colony.claimSlot(f);
+			colony.claimPlot(f);
 		}
 	}
 
-	// the four non-consumer firms that each claim an effective build slot at founding
-	// (capital, strategic export, builder, science) — reserved when sizing the founding
+	// the four non-consumer firms that each claim a plot at founding (capital,
+	// strategic export, builder, science) — reserved when sizing the founding
 	// necessity sector so it never tries to seat more firms than the colony can hold
 	private static final int FOUNDING_SERVICE_SLOTS = 4;
 
@@ -617,10 +616,10 @@ public class SimulationHarness {
 	 * round(laborForce / cfg.foundingLaborersPerNFirm())} (laborForce =
 	 * {@code round(promotionRatio * retinueSize)}), floored at {@code cfg.numNFirms()}
 	 * and capped to what the colony can ever seat — its {@linkplain
-	 * Settlement#getMaxEffectiveSlots() maximum effective slots} less the enjoyment
-	 * firms and the {@value #FOUNDING_SERVICE_SLOTS} slot-claiming services — so {@code
-	 * foundOnto} never has to reject a firm. A configured ratio of {@code 0} keeps the
-	 * fixed {@code cfg.numNFirms()} (legacy behavior).
+	 * Settlement#getMaxPlots() maximum plots} less the enjoyment firms and the {@value
+	 * #FOUNDING_SERVICE_SLOTS} plot-claiming services — so {@code foundPlot} never has
+	 * to reject a firm. A configured ratio of {@code 0} keeps the fixed {@code
+	 * cfg.numNFirms()} (legacy behavior).
 	 *
 	 * @return the founding necessity-firm count
 	 */
@@ -631,7 +630,7 @@ public class SimulationHarness {
 		int laborForce = (int) Math.round(cfg.promotionRatio() * cfg.retinueSize());
 		int sized = Math.max(cfg.numNFirms(),
 				(int) Math.ceil((double) laborForce / perFirm));
-		int maxFit = colony.getMaxEffectiveSlots() - cfg.numEFirms()
+		int maxFit = colony.getMaxPlots() - cfg.numEFirms()
 				- FOUNDING_SERVICE_SLOTS;
 		return Math.max(1, Math.min(sized, maxFit));
 	}
@@ -677,7 +676,7 @@ public class SimulationHarness {
 			StrategicFirmConfig config) {
 		strategicFirm = new StrategicFirm(config, bank, colony);
 		colony.addAgent(strategicFirm);
-		colony.claimSlot(strategicFirm);
+		colony.claimPlot(strategicFirm);
 		return strategicFirm;
 	}
 
@@ -766,7 +765,7 @@ public class SimulationHarness {
 			colony.addMarket(new LaborMarket(ScienceFirm.LABOR_MARKET, colony));
 		ScienceFirm scienceFirm = new ScienceFirm(config, bank, colony);
 		colony.addAgent(scienceFirm);
-		colony.claimSlot(scienceFirm);
+		colony.claimPlot(scienceFirm);
 		return scienceFirm;
 	}
 
@@ -924,11 +923,11 @@ public class SimulationHarness {
 							raised.addFirm(firm);
 					});
 
-				// claim a slot — a live colony queues a builder growth ring and holds
+				// claim a plot — a live colony queues a builder plot-clearance and holds
 				// the firm pending, but it is economically active from its constructor
 				// (which posted a labor demand) regardless — then admit it to the step
 				// loop at end of step (so the agent set is not mutated mid-iteration)
-				colony.claimSlot(firm);
+				colony.claimPlot(firm);
 				colony.scheduleAddAgent(firm);
 				return firm;
 			}
@@ -939,7 +938,7 @@ public class SimulationHarness {
 				for (Agent a : colony.getAgents())
 					if (a instanceof Noble noble && noble.removeFirm(firm))
 						break;
-				// mark it dissolved and remove it at end of step; its slot is freed and
+				// mark it dissolved and remove it at end of step; its plot is freed and
 				// its account settled into equity there (its final offers clear first)
 				firm.markDissolved();
 				colony.scheduleRemoveAgent(firm);
@@ -1333,7 +1332,7 @@ public class SimulationHarness {
 			colony.addMarket(new LaborMarket(BuilderFirm.LABOR_MARKET, colony));
 		builderFirm = new BuilderFirm(config, bank, colony);
 		colony.addAgent(builderFirm);
-		colony.claimSlot(builderFirm);
+		colony.claimPlot(builderFirm);
 		return builderFirm;
 	}
 

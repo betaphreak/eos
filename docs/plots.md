@@ -1,6 +1,6 @@
 # Design note: Civ4-style plots for settlement slots
 
-**Status:** proposed (design only — not yet implemented)
+**Status:** Phases 0–1 implemented; Phases 2–4 proposed
 **Date:** 2026-06-29
 **Depends on:** the occupant seam (`SlotOccupant`, which `Agent` implements) and the build
 queue (`BuildProject`, `BuilderFirm`) — this note **removes** the disc geometry it replaces
@@ -504,21 +504,26 @@ near its current food TFP. The plan therefore:
 
 ## Phased implementation plan
 
-- **Phase 0 — data layer (no behaviour change).** The `TerrainExporter`/`FeatureExporter`/
-  `ImprovementExporter` (parsing `data/CIV4*.xml` → curated JSON); the
-  `Terrain`/`Feature`/`Improvement` records; `TerrainRegistry`; the committed JSON resources.
-  Test: registry loads; yields / clear-costs / improvement yields spot-checked against the XML
-  (a data-resource load test in the style of the existing registry tests).
-- **Phase 1 — structural swap: plot list replaces the disc.** Delete `Slot`/`SlotTable`/
-  `SlotInfo`/`size`/`slots.json`; the colony holds a `List<Plot>` capped at `province.plots`
-  (`Plot` absorbs the occupant role); `TerrainGenerator` generates each appended plot off the
-  terrain RNG; province-less → baseline; the builder's growth appends one plot at a time
-  (LAND/clear only — the `ROAD`/`WALL` public-works tasks are dropped). Plots not yet read by
-  any firm for yield/travel. **Byte-identical for builderless colonies** (e.g.
-  `SmallOpenEconomy`); any **builder-bearing colony** — the standard runs *and* the
-  province-less `HanseaticEconomy`/sweeps — loses the builder's `ROAD`/`WALL` public-works
-  billing (a small ruler-treasury change), so re-validate those rather than checksum them.
-  Test: plot generation deterministic per seed; province-less colony uniformly baseline.
+- **Phase 0 — data layer (no behaviour change). ✅ Implemented.** The `TerrainExporter`/
+  `FeatureExporter`/`ImprovementExporter` (parsing `data/CIV4*.xml` → curated JSON, via a
+  shared `Civ4Xml` DOM helper); the `Terrain`/`Feature`/`Improvement` records; `TerrainRegistry`;
+  the committed `terrains.json`/`features.json`/`improvements.json`. Test: `TerrainRegistryTest`
+  (registry loads; yields / clear-costs / improvement yields spot-checked against the XML).
+- **Phase 1 — structural swap: plot list replaces the disc. ✅ Implemented.** Deleted
+  `Slot`/`SlotTable`/`SlotInfo`/`size`/`slots.json` (and special sites); the colony holds a
+  `List<Plot>` capped at `province.plots` (`PROVINCE_LESS_PLOT_CAP` when bare). `Plot` absorbs
+  the occupant role (carrying its ladder index + terrain); claim/vacate became
+  `claimPlot`/`vacatePlot`, the size methods became `getPlotCount`/`getMaxPlots`. `TerrainGenerator`
+  generates each appended plot's terrain off a per-colony terrain RNG (salted apart from the
+  economic stream); a province-less colony uses the baseline terrain uniformly. The builder grows
+  one plot at a time (LAND/clear only — `ROAD`/`WALL` public works dropped, so `BuildProject` lost
+  its `Kind` and `BuilderConfig` its road/wall costs; growth is fully firm-funded). Plots are not
+  yet read for yield or travel. The capacity ceiling is now `province.plots` directly (74 for
+  Dhenijansar, vs the old 29 effective slots), so province-/builder-bearing runs were re-validated
+  rather than checksummed. Test: `PlotGenerationTest` (deterministic per seed; province-less
+  uniformly baseline).
+  - *Deferred to Phase 2b cleanup:* `FOUNDING_SERVICE_SLOTS` and the per-firm plot reservation
+    stay until center-grouping lands (every firm still occupies a plot this cut).
 - **Phase 2 — terrain yield → TFP (behavioural; needs re-validation).** Wire
   `plotYieldFactor` into the on-plot firms' `effectiveA` (food first, via `NFirm`); **keep**
   the climate multiplier as a residual layer; tune `REFERENCE` so the plot factor is ≈ 1.0

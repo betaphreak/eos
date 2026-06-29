@@ -12,8 +12,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.civstudio.calendar.LiturgicalCalendar;
+import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.settlement.GameSession;
-import com.civstudio.settlement.SlotTable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -25,7 +25,7 @@ import com.civstudio.era.Era;
 /**
  * The technology graph: the set of researchable {@link Tech} nodes and the
  * prerequisite edges between them, loaded once from {@code /techs.json} (a
- * Caveman2Cosmos tech graph). Like {@link SlotTable} and
+ * Caveman2Cosmos tech graph). Like {@link TerrainRegistry} and
  * {@link LiturgicalCalendar} it is pure, immutable reference data —
  * independent of seed and location — so a single instance is shared by every colony
  * in a {@link GameSession} (which loads it lazily, on first use).

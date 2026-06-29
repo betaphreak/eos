@@ -19,7 +19,6 @@ import com.civstudio.geo.Province;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
-import com.civstudio.settlement.SlotTable;
 import com.civstudio.util.Rng;
 
 /**
@@ -48,7 +47,7 @@ class MigrantCaravanTest {
 		Retinue following = new Retinue(followers, bank, muster);
 		Member leader = following.promoteHighestSkilled();
 		return new MigrantCaravan(leader, following, 1000, provinceId,
-				session.getWorldMap(), session.getSlotTable());
+				session.getWorldMap());
 	}
 
 	@Test
@@ -88,7 +87,6 @@ class MigrantCaravanTest {
 	void wandersOffTheOriginToAViableSiteAndSettles() {
 		GameSession session = new GameSession(99);
 		WorldMap map = session.getWorldMap();
-		SlotTable slots = session.getSlotTable();
 		MigrantCaravan band = bandAt(session, WITHACEN, 50);
 		Rng rng = session.getBandRng();
 
@@ -104,7 +102,7 @@ class MigrantCaravanTest {
 				"it re-founds at a fresh site, not the abandoned origin");
 		Province chosen = map.province(band.getProvinceId());
 		assertTrue(chosen.isSettleable(), "the chosen site is settleable land");
-		assertTrue(slots.maxSizeForPlots(chosen.plots()) >= SlotTable.MIN_SIZE,
+		assertTrue(chosen.plots() >= Settlement.MIN_FOUNDING_PLOTS,
 				"the chosen site has enough plots to found into");
 	}
 

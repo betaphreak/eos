@@ -19,6 +19,9 @@ import com.civstudio.agent.Agent;
 import com.civstudio.agent.Granary;
 import com.civstudio.agent.MigrantCaravan;
 import com.civstudio.geo.Province;
+import com.civstudio.geo.Terrain;
+import com.civstudio.geo.TerrainGenerator;
+import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.agent.Household;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.Retinue;
@@ -81,6 +84,23 @@ public class Settlement {
 	 * per-rung floors are a deferred design question).
 	 */
 	public static final int DISSOLUTION_WORKFORCE_FLOOR = 10;
+
+	/**
+	 * The fewest plots a province must have for a colony to be founded into it — the
+	 * minimum viable settlement footprint (and the threshold a {@link MigrantCaravan}
+	 * judges a site by). Matches the disc model's old founding floor: a size-3 disc's
+	 * total plot footprint (so a province too small to hold the floor is rejected
+	 * exactly as before). See {@code docs/plots.md}.
+	 */
+	public static final int MIN_FOUNDING_PLOTS = 28;
+
+	/**
+	 * The plot-count ceiling for a colony founded at <b>bare coordinates</b> (no
+	 * province): an effectively-unbounded cap, since such analytical colonies never
+	 * approach it (they collapse first). A province-founded colony is capped at its
+	 * {@link Province#plots()} instead. See {@code docs/plots.md}.
+	 */
+	public static final int PROVINCE_LESS_PLOT_CAP = 4096;
 
 	/********************************************************/
 
@@ -158,32 +178,37 @@ public class Settlement {
 	@Getter
 	private final Map<Race, Double> raceMix;
 
-	// the precalculated slot table (shared with the owning game session): a
-	// size -> SlotInfo lookup the colony reads its current geometry from
-	private final SlotTable slotTable;
+	// the curated terrain/feature/improvement definitions (shared with the owning
+	// game session, pure reference data): the generator below resolves a plot's
+	// terrain through it
+	private final TerrainRegistry terrainRegistry;
+
+	// generates each appended plot's terrain procedurally from the founding
+	// province's climate, off the dedicated terrain RNG below. Null for a
+	// province-less colony, which uses the baseline terrain instead (see appendPlot).
+	private final TerrainGenerator terrainGenerator;
+
+	// the dedicated random stream the terrain generator draws on — salted separately
+	// from the economic stream (like the naming/mortality/skill streams), so plot
+	// generation is deterministic per seed yet never perturbs the economy. Unused by
+	// a province-less colony (baseline terrain takes no draw).
+	private final Rng terrainRng;
+
+	// the colony's baseline terrain (the generator's reference ground), used for a
+	// province-less colony's plots
+	private final Terrain baselineTerrain;
 
 	// the liturgical calendar (shared with the owning game session): classifies
 	// the current in-game date as a workday/weekend/holiday. A pure date lookup,
 	// independent of seed and location. See getDayType.
 	private final LiturgicalCalendar liturgicalCalendar;
 
-	// the colony's current size (disc radius). Founded at SlotTable.MIN_SIZE and
-	// grows upward as it needs more slots (see claimSlot); the slot table maps it
-	// to the total/road/wall/effective counts.
-	private int size;
-
-	// the colony's effective build slots (occupied and vacant), one per effective
-	// slot at the current size, in a fixed order. Rebuilt — extended — whenever the
-	// size grows; an occupant keeps its slot. Today only firms occupy slots.
-	private final List<Slot> slots = new ArrayList<Slot>();
-
-	// the colony's special sites: out-of-band build sites for enormous civic
-	// buildings/projects (a village hall, later) NOT subject to the effective-slot
-	// limit and NOT raised by the builder — their count is unlocked purely by size
-	// (SlotInfo.maxSpecialSites, 1 at the founding floor rising to 6). Extended by
-	// setSize as larger sizes unlock more; nothing occupies them until civic
-	// buildings arrive, so like effective slots they are pure spatial bookkeeping.
-	private final List<Slot> specialSites = new ArrayList<Slot>();
+	// the colony's build plots (occupied and vacant), in claim order — one per firm
+	// site (the disc model's road/wall congestion is gone; every plot is usable).
+	// Appended at founding (genesis sizing) and, once live, one at a time by the
+	// builder (see claimPlot); an occupant keeps its plot. Today only firms occupy
+	// plots. Capped at maxPlots.
+	private final List<Plot> plots = new ArrayList<Plot>();
 
 	// mean of the normal distribution from which founding household heads draw
 	// their initial age, in years (see Demography.sampleInitialAgeDays)
@@ -240,16 +265,15 @@ public class Settlement {
 	// the province this colony was founded into, or null if it was founded at bare
 	// coordinates (every scenario that does not opt into the world map). When set, it
 	// is the source of the colony's latitude/longitude and bounds its growth (see
-	// maxSize). Carried for the dependent geography features (caravan/founding).
+	// maxPlots). Carried for the dependent geography features (caravan/founding).
 	@Getter
 	private final Province province;
 
-	// the largest size this colony may grow to: the slot table's own ceiling, lowered
-	// to what the province's plots can hold (build slots are plots, so the footprint
-	// cannot exceed province.plots). Equal to slotTable.maxSize() when there is no
-	// province. See docs/geography.md and foundOnto/requestGrowth.
+	// the hard ceiling on the colony's plot count: its province's plots (build slots
+	// are plots — see docs/plots.md), or PROVINCE_LESS_PLOT_CAP for a bare-coordinate
+	// colony. A colony cannot grow past this. See foundPlot/requestGrowth.
 	@Getter
-	private final int maxSize;
+	private final int maxPlots;
 
 	// the colony's solar clock for its (fixed) location: computes the day's
 	// dawn/sunrise/sunset/dusk and daylight length, refreshed for the current
@@ -303,13 +327,12 @@ public class Settlement {
 
 	// the colony's builder, if any (see BuilderFirm). At most one per colony; set
 	// via setBuilder. Once a colony is live (started), this is the *only* way it
-	// can grow: claimSlot routes a slot demand it cannot satisfy through the
+	// can grow: claimPlot routes a plot demand it cannot satisfy through the
 	// builder. A colony without one cannot grow during the run.
 	@Getter
 	private BuilderFirm builder;
 
-	// the colony's sovereign, if any (see Ruler). Recorded so the builder can bill
-	// it for the public works (roads and walls) of a growth ring.
+	// the colony's sovereign, if any (see Ruler). Recorded for succession and taxation.
 	@Getter
 	private Ruler ruler;
 
@@ -320,9 +343,9 @@ public class Settlement {
 	@Getter
 	private Granary granary;
 
-	// outstanding construction tasks the builder is working through, in the order
-	// rings were demanded (lowest ring first). Empty unless a live colony has
-	// outgrown its slots; see claimSlot / requestGrowth / completeFinishedRings.
+	// outstanding plot-clearance tasks the builder is working through, in the order
+	// plots were demanded (lowest index first). Empty unless a live colony has
+	// outgrown its plots; see claimPlot / requestGrowth / completeFinishedPlots.
 	private final List<BuildProject> buildQueue = new ArrayList<BuildProject>();
 
 	// occupants that demanded a slot a live colony could not yet supply: they are
@@ -382,8 +405,12 @@ public class Settlement {
 	 *            the name sets for this colony
 	 * @param demography
 	 *            the demographic service for this colony
-	 * @param slotTable
-	 *            the precalculated slot table (shared across the session)
+	 * @param terrainRegistry
+	 *            the curated terrain/feature/improvement definitions (shared across
+	 *            the session)
+	 * @param terrainRng
+	 *            the dedicated terrain-generation random stream (salted apart from
+	 *            the economic one)
 	 * @param liturgicalCalendar
 	 *            the liturgical calendar (shared across the session)
 	 * @param meanInitAgeYears
@@ -400,13 +427,14 @@ public class Settlement {
 	 *            the colony's geographic longitude in decimal degrees (east positive)
 	 */
 	public Settlement(String name, LocalDate startDate, Rng rng,
-			NameRegistry names, Demography demography, SlotTable slotTable,
-			LiturgicalCalendar liturgicalCalendar, double meanInitAgeYears,
-			double targetNStock, double meanSkillMale, double meanSkillFemale,
-			double latitude, double longitude) {
-		this(name, startDate, rng, names, demography, slotTable, liturgicalCalendar,
-				meanInitAgeYears, targetNStock, meanSkillMale, meanSkillFemale,
-				latitude, longitude, Race.HUMAN, Map.of(Race.HUMAN, 1.0), null);
+			NameRegistry names, Demography demography, TerrainRegistry terrainRegistry,
+			Rng terrainRng, LiturgicalCalendar liturgicalCalendar,
+			double meanInitAgeYears, double targetNStock, double meanSkillMale,
+			double meanSkillFemale, double latitude, double longitude) {
+		this(name, startDate, rng, names, demography, terrainRegistry, terrainRng,
+				liturgicalCalendar, meanInitAgeYears, targetNStock, meanSkillMale,
+				meanSkillFemale, latitude, longitude, Race.HUMAN,
+				Map.of(Race.HUMAN, 1.0), null);
 	}
 
 	/**
@@ -426,8 +454,11 @@ public class Settlement {
 	 *            the name sets for this colony
 	 * @param demography
 	 *            the demographic service for this colony
-	 * @param slotTable
-	 *            the precalculated slot table (shared across the session)
+	 * @param terrainRegistry
+	 *            the curated terrain/feature/improvement definitions (shared across
+	 *            the session)
+	 * @param terrainRng
+	 *            the dedicated terrain-generation random stream
 	 * @param liturgicalCalendar
 	 *            the founding race's liturgical calendar (shared across the session)
 	 * @param meanInitAgeYears
@@ -448,11 +479,11 @@ public class Settlement {
 	 *            race &rarr; weight every generated person is rolled against
 	 */
 	public Settlement(String name, LocalDate startDate, Rng rng,
-			NameRegistry names, Demography demography, SlotTable slotTable,
-			LiturgicalCalendar liturgicalCalendar, double meanInitAgeYears,
-			double targetNStock, double meanSkillMale, double meanSkillFemale,
-			double latitude, double longitude, Race foundingRace,
-			Map<Race, Double> raceMix, Province province) {
+			NameRegistry names, Demography demography, TerrainRegistry terrainRegistry,
+			Rng terrainRng, LiturgicalCalendar liturgicalCalendar,
+			double meanInitAgeYears, double targetNStock, double meanSkillMale,
+			double meanSkillFemale, double latitude, double longitude,
+			Race foundingRace, Map<Race, Double> raceMix, Province province) {
 		this.name = name;
 		this.startDate = startDate;
 		this.rng = rng;
@@ -460,7 +491,8 @@ public class Settlement {
 		this.demography = demography;
 		this.foundingRace = foundingRace;
 		this.raceMix = raceMix;
-		this.slotTable = slotTable;
+		this.terrainRegistry = terrainRegistry;
+		this.terrainRng = terrainRng;
 		this.liturgicalCalendar = liturgicalCalendar;
 		this.meanInitAgeYears = meanInitAgeYears;
 		this.targetNStock = targetNStock;
@@ -469,17 +501,23 @@ public class Settlement {
 		this.latitude = latitude;
 		this.longitude = longitude;
 		this.province = province;
-		// the province's plots cap growth (slots are plots); no province -> the slot
-		// table's own ceiling. A province too small to hold even the founding floor is
-		// rejected outright (it could never seat a viable settlement).
-		this.maxSize = province == null ? slotTable.maxSize()
-				: Math.min(slotTable.maxSize(),
-						slotTable.maxSizeForPlots(province.plots()));
-		if (province != null && maxSize < SlotTable.MIN_SIZE)
+		// the province's plots cap growth (build slots are plots); a province-less
+		// colony uses the fixed effectively-unbounded cap. A province too small to
+		// hold even the founding floor is rejected outright.
+		this.maxPlots = province == null ? PROVINCE_LESS_PLOT_CAP : province.plots();
+		if (province != null && province.plots() < MIN_FOUNDING_PLOTS)
 			throw new IllegalArgumentException(name
 					+ " cannot be founded in province " + province.name() + ": its "
-					+ province.plots() + " plots cannot hold the minimum settlement size "
-					+ SlotTable.MIN_SIZE);
+					+ province.plots() + " plots are below the minimum founding footprint "
+					+ MIN_FOUNDING_PLOTS);
+		// a province-founded colony generates its plot terrain from the province's
+		// climate (off the dedicated terrain RNG); a province-less colony uses the
+		// baseline terrain uniformly and takes no terrain draw (see appendPlot).
+		this.baselineTerrain = terrainRegistry == null ? null
+				: terrainRegistry.terrain(TerrainGenerator.BASELINE_TERRAIN);
+		this.terrainGenerator = (province == null || terrainRegistry == null) ? null
+				: new TerrainGenerator(terrainRegistry, province.climate(),
+						province.winter(), province.monsoon());
 		this.solarClock = new SolarClock(latitude, longitude);
 		// every household knows how to produce its own heir; register one built-in
 		// policy that asks each dead household to do so, tried before any the
@@ -489,8 +527,8 @@ public class Settlement {
 		// stock) returns null here and is covered by a policy the harness registers.
 		addReplacementPolicy(dead -> dead instanceof Household h
 				? h.successor(this) : null);
-		// found the colony at the floor size, building its initial effective slots
-		setSize(SlotTable.MIN_SIZE);
+		// the colony starts with no plots; firms are seated (and the plot list grown)
+		// on demand as they claim plots — see claimPlot.
 		// seed the starting day's solar times so they are valid before the first
 		// newDay (e.g. for inspection at step 0); newDay recomputes them each day
 		updateSolarTimes();
@@ -661,169 +699,76 @@ public class Settlement {
 	}
 
 	/**
-	 * The colony's current size (its disc radius). Colonies are founded at {@link
-	 * SlotTable#MIN_SIZE} and grow upward as they need more slots.
+	 * The colony's current plot count — how many build plots it has laid out
+	 * (occupied or vacant). Founded with none and grown on demand as firms claim
+	 * plots (see {@link #claimPlot}), up to {@link #getMaxPlots()}.
 	 *
-	 * @return the current size
+	 * @return the current plot count
 	 */
-	public int getSize() {
-		return size;
+	public int getPlotCount() {
+		return plots.size();
 	}
 
 	/**
-	 * The slot geometry (total/road/wall/effective counts and unlocked special
-	 * sites) at the colony's current {@link #getSize() size}.
+	 * The colony's build plots — occupied and vacant — in claim order, as an
+	 * unmodifiable view.
 	 *
-	 * @return the current slot info
+	 * @return the colony's plots
 	 */
-	public SlotInfo getSlotInfo() {
-		return slotTable.forSize(size);
+	public List<Plot> getPlots() {
+		return Collections.unmodifiableList(plots);
 	}
 
 	/**
-	 * The number of effective build slots the colony has at its <b>maximum</b> size —
-	 * its hard firm-capacity ceiling, which a province-capped colony can never grow
-	 * past. Used to size founding provisioning so it does not try to seat more firms
-	 * than the colony can ever hold (which {@code foundOnto} would reject). See {@code
-	 * docs/food-balance.md}.
-	 *
-	 * @return effective slots at the colony's maximum size
-	 */
-	public int getMaxEffectiveSlots() {
-		return slotTable.forSize(maxSize).effective();
-	}
-
-	/**
-	 * The colony's effective build slots — occupied and vacant — in a fixed
-	 * order, as an unmodifiable view. Its length is {@code getSlotInfo().effective()}.
-	 *
-	 * @return the colony's slots
-	 */
-	public List<Slot> getSlots() {
-		return Collections.unmodifiableList(slots);
-	}
-
-	/**
-	 * The colony's <b>special sites</b> — occupied and vacant — in a fixed order, as
-	 * an unmodifiable view. Its length is the current size's {@link
-	 * SlotInfo#maxSpecialSites()} (1 at the founding floor, rising to 6). These are
-	 * out-of-band sites for civic buildings (a village hall, later); nothing occupies
-	 * them yet.
-	 *
-	 * @return the colony's special sites
-	 */
-	public List<Slot> getSpecialSites() {
-		return Collections.unmodifiableList(specialSites);
-	}
-
-	/**
-	 * Place <tt>occupant</tt> on a vacant special site. Unlike {@link #claimSlot},
-	 * special sites are not raised by the builder and not grown on demand — their
-	 * count is fixed by the current size's {@link SlotInfo#maxSpecialSites()} — so
-	 * this throws when every unlocked special site is taken (the colony must grow to
-	 * a size that unlocks another). Placement moves no money and consumes no
-	 * randomness, exactly like {@link #claimSlot}.
-	 *
-	 * @param occupant
-	 *            the occupant to place (e.g. a civic building)
-	 * @return the special site it was placed on
-	 * @throws IllegalStateException
-	 *             if no special site is free at the current size
-	 */
-	public Slot claimSpecialSite(SlotOccupant occupant) {
-		for (Slot site : specialSites)
-			if (site.isVacant()) {
-				site.occupy(occupant);
-				return site;
-			}
-		throw new IllegalStateException(name + " has no free special site for "
-				+ occupant + " (all " + specialSites.size()
-				+ " unlocked at size " + size + " are taken)");
-	}
-
-	/**
-	 * Set the colony's size to <tt>newSize</tt>, extending its effective-slot list
-	 * to match (new slots are vacant; existing slots and their occupants are kept).
-	 * Used to <b>grow</b> the colony; shrinking below the number of slots already
-	 * in existence is unsupported (it would orphan occupants). In the colony's
-	 * normal operating range effective slots increase with size, so growth only
-	 * appends.
-	 *
-	 * @param newSize
-	 *            the new size, in {@code [0, slotTable.maxSize()]}
-	 * @throws IllegalStateException
-	 *             if the new size would have fewer effective slots than already exist
-	 */
-	public void setSize(int newSize) {
-		SlotInfo info = slotTable.forSize(newSize);
-		int newEffective = info.effective();
-		if (newEffective < slots.size())
-			throw new IllegalStateException(name + " cannot shrink from "
-					+ slots.size() + " to " + newEffective + " effective slots");
-		this.size = newSize;
-		while (slots.size() < newEffective)
-			slots.add(new Slot());
-		// unlock any special sites this size grants (maxSpecialSites rises with size,
-		// so this only ever appends — special sites, once unlocked, stay unlocked)
-		while (specialSites.size() < info.maxSpecialSites())
-			specialSites.add(new Slot());
-	}
-
-	/**
-	 * Place <tt>occupant</tt> on a vacant effective slot. How the colony makes room
-	 * when none is free depends on its lifecycle:
+	 * Place <tt>occupant</tt> on a vacant plot. How the colony makes room when none
+	 * is free depends on its lifecycle:
 	 * <ul>
-	 * <li><b>At founding</b> (before {@link #start()}) it lays out its initial
-	 * footprint, growing one size at a time until the occupant fits — a one-time
-	 * genesis sizing, not live growth — and returns the slot it took.</li>
+	 * <li><b>At founding</b> (before {@link #start()}) it appends a fresh plot (a
+	 * one-time genesis sizing, not live growth) and seats the occupant on it,
+	 * returning that plot.</li>
 	 * <li><b>While live</b> (after {@code start()}) it does <em>not</em> grow
 	 * itself: the only way a running colony gets bigger is through its {@link
-	 * BuilderFirm}. The demand is queued for the builder (firm-funded land plus
-	 * ruler-funded roads and walls; see {@link #requestGrowth(Agent)}), the
-	 * occupant is held pending, and this returns {@code null} — the occupant is
-	 * seated once the builder finishes the ring. A live colony with no builder
-	 * cannot grow, so this throws.</li>
+	 * BuilderFirm}. One plot's land clearance is queued for the builder (firm-funded;
+	 * see {@link #requestGrowth(Agent)}), the occupant is held pending, and this
+	 * returns {@code null} — the occupant is seated once the builder finishes the
+	 * plot. A live colony with no builder cannot grow, so this throws.</li>
 	 * </ul>
-	 * Either way, slot placement moves no money and consumes no randomness.
+	 * Either way, plot placement moves no money and consumes no randomness (the
+	 * terrain draw is on the separate terrain stream).
 	 *
 	 * @param occupant
 	 *            the occupant to place (today, a firm)
-	 * @return the slot it was placed on, or {@code null} if a live colony has
-	 *         queued the demand for its builder to build
+	 * @return the plot it was placed on, or {@code null} if a live colony has queued
+	 *         the demand for its builder to build
 	 * @throws IllegalStateException
-	 *             if the colony cannot make room (full at max size while founding,
+	 *             if the colony cannot make room (full at max plots while founding,
 	 *             or full with no builder while live)
 	 */
-	public Slot claimSlot(SlotOccupant occupant) {
-		Slot slot = firstVacantSlot();
-		if (slot != null) {
-			slot.occupy(occupant);
-			return slot;
+	public Plot claimPlot(SlotOccupant occupant) {
+		Plot plot = firstVacantPlot();
+		if (plot != null) {
+			plot.occupy(occupant);
+			return plot;
 		}
 		if (started)
 			return requestBuild(occupant);
-		return foundOnto(occupant);
+		return foundPlot(occupant);
 	}
 
-	// founding (pre-run genesis): extend the colony's initial footprint one size at
-	// a time until the occupant fits, and seat it. Not the live-growth path.
-	private Slot foundOnto(SlotOccupant occupant) {
-		Slot slot = null;
-		while (slot == null && size < maxSize) {
-			setSize(size + 1);
-			slot = firstVacantSlot();
-		}
-		if (slot == null)
-			throw new IllegalStateException(name
-					+ " cannot seat " + occupant + " even at its maximum size "
-					+ size);
-		slot.occupy(occupant);
-		return slot;
+	// founding (pre-run genesis): append a fresh plot for the occupant and seat it.
+	// Not the live-growth path.
+	private Plot foundPlot(SlotOccupant occupant) {
+		if (plots.size() >= maxPlots)
+			throw new IllegalStateException(name + " cannot seat " + occupant
+					+ ": it is full at its maximum of " + maxPlots + " plots");
+		Plot plot = appendPlot();
+		plot.occupy(occupant);
+		return plot;
 	}
 
-	// live colony: only the builder can make room. Queue the next ring's work and
-	// hold the occupant pending; it is seated when the builder finishes the ring.
-	private Slot requestBuild(SlotOccupant occupant) {
+	// live colony: only the builder can make room. Queue one plot's clearance and
+	// hold the occupant pending; it is seated when the builder finishes the plot.
+	private Plot requestBuild(SlotOccupant occupant) {
 		if (builder == null)
 			throw new IllegalStateException(name
 					+ " is full and has no builder to grow it for " + occupant);
@@ -832,29 +777,40 @@ public class Settlement {
 		return null;
 	}
 
+	// append a fresh vacant plot at the next ladder index, generating its terrain
+	// from the province's climate (off the terrain stream); a province-less colony
+	// uses the baseline terrain and takes no draw.
+	private Plot appendPlot() {
+		Terrain terrain = terrainGenerator == null ? baselineTerrain
+				: terrainGenerator.next(terrainRng);
+		Plot plot = new Plot(plots.size(), terrain);
+		plots.add(plot);
+		return plot;
+	}
+
 	/**
-	 * Whether the colony can seat another effective-slot occupant — either a slot
-	 * is vacant now, or it can still grow into one: its {@link #getSize() size} is
-	 * below its {@link #getMaxSize() maximum} <em>and</em> it has a {@link
+	 * Whether the colony can seat another plot occupant — either a plot is vacant
+	 * now, or it can still grow into one: its plot count (plus any growth already in
+	 * flight) is below its {@link #getMaxPlots() maximum} <em>and</em> it has a {@link
 	 * #setBuilder builder} to do the growing. When this is {@code false} the colony
-	 * cannot take another firm — it is physically full at its (plots-capped) maximum
-	 * size, or it is full and has no builder to enlarge it — so the dynamic firm
+	 * cannot take another firm — it is physically full at its (plots-capped) maximum,
+	 * or it is full and has no builder to enlarge it — so the dynamic firm
 	 * provisioning must not charter another firm: there is nowhere to put it and
-	 * {@link #claimSlot} would fail (a builderless colony cannot grow, so its firm
-	 * count is capped at its founding slots). A colony with no province cap reaches
-	 * the size limit only at the slot table's own ceiling. See {@code docs/geography.md}.
+	 * {@link #claimPlot} would fail. A province-less colony reaches the limit only at
+	 * the fixed ceiling. See {@code docs/plots.md}.
 	 *
 	 * @return {@code true} if another occupant could be seated (now or after growth)
 	 */
 	public boolean hasRoomToExpand() {
-		return firstVacantSlot() != null || (size < maxSize && builder != null);
+		return firstVacantPlot() != null
+				|| (plots.size() + buildQueue.size() < maxPlots && builder != null);
 	}
 
-	// the first vacant slot, or null if every effective slot is occupied
-	private Slot firstVacantSlot() {
-		for (Slot slot : slots)
-			if (slot.isVacant())
-				return slot;
+	// the first vacant plot, or null if every plot is occupied
+	private Plot firstVacantPlot() {
+		for (Plot plot : plots)
+			if (plot.isVacant())
+				return plot;
 		return null;
 	}
 
@@ -876,10 +832,8 @@ public class Settlement {
 	}
 
 	/**
-	 * Record the colony's sovereign, so the builder can bill it for public works
-	 * (the roads and walls of each growth ring). Set by the harness when it creates
-	 * the default ruler. Storing the reference moves no money and is a no-op for any
-	 * colony that never grows, so it leaves runs byte-identical.
+	 * Record the colony's sovereign. Set by the harness when it creates the default
+	 * ruler. Storing the reference moves no money, so it leaves runs byte-identical.
 	 *
 	 * @param ruler
 	 *            the colony's ruler
@@ -943,7 +897,7 @@ public class Settlement {
 
 	/**
 	 * Schedule <tt>agent</tt>'s removal from the colony at the <em>end</em> of the
-	 * current step: its slot is freed and its account settled into the bank's equity
+	 * current step: its plot is freed and its account settled into the bank's equity
 	 * (debt absorbed), as for a deceased estate. Deferred so the agent's final
 	 * market offers still clear this step and the agent set is not mutated mid-act.
 	 *
@@ -970,130 +924,80 @@ public class Settlement {
 	}
 
 	/**
-	 * Free the build slot or special site occupied by <tt>occupant</tt> (or drop it
-	 * from the pending queue if it was awaiting a slot a growing colony had not yet
-	 * built). A no-op if the occupant holds neither.
+	 * Free the plot occupied by <tt>occupant</tt> (or drop it from the pending queue
+	 * if it was awaiting a plot a growing colony had not yet built). The plot itself
+	 * stays in the colony — vacant and ready to be reseated. A no-op if the occupant
+	 * holds neither.
 	 *
 	 * @param occupant
-	 *            the occupant whose slot or special site to free
+	 *            the occupant whose plot to free
 	 */
-	public void vacateSlot(SlotOccupant occupant) {
-		for (Slot slot : slots)
-			if (slot.getOccupant() == occupant) {
-				slot.vacate();
-				return;
-			}
-		for (Slot site : specialSites)
-			if (site.getOccupant() == occupant) {
-				site.vacate();
+	public void vacatePlot(SlotOccupant occupant) {
+		for (Plot plot : plots)
+			if (plot.getOccupant() == occupant) {
+				plot.vacate();
 				return;
 			}
 		pendingOccupants.remove(occupant);
 	}
 
-	// queue construction work for the next ring (size -> size+1) on behalf of one
-	// occupant. The occupant funds the LAND for the single slot it will stand on
-	// (so each firm pays its own land clearance); the ring's ROAD and WALL public
-	// works are queued once, on the ruler's account. The wall work is scaled by the
-	// wall build-speed factor (walls go up fast while the colony is small, slower as
-	// its circumference grows). The sponsor stored for the public works is the
-	// current ruler; the builder bills whoever is ruler when it does the work, so a
-	// succession mid-build does not strand the task on a closed account.
+	// queue the land-clearance work to open one more plot on behalf of one occupant.
+	// The occupant funds its own plot (so each firm pays its own land clearance);
+	// there are no longer any ruler-funded public works (the disc model's road/wall
+	// tasks are gone). An occupant must be billable, which today means it is an Agent
+	// (the sole SlotOccupant); this is the bridge where billing assumes that.
 	private void requestGrowth(SlotOccupant requester) {
-		int next = size + 1;
-		if (next > maxSize)
+		if (plots.size() + buildQueue.size() >= maxPlots)
 			throw new IllegalStateException(
-					name + " cannot grow past its maximum size " + size);
+					name + " cannot grow past its maximum of " + maxPlots + " plots");
 		BuilderConfig c = builder.getConfig();
-
-		// the requester funds its own slot's land. An effective-slot occupant must be
-		// billable, which today means it is an Agent (the sole SlotOccupant); this is
-		// the one bridge where the slot machinery still assumes that, and where billing
-		// must generalize once a non-agent occupant can take an effective slot.
-		buildQueue.add(new BuildProject(next, BuildProject.Kind.LAND,
-				c.landWorkPerSlot(), (Agent) requester));
-
-		// queue the ring's public works once (the ruler funds roads and walls)
-		if (!ringHasPublicWorks(next)) {
-			if (ruler == null)
-				throw new IllegalStateException(name
-						+ " has no ruler to fund the public works of its growth");
-			SlotInfo cur = slotTable.forSize(size);
-			SlotInfo nxt = slotTable.forSize(next);
-			int dRoad = nxt.road() - cur.road();
-			int dWall = nxt.wall() - cur.wall();
-			// wallBuildTimePercent is a build-*speed* percentage (100% = parity);
-			// invert it to a work multiplier (a faster wall costs less work)
-			double wallFactor = 100.0 / Math.max(1e-9, nxt.wallBuildTimePercent());
-			buildQueue.add(new BuildProject(next, BuildProject.Kind.ROAD,
-					dRoad * c.roadWorkPerSlot(), ruler));
-			buildQueue.add(new BuildProject(next, BuildProject.Kind.WALL,
-					dWall * c.wallWorkPerSlot() * wallFactor, ruler));
-		}
-	}
-
-	// whether the ring of the given size already has its road/wall tasks queued
-	private boolean ringHasPublicWorks(int ringSize) {
-		for (BuildProject p : buildQueue)
-			if (p.getRingSize() == ringSize
-					&& p.getKind() != BuildProject.Kind.LAND)
-				return true;
-		return false;
+		int nextIndex = plots.size() + buildQueue.size();
+		buildQueue.add(new BuildProject(nextIndex, c.landWorkPerPlot(),
+				(Agent) requester));
 	}
 
 	/**
-	 * The unfinished construction tasks of the ring the builder is currently
-	 * building — the lowest-numbered ring still in the queue. The {@link
-	 * BuilderFirm} applies its build-units to these each step. Empty when there is
-	 * nothing to build.
+	 * The unfinished construction tasks the builder is working through — the plots
+	 * still queued to open. The {@link BuilderFirm} applies its build-units to these
+	 * each step (lowest-index first). Empty when there is nothing to build.
 	 *
-	 * @return the active ring's outstanding tasks (an empty list when idle)
+	 * @return the outstanding plot-prep tasks (an empty list when idle)
 	 */
 	public List<BuildProject> activeProjects() {
-		int next = size + 1;
 		List<BuildProject> active = new ArrayList<BuildProject>();
 		for (BuildProject p : buildQueue)
-			if (p.getRingSize() == next && !p.isComplete())
+			if (!p.isComplete())
 				active.add(p);
 		return active;
 	}
 
 	/**
-	 * If the ring being built is fully done — its land, road and wall tasks all
-	 * complete — grow the colony into it and seat the occupants that were waiting on
-	 * it. Called by the {@link BuilderFirm} each step after it applies its work. A
-	 * no-op until a ring finishes.
+	 * Append a plot for each completed clearance task and seat the occupants that
+	 * were waiting on them. Called by the {@link BuilderFirm} each step after it
+	 * applies its work. A no-op until a task finishes.
 	 */
-	public void completeFinishedRings() {
-		int next = size + 1;
-		boolean hasRing = false;
-		for (BuildProject p : buildQueue) {
-			if (p.getRingSize() != next)
-				continue;
-			hasRing = true;
-			if (!p.isComplete())
-				return; // this ring is not finished yet
+	public void completeFinishedPlots() {
+		// the builder works the queue in order, so completed tasks sit at its head
+		boolean grew = false;
+		while (!buildQueue.isEmpty() && buildQueue.get(0).isComplete()) {
+			buildQueue.remove(0);
+			appendPlot(); // the now-cleared plot, vacant
+			grew = true;
 		}
-		if (!hasRing)
-			return;
-		buildQueue.removeIf(p -> p.getRingSize() == next);
-		setSize(next); // appends the ring's now-built effective slots
-		placePending();
+		if (grew)
+			placePending();
 	}
 
-	// seat the waiting occupants onto newly-built slots; if any still do not fit,
-	// queue the next ring for them (funded by the first one still waiting)
+	// seat the waiting occupants onto newly-built (vacant) plots, in order
 	private void placePending() {
 		java.util.Iterator<SlotOccupant> it = pendingOccupants.iterator();
 		while (it.hasNext()) {
-			Slot slot = firstVacantSlot();
-			if (slot == null)
+			Plot plot = firstVacantPlot();
+			if (plot == null)
 				break;
-			slot.occupy(it.next());
+			plot.occupy(it.next());
 			it.remove();
 		}
-		if (!pendingOccupants.isEmpty())
-			requestGrowth(pendingOccupants.get(0));
 	}
 
 	/**
@@ -1443,7 +1347,7 @@ public class Settlement {
 		if (!agentsToRemove.isEmpty()) {
 			for (Agent a : agentsToRemove) {
 				agents.remove(a);
-				vacateSlot(a);
+				vacatePlot(a);
 				// a Household leaving this way (e.g. a laborer ennobled into a noble)
 				// is no longer a person of interest; its successor re-registers itself
 				if (a instanceof Household h)

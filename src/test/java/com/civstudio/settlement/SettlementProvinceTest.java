@@ -46,17 +46,17 @@ class SettlementProvinceTest {
 		Province dh = s.getWorldMap().findByName("Dhenijansar").orElseThrow();
 		Settlement c = found(s, dh);
 
-		// 74 plots: size 4 (total 50) fits, size 5 (total 78) does not
-		assertEquals(4, c.getMaxSize());
+		// 74 plots: the cap is the province's plot count directly (build slots are plots)
+		assertEquals(74, c.getMaxPlots());
 
-		// founding seats firms until the cap, then refuses to grow past it. Size 4
-		// has 29 effective slots; the 30th occupant cannot be seated.
-		for (int i = 0; i < 29; i++)
-			c.claimSlot(new SlotOccupant() {
+		// founding seats firms until the cap, then refuses to grow past it: the 74
+		// plots fill, and the 75th occupant cannot be seated.
+		for (int i = 0; i < 74; i++)
+			c.claimPlot(new SlotOccupant() {
 			});
-		assertEquals(4, c.getSize());
+		assertEquals(74, c.getPlotCount());
 		assertThrows(IllegalStateException.class,
-				() -> c.claimSlot(new SlotOccupant() {
+				() -> c.claimPlot(new SlotOccupant() {
 				}));
 	}
 
@@ -84,7 +84,7 @@ class SettlementProvinceTest {
 		GameSession s = new GameSession(42);
 		Settlement c = s.newSettlement("Bare", START, 30, 26, 5, 2, 51.5074, -0.1278);
 		assertNull(c.getProvince());
-		assertEquals(s.getSlotTable().maxSize(), c.getMaxSize());
+		assertEquals(Settlement.PROVINCE_LESS_PLOT_CAP, c.getMaxPlots());
 	}
 
 	@Test

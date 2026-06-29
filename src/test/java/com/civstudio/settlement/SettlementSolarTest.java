@@ -10,6 +10,7 @@ import java.time.LocalTime;
 import com.civstudio.calendar.LiturgicalCalendar;
 import org.junit.jupiter.api.Test;
 
+import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.util.Rng;
 
 /**
@@ -31,7 +32,7 @@ class SettlementSolarTest {
 	// its stored solar times are those of that date
 	private Settlement colonyOn(LocalDate date) {
 		return new Settlement("Test Colony", date, new Rng(1L), null, null,
-				SlotTable.load(), LiturgicalCalendar.load(), 35, 26,
+				TerrainRegistry.load(), new Rng(2L), LiturgicalCalendar.load(), 35, 26,
 				5, 2, LAT, LON);
 	}
 

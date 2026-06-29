@@ -22,12 +22,13 @@ import lombok.Getter;
  * {@link StrategicFirm} draws on a noble-only market — and converts that labor into
  * <i>build-units</i> (its output is capped by the {@link BuilderConfig#scaffoldCap()
  * scaffold cap}), which it applies to the {@link BuildProject}s in the colony's
- * build queue — land clearance, road building and wall raising. The work it
- * delivers is <b>billed to each task's sponsor</b> at cost: the firm that requested
- * a slot pays for the land it will occupy, and the {@link Ruler
- * ruler} pays for the ring's roads and walls. When a ring's land, road and wall
- * tasks are all complete the colony grows by one size (see {@link
- * Settlement#completeFinishedRings()}) and seats the firms that were waiting on it.
+ * build queue — each one the land clearance to open one new {@link
+ * com.civstudio.settlement.Plot plot}. The work it delivers is <b>billed to each
+ * task's sponsor</b> at cost: the firm that requested a plot pays for the land it
+ * will occupy (the disc model's ruler-funded road/wall public works are gone —
+ * growth is now fully firm-funded). When a task is complete the colony appends the
+ * plot (see {@link Settlement#completeFinishedPlots()}) and seats the firm that was
+ * waiting on it.
  * <p>
  * Because the peasants are the ruler's wards (it feeds the pool), the wage the
  * builder pays for their labor is <b>reimbursed to the ruler</b>: the pool registers
@@ -107,21 +108,17 @@ public class BuilderFirm extends Firm {
 		double costBasis = wageBudget;
 		double unitCost = producible > 0 ? costBasis / producible : 0;
 
-		// 2. apply the work to the head ring's tasks, billing each sponsor at cost for
+		// 2. apply the work to the queued plot tasks, billing each sponsor at cost for
 		//    what it delivered
 		double delivered = 0;
 		for (BuildProject p : colony.activeProjects()) {
 			double room = producible - delivered;
 			if (room <= 0)
 				break;
-			// the firm funds its own land; the *current* ruler funds the ring's
-			// public works (so a ruler succession mid-build bills the heir, not the
-			// dead ruler's closed account)
-			Agent sponsor = p.getKind() == BuildProject.Kind.LAND
-					? p.getSponsor()
-					: colony.getRuler();
+			// the requesting firm funds its own plot's land clearance
+			Agent sponsor = p.getSponsor();
 			if (sponsor == null)
-				continue; // no one to bill (e.g. an interregnum) — defer this work
+				continue; // no one to bill — defer this work
 			double done = p.advance(room);
 			if (done <= 0)
 				continue;
@@ -138,8 +135,8 @@ public class BuilderFirm extends Firm {
 		output = delivered;
 		revenue = delivered * unitCost;
 
-		// 3. a fully-built ring grows the colony and seats the firms waiting on it
-		colony.completeFinishedRings();
+		// 3. a fully-built plot is appended to the colony and seats the firm waiting on it
+		colony.completeFinishedPlots();
 
 		// 4. size next step's wage budget to whether there is work left (0 -> lay the
 		//    workers off), and post it to the labor market

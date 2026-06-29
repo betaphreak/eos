@@ -11,8 +11,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * province is the geographic cell a colony is founded into — its
  * {@link #latitude()}/{@link #longitude()} feed the solar/daylight system and
  * its {@link #plots()} cap how large the settlement may grow (build slots
- * <em>are</em> plots, so a colony's {@code SlotTable} total stays
- * {@code <= plots}). The {@link #neighbors()} are the adjacent provinces — the
+ * <em>are</em> plots, so a colony's plot count stays {@code <= plots}). The
+ * {@link #neighbors()} are the adjacent provinces — the
  * undirected edges of the travel/trade graph the caravan and village-founding
  * features route over.
  * <p>

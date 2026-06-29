@@ -10,9 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
-import com.civstudio.settlement.SlotTable;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * holiday} (a feast day). The feast set is loaded once from {@code
  * /feasts.json}, a curated list of <b>fixed-date</b> universal Western
  * (pre-Reformation) feasts — the same set everywhere, independent of seed and
- * location, exactly like {@link SlotTable}. A single instance is
+ * location, exactly like {@link TerrainRegistry}. A single instance is
  * therefore shared by every colony in a {@link GameSession},
  * which loads it at start and threads it into each {@link
  * Settlement}.

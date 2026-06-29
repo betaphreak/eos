@@ -54,8 +54,8 @@ class CaravanRefoundIntoProvinceTest {
 				"the re-founded colony is seated in a province");
 		assertEquals(origin.getProvince().id(), reborn.getProvince().id(),
 				"the band re-founds into the province it is standing in");
-		assertEquals(origin.getMaxSize(), reborn.getMaxSize(),
-				"the re-founded colony inherits the province's plots cap on size");
+		assertEquals(origin.getMaxPlots(), reborn.getMaxPlots(),
+				"the re-founded colony inherits the province's plots cap");
 		assertEquals(origin.getProvince().latitude(), reborn.getLatitude(),
 				"the re-founded colony takes the province's latitude");
 	}
