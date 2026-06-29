@@ -73,6 +73,16 @@ public class NFirm extends ConsumerGoodFirm {
 	}
 
 	/**
+	 * A necessity firm is subsistence agriculture — a farm on cleared land — so it
+	 * <b>sits on a plot</b> (the only firm type that does, this cut): it reads its
+	 * plot's terrain food yield into its TFP and its workers commute to it.
+	 */
+	@Override
+	public boolean occupiesPlot() {
+		return true;
+	}
+
+	/**
 	 * Necessity is the colony's agriculture, so its effective total-factor
 	 * productivity is additionally scaled by the colony's {@linkplain
 	 * Settlement#getAgricultureClimateMultiplier() agricultural climate multiplier}

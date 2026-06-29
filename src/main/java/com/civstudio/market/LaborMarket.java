@@ -12,6 +12,7 @@ import com.civstudio.agent.Member;
 import com.civstudio.agent.firm.Firm;
 import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.settlement.Settlement;
+import com.civstudio.settlement.TravelLadder;
 import com.civstudio.good.Labor;
 import com.civstudio.skill.Skill;
 import com.civstudio.skill.SkillTracker;
@@ -58,6 +59,7 @@ public class LaborMarket extends Market {
 		private Bank bank; // bank of the employer
 		private Set<Skill> skills; // skills this employer's labor trains
 		private boolean operating; // whether the firm hires today (see Firm.operatesOn)
+		private double commute; // round-trip travel to its plot in seconds (0 = in-town)
 	}
 
 	/* employee */
@@ -132,6 +134,9 @@ public class LaborMarket extends Market {
 		employer.skills = firm.laborSkills();
 		employer.operating = !colony.isStarted()
 				|| firm.operatesOn(colony.getDayType());
+		// the round-trip commute its workers walk to its plot (0 for a center-grouped
+		// firm, or any firm in a province-less colony — see Settlement.plotTravelTime)
+		employer.commute = colony.plotTravelTime(firm);
 		employers.add(employer);
 		totalBudget += wageBudget;
 	}
@@ -209,6 +214,14 @@ public class LaborMarket extends Market {
 	public void clear() {
 		Collections.shuffle(employers, colony.getRng().getRandom());
 		Collections.shuffle(employees, colony.getRng().getRandom());
+		// the travel-time coupling: each worker loses the market's clearing overhead N
+		// (one second per participant) plus its firm's round-trip commute, out of the
+		// day's work window D (sunrise→sunset). A province-less colony bypasses it
+		// entirely (workFactor == 1), staying byte-identical. Both N and D are
+		// per-day, so this is recomputed every clear. See docs/plots.md.
+		boolean coupled = colony.getProvince() != null;
+		double n = employees.size();
+		double d = coupled ? colony.getWorkWindowSeconds() : 0;
 		int low = 0;
 		double sum = 0;
 		for (Employer employer : employers) {
@@ -225,6 +238,11 @@ public class LaborMarket extends Market {
 			// rest (no wage, no labor delivered, no experience gained)
 			if (employer.operating && high > low) {
 				double wage = employer.wageBudget / (high - low);
+				// the fraction of each worker's labor that survives the day's overheads
+				// (market clearing N + this firm's commute, out of the work window D);
+				// 1 for a province-less colony (the coupling is off)
+				double workFactor = coupled
+						? TravelLadder.workFactor(employer.commute, n, d) : 1.0;
 				for (int i = low; i < high; i++) {
 					Employee employee = employees.get(i);
 					employer.bank.withdraw(employer.bankID, wage);
@@ -232,13 +250,15 @@ public class LaborMarket extends Market {
 					// the labor the firm gets is the worker's proficiency in the
 					// firm's own work — productivityOf its level in the employer's
 					// skills (a skill-10 worker produces 1, as in the old homogeneous
-					// case) — times any non-skill scaling (day length). The wage,
-					// though, is still split per head, not by skill.
+					// case) — times any non-skill scaling (day length) and the
+					// travel/market work factor. The wage, though, is still split per
+					// head, not by skill.
 					double base = employee.skills != null
 							? Household.productivityOf(
 									relevantLevel(employee.skills, employer.skills))
 							: 1.0;
-					employer.labor.increase(base * employee.laborMultiplier);
+					employer.labor.increase(
+							base * employee.laborMultiplier * workFactor);
 					// performing this labor trains the worker: one unit of experience
 					// in each skill the employer's work develops
 					if (employee.skills != null)

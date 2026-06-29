@@ -31,7 +31,7 @@ import lombok.Getter;
  * so schooling does not perturb the economy's random draws.
  * <p>
  * It is an automatic civic institution: it is not chartered or dissolved by the
- * dynamic firm provisioning and occupies no build slot. A colony with no children
+ * dynamic firm provisioning and occupies no build plot. A colony with no children
  * simply enrolls no one (and draws no randomness), so it is inert until births fill it.
  */
 public class ChildrenFirm extends Agent {

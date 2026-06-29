@@ -457,11 +457,12 @@ public class Ruler extends AbstractHousehold {
 				avgUtil >= OPEN_UTIL_THRESHOLD && unmet > MIN_UNMET_TO_OPEN;
 		boolean demandSurging = pressure > openPressure;
 		boolean canCharter = now - mem.lastDissolveStep >= REENTRY_COOLDOWN_DAYS;
-		// a colony full at its (plots-capped) maximum size physically cannot seat
-		// another firm — charter would fail to grow the settlement. Skip it: the
-		// sector stays supply-constrained, but the province has no room (Phase 2.5,
-		// docs/geography.md). A colony with no province cap effectively never hits this.
-		boolean hasRoom = getColony().hasRoomToExpand();
+		// only the on-plot necessity sector (the farms) is plot-capped: a colony full
+		// at its (plots-capped) maximum cannot seat another farm, so skip the charter
+		// (the sector stays supply-constrained, but the province has no room — Phase 2.5,
+		// docs/geography.md). The enjoyment sector is center-grouped (consumes no plot),
+		// so it always has room. A colony with no province cap effectively never hits this.
+		boolean hasRoom = !necessity || getColony().hasRoomToExpand();
 		if (sectorProfit > 0 && (supplyConstrained || demandSurging) && canCharter
 				&& hasRoom) {
 			ConsumerGoodFirm f = factory.charter(necessity);

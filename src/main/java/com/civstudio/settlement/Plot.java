@@ -7,7 +7,7 @@ import com.civstudio.tech.Sector;
  * One build <b>plot</b> in a {@link Settlement} — the occupiable unit of the
  * Civ4-style plot model that replaces the old disc {@code Slot}. A plot carries
  * its position on the travel-time ladder (its {@link #index()}), the {@link
- * Terrain} it sits on, and at most one {@link SlotOccupant} (a firm today; the
+ * Terrain} it sits on, and at most one {@link PlotOccupant} (a firm today; the
  * interface is the seam for housing and other buildings later). A plot is either
  * <b>vacant</b> ({@code occupant == null}) or taken by exactly one occupant.
  * <p>
@@ -46,7 +46,7 @@ public final class Plot {
 	private final Terrain terrain;
 
 	// the occupant standing on this plot, or null if the plot is vacant
-	private SlotOccupant occupant;
+	private PlotOccupant occupant;
 
 	/**
 	 * Create a vacant plot at the given ladder index on the given terrain.
@@ -114,7 +114,7 @@ public final class Plot {
 	}
 
 	/** The occupant on this plot, or {@code null} if it is vacant. */
-	public SlotOccupant getOccupant() {
+	public PlotOccupant getOccupant() {
 		return occupant;
 	}
 
@@ -126,7 +126,7 @@ public final class Plot {
 	 * @throws IllegalStateException
 	 *             if the plot is already occupied
 	 */
-	public void occupy(SlotOccupant occupant) {
+	public void occupy(PlotOccupant occupant) {
 		if (occupant == null)
 			throw new IllegalArgumentException("occupant must be non-null");
 		if (this.occupant != null)

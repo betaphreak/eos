@@ -145,6 +145,22 @@ public abstract class Firm extends Agent implements Property {
 	}
 
 	/**
+	 * Whether this firm <b>sits on a build plot</b> — i.e. operates an improvement on
+	 * the land (a farm, mine, …) rather than working in the city center. An on-plot
+	 * firm claims a {@link com.civstudio.settlement.Plot} (consuming scarce plot
+	 * capacity), reads its plot's terrain yield into its TFP, and its workers pay the
+	 * commute to it; a <b>center-grouped</b> firm (the default) does none of these —
+	 * it is land-independent and consumes no plot. In this cut only the necessity
+	 * farm ({@link NFirm}) sits on a plot; capital/enjoyment/export/science/builder
+	 * firms are center-grouped. See {@code docs/plots.md}.
+	 *
+	 * @return {@code true} if this firm occupies a plot
+	 */
+	public boolean occupiesPlot() {
+		return false;
+	}
+
+	/**
 	 * Whether this firm operates — hires labor and so produces — on the given
 	 * kind of day. By default a firm runs only on {@link DayType#WORKDAY
 	 * workdays}; the weekly day of rest (Sunday) and feast days are days off.

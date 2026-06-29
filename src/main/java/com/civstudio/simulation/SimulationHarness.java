@@ -22,6 +22,7 @@ import com.civstudio.agent.Household;
 import com.civstudio.agent.firm.BuilderConfig;
 import com.civstudio.agent.firm.BuilderFirm;
 import com.civstudio.agent.firm.CFirm;
+import com.civstudio.agent.firm.Firm;
 import com.civstudio.agent.firm.ChildrenFirm;
 import com.civstudio.agent.firm.ChildrenFirmConfig;
 import com.civstudio.agent.firm.ConsumerGoodFirm;
@@ -590,24 +591,28 @@ public class SimulationHarness {
 					cfg.nFirm().wageBudget(), cfg.nFirm().capital(),
 					capitalFirms, nFirmConfig, firmBank.apply(i), colony);
 
-		// add each firm to the colony and place it on a plot; the colony appends one
-		// plot per founding firm (genesis sizing). Plot placement is pure bookkeeping.
+		// add each firm to the colony, placing the on-plot ones (the necessity farms)
+		// on a plot — the colony appends one plot per such firm (genesis sizing).
+		// Center-grouped firms (capital, enjoyment) consume no plot. Plot placement is
+		// pure bookkeeping.
 		colony.addAgent(cFirm);
-		colony.claimPlot(cFirm);
+		seatFirm(cFirm);
 		for (NFirm f : nFirms) {
 			colony.addAgent(f);
-			colony.claimPlot(f);
+			seatFirm(f);
 		}
 		for (EFirm f : eFirms) {
 			colony.addAgent(f);
-			colony.claimPlot(f);
+			seatFirm(f);
 		}
 	}
 
-	// the four non-consumer firms that each claim a plot at founding (capital,
-	// strategic export, builder, science) — reserved when sizing the founding
-	// necessity sector so it never tries to seat more firms than the colony can hold
-	private static final int FOUNDING_SERVICE_SLOTS = 4;
+	// claim a plot for a firm iff it sits on the land (a farm); a center-grouped firm
+	// works in town and consumes no plot. The single place plot-occupancy is decided.
+	private void seatFirm(Firm firm) {
+		if (firm.occupiesPlot())
+			colony.claimPlot(firm);
+	}
 
 	/**
 	 * The number of <b>necessity</b> firms to found, sized to the labor force so food
@@ -615,11 +620,11 @@ public class SimulationHarness {
 	 * (failure mode A in {@code docs/food-balance.md}). It is {@code
 	 * round(laborForce / cfg.foundingLaborersPerNFirm())} (laborForce =
 	 * {@code round(promotionRatio * retinueSize)}), floored at {@code cfg.numNFirms()}
-	 * and capped to what the colony can ever seat — its {@linkplain
-	 * Settlement#getMaxPlots() maximum plots} less the enjoyment firms and the {@value
-	 * #FOUNDING_SERVICE_SLOTS} plot-claiming services — so {@code foundPlot} never has
-	 * to reject a firm. A configured ratio of {@code 0} keeps the fixed {@code
-	 * cfg.numNFirms()} (legacy behavior).
+	 * and capped to the colony's {@linkplain Settlement#getMaxPlots() maximum plots} —
+	 * the whole plot budget, since under the plot model only the necessity farms
+	 * occupy plots (enjoyment/capital/service firms are center-grouped) — so {@code
+	 * foundPlot} never has to reject a firm. A configured ratio of {@code 0} keeps the
+	 * fixed {@code cfg.numNFirms()} (legacy behavior).
 	 *
 	 * @return the founding necessity-firm count
 	 */
@@ -630,9 +635,7 @@ public class SimulationHarness {
 		int laborForce = (int) Math.round(cfg.promotionRatio() * cfg.retinueSize());
 		int sized = Math.max(cfg.numNFirms(),
 				(int) Math.ceil((double) laborForce / perFirm));
-		int maxFit = colony.getMaxPlots() - cfg.numEFirms()
-				- FOUNDING_SERVICE_SLOTS;
-		return Math.max(1, Math.min(sized, maxFit));
+		return Math.max(1, Math.min(sized, colony.getMaxPlots()));
 	}
 
 	/**
@@ -676,7 +679,7 @@ public class SimulationHarness {
 			StrategicFirmConfig config) {
 		strategicFirm = new StrategicFirm(config, bank, colony);
 		colony.addAgent(strategicFirm);
-		colony.claimPlot(strategicFirm);
+		seatFirm(strategicFirm);
 		return strategicFirm;
 	}
 
@@ -765,7 +768,7 @@ public class SimulationHarness {
 			colony.addMarket(new LaborMarket(ScienceFirm.LABOR_MARKET, colony));
 		ScienceFirm scienceFirm = new ScienceFirm(config, bank, colony);
 		colony.addAgent(scienceFirm);
-		colony.claimPlot(scienceFirm);
+		seatFirm(scienceFirm);
 		return scienceFirm;
 	}
 
@@ -825,8 +828,7 @@ public class SimulationHarness {
 		// name the crown's gold bank after the ruling house (a same-dynasty heir keeps
 		// the surname, so the name carries across successions)
 		ruler.getBank().setName(ruler.getHead().surname() + " Bank");
-		// record the sovereign so a builder can bill it for public works (the roads
-		// and walls of a growth ring); a no-op for any colony that never grows
+		// record the sovereign (for succession and taxation); a no-op for the economy
 		colony.setRuler(ruler);
 		// a same-dynasty heir succeeds the ruler via the colony's built-in
 		// household-succession policy (see Ruler.successor, which also keeps the
@@ -866,7 +868,7 @@ public class SimulationHarness {
 	 * firm banks at <tt>firmBank</tt>, is built with the run's standard initial
 	 * parameters, has its seed capital funded out of the ruler's treasury, and is
 	 * granted to the least-encumbered living noble (or left unowned if the colony has
-	 * no noble); a dissolved firm is detached from its owner, its slot freed and its
+	 * no noble); a dissolved firm is detached from its owner, its plot freed and its
 	 * account settled into equity. Called automatically by {@link
 	 * #createDefaultRuler()} (so every ruler-bearing colony grows its firms by
 	 * default), after the firms (see {@link #createFirms}) exist.
@@ -923,11 +925,12 @@ public class SimulationHarness {
 							raised.addFirm(firm);
 					});
 
-				// claim a plot — a live colony queues a builder plot-clearance and holds
-				// the firm pending, but it is economically active from its constructor
-				// (which posted a labor demand) regardless — then admit it to the step
-				// loop at end of step (so the agent set is not mutated mid-iteration)
-				colony.claimPlot(firm);
+				// seat the firm: an on-plot farm claims a plot (on a live colony that
+				// queues a builder plot-clearance and holds it pending; a center-grouped
+				// enjoyment firm consumes none) — but it is economically active from its
+				// constructor (which posted a labor demand) regardless — then admit it to
+				// the step loop at end of step (so the agent set is not mutated mid-iter)
+				seatFirm(firm);
 				colony.scheduleAddAgent(firm);
 				return firm;
 			}
@@ -1296,7 +1299,7 @@ public class SimulationHarness {
 	 * Give the colony its civic <b>school</b> (the {@link ChildrenFirm}): an automatic
 	 * institution that trains the colony's children each step (see {@code
 	 * docs/births.md}). It produces no good, moves no money, and occupies no build
-	 * slot; a colony with no children simply enrolls no one. Part of the default civic
+	 * plot; a colony with no children simply enrolls no one. Part of the default civic
 	 * setup ({@link #foundStandardColony}), so every standard colony has a school. The
 	 * school references {@link #getCopperBank() the copper bank} but holds no account.
 	 *
@@ -1309,13 +1312,12 @@ public class SimulationHarness {
 	}
 
 	/**
-	 * Give the colony a <b>builder</b> (banking at <tt>bank</tt>) and place it on an
-	 * effective slot at founding, like the other firms. Registering a builder
-	 * changes how the colony grows: once it is running, the builder is the only way
-	 * it gets bigger — a slot demand it cannot satisfy is built (firm-funded land,
-	 * ruler-funded roads and walls) rather than granted instantly. A colony with a
-	 * builder therefore also needs a ruler (its public-works sponsor; see {@link
-	 * #createDefaultRuler()}).
+	 * Give the colony a <b>builder</b> (banking at <tt>bank</tt>). The builder is
+	 * center-grouped (it consumes no plot itself). Registering it changes how the
+	 * colony grows: once it is running, the builder is the only way it gets bigger —
+	 * a farm's plot demand it cannot satisfy is built (firm-funded land clearance)
+	 * rather than granted instantly. A colony with a builder therefore also needs a
+	 * ruler (and a peasant pool to staff it; see {@link #createDefaultRuler()}).
 	 *
 	 * @param bank
 	 *            the bank at which the builder holds its account
@@ -1332,7 +1334,7 @@ public class SimulationHarness {
 			colony.addMarket(new LaborMarket(BuilderFirm.LABOR_MARKET, colony));
 		builderFirm = new BuilderFirm(config, bank, colony);
 		colony.addAgent(builderFirm);
-		colony.claimPlot(builderFirm);
+		seatFirm(builderFirm);
 		return builderFirm;
 	}
 

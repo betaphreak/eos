@@ -100,7 +100,7 @@ import lombok.Builder;
  *                     production matches demand from day 0 instead of ramping from a
  *                     single seed firm (see {@code docs/food-balance.md}). Applied by
  *                     {@code SimulationHarness.foundStandardColony}, clamped to what
- *                     the colony's (province-capped) slots can seat; {@code 0} keeps
+ *                     the colony's (province-capped) plots can seat; {@code 0} keeps
  *                     the fixed {@code numNFirms}. The granular-founding sims
  *                     (Hanseatic, SmallOpen) bypass it
  */

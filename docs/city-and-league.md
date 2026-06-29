@@ -232,7 +232,7 @@ triggers.
   exactly like a `Ruler`.)
 - **Seats (special sites).** The **Rathaus** is the `CITY` seat (in the city); a
   **league hall / Kontor** is the `LEAGUE` seat (in the senior member). Both are civic
-  `SlotOccupant`s with no economic function yet — rank markers whose loss feeds the
+  `PlotOccupant`s with no economic function yet — rank markers whose loss feeds the
   deferred demotion triggers. The `SlotTable` special-site unlocks
   (`{0,4,10,19,31,57}`) give a settlement out-of-band capacity for these without
   crowding its effective firm slots.

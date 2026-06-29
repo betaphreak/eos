@@ -24,10 +24,10 @@ class PlotYieldTest {
 	private static final LocalDate START = LocalDate.of(1444, 12, 11);
 
 	// genesis-append n plots, returning the dummy occupants seated on them
-	private static List<SlotOccupant> seatN(Settlement c, int n) {
-		List<SlotOccupant> occupants = new ArrayList<>();
+	private static List<PlotOccupant> seatN(Settlement c, int n) {
+		List<PlotOccupant> occupants = new ArrayList<>();
 		for (int i = 0; i < n; i++) {
-			SlotOccupant o = new SlotOccupant() {
+			PlotOccupant o = new PlotOccupant() {
 			};
 			c.claimPlot(o);
 			occupants.add(o);
@@ -42,8 +42,8 @@ class PlotYieldTest {
 		Settlement c = new GameSession(7).newSettlement("A", START, 30, 26, 5, 2, dh);
 
 		double sum = 0;
-		List<SlotOccupant> occ = seatN(c, 60);
-		for (SlotOccupant o : occ)
+		List<PlotOccupant> occ = seatN(c, 60);
+		for (PlotOccupant o : occ)
 			sum += c.plotYieldFactor(o, Sector.NECESSITY);
 		double mean = sum / occ.size();
 		// REFERENCE[food] is calibrated to Dhenijansar's climate, so the mean food
@@ -57,7 +57,7 @@ class PlotYieldTest {
 		Province dh = new GameSession(7).getWorldMap().findByName("Dhenijansar")
 				.orElseThrow();
 		Settlement c = new GameSession(7).newSettlement("A", START, 30, 26, 5, 2, dh);
-		SlotOccupant o = seatN(c, 1).get(0);
+		PlotOccupant o = seatN(c, 1).get(0);
 
 		// only food is live this cut — enjoyment/capital/export read the neutral 1.0
 		assertEquals(1.0, c.plotYieldFactor(o, Sector.ENJOYMENT), 1e-9);
@@ -69,7 +69,7 @@ class PlotYieldTest {
 	void provinceLessColonyBypassesTheCoupling() {
 		Settlement bare = new GameSession(7).newSettlement("Bare", START, 30, 26, 5, 2,
 				51.5074, -0.1278);
-		for (SlotOccupant o : seatN(bare, 20))
+		for (PlotOccupant o : seatN(bare, 20))
 			assertEquals(1.0, bare.plotYieldFactor(o, Sector.NECESSITY), 1e-9,
 					"a province-less colony takes no terrain yield factor");
 	}
@@ -80,7 +80,7 @@ class PlotYieldTest {
 				.orElseThrow();
 		Settlement c = new GameSession(7).newSettlement("A", START, 30, 26, 5, 2, dh);
 		// an occupant that never claimed a plot (center-grouped / pending) reads 1.0
-		assertEquals(1.0, c.plotYieldFactor(new SlotOccupant() {
+		assertEquals(1.0, c.plotYieldFactor(new PlotOccupant() {
 		}, Sector.NECESSITY), 1e-9);
 	}
 }

@@ -11,9 +11,9 @@ services (the `NameRegistry`/`DynastyPool`, the `LiturgicalCalendar`, the lazy
 `TechTree` — `com.civstudio.settlement.GameSession`); the `newSettlement(…,
 latitude, longitude, …)` seam that already carries a colony's coordinates; the
 solar/daylight system that consumes them (`com.civstudio.solar.GeoLocation` and
-`Settlement.newDay`'s daily solar recompute — see `docs/solar.md`); the slot
-geometry a colony grows on (`com.civstudio.settlement.SlotTable`, founding at
-`MIN_SIZE` and growing — see `docs/settlement-slots.md`); and the JSON
+`Settlement.newDay`'s daily solar recompute — see `docs/solar.md`); the plot
+geometry a colony grows on (`com.civstudio.settlement.Plot`, capped at
+`province.plots` — see `docs/plots.md`); and the JSON
 resource-loading convention every content table already follows
 (`techs.json`, `dynasty-*.json`, loaded via Jackson).
 **Related:** `docs/caravan.md` and `docs/village-founding.md` both defer

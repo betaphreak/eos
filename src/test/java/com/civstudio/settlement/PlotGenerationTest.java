@@ -31,7 +31,7 @@ class PlotGenerationTest {
 	private static List<String> claimTerrains(Settlement c, int n) {
 		List<String> out = new ArrayList<>();
 		for (int i = 0; i < n; i++) {
-			c.claimPlot(new SlotOccupant() {
+			c.claimPlot(new PlotOccupant() {
 			});
 			out.add(c.getPlots().get(i).terrain().type());
 		}

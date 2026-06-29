@@ -338,7 +338,7 @@ public abstract class ConsumerGoodFirm extends Firm {
 	/**
 	 * Mark this firm <b>dissolved</b> (no longer alive): it stops drawing a dividend
 	 * for its owner and drops out of the firm reports immediately, before the colony
-	 * frees its slot and settles its account at the end of the step. Called by the
+	 * frees its plot and settles its account at the end of the step. Called by the
 	 * dynamic firm provisioning (see {@link FirmFactory#dissolve}).
 	 */
 	public void markDissolved() {

@@ -215,8 +215,8 @@ public class Settlement {
 	// yield factor can be read by identity in O(1) (effectiveA reads it per firm per
 	// step). Kept in sync by seat()/vacatePlot; an occupant with no entry (a
 	// center-grouped or pending firm) reads the neutral factor 1.0.
-	private final Map<SlotOccupant, Plot> plotByOccupant =
-			new IdentityHashMap<SlotOccupant, Plot>();
+	private final Map<PlotOccupant, Plot> plotByOccupant =
+			new IdentityHashMap<PlotOccupant, Plot>();
 
 	// mean of the normal distribution from which founding household heads draw
 	// their initial age, in years (see Demography.sampleInitialAgeDays)
@@ -356,9 +356,9 @@ public class Settlement {
 	// outgrown its plots; see claimPlot / requestGrowth / completeFinishedPlots.
 	private final List<BuildProject> buildQueue = new ArrayList<BuildProject>();
 
-	// occupants that demanded a slot a live colony could not yet supply: they are
-	// seated as the builder finishes the rings being built for them.
-	private final List<SlotOccupant> pendingOccupants = new ArrayList<SlotOccupant>();
+	// occupants that demanded a plot a live colony could not yet supply: they are
+	// seated as the builder finishes clearing the plots being built for them.
+	private final List<PlotOccupant> pendingOccupants = new ArrayList<PlotOccupant>();
 
 	// tracks the colony's CPI and inflation, recomputed once per newDay. Reads
 	// the live consumerGoodMarkets set, so markets added later are included.
@@ -447,8 +447,8 @@ public class Settlement {
 
 	/**
 	 * Create a colony as {@link #Settlement(String, LocalDate, Rng, NameRegistry,
-	 * Demography, SlotTable, LiturgicalCalendar, double, double, double, double,
-	 * double, double)} but with an explicit {@link Race founding race} and
+	 * Demography, TerrainRegistry, Rng, LiturgicalCalendar, double, double, double,
+	 * double, double, double)} but with an explicit {@link Race founding race} and
 	 * per-person race-mix (see {@code docs/race.md}). The other overload defaults
 	 * both to human, so a mono-cultural colony is unaffected.
 	 *
@@ -752,7 +752,7 @@ public class Settlement {
 	 *             if the colony cannot make room (full at max plots while founding,
 	 *             or full with no builder while live)
 	 */
-	public Plot claimPlot(SlotOccupant occupant) {
+	public Plot claimPlot(PlotOccupant occupant) {
 		Plot plot = firstVacantPlot();
 		if (plot != null) {
 			seat(plot, occupant);
@@ -765,7 +765,7 @@ public class Settlement {
 
 	// founding (pre-run genesis): append a fresh plot for the occupant and seat it.
 	// Not the live-growth path.
-	private Plot foundPlot(SlotOccupant occupant) {
+	private Plot foundPlot(PlotOccupant occupant) {
 		if (plots.size() >= maxPlots)
 			throw new IllegalStateException(name + " cannot seat " + occupant
 					+ ": it is full at its maximum of " + maxPlots + " plots");
@@ -776,14 +776,14 @@ public class Settlement {
 
 	// place an occupant on a plot and index it (so its terrain yield can be read by
 	// identity — see plotYieldFactor)
-	private void seat(Plot plot, SlotOccupant occupant) {
+	private void seat(Plot plot, PlotOccupant occupant) {
 		plot.occupy(occupant);
 		plotByOccupant.put(occupant, plot);
 	}
 
 	// live colony: only the builder can make room. Queue one plot's clearance and
 	// hold the occupant pending; it is seated when the builder finishes the plot.
-	private Plot requestBuild(SlotOccupant occupant) {
+	private Plot requestBuild(PlotOccupant occupant) {
 		if (builder == null)
 			throw new IllegalStateException(name
 					+ " is full and has no builder to grow it for " + occupant);
@@ -947,7 +947,7 @@ public class Settlement {
 	 * @param occupant
 	 *            the occupant whose plot to free
 	 */
-	public void vacatePlot(SlotOccupant occupant) {
+	public void vacatePlot(PlotOccupant occupant) {
 		Plot plot = plotByOccupant.remove(occupant);
 		if (plot != null) {
 			plot.vacate();
@@ -978,19 +978,58 @@ public class Settlement {
 	 * @param sector   the firm's sector
 	 * @return the plot's yield factor (1.0 when the coupling does not apply)
 	 */
-	public double plotYieldFactor(SlotOccupant occupant, Sector sector) {
+	public double plotYieldFactor(PlotOccupant occupant, Sector sector) {
 		if (province == null || sector != Sector.NECESSITY)
 			return 1.0;
 		Plot plot = plotByOccupant.get(occupant);
 		return plot == null ? 1.0 : plot.yieldFactor(sector);
 	}
 
+	/**
+	 * The <b>round-trip commute</b>, in seconds, a worker pays to reach the given
+	 * occupant's plot — {@code 2·T(index)} on the {@link TravelLadder travel-time
+	 * ladder}. The labor market folds this into each worker's {@code workFactor}
+	 * (see {@link com.civstudio.market.LaborMarket#clear()}). Returns {@code 0} when
+	 * the occupant pays no commute: a <b>province-less</b> colony (the whole travel
+	 * coupling is bypassed), or a <b>center-grouped / not-yet-seated</b> firm (no
+	 * plot — it works in town). See {@code docs/plots.md}.
+	 *
+	 * @param occupant the firm whose plot commute to read
+	 * @return the round-trip commute in seconds (0 when none applies)
+	 */
+	public double plotTravelTime(PlotOccupant occupant) {
+		if (province == null)
+			return 0;
+		Plot plot = plotByOccupant.get(occupant);
+		return plot == null ? 0 : 2.0 * TravelLadder.oneWaySeconds(plot.index());
+	}
+
+	/**
+	 * The day's <b>work window</b> in seconds — the sunrise→sunset span the labor
+	 * market measures the commute and clearing overhead against. Falls back to
+	 * {@link #getDaylightHours()}{@code × 3600} when the sunrise/sunset times are
+	 * undefined (polar day/night), and to {@code 0} if even that is non-finite.
+	 *
+	 * @return the work window in seconds
+	 */
+	public double getWorkWindowSeconds() {
+		LocalTime sr = getSunrise();
+		LocalTime ss = getSunset();
+		if (sr != null && ss != null) {
+			double secs = java.time.Duration.between(sr, ss).getSeconds();
+			if (secs > 0)
+				return secs;
+		}
+		double h = getDaylightHours();
+		return Double.isFinite(h) ? Math.max(0, h) * 3600 : 0;
+	}
+
 	// queue the land-clearance work to open one more plot on behalf of one occupant.
 	// The occupant funds its own plot (so each firm pays its own land clearance);
 	// there are no longer any ruler-funded public works (the disc model's road/wall
 	// tasks are gone). An occupant must be billable, which today means it is an Agent
-	// (the sole SlotOccupant); this is the bridge where billing assumes that.
-	private void requestGrowth(SlotOccupant requester) {
+	// (the sole PlotOccupant); this is the bridge where billing assumes that.
+	private void requestGrowth(PlotOccupant requester) {
 		if (plots.size() + buildQueue.size() >= maxPlots)
 			throw new IllegalStateException(
 					name + " cannot grow past its maximum of " + maxPlots + " plots");
@@ -1034,7 +1073,7 @@ public class Settlement {
 
 	// seat the waiting occupants onto newly-built (vacant) plots, in order
 	private void placePending() {
-		java.util.Iterator<SlotOccupant> it = pendingOccupants.iterator();
+		java.util.Iterator<PlotOccupant> it = pendingOccupants.iterator();
 		while (it.hasNext()) {
 			Plot plot = firstVacantPlot();
 			if (plot == null)
@@ -1370,7 +1409,7 @@ public class Settlement {
 
 	// admit firms chartered this step (active from their constructor already; they
 	// now join the step loop and first act() next step) and remove firms dissolved
-	// this step (their final offers have cleared; free the slot and settle the
+	// this step (their final offers have cleared; free the plot and settle the
 	// account into equity). Run at the end of newDay, after this step's market
 	// clearing and printing.
 	private void applyScheduledAgentChanges() {

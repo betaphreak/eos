@@ -36,7 +36,7 @@ class GlutCloseTest {
 				// sector to charter up and then contract; founding it already full would
 				// collapse the high-skill colony before the close rule can fire
 				.foundingLaborersPerNFirm(0)
-				.meanSkillMale(12).meanSkillFemale(9).build();
+				.meanSkillMale(15).meanSkillFemale(12).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, 4411);
 		h.foundStandardColony(i -> cfg.eFirm().savings(),
 				i -> cfg.nFirm().savings(), i -> 15);

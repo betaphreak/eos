@@ -2,19 +2,19 @@ package com.civstudio.agent;
 
 import com.civstudio.bank.Bank;
 import com.civstudio.settlement.Settlement;
-import com.civstudio.settlement.SlotOccupant;
+import com.civstudio.settlement.PlotOccupant;
 import com.civstudio.good.Good;
 import lombok.Getter;
 
 /**
- * Parent class of all agents. Agents are the only things that occupy build slots
- * today (firms do), so {@code Agent} is the model's sole {@link SlotOccupant} —
- * see that interface for the seam future non-agent occupants will use.
+ * Parent class of all agents. Agents are the only things that occupy build plots
+ * today (on-plot firms do), so {@code Agent} is the model's sole {@link
+ * PlotOccupant} — see that interface for the seam future non-agent occupants will use.
  *
  * @author zhihongx
  *
  */
-public abstract class Agent implements SlotOccupant {
+public abstract class Agent implements PlotOccupant {
 
 	// each agent has an unique ID that is also used as the bank account number
 	@Getter

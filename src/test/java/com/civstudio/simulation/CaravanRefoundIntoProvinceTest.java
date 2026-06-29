@@ -21,7 +21,7 @@ import com.civstudio.settlement.Settlement;
 class CaravanRefoundIntoProvinceTest {
 
 	// the default founding province: Dhenijansar (a small coastal LAND province whose
-	// plots cap the settlement well below the slot table's own ceiling)
+	// plots cap the settlement well below the province-less plot ceiling)
 	private static final int DHENIJANSAR = 4411;
 
 	@Test

@@ -1,10 +1,10 @@
 # Design note: Civ4-style plots for settlement slots
 
-**Status:** Phases 0–2 implemented; Phases 2b–4 proposed
+**Status:** Phases 0–2b implemented; Phases 3–4 proposed
 **Date:** 2026-06-29
-**Depends on:** the occupant seam (`SlotOccupant`, which `Agent` implements) and the build
+**Depends on:** the occupant seam (`PlotOccupant`, which `Agent` implements) and the build
 queue (`BuildProject`, `BuilderFirm`) — this note **removes** the disc geometry it replaces
-(`SlotTable`/`SlotInfo`/`Slot`/the `size` field, `docs/settlement-slots.md`, now obsolete);
+(`SlotTable`/`SlotInfo`/`Slot`/the `size` field, now removed);
 the geography axis (`com.civstudio.geo` — `Province` incl. `plots`,
 `Climate`/`WinterSeverity`/`Monsoon`, `Settlement.getAgricultureClimateMultiplier()`); and
 the sector/TFP plumbing (`tech.Sector`, `ConsumerGoodFirm.effectiveA()`).
@@ -13,7 +13,7 @@ the sector/TFP plumbing (`tech.Sector`, `ConsumerGoodFirm.effectiveA()`).
 
 Today a settlement is a **disc of identical, featureless build slots**: `SlotTable` gives
 an `effective` count, and each `Slot` (`settlement/Slot.java`) is just an occupant holder
-— vacant or holding one `SlotOccupant`. Land quality enters the economy as a single flat
+— vacant or holding one `PlotOccupant`. Land quality enters the economy as a single flat
 **per-colony** scalar, `Settlement.getAgricultureClimateMultiplier()` (climate × winter ×
 monsoon), which only `NFirm.effectiveA()` folds into food TFP. Every firm on every slot is
 otherwise on interchangeable ground, and enjoyment/capital/export output is entirely
@@ -353,7 +353,7 @@ queue and the costing change:
 
 With the disc gone, **`Plot` is the unit** — it absorbs the old `Slot`'s occupant role.
 A `Plot` is one rung on the ladder: its **index** (→ travel time `T(index)`), its land
-(terrain + feature + improvement + cleared state), and its single **`SlotOccupant`** (the
+(terrain + feature + improvement + cleared state), and its single **`PlotOccupant`** (the
 interface is kept — `Agent` implements it — so the rename is `Slot`→`Plot`, not a new
 abstraction). `SlotTable`/`SlotInfo` are deleted; the colony holds `List<Plot>` and the
 claim/vacate methods become `claimPlot`/`vacatePlot`. Special sites stay a small separate
@@ -374,7 +374,7 @@ list (above).
   improvement.
 - `settlement/Plot.java` — **the occupiable unit** (replaces `Slot`): a ladder **index**
   (→ travel time `T(index)`), the land (`Terrain` + a `PlotType` `FLAT`/`HILL`/`PEAK` +
-  nullable `Feature` + nullable `Improvement` + `cleared` flag), and one `SlotOccupant` with
+  nullable `Feature` + nullable `Improvement` + `cleared` flag), and one `PlotOccupant` with
   `occupy`/`vacate`/`isVacant`. Plus `yields()` (terrain + hill bonus + feature + improvement),
   `yieldFactor(Sector)`, `isWild()` (has a feature and not cleared — the forage target),
   `isWorkable()` (false for `PEAK`), `clearCost()`.
@@ -391,7 +391,7 @@ list (above).
 - **Delete** `settlement/Slot.java`, `settlement/SlotTable.java`, `settlement/SlotInfo.java`,
   the `/slots.json` resource, and the settlement `size` field — their role is taken by the
   `List<Plot>` capped at `province.plots` (the occupant logic moves onto `Plot`; the
-  `SlotOccupant` interface is kept). `SlotTableTest` is removed/retargeted.
+  `PlotOccupant` interface is kept). `SlotTableTest` is removed/retargeted.
 - `market/LaborMarket.java` — in `clear()`, compute `N` = the number of participating
   workers in seconds — **each posted person counts one second** (a household's head and each
   working spouse are separate workers) — and `D` =
@@ -424,9 +424,9 @@ list (above).
     coupling only — the *structural* disc-removal below still affects any builder-bearing
     colony, province or not; see *Phasing*.)
   - Maintain an `occupant → Plot` map and expose two separate accessors, because terrain and
-    travel hit production through different channels: `plotYieldFactor(SlotOccupant, Sector)`
+    travel hit production through different channels: `plotYieldFactor(PlotOccupant, Sector)`
     — the occupied plot's **terrain** yield factor, the **TFP** channel into `effectiveA`
-    (`1.0` for a center-grouped/pending firm) — and `plotTravelTime(SlotOccupant)` =
+    (`1.0` for a center-grouped/pending firm) — and `plotTravelTime(PlotOccupant)` =
     `2·T(index)`, the commute the labor market folds into `workFactor` (`0` for a
     center-grouped/pending firm). (The market overhead `N` is the labor market's own
     participant count, not per-plot.)
@@ -460,8 +460,8 @@ list (above).
 - `settlement/GameSession.java` — load the shared `TerrainRegistry` and mint the per-colony
   terrain `Rng`, threading both into the `Settlement` constructor; **stop** loading/threading
   the now-deleted `SlotTable`.
-- Docs: this note and `docs/daily-rhythm.md`; `docs/settlement-slots.md` is now **obsolete**
-  (banner added, pointing here); update the *Settlement size and build slots* / *Goods,
+- Docs: this note and `docs/daily-rhythm.md`; `docs/settlement-slots.md` was **deleted**
+  (the disc model it described is gone); update the *Settlement build plots* / *Goods,
   climate* sections of `CLAUDE.md`.
 
 ## Procedural generation from climate
@@ -536,12 +536,22 @@ near its current food TFP. The plan therefore:
   and commerce are plumbed but dormant (gated off until a mine / trading-post firm sits on a
   plot). Re-validated against the full suite. Tests: `PlotYieldTest` (mean food factor ≈ 1.0;
   non-food gated; province-less/unseated → 1.0).
-- **Phase 2b — the travel-time ladder → labor (behavioural).** Give each `Plot` its ladder
-  index; compute `N` and `D` in `LaborMarket.clear()`; scale each worker's delivered labor
-  by `workFactor`. Center-grouped firms feel only `N`; farms feel `N` + commute. Re-validate
-  (the market overhead is ~1.4% at today's scale, so the shift should be small) and confirm
-  the deep-winter interaction. (The daily-rhythm consumption windows — `docs/daily-rhythm.md`
-  — are a separable change and not required here.)
+- **Phase 2b — the travel-time ladder → labor + center-grouping. ✅ Implemented.** `TravelLadder`
+  gives the Fibonacci `oneWaySeconds(index)` and `workFactor(commute, N, D)`; `LaborMarket.clear()`
+  computes `N` (= participant count) and `D` (= `getWorkWindowSeconds()`, sunrise→sunset, with a
+  daylight-hours/polar fallback) per day and scales each worker's delivered labor by `workFactor`
+  (on top of the skill + daylight scaling). The commute is `Settlement.plotTravelTime(occupant)` =
+  `2·T(plotIndex)`. **Center-grouping** landed with it: `Firm.occupiesPlot()` (true only for
+  `NFirm`) gates plot-claiming — only the farms sit on plots (and feel `N` + commute); capital/
+  enjoyment/export/science/builder firms are center-grouped (consume no plot, feel only `N`).
+  This retired `FOUNDING_SERVICE_SLOTS` (the founding necessity sizing now uses the whole plot
+  budget) and made `hasRoomToExpand` apply only to the on-plot necessity sector in
+  `Ruler.reviewSector`. A **province-less** colony bypasses the whole coupling (`workFactor == 1`,
+  no `N`/commute) — byte-identical. The market overhead is ~1–1.5% at the default colony's scale,
+  so the shift is small; re-validated against the full suite. Tests: `PlotTravelTest` (ladder,
+  `workFactor`, `plotTravelTime`, province-less/unseated → 0). *Deferred:* the builder peasants'
+  per-build-site commute (they feel only `N` this cut), the provisioning workFactor stop-rule, and
+  the daily-rhythm consumption windows (`docs/daily-rhythm.md`, a separable change).
 - **Phase 3 — improvements, clearing & wild plots.** `Plot` carries an `Improvement`; the
   builder raises the improvement its firm type fixes (`NFirm` → `FARM`). The plot-prep
   `BuildProject` costs the improvement's `iAdvancedStartCost` + the feature's

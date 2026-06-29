@@ -63,7 +63,7 @@ class LaborTrainsSkillsTest {
 	 */
 	private static SimulationHarness runShort() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.durationYears(6).numEFirms(1).numNFirms(24).build();
+				.durationYears(8).numEFirms(1).numNFirms(30).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		// weddings are orthogonal to skill training and only add noise here (female
 		// ex-spouses becoming heads via widowhood with short training histories), so

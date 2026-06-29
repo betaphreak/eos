@@ -52,11 +52,11 @@ class SettlementProvinceTest {
 		// founding seats firms until the cap, then refuses to grow past it: the 74
 		// plots fill, and the 75th occupant cannot be seated.
 		for (int i = 0; i < 74; i++)
-			c.claimPlot(new SlotOccupant() {
+			c.claimPlot(new PlotOccupant() {
 			});
 		assertEquals(74, c.getPlotCount());
 		assertThrows(IllegalStateException.class,
-				() -> c.claimPlot(new SlotOccupant() {
+				() -> c.claimPlot(new PlotOccupant() {
 				}));
 	}
 

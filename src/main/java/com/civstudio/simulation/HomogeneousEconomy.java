@@ -15,9 +15,9 @@ import com.civstudio.bank.Bank;
 public class HomogeneousEconomy {
 
 	// the default founding province: Dhenijansar (province_id 4411), a small coastal
-	// LAND province in the Rahen Coast region. Its 74 plots cap the colony at size 4
-	// (29 effective slots); the dynamic provisioning respects that cap rather than
-	// overrunning it (see Settlement.hasRoomToExpand / docs/geography.md).
+	// LAND province in the Rahen Coast region. Its 74 plots cap the colony's plot
+	// count (only the necessity farms occupy plots); the dynamic provisioning respects
+	// that cap rather than overrunning it (see Settlement.hasRoomToExpand / docs/plots.md).
 	private static final int DHENIJANSAR = 4411;
 
 	/**

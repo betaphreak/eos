@@ -120,7 +120,7 @@ public class GameSession {
 	private final TerrainRegistry terrainRegistry;
 
 	// the liturgical calendar (curated universal feast list), loaded once and
-	// shared by every colony — like the slot table it is independent of seed and
+	// shared by every colony — like the terrain registry it is independent of seed and
 	// location, classifying any date as workday/weekend/holiday
 	@Getter
 	private final LiturgicalCalendar liturgicalCalendar;

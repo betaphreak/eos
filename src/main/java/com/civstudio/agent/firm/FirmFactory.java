@@ -8,7 +8,7 @@ import com.civstudio.settlement.Settlement;
  * charters a new consumer-good firm and dissolves an existing one. The {@link
  * Ruler}'s monthly sector review decides <em>whether</em> to act
  * (reading the demand and firm-level signals); this factory encapsulates the
- * <em>how</em> — the construction, funding, ownership assignment, slot placement
+ * <em>how</em> — the construction, funding, ownership assignment, plot placement
  * and teardown that need the run's full context (firm configs, the capital
  * producers, the firm bank) which the harness holds but the ruler does not.
  * <p>
@@ -22,10 +22,11 @@ public interface FirmFactory {
 	/**
 	 * Charter a new consumer-good firm: build it (with the run's standard initial
 	 * parameters), fund its seed capital out of the ruler's treasury (so the new
-	 * money has a counterparty), grant it to a noble owner, claim it a build slot
-	 * (queuing a builder growth ring when the colony is full), and schedule it to
-	 * join the step loop. The firm is economically active immediately (its
-	 * constructor posts a labor demand); the slot is pure bookkeeping.
+	 * money has a counterparty), grant it to a noble owner, place it on a plot if it
+	 * is an on-plot farm (queuing a builder plot-clearance when the colony is full;
+	 * a center-grouped enjoyment firm consumes none), and schedule it to join the
+	 * step loop. The firm is economically active immediately (its constructor posts a
+	 * labor demand); plot placement is pure bookkeeping.
 	 *
 	 * @param necessity
 	 *            {@code true} to charter a necessity (food) firm, {@code false} an
@@ -36,7 +37,7 @@ public interface FirmFactory {
 	ConsumerGoodFirm charter(boolean necessity);
 
 	/**
-	 * Dissolve <tt>firm</tt>: detach it from its owner, vacate its slot, settle its
+	 * Dissolve <tt>firm</tt>: detach it from its owner, vacate its plot, settle its
 	 * account (its net worth folds into the bank's equity, debt absorbed, as for a
 	 * deceased estate) and remove it from the colony. Its workers are freed simply
 	 * by its ceasing to bid for labor.

@@ -228,15 +228,14 @@ symmetric inverse of the dissolution in `docs/caravan.md`; running both in one s
 
 ### The village hall — a civic seat (only)
 
-The hall is the **first special site**. The size table lines up: `maxSpecialSites`
-unlocks at sizes `{0,4,10,19,31,57}`, so a village founded at `MIN_SIZE` (3) has
-**exactly one** special site — the hall — occupying reserved out-of-band capacity
-that does not crowd the 15 effective slots the seed firms need. The slot machinery
-it sits on already exists (see [`settlement-slots.md`](settlement-slots.md)): the
-`SlotOccupant` interface (`Agent` implements it) and occupiable special sites
-(`claimSpecialSite`/`getSpecialSites`) were built as pre-work; the hall will be the
-**first non-firm occupant** of a special site (and likely the first non-`Agent`
-`SlotOccupant`, which is where the land-funding bridge will need to generalize).
+The hall is a **civic seat** the village founds with. The disc model's out-of-band
+"special sites" that earlier drafts placed it on were **removed** with the rest of
+the disc geometry (see [`plots.md`](plots.md)); under the plot model the hall finds
+its home on a **plot** — e.g. plot 0, the city center — rather than a separate
+special-site slot. The occupant machinery it reuses already exists: the
+`PlotOccupant` interface (`Agent` implements it), so the hall will be the **first
+non-firm occupant** of a plot (and likely the first non-`Agent` `PlotOccupant`,
+which is where the land-funding bridge will need to generalize).
 
 The hall is **civic only**: it marks the holding and the rank and has **no economic
 function yet** (no taxation/governance gating). Its one mechanical consequence is as

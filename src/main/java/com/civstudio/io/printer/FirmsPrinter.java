@@ -42,7 +42,7 @@ import com.civstudio.settlement.Settlement;
  * AvgUtilization} are meaningful only for the consumer firms (the necessity firms' stock
  * is the food a collapsing colony hands its departing band — see {@code Caravan.dissolve});
  * the other types report {@code 0} for both. The genuinely type-specific detail — the
- * export firm's shipped/earned totals and the builder's size/slots/build-ring progress —
+ * export firm's shipped/earned totals and the builder's plots/cap/active-task progress —
  * lives with the colony's research in the consolidated {@code Services.csv}
  * ({@code ServicesPrinter}).
  * <p>
