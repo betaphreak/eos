@@ -3,6 +3,7 @@ package com.civstudio.agent.laborer;
 import java.time.LocalDate;
 
 import com.civstudio.agent.AbstractHousehold;
+import com.civstudio.agent.Granary;
 import com.civstudio.agent.Member;
 import com.civstudio.name.Gender;
 import com.civstudio.race.Race;
@@ -293,9 +294,12 @@ public class Laborer extends AbstractHousehold {
 		// the household eats per member, in priority order (head, then other adults,
 		// then children): an adult eats the FINE worker ration, a child the SNACK
 		// ration. The head eats first — if even it cannot be fed the household dies
-		// (a successor of the same dynasty inherits the estate); a member that cannot
-		// be fed starves off, and because children are appended last the youngest go
-		// first. See docs/births.md.
+		// (a successor of the same dynasty inherits the estate); a non-head adult that
+		// cannot be fed starves off. A child the larder cannot feed draws its ration
+		// from the colony granary (child relief) before starving, so the next generation
+		// survives lean spells (see docs/granary.md §5.2 / the loop below); children are
+		// appended last, so the youngest are the last to be relieved and the first to
+		// starve when even the granary is empty. See docs/births.md.
 		LocalDate today = getColony().getDate();
 		var members = getMembers();
 		double available = necessity.getQuantity();
@@ -306,12 +310,27 @@ public class Laborer extends AbstractHousehold {
 		}
 		double remaining = available - headRation;
 		int fed = 1;
+		Granary granary = getColony().getGranary();
 		for (int i = 1; i < members.size(); i++) {
-			double r = rationFor(members.get(i), today);
-			if (remaining < r)
-				break; // and every lower-priority (younger) member after it starves
-			remaining -= r;
-			fed++;
+			Member m = members.get(i);
+			double r = rationFor(m, today);
+			if (remaining >= r) {
+				remaining -= r;
+				fed++;
+				continue;
+			}
+			// the larder cannot feed this member. A non-head ADULT starves off (and every
+			// lower-priority member after it). A CHILD instead draws its ration from the
+			// granary (subsidized child relief, billed to the crown), so the next
+			// generation survives lean spells to reach working age — only starving if the
+			// granary too is empty. Children are appended last, so once the loop reaches
+			// them every adult is already fed. See docs/granary.md §5.2.
+			if (!m.isAdult(today) && granary != null && granary.getStock() >= r) {
+				granary.drawStock(r);
+				fed++;
+				continue;
+			}
+			break;
 		}
 		necessity.decrease(available - remaining);
 		while (getMemberCount() > fed)
@@ -414,31 +433,23 @@ public class Laborer extends AbstractHousehold {
 	}
 
 	/**
-	 * <b>Emancipate a grown child</b> into its own household. If this household has an
-	 * adult, colony-born child (see {@link #releaseGrownChild}) and at least
-	 * {@code necessityDowry} food to send with it, remove the child, draw the dowry out
-	 * of this household's larder (so the food is <b>conserved</b>, not created), and
-	 * return the released child for the colony to set up as a new household's head.
-	 * Returns {@code null} if there is no eligible child or the larder cannot cover the
-	 * dowry — so only a household that can afford to set its child up does so, which
-	 * also throttles the rate. Fission grows the household <i>count</i> at zero net
-	 * resource cost (the child already existed and ate as a member). See
-	 * {@code docs/food-balance.md} #4.
+	 * <b>Emancipate a grown child</b> into its own household: remove and return this
+	 * household's first adult, colony-born child (see {@link #releaseGrownChild}), or
+	 * {@code null} if it has none. The child's food <b>dowry is granary-funded</b> (the
+	 * colony's strategic store dowers the new household — see {@code docs/granary.md}
+	 * §5.3), <b>not</b> drawn from this parent's larder: the parent's larder is typically
+	 * depleted exactly when its child matures (a lean spell is what delays maturity), so
+	 * gating fission on the parent's food was the second gate that kept it from ever
+	 * firing (`docs/food-balance.md` #4). Fission grows the household <i>count</i> (the
+	 * count the survival floor measures), the renewal path the finite peasant pool cannot
+	 * provide.
 	 *
 	 * @param today
 	 *            the colony's current date (sets working age)
-	 * @param necessityDowry
-	 *            the food the child carries out of the parent's larder
-	 * @return the released grown child, or {@code null} if none is eligible/affordable
+	 * @return the released grown child, or {@code null} if none is eligible
 	 */
-	public Member emancipateChild(LocalDate today, double necessityDowry) {
-		if (necessity.getQuantity() < necessityDowry)
-			return null;
-		Member child = releaseGrownChild(today);
-		if (child == null)
-			return null;
-		necessity.decrease(necessityDowry);
-		return child;
+	public Member emancipateChild(LocalDate today) {
+		return releaseGrownChild(today);
 	}
 
 	// the daily necessity ration a member eats: an adult the FINE worker ration

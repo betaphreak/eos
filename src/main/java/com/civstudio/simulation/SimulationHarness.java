@@ -1096,18 +1096,25 @@ public class SimulationHarness {
 	}
 
 	// emancipate one grown child from the parent into its own household (deferred to end
-	// of step): draw the child + its food dowry out of the parent (conserving food),
-	// build a new single-head laborer household for it, and queue its add. A no-op if the
-	// parent died this step or has no eligible/affordable child.
+	// of step): the dowry is GRANARY-funded (docs/granary.md §5.3), so the split is gated
+	// on the colony's strategic store being able to dower the new household rather than on
+	// the parent's larder (which is typically empty exactly when the child matures — the
+	// measured second gate that kept fission from firing). Draw the dowry from the granary,
+	// release the child, build a new single-head laborer household seeded with that dowry,
+	// and queue its add. A no-op if the parent died this step, the granary cannot fund the
+	// dowry, or there is no eligible child.
 	private void tryFission(Laborer parent) {
 		if (!parent.isAlive())
 			return;
-		Member child = parent.emancipateChild(colony.getDate(),
-				FISSION_NECESSITY_DOWRY);
+		Granary granary = colony.getGranary();
+		if (granary == null || granary.getStock() < FISSION_NECESSITY_DOWRY)
+			return; // no strategic store to dower a new household — fission waits
+		Member child = parent.emancipateChild(colony.getDate());
 		if (child == null)
 			return;
+		double dowry = granary.drawStock(FISSION_NECESSITY_DOWRY);
 		colony.scheduleAddAgent(
-				buildFissionHousehold(child, parent.getBank(), FISSION_NECESSITY_DOWRY));
+				buildFissionHousehold(child, parent.getBank(), dowry));
 		fissionCount++;
 	}
 

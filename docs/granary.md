@@ -233,8 +233,18 @@ trades "keep the elite fed from the store" against "keep enough stock to defend 
    stressed/shallow-larder colony, exactly like fission is dormant until a child matures;
    the unit test exercises it by draining the larder against a stocked granary and confirms
    peasants draw relief instead of starving. Price undisturbed; no double-counting.
-3. **Child relief.** Feed unfed children from the granary (§5.3) — the same `drawStock` call
-   from `Laborer` feeding.
+3. **Child relief + granary-funded fission. — implemented (2026-06-29).** In `Laborer`
+   feeding, a child the larder cannot feed draws its ration from the granary before
+   starving (§5.2); and household fission now dowers the new household **from the granary**,
+   gated on the granary's stock rather than the parent's larder (`emancipateChild` no longer
+   depletes the parent — §5.3). Both covered by `GranaryTest`. **Observed** on the default
+   colony: child relief fires only marginally (≈3 units over the run, one lean month) and
+   **fission never fires** — children reach working age (~16 y) only *after* the ~11-year
+   collapse, so the renewal loop cannot close on the current colony. The mechanisms are
+   correct (the unit tests drive each to fire) but **renewal is gated on survival-to-year-16**,
+   which the colony does not yet reach. That gap — keep the colony alive long enough for the
+   first home-grown generation to mature — is the binding problem the remaining work must
+   solve, not another granary lever.
 4. **Elite draws.** Drop the ruler's and nobles' own larders; have them draw their
    GOURMET/LAVISH ration from the granary as a **paid** transfer (§4.5). **Verify:** FX
    revenue preserved, elite stay fed, the number of independent necessity bidders drops from
@@ -271,18 +281,21 @@ calibration of mechanisms already built or designed.
   (the tunable factor) is in place for that coupled step and the §6 sweep. **Revised
   sequencing:** build a surplus sink and/or the renewal spend *before* turning up TFP —
   the §4.8 note to "do TFP first" is superseded by this finding.
-- **5.2 Child survival — child relief (new, small).** Children starve first (the household
+- **5.2 Child survival — child relief (implemented).** Children starve first (the household
   feeds head → adults → children), so the next generation is culled before it matures — the
-  measured reason fission never fires. Draw an unfed child's ration from the granary (§4.5
-  relief draw) rather than letting it starve, billed to the crown. The granary's accumulated
-  surplus is exactly the reserve that pays for this.
-- **5.3 Home-grown renewal — fission + marriage (built + calibration).** Fission is built
-  (`SimulationHarness.formNewHouseholds`, dormant): a colony-born child that reaches working
-  age leaves to found its **own** household, turning births into household *count*. Once
-  5.1–5.2 let children survive to maturity, this is the valve that fires; make its food dowry
-  granary-funded (the parent's larder is depleted exactly when its child matures). Marriage
-  throughput gates births — raise `WeddingConfig.capacity` and/or seed pool-promoted laborers
-  as couples so enough households pair to sustain a birth rate.
+  measured reason fission never fires. `Laborer` feeding now draws an unfed child's ration
+  from the granary (the §4.5 relief draw, billed to the crown) rather than letting it starve.
+  The granary's accumulated surplus is the reserve that pays for this.
+- **5.3 Home-grown renewal — fission + marriage.** Fission is built
+  (`SimulationHarness.formNewHouseholds`): a colony-born child that reaches working age leaves
+  to found its **own** household, turning births into household *count*. Its food dowry is now
+  **granary-funded** and gated on the granary's stock (`emancipateChild` no longer depletes
+  the parent — the second gate that kept it from firing). The remaining piece is **marriage
+  throughput**, which gates births — raise `WeddingConfig.capacity` and/or seed pool-promoted
+  laborers as couples so enough households pair to sustain a birth rate. **But all of this is
+  blocked by survival:** a child matures at ~16 y while the colony collapses at ~11 y, so the
+  loop cannot close until the colony lives long enough for the first home-grown generation to
+  come of age (see migration step 3).
 - **5.4 How the loop closes.** Workers over-produce → the granary fills and holds the price
   stable → stable prices and wages let households prosper, marry, and clear the births
   food-buffer → children are born and **survive lean spells on granary relief** → they mature
