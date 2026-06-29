@@ -1,5 +1,7 @@
 package com.civstudio.settlement;
 
+import com.civstudio.geo.Feature;
+import com.civstudio.geo.Improvement;
 import com.civstudio.geo.Terrain;
 import com.civstudio.tech.Sector;
 
@@ -7,14 +9,21 @@ import com.civstudio.tech.Sector;
  * One build <b>plot</b> in a {@link Settlement} — the occupiable unit of the
  * Civ4-style plot model that replaces the old disc {@code Slot}. A plot carries
  * its position on the travel-time ladder (its {@link #index()}), the {@link
- * Terrain} it sits on, and at most one {@link PlotOccupant} (a firm today; the
- * interface is the seam for housing and other buildings later). A plot is either
- * <b>vacant</b> ({@code occupant == null}) or taken by exactly one occupant.
+ * Terrain} it sits on, an optional wild {@link Feature} overlay, the {@link
+ * Improvement} an on-plot firm has raised on it, and at most one {@link
+ * PlotOccupant} (a firm today; the interface is the seam for housing and other
+ * buildings later). A plot is either <b>vacant</b> ({@code occupant == null}) or
+ * taken by exactly one occupant.
  * <p>
- * As of Phase 2 the plot's terrain {@link #yieldFactor(Sector) yield factor} is
- * read into the on-plot firm's TFP (food only this cut — {@link Sector#NECESSITY});
- * the travel-time coupling is still Phase 2b. Occupancy is pure spatial
- * bookkeeping: claiming or vacating a plot moves no money and consumes no
+ * As of Phase 3 a plot's land is the three Civ4 legs: its base {@code terrain}, an
+ * optional {@code feature} (forest/jungle/…), and the {@code improvement} a firm
+ * builds on it (an {@code NFirm} raises a {@code FARM}). Raising a farm <b>clears</b>
+ * any feature ({@link #isCleared()}), so a developed farm's {@link #yields()} are
+ * terrain + improvement; an <b>uncleared, feature-bearing</b> plot is {@link
+ * #isWild() wild} — the seam the future forage firm works (a {@code CAMP} reading
+ * terrain + feature, no clearing). The terrain {@link #yieldFactor(Sector) yield
+ * factor} is read into the on-plot firm's TFP (food only this cut — {@link
+ * Sector#NECESSITY}). Occupancy and development move no money and consume no
  * randomness. See {@code docs/plots.md}.
  */
 public final class Plot {
@@ -24,12 +33,14 @@ public final class Plot {
 	 * divided by to get a TFP <b>multiplier</b> (not a raw yield): chosen so a plot
 	 * at the reference yield lands at factor 1.0, bounding the disturbance to the
 	 * model's existing calibration. {@code food} is calibrated so the default
-	 * (Dhenijansar) colony's aggregate food TFP stays near its pre-rework value (see
-	 * {@code docs/plots.md} <i>Calibration</i>); production/commerce are placeholders
-	 * — they are dormant this cut (only food is live; see {@link
+	 * (Dhenijansar) colony's aggregate food TFP stays near its pre-rework value — as
+	 * of Phase 3 against the <b>developed farm</b> (terrain food + {@code FARM} +2),
+	 * so the reference is Dhenijansar's expected terrain food (≈ 1.4) plus the farm's
+	 * +2 (see {@code docs/plots.md} <i>Calibration</i>); production/commerce are
+	 * placeholders — they are dormant this cut (only food is live; see {@link
 	 * Settlement#plotYieldFactor}).
 	 */
-	private static final double[] YIELD_REFERENCE = { 1.4, 2.0, 2.0 };
+	private static final double[] YIELD_REFERENCE = { 3.4, 2.0, 2.0 };
 
 	/**
 	 * The floor on a plot's yield factor — a small &epsilon; so a zero-yield plot
@@ -45,20 +56,38 @@ public final class Plot {
 	// baseline terrain for a province-less colony. Never null.
 	private final Terrain terrain;
 
+	// the wild feature overlaying the terrain (forest, jungle, …), or null if the
+	// plot is bare. Fixed at generation; removed in effect once the plot is cleared
+	// (the field is kept for the wild/cleared record — see isWild/isCleared).
+	private final Feature feature;
+
+	// the improvement a firm has raised on this plot (a FARM for a necessity firm),
+	// or null until one is built — a durable land investment that survives the firm
+	// that built it (a vacated developed plot keeps its improvement, so re-seating is
+	// free). Set by raiseImprovement.
+	private Improvement improvement;
+
+	// whether the plot has been cleared for cultivation (its feature removed to raise
+	// a farm). A wild plot is feature-bearing and not cleared; a forage CAMP is raised
+	// without clearing, so cleared stays false there.
+	private boolean cleared;
+
 	// the occupant standing on this plot, or null if the plot is vacant
 	private PlotOccupant occupant;
 
 	/**
-	 * Create a vacant plot at the given ladder index on the given terrain.
+	 * Create a vacant, undeveloped plot at the given ladder index.
 	 *
 	 * @param index   the plot's position on the travel-time ladder
 	 * @param terrain the ground it sits on (non-null)
+	 * @param feature the wild feature overlaying it, or {@code null} if bare
 	 */
-	public Plot(int index, Terrain terrain) {
+	public Plot(int index, Terrain terrain, Feature feature) {
 		if (terrain == null)
 			throw new IllegalArgumentException("terrain must be non-null");
 		this.index = index;
 		this.terrain = terrain;
+		this.feature = feature;
 	}
 
 	/** The plot's position on the travel-time ladder. */
@@ -71,15 +100,74 @@ public final class Plot {
 		return terrain;
 	}
 
+	/** The wild feature overlaying the terrain, or {@code null} if the plot is bare. */
+	public Feature feature() {
+		return feature;
+	}
+
+	/** The improvement raised on this plot, or {@code null} if undeveloped. */
+	public Improvement improvement() {
+		return improvement;
+	}
+
+	/** Whether the plot has been cleared for cultivation (its feature removed). */
+	public boolean isCleared() {
+		return cleared;
+	}
+
 	/**
-	 * The plot's raw {@code [food, production, commerce]} yield triple. In this cut
-	 * that is just the terrain's yield; hill bonus, feature and improvement
-	 * contributions are added in later phases.
+	 * Whether the plot is <b>wild</b>: it carries a feature and has not been cleared
+	 * — the uncleared, feature-bearing land the future forage firm works (a {@code
+	 * CAMP} gathering off it, no clearing). A bare plot or a cleared farm is not wild.
 	 *
-	 * @return the plot's yields (length 3)
+	 * @return {@code true} if the plot is uncleared and feature-bearing
+	 */
+	public boolean isWild() {
+		return feature != null && !cleared;
+	}
+
+	/**
+	 * The work to <b>clear</b> this plot's feature (the Civ4 feature-removal cost), or
+	 * {@code 0} if the plot is bare or already cleared. Added to the build cost when a
+	 * farm is raised on feature-bearing land.
+	 *
+	 * @return the feature-clearance work, or 0 if there is nothing to clear
+	 */
+	public double clearCost() {
+		return isWild() ? feature.clearCost() : 0;
+	}
+
+	/**
+	 * Raise an improvement on this plot, optionally <b>clearing</b> its feature first
+	 * (a farm needs cleared land; a forage camp does not). Once developed the plot's
+	 * {@link #yields()} include the improvement.
+	 *
+	 * @param improvement  the improvement built (a {@code FARM}, {@code CAMP}, …)
+	 * @param clearFeature whether raising it clears the plot's feature
+	 */
+	public void raiseImprovement(Improvement improvement, boolean clearFeature) {
+		this.improvement = improvement;
+		if (clearFeature)
+			this.cleared = true;
+	}
+
+	/**
+	 * The plot's raw {@code [food, production, commerce]} yield triple: its terrain,
+	 * plus the feature's yield change while the plot is still {@link #isWild() wild}
+	 * (a cleared plot's feature is gone), plus the {@link #improvement() improvement}'s
+	 * yield change once one is built.
+	 *
+	 * @return the plot's yields (a fresh length-3 array)
 	 */
 	public int[] yields() {
-		return terrain.yields();
+		int[] out = terrain.yields().clone();
+		if (isWild())
+			for (int i = 0; i < 3; i++)
+				out[i] += feature.yieldChange(i);
+		if (improvement != null)
+			for (int i = 0; i < 3; i++)
+				out[i] += improvement.yieldChange(i);
+		return out;
 	}
 
 	/**

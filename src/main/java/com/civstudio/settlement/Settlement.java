@@ -19,6 +19,8 @@ import java.util.function.UnaryOperator;
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.Granary;
 import com.civstudio.agent.MigrantCaravan;
+import com.civstudio.geo.Feature;
+import com.civstudio.geo.Improvement;
 import com.civstudio.geo.Province;
 import com.civstudio.geo.Terrain;
 import com.civstudio.geo.TerrainGenerator;
@@ -28,7 +30,6 @@ import com.civstudio.agent.Member;
 import com.civstudio.agent.Retinue;
 import com.civstudio.calendar.DayType;
 import com.civstudio.calendar.LiturgicalCalendar;
-import com.civstudio.agent.firm.BuilderConfig;
 import com.civstudio.agent.firm.BuilderFirm;
 import com.civstudio.agent.firm.Firm;
 import com.civstudio.agent.firm.FirmFactory;
@@ -771,6 +772,7 @@ public class Settlement {
 					+ ": it is full at its maximum of " + maxPlots + " plots");
 		Plot plot = appendPlot();
 		seat(plot, occupant);
+		developPlot(plot, occupant); // genesis: raise the occupant's improvement for free
 		return plot;
 	}
 
@@ -792,15 +794,53 @@ public class Settlement {
 		return null;
 	}
 
-	// append a fresh vacant plot at the next ladder index, generating its terrain
-	// from the province's climate (off the terrain stream); a province-less colony
-	// uses the baseline terrain and takes no draw.
+	// generate the next plot's land — terrain plus an optional wild feature — from
+	// the province's climate (off the terrain stream); a province-less colony uses
+	// the baseline terrain (no feature) and takes no draw. Does not add it to the
+	// colony (the founding path appends; live growth holds it on the build queue).
+	private Plot generatePlot(int index) {
+		if (terrainGenerator == null)
+			return new Plot(index, baselineTerrain, null);
+		Terrain terrain = terrainGenerator.next(terrainRng);
+		Feature feature = terrainGenerator.nextFeature(terrain, terrainRng);
+		return new Plot(index, terrain, feature);
+	}
+
+	// append a freshly-generated vacant plot at the next ladder index (the founding
+	// genesis path; live growth generates its plot up front in requestGrowth).
 	private Plot appendPlot() {
-		Terrain terrain = terrainGenerator == null ? baselineTerrain
-				: terrainGenerator.next(terrainRng);
-		Plot plot = new Plot(plots.size(), terrain);
+		Plot plot = generatePlot(plots.size());
 		plots.add(plot);
 		return plot;
+	}
+
+	// resolve the improvement an on-plot firm raises on its plot (a necessity firm →
+	// a FARM), looked up in the shared terrain registry; null for a center-grouped
+	// occupant or a non-firm (which raise none).
+	private Improvement improvementFor(PlotOccupant occupant) {
+		if (terrainRegistry == null || !(occupant instanceof Firm f) || !f.occupiesPlot())
+			return null;
+		String type = f.plotImprovement();
+		return type == null ? null : terrainRegistry.improvement(type);
+	}
+
+	// develop a plot for its occupant — raise the firm's improvement, clearing any
+	// feature (a farm needs cleared land). A no-op for an occupant operating none.
+	// Used on the founding genesis path (free); live growth develops via the builder.
+	private void developPlot(Plot plot, PlotOccupant occupant) {
+		Improvement imp = improvementFor(occupant);
+		if (imp != null)
+			plot.raiseImprovement(imp, true);
+	}
+
+	// the build-units to open a plot: the improvement's build cost (or, for an
+	// occupant with none, the builder's flat land cost) plus the feature clear cost
+	// when the plot is wild, scaled up by the terrain's percent build modifier (rough
+	// or forested ground takes longer to prepare).
+	private double clearanceWork(Plot plot, Improvement imp) {
+		double base = imp != null ? imp.buildCost() : builder.getConfig().landWorkPerPlot();
+		base += plot.clearCost();
+		return base * (1.0 + plot.terrain().buildModifier() / 100.0);
 	}
 
 	/**
@@ -1033,9 +1073,13 @@ public class Settlement {
 		if (plots.size() + buildQueue.size() >= maxPlots)
 			throw new IllegalStateException(
 					name + " cannot grow past its maximum of " + maxPlots + " plots");
-		BuilderConfig c = builder.getConfig();
+		// the plot's land (terrain + feature) is fixed now so its clearance can be
+		// costed; the builder raises the improvement and the colony seats the firm
+		// once the work is delivered (see completeFinishedPlots).
 		int nextIndex = plots.size() + buildQueue.size();
-		buildQueue.add(new BuildProject(nextIndex, c.landWorkPerPlot(),
+		Plot plot = generatePlot(nextIndex);
+		Improvement imp = improvementFor(requester);
+		buildQueue.add(new BuildProject(plot, imp, clearanceWork(plot, imp),
 				(Agent) requester));
 	}
 
@@ -1063,8 +1107,13 @@ public class Settlement {
 		// the builder works the queue in order, so completed tasks sit at its head
 		boolean grew = false;
 		while (!buildQueue.isEmpty() && buildQueue.get(0).isComplete()) {
-			buildQueue.remove(0);
-			appendPlot(); // the now-cleared plot, vacant
+			BuildProject done = buildQueue.remove(0);
+			Plot plot = done.getPlot();
+			// the builder has cleared the land and raised the firm's improvement (a
+			// FARM) — develop the plot before it is seated
+			if (done.getImprovement() != null)
+				plot.raiseImprovement(done.getImprovement(), true);
+			plots.add(plot);
 			grew = true;
 		}
 		if (grew)

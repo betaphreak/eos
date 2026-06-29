@@ -9,19 +9,25 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.civstudio.geo.Improvement;
 import com.civstudio.geo.Province;
+import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.tech.Sector;
 
 /**
- * Phase-2 coverage for the terrain &rarr; TFP coupling (see {@code docs/plots.md}):
- * a province colony reads its plot's terrain food yield as a productivity factor
- * (calibrated so the default Dhenijansar colony's aggregate food factor averages
- * ≈ 1.0), while the coupling is bypassed for a province-less colony and gated off
- * for every non-food sector this cut.
+ * Phase-2/3 coverage for the terrain &rarr; TFP coupling (see {@code docs/plots.md}):
+ * a province colony reads its plot's food yield as a productivity factor, calibrated
+ * so the default Dhenijansar colony's aggregate food factor — measured against the
+ * <b>developed farm</b> (terrain food + the {@code FARM} improvement's +2, as a
+ * seated necessity firm has) — averages ≈ 1.0, while the coupling is bypassed for a
+ * province-less colony and gated off for every non-food sector this cut.
  */
 class PlotYieldTest {
 
 	private static final LocalDate START = LocalDate.of(1444, 12, 11);
+
+	private static final Improvement FARM =
+			TerrainRegistry.load().improvement("IMPROVEMENT_FARM");
 
 	// genesis-append n plots, returning the dummy occupants seated on them
 	private static List<PlotOccupant> seatN(Settlement c, int n) {
@@ -43,11 +49,16 @@ class PlotYieldTest {
 
 		double sum = 0;
 		List<PlotOccupant> occ = seatN(c, 60);
+		// a seated necessity firm raises a FARM on cleared land — develop each plot
+		// the way founding does, so the factor measured is the developed-farm food TFP
+		for (Plot p : c.getPlots())
+			p.raiseImprovement(FARM, true);
 		for (PlotOccupant o : occ)
 			sum += c.plotYieldFactor(o, Sector.NECESSITY);
 		double mean = sum / occ.size();
-		// REFERENCE[food] is calibrated to Dhenijansar's climate, so the mean food
-		// factor sits near 1.0 (the default colony's food TFP ≈ its pre-rework value)
+		// REFERENCE[food] is calibrated to Dhenijansar's climate plus the FARM's +2,
+		// so the mean food factor sits near 1.0 (the default colony's food TFP ≈ its
+		// pre-rework value)
 		assertTrue(Math.abs(mean - 1.0) < 0.2,
 				"mean food yield factor should be ~1.0, was " + mean);
 	}

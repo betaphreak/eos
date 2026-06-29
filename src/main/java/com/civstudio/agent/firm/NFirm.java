@@ -83,6 +83,16 @@ public class NFirm extends ConsumerGoodFirm {
 	}
 
 	/**
+	 * A necessity firm is subsistence agriculture, so the improvement it raises on its
+	 * plot is a {@code FARM} (on cleared land). Its {@code +2} food yield is folded
+	 * into the plot's food TFP factor (see {@link com.civstudio.settlement.Plot}).
+	 */
+	@Override
+	public String plotImprovement() {
+		return "IMPROVEMENT_FARM";
+	}
+
+	/**
 	 * Necessity is the colony's agriculture, so its effective total-factor
 	 * productivity is additionally scaled by the colony's {@linkplain
 	 * Settlement#getAgricultureClimateMultiplier() agricultural climate multiplier}

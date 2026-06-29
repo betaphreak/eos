@@ -20,7 +20,12 @@ import lombok.Builder;
  *                        first round of building labor before billing recoups it
  * @param targetWageBudget wage budget the firm bids while it has work queued (it
  *                        bids nothing — and so lays its workers off — when idle)
- * @param landWorkPerPlot build-units to open one plot (firm-funded land clearance)
+ * @param landWorkPerPlot build-units to open one plot when its occupant raises no
+ *                        improvement — the fallback land-clearance cost; an on-plot
+ *                        firm (an {@code NFirm} → a {@code FARM}) is costed instead
+ *                        from its improvement's build cost plus any feature clear
+ *                        cost, &times; the terrain build modifier (Phase 3, see
+ *                        {@code Settlement.clearanceWork})
  */
 @Builder(toBuilder = true)
 public record BuilderConfig(

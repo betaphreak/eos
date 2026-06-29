@@ -14,12 +14,13 @@ import com.civstudio.util.Rng;
  * plot off a dedicated terrain {@link Rng} (salted separately from the economic
  * stream, so generation never perturbs it). See {@code docs/plots.md}.
  * <p>
- * This is the Phase-1 generator: it produces only the base terrain (hills/peaks,
- * features and improvements come in later phases), and the generated terrain is
- * not yet read for yield or travel. A <b>province-less</b> colony bypasses
- * generation entirely and uses the {@link #BASELINE_TERRAIN baseline terrain}
- * (uniform grassland) — the weights below are tuned so the model's baseline plot
- * lands at yield-factor ≈ 1.0 once Phase 2 wires terrain into TFP.
+ * As of Phase 3 it produces the base terrain <b>and an optional wild feature</b>
+ * (forest/jungle/…), honouring each feature's valid host terrains and skipping the
+ * river-gated ones (no per-plot river signal yet — see {@code docs/plots.md}); plot
+ * type (hills/peaks) and resource bonuses come in a later phase. A
+ * <b>province-less</b> colony bypasses generation entirely and uses the {@link
+ * #BASELINE_TERRAIN baseline terrain} (uniform grassland, no feature) — the weights
+ * below are tuned so the model's baseline plot lands at yield-factor ≈ 1.0.
  */
 public final class TerrainGenerator {
 
@@ -30,15 +31,29 @@ public final class TerrainGenerator {
 	 */
 	public static final String BASELINE_TERRAIN = "TERRAIN_GRASSLAND";
 
+	/**
+	 * Probability a generated plot carries a wild feature (when its terrain has any
+	 * valid feature). A placeholder pending the food-balance calibration, like the
+	 * terrain weights — features only affect a farmed plot's <em>clear cost</em> (the
+	 * feature is removed when the farm is raised), and give the future forage firm its
+	 * wild targets.
+	 */
+	private static final double FEATURE_PROBABILITY = 0.35;
+
 	// the weighted pool this generator draws from: parallel terrain/cumulative-weight
 	// arrays for a single uniform draw per plot
 	private final Terrain[] pool;
 	private final double[] cumulative;
 	private final double totalWeight;
 
+	// the wild features each terrain may host (its valid, non-river features), keyed
+	// by terrain type, for the per-plot feature roll
+	private final Map<String, List<Feature>> featuresByTerrain = new LinkedHashMap<>();
+
 	/**
-	 * Build a generator for a province of the given climate. The terrain pool is
-	 * fixed at construction (so every plot draws from the same distribution).
+	 * Build a generator for a province of the given climate. The terrain pool and the
+	 * per-terrain feature lists are fixed at construction (so every plot draws from
+	 * the same distribution).
 	 *
 	 * @param registry the curated terrain/feature/improvement definitions
 	 * @param climate  the province's climate band (drives the base pool)
@@ -68,6 +83,25 @@ public final class TerrainGenerator {
 		for (int i = 0; i < cum.size(); i++)
 			this.cumulative[i] = cum.get(i);
 		this.totalWeight = running;
+
+		indexFeatures(registry);
+	}
+
+	// build, per terrain type, the list of wild features valid on it — those whose
+	// validTerrains include the terrain and that are not river-gated (no per-plot
+	// river signal yet, so FLOOD_PLAINS et al. are skipped). Deterministic order.
+	private void indexFeatures(TerrainRegistry registry) {
+		for (Terrain t : pool)
+			featuresByTerrain.putIfAbsent(t.type(), new ArrayList<>());
+		for (Feature f : registry.features()) {
+			if (f.requiresRiver())
+				continue;
+			for (String terrainType : f.validTerrains()) {
+				List<Feature> list = featuresByTerrain.get(terrainType);
+				if (list != null)
+					list.add(f);
+			}
+		}
 	}
 
 	/**
@@ -82,6 +116,27 @@ public final class TerrainGenerator {
 			if (x < cumulative[i])
 				return pool[i];
 		return pool[pool.length - 1]; // floating-point guard
+	}
+
+	/**
+	 * Draw the wild feature (if any) overlaying a plot of the given terrain, off the
+	 * terrain RNG. Consumes exactly one draw per call (whether or not a feature
+	 * results), so the terrain stream stays predictable. Returns {@code null} when the
+	 * roll misses {@link #FEATURE_PROBABILITY} or the terrain hosts no valid feature.
+	 *
+	 * @param terrain the plot's terrain (its valid feature pool)
+	 * @param rng     the dedicated terrain generator (not the economic stream)
+	 * @return the drawn feature, or {@code null} if the plot is bare
+	 */
+	public Feature nextFeature(Terrain terrain, Rng rng) {
+		double r = rng.uniform();
+		List<Feature> valid = featuresByTerrain.get(terrain.type());
+		if (valid == null || valid.isEmpty() || r >= FEATURE_PROBABILITY)
+			return null;
+		int i = (int) (r / FEATURE_PROBABILITY * valid.size());
+		if (i >= valid.size())
+			i = valid.size() - 1; // floating-point guard
+		return valid.get(i);
 	}
 
 	// the base climate pool (placeholder weights pending the Phase-2 food-balance

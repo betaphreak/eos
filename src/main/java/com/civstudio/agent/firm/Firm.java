@@ -161,6 +161,21 @@ public abstract class Firm extends Agent implements Property {
 	}
 
 	/**
+	 * The Civ4 <b>improvement type</b> this firm raises on its plot — its "building on
+	 * the land" (a necessity farm raises an {@code IMPROVEMENT_FARM}). The colony
+	 * resolves it against the {@link com.civstudio.geo.TerrainRegistry} to cost the
+	 * land clearance (the improvement's build cost plus any feature clear cost) and to
+	 * develop the plot once built. Defaults to {@code null} — a center-grouped firm
+	 * (the default) operates no improvement; only {@link #occupiesPlot() on-plot}
+	 * firms override it. See {@code docs/plots.md}.
+	 *
+	 * @return the improvement type key it operates, or {@code null} if none
+	 */
+	public String plotImprovement() {
+		return null;
+	}
+
+	/**
 	 * Whether this firm operates — hires labor and so produces — on the given
 	 * kind of day. By default a firm runs only on {@link DayType#WORKDAY
 	 * workdays}; the weekly day of rest (Sunday) and feast days are days off.

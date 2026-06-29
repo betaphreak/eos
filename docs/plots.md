@@ -1,6 +1,6 @@
 # Design note: Civ4-style plots for settlement slots
 
-**Status:** Phases 0–2b implemented; Phases 3–4 proposed
+**Status:** Phases 0–3 implemented; Phase 4 proposed
 **Date:** 2026-06-29
 **Depends on:** the occupant seam (`PlotOccupant`, which `Agent` implements) and the build
 queue (`BuildProject`, `BuilderFirm`) — this note **removes** the disc geometry it replaces
@@ -625,13 +625,28 @@ near its current food TFP. The plan therefore:
   `workFactor`, `plotTravelTime`, province-less/unseated → 0). *Deferred:* the builder peasants'
   per-build-site commute (they feel only `N` this cut), the provisioning workFactor stop-rule, and
   the daily-rhythm consumption windows (`docs/daily-rhythm.md`, a separable change).
-- **Phase 3 — improvements, clearing & wild plots.** `Plot` carries an `Improvement`; the
-  builder raises the improvement its firm type fixes (`NFirm` → `FARM`). The plot-prep
-  `BuildProject` costs the improvement's `iAdvancedStartCost` + the feature's
-  `iAdvancedStartRemoveCost` when clearing (a `FARM` needs cleared land), × `buildModifier`;
-  `Plot.cleared` / `isWild()` state. This is the seam the **forage firm** (a separate
-  feature) occupies — a `CAMP` on a *wild* plot reading its feature-modified food yield, no
-  clearing.
+- **Phase 3 — improvements, clearing & wild plots. ✅ Implemented.** `Plot` now carries the
+  three Civ4 land legs — its `Terrain`, an optional wild `Feature`, and the `Improvement` a
+  firm raises on it — plus a `cleared` flag, and folds feature (while wild) + improvement into
+  `yields()`. `TerrainGenerator.nextFeature` rolls a wild feature per plot from the terrain's
+  valid, non-river features (`FEATURE_PROBABILITY` 0.35, a placeholder; river-gated features
+  skipped — no per-plot river signal). The builder **raises the improvement the firm type
+  fixes** (`Firm.plotImprovement()`; `NFirm` → `IMPROVEMENT_FARM`): `Settlement.requestGrowth`
+  fixes the plot's land up front and costs the `BuildProject` at the improvement's
+  `iAdvancedStartCost` + the feature's clear cost when wild, × the terrain `buildModifier`
+  (`clearanceWork`); `completeFinishedPlots` develops the plot (raises the improvement,
+  clearing the feature) before seating. Founding develops genesis plots for free
+  (`developPlot`). `Plot.isWild()` (feature-bearing and uncleared) / `isCleared()` /
+  `clearCost()` are the wild/cleared state — the seam the **forage firm** (a separate feature)
+  will occupy (a `CAMP` raised *without* clearing leaves the plot wild, reading its
+  feature-modified food yield). **Behavioural + recalibrated:** folding the `FARM` +2 into food
+  TFP moved `YIELD_REFERENCE[food]` from 1.4 → **3.4** (Dhenijansar's terrain food ≈ 1.4 + the
+  farm's +2), so the developed-farm mean food factor stays ≈ 1.0 and the full suite (incl. the
+  collapse smoke tests) re-validated. A **province-less** colony generates no features and its
+  yield factor stays bypassed. Tests: `PlotDevelopmentTest` (the three legs + wild/cleared
+  lifecycle), updated `PlotYieldTest` (developed-farm mean ≈ 1.0). *Deferred:* the forage-firm
+  agent itself (the substrate is laid, the agent is a separate feature); plot-type
+  (hills/peaks) and bonuses (below).
   - *Bonuses are **not** wired here (decided).* Phase 0 exported the full bonus set as inert
     data, but placing bonuses on plots and folding their yield into `yieldFactor` is
     **deferred past Phase 3** — Phase 3's FARM/clearing/forage work is food-only and a FARM or
@@ -681,10 +696,11 @@ near its current food TFP. The plan therefore:
    from plot 0, so the travel cost depends only on the *firm's* plot. Houses on plots (a
    worker living near where it works → reduced commute) are future work and are the natural
    next step once the ladder exists.
-3. **The forage firm is enabled, not built.** This cut lays the substrate (wild/cleared plot
-   state, the `CAMP` improvement, the no-clearing path); the forage-firm agent itself is a
-   separate later feature — a `BuilderFirm`-like labor-only firm producing `Necessity`, *not*
-   an `NFirm` subclass (see *The forage firm (future work)* for the full plan).
+3. **The forage firm is enabled, not built.** Phase 3 laid the substrate (wild/cleared plot
+   state via `Plot.isWild()`/`isCleared()`, generated wild features, the no-clearing
+   `raiseImprovement(camp, false)` path); the forage-firm agent itself is a separate later
+   feature — a `BuilderFirm`-like labor-only firm producing `Necessity`, *not* an `NFirm`
+   subclass (see *The forage firm (future work)* for the full plan).
 4. **Special sites dropped.** The special-site machinery is removed; the village hall's home
    is deferred to `docs/village-founding.md`.
 5. **Water/coastal plots deferred.** Only land terrains are generated; fishing/coastal
@@ -707,16 +723,22 @@ near its current food TFP. The plan therefore:
   double-count of climate as the price of staying near today's calibrated behaviour.)
 - **Working-day length `D`.** Now the exact `Duration.between(getSunrise(), getSunset())`
   in seconds (full window, minute/second precision). With seconds the grows-too-fast tension
-  is gone (~21 plots workable at an 8 h day), so the open part is just confirming the
-  deep-winter `D` (short days) doesn't over-penalize the far farms under the combined
-  daylight + travel scaling — and choosing the polar `null`-sunrise fallback.
-- **Which firm types operate an improvement (and which one).** Provisionally `NFirm` → `FARM`
-  (1:1 plot) and forage → `CAMP`; the candidates to add (and thereby make their
-  Production/Commerce coupling live) are an extractive `CFirm` → `MINE`/`QUARRY` and a
-  commerce firm → `COTTAGE`/`PLANTATION`. A per-firm-type mapping, not yet decided beyond food.
-- **Improvement tech-gating — deferred (decided).** Not enforced this cut; every improvement
-  is buildable regardless of tech, and `PrereqTech` is stored dormant. The future question is
-  how/when to enforce it and feed the tech-gated yield upgrades into `SectorProductivity`.
+  is gone (~21 plots workable at an 8 h day). **Decided: the polar `null`-sunrise fallback is
+  `getDaylightHours() × 3600`, and the deep-winter penalty is accepted** (rather than flooring
+  `D` or capping the targeted latitude) — short winter days legitimately shrink the workable
+  frontier when output is already tight; the remaining work is just to confirm it stays
+  survivable across the targeted temperate-to-subpolar range when the coupling is swept.
+- **Which firm types operate an improvement (and which one).** `NFirm` → `FARM` (1:1 plot)
+  and forage → `CAMP` are live/seamed. **Decided: the next activation is an extractive
+  `CFirm` → `MINE`/`QUARRY`** on a `ROCKY`/`HILL` plot, which makes the **Production** channel
+  live (and brings in the hill/peak `PlotType` and the bonus extension); a commerce firm →
+  `COTTAGE`/`PLANTATION` (the **Commerce** channel) follows after. A per-firm-type mapping,
+  still open beyond that order.
+- **Improvement tech-gating — deferred (decided).** Not enforced; every improvement is
+  buildable regardless of tech, and `PrereqTech` is stored dormant. **Decided: stay deferred
+  for now** — enforcement (and feeding the tech-gated yield upgrades into `SectorProductivity`)
+  waits until the first non-food improvements exist to gate, rather than gating `FARM`/`CAMP`
+  this early.
 - **Consumption windows — schedule-only (decided).** Dawn→sunrise (necessity) and
   sunset→dusk (enjoyment) place *when* the existing flat consumption happens; they do **not**
   scale quantity (see `docs/daily-rhythm.md`). This mechanic shares the solar clock but is
@@ -724,7 +746,9 @@ near its current food TFP. The plan therefore:
 - **`SlotTable`'s fate — removed (decided).** The disc geometry, `SlotTable`/`SlotInfo`, the
   `size` field, and the special-site machinery are deleted; a colony is a `List<Plot>` capped
   at `province.plots`. (The village hall's home is deferred to `docs/village-founding.md`.)
-- **The provisioning stop-rule.** The ruler's dynamic firm provisioning should stop
-  chartering when the next plot's `workFactor` makes a new firm uneconomic (the commute
-  gradient gives it a principled cutoff) — needs wiring into `Ruler.reviewSectors()` /
-  `hasRoomToExpand`.
+- **The provisioning stop-rule — decided (wire the `workFactor` cutoff).** The ruler's
+  dynamic firm provisioning currently stops only at the hard `province.plots` cap; it should
+  also stop chartering a new farm when the next available plot's `workFactor` (the commute
+  gradient) makes it uneconomic — the principled Von Thünen cutoff, chosen over a plot-cap-only
+  or profit/utilization-based rule. Implementation pending: wire into `Ruler.reviewSectors()` /
+  `hasRoomToExpand` as its own small change.
