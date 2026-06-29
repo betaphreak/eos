@@ -413,6 +413,34 @@ public class Laborer extends AbstractHousehold {
 		firstAct = false;
 	}
 
+	/**
+	 * <b>Emancipate a grown child</b> into its own household. If this household has an
+	 * adult, colony-born child (see {@link #releaseGrownChild}) and at least
+	 * {@code necessityDowry} food to send with it, remove the child, draw the dowry out
+	 * of this household's larder (so the food is <b>conserved</b>, not created), and
+	 * return the released child for the colony to set up as a new household's head.
+	 * Returns {@code null} if there is no eligible child or the larder cannot cover the
+	 * dowry — so only a household that can afford to set its child up does so, which
+	 * also throttles the rate. Fission grows the household <i>count</i> at zero net
+	 * resource cost (the child already existed and ate as a member). See
+	 * {@code docs/food-balance.md} #4.
+	 *
+	 * @param today
+	 *            the colony's current date (sets working age)
+	 * @param necessityDowry
+	 *            the food the child carries out of the parent's larder
+	 * @return the released grown child, or {@code null} if none is eligible/affordable
+	 */
+	public Member emancipateChild(LocalDate today, double necessityDowry) {
+		if (necessity.getQuantity() < necessityDowry)
+			return null;
+		Member child = releaseGrownChild(today);
+		if (child == null)
+			return null;
+		necessity.decrease(necessityDowry);
+		return child;
+	}
+
 	// the daily necessity ration a member eats: an adult the FINE worker ration
 	// (config.eatAmt()), a child the colony's configured child ration (SNACK)
 	private double rationFor(Member m, LocalDate today) {

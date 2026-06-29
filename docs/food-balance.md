@@ -88,6 +88,17 @@ runs away to 44–72. Mechanism:
   with the head's skill-sum, overwhelmed the ruler's fixed 50-gold treasury at
   founding; in the clean default config skill 12 declines via the deflation spiral but
   does not collapse in months. Both point at calibration gaps, below.)
+  - **A *modest* bump (male mean 7 → 8) is safe but still unhelpful — MEASURED.** It does
+    *not* trigger the spiral (the glut-aware close rule of item 3 and the sub-cubic skill
+    level keep prices/wages healthy: founding necessity price dips 0.37 → 0.18 from the
+    extra output, but recovers to run *higher* than baseline by year 3, and avg laborer
+    savings stay positive). Yet the colony still collapses **~1.4 y sooner** (1455-02 vs
+    1456-06) — near the ~1 y noise band these levers live in, so call it "no help." Two
+    coupled costs eat the output gain: the surplus food can't be *eaten* (ration-capped
+    demand), so it only depresses founding firm revenue; and the ~14 % larger skill-sum
+    **endowment** per promoted laborer drains the ruler's *fixed* 50-gold treasury faster,
+    underfunding pool relief. So even below the deflation threshold, raising skill shifts
+    the bottleneck rather than relieving it — output capacity is not the binding constraint.
   - **Why overproduction doesn't self-correct (firm closure doesn't fire).** The
     dynamic provisioning's *close* rule dissolves a firm only when its **capacity
     utilization** (`output / machine-capacity`) falls below 0.55 — an "idle machines"
@@ -192,6 +203,54 @@ survival fix.
      **~9 years to ~11.5 years**. A real gain on the maturation window, but still short of
      the ~15y births needs; this is the *staggering* lever, to be combined with the others
      (bigger reserve, softer mortality) — not a standalone cure.
+   - **Softer mortality is a near-flat lever — SWEPT, weak.** Scaling the human
+     `LENIENT_MORTALITY_FACTOR` from 0.5 down through 0.35 / 0.25 / 0.15 (a 3× reduction
+     in every adult hazard) moves the default colony's collapse only from ~11.5 y to
+     ~12.5 y — **and not even monotonically** (0.35 came out *worse* than 0.5, i.e. the
+     response is in the noise). **Old-age mortality is not the binding constraint:** the
+     decisive deaths are the founding **starvation** crunch (immune to the life table)
+     and the workforce stalling once the pool holds **no promotable adults** (all
+     children) — softer mortality keeps more laborers and children alive, but they still
+     can't be fed past the food ceiling or promoted (children). A gentler table helps
+     only at the margin and should be stacked, not relied on.
+   - **Demand-driven promotion makes it WORSE — PROTOTYPED, rejected.** Hypothesis: the
+     replacement-only ratchet (promote 1:1 only on death) is the cause, so promote *extra*
+     pool adults to staff the provisioning-grown necessity sector toward demand. Built as a
+     monthly harness step-action (target = `nFirms · 30` workers, batched, adult-capped) and
+     measured on the default colony: collapse came **~1 year sooner** (1455-06 vs 1456-06),
+     with a **steeper year-1 crash** (420→170 vs 402→216). The extra workers are **net food
+     consumers during the crunch** — a skill-5 worker's marginal food product doesn't cover
+     its household's consumption while larders deplete — so promoting more drains the pool's
+     adults into starving households faster. This **confirms the constraint is food output,
+     not workforce headcount or promotion timing**: you cannot staff your way out of a food
+     deficit. (Prototype reverted; finding kept here.) The corollary: holding the workforce
+     to demand only helps *once the food economy can feed it* — so the food fixes (1–2, and a
+     real TFP gain behind the glut-aware close rule, 3) are the prerequisite, not the labor
+     supply.
+   - **Household fission — BUILT, correct but DORMANT.** The deepest structural gap: new
+     laborer *households* (the count the survival floor measures) are created only by
+     pool-promotion, death-replacement, immigration and inheritance — **never from a
+     grown child.** Births call `addMember`, so they grow a household's *size*, never the
+     *count*; a colony-born child, even after maturing, stays a member until it inherits
+     or starves. So births structurally **cannot** renew the household population — the
+     real reason they are "necessary but insufficient." Fission closes that valve: when a
+     household's colony-born child reaches working age it leaves to found its **own**
+     laborer household (`AbstractHousehold.releaseGrownChild` / `Laborer.emancipateChild`
+     / `SimulationHarness.formNewHouseholds`, deferred to end of step like ennoblement;
+     food-conserving — the child carries a dowry out of its parent's larder). It grows the
+     count at **zero net resource cost** (the child already existed and ate as a member).
+     **Measured: it never fires on the default colony** (and is a no-op there — collapse
+     stays 1456-06-28). The renewal pipeline **marriage → birth → maturation → fission**
+     is throttled at the *source*: births need a *married* couple **and** a 14-day food
+     buffer, both scarce in a food-stressed colony, so almost no children are born; the
+     few that are get culled first (non-head members starve before the head) or mature
+     only after their parent household has died. Stress-testing each gate in turn
+     (children spared the cull, dowry → 1, working-age floor → 4) lifts it only to **~3
+     fissions in 10 years** — still negligible, and survival does not improve. So fission
+     is the correct renewal mechanism but **inert until the food economy supports a
+     positive birth rate** — the same root every other lever hits. Kept in place (dormant,
+     like the glut-aware close rule was before colonies could contract) so the valve is
+     ready once food is fixed.
 
 Fixes 1–4 together are the path from "collapses at ~7 years" to "survives long enough
 for births to sustain it." None is a single knob; this is the food-economy calibration

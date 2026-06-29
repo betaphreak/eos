@@ -54,6 +54,7 @@ import com.civstudio.io.printer.*;
 import com.civstudio.market.*;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.extern.java.Log;
 
 /**
  * Shared construction and run logic for the bundled simulations. Each
@@ -69,6 +70,7 @@ import lombok.Getter;
  * #createLaborers}, printers, then {@link #run()}.
  */
 @Getter
+@Log
 public class SimulationHarness {
 
 	// fixed necessity stock granted to a replacement household
@@ -204,6 +206,11 @@ public class SimulationHarness {
 	private BuilderFirm builderFirm;
 	private Retinue retinue;
 	private ChildrenFirm childrenFirm;
+
+	// household fission: the food a grown child carries out of its parent's larder when
+	// it leaves to found its own household, and a tally of fissions over the run
+	private static final double FISSION_NECESSITY_DOWRY = REPLACEMENT_NECESSITY_STOCK;
+	private long fissionCount;
 
 	/**
 	 * Build an empty harness for {@code cfg} from a fresh {@link GameSession}
@@ -780,6 +787,12 @@ public class SimulationHarness {
 		// since nobles can arise even without an export sector (the no-owner charter
 		// fallback); a no-op while every noble is solvent.
 		colony.addStepAction(this::demoteRuinedNobles);
+
+		// household fission: a grown, colony-born child leaves to found its own laborer
+		// household, so in-colony births grow the household count (not just size) — the
+		// renewal path the finite peasant pool cannot provide. A no-op until births
+		// produce a working-age child (see formNewHouseholds).
+		colony.addStepAction(this::formNewHouseholds);
 		return ruler.getBank();
 	}
 
@@ -997,6 +1010,56 @@ public class SimulationHarness {
 				.anyMatch(a -> a instanceof Laborer l && l.isAlive());
 		if (hasLaborer)
 			colony.scheduleEndOfStepAction(this::ennobleBestLaborer);
+	}
+
+	/**
+	 * <b>Household fission</b> (a step action for every ruler-bearing colony). Once a
+	 * week, each laborer household with more than its head is given a chance to
+	 * emancipate a grown, colony-born child into a <b>new</b> laborer household — the
+	 * mechanism that lets in-colony births grow the household <i>count</i> (the number
+	 * the colony's survival floor measures), not just household size. The actual split
+	 * is deferred to end of step (after the day's labor/market clearing, so the child's
+	 * last day of labor credits its parent cleanly), exactly as ennoblement is. A no-op
+	 * for a colony with no eligible children (e.g. before the first birth matures).
+	 */
+	private void formNewHouseholds() {
+		if (colony.getDate().getDayOfWeek() != DayOfWeek.MONDAY)
+			return;
+		for (Agent a : colony.getAgents())
+			if (a instanceof Laborer parent && parent.isAlive()
+					&& parent.getMemberCount() > 1)
+				colony.scheduleEndOfStepAction(() -> tryFission(parent));
+	}
+
+	// emancipate one grown child from the parent into its own household (deferred to end
+	// of step): draw the child + its food dowry out of the parent (conserving food),
+	// build a new single-head laborer household for it, and queue its add. A no-op if the
+	// parent died this step or has no eligible/affordable child.
+	private void tryFission(Laborer parent) {
+		if (!parent.isAlive())
+			return;
+		Member child = parent.emancipateChild(colony.getDate(),
+				FISSION_NECESSITY_DOWRY);
+		if (child == null)
+			return;
+		colony.scheduleAddAgent(
+				buildFissionHousehold(child, parent.getBank(), FISSION_NECESSITY_DOWRY));
+		fissionCount++;
+	}
+
+	// build a new laborer household headed by an emancipated child: rename it under a
+	// fresh dynasty surname (its parent's is still in use), keeping its given name,
+	// gender, skills, race, age and parentage; it opens with only the food dowry it
+	// carried (no cash — it earns its keep on the labor market like any laborer)
+	private Laborer buildFissionHousehold(Member child, Bank bank, double initNQty) {
+		Race race = child.race();
+		String surname = colony.getNames().nextDynastyName(race);
+		Member head = new Member(
+				new Person(child.person().givenName(), surname, child.gender(),
+						child.skills(), race),
+				child.getBirthDate(), child.getMother(), child.getFather());
+		return new Laborer(head, cfg.laborer().e(), initNQty, 0, 0,
+				cfg.laborer().savingsRate(), LaborerConfig.DEFAULT, bank, colony);
 	}
 
 	/**
@@ -1550,6 +1613,8 @@ public class SimulationHarness {
 	/** Run the simulation for the configured number of steps, then clean up. */
 	public void run() {
 		colony.run(cfg.numStep());
+		if (fissionCount > 0)
+			log.info("household fissions over the run: " + fissionCount);
 		colony.cleanUpPrinters();
 	}
 

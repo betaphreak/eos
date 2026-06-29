@@ -249,6 +249,29 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	}
 
 	/**
+	 * Remove and return the first <b>grown child</b> — a non-head member that has
+	 * reached working age and was <b>born into this colony</b> (it has known
+	 * parentage, unlike the head, a wed-in spouse, or an immigrant, all of which are
+	 * parentless). The head (member 0) and a parentless spouse are never released.
+	 * Used by <b>household fission</b>: a coming-of-age child leaving to found its own
+	 * household, which is what lets in-colony births grow the household <i>count</i>
+	 * rather than only household size (see {@code docs/food-balance.md} #4).
+	 *
+	 * @param today
+	 *            the colony's current date (sets working age)
+	 * @return the released grown child, or {@code null} if the household has none
+	 */
+	protected final Member releaseGrownChild(LocalDate today) {
+		for (int i = 1; i < members.size(); i++) {
+			Member m = members.get(i);
+			if (m.isAdult(today)
+					&& (m.getMother() != null || m.getFather() != null))
+				return members.remove(i);
+		}
+		return null;
+	}
+
+	/**
 	 * If this household has no spouse (just its head) and the colony runs a
 	 * {@link WeddingMarket}, post the household to it so it can be
 	 * matched with a spouse from the peasant pool when the market clears (on
