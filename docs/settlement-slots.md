@@ -1,5 +1,16 @@
 # Settlement size and build slots
 
+> **OBSOLETE (2026-06-29).** The disc-based slot geometry described here is superseded by
+> the **plot** model: plots arranged by **travel time** from the city center (a Fibonacci
+> ladder), each carrying a Civ4-style terrain + feature and yield, with the commute eating
+> into the working day. See **[`plots.md`](plots.md)** (the spatial model — plots, terrain,
+> yields, the travel-time ladder, on-plot vs. center-grouped firms) and
+> **[`daily-rhythm.md`](daily-rhythm.md)** (the solar-clock day schedule — sunrise market,
+> the work window `D`, consumption windows). The disc's road/wall congestion mechanic is
+> replaced by the travel-time gradient. Retained only for historical context and the parts
+> not yet re-homed (special sites / the village hall — see
+> [`village-founding.md`](village-founding.md)).
+
 Current-state architecture reference (extracted from `CLAUDE.md`). The spatial
 capacity model — how a settlement's size maps to build slots, how it grows, and the
 out-of-band special sites. The runtime-founding design that builds on this lives in
