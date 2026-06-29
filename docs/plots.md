@@ -316,6 +316,44 @@ firm types actually placed on plots), and because most firm types group at the c
 **plot count a colony needs is much smaller** than its firm count — only the farms (and
 forage) draw on the travel-time ladder — which further eases the capacity question.
 
+### The forage firm (future work)
+
+The forage firm is a designed-but-unbuilt **second food source**, the inverse of the farm,
+and the chief consumer of the wild/cleared plot state Phase 3 lays down. Its plan:
+
+- **A `CAMP`/`HUNTING_CAMP` on a *wild* plot.** Where the necessity farm needs the builder to
+  *clear* the feature and raise a `FARM` on cleared `LAND`, the forage firm works an
+  **uncleared, feature-bearing** plot directly — gathering/hunting the hinterland and bringing
+  back `Necessity` **every day with no clearing**. It is gated on `Plot.isWild()` (has a
+  feature and is not cleared — see *Architecture*); clearing a plot for a farm destroys the
+  feature and the forage option, so a wild plot is **either** farmed (cleared, capital,
+  higher yield) **or** foraged (left wild, no capital, lower yield) — a land-use choice.
+- **Architecturally a `BuilderFirm`-like labor-only firm, *not* an `NFirm` subclass**
+  (decided). The firm hierarchy splits on *production structure*: the capital-bearing
+  `ConsumerGoodFirm` family (`EFirm`/`NFirm`, `A·L^β·K^(1-β)`) vs. the labor-only firms
+  (`BuilderFirm`/`StrategicFirm`/`ScienceFirm`, `A·L^β`). A forage firm — labor-only, no
+  capital, **peasant-staffed on the `PeasantLabor` market** (corvée, like the builder) — sits
+  with the latter. Subclassing `NFirm` would saddle it with the `K` term and the
+  return-on-capital purchase machinery it must then disable (a refused-bequest smell). What it
+  shares with `NFirm` is **not the class** but two seams it joins from outside: the **good +
+  market** (it produces `Necessity` and sells into the same necessity `ConsumerGoodMarket`, so
+  the sector's supply aggregates farms + camps with no extra wiring) and the **on-plot food
+  yield** (`Settlement.plotYieldFactor(occupant, NECESSITY)`, keyed by *sector* not by `NFirm`,
+  with `occupiesPlot()` true — so a `CAMP` reads its plot's feature-modified food yield). It
+  trains a gathering/hunting skill (`PLANTS`, or `SHOOTING`/`ANIMALS` for hunting) rather than
+  the builder's `CONSTRUCTION`. If a later refactor finds genuinely-shared farm/forage code,
+  the right move is a small shared base/interface both implement — not inheritance from
+  `NFirm`.
+- **Why it matters — the survival lever.** It puts the colony's otherwise-**idle reserve
+  adults to productive food work** instead of letting them drain away on relief: the founding
+  reserve's promotable adults deplete in ~year 1 and the surplus peasants die off unused
+  (`docs/granary.md` §6.1), so foraging feeds the colony off wild land during the long "adult
+  gap" while the land is gradually cleared for higher-yield `NFirm` agriculture. A low-yield,
+  no-capital, no-clearing food tap that complements the cleared-land necessity sector.
+- **One open seam.** "Wild" is currently defined as *feature present*, so forage is
+  feature-gated; foraging bare, featureless wilderness would be a small extension to
+  `isWild()`.
+
 ### The plot list replaces the disc (no `SlotTable`, no `size`)
 
 **Decided: the disc model is removed.** There is no `SlotTable`, no `SlotInfo`, and no
@@ -645,7 +683,8 @@ near its current food TFP. The plan therefore:
    next step once the ladder exists.
 3. **The forage firm is enabled, not built.** This cut lays the substrate (wild/cleared plot
    state, the `CAMP` improvement, the no-clearing path); the forage-firm agent itself is a
-   separate later feature.
+   separate later feature — a `BuilderFirm`-like labor-only firm producing `Necessity`, *not*
+   an `NFirm` subclass (see *The forage firm (future work)* for the full plan).
 4. **Special sites dropped.** The special-site machinery is removed; the village hall's home
    is deferred to `docs/village-founding.md`.
 5. **Water/coastal plots deferred.** Only land terrains are generated; fishing/coastal
