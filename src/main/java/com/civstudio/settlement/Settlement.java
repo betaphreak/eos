@@ -21,6 +21,7 @@ import com.civstudio.agent.Granary;
 import com.civstudio.agent.MigrantCaravan;
 import com.civstudio.geo.Feature;
 import com.civstudio.geo.Improvement;
+import com.civstudio.geo.PlotType;
 import com.civstudio.geo.Province;
 import com.civstudio.geo.Terrain;
 import com.civstudio.geo.TerrainGenerator;
@@ -764,16 +765,21 @@ public class Settlement {
 		return foundPlot(occupant);
 	}
 
-	// founding (pre-run genesis): append a fresh plot for the occupant and seat it.
-	// Not the live-growth path.
+	// founding (pre-run genesis): append fresh plots for the occupant — skipping any
+	// unworkable peaks (which stay on the ladder, counting toward the cap) — and seat
+	// it on the first workable one. Not the live-growth path.
 	private Plot foundPlot(PlotOccupant occupant) {
-		if (plots.size() >= maxPlots)
-			throw new IllegalStateException(name + " cannot seat " + occupant
-					+ ": it is full at its maximum of " + maxPlots + " plots");
-		Plot plot = appendPlot();
-		seat(plot, occupant);
-		developPlot(plot, occupant); // genesis: raise the occupant's improvement for free
-		return plot;
+		while (true) {
+			if (plots.size() >= maxPlots)
+				throw new IllegalStateException(name + " cannot seat " + occupant
+						+ ": it is full at its maximum of " + maxPlots + " plots");
+			Plot plot = appendPlot();
+			if (!plot.isWorkable())
+				continue; // a peak: keep it on the ladder and append the next plot
+			seat(plot, occupant);
+			developPlot(plot, occupant); // genesis: raise the improvement for free
+			return plot;
+		}
 	}
 
 	// place an occupant on a plot and index it (so its terrain yield can be read by
@@ -800,10 +806,11 @@ public class Settlement {
 	// colony (the founding path appends; live growth holds it on the build queue).
 	private Plot generatePlot(int index) {
 		if (terrainGenerator == null)
-			return new Plot(index, baselineTerrain, null);
+			return new Plot(index, baselineTerrain, PlotType.FLAT, null);
 		Terrain terrain = terrainGenerator.next(terrainRng);
-		Feature feature = terrainGenerator.nextFeature(terrain, terrainRng);
-		return new Plot(index, terrain, feature);
+		PlotType plotType = terrainGenerator.nextPlotType(terrainRng);
+		Feature feature = terrainGenerator.nextFeature(terrain, plotType, terrainRng);
+		return new Plot(index, terrain, plotType, feature);
 	}
 
 	// append a freshly-generated vacant plot at the next ladder index (the founding
@@ -861,10 +868,11 @@ public class Settlement {
 				|| (plots.size() + buildQueue.size() < maxPlots && builder != null);
 	}
 
-	// the first vacant plot, or null if every plot is occupied
+	// the first vacant, workable plot, or null if none is free. Peaks are unworkable,
+	// so they are never seated (they sit on the ladder as rough ground).
 	private Plot firstVacantPlot() {
 		for (Plot plot : plots)
-			if (plot.isVacant())
+			if (plot.isVacant() && plot.isWorkable())
 				return plot;
 		return null;
 	}
@@ -1070,17 +1078,27 @@ public class Settlement {
 	// tasks are gone). An occupant must be billable, which today means it is an Agent
 	// (the sole PlotOccupant); this is the bridge where billing assumes that.
 	private void requestGrowth(PlotOccupant requester) {
-		if (plots.size() + buildQueue.size() >= maxPlots)
-			throw new IllegalStateException(
-					name + " cannot grow past its maximum of " + maxPlots + " plots");
-		// the plot's land (terrain + feature) is fixed now so its clearance can be
-		// costed; the builder raises the improvement and the colony seats the firm
-		// once the work is delivered (see completeFinishedPlots).
-		int nextIndex = plots.size() + buildQueue.size();
-		Plot plot = generatePlot(nextIndex);
-		Improvement imp = improvementFor(requester);
-		buildQueue.add(new BuildProject(plot, imp, clearanceWork(plot, imp),
-				(Agent) requester));
+		// generate forward to the next workable plot, queueing any intervening peaks as
+		// zero-work tasks (unworkable rough ground needs no building — it just lands on
+		// the ladder, in order, via completeFinishedPlots). The workable plot's land
+		// (terrain + feature) is fixed now so its clearance can be costed; the builder
+		// raises the improvement and the colony seats the firm once the work is
+		// delivered (see completeFinishedPlots).
+		while (true) {
+			if (plots.size() + buildQueue.size() >= maxPlots)
+				throw new IllegalStateException(
+						name + " cannot grow past its maximum of " + maxPlots + " plots");
+			int nextIndex = plots.size() + buildQueue.size();
+			Plot plot = generatePlot(nextIndex);
+			if (!plot.isWorkable()) {
+				buildQueue.add(new BuildProject(plot, null, 0, null)); // a peak: no work
+				continue;
+			}
+			Improvement imp = improvementFor(requester);
+			buildQueue.add(new BuildProject(plot, imp, clearanceWork(plot, imp),
+					(Agent) requester));
+			return;
+		}
 	}
 
 	/**

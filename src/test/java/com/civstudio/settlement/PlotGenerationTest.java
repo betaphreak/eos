@@ -11,6 +11,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import com.civstudio.geo.PlotType;
 import com.civstudio.geo.Province;
 import com.civstudio.geo.TerrainGenerator;
 
@@ -64,5 +65,36 @@ class PlotGenerationTest {
 		for (String t : claimTerrains(bare, 30))
 			assertEquals(TerrainGenerator.BASELINE_TERRAIN, t,
 					"a province-less colony's plots are all baseline terrain");
+		// a province-less colony's plots are all flat (no relief generation)
+		for (Plot p : bare.getPlots())
+			assertEquals(PlotType.FLAT, p.plotType(),
+					"a province-less colony's plots are all flat");
+	}
+
+	@Test
+	void provinceColonyGeneratesVariedReliefAndNeverSeatsAPeak() {
+		Province dh = new GameSession(7).getWorldMap().findByName("Dhenijansar")
+				.orElseThrow();
+		Settlement c = new GameSession(7).newSettlement("A", START, 30, 26, 5, 2, dh);
+
+		// seat a good run of occupants; with peaks counting toward the cap, this lays
+		// more plots than firms — every seated occupant must be on a workable plot,
+		// and the ladder should carry some non-flat relief over enough plots
+		List<PlotOccupant> seated = new ArrayList<>();
+		for (int i = 0; i < 50; i++) {
+			PlotOccupant o = new PlotOccupant() {
+			};
+			c.claimPlot(o);
+			seated.add(o);
+		}
+		Set<PlotType> relief = new LinkedHashSet<>();
+		for (Plot p : c.getPlots())
+			relief.add(p.plotType());
+		assertTrue(relief.size() >= 2,
+				"the province ladder should carry varied relief, got " + relief);
+		// a peak is unworkable and never seated
+		for (Plot p : c.getPlots())
+			if (!p.isWorkable())
+				assertTrue(p.isVacant(), "a peak is never seated");
 	}
 }

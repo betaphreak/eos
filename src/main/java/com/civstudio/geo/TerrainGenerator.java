@@ -16,11 +16,12 @@ import com.civstudio.util.Rng;
  * <p>
  * As of Phase 3 it produces the base terrain <b>and an optional wild feature</b>
  * (forest/jungle/…), honouring each feature's valid host terrains and skipping the
- * river-gated ones (no per-plot river signal yet — see {@code docs/plots.md}); plot
- * type (hills/peaks) and resource bonuses come in a later phase. A
- * <b>province-less</b> colony bypasses generation entirely and uses the {@link
- * #BASELINE_TERRAIN baseline terrain} (uniform grassland, no feature) — the weights
- * below are tuned so the model's baseline plot lands at yield-factor ≈ 1.0.
+ * river-gated ones (no per-plot river signal yet — see {@code docs/plots.md}). The
+ * Phase-4 substrate adds each plot's <b>relief</b> ({@link PlotType} flat/hill/peak);
+ * resource bonuses come in a later phase. A <b>province-less</b> colony bypasses
+ * generation entirely and uses the {@link #BASELINE_TERRAIN baseline terrain}
+ * (uniform flat grassland, no feature) — the weights below are tuned so the model's
+ * baseline plot lands at yield-factor ≈ 1.0.
  */
 public final class TerrainGenerator {
 
@@ -39,6 +40,16 @@ public final class TerrainGenerator {
 	 * wild targets.
 	 */
 	private static final double FEATURE_PROBABILITY = 0.35;
+
+	/**
+	 * Probability a generated plot is a <b>hill</b>, and (cumulatively above it) a
+	 * <b>peak</b>: a single uniform draw below {@link #HILL_PROBABILITY} is a hill,
+	 * below {@code HILL_PROBABILITY + PEAK_PROBABILITY} a peak, otherwise flat.
+	 * Placeholders pending calibration — peaks are kept rare because each is
+	 * unworkable ground that still consumes a plot and pushes workable land outward.
+	 */
+	private static final double HILL_PROBABILITY = 0.15;
+	private static final double PEAK_PROBABILITY = 0.04;
 
 	// the weighted pool this generator draws from: parallel terrain/cumulative-weight
 	// arrays for a single uniform draw per plot
@@ -119,20 +130,54 @@ public final class TerrainGenerator {
 	}
 
 	/**
-	 * Draw the wild feature (if any) overlaying a plot of the given terrain, off the
-	 * terrain RNG. Consumes exactly one draw per call (whether or not a feature
-	 * results), so the terrain stream stays predictable. Returns {@code null} when the
-	 * roll misses {@link #FEATURE_PROBABILITY} or the terrain hosts no valid feature.
+	 * Draw a plot's relief off the terrain RNG: a {@link PlotType#HILL hill} with
+	 * {@link #HILL_PROBABILITY}, a {@link PlotType#PEAK peak} with {@link
+	 * #PEAK_PROBABILITY} above it, otherwise {@link PlotType#FLAT flat}. One draw per
+	 * call, so the terrain stream stays predictable.
 	 *
-	 * @param terrain the plot's terrain (its valid feature pool)
-	 * @param rng     the dedicated terrain generator (not the economic stream)
+	 * @param rng the dedicated terrain generator (not the economic stream)
+	 * @return the drawn relief
+	 */
+	public PlotType nextPlotType(Rng rng) {
+		double r = rng.uniform();
+		if (r < HILL_PROBABILITY)
+			return PlotType.HILL;
+		if (r < HILL_PROBABILITY + PEAK_PROBABILITY)
+			return PlotType.PEAK;
+		return PlotType.FLAT;
+	}
+
+	/**
+	 * Draw the wild feature (if any) overlaying a plot of the given terrain and relief,
+	 * off the terrain RNG. Consumes exactly one draw per call (whether or not a feature
+	 * results), so the terrain stream stays predictable. Returns {@code null} for a
+	 * {@link PlotType#PEAK peak} (bare rock), when the roll misses {@link
+	 * #FEATURE_PROBABILITY}, or when the terrain hosts no valid feature; a
+	 * <b>flatlands-only</b> feature (e.g. an oasis) is skipped on a non-flat plot.
+	 *
+	 * @param terrain  the plot's terrain (its valid feature pool)
+	 * @param plotType the plot's relief (a peak gets no feature; hills skip
+	 *                 flatlands-only features)
+	 * @param rng      the dedicated terrain generator (not the economic stream)
 	 * @return the drawn feature, or {@code null} if the plot is bare
 	 */
-	public Feature nextFeature(Terrain terrain, Rng rng) {
+	public Feature nextFeature(Terrain terrain, PlotType plotType, Rng rng) {
 		double r = rng.uniform();
-		List<Feature> valid = featuresByTerrain.get(terrain.type());
-		if (valid == null || valid.isEmpty() || r >= FEATURE_PROBABILITY)
+		if (plotType == PlotType.PEAK)
 			return null;
+		List<Feature> all = featuresByTerrain.get(terrain.type());
+		if (all == null || all.isEmpty() || r >= FEATURE_PROBABILITY)
+			return null;
+		// on a hill, flatlands-only features cannot appear
+		List<Feature> valid = all;
+		if (plotType != PlotType.FLAT) {
+			valid = new ArrayList<>(all.size());
+			for (Feature f : all)
+				if (!f.requiresFlatlands())
+					valid.add(f);
+			if (valid.isEmpty())
+				return null;
+		}
 		int i = (int) (r / FEATURE_PROBABILITY * valid.size());
 		if (i >= valid.size())
 			i = valid.size() - 1; // floating-point guard

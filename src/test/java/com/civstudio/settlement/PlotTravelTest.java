@@ -46,19 +46,22 @@ class PlotTravelTest {
 				.orElseThrow();
 		Settlement c = new GameSession(7).newSettlement("A", START, 30, 26, 5, 2, dh);
 
-		PlotOccupant first = new PlotOccupant() {
-		};
-		c.claimPlot(first); // plot index 0 → T(0)=0 → no commute
-		assertEquals(0.0, c.plotTravelTime(first), 1e-9);
-
-		PlotOccupant fifth = null;
-		for (int i = 1; i <= 5; i++) {
-			fifth = new PlotOccupant() {
+		// claim a run of plots; each lands on the next workable plot, so the commute
+		// is non-decreasing in claim order (peaks may be skipped over, leaving the
+		// seated indices non-contiguous, so we assert the rise, not an exact T(index))
+		double[] commutes = new double[8];
+		for (int i = 0; i < commutes.length; i++) {
+			PlotOccupant o = new PlotOccupant() {
 			};
-			c.claimPlot(fifth); // last claim lands on plot index 5 → T(5)=5
+			c.claimPlot(o);
+			commutes[i] = c.plotTravelTime(o);
 		}
-		// round-trip = 2 · T(5) = 10 seconds
-		assertEquals(10.0, c.plotTravelTime(fifth), 1e-9);
+		for (int i = 1; i < commutes.length; i++)
+			assertTrue(commutes[i] >= commutes[i - 1],
+					"commute should not fall as plots are claimed: " + commutes[i]
+							+ " < " + commutes[i - 1]);
+		assertTrue(commutes[commutes.length - 1] > commutes[0],
+				"a far plot commutes more than the first");
 
 		// an unseated occupant pays no commute (center-grouped / pending)
 		assertEquals(0.0, c.plotTravelTime(new PlotOccupant() {

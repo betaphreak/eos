@@ -2,6 +2,7 @@ package com.civstudio.settlement;
 
 import com.civstudio.geo.Feature;
 import com.civstudio.geo.Improvement;
+import com.civstudio.geo.PlotType;
 import com.civstudio.geo.Terrain;
 import com.civstudio.tech.Sector;
 
@@ -9,11 +10,12 @@ import com.civstudio.tech.Sector;
  * One build <b>plot</b> in a {@link Settlement} — the occupiable unit of the
  * Civ4-style plot model that replaces the old disc {@code Slot}. A plot carries
  * its position on the travel-time ladder (its {@link #index()}), the {@link
- * Terrain} it sits on, an optional wild {@link Feature} overlay, the {@link
- * Improvement} an on-plot firm has raised on it, and at most one {@link
- * PlotOccupant} (a firm today; the interface is the seam for housing and other
- * buildings later). A plot is either <b>vacant</b> ({@code occupant == null}) or
- * taken by exactly one occupant.
+ * Terrain} it sits on, its {@link PlotType} relief (flat/hill/peak), an optional
+ * wild {@link Feature} overlay, the {@link Improvement} an on-plot firm has raised
+ * on it, and at most one {@link PlotOccupant} (a firm today; the interface is the
+ * seam for housing and other buildings later). A plot is either <b>vacant</b>
+ * ({@code occupant == null}) or taken by exactly one occupant; a {@link
+ * PlotType#PEAK peak} is {@link #isWorkable() unworkable} and never seated.
  * <p>
  * As of Phase 3 a plot's land is the three Civ4 legs: its base {@code terrain}, an
  * optional {@code feature} (forest/jungle/…), and the {@code improvement} a firm
@@ -56,6 +58,10 @@ public final class Plot {
 	// baseline terrain for a province-less colony. Never null.
 	private final Terrain terrain;
 
+	// the plot's relief (flat/hill/peak), orthogonal to its terrain. A hill adds a
+	// production bonus; a peak is unworkable. Never null (FLAT by default).
+	private final PlotType plotType;
+
 	// the wild feature overlaying the terrain (forest, jungle, …), or null if the
 	// plot is bare. Fixed at generation; removed in effect once the plot is cleared
 	// (the field is kept for the wild/cleared record — see isWild/isCleared).
@@ -78,15 +84,19 @@ public final class Plot {
 	/**
 	 * Create a vacant, undeveloped plot at the given ladder index.
 	 *
-	 * @param index   the plot's position on the travel-time ladder
-	 * @param terrain the ground it sits on (non-null)
-	 * @param feature the wild feature overlaying it, or {@code null} if bare
+	 * @param index    the plot's position on the travel-time ladder
+	 * @param terrain  the ground it sits on (non-null)
+	 * @param plotType the relief (flat/hill/peak; non-null)
+	 * @param feature  the wild feature overlaying it, or {@code null} if bare
 	 */
-	public Plot(int index, Terrain terrain, Feature feature) {
+	public Plot(int index, Terrain terrain, PlotType plotType, Feature feature) {
 		if (terrain == null)
 			throw new IllegalArgumentException("terrain must be non-null");
+		if (plotType == null)
+			throw new IllegalArgumentException("plotType must be non-null");
 		this.index = index;
 		this.terrain = terrain;
+		this.plotType = plotType;
 		this.feature = feature;
 	}
 
@@ -98,6 +108,16 @@ public final class Plot {
 	/** The ground this plot sits on. */
 	public Terrain terrain() {
 		return terrain;
+	}
+
+	/** The plot's relief (flat/hill/peak). */
+	public PlotType plotType() {
+		return plotType;
+	}
+
+	/** Whether a firm can occupy this plot (false for a {@link PlotType#PEAK peak}). */
+	public boolean isWorkable() {
+		return plotType.isWorkable();
 	}
 
 	/** The wild feature overlaying the terrain, or {@code null} if the plot is bare. */
@@ -153,14 +173,17 @@ public final class Plot {
 
 	/**
 	 * The plot's raw {@code [food, production, commerce]} yield triple: its terrain,
-	 * plus the feature's yield change while the plot is still {@link #isWild() wild}
-	 * (a cleared plot's feature is gone), plus the {@link #improvement() improvement}'s
-	 * yield change once one is built.
+	 * plus the {@link PlotType#productionBonus() hill production bonus}, plus the
+	 * feature's yield change while the plot is still {@link #isWild() wild} (a cleared
+	 * plot's feature is gone), plus the {@link #improvement() improvement}'s yield
+	 * change once one is built. (The hill production bonus is dormant until a
+	 * production firm sits on a plot — only food is live this cut.)
 	 *
 	 * @return the plot's yields (a fresh length-3 array)
 	 */
 	public int[] yields() {
 		int[] out = terrain.yields().clone();
+		out[1] += plotType.productionBonus();
 		if (isWild())
 			for (int i = 0; i < 3; i++)
 				out[i] += feature.yieldChange(i);

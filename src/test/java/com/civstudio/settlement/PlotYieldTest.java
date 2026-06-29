@@ -49,10 +49,12 @@ class PlotYieldTest {
 
 		double sum = 0;
 		List<PlotOccupant> occ = seatN(c, 60);
-		// a seated necessity firm raises a FARM on cleared land — develop each plot
-		// the way founding does, so the factor measured is the developed-farm food TFP
+		// a seated necessity firm raises a FARM on cleared land — develop each workable
+		// plot the way founding does (peaks are never seated), so the factor measured
+		// is the developed-farm food TFP
 		for (Plot p : c.getPlots())
-			p.raiseImprovement(FARM, true);
+			if (p.isWorkable())
+				p.raiseImprovement(FARM, true);
 		for (PlotOccupant o : occ)
 			sum += c.plotYieldFactor(o, Sector.NECESSITY);
 		double mean = sum / occ.size();

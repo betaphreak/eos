@@ -49,12 +49,16 @@ class SettlementProvinceTest {
 		// 74 plots: the cap is the province's plot count directly (build slots are plots)
 		assertEquals(74, c.getMaxPlots());
 
-		// founding seats firms until the cap, then refuses to grow past it: the 74
-		// plots fill, and the 75th occupant cannot be seated.
-		for (int i = 0; i < 74; i++)
-			c.claimPlot(new PlotOccupant() {
-			});
-		assertEquals(74, c.getPlotCount());
+		// founding lays plots until the cap, then refuses to grow past it. Peaks are
+		// unworkable but still count toward the 74, so the number of firms seated may
+		// be a little under 74; claiming past the cap throws.
+		assertThrows(IllegalStateException.class, () -> {
+			for (int i = 0; i < 200; i++)
+				c.claimPlot(new PlotOccupant() {
+				});
+		});
+		assertEquals(74, c.getPlotCount(), "plot count is capped at the province's plots");
+		// the colony is full — a further claim still refuses
 		assertThrows(IllegalStateException.class,
 				() -> c.claimPlot(new PlotOccupant() {
 				}));

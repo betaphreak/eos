@@ -1,6 +1,6 @@
 # Design note: Civ4-style plots for settlement slots
 
-**Status:** Phases 0–3 implemented; Phase 4 proposed
+**Status:** Phases 0–3 and 4a (plot-type substrate) implemented; Phase 4b proposed
 **Date:** 2026-06-29
 **Depends on:** the occupant seam (`PlotOccupant`, which `Agent` implements) and the build
 queue (`BuildProject`, `BuilderFirm`) — this note **removes** the disc geometry it replaces
@@ -83,15 +83,17 @@ JAGGED 0/1/0      BARREN 0/0/0  DESERT 0/0/0    DUNES 0/0/0
 SALT_FLATS 0/0/2  TAIGA 1/0/0   TUNDRA 0/0/0    PERMAFROST 0/0/0
 ```
 
-**Hills and peaks are a per-plot *type*, not a terrain** (decided — matching Civ4, where
-plot type is orthogonal to terrain). A `Plot` carries a `PlotType` (`FLAT` / `HILL` /
-`PEAK`) alongside its terrain, so any terrain can be flat or hilly (a grassland hill, a
-desert hill): a `HILL` adds a production bonus and makes `MINE` valid (`bHillsMakesValid`);
-a `PEAK` is **unworkable** (no occupant, no usable yield). A peak still **occupies a rung on
-the travel ladder** (and counts toward `province.plots`), so peaks among the near plots push
-workable land farther out — a real terrain penalty for rough country, not skipped.
-`TERRAIN_HILL`/`TERRAIN_PEAK` from the XML are read as this plot-type axis rather than as
-terrain entries.
+**Hills and peaks are a per-plot *type*, not a terrain** (implemented in Phase 4a —
+`geo/PlotType.java`; matching Civ4, where plot type is orthogonal to terrain). A `Plot`
+carries a `PlotType` (`FLAT` / `HILL` / `PEAK`) alongside its terrain, so any terrain can be
+flat or hilly (a grassland hill, a desert hill): a `HILL` adds a production bonus (folded into
+`Plot.yields()`, dormant until a production firm sits on a plot) and makes `MINE` valid
+(`bHillsMakesValid` → `PlotType.makesMineValid()`); a `PEAK` is **unworkable** (`isWorkable()
+== false` — no occupant, no usable yield). A peak still **occupies a rung on the travel
+ladder** (and counts toward `province.plots`), so peaks among the near plots push workable
+land farther out — a real terrain penalty for rough country, not skipped. The curated terrain
+set already excludes `TERRAIN_HILL`/`TERRAIN_PEAK` (they are this plot-type axis, not terrain
+entries).
 
 ### Feature (`FeatureInfo`)
 
@@ -645,8 +647,8 @@ near its current food TFP. The plan therefore:
   collapse smoke tests) re-validated. A **province-less** colony generates no features and its
   yield factor stays bypassed. Tests: `PlotDevelopmentTest` (the three legs + wild/cleared
   lifecycle), updated `PlotYieldTest` (developed-farm mean ≈ 1.0). *Deferred:* the forage-firm
-  agent itself (the substrate is laid, the agent is a separate feature); plot-type
-  (hills/peaks) and bonuses (below).
+  agent itself (the substrate is laid, the agent is a separate feature); plot-type (hills/peaks,
+  landed in Phase 4a below) and bonuses (Phase 4b).
   - *Bonuses are **not** wired here (decided).* Phase 0 exported the full bonus set as inert
     data, but placing bonuses on plots and folding their yield into `yieldFactor` is
     **deferred past Phase 3** — Phase 3's FARM/clearing/forage work is food-only and a FARM or
@@ -660,11 +662,42 @@ near its current food TFP. The plan therefore:
     `TerrainGenerator` extension (needs its own salted draw so it doesn't perturb the terrain
     stream) that could land cheaply anytime; the behavioural yield + REFERENCE recalibration
     waits for a bonus-consuming firm.
-- **Phase 4 (optional / future).** Production/Commerce activation (an extractive `CFirm` →
-  `MINE`/`QUARRY`, a commerce firm → `COTTAGE`/`PLANTATION`) and, with it, the **bonus
-  extension** above (place bonuses, fold their yield into `yieldFactor`, recalibrate
-  `YIELD_REFERENCE`); `Plots.csv` reporting; coastal/water plots & rivers; plot
-  `healthPercent` → disease; feature spread (`iGrowth`).
+- **Phase 4a — the plot-type (relief) substrate. ✅ Implemented.** `Plot` carries a `PlotType`
+  (`geo/PlotType.java`, `FLAT`/`HILL`/`PEAK`), orthogonal to its terrain. `TerrainGenerator`
+  rolls it per plot (`nextPlotType`: hill `0.15`, peak `0.04`, placeholders) off the terrain
+  stream, and `nextFeature` now skips a feature on a peak and skips flatlands-only features on a
+  hill. A **hill** adds `+1` production to `Plot.yields()` (dormant — production is still gated
+  off until a production firm sits on a plot) and `makesMineValid()`; a **peak** is
+  `isWorkable() == false` — it is **never seated** (`firstVacantPlot` skips it) yet still
+  **counts toward `province.plots`** and occupies a travel-ladder rung, so peaks push workable
+  land outward (rough country supports fewer, farther farms). The claim/found/grow flow skips
+  peaks: `foundPlot` appends past peaks to the next workable plot; `requestGrowth` queues an
+  intervening peak as a zero-work `BuildProject` (unworkable ground needs no building) and only
+  costs the workable plot. A **province-less** colony is uniformly `FLAT` (no relief draw). This
+  is the substrate both the extractive `MINE` (needs hills) and the bonus placement flags
+  (`hills`/`flatlands`/`peaks`) require. **Behavioural** (peaks slightly reduce workable
+  capacity and lengthen commutes — small at the default colony's headroom; full suite incl. the
+  collapse smoke tests re-validated). Tests: `PlotDevelopmentTest` (hill bonus / peak
+  unworkable), `PlotGenerationTest` (varied relief, deterministic, no peak ever seated),
+  retargeted `PlotTravelTest`/`SettlementProvinceTest` (peaks break the old 1-claim-1-plot
+  index assumptions). *Deferred to 4b:* the extractive firm that actually reads the hill
+  production yield (see below).
+- **Phase 4b — Production/Commerce activation (future).** The extractive firm is a **new firm
+  economy**, not a drop-in: `CFirm` is an infinite-capacity abstraction (`A = 20000`, and it
+  computes output from its own `A`, not through `ConsumerGoodFirm.effectiveA()` where the plot
+  factor folds in), so multiplying its capacity by a production factor is inert. Activating
+  Production needs a **new finite-capacity extractive firm** (`MINE`/`QUARRY` on a `ROCKY`/`HILL`
+  plot, `sector() == CAPITAL`, finite Cobb-Douglas output scaled by the plot's production yield,
+  selling into the capital market alongside the infinite `CFirm`, with its own
+  capacity/stability calibration) — and opening the `CAPITAL` gate in `Settlement.plotYieldFactor`.
+  A commerce firm (`COTTAGE`→`TOWN`/`PLANTATION`, `ENJOYMENT`/`EXPORT`) follows. With it lands the
+  **bonus extension** above (place bonuses, fold their yield into `yieldFactor`, recalibrate
+  `YIELD_REFERENCE`) and the now-triggerable **improvement tech-gating** (enforce `PrereqTech`
+  once non-food improvements exist; feed tech-gated yield upgrades into `SectorProductivity`).
+  Plus the smaller riders: the provisioning **`workFactor` stop-rule** (`Ruler.reviewSectors()`),
+  `Plots.csv` reporting, coastal/water plots & rivers (a per-plot river signal unlocks the
+  river-gated features/improvements deferred above), plot `healthPercent` → disease, feature
+  spread (`iGrowth`).
 
 ## Test impact
 
