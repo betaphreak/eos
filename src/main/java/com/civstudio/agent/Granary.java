@@ -39,9 +39,11 @@ import lombok.extern.java.Log;
  * only taps the treasury when its capital is exhausted.
  *
  * <p>The granary's <b>stock</b> is the colony's strategic food reserve — the buffer
- * later phases (child relief, fission dowries) draw on via {@link #drawStock(double)}.
- * <b>Phase 1</b> builds only the price-stabilizing keystone; the relief draws are wired
- * in later phases.
+ * relief holders draw on via {@link #drawStock(double)}. The <b>peasant pool</b> already
+ * does so: before any peasant starves, {@code Retinue.feed} draws the shortfall from the
+ * granary (subsidized relief, fed from grain the crown banked cheaply in plenty — see
+ * {@code docs/granary.md} §4.8). Child relief and fission dowries are the next draws to
+ * be wired (§5).
  */
 @Log
 public class Granary extends Agent {
@@ -76,6 +78,16 @@ public class Granary extends Agent {
 	@Getter
 	private double totalSold;
 
+	// relief drawn out of the reserve since the last act() — a running tally that
+	// disentangles internal relief draws (which also shrink stock) from market trades
+	// when act() classifies the cycle's stock change (see act()). Reported per-cycle as
+	// lastReliefDrawn and cumulatively as totalReliefDrawn.
+	private double reliefDrawnSinceLastAct;
+	@Getter
+	private double lastReliefDrawn;
+	@Getter
+	private double totalReliefDrawn;
+
 	// cumulative net cost to the ruler of the granary (deficits covered minus surpluses
 	// remitted) — negative once the granary's buy-low/sell-high has netted the crown a
 	// profit over its outlays
@@ -103,20 +115,26 @@ public class Granary extends Agent {
 
 	/** Called by Settlement.newDay() in each step. */
 	public void act() {
-		// measure last cycle's net trade (the market's clear() moved stock since the
-		// previous act): a rise is a purchase, a fall a sale
-		double delta = stock.getQuantity() - stockAtLastAct;
-		if (delta > 1e-9) {
-			lastBought = delta;
+		// measure last cycle's net market trade. Stock moved since the previous act from
+		// two sources: the market's clear() (a buy raises it, a sale lowers it) and any
+		// relief draws (which also lower it). Add the relief tally back so an internal
+		// draw is not misread as a market sale — the residual is the true market trade.
+		double netMarket =
+				(stock.getQuantity() - stockAtLastAct) + reliefDrawnSinceLastAct;
+		if (netMarket > 1e-9) {
+			lastBought = netMarket;
 			lastSold = 0;
-			totalBought += delta;
-		} else if (delta < -1e-9) {
-			lastSold = -delta;
+			totalBought += netMarket;
+		} else if (netMarket < -1e-9) {
+			lastSold = -netMarket;
 			lastBought = 0;
-			totalSold += -delta;
+			totalSold += -netMarket;
 		} else {
 			lastBought = lastSold = 0;
 		}
+		lastReliefDrawn = reliefDrawnSinceLastAct;
+		totalReliefDrawn += reliefDrawnSinceLastAct;
+		reliefDrawnSinceLastAct = 0;
 
 		// the granary's cash P&L is the crown's: reconcile its account to ~0 against the
 		// gold treasury each step — the ruler covers a purchase's overdraft, and the
@@ -206,9 +224,13 @@ public class Granary extends Agent {
 	/**
 	 * Draw up to {@code requested} units of necessity out of the granary's reserve,
 	 * returning the amount actually drawn (less than requested only if the reserve is
-	 * short). The seam later phases use to feed children and dower fissioning households
-	 * from the strategic reserve rather than fresh treasury (see {@code
-	 * docs/granary.md} §5.2–5.3 and the consolidated draws in §4).
+	 * short). The relief seam: the {@link com.civstudio.agent.Retinue peasant pool} draws
+	 * its starvation shortfall here before any peasant starves, and child relief / fission
+	 * dowries will draw here too — feeding the colony's non-wage population from grain the
+	 * crown banked cheaply rather than from fresh treasury (see {@code docs/granary.md}
+	 * §4.8, §5.2–5.3). The draw moves only food; the cost was borne when the granary
+	 * bought the grain (reconciled to the ruler), so relief is subsidized by the crown.
+	 * Tallied so {@link #act()} does not misclassify the stock drop as a market sale.
 	 *
 	 * @param requested
 	 *            necessity units to draw from the reserve
@@ -217,6 +239,8 @@ public class Granary extends Agent {
 	public double drawStock(double requested) {
 		double drawn = Math.min(Math.max(0, requested), stock.getQuantity());
 		stock.decrease(drawn);
+		// tally the draw so act() does not misclassify this stock drop as a market sale
+		reliefDrawnSinceLastAct += drawn;
 		return drawn;
 	}
 

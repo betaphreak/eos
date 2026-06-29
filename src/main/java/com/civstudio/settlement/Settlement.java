@@ -16,6 +16,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import com.civstudio.agent.Agent;
+import com.civstudio.agent.Granary;
 import com.civstudio.agent.MigrantCaravan;
 import com.civstudio.geo.Province;
 import com.civstudio.agent.Household;
@@ -311,6 +312,13 @@ public class Settlement {
 	// it for the public works (roads and walls) of a growth ring.
 	@Getter
 	private Ruler ruler;
+
+	// the colony's ever-normal granary, if any (see Granary). Recorded so relief
+	// holders — the peasant pool, and later children — can draw their ration from the
+	// colony's strategic food store rather than each bidding the necessity market (see
+	// docs/granary.md §4). At most one per colony; null leaves relief on the market.
+	@Getter
+	private Granary granary;
 
 	// outstanding construction tasks the builder is working through, in the order
 	// rings were demanded (lowest ring first). Empty unless a live colony has
@@ -878,6 +886,23 @@ public class Settlement {
 	 */
 	public void setRuler(Ruler ruler) {
 		this.ruler = ruler;
+	}
+
+	/**
+	 * Register the colony's {@link Granary ever-normal granary} — its single strategic
+	 * food store, which relief holders draw their ration from (see {@code
+	 * docs/granary.md} §4). Set by the harness when it creates the default granary; at
+	 * most one per colony, so this throws if one is already registered.
+	 *
+	 * @param granary
+	 *            the colony's granary
+	 * @throws IllegalStateException
+	 *             if the colony already has a granary
+	 */
+	public void setGranary(Granary granary) {
+		if (this.granary != null)
+			throw new IllegalStateException("Settlement already has a granary");
+		this.granary = granary;
 	}
 
 	/**

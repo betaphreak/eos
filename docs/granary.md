@@ -218,10 +218,21 @@ trades "keep the elite fed from the store" against "keep enough stock to defend 
 ### 4.8 Migration path (each step independently verifiable)
 
 1. **(done)** Granary stabilizes the price (§3).
-2. **Pool relief backstop.** Add `Settlement.getGranary`; in `Retinue.feed()`, draw any
-   shortfall from the granary before counting starvation (subsidized, ruler-billed). The
-   smallest, lowest-risk consolidation. **Verify:** the reserve survives lean spells longer,
-   the price is undisturbed, no double-counting in `Granary.csv`.
+2. **Pool relief backstop. — implemented (2026-06-29).** `Settlement.setGranary/getGranary`
+   registers the colony's store (set by `createDefaultGranary`); `Retinue.feed()` draws any
+   starvation shortfall from the granary before counting starvation (settled mode only — a
+   wandering band forages from its carried larder). The draw moves only food and is
+   subsidized — its cost was borne when the granary bought the grain (reconciled to the
+   ruler) — and is tallied (`Granary.drawStock` → `reliefDrawnSinceLastAct`) so the
+   granary's `act()` adds it back when classifying the cycle's stock change, never
+   misreading an internal draw as a market sale (§4.7); reported as the `Drawn`/`TotalDrawn`
+   columns of `Granary.csv` and covered by `GranaryTest`. **Observed:** on the *default*
+   colony the backstop stays **dormant** (zero draws) — its deep 150-day pool larder never
+   empties, because the reserve drains by promotion and old age, not starvation (the
+   workforce, not the pool, is what starves at collapse). It is a safety valve for a
+   stressed/shallow-larder colony, exactly like fission is dormant until a child matures;
+   the unit test exercises it by draining the larder against a stocked granary and confirms
+   peasants draw relief instead of starving. Price undisturbed; no double-counting.
 3. **Child relief.** Feed unfed children from the granary (§5.3) — the same `drawStock` call
    from `Laborer` feeding.
 4. **Elite draws.** Drop the ruler's and nobles' own larders; have them draw their

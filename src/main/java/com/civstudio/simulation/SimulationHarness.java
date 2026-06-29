@@ -1225,6 +1225,9 @@ public class SimulationHarness {
 	public Granary createDefaultGranary(Bank bank) {
 		granary = new Granary(bank, colony, granaryConfig);
 		colony.addAgent(granary);
+		// register it as the colony's strategic food store, so relief holders (the
+		// peasant pool, later children) can draw their ration from it (see docs/granary.md)
+		colony.setGranary(granary);
 		return granary;
 	}
 

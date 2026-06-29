@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 import com.civstudio.agent.Granary;
+import com.civstudio.agent.Retinue;
 import com.civstudio.market.ConsumerGoodMarket;
 
 /**
@@ -60,5 +61,50 @@ class GranaryTest {
 		// hierarchy (commoners copper, nobles silver, ruler gold)
 		assertEquals(3, h.getBanks().size(),
 				"expected three banks (copper, silver, gold)");
+	}
+
+	/**
+	 * The pool-relief backstop ({@code docs/granary.md} §4.8): when the peasant pool's
+	 * larder runs dry, it draws its ration from the granary's reserve <b>before any
+	 * peasant starves</b> — and that internal draw is tallied as relief, not misread as a
+	 * market sale (§4.7).
+	 */
+	@Test
+	void poolDrawsReliefFromTheGranaryBeforeStarving() {
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				.durationYears(1).build();
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		h.foundStandardColony(i -> cfg.eFirm().savings(),
+				i -> cfg.nFirm().savings(), i -> 15);
+		Retinue retinue = h.getRetinue();
+		Granary granary = h.getGranary();
+		assertNotNull(retinue);
+		assertNotNull(granary);
+
+		// give the granary a reserve and empty the pool's larder, so the pool's next feed
+		// must come from the granary rather than its own store
+		granary.getGood("Necessity").increase(5000);
+		retinue.drawPromotionStock(retinue.getLarder());
+		assertEquals(0, retinue.getLarder(), 1.0, "the pool's larder is drained");
+
+		double granaryBefore = granary.getStock();
+		retinue.act();
+
+		// the pool ate from the granary (its reserve fell) and no peasant starved for food
+		// the granary could supply
+		assertTrue(granary.getStock() < granaryBefore,
+				"the pool should have drawn relief from the granary, stock "
+						+ granaryBefore + " -> " + granary.getStock());
+		assertEquals(0, retinue.getLastStarved(),
+				"no peasant should starve while the granary holds stock");
+
+		// the granary's own act() must classify that draw as relief, not a market sale
+		// (the draw also shrank the stock) — the no-double-counting guard of §4.7
+		double soldBefore = granary.getTotalSold();
+		granary.act();
+		assertEquals(soldBefore, granary.getTotalSold(), 1e-6,
+				"a relief draw must not be counted as a market sale");
+		assertTrue(granary.getTotalReliefDrawn() > 0,
+				"the relief draw should be tallied as relief drawn");
 	}
 }

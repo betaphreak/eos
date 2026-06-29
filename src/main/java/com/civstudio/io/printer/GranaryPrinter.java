@@ -12,7 +12,8 @@ import com.civstudio.settlement.Settlement;
  * traded totals, its cash, and the cumulative cost the ruler covered. Register with
  * {@link Settlement#addPrinter} and finalize with {@link Settlement#cleanUpPrinters}.
  * <p>
- * Columns: Date, Stock, Target, Bought, Sold, TotalBought, TotalSold, Cash, BilledTotal.
+ * Columns: Date, Stock, Target, Bought, Sold, Drawn (relief drawn from the reserve last
+ * cycle), TotalBought, TotalSold, TotalDrawn, Cash, BilledTotal.
  */
 public class GranaryPrinter extends Printer {
 
@@ -37,8 +38,9 @@ public class GranaryPrinter extends Printer {
 	@Override
 	public ColumnSpec[] columns() {
 		return new ColumnSpec[] { date("Date"), real("Stock"), real("Target"),
-				real("Bought"), real("Sold"), real("TotalBought"), real("TotalSold"),
-				real("Cash"), real("BilledTotal") };
+				real("Bought"), real("Sold"), real("Drawn"), real("TotalBought"),
+				real("TotalSold"), real("TotalDrawn"), real("Cash"),
+				real("BilledTotal") };
 	}
 
 	@Override
@@ -46,8 +48,9 @@ public class GranaryPrinter extends Printer {
 		if (!shouldPrint(colony))
 			return;
 		sink.writeRow(colony.getDate(), granary.getStock(), granary.getTargetStock(),
-				granary.getLastBought(), granary.getLastSold(), granary.getTotalBought(),
-				granary.getTotalSold(), granary.getCash(),
+				granary.getLastBought(), granary.getLastSold(),
+				granary.getLastReliefDrawn(), granary.getTotalBought(),
+				granary.getTotalSold(), granary.getTotalReliefDrawn(), granary.getCash(),
 				granary.getTotalBilledToRuler());
 	}
 }

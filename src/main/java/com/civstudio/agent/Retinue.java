@@ -382,11 +382,28 @@ public class Retinue extends Agent {
 		for (Member m : peasants)
 			wanted += rationFor(m, adultRation, childRation, today);
 		lastConsumed = necessity.decrease(wanted);
+		double shortfall = wanted - lastConsumed;
+
+		// poor relief from the colony's strategic store: before any peasant starves, draw
+		// the shortfall the larder could not cover from the granary — the ever-normal food
+		// bank the crown filled cheaply in plenty (see docs/granary.md §4.8). This feeds
+		// the reserve from stored grain rather than the pool out-bidding the workforce on a
+		// tight market, and is subsidized (the draw moves only food; its cost was borne
+		// when the granary bought the grain, reconciled to the ruler). Settled mode only —
+		// a wandering band is detached from the colony and forages from its carried larder.
+		if (shortfall > 1e-9 && !isWandering()) {
+			Granary granary = getColony().getGranary();
+			if (granary != null) {
+				double drawn = granary.drawStock(shortfall);
+				lastConsumed += drawn;
+				shortfall -= drawn;
+			}
+		}
+
 		// a peasant starves only when even its ration is missing; fractional shortfalls
 		// are absorbed (the larder/buffer carries them). With mixed adult/child rations
 		// the least skilled starve first, each freeing its own ration, until the missing
 		// food is covered (the generalization of "floor(shortfall / ration)")
-		double shortfall = wanted - lastConsumed;
 		long starved = 0;
 		if (shortfall > 1e-9) {
 			// the least skilled starve first; the abler are kept for promotion
