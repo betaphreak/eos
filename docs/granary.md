@@ -242,19 +242,35 @@ trades "keep the elite fed from the store" against "keep enough stock to defend 
 5. **Price-defense floor.** Add and calibrate `priceDefenseFloor` (§4.6) so daily draws do
    not starve the granary's spike-defense.
 
-Sequence steps 2–5 **after** Phase 2's TFP raise (§5), so the granary actually holds banked
-surplus to distribute rather than competing with the founding colony for scarce food.
+~~Sequence steps 2–5 after Phase 2's TFP raise~~ — **superseded** (see §5.1): an isolated TFP
+raise deflates (the finite reserve saturates) and does not move the renewal-bound horizon, so
+the surplus *sink* and/or renewal *spend* must come first. The TFP lever is built (tunable,
+defaulted to no-op) but stays at 1.0 until a sink/spend can consume the surplus it creates.
 
 ## 5. The rest of the renewal loop (the granary is the keystone)
 
 The granary lets a stored surplus exist; renewal spends it. The other components are
 calibration of mechanisms already built or designed.
 
-- **5.1 Net-food-positive workers (calibration, now safe).** For the granary to fill, a
-  necessity worker must over-produce. Raising necessity TFP (`NFirm.effectiveA` /
-  `NECESSITY_TECH_FACTOR`, or the tech tree's per-sector multiplier) was self-defeating
-  before because surplus deflated the price; **behind the granary and the glut-aware close
-  rule, surplus is absorbed at the floor instead.** Target output ≈ 1.3–1.5× consumption.
+- **5.1 Net-food-positive workers — measured: coupled, not standalone (2026-06-29).** For
+  the granary to fill, a necessity worker must over-produce. The lever is a tunable surplus
+  multiplier on the necessity firms' TFP (`SimulationHarness.DEFAULT_NECESSITY_SURPLUS_FACTOR`
+  / `setNecessitySurplusFactor`, on top of the structural `NECESSITY_TECH_FACTOR`). The
+  hypothesis was that *behind the granary, surplus is absorbed at the floor instead of
+  deflating*. **A sweep refuted it for an isolated raise:** any permanent surplus factor
+  `> 1.0` *lowers* the necessity price floor (measured 1.0→1.3 dropped the price floor
+  0.31→0.13), because the granary's **finite reserve saturates** — it fills to its 60-day
+  target, stops buying, and the steady-state surplus then floods the ration-capped market
+  forever. A bigger per-step cap or target only changes how fast it saturates, not the
+  outcome (the §7.3 deflation risk, confirmed). And the **collapse horizon does not improve**
+  (it is renewal-bound — `docs/food-balance.md` mode B — not production-bound), so TFP buys
+  nothing alone. **The lever is therefore coupled** and ships **defaulted to 1.0 (no-op)**:
+  a permanent surplus needs a permanent *sink* (export earnings or a spoilage term, §7.3) so
+  the reserve can hold steady without deflating, **and/or** the renewal *spend* below
+  (5.2–5.3) to consume it. Raise the factor only once one of those exists. The infrastructure
+  (the tunable factor) is in place for that coupled step and the §6 sweep. **Revised
+  sequencing:** build a surplus sink and/or the renewal spend *before* turning up TFP —
+  the §4.8 note to "do TFP first" is superseded by this finding.
 - **5.2 Child survival — child relief (new, small).** Children starve first (the household
   feeds head → adults → children), so the next generation is culled before it matures — the
   measured reason fission never fires. Draw an unfed child's ration from the granary (§4.5

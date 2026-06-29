@@ -198,6 +198,33 @@ public class SimulationHarness {
 	// across the rest-day calendar (see Firm.operatesOn / the day-type wiring).
 	public static final double NECESSITY_TECH_FACTOR = 2.0;
 
+	/**
+	 * Phase-2 of the food redesign (see {@code docs/granary.md} §5.1): a deliberate
+	 * <b>surplus</b> multiplier on the necessity firms' TFP, <em>on top of</em> the
+	 * structural rest-day coverage ({@link #NECESSITY_TECH_FACTOR}). Where the rest-day
+	 * factor only lets a colony break even across the calendar, this would lift a stable
+	 * workforce into net food surplus above ration-capped consumption.
+	 * <p>
+	 * <b>Defaulted to {@code 1.0} (no-op) by a measured finding.</b> Raising it in
+	 * isolation <em>deflates</em> the necessity price: a <em>permanent</em> production
+	 * surplus saturates the granary's <em>finite</em> reserve (it fills to target, then
+	 * stops buying), after which the steady-state surplus floods a ration-capped market
+	 * forever and the price floor falls (measured: factor 1.0→1.3 dropped the price floor
+	 * 0.31→0.13). A bigger granary cap or target only changes how fast it saturates, not
+	 * the outcome — the §7.3 "TFP deflation if the granary saturates" risk, confirmed. And
+	 * the collapse horizon does not improve (it is renewal-bound, not production-bound —
+	 * {@code docs/food-balance.md} mode B). So the lever is <b>coupled</b>: a permanent
+	 * surplus needs a permanent <em>sink</em> (export earnings or spoilage, §7.3) and/or
+	 * the renewal <em>spend</em> (child relief + fission, §5.2–5.3) to consume it. The
+	 * factor ships here as tunable infrastructure (override via {@link
+	 * #setNecessitySurplusFactor}); raise it only once a sink/spend exists.
+	 */
+	public static final double DEFAULT_NECESSITY_SURPLUS_FACTOR = 1.0;
+
+	// the surplus multiplier actually used this run (default DEFAULT_NECESSITY_SURPLUS_FACTOR);
+	// override via setNecessitySurplusFactor before createFirms (e.g. a calibration sweep)
+	private double necessitySurplusFactor = DEFAULT_NECESSITY_SURPLUS_FACTOR;
+
 	private ConsumerGoodMarket enjoymentMkt;
 	private ConsumerGoodMarket necessityMkt;
 	private LaborMarket laborMkt;
@@ -435,6 +462,20 @@ public class SimulationHarness {
 	}
 
 	/**
+	 * Override the Phase-2 necessity <b>surplus</b> multiplier (default {@link
+	 * #DEFAULT_NECESSITY_SURPLUS_FACTOR}; see {@code docs/granary.md} §5.1). Must be called
+	 * before {@link #createFirms} to take effect. {@code 1.0} reproduces the pre-Phase-2
+	 * break-even food economy; higher values bank a larger surplus in the granary. Used by
+	 * the calibration sweep to grid this lever.
+	 *
+	 * @param necessitySurplusFactor
+	 *            the surplus multiplier on the necessity firms' TFP
+	 */
+	public void setNecessitySurplusFactor(double necessitySurplusFactor) {
+		this.necessitySurplusFactor = necessitySurplusFactor;
+	}
+
+	/**
 	 * Override the wedding-market parameters (default {@link WeddingConfig#DEFAULT}).
 	 * Must be called before {@link #createMarkets()} to take effect. Pass a config
 	 * with {@code capacity == 0} to disable weddings entirely.
@@ -533,12 +574,15 @@ public class SimulationHarness {
 					cfg.eFirm().wageBudget(), cfg.eFirm().capital(),
 					capitalFirms, firmConfig, firmBank.apply(i), colony);
 
-		// necessity firms get a higher technology coefficient (see
-		// NECESSITY_TECH_FACTOR) so food output on working days covers the rest
-		// days when production stops; everything else matches the other firms.
-		// Stored on the harness so the dynamic provisioning can charter matching ones.
+		// necessity firms get a higher technology coefficient (see NECESSITY_TECH_FACTOR)
+		// so food output on working days covers the rest days when production stops, times
+		// the Phase-2 surplus factor (see DEFAULT_NECESSITY_SURPLUS_FACTOR) that lifts a
+		// stable workforce into net food surplus for the granary to bank; everything else
+		// matches the other firms. Stored on the harness so the dynamic provisioning can
+		// charter matching ones.
 		nFirmConfig = firmConfig.toBuilder()
-				.A(firmConfig.A() * NECESSITY_TECH_FACTOR).build();
+				.A(firmConfig.A() * NECESSITY_TECH_FACTOR * necessitySurplusFactor)
+				.build();
 		nFirms = new NFirm[numNFirms];
 		for (int i = 0; i < numNFirms; i++)
 			nFirms[i] = new NFirm(cfg.nFirm().checking(),
