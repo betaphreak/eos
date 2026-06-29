@@ -23,6 +23,7 @@ import com.civstudio.name.NameTable;
 import com.civstudio.race.Race;
 import com.civstudio.tech.TechTree;
 import com.civstudio.util.Rng;
+import com.civstudio.util.RngSeed;
 import lombok.Getter;
 
 /**
@@ -58,24 +59,6 @@ import lombok.Getter;
  */
 public class GameSession {
 
-	// decorrelate the naming/mortality/per-colony generators from the economic
-	// one (and from each other), all seeded from the same session seed
-	private static final long NAME_SEED_SALT = 0x9E3779B97F4A7C15L;
-	private static final long MORTALITY_SEED_SALT = 0xD1B54A32D192ED03L;
-	private static final long SKILL_SEED_SALT = 0xBF58476D1CE4E5B9L;
-	private static final long TERRAIN_SEED_SALT = 0x6A09E667F3BCC909L;
-	private static final long COLONY_SEED_SALT = 0xA24BAED4963EE407L;
-	// decorrelate the one-time master-pool shuffle from any colony's name draws
-	private static final long DYNASTY_SHUFFLE_SALT = 0x2545F4914F6CDD1DL;
-	// decorrelate each non-human race's surname-pool shuffle from the human one (and
-	// from each other), scaled by the race's ordinal; HUMAN (ordinal 0) uses no salt,
-	// so its pool is built exactly as before — keeping mono-cultural runs byte-identical
-	private static final long RACE_POOL_SALT = 0x3C79AC492BA7B653L;
-	// decorrelate the session-level band stream (caravan movement/settle decisions) from
-	// every per-colony economic stream and from the naming/mortality/skill streams, so a
-	// session with bands on the map stays reproducible without perturbing the economies
-	private static final long SESSION_BAND_SEED_SALT = 0x94D049BB133111EBL;
-
 	// surnames dealt to each colony's NameRegistry as its initial slice (and the
 	// size of each refill). Sized well above a colony's peak living-household count
 	// (a default colony peaks at a few hundred) so a colony rarely needs a refill,
@@ -85,6 +68,10 @@ public class GameSession {
 	// random-number seed for this session
 	@Getter
 	private final long seed;
+
+	// derives all of the session's decorrelated random streams off the seed (and owns
+	// the decorrelation salts); see RngSeed.
+	private final RngSeed rngSeed;
 
 	// the era every colony in this session founds in — the session's place on the
 	// civilizational ladder. Drives the economic tuning and the research baseline (a
@@ -177,6 +164,7 @@ public class GameSession {
 	 */
 	public GameSession(long seed, Era era) {
 		this.seed = seed;
+		this.rngSeed = new RngSeed(seed);
 		this.era = era;
 		// human name tables / surname pool eager (built exactly as before, so a
 		// mono-cultural run is byte-identical); non-human races load lazily on demand
@@ -184,7 +172,7 @@ public class GameSession {
 		this.femaleNamesByRace.put(Race.HUMAN, NameTable.load("/names/human/female.json"));
 		this.dynastyPoolByRace.put(Race.HUMAN,
 				new DynastyPool(NameTable.load("/names/human/dynasty.json"),
-						new Rng(seed ^ NAME_SEED_SALT ^ DYNASTY_SHUFFLE_SALT)));
+						rngSeed.forDynastyPool(Race.HUMAN.ordinal())));
 		this.terrainRegistry = TerrainRegistry.load();
 		this.liturgicalCalendar = LiturgicalCalendar.load();
 		this.calendarByRace.put(Race.HUMAN, liturgicalCalendar);
@@ -233,7 +221,7 @@ public class GameSession {
 	 */
 	public synchronized Rng getBandRng() {
 		if (bandRng == null)
-			bandRng = new Rng(seed ^ SESSION_BAND_SEED_SALT);
+			bandRng = rngSeed.forSession(RngSeed.Stream.BAND);
 		return bandRng;
 	}
 
@@ -308,9 +296,8 @@ public class GameSession {
 		return dynastyPoolByRace.computeIfAbsent(race, r -> {
 			String racePath = "/names/" + r.id() + "/dynasty.json";
 			String path = resourceExists(racePath) ? racePath : "/names/human/dynasty.json";
-			long raceSalt = RACE_POOL_SALT * r.ordinal(); // 0 for HUMAN
 			return new DynastyPool(NameTable.load(path),
-					new Rng(seed ^ NAME_SEED_SALT ^ DYNASTY_SHUFFLE_SALT ^ raceSalt));
+					rngSeed.forDynastyPool(r.ordinal()));
 		});
 	}
 
@@ -463,14 +450,15 @@ public class GameSession {
 		// threads founding/re-founding colonies don't race on the colony index or the
 		// dynasty pool.
 		int idx = colonyCount++;
-		long colonySalt = COLONY_SEED_SALT * idx; // 0 for colony 0
-		Rng colonyRng = new Rng(seed ^ colonySalt);
+		// index 0 -> bare seed per stream (byte-identical to the old single shared rng);
+		// later colonies get distinct, decorrelated streams. The salts live in RngSeed.
+		Rng colonyRng = rngSeed.forColony(RngSeed.Stream.ECONOMIC, idx);
 		// each colony gets its own NameRegistry (per-race disjoint surname slices +
 		// shared immutable given-name tables, on its own naming generator) and its own
 		// Demography (own mortality/skill generators). Colony 0 reuses the bare salted
 		// seeds, so a single-colony run's mortality/skill — hence its economics — is
 		// unchanged; only which surnames land where shifts.
-		Rng nameRng = new Rng(seed ^ NAME_SEED_SALT ^ colonySalt);
+		Rng nameRng = rngSeed.forColony(RngSeed.Stream.NAME, idx);
 		NameRegistry colonyNames = new NameRegistry(givenNames(Race.HUMAN, true),
 				givenNames(Race.HUMAN, false), dynastyPool(Race.HUMAN),
 				dynastyPool(Race.HUMAN).deal(DYNASTY_SLICE_SIZE), DYNASTY_SLICE_SIZE,
@@ -487,11 +475,11 @@ public class GameSession {
 						dynastyPool(r), dynastyPool(r).deal(DYNASTY_SLICE_SIZE),
 						DYNASTY_SLICE_SIZE);
 		Demography colonyDemography = new Demography(
-				new Rng(seed ^ MORTALITY_SEED_SALT ^ colonySalt),
-				new Rng(seed ^ SKILL_SEED_SALT ^ colonySalt));
+				rngSeed.forColony(RngSeed.Stream.MORTALITY, idx),
+				rngSeed.forColony(RngSeed.Stream.SKILL, idx));
 		// the terrain stream is salted apart from the economic/naming/mortality/skill
 		// streams, so plot generation is deterministic per seed yet perturbs none of them
-		Rng terrainRng = new Rng(seed ^ TERRAIN_SEED_SALT ^ colonySalt);
+		Rng terrainRng = rngSeed.forColony(RngSeed.Stream.TERRAIN, idx);
 		Settlement colony = new Settlement(name, startDate, colonyRng, colonyNames,
 				colonyDemography, terrainRegistry, terrainRng,
 				getLiturgicalCalendar(foundingRace), meanInitAgeYears, targetNStock,
