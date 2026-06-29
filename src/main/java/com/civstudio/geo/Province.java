@@ -5,9 +5,9 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * One province of the world map: a node imported from the Strapi world content
- * (see {@code com.civstudio.geo.export.ProvinceExporter}) and loaded as part of
- * the per-{@link com.civstudio.settlement.GameSession} {@link WorldMap}. A
+ * One province of the world map: a node exported from the Anbennar EU4 map
+ * sources (see {@code com.civstudio.geo.export.ProvinceExporter}) and loaded as
+ * part of the per-{@link com.civstudio.settlement.GameSession} {@link WorldMap}. A
  * province is the geographic cell a colony is founded into — its
  * {@link #latitude()}/{@link #longitude()} feed the solar/daylight system and
  * its {@link #plots()} cap how large the settlement may grow (build slots
@@ -17,9 +17,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * features route over.
  * <p>
  * The {@code id} is the game's {@code province_id} (the "used id"), unique per
- * province and the value the {@link #neighbors()} adjacency references — not the
- * Strapi surrogate key. Values come straight from {@code /provinces.json} and are
- * loaded once per session.
+ * province and the value the {@link #neighbors()} adjacency references. Values
+ * come straight from {@code /provinces.json} and are loaded once per session.
  *
  * @param id         the province's {@code province_id} (the adjacency key)
  * @param name       the province's display name

@@ -46,19 +46,6 @@
             <artifactId>jackson-databind</artifactId>
             <version>2.18.2</version>
         </dependency>
-
-        <!--
-          Postgres JDBC driver — used only by the dev export tool
-          com.civstudio.geo.export.ProvinceExporter, which reads the Strapi world
-          content over JDBC to regenerate provinces.json. The running simulation
-          and tests never touch a database (they write CSV).
-        -->
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>42.7.4</version>
-            <scope>runtime</scope>
-        </dependency>
     </dependencies>
 
     <build>

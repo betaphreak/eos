@@ -4,8 +4,11 @@
 founding a colony into a province with province-sourced climate and a
 plots-derived size cap; the dynamic provisioning respects that cap; the default
 scenario founds into Dhenijansar; and a multi-province session founds two
-adjacent provinces). Phase 4 proposed.
-**Date:** 2026-06-20 (Phases 1–3 landed 2026-06-21)
+adjacent provinces). Phase 4 proposed; **Phase 5 implemented:** the province
+export is migrated off the Strapi/Postgres round-trip onto a self-contained
+raster loader that reads the Anbennar EU4 map sources directly — regenerating a
+byte-identical `provinces.json` (see *The export step* and *Phase 5* below).
+**Date:** 2026-06-20 (Phases 1–3 landed 2026-06-21; Phase 5 landed 2026-06-30)
 **Depends on:** `GameSession`'s multi-colony support and its per-session shared
 services (the `NameRegistry`/`DynastyPool`, the `LiturgicalCalendar`, the lazy
 `TechTree` — `com.civstudio.settlement.GameSession`); the `newSettlement(…,
@@ -34,20 +37,25 @@ between settlements, and a village cannot be founded "somewhere on the map."
 as the missing substrate and defer their movement/founding features until it
 exists.
 
-Separately, an authored fantasy world already exists as Strapi-managed content
-(the `strapi-civbox` Postgres database): a four-level geographic hierarchy of
+Separately, an authored fantasy world already exists — the Anbennar EU4 mod's
+map (`data/provinces.bmp` + `data/definition.csv` + the Clausewitz `data/*.txt`
+hierarchy files), historically mirrored into a `strapi-civbox` Postgres database:
+a four-level geographic hierarchy of
 **29 super-regions → 153 regions → 1375 province-areas → 5264 provinces**, each
 province carrying a real latitude, a land/water plot count, a terrain type, and
 — critically — a **neighbor adjacency graph**. This note imports that content as
 the colony's map: the substrate that turns isolated points into a connected
-world.
+world. (The geographic tier files are already read directly from `data/`; Phase 5
+extends that to the province raster too — see *The export step*.)
 
 The guiding constraint, mirroring `docs/race.md`: **the import is additive and
-the core sim stays Spring-free.** Content is exported from Strapi to a JSON
+the core sim stays Spring-free.** Content is exported to a committed JSON
 resource and loaded by the core through the same Jackson path that already loads
-`techs.json`; the running simulation never touches Postgres. Existing scenarios
-keep founding at their configured coordinates and are byte-unaffected until they
-opt into a province.
+`techs.json`; the running simulation never touches a database. (The export step
+itself reads the Anbennar EU4 map rasters directly as of Phase 5 — before that it
+read a Strapi/Postgres mirror of the same data.) Existing scenarios keep founding
+at their configured coordinates and are byte-unaffected until they opt into a
+province.
 
 ## Scope: what comes in, and what is deliberately left out
 
@@ -70,9 +78,15 @@ tables:
 What remains — the geographic spine — is `super_regions`, `regions`,
 `province_areas`, `provinces`, and the `provinces_neighbors_lnk` adjacency.
 
-## The data (what the Strapi tables hold)
+## The data (what the source provides)
 
-A `provinces` row carries, beyond Strapi bookkeeping:
+Each province carries the following fields. They originate in the Anbennar EU4
+map sources — `data/definition.csv` (id, name, map colour), `data/provinces.bmp`
+(province shapes → pixel counts, bounding box, adjacency), `data/rivers.bmp`
+(water cells) and `data/default.map` (sea/lake classification) — and **as of
+Phase 5 are read directly from those rasters** by `ProvinceExporter`. Before
+Phase 5 the same fields were read from the `strapi-civbox` Postgres mirror; the
+column names below are that mirror's, retained as the field glossary:
 
 | Column | Type | Meaning | Used for |
 | --- | --- | --- | --- |
@@ -88,32 +102,36 @@ A `provinces` row carries, beyond Strapi bookkeeping:
 
 Distribution: **4807 LAND, 388 SEA, 69 LAKE** (5264 total). LAND provinces
 average ~672 plots; SEA provinces are large (avg ~12700 plots) and unsettleable.
-Adjacency lives in `provinces_neighbors_lnk` (an undirected province↔province
-graph keyed on the Strapi surrogate `id`, which the export translates to
-`province_id`); `province_relations` (a separate `src`/`dest` province relation)
-is a second, typed edge set left for later (see open questions).
+Adjacency is the province↔province **pixel-adjacency** graph: two provinces are
+neighbors when their colours touch on `provinces.bmp` (the exporter scans each
+pixel's right/bottom neighbour and records a colour edge, then maps colours to
+`province_id`s and materializes the graph symmetrically). (Before Phase 5 this
+came from the Strapi `provinces_neighbors_lnk` table keyed on the surrogate `id`;
+the raster computes it from first principles instead, so no surrogate-id
+translation is needed. A separate typed `src`/`dest` `province_relations` edge set
+remains left for later — see open questions.)
 
-**`province_id` is the key, and it is unique** — after a one-time source fix.
-The raw table had **two double-imported duplicate `province_id`s** (Gate Islands
-1058, Leliathail 2161 — two Strapi documents each, with their *relationships*
-split across the copies: one held the region/area link, the other the neighbor
-edges). They were merged in the source DB (edges + relations consolidated onto
-one row, the redundant row deleted) so `province_id` is a clean unique key; the
-export assumes this.
+**`province_id` is the key, and it is unique.** In `definition.csv` each
+`province_id` appears exactly once (one map colour per province), so the raster
+export produces a clean unique key for free — it does **not** reproduce the two
+double-imported duplicates (Gate Islands 1058, Leliathail 2161) that the Strapi
+mirror carried and that needed a one-time manual merge there. Dropping the
+Postgres round-trip therefore also drops that data-cleanliness footgun.
 
-**Longitude is not stored** — only `latitude` is. The export **derives** it from
-the province's bounding-box centroid. The whole world spans `x ∈ [0, 5631]` px
-(and `y ∈ [0, 2047]`, which the precomputed `latitude` already encodes, so only
-longitude is derived), so a province's longitude is a linear map of its centroid
-`cx = (min_x + max_x) / 2`:
+**Both `latitude` and `longitude` are derived from the province's pixels**, on
+the `5632 × 2048` map (`x ∈ [0, 5631]`, `y ∈ [0, 2047]`). `latitude` is the
+inverse-Mercator of the bounding-box vertical centre; `longitude` is a linear map
+of the horizontal centroid `cx = (min_x + max_x) / 2`:
 
 ```
 longitude = (cx - X_MIN) / (X_MAX - X_MIN) * 360 - 180        // X_MIN = 0, X_MAX = 5631
 ```
 
-The global `X_MIN`/`X_MAX` are taken over all provinces at export time and baked
-into `provinces.json` as a derived `lon` field, so the core never recomputes the
-projection — it loads a latitude *and* a longitude per province.
+The global `X_MIN`/`X_MAX` are taken over all provinces at export time and both
+values are baked into `provinces.json` as `lat`/`lon`, so the core never
+recomputes the projection — it loads a latitude *and* a longitude per province.
+(Pre-Phase 5 the Strapi mirror stored `latitude` and the bounding box, and the
+exporter derived only `lon`; the raster computes both.)
 
 ## The model (proposed behaviour)
 
@@ -157,14 +175,14 @@ projection — it loads a latitude *and* a longitude per province.
 
 ## Architecture mapping
 
-### The export step (Strapi → JSON, core stays Spring-free)
+### The export step (raster → JSON, core stays Spring-free)
 
 Following `docs/race.md`'s import pattern and the project's Spring-free-core
-rule, the geographic tables are **exported to a committed JSON resource**, not
-read live. A small standalone JDBC exporter
-(`com.civstudio.geo.export.ProvinceExporter`, run via `mvn exec:exec`) flattens
-the four-level hierarchy and the adjacency into one `map/provinces.json` (the map
-JSON resources live under `src/main/resources/map/`):
+rule, the geographic data is **exported to a committed JSON resource**, not read
+live. A small standalone exporter (`com.civstudio.geo.export.ProvinceExporter`,
+run via `mvn exec:exec`) reads the Anbennar EU4 map sources committed under
+`data/` and writes one `map/provinces.json` (the map JSON resources live under
+`src/main/resources/map/`):
 
 ```json
 [
@@ -175,19 +193,35 @@ JSON resources live under `src/main/resources/map/`):
 ]
 ```
 
-(The `continent` string deserializes to the `Continent` enum; the `region` shown
-is what `AreaExporter` re-derives through the area tier — see the package notes
-below.)
+(The `continent` string deserializes to the `Continent` enum; the `region`/`area`
+shown are stamped on later by `AreaExporter` — see the package notes below. The
+raster exporter itself emits `region`/`area` as `null` placeholders, in the exact
+field set/order above, so the downstream stamp chain overwrites them in place
+rather than having to insert new keys.)
 
-The exporter keys each entry on `province_id`, resolves
-`province → province_area → region` to the area's and region's stable `raw_key`s
-(`null` when absent), derives `lon` from the bounding-box centroid, and
-**materializes the `provinces_neighbors_lnk` edges symmetrically** (each stored
-edge emitted in both directions, since the table stores each undirected edge
-once) while **translating the surrogate-id adjacency to `province_id`**. It runs
-on demand; the output is committed; the core loads it through Jackson exactly as
-it loads `techs.json`. The running sim has no Postgres dependency and stays
-reproducible and offline-capable.
+The exporter does a single pass over `data/provinces.bmp` (24-bit province
+colours) and `data/rivers.bmp` (water cells), reading `data/definition.csv` for
+the colour → `province_id` + name map (skipping `RNW`/`Unused` placeholders) and
+`data/default.map` for the `SEA`/`LAKE` classification. Per province it counts
+land/water pixels (`plots`/`waterPlots`, with a flooding auto-correct that
+reclassifies an all-water "LAND" province to `LAKE`), tracks the bounding box
+(for the `lat`/`lon` projection above), and builds the colour-adjacency graph,
+which it maps to `province_id`s and **materializes symmetrically**. It uses only
+`javax.imageio.ImageIO` (JDK built-in) and Jackson — no native image library and
+no database. It runs on demand; the output is committed; the core loads it
+through Jackson exactly as it loads `techs.json`, so the running sim has no
+database dependency and stays reproducible and offline-capable.
+
+**Why raster, not Strapi (Phase 5).** The province data originally lived in a
+`strapi-civbox` Postgres mirror, itself populated from these same EU4 rasters by
+an upstream tool; `ProvinceExporter` used to read that mirror over JDBC. Phase 5
+removes the round-trip — the exporter reads the rasters directly — so the whole
+pipeline is offline and source-committed end to end (the `org.postgresql`
+dependency is dropped), and the Strapi duplicate-`province_id` footgun (above)
+disappears. The committed `provinces.json` is unchanged in schema and — bar one
+cleaned-up name (province 4637, a trimmed trailing space) — in content, validated
+by regenerating the full chain and diffing against the committed file (see
+*Phase 5* for the result and the one filter the port needed).
 
 ### New package `com.civstudio.geo`
 
@@ -369,10 +403,12 @@ explicit coordinates are unchanged.
 
 ## Phased implementation plan
 
-- **Phase 1 — export + model + load. (Implemented.)** The exporter
-  (`com.civstudio.geo.export.ProvinceExporter`, a standalone JDBC `main` reading
-  `GEO_DB_URL`/`GEO_DB_USER`/`PGPASSWORD`, run via `mvn exec:exec
-  -Dsim.main=…`) writes the committed `/map/provinces.json`; `com.civstudio.geo`
+- **Phase 1 — export + model + load. (Implemented; export step superseded by
+  Phase 5.)** The exporter (`com.civstudio.geo.export.ProvinceExporter`, run via
+  `mvn exec:exec -Dsim.main=…`) writes the committed `/map/provinces.json` —
+  originally a JDBC `main` reading the Strapi mirror
+  (`GEO_DB_URL`/`GEO_DB_USER`/`PGPASSWORD`), since **Phase 5** a self-contained
+  raster loader (see *The export step* and *Phase 5*); `com.civstudio.geo`
   holds the `Province` record (Jackson, with `isSettleable()`/`isCoastal()`),
   the `ProvinceType` enum, and `WorldMap` (load + `province`/`neighbors`/
   `settleableProvinces`/`findByName`/`path` BFS); `GameSession.getWorldMap()`
@@ -384,10 +420,12 @@ explicit coordinates are unchanged.
   stable strings or null, and `path` walks the graph. **The map keys on the
   game's `province_id`** (the "used id"), not the Strapi surrogate `id`; the
   adjacency's surrogate references are translated to `province_id` at export.
-  This required a **one-time source fix**: `province_id` had two double-imported
-  duplicates (Gate Islands 1058, Leliathail 2161) whose relationships were split
-  across the copies, merged in the DB so the key is unique (5266 → 5264 rows).
-  **167 open-ocean provinces have no region** (exported as `null`).
+  This required a **one-time source fix** in the Strapi mirror: `province_id` had
+  two double-imported duplicates (Gate Islands 1058, Leliathail 2161) whose
+  relationships were split across the copies, merged in the DB so the key is
+  unique (5266 → 5264 rows) — moot since **Phase 5**, which reads `definition.csv`
+  where each `province_id` is already unique. **167 open-ocean provinces have no
+  region** (exported as `null`).
 - **Phase 2 — found a colony into a province. (Implemented.)**
   `GameSession.newSettlement(…, Province, …)` (and a mono-human overload) resolve
   the province's `latitude`/`longitude` and thread the `Province` through the
@@ -446,6 +484,39 @@ explicit coordinates are unchanged.
   merchant convoy that buys at one settlement's market and sells at a neighbour's,
   arbitrage coupling the two economies). Phase A of that note (province-anchored
   movement + the settler band) is the concrete realization of this hand-off.
+- **Phase 5 — raster export, off Strapi. (Implemented, 2026-06-30.)**
+  `ProvinceExporter`'s JDBC-from-Strapi source is replaced **in place** (same class
+  name + output path) by a self-contained raster loader that reads the committed
+  Anbennar EU4 map sources under `data/` (`provinces.bmp`, `rivers.bmp`,
+  `definition.csv`, `default.map`) and regenerates the same `map/provinces.json` —
+  same schema, same field set/order (`id`, `name`, `lat`, `lon`, `plots`,
+  `waterPlots`, `type`, `region`:null, `area`:null, `neighbors`), so the downstream
+  stamp chain (`RegionExporter` → `SuperRegionExporter` → `AreaExporter` →
+  `ContinentExporter` → `ClimateExporter`) runs unchanged on top (`AreaExporter`
+  overwrites the `region`/`area` placeholders in place, so emitting them is
+  load-bearing). It does a single pass over the two rasters using only
+  `javax.imageio.ImageIO` + Jackson (no OpenCV/SVG/sprites, no JDBC); the
+  `org.postgresql` dependency is dropped from `pom.xml`. Scope is **the export step
+  only** — the `Province` record, `WorldMap` and the running sim are untouched.
+  - **The one filter the plan missed.** A naïve port emits **6114** provinces, a
+    superset of the committed **5264** (every committed id present, +850 extra). All
+    850 extras are auto-placeholder names (`Anbennar<id>`) — unnamed/unused
+    provinces the Strapi pipeline had dropped — and **zero** kept provinces use that
+    pattern, so excluding `Anbennar\d+` names (alongside the existing `RNW`/`Unused`
+    prefixes) reconciles it to exactly 5264. (`only_used_for_random` provinces fall
+    out for free: all but two have no pixels, and those two are placeholder-named.)
+  - **Result: byte-identical, bar one cleanup.** Regenerating the full chain and
+    diffing against the committed file yields a **single** field change across all
+    5264 provinces — province 4637's name `"Lakrazbul "` → `"Lakrazbul"` (the source
+    has a stray double underscore `Lakrazbul__#…`; the new `.trim()` drops the
+    trailing space the Strapi value kept). Every `lat`/`lon`/`plots`/`waterPlots`/
+    `type`/`neighbors` value reproduces exactly (including the former duplicates 1058
+    Gate Islands / 2161 Leliathail, now naturally single provinces — the manual
+    Strapi merge is no longer needed), and `regions.json`/`superregions.json`/
+    `areas.json` regenerate with no change. This confirms the `data/` rasters are the
+    exact source that populated Strapi. No flooding auto-correct fired. Full suite
+    green (197 tests). The map pipeline is now offline and source-committed end to
+    end.
 
 ## Decided (folded in above)
 

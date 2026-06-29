@@ -2,10 +2,11 @@ package com.civstudio.geo;
 
 /**
  * The terrain class of a {@link Province}. {@link #LAND}/{@link #SEA}/{@link
- * #LAKE} are imported from the Strapi world content's {@code province_type}
- * column; {@link #IMPASSABLE} is overlaid from {@code data/climate.txt} (the
- * wasteland/mountain provinces) by {@link
- * com.civstudio.geo.export.ClimateExporter}.
+ * #LAKE} are derived from the Anbennar {@code data/default.map} (its {@code
+ * sea_starts}/{@code lakes} province-id blocks, every other province being land)
+ * by {@link com.civstudio.geo.export.ProvinceExporter}; {@link #IMPASSABLE} is
+ * overlaid from {@code data/climate.txt} (the wasteland/mountain provinces) by
+ * {@link com.civstudio.geo.export.ClimateExporter}.
  * <ul>
  * <li>{@link #LAND} — dry land; settleable and passable.</li>
  * <li>{@link #SEA} — open ocean; unsettleable, but the water the travel/trade
