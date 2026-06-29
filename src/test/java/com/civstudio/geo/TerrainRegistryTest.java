@@ -11,10 +11,11 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Verifies the Phase-0 plot data layer: the {@link TerrainRegistry} loads the
- * committed {@code /terrains.json}, {@code /features.json} and {@code
- * /improvements.json} resources (emitted by the {@code geo.export} exporters from
- * {@code data/CIV4*.xml}), and a handful of yields / clear-costs / improvement
- * yields are spot-checked against the source XML. See {@code docs/plots.md}.
+ * committed {@code /terrains.json}, {@code /features.json}, {@code
+ * /improvements.json} and {@code /bonuses.json} resources (emitted by the {@code
+ * geo.export} exporters from {@code data/CIV4*.xml}), and a handful of yields /
+ * clear-costs / improvement and bonus yields are spot-checked against the source
+ * XML. See {@code docs/plots.md}.
  */
 class TerrainRegistryTest {
 
@@ -25,6 +26,9 @@ class TerrainRegistryTest {
 		assertEquals(16, reg.terrains().size(), "curated land terrains");
 		assertEquals(10, reg.features().size(), "curated land features");
 		assertEquals(12, reg.improvements().size(), "curated firm-building improvements");
+		// bonuses are exported in full (no curated subset), so the count is the
+		// whole CIV4BonusInfos.xml set
+		assertEquals(106, reg.bonuses().size(), "all bonus resources");
 	}
 
 	@Test
@@ -97,10 +101,51 @@ class TerrainRegistryTest {
 	}
 
 	@Test
+	void bonusYieldsAndConstraintsMatchXml() {
+		TerrainRegistry reg = TerrainRegistry.load();
+
+		// barley: a crop with a commerce edge, exercising all three placement lists
+		Bonus barley = reg.bonus("BONUS_BARLEY");
+		assertNotNull(barley);
+		assertEquals(BonusClass.CROP, barley.bonusClass());
+		assertArrayEquals(new int[] { 3, 0, 1 }, barley.yieldChanges());
+		assertEquals("TECH_GATHERING", barley.techReveal());
+		assertEquals(1, barley.health());
+		assertTrue(barley.validTerrains().contains("TERRAIN_GRASSLAND"));
+		assertTrue(barley.validFeatures().contains("FEATURE_FLOOD_PLAINS"));
+		assertTrue(barley.validFeatureTerrains().contains("TERRAIN_DESERT"));
+
+		// corn: latitude-banded
+		Bonus corn = reg.bonus("BONUS_CORN");
+		assertArrayEquals(new int[] { 4, 0, 0 }, corn.yieldChanges());
+		assertEquals(20, corn.minLatitude());
+		assertEquals(50, corn.maxLatitude());
+
+		// olives: a luxury contributing happiness (a dormant amenity)
+		Bonus olives = reg.bonus("BONUS_OLIVES");
+		assertEquals(BonusClass.LUXURY, olives.bonusClass());
+		assertEquals(1, olives.happiness());
+	}
+
+	@Test
+	void bonusClassUniqueRangesMatchXml() {
+		// baked into the enum from data/CIV4BonusClassInfos.xml
+		assertEquals(2, BonusClass.CROP.uniqueRange());
+		assertEquals(3, BonusClass.LIVESTOCK.uniqueRange());
+		assertEquals(1, BonusClass.STRATEGIC.uniqueRange());
+		assertEquals(0, BonusClass.SEAFOOD.uniqueRange());
+		// key round-trips through the JSON form
+		assertEquals(BonusClass.CROP, BonusClass.fromKey("BONUSCLASS_CROP"));
+		assertEquals("BONUSCLASS_CROP", BonusClass.CROP.key());
+		assertNull(BonusClass.fromKey(null));
+	}
+
+	@Test
 	void unknownTypesReturnNull() {
 		TerrainRegistry reg = TerrainRegistry.load();
 		assertNull(reg.terrain("TERRAIN_NONEXISTENT"));
 		assertNull(reg.feature("FEATURE_NONEXISTENT"));
 		assertNull(reg.improvement("IMPROVEMENT_NONEXISTENT"));
+		assertNull(reg.bonus("BONUS_NONEXISTENT"));
 	}
 }

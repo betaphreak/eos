@@ -12,10 +12,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * The curated Civ4 terrain/feature/improvement definitions, loaded once from the
- * committed {@code /terrains.json}, {@code /features.json} and {@code
- * /improvements.json} resources (emitted by the exporters in {@link
- * com.civstudio.geo.export}). Like {@link WorldMap}, it is pure reference data —
+ * The curated Civ4 terrain/feature/improvement/bonus definitions, loaded once from
+ * the committed {@code /terrains.json}, {@code /features.json}, {@code
+ * /improvements.json} and {@code /bonuses.json} resources (emitted by the exporters
+ * in {@link com.civstudio.geo.export}). Like {@link WorldMap}, it is pure reference
+ * data —
  * independent of seed and run — so a single instance is shared by every colony in
  * a {@link com.civstudio.settlement.GameSession} (which will load it lazily, the
  * same way it does the world map and name tables).
@@ -29,6 +30,7 @@ public final class TerrainRegistry {
 	private static final String TERRAINS_RESOURCE = "/terrains.json";
 	private static final String FEATURES_RESOURCE = "/features.json";
 	private static final String IMPROVEMENTS_RESOURCE = "/improvements.json";
+	private static final String BONUSES_RESOURCE = "/bonuses.json";
 
 	private static final ObjectMapper MAPPER = new ObjectMapper()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -37,12 +39,14 @@ public final class TerrainRegistry {
 	private final Map<String, Terrain> terrains;
 	private final Map<String, Feature> features;
 	private final Map<String, Improvement> improvements;
+	private final Map<String, Bonus> bonuses;
 
 	private TerrainRegistry(List<Terrain> terrains, List<Feature> features,
-			List<Improvement> improvements) {
+			List<Improvement> improvements, List<Bonus> bonuses) {
 		this.terrains = index(terrains, Terrain::type);
 		this.features = index(features, Feature::type);
 		this.improvements = index(improvements, Improvement::type);
+		this.bonuses = index(bonuses, Bonus::type);
 	}
 
 	/** Load the registry from the committed JSON resources. */
@@ -53,6 +57,8 @@ public final class TerrainRegistry {
 				loadList(FEATURES_RESOURCE, new TypeReference<List<Feature>>() {
 				}),
 				loadList(IMPROVEMENTS_RESOURCE, new TypeReference<List<Improvement>>() {
+				}),
+				loadList(BONUSES_RESOURCE, new TypeReference<List<Bonus>>() {
 				}));
 	}
 
@@ -91,6 +97,11 @@ public final class TerrainRegistry {
 		return improvements.get(type);
 	}
 
+	/** The bonus with this Civ4 type, or {@code null} if not in the set. */
+	public Bonus bonus(String type) {
+		return bonuses.get(type);
+	}
+
 	/** All curated terrains, in load (XML) order. */
 	public List<Terrain> terrains() {
 		return List.copyOf(terrains.values());
@@ -104,5 +115,10 @@ public final class TerrainRegistry {
 	/** All curated improvements, in load (XML) order. */
 	public List<Improvement> improvements() {
 		return List.copyOf(improvements.values());
+	}
+
+	/** All bonuses, in load (XML) order. */
+	public List<Bonus> bonuses() {
+		return List.copyOf(bonuses.values());
 	}
 }

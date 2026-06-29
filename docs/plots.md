@@ -143,16 +143,46 @@ COTTAGE→HAMLET→VILLAGE→TOWN (growing com) → trade / housing
 CAMP / HUNTING_CAMP +food (works wild, no clearing) → the forage firm
 ```
 
+### Bonus (`BonusInfo`, `data/CIV4BonusInfos.xml`)
+
+A Civ4 **bonus** is a discrete resource placed on a plot (wheat, iron, gold, horse…), adding
+its own F/P/C yield change on top of terrain + feature + improvement and belonging to a
+**bonus class** (crop / livestock / strategic / luxury / production / seafood / misc — from
+`data/CIV4BonusClassInfos.xml`). Bonuses have **no plot-model role yet** (they are not placed
+on plots or read for yield in this cut); the Phase-0 data layer just parses and indexes them.
+Unlike the curated terrain/feature/improvement subsets, the **full** set (all 106 bonuses) is
+exported. Kept fields:
+
+| Field | Use |
+|---|---|
+| `BonusClassType` | its `BonusClass` (carries the dormant `iUniqueRange` placement spacing) |
+| `YieldChanges` = `[df, dp, dc]` | additive yield the resource adds |
+| `TechReveal` / `TechCityTrade` | tech gating, stored **dormant** |
+| `iHealth` / `iHappiness` | amenity, stored **dormant** |
+| `iMinLatitude` / `iMaxLatitude` | generation latitude band |
+| `bHills` / `bFlatlands` / `bPeaks` | generation plot-type constraints |
+| `TerrainBooleans` / `FeatureBooleans` / `FeatureTerrainBooleans` | valid host terrains / features / feature-bearing terrains (drives generation) |
+
+The map-generator/AI internals (`iPlacementOrder`, `Rands`, `iTilesPer`, `iConstAppearance`,
+`iAITradeModifier`, art/sounds) are dropped. The 11 **bonus classes** are a fixed taxonomy
+modeled as the `BonusClass` **enum** (uniqueRange baked in from `CIV4BonusClassInfos.xml`),
+not a separate resource — the way `Continent` is an enum rather than a `continents.json`.
+
+This data is **inert in this cut** — bonuses are not placed on plots or read for yield.
+Wiring them in is **deferred past Phase 3** to the Production/Commerce activation, where the
+extractive/commerce improvements make a resource economically load-bearing (see *Phasing*).
+
 ### Provenance
 
-The `terrains.json` / `features.json` / `improvements.json` resources are **produced by
-exporters** — `TerrainExporter` / `FeatureExporter` / `ImprovementExporter` in
-`com.civstudio.geo.export` (mirroring `ProvinceExporter` et al.) — that parse the committed
-`data/CIV4*.xml` (all conforming to the shared **`data/C2C_CIV4TerrainSchema.xml`**, the Civ4
-schema for terrains, features and improvements alike) and emit the **curated subset**. The
-curation (which types to keep) and the XML→record field mapping live in the exporters; they
-run **manually**, like the geo exporters, so the resources are **regenerable** and provenance
-is preserved.
+The `terrains.json` / `features.json` / `improvements.json` / `bonuses.json` resources are
+**produced by exporters** — `TerrainExporter` / `FeatureExporter` / `ImprovementExporter` /
+`BonusExporter` in `com.civstudio.geo.export` (mirroring `ProvinceExporter` et al.) — that
+parse the committed `data/CIV4*.xml` (all conforming to the shared
+**`data/C2C_CIV4TerrainSchema.xml`**, the Civ4 schema for terrains, features, improvements and
+bonuses alike) and emit the **curated subset** (the **full** set for bonuses). The curation
+(which types to keep) and the XML→record field mapping live in the exporters; they run
+**manually**, like the geo exporters, so the resources are **regenerable** and provenance is
+preserved.
 
 ## Yield → sector mapping
 
@@ -361,17 +391,20 @@ list (above).
 
 ### New files
 
-- `src/main/resources/terrains.json`, `features.json`, `improvements.json` — the curated data
-  above, **emitted by the exporters below** (committed resources, like `provinces.json`).
-- `geo/export/TerrainExporter.java`, `FeatureExporter.java`, `ImprovementExporter.java` —
-  parse `data/CIV4*.xml` → the curated JSON (subset + field mapping), mirroring
-  `geo/export/ProvinceExporter`; run manually to regenerate.
+- `src/main/resources/terrains.json`, `features.json`, `improvements.json`, `bonuses.json` —
+  the curated data above (full set for `bonuses.json`), **emitted by the exporters below**
+  (committed resources, like `provinces.json`).
+- `geo/export/TerrainExporter.java`, `FeatureExporter.java`, `ImprovementExporter.java`,
+  `BonusExporter.java` — parse `data/CIV4*.xml` → the curated JSON (subset + field mapping),
+  mirroring `geo/export/ProvinceExporter`; run manually to regenerate.
+- `geo/Bonus.java` — record `(String type, BonusClass bonusClass, int[] yieldChanges, String techReveal, String techCityTrade, int health, int happiness, int minLatitude, int maxLatitude, boolean hills, boolean flatlands, boolean peaks, List<String> validTerrains, List<String> validFeatures, List<String> validFeatureTerrains)`.
+- `geo/BonusClass.java` — enum of the 11 Civ4 bonus classes, each carrying its dormant `iUniqueRange` (from `data/CIV4BonusClassInfos.xml`).
 - `geo/Terrain.java` — record `(String type, int[] yields, boolean bFound, int buildModifier, int healthPercent)`.
 - `geo/Feature.java` — record `(String type, int[] yieldChanges, int clearCost, boolean requiresFlatlands, boolean requiresRiver, List<String> validTerrains, int healthPercent, int growth)`.
 - `geo/Improvement.java` — record `(String type, int[] yieldChanges, String prereqTech, boolean hillsMakesValid, boolean freshWaterMakesValid, List<String> validTerrains, List<String> validFeatures, int buildCost, int healthPercent)`.
-- `geo/TerrainRegistry.java` — loads the three JSON via Jackson, **shared per `GameSession`**
-  (like `NameRegistry`/`Demography`); type → definition lookups for terrain, feature and
-  improvement.
+- `geo/TerrainRegistry.java` — loads the four JSON via Jackson, **shared per `GameSession`**
+  (like `NameRegistry`/`Demography`); type → definition lookups for terrain, feature,
+  improvement and bonus.
 - `settlement/Plot.java` — **the occupiable unit** (replaces `Slot`): a ladder **index**
   (→ travel time `T(index)`), the land (`Terrain` + a `PlotType` `FLAT`/`HILL`/`PEAK` +
   nullable `Feature` + nullable `Improvement` + `cleared` flag), and one `PlotOccupant` with
@@ -505,10 +538,12 @@ near its current food TFP. The plan therefore:
 ## Phased implementation plan
 
 - **Phase 0 — data layer (no behaviour change). ✅ Implemented.** The `TerrainExporter`/
-  `FeatureExporter`/`ImprovementExporter` (parsing `data/CIV4*.xml` → curated JSON, via a
-  shared `Civ4Xml` DOM helper); the `Terrain`/`Feature`/`Improvement` records; `TerrainRegistry`;
-  the committed `terrains.json`/`features.json`/`improvements.json`. Test: `TerrainRegistryTest`
-  (registry loads; yields / clear-costs / improvement yields spot-checked against the XML).
+  `FeatureExporter`/`ImprovementExporter`/`BonusExporter` (parsing `data/CIV4*.xml` → curated
+  JSON — full set for bonuses — via a shared `Civ4Xml` DOM helper); the
+  `Terrain`/`Feature`/`Improvement`/`Bonus` records, the `BonusClass` enum; `TerrainRegistry`;
+  the committed `terrains.json`/`features.json`/`improvements.json`/`bonuses.json`. Test:
+  `TerrainRegistryTest` (registry loads; yields / clear-costs / improvement and bonus yields
+  spot-checked against the XML).
 - **Phase 1 — structural swap: plot list replaces the disc. ✅ Implemented.** Deleted
   `Slot`/`SlotTable`/`SlotInfo`/`size`/`slots.json` (and special sites); the colony holds a
   `List<Plot>` capped at `province.plots` (`PROVINCE_LESS_PLOT_CAP` when bare). `Plot` absorbs
@@ -559,8 +594,24 @@ near its current food TFP. The plan therefore:
   `Plot.cleared` / `isWild()` state. This is the seam the **forage firm** (a separate
   feature) occupies — a `CAMP` on a *wild* plot reading its feature-modified food yield, no
   clearing.
-- **Phase 4 (optional / future).** `Plots.csv` reporting; coastal/water plots & rivers;
-  plot `healthPercent` → disease; feature spread (`iGrowth`).
+  - *Bonuses are **not** wired here (decided).* Phase 0 exported the full bonus set as inert
+    data, but placing bonuses on plots and folding their yield into `yieldFactor` is
+    **deferred past Phase 3** — Phase 3's FARM/clearing/forage work is food-only and a FARM or
+    `CAMP` needs no resource, so bonuses buy it nothing, while folding them in would force
+    another `YIELD_REFERENCE` re-calibration on top of Phase 3's own build-cost change. The
+    bonus extension lands with the **Production/Commerce activation** below — the extractive/
+    commerce improvements (`PASTURE`/`PLANTATION`/`WINERY`/`MINE`) are where a resource is
+    economically load-bearing (in Civ4 the improvement's value often *comes from* the bonus it
+    sits on — see the improvement record's per-bonus `BonusTypeStruct` yields, currently scoped
+    out by `Civ4Xml`). The two halves can split: generating bonuses onto plots is an inert
+    `TerrainGenerator` extension (needs its own salted draw so it doesn't perturb the terrain
+    stream) that could land cheaply anytime; the behavioural yield + REFERENCE recalibration
+    waits for a bonus-consuming firm.
+- **Phase 4 (optional / future).** Production/Commerce activation (an extractive `CFirm` →
+  `MINE`/`QUARRY`, a commerce firm → `COTTAGE`/`PLANTATION`) and, with it, the **bonus
+  extension** above (place bonuses, fold their yield into `yieldFactor`, recalibrate
+  `YIELD_REFERENCE`); `Plots.csv` reporting; coastal/water plots & rivers; plot
+  `healthPercent` → disease; feature spread (`iGrowth`).
 
 ## Test impact
 
