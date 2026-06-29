@@ -161,6 +161,25 @@ survival fix.
    not an independent cause. The follow-on lever is to soften the `minN` runaway (e.g.
    ration the inelastic demand at a price cap, or let the price band widen) so the death
    throes don't price-starve the last buyers — a refinement, not the root fix.
+   - **Capping the `minN` floor neither tames the spike nor extends survival —
+     PROTOTYPED, rejected.** Implemented the price cap: above `MINN_PRICE_CAP_FACTOR ×`
+     the food's reference price (`ConsumerGoodMarket.getInitialPrice()` = 2.55 for
+     necessity) a household drops its inelastic survival floor, falling back to
+     budget-elastic demand so a clearing price can exist. Swept the factor over 4 / 8 /
+     15 / 30 / 1000 (≈ off): the **collapse horizon stays flat within the ~1 y noise
+     band** (~1455-08 to 1456-08; the aggressive cap=4 is, if anything, marginally
+     *worse*, like a too-narrow price band), and the price spike is **not** reliably
+     capped — even cap=8 (a ~20 ceiling) still saw necessity hit **132**. The reason
+     refines the diagnosis above: the death-throes spike is driven mainly by **elastic
+     budget demand** (a starving household steers nearly its whole consumption budget to
+     necessity, so the clearing price ≈ Σbudget / supply), **not** by the inelastic
+     `minN` floor — so removing the floor leaves the budget demand to clear at a high
+     price anyway. Capping the floor therefore cannot soften the spike, and — like every
+     other downstream lever — does not extend survival, because the food deficit is real:
+     once supply < aggregate need, someone starves at any price. Taming the *number*
+     would need a market-level price ceiling, which still would not move the horizon.
+     (Prototype reverted; finding kept here.) Confirms the spiral is a **symptom** of the
+     food-output collapse, not a cause.
 3. **Make the supply-control loop price/profit-aware (prerequisite for any TFP gain) —
    DONE.** `Ruler.reviewSector`'s close rule now fires on an **unprofitable glut** as
    well as on idle capacity, so an over-supplied sector that has crashed its own price
