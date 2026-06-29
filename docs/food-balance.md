@@ -128,6 +128,19 @@ runs away to 44–72. Mechanism:
   the runaway ~10×.) If the high-productivity regime is ever wanted, an **asymmetric**
   band — capping how fast price may *fall*, not how fast it may rise — is the lever to
   explore, not a smaller symmetric one.
+  - **The asymmetric band was prototyped — REJECTED.** Split `zeta` into `zetaUp`
+    (rise) / `zetaDown` (fall), keeping `zetaUp = 0.10` (fast rationing) and shrinking
+    `zetaDown`. It does **not** rescue the high-skill regime — the opposite: a skill-12
+    colony with `zetaDown = 0.01` *prevented* the price crash (min necessity price
+    0.09 → 0.36) yet collapsed **far sooner** (~9 y → ~4.5 y). And on the normal colony
+    the response is **chaotic, not a lever**: sweeping `zetaDown` over 0.1 / 0.05 / 0.02 /
+    0.01 gave collapse at ~11.5 y / **~0.7 y** / ~2.4 y / ~13.5 y — non-monotonic by an
+    order of magnitude, so the lone good point (0.01, +1.4 y) is luck, not signal.
+    Asymmetrically distorting price discovery destabilizes the tightly-coupled
+    revenue→wage→rationing→pool-funding loop unpredictably; the band is too blunt to be a
+    usable surplus lever. (Prototype reverted; finding kept here.) The doc's earlier
+    hope that an asymmetric band unlocks the high-productivity regime is **disproved** —
+    keeping the food price from crashing does not, by itself, save a high-output colony.
 
 ## The core blocker
 
