@@ -320,6 +320,40 @@ A `CalibrationSweep`-style harness over the granary/TFP/relief/marriage paramete
 the stable region (the earlier sweep proved none exists under the replacement-only model —
 the point of this redesign is to make one exist).
 
+### 6.1 First survival experiment — measured (2026-06-29)
+
+`SurvivalExperiment` (a developer probe) runs the **open** (pool-immigration) colony — the
+configuration whose workforce should not decline from day one — over 50 years with all of
+Phases 1–3 active, snapshotting the renewal signals yearly. **Result: it still dies at ~10
+years**, before child-maturity (~16 y), so **fission never fires (0)** and the loop cannot
+close. Births *do* work (children appear, peaking ~43), but mature too late.
+
+The probe pinpointed **why**, via the *promotable-adult* count of the pool (`pAdult` = pool
+size minus its children):
+
+- Year 1: 402 laborers, pool 481, **pAdult 158**. Year 2: 223 laborers, **pAdult 8**.
+  Thereafter **pAdult ≈ 0** while the pool still holds 120–300 people — all **children**.
+- The workforce isn't replaced because the pool runs out of promotable **adults** by year 2,
+  and **immigration never fires** to replenish them: the reserve target is
+  `IMMIGRATION_RESERVE_FRACTION` (15%) of the *shrinking* workforce ≈ 60, but the founding
+  pool starts at 481 and only ever *drains* toward that target, so it is always above it →
+  zero immigrants admitted. **The "open" colony is effectively closed.**
+
+**The binding constraint is the founding pool's adult supply, not food.** The granary, relief,
+and fission machinery are all correct and waiting, but the colony cannot survive the ~1-to-16-
+year "adult gap" between the founding reserve adults running out (year 2) and the first
+home-grown generation maturing (~year 16). Two fixes follow directly:
+
+1. **Immigration must maintain promotable *adults*, not total pool size** — target adults (or
+   raise the target / count children out), so the inflow actually fires and bridges the adult
+   gap. (The current child-counting target is the bug.)
+2. **Or smooth the founding-age structure** so the reserve adults do not all deplete at once
+   and the home-grown generation arrives in a continuous stream rather than a single ~year-16
+   cohort.
+
+Either keeps the workforce alive past year ~16, at which point the (already-built) fission
+valve can take over and the loop closes. This — not another granary lever — is the next work.
+
 ## 7. Risks and open questions
 
 - **Ruler treasury drain.** The granary, child relief, and fission dowries all spend the
