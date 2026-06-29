@@ -15,6 +15,8 @@ import com.civstudio.race.Race;
 
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.Caravan;
+import com.civstudio.agent.Granary;
+import com.civstudio.agent.GranaryConfig;
 import com.civstudio.agent.MigrantCaravan;
 import com.civstudio.agent.Household;
 import com.civstudio.agent.firm.BuilderConfig;
@@ -178,6 +180,11 @@ public class SimulationHarness {
 	// created (createDefaultChildrenFirm / foundStandardColony). See docs/births.md.
 	private ChildrenFirmConfig childrenFirmConfig = ChildrenFirmConfig.DEFAULT;
 
+	// parameters for the ever-normal granary (its price band and reserve target);
+	// defaults to the canonical values. Replace via setGranaryConfig before the granary
+	// is created (createDefaultGranary / foundStandardColony). See docs/granary.md.
+	private GranaryConfig granaryConfig = GranaryConfig.DEFAULT;
+
 	// the social-mobility engine for this colony (promotion/demotion across ranks),
 	// built lazily on first use with the realized ranks' factories registered (see
 	// rankLadder()). Today only ennoblement (HOUSEHOLD -> HOLDING) uses it.
@@ -206,6 +213,7 @@ public class SimulationHarness {
 	private BuilderFirm builderFirm;
 	private Retinue retinue;
 	private ChildrenFirm childrenFirm;
+	private Granary granary;
 
 	// household fission: the food a grown child carries out of its parent's larder when
 	// it leaves to found its own household, and a tally of fissions over the run
@@ -472,6 +480,18 @@ public class SimulationHarness {
 	 */
 	public void setChildrenFirmConfig(ChildrenFirmConfig childrenFirmConfig) {
 		this.childrenFirmConfig = childrenFirmConfig;
+	}
+
+	/**
+	 * Override the ever-normal granary's parameters (default {@link
+	 * GranaryConfig#DEFAULT}). Must be called before the granary is created ({@link
+	 * #createDefaultGranary()} / {@link #foundStandardColony}) to take effect.
+	 *
+	 * @param granaryConfig
+	 *            the granary's tunable parameters (price band, reserve target, trade cap)
+	 */
+	public void setGranaryConfig(GranaryConfig granaryConfig) {
+		this.granaryConfig = granaryConfig;
 	}
 
 	/**
@@ -1188,6 +1208,38 @@ public class SimulationHarness {
 	}
 
 	/**
+	 * Give the colony its <b>ever-normal granary</b> (banking in copper, the base
+	 * currency, so its food trades pay no FX fee): the ruler-run food buffer that
+	 * stabilizes the necessity price by buying gluts at the floor and selling into
+	 * scarcity at the ceiling (see {@link Granary} and {@code docs/granary.md}). Its net
+	 * cost is borne by the ruler (it
+	 * reconciles its account against the gold treasury each step), so a ruler must exist
+	 * first (see {@link #createDefaultRuler()}); the necessity market must also already
+	 * exist (see {@link #createMarkets()}). Part of the standard founding sequence ({@link
+	 * #foundStandardColony}).
+	 *
+	 * @param bank
+	 *            the copper bank the granary transacts through
+	 * @return the created granary (also retained for {@link #addGranaryPrinter})
+	 */
+	public Granary createDefaultGranary(Bank bank) {
+		granary = new Granary(bank, colony, granaryConfig);
+		colony.addAgent(granary);
+		return granary;
+	}
+
+	/**
+	 * Register a {@link GranaryPrinter} for the colony's granary. The granary must
+	 * already exist (see {@link #createDefaultGranary(Bank)}).
+	 *
+	 * @param fileName
+	 *            the CSV output file name
+	 */
+	public void addGranaryPrinter(String fileName) {
+		colony.addPrinter(new GranaryPrinter(fileName, granary));
+	}
+
+	/**
 	 * Give the colony its civic <b>school</b> (the {@link ChildrenFirm}): an automatic
 	 * institution that trains the colony's children each step (see {@code
 	 * docs/births.md}). It produces no good, moves no money, and occupies no build
@@ -1495,6 +1547,7 @@ public class SimulationHarness {
 				cfg.numEFirms(), foundingNFirmCount());
 		createDefaultStrategicSector(copper);
 		Bank gold = createDefaultRuler();
+		createDefaultGranary(copper);
 		createDefaultRetinue();
 		foundLaborersFromRetinue(i -> copper, laborerNStock);
 		createDefaultChildrenFirm();
@@ -1541,6 +1594,7 @@ public class SimulationHarness {
 					colony.getSession().getTechTree(colony.getFoundingRace()), colony,
 					band.getResearch(), cfg.researchCostScale()));
 		Bank gold = createRulerFromLeader(band.getLeader(), band.getHoard());
+		createDefaultGranary(copper);
 		createRetinueFromBand(band, copper);
 		foundLaborersFromRetinue(i -> copper, laborerNStock);
 		createDefaultChildrenFirm();

@@ -154,7 +154,7 @@ survival fix.
 (fission, glut-close, founding children) with a new ruler-run **ever-normal granary**
 that lets a food surplus exist without deflating wages, then spending that surplus on
 child survival and home-grown household renewal — is proposed concretely in
-[`docs/food-economy-redesign.md`](food-economy-redesign.md).
+[`docs/granary.md`](granary.md).
 
 ## Recommended directions (each a calibration effort)
 

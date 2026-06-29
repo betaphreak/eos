@@ -46,6 +46,7 @@ public class HomogeneousEconomy {
 		h.addCommonPrinters();
 		h.addBanksPrinter("Banks");
 		h.addStrategicSectorPrinters("", bank);
+		h.addGranaryPrinter("Granary");
 		h.run();
 		return h;
 	}
