@@ -15,14 +15,15 @@ import com.civstudio.util.Rng;
  * into the province (which claim plots from it; ownership/claiming land in a later
  * phase). See {@code docs/province-plots.md}.
  * <p>
- * <b>This phase</b> assembles three stages: the relief ({@link PlotType}
+ * <b>This phase</b> assembles four stages: the relief ({@link PlotType}
  * flat/hill/peak) from the C2C-ported {@link ReliefGenerator} (spatially clustered
  * ranges), the ground {@link Terrain} from the province's climate-weighted pool
- * ({@link TerrainGenerator#next}), and the wild {@link Feature} from the C2C-ported
+ * ({@link TerrainGenerator#next}), the wild {@link Feature} from the C2C-ported
  * {@link FeatureGenerator} (water-seeded forest/jungle) plus river <b>flood
- * plains</b> (flat, riverside). The remaining C2C per-tile stages — the
- * temperature-driven terrain refinement and resource placement — are staged for the
- * next slices.
+ * plains</b> (flat, riverside), and the {@link Bonus} resource from {@link
+ * BonusGenerator} (placed by each bonus's own terrain/feature/relief/latitude
+ * constraints). The one remaining C2C stage — the temperature-driven terrain
+ * refinement — is deferred (see {@code docs/province-plots.md}).
  */
 public final class ProvincePlotField {
 
@@ -35,10 +36,11 @@ public final class ProvincePlotField {
 	 * @param river    whether a river pixel fell on this plot
 	 * @param terrain  the ground (from the climate pool)
 	 * @param plotType the relief (flat/hill/peak; from {@link ReliefGenerator})
-	 * @param feature  the wild feature, or {@code null} (feature growth is a later phase)
+	 * @param feature  the wild feature, or {@code null}
+	 * @param bonus    the resource on this plot, or {@code null}
 	 */
 	public record ProvincePlot(int x, int y, boolean river, Terrain terrain,
-			PlotType plotType, Feature feature) {
+			PlotType plotType, Feature feature, Bonus bonus) {
 	}
 
 	private final Province province;
@@ -70,6 +72,7 @@ public final class ProvincePlotField {
 		ClimateProfile climate = ClimateProfile.of(province);
 		Feature[] vegetation = FeatureGenerator.generate(mask, climate, registry, rng);
 		Feature floodPlains = registry.feature("FEATURE_FLOOD_PLAINS");
+		List<Bonus> bonuses = registry.bonuses();
 
 		int w = mask.width(), h = mask.height();
 		List<ProvincePlot> out = new ArrayList<>(mask.landCount());
@@ -85,8 +88,10 @@ public final class ProvincePlotField {
 				Feature feature = (river && plotType == PlotType.FLAT && floodPlains != null)
 						? floodPlains
 						: vegetation[idx];
+				Bonus bonus = BonusGenerator.pick(terrain, plotType, feature,
+						province.latitude(), bonuses, rng);
 				out.add(new ProvincePlot(mask.originX() + lx, mask.originY() + ly,
-						river, terrain, plotType, feature));
+						river, terrain, plotType, feature, bonus));
 			}
 		}
 		return new ProvincePlotField(province, out);

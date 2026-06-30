@@ -62,7 +62,35 @@ class ProvincePlotFieldTest {
 			assertSame(pa.plotType(), pb.plotType(), "same relief at " + i);
 			assertEquals(pa.terrain().type(), pb.terrain().type(), "same terrain at " + i);
 			assertEquals(featureType(pa), featureType(pb), "same feature at " + i);
+			assertEquals(bonusType(pa), bonusType(pb), "same bonus at " + i);
 		}
+	}
+
+	@Test
+	void resourcesArePlacedOnlyWhereTheirConstraintsAllow() throws Exception {
+		Province dh = dhenijansar();
+		TerrainRegistry reg = TerrainRegistry.load();
+		ProvinceRaster raster = ProvinceRaster.load();
+
+		// every placed bonus must satisfy its own placement constraints on its plot
+		int placed = 0;
+		for (int seed = 0; seed < 12; seed++) {
+			ProvincePlotField field = ProvincePlotField.generate(dh, reg, raster, new Rng(seed));
+			for (ProvincePlot p : field.plots())
+				if (p.bonus() != null) {
+					placed++;
+					assertTrue(
+							BonusGenerator.eligible(p.bonus(), p.terrain(), p.plotType(),
+									p.feature(), dh.latitude()),
+							p.bonus().type() + " placed on an ineligible plot");
+				}
+		}
+		// a tropical coastal province has many eligible (jungle/lush) resources — some land
+		assertTrue(placed > 0, "expected some resources placed across the seed sweep");
+	}
+
+	private static String bonusType(ProvincePlot p) {
+		return p.bonus() == null ? "none" : p.bonus().type();
 	}
 
 	@Test

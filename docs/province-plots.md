@@ -106,7 +106,11 @@ raster-reading approach, `docs/geography.md`):
      in isolation it regresses hot climates to desert (the C2C stage relies on the
      terrain-rewriting it does *as features spread*, itself not yet ported), so the
      climate pool is the better interim ground. *(deferred)*
-   - **resources** — the C2C `addBonuses` placement onto plots. *(next)*
+   - **resources** — `BonusGenerator` wakes the dormant `Bonus` data: the C2C
+     `addBonuses` delegates to the engine, which places each resource by its own
+     terrain/feature/relief/latitude constraints — exactly the constraints the
+     `Bonus` record already carries — so placement honours them (sparse,
+     eligibility-gated). *(done)*
 3. Each land cell becomes one `ProvincePlot` (raster `(x, y)`, river flag, terrain,
    relief, feature). The plot count equals `province.plots` (the land-pixel count) —
    the finite pool every settlement in the province shares.
@@ -203,10 +207,17 @@ the economic stream), exactly as `TerrainGenerator` does today.
     `ClimateProfile` supplying the C2C temperature/humidity. Covered by
     `ProvincePlotFieldTest` (silhouette/count, determinism, relief clusters, climate
     vegetation + flood plains).
-  - *Slice 3 (next):* the C2C **resource** placement (`addBonuses`).
+  - *Slice 3 (done):* **resource** placement (`BonusGenerator`) — the C2C `addBonuses`
+    delegates to the engine, so this wakes the dormant `Bonus` data and places each
+    resource by its own terrain/feature/relief/latitude constraints. Covered by
+    `ProvincePlotFieldTest` (placed only where eligible; determinism includes bonus).
   - *Deferred:* the C2C **temperature→terrain** replacement — the climate pool is the
     better interim ground until the feature-driven terrain rewriting is ported (a hot
     climate's raw C2C terrain is desert until features convert it).
+
+  With slices 1–3 the **per-tile generation port is functionally complete** (relief,
+  features, resources — only the deferred terrain refinement remains); the next major
+  work is the ownership/claiming model in **Phases 2–4** below.
 - **Phase 2 — ownership + single-settlement claim.** Plot gains `(x,y)` + owner;
   `Settlement.claimPlot`/`vacatePlot` re-pointed to claim from the province field
   (ownership transfer); the per-settlement Fibonacci ladder from a center. Fold the
