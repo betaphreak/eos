@@ -92,14 +92,45 @@ final class Civ4Xml {
 	 * container is absent.
 	 */
 	static int[] yields(Element parent, String container, String item) {
-		int[] out = new int[3];
+		return ints(parent, container, item, 3);
+	}
+
+	/**
+	 * Read an ordered list of {@code <item>} ints from a direct-child
+	 * {@code <container>} into a length-{@code len} array, missing trailing
+	 * entries padded with 0 (extras beyond {@code len} dropped). Returns
+	 * all-zero if the container is absent. Generalizes {@link #yields} for
+	 * lists of other widths (e.g. the length-4 {@code <CommerceChanges>}).
+	 */
+	static int[] ints(Element parent, String container, String item, int len) {
+		int[] out = new int[len];
 		Element c = child(parent, container);
 		if (c == null)
 			return out;
 		List<Element> items = children(c, item);
-		for (int i = 0; i < items.size() && i < 3; i++) {
+		for (int i = 0; i < items.size() && i < len; i++) {
 			String s = items.get(i).getTextContent().trim();
 			out[i] = s.isEmpty() ? 0 : Integer.parseInt(s);
+		}
+		return out;
+	}
+
+	/**
+	 * Read a flat list of strings — a direct-child {@code <container>} holding
+	 * {@code <item>} elements whose text is each entry (e.g.
+	 * {@code <ReplacementBuildings>} of {@code <BuildingType>}, or
+	 * {@code <PrereqBonuses>} of {@code <Bonus>}). Empty list if the container
+	 * is absent.
+	 */
+	static List<String> textList(Element parent, String container, String item) {
+		List<String> out = new ArrayList<>();
+		Element c = child(parent, container);
+		if (c == null)
+			return out;
+		for (Element e : children(c, item)) {
+			String t = e.getTextContent().trim();
+			if (!t.isEmpty())
+				out.add(t);
 		}
 		return out;
 	}

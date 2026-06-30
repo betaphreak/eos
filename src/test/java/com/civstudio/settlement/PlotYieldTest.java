@@ -1,5 +1,6 @@
 package com.civstudio.settlement;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -9,8 +10,11 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.civstudio.geo.Bonus;
 import com.civstudio.geo.Improvement;
+import com.civstudio.geo.PlotType;
 import com.civstudio.geo.Province;
+import com.civstudio.geo.Terrain;
 import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.tech.Sector;
 
@@ -26,8 +30,14 @@ class PlotYieldTest {
 
 	private static final LocalDate START = LocalDate.of(1444, 12, 11);
 
-	private static final Improvement FARM =
-			TerrainRegistry.load().improvement("IMPROVEMENT_FARM");
+	private static final TerrainRegistry REG = TerrainRegistry.load();
+	private static final Improvement FARM = REG.improvement("IMPROVEMENT_FARM");
+	private static final Terrain GRASSLAND = REG.terrain("TERRAIN_GRASSLAND");
+	// BONUS_CORN is a CROP (necessity) resource, yield [4,0,0]; BONUS_OLIVES is a LUXURY
+	// (enjoyment) resource that nonetheless carries food (yield [2,0,2]) — the foil that
+	// proves the food wiring is gated on the bonus's consumer-good class, not its raw food.
+	private static final Bonus CORN = REG.bonus("BONUS_CORN");
+	private static final Bonus OLIVES = REG.bonus("BONUS_OLIVES");
 
 	// genesis-append n plots, returning the dummy occupants seated on them
 	private static List<PlotOccupant> seatN(Settlement c, int n) {
@@ -85,6 +95,32 @@ class PlotYieldTest {
 		for (PlotOccupant o : seatN(bare, 20))
 			assertEquals(1.0, bare.plotYieldFactor(o, Sector.NECESSITY), 1e-9,
 					"a province-less colony takes no terrain yield factor");
+	}
+
+	@Test
+	void aFoodBonusAddsItsFoodYield() {
+		// a bare grassland plot vs. the same plot bearing a CROP (necessity) resource:
+		// the food channel rises by the bonus's food yield, the others are untouched
+		Plot bare = new Plot(0, 0, GRASSLAND, PlotType.FLAT, null, null);
+		Plot corn = new Plot(0, 0, GRASSLAND, PlotType.FLAT, null, CORN);
+		assertEquals(bare.yields()[0] + CORN.yieldChange(0), corn.yields()[0],
+				"a CROP bonus adds its food yield to the plot");
+		assertEquals(bare.yields()[1], corn.yields()[1]);
+		assertEquals(bare.yields()[2], corn.yields()[2]);
+		// and a richer food plot reads a higher necessity yield factor
+		assertTrue(corn.yieldFactor(Sector.NECESSITY) > bare.yieldFactor(Sector.NECESSITY),
+				"a food bonus raises the necessity yield factor");
+	}
+
+	@Test
+	void aNonFoodBonusDoesNotAddFood() {
+		// BONUS_OLIVES is a LUXURY (enjoyment) resource and carries food in its raw yield,
+		// but the wiring is gated on the bonus's consumer-good class — so it adds nothing
+		// to the necessity firm's food (enjoyment bonuses are dormant this cut)
+		Plot bare = new Plot(0, 0, GRASSLAND, PlotType.FLAT, null, null);
+		Plot olives = new Plot(0, 0, GRASSLAND, PlotType.FLAT, null, OLIVES);
+		assertArrayEquals(bare.yields(), olives.yields(),
+				"a non-necessity bonus leaves the (food-only) yields unchanged this cut");
 	}
 
 	@Test

@@ -3,6 +3,8 @@ package com.civstudio.geo;
 import java.util.Arrays;
 import java.util.List;
 
+import com.civstudio.good.ResourceType;
+
 /**
  * A Civ4 bonus resource — a discrete resource placed on a {@link
  * com.civstudio.settlement.Plot plot} (wheat, iron, gold, horse…), contributing an
@@ -69,6 +71,16 @@ public record Bonus(
 	/** A yield-change component by index (0 = food, 1 = production, 2 = commerce). */
 	public int yieldChange(int i) {
 		return yieldChanges[i];
+	}
+
+	/**
+	 * The consumer-good category this resource supplies (e.g. a {@code CROP} bonus
+	 * feeds {@link ResourceType#NECESSITY}), or {@code null} if
+	 * its {@link BonusClass} is not a consumer good. Delegates to
+	 * {@link BonusClass#resourceType()}.
+	 */
+	public ResourceType resourceType() {
+		return bonusClass == null ? null : bonusClass.resourceType();
 	}
 
 	@Override

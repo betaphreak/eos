@@ -1,5 +1,6 @@
 package com.civstudio.geo;
 
+import com.civstudio.good.ResourceType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
@@ -15,31 +16,42 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * {@code iUniqueRange} is the minimum spacing the Civ4 map generator keeps between
  * two placements of bonuses in the same class; it is stored but dormant in this
  * Phase-0 data layer. See {@code docs/plots.md}.
+ * <p>
+ * Each class also declares the {@linkplain ResourceType consumer-good category} a
+ * bonus of that class supplies (its {@link #resourceType()}): the three <b>food</b>
+ * classes — {@link #CROP}, {@link #LIVESTOCK}, {@link #SEAFOOD} — supply
+ * {@link ResourceType#NECESSITY}, {@link #LUXURY} supplies
+ * {@link ResourceType#ENJOYMENT}, and {@link #STRATEGIC} supplies
+ * {@link ResourceType#STRATEGIC}. The remaining classes are not consumer goods
+ * (production inputs, building/wonder outputs, misc) and map to {@code null}. This
+ * is the seam by which a placed {@link Bonus} feeds the matching consumer sector.
  */
 public enum BonusClass {
 
-	MISC("BONUSCLASS_MISC", 0),
-	CROP("BONUSCLASS_CROP", 2),
-	LIVESTOCK("BONUSCLASS_LIVESTOCK", 3),
-	SEAFOOD("BONUSCLASS_SEAFOOD", 0),
-	STRATEGIC("BONUSCLASS_STRATEGIC", 1),
-	LUXURY("BONUSCLASS_LUXURY", 2),
-	PRODUCTION("BONUSCLASS_PRODUCTION", 2),
+	MISC("BONUSCLASS_MISC", 0, null),
+	CROP("BONUSCLASS_CROP", 2, ResourceType.NECESSITY),
+	LIVESTOCK("BONUSCLASS_LIVESTOCK", 3, ResourceType.NECESSITY),
+	SEAFOOD("BONUSCLASS_SEAFOOD", 0, ResourceType.NECESSITY),
+	STRATEGIC("BONUSCLASS_STRATEGIC", 1, ResourceType.STRATEGIC),
+	LUXURY("BONUSCLASS_LUXURY", 2, ResourceType.ENJOYMENT),
+	PRODUCTION("BONUSCLASS_PRODUCTION", 2, null),
 	/** Produced by buildings, never placed on the map. */
-	MANUFACTURED("BONUSCLASS_MANUFACTURED", 0),
+	MANUFACTURED("BONUSCLASS_MANUFACTURED", 0, null),
 	/** Produced by cultural wonders, never placed on the map. */
-	CULTURE("BONUSCLASS_CULTURE", 0),
+	CULTURE("BONUSCLASS_CULTURE", 0, null),
 	/** Produced by cultural wonders (technological in nature), never placed. */
-	GENMODS("BONUSCLASS_GENMODS", 0),
+	GENMODS("BONUSCLASS_GENMODS", 0, null),
 	/** Produced by wonder buildings only, never placed. */
-	WONDER("BONUSCLASS_WONDER", 0);
+	WONDER("BONUSCLASS_WONDER", 0, null);
 
 	private final String key;
 	private final int uniqueRange;
+	private final ResourceType resourceType;
 
-	BonusClass(String key, int uniqueRange) {
+	BonusClass(String key, int uniqueRange, ResourceType resourceType) {
 		this.key = key;
 		this.uniqueRange = uniqueRange;
+		this.resourceType = resourceType;
 	}
 
 	/** The stable Civ4 type key (e.g. {@code "BONUSCLASS_CROP"}); the persisted form. */
@@ -51,6 +63,17 @@ public enum BonusClass {
 	/** Minimum map-generator spacing between same-class placements (dormant). */
 	public int uniqueRange() {
 		return uniqueRange;
+	}
+
+	/**
+	 * The consumer-good category a bonus of this class supplies, or {@code null}
+	 * if the class is not a consumer good. The food classes ({@link #CROP},
+	 * {@link #LIVESTOCK}, {@link #SEAFOOD}) supply {@link ResourceType#NECESSITY};
+	 * {@link #LUXURY} supplies {@link ResourceType#ENJOYMENT}; {@link #STRATEGIC}
+	 * supplies {@link ResourceType#STRATEGIC}.
+	 */
+	public ResourceType resourceType() {
+		return resourceType;
 	}
 
 	/**

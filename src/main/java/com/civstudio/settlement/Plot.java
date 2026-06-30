@@ -9,6 +9,7 @@ import com.civstudio.geo.Feature;
 import com.civstudio.geo.Improvement;
 import com.civstudio.geo.PlotType;
 import com.civstudio.geo.Terrain;
+import com.civstudio.good.ResourceType;
 import com.civstudio.tech.Sector;
 
 /**
@@ -27,7 +28,8 @@ import com.civstudio.tech.Sector;
  * optional {@code feature} (forest/jungle/…), and the {@code improvement} a firm
  * builds on it (an {@code NFirm} raises a {@code FARM}). Raising a farm <b>clears</b>
  * any feature ({@link #isCleared()}), so a developed farm's {@link #yields()} are
- * terrain + improvement; an <b>uncleared, feature-bearing</b> plot is {@link
+ * terrain + improvement (+ a food {@link #bonus() resource}'s food yield, if any); an
+ * <b>uncleared, feature-bearing</b> plot is {@link
  * #isWild() wild} — the seam the future forage firm works (a {@code CAMP} reading
  * terrain + feature, no clearing). The terrain {@link #yieldFactor(Sector) yield
  * factor} is read into the on-plot firm's TFP (food only this cut — {@link
@@ -68,8 +70,10 @@ public final class Plot {
 	private final int x;
 	private final int y;
 
-	// the resource on this plot (from the province field's bonus stage), or null. Carried
-	// here but dormant in yields() this phase — waking it changes the food calibration.
+	// the resource on this plot (from the province field's bonus stage), or null. A
+	// necessity-class (food) bonus adds its food yield in yields() — the live cut of the
+	// bonus -> consumer-good connection (Bonus.resourceType()); enjoyment and strategic
+	// bonuses stay dormant, as their sectors are gated off in Settlement.plotYieldFactor.
 	private final Bonus bonus;
 
 	// the settlement that has claimed this plot out of the shared province pool, or null
@@ -174,7 +178,11 @@ public final class Plot {
 		return y;
 	}
 
-	/** The resource on this plot, or {@code null}. Dormant in {@link #yields()} this phase. */
+	/**
+	 * The resource on this plot, or {@code null}. A necessity-class (food) bonus
+	 * contributes its food yield to {@link #yields()}; enjoyment/strategic bonuses
+	 * stay dormant (their sectors are gated off this cut).
+	 */
 	public Bonus bonus() {
 		return bonus;
 	}
@@ -260,8 +268,10 @@ public final class Plot {
 	 * plus the {@link PlotType#productionBonus() hill production bonus}, plus the
 	 * feature's yield change while the plot is still {@link #isWild() wild} (a cleared
 	 * plot's feature is gone), plus the {@link #improvement() improvement}'s yield
-	 * change once one is built. (The hill production bonus is dormant until a
-	 * production firm sits on a plot — only food is live this cut.)
+	 * change once one is built, plus a {@link #bonus() resource}'s food yield when it
+	 * is a necessity-class (food) bonus. (The hill production bonus and non-food
+	 * bonuses are dormant until a production/commerce firm sits on a plot — only food
+	 * is live this cut.)
 	 *
 	 * @return the plot's yields (a fresh length-3 array)
 	 */
@@ -274,6 +284,12 @@ public final class Plot {
 		if (improvement != null)
 			for (int i = 0; i < 3; i++)
 				out[i] += improvement.yieldChange(i);
+		// a food (necessity-class) bonus adds its food yield — the live cut of the
+		// bonus -> consumer-good connection (BonusClass.resourceType()), so a necessity
+		// firm on wheat/cattle/fish land is the more productive for it. Enjoyment and
+		// strategic bonuses stay dormant, as their sectors are in plotYieldFactor.
+		if (bonus != null && bonus.resourceType() == ResourceType.NECESSITY)
+			out[0] += bonus.yieldChange(0);
 		return out;
 	}
 
