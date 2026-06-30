@@ -534,8 +534,10 @@ explicit coordinates are unchanged.
   (land) bounds size; coastal land's water capacity is unused until sea trade.
 - **`province_relations`** — whether to import the typed src/dest edges as a
   second graph (trade/border relations) when the trade feature lands.
-- **Map scale vs. colony scale.** Dhenijansar is only 74 plots (caps the colony at
-  size 4); other LAND provinces run into the hundreds, and SEA provinces into the
-  tens of thousands. Whether one colony fills a province, or a province holds
-  several settlements, is a modelling decision the founding/trade features will
-  force — and the wide plot range means the answer may differ by province.
+- **Map scale vs. colony scale — decided.** Dhenijansar is only 74 plots; other
+  LAND provinces run into the hundreds, and SEA provinces into the tens of
+  thousands. The decision: **a province holds multiple settlements**, which share
+  one generated **plot field** — the province's real land pixels as plots (at 1
+  pixel = 1 plot, from the same `data/` rasters this note's Phase 5 reader uses),
+  claimed per-settlement around each settlement's center. Designed in
+  [`docs/province-plots.md`](province-plots.md).
