@@ -166,6 +166,14 @@ the economic stream), exactly as `TerrainGenerator` does today.
 - **`BuilderFirm`/`BuildProject`** are unchanged — they still clear one reserved
   plot at a time; they now clear *claimed province plots* rather than self-created
   ones.
+- **Reporting.** Two printers (`io/printer/`) make the field visible:
+  `ProvinceInventoryPrinter` (a monthly tally of a colony's claimed plots by
+  terrain/relief/feature/bonus, with a developed count — settlement-level, so the
+  multi-colony merge shows Upper's vs Lower's holdings side by side) and
+  `PlotMapPrinter` (a one-time dump of the whole province field — every plot's
+  `x`/`y`/terrain/relief/feature/bonus/owner). Wired by `addPlotInventoryPrinters`
+  into the province-founded scenarios (`HomogeneousEconomy`, `TwinSettlementEconomy`).
+  Bonus is reported but still dormant in `Plot.yields()`.
 
 ## Caveats
 

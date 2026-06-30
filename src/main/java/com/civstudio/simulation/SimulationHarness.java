@@ -1696,6 +1696,22 @@ public class SimulationHarness {
 	}
 
 	/**
+	 * Register the province plot-inventory printers (a {@linkplain
+	 * com.civstudio.geo.Province province}-founded colony only): the periodic {@link
+	 * ProvinceInventoryPrinter} (a monthly tally of the colony's claimed plots by
+	 * terrain/relief/feature/bonus) and the one-time {@link PlotMapPrinter} (a full
+	 * dump of the province's plot field). For a province-less colony both produce
+	 * nothing meaningful (no shared field), so they are only wired by the
+	 * province-founded scenarios. See {@code docs/province-plots.md}.
+	 *
+	 * @param prefix prepended to each printer's filename ({@code ""} for the default)
+	 */
+	public void addPlotInventoryPrinters(String prefix) {
+		colony.addPrinter(new ProvinceInventoryPrinter(prefix + "Inventory"));
+		colony.addPrinter(new PlotMapPrinter(prefix + "PlotMap"));
+	}
+
+	/**
 	 * Register the export sector's printers — the {@link ServicesPrinter} (the
 	 * colony's crown services: export, construction and research in one CSV) and the
 	 * {@link NoblesPrinter} — for a colony whose nobles are the default export

@@ -97,6 +97,7 @@ public class TwinSettlementEconomy {
 		h.addBanksPrinter(prefix + "Banks");
 		h.addStrategicSectorPrinters(prefix, copper);
 		h.addGranaryPrinter(prefix + "Granary");
+		h.addPlotInventoryPrinters(prefix);
 		return h;
 	}
 
