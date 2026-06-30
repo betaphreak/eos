@@ -85,6 +85,38 @@ class BirthsTest {
 	}
 
 	/**
+	 * Births are <b>universal</b>: not only laborers but the colony's <b>nobles</b> and
+	 * its <b>ruler</b> bear children, through the one shared mechanism. After a short
+	 * fertile run the non-laborer households (the ruler, and the nobles raised by
+	 * ennoblement) hold colony-born children, each recording both parents — the path by
+	 * which a noble/ruler line continues through its own issue rather than a fresh-drawn
+	 * successor.
+	 */
+	@Test
+	void noblesAndRulerBearChildren() {
+		SimulationHarness h = assertDoesNotThrow(BirthsTest::runFertilePoolColony);
+
+		LocalDate today = h.getColony().getDate();
+		int nonLaborerChildren = 0, withParents = 0;
+		for (Agent a : h.getColony().getAgents()) {
+			if (a instanceof Laborer)
+				continue; // the laborer path is covered above; here, the rest
+			if (a instanceof AbstractHousehold household && household.isAlive())
+				for (Member m : household.getMembers())
+					if (!m.isAdult(today)) {
+						nonLaborerChildren++;
+						if (m.getMother() != null && m.getFather() != null)
+							withParents++;
+					}
+		}
+
+		assertTrue(nonLaborerChildren > 0,
+				"expected the ruler and/or nobles to have borne children");
+		assertEquals(nonLaborerChildren, withParents,
+				"every colony-born noble/ruler child should record its mother and father");
+	}
+
+	/**
 	 * A small {@link com.civstudio.simulation.HomogeneousEconomy}-style pool colony
 	 * (weddings on by default) over a one-year horizon, with <b>fertility enabled</b>
 	 * at a high daily birth rate and a shallow food buffer so households that pair up

@@ -60,9 +60,12 @@ class WeddingMarketTest {
 				"expected peasants to be wed out of the pool");
 
 		// the sovereign weds first of all (free, from its own wards), so after a
-		// year it has taken a spouse of the opposite gender
+		// year it has taken a spouse of the opposite gender. Births are universal, so
+		// the ruler may also have borne children by now (extra members beyond the
+		// spouse) — hence >= 2, not == 2. The spouse is member 1 (wed in before any
+		// child, which is appended after).
 		Ruler ruler = h.getColony().getRuler();
-		assertEquals(2, ruler.getMemberCount(), "ruler should have wed a spouse");
+		assertTrue(ruler.getMemberCount() >= 2, "ruler should have wed a spouse");
 		assertEquals(ruler.getHead().gender().opposite(),
 				ruler.getMembers().get(1).gender(),
 				"ruler's spouse should be the opposite gender");

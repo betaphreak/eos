@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.civstudio.agent.laborer.FertilityConfig;
 import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.agent.noble.Noble;
 import com.civstudio.agent.ruler.Ruler;
@@ -268,6 +269,100 @@ public abstract class AbstractHousehold extends Agent implements Household {
 					&& (m.getMother() != null || m.getFather() != null))
 				return members.remove(i);
 		}
+		return null;
+	}
+
+	/**
+	 * <b>Bear a child if this household is a fertile, well-fed couple.</b> The
+	 * universal birth mechanism, shared by every household type — {@link Laborer},
+	 * {@link Noble} and {@link Ruler}: a household holding both a fertile female
+	 * adult and an adult male (a breeding couple) bears a child — a new
+	 * child-ration-eating {@link Member} — when its larder clears the configured
+	 * food-buffer gate, per the colony's {@link FertilityConfig}. The newborn
+	 * records both parents (see {@link Demography#newChild}) and is added now, so
+	 * the caller's later per-step buffer/feeding sees it this step.
+	 * <p>
+	 * Gated on {@code dailyBirthProb > 0} so births stay dormant (and a run
+	 * byte-identical) until enabled, and the birth roll ({@link
+	 * Demography#bearsChild}, which consumes a demographic-RNG draw) is taken
+	 * <b>only</b> when the food gate already passes — so a colony with the gate shut
+	 * draws no randomness. A household with no breeding couple (a single head, a
+	 * widowed lone parent, an all-child remnant) bears nothing.
+	 *
+	 * @param availableFood
+	 *            units of necessity the household currently holds (its larder),
+	 *            tested against the configured food buffer
+	 * @param adultRationPerDay
+	 *            the daily necessity an adult member of this household eats — the
+	 *            worker {@code FINE} ration for a laborer, {@code LAVISH} for a
+	 *            noble, {@code GOURMET} for the ruler — used (with the child ration)
+	 *            to size the prospective food need the gate measures against
+	 */
+	protected final void bearChildIfFertile(double availableFood,
+			double adultRationPerDay) {
+		FertilityConfig fertility = getColony().getFertilityConfig();
+		if (fertility.dailyBirthProb() <= 0)
+			return;
+		LocalDate today = getColony().getDate();
+		Member mother = fertileFemaleMember(today, fertility);
+		Member father = adultMaleMember(today);
+		if (mother == null || father == null)
+			return;
+		double childRation = fertility.childRation().perDay();
+		double prospectiveNeed =
+				householdDailyNeed(adultRationPerDay, childRation, today) + childRation;
+		if (availableFood < fertility.foodBufferDays() * prospectiveNeed)
+			return;
+		if (!getColony().getDemography().bearsChild(fertility.dailyBirthProb()))
+			return;
+		Member child = getColony().getDemography().newChild(getHead().surname(),
+				getHead().race(), getColony(), mother, father);
+		addMember(child);
+	}
+
+	/**
+	 * This household's total daily necessity need: the sum of every member's ration,
+	 * an adult eating {@code adultRationPerDay} and a child {@code childRationPerDay}.
+	 * An all-adult household equals {@code memberCount × adultRationPerDay}, so a
+	 * household with no children is unchanged; a child counts as its smaller ration.
+	 *
+	 * @param adultRationPerDay
+	 *            the daily necessity an adult member eats
+	 * @param childRationPerDay
+	 *            the daily necessity a child member eats
+	 * @param today
+	 *            the colony's current date (sets the child/adult boundary)
+	 * @return the household's total daily necessity ration in units
+	 */
+	protected final double householdDailyNeed(double adultRationPerDay,
+			double childRationPerDay, LocalDate today) {
+		double sum = 0;
+		for (Member m : members)
+			sum += m.isAdult(today) ? adultRationPerDay : childRationPerDay;
+		return sum;
+	}
+
+	// the household's fertile female member — an adult female of childbearing age, the
+	// prospective mother — or null if there is none
+	private Member fertileFemaleMember(LocalDate today, FertilityConfig fertility) {
+		for (Member m : members) {
+			if (!m.isAdult(today) || m.gender() != Gender.FEMALE)
+				continue;
+			int age = m.getAgeYears(today);
+			if (age >= fertility.childbearingMinAge()
+					&& age <= fertility.childbearingMaxAge())
+				return m;
+		}
+		return null;
+	}
+
+	// an adult male member of the household — the prospective father — or null if none.
+	// Together with a fertile female it forms the breeding couple; a widowed lone
+	// parent, an as-yet-unwed single head, or an all-child remnant has no couple.
+	private Member adultMaleMember(LocalDate today) {
+		for (Member m : members)
+			if (m.isAdult(today) && m.gender() == Gender.MALE)
+				return m;
 		return null;
 	}
 

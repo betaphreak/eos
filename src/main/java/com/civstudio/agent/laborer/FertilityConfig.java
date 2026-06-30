@@ -4,12 +4,14 @@ import com.civstudio.good.RationSize;
 import lombok.Builder;
 
 /**
- * Tunable parameters for household fertility — when a married {@link Laborer}
- * household bears a child. A <b>colony-wide demographic property</b> (uniform across
- * the colony's households and fixed for its life, like the target necessity stock
- * and the gendered mean skills), held on the
- * {@link com.civstudio.settlement.Settlement} and read live each step in
- * {@link Laborer#act()}.
+ * Tunable parameters for household fertility — when a married household bears a
+ * child. A <b>colony-wide demographic property</b> (uniform across the colony's
+ * households and fixed for its life, like the target necessity stock and the
+ * gendered mean skills), held on the {@link com.civstudio.settlement.Settlement} and
+ * read live each step by <b>every</b> household type — {@link Laborer}, {@code Noble}
+ * and {@code Ruler} alike — through
+ * {@code AbstractHousehold.bearChildIfFertile} (the births mechanism is universal;
+ * the config lives in this package for historical reasons only).
  * <p>
  * Births are <b>on by default</b> for every colony: the canonical {@link #DEFAULT}
  * carries a non-zero {@code dailyBirthProb}, so any colony with married households

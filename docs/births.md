@@ -1,10 +1,13 @@
 # Design note: births and children
 
 **Status:** Phases 1, 2 and 4 implemented (births on by default + parentage + the
-ChildrenFirm). **Phase 3 (calibration → stable colony) attempted and found BLOCKED:**
-births cannot prevent the colony's structural ~6–10-year food-balance collapse, which
-precedes the 15-year child-maturation window, so the collapse tests are **not** flipped
-— see *Phased implementation plan → Phase 3*. **Phase 5 (abandonment / age-gating the
+ChildrenFirm), and **births are now universal across every household type** —
+`Laborer`, `Noble` and `Ruler` all breed through one shared mechanism, with a
+noble/ruler child becoming the real hereditary heir (see *The model → Scope*).
+**Phase 3 (calibration → stable colony) attempted and found BLOCKED:** births cannot
+prevent the colony's structural ~6–10-year food-balance collapse, which precedes the
+15-year child-maturation window, so the collapse tests are **not** flipped — see
+*Phased implementation plan → Phase 3*. **Phase 5 (abandonment / age-gating the
 pool) pending.**
 **Date:** 2026-06-28
 **Depends on:** the `Person`/`Member` split (`com.civstudio.agent.Member`), the
@@ -70,10 +73,14 @@ consequence of seating children as members and letting the existing machinery ru
 - **No hard household-size cap.** Size is bounded organically by the food gate (no
   births when food is short), child mortality, and the existing
   starve-off-the-youngest rule (below) — not by an arbitrary maximum.
-- **Scope: laborers only.** Only `Laborer` households bear children for now. Nobles
-  and the Ruler keep their current fresh-drawn same-dynasty heir (the colony's
-  built-in `Household.successor` policy); extending births to them — so a noble/ruler
-  child becomes the real hereditary heir — is deferred (see *Open questions*).
+- **Scope: every household type.** `Laborer`, `Noble` **and** `Ruler` households all
+  bear children, through one shared mechanism (`AbstractHousehold.bearChildIfFertile`).
+  A noble's or the ruler's child becomes the **real hereditary heir** by member
+  promotion when the head dies (`checkOldAgeDeath` promotes the next surviving member),
+  so the line continues through its own offspring; the fresh-drawn same-dynasty
+  `successor` is now only the fallback for a house that dies out entirely (no surviving
+  member). Each type feeds its children the child ration (not its own LAVISH/GOURMET
+  table) and keeps them out of the labour market until they come of age.
 - **Everyone tracks their parents.** Every individual carries a reference to its
   **mother** and **father**. A newborn's are set to the breeding couple that bore it
   (the household's adult female and adult male). **Every initially-generated
@@ -397,16 +404,32 @@ maturation window by a separate food-economy/survival fix.
   *Abandonment (the caravan hinge)*). Covered by a test: dissolve a colony holding
   children and assert they enter the band's pool, are not promoted/wed while underage,
   and keep their parent references.
+- **Universal births (nobles + ruler). (Implemented.)** The birth roll, the
+  ration-weighted breeding-couple lookup, and the food-buffer gate were lifted out of
+  `Laborer.act()` into a shared `AbstractHousehold.bearChildIfFertile(availableFood,
+  adultRation)` that all three household types call (a laborer with the `FINE` adult
+  ration, a noble with `LAVISH`, the ruler with `GOURMET`; children eat the configured
+  child ration in every case via the shared `householdDailyNeed`). Noble and ruler
+  feeding became ration-weighted so their children eat the child ration, not the
+  household's luxury table; the noble's export/science labour posting and the ruler's
+  strategic labour now skip underage members, so a child of the house is schooled
+  rather than put to work and an underage heir who inherits the headship does no labour
+  until it comes of age. The `ChildrenFirm` school and `ChildrenPrinter` now gather
+  children across **all** household types, not just laborers. Covered by `BirthsTest`
+  (a noble and ruler couple bear children over a short run, every child recording both
+  parents). This realises what was the *Births for nobles and the Ruler* open question.
 
 ## Open questions deferred to later
 
-- **Births for nobles and the Ruler** — so a noble/ruler child becomes the real
-  hereditary heir, replacing the fresh-drawn successor. Natural next scope once the
-  laborer path is proven.
-- **Adult children splitting off** into their own new households (e.g. on marriage),
-  rather than only accumulating as members of the parent household. Today an adult
-  child stays a working member and only ever becomes head by inheritance; a
-  marriage-driven household-fission would be a richer model.
+- **Marriage-driven fission.** Age-driven household fission **already exists** — a
+  grown, colony-born child of a **laborer** household emancipates into its own new
+  laborer household, granary-dowered (`SimulationHarness.formNewHouseholds`/`tryFission`,
+  `docs/granary.md` §5.3; currently *dormant*, as colonies collapse before any child
+  reaches ~16). What is still open is the *richer* variant: a child splitting off when
+  it **weds** (rather than purely on coming of age), and possibly taking its own spouse.
+  Fission stays deliberately **laborer-only** — a noble's or the ruler's grown child is
+  meant to inherit the house/throne *in place* (member promotion), not leave to found a
+  commoner household.
 - **Multiple fertile couples per household** — today only the head + spouse breed;
   an adult child does not take its own spouse while in the parent household.
 - **Inherited aptitude** — skill is currently drawn fresh for every newborn; a model

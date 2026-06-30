@@ -4,10 +4,10 @@ import static com.civstudio.io.sink.ColumnSpec.*;
 
 import java.time.LocalDate;
 
+import com.civstudio.agent.AbstractHousehold;
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.firm.ChildrenFirm;
-import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.io.sink.ColumnSpec;
 import com.civstudio.settlement.Settlement;
 
@@ -15,8 +15,9 @@ import com.civstudio.settlement.Settlement;
  * Writes a time-series of the colony's <b>children</b>: how many there are, their
  * average age and skill, and how many of them the {@link ChildrenFirm civic school}
  * is training against its capacity. Aggregates over the <b>living</b> children read
- * from {@code colony.getAgents()} each cycle (the sub-working-age members of the
- * laborer households), mirroring how {@link LaborersPrinter} / {@link RetinuePrinter}
+ * from {@code colony.getAgents()} each cycle (the sub-working-age members across all
+ * household types — laborer, noble and ruler), mirroring how {@link LaborersPrinter} /
+ * {@link RetinuePrinter}
  * report the laborer population and the pool. Register with {@link
  * Settlement#addPrinter} and finalize with {@link Settlement#cleanUpPrinters}.
  * <p>
@@ -57,8 +58,8 @@ public class ChildrenPrinter extends Printer {
 		int count = 0;
 		double ageSum = 0, skillSum = 0;
 		for (Agent a : colony.getAgents())
-			if (a instanceof Laborer laborer && laborer.isAlive())
-				for (Member m : laborer.getMembers())
+			if (a instanceof AbstractHousehold household && household.isAlive())
+				for (Member m : household.getMembers())
 					if (!m.isAdult(today)) {
 						count++;
 						ageSum += m.getAgeYears(today);

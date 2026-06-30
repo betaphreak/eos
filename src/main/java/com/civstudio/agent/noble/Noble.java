@@ -1,5 +1,6 @@
 package com.civstudio.agent.noble;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -284,7 +285,12 @@ public class Noble extends AbstractHousehold {
 	// science firm (ScholarLabor) — a scholar-merchant doing double duty — so it posts
 	// to each market that exists (a no-op for one the colony lacks).
 	private void postNobleLabor() {
+		LocalDate today = getColony().getDate();
 		for (Member member : getMembers()) {
+			// children of the house supply no labor (they are schooled, not put to
+			// work) — only adult members work the export / science sectors
+			if (!member.isAdult(today))
+				continue;
 			if (nobleLaborMkt != null)
 				nobleLaborMkt.addEmployee(getID(), getBank(), 1.0, member.skills());
 			if (scholarLaborMkt != null)
@@ -349,10 +355,21 @@ public class Noble extends AbstractHousehold {
 		eConsumption = consumption - nConsumption;
 		bank.deposit(getID(), checking - consumption);
 
-		// the noble household eats the LAVISH ration per member each step from its
-		// larder (it never starves — it simply draws its table down, then refills it
-		// toward the reserve target below)
-		necessity.decrease(RationSize.LAVISH.perDay() * getMemberCount());
+		// the noble household eats per member each step from its larder (it never
+		// starves — it simply draws its table down, then refills it toward the reserve
+		// target below): an adult eats the LAVISH ration, a child the smaller child
+		// ration (so a noble's children eat like any colony child, not lavishly).
+		LocalDate today = getColony().getDate();
+		necessity.decrease(householdDailyNeed(RationSize.LAVISH.perDay(),
+				getColony().getFertilityConfig().childRation().perDay(), today));
+
+		// bear a child: a wed noble couple with a fertile female and a stocked larder
+		// bears a child — a new child-ration-eating member of the house — exactly as a
+		// laborer household does (the universal birth mechanism). A noble child becomes
+		// the hereditary heir by promotion when the head dies, so the line continues
+		// through its own offspring rather than a fresh-drawn successor. See
+		// docs/births.md.
+		bearChildIfFertile(necessity.getQuantity(), RationSize.LAVISH.perDay());
 
 		// if the noble keeps a necessity reserve, cap this step's necessity buying
 		// at the gap to its target stock so it fills toward the target "if possible"

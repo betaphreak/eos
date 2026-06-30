@@ -243,11 +243,11 @@ public class Settlement {
 	@Getter
 	private final double targetNStock;
 
-	// the colony's fertility parameters — when a married laborer household bears a
-	// child (see docs/births.md). A colony-wide demographic property read live each
-	// step by Laborer.act(); settable so a run can enable/tune births. The default
-	// (FertilityConfig.DEFAULT) leaves births off, so a colony is byte-identical
-	// until a run enables them.
+	// the colony's fertility parameters — when a married household bears a child (see
+	// docs/births.md). A colony-wide demographic property read live each step by every
+	// household type (Laborer/Noble/Ruler) via AbstractHousehold.bearChildIfFertile;
+	// settable so a run can tune or disable births. FertilityConfig.DEFAULT enables
+	// births (non-zero dailyBirthProb); a run sets dailyBirthProb 0 to suppress them.
 	@Getter
 	@Setter
 	private FertilityConfig fertilityConfig = FertilityConfig.DEFAULT;

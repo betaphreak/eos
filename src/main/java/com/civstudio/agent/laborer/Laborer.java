@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import com.civstudio.agent.AbstractHousehold;
 import com.civstudio.agent.Granary;
 import com.civstudio.agent.Member;
-import com.civstudio.name.Gender;
 import com.civstudio.race.Race;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.Account;
@@ -338,27 +337,10 @@ public class Laborer extends AbstractHousehold {
 
 		// bear a child: a married household (an adult couple) with a fertile female
 		// and a food cushion bears a child — a new SNACK-eating member — per the
-		// colony's fertility config. Gated on dailyBirthProb > 0 so births stay
-		// dormant (and the colony byte-identical) until enabled. The newborn is added
-		// now, so it counts toward this step's necessity buffer below. See
-		// docs/births.md.
-		FertilityConfig fertility = getColony().getFertilityConfig();
-		if (fertility.dailyBirthProb() > 0) {
-			Member mother = fertileFemaleMember(today, fertility);
-			Member father = adultMaleMember(today);
-			if (mother != null && father != null) {
-				double prospectiveNeed =
-						dailyRation(today) + fertility.childRation().perDay();
-				if (necessity.getQuantity() >= fertility.foodBufferDays() * prospectiveNeed
-						&& getColony().getDemography()
-								.bearsChild(fertility.dailyBirthProb())) {
-					Member child = getColony().getDemography().newChild(
-							getHead().surname(), getHead().race(), getColony(), mother,
-							father);
-					addMember(child);
-				}
-			}
-		}
+		// colony's fertility config (the universal birth mechanism, shared with
+		// nobles and the ruler). The newborn is added now, so it counts toward this
+		// step's necessity buffer below. See docs/births.md.
+		bearChildIfFertile(necessity.getQuantity(), config.eatAmt());
 
 		if (!firstAct) {
 			if (RR < lowRR)
@@ -466,30 +448,6 @@ public class Laborer extends AbstractHousehold {
 		for (Member m : getMembers())
 			sum += rationFor(m, today);
 		return sum;
-	}
-
-	// the household's fertile female member — an adult female of childbearing age, the
-	// prospective mother — or null if there is none
-	private Member fertileFemaleMember(LocalDate today, FertilityConfig fertility) {
-		for (Member m : getMembers()) {
-			if (!m.isAdult(today) || m.gender() != Gender.FEMALE)
-				continue;
-			int age = m.getAgeYears(today);
-			if (age >= fertility.childbearingMinAge()
-					&& age <= fertility.childbearingMaxAge())
-				return m;
-		}
-		return null;
-	}
-
-	// an adult male member of the household — the prospective father — or null if none.
-	// Together with a fertile female it forms the breeding couple; a widowed lone
-	// parent, an as-yet-unwed single head, or an all-child remnant has no couple.
-	private Member adultMaleMember(LocalDate today) {
-		for (Member m : getMembers())
-			if (m.isAdult(today) && m.gender() == Gender.MALE)
-				return m;
-		return null;
 	}
 
 	/** A laborer is the colony's workforce: its labor sustains the colony. */

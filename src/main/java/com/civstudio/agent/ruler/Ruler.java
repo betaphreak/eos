@@ -1,5 +1,6 @@
 package com.civstudio.agent.ruler;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -292,11 +293,22 @@ public class Ruler extends AbstractHousehold {
 		double wealth = acct.getChecking() + acct.getSavings();
 		consumption = consumptionRate * Math.max(0, wealth);
 
-		// the ruler keeps a lavish table: eat the GOURMET ration per member each step
-		// (it never starves) and restock necessity toward its reserve. Necessity is
-		// copper-quoted like enjoyment, so the purchase converts gold -> copper and
-		// fires the gold bank's FX fee.
-		necessity.decrease(RationSize.GOURMET.perDay() * getMemberCount());
+		// the ruler keeps a lavish table: eat per member each step (it never starves)
+		// and restock necessity toward its reserve. An adult eats the GOURMET ration, a
+		// child the smaller child ration (a royal child eats like any colony child).
+		// Necessity is copper-quoted like enjoyment, so the purchase converts gold ->
+		// copper and fires the gold bank's FX fee.
+		LocalDate today = getColony().getDate();
+		necessity.decrease(householdDailyNeed(RationSize.GOURMET.perDay(),
+				getColony().getFertilityConfig().childRation().perDay(), today));
+
+		// bear a child: a wed ruling couple with a fertile female and a stocked larder
+		// bears a child — a new child-ration-eating member of the ruling house (the
+		// universal birth mechanism). A royal child becomes the hereditary heir by
+		// promotion when the sovereign dies, continuing the line through its own issue
+		// rather than a fresh-drawn successor. See docs/births.md.
+		bearChildIfFertile(necessity.getQuantity(), RationSize.GOURMET.perDay());
+
 		double nReserve = NECESSITY_RESERVE_DAYS * RationSize.GOURMET.perDay()
 				* getMemberCount();
 		nGap = Math.max(0, nReserve - necessity.getQuantity());
@@ -317,14 +329,16 @@ public class Ruler extends AbstractHousehold {
 		// while the aristocracy is still being built up by ennoblement. A no-op for a
 		// colony with no export sector. The export wage credits the gold treasury (FX
 		// fee fires); the ruler does not draw dividends, and its reported income stays
-		// 0 (getIncome) — the wage simply tops up the treasury.
-		if (nobleLaborMkt != null)
+		// 0 (getIncome) — the wage simply tops up the treasury. A child sovereign (an
+		// underage heir who inherited the throne) does no labor until it comes of age.
+		boolean headWorks = getHead().isAdult(today);
+		if (headWorks && nobleLaborMkt != null)
 			nobleLaborMkt.addEmployee(getID(), bank, 1.0, getHead().skills());
 
 		// likewise work the science firm during the ramp, so research is staffed
 		// before the scholarly aristocracy is raised (the ruler funds the science
 		// wages from its treasury, so this returns part of that wage to itself)
-		if (scholarLaborMkt != null)
+		if (headWorks && scholarLaborMkt != null)
 			scholarLaborMkt.addEmployee(getID(), bank, 1.0, getHead().skills());
 
 		// tax revenue enters via collectTaxes (as OTHER, not income); reset the income

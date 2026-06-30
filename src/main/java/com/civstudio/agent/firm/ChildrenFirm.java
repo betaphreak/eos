@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import com.civstudio.agent.AbstractHousehold;
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.Member;
-import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.bank.Bank;
 import com.civstudio.good.Good;
 import com.civstudio.settlement.Settlement;
@@ -21,7 +21,8 @@ import lombok.Getter;
  * advancing the enrolled children's skills.
  * <p>
  * Each step it gathers the colony's <b>children</b> — the sub-working-age members
- * across the laborer households — and enrolls up to {@link ChildrenFirmConfig#capacity()}
+ * across all of its households (laborer, noble and ruler alike) — and enrolls up to
+ * {@link ChildrenFirmConfig#capacity()}
  * of them, <b>the oldest first</b> (those closest to working age, so their freshly-grown
  * skills land just before they enter the workforce); any overflow waits and is
  * enrolled in later years as it ages up. Each enrolled child gains
@@ -76,12 +77,13 @@ public class ChildrenFirm extends Agent {
 		Settlement colony = getColony();
 		LocalDate today = colony.getDate();
 
-		// gather every child in the colony (the sub-working-age members of the living
-		// laborer households); nobles/ruler bear no children (laborers only, for now)
+		// gather every child in the colony — the sub-working-age members of every
+		// living household, laborer, noble or ruler alike (births are universal, so a
+		// noble's or the ruler's children are schooled like any other)
 		List<Member> children = new ArrayList<>();
 		for (Agent a : colony.getAgents())
-			if (a instanceof Laborer laborer && laborer.isAlive())
-				for (Member m : laborer.getMembers())
+			if (a instanceof AbstractHousehold household && household.isAlive())
+				for (Member m : household.getMembers())
 					if (!m.isAdult(today))
 						children.add(m);
 
