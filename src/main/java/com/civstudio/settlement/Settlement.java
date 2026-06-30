@@ -781,10 +781,13 @@ public class Settlement {
 	// it on the first workable one. Not the live-growth path.
 	private Plot foundPlot(PlotOccupant occupant) {
 		while (true) {
-			if (plots.size() >= maxPlots)
+			if (!canAcquirePlot(0))
 				throw new IllegalStateException(name + " cannot seat " + occupant
-						+ ": it is full at its maximum of " + maxPlots + " plots");
+						+ ": no room left in its province (max " + maxPlots + " plots)");
 			Plot plot = appendPlot();
+			if (plot == null)
+				throw new IllegalStateException(name + " cannot seat " + occupant
+						+ ": its province pool is exhausted");
 			if (!plot.isWorkable())
 				continue; // a peak: keep it on the ladder and append the next plot
 			seat(plot, occupant);
@@ -823,6 +826,8 @@ public class Settlement {
 		ProvincePlotPool pool = plotPool();
 		if (pool != null) {
 			Plot plot = claimNearestFreePlot(pool);
+			if (plot == null)
+				return null; // the shared pool is exhausted — the caller handles "no room"
 			plot.setIndex(index);
 			return plot;
 		}
@@ -845,63 +850,37 @@ public class Settlement {
 		return plotPool;
 	}
 
-	// claim the next plot for this colony from the province pool: the free plot nearest
-	// the colony's center. The first claim founds the center at the plot nearest the
-	// province centroid and grows outward from there. A peak is claimed like any plot —
-	// the caller (foundPlot/requestGrowth) skips or zero-work-queues it, so peaks consume
-	// a ladder rung and push workable land outward, exactly as the generated path did.
+	// claim the next plot for this colony from the shared province pool: the founding
+	// center (spaced from any other settlement already in the province) for the first
+	// claim, then the free plot nearest that center. Returns null if the shared pool is
+	// exhausted (another settlement took the last plots) — the caller treats that as
+	// "no room". A peak is claimed like any plot — the caller (foundPlot/requestGrowth)
+	// skips or zero-work-queues it, so peaks consume a ladder rung exactly as before.
 	private Plot claimNearestFreePlot(ProvincePlotPool pool) {
-		int cx, cy;
-		if (center == null) {
-			int[] c = centroid(pool);
-			cx = c[0];
-			cy = c[1];
-		} else {
-			cx = center.x();
-			cy = center.y();
-		}
-		Plot target = nearestFreePlot(pool, cx, cy);
-		if (target == null)
-			throw new IllegalStateException(name + ": its province plot pool is exhausted");
-		pool.claim(target, this);
-		if (center == null)
+		Plot target = (center == null)
+				? pool.claimFoundingCenter(this)
+				: pool.claimNearest(this, center.x(), center.y());
+		if (target != null && center == null)
 			center = target;
 		return target;
 	}
 
-	// the free plot of the pool closest (squared raster distance) to (cx, cy)
-	private static Plot nearestFreePlot(ProvincePlotPool pool, int cx, int cy) {
-		Plot best = null;
-		long bestDist = Long.MAX_VALUE;
-		for (Plot p : pool.plots()) {
-			if (p.owner() != null)
-				continue;
-			long dx = p.x() - cx, dy = p.y() - cy;
-			long dist = dx * dx + dy * dy;
-			if (dist < bestDist) {
-				bestDist = dist;
-				best = p;
-			}
-		}
-		return best;
-	}
-
-	// the integer centroid of all the province's plots — the founding anchor for the
-	// first claim (the colony's center becomes the actual plot nearest it)
-	private static int[] centroid(ProvincePlotPool pool) {
-		long sx = 0, sy = 0;
-		for (Plot p : pool.plots()) {
-			sx += p.x();
-			sy += p.y();
-		}
-		int n = pool.size();
-		return new int[] { Math.round((float) sx / n), Math.round((float) sy / n) };
+	// whether the colony can acquire one more plot: free room in the shared province
+	// pool for a province-founded colony (the real, shared limit — several settlements
+	// draw from it), or the per-colony plot cap for a province-less one.
+	private boolean canAcquirePlot(int inFlight) {
+		ProvincePlotPool pool = plotPool();
+		if (pool != null)
+			return pool.freeCount() > 0;
+		return plots.size() + inFlight < maxPlots;
 	}
 
 	// append a freshly-generated vacant plot at the next ladder index (the founding
 	// genesis path; live growth generates its plot up front in requestGrowth).
 	private Plot appendPlot() {
 		Plot plot = generatePlot(plots.size());
+		if (plot == null)
+			return null; // the shared province pool is exhausted
 		plots.add(plot);
 		return plot;
 	}
@@ -950,7 +929,7 @@ public class Settlement {
 	 */
 	public boolean hasRoomToExpand() {
 		return firstVacantPlot() != null
-				|| (plots.size() + buildQueue.size() < maxPlots && builder != null);
+				|| (builder != null && canAcquirePlot(buildQueue.size()));
 	}
 
 	// the first vacant, workable plot, or null if none is free. Peaks are unworkable,
@@ -1170,11 +1149,12 @@ public class Settlement {
 		// raises the improvement and the colony seats the firm once the work is
 		// delivered (see completeFinishedPlots).
 		while (true) {
-			if (plots.size() + buildQueue.size() >= maxPlots)
-				throw new IllegalStateException(
-						name + " cannot grow past its maximum of " + maxPlots + " plots");
+			if (!canAcquirePlot(buildQueue.size()))
+				return; // no room to grow now — its province is full / the shared pool drained
 			int nextIndex = plots.size() + buildQueue.size();
 			Plot plot = generatePlot(nextIndex);
+			if (plot == null)
+				return; // the shared pool emptied between the check and the claim (a race)
 			if (!plot.isWorkable()) {
 				buildQueue.add(new BuildProject(plot, null, 0, null)); // a peak: no work
 				continue;

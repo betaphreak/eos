@@ -9,6 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -113,5 +115,52 @@ class ProvincePlotPoolTest {
 		bare.claimPlot(new PlotOccupant() {
 		});
 		assertEquals(-1, bare.getPlots().get(0).x(), "a province-less plot has no raster position");
+	}
+
+	@Test
+	void twoSettlementsInOneProvinceClaimSpacedDisjointPlots() {
+		GameSession s = new GameSession(11);
+		Province dh = dhenijansar(s);
+		Settlement upper = s.newSettlement("Upper", START, 30, 26, 5, 2, dh);
+		Settlement lower = s.newSettlement("Lower", START, 30, 26, 5, 2, dh);
+		ProvincePlotPool pool = s.provincePlotPool(dh);
+
+		// each lays a cluster of plots; both draw from the SAME shared province pool
+		for (int i = 0; i < 8; i++)
+			upper.claimPlot(new PlotOccupant() {
+			});
+		for (int i = 0; i < 8; i++)
+			lower.claimPlot(new PlotOccupant() {
+			});
+
+		// disjoint: every plot is owned by exactly one of them, none shared
+		Set<Plot> upperPlots = new HashSet<>(upper.getPlots());
+		for (Plot p : upper.getPlots())
+			assertSame(upper, p.owner());
+		for (Plot p : lower.getPlots()) {
+			assertSame(lower, p.owner());
+			assertFalse(upperPlots.contains(p), "the two settlements never share a plot");
+		}
+
+		// both claims came out of the one shared pool's free count
+		assertEquals(pool.size() - upper.getPlotCount() - lower.getPlotCount(), pool.freeCount(),
+				"both settlements draw from the same pool");
+
+		// min-distance spacing: Lower's center (its first plot) founds OUTSIDE Upper's
+		// footprint — farther from Upper's center than any of Upper's own plots are
+		Plot uCenter = upper.getPlots().get(0);
+		Plot lCenter = lower.getPlots().get(0);
+		long lowerSeparation = sqDist(lCenter, uCenter);
+		long upperRadius = 0;
+		for (Plot p : upper.getPlots())
+			upperRadius = Math.max(upperRadius, sqDist(p, uCenter));
+		assertTrue(lowerSeparation > upperRadius,
+				"Lower founds spaced outside Upper's footprint (sep=" + lowerSeparation
+						+ ", radius=" + upperRadius + ")");
+	}
+
+	private static long sqDist(Plot a, Plot b) {
+		long dx = a.x() - b.x(), dy = a.y() - b.y();
+		return dx * dx + dy * dy;
 	}
 }
