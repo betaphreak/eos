@@ -227,11 +227,18 @@ the economic stream), exactly as `TerrainGenerator` does today.
     builds claimable `Plot`s from the Phase-1 geo field with `claim`/`release`
     ownership. `Settlement` is **not** rewired, so the full suite stays green
     (`ProvincePlotPoolTest`).
-  - *Slice 2b (next):* rewire `Settlement.claimPlot`/`vacatePlot`/`generatePlot` for a
-    province-founded colony to draw from the pool (per-settlement Fibonacci ladder, rung
-    = claim order from a center), keeping the `BuilderFirm` flow. This shifts terrain/
-    ladder values, so the full suite is re-run and the province-founding tests
-    reconciled/retuned.
+  - *Slice 2b (done):* `Settlement.generatePlot` now **claims from the province pool**
+    for a province-founded colony — the free plot nearest its **center** (the first
+    plot it claims, anchored at the plot nearest the province centroid), growing
+    outward; the existing found/grow/peak/seat machinery is unchanged, so a claimed peak
+    still consumes a ladder rung (rough country pushes workable land out) exactly as
+    before, and the rung stays the claim order. A province-less colony keeps the legacy
+    per-plot terrain draw. The whole suite stayed green with **no retuning** — the pool
+    uses the same climate→terrain distribution, so the food-factor calibration and the
+    collapse profile held; `ProvincePlotPoolTest` adds a check that a province colony's
+    plots are pool-sourced and pool-owned. (A vacated plot stays owned by the colony,
+    re-seatable; releasing back to the province pool is a Phase-4 concern, when several
+    settlements share one province.)
 - **Phase 3 — best-plot selection + founding reservation.** Weighted yield+proximity
   scoring; founding reserves its footprint; `BuilderFirm` clears reserved plots.
 - **Phase 4 — multiple settlements.** Center auto-placement with spacing; a second

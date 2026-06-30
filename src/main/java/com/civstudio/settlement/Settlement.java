@@ -213,6 +213,17 @@ public class Settlement {
 	// plots. Capped at maxPlots.
 	private final List<Plot> plots = new ArrayList<Plot>();
 
+	// the shared province plot pool this colony claims from (resolved lazily from the
+	// session once province and session are both set); null for a province-less colony,
+	// which generates its own plots instead. See docs/province-plots.md.
+	private ProvincePlotPool plotPool;
+	private boolean plotPoolResolved;
+
+	// the colony's center on the province field — the first plot it claims; its
+	// per-settlement travel ladder ranks plots by distance from this. Null until the
+	// first claim (province-founded colonies only).
+	private Plot center;
+
 	// reverse index from a seated occupant to the plot it stands on, so the terrain
 	// yield factor can be read by identity in O(1) (effectiveA reads it per firm per
 	// step). Kept in sync by seat()/vacatePlot; an occupant with no entry (a
@@ -805,12 +816,86 @@ public class Settlement {
 	// the baseline terrain (no feature) and takes no draw. Does not add it to the
 	// colony (the founding path appends; live growth holds it on the build queue).
 	private Plot generatePlot(int index) {
+		// a province-founded colony claims a pre-generated plot from the shared province
+		// pool (nearest its center) instead of drawing its own; a province-less colony
+		// keeps the legacy per-plot terrain draw. Either way the caller assigns the plot
+		// its ladder index and handles peaks the same way.
+		ProvincePlotPool pool = plotPool();
+		if (pool != null) {
+			Plot plot = claimNearestFreePlot(pool);
+			plot.setIndex(index);
+			return plot;
+		}
 		if (terrainGenerator == null)
 			return new Plot(index, baselineTerrain, PlotType.FLAT, null);
 		Terrain terrain = terrainGenerator.next(terrainRng);
 		PlotType plotType = terrainGenerator.nextPlotType(terrainRng);
 		Feature feature = terrainGenerator.nextFeature(terrain, plotType, terrainRng);
 		return new Plot(index, terrain, plotType, feature);
+	}
+
+	// the shared province pool this colony claims from, resolved lazily from the session
+	// (province-founded only); null for a province-less colony. Resolved once.
+	private ProvincePlotPool plotPool() {
+		if (!plotPoolResolved) {
+			plotPoolResolved = true;
+			if (province != null && session != null)
+				plotPool = session.provincePlotPool(province);
+		}
+		return plotPool;
+	}
+
+	// claim the next plot for this colony from the province pool: the free plot nearest
+	// the colony's center. The first claim founds the center at the plot nearest the
+	// province centroid and grows outward from there. A peak is claimed like any plot —
+	// the caller (foundPlot/requestGrowth) skips or zero-work-queues it, so peaks consume
+	// a ladder rung and push workable land outward, exactly as the generated path did.
+	private Plot claimNearestFreePlot(ProvincePlotPool pool) {
+		int cx, cy;
+		if (center == null) {
+			int[] c = centroid(pool);
+			cx = c[0];
+			cy = c[1];
+		} else {
+			cx = center.x();
+			cy = center.y();
+		}
+		Plot target = nearestFreePlot(pool, cx, cy);
+		if (target == null)
+			throw new IllegalStateException(name + ": its province plot pool is exhausted");
+		pool.claim(target, this);
+		if (center == null)
+			center = target;
+		return target;
+	}
+
+	// the free plot of the pool closest (squared raster distance) to (cx, cy)
+	private static Plot nearestFreePlot(ProvincePlotPool pool, int cx, int cy) {
+		Plot best = null;
+		long bestDist = Long.MAX_VALUE;
+		for (Plot p : pool.plots()) {
+			if (p.owner() != null)
+				continue;
+			long dx = p.x() - cx, dy = p.y() - cy;
+			long dist = dx * dx + dy * dy;
+			if (dist < bestDist) {
+				bestDist = dist;
+				best = p;
+			}
+		}
+		return best;
+	}
+
+	// the integer centroid of all the province's plots — the founding anchor for the
+	// first claim (the colony's center becomes the actual plot nearest it)
+	private static int[] centroid(ProvincePlotPool pool) {
+		long sx = 0, sy = 0;
+		for (Plot p : pool.plots()) {
+			sx += p.x();
+			sy += p.y();
+		}
+		int n = pool.size();
+		return new int[] { Math.round((float) sx / n), Math.round((float) sy / n) };
 	}
 
 	// append a freshly-generated vacant plot at the next ladder index (the founding

@@ -1,6 +1,7 @@
 package com.civstudio.settlement;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -82,5 +83,35 @@ class ProvincePlotPoolTest {
 
 	private static ProvincePlotPool poolFor(GameSession s) {
 		return s.provincePlotPool(dhenijansar(s));
+	}
+
+	@Test
+	void provinceFoundedColonyClaimsItsPlotsFromTheSharedPool() {
+		GameSession s = new GameSession(7);
+		Province dh = dhenijansar(s);
+		Settlement colony = s.newSettlement("A", START, 30, 26, 5, 2, dh);
+		ProvincePlotPool pool = s.provincePlotPool(dh);
+		int free0 = pool.freeCount();
+
+		// genesis-claim a run of occupants (peaks count toward the cap, so the colony may
+		// lay more plots than occupants)
+		for (int i = 0; i < 12; i++)
+			colony.claimPlot(new PlotOccupant() {
+			});
+
+		assertFalse(colony.getPlots().isEmpty(), "colony laid plots");
+		for (Plot p : colony.getPlots()) {
+			assertTrue(p.x() >= 0 && p.y() >= 0, "a claimed plot carries a raster position (pool-sourced)");
+			assertSame(colony, p.owner(), "a claimed plot is owned by the colony");
+		}
+		// every plot the colony holds came out of the pool's free count
+		assertEquals(colony.getPlotCount(), free0 - pool.freeCount(),
+				"colony plots match the pool's claimed count");
+
+		// a province-less colony does not use the pool — its plots have no raster position
+		Settlement bare = s.newSettlement("Bare", START, 30, 26, 5, 2, 51.5074, -0.1278);
+		bare.claimPlot(new PlotOccupant() {
+		});
+		assertEquals(-1, bare.getPlots().get(0).x(), "a province-less plot has no raster position");
 	}
 }
