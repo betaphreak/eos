@@ -1,5 +1,6 @@
 package com.civstudio.settlement;
 
+import com.civstudio.geo.Bonus;
 import com.civstudio.geo.Feature;
 import com.civstudio.geo.Improvement;
 import com.civstudio.geo.PlotType;
@@ -50,9 +51,26 @@ public final class Plot {
 	 */
 	private static final double YIELD_FLOOR = 0.1;
 
-	// the plot's position on the travel-time ladder (0 = the first plot; the
-	// commute cost T(index) is read in a later phase). Assigned in claim order.
-	private final int index;
+	// the plot's position on the travel-time ladder (0 = the first plot; the commute
+	// cost T(index) is read by plotTravelTime). For a legacy/province-less colony the
+	// plot's own intrinsic claim order; for a plot drawn from a shared province pool
+	// it is the per-settlement claim rank, assigned by setIndex when claimed (-1 until).
+	private int index;
+
+	// the plot's raster pixel position in the province silhouette, or -1 for a plot
+	// not sourced from the province field (a legacy/province-less plot). See
+	// docs/province-plots.md.
+	private final int x;
+	private final int y;
+
+	// the resource on this plot (from the province field's bonus stage), or null. Carried
+	// here but dormant in yields() this phase — waking it changes the food calibration.
+	private final Bonus bonus;
+
+	// the settlement that has claimed this plot out of the shared province pool, or null
+	// while the plot is free (province-owned). Hybrid ownership: claiming transfers the
+	// plot to the settlement. Null for a legacy/province-less plot (no shared pool).
+	private Settlement owner;
 
 	// the ground this plot sits on (its base Food/Production/Commerce yield); the
 	// baseline terrain for a province-less colony. Never null.
@@ -90,19 +108,73 @@ public final class Plot {
 	 * @param feature  the wild feature overlaying it, or {@code null} if bare
 	 */
 	public Plot(int index, Terrain terrain, PlotType plotType, Feature feature) {
+		this(index, -1, -1, terrain, plotType, feature, null);
+	}
+
+	/**
+	 * Create a vacant, undeveloped plot at a raster position in a province field, with
+	 * its resource — a plot for the shared province pool. Its ladder {@link #index()}
+	 * is unset ({@code -1}) until a settlement claims it (see {@link #setIndex(int)}).
+	 *
+	 * @param x        the raster x of the plot in the province silhouette
+	 * @param y        the raster y of the plot in the province silhouette
+	 * @param terrain  the ground it sits on (non-null)
+	 * @param plotType the relief (flat/hill/peak; non-null)
+	 * @param feature  the wild feature overlaying it, or {@code null} if bare
+	 * @param bonus    the resource on it, or {@code null}
+	 */
+	public Plot(int x, int y, Terrain terrain, PlotType plotType, Feature feature, Bonus bonus) {
+		this(-1, x, y, terrain, plotType, feature, bonus);
+	}
+
+	private Plot(int index, int x, int y, Terrain terrain, PlotType plotType,
+			Feature feature, Bonus bonus) {
 		if (terrain == null)
 			throw new IllegalArgumentException("terrain must be non-null");
 		if (plotType == null)
 			throw new IllegalArgumentException("plotType must be non-null");
 		this.index = index;
+		this.x = x;
+		this.y = y;
 		this.terrain = terrain;
 		this.plotType = plotType;
 		this.feature = feature;
+		this.bonus = bonus;
 	}
 
-	/** The plot's position on the travel-time ladder. */
+	/** The plot's position on the travel-time ladder ({@code -1} until claimed, for a pool plot). */
 	public int index() {
 		return index;
+	}
+
+	/** Set the plot's ladder index — its claim rank, assigned when a settlement claims it. */
+	public void setIndex(int index) {
+		this.index = index;
+	}
+
+	/** The plot's raster x in the province silhouette, or {@code -1} if not from a province field. */
+	public int x() {
+		return x;
+	}
+
+	/** The plot's raster y in the province silhouette, or {@code -1} if not from a province field. */
+	public int y() {
+		return y;
+	}
+
+	/** The resource on this plot, or {@code null}. Dormant in {@link #yields()} this phase. */
+	public Bonus bonus() {
+		return bonus;
+	}
+
+	/** The settlement that has claimed this plot from the shared pool, or {@code null} if free. */
+	public Settlement owner() {
+		return owner;
+	}
+
+	/** Set (or clear, with {@code null}) the settlement owning this plot. Called by the province pool. */
+	public void setOwner(Settlement owner) {
+		this.owner = owner;
 	}
 
 	/** The ground this plot sits on. */

@@ -32,6 +32,11 @@ public final class RngSeed {
 	private static final long DYNASTY_SHUFFLE_SALT = 0x2545F4914F6CDD1DL;
 	private static final long RACE_POOL_SALT = 0x3C79AC492BA7B653L;
 
+	// decorrelates a per-province stream (the shared province plot field, generated
+	// once per province and claimed by every settlement in it) by the province id,
+	// kept apart from the per-colony streams.
+	private static final long PROVINCE_SALT = 0x8EBC6AF09C88C6E3L;
+
 	/**
 	 * A decorrelated random stream a session derives off its seed. Each carries the
 	 * fixed salt that separates it from the others; {@link #ECONOMIC} is salt-free so
@@ -91,6 +96,21 @@ public final class RngSeed {
 	 */
 	public Rng forColony(Stream stream, int colonyIndex) {
 		return new Rng(seed ^ stream.salt() ^ (COLONY_SALT * colonyIndex));
+	}
+
+	/**
+	 * A <b>per-province</b> stream: decorrelated by the province id, for state a
+	 * province generates once and shares across every settlement founded into it (the
+	 * province plot field — see {@code docs/province-plots.md}). Kept apart from the
+	 * per-colony streams so a province's terrain is the same regardless of which
+	 * colony first builds its field.
+	 *
+	 * @param stream     the stream kind (e.g. {@link Stream#TERRAIN})
+	 * @param provinceId the province's id
+	 * @return a fresh generator for that stream of that province
+	 */
+	public Rng forProvince(Stream stream, int provinceId) {
+		return new Rng(seed ^ stream.salt() ^ (PROVINCE_SALT * provinceId));
 	}
 
 	/**

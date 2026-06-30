@@ -218,12 +218,20 @@ the economic stream), exactly as `TerrainGenerator` does today.
   With slices 1–3 the **per-tile generation port is functionally complete** (relief,
   features, resources — only the deferred terrain refinement remains); the next major
   work is the ownership/claiming model in **Phases 2–4** below.
-- **Phase 2 — ownership + single-settlement claim.** Plot gains `(x,y)` + owner;
-  `Settlement.claimPlot`/`vacatePlot` re-pointed to claim from the province field
-  (ownership transfer); the per-settlement Fibonacci ladder from a center. Fold the
-  existing single-settlement-per-province path onto the shared field with no
-  behavioural change (the colony still founds and grows as today, now over province
-  plots).
+- **Phase 2 — ownership + single-settlement claim.** Re-source `Settlement`'s plots
+  from a shared province field, in two sub-slices:
+  - *Slice 2a (done):* the claimable pool — additive, zero behaviour change. `Plot`
+    gains its raster `(x, y)`, its `Bonus`, a settable ladder `index`, and a nullable
+    owning `Settlement` (the existing constructor untouched). `ProvincePlotPool`
+    (cached per province on `GameSession`, off a `RngSeed.forProvince` terrain stream)
+    builds claimable `Plot`s from the Phase-1 geo field with `claim`/`release`
+    ownership. `Settlement` is **not** rewired, so the full suite stays green
+    (`ProvincePlotPoolTest`).
+  - *Slice 2b (next):* rewire `Settlement.claimPlot`/`vacatePlot`/`generatePlot` for a
+    province-founded colony to draw from the pool (per-settlement Fibonacci ladder, rung
+    = claim order from a center), keeping the `BuilderFirm` flow. This shifts terrain/
+    ladder values, so the full suite is re-run and the province-founding tests
+    reconciled/retuned.
 - **Phase 3 — best-plot selection + founding reservation.** Weighted yield+proximity
   scoring; founding reserves its footprint; `BuilderFirm` clears reserved plots.
 - **Phase 4 — multiple settlements.** Center auto-placement with spacing; a second

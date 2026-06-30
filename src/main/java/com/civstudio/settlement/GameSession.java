@@ -1,9 +1,12 @@
 package com.civstudio.settlement;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +17,7 @@ import com.civstudio.agent.Caravan;
 import com.civstudio.calendar.LiturgicalCalendar;
 import com.civstudio.era.Era;
 import com.civstudio.geo.Province;
+import com.civstudio.geo.ProvinceRaster;
 import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.mortality.Demography;
@@ -123,6 +127,13 @@ public class GameSession {
 	// tests do not pay the ~1MB parse. See getWorldMap() and docs/geography.md.
 	private WorldMap worldMap;
 
+	// per-province claimable plot pools — the shared province plot field (see
+	// docs/province-plots.md), generated lazily on first request and cached, with the
+	// raster reader loaded on demand too. Only a province-founded colony reaching for
+	// its pool pays the BMP read; geography-less runs and tests are unaffected.
+	private ProvinceRaster provinceRaster;
+	private final Map<Integer, ProvincePlotPool> plotPoolByProvince = new HashMap<>();
+
 	// per-race tech trees: the same graph (techs.json) under a race's effect overlay
 	// (/tech-effects-<id>.json). A race with no overlay file reuses the shared techTree
 	// (the default empty overlay), so the human path is unchanged. See getTechTree(Race).
@@ -205,6 +216,31 @@ public class GameSession {
 		if (worldMap == null)
 			worldMap = WorldMap.load();
 		return worldMap;
+	}
+
+	/**
+	 * The shared, claimable {@link ProvincePlotPool plot pool} of a province — its
+	 * land pixels realised as occupiable plots, generated once per province (off a
+	 * per-province terrain stream) and cached, so every settlement founded into the
+	 * province claims from the same field. Built lazily on first request (loading the
+	 * raster reader on demand), so only a province-founded colony that reaches for its
+	 * pool pays the cost; geography-less runs and tests are unaffected. See {@code
+	 * docs/province-plots.md}.
+	 *
+	 * @param province the province whose pool is wanted
+	 * @return the province's shared plot pool
+	 */
+	public synchronized ProvincePlotPool provincePlotPool(Province province) {
+		return plotPoolByProvince.computeIfAbsent(province.id(), id -> {
+			try {
+				if (provinceRaster == null)
+					provinceRaster = ProvinceRaster.load();
+				Rng terrainRng = rngSeed.forProvince(RngSeed.Stream.TERRAIN, id);
+				return ProvincePlotPool.generate(province, terrainRegistry, provinceRaster, terrainRng);
+			} catch (IOException e) {
+				throw new UncheckedIOException("failed to build plot pool for province " + id, e);
+			}
+		});
 	}
 
 	/**
