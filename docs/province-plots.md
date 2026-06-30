@@ -93,24 +93,41 @@ raster-reading approach, `docs/geography.md`):
    and shared by all its settlements). The C2C generator's continent/ocean/latitude
    machinery is irrelevant to a single fixed-shape, single-climate province; only its
    per-tile stage is ported, in slices:
+   - **terrain** — the ground now comes from the **real EU4 `data/terrain.bmp`**
+     (full-resolution, 1 pixel = 1 province pixel), decoded per plot by
+     `MapTerrainCodec.ground` (the EU4 palette → curated Civ4 `Terrain`, transcribed
+     from `data/terrain.txt`'s `terrain { }` block). The climate-weighted pool
+     (`TerrainGenerator.next`) is kept as the **fallback** for water/coastline/
+     unmapped pixels and for a province-less colony. This replaces the interim
+     climate-pool ground: a province now reads as the map actually paints it (e.g.
+     Dhenijansar as plains/grassland with a desert fringe, not a tropical
+     lush/marsh draw). *(done — real map)*
    - **relief** — `ReliefGenerator` ports the C2C `addPeaks`/`addHills`: seed by
      probability, then **grow into clusters/ranges** (so a province reads as a
-     landscape, not scattered noise), an `IMPASSABLE` province mountainous. *(done)*
+     landscape, not scattered noise), an `IMPASSABLE` province mountainous. The
+     **real map's** hills/mountains (EU4 folds relief into the same `terrain.bmp`
+     palette — `hills`/`highlands`/`mountain`/`snow`) are lifted onto the orthogonal
+     `PlotType` axis by `MapTerrainCodec.relief` and composed as the **rougher** of
+     the two, so map mountains survive while ordinary ground keeps the generator's
+     coherent ranges. *(done)*
    - **features** — `FeatureGenerator` ports the C2C water-seeded growth: vegetation
      seeds along rivers and the coast and **spreads inland** with distance decay
      (jungle in a hot climate, forest otherwise), plus river **flood plains** on flat
-     riverside plots. `ClimateProfile` reduces the province's climate to the C2C
-     temperature/humidity scalars the stage reads. *(done)*
-   - **terrain** — the ground; the interim climate-weighted pool
-     (`TerrainGenerator.next`). The C2C temperature→terrain selection is **deferred**:
-     in isolation it regresses hot climates to desert (the C2C stage relies on the
-     terrain-rewriting it does *as features spread*, itself not yet ported), so the
-     climate pool is the better interim ground. *(deferred)*
+     riverside plots. The vegetation **amount** is now the real wooded fraction from
+     **`data/trees.bmp`** (decoded by `MapTerrainCodec.isWoody`): `trees.bmp` is
+     ~1/7.7 resolution (732×266 vs the 5632×2048 province raster) — far too coarse
+     to place individual forest pixels on a small
+     province — so it drives the spread **density** rather than a per-pixel feature,
+     while the climate still sets the **kind**. `ClimateProfile` reduces the
+     province's climate to the C2C temperature/humidity scalars the stage reads.
+     *(done — real map density)*
    - **resources** — `BonusGenerator` wakes the dormant `Bonus` data: the C2C
      `addBonuses` delegates to the engine, which places each resource by its own
      terrain/feature/relief/latitude constraints — exactly the constraints the
      `Bonus` record already carries — so placement honours them (sparse,
-     eligibility-gated). *(done)*
+     eligibility-gated). **Unchanged by the real-map sourcing above** — it consumes
+     whatever terrain/relief/feature a plot ends up with, so resources now simply sit
+     on the map's authentic ground. *(done)*
 3. Each land cell becomes one `ProvincePlot` (raster `(x, y)`, river flag, terrain,
    relief, feature). The plot count equals `province.plots` (the land-pixel count) —
    the finite pool every settlement in the province shares.

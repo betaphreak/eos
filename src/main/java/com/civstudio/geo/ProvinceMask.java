@@ -21,14 +21,22 @@ public final class ProvinceMask {
 	private final int height;
 	private final boolean[] land; // row-major, width*height
 	private final boolean[] river;
+	// the real EU4 terrain.bmp / trees.bmp palette index per cell, or -1 where the
+	// overlay is absent (see ProvinceRaster); the plot field reads these to ground a
+	// plot on the real map and falls back to climate generation where they are -1
+	private final int[] terrainIndex;
+	private final int[] treeIndex;
 
-	ProvinceMask(int originX, int originY, int width, int height, boolean[] land, boolean[] river) {
+	ProvinceMask(int originX, int originY, int width, int height, boolean[] land, boolean[] river,
+			int[] terrainIndex, int[] treeIndex) {
 		this.originX = originX;
 		this.originY = originY;
 		this.width = width;
 		this.height = height;
 		this.land = land;
 		this.river = river;
+		this.terrainIndex = terrainIndex;
+		this.treeIndex = treeIndex;
 	}
 
 	/** Absolute raster x of local column 0 (the bounding-box left edge). */
@@ -63,6 +71,28 @@ public final class ProvinceMask {
 		if (lx < 0 || lx >= width || ly < 0 || ly >= height)
 			return false;
 		return river[ly * width + lx];
+	}
+
+	/**
+	 * The real {@code terrain.bmp} palette index at the local cell, or {@code -1} if
+	 * the cell is outside the bbox or the terrain overlay was not loaded. Decode it
+	 * with {@link MapTerrainCodec#ground}/{@link MapTerrainCodec#relief}.
+	 */
+	public int terrainIndex(int lx, int ly) {
+		if (lx < 0 || lx >= width || ly < 0 || ly >= height)
+			return -1;
+		return terrainIndex[ly * width + lx];
+	}
+
+	/**
+	 * The real {@code trees.bmp} palette index covering the local cell, or {@code -1}
+	 * if outside the bbox or the tree overlay was not loaded. Decode it with {@link
+	 * MapTerrainCodec#isWoody} (the overlay is coarse — used as a density signal).
+	 */
+	public int treeIndex(int lx, int ly) {
+		if (lx < 0 || lx >= width || ly < 0 || ly >= height)
+			return -1;
+		return treeIndex[ly * width + lx];
 	}
 
 	/** The number of land cells (== the province's plot count). */

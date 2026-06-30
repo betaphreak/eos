@@ -36,15 +36,26 @@ public final class FeatureGenerator {
 	 * Generate the vegetation overlay for a mask: one {@link Feature} per cell —
 	 * {@code FEATURE_FOREST}/{@code FEATURE_JUNGLE} on vegetated land, {@code null}
 	 * elsewhere — drawn off the terrain {@code rng}.
+	 * <p>
+	 * The vegetation <b>kind</b> is the province's climate (jungle if hot, else
+	 * forest); the vegetation <b>amount</b> is the {@code treeCover} fraction read
+	 * from the real {@code trees.bmp} overlay (see {@link MapTerrainCodec#isWoody}):
+	 * the seed-and-spread chance scales with it, so a province the map paints as
+	 * heavily wooded grows dense vegetation along its water while a bare one grows
+	 * almost none. {@code trees.bmp} is too coarse to place individual forest pixels
+	 * on a small province, so it drives this density rather than a per-pixel feature.
 	 *
-	 * @param mask     the province silhouette (land + river flags)
-	 * @param climate  the province's temperature/humidity profile
-	 * @param registry the curated feature definitions
-	 * @param rng      the dedicated terrain stream (not the economic one)
+	 * @param mask      the province silhouette (land + river flags)
+	 * @param climate   the province's temperature/humidity profile (the veg kind)
+	 * @param treeCover the real wooded fraction in {@code [0, 1]} from {@code
+	 *                  trees.bmp} (the veg amount); a negative value (no overlay)
+	 *                  falls back to the climate humidity
+	 * @param registry  the curated feature definitions
+	 * @param rng       the dedicated terrain stream (not the economic one)
 	 * @return a {@code width*height} feature grid (row-major; {@code null} = bare)
 	 */
 	public static Feature[] generate(ProvinceMask mask, ClimateProfile climate,
-			TerrainRegistry registry, Rng rng) {
+			double treeCover, TerrainRegistry registry, Rng rng) {
 		int w = mask.width(), h = mask.height();
 		Feature[] feat = new Feature[w * h];
 		Feature vegetation = registry.feature(climate.isHot() ? "FEATURE_JUNGLE" : "FEATURE_FOREST");
@@ -58,15 +69,18 @@ public final class FeatureGenerator {
 				if (mask.isLand(lx, ly) && (mask.isRiver(lx, ly) || isCoastal(mask, lx, ly)))
 					seeds.add(new int[] { lx, ly, 1 });
 
-		double humidity = climate.humidity();
+		// the real wooded fraction drives the spread density; with no overlay fall
+		// back to the climate humidity (the prior behaviour)
+		double density = treeCover >= 0 ? treeCover : (0.2 + 0.8 * climate.humidity());
 		while (!seeds.isEmpty()) {
 			int[] s = seeds.remove(rng.uniform(seeds.size()));
 			int x = s[0], y = s[1], dist = s[2];
 			int idx = y * w + x;
 			if (feat[idx] != null)
 				continue;
-			// vegetate with a chance that decays with distance and rises with humidity
-			double pVegetate = (0.2 + 0.8 * humidity) / dist;
+			// vegetate with a chance that decays with distance from water and scales
+			// with how wooded the real map paints this province
+			double pVegetate = density / dist;
 			if (rng.uniform() >= pVegetate)
 				continue;
 			feat[idx] = vegetation;

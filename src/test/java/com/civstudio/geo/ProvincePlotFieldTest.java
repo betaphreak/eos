@@ -1,12 +1,13 @@
 package com.civstudio.geo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -93,36 +94,78 @@ class ProvincePlotFieldTest {
 		return p.bonus() == null ? "none" : p.bonus().type();
 	}
 
+	/**
+	 * The feature stage places <b>diverse, valid</b> features drawn from the real map:
+	 * the tree class and the ground each imply a feature (forest/jungle/savanna/cactus/
+	 * swamp/…), every one validity-gated against its plot's terrain & relief, plus
+	 * river flood plains. Dhenijansar — real plains/grassland with a desert fringe,
+	 * wooded and wet — grows more than one feature type, where the old single-climate
+	 * kind gave only one.
+	 */
 	@Test
-	void featureStagePlacesClimateVegetationAndRiverFloodPlains() throws Exception {
+	void featureStagePlacesDiverseValidFeaturesAndFloodPlains() throws Exception {
 		Province dh = dhenijansar();
 		ProvincePlotField field = ProvincePlotField.generate(
 				dh, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(3));
 
-		// the vegetation kind is the climate's — jungle if hot, else forest, never both
-		String veg = ClimateProfile.of(dh).isHot() ? "FEATURE_JUNGLE" : "FEATURE_FOREST";
-		String otherVeg = veg.equals("FEATURE_JUNGLE") ? "FEATURE_FOREST" : "FEATURE_JUNGLE";
-		int vegetated = 0, flood = 0;
+		Set<String> kinds = new HashSet<>();
+		int featured = 0, flood = 0;
 		for (ProvincePlot p : field.plots()) {
-			String f = featureType(p);
-			assertNotEquals(otherVeg, f, "wrong vegetation for this climate");
-			if (veg.equals(f))
-				vegetated++;
-			if ("FEATURE_FLOOD_PLAINS".equals(f)) {
+			if (p.feature() == null)
+				continue;
+			featured++;
+			kinds.add(p.feature().type());
+			// every placed feature must be a valid host of its plot's terrain & relief
+			assertTrue(p.feature().validTerrains().contains(p.terrain().type()),
+					p.feature().type() + " placed on invalid terrain " + p.terrain().type());
+			if (p.feature().requiresFlatlands())
+				assertEquals(PlotType.FLAT, p.plotType(),
+						p.feature().type() + " requires flat ground");
+			if ("FEATURE_FLOOD_PLAINS".equals(p.feature().type())) {
 				flood++;
-				assertTrue(p.river(), "flood plains only on river plots");
+				assertTrue(p.river() && p.plotType() == PlotType.FLAT,
+						"flood plains only on flat river plots");
 			}
-			// flat riverside plots are flood plains, not bare/forest
-			if (p.river() && p.plotType() == PlotType.FLAT)
-				assertEquals("FEATURE_FLOOD_PLAINS", f, "flat riverside should flood");
 		}
-		// Dhenijansar is a wet coastal province — it should grow some vegetation
-		assertTrue(vegetated > 0, "expected some vegetation near water/coast");
-		assertTrue(flood > 0, "expected flood plains on its river plots");
+		assertTrue(featured > 0, "expected some features placed");
+		assertTrue(kinds.size() >= 2, "expected diverse features from the real map, got " + kinds);
+		assertTrue(flood > 0, "expected flood plains on its flat river plots");
 	}
 
 	private static String featureType(ProvincePlot p) {
 		return p.feature() == null ? "none" : p.feature().type();
+	}
+
+	/**
+	 * The plots are grounded on the <b>real</b> {@code terrain.bmp}, not the
+	 * province's climate-weighted pool. Dhenijansar reads from the map as plains +
+	 * grassland with a little desert; its tropical {@link Climate} pool would instead
+	 * draw lush/muddy/marsh and could never produce desert — so the real composition
+	 * is the discriminator that the map (not the climate RNG) is driving terrain.
+	 */
+	@Test
+	void terrainComesFromTheRealMapNotTheClimatePool() throws Exception {
+		Province dh = dhenijansar();
+		ProvincePlotField field = ProvincePlotField.generate(
+				dh, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(5));
+
+		Map<String, Integer> counts = new HashMap<>();
+		for (ProvincePlot p : field.plots())
+			counts.merge(p.terrain().type(), 1, Integer::sum);
+
+		int total = field.size();
+		int plainsAndGrass = counts.getOrDefault("TERRAIN_PLAINS", 0)
+				+ counts.getOrDefault("TERRAIN_GRASSLAND", 0);
+		// the map paints this province overwhelmingly plains/grassland
+		assertTrue(plainsAndGrass >= total * 0.8,
+				"expected mostly plains/grassland from the map, got " + counts);
+		// it carries the map's desert fringe — impossible from the tropical pool
+		assertTrue(counts.getOrDefault("TERRAIN_DESERT", 0) > 0,
+				"expected the map's desert pixels, got " + counts);
+		// and none of the tropical climate pool's signature wet terrains
+		assertEquals(0, counts.getOrDefault("TERRAIN_LUSH", 0)
+				+ counts.getOrDefault("TERRAIN_MUDDY", 0),
+				"climate-pool terrains should not appear when the map grounds every plot");
 	}
 
 	@Test

@@ -39,23 +39,42 @@ class PlotGenerationTest {
 		return out;
 	}
 
+	// claim the colony's whole province (every plot in its shared pool, draining it),
+	// returning the terrain type of each laid plot. Claims nearest-center first, so a
+	// small central cluster is laid before the periphery; draining the pool guarantees
+	// the full province silhouette is covered. Stops when the pool is exhausted.
+	private static List<String> claimWholeProvince(Settlement c, int provincePlots) {
+		try {
+			for (int i = 0; i < provincePlots; i++)
+				c.claimPlot(new PlotOccupant() {
+				});
+		} catch (IllegalStateException poolDrained) {
+			// the province pool ran out (peaks consume the cap without seating) — done
+		}
+		List<String> out = new ArrayList<>();
+		for (Plot p : c.getPlots())
+			out.add(p.terrain().type());
+		return out;
+	}
+
 	@Test
 	void provinceColonyGeneratesDeterministicVariedTerrain() {
 		Province dh = new GameSession(7).getWorldMap().findByName("Dhenijansar")
 				.orElseThrow();
 
 		// same seed -> identical terrain sequence (the terrain stream is reproducible)
-		List<String> a = claimTerrains(
-				new GameSession(7).newSettlement("A", START, 30, 26, 5, 2, dh), 40);
-		List<String> b = claimTerrains(
-				new GameSession(7).newSettlement("B", START, 30, 26, 5, 2, dh), 40);
+		List<String> a = claimWholeProvince(
+				new GameSession(7).newSettlement("A", START, 30, 26, 5, 2, dh), dh.plots());
+		List<String> b = claimWholeProvince(
+				new GameSession(7).newSettlement("B", START, 30, 26, 5, 2, dh), dh.plots());
 		assertEquals(a, b, "plot generation is deterministic per seed");
 
-		// the climate pool yields more than one terrain over 40 draws (it is not the
-		// uniform baseline a bare colony gets)
+		// the real province map grounds the colony in more than one terrain (Dhenijansar
+		// reads as plains/grassland with a desert fringe), not the uniform baseline a
+		// province-less colony gets
 		Set<String> distinct = new LinkedHashSet<>(a);
 		assertTrue(distinct.size() >= 2,
-				"a province colony's terrain varies with its climate, got " + distinct);
+				"a province colony's terrain varies across its real map, got " + distinct);
 	}
 
 	@Test
