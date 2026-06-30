@@ -101,8 +101,8 @@ import lombok.Builder;
  *                     single seed firm (see {@code docs/food-balance.md}). Applied by
  *                     {@code SimulationHarness.foundStandardColony}, clamped to what
  *                     the colony's (province-capped) plots can seat; {@code 0} keeps
- *                     the fixed {@code numNFirms}. The granular-founding sims
- *                     (Hanseatic, SmallOpen) bypass it
+ *                     the fixed {@code numNFirms}. The granular-founding sim
+ *                     (SmallOpen) bypasses it
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(

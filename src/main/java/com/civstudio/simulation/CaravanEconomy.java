@@ -39,7 +39,7 @@ import com.civstudio.util.Rng;
  * The three colonies share the session's {@link NameRegistry} and {@link
  * Demography} (so dynasty surnames are unique across all of them) but each has its own
  * economic stream, markets, banks and agents; they are built and run in turn (like
- * {@link HanseaticEconomy}), each writing name-prefixed CSVs.
+ * {@link TwinSettlementEconomy}), each writing name-prefixed CSVs.
  * <p>
  * Because a band's {@link Retinue following} must live on <em>some</em> colony, the
  * three bands are first mustered on a throwaway colony (never run) that only mints

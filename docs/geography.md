@@ -474,7 +474,10 @@ explicit coordinates are unchanged.
   was founded into Withacen at its latitude, and that the two provinces are
   adjacent (`WorldMap.path(515, 519) == [515, 519]`, a one-step route) — the
   travel-network substrate caravan trade will route over. Full suite green (143
-  tests).
+  tests). **(Superseded:** `HanseaticEconomy` was later removed in favour of the
+  single-province `TwinSettlementEconomy` — two settlements sharing one province's
+  plot field, see `docs/province-plots.md`. The province-adjacency it demonstrated
+  is now covered by `MigrantCaravanTest`, which still routes over Withacen↔Hopespeak.)
 - **Phase 4 — hand off to the dependent features. (Designed — see
   [`docs/caravan-trade.md`](caravan-trade.md).)** Geography itself is complete at
   Phase 3; the travel-network consumers are designed in their own note: a

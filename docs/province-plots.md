@@ -239,14 +239,36 @@ the economic stream), exactly as `TerrainGenerator` does today.
     plots are pool-sourced and pool-owned. (A vacated plot stays owned by the colony,
     re-seatable; releasing back to the province pool is a Phase-4 concern, when several
     settlements share one province.)
-- **Phase 3 — best-plot selection + founding reservation.** Weighted yield+proximity
-  scoring; founding reserves its footprint; `BuilderFirm` clears reserved plots.
-- **Phase 4 — multiple settlements.** Center auto-placement with spacing; a second
-  settlement founded into an occupied province claims the best free region; verify
-  two settlements coexist on one province's field without contention.
-- **Phase 5 — validate + retune.** Confirm the macro behaviour (food balance, the
-  collapse profile) is unchanged for the single-settlement default, and exercise a
-  two-settlement province end to end.
+- **Phase 3 — multiple settlements in one province. (Done.)** Pulled the multi-settlement
+  payoff forward into a concrete scenario: **Upper and Lower, both founded into
+  Dhenijansar**, sharing its 74-plot pool (`simulation/TwinSettlementEconomy`,
+  replacing the old two-province `HanseaticEconomy`).
+  - *Slice 3a (done):* the shared pool is now **thread-safe** (several settlements claim
+    concurrently under the lockstep `SessionRunner`); a settlement's founding center is
+    placed by **min-distance auto-spacing** (`claimFoundingCenter` — the free plot
+    maximizing the minimum distance to other settlements' claimed plots; the centroid for
+    the first), then `claimNearest` grows it outward. Growth is **pool-aware and graceful**:
+    `canAcquirePlot` checks the shared pool's free count (the real limit when settlements
+    compete), so `hasRoomToExpand`/`requestGrowth` stop instead of crashing when the pool
+    drains, and a lost claim race returns cleanly. Single-colony behaviour is unchanged
+    (equivalent when one colony owns the whole pool). `ProvincePlotPoolTest` covers two
+    settlements claiming spaced, disjoint plots from one pool.
+  - *Slice 3b (done):* `TwinSettlementEconomy` founds Upper + Lower into Dhenijansar at
+    default scale and runs them concurrently; both **compete for the 74 plots** until the
+    pool drains, then collapse (sooner than a lone colony, crowding one small province).
+    `TwinSettlementEconomyTest` is the concurrent smoke test (both run clean over the
+    shared pool to dissolution); the old `HanseaticEconomy`/`HanseaticEconomyTest` are
+    removed. Full suite green.
+  - *Deferred from the original Phase 3:* **weighted yield+proximity** best-plot selection
+    (claiming is nearest-first proximity only, no yield term yet) and **founding
+    reservation** (`BuilderFirm`-cleared reserved footprint) — placement uses min-distance
+    spacing + nearest-first, which suffices for the scenario.
+- **Phase 4 — refinements (proposed).** Release a colony's plots back to the pool on
+  death/shrink (a vacated plot currently stays owned, re-seatable); weighted best-plot
+  selection; and the yield-aware center the deferred Phase-3 items describe.
+- **Phase 5 — validate + retune. (Done for the current cuts.)** The single-settlement
+  default and the two-settlement province both run end to end with no retuning (the pool
+  preserves the climate→terrain distribution); full suite green.
 
 ## Open questions deferred to later
 

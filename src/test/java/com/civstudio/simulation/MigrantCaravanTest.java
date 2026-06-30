@@ -30,7 +30,7 @@ import com.civstudio.util.Rng;
  */
 class MigrantCaravanTest {
 
-	// two directly-adjacent LAND provinces (the Hanseatic pair) and a far-away one
+	// two directly-adjacent LAND provinces (Withacen/Hopespeak) and a far-away one
 	private static final int WITHACEN = 515;
 	private static final int HOPESPEAK = 519;
 	private static final int DHENIJANSAR = 4411;

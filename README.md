@@ -137,7 +137,7 @@ invariant checks. Select a different entry point with the `sim.main` property:
 
 ```bash
 mvn exec:exec -Dsim.main=simulation.com.civstudio.SmallOpenEconomy   # open colony + immigration
-mvn exec:exec -Dsim.main=simulation.com.civstudio.HanseaticEconomy   # two colonies, shared name pool
+mvn exec:exec -Dsim.main=simulation.com.civstudio.TwinSettlementEconomy  # two settlements sharing one province
 mvn exec:exec -Dsim.main=simulation.com.civstudio.CaravanEconomy     # three caravans found, fall, and reform
 ```
 
@@ -155,7 +155,7 @@ so the count tracks demand. The entry points are:
 |------------------------|------------------------------------------------------------------------------------------------------|
 | `HomogeneousEconomy`   | Homogeneous agents, a single copper bank (plus the silver nobles and the gold ruler) — the default run, founded via `SimulationHarness.foundStandardColony`. |
 | `SmallOpenEconomy`     | An economy opened to external money inflow + immigration, growing past its starting size; bare, with no ruler/pool. |
-| `HanseaticEconomy`     | Two neighbouring colonies near Lübeck in one session — independent economies, shared name pool.       |
+| `TwinSettlementEconomy` | Two settlements (Upper and Lower) founded into one province (Dhenijansar) in one session — independent economies sharing the province's plot field, run concurrently, competing for its 74 plots. |
 | `CaravanEconomy`       | Three wandering bands (hoards of 50/100/200 gold, lean→ample larders) each **re-found** a settlement that runs until its reserve drains and it **collapses back into a Caravan**; uncapped, ending once all three have reformed. |
 
 Each scenario consists of a `static run()` that builds and runs the colony via

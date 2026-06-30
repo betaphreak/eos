@@ -168,7 +168,7 @@ public class SimulationHarness {
 	// parameters for nobles raised by ennoblement (the export aristocracy is now
 	// built from laborers, not created up front); defaults to the canonical values.
 	// Replace via setNobleConfig before createDefaultRuler (e.g. to give a colony's
-	// nobles a necessity reserve, as HanseaticEconomy does).
+	// nobles a necessity reserve, as a per-run override can).
 	private NobleConfig nobleConfig = NobleConfig.DEFAULT;
 
 	// parameters for the peasant pool (larder depth, relief budget, relief ration);
@@ -706,7 +706,7 @@ public class SimulationHarness {
 		primeNobleLabor();
 		// install research + the science firm (see ensureResearchAndScience);
 		// createDefaultRuler calls it too, so even a colony reaching a ruler without
-		// going through this method (e.g. HanseaticEconomy) still researches.
+		// going through this method (a manually-built colony) still researches.
 		ensureResearchAndScience(bank);
 	}
 
