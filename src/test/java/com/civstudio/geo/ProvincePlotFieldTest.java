@@ -1,6 +1,7 @@
 package com.civstudio.geo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -60,7 +61,40 @@ class ProvincePlotFieldTest {
 			assertEquals(pa.y(), pb.y());
 			assertSame(pa.plotType(), pb.plotType(), "same relief at " + i);
 			assertEquals(pa.terrain().type(), pb.terrain().type(), "same terrain at " + i);
+			assertEquals(featureType(pa), featureType(pb), "same feature at " + i);
 		}
+	}
+
+	@Test
+	void featureStagePlacesClimateVegetationAndRiverFloodPlains() throws Exception {
+		Province dh = dhenijansar();
+		ProvincePlotField field = ProvincePlotField.generate(
+				dh, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(3));
+
+		// the vegetation kind is the climate's — jungle if hot, else forest, never both
+		String veg = ClimateProfile.of(dh).isHot() ? "FEATURE_JUNGLE" : "FEATURE_FOREST";
+		String otherVeg = veg.equals("FEATURE_JUNGLE") ? "FEATURE_FOREST" : "FEATURE_JUNGLE";
+		int vegetated = 0, flood = 0;
+		for (ProvincePlot p : field.plots()) {
+			String f = featureType(p);
+			assertNotEquals(otherVeg, f, "wrong vegetation for this climate");
+			if (veg.equals(f))
+				vegetated++;
+			if ("FEATURE_FLOOD_PLAINS".equals(f)) {
+				flood++;
+				assertTrue(p.river(), "flood plains only on river plots");
+			}
+			// flat riverside plots are flood plains, not bare/forest
+			if (p.river() && p.plotType() == PlotType.FLAT)
+				assertEquals("FEATURE_FLOOD_PLAINS", f, "flat riverside should flood");
+		}
+		// Dhenijansar is a wet coastal province — it should grow some vegetation
+		assertTrue(vegetated > 0, "expected some vegetation near water/coast");
+		assertTrue(flood > 0, "expected flood plains on its river plots");
+	}
+
+	private static String featureType(ProvincePlot p) {
+		return p.feature() == null ? "none" : p.feature().type();
 	}
 
 	@Test

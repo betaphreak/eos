@@ -96,12 +96,17 @@ raster-reading approach, `docs/geography.md`):
    - **relief** — `ReliefGenerator` ports the C2C `addPeaks`/`addHills`: seed by
      probability, then **grow into clusters/ranges** (so a province reads as a
      landscape, not scattered noise), an `IMPASSABLE` province mountainous. *(done)*
-   - **terrain** — the ground; the C2C temperature→terrain selection (interim: the
-     existing climate-weighted pool, `TerrainGenerator.next`). *(relief done; C2C
-     temperature refinement next)*
-   - **features** — water-seeded forest/jungle growth and river flood plains (the
-     per-plot river flag is already captured for this). *(staged)*
-   - **resources** — the C2C `addBonuses` placement onto plots. *(staged)*
+   - **features** — `FeatureGenerator` ports the C2C water-seeded growth: vegetation
+     seeds along rivers and the coast and **spreads inland** with distance decay
+     (jungle in a hot climate, forest otherwise), plus river **flood plains** on flat
+     riverside plots. `ClimateProfile` reduces the province's climate to the C2C
+     temperature/humidity scalars the stage reads. *(done)*
+   - **terrain** — the ground; the interim climate-weighted pool
+     (`TerrainGenerator.next`). The C2C temperature→terrain selection is **deferred**:
+     in isolation it regresses hot climates to desert (the C2C stage relies on the
+     terrain-rewriting it does *as features spread*, itself not yet ported), so the
+     climate pool is the better interim ground. *(deferred)*
+   - **resources** — the C2C `addBonuses` placement onto plots. *(next)*
 3. Each land cell becomes one `ProvincePlot` (raster `(x, y)`, river flag, terrain,
    relief, feature). The plot count equals `province.plots` (the land-pixel count) —
    the finite pool every settlement in the province shares.
@@ -192,11 +197,16 @@ the economic stream), exactly as `TerrainGenerator` does today.
   `province.plots` count and per-seed determinism.
   - *Slice 1 (done):* the substrate (`ProvinceRaster` → `ProvinceMask`), the
     C2C-ported **relief** clustering (`ReliefGenerator`), and the field assembler
-    (`ProvincePlotField`: relief + climate-pool terrain). Covered by
-    `ProvincePlotFieldTest` (silhouette/count, determinism, relief clusters).
-  - *Slice 2 (next):* the C2C **temperature→terrain** selection (replacing the interim
-    climate pool) + water-seeded **feature growth** and river **flood plains**.
-  - *Slice 3:* the C2C **resource** placement (`addBonuses`).
+    (`ProvincePlotField`).
+  - *Slice 2 (done):* the C2C water-seeded **feature growth** (`FeatureGenerator` —
+    forest/jungle seeded along water, spread inland) + river **flood plains**, with
+    `ClimateProfile` supplying the C2C temperature/humidity. Covered by
+    `ProvincePlotFieldTest` (silhouette/count, determinism, relief clusters, climate
+    vegetation + flood plains).
+  - *Slice 3 (next):* the C2C **resource** placement (`addBonuses`).
+  - *Deferred:* the C2C **temperature→terrain** replacement — the climate pool is the
+    better interim ground until the feature-driven terrain rewriting is ported (a hot
+    climate's raw C2C terrain is desert until features convert it).
 - **Phase 2 — ownership + single-settlement claim.** Plot gains `(x,y)` + owner;
   `Settlement.claimPlot`/`vacatePlot` re-pointed to claim from the province field
   (ownership transfer); the per-settlement Fibonacci ladder from a center. Fold the

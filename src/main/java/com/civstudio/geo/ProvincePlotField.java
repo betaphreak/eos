@@ -15,13 +15,14 @@ import com.civstudio.util.Rng;
  * into the province (which claim plots from it; ownership/claiming land in a later
  * phase). See {@code docs/province-plots.md}.
  * <p>
- * <b>This phase</b> assembles two stages: the relief ({@link PlotType}
- * flat/hill/peak) comes from the C2C-ported {@link ReliefGenerator} (spatially
- * clustered ranges), and the ground {@link Terrain} from the province's
- * climate-weighted pool ({@link TerrainGenerator#next}). The remaining C2C
- * per-tile stages — the temperature-driven terrain refinement, water-seeded
- * feature growth, river flood plains, and resource placement — are staged for the
- * next phases, so {@link ProvincePlot#feature()} is {@code null} for now.
+ * <b>This phase</b> assembles three stages: the relief ({@link PlotType}
+ * flat/hill/peak) from the C2C-ported {@link ReliefGenerator} (spatially clustered
+ * ranges), the ground {@link Terrain} from the province's climate-weighted pool
+ * ({@link TerrainGenerator#next}), and the wild {@link Feature} from the C2C-ported
+ * {@link FeatureGenerator} (water-seeded forest/jungle) plus river <b>flood
+ * plains</b> (flat, riverside). The remaining C2C per-tile stages — the
+ * temperature-driven terrain refinement and resource placement — are staged for the
+ * next slices.
  */
 public final class ProvincePlotField {
 
@@ -66,6 +67,9 @@ public final class ProvincePlotField {
 		PlotType[] relief = ReliefGenerator.generate(mask, ReliefGenerator.Params.forProvince(province), rng);
 		TerrainGenerator terrainGen = new TerrainGenerator(registry, province.climate(),
 				province.winter(), province.monsoon());
+		ClimateProfile climate = ClimateProfile.of(province);
+		Feature[] vegetation = FeatureGenerator.generate(mask, climate, registry, rng);
+		Feature floodPlains = registry.feature("FEATURE_FLOOD_PLAINS");
 
 		int w = mask.width(), h = mask.height();
 		List<ProvincePlot> out = new ArrayList<>(mask.landCount());
@@ -73,10 +77,16 @@ public final class ProvincePlotField {
 			for (int lx = 0; lx < w; lx++) {
 				if (!mask.isLand(lx, ly))
 					continue;
+				int idx = ly * w + lx;
 				Terrain terrain = terrainGen.next(rng);
-				PlotType plotType = relief[ly * w + lx];
+				PlotType plotType = relief[idx];
+				boolean river = mask.isRiver(lx, ly);
+				// flood plains take a flat riverside plot; otherwise the grown vegetation
+				Feature feature = (river && plotType == PlotType.FLAT && floodPlains != null)
+						? floodPlains
+						: vegetation[idx];
 				out.add(new ProvincePlot(mask.originX() + lx, mask.originY() + ly,
-						mask.isRiver(lx, ly), terrain, plotType, null));
+						river, terrain, plotType, feature));
 			}
 		}
 		return new ProvincePlotField(province, out);
