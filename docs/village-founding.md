@@ -169,7 +169,7 @@ wedding markets, charter the banks as the founder's holdings, found the seed fir
 and claim their slots at `MIN_SIZE`, seed the new colony's `Retinue` from the
 band's surviving `Member`s, and promote the ablest into laborer households
 (reusing `foundLaborersFromRetinue` / `promoteToLaborer` wholesale). Multi-colony
-support already exists (Hanseatic), so a founded village is just colony *N+1* in the
+support already exists (`TwinSettlementEconomy`), so a founded village is just colony *N+1* in the
 session.
 
 ### The Caravan entity
@@ -194,9 +194,9 @@ when the band settles (seeded from that data, via `foundLaborersFromRetinue` /
 persistent thread" (`docs/caravan.md`) holds at the *data* level — the same `Member`s
 and larder flow across the hinge — with a fresh `Retinue` Agent per settled colony.
 
-### Worked example: founding from two caravans (a Caravan-first Hanseatic start)
+### Worked example: founding from two caravans (a Caravan-first two-colony start)
 
-`HanseaticEconomy` today raises two villages near Lübeck by calling
+`TwinSettlementEconomy` today raises two settlements into one province by calling
 `session.newSettlement(...)` twice and running the full founding sequence (`build()`)
 per colony — i.e. it is **already "two bands that settle at `t=0`,"** with the settle
 operation unrolled inline. Recast as two caravans, the *destination* is identical; the

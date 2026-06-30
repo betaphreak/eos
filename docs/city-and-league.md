@@ -8,7 +8,7 @@ of village-quarters — the wrong rung; that federation is a LEAGUE, below).
 `RankFactory` — see `docs/rank-ladder.md`), the founding ascent
 `CARAVAN → HOLDING → VILLAGE` and the `Property` abstraction
 (`docs/village-founding.md`), `GameSession`'s multi-colony support (the
-`HanseaticEconomy` worked example), `SlotTable`'s special sites, the ruler's
+`TwinSettlementEconomy` worked example), `SlotTable`'s special sites, the ruler's
 taxation machinery (`Ruler.collectTaxes`), and the open-economy inflow/immigration
 machinery (`SimulationHarness.enableExternalInflow`, `SimulationConfig.immigrationThreshold`).
 
@@ -28,8 +28,8 @@ are collectives of the rank below. That places:
 
 So a CITY is **not** several settlements under one head — that was the first sketch's
 error. A CITY is a single settlement grown permanent; the *several-settlements*
-polity is the **LEAGUE** one rung up. This also fixes the worked example: the two
-adjacent Hanseatic colonies are not "quarters of one city" — they are two cities in a
+polity is the **LEAGUE** one rung up. This also fixes the worked example: two
+adjacent colonies are not "quarters of one city" — they are two cities in a
 **LEAGUE** (the Hansa was, literally, a league of cities). This note redoes the design
 along that split, and realizes the **`VILLAGE → CITY`** gameplay promotion that
 `docs/village-founding.md` left as a reserved future rung.
@@ -73,7 +73,7 @@ player-driven.
 
 A `VILLAGE` is **collapse-prone**: it founds and replaces its labor force from a
 finite peasant pool, and with no inflow the reserve drains and the colony spirals to
-collapse (the central dynamic of `HomogeneousEconomy`/`HanseaticEconomy`; the tests
+collapse (the central dynamic of `HomogeneousEconomy`/`TwinSettlementEconomy`; the tests
 assert it). A `CITY` is **permanent — it does not collapse.** The grounding reuses
 machinery that already exists: an urban center **attracts immigration**, so on
 urbanizing the colony **flips from the closed regime to the open one** —
@@ -251,7 +251,7 @@ history:
 1. Each colony (Lübeck Altstadt, Bad Schwartau) grows `VILLAGE → CITY` on the
    readiness threshold — each Ruler becomes a Mayor, each settlement flips to the
    immigration inflow and becomes **permanent** (no longer collapsing as the present
-   `HanseaticEconomy` does).
+   `TwinSettlementEconomy` does).
 2. The two cities **federate into a LEAGUE**: the senior city's Mayor is promoted to
    **Legate** (Lübeck the senior seat, as in the real Hansa), keeping its city and its
    gold bank (now the league treasury); Bad Schwartau is annexed as a member, its

@@ -199,8 +199,8 @@ ruler/treasury + ownership machinery:
 - **Phase B — `TradeCaravan` (settlement-sponsored, market-coupled).** The trade
   subclass: a sponsor funds a venture, buys at the origin market, travels a
   `WorldMap.path` to a destination settlement, sells into its market (arbitrage
-  flattening the gap), and returns the profit. A two-settlement scenario (the
-  reseated Hanseatic pair — adjacent Withacen/Hopespeak) is the natural testbed: a
+  flattening the gap), and returns the profit. A two-settlement scenario across two
+  adjacent provinces (e.g. Withacen/Hopespeak) is the natural testbed: a
   trade caravan running between them should move both prices toward parity. Needs
   calibration of trade volume vs. market size.
 - **Phase C — richness (later).** Real travel cost/time, naval/`SEA` routing,

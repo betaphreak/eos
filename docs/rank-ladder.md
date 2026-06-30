@@ -232,7 +232,7 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
   delegates the transformation to `rankLadder().promote(best)`, with the former
   inline body now the `HOLDING` factory. `topUpAristocracy` and the no-owner charter
   fallback are unchanged (they still call `ennobleBestLaborer`). Behaviour-preserving
-  — the full suite stays green, including the ennoblement/Hanseatic/meritocratic
+  — the full suite stays green, including the ennoblement/twin-settlement/meritocratic
   smoke runs. **Realized subtlety:** a `Laborer` is `HOUSEHOLD` and ennoblement
   targets `HOLDING`, so `promote` had to *skip* the unrealized `CARAVAN` rung; the
   ladder walks to the nearest rank with a registered factory rather than the

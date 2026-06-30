@@ -19,9 +19,9 @@ Couple two settlements' economies through trade: a sponsor funds a `TradeCaravan
 price), carries it one hop/day to a neighbouring settlement, **sells it there** (a real
 sell offer that *lowers* the destination price), and **remits the profit to the sponsor**.
 Because both legs clear through the actual markets, arbitrage moves the two prices toward
-parity — the first genuine inter-settlement economic link. The `HanseaticEconomy` pair
-(adjacent Withacen/Hopespeak) is the testbed: a venture running between them should move
-both prices toward each other.
+parity — the first genuine inter-settlement economic link. A two-settlement pair across
+the adjacent Withacen/Hopespeak provinces is the testbed: a venture running between them
+should move both prices toward each other.
 
 ## Key facts the plan is built on
 
@@ -196,11 +196,11 @@ through the conserving primitives so session-wide money is invariant:
 - Keep it all single-threaded in `onAdvance`.
 
 ### B6 — a two-settlement trade testbed
-**Files:** new `simulation/TradeEconomy.java` (or extend `HanseaticEconomy`),
-new `TradeCaravanTest`.
+**Files:** new `simulation/TradeEconomy.java` (a two-province pair, à la the removed
+`HanseaticEconomy` but kept for trade), new `TradeCaravanTest`.
 
 - Two adjacent colonies (the Withacen/Hopespeak pair — already asserted adjacent by
-  `HanseaticEconomyTest`) with a deliberate **standing price gap** in the tradable good
+  `MigrantCaravanTest`) with a deliberate **standing price gap** in the tradable good
   (e.g. seed one colony's Enjoyment sector smaller so its price runs higher), a sponsor on
   the low-price side, and the trade policy enabled.
 - Run a window and assert: a venture completes a full cycle (`DONE`), the **price gap
@@ -213,14 +213,14 @@ new `TradeCaravanTest`.
 ## Test plan
 
 - **Keep green:** the whole Phase A suite (`CaravanMovementTest`, `MigrantCaravanSettleTest`,
-  `CaravanDissolutionTest`, `CaravanRefoundTest`, `HanseaticEconomyTest`), and the smoke
+  `CaravanDissolutionTest`, `CaravanRefoundTest`, `TwinSettlementEconomyTest`), and the smoke
   suite — band-free runs draw nothing new and stay byte-identical (assert with a
   CSV-checksum diff of `HomogeneousEconomy`).
 - **New `TradeAgentTest`** (B1): proxy buy/sell against a throwaway market debits/credits
   its account and moves cargo.
 - **New `TradeCaravanTest`** (B6): full cycle completes; price gap narrows; profit returns;
   session money conserved; deterministic province sequence.
-- **Calibration smoke:** a Hanseatic-scale run with trade on stays solvent (trade does not
+- **Calibration smoke:** a two-settlement run with trade on stays solvent (trade does not
   destabilize an otherwise-healthy colony) — the binding Phase B risk.
 
 ## Risks / things to confirm before coding

@@ -166,8 +166,8 @@ child survival and home-grown household renewal — is proposed concretely in
    and the four slot-claiming services — so `foundOnto` never rejects a firm). The
    default Dhenijansar colony founds **~14** necessity firms instead of 1; the founding
    food crunch softens and lifespan rises from ~7.7 y to **~10 y** (births off; the
-   improvement is robust across `foundingLaborersPerNFirm` ≈ 25–50). The granular sims
-   (`Hanseatic`, `SmallOpen`) call `createFirms` directly and are unaffected; a ratio
+   improvement is robust across `foundingLaborersPerNFirm` ≈ 25–50). The granular sim
+   (`SmallOpen`) calls `createFirms` directly and is unaffected; a ratio
    of `0` keeps the fixed `numNFirms`. (Note: founding *already-full* over-provisions a
    high-skill colony into a faster deflationary collapse — orthogonal to the normal
    colony this helps; `GlutCloseTest` pins the ratio to 0 to study the glut-close in

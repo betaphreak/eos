@@ -155,7 +155,7 @@ update callers.
 ## Test plan
 
 - **Keep green:** `CaravanDissolutionTest`, `CaravanRefoundTest` (off-graph paths),
-  `HanseaticEconomyTest`, the smoke suite.
+  `TwinSettlementEconomyTest`, the smoke suite.
 - **New `CaravanMovementTest`:** a band seeded at a known province steps to a listed
   neighbour; `moveTo` a non-neighbour throws; a *k*-hop `path` takes *k* days.
 - **New `MigrantCaravanSettleTest`:** a band wanders to a settleable province and

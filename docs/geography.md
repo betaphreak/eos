@@ -380,9 +380,11 @@ explicit coordinates are unchanged.
   "for free," exactly as that note anticipates ("its `lat/long` flows into
   `newSettlement` and the solar/latitude system gives the new village its climate
   for free").
-- **`HanseaticEconomy`** (two colonies in one session) is the natural first
-  multi-province test: reseat its two colonies onto two **neighboring** real
-  provinces so their adjacency is exercised.
+- **Multi-province sessions** were first exercised by the (since-removed)
+  `HanseaticEconomy`, reseated onto two **neighboring** real provinces so their
+  adjacency was tested; that province-adjacency now lives in `MigrantCaravanTest`
+  (Withacen↔Hopespeak), while `TwinSettlementEconomy` exercises two settlements
+  **sharing one** province (`docs/province-plots.md`).
 
 ## Accepted limitations (out of scope for this cut)
 

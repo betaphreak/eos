@@ -332,7 +332,7 @@ band wait out the children's coming-of-age; for now it is an accepted failure mo
 
 The original plan was to **flip the collapse-asserting tests to assert survival**
 once births made colonies self-renewing (`ClosedColonySmokeTest` /
-`HanseaticEconomyTest` assert a colony departs as a Caravan; the caravan-machinery
+`TwinSettlementEconomyTest` assert a colony departs as a Caravan; the caravan-machinery
 tests *require* dissolution). The Phase-3 calibration sweep found **births do not, and
 cannot, prevent the collapse** (the ~6–10-year food-balance shock precedes the 15-year
 maturation window — see Phase 3). **So the tests are NOT flipped:** colonies still

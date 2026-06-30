@@ -490,7 +490,7 @@ list (above).
     every candidate); growth / `claimPlot` only mark which plots are *prepared and occupied*
     (building out to the chosen plot), capped at `province.plots`.
   - **Province-less colonies bypass the whole plot coupling** (decided). The analytical sims
-    — `SmallOpenEconomy`, the sweeps, `HanseaticEconomy` (bare coordinates, `province == null`)
+    — `SmallOpenEconomy`, the sweeps (bare coordinates, `province == null`)
     — take **no terrain yield factor, no travel cost, and no market-`N` deduction**
     (`plotYieldFactor == 1.0`, `workFactor == 1.0`), exactly as they get no climate multiplier
     today. So the yield/travel/market coupling leaves them untouched. (This is the *economic*
@@ -567,7 +567,7 @@ near its current food TFP. The plan therefore:
 
 - keeps the **yield/travel/market coupling off for province-less colonies** (they bypass it),
   so it never perturbs them — though the **structural disc-removal still touches any
-  builder-bearing colony** (the province-less `HanseaticEconomy`/sweeps included), which lose
+  builder-bearing colony** (the province-less `SmallOpenEconomy`/sweeps included), which lose
   the dropped `ROAD`/`WALL` billing;
 - tunes `REFERENCE` so the plot yield factor is ≈ 1.0 at the baseline plot+farm, leaving the
   retained climate multiplier as the dominant food-TFP term ≈ its pre-rework value, then
@@ -715,7 +715,7 @@ near its current food TFP. The plan therefore:
   and passes `SlotTable.load()` — `SettlementSolarTest`, `SettlementLifecycleTest`,
   `BankInheritanceTest` — just drop the `SlotTable` arg and add the `TerrainRegistry`.
 - **Re-baseline (behavioural, not stale):** the full-run smoke tests
-  (`ClosedColonySmokeTest`, the `Simulation*Test`s, `RetinueTest`, `HanseaticEconomyTest`,
+  (`ClosedColonySmokeTest`, the `Simulation*Test`s, `RetinueTest`, `TwinSettlementEconomyTest`,
   the sweeps) — Phase 1 drops `ROAD`/`WALL` billing and Phase 2/2b add the coupling, so the
   province-/builder-bearing runs shift; their invariants (`assertCollapsed`, etc.) should
   still hold but exact figures move. `LaborMarketTest` is unaffected if its colony is
@@ -748,8 +748,19 @@ near its current food TFP. The plan therefore:
 ## Open questions
 
 - The exact `REFERENCE` triple and `FLOOR`, set by the Phase-2 calibration.
-- The climate → terrain-distribution weights (the generator tables) — placeholders pending
-  a feel for the resulting colony food balance.
+- **Generator placeholders pending a food-balance feel.** The climate → terrain-distribution
+  weights (the generator tables), the per-plot **feature probability** (`FEATURE_PROBABILITY`
+  = 0.35, Phase 3), and the **relief probabilities** (`HILL_PROBABILITY` = 0.15 /
+  `PEAK_PROBABILITY` = 0.04, Phase 4a) are all placeholders, set together once the resulting
+  colony food balance is tuned. Peaks are deliberately kept rare because each is unworkable
+  ground that still consumes a plot and pushes workable land outward.
+- **Plot-type relief — implemented (4a), two choices to revisit.** `PlotType` (FLAT/HILL/PEAK)
+  is live (see *Phasing → Phase 4a*). Two modelling choices were made to keep the substrate's
+  live footprint to peaks alone: (1) a **hill adds production only, not a food penalty** (Civ4
+  hills often cut food) — so hills are fully dormant until a production firm exists, leaving
+  peaks (via the travel ladder) as the only behavioural effect this cut; (2) **peaks count
+  toward `province.plots`** (rough country supports fewer farms) rather than being free extra
+  land. Both are revisitable when 4b makes the hill production yield live.
 - **Climate multiplier — kept (decided).** `getAgricultureClimateMultiplier()` stays as a
   residual food-TFP layer on top of plot yields (belt-and-braces; aids calibration), so
   climate acts through both terrain generation and this multiplier. (Accepts a mild
@@ -762,11 +773,17 @@ near its current food TFP. The plan therefore:
   frontier when output is already tight; the remaining work is just to confirm it stays
   survivable across the targeted temperate-to-subpolar range when the coupling is swept.
 - **Which firm types operate an improvement (and which one).** `NFirm` → `FARM` (1:1 plot)
-  and forage → `CAMP` are live/seamed. **Decided: the next activation is an extractive
-  `CFirm` → `MINE`/`QUARRY`** on a `ROCKY`/`HILL` plot, which makes the **Production** channel
-  live (and brings in the hill/peak `PlotType` and the bonus extension); a commerce firm →
-  `COTTAGE`/`PLANTATION` (the **Commerce** channel) follows after. A per-firm-type mapping,
-  still open beyond that order.
+  and forage → `CAMP` are live/seamed, and the hill/peak `PlotType` substrate the `MINE` needs
+  **landed in Phase 4a**. **Decided: the next activation is an extractive mine → `MINE`/`QUARRY`**
+  on a `ROCKY`/`HILL` plot, making the **Production** channel live (with it, the bonus
+  extension); a commerce firm → `COTTAGE`/`PLANTATION` (the **Commerce** channel) follows.
+  **Caveat surfaced in 4a:** it cannot be the existing `CFirm` — that is an infinite-capacity
+  abstraction (`A = 20000`, output from its own `A`, not via `effectiveA()`), so a production
+  yield factor is inert on it. The mine must be a **new finite-capacity extractive firm**
+  (`sector() == CAPITAL`, output scaled by the plot's production yield, selling alongside the
+  infinite `CFirm`, with its own capacity/stability calibration) plus opening the `CAPITAL` gate
+  in `Settlement.plotYieldFactor` — the Phase-4b work. A per-firm-type mapping, still open
+  beyond that order.
 - **Improvement tech-gating — deferred (decided).** Not enforced; every improvement is
   buildable regardless of tech, and `PrereqTech` is stored dormant. **Decided: stay deferred
   for now** — enforcement (and feeding the tech-gated yield upgrades into `SectorProductivity`)
