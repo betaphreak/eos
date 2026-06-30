@@ -134,6 +134,11 @@ public class GameSession {
 	private ProvinceRaster provinceRaster;
 	private final Map<Integer, ProvincePlotPool> plotPoolByProvince = new HashMap<>();
 
+	// provinces whose barony-level plot map has already been claimed by a settlement,
+	// so a province shared by several settlements dumps its whole plot field once
+	// rather than once per settlement (see firstPlotMapFor / PlotMapPrinter).
+	private final Set<Integer> plotMapProvinces = new LinkedHashSet<>();
+
 	// per-race tech trees: the same graph (techs.json) under a race's effect overlay
 	// (/tech-effects-<id>.json). A race with no overlay file reuses the shared techTree
 	// (the default empty overlay), so the human path is unchanged. See getTechTree(Race).
@@ -230,6 +235,21 @@ public class GameSession {
 	 * @param province the province whose pool is wanted
 	 * @return the province's shared plot pool
 	 */
+	/**
+	 * Whether this is the <b>first</b> request to own the barony-level plot map of a
+	 * province — true once per province, false thereafter. A province's whole plot
+	 * field belongs to the barony, not to any one settlement, so only the first
+	 * settlement founded into a province registers a {@link
+	 * com.civstudio.io.printer.PlotMapPrinter}; settlements sharing the province do
+	 * not, and the field is dumped once. See {@code docs/province-plots.md}.
+	 *
+	 * @param province the province whose plot map is being claimed
+	 * @return {@code true} if no settlement has yet claimed this province's plot map
+	 */
+	public synchronized boolean firstPlotMapFor(Province province) {
+		return plotMapProvinces.add(province.id());
+	}
+
 	public synchronized ProvincePlotPool provincePlotPool(Province province) {
 		return plotPoolByProvince.computeIfAbsent(province.id(), id -> {
 			try {

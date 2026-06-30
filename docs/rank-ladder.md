@@ -287,6 +287,63 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
   *productive assets* owned, transferred separately (`transferPropertyTo`). A reform
   carries the `Estate`; the holdings move on their own.
 
+## Realizing `BARONY`: a province as a barony (proposed)
+
+The geography axis gives a settlement a **province** it is founded into, and several
+settlements can now share one (`docs/province-plots.md` — they claim from one
+`ProvincePlotPool`). That makes the province the natural **next realized rung above
+`VILLAGE`**: a settlement's ruler leads a `VILLAGE` (level 3); the political entity
+over the *whole province and its settlements* is a **`BARONY`** (level 6), held by a
+**Baron**.
+
+**It uses the ladder's existing skip mechanism — no `Rank` change.** `BARONY` sits
+two rungs above `VILLAGE`, with `CITY` (4) and `LEAGUE` (5) between them still
+*unrealized* (no factory). `RankLadder.promote` already skips unrealized rungs to the
+next realized one, so registering a **`BARONY` factory** is all it takes for a
+`Ruler` to promote straight to `Baron`, the ladder auto-skipping city/league. They
+slot in later if those rungs are ever realized.
+
+**Why `BARONY` (singular) and not `LEAGUE` (plural) — the `isPlural` question.** A
+province holding several settlements could map to either rung: `LEAGUE` (5, plural) —
+a loose federation of *independent* cities, or `BARONY` (6, singular) — *one
+consolidated fief* under a single Baron, the settlements as sub-holdings. The model
+chooses **`BARONY`**: the province is **one territory governed as a unit** (the
+settlements share one plot pool, with no independence), not a federation. Note
+`isPlural` (like the titles and casus belli) is **inert metadata today** — nothing
+consumes it — so the choice is *semantic*, for the future diplomacy/governance layer;
+it drives no current code. (`LEAGUE` remains the right rung for a *later* federation
+of genuinely-independent cities — see `docs/city-and-league.md`.)
+
+**The concrete changes.**
+
+1. **A `Baron` household type** whose `rank()` returns `BARONY`, governing a
+   `Province` (a `Household` like `Ruler`/`Noble` — a family + money — plus a
+   `Province` reference and the settlements under it).
+2. **Register a `BARONY` `RankFactory`** on the colony's `RankLadder` (mirroring the
+   `HOLDING`/`HOUSEHOLD` registration in `SimulationHarness`). A `Ruler` promoting
+   then reforms into a `Baron`, conserving its dynasty and treasury via the existing
+   `Estate` path.
+3. **A province → settlements relationship — the missing link.** Today a `Province`
+   does not know its settlements; only a settlement knows its `province`, and the
+   `ProvincePlotPool` tracks which settlements have claimed plots. A Baron governing a
+   province needs that set (add it to `Province`, or derive it from the pool's plot
+   owners). The Baron then sits *above* the `VILLAGE`-ranked rulers in it — taxing
+   them, coordinating the shared field.
+4. **A promotion trigger** — a readiness condition (e.g. the province holds ≥2
+   settlements, or one passes a threshold), fired from an **end-of-step** action (the
+   `RankLadder` requires end-of-step timing). The natural first case is
+   **`TwinSettlementEconomy`**: Upper + Lower share Dhenijansar, so the **senior**
+   ruler is elevated to **Baron of Dhenijansar** and the other stays a `VILLAGE`
+   under it — the same "senior seat is promoted, peers are annexed" shape
+   `docs/city-and-league.md` uses for a `LEAGUE`.
+
+**The barony owns the province's plot map.** A province's whole plot field is a
+**barony-level** artifact, not any one settlement's, so `PlotMapPrinter` is already
+registered **once per province** (the first settlement to found there claims it, via
+`GameSession.firstPlotMapFor`), while the per-settlement `ProvinceInventoryPrinter`
+reports each *village's* holdings. When the `Baron` type lands it is the natural owner
+of that province-level printer — the Baron's survey of his fief.
+
 ## Open questions deferred to later
 
 - Whether selection (who gets promoted/demoted) belongs in the ladder or stays with

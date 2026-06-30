@@ -22,6 +22,13 @@ import com.civstudio.settlement.Settlement;
  * moment. A {@linkplain Settlement#getProvince() province-less} colony has no pool,
  * so this prints nothing for one. See {@code docs/province-plots.md}.
  * <p>
+ * The field is the whole province's — a <b>barony-level</b> view, not any one
+ * settlement's — so it is registered <b>once per province</b> (by the first
+ * settlement founded into it, via {@link
+ * com.civstudio.settlement.GameSession#firstPlotMapFor}); settlements sharing the
+ * province do not each dump it. When a province gains a governing Baron (see {@code
+ * docs/rank-ladder.md}), that barony is the natural owner of this printer.
+ * <p>
  * Columns: Date, X, Y, Terrain, Relief, Feature, Bonus, Owner. {@code Feature} and
  * {@code Bonus} are {@code -} when absent; {@code Owner} is {@code free} for an
  * unclaimed plot.

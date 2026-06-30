@@ -1707,8 +1707,14 @@ public class SimulationHarness {
 	 * @param prefix prepended to each printer's filename ({@code ""} for the default)
 	 */
 	public void addPlotInventoryPrinters(String prefix) {
+		// the inventory is per-settlement (what this colony holds); always register it
 		colony.addPrinter(new ProvinceInventoryPrinter(prefix + "Inventory"));
-		colony.addPrinter(new PlotMapPrinter(prefix + "PlotMap"));
+		// the plot map is the whole barony's (province's) land, not any one
+		// settlement's — register it once per province (the first settlement to ask),
+		// so a province shared by several settlements dumps its field once
+		if (colony.getProvince() != null
+				&& colony.getSession().firstPlotMapFor(colony.getProvince()))
+			colony.addPrinter(new PlotMapPrinter(prefix + "PlotMap"));
 	}
 
 	/**
