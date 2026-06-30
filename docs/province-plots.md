@@ -129,15 +129,21 @@ the economic stream), exactly as `TerrainGenerator` does today.
 - **Province owns the field; settlements claim into it.** `Province` (or a
   per-province holder the `WorldMap`/`GameSession` caches) owns the generated
   `List<Plot>` and the plot→owner map. `Settlement.claimPlot` sources a free plot
-  from the province and transfers ownership; `vacatePlot` returns it to free.
-- **Center placement.** A founding settlement's center is the free plot that
-  maximizes `(yield − distancePenalty)` while keeping a minimum spacing from
-  existing settlement centers in the province — so settlements spread out across
-  the province rather than stacking.
-- **Best-plot claim.** From its center, a settlement scores free plots by
-  `w·yield − (1−w)·travelCost` and claims the best, assigning successive Fibonacci
-  rungs in claim order (the Nth-closest reserved plot sits on rung N), preserving
-  today's `TravelLadder` index→time semantics.
+  from the province and transfers ownership; `vacatePlot` frees the plot for
+  re-seating but **keeps the colony's ownership** (its territory persists as firms
+  come and go) — only the colony's **death** returns its plots to the pool
+  (`releasePlotsToPool`, Phase 4a).
+- **Center placement.** A founding settlement's center is, for the first settlement
+  in a province, the best-food free plot near the province centroid; for a later one,
+  the free plot that **maximizes the minimum distance** to the other settlements'
+  claimed plots (min-distance auto-spacing) — so settlements spread out rather than
+  stacking.
+- **Best-plot claim.** From its center, a settlement claims the **best-food plot
+  among its nearest few** free plots (proximity picks the band, food yield picks
+  within it — `bestYieldNearest`), assigning successive Fibonacci rungs in claim
+  order, preserving today's `TravelLadder` index→time semantics. Kept
+  proximity-dominant so the nearest-first growth and the food-balance calibration
+  hold (Phase 4b/4c).
 - **Founding reserves, the builder clears.** At founding the settlement reserves
   the footprint its founding firms need (the necessity sector sized to its labor
   force, per `docs/food-balance.md`); ownership transfers immediately, and the
@@ -271,9 +277,23 @@ the economic stream), exactly as `TerrainGenerator` does today.
     (claiming is nearest-first proximity only, no yield term yet) and **founding
     reservation** (`BuilderFirm`-cleared reserved footprint) — placement uses min-distance
     spacing + nearest-first, which suffices for the scenario.
-- **Phase 4 — refinements (proposed).** Release a colony's plots back to the pool on
-  death/shrink (a vacated plot currently stays owned, re-seatable); weighted best-plot
-  selection; and the yield-aware center the deferred Phase-3 items describe.
+- **Phase 4 — refinements. (Done.)** Two refinements to the shared field:
+  - *Release on death (4a):* when a colony dies, `Settlement.releasePlotsToPool` returns
+    all its claimed plots to the shared pool — vacating each first, since its firms (the
+    plot occupants) outlive its last laborer — so its land is free for the other
+    settlements and any later founding. Covered by `TwinSettlementEconomyTest` (after both
+    die, the pool is all free). A per-firm `vacatePlot` still keeps the plot owned and
+    re-seatable; only the colony's **death** frees its whole territory (a colony's
+    territory persists as firms come and go).
+  - *Yield-aware claim + center (4b/4c):* a settlement claims the **best-food plot among
+    its nearest few** free plots (`ProvincePlotPool.bestYieldNearest`, food =
+    `yieldFactor(NECESSITY)`), and its founding center likewise prefers good central land.
+    Kept **proximity-dominant** (best yield among the `YIELD_CHOICE_NEIGHBOURS` = 4
+    nearest) so the nearest-first growth, the travel ladder, and the food-balance
+    calibration all hold — the full suite stays green with no retuning (`PlotYieldTest`'s
+    mean food factor still ≈ 1.0). The literal `w·yield − (1−w)·travelCost` blend the model
+    sketches is the heavier alternative; the bounded k-nearest form is the calibration-safe
+    realization.
 - **Phase 5 — validate + retune. (Done for the current cuts.)** The single-settlement
   default and the two-settlement province both run end to end with no retuning (the pool
   preserves the climate→terrain distribution); full suite green.

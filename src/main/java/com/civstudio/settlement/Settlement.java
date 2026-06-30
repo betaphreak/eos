@@ -650,6 +650,24 @@ public class Settlement {
 			log.info(name + " died on " + deathDate
 					+ " (its last laborer is gone)");
 		}
+		if (died)
+			releasePlotsToPool();
+	}
+
+	// a dead colony no longer holds territory: return all its claimed plots to the
+	// shared province pool so they are free for the other settlements in the province
+	// (and any later founding). Vacate each first — a colony dies when its last laborer
+	// is gone, while its firms (the plot occupants) outlive it, so the plots are still
+	// occupied at death. A no-op for a province-less colony (it has no shared pool).
+	private void releasePlotsToPool() {
+		ProvincePlotPool pool = plotPool();
+		if (pool == null)
+			return;
+		for (Plot plot : plots) {
+			plot.vacate();
+			pool.release(plot);
+		}
+		plotByOccupant.clear();
 	}
 
 	// whether this colony can dissolve into a Caravan rather than dying terminally:

@@ -2,6 +2,7 @@ package com.civstudio.settlement;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -10,6 +11,7 @@ import com.civstudio.geo.ProvincePlotField;
 import com.civstudio.geo.ProvincePlotField.ProvincePlot;
 import com.civstudio.geo.ProvinceRaster;
 import com.civstudio.geo.TerrainRegistry;
+import com.civstudio.tech.Sector;
 import com.civstudio.util.Rng;
 
 /**
@@ -105,7 +107,7 @@ public final class ProvincePlotPool {
 	 * @return the claimed plot, or {@code null} if the pool is exhausted
 	 */
 	public synchronized Plot claimNearest(Settlement owner, int cx, int cy) {
-		return take(owner, nearestFree(cx, cy));
+		return take(owner, bestYieldNearest(cx, cy));
 	}
 
 	/**
@@ -160,16 +162,43 @@ public final class ProvincePlotPool {
 		return plot;
 	}
 
-	// the free plot closest (squared raster distance) to (cx, cy)
-	private Plot nearestFree(int cx, int cy) {
-		Plot best = null;
-		long bestDist = Long.MAX_VALUE;
+	// how many of the nearest free plots a settlement weighs by food yield when it
+	// claims — it takes the best-food plot among its nearest few, favouring good land
+	// in its vicinity without abandoning the nearest-first growth (which keeps the
+	// travel ladder and the food-balance calibration stable). A small, proximity-
+	// dominant placeholder pending calibration (1 == pure nearest-first).
+	private static final int YIELD_CHOICE_NEIGHBOURS = 4;
+
+	// the best-food free plot among the YIELD_CHOICE_NEIGHBOURS nearest to (cx, cy):
+	// proximity picks the candidate band, yield picks within it (Phase 4b/4c). Returns
+	// null if the pool is exhausted.
+	private Plot bestYieldNearest(int cx, int cy) {
+		int k = YIELD_CHOICE_NEIGHBOURS;
+		long[] nearDist = new long[k];
+		Plot[] nearPlot = new Plot[k];
+		Arrays.fill(nearDist, Long.MAX_VALUE);
 		for (Plot p : plots) {
 			if (p.owner() != null)
 				continue;
-			long dist = dist2(p, cx, cy);
-			if (dist < bestDist) {
-				bestDist = dist;
+			long d = dist2(p, cx, cy);
+			// keep the k nearest: replace the current farthest if this is closer
+			int farthest = 0;
+			for (int i = 1; i < k; i++)
+				if (nearDist[i] > nearDist[farthest])
+					farthest = i;
+			if (d < nearDist[farthest]) {
+				nearDist[farthest] = d;
+				nearPlot[farthest] = p;
+			}
+		}
+		Plot best = null;
+		double bestYield = -1;
+		for (Plot p : nearPlot) {
+			if (p == null)
+				continue;
+			double y = p.yieldFactor(Sector.NECESSITY);
+			if (y > bestYield) {
+				bestYield = y;
 				best = p;
 			}
 		}
@@ -187,7 +216,7 @@ public final class ProvincePlotPool {
 				break;
 			}
 		if (!anyOther)
-			return nearestFree(centroidX, centroidY);
+			return bestYieldNearest(centroidX, centroidY);
 
 		Plot best = null;
 		long bestSpacing = -1;

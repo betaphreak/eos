@@ -43,6 +43,12 @@ class TwinSettlementEconomyTest {
 		// like every ruler-bearing colony it founds and replaces from a finite pool,
 		// so once the reserve drains it departs as a caravan (ran clean, no -ea trip)
 		SimulationAssertions.assertDepartedAsCaravan(upper);
+
+		// both settlements have died, so all their plots were released back to the
+		// shared province pool — a dead colony holds no territory (Phase 4a)
+		ProvincePlotPool pool = colony.getSession().provincePlotPool(colony.getProvince());
+		assertEquals(pool.size(), pool.freeCount(),
+				"a dead colony's plots return to the province pool");
 	}
 
 	@Test
