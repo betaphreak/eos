@@ -287,62 +287,55 @@ engine has **no** special case. The pool is drawn from for recruitment (creating
   *productive assets* owned, transferred separately (`transferPropertyTo`). A reform
   carries the `Estate`; the holdings move on their own.
 
-## Realizing `BARONY`: a province as a barony (proposed)
+## The rungs above `VILLAGE`: `CITY → LEAGUE → BARONY`
 
-The geography axis gives a settlement a **province** it is founded into, and several
-settlements can now share one (`docs/province-plots.md` — they claim from one
-`ProvincePlotPool`). That makes the province the natural **next realized rung above
-`VILLAGE`**: a settlement's ruler leads a `VILLAGE` (level 3); the political entity
-over the *whole province and its settlements* is a **`BARONY`** (level 6), held by a
-**Baron**.
+> **Note (2026-06-30):** this section originally proposed mapping a shared-province
+> multi-settlement (`TwinSettlementEconomy`) straight onto `BARONY` via the ladder's
+> skip mechanism, leaping past `CITY`/`LEAGUE`. That ordering and scenario mapping
+> were **wrong** and are corrected here. See **`docs/barony-vs-league.md`** for the
+> full reconciliation and **`docs/city-and-league.md`** for the `CITY`/`LEAGUE` design.
 
-**It uses the ladder's existing skip mechanism — no `Rank` change.** `BARONY` sits
-two rungs above `VILLAGE`, with `CITY` (4) and `LEAGUE` (5) between them still
-*unrealized* (no factory). `RankLadder.promote` already skips unrealized rungs to the
-next realized one, so registering a **`BARONY` factory** is all it takes for a
-`Ruler` to promote straight to `Baron`, the ladder auto-skipping city/league. They
-slot in later if those rungs are ever realized.
+The rungs above `VILLAGE` are realized **in declaration order, one at a time**,
+following the enum's singular/plural alternation (going up two rungs is "gather peers
+into a collective, then consolidate that collective into one larger entity"):
 
-**Why `BARONY` (singular) and not `LEAGUE` (plural) — the `isPlural` question.** A
-province holding several settlements could map to either rung: `LEAGUE` (5, plural) —
-a loose federation of *independent* cities, or `BARONY` (6, singular) — *one
-consolidated fief* under a single Baron, the settlements as sub-holdings. The model
-chooses **`BARONY`**: the province is **one territory governed as a unit** (the
-settlements share one plot pool, with no independence), not a federation. Note
-`isPlural` (like the titles and casus belli) is **inert metadata today** — nothing
-consumes it — so the choice is *semantic*, for the future diplomacy/governance layer;
-it drives no current code. (`LEAGUE` remains the right rung for a *later* federation
-of genuinely-independent cities — see `docs/city-and-league.md`.)
+```
+VILLAGE(3, plural)  →  CITY(4, singular)  →  LEAGUE(5, plural)  →  BARONY(6, singular)
+ Ruler                  Mayor                 Legate                Baron
+ network of holdings    one urban center      bloc of cities        one consolidated fief
+```
 
-**The concrete changes.**
+- **`CITY`** (the next realized rung, and the lightest reform): a single `VILLAGE`
+  urbanizes into a permanent city — `Mayor extends Ruler`, same gold bank, balances
+  carried 1:1, all within one colony. Designed in `docs/city-and-league.md`.
+- **`LEAGUE`**: several sovereign cities **federate** — the senior `Mayor` reforms into
+  a `Legate` that holds and taxes the member cities (each keeping its own Mayor,
+  economy and banks). A **shared-province multi-settlement is a `LEAGUE`, not a
+  `BARONY`**: sharing one `ProvincePlotPool` is a *geographic* fact and is politically
+  neutral, and `TwinSettlementEconomy`'s colonies run independent economies — the
+  textbook federation. This is what `TwinSettlementEconomy` realizes.
+- **`BARONY`**: reached by **consolidating a `LEAGUE`**, not by promoting a `VILLAGE`.
+  A federation of sovereign cities becomes *one fief*: the `Legate` reforms one rung up
+  into a `Baron` and the member cities lose their autonomy (their Mayors demoted, the
+  settlements becoming sub-holdings the Baron governs directly). `LEAGUE` (5, plural,
+  the collective of cities) consolidating into `BARONY` (6, singular, one fief) is the
+  single-rung step the alternation already describes — **no skip**, and nothing to
+  build for `BARONY` until `LEAGUE` exists.
 
-1. **A `Baron` household type** whose `rank()` returns `BARONY`, governing a
-   `Province` (a `Household` like `Ruler`/`Noble` — a family + money — plus a
-   `Province` reference and the settlements under it).
-2. **Register a `BARONY` `RankFactory`** on the colony's `RankLadder` (mirroring the
-   `HOLDING`/`HOUSEHOLD` registration in `SimulationHarness`). A `Ruler` promoting
-   then reforms into a `Baron`, conserving its dynasty and treasury via the existing
-   `Estate` path.
-3. **A province → settlements relationship — the missing link.** Today a `Province`
-   does not know its settlements; only a settlement knows its `province`, and the
-   `ProvincePlotPool` tracks which settlements have claimed plots. A Baron governing a
-   province needs that set (add it to `Province`, or derive it from the pool's plot
-   owners). The Baron then sits *above* the `VILLAGE`-ranked rulers in it — taxing
-   them, coordinating the shared field.
-4. **A promotion trigger** — a readiness condition (e.g. the province holds ≥2
-   settlements, or one passes a threshold), fired from an **end-of-step** action (the
-   `RankLadder` requires end-of-step timing). The natural first case is
-   **`TwinSettlementEconomy`**: Upper + Lower share Dhenijansar, so the **senior**
-   ruler is elevated to **Baron of Dhenijansar** and the other stays a `VILLAGE`
-   under it — the same "senior seat is promoted, peers are annexed" shape
-   `docs/city-and-league.md` uses for a `LEAGUE`.
+So `LEAGUE` and `BARONY` are **different political relationships, never competing for
+the same scenario**: a `LEAGUE` is bottom-up *and* leaves members sovereign; a `BARONY`
+is top-down *and* absorbs them (`docs/barony-vs-league.md` details both axes). The
+`RankLadder` skip mechanism stays — correct for the genuinely-unrealized `CARAVAN` rung
+ennoblement already skips — but it is **not** a licence to leapfrog rungs slated to be
+realized.
 
-**The barony owns the province's plot map.** A province's whole plot field is a
-**barony-level** artifact, not any one settlement's, so `PlotMapPrinter` is already
-registered **once per province** (the first settlement to found there claims it, via
-`GameSession.firstPlotMapFor`), while the per-settlement `ProvinceInventoryPrinter`
-reports each *village's* holdings. When the `Baron` type lands it is the natural owner
-of that province-level printer — the Baron's survey of his fief.
+**The province's plot map is a polity-level artifact.** A province's whole plot field
+belongs to the political entity over it, not any one settlement, so `PlotMapPrinter` is
+already registered **once per province** (the first settlement to found there claims
+it, via `GameSession.firstPlotMapFor`), while the per-settlement
+`ProvinceInventoryPrinter` reports each *village's* holdings. The natural owner of that
+province-level printer is whatever rung governs the province — a `Legate` over a
+federation, or (after consolidation) a `Baron` over his fief.
 
 ## Open questions deferred to later
 

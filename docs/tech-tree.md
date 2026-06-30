@@ -126,11 +126,19 @@ a **live per-sector multiplier** that completed techs raise.
 ```
 
 Enables a content element that does not exist (or is disabled) before the tech: a new
-good, a new firm/sector type, a building on a special site, a new market. Targets are
+good, a new firm/sector type, a building, a new market. Targets are
 **eos-native ids**, not Civ4's. Most unlock targets are **forward-looking** — the
 first cut wires few or none (eos has a fixed good set today), but the schema reserves
 the kind so a content tech (e.g. `TECH_CORPORATION` → a joint-stock firm,
 `TECH_STOCK_BROKERING` → a second bank tier) slots in without a schema change.
+
+The first concrete consumer planned for this seam is **center-building auto-build**
+(`docs/plots.md`, *Buildings vs. improvements; auto-built at the center*): a building
+`Unlock` target (e.g. `FIRM_BANKING_HOUSE`) is, once its tech is researched, the
+precondition that triggers the building's auto-construction at the **village center
+(plot 0)** — funded from the crown treasury, no manual charter. So the dormant token
+becomes a live prerequisite read by the plot/building code; the building's economic
+*effect* stays deferred (the structure and its tech gate land first).
 
 ### 3. `SOCIAL_GATE` — enable a social/political capability
 

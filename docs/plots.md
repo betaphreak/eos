@@ -318,6 +318,79 @@ firm types actually placed on plots), and because most firm types group at the c
 **plot count a colony needs is much smaller** than its firm count — only the farms (and
 forage) draw on the travel-time ladder — which further eases the capacity question.
 
+> **The center is a holding, not a void (see `docs/village-founding.md`).** Read up the
+> rank ladder, "the city center" is the **village center** — the first `HOLDING`
+> settled, the Ruler's own seat, occupying plot 0. So "center-grouped / consumes no
+> plot" is more precisely "**resident in the village-center holding that occupies plot
+> 0**": the landless firms, the banks, and the agents with no building of their own all
+> live there until they acquire a building on a plot. Plot 0 having travel time
+> `T(0) = 0` is exactly why the "no commute" abstraction holds. The arithmetic in this
+> note is unchanged; the framing names what plot 0 actually is.
+
+### Buildings vs. improvements; auto-built at the center (proposed)
+
+A plot carries **two** kinds of structure, and today's model has only the first:
+
+- **Improvements** (existing): the Civ4 *tile* improvement a land-working firm raises
+  on its own plot — a `FARM` on cleared land, a `MINE` on a hill — read into the plot's
+  `yields()`. One per worked plot.
+- **Buildings** (proposed): Civ4 *city* buildings — a banking house, a granary, a
+  workshop — with **no land footprint of their own**, which live at the **village
+  center (plot 0)** where the landless center-grouped firms and banks already reside
+  (see *On-plot firms vs. the city center* above and `docs/village-founding.md`). These
+  are exactly the targets the tech tree's `TechEffect.Unlock` already names ("a good,
+  firm **or building**", e.g. `FIRM_BANKING_HOUSE`).
+
+So each `Plot` **tracks both** — generalizing today's single `improvement` field into
+the set of structures standing on it: a worked plot carries its one tile improvement;
+plot 0 accumulates the village's buildings.
+
+**Auto-built at the center, gated on tech.** Plot 0 is where buildings **auto-build
+when their prerequisites are met**, and the prerequisite is **tech**: when the colony
+researches the `Tech` whose `Unlock` effect targets a building id, that building's
+prerequisite is satisfied and it is built at the center — no charter decision, research
+→ unlock → the center raises it. This makes the auto-build the **first consumer of the
+dormant `Unlock` seam** (`docs/tech-tree.md`: `Unlock` tokens are today "recorded as
+granted tokens on the colony but read by nothing yet"). Auto-build is the **center's**
+behaviour specifically; other plots' tile improvements are still firm-raised through
+the `BuilderFirm`'s funded clearance, as now.
+
+**"Auto-built" = auto-*decided*, not free.** A center building is **auto-queued and
+funded** out of the crown/center treasury — the same money-conserving construction as
+plot clearance (a funded `BuildProject` on the builder's queue), just without the
+manual decision. So it conserves money exactly as the land-clearance flow does.
+
+**Effect deferred (first cut).** A building is, at first, a **tracked structure that
+auto-builds on unlock**; what it *does* — host a center firm/bank (its premises), or
+modify output — stays **dormant**, mirroring how the `Unlock`/`SocialGate` tokens are
+"read by nothing yet". The structure-tracking + the auto-build trigger land first; the
+building's economic role is pinned in a later cut. (A per-sector productivity boost
+would duplicate the existing `TechEffect.SectorProductivity`, so when a building's
+effect *is* defined it should be the **content/hosting** role — premises a center firm
+needs, a capability it enables — not a second productivity knob.)
+
+**Phasing.**
+
+- **Phase 1 — the `Plot` data model (byte-identical). ✅ Implemented.** A `Plot` now
+  tracks a `List<Building>` (`buildings()`/`hasBuilding(id)`/`addBuilding(...)`)
+  alongside its single tile `improvement`, and the minimal `Building` record
+  (`com.civstudio.settlement.Building`, keyed by the eos-native id its `Unlock` names —
+  distinct from the tile `Improvement`) lands. The existing single tile-improvement
+  path is preserved — a worked plot still raises and reads its one `FARM`/`MINE`
+  through `yields()`, which buildings never enter — and nothing populates the
+  collection in a run, so the change is **byte-identical** (additive, run-inert).
+  Covered by `PlotBuildingTest` (tracking + the yields-unchanged guard). Pure
+  structural groundwork the next phases sit on.
+- **Phase 2 — auto-build at the center (consumes the `Unlock` seam).** Wire the
+  trigger: a researched `Tech` whose `Unlock` targets a building id auto-queues that
+  building at plot 0, funded from the crown treasury via the `BuilderFirm`'s
+  `BuildProject`. The first live read of the dormant `Unlock` token; **behavioural**
+  (it spends treasury and constructs), so re-validated against the suite, not
+  byte-identical.
+- **Phase 3 — the building effect (deferred).** Give a built building an economic role
+  — the premises a center firm/bank occupies, or a capability it enables (the
+  content/hosting role above) — pinned once that role is decided.
+
 ### The forage firm (future work)
 
 The forage firm is a designed-but-unbuilt **second food source**, the inverse of the farm,

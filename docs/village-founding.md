@@ -243,6 +243,37 @@ the **seat of rank**: losing the hall is losing one's last holding, which feeds 
 rank ladder's planned **demotion trigger** (`VILLAGE → HOLDING` on loss of the
 seat — the converse direction of the insolvency demotion already built).
 
+### The village center — the first holding, and the landless home
+
+Read the ladder *downward*: a `VILLAGE` (level 3, plural) **is a group of `HOLDING`s**
+(level 2, singular — "a centralized physical asset") — the enum's singular/plural
+alternation seen from inside the settlement. The **first `HOLDING` settled is the
+village center**: the founder's original holding (the hall, above), placed on the
+**first plot** (plot 0, the city center). It is *not* a separate civic entity — it is
+the **Ruler's own seat**, the holding the founder carries up the ladder
+(`CARAVAN → HOLDING → VILLAGE`) and that the `VILLAGE`-rank Ruler then sits on and owns.
+The settlement's other holdings (the nobles' estates) accrete around it.
+
+This concretizes the plot model's **center-grouping** (`docs/plots.md`). Today
+"center-grouped" is an abstraction — the capital/enjoyment/export/science/builder
+firms and all three banks are said to "consume no plot." Under the village-center
+model they instead **reside in the village-center holding, which occupies plot 0**: the
+center is a *real occupied plot*, and "consumes no plot" becomes "**shares the center's
+plot 0**." So the village center is the **landless home** — where the firms with no
+building of their own, the banks, and the agents with no building (laborers, nobles,
+the pool) all live until they acquire a building (a farm, an estate) on a plot of their
+own. Behaviourally this is compatible with today's center-grouping: plot 0 has travel
+time `T(0) = 0`, so a center-resident firm's commute term stays ~0 exactly as the
+"no commute" abstraction assumed.
+
+**Scope of the first cut: only the center occupies a plot.** A noble's `HOLDING` stays
+land-abstract for now (its estate is not yet placed on its own plot); the plot
+occupants remain the **necessity farms** plus the **village center**. Placing every
+`HOLDING` (noble estates among them) on its own plot — so the `VILLAGE` is literally a
+field of plotted holdings — is the natural next step, deferred. (This is the *downward*
+internal structure of a `VILLAGE`; the *upward* `VILLAGE → CITY → LEAGUE → BARONY`
+progression is `docs/city-and-league.md` / `docs/barony-vs-league.md`.)
+
 ### Geography, wandering, determinism
 
 "Wandering" needs a map and movement, which do not exist (settlements are isolated

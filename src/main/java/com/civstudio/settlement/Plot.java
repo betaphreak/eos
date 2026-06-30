@@ -1,5 +1,9 @@
 package com.civstudio.settlement;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import com.civstudio.geo.Bonus;
 import com.civstudio.geo.Feature;
 import com.civstudio.geo.Improvement;
@@ -13,8 +17,9 @@ import com.civstudio.tech.Sector;
  * its position on the travel-time ladder (its {@link #index()}), the {@link
  * Terrain} it sits on, its {@link PlotType} relief (flat/hill/peak), an optional
  * wild {@link Feature} overlay, the {@link Improvement} an on-plot firm has raised
- * on it, and at most one {@link PlotOccupant} (a firm today; the interface is the
- * seam for housing and other buildings later). A plot is either <b>vacant</b>
+ * on it, the {@link Building center buildings} standing on it (distinct from the tile
+ * improvement — see below), and at most one {@link PlotOccupant} (a firm today; the
+ * interface is the seam for housing and other buildings later). A plot is either <b>vacant</b>
  * ({@code occupant == null}) or taken by exactly one occupant; a {@link
  * PlotType#PEAK peak} is {@link #isWorkable() unworkable} and never seated.
  * <p>
@@ -98,6 +103,13 @@ public final class Plot {
 
 	// the occupant standing on this plot, or null if the plot is vacant
 	private PlotOccupant occupant;
+
+	// the center buildings standing on this plot — Civ4-style city buildings, distinct
+	// from the single tile `improvement` leg above and from the `occupant` firm. Phase 1
+	// tracks them but nothing populates the list and they never enter yields(), so the
+	// data model lands byte-identical; the tech-gated auto-build trigger (which calls
+	// addBuilding) and the building effect are later phases. See docs/plots.md.
+	private final List<Building> buildings = new ArrayList<>();
 
 	/**
 	 * Create a vacant, undeveloped plot at the given ladder index.
@@ -321,5 +333,44 @@ public final class Plot {
 	/** Free the plot, removing any occupant. */
 	public void vacate() {
 		occupant = null;
+	}
+
+	/**
+	 * The {@link Building center buildings} standing on this plot — an unmodifiable live
+	 * view. Distinct from the single tile {@link #improvement()} leg: buildings are
+	 * Civ4-style city buildings with no {@link #yields()} footprint (their effect is
+	 * deferred — see {@code docs/plots.md}). Empty until {@link #addBuilding} places one;
+	 * in this phase nothing does.
+	 *
+	 * @return the buildings on this plot (possibly empty, never {@code null})
+	 */
+	public List<Building> buildings() {
+		return Collections.unmodifiableList(buildings);
+	}
+
+	/**
+	 * Whether a building with the given eos-native id stands on this plot.
+	 *
+	 * @param id the building id
+	 * @return {@code true} if such a building is present
+	 */
+	public boolean hasBuilding(String id) {
+		for (Building b : buildings)
+			if (b.id().equals(id))
+				return true;
+		return false;
+	}
+
+	/**
+	 * Add a center building to this plot. The tech-gated auto-build trigger (a later
+	 * phase) calls this once a building's prerequisite is met; nothing does yet, so the
+	 * collection stays empty in this phase and the data model is byte-identical.
+	 *
+	 * @param building the building to place (non-null)
+	 */
+	public void addBuilding(Building building) {
+		if (building == null)
+			throw new IllegalArgumentException("building must be non-null");
+		buildings.add(building);
 	}
 }
