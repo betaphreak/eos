@@ -43,9 +43,13 @@ raster) instead of an abstract count.
 
 - **Lazy per-province plot field.** The first time a province is needed, it
   generates its plot field: its land pixels (the `province.plots` count) become
-  `Plot`s, at **1 raster pixel = 1 plot**, terrain/relief/rivers drawn from the
-  province's single `Climate`/`WinterSeverity`/`Monsoon` via `TerrainGenerator`
-  (now on a per-**province** terrain `Rng`). Plots start **free**.
+  `Plot`s, at **1 raster pixel = 1 plot**, terrain/relief/rivers generated from the
+  province's single `Climate`/`WinterSeverity`/`Monsoon` by a **Java port of the
+  Caveman2Cosmos planet generator's per-tile stage**
+  (`data/C2C_Planet_Generator_0_68.py`) — spatially-coherent relief (clustered
+  peak/hill ranges), water-seeded feature growth, river flood plains, and resource
+  placement — over the province's real silhouette, on a per-**province** terrain
+  `Rng`. Plots start **free**.
 - **Multiple settlements per province**, sharing that field.
 - **Hybrid ownership.** Free plots belong to the province; **claiming a plot
   transfers it to the claiming settlement**, which keeps its existing `List<Plot>`
@@ -66,8 +70,9 @@ raster) instead of an abstract count.
 **Out (deliberately):**
 
 - **No Civ4/WBSave file export.** The `.CivBeyondSwordWBSave` writer, exporter, and
-  the "play a province as a Civ4 map" framing are dropped. Only the *generation*
-  (silhouette + climate→terrain) is kept, producing in-sim `Plot`s.
+  the "play a province as a Civ4 map" framing are dropped. What is kept from that
+  work is the C2C *generation algorithm* (its per-tile relief/terrain/feature
+  stage), ported to Java to produce in-sim `Plot`s — not a file.
 - **No whole-world projection, no new raster import, no boundary fill.** The
   in-sim field is the province's own land pixels as plots; out-of-province pixels
   are not plots, so the "coast/peak margin" of the file-export sketch is moot.
@@ -77,18 +82,29 @@ raster) instead of an abstract count.
 A province's field is built from the committed rasters on demand (the Phase-5
 raster-reading approach, `docs/geography.md`):
 
-1. From `data/definition.csv` get the province's colour; scan its bbox window of
-   `data/provinces.bmp` for its own pixels (the **mask** — the discarded-but-now-
-   needed data flagged in the geography work) and the aligned `data/rivers.bmp` for
-   river pixels.
-2. Each in-mask pixel becomes a `Plot` carrying its raster `(x, y)` position. Its
-   `Terrain`/`Feature`/`PlotType` (`FLAT`/`HILL`/`PEAK`) come from the province's
-   climate via `TerrainGenerator` (generalized from a per-settlement handful of
-   plots to the whole mask, on a per-province terrain `Rng` so a province's field is
-   deterministic per seed and shared by all its settlements); river pixels mark a
-   floodplain/yield attribute.
-3. The plot count equals `province.plots` (the land-pixel count) — the finite pool
-   every settlement in the province shares.
+1. **Mask.** `ProvinceRaster` reads `data/definition.csv` (the colour↔id map) and,
+   lazily, `data/provinces.bmp`/`data/rivers.bmp`; `mask(id)` returns the province's
+   `ProvinceMask` — its bbox grid of land cells (its own pixels — the
+   discarded-but-now-needed silhouette flagged in the geography work) and river flags.
+2. **Per-tile generation (the C2C port).** Over the mask, a **Java port of the
+   Caveman2Cosmos planet generator's per-tile stage** paints each land cell, seeded
+   by the province's `Climate`/`WinterSeverity`/`Monsoon` and drawn off a
+   per-**province** terrain `Rng` (so a province's field is deterministic per seed
+   and shared by all its settlements). The C2C generator's continent/ocean/latitude
+   machinery is irrelevant to a single fixed-shape, single-climate province; only its
+   per-tile stage is ported, in slices:
+   - **relief** — `ReliefGenerator` ports the C2C `addPeaks`/`addHills`: seed by
+     probability, then **grow into clusters/ranges** (so a province reads as a
+     landscape, not scattered noise), an `IMPASSABLE` province mountainous. *(done)*
+   - **terrain** — the ground; the C2C temperature→terrain selection (interim: the
+     existing climate-weighted pool, `TerrainGenerator.next`). *(relief done; C2C
+     temperature refinement next)*
+   - **features** — water-seeded forest/jungle growth and river flood plains (the
+     per-plot river flag is already captured for this). *(staged)*
+   - **resources** — the C2C `addBonuses` placement onto plots. *(staged)*
+3. Each land cell becomes one `ProvincePlot` (raster `(x, y)`, river flag, terrain,
+   relief, feature). The plot count equals `province.plots` (the land-pixel count) —
+   the finite pool every settlement in the province shares.
 
 Generation moves no money and consumes only the terrain `Rng` (salted apart from
 the economic stream), exactly as `TerrainGenerator` does today.
@@ -169,12 +185,18 @@ the economic stream), exactly as `TerrainGenerator` does today.
 
 ## Phased implementation plan
 
-- **Phase 1 — province plot field + mask.** A per-province plot holder that lazily
-  reads the province mask from `data/provinces.bmp` and generates the `Plot` field
-  (positions + climate terrain/relief/rivers via the generalized `TerrainGenerator`)
-  on first request; plots start free. No settlement wiring yet — pure generation,
-  with a test that a province builds `province.plots` plots deterministically per
-  seed.
+- **Phase 1 — province plot field + mask + the C2C per-tile port.** A per-province
+  plot field that lazily reads the province silhouette from `data/provinces.bmp` and
+  paints it via the Java port of the C2C planet generator's per-tile stage; plots
+  start free, no settlement wiring — pure generation, tested for the
+  `province.plots` count and per-seed determinism.
+  - *Slice 1 (done):* the substrate (`ProvinceRaster` → `ProvinceMask`), the
+    C2C-ported **relief** clustering (`ReliefGenerator`), and the field assembler
+    (`ProvincePlotField`: relief + climate-pool terrain). Covered by
+    `ProvincePlotFieldTest` (silhouette/count, determinism, relief clusters).
+  - *Slice 2 (next):* the C2C **temperature→terrain** selection (replacing the interim
+    climate pool) + water-seeded **feature growth** and river **flood plains**.
+  - *Slice 3:* the C2C **resource** placement (`addBonuses`).
 - **Phase 2 — ownership + single-settlement claim.** Plot gains `(x,y)` + owner;
   `Settlement.claimPlot`/`vacatePlot` re-pointed to claim from the province field
   (ownership transfer); the per-settlement Fibonacci ladder from a center. Fold the
