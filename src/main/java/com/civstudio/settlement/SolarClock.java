@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Calendar;
+import java.util.SimpleTimeZone;
 import java.util.TimeZone;
 
 import com.civstudio.solar.GeoLocation;
@@ -31,6 +32,14 @@ public class SolarClock {
 	private final double latitude;
 	private final double longitude;
 
+	// the location's local mean-solar-time zone, derived from its longitude (15° = 1h, so
+	// the offset is longitude/15 hours). Using it — rather than UTC — makes the reported
+	// dawn/sunrise/sunset/dusk read as realistic LOCAL clock times (sunrise ~06:00, etc.)
+	// wherever the province sits, instead of UTC times skewed by its longitude. Daylight
+	// *length* is a sunrise→sunset duration, invariant to the offset, so the colony economy
+	// (which reads only durations) is unchanged.
+	private final TimeZone zone;
+
 	// the solar calculator for this location, built lazily on first use; its
 	// inputs (latitude/longitude) are fixed for the clock's life
 	private SolarEventCalculator solarCalculator;
@@ -57,6 +66,9 @@ public class SolarClock {
 	public SolarClock(double latitude, double longitude) {
 		this.latitude = latitude;
 		this.longitude = longitude;
+		// longitude/15 hours, in ms, as a DST-free fixed-offset zone (mean solar time)
+		this.zone = new SimpleTimeZone(
+				(int) Math.round(longitude / 15.0 * 3_600_000), "LMT");
 	}
 
 	/**
@@ -77,15 +89,15 @@ public class SolarClock {
 	private SolarEventCalculator solarCalculator() {
 		if (solarCalculator == null)
 			solarCalculator = new SolarEventCalculator(
-					new GeoLocation(latitude, longitude),
-					TimeZone.getTimeZone("UTC"));
+					new GeoLocation(latitude, longitude), zone);
 		return solarCalculator;
 	}
 
-	// a date as a UTC java.util.Calendar, the input the SolarEventCalculator
-	// (legacy Calendar-based) expects
+	// a date as a java.util.Calendar in the location's mean-solar-time zone, the input the
+	// SolarEventCalculator (legacy Calendar-based) expects — the same zone the calculator
+	// uses, so the day-of-year is not shifted by a timezone change mid-calculation
 	private Calendar asCalendar(LocalDate d) {
-		Calendar c = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		Calendar c = Calendar.getInstance(zone);
 		c.clear();
 		c.set(d.getYear(), d.getMonthValue() - 1, d.getDayOfMonth());
 		return c;
