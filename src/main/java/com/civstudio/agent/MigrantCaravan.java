@@ -272,14 +272,14 @@ public class MigrantCaravan extends Caravan {
 	 *             stream), for the deterministic site choice
 	 */
 	@Override
-	public void tick(LocalDate date, Rng rng) {
+	public MarchReport tick(LocalDate date, Rng rng) {
 		if (readyToSettle || !onGraph())
-			return;
+			return null;
 		// one day on the larder clock: consume the wandering ration; the unfed starve
 		following.act();
 		if (following.size() == 0) {
 			releaseCamp();
-			return; // a spent band — no one left to settle
+			return null; // a spent band — no one left to settle
 		}
 		// dawn: strike last night's camp before deciding today's move
 		releaseCamp();
@@ -289,7 +289,7 @@ public class MigrantCaravan extends Caravan {
 		if (getProvinceId() != originProvinceId && isViable(here)
 				&& following.size() >= MIN_SETTLERS) {
 			readyToSettle = true;
-			return;
+			return null; // settled today — no march row (and none on any later day)
 		}
 
 		// the daylight-bounded day: the net distance D the band can relocate camp, from
@@ -331,6 +331,7 @@ public class MigrantCaravan extends Caravan {
 		PlotCorridor corridor = campingEnabled ? currentCorridor() : null;
 		Plot camp = campingEnabled ? claimCampOn(corridor) : null;
 		lastReport = buildReport(date, day, traversed, corridor, camp);
+		return lastReport;
 	}
 
 	/**
@@ -445,8 +446,9 @@ public class MigrantCaravan extends Caravan {
 		String plotsLabel = corridorLabel(corridor);
 		int plotsEst = (corridor != null && !corridor.isEmpty()) ? corridor.plotCount()
 				: (int) Math.round(day.netMarchKm() / marchConfig.kmPerPlot());
-		String campLabel = camp == null ? "-"
-				: campLabel(camp) + " in " + provLabel(getProvinceId());
+		// the camp column omits the province (it is already the row's Province) and the
+		// TERRAIN_/FEATURE_ prefixes
+		String campLabel = camp == null ? "-" : campLabel(camp);
 		// the "Province" column reads where the day began (the first traversal entry),
 		// not where it ended
 		return new MarchReport(date, getLeader().fullName(), provLabel(traversed.get(0)),
@@ -464,24 +466,32 @@ public class MigrantCaravan extends Caravan {
 		for (int i = 0; i < cap; i++) {
 			if (sb.length() > 0)
 				sb.append(" > ");
-			sb.append(path.get(i).terrain().type());
+			sb.append(shortName(path.get(i).terrain().type()));
 		}
 		if (path.size() > cap)
 			sb.append(" > … (").append(path.size()).append(" plots)");
 		return sb.toString();
 	}
 
-	// "id name" for a province
+	// "Name (id)" for a province
 	private String provLabel(int id) {
-		return id + " " + worldMap().province(id).name();
+		return worldMap().province(id).name() + " (" + id + ")";
 	}
 
-	// a concise descriptor of a camp plot: terrain, relief, and feature if any
+	// a concise descriptor of a camp plot: terrain, relief, and feature if any (with the
+	// verbose TERRAIN_/FEATURE_ prefixes dropped)
 	private String campLabel(Plot p) {
-		String s = p.terrain().type() + " " + p.plotType();
+		String s = shortName(p.terrain().type()) + " " + p.plotType();
 		if (p.feature() != null)
-			s += " " + p.feature().type();
+			s += " " + shortName(p.feature().type());
 		return s;
+	}
+
+	// drop the Civ4 TERRAIN_/FEATURE_ prefix and lower-case the rest ("TERRAIN_GRASSLAND"
+	// -> "grassland"), so the journal reads compactly
+	private static String shortName(String type) {
+		int us = type.indexOf('_');
+		return (us >= 0 ? type.substring(us + 1) : type).toLowerCase();
 	}
 
 	// whether a province can be founded into: settleable land with at least the

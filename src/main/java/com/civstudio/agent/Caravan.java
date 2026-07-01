@@ -209,6 +209,10 @@ public abstract class Caravan {
 	 * @param date the current in-game date (drives the daily daylight budget)
 	 * @param rng  the session-level band RNG (distinct from any colony's economic
 	 *             stream), for deterministic movement/decisions
+	 * @return the day's fresh {@link com.civstudio.agent.march.MarchReport march report},
+	 *         or {@code null} on a day the band produced none (it has already settled, is
+	 *         spent, or is off-graph) — so a driver records one row per marched day rather
+	 *         than re-recording a stale report every remaining day
 	 */
-	public abstract void tick(LocalDate date, Rng rng);
+	public abstract com.civstudio.agent.march.MarchReport tick(LocalDate date, Rng rng);
 }

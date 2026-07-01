@@ -181,9 +181,9 @@ public class CaravanEconomy {
 			com.civstudio.io.printer.CaravanMarchPrinter journal) {
 		int days = 0;
 		while (!band.isReadyToSettle() && days < MAX_WANDER_DAYS) {
-			band.tick(date.plusDays(days), rng);
-			if (band.getLastReport() != null)
-				journal.record(band.getLastReport());
+			var report = band.tick(date.plusDays(days), rng);
+			if (report != null)
+				journal.record(report);
 			days++;
 		}
 		if (!band.isReadyToSettle())

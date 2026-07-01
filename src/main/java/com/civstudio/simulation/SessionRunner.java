@@ -156,9 +156,11 @@ public final class SessionRunner {
 				// colony so the daylight-bounded march reads the right in-game date
 				LocalDate date = dateSource == null ? null : dateSource.getDate();
 				for (Caravan band : bands) {
-					band.tick(date, rng);
-					if (journal != null && band.getLastReport() != null)
-						journal.record(band.getLastReport());
+					// record only a fresh report (null once the band has settled), so a
+					// settled band doesn't re-log its last day every remaining day
+					var report = band.tick(date, rng);
+					if (journal != null && report != null)
+						journal.record(report);
 				}
 			} catch (Throwable t) {
 				failures.add(t);
