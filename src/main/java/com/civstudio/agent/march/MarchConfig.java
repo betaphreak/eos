@@ -25,6 +25,15 @@ import lombok.Builder;
  *                          reported plot estimate until Level-2 corridors land)
  * @param roadSpeedFactor   terrain/road speed multiplier (1.0 hook; roads &gt; 1, rough
  *                          &lt; 1 — a later cut fed by {@code data/civ4/Civ4RouteInfos.xml})
+ * @param maxDailyKm        the practical daily march ceiling — a real foot force sustains
+ *                          ~20–30&nbsp;km/day well below the daylight ceiling ({@code
+ *                          docs/caravan-march.md} §<i>Motivation</i>). Capping the day here
+ *                          is what leaves <b>surplus daylight</b> for foraging on long days.
+ * @param forageRatePerHour food a single forager gathers per surplus-daylight hour when the
+ *                          corridor crossed a food resource (a placeholder)
+ * @param forageCapFraction the daily forage ceiling as a fraction of the band's daily
+ *                          ration — kept &lt; 1 so foraging only slows the larder's decline
+ *                          (the band stays a decaying asset; see {@code docs/caravan.md})
  */
 @Builder(toBuilder = true)
 public record MarchConfig(
@@ -39,7 +48,10 @@ public record MarchConfig(
 		double elementBufferMin,
 		double scoutBufferMin,
 		double kmPerPlot,
-		double roadSpeedFactor) {
+		double roadSpeedFactor,
+		double maxDailyKm,
+		double forageRatePerHour,
+		double forageCapFraction) {
 
 	/** The canonical placeholder constants (see {@code docs/caravan-march.md}). */
 	public static final MarchConfig DEFAULT = new MarchConfig(
@@ -54,7 +66,10 @@ public record MarchConfig(
 			1.0,    // elementBufferMin
 			20.0,   // scoutBufferMin
 			7.0,    // kmPerPlot (placeholder; see docs/land-routing.md open question)
-			1.0);   // roadSpeedFactor (hook)
+			1.0,    // roadSpeedFactor (hook)
+			30.0,   // maxDailyKm (practical daily march ceiling)
+			0.03,   // forageRatePerHour (food per forager per surplus hour)
+			0.8);   // forageCapFraction (< 1: foraging only slows the larder's decline)
 
 	/**
 	 * The march speed in km/h — pace length &times; cadence, converted from m/min. With

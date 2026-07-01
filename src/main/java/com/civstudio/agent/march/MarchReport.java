@@ -22,8 +22,13 @@ import java.time.LocalDate;
  *                           corridor is known, else {@code D / kmPerPlot})
  * @param ate                the necessity the band consumed today (its wandering ration
  *                           × head-count) — eaten every day, halts and fords included
- * @param larder             the necessity remaining in the carried larder after eating —
- *                           the countdown to starvation while the band cannot restock
+ * @param foraged            the food gathered from the land today — non-zero only when the
+ *                           day left surplus daylight and the corridor crossed a food
+ *                           resource; added to the larder (offsets, but is capped below,
+ *                           the ration, so the band still declines)
+ * @param larder             the necessity remaining in the carried larder after eating and
+ *                           foraging — the countdown to starvation while the band cannot
+ *                           restock on a market
  * @param camp               the nightly camp, as a label ("-" if the band did not camp)
  */
 public record MarchReport(
@@ -35,6 +40,7 @@ public record MarchReport(
 		String bonuses,
 		int plotsEstimate,
 		double ate,
+		double foraged,
 		double larder,
 		String camp) {
 }

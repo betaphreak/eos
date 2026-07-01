@@ -24,6 +24,7 @@ import com.civstudio.geo.Route;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.good.Good;
 import com.civstudio.good.RationSize;
+import com.civstudio.good.ResourceType;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Plot;
 import com.civstudio.settlement.PlotCorridor;
@@ -325,7 +326,8 @@ public class MigrantCaravan extends Caravan {
 		// lean band in a long day may clear several short legs (docs/caravan-march.md §6).
 		List<Integer> traversed = new ArrayList<>();
 		traversed.add(getProvinceId());
-		double budget = day.netMarchKm();
+		double startBudget = day.netMarchKm();
+		double budget = startBudget;
 		while (budget > 1e-9 && route != null && legIndex < route.hops()) {
 			if (!legReady)
 				computeLeg();
@@ -356,8 +358,54 @@ public class MigrantCaravan extends Caravan {
 		// land route (docs/land-routing.md); camp on one of its plots and report them
 		PlotCorridor corridor = campingEnabled ? currentCorridor() : null;
 		Plot camp = campingEnabled ? claimCampOn(corridor) : null;
-		lastReport = buildReport(date, day, traversed, corridor, camp);
+		// forage food from the land if the day left surplus daylight and the corridor
+		// crossed a food resource (free, no march cost; capped below the ration)
+		double foraged = campingEnabled ? forage(day, startBudget - budget, corridor) : 0;
+		lastReport = buildReport(date, day, traversed, corridor, foraged, camp);
 		return lastReport;
+	}
+
+	/**
+	 * The daily forage constant: how much a wandering band gathers depends on the
+	 * <b>surplus daylight</b> (the daylight the capped march did not use) and the number of
+	 * foragers, and only happens where the day's corridor crossed a <b>food</b> resource.
+	 * The yield is added to the larder but capped below the daily ration, so foraging only
+	 * <b>slows</b> the larder's decline — the band stays a decaying asset (see {@code
+	 * docs/caravan.md}). Decisions per the design Q&amp;A.
+	 *
+	 * @param day      the day's computed march (daylight, speed, column length)
+	 * @param movedKm  the distance the band actually relocated today
+	 * @param corridor the day's plot corridor (its plots' bonuses are the forageable land)
+	 * @return the food foraged into the larder (0 if no surplus daylight or no food resource)
+	 */
+	private double forage(MarchDay day, double movedKm, PlotCorridor corridor) {
+		if (!crossedFoodResource(corridor))
+			return 0;
+		double hCamp = marchConfig.hCampBaseHours()
+				+ marchConfig.hCampPerThousand() * following.size() / 1000.0;
+		// surplus = the daylight left after the (capped) march and the camp overhead
+		double surplusHours = Math.max(0, (day.daylightHours() - hCamp)
+				- (movedKm + day.columnKm()) / day.speedKmh());
+		if (surplusHours <= 0)
+			return 0;
+		double ration = following.size() * WANDERING_RATION.perDay();
+		double foraged = Math.min(
+				surplusHours * following.size() * marchConfig.forageRatePerHour(),
+				marchConfig.forageCapFraction() * ration);
+		if (foraged > 0)
+			following.stockLarder(foraged);
+		return foraged;
+	}
+
+	// whether the day's corridor crossed a food (necessity-class) resource — the land a
+	// wandering band can forage for its larder
+	private boolean crossedFoodResource(PlotCorridor corridor) {
+		if (corridor == null)
+			return false;
+		for (Plot p : corridor.path())
+			if (p.bonus() != null && p.bonus().resourceType() == ResourceType.NECESSITY)
+				return true;
+		return false;
 	}
 
 	/**
@@ -502,7 +550,7 @@ public class MigrantCaravan extends Caravan {
 
 	// compose the day's print-ready report (labels resolved against the province graph)
 	private MarchReport buildReport(LocalDate date, MarchDay day, List<Integer> traversed,
-			PlotCorridor corridor, Plot camp) {
+			PlotCorridor corridor, double foraged, Plot camp) {
 		StringBuilder path = new StringBuilder();
 		for (int id : traversed) {
 			if (path.length() > 0)
@@ -519,7 +567,7 @@ public class MigrantCaravan extends Caravan {
 		// not where it ended
 		return new MarchReport(date, getLeader().fullName(), provLabel(traversed.get(0)),
 				day, path.toString(), bonusesLabel, plotsEst,
-				following.getLastConsumed(), following.getLarder(), campLabel);
+				following.getLastConsumed(), foraged, following.getLarder(), campLabel);
 	}
 
 	// the notable resource bonuses encountered on the corridor — the distinct bonus names

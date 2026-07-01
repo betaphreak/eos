@@ -41,6 +41,7 @@ public final class CaravanMarchPrinter {
 			ColumnSpec.text("Bonuses"),
 			ColumnSpec.integer("PlotsEst"),
 			ColumnSpec.real("Ate"),
+			ColumnSpec.real("Foraged"),
 			ColumnSpec.real("Larder"),
 			ColumnSpec.text("Camp"),
 	};
@@ -70,7 +71,7 @@ public final class CaravanMarchPrinter {
 		marchSink(r.band()).writeRow(r.date(), r.province(), day.bandSize(),
 				day.daylightHours(), day.speedKmh(), day.columnKm(), day.netMarchKm(),
 				hm(day.firstDepart()), hm(day.campMade()), r.provincesTraversed(),
-				r.bonuses(), r.plotsEstimate(), r.ate(), r.larder(), r.camp());
+				r.bonuses(), r.plotsEstimate(), r.ate(), r.foraged(), r.larder(), r.camp());
 	}
 
 	/** Flush and close every band's file. */

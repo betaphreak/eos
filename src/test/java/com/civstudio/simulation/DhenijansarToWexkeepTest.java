@@ -21,6 +21,7 @@ import com.civstudio.bank.BankConfig;
 import com.civstudio.geo.LandRouter;
 import com.civstudio.geo.Route;
 import com.civstudio.geo.WorldMap;
+import com.civstudio.good.Good;
 import com.civstudio.io.printer.CaravanMarchPrinter;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
@@ -37,6 +38,22 @@ class DhenijansarToWexkeepTest {
 
 	private static final int DHENIJANSAR = 4411;
 	private static final int WEXKEEP = 306;
+
+	// per-head food to provision the larder with — ~the observed journey length (the band
+	// arrives in ~770 days) times the daily wandering ration (0.1/day), with a small margin.
+	// Sized so eating just drains the provision, leaving the foraged food as the surplus at
+	// Wexkeep (see the test body).
+	private static final double JOURNEY_RATION_PER_PERSON = 77.0;
+
+	// set a retinue's larder to an exact quantity
+	private static void setLarder(Retinue following, double target) {
+		Good larder = following.getGood("Necessity");
+		double have = larder.getQuantity();
+		if (target > have)
+			larder.increase(target - have);
+		else
+			larder.decrease(have - target);
+	}
 
 	@Test
 	void aLongLandRouteConnectsTheTwo() {
@@ -67,32 +84,37 @@ class DhenijansarToWexkeepTest {
 				cfg.meanSkillFemale(), 0, 0);
 		Bank bank = new Bank(BankConfig.DEFAULT, muster);
 		Retinue following = new Retinue(50, bank, muster);
-		// a deep larder so the multi-year northward journey (with winter halts, which
-		// still eat) never starves before it arrives — the test is about reaching Wexkeep
-		following.getGood("Necessity").increase(500_000);
 		Member leader = following.promoteHighestSkilled();
+		int people = following.size();
+		// Provision the larder for exactly the journey's consumption, scaled to the band:
+		// ~the observed trip length (JOURNEY_RATION_PER_PERSON days of ration per head).
+		// Since eating exactly drains this provision, whatever larder remains at Wexkeep is
+		// what the band foraged from the land along the way.
+		double provision = JOURNEY_RATION_PER_PERSON * people;
+		setLarder(following, provision);
 		MigrantCaravan band = new MigrantCaravan(leader, following, 100_000, DHENIJANSAR, session);
 		band.setCampingEnabled(true);
 		band.setDestination(WEXKEEP);
 
-		// march until it arrives, journalling each marched day
+		// march until it arrives, journalling each marched day and tallying food eaten/foraged
 		CaravanMarchPrinter journal = new CaravanMarchPrinter("output/" + seed);
 		Rng rng = session.getBandRng();
 		LocalDate start = LocalDate.of(1445, 6, 1);
 		Set<Integer> visited = new HashSet<>();
-		boolean sawBonus = false;
+		double totalAte = 0, totalForaged = 0;
 		int maxDays = 365 * 25;
 		int day = 0;
 		for (; day < maxDays && !band.isReadyToSettle(); day++) {
 			MarchReport report = band.tick(start.plusDays(day), rng);
 			visited.add(band.getProvinceId());
+			totalAte += following.getLastConsumed();
 			if (report != null) {
 				journal.record(report);
-				if (!"-".equals(report.bonuses()))
-					sawBonus = true;
+				totalForaged += report.foraged();
 			}
 		}
 		journal.close();
+		double larderAtWexkeep = following.getLarder();
 
 		// it reached Wexkeep, having crossed the whole route
 		assertTrue(band.isReadyToSettle(),
@@ -101,9 +123,16 @@ class DhenijansarToWexkeepTest {
 		assertEquals(WEXKEEP, band.getProvinceId(), "the band arrived at Wexkeep");
 		assertTrue(visited.size() >= 20,
 				"it crossed the whole continent (visited=" + visited.size() + " provinces)");
-		System.out.println("Dhenijansar->Wexkeep: arrived on day " + day + " (~"
-				+ (day / 365) + "y), visited " + visited.size() + " provinces, saw bonus="
-				+ sawBonus);
+		// the larder is provisioned to the trip's consumption, so eating drains it and the
+		// remainder at Wexkeep is what was foraged: larder = provision - ate + foraged
+		assertTrue(totalForaged > 0, "the band foraged food on the way");
+		assertEquals(provision - totalAte + totalForaged, larderAtWexkeep, 1.0,
+				"larder = provision - eaten + foraged (accounting)");
+		assertEquals(totalForaged, larderAtWexkeep, provision * 0.1,
+				"the larder at Wexkeep reflects what was foraged (provision covered the eating)");
+		System.out.printf("Dhenijansar->Wexkeep: arrived day %d (~%dy), %d provinces; "
+				+ "ate=%.0f foraged=%.0f larderAtWexkeep=%.0f%n",
+				day, day / 365, visited.size(), totalAte, totalForaged, larderAtWexkeep);
 		// the journal was written with the Bonuses column
 		File marchFile = new File("output/" + seed + "/by-caravan/"
 				+ leader.fullName().trim() + "-CaravanMarch.csv");

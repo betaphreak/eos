@@ -327,9 +327,15 @@ a transient plot claim that, on the settle decision, *is* the founding `HOLDING`
    future.
 3. **No auto-dispersion.** The model creates the *pressure* to split a huge band (`D → 0`),
    but a band splitting into parallel columns is not modelled here.
-4. **Foraging is not a real food draw** from the transited province yet — the band lives
-   off its carried larder (`docs/caravan.md`); marching foragers pulling food from the
-   land is deferred to the caravan-trade / sustenance work.
+4. ~~**Foraging is not a real food draw**~~ **Foraging is implemented.** As the band crosses
+   its corridor, if the day left **surplus daylight** (the daily march is capped at a
+   practical ~30 km — `MarchConfig.maxDailyKm` — so long summer days leave a forage window)
+   and the corridor crossed a **food resource** (a necessity-class {@link
+   com.civstudio.geo.Bonus}), the band gathers food into its larder: `surplusHours × band
+   size × forageRatePerHour`, capped below the daily ration (`forageCapFraction` < 1) so it
+   only **slows** the larder's decline — the band stays a decaying asset (`docs/caravan.md`).
+   Free (no march cost). Reported in the journal's `Foraged` column. Non-food bonuses and
+   pulling food from a settled province's market are still future.
 5. **Transit accounts for plots via corridors, not a global plot graph.** Per
    `docs/land-routing.md`, a route province's plot **corridor** (entry portal → exit
    portal) is generated from the existing plot generator and gives the plots crossed and

@@ -57,10 +57,12 @@ public final class March {
 		}
 
 		// net daily distance D = max(0, v·(H − H_camp) − L); a daylight-starved day
-		// (H NaN/≤0) or a column longer than the usable window makes zero progress
+		// (H NaN/≤0) or a column longer than the usable window makes zero progress. The
+		// day is then capped at the practical march ceiling (a real force sustains far less
+		// than the daylight ceiling), which is what leaves surplus daylight for foraging.
 		double hCamp = cfg.hCampBaseHours() + cfg.hCampPerThousand() * size / 1000.0;
 		double usable = Double.isNaN(daylightHours) ? 0 : daylightHours - hCamp;
-		double d = Math.max(0, v * Math.max(0, usable) - columnKm);
+		double d = Math.min(cfg.maxDailyKm(), Math.max(0, v * Math.max(0, usable) - columnKm));
 
 		// the timed per-element schedule (only when the band marches and sunrise is
 		// defined): each element leaves once the previous has cleared camp plus a buffer

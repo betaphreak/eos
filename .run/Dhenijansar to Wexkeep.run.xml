@@ -1,0 +1,18 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Dhenijansar to Wexkeep" type="JUnit" factoryName="JUnit">
+    <module name="com.civstudio" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="com.civstudio.simulation.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="PACKAGE_NAME" value="com.civstudio.simulation" />
+    <option name="MAIN_CLASS_NAME" value="com.civstudio.simulation.DhenijansarToWexkeepTest" />
+    <option name="METHOD_NAME" value="aDirectedBandMarchesAllTheWayToWexkeep" />
+    <option name="TEST_OBJECT" value="method" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
