@@ -5,7 +5,7 @@ import java.util.Arrays;
 /**
  * A Civ4 base terrain — the ground a {@link com.civstudio.settlement.Plot plot}
  * sits on, carrying its base Food/Production/Commerce yield. Exported (curated to
- * the settleable land subset) from {@code data/CIV4TerrainInfos.xml} by
+ * the settleable land subset) from {@code data/civ4/CIV4TerrainInfos.xml} by
  * {@link com.civstudio.geo.export.TerrainExporter} into {@code /terrains.json},
  * loaded by {@link TerrainRegistry}. See {@code docs/plots.md}.
  * <p>

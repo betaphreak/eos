@@ -1,10 +1,10 @@
 package com.civstudio.geo;
 
 /**
- * The pixel silhouette of one province, read from {@code data/provinces.bmp}: a
+ * The pixel silhouette of one province, read from {@code data/anbennar/provinces.bmp}: a
  * rectangular grid over the province's bounding box in which each cell is either
  * <b>land</b> (a pixel of this province's colour) or not, with a parallel
- * <b>river</b> flag (from {@code data/rivers.bmp}). It is the substrate the
+ * <b>river</b> flag (from {@code data/anbennar/rivers.bmp}). It is the substrate the
  * per-province plot generation paints onto — one land cell becomes one plot, at 1
  * raster pixel = 1 plot. See {@code docs/province-plots.md}.
  * <p>

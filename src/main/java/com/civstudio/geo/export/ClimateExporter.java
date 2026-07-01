@@ -18,7 +18,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Dev tool: reads the Anbennar {@code data/climate.txt} (a Clausewitz file) and
+ * Dev tool: reads the Anbennar {@code data/anbennar/climate.txt} (a Clausewitz file) and
  * stamps each province's environmental attributes onto {@code map/provinces.json}
  * — the {@code climate}/{@code winter}/{@code monsoon} keys ({@link
  * com.civstudio.geo.Province#climate()} / {@code winter()} / {@code monsoon()})
@@ -49,7 +49,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class ClimateExporter {
 
-	private static final String INPUT = "data/climate.txt";
+	private static final String INPUT = "data/anbennar/climate.txt";
 	private static final String PROVINCES = "src/main/resources/map/provinces.json";
 
 	// key = { id id id ... } (the equator_y scalar has no braces, so it is skipped)

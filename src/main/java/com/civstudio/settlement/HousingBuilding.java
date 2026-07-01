@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * A <b>housing building</b> catalog entry — one rung of the C2C housing ladder
  * (lean-tos → hovels → cottages → … → arcologies), exported from
- * {@code data/SpecialBuildings_CIV4BuildingInfos.xml} by
+ * {@code data/civ4/SpecialBuildings_CIV4BuildingInfos.xml} by
  * {@link com.civstudio.geo.export.HousingExporter} into {@code /housing.json}.
  * <p>
  * This is the immutable <b>reference/catalog</b> definition (like

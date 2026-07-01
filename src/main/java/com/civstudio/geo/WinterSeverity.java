@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
  * The winter severity of a {@link Province}, overlaid from {@code
- * data/climate.txt} (the {@code mild_winter}/{@code normal_winter}/{@code
+ * data/anbennar/climate.txt} (the {@code mild_winter}/{@code normal_winter}/{@code
  * severe_winter} blocks) by {@link com.civstudio.geo.export.ClimateExporter}.
  * Provinces in none of those blocks have {@link #NONE} (the default), so {@link
  * Province#winter()} is never {@code null}. A per-province environmental attribute,

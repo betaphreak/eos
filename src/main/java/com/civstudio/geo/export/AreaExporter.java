@@ -14,7 +14,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Dev tool: flattens the Anbennar {@code data/area.txt} (a Clausewitz file) into
+ * Dev tool: flattens the Anbennar {@code data/anbennar/area.txt} (a Clausewitz file) into
  * the {@code /areas.json} resource the core {@link com.civstudio.geo.WorldMap}
  * loads, and stamps each province's {@code area} <em>and</em> {@code region} keys
  * onto {@code provinces.json}. Like the sibling exporters this is a
@@ -51,7 +51,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class AreaExporter {
 
-	private static final String INPUT = "data/area.txt";
+	private static final String INPUT = "data/anbennar/area.txt";
 	private static final String AREAS_OUTPUT = "src/main/resources/map/areas.json";
 	private static final String REGIONS = "src/main/resources/map/regions.json";
 	private static final String PROVINCES = "src/main/resources/map/provinces.json";

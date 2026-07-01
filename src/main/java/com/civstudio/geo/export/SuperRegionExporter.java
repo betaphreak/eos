@@ -11,7 +11,7 @@ import com.civstudio.geo.SuperRegion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Dev tool: flattens the Anbennar {@code data/superregion.txt} (a Clausewitz
+ * Dev tool: flattens the Anbennar {@code data/anbennar/superregion.txt} (a Clausewitz
  * file) into the {@code /superregions.json} resource the core {@link
  * com.civstudio.geo.WorldMap} loads alongside the other geographic tiers. Like
  * the sibling exporters this is a build-time/manual step whose output is
@@ -45,7 +45,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class SuperRegionExporter {
 
-	private static final String INPUT = "data/superregion.txt";
+	private static final String INPUT = "data/anbennar/superregion.txt";
 	private static final String OUTPUT = "src/main/resources/map/superregions.json";
 
 	// superregion_key = { region_key region_key ... } (no nested braces)

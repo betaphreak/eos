@@ -13,7 +13,7 @@ import com.civstudio.geo.Terrain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Dev tool: parses {@code data/CIV4TerrainInfos.xml} and emits the curated
+ * Dev tool: parses {@code data/civ4/CIV4TerrainInfos.xml} and emits the curated
  * settleable-land subset to the committed {@code /terrains.json} resource the
  * core {@link com.civstudio.geo.TerrainRegistry} loads. The curation (which
  * terrains to keep) and the XML&rarr;record field mapping live here; the running
@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class TerrainExporter {
 
-	private static final String INPUT = "data/CIV4TerrainInfos.xml";
+	private static final String INPUT = "data/civ4/CIV4TerrainInfos.xml";
 	private static final String OUTPUT = "src/main/resources/terrains.json";
 
 	/** The curated land subset, in the order they appear in {@code docs/plots.md}. */

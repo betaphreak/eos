@@ -13,7 +13,7 @@ import com.civstudio.geo.Improvement;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Dev tool: parses {@code data/CIV4ImprovementInfos.xml} and emits the curated
+ * Dev tool: parses {@code data/civ4/CIV4ImprovementInfos.xml} and emits the curated
  * firm-building subset to the committed {@code /improvements.json} resource the
  * core {@link com.civstudio.geo.TerrainRegistry} loads. Each kept improvement is
  * the building of one on-plot firm type (a {@code FARM} for necessity, a
@@ -30,7 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class ImprovementExporter {
 
-	private static final String INPUT = "data/CIV4ImprovementInfos.xml";
+	private static final String INPUT = "data/civ4/CIV4ImprovementInfos.xml";
 	private static final String OUTPUT = "src/main/resources/improvements.json";
 
 	/** The curated firm-building subset, in {@code docs/plots.md} order. */

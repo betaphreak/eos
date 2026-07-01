@@ -4,7 +4,7 @@ package com.civstudio.geo;
  * Decodes the Anbennar EU4 map rasters into this engine's Civ4 terrain model — the
  * bridge that lets the real committed map (rather than a climate-weighted random
  * draw) drive a province's plots. Two palettes are decoded, each transcribed from
- * the {@code terrain { }} and {@code tree { }} blocks of {@code data/terrain.txt}
+ * the {@code terrain { }} and {@code tree { }} blocks of {@code data/anbennar/terrain.txt}
  * (the EU4 colour-table → terrain definitions):
  * <ul>
  * <li><b>{@code terrain.bmp}</b> (8-bit, 1 pixel = 1 province pixel) — each palette

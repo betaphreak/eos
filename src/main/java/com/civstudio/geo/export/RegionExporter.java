@@ -11,7 +11,7 @@ import com.civstudio.geo.Region;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Dev tool: flattens the Anbennar {@code data/region.txt} (a Clausewitz file)
+ * Dev tool: flattens the Anbennar {@code data/anbennar/region.txt} (a Clausewitz file)
  * into the {@code /regions.json} resource the core {@link
  * com.civstudio.geo.WorldMap} loads alongside {@code provinces.json}. Like {@link
  * ProvinceExporter} this is a build-time/manual step whose output is committed to
@@ -43,7 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class RegionExporter {
 
-	private static final String INPUT = "data/region.txt";
+	private static final String INPUT = "data/anbennar/region.txt";
 	private static final String OUTPUT = "src/main/resources/map/regions.json";
 
 	// region_key = { areas = { area1 area2 ... } ...rest of body ignored }

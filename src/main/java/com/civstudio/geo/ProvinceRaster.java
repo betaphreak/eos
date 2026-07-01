@@ -32,11 +32,11 @@ import javax.imageio.ImageIO;
  */
 public final class ProvinceRaster {
 
-	private static final String DEFINITIONS = "data/definition.csv";
-	private static final String PROVINCES_BMP = "data/provinces.bmp";
-	private static final String RIVERS_BMP = "data/rivers.bmp";
-	private static final String TERRAIN_BMP = "data/terrain.bmp";
-	private static final String TREES_BMP = "data/trees.bmp";
+	private static final String DEFINITIONS = "data/anbennar/definition.csv";
+	private static final String PROVINCES_BMP = "data/anbennar/provinces.bmp";
+	private static final String RIVERS_BMP = "data/anbennar/rivers.bmp";
+	private static final String TERRAIN_BMP = "data/anbennar/terrain.bmp";
+	private static final String TREES_BMP = "data/anbennar/trees.bmp";
 
 	private static final int RIVER_NONE = 0xFFFFFF; // pure white = no river
 

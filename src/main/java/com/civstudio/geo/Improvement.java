@@ -8,7 +8,7 @@ import java.util.List;
  * mine, cottage…), the third leg of a plot's yield after terrain and feature. The
  * firm type fixes the improvement (necessity = a {@code FARM}), and the
  * improvement's yield change is that firm's land-productivity bonus. Exported
- * (curated to the firm-building subset) from {@code data/CIV4ImprovementInfos.xml}
+ * (curated to the firm-building subset) from {@code data/civ4/CIV4ImprovementInfos.xml}
  * by {@link com.civstudio.geo.export.ImprovementExporter} into {@code
  * /improvements.json}, loaded by {@link TerrainRegistry}. See {@code docs/plots.md}.
  * <p>

@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * livestock, strategic, luxury…). Like {@link Continent}, this is a small, fixed
  * taxonomy, so it is modeled as an {@code enum} with its data baked in rather than
  * loaded from a resource. The eleven values and their {@link #uniqueRange()} are
- * the curated content of {@code data/CIV4BonusClassInfos.xml}; the per-bonus
+ * the curated content of {@code data/civ4/CIV4BonusClassInfos.xml}; the per-bonus
  * {@code BonusClassType} key is the only bonus-class data persisted (on each entry
  * of {@code bonuses.json}), and {@link #fromKey(String)} maps it back to the enum.
  * <p>

@@ -8,7 +8,7 @@ import java.util.List;
  * com.civstudio.settlement.Plot plot}'s base terrain (forest, jungle, oasis…),
  * contributing an additive yield change on top of the host terrain's triple and
  * carrying a clear cost (the work to remove it). Exported (curated to the
- * land-feature subset) from {@code data/CIV4FeatureInfos.xml} by
+ * land-feature subset) from {@code data/civ4/CIV4FeatureInfos.xml} by
  * {@link com.civstudio.geo.export.FeatureExporter} into {@code /features.json},
  * loaded by {@link TerrainRegistry}. See {@code docs/plots.md}.
  *

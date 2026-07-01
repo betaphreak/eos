@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Unit checks on the EU4 {@code terrain.bmp}/{@code trees.bmp} palette decoding —
- * that the index tables transcribed from {@code data/terrain.txt} map to the
+ * that the index tables transcribed from {@code data/anbennar/terrain.txt} map to the
  * intended Civ4 terrain/relief, that EU4's relief-in-the-palette is lifted onto the
  * orthogonal {@link PlotType} axis, and that water/unmapped indices decode to a
  * {@code null} ground (so the caller falls back to climate generation).

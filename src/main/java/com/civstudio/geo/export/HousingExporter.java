@@ -11,7 +11,7 @@ import com.civstudio.settlement.HousingBuilding;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Dev tool: parses {@code data/SpecialBuildings_CIV4BuildingInfos.xml} and emits the
+ * Dev tool: parses {@code data/civ4/SpecialBuildings_CIV4BuildingInfos.xml} and emits the
  * <b>housing</b> subset — every {@code BUILDING_HOUSING_*} rung of the C2C housing
  * ladder — to the committed {@code /housing.json} resource. These are the buildings
  * a village <b>auto-builds at its center (plot 0) once their prerequisites are met</b>
@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class HousingExporter {
 
-	private static final String INPUT = "data/SpecialBuildings_CIV4BuildingInfos.xml";
+	private static final String INPUT = "data/civ4/SpecialBuildings_CIV4BuildingInfos.xml";
 	private static final String OUTPUT = "src/main/resources/housing.json";
 
 	/** Every housing building's {@code <Type>} starts with this. */

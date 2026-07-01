@@ -129,7 +129,7 @@ class TerrainRegistryTest {
 
 	@Test
 	void bonusClassUniqueRangesMatchXml() {
-		// baked into the enum from data/CIV4BonusClassInfos.xml
+		// baked into the enum from data/civ4/CIV4BonusClassInfos.xml
 		assertEquals(2, BonusClass.CROP.uniqueRange());
 		assertEquals(3, BonusClass.LIVESTOCK.uniqueRange());
 		assertEquals(1, BonusClass.STRATEGIC.uniqueRange());

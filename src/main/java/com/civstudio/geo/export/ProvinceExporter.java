@@ -35,15 +35,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * <p>
  * It does a single pass over the two rasters:
  * <ul>
- * <li>{@code data/provinces.bmp} (24-bit, one colour per province) — per-colour
+ * <li>{@code data/anbennar/provinces.bmp} (24-bit, one colour per province) — per-colour
  * pixel count ({@code plots}), bounding box (for the {@code lat}/{@code lon}
  * projection), and the colour-adjacency graph;</li>
- * <li>{@code data/rivers.bmp} (a non-white pixel marks water) — per-colour water
+ * <li>{@code data/anbennar/rivers.bmp} (a non-white pixel marks water) — per-colour water
  * pixel count ({@code waterPlots}).</li>
  * </ul>
- * resolving colours to province ids and names from {@code data/definition.csv}
+ * resolving colours to province ids and names from {@code data/anbennar/definition.csv}
  * (skipping {@code RNW}/{@code Unused} placeholders) and {@code SEA}/{@code LAKE}
- * classification from {@code data/default.map}. {@code latitude} is the
+ * classification from {@code data/anbennar/default.map}. {@code latitude} is the
  * inverse-Mercator of the bounding-box vertical centre; {@code longitude} is a
  * linear map of the horizontal centroid over the global x extent. The
  * colour-adjacency graph is mapped to {@code province_id}s and materialized
@@ -67,10 +67,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class ProvinceExporter {
 
-	private static final String DEFINITIONS = "data/definition.csv";
-	private static final String DEFAULT_MAP = "data/default.map";
-	private static final String PROVINCES_BMP = "data/provinces.bmp";
-	private static final String RIVERS_BMP = "data/rivers.bmp";
+	private static final String DEFINITIONS = "data/anbennar/definition.csv";
+	private static final String DEFAULT_MAP = "data/anbennar/default.map";
+	private static final String PROVINCES_BMP = "data/anbennar/provinces.bmp";
+	private static final String RIVERS_BMP = "data/anbennar/rivers.bmp";
 	private static final String OUTPUT = "src/main/resources/map/provinces.json";
 
 	/** Paradox uses pure white for a non-river pixel on {@code rivers.bmp}. */

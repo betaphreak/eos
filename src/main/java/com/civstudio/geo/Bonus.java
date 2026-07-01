@@ -9,7 +9,7 @@ import com.civstudio.good.ResourceType;
  * A Civ4 bonus resource — a discrete resource placed on a {@link
  * com.civstudio.settlement.Plot plot} (wheat, iron, gold, horse…), contributing an
  * additive Food/Production/Commerce yield change and belonging to a {@link
- * BonusClass}. Exported (the full set) from {@code data/CIV4BonusInfos.xml} by
+ * BonusClass}. Exported (the full set) from {@code data/civ4/CIV4BonusInfos.xml} by
  * {@link com.civstudio.geo.export.BonusExporter} into {@code /bonuses.json}, loaded
  * by {@link TerrainRegistry}. See {@code docs/plots.md}.
  * <p>

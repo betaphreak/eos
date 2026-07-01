@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
  * The monsoon intensity of a {@link Province}, overlaid from {@code
- * data/climate.txt} (the {@code mild_monsoon}/{@code normal_monsoon}/{@code
+ * data/anbennar/climate.txt} (the {@code mild_monsoon}/{@code normal_monsoon}/{@code
  * severe_monsoon} blocks) by {@link com.civstudio.geo.export.ClimateExporter}.
  * Provinces in none of those blocks have {@link #NONE} (the default), so {@link
  * Province#monsoon()} is never {@code null}. A per-province environmental

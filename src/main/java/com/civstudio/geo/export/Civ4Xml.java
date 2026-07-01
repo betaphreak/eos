@@ -16,7 +16,7 @@ import org.w3c.dom.NodeList;
  * Small DOM helper shared by the Civ4 data exporters ({@link TerrainExporter} /
  * {@link FeatureExporter} / {@link ImprovementExporter}). The
  * {@code data/CIV4*.xml} files all conform to the same Civ4 info schema
- * ({@code data/C2C_CIV4TerrainSchema.xml}): a list of {@code <*Info>} elements,
+ * ({@code data/civ4/C2C_CIV4TerrainSchema.xml}): a list of {@code <*Info>} elements,
  * each a flat bag of scalar tags plus a few nested ordered-yield lists.
  * <p>
  * It reads tags by their literal name (the parser is left namespace-unaware, so

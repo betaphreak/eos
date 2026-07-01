@@ -13,7 +13,7 @@ import com.civstudio.geo.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Dev tool: parses {@code data/CIV4FeatureInfos.xml} and emits the curated
+ * Dev tool: parses {@code data/civ4/CIV4FeatureInfos.xml} and emits the curated
  * land-feature subset to the committed {@code /features.json} resource the core
  * {@link com.civstudio.geo.TerrainRegistry} loads. Mirrors {@link
  * TerrainExporter}; run manually:
@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class FeatureExporter {
 
-	private static final String INPUT = "data/CIV4FeatureInfos.xml";
+	private static final String INPUT = "data/civ4/CIV4FeatureInfos.xml";
 	private static final String OUTPUT = "src/main/resources/features.json";
 
 	/** The curated land-feature subset, in {@code docs/plots.md} order. */

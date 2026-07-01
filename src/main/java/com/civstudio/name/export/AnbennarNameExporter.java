@@ -56,7 +56,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public final class AnbennarNameExporter {
 
 	// build-time input (not a runtime resource, so it is not bundled into the jar)
-	private static final Path INPUT = Path.of("data/anb_cultures.txt");
+	private static final Path INPUT = Path.of("data/anbennar/anb_cultures.txt");
 	// name tables are grouped per race: src/main/resources/names/<race>/<kind>.json
 	private static final String NAMES_DIR = "src/main/resources/names";
 

@@ -14,7 +14,7 @@ import com.civstudio.geo.BonusClass;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Dev tool: parses {@code data/CIV4BonusInfos.xml} and emits the bonus resources
+ * Dev tool: parses {@code data/civ4/CIV4BonusInfos.xml} and emits the bonus resources
  * to the committed {@code /bonuses.json} resource the core {@link
  * com.civstudio.geo.TerrainRegistry} loads. Unlike the terrain/feature/improvement
  * exporters (which curate a model-tied subset), the <b>full</b> bonus set is
@@ -29,12 +29,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * ({@code iPlacementOrder}, {@code Rands}, {@code iTilesPer}, {@code
  * iConstAppearance}, {@code iAITradeModifier}, art/sounds) are dropped. The bonus
  * classes themselves are a fixed taxonomy modeled as the {@link BonusClass} enum
- * (from {@code data/CIV4BonusClassInfos.xml}), not a separate resource. See {@code
+ * (from {@code data/civ4/CIV4BonusClassInfos.xml}), not a separate resource. See {@code
  * docs/plots.md}.
  */
 public final class BonusExporter {
 
-	private static final String INPUT = "data/CIV4BonusInfos.xml";
+	private static final String INPUT = "data/civ4/CIV4BonusInfos.xml";
 	private static final String OUTPUT = "src/main/resources/bonuses.json";
 
 	private BonusExporter() {

@@ -15,7 +15,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Dev tool: reads the Anbennar {@code data/continent.txt} (a Clausewitz file) and
+ * Dev tool: reads the Anbennar {@code data/anbennar/continent.txt} (a Clausewitz file) and
  * stamps each province's continent {@code raw_key} onto {@code provinces.json} (the
  * {@code continent} field {@link com.civstudio.geo.Province#continent()} reads).
  * Unlike the area/region exporters there is <em>no</em> {@code continents.json}:
@@ -50,7 +50,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class ContinentExporter {
 
-	private static final String INPUT = "data/continent.txt";
+	private static final String INPUT = "data/anbennar/continent.txt";
 	private static final String PROVINCES = "src/main/resources/map/provinces.json";
 
 	/** Non-geographic utility blocks in {@code continent.txt} (not continents). */

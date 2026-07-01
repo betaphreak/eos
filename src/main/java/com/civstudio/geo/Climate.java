@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * The climate band of a {@link Province}, overlaid from {@code data/climate.txt}
+ * The climate band of a {@link Province}, overlaid from {@code data/anbennar/climate.txt}
  * by {@link com.civstudio.geo.export.ClimateExporter}. The file lists the
  * {@code tropical}/{@code arid}/{@code arctic} provinces explicitly; anything
  * unlisted is {@link #TEMPERATE} (the default), so {@link Province#climate()} is
