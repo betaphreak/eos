@@ -170,9 +170,8 @@ child survival and home-grown household renewal — is proposed concretely in
    (`SmallOpen`) calls `createFirms` directly and is unaffected; a ratio
    of `0` keeps the fixed `numNFirms`. (Note: founding *already-full* over-provisions a
    high-skill colony into a faster deflationary collapse — orthogonal to the normal
-   colony this helps; `GlutCloseTest` pins the ratio to 0 to study the glut-close in
-   isolation.) This removes failure mode A; the residual collapse is failure mode B
-   (the replacement ratchet), still open.
+   colony this helps.) This removes failure mode A; the residual collapse is failure
+   mode B (the replacement ratchet), still open.
 2. **Diagnose the late-stage food-price spiral — DONE** (see *The late-stage price
    spiral — diagnosed*, above). It is labour-starved supply falling below the inelastic
    `minN` survival demand: with no clearing price, the bounded ±10 %/step search
@@ -215,8 +214,12 @@ child survival and home-grown household renewal — is proposed concretely in
    provisioning hysteresis was set to a **6-month** window (`MIN_FIRM_LIFETIME_DAYS` /
    `REENTRY_COOLDOWN_DAYS` = 180) — short enough to react within half a year, long
    enough to damp the seasonal charter↔dissolve hog cycle a 3-month window reintroduced.
-   Verified: the high-skill glut still contracts its necessity sector (`GlutCloseTest`)
-   and the normal colony is undisturbed. *Caveat:* a control-loop fix, not a cure — it
+   Verified at the time against the normal colony (undisturbed) and a high-skill glut
+   (its necessity sector contracts). (The former `GlutCloseTest` that pinned this has
+   since been removed: it disabled births to isolate the rule, and necessity-TFP drift
+   had made its single-seed-firm scenario self-contradictory — one hyper-skilled firm
+   now gluts the market immediately, so the sector never charters up to the multi-firm
+   state the close rule contracts from.) *Caveat:* a control-loop fix, not a cure — it
    reacts on a lag and does not by itself save a high-skill colony whose wage economy
    the deflation has already damaged; it is the prerequisite that stops output-raising
    levers (skill, TFP) from backfiring into an uncorrected deflation.
