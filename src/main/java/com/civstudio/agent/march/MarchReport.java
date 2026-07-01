@@ -15,8 +15,9 @@ import java.time.LocalDate;
  * @param province           the band's starting province ("id name")
  * @param day                the computed day's physics and order-of-march schedule
  * @param provincesTraversed the provinces to move through today, as a label
- * @param plotsTraversed     the plots of the current province's corridor, as a label
- *                           ("-" until Level-2 corridors are computed for the band)
+ * @param bonuses            the notable {@link com.civstudio.geo.Bonus resource bonuses}
+ *                           encountered on the current province's corridor, as a label
+ *                           ("-" when none, or before Level-2 corridors are computed)
  * @param plotsEstimate      the plots crossed today (the corridor plot count when a
  *                           corridor is known, else {@code D / kmPerPlot})
  * @param camp               the nightly camp, as a label ("-" if the band did not camp)
@@ -27,7 +28,7 @@ public record MarchReport(
 		String province,
 		MarchDay day,
 		String provincesTraversed,
-		String plotsTraversed,
+		String bonuses,
 		int plotsEstimate,
 		String camp) {
 }

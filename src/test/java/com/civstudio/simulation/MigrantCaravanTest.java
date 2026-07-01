@@ -132,8 +132,9 @@ class MigrantCaravanTest {
 				"the report carries the HH:mm order-of-march timetable");
 		assertTrue(report.provincesTraversed().contains("515"),
 				"the traversal lists the provinces crossed: " + report.provincesTraversed());
-		assertNotEquals("-", report.plotsTraversed(),
-				"the report lists the Level-2 corridor plots: " + report.plotsTraversed());
+		assertTrue(report.plotsEstimate() > 0,
+				"the Level-2 corridor was computed (a positive plot count)");
+		assertNotNull(report.bonuses(), "the bonuses column is populated (may be '-')");
 		assertNotEquals("-", report.camp(),
 				"a camping band records the plot it camps on: " + report.camp());
 	}

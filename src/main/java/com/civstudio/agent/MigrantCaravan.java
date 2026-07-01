@@ -123,6 +123,12 @@ public class MigrantCaravan extends Caravan {
 	// OFF_GRAPH until it has made a hop (then the entry portal falls back to the centroid)
 	private int enteredFrom = OFF_GRAPH;
 
+	// directed travel: when set (see setDestination), the band marches the route to a
+	// fixed destination and settles only on arriving there, rather than wandering to the
+	// nearest viable site. OFF_GRAPH = the default nearest-viable wander.
+	private int destination = OFF_GRAPH;
+	private boolean directed;
+
 	/**
 	 * Create an <b>on-graph</b> migration band anchored at a province, able to wander
 	 * the graph and settle.
@@ -284,10 +290,13 @@ public class MigrantCaravan extends Caravan {
 		// dawn: strike last night's camp before deciding today's move
 		releaseCamp();
 
-		// settle if standing on a viable site that isn't the one just abandoned
+		// settle on arrival: at the fixed destination in directed mode, else at any viable
+		// site that isn't the one just abandoned
 		Province here = worldMap().province(getProvinceId());
-		if (getProvinceId() != originProvinceId && isViable(here)
-				&& following.size() >= MIN_SETTLERS) {
+		boolean arrived = directed ? (getProvinceId() == destination)
+				: (getProvinceId() != originProvinceId && isViable(here)
+						&& following.size() >= MIN_SETTLERS);
+		if (arrived) {
 			readyToSettle = true;
 			return null; // settled today — no march row (and none on any later day)
 		}
@@ -357,8 +366,10 @@ public class MigrantCaravan extends Caravan {
 	private void ensureRoute(Rng rng) {
 		boolean stale = route == null || legIndex >= route.hops()
 				|| route.provinces().get(legIndex) != getProvinceId();
-		if (targetProvinceId == OFF_GRAPH || targetProvinceId == getProvinceId() || stale) {
-			targetProvinceId = chooseTargetProvince(rng).orElse(OFF_GRAPH);
+		if (targetProvinceId == OFF_GRAPH
+				|| (!directed && targetProvinceId == getProvinceId()) || stale) {
+			targetProvinceId = directed ? destination
+					: chooseTargetProvince(rng).orElse(OFF_GRAPH);
 			if (targetProvinceId == OFF_GRAPH) {
 				route = Route.NONE;
 				legIndex = 0;
@@ -371,6 +382,22 @@ public class MigrantCaravan extends Caravan {
 			legIndex = 0;
 			progressKm = 0;
 		}
+	}
+
+	/**
+	 * Direct the band to march to a <b>fixed destination</b> province, settling only on
+	 * arriving there — rather than the default wander to the nearest viable site. It routes
+	 * over the shortest-km land path ({@link LandRouter}) and marches it under the same
+	 * daylight-bounded model. Used to travel a band between two known places (e.g. the
+	 * Dhenijansar&rarr;Wexkeep motivating route of {@code docs/land-routing.md}).
+	 *
+	 * @param provinceId the destination province to march to
+	 */
+	public void setDestination(int provinceId) {
+		this.destination = provinceId;
+		this.directed = true;
+		this.targetProvinceId = provinceId;
+		this.route = null; // force a fresh route to the new destination
 	}
 
 	// the plot corridor across the province the band ended the day in: from the border
@@ -443,7 +470,7 @@ public class MigrantCaravan extends Caravan {
 				path.append(" > ");
 			path.append(provLabel(id));
 		}
-		String plotsLabel = corridorLabel(corridor);
+		String bonusesLabel = bonusesLabel(corridor);
 		int plotsEst = (corridor != null && !corridor.isEmpty()) ? corridor.plotCount()
 				: (int) Math.round(day.netMarchKm() / marchConfig.kmPerPlot());
 		// the camp column omits the province (it is already the row's Province) and the
@@ -452,25 +479,19 @@ public class MigrantCaravan extends Caravan {
 		// the "Province" column reads where the day began (the first traversal entry),
 		// not where it ended
 		return new MarchReport(date, getLeader().fullName(), provLabel(traversed.get(0)),
-				day, path.toString(), plotsLabel, plotsEst, campLabel);
+				day, path.toString(), bonusesLabel, plotsEst, campLabel);
 	}
 
-	// a compact label of the corridor's plots (their terrain), capped so a large province
-	// does not blow up the CSV cell; "-" when there is no corridor
-	private String corridorLabel(PlotCorridor corridor) {
+	// the notable resource bonuses encountered on the corridor — the distinct bonus names
+	// (prefix-stripped) found on the crossed plots, in first-seen order; "-" when none
+	private String bonusesLabel(PlotCorridor corridor) {
 		if (corridor == null || corridor.isEmpty())
 			return "-";
-		List<Plot> path = corridor.path();
-		int cap = Math.min(path.size(), 40);
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < cap; i++) {
-			if (sb.length() > 0)
-				sb.append(" > ");
-			sb.append(shortName(path.get(i).terrain().type()));
-		}
-		if (path.size() > cap)
-			sb.append(" > … (").append(path.size()).append(" plots)");
-		return sb.toString();
+		java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
+		for (Plot p : corridor.path())
+			if (p.bonus() != null)
+				seen.add(shortName(p.bonus().type()));
+		return seen.isEmpty() ? "-" : String.join(" > ", seen);
 	}
 
 	// "Name (id)" for a province
@@ -478,10 +499,10 @@ public class MigrantCaravan extends Caravan {
 		return worldMap().province(id).name() + " (" + id + ")";
 	}
 
-	// a concise descriptor of a camp plot: terrain, relief, and feature if any (with the
-	// verbose TERRAIN_/FEATURE_ prefixes dropped)
+	// a concise descriptor of a camp plot: relief, then terrain, then feature if any — all
+	// lower-case with the verbose TERRAIN_/FEATURE_ prefixes dropped (e.g. "flat plains")
 	private String campLabel(Plot p) {
-		String s = shortName(p.terrain().type()) + " " + p.plotType();
+		String s = p.plotType().name().toLowerCase() + " " + shortName(p.terrain().type());
 		if (p.feature() != null)
 			s += " " + shortName(p.feature().type());
 		return s;

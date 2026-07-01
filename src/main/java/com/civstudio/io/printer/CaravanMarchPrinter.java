@@ -43,7 +43,7 @@ public final class CaravanMarchPrinter {
 			ColumnSpec.text("FirstDepart"),
 			ColumnSpec.text("CampMade"),
 			ColumnSpec.text("ProvincesTraversed"),
-			ColumnSpec.text("PlotsTraversed"),
+			ColumnSpec.text("Bonuses"),
 			ColumnSpec.integer("PlotsEst"),
 			ColumnSpec.text("Camp"),
 	};
@@ -83,7 +83,7 @@ public final class CaravanMarchPrinter {
 		MarchDay day = r.day();
 		marchSink(band).writeRow(r.date(), r.province(), day.bandSize(), day.daylightHours(),
 				day.speedKmh(), day.columnKm(), day.netMarchKm(), hm(day.firstDepart()),
-				hm(day.campMade()), r.provincesTraversed(), r.plotsTraversed(),
+				hm(day.campMade()), r.provincesTraversed(), r.bonuses(),
 				r.plotsEstimate(), r.camp());
 		CsvRowSink tt = timetableSink(band);
 		for (MarchDay.Stage s : day.stages())
