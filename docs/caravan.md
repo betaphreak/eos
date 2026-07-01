@@ -9,7 +9,9 @@ from its leader, people and hoard (Phase 4), the same bloodline ruling again. St
 design-only: the gradual `Ruler → holder` lesser demotion (needs the standalone `holder`
 type), the dwell-able `HOLDING` founding phase, and the literal settlement teardown
 (a disbanded colony is marked gone — and its households' dynasty surnames return to the
-pool — but its stale agent objects are not yet removed).
+pool — but its stale agent objects are not yet removed). A planned refinement —
+**band-as-data**, eliminating the last settlements formed at compile time — is set out in
+*Implementation plan: eliminating compile-time-formed settlements* below.
 **Date:** 2026-06-18
 **Depends on:** the rank ladder (`agent.com.civstudio.Rank`, `RankLadder`, `Estate`,
 `RankFactory` — see `docs/rank-ladder.md`), the founding ascent in
@@ -211,7 +213,10 @@ founds in place at a hardcoded location with no real wandering.
   position. The `Retinue` is **reused, not reinvented** — detaching it from the colony
   is the bulk of the work (see *Retinue and Caravan*). The Caravan is a colony-less
   aggregate, so — like the `RankLadder` and the supra-settlement ranks — it lives at
-  the **`GameSession`** level, not on any `Settlement`.
+  the **`GameSession`** level, not on any `Settlement`. *(Refined below: the band holds
+  its following as **data**, not a live `Retinue` object — a `Retinue` is colony-bound
+  and cannot exist before a settlement does. See *Implementation plan: eliminating
+  compile-time-formed settlements*.)*
 - **The reforms & the two realizations of `HOLDING`.** The `HOLDING` rung has *two*
   realizations: the within-settlement **vassal `Noble`** (a rentier owning firms, the
   ennoblement target) and the standalone **holder** (a settlement-owner mid-founding
@@ -363,7 +368,98 @@ out).
   the graph to a settleable province and re-founding *into* it) and a **trade**
   subclass (a settlement-sponsored merchant convoy that couples two settlements'
   economies through their real markets). The band's `position`/`moveTo` seam this
-  note deferred is realized there.
+  note deferred is realized there. The **daily movement's logistics** — a metric,
+  **daylight-bounded** march (distance = speed × effective daylight hours, correlated with
+  `docs/solar.md`), the **column-length overhead** that makes big bands slow, the
+  **fixed-order march enum** with per-stage timing, and the **nightly transient-plot-claim
+  camp** (which becomes the founding `HOLDING` on the settle decision) — are designed in
+  **[`docs/caravan-march.md`](caravan-march.md)**.
+
+  These are **admin-flavored** caravans — the settler (a Civ4-settler analogue that
+  founds settlements) and the merchant convoy. A future **military-flavored** flavor —
+  an **army** / `WarBand`, a band whose following is soldiers that moves to *project
+  force* rather than to settle — is the natural third subclass, plugging into the
+  `Rank` enum's **military register** (`TitleMode.MILITARY`) and `CasusBelli`/`Relation`
+  vocabulary (dormant in `agent/Rank.java`) and the war/conquest triggers of
+  `docs/rank-ladder.md` Phase 5. The **band-as-data** refinement below serves this
+  directly: once the following is data rather than a settlement-bound `Retinue`, an army
+  is the *same carrier* with a different `tick`/objective that never materializes a
+  colony — so the `Caravan` base is kept **flavor-agnostic** (leader, following-as-data,
+  hoard, position, movement) and each flavor specializes only `tick()` and its goal.
+
+## Implementation plan: eliminating compile-time-formed settlements
+
+The cycle above lets a colony be **born at runtime** (a band settles — Phase 4,
+implemented). But most colonies are still **formed at compile time**: a fixed bootstrap
+at scenario setup, not a band settling. Two concrete instances remain:
+
+1. **Every standard scenario** — `HomogeneousEconomy`, `TwinSettlementEconomy`,
+   `ElvenEconomy`, `HarimariEconomy`, `OpenColonyEconomy`, `CalibrationSweep`,
+   `SurvivalExperiment` — forms its colony via `SimulationHarness.foundStandardColony(…)`,
+   no band.
+2. **`CaravanEconomy`'s throwaway `muster` colony** (`CaravanEconomy.java:94`) — a real
+   `Settlement` conjured only to host the bands' `Retinue`s before they wander; it never
+   runs, but it is a settlement created at setup purely as a data holder.
+
+The end state: **no `Settlement` comes into being except by a band settling.** A scenario
+that "starts established" musters a band and settles it *in place at t=0* (a zero-length
+wander) rather than bootstrapping a colony directly.
+
+### Root cause — and a refinement of the Caravan entity
+
+This note's model carries the settled colony's **live `Retinue` object** out into the
+band ("detach it and hand it to a landless leader"). But `Retinue extends Agent`,
+`Agent.colony` is **`final`**, and `Retinue`'s constructor wires an account + markets + a
+columnar skill store against a `Settlement` — so **a band cannot exist before a colony
+does.** That is exactly why the `muster` colony is needed, and why the standard sims
+cannot be band-first.
+
+The fix — **band-as-data** — supersedes "detach the live Retinue": while wandering, the
+`Caravan` holds its following as **data** (a `List<Member>` + a larder amount; the leader,
+hoard and position already on the aggregate), and the `Retinue` `Agent` is **materialized
+only on settle**, seeded from that data via the existing adopt constructor
+`Retinue(List<Member>, double, Bank, Settlement)`. The `Member`s and larder are the
+persistent thread at the **data** level; a fresh `Retinue` is built per settled colony.
+So "the Retinue is the thread" (above) holds — as data across the hinge, one `Retinue`
+Agent per settlement — and the `Retinue` reverts to **settled-only**, dropping its
+`detach()` / wandering-provisioning mode.
+
+This sharpens **the bankless rung**: a wandering band holds only its **gold** hoard —
+copper and silver are *bank denominations* that come into being only when the banks are
+chartered on settle. Band-as-data holds `Member`s with **no accounts**, making the
+invariant literal: **no `Bank` (of any currency) is constructed before a colony is
+founded.** Deleting the `muster` colony (Phase A) also deletes its premature copper
+`musterBank`, enforcing it.
+
+### Phases
+
+- **Phase A — band-as-data (removes the `muster` colony; byte-identical target).** A data
+  carrier (`List<Member>` + larder) on the `Caravan`; a session-level muster generator
+  (`GameSession.musterFollowing(n, spec)`) drawing peasants as data on the
+  demographic/naming RNGs in the same `Retinue.newPeasant` order (gender → age → skills →
+  name), so reproducible and needing **no colony**; `MigrantCaravan.tick`/`dissolve`
+  operate on the data; the settle seam (`SimulationHarness.createRetinueFromBand`) reads
+  it; and `CaravanEconomy` musters bands with **no** throwaway colony/bank. Verify
+  byte-identical with a full-run CSV checksum diff (the never-run muster colony perturbs
+  nothing economic). Self-contained, and the enabler for Phase B.
+- **Phase B — band-first standard sims (re-validate calibration).** Reuse
+  `reFoundStandardColony` (generalized to a fresh, non-dissolution band) so each standard
+  sim musters a band as data and settles it in place at t=0 into its province, instead of
+  `foundStandardColony`. Same people, same opening money (`DEFAULT_RULER_GOLD` → the band
+  hoard), same province. **Not** guaranteed byte-identical — treat like any
+  calibration-touching change (checksum diff + suite). Keep a `foundStandardColony(…)`
+  convenience that internally musters an in-place band so scenarios stay one-liners.
+  `SmallOpenEconomy` (bare, pool-less, `createLaborers` directly) stays the documented
+  exception.
+- **Phase C — deferred.** The dwell-able `HOLDING` phase + founder/holder config + village
+  hall (`docs/village-founding.md` Phase 3) is out of scope here: a **zero-length**
+  `HOLDING` (founder → `Ruler` at t=0) already satisfies "no compile-time settlement."
+
+**Suggested first step: Phase A alone** — self-contained, removes a genuine compile-time
+settlement, byte-identical target, and unblocks Phase B without committing to the
+calibrated-run reroute. Most of the surrounding machinery (the `Property` interface, the
+foundry, `reFoundStandardColony`, runtime caravan founding) is already built; band-as-data
+is the missing enabler.
 
 ## Open questions deferred to later
 
