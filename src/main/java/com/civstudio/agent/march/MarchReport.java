@@ -15,7 +15,10 @@ import java.time.LocalDate;
  * @param province           the band's starting province ("id name")
  * @param day                the computed day's physics and order-of-march schedule
  * @param provincesTraversed the provinces to move through today, as a label
- * @param plotsEstimate      the estimated plots crossed today ({@code D / kmPerPlot})
+ * @param plotsTraversed     the plots of the current province's corridor, as a label
+ *                           ("-" until Level-2 corridors are computed for the band)
+ * @param plotsEstimate      the plots crossed today (the corridor plot count when a
+ *                           corridor is known, else {@code D / kmPerPlot})
  * @param camp               the nightly camp, as a label ("-" if the band did not camp)
  */
 public record MarchReport(
@@ -24,6 +27,7 @@ public record MarchReport(
 		String province,
 		MarchDay day,
 		String provincesTraversed,
+		String plotsTraversed,
 		int plotsEstimate,
 		String camp) {
 }

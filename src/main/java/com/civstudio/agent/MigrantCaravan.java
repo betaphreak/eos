@@ -26,6 +26,7 @@ import com.civstudio.good.Good;
 import com.civstudio.good.RationSize;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Plot;
+import com.civstudio.settlement.PlotCorridor;
 import com.civstudio.settlement.ProvincePlotPool;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.settlement.SolarClock;
@@ -118,6 +119,9 @@ public class MigrantCaravan extends Caravan {
 	// it); a bare wander leaves it off and pays no generation cost.
 	private boolean campingEnabled;
 	private Plot campPlot;
+	// the province the band crossed into its current one from (the corridor entry side);
+	// OFF_GRAPH until it has made a hop (then the entry portal falls back to the centroid)
+	private int enteredFrom = OFF_GRAPH;
 
 	/**
 	 * Create an <b>on-graph</b> migration band anchored at a province, able to wander
@@ -311,6 +315,7 @@ public class MigrantCaravan extends Caravan {
 				budget -= need;
 				progressKm = 0;
 				int next = route.provinces().get(legIndex + 1);
+				enteredFrom = getProvinceId(); // remember the side we cross in from
 				moveTo(next);
 				legIndex++;
 				traversed.add(next);
@@ -320,9 +325,12 @@ public class MigrantCaravan extends Caravan {
 			}
 		}
 
-		// camp for the night where the day ended, then publish the day's report
-		Plot camp = campingEnabled ? claimCamp() : null;
-		lastReport = buildReport(date, day, traversed, camp);
+		// resolve the plot corridor across the province the day ended in (entry portal
+		// from the side we came in, exit portal toward the next province) — the Level-2
+		// land route (docs/land-routing.md); camp on one of its plots and report them
+		PlotCorridor corridor = campingEnabled ? currentCorridor() : null;
+		Plot camp = campingEnabled ? claimCampOn(corridor) : null;
+		lastReport = buildReport(date, day, traversed, corridor, camp);
 	}
 
 	/**
@@ -364,20 +372,56 @@ public class MigrantCaravan extends Caravan {
 		}
 	}
 
-	// pitch a nightly camp: occupy the first free, vacant, workable plot of the current
-	// province's shared plot field (a transient occupancy, not a settlement claim). Null
-	// when the band is session-less (off-graph) or the province has no free plot.
-	private Plot claimCamp() {
+	// the plot corridor across the province the band ended the day in: from the border
+	// portal it crossed in at (enteredFrom) to the portal toward the next province on the
+	// route (or the province centroid when either is unknown). Null when session-less.
+	private PlotCorridor currentCorridor() {
 		if (session() == null)
 			return null;
 		ProvincePlotPool pool = session().provincePlotPool(worldMap().province(getProvinceId()));
-		for (Plot p : pool.plots()) {
+		int next = (route != null && legIndex < route.hops())
+				? route.provinces().get(legIndex + 1) : OFF_GRAPH;
+		int[] entry = anchor(enteredFrom, getProvinceId(), pool);
+		int[] exit = anchor(getProvinceId(), next, pool);
+		return pool.corridor(entry[0], entry[1], exit[0], exit[1]);
+	}
+
+	// the raster anchor for a corridor endpoint: the committed border portal from -> to,
+	// or the province's plot centroid when the portal is unknown (no hop yet, or the band
+	// has arrived so there is no next province)
+	private int[] anchor(int from, int to, ProvincePlotPool pool) {
+		if (from != OFF_GRAPH && to != OFF_GRAPH) {
+			int[] portal = worldMap().portal(from, to);
+			if (portal != null)
+				return portal;
+		}
+		return new int[] { pool.centroidX(), pool.centroidY() };
+	}
+
+	// pitch a nightly camp on a plot of the day's corridor (preferring its exit end, where
+	// the band actually stopped), falling back to any free plot of the province; a
+	// transient occupancy, not a settlement claim. Null when session-less or no plot is free.
+	private Plot claimCampOn(PlotCorridor corridor) {
+		if (session() == null)
+			return null;
+		if (corridor != null && !corridor.isEmpty()) {
+			List<Plot> path = corridor.path();
+			for (int i = path.size() - 1; i >= 0; i--) {
+				Plot p = path.get(i);
+				if (p.owner() == null && p.isVacant() && p.isWorkable()) {
+					p.occupy(new Camp());
+					campPlot = p;
+					return p;
+				}
+			}
+		}
+		ProvincePlotPool pool = session().provincePlotPool(worldMap().province(getProvinceId()));
+		for (Plot p : pool.plots())
 			if (p.owner() == null && p.isVacant() && p.isWorkable()) {
 				p.occupy(new Camp());
 				campPlot = p;
 				return p;
 			}
-		}
 		return null;
 	}
 
@@ -391,20 +435,40 @@ public class MigrantCaravan extends Caravan {
 
 	// compose the day's print-ready report (labels resolved against the province graph)
 	private MarchReport buildReport(LocalDate date, MarchDay day, List<Integer> traversed,
-			Plot camp) {
+			PlotCorridor corridor, Plot camp) {
 		StringBuilder path = new StringBuilder();
 		for (int id : traversed) {
 			if (path.length() > 0)
 				path.append(" > ");
 			path.append(provLabel(id));
 		}
-		int plotsEst = (int) Math.round(day.netMarchKm() / marchConfig.kmPerPlot());
+		String plotsLabel = corridorLabel(corridor);
+		int plotsEst = (corridor != null && !corridor.isEmpty()) ? corridor.plotCount()
+				: (int) Math.round(day.netMarchKm() / marchConfig.kmPerPlot());
 		String campLabel = camp == null ? "-"
 				: campLabel(camp) + " in " + provLabel(getProvinceId());
 		// the "Province" column reads where the day began (the first traversal entry),
 		// not where it ended
 		return new MarchReport(date, getLeader().fullName(), provLabel(traversed.get(0)),
-				day, path.toString(), plotsEst, campLabel);
+				day, path.toString(), plotsLabel, plotsEst, campLabel);
+	}
+
+	// a compact label of the corridor's plots (their terrain), capped so a large province
+	// does not blow up the CSV cell; "-" when there is no corridor
+	private String corridorLabel(PlotCorridor corridor) {
+		if (corridor == null || corridor.isEmpty())
+			return "-";
+		List<Plot> path = corridor.path();
+		int cap = Math.min(path.size(), 40);
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < cap; i++) {
+			if (sb.length() > 0)
+				sb.append(" > ");
+			sb.append(path.get(i).terrain().type());
+		}
+		if (path.size() > cap)
+			sb.append(" > … (").append(path.size()).append(" plots)");
+		return sb.toString();
 	}
 
 	// "id name" for a province

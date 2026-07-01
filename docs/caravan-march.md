@@ -11,12 +11,15 @@ to a per-session **caravan march journal** (`CaravanMarch.csv` + `CaravanTimetab
 `MarchElement`, `MarchFlavor`, `MarchReport`, `Camp`), the rewired `MigrantCaravan.tick`
 (`tick(LocalDate, Rng)`), and the `SessionRunner`/`CaravanEconomy` wiring; tests in
 `agent/march/MarchTest` and `simulation/MigrantCaravanTest`.
-**Deferred (a later cut):** the §6 **plot corridors** — within a province the band advances
-over *centroid-to-centroid* metric legs, not the real plot-by-plot corridor (Level 2 of
-`docs/land-routing.md`); so the road/terrain speed factor, the river-costs-a-day rule, and
-the plots-crossed list (a coarse `D / KM_PER_PLOT` estimate for now) await the corridor work.
-The camp plot is a transient occupancy for the journal; promoting it into the founding
-`HOLDING` seat on the settle decision is also later.
+**Level-2 corridors now surface in the journal:** the band resolves the real plot **corridor**
+across the province it ends each day in (border-portal entry→exit; `docs/land-routing.md`),
+**lists those plots** in the journal's `PlotsTraversed` column, sets `PlotsEst` to the real
+corridor plot count, and **camps on a corridor plot**. **Still deferred (a later cut):**
+spending the daily distance `D` *over the corridor plot costs* — the band still advances over
+*centroid-to-centroid* metric legs, so the road/terrain speed factor and the
+river-costs-a-day rule await that movement-metric change. The camp plot is a transient
+occupancy for the journal; promoting it into the founding `HOLDING` seat on the settle
+decision is also later.
 
 **Original status:** design only — not yet implemented
 **Date:** 2026-07-01

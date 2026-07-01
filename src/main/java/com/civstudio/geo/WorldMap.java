@@ -50,6 +50,7 @@ public final class WorldMap {
 	private static final String REGIONS_RESOURCE = "/map/regions.json";
 	private static final String SUPERREGIONS_RESOURCE = "/map/superregions.json";
 	private static final String EDGES_RESOURCE = "/map/edges.json";
+	private static final String PORTALS_RESOURCE = "/map/portals.json";
 
 	/** Mean Earth radius in km — the great-circle scale for {@link #distanceKm}. */
 	private static final double EARTH_RADIUS_KM = 6371.0;
@@ -81,10 +82,15 @@ public final class WorldMap {
 	// when the resource is absent (e.g. while the exporter itself bootstraps the map),
 	// in which case edgeKm falls back to the runtime centroid distance. See docs/land-routing.md.
 	private final Map<Integer, double[]> edgeKmById;
+	// committed border-portal anchors, keyed by the directed edge (from<<32 | to) ->
+	// {x, y} raster pixel on `from`'s side of the shared border (from /map/portals.json,
+	// the PortalExporter). Empty when the resource is absent (edgeless routing / the
+	// exporter bootstrapping). See docs/land-routing.md.
+	private final Map<Long, int[]> portalByEdge;
 
 	private WorldMap(List<Province> provinces, List<Area> areas,
 			List<Region> regions, List<SuperRegion> superRegions,
-			List<ProvinceEdges> edges) {
+			List<ProvinceEdges> edges, List<ProvincePortals> portals) {
 		Map<Integer, Province> byId = new LinkedHashMap<>(provinces.size() * 2);
 		for (Province p : provinces)
 			if (byId.put(p.id(), p) != null)
@@ -220,6 +226,19 @@ public final class WorldMap {
 			edgeKm.put(e.id(), km);
 		}
 		this.edgeKmById = edgeKm;
+
+		// committed border portals, keyed by directed edge (from<<32 | to)
+		Map<Long, int[]> portalMap = new HashMap<>(portals.size() * 4);
+		for (ProvincePortals pp : portals)
+			for (ProvincePortals.Portal portal : pp.portals())
+				portalMap.put(edgeKey(pp.id(), portal.to()),
+						new int[] { portal.x(), portal.y() });
+		this.portalByEdge = portalMap;
+	}
+
+	// pack a directed edge (from, to) into a single long key
+	private static long edgeKey(int from, int to) {
+		return ((long) from << 32) | (to & 0xFFFFFFFFL);
 	}
 
 	/**
@@ -252,7 +271,12 @@ public final class WorldMap {
 		List<ProvinceEdges> edges = loadListOptional(EDGES_RESOURCE,
 				new TypeReference<List<ProvinceEdges>>() {
 				});
-		return new WorldMap(provinces, areas, regions, superRegions, edges);
+		// the committed border-portal table is optional too (absent while the exporter
+		// bootstraps, or on a map with no committed portals yet)
+		List<ProvincePortals> portals = loadListOptional(PORTALS_RESOURCE,
+				new TypeReference<List<ProvincePortals>>() {
+				});
+		return new WorldMap(provinces, areas, regions, superRegions, edges, portals);
 	}
 
 	private static <T> List<T> loadList(String resource,
@@ -705,6 +729,22 @@ public final class WorldMap {
 					"province " + to + " is not a neighbour of " + from);
 		double[] km = edgeKmById.get(from);
 		return km != null ? km[i] : distanceKm(from, to);
+	}
+
+	/**
+	 * The <b>border portal</b> anchor on province {@code from}'s side of its shared border
+	 * with neighbour {@code to} — the raster {@code {x, y}} pixel a caravan's plot corridor
+	 * enters or leaves {@code from} at (Level 2 of {@code docs/land-routing.md}). Read from
+	 * the committed {@code /map/portals.json}; {@code null} when no portal is recorded for
+	 * that edge (the resource is absent, or the pair does not share a pixel border).
+	 *
+	 * @param from a province id
+	 * @param to   a neighbour of {@code from}
+	 * @return the {@code {x, y}} border anchor, or {@code null} if none is recorded
+	 */
+	public int[] portal(int from, int to) {
+		int[] xy = portalByEdge.get(edgeKey(from, to));
+		return xy == null ? null : xy.clone();
 	}
 
 	private static List<Integer> reconstruct(Map<Integer, Integer> cameFrom,

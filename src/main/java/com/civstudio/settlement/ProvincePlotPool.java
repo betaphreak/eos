@@ -4,8 +4,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
 
+import com.civstudio.geo.PlotType;
 import com.civstudio.geo.Province;
 import com.civstudio.geo.ProvincePlotField;
 import com.civstudio.geo.ProvincePlotField.ProvincePlot;
@@ -41,6 +45,12 @@ public final class ProvincePlotPool {
 	private int freeCount;
 	private final int centroidX; // the founding anchor for the first settlement
 	private final int centroidY;
+
+	// lazily-built spatial index (packed (x,y) -> workable plot) and corridor cache, for
+	// the caravan land-routing corridors (docs/land-routing.md Level 2). Built on first
+	// corridor() request; a province with no caravan crossing it never pays for them.
+	private Map<Long, Plot> posIndex;
+	private final Map<Long, PlotCorridor> corridorCache = new HashMap<>();
 
 	private ProvincePlotPool(Province province, List<Plot> plots) {
 		this.province = province;
@@ -90,6 +100,16 @@ public final class ProvincePlotPool {
 	/** The total number of plots (== {@code province.plots()}). */
 	public int size() {
 		return plots.size();
+	}
+
+	/** The raster x of the province's plot centroid (a corridor anchor fallback). */
+	public int centroidX() {
+		return centroidX;
+	}
+
+	/** The raster y of the province's plot centroid (a corridor anchor fallback). */
+	public int centroidY() {
+		return centroidY;
 	}
 
 	/** The number of unclaimed (province-owned) plots. */
@@ -238,5 +258,146 @@ public final class ProvincePlotPool {
 	private static long dist2(Plot p, int x, int y) {
 		long dx = p.x() - x, dy = p.y() - y;
 		return dx * dx + dy * dy;
+	}
+
+	// --- caravan land-routing corridors (docs/land-routing.md Level 2) --------
+
+	/**
+	 * The <b>plot corridor</b> a caravan crosses through this province from its entry
+	 * border to its exit border — an A* over the province's plots (4-neighbour raster
+	 * adjacency, {@link PlotType#PEAK peaks} impassable), returning the plots crossed and
+	 * their total move cost (see {@link PlotCorridor} / {@code docs/caravan-march.md} §6).
+	 * The entry/exit anchors are the {@link com.civstudio.geo.WorldMap#portal border
+	 * portals}; the corridor snaps each to the nearest workable plot. Cached per
+	 * (entry-plot, exit-plot), so a province a route revisits pays the search once.
+	 *
+	 * @param entryX the entry border anchor's raster x
+	 * @param entryY the entry border anchor's raster y
+	 * @param exitX  the exit border anchor's raster x
+	 * @param exitY  the exit border anchor's raster y
+	 * @return the corridor, or {@link PlotCorridor#NONE} if no plot path exists
+	 */
+	public synchronized PlotCorridor corridor(int entryX, int entryY, int exitX, int exitY) {
+		Plot start = nearestWorkable(entryX, entryY);
+		Plot goal = nearestWorkable(exitX, exitY);
+		if (start == null || goal == null)
+			return PlotCorridor.NONE;
+		long key = corridorKey(start, goal);
+		PlotCorridor cached = corridorCache.get(key);
+		if (cached != null)
+			return cached;
+		PlotCorridor result = search(start, goal);
+		corridorCache.put(key, result);
+		return result;
+	}
+
+	// A* over the workable plots' 4-neighbour raster adjacency, from start to goal
+	private PlotCorridor search(Plot start, Plot goal) {
+		Map<Long, Plot> index = posIndex();
+		Map<Plot, Double> g = new HashMap<>();
+		Map<Plot, Plot> cameFrom = new HashMap<>();
+		PriorityQueue<Plot> open = new PriorityQueue<>((a, b) -> Double.compare(
+				g.getOrDefault(a, Double.MAX_VALUE) + heuristic(a, goal),
+				g.getOrDefault(b, Double.MAX_VALUE) + heuristic(b, goal)));
+		g.put(start, 0.0);
+		open.add(start);
+		while (!open.isEmpty()) {
+			Plot cur = open.poll();
+			if (cur == goal)
+				return build(cameFrom, start, goal, g.get(goal));
+			double gc = g.get(cur);
+			for (Plot nb : neighbours(index, cur)) {
+				double tentative = gc + moveCost(nb);
+				Double best = g.get(nb);
+				if (best == null || tentative < best) {
+					g.put(nb, tentative);
+					cameFrom.put(nb, cur);
+					open.add(nb);
+				}
+			}
+		}
+		return PlotCorridor.NONE; // disconnected (e.g. a peak barrier splits the province)
+	}
+
+	// reconstruct the corridor path (entry -> exit) and carry the accumulated cost
+	private PlotCorridor build(Map<Plot, Plot> cameFrom, Plot start, Plot goal, double cost) {
+		List<Plot> path = new ArrayList<>();
+		for (Plot cur = goal; cur != start; cur = cameFrom.get(cur))
+			path.add(cur);
+		path.add(start);
+		Collections.reverse(path);
+		return new PlotCorridor(Collections.unmodifiableList(path), cost);
+	}
+
+	// the 4-neighbour workable plots of a plot, by raster adjacency
+	private List<Plot> neighbours(Map<Long, Plot> index, Plot p) {
+		List<Plot> out = new ArrayList<>(4);
+		addNeighbour(out, index, p.x() + 1, p.y());
+		addNeighbour(out, index, p.x() - 1, p.y());
+		addNeighbour(out, index, p.x(), p.y() + 1);
+		addNeighbour(out, index, p.x(), p.y() - 1);
+		return out;
+	}
+
+	private static void addNeighbour(List<Plot> out, Map<Long, Plot> index, int x, int y) {
+		Plot n = index.get(pack(x, y));
+		if (n != null)
+			out.add(n);
+	}
+
+	// the cost of stepping onto a plot: base 1, rougher for a hill or an uncleared wild
+	// feature (a later cut lowers it for a ROAD-improved plot, so corridors hug roads)
+	private static double moveCost(Plot p) {
+		double c = 1.0;
+		if (p.plotType() == PlotType.HILL)
+			c += 0.5;
+		if (p.isWild())
+			c += 0.5;
+		return c;
+	}
+
+	// straight-line (Euclidean) distance to the goal — admissible, since the minimum
+	// per-plot move cost is 1
+	private static double heuristic(Plot a, Plot goal) {
+		double dx = a.x() - goal.x(), dy = a.y() - goal.y();
+		return Math.sqrt(dx * dx + dy * dy);
+	}
+
+	// the workable plot nearest (x,y), the snap target for a border-portal anchor
+	private Plot nearestWorkable(int x, int y) {
+		Plot best = null;
+		long bestD = Long.MAX_VALUE;
+		for (Plot p : plots) {
+			if (!p.isWorkable())
+				continue;
+			long d = dist2(p, x, y);
+			if (d < bestD) {
+				bestD = d;
+				best = p;
+			}
+		}
+		return best;
+	}
+
+	// the packed (x,y) -> workable-plot index, built once on first corridor request
+	private Map<Long, Plot> posIndex() {
+		if (posIndex == null) {
+			Map<Long, Plot> idx = new HashMap<>(plots.size() * 2);
+			for (Plot p : plots)
+				if (p.isWorkable())
+					idx.put(pack(p.x(), p.y()), p);
+			posIndex = idx;
+		}
+		return posIndex;
+	}
+
+	// pack a raster (x,y) into 25 bits (x<<12 | y; y < 4096 covers the 2048-tall raster,
+	// x < ~8192 the 5632-wide one) — so two packs compose into a collision-free long key
+	private static long pack(int x, int y) {
+		return ((long) x << 12) | (y & 0xFFF);
+	}
+
+	private static long corridorKey(Plot start, Plot goal) {
+		return (pack(start.x(), start.y()) << 32) | pack(goal.x(), goal.y());
 	}
 }

@@ -1,6 +1,20 @@
 # Design note: land routing (province route + plot corridors)
 
-**Status:** **Level 1 implemented; Level 2 (plot corridors) deferred.** The km-weighted
+**Status:** **Levels 1 & 2 implemented; corridor-driven movement metric deferred.**
+Level 2 is now built: border **portals** are precomputed by `geo/export/PortalExporter`
+into the committed `/map/portals.json` and exposed by `WorldMap.portal(from, to)`; the
+per-province **plot corridor** is an A* over the province's shared plot field
+(`settlement/ProvincePlotPool.corridor` → `settlement/PlotCorridor`, 4-neighbour raster
+adjacency, `PEAK` impassable, cached per entry/exit, road-ready via the per-plot `moveCost`).
+The caravan consumes it: its march journal now lists the **actual corridor plots** crossed
+and camps on a corridor plot (`MigrantCaravan`). Tests: `settlement/PlotCorridorTest`.
+**Still deferred:** spending the march's daily distance `D` *over the corridor plot costs*
+(the band still advances over centroid-to-centroid legs — `docs/caravan-march.md` §6), the
+river-costs-a-day rule (the `Plot` does not yet carry the river flag), and laying roads
+(the `moveCost` road discount is a dormant hook; `data/civ4/CIV4RouteInfos.xml` supplies the
+movement modifiers when roads are laid).
+
+**Earlier status:** **Level 1 implemented; Level 2 (plot corridors) deferred.** The km-weighted
 province graph is live: `WorldMap.distanceKm`/`edgeKm` (great-circle centroid distances,
 with the committed `/map/edges.json` weight table written by
 `geo/export/LandRouteExporter`) and `geo/LandRouter` (A* over passable provinces returning a
