@@ -5,8 +5,6 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -19,12 +17,7 @@ import java.util.function.UnaryOperator;
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.Granary;
 import com.civstudio.agent.MigrantCaravan;
-import com.civstudio.geo.Feature;
-import com.civstudio.geo.Improvement;
-import com.civstudio.geo.PlotType;
 import com.civstudio.geo.Province;
-import com.civstudio.geo.Terrain;
-import com.civstudio.geo.TerrainGenerator;
 import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.agent.Household;
 import com.civstudio.agent.Member;
@@ -181,55 +174,16 @@ public class Settlement {
 	@Getter
 	private final Map<Race, Double> raceMix;
 
-	// the curated terrain/feature/improvement definitions (shared with the owning
-	// game session, pure reference data): the generator below resolves a plot's
-	// terrain through it
-	private final TerrainRegistry terrainRegistry;
-
-	// generates each appended plot's terrain procedurally from the founding
-	// province's climate, off the dedicated terrain RNG below. Null for a
-	// province-less colony, which uses the baseline terrain instead (see appendPlot).
-	private final TerrainGenerator terrainGenerator;
-
-	// the dedicated random stream the terrain generator draws on — salted separately
-	// from the economic stream (like the naming/mortality/skill streams), so plot
-	// generation is deterministic per seed yet never perturbs the economy. Unused by
-	// a province-less colony (baseline terrain takes no draw).
-	private final Rng terrainRng;
-
-	// the colony's baseline terrain (the generator's reference ground), used for a
-	// province-less colony's plots
-	private final Terrain baselineTerrain;
+	// the colony's spatial subsystem — its build plots, the shared province plot pool
+	// it claims from, terrain generation and the builder's clearance queue. Extracted
+	// from this class (see PlotField); the plot API below delegates to it. Assigned in
+	// the constructor (it needs the terrain/province inputs).
+	private final PlotField plotField;
 
 	// the liturgical calendar (shared with the owning game session): classifies
 	// the current in-game date as a workday/weekend/holiday. A pure date lookup,
 	// independent of seed and location. See getDayType.
 	private final LiturgicalCalendar liturgicalCalendar;
-
-	// the colony's build plots (occupied and vacant), in claim order — one per firm
-	// site (the disc model's road/wall congestion is gone; every plot is usable).
-	// Appended at founding (genesis sizing) and, once live, one at a time by the
-	// builder (see claimPlot); an occupant keeps its plot. Today only firms occupy
-	// plots. Capped at maxPlots.
-	private final List<Plot> plots = new ArrayList<Plot>();
-
-	// the shared province plot pool this colony claims from (resolved lazily from the
-	// session once province and session are both set); null for a province-less colony,
-	// which generates its own plots instead. See docs/province-plots.md.
-	private ProvincePlotPool plotPool;
-	private boolean plotPoolResolved;
-
-	// the colony's center on the province field — the first plot it claims; its
-	// per-settlement travel ladder ranks plots by distance from this. Null until the
-	// first claim (province-founded colonies only).
-	private Plot center;
-
-	// reverse index from a seated occupant to the plot it stands on, so the terrain
-	// yield factor can be read by identity in O(1) (effectiveA reads it per firm per
-	// step). Kept in sync by seat()/vacatePlot; an occupant with no entry (a
-	// center-grouped or pending firm) reads the neutral factor 1.0.
-	private final Map<PlotOccupant, Plot> plotByOccupant =
-			new IdentityHashMap<PlotOccupant, Plot>();
 
 	// mean of the normal distribution from which founding household heads draw
 	// their initial age, in years (see Demography.sampleInitialAgeDays)
@@ -252,17 +206,11 @@ public class Settlement {
 	@Setter
 	private FertilityConfig fertilityConfig = FertilityConfig.DEFAULT;
 
-	// per-sector technology multiplier: the live total-factor-productivity scaling a
-	// researched SectorProductivity tech effect raises (see applyTechEffect and the
-	// firms' effective-A production). Every sector starts at 1.0 — no tech effect
-	// applied — so production is unchanged until something raises it. A firm with no
-	// sector (the builder) reads 1.0 via getTechMultiplier(null).
-	private final Map<Sector, Double> techMultiplier = new EnumMap<>(Sector.class);
-
-	// tokens granted by researched Unlock / SocialGate tech effects (e.g. GOOD_PAPER,
-	// CLASS_BURGHER). Recorded here so future consumers (new content, the rank ladder,
-	// SocialClass) can read them; nothing reads them yet (see applyTechEffect).
-	private final Set<String> grantedTechTokens = new LinkedHashSet<>();
+	// the colony's technology state — the per-sector productivity multipliers and the
+	// capability tokens researched tech effects accumulate. Extracted (see TechState);
+	// the tech API below delegates to it. Neutral (all 1.0, no tokens) until a tech
+	// effect is applied.
+	private final TechState techState = new TechState();
 
 	// mean of this colony's skill distribution, fixed at colony start: the center
 	// of the spread from which a person draws its skill, hence the colony's labor
@@ -285,16 +233,11 @@ public class Settlement {
 
 	// the province this colony was founded into, or null if it was founded at bare
 	// coordinates (every scenario that does not opt into the world map). When set, it
-	// is the source of the colony's latitude/longitude and bounds its growth (see
-	// maxPlots). Carried for the dependent geography features (caravan/founding).
+	// is the source of the colony's latitude/longitude and bounds its growth (the
+	// plot field's maxPlots). Carried for the dependent geography features
+	// (caravan/founding), and read for the agriculture climate multiplier.
 	@Getter
 	private final Province province;
-
-	// the hard ceiling on the colony's plot count: its province's plots (build slots
-	// are plots — see docs/plots.md), or PROVINCE_LESS_PLOT_CAP for a bare-coordinate
-	// colony. A colony cannot grow past this. See foundPlot/requestGrowth.
-	@Getter
-	private final int maxPlots;
 
 	// the colony's solar clock for its (fixed) location: computes the day's
 	// dawn/sunrise/sunset/dusk and daylight length, refreshed for the current
@@ -303,30 +246,14 @@ public class Settlement {
 	// to it.
 	private final SolarClock solarClock;
 
-	// lifecycle: a colony is "started" once it begins running (start()) and ends
-	// its settled life ("dies") when its workforce drains. deathDate records when,
-	// and the transition is terminal. A ruler-bearing colony does not simply vanish:
-	// once its workforce falls below DISSOLUTION_WORKFORCE_FLOOR it crosses the
-	// HOLDING -> CARAVAN hinge and the survivors depart as a wandering Caravan
-	// (see docs/caravan.md); a pool-less colony (no ruler/Retinue to form a band)
-	// still dies terminally when its last laborer is gone.
-	private boolean started = false;
-	private boolean died = false;
-	@Getter
-	private LocalDate deathDate;
+	// the colony's lifecycle — started/died/dissolution state and the transition into
+	// a wandering band when its workforce drains. Extracted (see SettlementLifecycle);
+	// the lifecycle API below delegates to it.
+	private final SettlementLifecycle lifecycle = new SettlementLifecycle(this);
 
 	// persons of interest who died since the last annual digest, summarized and reset
 	// once a year by logAnnualDigest (the per-death log itself is FINE, off by default)
 	private int poiDeathsThisYear = 0;
-
-	// the wandering band a dissolved colony departed as (null until then; only a
-	// ruler-bearing colony produces one — see dissolveIntoCaravan / updateLifecycle)
-	@Getter
-	private MigrantCaravan departedBand;
-	// flagged by updateLifecycle when the workforce floor is crossed, so run()
-	// performs the dissolution after the step's market clearing/printing (the
-	// dissolution drains banks and folds households, so it must not run mid-step)
-	private boolean dissolving = false;
 
 	// the session that owns this colony, set by GameSession.newSettlement; a colony
 	// constructed directly (some tests) has none, and then a dissolved band is held
@@ -363,15 +290,6 @@ public class Settlement {
 	// docs/granary.md §4). At most one per colony; null leaves relief on the market.
 	@Getter
 	private Granary granary;
-
-	// outstanding plot-clearance tasks the builder is working through, in the order
-	// plots were demanded (lowest index first). Empty unless a live colony has
-	// outgrown its plots; see claimPlot / requestGrowth / completeFinishedPlots.
-	private final List<BuildProject> buildQueue = new ArrayList<BuildProject>();
-
-	// occupants that demanded a plot a live colony could not yet supply: they are
-	// seated as the builder finishes clearing the plots being built for them.
-	private final List<PlotOccupant> pendingOccupants = new ArrayList<PlotOccupant>();
 
 	// tracks the colony's CPI and inflation, recomputed once per newDay. Reads
 	// the live consumerGoodMarkets set, so markets added later are included.
@@ -512,8 +430,6 @@ public class Settlement {
 		this.demography = demography;
 		this.foundingRace = foundingRace;
 		this.raceMix = raceMix;
-		this.terrainRegistry = terrainRegistry;
-		this.terrainRng = terrainRng;
 		this.liturgicalCalendar = liturgicalCalendar;
 		this.meanInitAgeYears = meanInitAgeYears;
 		this.targetNStock = targetNStock;
@@ -522,23 +438,10 @@ public class Settlement {
 		this.latitude = latitude;
 		this.longitude = longitude;
 		this.province = province;
-		// the province's plots cap growth (build slots are plots); a province-less
-		// colony uses the fixed effectively-unbounded cap. A province too small to
-		// hold even the founding floor is rejected outright.
-		this.maxPlots = province == null ? PROVINCE_LESS_PLOT_CAP : province.plots();
-		if (province != null && province.plots() < MIN_FOUNDING_PLOTS)
-			throw new IllegalArgumentException(name
-					+ " cannot be founded in province " + province.name() + ": its "
-					+ province.plots() + " plots are below the minimum founding footprint "
-					+ MIN_FOUNDING_PLOTS);
-		// a province-founded colony generates its plot terrain from the province's
-		// climate (off the dedicated terrain RNG); a province-less colony uses the
-		// baseline terrain uniformly and takes no terrain draw (see appendPlot).
-		this.baselineTerrain = terrainRegistry == null ? null
-				: terrainRegistry.terrain(TerrainGenerator.BASELINE_TERRAIN);
-		this.terrainGenerator = (province == null || terrainRegistry == null) ? null
-				: new TerrainGenerator(terrainRegistry, province.climate(),
-						province.winter(), province.monsoon());
+		// the spatial subsystem: the plots, the shared province pool, terrain generation
+		// and the builder's queue (it caps growth at the province's plots, and rejects a
+		// province too small to hold the founding floor). See PlotField.
+		this.plotField = new PlotField(this, terrainRegistry, terrainRng, province);
 		this.solarClock = new SolarClock(latitude, longitude);
 		// every household knows how to produce its own heir; register one built-in
 		// policy that asks each dead household to do so, tried before any the
@@ -576,10 +479,7 @@ public class Settlement {
 	 * #run(int)}; idempotent.
 	 */
 	public void start() {
-		if (started)
-			return;
-		started = true;
-		log.info(name + " was founded on " + getDate() + ".");
+		lifecycle.start();
 	}
 
 	/**
@@ -593,7 +493,7 @@ public class Settlement {
 	 * @return true once {@link #start()} has been called
 	 */
 	public boolean isStarted() {
-		return started;
+		return lifecycle.isStarted();
 	}
 
 	/**
@@ -602,7 +502,7 @@ public class Settlement {
 	 * @return true if the colony is alive
 	 */
 	public boolean isAlive() {
-		return started && !died;
+		return lifecycle.isAlive();
 	}
 
 	/**
@@ -612,73 +512,32 @@ public class Settlement {
 	 * @return true if the colony has died
 	 */
 	public boolean isDead() {
-		return died;
+		return lifecycle.isDead();
 	}
 
-	// number of living workforce households in this colony (the laborers whose
-	// labor sustains the colony; see Household.isWorkforce)
-	private long livingLaborerCount() {
-		long n = 0;
-		for (Agent agent : agents)
-			if (agent instanceof Household h && h.isWorkforce())
-				n++;
-		return n;
+	/** The date the colony died, or null if it is still alive. */
+	public LocalDate getDeathDate() {
+		return lifecycle.getDeathDate();
+	}
+
+	/** The wandering band a dissolved colony departed as, or null. */
+	public MigrantCaravan getDepartedBand() {
+		return lifecycle.getDepartedBand();
 	}
 
 	// detect the end of the colony's settled life, called each newDay once the
-	// population settles. A ruler-bearing colony that can form a band dissolves into
-	// a Caravan once its workforce falls below DISSOLUTION_WORKFORCE_FLOOR (the
-	// HOLDING -> CARAVAN hinge): it is flagged here and the band departs in run(),
-	// after the step's market clearing. A pool-less colony (no ruler/Retinue) instead
-	// dies terminally when its last laborer is gone, as before.
+	// population settles (delegates to SettlementLifecycle). A ruler-bearing colony
+	// that can form a band flags itself for dissolution once its workforce falls below
+	// DISSOLUTION_WORKFORCE_FLOOR; the band departs in finishRun.
 	void updateLifecycle() {
-		if (!started || died)
-			return;
-		long workforce = livingLaborerCount();
-		if (canDissolve()) {
-			if (workforce < DISSOLUTION_WORKFORCE_FLOOR) {
-				died = true;
-				dissolving = true;
-				deathDate = getDate();
-				log.info(name + " is dissolving into a Caravan on " + deathDate
-						+ " (workforce " + workforce + " < floor "
-						+ DISSOLUTION_WORKFORCE_FLOOR + ")");
-			}
-		} else if (workforce == 0) {
-			died = true;
-			deathDate = getDate();
-			log.info(name + " died on " + deathDate
-					+ " (its last laborer is gone)");
-		}
-		if (died)
-			releasePlotsToPool();
+		lifecycle.update();
 	}
 
 	// a dead colony no longer holds territory: return all its claimed plots to the
-	// shared province pool so they are free for the other settlements in the province
-	// (and any later founding). Vacate each first — a colony dies when its last laborer
-	// is gone, while its firms (the plot occupants) outlive it, so the plots are still
-	// occupied at death. A no-op for a province-less colony (it has no shared pool).
-	private void releasePlotsToPool() {
-		ProvincePlotPool pool = plotPool();
-		if (pool == null)
-			return;
-		for (Plot plot : plots) {
-			plot.vacate();
-			pool.release(plot);
-		}
-		plotByOccupant.clear();
-	}
-
-	// whether this colony can dissolve into a Caravan rather than dying terminally:
-	// it needs a living ruler to lead the band and a Retinue to be its following.
-	private boolean canDissolve() {
-		if (ruler == null || !ruler.isAlive())
-			return false;
-		for (Agent a : agents)
-			if (a instanceof Retinue)
-				return true;
-		return false;
+	// shared province pool (delegates to the plot field). Called by the lifecycle when
+	// the colony dies; a no-op for a province-less colony.
+	void releasePlotsToPool() {
+		plotField.releasePlotsToPool();
 	}
 
 	// set the session that owns this colony (only GameSession calls this, when it
@@ -738,6 +597,17 @@ public class Settlement {
 	}
 
 	/**
+	 * The hard ceiling on the colony's plot count: its province's plots (build slots
+	 * are plots — see {@code docs/plots.md}), or {@link #PROVINCE_LESS_PLOT_CAP} for a
+	 * bare-coordinate colony. A colony cannot grow past this.
+	 *
+	 * @return the maximum plot count
+	 */
+	public int getMaxPlots() {
+		return plotField.getMaxPlots();
+	}
+
+	/**
 	 * The colony's current plot count — how many build plots it has laid out
 	 * (occupied or vacant). Founded with none and grown on demand as firms claim
 	 * plots (see {@link #claimPlot}), up to {@link #getMaxPlots()}.
@@ -745,7 +615,7 @@ public class Settlement {
 	 * @return the current plot count
 	 */
 	public int getPlotCount() {
-		return plots.size();
+		return plotField.getPlotCount();
 	}
 
 	/**
@@ -755,25 +625,15 @@ public class Settlement {
 	 * @return the colony's plots
 	 */
 	public List<Plot> getPlots() {
-		return Collections.unmodifiableList(plots);
+		return plotField.getPlots();
 	}
 
 	/**
-	 * Place <tt>occupant</tt> on a vacant plot. How the colony makes room when none
-	 * is free depends on its lifecycle:
-	 * <ul>
-	 * <li><b>At founding</b> (before {@link #start()}) it appends a fresh plot (a
-	 * one-time genesis sizing, not live growth) and seats the occupant on it,
-	 * returning that plot.</li>
-	 * <li><b>While live</b> (after {@code start()}) it does <em>not</em> grow
-	 * itself: the only way a running colony gets bigger is through its {@link
-	 * BuilderFirm}. One plot's land clearance is queued for the builder (firm-funded;
-	 * see {@link #requestGrowth(Agent)}), the occupant is held pending, and this
-	 * returns {@code null} — the occupant is seated once the builder finishes the
-	 * plot. A live colony with no builder cannot grow, so this throws.</li>
-	 * </ul>
-	 * Either way, plot placement moves no money and consumes no randomness (the
-	 * terrain draw is on the separate terrain stream).
+	 * Place <tt>occupant</tt> on a vacant plot (delegates to the {@link PlotField}).
+	 * At founding (before {@link #start()}) it appends a fresh developed plot and
+	 * seats the occupant, returning it; while live it queues the plot's clearance for
+	 * the {@link BuilderFirm} and returns {@code null} (the occupant is seated once the
+	 * plot is built). Plot placement moves no money and consumes no randomness.
 	 *
 	 * @param occupant
 	 *            the occupant to place (today, a firm)
@@ -784,179 +644,20 @@ public class Settlement {
 	 *             or full with no builder while live)
 	 */
 	public Plot claimPlot(PlotOccupant occupant) {
-		Plot plot = firstVacantPlot();
-		if (plot != null) {
-			seat(plot, occupant);
-			return plot;
-		}
-		if (started)
-			return requestBuild(occupant);
-		return foundPlot(occupant);
-	}
-
-	// founding (pre-run genesis): append fresh plots for the occupant — skipping any
-	// unworkable peaks (which stay on the ladder, counting toward the cap) — and seat
-	// it on the first workable one. Not the live-growth path.
-	private Plot foundPlot(PlotOccupant occupant) {
-		while (true) {
-			if (!canAcquirePlot(0))
-				throw new IllegalStateException(name + " cannot seat " + occupant
-						+ ": no room left in its province (max " + maxPlots + " plots)");
-			Plot plot = appendPlot();
-			if (plot == null)
-				throw new IllegalStateException(name + " cannot seat " + occupant
-						+ ": its province pool is exhausted");
-			if (!plot.isWorkable())
-				continue; // a peak: keep it on the ladder and append the next plot
-			seat(plot, occupant);
-			developPlot(plot, occupant); // genesis: raise the improvement for free
-			return plot;
-		}
-	}
-
-	// place an occupant on a plot and index it (so its terrain yield can be read by
-	// identity — see plotYieldFactor)
-	private void seat(Plot plot, PlotOccupant occupant) {
-		plot.occupy(occupant);
-		plotByOccupant.put(occupant, plot);
-	}
-
-	// live colony: only the builder can make room. Queue one plot's clearance and
-	// hold the occupant pending; it is seated when the builder finishes the plot.
-	private Plot requestBuild(PlotOccupant occupant) {
-		if (builder == null)
-			throw new IllegalStateException(name
-					+ " is full and has no builder to grow it for " + occupant);
-		requestGrowth(occupant);
-		pendingOccupants.add(occupant);
-		return null;
-	}
-
-	// generate the next plot's land — terrain plus an optional wild feature — from
-	// the province's climate (off the terrain stream); a province-less colony uses
-	// the baseline terrain (no feature) and takes no draw. Does not add it to the
-	// colony (the founding path appends; live growth holds it on the build queue).
-	private Plot generatePlot(int index) {
-		// a province-founded colony claims a pre-generated plot from the shared province
-		// pool (nearest its center) instead of drawing its own; a province-less colony
-		// keeps the legacy per-plot terrain draw. Either way the caller assigns the plot
-		// its ladder index and handles peaks the same way.
-		ProvincePlotPool pool = plotPool();
-		if (pool != null) {
-			Plot plot = claimNearestFreePlot(pool);
-			if (plot == null)
-				return null; // the shared pool is exhausted — the caller handles "no room"
-			plot.setIndex(index);
-			return plot;
-		}
-		if (terrainGenerator == null)
-			return new Plot(index, baselineTerrain, PlotType.FLAT, null);
-		Terrain terrain = terrainGenerator.next(terrainRng);
-		PlotType plotType = terrainGenerator.nextPlotType(terrainRng);
-		Feature feature = terrainGenerator.nextFeature(terrain, plotType, terrainRng);
-		return new Plot(index, terrain, plotType, feature);
-	}
-
-	// the shared province pool this colony claims from, resolved lazily from the session
-	// (province-founded only); null for a province-less colony. Resolved once.
-	private ProvincePlotPool plotPool() {
-		if (!plotPoolResolved) {
-			plotPoolResolved = true;
-			if (province != null && session != null)
-				plotPool = session.provincePlotPool(province);
-		}
-		return plotPool;
-	}
-
-	// claim the next plot for this colony from the shared province pool: the founding
-	// center (spaced from any other settlement already in the province) for the first
-	// claim, then the free plot nearest that center. Returns null if the shared pool is
-	// exhausted (another settlement took the last plots) — the caller treats that as
-	// "no room". A peak is claimed like any plot — the caller (foundPlot/requestGrowth)
-	// skips or zero-work-queues it, so peaks consume a ladder rung exactly as before.
-	private Plot claimNearestFreePlot(ProvincePlotPool pool) {
-		Plot target = (center == null)
-				? pool.claimFoundingCenter(this)
-				: pool.claimNearest(this, center.x(), center.y());
-		if (target != null && center == null)
-			center = target;
-		return target;
-	}
-
-	// whether the colony can acquire one more plot: free room in the shared province
-	// pool for a province-founded colony (the real, shared limit — several settlements
-	// draw from it), or the per-colony plot cap for a province-less one.
-	private boolean canAcquirePlot(int inFlight) {
-		ProvincePlotPool pool = plotPool();
-		if (pool != null)
-			return pool.freeCount() > 0;
-		return plots.size() + inFlight < maxPlots;
-	}
-
-	// append a freshly-generated vacant plot at the next ladder index (the founding
-	// genesis path; live growth generates its plot up front in requestGrowth).
-	private Plot appendPlot() {
-		Plot plot = generatePlot(plots.size());
-		if (plot == null)
-			return null; // the shared province pool is exhausted
-		plots.add(plot);
-		return plot;
-	}
-
-	// resolve the improvement an on-plot firm raises on its plot (a necessity firm →
-	// a FARM), looked up in the shared terrain registry; null for a center-grouped
-	// occupant or a non-firm (which raise none).
-	private Improvement improvementFor(PlotOccupant occupant) {
-		if (terrainRegistry == null || !(occupant instanceof Firm f) || !f.occupiesPlot())
-			return null;
-		String type = f.plotImprovement();
-		return type == null ? null : terrainRegistry.improvement(type);
-	}
-
-	// develop a plot for its occupant — raise the firm's improvement, clearing any
-	// feature (a farm needs cleared land). A no-op for an occupant operating none.
-	// Used on the founding genesis path (free); live growth develops via the builder.
-	private void developPlot(Plot plot, PlotOccupant occupant) {
-		Improvement imp = improvementFor(occupant);
-		if (imp != null)
-			plot.raiseImprovement(imp, true);
-	}
-
-	// the build-units to open a plot: the improvement's build cost (or, for an
-	// occupant with none, the builder's flat land cost) plus the feature clear cost
-	// when the plot is wild, scaled up by the terrain's percent build modifier (rough
-	// or forested ground takes longer to prepare).
-	private double clearanceWork(Plot plot, Improvement imp) {
-		double base = imp != null ? imp.buildCost() : builder.getConfig().landWorkPerPlot();
-		base += plot.clearCost();
-		return base * (1.0 + plot.terrain().buildModifier() / 100.0);
+		return plotField.claimPlot(occupant);
 	}
 
 	/**
-	 * Whether the colony can seat another plot occupant — either a plot is vacant
-	 * now, or it can still grow into one: its plot count (plus any growth already in
-	 * flight) is below its {@link #getMaxPlots() maximum} <em>and</em> it has a {@link
-	 * #setBuilder builder} to do the growing. When this is {@code false} the colony
-	 * cannot take another firm — it is physically full at its (plots-capped) maximum,
-	 * or it is full and has no builder to enlarge it — so the dynamic firm
-	 * provisioning must not charter another firm: there is nowhere to put it and
-	 * {@link #claimPlot} would fail. A province-less colony reaches the limit only at
-	 * the fixed ceiling. See {@code docs/plots.md}.
+	 * Whether the colony can seat another plot occupant — either a plot is vacant now,
+	 * or it can still grow into one (below {@link #getMaxPlots() max plots} and it has
+	 * a {@link #setBuilder builder} to do the growing). When {@code false} the dynamic
+	 * firm provisioning must not charter another firm — there is nowhere to put it.
+	 * Delegates to the {@link PlotField}. See {@code docs/plots.md}.
 	 *
 	 * @return {@code true} if another occupant could be seated (now or after growth)
 	 */
 	public boolean hasRoomToExpand() {
-		return firstVacantPlot() != null
-				|| (builder != null && canAcquirePlot(buildQueue.size()));
-	}
-
-	// the first vacant, workable plot, or null if none is free. Peaks are unworkable,
-	// so they are never seated (they sit on the ladder as rough ground).
-	private Plot firstVacantPlot() {
-		for (Plot plot : plots)
-			if (plot.isVacant() && plot.isWorkable())
-				return plot;
-		return null;
+		return plotField.hasRoomToExpand();
 	}
 
 	/**
@@ -1078,12 +779,7 @@ public class Settlement {
 	 *            the occupant whose plot to free
 	 */
 	public void vacatePlot(PlotOccupant occupant) {
-		Plot plot = plotByOccupant.remove(occupant);
-		if (plot != null) {
-			plot.vacate();
-			return;
-		}
-		pendingOccupants.remove(occupant);
+		plotField.vacatePlot(occupant);
 	}
 
 	/**
@@ -1109,10 +805,7 @@ public class Settlement {
 	 * @return the plot's yield factor (1.0 when the coupling does not apply)
 	 */
 	public double plotYieldFactor(PlotOccupant occupant, Sector sector) {
-		if (province == null || sector != Sector.NECESSITY)
-			return 1.0;
-		Plot plot = plotByOccupant.get(occupant);
-		return plot == null ? 1.0 : plot.yieldFactor(sector);
+		return plotField.plotYieldFactor(occupant, sector);
 	}
 
 	/**
@@ -1128,10 +821,7 @@ public class Settlement {
 	 * @return the round-trip commute in seconds (0 when none applies)
 	 */
 	public double plotTravelTime(PlotOccupant occupant) {
-		if (province == null)
-			return 0;
-		Plot plot = plotByOccupant.get(occupant);
-		return plot == null ? 0 : 2.0 * TravelLadder.oneWaySeconds(plot.index());
+		return plotField.plotTravelTime(occupant);
 	}
 
 	/**
@@ -1154,83 +844,24 @@ public class Settlement {
 		return Double.isFinite(h) ? Math.max(0, h) * 3600 : 0;
 	}
 
-	// queue the land-clearance work to open one more plot on behalf of one occupant.
-	// The occupant funds its own plot (so each firm pays its own land clearance);
-	// there are no longer any ruler-funded public works (the disc model's road/wall
-	// tasks are gone). An occupant must be billable, which today means it is an Agent
-	// (the sole PlotOccupant); this is the bridge where billing assumes that.
-	private void requestGrowth(PlotOccupant requester) {
-		// generate forward to the next workable plot, queueing any intervening peaks as
-		// zero-work tasks (unworkable rough ground needs no building — it just lands on
-		// the ladder, in order, via completeFinishedPlots). The workable plot's land
-		// (terrain + feature) is fixed now so its clearance can be costed; the builder
-		// raises the improvement and the colony seats the firm once the work is
-		// delivered (see completeFinishedPlots).
-		while (true) {
-			if (!canAcquirePlot(buildQueue.size()))
-				return; // no room to grow now — its province is full / the shared pool drained
-			int nextIndex = plots.size() + buildQueue.size();
-			Plot plot = generatePlot(nextIndex);
-			if (plot == null)
-				return; // the shared pool emptied between the check and the claim (a race)
-			if (!plot.isWorkable()) {
-				buildQueue.add(new BuildProject(plot, null, 0, null)); // a peak: no work
-				continue;
-			}
-			Improvement imp = improvementFor(requester);
-			buildQueue.add(new BuildProject(plot, imp, clearanceWork(plot, imp),
-					(Agent) requester));
-			return;
-		}
-	}
-
 	/**
 	 * The unfinished construction tasks the builder is working through — the plots
-	 * still queued to open. The {@link BuilderFirm} applies its build-units to these
-	 * each step (lowest-index first). Empty when there is nothing to build.
+	 * still queued to open (delegates to the {@link PlotField}). The {@link BuilderFirm}
+	 * applies its build-units to these each step (lowest-index first).
 	 *
 	 * @return the outstanding plot-prep tasks (an empty list when idle)
 	 */
 	public List<BuildProject> activeProjects() {
-		List<BuildProject> active = new ArrayList<BuildProject>();
-		for (BuildProject p : buildQueue)
-			if (!p.isComplete())
-				active.add(p);
-		return active;
+		return plotField.activeProjects();
 	}
 
 	/**
 	 * Append a plot for each completed clearance task and seat the occupants that
-	 * were waiting on them. Called by the {@link BuilderFirm} each step after it
-	 * applies its work. A no-op until a task finishes.
+	 * were waiting on them (delegates to the {@link PlotField}). Called by the {@link
+	 * BuilderFirm} each step after it applies its work.
 	 */
 	public void completeFinishedPlots() {
-		// the builder works the queue in order, so completed tasks sit at its head
-		boolean grew = false;
-		while (!buildQueue.isEmpty() && buildQueue.get(0).isComplete()) {
-			BuildProject done = buildQueue.remove(0);
-			Plot plot = done.getPlot();
-			// the builder has cleared the land and raised the firm's improvement (a
-			// FARM) — develop the plot before it is seated
-			if (done.getImprovement() != null)
-				plot.raiseImprovement(done.getImprovement(), true);
-			plots.add(plot);
-			grew = true;
-		}
-		if (grew)
-			placePending();
-	}
-
-	// seat the waiting occupants onto newly-built (vacant) plots, in order
-	private void placePending() {
-		java.util.Iterator<PlotOccupant> it = pendingOccupants.iterator();
-		while (it.hasNext()) {
-			Plot plot = firstVacantPlot();
-			if (plot == null)
-				break;
-			seat(plot, it.next());
-			it.remove();
-		}
+		plotField.completeFinishedPlots();
 	}
 
 	/**
@@ -1253,7 +884,7 @@ public class Settlement {
 		start();
 		// stop early once the colony's settled life has ended (workforce drained): a
 		// dead colony produces nothing more of interest, so running on only burns compute
-		for (int i = 0; i < steps && !died; i++) {
+		for (int i = 0; i < steps && !lifecycle.isDead(); i++) {
 			printAnnualProgress();
 			newDay();
 		}
@@ -1269,7 +900,7 @@ public class Settlement {
 	 */
 	public void run() {
 		start();
-		while (!died) {
+		while (!lifecycle.isDead()) {
 			printAnnualProgress();
 			newDay();
 		}
@@ -1339,21 +970,7 @@ public class Settlement {
 	 * ends, exactly as {@link #run(int)} does.
 	 */
 	public void finishRun() {
-		if (dissolving && departedBand == null)
-			dissolveIntoCaravan();
-	}
-
-	// cross the HOLDING -> CARAVAN hinge: dissolve this colony into a wandering band
-	// (money -> hoard, households -> following) and, if the colony belongs to a
-	// session, register the band there (colony-less bands live at the session level —
-	// see docs/caravan.md). The settlement is now gone; its people persist in the band.
-	private void dissolveIntoCaravan() {
-		departedBand = MigrantCaravan.dissolve(this);
-		if (session != null)
-			session.addCaravan(departedBand);
-		log.info(name + " departed as a Caravan (" + departedBand.getFollowing().size()
-				+ " in the following, hoard " + (long) departedBand.getHoard()
-				+ " copper)");
+		lifecycle.finishRun();
 	}
 
 	/**
@@ -1607,9 +1224,7 @@ public class Settlement {
 	 * @return the sector's tech multiplier (1.0 if unset or {@code null})
 	 */
 	public double getTechMultiplier(Sector sector) {
-		if (sector == null)
-			return 1.0;
-		return techMultiplier.getOrDefault(sector, 1.0);
+		return techState.multiplier(sector);
 	}
 
 	/**
@@ -1651,12 +1266,7 @@ public class Settlement {
 	 *            the effect to apply
 	 */
 	public void applyTechEffect(TechEffect effect) {
-		switch (effect) {
-		case TechEffect.SectorProductivity sp -> techMultiplier.merge(sp.sector(),
-				sp.factor(), (cur, f) -> cur * f);
-		case TechEffect.Unlock u -> grantedTechTokens.add(u.target());
-		case TechEffect.SocialGate g -> grantedTechTokens.add(g.capability());
-		}
+		techState.apply(effect);
 	}
 
 	/**
@@ -1668,7 +1278,7 @@ public class Settlement {
 	 * @return the granted tech tokens
 	 */
 	public Set<String> getGrantedTechTokens() {
-		return Collections.unmodifiableSet(grantedTechTokens);
+		return techState.grantedTokens();
 	}
 
 	/**
