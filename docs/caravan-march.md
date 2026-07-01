@@ -336,6 +336,12 @@ a transient plot claim that, on the settle decision, *is* the founding `HOLDING`
    only **slows** the larder's decline — the band stays a decaying asset (`docs/caravan.md`).
    Free (no march cost). Reported in the journal's `Foraged` column. Non-food bonuses and
    pulling food from a settled province's market are still future.
+   **Tech-gated identification:** a band departs with a **tech state** (its known tech ids —
+   a dissolution band carries its colony's research; a fresh band defaults to
+   `MigrantCaravan.DEFAULT_TECH` = `TECH_MEDIEVAL_LIFESTYLE`, i.e. the pre-known set of that
+   era). It can only **identify** a resource whose {@code Bonus.techReveal} it knows, so it
+   neither reports nor forages one locked behind a tech it lacks (a medieval band cannot see
+   an oil/uranium/natural-gas deposit). Overridable via `setKnownTechs`.
 5. **Transit accounts for plots via corridors, not a global plot graph.** Per
    `docs/land-routing.md`, a route province's plot **corridor** (entry portal → exit
    portal) is generated from the existing plot generator and gives the plots crossed and

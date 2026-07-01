@@ -74,6 +74,41 @@ class DhenijansarToWexkeepTest {
 	}
 
 	@Test
+	void techStateGatesWhichResourcesTheBandCanIdentify() {
+		// Dhenijansar carries food resources a medieval band forages (see the main test);
+		// a band that knows *no* techs can identify none of them — it neither reports nor
+		// forages a resource locked behind a tech it lacks
+		GameSession session = new GameSession(4242);
+		SimulationConfig cfg = SimulationConfig.DEFAULT;
+		Settlement muster = session.newSettlement("muster", cfg.startDate(),
+				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkillMale(),
+				cfg.meanSkillFemale(), 0, 0);
+		Bank bank = new Bank(BankConfig.DEFAULT, muster);
+		Retinue following = new Retinue(50, bank, muster);
+		Member leader = following.promoteHighestSkilled();
+		MigrantCaravan band = new MigrantCaravan(leader, following, 1000, DHENIJANSAR, session);
+		band.setCampingEnabled(true);
+		band.setDestination(WEXKEEP);
+		band.setKnownTechs(java.util.Set.of()); // a band that knows nothing
+
+		Rng rng = session.getBandRng();
+		double totalForaged = 0;
+		boolean anyBonusReported = false;
+		for (int i = 0; i < 15 && !band.isReadyToSettle(); i++) {
+			MarchReport report = band.tick(LocalDate.of(1445, 6, 1).plusDays(i), rng);
+			if (report != null) {
+				totalForaged += report.foraged();
+				if (!"-".equals(report.bonuses()))
+					anyBonusReported = true;
+			}
+		}
+		assertFalse(anyBonusReported,
+				"a band that knows no techs identifies no resources (all bonuses hidden)");
+		assertEquals(0.0, totalForaged, 1e-9,
+				"and forages nothing, since it can identify no food resource");
+	}
+
+	@Test
 	void aDirectedBandMarchesAllTheWayToWexkeep() throws Exception {
 		long seed = 90210;
 		GameSession session = new GameSession(seed);

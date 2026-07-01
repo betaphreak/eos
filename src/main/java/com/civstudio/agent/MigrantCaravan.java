@@ -18,6 +18,8 @@ import com.civstudio.agent.march.MarchFlavor;
 import com.civstudio.agent.march.MarchReport;
 import com.civstudio.agent.ruler.Ruler;
 import com.civstudio.bank.Bank;
+import com.civstudio.era.Era;
+import com.civstudio.geo.Bonus;
 import com.civstudio.geo.LandRouter;
 import com.civstudio.geo.Province;
 import com.civstudio.geo.Route;
@@ -32,6 +34,8 @@ import com.civstudio.settlement.ProvincePlotPool;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.settlement.SolarClock;
 import com.civstudio.tech.ResearchSnapshot;
+import com.civstudio.tech.Tech;
+import com.civstudio.tech.TechTree;
 import com.civstudio.util.Rng;
 import lombok.Getter;
 
@@ -97,6 +101,19 @@ public class MigrantCaravan extends Caravan {
 	// re-founds so progress is not lost (see MigrantCaravan.dissolve / ResearchState.restore)
 	@Getter
 	private ResearchSnapshot research;
+
+	/**
+	 * The tech a band departs with by default — a <b>medieval lifestyle</b>. Its era's
+	 * pre-known set is the band's {@linkplain #knownTechs() tech state} when it carries no
+	 * research of its own, so a fresh band identifies only the resources a medieval people
+	 * would know (not, say, an oil or uranium deposit locked behind far-future techs).
+	 */
+	public static final String DEFAULT_TECH = "TECH_MEDIEVAL_LIFESTYLE";
+
+	// the band's tech state: the set of tech ids it knows, which gates which resource
+	// bonuses it can identify (forage / report). Lazily defaulted (see knownTechs) from the
+	// carried research, else the DEFAULT_TECH baseline; overridable via setKnownTechs.
+	private Set<String> knownTechs;
 
 	// the daylight-bounded march (docs/caravan-march.md): the calibration constants, the
 	// distance-accurate route the band spends its daily distance along, and where it is
@@ -397,15 +414,54 @@ public class MigrantCaravan extends Caravan {
 		return foraged;
 	}
 
-	// whether the day's corridor crossed a food (necessity-class) resource — the land a
-	// wandering band can forage for its larder
+	// whether the day's corridor crossed a food (necessity-class) resource the band can
+	// identify — the land a wandering band can forage for its larder (a resource locked
+	// behind a tech the band lacks is invisible to it, so it cannot forage it)
 	private boolean crossedFoodResource(PlotCorridor corridor) {
 		if (corridor == null)
 			return false;
 		for (Plot p : corridor.path())
-			if (p.bonus() != null && p.bonus().resourceType() == ResourceType.NECESSITY)
+			if (identifies(p.bonus()) && p.bonus().resourceType() == ResourceType.NECESSITY)
 				return true;
 		return false;
+	}
+
+	/**
+	 * Set the band's <b>tech state</b> — the tech ids it knows, which gate the resource
+	 * bonuses it can {@linkplain #identifies(Bonus) identify}. A band departs with a
+	 * specific tech state (a dissolution band carries its colony's research; a fresh band
+	 * defaults to {@link #DEFAULT_TECH}); this overrides it.
+	 *
+	 * @param known the tech ids the band knows (a defensive copy is taken)
+	 */
+	public void setKnownTechs(Set<String> known) {
+		this.knownTechs = known == null ? null : Set.copyOf(known);
+	}
+
+	// the band's known-tech set: its carried research if it has any, else the DEFAULT_TECH
+	// (medieval lifestyle) baseline — the pre-known set of that tech's era. Empty for an
+	// off-graph band (no session, and it does not forage/report anyway). Computed once.
+	private Set<String> knownTechs() {
+		if (knownTechs == null) {
+			if (research != null)
+				knownTechs = Set.copyOf(research.known());
+			else if (session() != null) {
+				TechTree tree = session().getTechTree();
+				Tech def = tree.get(DEFAULT_TECH);
+				Era era = def != null ? def.era() : session().getEra();
+				knownTechs = Set.copyOf(tree.preKnownThrough(era));
+			} else
+				knownTechs = Set.of();
+		}
+		return knownTechs;
+	}
+
+	// whether the band can identify a resource bonus: a bonus revealed by no tech, or by a
+	// tech the band knows. A bonus locked behind an unknown tech is invisible to the band —
+	// it can neither forage nor report it (see setKnownTechs). Null-safe (no bonus -> false).
+	private boolean identifies(Bonus bonus) {
+		return bonus != null
+				&& (bonus.techReveal() == null || knownTechs().contains(bonus.techReveal()));
 	}
 
 	/**
@@ -577,7 +633,7 @@ public class MigrantCaravan extends Caravan {
 			return "-";
 		java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
 		for (Plot p : corridor.path())
-			if (p.bonus() != null)
+			if (identifies(p.bonus()))
 				seen.add(shortName(p.bonus().type()));
 		return seen.isEmpty() ? "-" : String.join(" > ", seen);
 	}
