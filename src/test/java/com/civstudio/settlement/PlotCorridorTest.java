@@ -76,6 +76,14 @@ class PlotCorridorTest {
 		// each step costs at least 1, so the total is at least the number of steps
 		assertTrue(c.totalCost() >= c.plotCount() - 1 - 1e-9,
 				"total move cost is at least one per step");
+		// riverCrossings counts the river plots on the path (the fords the march charges a
+		// full day each — docs/caravan-march.md §6)
+		int riversOnPath = 0;
+		for (Plot p : c.path())
+			if (p.river())
+				riversOnPath++;
+		assertEquals(riversOnPath, c.riverCrossings(),
+				"riverCrossings equals the number of river plots on the corridor");
 		// the search is cached per (entry-plot, exit-plot)
 		assertSame(c, pool.corridor(entry[0], entry[1], exit[0], exit[1]),
 				"a repeated corridor request returns the cached result");

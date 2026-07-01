@@ -1,18 +1,19 @@
 # Design note: land routing (province route + plot corridors)
 
-**Status:** **Levels 1 & 2 implemented; corridor-driven movement metric deferred.**
+**Status:** **Levels 1 & 2 implemented, and consumed by corridor-metric caravan movement.**
 Level 2 is now built: border **portals** are precomputed by `geo/export/PortalExporter`
 into the committed `/map/portals.json` and exposed by `WorldMap.portal(from, to)`; the
 per-province **plot corridor** is an A* over the province's shared plot field
 (`settlement/ProvincePlotPool.corridor` → `settlement/PlotCorridor`, 4-neighbour raster
 adjacency, `PEAK` impassable, cached per entry/exit, road-ready via the per-plot `moveCost`).
-The caravan consumes it: its march journal now lists the **actual corridor plots** crossed
-and camps on a corridor plot (`MigrantCaravan`). Tests: `settlement/PlotCorridorTest`.
-**Still deferred:** spending the march's daily distance `D` *over the corridor plot costs*
-(the band still advances over centroid-to-centroid legs — `docs/caravan-march.md` §6), the
-river-costs-a-day rule (the `Plot` does not yet carry the river flag), and laying roads
-(the `moveCost` road discount is a dormant hook; `data/civ4/CIV4RouteInfos.xml` supplies the
-movement modifiers when roads are laid).
+The caravan consumes it: it **spends its daily distance `D` over the corridor plot costs**
+(`KM_PER_PLOT × corridor.totalCost` per province) plus the boundary hop, so rough/wild ground
+and larger provinces are slower (`MigrantCaravan.computeLeg`); **crossing a river costs a full
+day** (`Plot` carries a river flag, `PlotCorridor.riverCrossings` counts the fords); and the
+journal reports the notable bonuses encountered and camps on a corridor plot. Tests:
+`settlement/PlotCorridorTest`, `simulation/DhenijansarToWexkeepTest`. **Still deferred:**
+laying roads (the corridor `moveCost` road discount is a dormant hook; `data/civ4/CIV4RouteInfos.xml`
+supplies the movement modifiers when roads are laid) and a border-aware edge-weight exporter.
 
 **Earlier status:** **Level 1 implemented; Level 2 (plot corridors) deferred.** The km-weighted
 province graph is live: `WorldMap.distanceKm`/`edgeKm` (great-circle centroid distances,

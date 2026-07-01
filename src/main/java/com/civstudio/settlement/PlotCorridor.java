@@ -15,13 +15,15 @@ import java.util.List;
  * march multiplies it by {@code KM_PER_PLOT} to charge the day's distance budget (see
  * {@code docs/caravan-march.md} §6).
  *
- * @param path      the plots crossed, entry &rarr; exit (empty when no corridor exists)
- * @param totalCost the summed per-plot move cost of entering each plot after the first
+ * @param path           the plots crossed, entry &rarr; exit (empty when none exists)
+ * @param totalCost      the summed per-plot move cost of entering each plot after the first
+ * @param riverCrossings the number of river plots on the path — each is a ford the caravan
+ *                       march charges a full day for (see {@code docs/caravan-march.md} §6)
  */
-public record PlotCorridor(List<Plot> path, double totalCost) {
+public record PlotCorridor(List<Plot> path, double totalCost, int riverCrossings) {
 
 	/** The empty corridor — no plot path between the entry and exit. */
-	public static final PlotCorridor NONE = new PlotCorridor(List.of(), 0);
+	public static final PlotCorridor NONE = new PlotCorridor(List.of(), 0, 0);
 
 	/** The number of plots crossed. */
 	public int plotCount() {

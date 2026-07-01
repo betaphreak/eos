@@ -83,7 +83,8 @@ public final class ProvincePlotPool {
 		ProvincePlotField field = ProvincePlotField.generate(province, registry, raster, rng);
 		List<Plot> plots = new ArrayList<>(field.size());
 		for (ProvincePlot pp : field.plots())
-			plots.add(new Plot(pp.x(), pp.y(), pp.terrain(), pp.plotType(), pp.feature(), pp.bonus()));
+			plots.add(new Plot(pp.x(), pp.y(), pp.river(), pp.terrain(), pp.plotType(),
+					pp.feature(), pp.bonus()));
 		return new ProvincePlotPool(province, plots);
 	}
 
@@ -319,14 +320,19 @@ public final class ProvincePlotPool {
 		return PlotCorridor.NONE; // disconnected (e.g. a peak barrier splits the province)
 	}
 
-	// reconstruct the corridor path (entry -> exit) and carry the accumulated cost
+	// reconstruct the corridor path (entry -> exit), carrying the accumulated cost and
+	// counting the river plots on it (each a full-day ford for the march)
 	private PlotCorridor build(Map<Plot, Plot> cameFrom, Plot start, Plot goal, double cost) {
 		List<Plot> path = new ArrayList<>();
 		for (Plot cur = goal; cur != start; cur = cameFrom.get(cur))
 			path.add(cur);
 		path.add(start);
 		Collections.reverse(path);
-		return new PlotCorridor(Collections.unmodifiableList(path), cost);
+		int rivers = 0;
+		for (Plot p : path)
+			if (p.river())
+				rivers++;
+		return new PlotCorridor(Collections.unmodifiableList(path), cost, rivers);
 	}
 
 	// the 4-neighbour workable plots of a plot, by raster adjacency

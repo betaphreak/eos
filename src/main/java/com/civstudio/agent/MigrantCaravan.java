@@ -105,7 +105,13 @@ public class MigrantCaravan extends Caravan {
 	private LandRouter router; // lazily built over the band's world map
 	private Route route;       // the current route toward the chosen target
 	private int legIndex;      // the hop of `route` the band is currently crossing
-	private double progressKm; // km already covered into the current hop
+	private double progressKm; // km already covered into the current leg's cost
+	// the current leg's cost = the plot-corridor distance across the province the band is
+	// in (KM_PER_PLOT × corridor cost) + the boundary hop into the next; and the river
+	// fords on that corridor (each a full day). Computed lazily per leg (docs/caravan-march.md §6).
+	private double legKmCost;
+	private int legFords;
+	private boolean legReady;
 
 	// the last day's computed march and its print-ready report (exposed for the journal
 	// and tests); null until the band has ticked at least once on the graph
@@ -312,17 +318,28 @@ public class MigrantCaravan extends Caravan {
 		// ensure a distance-accurate route toward the nearest viable site
 		ensureRoute(rng);
 
-		// spend D along that route: cross whole boundary hops while the budget lasts,
-		// carrying partial progress on a long hop across days (so a big province takes
-		// several days to cross, and a lean band in a long day may hop several times)
+		// spend D along that route: each leg is the plot corridor across the current
+		// province (KM_PER_PLOT × its plot cost — so rough/wild ground is slower) plus the
+		// boundary hop into the next, with river fords costing a full day. Partial progress
+		// carries across days, so a big/rough province takes several days to cross and a
+		// lean band in a long day may clear several short legs (docs/caravan-march.md §6).
 		List<Integer> traversed = new ArrayList<>();
 		traversed.add(getProvinceId());
 		double budget = day.netMarchKm();
 		while (budget > 1e-9 && route != null && legIndex < route.hops()) {
-			double need = route.hopKm()[legIndex] - progressKm;
+			if (!legReady)
+				computeLeg();
+			if (legFords > 0) {
+				// fording a river on this leg's corridor halts the day's advance
+				legFords--;
+				budget = 0;
+				break;
+			}
+			double need = legKmCost - progressKm;
 			if (budget + 1e-9 >= need) {
 				budget -= need;
 				progressKm = 0;
+				legReady = false;
 				int next = route.provinces().get(legIndex + 1);
 				enteredFrom = getProvinceId(); // remember the side we cross in from
 				moveTo(next);
@@ -381,7 +398,33 @@ public class MigrantCaravan extends Caravan {
 			route = router.route(getProvinceId(), targetProvinceId);
 			legIndex = 0;
 			progressKm = 0;
+			legReady = false;
 		}
+	}
+
+	// compute the current leg's cost and river fords: the plot corridor across the province
+	// the band is in (its plots' move cost × KM_PER_PLOT) plus the centroid-to-centroid
+	// boundary hop into the next province (docs/caravan-march.md §6, docs/land-routing.md)
+	private void computeLeg() {
+		int cur = getProvinceId();
+		int next = route.provinces().get(legIndex + 1);
+		PlotCorridor corr = corridorBetween(enteredFrom, cur, next);
+		double corridorKm = corr == null ? 0 : marchConfig.kmPerPlot() * corr.totalCost();
+		legKmCost = corridorKm + route.hopKm()[legIndex];
+		legFords = corr == null ? 0 : corr.riverCrossings();
+		legReady = true;
+	}
+
+	// the plot corridor across province `cur` from the border it was entered at (from) to
+	// the border toward `to`; the anchors fall back to the plot centroid when a portal is
+	// unknown. Null when the band is session-less.
+	private PlotCorridor corridorBetween(int from, int cur, int to) {
+		if (session() == null)
+			return null;
+		ProvincePlotPool pool = session().provincePlotPool(worldMap().province(cur));
+		int[] entry = anchor(from, cur, pool);
+		int[] exit = anchor(cur, to, pool);
+		return pool.corridor(entry[0], entry[1], exit[0], exit[1]);
 	}
 
 	/**
@@ -398,20 +441,16 @@ public class MigrantCaravan extends Caravan {
 		this.directed = true;
 		this.targetProvinceId = provinceId;
 		this.route = null; // force a fresh route to the new destination
+		this.legReady = false;
 	}
 
 	// the plot corridor across the province the band ended the day in: from the border
 	// portal it crossed in at (enteredFrom) to the portal toward the next province on the
 	// route (or the province centroid when either is unknown). Null when session-less.
 	private PlotCorridor currentCorridor() {
-		if (session() == null)
-			return null;
-		ProvincePlotPool pool = session().provincePlotPool(worldMap().province(getProvinceId()));
 		int next = (route != null && legIndex < route.hops())
 				? route.provinces().get(legIndex + 1) : OFF_GRAPH;
-		int[] entry = anchor(enteredFrom, getProvinceId(), pool);
-		int[] exit = anchor(getProvinceId(), next, pool);
-		return pool.corridor(entry[0], entry[1], exit[0], exit[1]);
+		return corridorBetween(enteredFrom, getProvinceId(), next);
 	}
 
 	// the raster anchor for a corridor endpoint: the committed border portal from -> to,

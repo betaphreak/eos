@@ -76,6 +76,11 @@ public final class Plot {
 	// bonuses stay dormant, as their sectors are gated off in Settlement.plotYieldFactor.
 	private final Bonus bonus;
 
+	// whether a river pixel fell on this plot (from the province field). Read by the
+	// caravan land-routing corridors — fording a river costs a full day's march (see
+	// docs/land-routing.md / docs/caravan-march.md §6). False for a province-less plot.
+	private final boolean river;
+
 	// the settlement that has claimed this plot out of the shared province pool, or null
 	// while the plot is free (province-owned). Hybrid ownership: claiming transfers the
 	// plot to the settlement. Null for a legacy/province-less plot (no shared pool).
@@ -124,7 +129,7 @@ public final class Plot {
 	 * @param feature  the wild feature overlaying it, or {@code null} if bare
 	 */
 	public Plot(int index, Terrain terrain, PlotType plotType, Feature feature) {
-		this(index, -1, -1, terrain, plotType, feature, null);
+		this(index, -1, -1, false, terrain, plotType, feature, null);
 	}
 
 	/**
@@ -134,16 +139,33 @@ public final class Plot {
 	 *
 	 * @param x        the raster x of the plot in the province silhouette
 	 * @param y        the raster y of the plot in the province silhouette
+	 * @param river    whether a river pixel fell on this plot
+	 * @param terrain  the ground it sits on (non-null)
+	 * @param plotType the relief (flat/hill/peak; non-null)
+	 * @param feature  the wild feature overlaying it, or {@code null} if bare
+	 * @param bonus    the resource on it, or {@code null}
+	 */
+	public Plot(int x, int y, boolean river, Terrain terrain, PlotType plotType,
+			Feature feature, Bonus bonus) {
+		this(-1, x, y, river, terrain, plotType, feature, bonus);
+	}
+
+	/**
+	 * Create a vacant province-field plot with <b>no river</b> — the convenience overload
+	 * for a plot on dry land (and for tests).
+	 *
+	 * @param x        the raster x of the plot in the province silhouette
+	 * @param y        the raster y of the plot in the province silhouette
 	 * @param terrain  the ground it sits on (non-null)
 	 * @param plotType the relief (flat/hill/peak; non-null)
 	 * @param feature  the wild feature overlaying it, or {@code null} if bare
 	 * @param bonus    the resource on it, or {@code null}
 	 */
 	public Plot(int x, int y, Terrain terrain, PlotType plotType, Feature feature, Bonus bonus) {
-		this(-1, x, y, terrain, plotType, feature, bonus);
+		this(-1, x, y, false, terrain, plotType, feature, bonus);
 	}
 
-	private Plot(int index, int x, int y, Terrain terrain, PlotType plotType,
+	private Plot(int index, int x, int y, boolean river, Terrain terrain, PlotType plotType,
 			Feature feature, Bonus bonus) {
 		if (terrain == null)
 			throw new IllegalArgumentException("terrain must be non-null");
@@ -152,6 +174,7 @@ public final class Plot {
 		this.index = index;
 		this.x = x;
 		this.y = y;
+		this.river = river;
 		this.terrain = terrain;
 		this.plotType = plotType;
 		this.feature = feature;
@@ -205,6 +228,11 @@ public final class Plot {
 	/** The plot's relief (flat/hill/peak). */
 	public PlotType plotType() {
 		return plotType;
+	}
+
+	/** Whether a river runs through this plot (fording it costs a caravan a full day). */
+	public boolean river() {
+		return river;
 	}
 
 	/** Whether a firm can occupy this plot (false for a {@link PlotType#PEAK peak}). */
