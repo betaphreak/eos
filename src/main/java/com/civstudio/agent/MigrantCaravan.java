@@ -518,7 +518,8 @@ public class MigrantCaravan extends Caravan {
 		// the "Province" column reads where the day began (the first traversal entry),
 		// not where it ended
 		return new MarchReport(date, getLeader().fullName(), provLabel(traversed.get(0)),
-				day, path.toString(), bonusesLabel, plotsEst, campLabel);
+				day, path.toString(), bonusesLabel, plotsEst,
+				following.getLastConsumed(), following.getLarder(), campLabel);
 	}
 
 	// the notable resource bonuses encountered on the corridor — the distinct bonus names

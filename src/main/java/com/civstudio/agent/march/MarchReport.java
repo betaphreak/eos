@@ -20,6 +20,10 @@ import java.time.LocalDate;
  *                           ("-" when none, or before Level-2 corridors are computed)
  * @param plotsEstimate      the plots crossed today (the corridor plot count when a
  *                           corridor is known, else {@code D / kmPerPlot})
+ * @param ate                the necessity the band consumed today (its wandering ration
+ *                           × head-count) — eaten every day, halts and fords included
+ * @param larder             the necessity remaining in the carried larder after eating —
+ *                           the countdown to starvation while the band cannot restock
  * @param camp               the nightly camp, as a label ("-" if the band did not camp)
  */
 public record MarchReport(
@@ -30,5 +34,7 @@ public record MarchReport(
 		String provincesTraversed,
 		String bonuses,
 		int plotsEstimate,
+		double ate,
+		double larder,
 		String camp) {
 }

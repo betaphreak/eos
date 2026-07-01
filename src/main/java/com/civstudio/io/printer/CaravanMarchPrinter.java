@@ -15,20 +15,15 @@ import com.civstudio.io.sink.CsvRowSink;
  * band belongs to no {@link com.civstudio.settlement.Settlement} (it is session-level) and
  * so has no colony to register a printer with.
  * <p>
- * Each band gets its <b>own</b> pair of files under a <b>{@code by-caravan/}</b> subfolder
- * of the session's {@code output/<seed>/} directory, so the journals of several caravans
- * are read separately (mirroring the colonies' {@code by-settlement/} grouping):
- * <ul>
- * <li><b>{@code by-caravan/<band>-CaravanMarch.csv}</b> — one row per day: the daylight
- * budget, speed, column length and net march distance, plus the <b>provinces to be
- * traversed</b> that day and the <b>nightly camp</b> plot.</li>
- * <li><b>{@code by-caravan/<band>-CaravanTimetable.csv}</b> — the day's <b>HH:mm
- * order-of-march</b>: one row per fielded {@link com.civstudio.agent.march.MarchElement}
- * with its depart / clears-camp / head-arrives times (see {@code docs/caravan-march.md}
- * §5).</li>
- * </ul>
- * Files are opened lazily on a band's first recorded day and appended as it ticks
- * (single-threaded, from the session day-barrier); {@link #close()} flushes them all.
+ * Each band gets its <b>own</b> file under a <b>{@code by-caravan/}</b> subfolder of the
+ * session's {@code output/<seed>/} directory ({@code by-caravan/<band>-CaravanMarch.csv}),
+ * so the journals of several caravans are read separately (mirroring the colonies'
+ * {@code by-settlement/} grouping). One row per marched day: the daylight budget, speed,
+ * column length and net march distance; the provinces traversed and the notable resource
+ * bonuses encountered on the day's plot corridor; the food the band <b>ate</b> and the
+ * <b>larder</b> remaining (its countdown to starvation while it cannot restock); and the
+ * nightly camp plot. Files are opened lazily on a band's first recorded day and appended as
+ * it ticks (single-threaded, from the session day-barrier); {@link #close()} flushes them.
  */
 public final class CaravanMarchPrinter {
 
@@ -45,22 +40,14 @@ public final class CaravanMarchPrinter {
 			ColumnSpec.text("ProvincesTraversed"),
 			ColumnSpec.text("Bonuses"),
 			ColumnSpec.integer("PlotsEst"),
+			ColumnSpec.real("Ate"),
+			ColumnSpec.real("Larder"),
 			ColumnSpec.text("Camp"),
 	};
 
-	private static final ColumnSpec[] TIMETABLE_COLUMNS = {
-			ColumnSpec.date("Date"),
-			ColumnSpec.text("Element"),
-			ColumnSpec.integer("Size"),
-			ColumnSpec.text("Depart"),
-			ColumnSpec.text("ClearsCamp"),
-			ColumnSpec.text("HeadArrives"),
-	};
-
 	private final String bandDir; // output/<seed>/by-caravan
-	// one file pair per band, opened on its first recorded day (keyed by band label)
+	// one file per band, opened on its first recorded day (keyed by band label)
 	private final Map<String, CsvRowSink> marchByBand = new LinkedHashMap<>();
-	private final Map<String, CsvRowSink> timetableByBand = new LinkedHashMap<>();
 
 	/**
 	 * Open the journal under {@code <baseDir>/by-caravan/}.
@@ -72,39 +59,28 @@ public final class CaravanMarchPrinter {
 	}
 
 	/**
-	 * Record one band's march for one day into that band's own files: the summary row and
-	 * the order-of-march timetable rows. The band composes the {@link MarchReport} (labels
-	 * resolved against the province graph) so the writer stays independent of it.
+	 * Record one band's march for one day into that band's own file. The band composes the
+	 * {@link MarchReport} (labels resolved against the province graph) so the writer stays
+	 * independent of it.
 	 *
 	 * @param r the day's print-ready march report
 	 */
 	public void record(MarchReport r) {
-		String band = r.band();
 		MarchDay day = r.day();
-		marchSink(band).writeRow(r.date(), r.province(), day.bandSize(), day.daylightHours(),
-				day.speedKmh(), day.columnKm(), day.netMarchKm(), hm(day.firstDepart()),
-				hm(day.campMade()), r.provincesTraversed(), r.bonuses(),
-				r.plotsEstimate(), r.camp());
-		CsvRowSink tt = timetableSink(band);
-		for (MarchDay.Stage s : day.stages())
-			tt.writeRow(r.date(), s.element().name(), s.size(),
-					hm(s.depart()), hm(s.clearsCamp()), hm(s.headArrives()));
+		marchSink(r.band()).writeRow(r.date(), r.province(), day.bandSize(),
+				day.daylightHours(), day.speedKmh(), day.columnKm(), day.netMarchKm(),
+				hm(day.firstDepart()), hm(day.campMade()), r.provincesTraversed(),
+				r.bonuses(), r.plotsEstimate(), r.ate(), r.larder(), r.camp());
 	}
 
-	/** Flush and close every band's files. */
+	/** Flush and close every band's file. */
 	public void close() {
 		marchByBand.values().forEach(CsvRowSink::close);
-		timetableByBand.values().forEach(CsvRowSink::close);
 	}
 
 	private CsvRowSink marchSink(String band) {
 		return marchByBand.computeIfAbsent(band, b -> new CsvRowSink(
 				bandDir + "/" + fileSafe(b) + "-CaravanMarch.csv", MARCH_COLUMNS));
-	}
-
-	private CsvRowSink timetableSink(String band) {
-		return timetableByBand.computeIfAbsent(band, b -> new CsvRowSink(
-				bandDir + "/" + fileSafe(b) + "-CaravanTimetable.csv", TIMETABLE_COLUMNS));
 	}
 
 	// HH:mm, or "-" when the time is undefined (the band did not march)

@@ -646,6 +646,11 @@ public class Retinue extends Agent {
 		return necessity.getQuantity();
 	}
 
+	/** @return the necessity the pool actually ate last {@link #act() step} */
+	public double getLastConsumed() {
+		return lastConsumed;
+	}
+
 	/** @return the average overall skill of the pooled peasants (0 if empty) */
 	public double avgSkill() {
 		if (peasants.isEmpty())
