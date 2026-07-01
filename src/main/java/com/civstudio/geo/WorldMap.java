@@ -49,6 +49,10 @@ public final class WorldMap {
 	private static final String AREAS_RESOURCE = "/map/areas.json";
 	private static final String REGIONS_RESOURCE = "/map/regions.json";
 	private static final String SUPERREGIONS_RESOURCE = "/map/superregions.json";
+	private static final String EDGES_RESOURCE = "/map/edges.json";
+
+	/** Mean Earth radius in km — the great-circle scale for {@link #distanceKm}. */
+	private static final double EARTH_RADIUS_KM = 6371.0;
 
 	private static final ObjectMapper MAPPER = new ObjectMapper()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -72,9 +76,15 @@ public final class WorldMap {
 	private final Map<String, List<Region>> regionsBySuperRegion;
 	private final Map<String, String> regionKeyByArea;
 	private final Map<String, String> superRegionKeyByRegion;
+	// committed per-edge great-circle km, keyed by province id and aligned to that
+	// province's neighbors() order (from the LandRouteExporter's /map/edges.json). Empty
+	// when the resource is absent (e.g. while the exporter itself bootstraps the map),
+	// in which case edgeKm falls back to the runtime centroid distance. See docs/land-routing.md.
+	private final Map<Integer, double[]> edgeKmById;
 
 	private WorldMap(List<Province> provinces, List<Area> areas,
-			List<Region> regions, List<SuperRegion> superRegions) {
+			List<Region> regions, List<SuperRegion> superRegions,
+			List<ProvinceEdges> edges) {
 		Map<Integer, Province> byId = new LinkedHashMap<>(provinces.size() * 2);
 		for (Province p : provinces)
 			if (byId.put(p.id(), p) != null)
@@ -192,6 +202,24 @@ public final class WorldMap {
 		this.provincesByClimate = provByClimate;
 		this.provincesByWinter = provByWinter;
 		this.provincesByMonsoon = provByMonsoon;
+
+		// committed edge weights, if the /map/edges.json resource is present: each
+		// entry's km[] aligns to the province's neighbors() order (validated), so an
+		// edge weight is a plain index lookup. Absent -> empty, and edgeKm falls back
+		// to the runtime centroid distance.
+		Map<Integer, double[]> edgeKm = new HashMap<>(edges.size() * 2);
+		for (ProvinceEdges e : edges) {
+			Province p = byId.get(e.id());
+			if (p == null)
+				continue; // an edge record for a province not in the map — skip
+			double[] km = e.km();
+			if (km.length != p.neighbors().size())
+				throw new IllegalStateException("province " + e.id() + " has "
+						+ p.neighbors().size() + " neighbors but " + km.length
+						+ " edge weights");
+			edgeKm.put(e.id(), km);
+		}
+		this.edgeKmById = edgeKm;
 	}
 
 	/**
@@ -218,7 +246,13 @@ public final class WorldMap {
 		List<SuperRegion> superRegions = loadList(SUPERREGIONS_RESOURCE,
 				new TypeReference<List<SuperRegion>>() {
 				});
-		return new WorldMap(provinces, areas, regions, superRegions);
+		// the committed edge-weight table is optional: absent while the exporter that
+		// writes it is bootstrapping the map, in which case edge weights fall back to
+		// the runtime centroid distance (see edgeKm / docs/land-routing.md)
+		List<ProvinceEdges> edges = loadListOptional(EDGES_RESOURCE,
+				new TypeReference<List<ProvinceEdges>>() {
+				});
+		return new WorldMap(provinces, areas, regions, superRegions, edges);
 	}
 
 	private static <T> List<T> loadList(String resource,
@@ -227,6 +261,20 @@ public final class WorldMap {
 			if (in == null)
 				throw new IllegalStateException(
 						"World map resource not found: " + resource);
+			return MAPPER.readValue(in, type);
+		} catch (IOException e) {
+			throw new UncheckedIOException(
+					"Failed to load world map resource: " + resource, e);
+		}
+	}
+
+	// like loadList, but a missing resource yields an empty list rather than throwing —
+	// for the optional committed edge-weight table (absent while the exporter bootstraps)
+	private static <T> List<T> loadListOptional(String resource,
+			TypeReference<List<T>> type) {
+		try (InputStream in = WorldMap.class.getResourceAsStream(resource)) {
+			if (in == null)
+				return List.of();
 			return MAPPER.readValue(in, type);
 		} catch (IOException e) {
 			throw new UncheckedIOException(
@@ -606,6 +654,57 @@ public final class WorldMap {
 			}
 		}
 		return List.of();
+	}
+
+	/**
+	 * The great-circle (haversine) distance in km between two provinces' centroids
+	 * (their {@link Province#latitude()}/{@link Province#longitude()}). Defined for any
+	 * two provinces, adjacent or not — it is the metric the caravan march charges for a
+	 * boundary hop and the admissible A* heuristic the {@link
+	 * com.civstudio.geo.LandRouter} routes with (see {@code docs/caravan-march.md} §6,
+	 * {@code docs/land-routing.md}).
+	 *
+	 * @param a a province id
+	 * @param b a province id
+	 * @return the great-circle distance between their centroids, in km (0 when
+	 *         {@code a == b})
+	 * @throws IllegalArgumentException if either id is not in the map
+	 */
+	public double distanceKm(int a, int b) {
+		Province pa = province(a), pb = province(b);
+		return haversineKm(pa.latitude(), pa.longitude(), pb.latitude(), pb.longitude());
+	}
+
+	// great-circle distance (km) between two lat/long points, in decimal degrees
+	private static double haversineKm(double lat1, double lon1, double lat2, double lon2) {
+		double dLat = Math.toRadians(lat2 - lat1);
+		double dLon = Math.toRadians(lon2 - lon1);
+		double s = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+				+ Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+						* Math.sin(dLon / 2) * Math.sin(dLon / 2);
+		return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1.0, Math.sqrt(s)));
+	}
+
+	/**
+	 * The travel weight in km of the edge from province {@code from} to its neighbour
+	 * {@code to} — the committed {@code /map/edges.json} weight when present, else the
+	 * runtime {@link #distanceKm(int, int) centroid distance} as a fallback. This is the
+	 * seam by which a later exporter can ship border-aware weights without touching the
+	 * router (see {@code docs/land-routing.md}).
+	 *
+	 * @param from a province id
+	 * @param to   a neighbour of {@code from}
+	 * @return the edge weight in km
+	 * @throws IllegalArgumentException if {@code to} is not a neighbour of {@code from}
+	 */
+	public double edgeKm(int from, int to) {
+		List<Integer> nb = province(from).neighbors();
+		int i = nb.indexOf(to);
+		if (i < 0)
+			throw new IllegalArgumentException(
+					"province " + to + " is not a neighbour of " + from);
+		double[] km = edgeKmById.get(from);
+		return km != null ? km[i] : distanceKm(from, to);
 	}
 
 	private static List<Integer> reconstruct(Map<Integer, Integer> cameFrom,

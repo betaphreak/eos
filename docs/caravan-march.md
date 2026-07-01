@@ -1,6 +1,24 @@
 # Design note: caravan march logistics (daylight-bounded movement)
 
-**Status:** design only — not yet implemented
+**Status:** **implemented (first cut — metric march + camp + journal).** The daylight-bounded
+daily march is live: a band computes its daylight `H` from a `SolarClock` at its moving
+position, its column length `L` and net distance `D = max(0, v·(H − H_camp) − L)` from its
+size, spends `D` along a distance-accurate `Route` (Level-1 land routing, `docs/land-routing.md`),
+and pitches a transient-plot **camp** each night. The full **order-of-march** enum + per-stage
+HH:mm schedule is computed and written, together with the day's provinces-traversed and camp,
+to a per-session **caravan march journal** (`CaravanMarch.csv` + `CaravanTimetable.csv`, via
+`io/printer/CaravanMarchPrinter`). Code: `agent/march/` (`March`, `MarchDay`, `MarchConfig`,
+`MarchElement`, `MarchFlavor`, `MarchReport`, `Camp`), the rewired `MigrantCaravan.tick`
+(`tick(LocalDate, Rng)`), and the `SessionRunner`/`CaravanEconomy` wiring; tests in
+`agent/march/MarchTest` and `simulation/MigrantCaravanTest`.
+**Deferred (a later cut):** the §6 **plot corridors** — within a province the band advances
+over *centroid-to-centroid* metric legs, not the real plot-by-plot corridor (Level 2 of
+`docs/land-routing.md`); so the road/terrain speed factor, the river-costs-a-day rule, and
+the plots-crossed list (a coarse `D / KM_PER_PLOT` estimate for now) await the corridor work.
+The camp plot is a transient occupancy for the journal; promoting it into the founding
+`HOLDING` seat on the settle decision is also later.
+
+**Original status:** design only — not yet implemented
 **Date:** 2026-07-01
 **Depends on:** the `Caravan` / `MigrantCaravan` band (`docs/caravan.md`), the **solar
 clock** (`docs/solar.md` — daylight hours per position/date), the **plot model**
@@ -49,7 +67,9 @@ crawls. That coupling is the point.
    lightweight camp — no rank reform, no banks, no markets. It becomes a real **`HOLDING`**
    only if the band decides to **settle permanently** there (that camp plot is then the
    village center — `docs/village-founding.md`).
-4. **Design only** — no code in this cut.
+4. ~~**Design only** — no code in this cut.~~ **Now implemented** (metric march + camp +
+   journal); the plot-corridor within-province spend of §6 is the one deferred piece (see
+   *Status*).
 
 ## The daily march model
 

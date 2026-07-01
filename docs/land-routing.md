@@ -1,6 +1,20 @@
 # Design note: land routing (province route + plot corridors)
 
-**Status:** design only — not yet implemented
+**Status:** **Level 1 implemented; Level 2 (plot corridors) deferred.** The km-weighted
+province graph is live: `WorldMap.distanceKm`/`edgeKm` (great-circle centroid distances,
+with the committed `/map/edges.json` weight table written by
+`geo/export/LandRouteExporter`) and `geo/LandRouter` (A* over passable provinces returning a
+`geo/Route` of provinces + per-hop km) feed the caravan march (`docs/caravan-march.md` §6).
+Tests: `geo/LandRouterTest`. The exporter currently commits *centroid-to-centroid* weights;
+substituting **border-aware** weights (centroid→shared-border-midpoint→centroid, from the
+raster) is a later revision of the exporter only — `LandRouter` reads `edgeKm`, so no runtime
+change. **Level 2 — the per-province plot corridors** (border portals + corridor A* over the
+generated plots, road-aware) — is **not yet built**: the march currently spends its daily km
+over centroid-to-centroid metric legs, not real plot corridors. Roads-as-improvements will
+draw movement modifiers from `data/civ4/Civ4RouteInfos.xml` when the corridor/road-speed cut
+lands.
+
+**Original status:** design only — not yet implemented
 **Date:** 2026-07-01
 **Depends on:** the province graph (`WorldMap` / `docs/geography.md`), the per-province
 **plot generation** already in place (`geo/ProvinceRaster` + `geo/ProvincePlotField` +

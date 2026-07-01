@@ -21,8 +21,12 @@ import lombok.Getter;
  *
  * <p>Extracted from {@link Settlement}, which holds one per colony and refreshes
  * it for the current in-game date at the top of every {@link Settlement#newDay()}.
+ * It is <b>public</b> so a moving {@link com.civstudio.agent.Caravan wandering band}
+ * can compute the daylight length at its own shifting position/date for the
+ * daylight-bounded march (see {@code docs/caravan-march.md}); a band constructs a
+ * fresh clock at its current coordinates each day it needs one.
  */
-class SolarClock {
+public class SolarClock {
 
 	private final double latitude;
 	private final double longitude;
@@ -50,7 +54,7 @@ class SolarClock {
 	@Getter
 	private double daylightHours;
 
-	SolarClock(double latitude, double longitude) {
+	public SolarClock(double latitude, double longitude) {
 		this.latitude = latitude;
 		this.longitude = longitude;
 	}
@@ -60,7 +64,7 @@ class SolarClock {
 	 * occur on the date (e.g. no astronomical twilight at this latitude in high
 	 * summer) is stored as null, and {@link #getDaylightHours()} as NaN.
 	 */
-	void update(LocalDate date) {
+	public void update(LocalDate date) {
 		dawn = computeSolarTime(date, Zenith.ASTRONOMICAL, true);
 		sunrise = computeSolarTime(date, Zenith.OFFICIAL, true);
 		sunset = computeSolarTime(date, Zenith.OFFICIAL, false);

@@ -98,17 +98,24 @@ public class CaravanEconomy {
 		Bank musterBank = new Bank(BankConfig.DEFAULT, muster);
 		MigrantCaravan[] caravans = new MigrantCaravan[BANDS.length];
 		for (int i = 0; i < BANDS.length; i++)
-			caravans[i] = musterBand(BANDS[i], starts.get(i), musterBank, muster, map);
+			caravans[i] = musterBand(BANDS[i], starts.get(i), musterBank, muster);
 
 		// 2) each band wanders to a viable site, re-founds a colony there, and runs
-		// until it dissolves back into a Caravan; the run ends once all three reform
+		// until it dissolves back into a Caravan; the run ends once all three reform.
+		// The march journal records each band's daily daylight-bounded march (its HH:mm
+		// order of march and the provinces/camp it crosses — see docs/caravan-march.md)
+		com.civstudio.io.printer.CaravanMarchPrinter journal =
+				new com.civstudio.io.printer.CaravanMarchPrinter("output/" + session.getSeed());
+		for (MigrantCaravan c : caravans)
+			c.setCampingEnabled(true);
 		SimulationHarness first = null;
 		for (int i = 0; i < BANDS.length; i++) {
-			wander(caravans[i], session.getBandRng());
+			wander(caravans[i], cfg.startDate(), session.getBandRng(), journal);
 			SimulationHarness h = settleAndRun(session, cfg, BANDS[i], caravans[i]);
 			if (first == null)
 				first = h;
 		}
+		journal.close();
 		System.out.println("All " + session.getCaravans().size()
 				+ " bands have reformed as Caravans.");
 		return first;
@@ -146,7 +153,7 @@ public class CaravanEconomy {
 	// build one Caravan with the band's own hoard, larder and following, anchored at its
 	// starting province on the graph
 	private static MigrantCaravan musterBand(Band b, int startProvinceId, Bank bank,
-			Settlement muster, WorldMap map) {
+			Settlement muster) {
 		Retinue following = new Retinue(FOLLOWERS, bank, muster);
 		// the int constructor sized the larder to FOLLOWERS·BUFFER_DAYS; set it to the
 		// band's own food (lean/middling/ample)
@@ -165,15 +172,18 @@ public class CaravanEconomy {
 				raw.skills(), raw.race()),
 				raw.getBirthDate());
 		return new MigrantCaravan(leader, following, CurrencyType.GOLD.toCopper(b.gold()),
-				startProvinceId, map);
+				startProvinceId, muster.getSession());
 	}
 
 	// wander the band over the province graph until it reaches a viable site and marks
 	// itself ready to settle (one hop per day, eating its carried larder)
-	private static void wander(MigrantCaravan band, Rng rng) {
+	private static void wander(MigrantCaravan band, java.time.LocalDate date, Rng rng,
+			com.civstudio.io.printer.CaravanMarchPrinter journal) {
 		int days = 0;
 		while (!band.isReadyToSettle() && days < MAX_WANDER_DAYS) {
-			band.tick(rng);
+			band.tick(date.plusDays(days), rng);
+			if (band.getLastReport() != null)
+				journal.record(band.getLastReport());
 			days++;
 		}
 		if (!band.isReadyToSettle())

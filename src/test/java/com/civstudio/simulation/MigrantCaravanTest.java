@@ -3,9 +3,11 @@ package com.civstudio.simulation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.MigrantCaravan;
 import com.civstudio.agent.Retinue;
+import com.civstudio.agent.march.MarchReport;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.BankConfig;
 import com.civstudio.geo.Province;
@@ -46,8 +49,7 @@ class MigrantCaravanTest {
 		Bank bank = new Bank(BankConfig.DEFAULT, muster);
 		Retinue following = new Retinue(followers, bank, muster);
 		Member leader = following.promoteHighestSkilled();
-		return new MigrantCaravan(leader, following, 1000, provinceId,
-				session.getWorldMap());
+		return new MigrantCaravan(leader, following, 1000, provinceId, session);
 	}
 
 	@Test
@@ -92,7 +94,7 @@ class MigrantCaravanTest {
 
 		int days = 0;
 		while (!band.isReadyToSettle() && days < 2000) {
-			band.tick(rng);
+			band.tick(SimulationConfig.DEFAULT.startDate().plusDays(days), rng);
 			days++;
 		}
 
@@ -104,6 +106,34 @@ class MigrantCaravanTest {
 		assertTrue(chosen.isSettleable(), "the chosen site is settleable land");
 		assertTrue(chosen.plots() >= Settlement.MIN_FOUNDING_PLOTS,
 				"the chosen site has enough plots to found into");
+	}
+
+	@Test
+	void marchReportCarriesTheDailyTimetableTraversalAndCamp() {
+		// a small band in high summer marches; each day it publishes a print-ready report
+		// (the daylight-bounded march) with an HH:mm order-of-march, the provinces it
+		// crosses, and its nightly camp — see docs/caravan-march.md
+		GameSession session = new GameSession(7);
+		MigrantCaravan band = bandAt(session, WITHACEN, 50);
+		band.setCampingEnabled(true);
+		Rng rng = session.getBandRng();
+		LocalDate summer = LocalDate.of(1445, 6, 21);
+
+		MarchReport report = null;
+		for (int i = 0; i < 30 && !band.isReadyToSettle(); i++) {
+			band.tick(summer.plusDays(i), rng);
+			if (band.getLastReport() != null && band.getLastReport().day().marches())
+				report = band.getLastReport();
+		}
+
+		assertNotNull(report, "a marching day produced a report");
+		assertNotNull(report.day().firstDepart(), "the day has a first departure time");
+		assertFalse(report.day().stages().isEmpty(),
+				"the report carries the HH:mm order-of-march timetable");
+		assertTrue(report.provincesTraversed().contains("515"),
+				"the traversal lists the provinces crossed: " + report.provincesTraversed());
+		assertNotEquals("-", report.camp(),
+				"a camping band records the plot it camps on: " + report.camp());
 	}
 
 	@Test

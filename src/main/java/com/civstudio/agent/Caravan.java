@@ -1,8 +1,10 @@
 package com.civstudio.agent;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.civstudio.geo.WorldMap;
+import com.civstudio.settlement.GameSession;
 import com.civstudio.util.Rng;
 import lombok.Getter;
 
@@ -14,7 +16,7 @@ import lombok.Getter;
  * <b>position</b> on the province graph.
  * <p>
  * The base carries only the universal band state — leader, hoard, position, and the
- * daily {@link #tick(Rng)}. Purpose-specific payload lives on the concrete
+ * daily {@link #tick(LocalDate, Rng)}. Purpose-specific payload lives on the concrete
  * subclasses: {@link MigrantCaravan} (the dissolution-born band that carries a
  * following and re-founds a colony — see {@code docs/caravan.md}); a settlement-
  * sponsored {@code TradeCaravan} is the planned follow-on (see
@@ -55,6 +57,12 @@ public abstract class Caravan {
 	// band's latitude/longitude are derived from worldMap.province(provinceId).
 	private final WorldMap worldMap;
 
+	// the session the band belongs to (null for an off-graph band); the home of the
+	// per-province plot pools the nightly camp claims a plot from (see the march,
+	// docs/caravan-march.md). Kept apart from worldMap so an off-graph band still has no
+	// session but derives no camp.
+	private final GameSession session;
+
 	// the band's geographic position in decimal degrees (north / east positive),
 	// mirroring a Settlement's: derived from its province when on-graph, or the raw
 	// coordinates it was created at when off-graph. Mutable because a caravan moves.
@@ -70,13 +78,16 @@ public abstract class Caravan {
 	 * @param leader     the band's leader (its Captain)
 	 * @param hoard      the band's carried money, in copper, held outside any bank
 	 * @param provinceId the band's starting node on the province graph
-	 * @param worldMap   the province graph the band moves on
+	 * @param session    the session the band belongs to (its {@link
+	 *                   GameSession#getWorldMap() world map} is the graph the band moves
+	 *                   on; its per-province plot pools host the nightly camp)
 	 */
-	protected Caravan(Member leader, double hoard, int provinceId, WorldMap worldMap) {
+	protected Caravan(Member leader, double hoard, int provinceId, GameSession session) {
 		this.leader = leader;
 		this.hoard = hoard;
 		this.provinceId = provinceId;
-		this.worldMap = worldMap;
+		this.session = session;
+		this.worldMap = session.getWorldMap();
 		this.latitude = worldMap.province(provinceId).latitude();
 		this.longitude = worldMap.province(provinceId).longitude();
 	}
@@ -96,6 +107,7 @@ public abstract class Caravan {
 		this.hoard = hoard;
 		this.provinceId = OFF_GRAPH;
 		this.worldMap = null;
+		this.session = null;
 		this.latitude = latitude;
 		this.longitude = longitude;
 	}
@@ -158,12 +170,45 @@ public abstract class Caravan {
 		return worldMap;
 	}
 
+	// the session the band belongs to (null when off-graph); for subclasses that need
+	// its per-province plot pools (the nightly camp) during their tick.
+	protected GameSession session() {
+		return session;
+	}
+
+	/**
+	 * The last day's print-ready {@link com.civstudio.agent.march.MarchReport march
+	 * report}, or {@code null} if the band has not marched (the base band does not march;
+	 * a {@link MigrantCaravan} overrides this). Read by the session runner to fill the
+	 * caravan march journal.
+	 *
+	 * @return the last day's march report, or {@code null}
+	 */
+	public com.civstudio.agent.march.MarchReport getLastReport() {
+		return null;
+	}
+
+	/**
+	 * Turn the band's nightly camp on or off (a no-op for a band that does not camp; a
+	 * {@link MigrantCaravan} overrides it). Camping generates the province plot field, so
+	 * the reporting drivers enable it to fill the journal's camp column.
+	 *
+	 * @param enabled whether the band pitches a nightly camp
+	 */
+	public void setCampingEnabled(boolean enabled) {
+		// no-op for the base band
+	}
+
 	/**
 	 * Advance the band by one day: consume its provisions and move and/or act. Driven
 	 * once per lockstep day by the session runner (see {@code docs/caravan-trade.md}).
+	 * The current in-game {@code date} is threaded in because the daylight-bounded march
+	 * reads the daylight length at the band's moving position for that date (see {@code
+	 * docs/caravan-march.md}).
 	 *
-	 * @param rng the session-level band RNG (distinct from any colony's economic
-	 *            stream), for deterministic movement/decisions
+	 * @param date the current in-game date (drives the daily daylight budget)
+	 * @param rng  the session-level band RNG (distinct from any colony's economic
+	 *             stream), for deterministic movement/decisions
 	 */
-	public abstract void tick(Rng rng);
+	public abstract void tick(LocalDate date, Rng rng);
 }

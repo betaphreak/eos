@@ -1,5 +1,6 @@
 package com.civstudio.simulation;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.concurrent.Phaser;
 
 import com.civstudio.agent.Caravan;
 import com.civstudio.io.CsvMerger;
+import com.civstudio.io.printer.CaravanMarchPrinter;
 import com.civstudio.mortality.Demography;
 import com.civstudio.name.NameRegistry;
 import com.civstudio.io.SimLog;
@@ -62,6 +64,16 @@ public final class SessionRunner {
 		List<Settlement> colonies = new ArrayList<>(harnesses.size());
 		for (SimulationHarness h : harnesses)
 			colonies.add(h.getColony());
+		// if the session already carries wandering bands, open the caravan march journal
+		// (scoped to output/<seed>/, like the colonies' CSVs) and enable their nightly
+		// camps — the journal is written from the single-threaded day-barrier below
+		CaravanMarchPrinter journal = null;
+		if (session != null && !session.getCaravans().isEmpty()) {
+			journal = new CaravanMarchPrinter("output/" + session.getSeed());
+			for (Caravan band : session.getCaravans())
+				band.setCampingEnabled(true);
+		}
+		final CaravanMarchPrinter marchJournal = journal;
 		// one party for this (coordinating) thread, so the phaser stays alive while
 		// we register and start the colony threads. The day-barrier also drives the
 		// session's bands: onAdvance runs once, single-threaded, each time every
@@ -70,7 +82,7 @@ public final class SessionRunner {
 		Phaser barrier = new Phaser(1) {
 			@Override
 			protected boolean onAdvance(int phase, int registeredParties) {
-				tickBands(session, colonies, failures);
+				tickBands(session, colonies, failures, marchJournal);
 				return registeredParties == 0; // terminate exactly as the default would
 			}
 		};
@@ -96,6 +108,9 @@ public final class SessionRunner {
 			}
 		}
 
+		if (marchJournal != null)
+			marchJournal.close();
+
 		if (!failures.isEmpty()) {
 			Throwable first = failures.get(0);
 			throw new RuntimeException("a colony thread failed: " + first.getMessage(),
@@ -120,7 +135,7 @@ public final class SessionRunner {
 	// nothing when there are no bands, so band-free runs are byte-identical; a band that
 	// misbehaves is recorded as a failure rather than left to corrupt the barrier.
 	private static void tickBands(GameSession session, List<Settlement> colonies,
-			List<Throwable> failures) {
+			List<Throwable> failures, CaravanMarchPrinter journal) {
 		if (session == null)
 			return;
 		List<Caravan> bands = session.getCaravans();
@@ -129,15 +144,22 @@ public final class SessionRunner {
 		// date the band records from the furthest-advanced colony (in lockstep they
 		// share the day, but one that died early has a frozen date), and label them
 		// (realm) rather than that colony's name — the bands belong to no one colony
-		Settlement dateSource = colonies.isEmpty() ? null : colonies.get(0);
+		Settlement furthest = colonies.isEmpty() ? null : colonies.get(0);
 		for (Settlement c : colonies)
-			if (dateSource == null || c.getTimeStep() > dateSource.getTimeStep())
-				dateSource = c;
+			if (furthest == null || c.getTimeStep() > furthest.getTimeStep())
+				furthest = c;
+		final Settlement dateSource = furthest;
 		SimLog.asRealm(dateSource, () -> {
 			try {
 				Rng rng = session.getBandRng();
-				for (Caravan band : bands)
-					band.tick(rng);
+				// the bands share the lockstep day; date them from the furthest-advanced
+				// colony so the daylight-bounded march reads the right in-game date
+				LocalDate date = dateSource == null ? null : dateSource.getDate();
+				for (Caravan band : bands) {
+					band.tick(date, rng);
+					if (journal != null && band.getLastReport() != null)
+						journal.record(band.getLastReport());
+				}
 			} catch (Throwable t) {
 				failures.add(t);
 			}
