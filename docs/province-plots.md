@@ -21,6 +21,17 @@ pixel = 1 plot, climate→terrain fill); that file-export framing is **dropped**
 the silhouette and the terrain fill are kept, but they produce **in-sim `Plot`s**,
 not a `.CivBeyondSwordWBSave`.
 
+> **Update (persisted, seed-independent field).** A province's plot field is now
+> generated **seed-independently** (off `RngSeed.forProvinceCanonical` — province id
+> only, not the run seed) and **persisted** to `src/main/resources/map/provinces/<id>.json.gz`
+> (gzipped JSON, ~25× smaller than raw) by `settlement/ProvincePlotStore`. The first run to
+> need a province generates and writes it; every later run (any seed) **loads the committed
+> canonical field** instead of regenerating — a province's geography is a property of the
+> map, not of a run. This eliminates the repeated generation cost (notably for the caravan
+> march, which crosses many provinces) at the cost of making colony farm terrain fixed per
+> province across seeds (the aggregate food calibration is preserved — `PlotYieldTest` mean
+> food factor ≈ 1.0 still holds). The per-seed determinism note below is superseded by this.
+
 ## Motivation
 
 Today a `Settlement` grows **its own** `List<Plot>` one plot at a time, capped at

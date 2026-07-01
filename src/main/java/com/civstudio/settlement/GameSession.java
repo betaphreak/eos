@@ -255,8 +255,12 @@ public class GameSession {
 			try {
 				if (provinceRaster == null)
 					provinceRaster = ProvinceRaster.load();
-				Rng terrainRng = rngSeed.forProvince(RngSeed.Stream.TERRAIN, id);
-				return ProvincePlotPool.generate(province, terrainRegistry, provinceRaster, terrainRng);
+				// seed-independent terrain stream: the field is a property of the map, so
+				// it is generated once, persisted (map/provinces/<id>.json), and reused by
+				// every run regardless of seed (see ProvincePlotStore / docs/province-plots.md)
+				Rng terrainRng = rngSeed.forProvinceCanonical(RngSeed.Stream.TERRAIN, id);
+				return ProvincePlotPool.loadOrGenerate(province, terrainRegistry,
+						provinceRaster, terrainRng);
 			} catch (IOException e) {
 				throw new UncheckedIOException("failed to build plot pool for province " + id, e);
 			}

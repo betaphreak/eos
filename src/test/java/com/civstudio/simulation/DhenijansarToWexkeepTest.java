@@ -2,7 +2,6 @@ package com.civstudio.simulation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -58,7 +57,7 @@ class DhenijansarToWexkeepTest {
 	}
 
 	@Test
-	void aDirectedBandMarchesTheRouteAndJournalsBonuses() throws Exception {
+	void aDirectedBandMarchesAllTheWayToWexkeep() throws Exception {
 		long seed = 90210;
 		GameSession session = new GameSession(seed);
 		// a lean band mustered on a throwaway colony, then directed to Wexkeep
@@ -68,18 +67,23 @@ class DhenijansarToWexkeepTest {
 				cfg.meanSkillFemale(), 0, 0);
 		Bank bank = new Bank(BankConfig.DEFAULT, muster);
 		Retinue following = new Retinue(50, bank, muster);
+		// a deep larder so the multi-year northward journey (with winter halts, which
+		// still eat) never starves before it arrives — the test is about reaching Wexkeep
+		following.getGood("Necessity").increase(500_000);
 		Member leader = following.promoteHighestSkilled();
 		MigrantCaravan band = new MigrantCaravan(leader, following, 100_000, DHENIJANSAR, session);
 		band.setCampingEnabled(true);
 		band.setDestination(WEXKEEP);
 
-		// march it for a couple of summer months, journalling each marched day
+		// march until it arrives, journalling each marched day
 		CaravanMarchPrinter journal = new CaravanMarchPrinter("output/" + seed);
 		Rng rng = session.getBandRng();
 		LocalDate start = LocalDate.of(1445, 6, 1);
 		Set<Integer> visited = new HashSet<>();
 		boolean sawBonus = false;
-		for (int day = 0; day < 60 && !band.isReadyToSettle(); day++) {
+		int maxDays = 365 * 25;
+		int day = 0;
+		for (; day < maxDays && !band.isReadyToSettle(); day++) {
 			MarchReport report = band.tick(start.plusDays(day), rng);
 			visited.add(band.getProvinceId());
 			if (report != null) {
@@ -90,18 +94,21 @@ class DhenijansarToWexkeepTest {
 		}
 		journal.close();
 
-		// it left Dhenijansar and made real progress along the route toward Wexkeep
-		assertNotEquals(DHENIJANSAR, band.getProvinceId(), "the band left its origin");
-		assertTrue(visited.size() >= 3,
-				"the band crossed several provinces toward Wexkeep (visited=" + visited.size() + ")");
+		// it reached Wexkeep, having crossed the whole route
+		assertTrue(band.isReadyToSettle(),
+				"the band reached Wexkeep within 25 years (stopped on day " + day
+						+ " at province " + band.getProvinceId() + ")");
+		assertEquals(WEXKEEP, band.getProvinceId(), "the band arrived at Wexkeep");
+		assertTrue(visited.size() >= 20,
+				"it crossed the whole continent (visited=" + visited.size() + " provinces)");
+		System.out.println("Dhenijansar->Wexkeep: arrived on day " + day + " (~"
+				+ (day / 365) + "y), visited " + visited.size() + " provinces, saw bonus="
+				+ sawBonus);
 		// the journal was written with the Bonuses column
 		File marchFile = new File("output/" + seed + "/by-caravan/"
 				+ leader.fullName().trim() + "-CaravanMarch.csv");
 		assertTrue(marchFile.exists(), "the march journal was written: " + marchFile);
 		String header = Files.readAllLines(marchFile.toPath()).get(0);
 		assertTrue(header.contains("Bonuses"), "the journal reports encountered bonuses");
-		// bonuses are sparse, so their presence is logged (likely true over many
-		// provinces) but not hard-asserted, to keep the test robust across seeds
-		System.out.println("Dhenijansar->Wexkeep: encountered a notable bonus = " + sawBonus);
 	}
 }

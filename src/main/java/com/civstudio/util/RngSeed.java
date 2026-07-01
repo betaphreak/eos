@@ -114,6 +114,22 @@ public final class RngSeed {
 	}
 
 	/**
+	 * A <b>seed-independent</b> per-province stream — decorrelated by the province id and
+	 * stream salt but <em>not</em> the session seed, so every run of every seed generates
+	 * the <b>same canonical field</b> for a province. This is what lets the province plot
+	 * field be persisted once and reused by all runs (see {@code
+	 * ProvincePlotStore} / {@code docs/province-plots.md}); a province's geography is a
+	 * property of the map, not of a particular run.
+	 *
+	 * @param stream     the stream kind (e.g. {@link Stream#TERRAIN})
+	 * @param provinceId the province's id
+	 * @return a fresh generator seeded from the province id and stream alone
+	 */
+	public Rng forProvinceCanonical(Stream stream, int provinceId) {
+		return new Rng(stream.salt() ^ (PROVINCE_SALT * provinceId));
+	}
+
+	/**
 	 * A <b>session-level</b> stream — one shared across the session, not
 	 * per-colony (e.g. {@link Stream#BAND}, the wandering bands).
 	 *

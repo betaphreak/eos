@@ -88,6 +88,34 @@ public final class ProvincePlotPool {
 		return new ProvincePlotPool(province, plots);
 	}
 
+	/**
+	 * Build a province's pool from its <b>persisted</b> plot field when one exists (see
+	 * {@link ProvincePlotStore}), generating and persisting it on first use otherwise. This
+	 * is the path a live session uses: the (expensive) per-tile generation is paid once and
+	 * the canonical field reused by every run. The {@code rng} must be the
+	 * {@linkplain com.civstudio.util.RngSeed#forProvinceCanonical seed-independent} terrain
+	 * stream, so a regenerated field always matches the persisted one.
+	 *
+	 * @param province the province to build the pool for
+	 * @param registry the curated terrain/feature/bonus definitions
+	 * @param raster   the raster reader (supplies the province mask, only if generating)
+	 * @param rng      the seed-independent per-province terrain stream
+	 * @return the province's claimable plot pool
+	 */
+	public static ProvincePlotPool loadOrGenerate(Province province, TerrainRegistry registry,
+			ProvinceRaster raster, Rng rng) throws IOException {
+		List<Plot> plots = ProvincePlotStore.load(province.id(), registry);
+		if (plots == null) {
+			ProvincePlotField field = ProvincePlotField.generate(province, registry, raster, rng);
+			plots = new ArrayList<>(field.size());
+			for (ProvincePlot pp : field.plots())
+				plots.add(new Plot(pp.x(), pp.y(), pp.river(), pp.terrain(), pp.plotType(),
+						pp.feature(), pp.bonus()));
+			ProvincePlotStore.save(province.id(), plots);
+		}
+		return new ProvincePlotPool(province, plots);
+	}
+
 	/** The province this pool belongs to. */
 	public Province province() {
 		return province;
