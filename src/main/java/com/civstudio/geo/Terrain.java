@@ -25,7 +25,8 @@ public record Terrain(
 		int[] yields,
 		boolean bFound,
 		int buildModifier,
-		int healthPercent) {
+		int healthPercent,
+		int movement) {
 
 	/** Normalize {@code yields} to a defensive length-3 copy (missing → 0). */
 	public Terrain {

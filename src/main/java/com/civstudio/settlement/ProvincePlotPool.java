@@ -379,14 +379,17 @@ public final class ProvincePlotPool {
 			out.add(n);
 	}
 
-	// the cost of stepping onto a plot: base 1, rougher for a hill or an uncleared wild
-	// feature (a later cut lowers it for a ROAD-improved plot, so corridors hug roads)
+	// the Civ4 movement cost to step onto a plot: a feature's own <iMovement> when it has
+	// one (it replaces the terrain's, as in Civ4), else the terrain's <iMovement>, plus the
+	// hill penalty (+1). Peaks are impassable and never enter the corridor graph. (A later
+	// cut lowers it for a ROAD-improved plot, so corridors hug roads.)
+	private static final int HILL_MOVE_PENALTY = 1;
+
 	private static double moveCost(Plot p) {
-		double c = 1.0;
+		int feature = p.feature() == null ? 0 : p.feature().movement();
+		double c = feature > 0 ? feature : p.terrain().movement();
 		if (p.plotType() == PlotType.HILL)
-			c += 0.5;
-		if (p.isWild())
-			c += 0.5;
+			c += HILL_MOVE_PENALTY;
 		return c;
 	}
 

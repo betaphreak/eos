@@ -23,6 +23,9 @@ import java.util.List;
  *                          {@code <TerrainBooleans>} list)
  * @param healthPercent     stored but dormant (future health axis)
  * @param growth            stored but dormant (future feature-spread)
+ * @param movement          the Civ4 {@code <iMovement>} — the movement cost to enter a
+ *                          plot carrying this feature (0 = no feature penalty, the host
+ *                          terrain's cost applies); read by the caravan corridor
  */
 public record Feature(
 		String type,
@@ -32,7 +35,8 @@ public record Feature(
 		boolean requiresRiver,
 		List<String> validTerrains,
 		int healthPercent,
-		int growth) {
+		int growth,
+		int movement) {
 
 	/** Normalize yields to length 3 and copy the valid-terrains list. */
 	public Feature {

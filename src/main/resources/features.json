@@ -6,7 +6,8 @@
   "requiresRiver" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MUDDY", "TERRAIN_LUSH", "TERRAIN_MARSH" ],
   "healthPercent" : -20,
-  "growth" : 10
+  "growth" : 10,
+  "movement" : 2
 }, {
   "type" : "FEATURE_OASIS",
   "yieldChanges" : [ 3, 0, 2 ],
@@ -15,7 +16,8 @@
   "requiresRiver" : false,
   "validTerrains" : [ "TERRAIN_DESERT", "TERRAIN_DUNES", "TERRAIN_SCRUB" ],
   "healthPercent" : 0,
-  "growth" : 0
+  "growth" : 0,
+  "movement" : 0
 }, {
   "type" : "FEATURE_FLOOD_PLAINS",
   "yieldChanges" : [ 2, 0, 0 ],
@@ -24,7 +26,8 @@
   "requiresRiver" : true,
   "validTerrains" : [ "TERRAIN_DESERT", "TERRAIN_DUNES", "TERRAIN_MUDDY", "TERRAIN_PLAINS", "TERRAIN_SCRUB" ],
   "healthPercent" : -40,
-  "growth" : 0
+  "growth" : 0,
+  "movement" : 0
 }, {
   "type" : "FEATURE_FOREST",
   "yieldChanges" : [ 0, 1, 0 ],
@@ -33,7 +36,8 @@
   "requiresRiver" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_TAIGA", "TERRAIN_LUSH", "TERRAIN_MUDDY" ],
   "healthPercent" : 25,
-  "growth" : 0
+  "growth" : 0,
+  "movement" : 1
 }, {
   "type" : "FEATURE_FOREST_ANCIENT",
   "yieldChanges" : [ 1, 2, 0 ],
@@ -42,7 +46,8 @@
   "requiresRiver" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_TAIGA", "TERRAIN_LUSH", "TERRAIN_MUDDY" ],
   "healthPercent" : 50,
-  "growth" : 0
+  "growth" : 0,
+  "movement" : 2
 }, {
   "type" : "FEATURE_SWAMP",
   "yieldChanges" : [ -1, 0, 0 ],
@@ -51,7 +56,8 @@
   "requiresRiver" : false,
   "validTerrains" : [ "TERRAIN_MARSH", "TERRAIN_MUDDY", "TERRAIN_LUSH", "TERRAIN_GRASSLAND" ],
   "healthPercent" : -50,
-  "growth" : 0
+  "growth" : 0,
+  "movement" : 3
 }, {
   "type" : "FEATURE_BAMBOO",
   "yieldChanges" : [ 0, 2, 0 ],
@@ -60,7 +66,8 @@
   "requiresRiver" : false,
   "validTerrains" : [ "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_ROCKY", "TERRAIN_MARSH" ],
   "healthPercent" : 0,
-  "growth" : 20
+  "growth" : 20,
+  "movement" : 1
 }, {
   "type" : "FEATURE_CACTUS",
   "yieldChanges" : [ 1, 0, 0 ],
@@ -69,7 +76,8 @@
   "requiresRiver" : false,
   "validTerrains" : [ "TERRAIN_DESERT", "TERRAIN_SCRUB" ],
   "healthPercent" : 0,
-  "growth" : 10
+  "growth" : 10,
+  "movement" : 0
 }, {
   "type" : "FEATURE_SAVANNA",
   "yieldChanges" : [ 0, 1, 0 ],
@@ -78,7 +86,8 @@
   "requiresRiver" : false,
   "validTerrains" : [ "TERRAIN_DESERT", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_ROCKY", "TERRAIN_SCRUB" ],
   "healthPercent" : 25,
-  "growth" : 15
+  "growth" : 15,
+  "movement" : 0
 }, {
   "type" : "FEATURE_VERY_TALL_GRASS",
   "yieldChanges" : [ 1, 0, 0 ],
@@ -87,5 +96,6 @@
   "requiresRiver" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_MARSH", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_ROCKY", "TERRAIN_SCRUB" ],
   "healthPercent" : 10,
-  "growth" : 20
+  "growth" : 20,
+  "movement" : 0
 } ]

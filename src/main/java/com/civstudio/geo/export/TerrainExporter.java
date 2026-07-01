@@ -56,7 +56,8 @@ public final class TerrainExporter {
 					Civ4Xml.yields(info, "Yields", "iYield"),
 					Civ4Xml.boolVal(info, "bFound"),
 					Civ4Xml.intVal(info, "iBuildModifier", 0),
-					Civ4Xml.intVal(info, "iHealthPercent", 0)));
+					Civ4Xml.intVal(info, "iHealthPercent", 0),
+					Civ4Xml.intVal(info, "iMovement", 1)));
 			seen.add(type);
 		}
 		Set<String> missing = new LinkedHashSet<>(KEEP);

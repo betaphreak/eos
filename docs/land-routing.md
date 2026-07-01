@@ -5,7 +5,12 @@ Level 2 is now built: border **portals** are precomputed by `geo/export/PortalEx
 into the committed `/map/portals.json` and exposed by `WorldMap.portal(from, to)`; the
 per-province **plot corridor** is an A* over the province's shared plot field
 (`settlement/ProvincePlotPool.corridor` → `settlement/PlotCorridor`, 4-neighbour raster
-adjacency, `PEAK` impassable, cached per entry/exit, road-ready via the per-plot `moveCost`).
+adjacency, `PEAK` impassable, cached per entry/exit). The per-plot `moveCost` is the **Civ4
+`iMovement`** cost — a feature's own movement cost when it has one (it replaces the
+terrain's, as in Civ4), else the terrain's, plus a hill penalty — exported onto
+`Terrain`/`Feature` from the Civ4 XML (`TerrainExporter`/`FeatureExporter`), so desert,
+dunes, swamp, jungle and hills genuinely slow the march; a `ROAD` improvement lowering it is
+the road-ready hook.
 The caravan consumes it: it **spends its daily distance `D` over the corridor plot costs**
 (`KM_PER_PLOT × corridor.totalCost` per province) plus the boundary hop, so rough/wild ground
 and larger provinces are slower (`MigrantCaravan.computeLeg`); **crossing a river costs a full
