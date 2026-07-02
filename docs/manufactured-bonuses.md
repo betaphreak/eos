@@ -165,13 +165,19 @@ caravan march work:
   aluminium, natural gas). The gate lives in `MigrantCaravan.identifies(Bonus)` and already
   filters the march journal's reported bonuses and what the band may forage.
 
-- **Foraging (implemented — food only; the goods model generalizes it).** As it marches, a
-  band gathers **food-class raw bonuses** (CROP/LIVESTOCK/SEAFOOD → `NECESSITY`, via
+- **Foraging and gathering (implemented — the per-good inventory is real).** As it marches,
+  a band forages **food-class raw bonuses** (CROP/LIVESTOCK/SEAFOOD → `NECESSITY`, via
   `BonusClass.resourceType()`) off its corridor into its carried **larder**, gated on surplus
-  daylight and on the band identifying the resource. This is the *food* slice of a general
-  mechanism: once goods are real, quantitative eos goods (this note), a band can carry a
-  **per-good inventory** and forage/gather other raw bonuses (production, luxury) too — the
-  larder is just the `NECESSITY` special case of that inventory.
+  daylight and on the band identifying the resource; with the surplus hours foraging leaves
+  over it then **gathers every other identified raw bonus** (ores, gems, luxuries,
+  production materials…) into a **per-good `Cargo` inventory** (`good/Cargo.java`, carried on
+  the `Caravan` base next to the money hoard) — **whole units** keyed by bonus type (discrete
+  goods, no fractional elephants; part-unit gathering accrues as progress on the band),
+  capped by a head-count-scaled **carrying capacity** (`MarchConfig.cargoCapacityPerHead`),
+  journalled as the march's `Gathered`/`Cargo`/`Carrying` columns. The larder remains the `NECESSITY`
+  special case (kept separate because it is eaten daily); the cargo is the goods side a
+  trade caravan will trade across (`Cargo.draw` is the selling seam), awaiting the per-good
+  markets (M2) as its venue.
 
 - **Trade (designed — `TradeCaravan`, `docs/caravan-trade.md` Phase B).** The **per-good
   markets** (M2) are the venue where a settlement-sponsored trade caravan **buys and sells**

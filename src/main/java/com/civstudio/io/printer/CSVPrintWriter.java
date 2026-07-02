@@ -59,7 +59,9 @@ public class CSVPrintWriter {
 	 * Render a single cell value. Floating-point numbers (<tt>Double</tt> /
 	 * <tt>Float</tt>) are formatted to two decimal places to keep the CSV
 	 * readable; everything else (dates, ints, strings, values a caller has
-	 * already formatted into a <tt>String</tt>) is left untouched.
+	 * already formatted into a <tt>String</tt>) is left untouched. (A
+	 * list-valued label cell separates its items with {@code "; "} — never a
+	 * comma, which is the column delimiter.)
 	 *
 	 * @param arg
 	 *            the value to render

@@ -365,7 +365,7 @@ public final class Plot {
 	 * @throws IllegalStateException
 	 *             if the plot is already occupied
 	 */
-	public void occupy(PlotOccupant occupant) {
+	public synchronized void occupy(PlotOccupant occupant) {
 		if (occupant == null)
 			throw new IllegalArgumentException("occupant must be non-null");
 		if (this.occupant != null)
@@ -374,8 +374,27 @@ public final class Plot {
 		this.occupant = occupant;
 	}
 
+	/**
+	 * Atomically place <tt>occupant</tt> if the plot is vacant — the thread-safe
+	 * check-then-act for transient claims that bypass the pool's synchronized claim
+	 * path (a caravan's nightly camp). Two bands camping in the same province the
+	 * same night thus cannot double-occupy a plot; the loser simply tries the next.
+	 *
+	 * @param occupant
+	 *            the occupant to place (non-null)
+	 * @return whether the plot was vacant and is now occupied by {@code occupant}
+	 */
+	public synchronized boolean tryOccupy(PlotOccupant occupant) {
+		if (occupant == null)
+			throw new IllegalArgumentException("occupant must be non-null");
+		if (this.occupant != null)
+			return false;
+		this.occupant = occupant;
+		return true;
+	}
+
 	/** Free the plot, removing any occupant. */
-	public void vacate() {
+	public synchronized void vacate() {
 		occupant = null;
 	}
 

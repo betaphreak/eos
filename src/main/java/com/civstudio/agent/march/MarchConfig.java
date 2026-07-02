@@ -34,6 +34,14 @@ import lombok.Builder;
  * @param forageCapFraction the daily forage ceiling as a fraction of the band's daily
  *                          ration — kept &lt; 1 so foraging only slows the larder's decline
  *                          (the band stays a decaying asset; see {@code docs/caravan.md})
+ * @param gatherRatePerHour non-food goods (ore, gems, luxuries…) a single gatherer collects
+ *                          into the band's cargo per surplus-daylight hour left after food
+ *                          foraging, when the corridor crossed such a resource — slower than
+ *                          foraging, since digging ore or picking spices yields less per hour
+ *                          than gathering food (a placeholder)
+ * @param cargoCapacityPerHead the cargo units one band member can carry — the band's total
+ *                          carrying capacity is this × its head-count; a full band gathers
+ *                          nothing more (a placeholder)
  */
 @Builder(toBuilder = true)
 public record MarchConfig(
@@ -51,7 +59,9 @@ public record MarchConfig(
 		double roadSpeedFactor,
 		double maxDailyKm,
 		double forageRatePerHour,
-		double forageCapFraction) {
+		double forageCapFraction,
+		double gatherRatePerHour,
+		double cargoCapacityPerHead) {
 
 	/** The canonical placeholder constants (see {@code docs/caravan-march.md}). */
 	public static final MarchConfig DEFAULT = new MarchConfig(
@@ -69,7 +79,9 @@ public record MarchConfig(
 			1.0,    // roadSpeedFactor (hook)
 			30.0,   // maxDailyKm (practical daily march ceiling)
 			0.03,   // forageRatePerHour (food per forager per surplus hour)
-			0.8);   // forageCapFraction (< 1: foraging only slows the larder's decline)
+			0.8,    // forageCapFraction (< 1: foraging only slows the larder's decline)
+			0.01,   // gatherRatePerHour (goods per gatherer per surplus hour left)
+			10.0);  // cargoCapacityPerHead (cargo units one member can carry)
 
 	/**
 	 * The march speed in km/h — pace length &times; cadence, converted from m/min. With

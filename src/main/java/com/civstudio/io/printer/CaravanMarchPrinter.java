@@ -16,12 +16,14 @@ import com.civstudio.io.sink.CsvRowSink;
  * so has no colony to register a printer with.
  * <p>
  * Each band gets its <b>own</b> file under a <b>{@code by-caravan/}</b> subfolder of the
- * session's {@code output/<seed>/} directory ({@code by-caravan/<band>-CaravanMarch.csv}),
- * so the journals of several caravans are read separately (mirroring the colonies'
- * {@code by-settlement/} grouping). One row per marched day: the daylight budget, speed,
+ * session's {@code output/<seed>/} directory, named by the band's <b>journey</b> —
+ * {@code by-caravan/<Origin>-<Destination>-CaravanMarch.csv} for a directed band
+ * ({@code <Origin>-<Leader>} for a wanderer) — so the journals of several caravans are
+ * read separately (mirroring the colonies' {@code by-settlement/} grouping). One row per marched day: the daylight budget, speed,
  * column length and net march distance; the provinces traversed and the notable resource
  * bonuses encountered on the day's plot corridor; the food the band <b>ate</b> and the
- * <b>larder</b> remaining (its countdown to starvation while it cannot restock); and the
+ * <b>larder</b> remaining (its countdown to starvation while it cannot restock); the
+ * non-food goods it <b>gathered</b> and the <b>cargo</b> manifest it carries; and the
  * nightly camp plot. Files are opened lazily on a band's first recorded day and appended as
  * it ticks (single-threaded, from the session day-barrier); {@link #close()} flushes them.
  */
@@ -43,6 +45,9 @@ public final class CaravanMarchPrinter {
 			ColumnSpec.real("Ate"),
 			ColumnSpec.real("Foraged"),
 			ColumnSpec.real("Larder"),
+			ColumnSpec.integer("Gathered"),
+			ColumnSpec.integer("Cargo"),
+			ColumnSpec.text("Carrying"),
 			ColumnSpec.text("Camp"),
 	};
 
@@ -68,10 +73,11 @@ public final class CaravanMarchPrinter {
 	 */
 	public void record(MarchReport r) {
 		MarchDay day = r.day();
-		marchSink(r.band()).writeRow(r.date(), r.province(), day.bandSize(),
+		marchSink(r.journey()).writeRow(r.date(), r.province(), day.bandSize(),
 				day.daylightHours(), day.speedKmh(), day.columnKm(), day.netMarchKm(),
 				hm(day.firstDepart()), hm(day.campMade()), r.provincesTraversed(),
-				r.bonuses(), r.plotsEstimate(), r.ate(), r.foraged(), r.larder(), r.camp());
+				r.bonuses(), r.plotsEstimate(), r.ate(), r.foraged(), r.larder(),
+				r.gathered(), r.cargo(), r.carrying(), r.camp());
 	}
 
 	/** Flush and close every band's file. */

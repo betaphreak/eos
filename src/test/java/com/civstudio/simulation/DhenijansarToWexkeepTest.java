@@ -92,12 +92,13 @@ class DhenijansarToWexkeepTest {
 		band.setKnownTechs(java.util.Set.of()); // a band that knows nothing
 
 		Rng rng = session.getBandRng();
-		double totalForaged = 0;
+		double totalForaged = 0, totalGathered = 0;
 		boolean anyBonusReported = false;
 		for (int i = 0; i < 15 && !band.isReadyToSettle(); i++) {
 			MarchReport report = band.tick(LocalDate.of(1445, 6, 1).plusDays(i), rng);
 			if (report != null) {
 				totalForaged += report.foraged();
+				totalGathered += report.gathered();
 				if (!"-".equals(report.bonuses()))
 					anyBonusReported = true;
 			}
@@ -106,6 +107,9 @@ class DhenijansarToWexkeepTest {
 				"a band that knows no techs identifies no resources (all bonuses hidden)");
 		assertEquals(0.0, totalForaged, 1e-9,
 				"and forages nothing, since it can identify no food resource");
+		assertEquals(0.0, totalGathered, 1e-9,
+				"and gathers nothing, since it can identify no non-food resource either");
+		assertTrue(band.getCargo().isEmpty(), "its cargo stays empty");
 	}
 
 	@Test
@@ -137,6 +141,7 @@ class DhenijansarToWexkeepTest {
 		LocalDate start = LocalDate.of(1445, 6, 1);
 		Set<Integer> visited = new HashSet<>();
 		double totalAte = 0, totalForaged = 0;
+		int totalGathered = 0;
 		int maxDays = 365 * 25;
 		int day = 0;
 		for (; day < maxDays && !band.isReadyToSettle(); day++) {
@@ -146,13 +151,15 @@ class DhenijansarToWexkeepTest {
 			if (report != null) {
 				journal.record(report);
 				totalForaged += report.foraged();
+				totalGathered += report.gathered();
 			}
 		}
 		journal.close();
 		double larderAtWexkeep = following.getLarder();
 		System.out.printf("Dhenijansar->Wexkeep: arrived day %d (~%dy), %d provinces; "
-				+ "ate=%.0f foraged=%.0f larderAtWexkeep=%.0f%n",
-				day, day / 365, visited.size(), totalAte, totalForaged, larderAtWexkeep);
+				+ "ate=%.0f foraged=%.0f larderAtWexkeep=%.0f gathered=%d cargo=[%s]%n",
+				day, day / 365, visited.size(), totalAte, totalForaged, larderAtWexkeep,
+				totalGathered, band.getCargo().manifest(10));
 
 		// it reached Wexkeep, having crossed the whole route
 		assertTrue(band.isReadyToSettle(),
@@ -168,11 +175,25 @@ class DhenijansarToWexkeepTest {
 				"larder = provision - eaten + foraged (accounting)");
 		assertEquals(totalForaged, larderAtWexkeep, provision * 0.1,
 				"the larder at Wexkeep reflects what was foraged (provision covered the eating)");
-		// the journal was written with the Bonuses column
+		// the band gathered the non-food resources it crossed (ores, gems, luxuries...)
+		// into its cargo — the per-good inventory the future trade caravan trades from —
+		// in whole units (discrete goods: no fractional elephants)
+		assertTrue(totalGathered > 0, "the band gathered non-food goods on the way");
+		assertEquals(totalGathered, band.getCargo().total(),
+				"the cargo holds exactly what was gathered (nothing drawn, nothing lost)");
+		assertTrue(band.getCargo().goods().size() > 1,
+				"the long route crossed more than one kind of gatherable resource");
+		assertTrue(band.getCargo().total() <= people
+				* com.civstudio.agent.march.MarchConfig.DEFAULT.cargoCapacityPerHead(),
+				"the cargo respects the band's carrying capacity");
+		// the journal was written (named by the journey, source-destination) with the
+		// Bonuses and cargo columns
 		File marchFile = new File("output/" + seed + "/by-caravan/"
-				+ leader.fullName().trim() + "-CaravanMarch.csv");
+				+ "Dhenijansar-Wexkeep-CaravanMarch.csv");
 		assertTrue(marchFile.exists(), "the march journal was written: " + marchFile);
 		String header = Files.readAllLines(marchFile.toPath()).get(0);
 		assertTrue(header.contains("Bonuses"), "the journal reports encountered bonuses");
+		assertTrue(header.contains("Gathered") && header.contains("Carrying"),
+				"the journal reports the day's gathering and the cargo manifest");
 	}
 }

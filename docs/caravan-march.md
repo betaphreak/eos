@@ -334,8 +334,19 @@ a transient plot claim that, on the settle decision, *is* the founding `HOLDING`
    com.civstudio.geo.Bonus}), the band gathers food into its larder: `surplusHours × band
    size × forageRatePerHour`, capped below the daily ration (`forageCapFraction` < 1) so it
    only **slows** the larder's decline — the band stays a decaying asset (`docs/caravan.md`).
-   Free (no march cost). Reported in the journal's `Foraged` column. Non-food bonuses and
-   pulling food from a settled province's market are still future.
+   Free (no march cost). Reported in the journal's `Foraged` column.
+   **Gathering is implemented too** (the per-good generalization of foraging, per
+   `docs/manufactured-bonuses.md`): with the surplus hours foraging left over, the band
+   gathers the **non-food** resources it identified on the corridor (ores, gems, luxuries…)
+   into its carried **`Cargo`** (a per-good inventory on the `Caravan` base — the physical
+   side the future trade caravan trades across, the hoard being the money side), at the
+   slower `gatherRatePerHour`, split evenly across the distinct resources crossed. Cargo
+   goods are **discrete** — no fractional elephants: part-unit work accrues as per-good
+   *progress* on the band and only **whole units** enter the cargo, capped by the band's
+   **carrying capacity** (`cargoCapacityPerHead` × head-count — a full band gathers nothing
+   more, and a shrinking band's cap shrinks with it). Reported in the journal's
+   `Gathered`/`Cargo`/`Carrying` columns. Pulling food from a settled province's market is
+   still future.
    **Tech-gated identification:** a band departs with a **tech state** (its known tech ids —
    a dissolution band carries its colony's research; a fresh band defaults to
    `MigrantCaravan.DEFAULT_TECH` = `TECH_MEDIEVAL_LIFESTYLE`, i.e. the pre-known set of that

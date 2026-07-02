@@ -111,9 +111,14 @@ public class MigrantCaravan extends Caravan {
 	public static final String DEFAULT_TECH = "TECH_MEDIEVAL_LIFESTYLE";
 
 	// the band's tech state: the set of tech ids it knows, which gates which resource
-	// bonuses it can identify (forage / report). Lazily defaulted (see knownTechs) from the
-	// carried research, else the DEFAULT_TECH baseline; overridable via setKnownTechs.
+	// bonuses it can identify (forage / gather / report). Lazily defaulted (see knownTechs)
+	// from the carried research, else the DEFAULT_TECH baseline; overridable via setKnownTechs.
 	private Set<String> knownTechs;
+
+	// fractional gathering progress per good (keyed by bonus type): cargo goods are
+	// discrete, so a day's part-unit work accrues here and only whole units are
+	// deposited into the carried cargo (see gather)
+	private final java.util.Map<String, Double> gatherProgress = new java.util.LinkedHashMap<>();
 
 	// the daylight-bounded march (docs/caravan-march.md): the calibration constants, the
 	// distance-accurate route the band spends its daily distance along, and where it is
@@ -375,35 +380,39 @@ public class MigrantCaravan extends Caravan {
 		// land route (docs/land-routing.md); camp on one of its plots and report them
 		PlotCorridor corridor = campingEnabled ? currentCorridor() : null;
 		Plot camp = campingEnabled ? claimCampOn(corridor) : null;
-		// forage food from the land if the day left surplus daylight and the corridor
-		// crossed a food resource (free, no march cost; capped below the ration)
-		double foraged = campingEnabled ? forage(day, startBudget - budget, corridor) : 0;
-		lastReport = buildReport(date, day, traversed, corridor, foraged, camp);
+		// the day's surplus daylight (what the capped march did not use) funds the
+		// off-march work: forage food into the larder first (survival), then gather
+		// non-food goods into the cargo with the hours foraging left over
+		double surplusHours = campingEnabled ? surplusHours(day, startBudget - budget) : 0;
+		double foraged = forage(surplusHours, corridor);
+		int gathered = gather(surplusHours, foraged, corridor);
+		lastReport = buildReport(date, day, traversed, corridor, foraged, gathered, camp);
 		return lastReport;
 	}
 
+	// the daylight left after the (capped) march and the camp overhead — the window the
+	// band forages and gathers in (docs/caravan-march.md)
+	private double surplusHours(MarchDay day, double movedKm) {
+		double hCamp = marchConfig.hCampBaseHours()
+				+ marchConfig.hCampPerThousand() * following.size() / 1000.0;
+		return Math.max(0, (day.daylightHours() - hCamp)
+				- (movedKm + day.columnKm()) / day.speedKmh());
+	}
+
 	/**
-	 * The daily forage constant: how much a wandering band gathers depends on the
+	 * The daily forage constant: how much food a wandering band gathers depends on the
 	 * <b>surplus daylight</b> (the daylight the capped march did not use) and the number of
 	 * foragers, and only happens where the day's corridor crossed a <b>food</b> resource.
 	 * The yield is added to the larder but capped below the daily ration, so foraging only
 	 * <b>slows</b> the larder's decline — the band stays a decaying asset (see {@code
 	 * docs/caravan.md}). Decisions per the design Q&amp;A.
 	 *
-	 * @param day      the day's computed march (daylight, speed, column length)
-	 * @param movedKm  the distance the band actually relocated today
-	 * @param corridor the day's plot corridor (its plots' bonuses are the forageable land)
+	 * @param surplusHours the day's surplus daylight (0 halts foraging)
+	 * @param corridor     the day's plot corridor (its plots' bonuses are the forageable land)
 	 * @return the food foraged into the larder (0 if no surplus daylight or no food resource)
 	 */
-	private double forage(MarchDay day, double movedKm, PlotCorridor corridor) {
-		if (!crossedFoodResource(corridor))
-			return 0;
-		double hCamp = marchConfig.hCampBaseHours()
-				+ marchConfig.hCampPerThousand() * following.size() / 1000.0;
-		// surplus = the daylight left after the (capped) march and the camp overhead
-		double surplusHours = Math.max(0, (day.daylightHours() - hCamp)
-				- (movedKm + day.columnKm()) / day.speedKmh());
-		if (surplusHours <= 0)
+	private double forage(double surplusHours, PlotCorridor corridor) {
+		if (surplusHours <= 0 || !crossedFoodResource(corridor))
 			return 0;
 		double ration = following.size() * WANDERING_RATION.perDay();
 		double foraged = Math.min(
@@ -412,6 +421,52 @@ public class MigrantCaravan extends Caravan {
 		if (foraged > 0)
 			following.stockLarder(foraged);
 		return foraged;
+	}
+
+	/**
+	 * <b>Gather</b> the day's corridor for non-food goods — the ore, gem, luxury and other
+	 * raw {@link Bonus} resources the band {@linkplain #identifies(Bonus) identifies} on the
+	 * plots it crossed — into the band's carried {@link #getCargo() cargo} (the per-good
+	 * inventory of {@code docs/manufactured-bonuses.md}; the food larder is its
+	 * {@code NECESSITY} special case, filled by {@link #forage} first). Gathering spends the
+	 * surplus daylight foraging left over, at the slower {@code gatherRatePerHour}, split
+	 * evenly across the distinct resources encountered. These are <b>discrete goods</b> (no
+	 * fractional elephants): the day's work accrues as per-good <i>progress</i> and only
+	 * <b>whole units</b> enter the cargo. The total is capped by the band's carrying
+	 * capacity ({@code cargoCapacityPerHead} × head-count) — a full band gathers nothing
+	 * more (and accrues no progress it could not carry).
+	 *
+	 * @param surplusHours the day's surplus daylight (before foraging spent its share)
+	 * @param foraged      the food foraged today (its hours are deducted from the surplus)
+	 * @param corridor     the day's plot corridor (its plots' bonuses are the gatherable land)
+	 * @return the whole units gathered into the cargo (0 if no time, no resource, or no room)
+	 */
+	private int gather(double surplusHours, double foraged, PlotCorridor corridor) {
+		List<Bonus> gatherables = gatherableBonuses(corridor);
+		if (gatherables.isEmpty())
+			return 0;
+		int room = (int) Math.floor(following.size() * marchConfig.cargoCapacityPerHead())
+				- getCargo().total();
+		if (room <= 0)
+			return 0;
+		// foraging worked part of the surplus: the hours its yield took at the forage rate
+		double hoursLeft = surplusHours
+				- foraged / (following.size() * marchConfig.forageRatePerHour());
+		if (hoursLeft <= 0)
+			return 0;
+		double each = hoursLeft * following.size() * marchConfig.gatherRatePerHour()
+				/ gatherables.size();
+		int gathered = 0;
+		for (Bonus b : gatherables) {
+			double progress = gatherProgress.merge(b.type(), each, Double::sum);
+			int whole = Math.min((int) progress, room - gathered);
+			if (whole > 0) {
+				getCargo().add(b.type(), whole);
+				gatherProgress.put(b.type(), progress - whole);
+				gathered += whole;
+			}
+		}
+		return gathered;
 	}
 
 	// whether the day's corridor crossed a food (necessity-class) resource the band can
@@ -424,6 +479,21 @@ public class MigrantCaravan extends Caravan {
 			if (identifies(p.bonus()) && p.bonus().resourceType() == ResourceType.NECESSITY)
 				return true;
 		return false;
+	}
+
+	// the distinct non-food resources on the day's corridor the band can identify (in
+	// first-seen order) — the land it can gather for its cargo; food is the larder's
+	// (see forage), and a resource locked behind an unknown tech is invisible
+	private List<Bonus> gatherableBonuses(PlotCorridor corridor) {
+		if (corridor == null)
+			return List.of();
+		java.util.LinkedHashMap<String, Bonus> seen = new java.util.LinkedHashMap<>();
+		for (Plot p : corridor.path()) {
+			Bonus b = p.bonus();
+			if (identifies(b) && b.resourceType() != ResourceType.NECESSITY)
+				seen.putIfAbsent(b.type(), b);
+		}
+		return List.copyOf(seen.values());
 	}
 
 	/**
@@ -458,7 +528,8 @@ public class MigrantCaravan extends Caravan {
 
 	// whether the band can identify a resource bonus: a bonus revealed by no tech, or by a
 	// tech the band knows. A bonus locked behind an unknown tech is invisible to the band —
-	// it can neither forage nor report it (see setKnownTechs). Null-safe (no bonus -> false).
+	// it can neither forage, gather nor report it (see setKnownTechs). Null-safe (no bonus
+	// -> false).
 	private boolean identifies(Bonus bonus) {
 		return bonus != null
 				&& (bonus.techReveal() == null || knownTechs().contains(bonus.techReveal()));
@@ -571,7 +642,9 @@ public class MigrantCaravan extends Caravan {
 
 	// pitch a nightly camp on a plot of the day's corridor (preferring its exit end, where
 	// the band actually stopped), falling back to any free plot of the province; a
-	// transient occupancy, not a settlement claim. Null when session-less or no plot is free.
+	// transient occupancy, not a settlement claim. The claim is an atomic tryOccupy, so
+	// bands ticked on different threads camping in the same province cannot double-claim
+	// a plot (the loser tries the next). Null when session-less or no plot is free.
 	private Plot claimCampOn(PlotCorridor corridor) {
 		if (session() == null)
 			return null;
@@ -579,8 +652,7 @@ public class MigrantCaravan extends Caravan {
 			List<Plot> path = corridor.path();
 			for (int i = path.size() - 1; i >= 0; i--) {
 				Plot p = path.get(i);
-				if (p.owner() == null && p.isVacant() && p.isWorkable()) {
-					p.occupy(new Camp());
+				if (p.owner() == null && p.isWorkable() && p.tryOccupy(new Camp())) {
 					campPlot = p;
 					return p;
 				}
@@ -588,8 +660,7 @@ public class MigrantCaravan extends Caravan {
 		}
 		ProvincePlotPool pool = session().provincePlotPool(worldMap().province(getProvinceId()));
 		for (Plot p : pool.plots())
-			if (p.owner() == null && p.isVacant() && p.isWorkable()) {
-				p.occupy(new Camp());
+			if (p.owner() == null && p.isWorkable() && p.tryOccupy(new Camp())) {
 				campPlot = p;
 				return p;
 			}
@@ -606,11 +677,11 @@ public class MigrantCaravan extends Caravan {
 
 	// compose the day's print-ready report (labels resolved against the province graph)
 	private MarchReport buildReport(LocalDate date, MarchDay day, List<Integer> traversed,
-			PlotCorridor corridor, double foraged, Plot camp) {
+			PlotCorridor corridor, double foraged, int gathered, Plot camp) {
 		StringBuilder path = new StringBuilder();
 		for (int id : traversed) {
 			if (path.length() > 0)
-				path.append(" > ");
+				path.append("; ");
 			path.append(provLabel(id));
 		}
 		String bonusesLabel = bonusesLabel(corridor);
@@ -621,9 +692,22 @@ public class MigrantCaravan extends Caravan {
 		String campLabel = camp == null ? "-" : campLabel(camp);
 		// the "Province" column reads where the day began (the first traversal entry),
 		// not where it ended
-		return new MarchReport(date, getLeader().fullName(), provLabel(traversed.get(0)),
+		return new MarchReport(date, journeyLabel(), provLabel(traversed.get(0)),
 				day, path.toString(), bonusesLabel, plotsEst,
-				following.getLastConsumed(), foraged, following.getLarder(), campLabel);
+				following.getLastConsumed(), foraged, following.getLarder(),
+				gathered, getCargo().total(), getCargo().manifest(5), campLabel);
+	}
+
+	// the journey label that names the band's journal file: "<Origin>-<Destination>"
+	// (province names) for a directed band; a wandering band has no fixed destination,
+	// so its leader's name stands in — "<Origin>-<Leader>" — keeping journals unique
+	private String journeyLabel() {
+		if (!onGraph())
+			return getLeader().fullName();
+		String origin = worldMap().province(originProvinceId).name();
+		String dest = directed ? worldMap().province(destination).name()
+				: getLeader().fullName();
+		return origin + "-" + dest;
 	}
 
 	// the notable resource bonuses encountered on the corridor — the distinct bonus names
@@ -635,7 +719,7 @@ public class MigrantCaravan extends Caravan {
 		for (Plot p : corridor.path())
 			if (identifies(p.bonus()))
 				seen.add(shortName(p.bonus().type()));
-		return seen.isEmpty() ? "-" : String.join(" > ", seen);
+		return seen.isEmpty() ? "-" : String.join("; ", seen);
 	}
 
 	// "Name (id)" for a province

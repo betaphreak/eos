@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.civstudio.geo.WorldMap;
+import com.civstudio.good.Cargo;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.util.Rng;
 import lombok.Getter;
@@ -12,11 +13,12 @@ import lombok.Getter;
  * A <b>wandering band</b> on the map: the abstract base for any led band that is
  * <b>not settled</b> — a mobile aggregate (not a household type) holding a
  * {@link #getLeader() leader} (the band's Captain, a {@link Member}, not a distinct
- * class), a carried {@link #getHoard() hoard} of money held outside any bank, and a
- * <b>position</b> on the province graph.
+ * class), a carried {@link #getHoard() hoard} of money held outside any bank, a
+ * carried {@link #getCargo() cargo} of goods, and a <b>position</b> on the province
+ * graph.
  * <p>
- * The base carries only the universal band state — leader, hoard, position, and the
- * daily {@link #tick(LocalDate, Rng)}. Purpose-specific payload lives on the concrete
+ * The base carries only the universal band state — leader, hoard, cargo, position,
+ * and the daily {@link #tick(LocalDate, Rng)}. Purpose-specific payload lives on the concrete
  * subclasses: {@link MigrantCaravan} (the dissolution-born band that carries a
  * following and re-founds a colony — see {@code docs/caravan.md}); a settlement-
  * sponsored {@code TradeCaravan} is the planned follow-on (see
@@ -47,6 +49,13 @@ public abstract class Caravan {
 	// (the colony's circulating money, conserved into one figure on dissolution)
 	@Getter
 	private double hoard;
+
+	// the band's carried cargo — its per-good inventory of non-food goods (ores, gems,
+	// luxuries...) gathered off the land as it marches, the physical side a trade
+	// caravan will trade across (the hoard is the money side; the food larder lives on
+	// the following, since it is eaten). See docs/manufactured-bonuses.md.
+	@Getter
+	private final Cargo cargo = new Cargo();
 
 	// the band's node on the province graph (OFF_GRAPH for a band that holds raw
 	// coordinates instead — see onGraph). Mutable because a caravan moves.
