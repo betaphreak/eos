@@ -6,9 +6,12 @@
 market layer (`com.civstudio.market.*`, `ConsumerGoodMarket`); the bonus/resource layer
 (`com.civstudio.geo.Bonus`, `BonusClass.MANUFACTURED`); the plot/terrain model
 (`docs/plots.md`); the tech tree (`docs/tech-tree.md`).
-**Driven by / first consumer:** `docs/household-housing.md` — a household buys its
+**Driven by / first consumers:** `docs/household-housing.md` — a household buys its
 dwelling's construction material (wood, bricks, …) from that material's market. Housing is
-the **demand** side; this note is the **supply** side.
+the **demand** side; this note is the **supply** side. The **caravan** is the second
+consumer: a wandering/trading band forages, carries, and (via a `TradeCaravan`) buys and
+sells these goods at the per-good markets — see *Caravans carry, forage, and trade these
+goods* below (`docs/caravan-march.md`, `docs/caravan-trade.md`).
 
 ## Motivation
 
@@ -142,6 +145,42 @@ Through the existing step loop (`act()` posts offers → markets `clear()` settl
    lagged demand to break even, like the existing conduit firms.
 4. **Goods taxonomy** — manufactured goods are a new family of `Good` (their own class or a
    parameterized good), distinct from `Necessity`/`Enjoyment`/`Capital`/`Strategic`.
+
+## Caravans carry, forage, and trade these goods
+
+The wandering **caravan** (`docs/caravan.md`, `docs/caravan-march.md`) is the second consumer
+of the goods model, alongside housing — and much of the seam is **already built** by the
+caravan march work:
+
+- **Tech-gated identification (implemented).** A band departs with a **tech state**
+  (`MigrantCaravan.setKnownTechs`; default `MigrantCaravan.DEFAULT_TECH` =
+  `TECH_MEDIEVAL_LIFESTYLE` for a fresh band, or its colony's carried research for a
+  dissolution band) and can only **identify** — report, forage, carry, or trade — a bonus or
+  good whose **`TechReveal`** it knows. This is exactly the tech gate this catalog carries
+  (M18/M5): a medieval band cannot see or handle a good locked behind a future tech (oil,
+  aluminium, natural gas). The gate lives in `MigrantCaravan.identifies(Bonus)` and already
+  filters the march journal's reported bonuses and what the band may forage.
+
+- **Foraging (implemented — food only; the goods model generalizes it).** As it marches, a
+  band gathers **food-class raw bonuses** (CROP/LIVESTOCK/SEAFOOD → `NECESSITY`, via
+  `BonusClass.resourceType()`) off its corridor into its carried **larder**, gated on surplus
+  daylight and on the band identifying the resource. This is the *food* slice of a general
+  mechanism: once goods are real, quantitative eos goods (this note), a band can carry a
+  **per-good inventory** and forage/gather other raw bonuses (production, luxury) too — the
+  larder is just the `NECESSITY` special case of that inventory.
+
+- **Trade (designed — `TradeCaravan`, `docs/caravan-trade.md` Phase B).** The **per-good
+  markets** (M2) are the venue where a settlement-sponsored trade caravan **buys and sells**
+  manufactured (and raw) goods, coupling two settlements' economies. Without this note's
+  goods-as-quantities model, caravan trade would be an abstract money transfer; with it, a
+  caravan moves **real goods** between markets. The band's carried **hoard** (money) and
+  larder/inventory (goods) are the two sides it trades across.
+
+So the per-good markets (M2), the `BonusClass.resourceType()` seam, and the `Bonus.techReveal`
+gate are **shared infrastructure**: housing is the first *demand* consumer of manufactured
+goods, and the caravan is the *mobile* forager/carrier/trader of both raw and manufactured
+goods. Building this note's supply side is therefore also what makes caravan foraging and
+trade span the full goods catalog rather than just food.
 
 ## Next steps
 
