@@ -1,6 +1,10 @@
 # Design note: manufactured bonuses (the production chain)
 
-**Status:** proposed — design complete, ready to export/implement
+**Status:** design complete; **step 1 (the data layer) implemented 2026-07-02** —
+`ManufacturedBonusExporter`/`RecipeExporter` emit the committed
+`/manufactured-bonuses.json`, `/recipes.json` and `/tier1-providers.json` resources
+(records `good/Recipe.java`, `good/TierOneSource.java`; covered by
+`RecipeCatalogTest`). The runtime (steps 2–3) remains proposed.
 **Depends on:** the goods model (`com.civstudio.good.Good`); the firm hierarchy
 (`com.civstudio.agent.firm.*` — esp. the labor-only `BuilderFirm`/`StrategicFirm`); the
 market layer (`com.civstudio.market.*`, `ConsumerGoodMarket`); the bonus/resource layer
@@ -184,10 +188,19 @@ trade span the full goods catalog rather than just food.
 
 ## Next steps
 
-1. **Exporters.** `ManufacturedBonusExporter` (catalog → `manufactured-bonuses.json`) and
-   `RecipeExporter` (filter `Regular_CIV4BuildingInfos` to manufactured producers → a
-   producer/recipe graph: output, inputs, tech, prereq-buildings, + the tier-1→plot mapping
-   from gatherer terrain/feature prereqs, M29). Parallels the existing Civ4 exporters.
+1. ~~**Exporters.**~~ ✅ **Done (2026-07-02).** `ManufacturedBonusExporter` (catalog →
+   `manufactured-bonuses.json`, all 326 as `geo/Bonus` records — 313 `MANUFACTURED` + 13
+   `WONDER` pseudo-goods the source file carries) and `RecipeExporter` (→ `recipes.json`,
+   the 318 Regular buildings granting a catalog good, as `good/Recipe.java` — output,
+   inputs, tech, prereq-buildings; and → `tier1-providers.json`, the 48 providers as
+   `good/TierOneSource.java` with each gatherer's terrain/feature/vicinity plot prereqs
+   inlined, M29). Both parallel the existing Civ4 exporters (`geo/export/`); spot-checked
+   against the XML by `RecipeCatalogTest`. Data notes: the two catalogs are disjoint
+   (`BONUS_SALT` is the one tier-1 output that is a *raw* map bonus, not manufactured);
+   37 gatherer references (national wonders, `BUILDING_HERD_*`, lost-lands buildings from
+   uncommitted C2C modules) are skipped, every provider retaining ≥1 real gatherer; 43
+   catalog goods have no committed producer — all far-future/mythical (Martian goods, warp
+   drives…), unreachable behind their `TechReveal` anyway.
 2. **Runtime** — the producer firm, per-good markets, the monthly demand graph, the labor
    two-pass.
 3. **Calibration** — `A·L^β` coefficients, the 1:1 input coefficient, market params.
