@@ -472,3 +472,42 @@ is the missing enabler.
   signal + site choice), and how that composes with determinism.
 - Whether the hoard should ever take a **haircut** on a catastrophic collapse (the
   current default is full conservation) — a lever for making collapse costlier.
+
+### Decided (2026-07-02) — from the RimWorld caravan comparison
+
+A comparison against RimWorld's caravan architecture (the porting reference at
+`C:/Code/RimWorldDebug/docs/caravan-system.md`) raised entity-level questions, all
+now resolved as below (none implemented yet). The march/routing decisions live in
+`docs/caravan-march.md` §Decided; the trade/arrival-action ones in
+`docs/caravan-trade.md` §Decided.
+
+- **Off-road demographics — a full daily pass on a per-band salted stream.** Band
+  members currently neither age nor die while wandering (verified: no mortality or
+  aging pass anywhere in `Caravan` / `MigrantCaravan.tick`), contradicting the
+  "mortality is always on — there is no toggle" doctrine and quietly making the road
+  *safer* than settlement. Decided: a session-level daily pass applies the
+  Coale-Demeny draw and aging to every band `Member`, drawing on a **new salted
+  per-band demographic stream** (per the convention that new draws get their own
+  stream) — colony streams untouched, so band-free runs stay byte-identical.
+  (RimWorld's precedent: off-map pawns keep ticking at full fidelity; the caravan
+  only *satisfies* needs.)
+- **Leader succession on the road — heir, else ablest follower.** When the leader
+  dies mid-march, the same-dynasty heir draw runs there and then (as households do);
+  if the line is extinct, the **ablest following `Member` is promoted** to leader
+  under a new dynasty. The band always survives leader death and the march continues.
+- **Births and weddings on the march — mortality only.** Biology beyond death is
+  suspended while wandering: no weddings, no conceptions, no births until the band
+  settles (mirroring RimWorld suspending jobs but not health). This keeps the
+  marriage market a settlement mechanism, off the band's data.
+- **Starvation kills — a ramping multiplier.** When the larder empties, each member's
+  mortality draw takes a hunger multiplier that grows with consecutive unfed days —
+  gradual, per-member, composing with the demographics pass above. The
+  decaying-asset clock becomes literal deaths, not an abstract dwindle.
+- **Warband visibility — deferred to the military flavor.** Nothing reads visibility
+  until raid/interception targeting exists, so no code now; the formula to adopt then
+  is RimWorld's (a curve over total band size, ×0.3 while stationary) — big slow
+  bands are seen, lean ones slip through.
+- **Serialize intent, not derived state — recorded as the future save contract.**
+  When save/load arrives (the playable-game direction), a band saves its target
+  province + progress spent, never the computed route/corridors, which are recomputed
+  on load — RimWorld's pattern. Noted in `docs/architecture.md`.

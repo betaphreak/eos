@@ -375,3 +375,55 @@ a transient plot claim that, on the settle decision, *is* the founding `HOLDING`
   cannot march through) weighs settling where it stands, coupling the logistics back into
   the rise/fall cycle (`docs/caravan.md`).
 - **A river on the corridor costs a full day to cross** (see §6 / `docs/land-routing.md`).
+
+## Decided (2026-07-02 — from the RimWorld caravan comparison)
+
+- **Load slows the march via a speed factor** (not yet implemented): `v` scales by
+  RimWorld's `lerp(2× → 1×)` over the band's load fraction (cargo + larder mass
+  against carrying capacity), while column length `L` stays headcount-based — one
+  formula in `March`, no footprint rework, and gathering cargo finally costs pace.
+  (A mass-derived baggage term in `L` is a possible later refinement; charging both
+  from day one was rejected as double-counting with the per-member footprint.)
+- **Over capacity, the band auto-abandons cargo** (not yet implemented): when the
+  head-count shrinks under an existing load (deaths en route), the **lowest-value
+  cargo units are dropped** until back under capacity — the larder is never abandoned
+  before cargo — and the journal reports what was left behind. (RimWorld's
+  immobilized-halt was rejected: with deaths as the shrink mechanism, a starving band
+  could deadlock — unable to move, unable to recover.)
+
+- **Pack animals are deferred to Phase C** (`docs/caravan-trade.md`): carrying
+  capacity stays `cargoCapacityPerHead × head-count`. Animals (extra capacity, and
+  RimWorld-style riding/draft speed) only become interesting once trade cargo volumes
+  exist.
+- **Route choice becomes cheapest-march-days Dijkstra** (not yet implemented): edge
+  cost = the march formula itself (corridor cost + boundary hop + river days), so the
+  router and the march can never disagree — Parusapa (~9 days) correctly loses to two
+  3-day provinces — and roads pay off automatically the day the corridor `moveCost`
+  discount activates. Plain Dijkstra: at 5,264 provinces, pathed once per journey,
+  neither a heuristic nor a reachability precheck is warranted (an exhausted search
+  *is* the unreachable answer); RimWorld's weighted A* + flood-fill precheck is
+  planet-scale machinery this graph doesn't need. Prerequisite: resolve the
+  corridor/centroid double-count (calibration note above) first, or a cost-optimizing
+  router optimizes against the distortion.
+- **Routes are priced at a departure-date snapshot**: all edges priced at the
+  departure date; the route is then fixed unless invalidated (the target gone — the
+  revalidation seam in `docs/caravan-trade.md`). Deterministic, one pathfinder run per
+  journey; the seasonal error over a multi-week march is accepted (future-dated
+  pricing and periodic repricing were rejected as complexity ahead of need).
+- **A `MarchEstimator` gates both the settle and the trade-launch decisions** (not yet
+  implemented): a deterministic, RNG-free days-of-larder-vs-ETA simulation — larder
+  consumption (including expected forage) against the route walked day-by-day. The
+  migrant's site choice prefers sites reachable before starvation; the trade launch
+  (`docs/caravan-trade.md`) prices round-trip march-days with the same tool. The
+  safety margin is an uncalibrated placeholder, and what a band does when *no*
+  reachable site passes stays open (settling in place at the least-bad site is the
+  presumed default).
+- **Splitting stays deferred until the pressure is real**: current bands never
+  approach the column sizes where `D → 0`, so the split mechanic (and merge as the
+  `HOUSEHOLD → CARAVAN` gather) waits for warbands / large migrations. Accepted
+  limitation 3 stands.
+- **The final push is adopted** (not yet implemented): within a threshold of its
+  target (~≤ one hour's remaining march), the band pushes past dusk and arrives
+  instead of camping one hour short — RimWorld's rule (it exempts the last leg onto a
+  destination from night rest). The journal shows a late arrival instead of a camp
+  that night.

@@ -500,3 +500,45 @@ choice.
 > source documents (the design overview treated it as part of the venture; the Phase-B
 > plan called it "a stretch within B or deferred to C") — is **deferred to Phase C**.
 > Phase B is export-only, one good, one direction.
+
+### Decided (2026-07-02) — from the RimWorld caravan comparison
+
+A comparison against RimWorld's caravan architecture (the porting reference at
+`C:/Code/RimWorldDebug/docs/caravan-system.md`) raised the trade/arrival-action
+questions below, all now resolved (none implemented — they amend the Phase B plan
+above where they conflict). The entity-level decisions live in `docs/caravan.md`, the
+march/routing ones in `docs/caravan-march.md` §Decided.
+
+- **Phase B is built on revalidated arrival actions, not the bespoke state machine.**
+  The B3 `Phase` enum is superseded by destination-typed arrival actions
+  (`SettleHere`, `SellAt`, `ReturnToSponsor`, …) whose `stillValid` is re-checked
+  every band tick and again on arrival — a target vanishing mid-journey aborts
+  cleanly instead of arriving at nothing (RimWorld's `CaravanArrivalAction` pattern:
+  settlements here *dissolve*, so this is not a corner case). The `AWAIT_*`
+  settlement-lag handling becomes part of the action's execution, not the band's
+  identity, and the future warband slots in as another action.
+- **Abort path: sell at home.** When a venture's destination settlement dies
+  mid-journey, the caravan carries the cargo back and sells it into the *home*
+  market, remitting proceeds to the sponsor — money and goods conserved with no new
+  mechanism (the sell leg simply happens at home). **Caveat for implementation:** the
+  abort must reclaim the proxy's balance *before* the destination's dissolution
+  sweep — a dissolving colony's `drainAllMoney` would otherwise sweep proxy funds
+  into the departing migrant band's hoard. (Reroute-to-next-partner and dump-cargo
+  were rejected for the first cut.)
+- **The migrant's settle target rides the same revalidation seam.** Each band tick
+  checks the chosen province is still viable and unclaimed (another band or a
+  re-founded colony can take it first); if not, the site-choice search reruns from
+  the band's current position (deterministic, band-RNG ties) — so two bands racing to
+  one province cannot double-settle.
+- **Flavors are payload-only subclasses; destination behaviour lives in the action.**
+  The `Caravan` base owns the journey (march, larder clock, arrival action +
+  `stillValid`); subclasses hold payload only (`MigrantCaravan`: following +
+  research; `TradeCaravan`: cargo + sponsor; the future warband: soldiers).
+  Settle/sell/attack are actions — aligning with the flavor-agnostic band-as-data
+  base `docs/caravan.md` wants.
+- **The launch decision prices spread per march-day.** `shouldSponsorTrade` requires
+  expected profit ÷ estimated round-trip march-days (from the `MarchEstimator`,
+  `docs/caravan-march.md`) to clear a threshold — distant partners are correctly
+  penalized, and a route the band cannot provision never launches. Deterministic and
+  RNG-free; this supersedes B4's raw largest-price-gap rule (the gap remains the
+  numerator's input, no longer the whole criterion).
