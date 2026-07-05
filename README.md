@@ -143,6 +143,10 @@ Runs are seed-reproducible — economic, naming, mortality, skill and terrain
 draws ride separate salted RNG streams, so adding one feature doesn't scramble
 the rest. (Byte-identical output *across* code versions is not a goal.)
 
+A run's output can be visualized: [`web/`](web/) holds self-contained, read-only
+HTML views built from `output/<seed>/`. `web/dashboard.html` is a map-led replay
+of a parallel directed-march caravan run — see [`web/README.md`](web/README.md).
+
 ## Roadmap
 
 Toward a playable game, headless-first:
