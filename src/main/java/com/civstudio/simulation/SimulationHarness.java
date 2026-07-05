@@ -57,6 +57,7 @@ import com.civstudio.io.printer.*;
 import com.civstudio.market.*;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.java.Log;
 
 /**
@@ -148,6 +149,7 @@ public class SimulationHarness {
 	// behavioral parameters for the consumer-good firms; defaults to the
 	// canonical values with the run's labor-share applied (see constructor).
 	// Replace via setFirmConfig before createFirms to vary other firm params.
+	@Setter
 	private FirmConfig firmConfig;
 
 	// the necessity firms' config (firmConfig with the necessity tech factor
@@ -163,27 +165,32 @@ public class SimulationHarness {
 	// parameters for the wedding market; defaults to the canonical values.
 	// Replace via setWeddingConfig before createMarkets (e.g. capacity 0 to
 	// disable weddings in a test that isolates another mechanism).
+	@Setter
 	private WeddingConfig weddingConfig = WeddingConfig.DEFAULT;
 
 	// parameters for nobles raised by ennoblement (the export aristocracy is now
 	// built from laborers, not created up front); defaults to the canonical values.
 	// Replace via setNobleConfig before createDefaultRuler (e.g. to give a colony's
 	// nobles a necessity reserve, as a per-run override can).
+	@Setter
 	private NobleConfig nobleConfig = NobleConfig.DEFAULT;
 
 	// parameters for the peasant pool (larder depth, relief budget, relief ration);
 	// defaults to the canonical values. Replace via setRetinueConfig before
 	// createDefaultRetinue / foundStandardColony to tune the reserve's food economics.
+	@Setter
 	private RetinueConfig retinueConfig = RetinueConfig.DEFAULT;
 
 	// parameters for the civic school (its capacity and per-step learning); defaults
 	// to the canonical values. Replace via setChildrenFirmConfig before the school is
 	// created (createDefaultChildrenFirm / foundStandardColony). See docs/births.md.
+	@Setter
 	private ChildrenFirmConfig childrenFirmConfig = ChildrenFirmConfig.DEFAULT;
 
 	// parameters for the ever-normal granary (its price band and reserve target);
 	// defaults to the canonical values. Replace via setGranaryConfig before the granary
 	// is created (createDefaultGranary / foundStandardColony). See docs/granary.md.
+	@Setter
 	private GranaryConfig granaryConfig = GranaryConfig.DEFAULT;
 
 	// the social-mobility engine for this colony (promotion/demotion across ranks),
@@ -224,6 +231,7 @@ public class SimulationHarness {
 
 	// the surplus multiplier actually used this run (default DEFAULT_NECESSITY_SURPLUS_FACTOR);
 	// override via setNecessitySurplusFactor before createFirms (e.g. a calibration sweep)
+	@Setter
 	private double necessitySurplusFactor = DEFAULT_NECESSITY_SURPLUS_FACTOR;
 
 	private ConsumerGoodMarket enjoymentMkt;
@@ -448,92 +456,6 @@ public class SimulationHarness {
 			goldBank.setName("Crown Bank");
 		}
 		return goldBank;
-	}
-
-	/**
-	 * Override the consumer-good firms' behavioral parameters (default {@link
-	 * FirmConfig#DEFAULT}). Must be called before {@link #createFirms} to take
-	 * effect.
-	 *
-	 * @param firmConfig
-	 *            the firm parameters to use for the enjoyment and necessity firms
-	 */
-	public void setFirmConfig(FirmConfig firmConfig) {
-		this.firmConfig = firmConfig;
-	}
-
-	/**
-	 * Override the Phase-2 necessity <b>surplus</b> multiplier (default {@link
-	 * #DEFAULT_NECESSITY_SURPLUS_FACTOR}; see {@code docs/granary.md} §5.1). Must be called
-	 * before {@link #createFirms} to take effect. {@code 1.0} reproduces the pre-Phase-2
-	 * break-even food economy; higher values bank a larger surplus in the granary. Used by
-	 * the calibration sweep to grid this lever.
-	 *
-	 * @param necessitySurplusFactor
-	 *            the surplus multiplier on the necessity firms' TFP
-	 */
-	public void setNecessitySurplusFactor(double necessitySurplusFactor) {
-		this.necessitySurplusFactor = necessitySurplusFactor;
-	}
-
-	/**
-	 * Override the wedding-market parameters (default {@link WeddingConfig#DEFAULT}).
-	 * Must be called before {@link #createMarkets()} to take effect. Pass a config
-	 * with {@code capacity == 0} to disable weddings entirely.
-	 *
-	 * @param weddingConfig
-	 *            the wedding parameters to use
-	 */
-	public void setWeddingConfig(WeddingConfig weddingConfig) {
-		this.weddingConfig = weddingConfig;
-	}
-
-	/**
-	 * Override the parameters of nobles raised by ennoblement (default {@link
-	 * NobleConfig#DEFAULT}). Must be called before {@link #createDefaultRuler()} (which
-	 * registers the aristocracy top-up) to take effect.
-	 *
-	 * @param nobleConfig
-	 *            the parameters for ennobled nobles
-	 */
-	public void setNobleConfig(NobleConfig nobleConfig) {
-		this.nobleConfig = nobleConfig;
-	}
-
-	/**
-	 * Override the peasant-pool parameters (default {@link RetinueConfig#DEFAULT}). Must
-	 * be called before {@link #createDefaultRetinue()} / {@link #foundStandardColony}
-	 * (which build the pool) to take effect.
-	 *
-	 * @param retinueConfig
-	 *            the pool's tunable parameters (larder depth, relief budget, ration)
-	 */
-	public void setRetinueConfig(RetinueConfig retinueConfig) {
-		this.retinueConfig = retinueConfig;
-	}
-
-	/**
-	 * Override the civic-school parameters (default {@link ChildrenFirmConfig#DEFAULT}).
-	 * Must be called before the school is created ({@link #createDefaultChildrenFirm()}
-	 * / {@link #foundStandardColony}) to take effect.
-	 *
-	 * @param childrenFirmConfig
-	 *            the school's tunable parameters (capacity, per-step learning)
-	 */
-	public void setChildrenFirmConfig(ChildrenFirmConfig childrenFirmConfig) {
-		this.childrenFirmConfig = childrenFirmConfig;
-	}
-
-	/**
-	 * Override the ever-normal granary's parameters (default {@link
-	 * GranaryConfig#DEFAULT}). Must be called before the granary is created ({@link
-	 * #createDefaultGranary()} / {@link #foundStandardColony}) to take effect.
-	 *
-	 * @param granaryConfig
-	 *            the granary's tunable parameters (price band, reserve target, trade cap)
-	 */
-	public void setGranaryConfig(GranaryConfig granaryConfig) {
-		this.granaryConfig = granaryConfig;
 	}
 
 	/**
