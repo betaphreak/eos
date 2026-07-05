@@ -47,6 +47,28 @@ class ProvincePlotFieldTest {
 	}
 
 	@Test
+	void plotsCarryHeightmapElevation() throws Exception {
+		Province dh = dhenijansar();
+		ProvinceRaster raster = ProvinceRaster.load();
+		ProvincePlotField field = ProvincePlotField.generate(
+				dh, TerrainRegistry.load(), raster, new Rng(11));
+
+		// every plot's elevation is exactly the heightmap.bmp value at its raster pixel
+		// (the mask exposes it), and a real province carries non-trivial relief
+		ProvinceMask mask = raster.mask(dh.id());
+		int min = 255, max = 0;
+		for (ProvincePlot p : field.plots()) {
+			int lx = p.x() - mask.originX(), ly = p.y() - mask.originY();
+			assertEquals(mask.elevation(lx, ly), p.elevation(),
+					"plot elevation == heightmap at its pixel");
+			min = Math.min(min, p.elevation());
+			max = Math.max(max, p.elevation());
+		}
+		assertTrue(max > 0, "elevation populated from the heightmap (max=" + max + ")");
+		assertTrue(max > min, "the province has elevation variation (" + min + ".." + max + ")");
+	}
+
+	@Test
 	void generationIsDeterministicPerSeed() throws Exception {
 		Province dh = dhenijansar();
 		TerrainRegistry reg = TerrainRegistry.load();

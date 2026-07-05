@@ -84,7 +84,7 @@ public final class ProvincePlotPool {
 		List<Plot> plots = new ArrayList<>(field.size());
 		for (ProvincePlot pp : field.plots())
 			plots.add(new Plot(pp.x(), pp.y(), pp.river(), pp.terrain(), pp.plotType(),
-					pp.feature(), pp.bonus()));
+					pp.feature(), pp.bonus(), pp.elevation()));
 		return new ProvincePlotPool(province, plots);
 	}
 
@@ -110,7 +110,7 @@ public final class ProvincePlotPool {
 			plots = new ArrayList<>(field.size());
 			for (ProvincePlot pp : field.plots())
 				plots.add(new Plot(pp.x(), pp.y(), pp.river(), pp.terrain(), pp.plotType(),
-						pp.feature(), pp.bonus()));
+						pp.feature(), pp.bonus(), pp.elevation()));
 			ProvincePlotStore.save(province.id(), plots);
 		}
 		return new ProvincePlotPool(province, plots);

@@ -37,6 +37,7 @@ public final class ProvinceRaster {
 	private static final String RIVERS_BMP = "data/anbennar/rivers.bmp";
 	private static final String TERRAIN_BMP = "data/anbennar/terrain.bmp";
 	private static final String TREES_BMP = "data/anbennar/trees.bmp";
+	private static final String HEIGHTMAP_BMP = "data/anbennar/heightmap.bmp";
 
 	private static final int RIVER_NONE = 0xFFFFFF; // pure white = no river
 
@@ -56,6 +57,9 @@ public final class ProvinceRaster {
 	private int[] treeIdx;
 	private int treeWidth;
 	private int treeHeight;
+	// the real heightmap.bmp elevation (8-bit grayscale, full resolution 1:1 with the
+	// province raster; the palette index equals the height). Optional — null if absent.
+	private int[] heightIdx;
 
 	private ProvinceRaster(Map<Integer, Integer> idToColor) {
 		this.idToColor = idToColor;
@@ -133,6 +137,7 @@ public final class ProvinceRaster {
 		// "unmapped" and the plot field falls back to climate generation)
 		int[] terrainGrid = new int[w * h];
 		int[] treeGrid = new int[w * h];
+		int[] elevationGrid = new int[w * h]; // 0 (sea level) where the heightmap is absent
 		java.util.Arrays.fill(terrainGrid, -1);
 		java.util.Arrays.fill(treeGrid, -1);
 		for (int[] hit : hits) {
@@ -144,8 +149,10 @@ public final class ProvinceRaster {
 				terrainGrid[idx] = terrainIdx[ay * width + ax];
 			if (treeIdx != null)
 				treeGrid[idx] = treeIndexAt(ax, ay);
+			if (heightIdx != null)
+				elevationGrid[idx] = heightIdx[ay * width + ax];
 		}
-		return new ProvinceMask(minX, minY, w, h, landGrid, riverGrid, terrainGrid, treeGrid);
+		return new ProvinceMask(minX, minY, w, h, landGrid, riverGrid, terrainGrid, treeGrid, elevationGrid);
 	}
 
 	// the trees.bmp palette index covering an absolute province pixel: trees.bmp is
@@ -170,6 +177,7 @@ public final class ProvinceRaster {
 		this.river = rImg.getRGB(0, 0, width, height, null, 0, width);
 		this.terrainIdx = loadIndexed(TERRAIN_BMP, width, height);
 		this.treeIdx = loadTreeOverlay();
+		this.heightIdx = loadIndexed(HEIGHTMAP_BMP, width, height);
 	}
 
 	// read an 8-bit indexed BMP's raw palette indices (not RGB) into a row-major

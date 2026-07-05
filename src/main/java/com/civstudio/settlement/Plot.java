@@ -81,6 +81,11 @@ public final class Plot {
 	// docs/land-routing.md / docs/caravan-march.md §6). False for a province-less plot.
 	private final boolean river;
 
+	// the real heightmap elevation (0..255) at this plot, or 0 for a province-less plot.
+	// A raster lookup (from the province field), for hillshading and future elevation-
+	// sensitive gameplay; orthogonal to plotType's flat/hill/peak class.
+	private final int elevation;
+
 	// the settlement that has claimed this plot out of the shared province pool, or null
 	// while the plot is free (province-owned). Hybrid ownership: claiming transfers the
 	// plot to the settlement. Null for a legacy/province-less plot (no shared pool).
@@ -129,7 +134,7 @@ public final class Plot {
 	 * @param feature  the wild feature overlaying it, or {@code null} if bare
 	 */
 	public Plot(int index, Terrain terrain, PlotType plotType, Feature feature) {
-		this(index, -1, -1, false, terrain, plotType, feature, null);
+		this(index, -1, -1, false, terrain, plotType, feature, null, 0);
 	}
 
 	/**
@@ -142,12 +147,13 @@ public final class Plot {
 	 * @param river    whether a river pixel fell on this plot
 	 * @param terrain  the ground it sits on (non-null)
 	 * @param plotType the relief (flat/hill/peak; non-null)
-	 * @param feature  the wild feature overlaying it, or {@code null} if bare
-	 * @param bonus    the resource on it, or {@code null}
+	 * @param feature   the wild feature overlaying it, or {@code null} if bare
+	 * @param bonus     the resource on it, or {@code null}
+	 * @param elevation the real heightmap elevation (0..255)
 	 */
 	public Plot(int x, int y, boolean river, Terrain terrain, PlotType plotType,
-			Feature feature, Bonus bonus) {
-		this(-1, x, y, river, terrain, plotType, feature, bonus);
+			Feature feature, Bonus bonus, int elevation) {
+		this(-1, x, y, river, terrain, plotType, feature, bonus, elevation);
 	}
 
 	/**
@@ -162,11 +168,11 @@ public final class Plot {
 	 * @param bonus    the resource on it, or {@code null}
 	 */
 	public Plot(int x, int y, Terrain terrain, PlotType plotType, Feature feature, Bonus bonus) {
-		this(-1, x, y, false, terrain, plotType, feature, bonus);
+		this(-1, x, y, false, terrain, plotType, feature, bonus, 0);
 	}
 
 	private Plot(int index, int x, int y, boolean river, Terrain terrain, PlotType plotType,
-			Feature feature, Bonus bonus) {
+			Feature feature, Bonus bonus, int elevation) {
 		if (terrain == null)
 			throw new IllegalArgumentException("terrain must be non-null");
 		if (plotType == null)
@@ -175,6 +181,7 @@ public final class Plot {
 		this.x = x;
 		this.y = y;
 		this.river = river;
+		this.elevation = elevation;
 		this.terrain = terrain;
 		this.plotType = plotType;
 		this.feature = feature;
@@ -233,6 +240,11 @@ public final class Plot {
 	/** Whether a river runs through this plot (fording it costs a caravan a full day). */
 	public boolean river() {
 		return river;
+	}
+
+	/** The real heightmap elevation (0..255) at this plot; 0 for a province-less plot. */
+	public int elevation() {
+		return elevation;
 	}
 
 	/** Whether a firm can occupy this plot (false for a {@link PlotType#PEAK peak}). */

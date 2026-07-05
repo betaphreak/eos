@@ -361,7 +361,7 @@ function bakeTerrainTiles(colorsHex) {
   if (!fs.existsSync(manifestPath)) return null;
   let manifest;
   try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch { return null; }
-  const T = 48, W = manifest.length * T, H = T;
+  const T = 256, W = manifest.length * T, H = T;   // high-res tiles from the 1024px detail source
   const rgb = Buffer.alloc(W * H * 3);
   const cols = {};
   let idx = 0, decoded = 0;

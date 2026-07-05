@@ -36,11 +36,12 @@ public final class ProvincePlotField {
 	 * @param river    whether a river pixel fell on this plot
 	 * @param terrain  the ground (from the climate pool)
 	 * @param plotType the relief (flat/hill/peak; from {@link ReliefGenerator})
-	 * @param feature  the wild feature, or {@code null}
-	 * @param bonus    the resource on this plot, or {@code null}
+	 * @param feature   the wild feature, or {@code null}
+	 * @param bonus     the resource on this plot, or {@code null}
+	 * @param elevation the real heightmap elevation (0..255), a raster lookup
 	 */
 	public record ProvincePlot(int x, int y, boolean river, Terrain terrain,
-			PlotType plotType, Feature feature, Bonus bonus) {
+			PlotType plotType, Feature feature, Bonus bonus, int elevation) {
 	}
 
 	/**
@@ -110,8 +111,11 @@ public final class ProvincePlotField {
 						registry, rng);
 				Bonus bonus = BonusGenerator.pick(terrain, plotType, feature,
 						province.latitude(), bonuses, rng);
+				// elevation is a pure heightmap lookup (no rng), so adding it leaves the
+				// terrain/relief/feature/bonus draws — and thus the field — otherwise identical
+				int elevation = mask.elevation(lx, ly);
 				out.add(new ProvincePlot(mask.originX() + lx, mask.originY() + ly,
-						river, terrain, plotType, feature, bonus));
+						river, terrain, plotType, feature, bonus, elevation));
 			}
 		}
 		return new ProvincePlotField(province, out);

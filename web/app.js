@@ -159,7 +159,7 @@ function buildPlotTexCanvas(p) {
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   for (const q of p._plots) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
   const w = x1 - x0 + 1, h = y1 - y0 + 1;
-  let tpp = 24; while (tpp > 4 && Math.max(w, h) * tpp > 1800) tpp = Math.max(4, tpp - 4);
+  let tpp = 32; while (tpp > 4 && Math.max(w, h) * tpp > 2600) tpp = Math.max(4, tpp - 4);
   const oc = document.createElement("canvas"); oc.width = w * tpp; oc.height = h * tpp;
   const o = oc.getContext("2d"); o.imageSmoothingEnabled = true;
   const grid = new Map();
@@ -192,11 +192,20 @@ function buildPlotTexCanvas(p) {
       o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
     }
   }
-  // 3) relief, then feature sprites, then rivers on top of the blended terrain
+  // 3) hillshade from real heightmap elevation (surface normal vs a NW light: slopes
+  // facing the light lighten, those in shadow darken), snow on the highest ground, then
+  // feature sprites and rivers. EXAG exaggerates the gentle continental slopes.
+  const EXAG = 4, STR = 1.5, SX = -0.42, SY = -0.42, SZ = 0.8;   // NW sun (SX/SY/SZ ≠ LY layer map)
   for (const q of p._plots) {
-    const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp;
-    if (q.plotType === "HILL") { o.fillStyle = "rgba(255,255,255,.10)"; o.fillRect(cx, cy, tpp, tpp); }
-    else if (q.plotType === "PEAK") { o.fillStyle = "rgba(214,218,228,.36)"; o.fillRect(cx, cy, tpp, tpp); }
+    const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp, e = q.elevation | 0;
+    const gW = grid.get((q.x - 1) * 1e5 + q.y), gE = grid.get((q.x + 1) * 1e5 + q.y);
+    const gN = grid.get(q.x * 1e5 + (q.y - 1)), gS = grid.get(q.x * 1e5 + (q.y + 1));
+    const nx = ((gW ? gW.elevation : e) - (gE ? gE.elevation : e)) * EXAG;
+    const ny = ((gN ? gN.elevation : e) - (gS ? gS.elevation : e)) * EXAG;
+    const k = ((nx * SX + ny * SY + SZ) / Math.hypot(nx, ny, 1) - SZ) * STR;   // 0 on flat ground
+    if (k > 0.01) { o.fillStyle = `rgba(255,255,248,${Math.min(0.5, k).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
+    else if (k < -0.01) { o.fillStyle = `rgba(12,16,28,${Math.min(0.5, -k).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
+    if (e >= 165) { o.fillStyle = `rgba(232,238,247,${Math.min(0.6, (e - 165) / 50).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
     if (q.feature) featureSprite(o, cx, cy, tpp, q.feature, q.x, q.y);
     if (q.river) { o.fillStyle = "rgba(74,124,170,.55)"; o.fillRect(cx, cy, tpp, tpp); }
   }

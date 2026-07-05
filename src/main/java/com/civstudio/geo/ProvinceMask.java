@@ -26,9 +26,13 @@ public final class ProvinceMask {
 	// plot on the real map and falls back to climate generation where they are -1
 	private final int[] terrainIndex;
 	private final int[] treeIndex;
+	// the real heightmap.bmp elevation per cell (0..255, the 8-bit grayscale height), or
+	// 0 where the overlay is absent; a raster lookup (no generation), read by the plot
+	// field so each plot carries its elevation
+	private final int[] elevation;
 
 	ProvinceMask(int originX, int originY, int width, int height, boolean[] land, boolean[] river,
-			int[] terrainIndex, int[] treeIndex) {
+			int[] terrainIndex, int[] treeIndex, int[] elevation) {
 		this.originX = originX;
 		this.originY = originY;
 		this.width = width;
@@ -37,6 +41,7 @@ public final class ProvinceMask {
 		this.river = river;
 		this.terrainIndex = terrainIndex;
 		this.treeIndex = treeIndex;
+		this.elevation = elevation;
 	}
 
 	/** Absolute raster x of local column 0 (the bounding-box left edge). */
@@ -93,6 +98,17 @@ public final class ProvinceMask {
 		if (lx < 0 || lx >= width || ly < 0 || ly >= height)
 			return -1;
 		return treeIndex[ly * width + lx];
+	}
+
+	/**
+	 * The real {@code heightmap.bmp} elevation at the local cell (0..255), or {@code 0}
+	 * (sea level) outside the bbox or if the heightmap was not loaded. A raster lookup
+	 * — higher is higher ground; used for hillshading and, later, gameplay elevation.
+	 */
+	public int elevation(int lx, int ly) {
+		if (lx < 0 || lx >= width || ly < 0 || ly >= height)
+			return 0;
+		return elevation[ly * width + lx];
 	}
 
 	/** The number of land cells (== the province's plot count). */

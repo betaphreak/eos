@@ -12,3 +12,5 @@
 /full.log
 # derived, regenerable web copy of per-province plot grids (build.mjs → shipPlots)
 /web/assets/plots/
+# derived, regenerable high-res terrain-texture atlas (build.mjs → bakeTerrainTiles)
+/web/assets/terrain-tiles-*.png
