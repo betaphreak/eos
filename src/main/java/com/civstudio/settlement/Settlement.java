@@ -894,9 +894,9 @@ public class Settlement {
 	/**
 	 * Run the simulation with <b>no step horizon</b> — until the colony's settled life
 	 * ends (its workforce drains and it dies / dissolves into a wandering band). Used
-	 * by scenarios that are bounded by collapse rather than an end date (e.g. {@code
-	 * CaravanEconomy}); a colony that never dies would loop forever, so this is only for
-	 * runs guaranteed to collapse (the closed default config).
+	 * by scenarios and tests that are bounded by collapse rather than an end date (e.g.
+	 * the caravan re-found tests); a colony that never dies would loop forever, so this is
+	 * only for runs guaranteed to collapse (the closed default config).
 	 */
 	public void run() {
 		start();

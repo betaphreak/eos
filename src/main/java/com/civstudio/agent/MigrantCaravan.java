@@ -538,9 +538,9 @@ public class MigrantCaravan extends Caravan {
 	/**
 	 * Turn the nightly {@link Camp} on or off. Camping claims a plot from the band's
 	 * current province's plot field, which <b>generates that field</b> — so it is opt-in:
-	 * the reporting drivers (the session runner, {@code CaravanEconomy}) enable it to fill
-	 * the camp column of the march journal, while a bare wander leaves it off and pays no
-	 * generation cost.
+	 * the reporting drivers (the session runner, the caravan-journey tests) enable it to
+	 * fill the camp column of the march journal, while a bare wander leaves it off and pays
+	 * no generation cost.
 	 *
 	 * @param enabled whether the band pitches a nightly camp
 	 */

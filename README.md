@@ -108,7 +108,6 @@ mvn exec:exec -Dsim.main=com.civstudio.simulation.TwinSettlementEconomy
 | `OpenColonyEconomy` | The same colony **opened** to an external inflow that refills its peasant pool — holds a full workforce for years. |
 | `SmallOpenEconomy` | A bare colony (no ruler/pool) opened to money inflow + immigration; grows and stays stable. |
 | `TwinSettlementEconomy` | Two settlements founded into **one province**, run concurrently in lockstep, competing for its 74 plots. |
-| `CaravanEconomy` | Three wandering bands on the world map — each founds a colony, outlives it, and reforms as a caravan. |
 | `HarimariEconomy` | A **mixed-race** colony founded by the harimari — race-varying names, calendar, mortality and tech. |
 | `ElvenEconomy` | A mono-racial elven colony — founding with one of the imported Anbennar races. |
 

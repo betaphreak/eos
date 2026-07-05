@@ -355,9 +355,10 @@ out).
   of which the initial labor force is promoted as usual. So the same bloodline rules the
   colony it re-founds, on the wealth and people it carried. Covered by
   `CaravanRefoundTest` (a colony is dissolved into a band, which re-founds a viable colony
-  in the same session, led by its former sovereign at the band's site). The
-  `CaravanEconomy` sim exercises the whole arc start-to-finish: three bands with
-  different hoards muster, re-found, collapse, and reform. **Deferred:** the dwell-able
+  in the same session, led by its former sovereign at the band's site). The caravan-journey
+  tests (`DhenijansarToWexkeepTest`, `ParallelCaravansTest`) exercise the whole arc
+  start-to-finish: bands muster, march the graph, forage/gather cargo, and settle.
+  **Deferred:** the dwell-able
   `HOLDING` phase / `holder` type and the asset-distribution of
   `docs/village-founding.md` (re-founding goes straight to a seated `Ruler`).
 - **Phase 5 — movement, foraging, trade** (and, later, the `HOUSEHOLD → CARAVAN`
@@ -397,9 +398,10 @@ at scenario setup, not a band settling. Two concrete instances remain:
    `ElvenEconomy`, `HarimariEconomy`, `OpenColonyEconomy`, `CalibrationSweep`,
    `SurvivalExperiment` — forms its colony via `SimulationHarness.foundStandardColony(…)`,
    no band.
-2. **`CaravanEconomy`'s throwaway `muster` colony** (`CaravanEconomy.java:94`) — a real
-   `Settlement` conjured only to host the bands' `Retinue`s before they wander; it never
-   runs, but it is a settlement created at setup purely as a data holder.
+2. **The caravan-journey tests' throwaway `muster` colony** (e.g. `ParallelCaravansTest`,
+   `DhenijansarToWexkeepTest`) — a real `Settlement` conjured only to host the bands'
+   `Retinue`s before they wander; it never runs, but it is a settlement created at setup
+   purely as a data holder.
 
 The end state: **no `Settlement` comes into being except by a band settling.** A scenario
 that "starts established" musters a band and settles it *in place at t=0* (a zero-length
@@ -439,7 +441,7 @@ founded.** Deleting the `muster` colony (Phase A) also deletes its premature cop
   demographic/naming RNGs in the same `Retinue.newPeasant` order (gender → age → skills →
   name), so reproducible and needing **no colony**; `MigrantCaravan.tick`/`dissolve`
   operate on the data; the settle seam (`SimulationHarness.createRetinueFromBand`) reads
-  it; and `CaravanEconomy` musters bands with **no** throwaway colony/bank. Verify
+  it; and the caravan drivers muster bands with **no** throwaway colony/bank. Verify
   byte-identical with a full-run CSV checksum diff (the never-run muster colony perturbs
   nothing economic). Self-contained, and the enabler for Phase B.
 - **Phase B — band-first standard sims (re-validate calibration).** Reuse

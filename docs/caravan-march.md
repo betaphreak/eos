@@ -9,8 +9,9 @@ HH:mm schedule is computed and written, together with the day's provinces-traver
 to a per-session **caravan march journal** (`CaravanMarch.csv` + `CaravanTimetable.csv`, via
 `io/printer/CaravanMarchPrinter`). Code: `agent/march/` (`March`, `MarchDay`, `MarchConfig`,
 `MarchElement`, `MarchFlavor`, `MarchReport`, `Camp`), the rewired `MigrantCaravan.tick`
-(`tick(LocalDate, Rng)`), and the `SessionRunner`/`CaravanEconomy` wiring; tests in
-`agent/march/MarchTest` and `simulation/MigrantCaravanTest`.
+(`tick(LocalDate, Rng)`), and the `SessionRunner` wiring; tests in
+`agent/march/MarchTest`, `simulation/MigrantCaravanTest` and the journey tests
+(`simulation/DhenijansarToWexkeepTest`, `simulation/ParallelCaravansTest`).
 **§6 corridor-metric movement is implemented.** The band now spends its daily distance `D`
 over the **plot corridor**: each leg costs `KM_PER_PLOT × corridor.totalCost` (the plots'
 move cost across the current province — rough/wild ground is slower) **plus** the

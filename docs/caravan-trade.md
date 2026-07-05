@@ -203,7 +203,7 @@ next** — a single-threaded window in which every colony thread is parked at
 5. **Split the runtime responsibility:** `SessionRunner` ticks band *movement* each
    lockstep day (deterministic, single-threaded). Automatic re-founding of a settled band
    as a new concurrent colony is the riskiest integration and was **kept explicit in the
-   scenario** (the sequential `CaravanEconomy`) for Phase A, exposing the settle
+   caravan scenarios/tests** (sequential, single-threaded) for Phase A, exposing the settle
    *decision* (`isReadyToSettle()` / `chosenProvince()`) so a concurrent runner can act on
    it later.
 
@@ -238,7 +238,7 @@ next** — a single-threaded window in which every colony thread is parked at
   (`tickBands`); the runner holds the `GameSession` (threaded through `runConcurrently`).
   This phase advances *movement* only; settled bands are surfaced for the scenario to
   re-found.
-- **A6 — Rework `CaravanEconomy` to wander the graph.** It musters bands anchored at
+- **A6 — On-graph wander scenario (now the caravan-journey tests).** Bands are mustered anchored at
   starting **province ids** (not raw London/Paris/Rome coords); after dissolution each
   band **wanders** to a viable province and re-founds *into that arrival province* (size
   capped by its plots), running to collapse — graph movement + province re-founding end to
@@ -266,7 +266,7 @@ next** — a single-threaded window in which every colony thread is parked at
 
 Deterministic **mid-run re-founding under `SessionRunner`** (adding a colony thread to a
 live `Phaser` run) is the genuinely hard integration and was not needed to demonstrate
-Phase A (`CaravanEconomy` is sequential). Bands created mid-run register off-barrier,
+Phase A (the caravan scenarios are sequential). Bands created mid-run register off-barrier,
 which has no observable effect today; the concurrent thread-join is left for Phase B
 integration.
 
