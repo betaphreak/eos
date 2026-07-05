@@ -32,7 +32,7 @@ import com.civstudio.util.Rng;
 /**
  * <b>Parallel directed caravans</b> — six bands mustered at Dhenijansar (Rahen) and
  * marched <b>concurrently, one thread each</b>, to six cities across the map: Marrhold,
- * North Castonath, Nathalaire, Damescrown, Vertesk and South Viswall.
+ * North Castonath, New Corveld, Damescrown, Vertesk and South Viswall.
  * <p>
  * This is the thread-safety test for off-session band ticking: the bands share the
  * session's world map (read-only), tech tree and per-province {@code ProvincePlotPool}s
@@ -50,10 +50,12 @@ class ParallelCaravansTest {
 
 	// the six destinations (province id + name, as committed in map/provinces.json);
 	// Castonath and Viswall are split provinces on the map — the largest part stands
-	// for the city
-	private static final int[] DEST_IDS = { 4097, 833, 451, 234, 216, 63 };
+	// for the city. All six must be reachable by land: caravans march on foot, so a
+	// sea-locked island (e.g. Nathalaire/451, whose only neighbour is open ocean) is
+	// deliberately *not* a destination — a land route to it does not exist.
+	private static final int[] DEST_IDS = { 4097, 833, 447, 234, 216, 63 };
 	private static final String[] DEST_NAMES = { "Marrhold", "North Castonath",
-			"Nathalaire", "Damescrown", "Vertesk", "South Viswall" };
+			"New Corveld", "Damescrown", "Vertesk", "South Viswall" };
 
 	// per-head larder provision: generous (thousands of days at the SNACK wandering
 	// ration) so no band starves short of a distant destination — arrival, not food

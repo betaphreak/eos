@@ -41,4 +41,16 @@ public enum ProvinceType {
 	public boolean isPassable() {
 		return passable;
 	}
+
+	/**
+	 * Whether this is dry land a caravan can march over on foot — {@link #LAND}
+	 * only. Water ({@link #SEA}/{@link #LAKE}) is {@link #isPassable() passable}
+	 * for the future sea/trade graph but is <b>not</b> land, so land routing
+	 * ({@link com.civstudio.geo.LandRouter}) excludes it; {@link #IMPASSABLE}
+	 * wasteland is neither. This is the predicate land caravans traverse on, not
+	 * {@link #isPassable()} (which would let a foot caravan cross open water).
+	 */
+	public boolean isLand() {
+		return this == LAND;
+	}
 }

@@ -770,8 +770,8 @@ public class MigrantCaravan extends Caravan {
 				for (int nb : map.neighbors(cur)) {
 					if (!visited.add(nb))
 						continue;
-					if (!map.province(nb).isPassable())
-						continue; // caravans cannot cross impassable wasteland
+					if (!map.province(nb).isLand())
+						continue; // land-only: caravans cross neither water nor impassable wasteland
 					nextLayer.add(nb);
 					if (nb != originProvinceId && isViable(map.province(nb)))
 						viableInLayer.add(nb);

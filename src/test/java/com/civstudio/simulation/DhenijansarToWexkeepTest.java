@@ -40,10 +40,11 @@ class DhenijansarToWexkeepTest {
 	private static final int WEXKEEP = 306;
 
 	// per-head food to provision the larder with — ~the observed journey length (the band
-	// arrives in ~960 days, marching over Civ4 per-plot movement penalties) times the daily
-	// wandering ration (0.1/day), with a small margin. Sized so eating just drains the
-	// provision, leaving the foraged food as the surplus at Wexkeep (see the test body).
-	private static final double JOURNEY_RATION_PER_PERSON = 98.0;
+	// arrives in ~800 days over the all-land route, marching over Civ4 per-plot movement
+	// penalties) times the daily wandering ration (0.1/day), with a small margin. Sized so
+	// eating just drains the provision, leaving the foraged food as the surplus at Wexkeep
+	// (see the test body).
+	private static final double JOURNEY_RATION_PER_PERSON = 82.0;
 
 	// set a retinue's larder to an exact quantity
 	private static void setLarder(Retinue following, double target) {

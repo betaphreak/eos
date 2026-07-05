@@ -202,9 +202,14 @@ on demand, the transient plot claim of `docs/caravan-march.md`).
 
 ## Open questions
 
-- Whether **coastal / sea legs (ferries)** are ever allowed — today caravans are land-only
-  (`WorldMap.path` is passable land), so a route with no land path (e.g. across an ocean)
-  simply does not exist.
+- Whether **coastal / sea legs (ferries)** are ever allowed — today caravans are **land-only**:
+  `LandRouter` (and the caravan's own target BFS) routes over **`Province.isLand()`** provinces
+  (`ProvinceType.LAND`) only, **not** the broader `isPassable()` graph. Water (`SEA`/`LAKE`) is
+  deliberately `isPassable()` — reserved for a future sea/trade graph — but a foot caravan must
+  never cross it, so land routing filters to `isLand()`. (Routing on `isPassable()` was a bug:
+  it let bands road across open ocean to reach sea-locked islands like Nathalaire; fixed.) A
+  province with no land path — e.g. an island whose only neighbour is sea — is therefore simply
+  **unreachable by land**, and both `LandRouter.route` and the target BFS correctly return no route.
 - **Portal choice** when a neighbour border spans many cells — enter/exit at the
   minimum-cost portal (nearest the through-line), the concrete selection rule.
 - The exact **`KM_PER_PLOT` derivation** from the raster (degrees-per-pixel → km at the

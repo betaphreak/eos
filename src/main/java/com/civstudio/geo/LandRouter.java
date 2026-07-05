@@ -11,8 +11,10 @@ import java.util.PriorityQueue;
  * Level 1 of the land-routing model (see {@code docs/land-routing.md}): a
  * <b>distance-accurate</b> route over the {@link WorldMap} province graph. Where
  * {@link WorldMap#path(int, int)} returns the fewest-<em>hops</em> path (unweighted
- * BFS), this returns the shortest-<em>km</em> path — an A* search over
- * <b>passable</b> provinces with real km edge weights ({@link WorldMap#edgeKm(int,
+ * BFS), this returns the shortest-<em>km</em> path — an A* search over <b>land</b>
+ * provinces ({@link Province#isLand()}; water is {@link Province#isPassable()
+ * passable} for the future sea graph but a foot caravan must not cross it) with
+ * real km edge weights ({@link WorldMap#edgeKm(int,
  * int)}, the committed {@code /map/edges.json} table) and the great-circle {@link
  * WorldMap#distanceKm(int, int)} as its admissible heuristic. The result is a {@link
  * Route} (province sequence + per-hop km) the caravan march spends its daily distance
@@ -48,7 +50,7 @@ public final class LandRouter {
 	public Route route(int from, int to) {
 		map.province(from); // validate endpoints
 		map.province(to);
-		if (!map.province(from).isPassable() || !map.province(to).isPassable())
+		if (!map.province(from).isLand() || !map.province(to).isLand())
 			return Route.NONE;
 		if (from == to)
 			return new Route(List.of(from), new double[0], 0);
@@ -66,8 +68,8 @@ public final class LandRouter {
 				return build(cameFrom, from, to);
 			double gc = g.get(cur);
 			for (int nb : map.neighbors(cur)) {
-				if (!map.province(nb).isPassable())
-					continue; // cannot route through impassable wasteland
+				if (!map.province(nb).isLand())
+					continue; // land-only: never route a foot caravan over water or wasteland
 				double tentative = gc + map.edgeKm(cur, nb);
 				Double best = g.get(nb);
 				if (best == null || tentative < best) {

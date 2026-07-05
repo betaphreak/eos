@@ -101,6 +101,19 @@ public record Province(
 	}
 
 	/**
+	 * Whether this is dry land a caravan can march over on foot (its {@link
+	 * ProvinceType#isLand()}) — {@link ProvinceType#LAND} only. Land routing
+	 * ({@link com.civstudio.geo.LandRouter}) traverses on this, not {@link
+	 * #isPassable()}: water is passable (for the future sea graph) but a foot
+	 * caravan must not cross it.
+	 *
+	 * @return {@code true} if a land caravan may march across this province
+	 */
+	public boolean isLand() {
+		return type.isLand();
+	}
+
+	/**
 	 * Whether this province has water access (any {@code waterPlots}).
 	 *
 	 * @return {@code true} if the province is coastal
