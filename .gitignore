@@ -10,3 +10,5 @@
 /.idea/
 /.claude/
 /full.log
+# derived, regenerable web copy of per-province plot grids (build.mjs → shipPlots)
+/web/assets/plots/

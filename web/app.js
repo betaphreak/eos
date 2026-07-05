@@ -42,6 +42,88 @@ let mapReady = false;
 mapImg.onload = () => { mapReady = true; draw(); };
 mapImg.src = MAP.src;
 
+// ---- per-plot terrain zoom layer (a base WorldMap layer; the Caravan View overlays
+// its routes/heat on top) ----
+// Past K_PLOT the blurry continent raster gives way to crisp per-plot Civ4 terrain:
+// each province's canonical plot grid (assets/plots/<id>.js, lazy-loaded on demand) is
+// rasterised once to an offscreen canvas at 1px/plot, then blitted scaled into place.
+const TCOL = BUNDLE.terrainColors || {};
+const K_PLOT = 5;                 // camera scale at which plots begin to fade in
+const _rgb = {};                  // "#rrggbb" -> [r,g,b], memoised
+function terrainRgb(type) {
+  const h = TCOL[type]; if (!h) return [70, 74, 68];
+  return _rgb[h] || (_rgb[h] = [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+}
+// a province's source-pixel bounding box (from its outline rings), cached; null for seas
+function provSrcBox(p) {
+  if (p._sbox !== undefined) return p._sbox;
+  if (!p.rings) return p._sbox = null;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const ring of p.rings) for (const pt of ring) {
+    if (pt[0] < x0) x0 = pt[0]; if (pt[0] > x1) x1 = pt[0];
+    if (pt[1] < y0) y0 = pt[1]; if (pt[1] > y1) y1 = pt[1];
+  }
+  return p._sbox = { x0, y0, x1, y1 };
+}
+window.__plots = window.__plots || {};
+// lazy-load a province's plot grid via a <script> tag (works off file://, where
+// fetch() of a local resource is blocked), then rasterise and redraw
+function loadPlots(p) {
+  if (p._loading) return;
+  p._loading = true;
+  const s = document.createElement("script");
+  s.src = `assets/plots/${p.id}.js`;
+  s.onload = () => {
+    const arr = window.__plots[p.id]; delete window.__plots[p.id]; p._loading = false;
+    if (arr) { buildPlotCanvas(p, arr); draw(); }
+  };
+  s.onerror = () => { p.hasPlots = false; p._loading = false; };
+  document.head.appendChild(s);
+}
+// rasterise a province's plots to a 1px/plot offscreen canvas: terrain colour, relief
+// shading (hill lighter, peak toward rock-grey), a light feature tint, and river blend
+function buildPlotCanvas(p, plots) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const q of plots) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
+  const w = x1 - x0 + 1, h = y1 - y0 + 1;
+  const oc = document.createElement("canvas"); oc.width = w; oc.height = h;
+  const octx = oc.getContext("2d"), im = octx.createImageData(w, h), d = im.data;
+  for (const q of plots) {
+    const c = terrainRgb(q.terrain); let r = c[0], g = c[1], b = c[2];
+    const f = q.feature;
+    if (f) {
+      if (/FOREST|JUNGLE|WOOD/.test(f)) { r = r * 0.7 | 0; g = g * 0.82 + 16 | 0; b = b * 0.6 | 0; }
+      else if (/SWAMP|MARSH|BOG/.test(f)) { r = r * 0.82 | 0; g = g * 0.86 | 0; b = b * 0.82 | 0; }
+    }
+    if (q.plotType === "HILL") { r = Math.min(255, r * 1.14 + 8) | 0; g = Math.min(255, g * 1.14 + 8) | 0; b = Math.min(255, b * 1.14 + 8) | 0; }
+    else if (q.plotType === "PEAK") { r = (r + 150) / 2 | 0; g = (g + 152) / 2 | 0; b = (b + 158) / 2 | 0; }
+    if (q.river) { r = r * 0.45 + 33 | 0; g = g * 0.45 + 61 | 0; b = b * 0.45 + 91 | 0; }
+    const o = ((q.y - y0) * w + (q.x - x0)) * 4;
+    d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = 255;
+  }
+  octx.putImageData(im, 0, 0);
+  p._pcanvas = oc; p._pbox = { x0, y0, w, h };
+}
+// draw the plot layer for the provinces in view, fading in just past K_PLOT
+function drawPlots() {
+  if (cam.k < K_PLOT) return;
+  const a = Math.min(1, (cam.k - K_PLOT) / 1.5);
+  const smooth = ctx.imageSmoothingEnabled;
+  ctx.imageSmoothingEnabled = false; ctx.globalAlpha = a;
+  for (const p of P) {
+    if (!p.hasPlots) continue;
+    const bb = provSrcBox(p);
+    let sx0, sy0, sx1, sy1;
+    if (bb) { sx0 = pxr(bb.x0); sy0 = pyr(bb.y0); sx1 = pxr(bb.x1); sy1 = pyr(bb.y1); }
+    else { const x = px(p.lon), y = py(p.lat); sx0 = x - 20; sy0 = y - 20; sx1 = x + 20; sy1 = y + 20; }
+    if (sx1 < 0 || sy1 < 0 || sx0 > VIEW.w || sy0 > VIEW.h) continue;   // cull to viewport
+    if (!p._pcanvas) { loadPlots(p); continue; }
+    const b = p._pbox, dX = pxr(b.x0), dY = pyr(b.y0);
+    ctx.drawImage(p._pcanvas, dX, dY, pxr(b.x0 + b.w) - dX, pyr(b.y0 + b.h) - dY);
+  }
+  ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = smooth;
+}
+
 // ---- province polygons: choropleth heat by caravan-days, cached per view ----
 let showHeat = true;
 const MAXD = BUNDLE.meta.maxDays;
@@ -111,6 +193,7 @@ function draw() {
     ctx.drawImage(mapImg, 0,0,MAP.dw,MAP.dh,
       cam.x + cam.k*VIEW.dx, cam.y + cam.k*VIEW.dy, cam.k*VIEW.dw, cam.k*VIEW.dh);
   }
+  drawPlots();   // crisp per-plot Civ4 terrain over the blurred raster when zoomed in
 
   // choropleth: shade each province by the caravan-days spent in it
   if (showHeat) for (const p of P) { if (p.rings && p.days) { ctx.fillStyle=heatColor(p.days); ctx.fill(provPath(p)); } }
@@ -224,7 +307,7 @@ function clampPan() {
   cam.y = clampAxis(cam.y, VIEW.dy, VIEW.dh, VIEW.h);
 }
 function zoomAt(mx, my, factor) {
-  const k2 = Math.max(1, Math.min(8, cam.k * factor));
+  const k2 = Math.max(1, Math.min(32, cam.k * factor));   // deep enough to read plots
   if (k2 === cam.k) return;
   const f = k2 / cam.k;
   cam.x = mx - f * (mx - cam.x);     // keep the point under (mx,my) fixed
@@ -417,7 +500,7 @@ function renderRail(){
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <p class="footnote">All six bands leave <b>${BUNDLE.meta.origin.name}</b> on <span class="mono">${BUNDLE.meta.dateStart}</span> and march the province graph one daylight-bounded leg per day, foraging food and gathering trade goods into a capacity-capped cargo. Drag to pan, scroll to zoom; hover the map to read a province; pick a route on the map or a row below to follow one band. Scrub or press play to watch them travel.</p>`;
+      <p class="footnote">All six bands leave <b>${BUNDLE.meta.origin.name}</b> on <span class="mono">${BUNDLE.meta.dateStart}</span> and march the province graph one daylight-bounded leg per day, foraging food and gathering trade goods into a capacity-capped cargo. Drag to pan, scroll to zoom — keep zooming past the continent view to resolve each province into its real Civ4 terrain, plot by plot. Hover the map to read a province; pick a route on the map or a row below to follow one band. Scrub or press play to watch them travel.</p>`;
     rail.querySelectorAll("tr.click").forEach(tr=> tr.onclick=()=> selectJourney(+tr.dataset.idx));
   } else {
     const j=J[selected];

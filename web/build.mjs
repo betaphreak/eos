@@ -103,13 +103,19 @@ const allDates = journeys.flatMap(j => [j.startDate, j.endDate]).sort();
 // the province dots as long as the page projects with the same two formulas.
 const map = bakeTerrain(provinces);
 
+// per-plot terrain zoom layer (a base WorldMap layer the Caravan View draws over):
+// ship each displayed province's canonical plot grid as a lazy-loadable JS file, and
+// expose the terrain display colours the page tints plots with (docs §10).
+const terrainColors = terrainDisplayColors(terrainRealColors());
+const plotsShipped = shipPlots(provinces);
+
 const bundle = {
   meta: {
     seed: +SEED, scenario,
     origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
-  provinces, journeys, map,
+  provinces, journeys, map, terrainColors,
 };
 
 // the run's data as a plain script the page (index.html) loads alongside the
@@ -121,6 +127,7 @@ fs.writeFileSync(path.join(WEB, 'data.js'), dataJs);
 console.log(`Built web/data.js (${(dataJs.length / 1024).toFixed(0)} KB) + web/${map.src} (${(terrainBytes / 1024).toFixed(0)} KB) from seed ${SEED}`);
 console.log(`  ${journeys.length} journeys · ${provinces.length} provinces · ${bundle.meta.dateStart} → ${bundle.meta.dateEnd}`);
 console.log(`  terrain crop ${map.dw}×${map.dh}px`);
+console.log(`  plots: ${plotsShipped} provinces shipped to web/assets/plots/ (lazy per-plot terrain zoom)`);
 for (const j of journeys) console.log(`  ${('→ ' + j.dest).padEnd(26)} ${j.provinceCount} prov · ${(j.days / 365.25).toFixed(1)}y · cargo ${j.cargoFinal}`);
 
 // ---------------------------------------------------------------------------
@@ -292,6 +299,57 @@ function resolveArt(artPath) {
     dir = path.join(dir, hit);
   }
   return dir;
+}
+
+// ---------------------------------------------------------------------------
+// per-plot terrain zoom layer
+// ---------------------------------------------------------------------------
+
+// the terrain display colours the plot layer tints with — the same real Civ4
+// blend×detail averages the background bake uses (terrainRealColors), as hex. The
+// fallback (those averages, measured once) keeps the plot layer colourful even when
+// the LFS textures aren't pulled, so terrain-art.json + textures are optional here.
+// (The table is inside the function so this hoisted call at module load doesn't hit
+// a const in its temporal dead zone.)
+function terrainDisplayColors(real) {
+  const fallback = {
+    TERRAIN_GRASSLAND: [81, 91, 33], TERRAIN_LUSH: [37, 74, 11], TERRAIN_PLAINS: [103, 88, 45],
+    TERRAIN_SCRUB: [100, 91, 62], TERRAIN_MARSH: [65, 72, 36], TERRAIN_MUDDY: [90, 79, 51],
+    TERRAIN_ROCKY: [68, 64, 62], TERRAIN_BADLAND: [89, 75, 55], TERRAIN_JAGGED: [110, 106, 100],
+    TERRAIN_BARREN: [56, 48, 37], TERRAIN_DESERT: [126, 83, 40], TERRAIN_DUNES: [161, 119, 66],
+    TERRAIN_SALT_FLATS: [129, 127, 123], TERRAIN_TAIGA: [101, 99, 49], TERRAIN_TUNDRA: [116, 102, 88],
+    TERRAIN_PERMAFROST: [122, 132, 138],
+  };
+  const hex = c => '#' + [0, 1, 2].map(k => Math.max(0, Math.min(255, c[k] | 0)).toString(16).padStart(2, '0')).join('');
+  // the plot zoom is a detail dive, so lift the blend×detail averages (×1.7) into a
+  // vibrant, map-like range rather than the dark-theme tint the background bake uses
+  const lift = c => [c[0] * 1.7, c[1] * 1.7, c[2] * 1.7];
+  const out = {};
+  for (const k in fallback) out[k] = hex(fallback[k]);        // colourful default (already lifted)
+  if (real) for (const [k, v] of real) out[k] = hex(lift(v)); // real textures override
+  return out;
+}
+
+// copy each displayed province's canonical plot grid (map/provinces/<id>.json.gz,
+// gzipped JSON) into web/assets/plots/<id>.js as a lazy-loadable assignment. Emitted
+// as a JS file (not the raw .gz) so the page can load it via a <script> tag — which
+// works off file:// where fetch() of a local resource is blocked (an HTTP deploy still
+// gzips the .js on the wire). Sets p.hasPlots; the dir is gitignored (regenerable).
+function shipPlots(provs) {
+  const srcDir = path.join(ROOT, 'src/main/resources/map/provinces');
+  const outDir = path.join(WEB, 'assets', 'plots');
+  fs.rmSync(outDir, { recursive: true, force: true });
+  fs.mkdirSync(outDir, { recursive: true });
+  let n = 0;
+  for (const p of provs) {
+    const gz = path.join(srcDir, `${p.id}.json.gz`);
+    if (!fs.existsSync(gz)) { p.hasPlots = false; continue; }
+    const json = zlib.gunzipSync(fs.readFileSync(gz)).toString('utf8');
+    fs.writeFileSync(path.join(outDir, `${p.id}.js`),
+      `window.__plots=window.__plots||{};window.__plots[${p.id}]=${json};\n`);
+    p.hasPlots = true; n++;
+  }
+  return n;
 }
 
 // Minimal truecolour PNG encoder (Node has zlib but no image codec).
