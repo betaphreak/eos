@@ -108,6 +108,7 @@ const map = bakeTerrain(provinces);
 // expose the terrain display colours the page tints plots with (docs §10). Slice B
 // also bakes a real ground-texture atlas the page draws per plot at deep zoom.
 const terrainColors = terrainDisplayColors(terrainRealColors());
+const terrainLayer = terrainLayerOrders();   // TERRAIN_* -> Civ4 LayerOrder (drives edge blending)
 const terrainTiles = bakeTerrainTiles(terrainColors);
 const plotsShipped = shipPlots(provinces);
 
@@ -117,7 +118,7 @@ const bundle = {
     origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
-  provinces, journeys, map, terrainColors, terrainTiles,
+  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles,
 };
 
 // the run's data as a plain script the page (index.html) loads alongside the
@@ -314,6 +315,20 @@ function resolveArt(artPath) {
 // the LFS textures aren't pulled, so terrain-art.json + textures are optional here.
 // (The table is inside the function so this hoisted call at module load doesn't hit
 // a const in its temporal dead zone.)
+// TERRAIN_* -> Civ4 LayerOrder from terrain-art.json: higher layers paint over lower,
+// so the plot renderer feathers a higher-layer terrain over its lower neighbours at
+// shared edges (docs §6.1). Empty if the manifest is absent (renderer keeps hard edges).
+function terrainLayerOrders() {
+  const mp = path.join(ROOT, 'src/main/resources/map/terrain-art.json');
+  if (!fs.existsSync(mp)) return {};
+  try {
+    const a = JSON.parse(fs.readFileSync(mp, 'utf8'));
+    const o = {};
+    for (const e of a) o[e.terrain] = e.layerOrder;
+    return o;
+  } catch { return {}; }
+}
+
 function terrainDisplayColors(real) {
   const fallback = {
     TERRAIN_GRASSLAND: [81, 91, 33], TERRAIN_LUSH: [37, 74, 11], TERRAIN_PLAINS: [103, 88, 45],
@@ -324,9 +339,10 @@ function terrainDisplayColors(real) {
     TERRAIN_PERMAFROST: [122, 132, 138],
   };
   const hex = c => '#' + [0, 1, 2].map(k => Math.max(0, Math.min(255, c[k] | 0)).toString(16).padStart(2, '0')).join('');
-  // the plot zoom is a detail dive, so lift the blend×detail averages (×1.7) into a
-  // vibrant, map-like range rather than the dark-theme tint the background bake uses
-  const lift = c => [c[0] * 1.7, c[1] * 1.7, c[2] * 1.7];
+  // the plot zoom is a detail dive, so lift the blend×detail averages into a vibrant,
+  // map-like range rather than the dark-theme tint the background bake uses
+  const LIFT = 2.35;
+  const lift = c => [c[0] * LIFT, c[1] * LIFT, c[2] * LIFT];
   const out = {};
   for (const k in fallback) out[k] = hex(fallback[k]);        // colourful default (already lifted)
   if (real) for (const [k, v] of real) out[k] = hex(lift(v)); // real textures override

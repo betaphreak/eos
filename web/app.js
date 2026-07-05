@@ -51,8 +51,20 @@ const TCOL = BUNDLE.terrainColors || {};
 const K_PLOT = 5;                 // camera scale at which plots begin to fade in
 const K_TEX = 16;                 // camera scale at which flat tiles give way to real textures
 const TT = BUNDLE.terrainTiles;   // ground-texture atlas {src, tile, cols:{TERRAIN_*: column}} or null
-let ttImg = null, ttReady = false;
-if (TT) { ttImg = new Image(); ttImg.onload = () => { ttReady = true; draw(); }; ttImg.src = TT.src; }
+const LY = BUNDLE.terrainLayer || {};   // TERRAIN_* -> Civ4 LayerOrder (higher bleeds over lower)
+const NB4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+let ttImg = null, ttReady = false, ttTiles = null;
+if (TT) { ttImg = new Image(); ttImg.onload = () => { extractTiles(); ttReady = true; draw(); }; ttImg.src = TT.src; }
+// split the atlas strip into a per-terrain tile canvas, so each can be a repeating
+// pattern (continuous ground texture across plots, no per-plot tile seam)
+function extractTiles() {
+  ttTiles = {};
+  for (const terr in TT.cols) {
+    const tc = document.createElement("canvas"); tc.width = TT.tile; tc.height = TT.tile;
+    tc.getContext("2d").drawImage(ttImg, TT.cols[terr] * TT.tile, 0, TT.tile, TT.tile, 0, 0, TT.tile, TT.tile);
+    ttTiles[terr] = tc;
+  }
+}
 const _rgb = {};                  // "#rrggbb" -> [r,g,b], memoised
 function terrainRgb(type) {
   const h = TCOL[type]; if (!h) return [70, 74, 68];
@@ -144,17 +156,45 @@ function drawPlots() {
 // once and blitted scaled (so hover/pan redraws stay a single drawImage per province).
 // TPP drops for very large provinces to bound the offscreen size.
 function buildPlotTexCanvas(p) {
-  const T = TT.tile;
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   for (const q of p._plots) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
   const w = x1 - x0 + 1, h = y1 - y0 + 1;
-  let tpp = 16; while (tpp > 4 && Math.max(w, h) * tpp > 1400) tpp >>= 1;
+  let tpp = 24; while (tpp > 4 && Math.max(w, h) * tpp > 1800) tpp = Math.max(4, tpp - 4);
   const oc = document.createElement("canvas"); oc.width = w * tpp; oc.height = h * tpp;
   const o = oc.getContext("2d"); o.imageSmoothingEnabled = true;
+  const grid = new Map();
+  for (const q of p._plots) grid.set(q.x * 1e5 + q.y, q);
+  // 1) base terrain as continuous repeating patterns (no per-plot tile seam)
+  const pat = {};
   for (const q of p._plots) {
-    const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp, c = TT.cols[q.terrain];
-    if (c === undefined) { const g = terrainRgb(q.terrain); o.fillStyle = `rgb(${g[0]},${g[1]},${g[2]})`; o.fillRect(cx, cy, tpp, tpp); }
-    else o.drawImage(ttImg, c * T, 0, T, T, cx, cy, tpp, tpp);
+    const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp;
+    let pp = pat[q.terrain];
+    if (pp === undefined) { const tc = ttTiles && ttTiles[q.terrain]; pp = pat[q.terrain] = tc ? o.createPattern(tc, "repeat") : null; }
+    if (pp) { o.fillStyle = pp; o.fillRect(cx, cy, tpp, tpp); }
+    else { const g = terrainRgb(q.terrain); o.fillStyle = `rgb(${g[0]},${g[1]},${g[2]})`; o.fillRect(cx, cy, tpp, tpp); }
+  }
+  // 2) 16-way edge blend: a higher-LayerOrder neighbour feathers over this plot across
+  // the shared edge (Civ4 §6.1, adapted to the raster — a colour bleed, not a tile swap)
+  const f = tpp * 0.5;
+  for (const q of p._plots) {
+    const ql = LY[q.terrain] || 0, cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp;
+    for (const d of NB4) {
+      const n = grid.get((q.x + d[0]) * 1e5 + (q.y + d[1]));
+      if (!n || n.terrain === q.terrain || (LY[n.terrain] || 0) <= ql) continue;
+      const g = terrainRgb(n.terrain);
+      const c0 = `rgba(${g[0]},${g[1]},${g[2]},.8)`, c1 = `rgba(${g[0]},${g[1]},${g[2]},0)`;
+      let gr, rx, ry, rw, rh;
+      if (d[0] === 1) { gr = o.createLinearGradient(cx + tpp, 0, cx + tpp - f, 0); rx = cx + tpp - f; ry = cy; rw = f; rh = tpp; }
+      else if (d[0] === -1) { gr = o.createLinearGradient(cx, 0, cx + f, 0); rx = cx; ry = cy; rw = f; rh = tpp; }
+      else if (d[1] === 1) { gr = o.createLinearGradient(0, cy + tpp, 0, cy + tpp - f); rx = cx; ry = cy + tpp - f; rw = tpp; rh = f; }
+      else { gr = o.createLinearGradient(0, cy, 0, cy + f); rx = cx; ry = cy; rw = tpp; rh = f; }
+      gr.addColorStop(0, c0); gr.addColorStop(1, c1);
+      o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
+    }
+  }
+  // 3) relief + rivers, on top of the blended terrain
+  for (const q of p._plots) {
+    const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp;
     if (q.plotType === "HILL") { o.fillStyle = "rgba(255,255,255,.10)"; o.fillRect(cx, cy, tpp, tpp); }
     else if (q.plotType === "PEAK") { o.fillStyle = "rgba(214,218,228,.36)"; o.fillRect(cx, cy, tpp, tpp); }
     if (q.river) { o.fillStyle = "rgba(74,124,170,.55)"; o.fillRect(cx, cy, tpp, tpp); }
@@ -350,7 +390,7 @@ function clampPan() {
   cam.y = clampAxis(cam.y, VIEW.dy, VIEW.dh, VIEW.h);
 }
 function zoomAt(mx, my, factor) {
-  const k2 = Math.max(1, Math.min(32, cam.k * factor));   // deep enough to read plots
+  const k2 = Math.max(1, Math.min(64, cam.k * factor));   // deep enough to read individual plots
   if (k2 === cam.k) return;
   const f = k2 / cam.k;
   cam.x = mx - f * (mx - cam.x);     // keep the point under (mx,my) fixed
@@ -617,7 +657,7 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>{ draw
 const Pby = new Map(P.map(p => [p.id, p]));
 function focusProvince(id, k) {
   const p = Pby.get(id); if (!p) return;
-  cam.k = Math.max(1, Math.min(32, k || 18));
+  cam.k = Math.max(1, Math.min(64, k || 18));
   cam.x = VIEW.w / 2 - cam.k * baseXr(sxSrc(p.lon));
   cam.y = VIEW.h / 2 - cam.k * baseYr(sySrc(p.lat));
   clampPan(); viewVersion++; draw();
