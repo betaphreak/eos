@@ -27,8 +27,13 @@ resolves into the **real Civ4 terrain, plot by plot** — each province's canoni
 grid (`src/main/resources/map/provinces/<id>.json.gz`) is shipped by the build as a
 lazy-loaded `assets/plots/<id>.js`, rasterised in-page to a 1px/plot offscreen canvas
 (terrain colour from the Civ4 textures, relief shading, rivers, feature tint) and
-blitted crisp under the caravan overlays. This layer is mode-agnostic — the Caravan
-View just draws its routes/heat on top; other WorldMap map modes will reuse it.
+blitted crisp under the caravan overlays. Past ~16× the flat tiles give way to **real
+ground textures** — each terrain's Civ4 *detail* texture, recoloured to its terrain
+colour and baked into `assets/terrain-tiles-<seed>.png`, drawn per plot. This layer is
+mode-agnostic — the Caravan View just draws its routes/heat on top; other WorldMap map
+modes will reuse it. Because the static caravan-days choropleth would hide the terrain,
+it shows as a **full overview only while zoomed out**, and **hover-only** once the
+terrain shows. Deep link to a province at a zoom with `index.html#p=<id>&z=<zoom>`.
 
 ## Run it
 

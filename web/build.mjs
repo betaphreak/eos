@@ -105,8 +105,10 @@ const map = bakeTerrain(provinces);
 
 // per-plot terrain zoom layer (a base WorldMap layer the Caravan View draws over):
 // ship each displayed province's canonical plot grid as a lazy-loadable JS file, and
-// expose the terrain display colours the page tints plots with (docs §10).
+// expose the terrain display colours the page tints plots with (docs §10). Slice B
+// also bakes a real ground-texture atlas the page draws per plot at deep zoom.
 const terrainColors = terrainDisplayColors(terrainRealColors());
+const terrainTiles = bakeTerrainTiles(terrainColors);
 const plotsShipped = shipPlots(provinces);
 
 const bundle = {
@@ -115,7 +117,7 @@ const bundle = {
     origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
-  provinces, journeys, map, terrainColors,
+  provinces, journeys, map, terrainColors, terrainTiles,
 };
 
 // the run's data as a plain script the page (index.html) loads alongside the
@@ -128,6 +130,7 @@ console.log(`Built web/data.js (${(dataJs.length / 1024).toFixed(0)} KB) + web/$
 console.log(`  ${journeys.length} journeys · ${provinces.length} provinces · ${bundle.meta.dateStart} → ${bundle.meta.dateEnd}`);
 console.log(`  terrain crop ${map.dw}×${map.dh}px`);
 console.log(`  plots: ${plotsShipped} provinces shipped to web/assets/plots/ (lazy per-plot terrain zoom)`);
+console.log(`  terrain tiles: ${terrainTiles ? terrainTiles.src + ' (' + Object.keys(terrainTiles.cols).length + ' textures)' : 'skipped (no terrain-art.json / LFS textures)'}`);
 for (const j of journeys) console.log(`  ${('→ ' + j.dest).padEnd(26)} ${j.provinceCount} prov · ${(j.days / 365.25).toFixed(1)}y · cargo ${j.cargoFinal}`);
 
 // ---------------------------------------------------------------------------
@@ -327,6 +330,79 @@ function terrainDisplayColors(real) {
   const out = {};
   for (const k in fallback) out[k] = hex(fallback[k]);        // colourful default (already lifted)
   if (real) for (const [k, v] of real) out[k] = hex(lift(v)); // real textures override
+  return out;
+}
+
+// Slice B — bake a real ground-texture atlas: for each curated terrain, take its Civ4
+// DETAIL texture (a large seamless tiling ground texture, unlike the blend maps which
+// are semi tile-sheets), downsample to a 48×48 tile and recolour it so its mean equals
+// the terrain's display colour — real texture in the right hue, cohesive with the flat
+// colours. Packed as one horizontal strip PNG the page draws per plot at deep zoom.
+// Returns {src, tile, cols:{TERRAIN_*: column}}, or null if the manifest/textures are
+// absent (the page then keeps the flat-colour plot tiles).
+function bakeTerrainTiles(colorsHex) {
+  const manifestPath = path.join(ROOT, 'src/main/resources/map/terrain-art.json');
+  if (!fs.existsSync(manifestPath)) return null;
+  let manifest;
+  try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch { return null; }
+  const T = 48, W = manifest.length * T, H = T;
+  const rgb = Buffer.alloc(W * H * 3);
+  const cols = {};
+  let idx = 0, decoded = 0;
+  const hexRgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  for (const e of manifest) {
+    const target = hexRgb(colorsHex[e.terrain] || '#465046');
+    const tile = detailTile(e.detail, target, T);
+    if (tile) decoded++;
+    const t = tile || solidTile(target, T);
+    for (let y = 0; y < T; y++)
+      for (let x = 0; x < T; x++) {
+        const s = (y * T + x) * 3, d = (y * W + idx * T + x) * 3;
+        rgb[d] = t[s]; rgb[d + 1] = t[s + 1]; rgb[d + 2] = t[s + 2];
+      }
+    cols[e.terrain] = idx++;
+  }
+  if (!decoded) return null;   // no textures decoded (LFS not pulled) → keep flat colours
+  const png = encodePng(W, H, rgb);
+  const assets = path.join(WEB, 'assets');
+  fs.mkdirSync(assets, { recursive: true });
+  const file = `terrain-tiles-${SEED}.png`;
+  fs.writeFileSync(path.join(assets, file), png);
+  return { src: `assets/${file}`, tile: T, cols };
+}
+// downsample a detail .dds to a T×T RGB tile, then recolour so its mean = target
+function detailTile(artPath, target, T) {
+  const file = resolveArt(artPath);
+  if (!file) return null;
+  let img;
+  try { img = decodeDds(fs.readFileSync(file)); } catch { return null; }
+  const bx = img.width / T, by = img.height / T;
+  const tmp = new Float64Array(T * T * 3);
+  let mr = 0, mg = 0, mb = 0;
+  for (let j = 0; j < T; j++)
+    for (let i = 0; i < T; i++) {
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let y = Math.floor(j * by); y < Math.floor((j + 1) * by); y++)
+        for (let x = Math.floor(i * bx); x < Math.floor((i + 1) * bx); x++) {
+          const o = (y * img.width + x) * 4; r += img.rgba[o]; g += img.rgba[o + 1]; b += img.rgba[o + 2]; n++;
+        }
+      const o = (j * T + i) * 3; tmp[o] = r / n; tmp[o + 1] = g / n; tmp[o + 2] = b / n;
+      mr += tmp[o]; mg += tmp[o + 1]; mb += tmp[o + 2];
+    }
+  const N = T * T;
+  const sr = target[0] / Math.max(1, mr / N), sg = target[1] / Math.max(1, mg / N), sb = target[2] / Math.max(1, mb / N);
+  const out = Buffer.alloc(N * 3);
+  for (let k = 0; k < N; k++) {
+    out[k * 3] = Math.min(255, tmp[k * 3] * sr) | 0;
+    out[k * 3 + 1] = Math.min(255, tmp[k * 3 + 1] * sg) | 0;
+    out[k * 3 + 2] = Math.min(255, tmp[k * 3 + 2] * sb) | 0;
+  }
+  return out;
+}
+// a flat T×T RGB tile of one colour (fallback when a detail texture is unavailable)
+function solidTile(rgbArr, T) {
+  const out = Buffer.alloc(T * T * 3);
+  for (let k = 0; k < T * T; k++) { out[k * 3] = rgbArr[0]; out[k * 3 + 1] = rgbArr[1]; out[k * 3 + 2] = rgbArr[2]; }
   return out;
 }
 

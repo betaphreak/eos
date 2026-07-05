@@ -49,6 +49,10 @@ mapImg.src = MAP.src;
 // rasterised once to an offscreen canvas at 1px/plot, then blitted scaled into place.
 const TCOL = BUNDLE.terrainColors || {};
 const K_PLOT = 5;                 // camera scale at which plots begin to fade in
+const K_TEX = 16;                 // camera scale at which flat tiles give way to real textures
+const TT = BUNDLE.terrainTiles;   // ground-texture atlas {src, tile, cols:{TERRAIN_*: column}} or null
+let ttImg = null, ttReady = false;
+if (TT) { ttImg = new Image(); ttImg.onload = () => { ttReady = true; draw(); }; ttImg.src = TT.src; }
 const _rgb = {};                  // "#rrggbb" -> [r,g,b], memoised
 function terrainRgb(type) {
   const h = TCOL[type]; if (!h) return [70, 74, 68];
@@ -69,13 +73,13 @@ window.__plots = window.__plots || {};
 // lazy-load a province's plot grid via a <script> tag (works off file://, where
 // fetch() of a local resource is blocked), then rasterise and redraw
 function loadPlots(p) {
-  if (p._loading) return;
+  if (p._loading || p._plots) return;
   p._loading = true;
   const s = document.createElement("script");
   s.src = `assets/plots/${p.id}.js`;
   s.onload = () => {
     const arr = window.__plots[p.id]; delete window.__plots[p.id]; p._loading = false;
-    if (arr) { buildPlotCanvas(p, arr); draw(); }
+    if (arr) { p._plots = arr; draw(); }         // kept for the textured pass; offscreen built lazily
   };
   s.onerror = () => { p.hasPlots = false; p._loading = false; };
   document.head.appendChild(s);
@@ -104,12 +108,15 @@ function buildPlotCanvas(p, plots) {
   octx.putImageData(im, 0, 0);
   p._pcanvas = oc; p._pbox = { x0, y0, w, h };
 }
-// draw the plot layer for the provinces in view, fading in just past K_PLOT
+// draw the plot layer for the provinces in view, fading in just past K_PLOT. Below
+// K_TEX each province blits its flat-colour 1px/plot offscreen (cheap overview); past
+// K_TEX (and not mid-pan) it draws real ground-texture tiles per plot.
 function drawPlots() {
   if (cam.k < K_PLOT) return;
+  const textured = cam.k >= K_TEX && ttReady && !dragging;   // flat tiles while panning (cheap)
   const a = Math.min(1, (cam.k - K_PLOT) / 1.5);
   const smooth = ctx.imageSmoothingEnabled;
-  ctx.imageSmoothingEnabled = false; ctx.globalAlpha = a;
+  ctx.globalAlpha = a;
   for (const p of P) {
     if (!p.hasPlots) continue;
     const bb = provSrcBox(p);
@@ -117,11 +124,42 @@ function drawPlots() {
     if (bb) { sx0 = pxr(bb.x0); sy0 = pyr(bb.y0); sx1 = pxr(bb.x1); sy1 = pyr(bb.y1); }
     else { const x = px(p.lon), y = py(p.lat); sx0 = x - 20; sy0 = y - 20; sx1 = x + 20; sy1 = y + 20; }
     if (sx1 < 0 || sy1 < 0 || sx0 > VIEW.w || sy0 > VIEW.h) continue;   // cull to viewport
-    if (!p._pcanvas) { loadPlots(p); continue; }
+    if (!p._plots) { loadPlots(p); continue; }
+    if (textured) {
+      if (!p._tcanvas) buildPlotTexCanvas(p);                 // textured offscreen, built once
+      ctx.imageSmoothingEnabled = true;
+      const b = p._tbox, dX = pxr(b.x0), dY = pyr(b.y0);
+      ctx.drawImage(p._tcanvas, dX, dY, pxr(b.x0 + b.w) - dX, pyr(b.y0 + b.h) - dY);
+      continue;
+    }
+    if (!p._pcanvas) buildPlotCanvas(p, p._plots);            // flat-colour offscreen, built once
+    ctx.imageSmoothingEnabled = false;
     const b = p._pbox, dX = pxr(b.x0), dY = pyr(b.y0);
     ctx.drawImage(p._pcanvas, dX, dY, pxr(b.x0 + b.w) - dX, pyr(b.y0 + b.h) - dY);
   }
   ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = smooth;
+}
+// rasterise a province's plots to a textured offscreen — each plot drawn as its Civ4
+// ground-texture tile (from the atlas) at TPP px, plus relief/river overlays — built
+// once and blitted scaled (so hover/pan redraws stay a single drawImage per province).
+// TPP drops for very large provinces to bound the offscreen size.
+function buildPlotTexCanvas(p) {
+  const T = TT.tile;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const q of p._plots) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
+  const w = x1 - x0 + 1, h = y1 - y0 + 1;
+  let tpp = 16; while (tpp > 4 && Math.max(w, h) * tpp > 1400) tpp >>= 1;
+  const oc = document.createElement("canvas"); oc.width = w * tpp; oc.height = h * tpp;
+  const o = oc.getContext("2d"); o.imageSmoothingEnabled = true;
+  for (const q of p._plots) {
+    const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp, c = TT.cols[q.terrain];
+    if (c === undefined) { const g = terrainRgb(q.terrain); o.fillStyle = `rgb(${g[0]},${g[1]},${g[2]})`; o.fillRect(cx, cy, tpp, tpp); }
+    else o.drawImage(ttImg, c * T, 0, T, T, cx, cy, tpp, tpp);
+    if (q.plotType === "HILL") { o.fillStyle = "rgba(255,255,255,.10)"; o.fillRect(cx, cy, tpp, tpp); }
+    else if (q.plotType === "PEAK") { o.fillStyle = "rgba(214,218,228,.36)"; o.fillRect(cx, cy, tpp, tpp); }
+    if (q.river) { o.fillStyle = "rgba(74,124,170,.55)"; o.fillRect(cx, cy, tpp, tpp); }
+  }
+  p._tcanvas = oc; p._tbox = { x0, y0, w, h };
 }
 
 // ---- province polygons: choropleth heat by caravan-days, cached per view ----
@@ -195,8 +233,13 @@ function draw() {
   }
   drawPlots();   // crisp per-plot Civ4 terrain over the blurred raster when zoomed in
 
-  // choropleth: shade each province by the caravan-days spent in it
-  if (showHeat) for (const p of P) { if (p.rings && p.days) { ctx.fillStyle=heatColor(p.days); ctx.fill(provPath(p)); } }
+  // choropleth: a full caravan-days overview while zoomed out, but once the terrain
+  // plots/textures show (cam.k >= K_PLOT) only the hovered province is shaded — the
+  // static heat would otherwise hide the real terrain colours under it.
+  if (showHeat) {
+    if (cam.k < K_PLOT) { for (const p of P) if (p.rings && p.days) { ctx.fillStyle=heatColor(p.days); ctx.fill(provPath(p)); } }
+    else if (hoverProv && hoverProv.rings && hoverProv.days) { ctx.fillStyle=heatColor(hoverProv.days); ctx.fill(provPath(hoverProv)); }
+  }
   // province outlines
   ctx.strokeStyle="rgba(190,205,230,.18)"; ctx.lineWidth=0.8;
   for (const p of P) if (p.rings) ctx.stroke(provPath(p));
@@ -334,7 +377,7 @@ window.addEventListener("mousemove", e => {
   cam.x += dx; cam.y += dy; lastX = e.clientX; lastY = e.clientY;
   clampPan(); viewVersion++; draw();
 });
-window.addEventListener("mouseup", () => { if (dragging) { dragging = false; stage.classList.remove("grabbing"); } });
+window.addEventListener("mouseup", () => { if (dragging) { dragging = false; stage.classList.remove("grabbing"); draw(); } });
 
 document.getElementById("zoomIn").onclick = () => zoomAt(VIEW.w/2, VIEW.h/2, 1.5);
 document.getElementById("zoomOut").onclick = () => zoomAt(VIEW.w/2, VIEW.h/2, 1/1.5);
@@ -570,9 +613,26 @@ themeBtn.onclick=()=>{
 };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>{ draw(); });
 
+// ---- deep link: index.html#p=<provinceId>&z=<zoom> focuses a province at a zoom ----
+const Pby = new Map(P.map(p => [p.id, p]));
+function focusProvince(id, k) {
+  const p = Pby.get(id); if (!p) return;
+  cam.k = Math.max(1, Math.min(32, k || 18));
+  cam.x = VIEW.w / 2 - cam.k * baseXr(sxSrc(p.lon));
+  cam.y = VIEW.h / 2 - cam.k * baseYr(sySrc(p.lat));
+  clampPan(); viewVersion++; draw();
+}
+function applyHash() {
+  const p = /(?:^|[#&])p=(\d+)/.exec(location.hash);
+  const z = /(?:^|[#&])z=(\d+(?:\.\d+)?)/.exec(location.hash);
+  if (p) focusProvince(+p[1], z ? +z[1] : 18);
+}
+window.addEventListener("hashchange", applyHash);
+
 // ---- boot ----
 window.addEventListener("resize", resize);
 resize();
 setT(t0);
 renderRail();
-if(!reduce) setTimeout(play, 650);
+applyHash();
+if(!reduce && !location.hash) setTimeout(play, 650);
