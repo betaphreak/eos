@@ -14,3 +14,6 @@
 /web/assets/plots/
 # derived, regenerable high-res terrain-texture atlas (build.mjs → bakeTerrainTiles)
 /web/assets/terrain-tiles-*.png
+# whole-world per-province plot caches — hundreds of MB, canonical/regenerable via
+# WorldPlotGenerator (the sim also regenerates any on demand). Too heavy to commit.
+/src/main/resources/map/provinces/*.json.gz

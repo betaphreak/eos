@@ -3,8 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CivStudio Caravan View</title>
+  <title>CivStudio · WorldMap</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    #modeToggle{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:6;display:flex;gap:2px;background:rgba(10,14,22,.72);border:1px solid rgba(190,205,230,.16);border-radius:9px;padding:3px;backdrop-filter:blur(6px)}
+    #modeToggle button{font:600 11px system-ui,'Segoe UI',sans-serif;letter-spacing:.02em;color:#9fb0c8;background:transparent;border:0;border-radius:6px;padding:5px 12px;cursor:pointer}
+    #modeToggle button[aria-pressed="true"]{background:rgba(190,205,230,.16);color:#eef2f8}
+  </style>
 </head>
 <body>
   <div class="app">
@@ -12,9 +17,14 @@
       <canvas id="map"></canvas>
 
       <div class="titleblock">
-        <p class="eyebrow">CivStudio · seed 24601 · replay</p>
-        <h1 class="title serif">Migration from Dhenijansar</h1>
+        <p class="eyebrow">CivStudio · WorldMap</p>
+        <h1 class="title serif">The World of Anbennar</h1>
         <p class="subtitle">Six caravans muster on the Rahen coast and strike out across the known world, foraging and hauling cargo until each reaches its distant site. A recorded run of the engine's parallel directed marches.</p>
+      </div>
+
+      <div id="modeToggle" role="group" aria-label="Map mode">
+        <button data-mode="world" aria-pressed="true">World</button>
+        <button data-mode="caravan" aria-pressed="false">Caravan</button>
       </div>
 
       <button class="themebtn" id="themeBtn" title="Toggle light / dark" aria-label="Toggle theme">

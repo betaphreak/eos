@@ -246,6 +246,8 @@ function featureSprite(o, cx, cy, s, feature, sx, sy) {
 
 // ---- province polygons: choropleth heat by caravan-days, cached per view ----
 let showHeat = true;
+// WorldMap is the base view; Caravan is a toggle-able overlay mode (routes/heat/timeline)
+let mode = /caravan/.test(location.hash) ? "caravan" : "world";
 const MAXD = BUNDLE.meta.maxDays;
 const lerp = (a,b,t) => a + (b-a)*t;
 function heatColor(days) {                      // amber (low) -> red (high), over dark terrain
@@ -318,7 +320,7 @@ function draw() {
   // choropleth: a full caravan-days overview while zoomed out, but once the terrain
   // plots/textures show (cam.k >= K_PLOT) only the hovered province is shaded — the
   // static heat would otherwise hide the real terrain colours under it.
-  if (showHeat) {
+  if (showHeat && mode === "caravan") {
     if (cam.k < K_PLOT) { for (const p of P) if (p.rings && p.days) { ctx.fillStyle=heatColor(p.days); ctx.fill(provPath(p)); } }
     else if (hoverProv && hoverProv.rings && hoverProv.days) { ctx.fillStyle=heatColor(hoverProv.days); ctx.fill(provPath(hoverProv)); }
   }
@@ -335,6 +337,8 @@ function draw() {
     ctx.strokeStyle="#eef2f8"; ctx.lineWidth=1.4; ctx.stroke();
   }
 
+  // caravan overlay (routes, origin, moving bands) — only in Caravan mode
+  if (mode === "caravan") {
   // routes (dim when another is selected), with a soft shadow to read over terrain
   J.forEach(j => {
     const dim = selected!==null && selected!==j.idx;
@@ -369,6 +373,7 @@ function draw() {
       ctx.globalAlpha=1;
     }
   });
+  } // end caravan overlay
 
   drawLabels();
 }
@@ -402,13 +407,15 @@ function drawLabels() {
     }
   };
   const F1="600 12px system-ui,'Segoe UI',sans-serif", F2="500 10.5px system-ui,'Segoe UI',sans-serif";
-  label(BUNDLE.meta.origin.name, px(BUNDLE.meta.origin.lon), py(BUNDLE.meta.origin.lat),
-    { font:F1, size:12, color:cssVar("--accent") });
-  J.forEach(j => {
-    if (selected!==null && selected!==j.idx) return;
-    const d = j.keys[j.keys.length-1];
-    label(j.dest, px(d.lon), py(d.lat), { font:F1, size:12, color:"#eaf0f8", dot:j.color, dotR:3.6 });
-  });
+  if (mode === "caravan") {
+    label(BUNDLE.meta.origin.name, px(BUNDLE.meta.origin.lon), py(BUNDLE.meta.origin.lat),
+      { font:F1, size:12, color:cssVar("--accent") });
+    J.forEach(j => {
+      if (selected!==null && selected!==j.idx) return;
+      const d = j.keys[j.keys.length-1];
+      label(j.dest, px(d.lon), py(d.lat), { font:F1, size:12, color:"#eaf0f8", dot:j.color, dotR:3.6 });
+    });
+  }
   if (selected===null)
     CONTEXT.forEach(p => label(p.name, px(p.lon), py(p.lat), { font:F2, size:10.5, color:"#9fb0c8" }));
 }
@@ -609,7 +616,32 @@ function parseCarrying(s){
   });
   return {items, more: more?+more:0};
 }
+function worldRail(){
+  return `<div class="runmeta">
+    <div class="rm-title serif" style="font-size:16px">WorldMap</div>
+    <div class="rm-sub">Anbennar · the whole world, real Civ4 terrain</div>
+    <div class="metagrid">
+      <div class="metacell"><div class="k">Land provinces</div><div class="v">${P.length}</div></div>
+      <div class="metacell"><div class="k">Zoom</div><div class="v" style="font-size:15px">to the plot</div></div>
+    </div></div>
+    <p class="footnote">The full world, rendered from the engine's real terrain. Drag to pan, scroll to zoom — keep zooming past the continent view to resolve any province into its terrain plot by plot (textures, hillshade from the heightmap, rivers, features). Hover the map to read a province. Switch to <b>Caravan</b> mode to replay the six-band migration from Dhenijansar.</p>`;
+}
+// show/hide the caravan-only chrome and swap the title for a mode
+function setMode(m){
+  mode = m;
+  document.querySelectorAll("#modeToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.mode===m));
+  const cara = m === "caravan";
+  legend.style.display = cara ? "" : "none";
+  document.querySelector(".transport").style.display = cara ? "" : "none";
+  heatBtn.style.display = cara ? "" : "none";
+  document.querySelector(".eyebrow").textContent = cara ? `CivStudio · seed ${BUNDLE.meta.seed} · replay` : "CivStudio · WorldMap";
+  document.querySelector(".title").textContent = cara ? "Migration from Dhenijansar" : "The World of Anbennar";
+  document.querySelector(".subtitle").style.display = cara ? "" : "none";
+  if (!cara) { pause(); selected = null; }
+  renderRail(); draw();
+}
 function renderRail(){
+  if (mode === "world") { rail.innerHTML = worldRail(); return; }
   if(selected===null){
     const rows = J.map(j=>`<tr class="click" data-idx="${j.idx}">
         <td><div class="destcell"><span class="dot" style="background:${j.color}"></span>${j.dest}</div></td>
@@ -711,10 +743,14 @@ function applyHash() {
 }
 window.addEventListener("hashchange", applyHash);
 
+// ---- mode toggle ----
+document.querySelectorAll("#modeToggle button").forEach(b =>
+  b.addEventListener("click", () => setMode(b.dataset.mode)));
+
 // ---- boot ----
 window.addEventListener("resize", resize);
 resize();
 setT(t0);
-renderRail();
+setMode(mode);            // paints the rail + chrome for the active mode (default: world)
 applyHash();
-if(!reduce && !location.hash) setTimeout(play, 650);
+if(mode === "caravan" && !reduce && !location.hash) setTimeout(play, 650);

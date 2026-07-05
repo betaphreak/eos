@@ -72,9 +72,9 @@ for (const file of files) {
   });
 }
 
-// province subset: everything visited + one neighbour ring, for map context
-const sub = new Set(visited);
-for (const pid of visited) { const p = byId.get(pid); if (p) p.neighbors.forEach(n => sub.add(n)); }
+// WorldMap: ship every LAND province (the whole world), not just the caravan crop —
+// the caravan run only supplies the optional Caravan-mode overlay (routes/heat).
+const sub = new Set(allProv.filter(p => p.type === "LAND").map(p => p.id));
 
 // canonical province outlines (source-pixel rings), attached to the displayed subset
 const borders = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/borders.json'), 'utf8'));
@@ -160,8 +160,9 @@ function bakeTerrain(provs) {
   const idxAt = (x, y) => buf[dataOff + (H - 1 - y) * W + x];  // 8-bit, bottom-up, W is 4-aligned
   const TINT = terrainTint(terrainRealColors());
 
-  // downsample by box-averaging the tinted colours (index averaging is meaningless)
-  const dw = Math.min(cropW, 1180);
+  // downsample by box-averaging the tinted colours (index averaging is meaningless);
+  // the whole-world crop needs more pixels than the old caravan crop to stay legible
+  const dw = Math.min(cropW, 2816);
   const scale = cropW / dw;
   const dh = Math.round(cropH / scale);
   const rgb = Buffer.alloc(dw * dh * 3);
