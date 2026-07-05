@@ -192,14 +192,47 @@ function buildPlotTexCanvas(p) {
       o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
     }
   }
-  // 3) relief + rivers, on top of the blended terrain
+  // 3) relief, then feature sprites, then rivers on top of the blended terrain
   for (const q of p._plots) {
     const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp;
     if (q.plotType === "HILL") { o.fillStyle = "rgba(255,255,255,.10)"; o.fillRect(cx, cy, tpp, tpp); }
     else if (q.plotType === "PEAK") { o.fillStyle = "rgba(214,218,228,.36)"; o.fillRect(cx, cy, tpp, tpp); }
+    if (q.feature) featureSprite(o, cx, cy, tpp, q.feature, q.x, q.y);
     if (q.river) { o.fillStyle = "rgba(74,124,170,.55)"; o.fillRect(cx, cy, tpp, tpp); }
   }
   p._tcanvas = oc; p._tbox = { x0, y0, w, h };
+}
+// small deterministic RNG seeded by a plot's coords, so feature sprites are stable
+function mkRng(seed) { let s = seed >>> 0 || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+// draw a procedural 2D sprite for a plot's Civ4 feature into cell (cx,cy) of size s.
+// (The real feature art is 3D .nif — pre-rendering it to sprites is a later toolchain;
+// these keyed vector marks read cleanly on the 2D map and cover the features in play.)
+function featureSprite(o, cx, cy, s, feature, sx, sy) {
+  const rng = mkRng((sx * 73856093) ^ (sy * 19349663));
+  const trees = (col, shadow, count, rad) => {
+    for (let i = 0; i < count; i++) {
+      const px = cx + s * (0.18 + 0.64 * rng()), py = cy + s * (0.24 + 0.58 * rng()), r = s * rad * (0.8 + 0.5 * rng());
+      o.fillStyle = shadow; o.beginPath(); o.arc(px + r * 0.28, py + r * 0.5, r, 0, 7); o.fill();
+      o.fillStyle = col; o.beginPath(); o.arc(px, py, r, 0, 7); o.fill();
+    }
+  };
+  if (/JUNGLE|RAINFOREST/.test(feature)) trees("#274a18", "rgba(8,16,6,.38)", 3 + (rng() * 2 | 0), 0.18);
+  else if (/FOREST|WOOD|MANGROVE|TAIGA/.test(feature)) trees("#345320", "rgba(8,16,6,.32)", 2 + (rng() * 2 | 0), 0.155);
+  else if (/SWAMP|BOG|MARSH|WETLAND/.test(feature)) {
+    o.strokeStyle = "#66743c"; o.lineWidth = Math.max(1, s * 0.045); o.lineCap = "round";
+    for (let i = 0; i < 3; i++) { const px = cx + s * (0.24 + 0.52 * rng()), py = cy + s * 0.72; o.beginPath(); o.moveTo(px, py); o.lineTo(px + s * 0.05 * (rng() - 0.5), py - s * (0.22 + 0.16 * rng())); o.stroke(); }
+  }
+  else if (/CACTUS|KAKTUS/.test(feature)) {
+    o.strokeStyle = "#5a7a44"; o.lineWidth = Math.max(1.2, s * 0.075); o.lineCap = "round"; o.lineJoin = "round";
+    const px = cx + s * (0.34 + 0.3 * rng()), py = cy + s * 0.76, hgt = s * (0.34 + 0.16 * rng());
+    o.beginPath(); o.moveTo(px, py); o.lineTo(px, py - hgt);
+    o.moveTo(px, py - hgt * 0.55); o.lineTo(px + s * 0.13, py - hgt * 0.55); o.lineTo(px + s * 0.13, py - hgt * 0.82); o.stroke();
+  }
+  else if (/OASIS/.test(feature)) { o.fillStyle = "#2f6f8a"; o.beginPath(); o.arc(cx + s * 0.52, cy + s * 0.56, s * 0.2, 0, 7); o.fill(); trees("#2e6a2a", "rgba(0,0,0,.3)", 1, 0.14); }
+  else if (/SAVANNA/.test(feature)) {
+    if (rng() > 0.45) { o.fillStyle = "#556a30"; o.beginPath(); o.arc(cx + s * 0.5, cy + s * 0.4, s * 0.17, 0, 7); o.fill(); o.strokeStyle = "#3a3020"; o.lineWidth = Math.max(1, s * 0.035); o.beginPath(); o.moveTo(cx + s * 0.5, cy + s * 0.5); o.lineTo(cx + s * 0.5, cy + s * 0.74); o.stroke(); }
+  }
+  // FLOOD_PLAINS: a ground quality, not foliage — left as terrain
 }
 
 // ---- province polygons: choropleth heat by caravan-days, cached per view ----
