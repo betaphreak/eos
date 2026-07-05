@@ -251,3 +251,52 @@ referenced `.nif`/`.dds` on first draw. Gameplay code references only the
 - **Barley bonus:** `ART_DEF_BONUS_BARLEY` → `resources/Barley/Wheat.nif` (+`.kfm`).
 - **Road:** `ROUTE_ROAD` → `routes/Roads/RoadA00.nif … A15` with `Connections` +
   `Rotations "0 90 180 270"` — good test of §6.3.
+
+---
+
+## 10. Target is a browser game — web asset delivery (supersedes §8's runtime loaders)
+
+**CivStudio's client is a browser.** The Java code is the simulation/source of
+truth; the rendering client is the web app under `web/` (today a **2D `<canvas>`**
+map, `web/app.js`; no Three.js/Babylon). So the art must be **delivered to the
+browser as pre-converted, web-optimised assets** — §8's "load `.nif`/`.dds` at
+runtime" is the wrong target for the client.
+
+**Hard rule — source vs. deliverable.** `UnpackedArt/art` (~141 MB, Git-LFS) is
+**offline source only**; it must **never ship to the client**. The browser
+receives a **curated, converted, atlased subset** (target: a few MB total, lazy
+where possible). `web/assets` today is ~124 KB; that order of magnitude is the
+budget to defend. The 3D `.nif` meshes are the bulk of the 141 MB and are **not
+runtime assets** for a 2D client — most of the tree is reference/source, not
+shipped.
+
+**Decided: 2D sprites** (matches today's `<canvas>` renderer; 3D WebGL is not the
+target). Concretely:
+
+- **Textures** — `.dds` → **WebP/PNG atlases** (WebP preferred; AVIF optional).
+- **Meshes** — the 3D `.nif` sets are **not runtime assets**. A feature/bonus that
+  needs a sprite is **pre-rendered once, offline**, from its `.nif` into a 2D sprite
+  (or replaced with hand-authored 2D art); the browser only ever sees the sprite.
+- **Terrain blend** — draw from a WebP tile atlas driven by the §4.1 16-way
+  `TextureBlend` table (pre-composed tiles, or composited on the canvas).
+- **Consequence for the LFS source** — the `.nif`/`.kf`/`.kfm` mesh+anim tree is the
+  **bulk of the 141 MB and never ships**; it is touch-once source (used only to
+  pre-render sprites) and is a candidate to **prune from LFS** once the sprites are
+  baked. Only the ~40 land/water terrain textures + the chosen feature sprites are
+  actually shipped.
+
+*(3D WebGL — `.nif`→glTF/GLB + `.dds`→KTX2/Basis — is recorded only as the road not
+taken, should the client ever go 3D.)*
+
+**Pipeline shape** (extends the existing `web/build.mjs` bake of `terrain.bmp`→PNG):
+the XML **exporter emits JSON manifests only** (blend table, layer order, atlas
+coords — small, text, committed like the other `map/` resources); a **build step
+bakes the curated `.dds` → a web image atlas**. Caveat: `web/build.mjs` is
+deliberately **dependency-free and hand-rolls its PNG encoder — it cannot decode
+`.dds`**. Converting therefore needs either a **build-time-only** dependency (a DDS
+decoder / `sharp`, kept out of the shipped page) or a hand-rolled DXT1/5 decoder.
+Whichever: the runtime page stays dependency-free; conversion is an offline/build
+concern, exactly like the LFS source it reads from.
+
+**So the exporter set from §3 still holds, but each pairs with an asset-bake step,
+and the *deliverable* is web atlases + JSON, not Civ4 formats.**

@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { decodeDds } from './dds.mjs';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(WEB, '..');
@@ -146,7 +147,7 @@ function bakeTerrain(provs) {
   const buf = fs.readFileSync(BMP);
   const dataOff = buf.readUInt32LE(10);
   const idxAt = (x, y) => buf[dataOff + (H - 1 - y) * W + x];  // 8-bit, bottom-up, W is 4-aligned
-  const TINT = terrainTint();
+  const TINT = terrainTint(terrainRealColors());
 
   // downsample by box-averaging the tinted colours (index averaging is meaningless)
   const dw = Math.min(cropW, 1180);
@@ -186,7 +187,13 @@ function bakeTerrain(provs) {
 // palette is semantic (indices are terrain categories, not real RGB), so the
 // classification mirrors MapTerrainCodec: water, flat land, hill, peak, snow,
 // desert, marsh, jungle — each a muted tone that fits the dashboard's dark theme.
-function terrainTint() {
+//
+// When `real` (a Map of TERRAIN_* -> real Civ4 texture colour, from terrain-art.json
+// + the .dds textures) is present, the land categories take the real terrain's HUE
+// but keep the hand-tuned tint's LUMINANCE — so the map stays exactly as dark, now
+// coloured by real Civ4 art rather than hand-picked values (docs §10). Absent (LFS
+// art not pulled), it falls back to the hand-tuned tints unchanged.
+function terrainTint(real) {
   const SEA = [18, 31, 51], SHALLOW = [27, 45, 68];
   const LAND = [42, 52, 68], GRASS = [41, 55, 60], PLAIN = [52, 58, 62];
   const DESERT = [67, 61, 50], SCRUB = [58, 58, 50], MARSH = [37, 53, 57];
@@ -205,7 +212,86 @@ function terrainTint() {
   set(MARSH, 9, 13);                      // marsh / shadow_swamp
   set(SCRUB, 22);                         // drylands
   set(JUNGLE, 254);                       // jungle
+
+  // recolour the land categories from real Civ4 terrain art (hue only; theme kept)
+  if (real) {
+    const use = (terrain, ...ix) => {
+      const c = real.get(terrain);
+      if (c) ix.forEach(i => { t[i] = hueAtLuminance(t[i], c); });
+    };
+    use('TERRAIN_GRASSLAND', 0, 5, 10, 11, 12, 14, 255);
+    use('TERRAIN_PLAINS', 4, 20);
+    use('TERRAIN_DESERT', 3, 7, 19);
+    use('TERRAIN_SCRUB', 22);
+    use('TERRAIN_MARSH', 9, 13);
+    use('TERRAIN_LUSH', 254);             // jungle
+    use('TERRAIN_PERMAFROST', 16);        // permanent snow
+    // the default land fill takes the grassland hue too
+    const gl = real.get('TERRAIN_GRASSLAND');
+    if (gl) for (let i = 0; i < 256; i++) if (t[i] === LAND) t[i] = hueAtLuminance(LAND, gl);
+  }
   return t;
+}
+
+// rec.601 luminance of an [r,g,b] (function decl: hoisted, so the top-level
+// bakeTerrain() call can reach it — see the crc32 note below)
+function luma(c) { return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]; }
+
+// `real`'s hue rescaled to `base`'s luminance — authentic colour, theme brightness
+function hueAtLuminance(base, real) {
+  const s = luma(base) / Math.max(1, luma(real));
+  return [Math.min(255, real[0] * s) | 0, Math.min(255, real[1] * s) | 0, Math.min(255, real[2] * s) | 0];
+}
+
+// Real per-terrain colours from terrain-art.json + the Civ4 .dds textures (offline
+// LFS source). Each terrain's colour is its base blend texture modulated by its
+// detail texture (base*detail/255 — the Civ4 layering, which recovers the hue the
+// near-neutral blend textures carry only via their detail). Returns a Map keyed by
+// TERRAIN_*, or null if the manifest or textures are unavailable (LFS not pulled),
+// so the bake degrades to the hand-tuned tints without failing.
+function terrainRealColors() {
+  const manifest = path.join(ROOT, 'src/main/resources/map/terrain-art.json');
+  if (!fs.existsSync(manifest)) { console.log('  terrain-art: manifest absent — using hand-tuned tints'); return null; }
+  let arr;
+  try { arr = JSON.parse(fs.readFileSync(manifest, 'utf8')); } catch { return null; }
+  const map = new Map();
+  for (const e of arr) {
+    const base = avgDds(e.path), detail = avgDds(e.detail);
+    if (!base) continue;
+    const c = detail ? [0, 1, 2].map(k => Math.min(255, base[k] * detail[k] / 255) | 0) : base;
+    map.set(e.terrain, c);
+  }
+  if (!map.size) { console.log('  terrain-art: no textures decoded (LFS not pulled?) — using hand-tuned tints'); return null; }
+  console.log(`  terrain-art: recoloured ${map.size} land terrains from real Civ4 textures`);
+  return map;
+}
+
+// average RGB of a Civ4 .dds texture resolved under UnpackedArt/art (case-insensitive);
+// null if the file or its format can't be read (caller falls back)
+function avgDds(artPath) {
+  const file = resolveArt(artPath);
+  if (!file) return null;
+  let img;
+  try { img = decodeDds(fs.readFileSync(file)); } catch { return null; }
+  let r = 0, g = 0, b = 0; const n = img.width * img.height;
+  for (let i = 0; i < n; i++) { r += img.rgba[i * 4]; g += img.rgba[i * 4 + 1]; b += img.rgba[i * 4 + 2]; }
+  return [r / n | 0, g / n | 0, b / n | 0];
+}
+
+// resolve an "Art/Terrain/.../X.dds" path to a file under UnpackedArt/art,
+// case-insensitively (the XML paths and on-disk names differ in case); null if absent
+function resolveArt(artPath) {
+  if (!artPath) return null;
+  const rel = artPath.replace(/^Art\//i, '').split('/');
+  let dir = path.join(ROOT, 'UnpackedArt', 'art');
+  for (const seg of rel) {
+    let ents;
+    try { ents = fs.readdirSync(dir); } catch { return null; }
+    const hit = ents.find(e => e.toLowerCase() === seg.toLowerCase());
+    if (!hit) return null;
+    dir = path.join(dir, hit);
+  }
+  return dir;
 }
 
 // Minimal truecolour PNG encoder (Node has zlib but no image codec).
