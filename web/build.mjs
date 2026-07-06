@@ -80,9 +80,32 @@ const sub = new Set(allProv.filter(p => p.type === "LAND").map(p => p.id));
 const borders = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/borders.json'), 'utf8'));
 const ringsById = new Map(borders.map(b => [b.id, b.rings]));
 
+// geographic hierarchy display names, keyed for per-province lookup and the label rollup.
+// Continent names mirror Continent.java displayName() (the Anbennar landmass per EU4 raw key).
+const CONTINENT_NAME = {
+  europe: 'Cannor', asia: 'Haless', africa: 'Sarhal', north_america: 'Aelantir',
+  south_america: 'Aelantir', serpentspine: 'Serpentspine', oceania: 'Hinuilands',
+};
+const superRegions = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/superregions.json'), 'utf8'));
+const regionsMeta = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/regions.json'), 'utf8'));
+const areasMeta = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/areas.json'), 'utf8'));
+const srNameByRegion = {};   // region key -> super-region display name
+for (const s of superRegions) for (const rk of s.regions) srNameByRegion[rk] = s.name;
+const regionDisplayName = {};   // region key -> display name
+for (const r of regionsMeta) regionDisplayName[r.key] = r.name;
+const areaDisplayName = {};   // area key -> display name
+for (const a of areasMeta) areaDisplayName[a.key] = a.name;
+
 const provinces = [...sub].map(id => byId.get(id)).filter(Boolean).map(p => ({
   id: p.id, name: p.name, lat: +p.lat.toFixed(3), lon: +p.lon.toFixed(3),
-  plots: p.plots, type: p.type, region: p.region,
+  plots: p.plots, waterPlots: p.waterPlots || 0, type: p.type, region: p.region,
+  winter: p.winter || null,
+  geo: {                                 // resolved hierarchy display names (sidebar detail)
+    continent: CONTINENT_NAME[p.continent] || null,
+    superRegion: srNameByRegion[p.region] || null,
+    region: regionDisplayName[p.region] || null,
+    area: areaDisplayName[p.area] || null,
+  },
   nb: p.neighbors.filter(n => sub.has(n)),
   days: traffic.get(p.id) || 0,          // caravan-days spent here (0 for context provinces)
   rings: ringsById.get(p.id) || null,    // outline in source pixels (null for sea/lake)
@@ -116,19 +139,9 @@ const plotPack = packPlots(provinces);
 // ---- geographic label tiers (continent -> super-region -> region) ----------
 // Roll the committed hierarchy up into per-tier label records {name, lat, lon, w}, where
 // (lat, lon) is the plot-weighted centroid of the tier's land provinces and w its total
-// plots (label priority). The page reveals a coarser/finer tier per zoom band. Continent
-// display names mirror Continent.java displayName() (the Anbennar landmass per EU4 raw key);
-// both Americas map to Aelantir and merge by name.
-const CONTINENT_NAME = {
-  europe: 'Cannor', asia: 'Haless', africa: 'Sarhal', north_america: 'Aelantir',
-  south_america: 'Aelantir', serpentspine: 'Serpentspine', oceania: 'Hinuilands',
-};
-const superRegions = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/superregions.json'), 'utf8'));
-const regionsMeta = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/regions.json'), 'utf8'));
-const srNameByRegion = {};   // region key -> super-region display name
-for (const s of superRegions) for (const rk of s.regions) srNameByRegion[rk] = s.name;
-const regionDisplayName = {};   // region key -> display name
-for (const r of regionsMeta) regionDisplayName[r.key] = r.name;
+// plots (label priority). The page reveals a coarser/finer tier per zoom band. The name
+// maps (CONTINENT_NAME / srNameByRegion / regionDisplayName) are defined above, next to the
+// per-province enrichment that shares them; both Americas map to Aelantir and merge by name.
 
 // plot-weighted centroid of the land provinces a nameFn buckets together
 function rollupTier(nameFn) {

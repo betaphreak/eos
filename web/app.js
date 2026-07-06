@@ -99,7 +99,7 @@ async function loadPlots(p) {
     const stream = new Response(buf).body.pipeThrough(new DecompressionStream("gzip"));
     const arr = JSON.parse(await new Response(stream).text());
     p._loading = false;
-    if (arr) { p._plots = arr; draw(); }         // kept for the textured pass; offscreen built lazily
+    if (arr) { p._plots = arr; draw(); if (selectedProv === p) renderRail(); }   // fill the detail panel too
   } catch (e) {
     p._loading = false; p.hasPlots = false;
   }
@@ -348,6 +348,7 @@ const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(
 
 let hoverProv = null;
 let selected = null;          // journey idx or null
+let selectedProv = null;      // the province whose full detail fills the sidebar, or null
 let curT = t0;
 
 function journeyPos(j, t) {
@@ -405,6 +406,15 @@ function draw() {
   } else if (hoverProv) {
     ctx.beginPath(); ctx.arc(px(hoverProv.lon), py(hoverProv.lat), 6, 0, 7);
     ctx.strokeStyle="#eef2f8"; ctx.lineWidth=1.4; ctx.stroke();
+  }
+  // selected province: a persistent accent outline while its detail fills the sidebar
+  if (selectedProv && selectedProv.rings) {
+    const sp = provPath(selectedProv);
+    ctx.fillStyle="rgba(232,183,106,.12)"; ctx.fill(sp);
+    ctx.strokeStyle=cssVar("--accent")||"#e8b76a"; ctx.lineWidth=2.2; ctx.stroke(sp);
+  } else if (selectedProv) {
+    ctx.beginPath(); ctx.arc(px(selectedProv.lon), py(selectedProv.lat), 7, 0, 7);
+    ctx.strokeStyle=cssVar("--accent")||"#e8b76a"; ctx.lineWidth=2; ctx.stroke();
   }
 
   // caravan overlay (routes, origin, moving bands) — only in Caravan mode
@@ -702,15 +712,21 @@ stage.addEventListener("mouseleave", ()=>{ hoverProv=null; tip.classList.remove(
 stage.addEventListener("click", e=>{
   if(panMoved){ panMoved=false; return; }    // this "click" was the end of a drag
   const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
-  // click near a route's current marker or destination selects it
-  let best=null,bd=1e9;
-  J.forEach(j=>{ const d=j.keys[j.keys.length-1]; const dx=px(d.lon)-mx,dy=py(d.lat)-my,dd=dx*dx+dy*dy; if(dd<bd){bd=dd;best=j;} });
-  if(best && bd<160) selectJourney(selected===best.idx?null:best.idx);
+  // in caravan mode a click near a route's current marker selects that journey
+  if (mode==="caravan") {
+    let best=null,bd=1e9;
+    J.forEach(j=>{ const d=j.keys[j.keys.length-1]; const dx=px(d.lon)-mx,dy=py(d.lat)-my,dd=dx*dx+dy*dy; if(dd<bd){bd=dd;best=j;} });
+    if(best && bd<160){ selectJourney(selected===best.idx?null:best.idx); return; }
+  }
+  // otherwise the click selects the province under the cursor (toggles off if re-clicked)
+  const prov = provinceAt(mx, my);
+  if (prov) selectProvince(selectedProv===prov ? null : prov);
 });
 
 // ---- rail ----
 const rail=document.getElementById("rail");
 function selectJourney(idx){
+  selectedProv=null;               // journey selection replaces any province detail
   selected=idx;
   J.forEach(j=> j._leg.setAttribute("aria-pressed", j.idx===idx));
   renderRail(); draw();
@@ -781,9 +797,94 @@ function setMode(m){
   document.querySelector(".title").textContent = cara ? "Migration from Dhenijansar" : "The World of Anbennar";
   document.querySelector(".subtitle").style.display = cara ? "" : "none";
   if (!cara) { pause(); selected = null; }
+  selectedProv = null;             // start each mode on its own overview
   renderRail(); draw();
 }
+// ---- province detail: the full-information sidebar for a selected province ----
+// aggregate a province's per-plot data into a terrain breakdown once its plots are loaded
+function provinceStats(plots) {
+  const terr = {}, feat = {}, res = {};
+  let flat=0, hill=0, peak=0, rivers=0, eMin=255, eMax=0, eSum=0;
+  for (const q of plots) {
+    terr[q.terrain] = (terr[q.terrain]||0) + 1;
+    if (q.plotType==="HILL") hill++; else if (q.plotType==="PEAK") peak++; else flat++;
+    if (q.river) rivers++;
+    if (q.feature) feat[q.feature] = (feat[q.feature]||0) + 1;
+    if (q.bonus) res[q.bonus] = (res[q.bonus]||0) + 1;
+    const e = q.elevation|0; if (e<eMin) eMin=e; if (e>eMax) eMax=e; eSum+=e;
+  }
+  const desc = o => Object.entries(o).sort((a,b)=> b[1]-a[1]);
+  return { n:plots.length, terr:desc(terr), feat:desc(feat), res:desc(res), flat, hill, peak,
+    rivers, eMin: plots.length?eMin:0, eMax, eMean: plots.length?Math.round(eSum/plots.length):0 };
+}
+// prettify a Civ4 TERRAIN_/FEATURE_/BONUS_ id (or a bare key like "mild"): strip prefix, Title Case
+function prettyId(s) {
+  return String(s).replace(/^(TERRAIN|FEATURE|BONUS)_/,"").toLowerCase().replace(/_/g," ")
+    .replace(/\b\w/g, c=>c.toUpperCase());
+}
+function selectProvince(p) {
+  selectedProv = p;
+  if (p && p.hasPlots !== false && !p._plots) loadPlots(p);   // stream in terrain for the breakdown
+  renderRail(); draw();
+}
+function provinceRail(p) {
+  const g = p.geo || {};
+  const crumbs = [g.continent, g.superRegion, g.region, g.area].filter(Boolean)
+    .map(s=>`<span>${s}</span>`).join('<span class="crumb-sep">›</span>');
+  const coord = `${Math.abs(p.lat).toFixed(2)}°${p.lat>=0?"N":"S"}, ${Math.abs(p.lon).toFixed(2)}°${p.lon>=0?"E":"W"}`;
+  let terrainHtml;
+  if (p._plots) {
+    const s = provinceStats(p._plots);
+    const bars = s.terr.map(([k,n])=>{
+      const pct = Math.round(n/s.n*100), c = terrainRgb(k);
+      return `<div class="pv-bar-row"><span class="pv-bar-lab" title="${prettyId(k)}">${prettyId(k)}</span>
+        <span class="pv-bar"><i style="width:${pct}%;background:rgb(${c[0]},${c[1]},${c[2]})"></i></span>
+        <span class="pv-bar-val">${pct}%</span></div>`;
+    }).join("");
+    const chips = o => o.length ? o.map(([k,n])=>`<span class="pv-chip">${prettyId(k)}<b>${n}</b></span>`).join("") : '<span class="pv-none">—</span>';
+    terrainHtml = `
+      <p class="sectlabel">Terrain · ${s.n} plots</p>
+      <div class="pv-bars">${bars}</div>
+      <div class="statrow" style="margin-top:10px">
+        <div class="stat"><div class="k">Flat</div><div class="v">${s.flat}</div></div>
+        <div class="stat"><div class="k">Hill</div><div class="v">${s.hill}</div></div>
+        <div class="stat"><div class="k">Peak</div><div class="v">${s.peak}</div></div>
+      </div>
+      <div class="statrow" style="margin-top:8px">
+        <div class="stat"><div class="k">Elevation</div><div class="v">${s.eMin}–${s.eMax}<small style="font-size:11px;color:var(--ink-soft)"> µ${s.eMean}</small></div></div>
+        <div class="stat"><div class="k">River plots</div><div class="v">${s.rivers}</div></div>
+      </div>
+      <p class="sectlabel" style="margin-top:14px">Features</p>
+      <div class="pv-chips">${chips(s.feat)}</div>
+      <p class="sectlabel" style="margin-top:12px">Resources</p>
+      <div class="pv-chips">${chips(s.res)}</div>`;
+  } else if (p.hasPlots === false || !PLOT_INDEX[p.id]) {
+    terrainHtml = `<p class="footnote">No per-plot terrain for this province.</p>`;
+  } else {
+    terrainHtml = `<p class="footnote">Loading terrain…</p>`;
+  }
+  rail.innerHTML = `
+    <button class="backbtn" id="backProv">← Back</button>
+    <div class="detail">
+      <div class="d-head"><h2 class="serif">${p.name}</h2></div>
+      <div class="rm-sub" style="color:var(--ink-soft);margin-top:-6px"><span class="r">${p.type.toLowerCase()}</span> · province ${p.id}</div>
+      ${crumbs ? `<div class="pv-crumbs">${crumbs}</div>` : ""}
+      <div class="statrow" style="margin-top:12px">
+        <div class="stat"><div class="k">Land plots</div><div class="v">${p.plots}</div></div>
+        <div class="stat"><div class="k">Water plots</div><div class="v">${p.waterPlots||0}</div></div>
+        <div class="stat"><div class="k">Neighbours</div><div class="v">${(p.nb||[]).length}</div></div>
+      </div>
+      <div class="metagrid" style="margin-top:8px">
+        <div class="metacell"><div class="k">Coordinates</div><div class="v" style="font-size:13px">${coord}</div></div>
+        <div class="metacell"><div class="k">Winter</div><div class="v" style="font-size:13px">${p.winter?prettyId(p.winter):"—"}</div></div>
+        ${p.days?`<div class="metacell"><div class="k">Caravan-days</div><div class="v">${p.days}</div></div>`:""}
+      </div>
+      ${terrainHtml}
+    </div>`;
+  document.getElementById("backProv").onclick = ()=>{ selectedProv=null; renderRail(); draw(); };
+}
 function renderRail(){
+  if (selectedProv) { provinceRail(selectedProv); return; }
   if (mode === "world") { rail.innerHTML = worldRail(); return; }
   if(selected===null){
     const rows = J.map(j=>`<tr class="click" data-idx="${j.idx}">
