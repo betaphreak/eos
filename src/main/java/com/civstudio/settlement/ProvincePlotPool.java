@@ -336,7 +336,7 @@ public final class ProvincePlotPool {
 				return build(cameFrom, start, goal, g.get(goal));
 			double gc = g.get(cur);
 			for (Plot nb : neighbours(index, cur)) {
-				double tentative = gc + moveCost(nb);
+				double tentative = gc + moveCost(cur, nb);
 				Double best = g.get(nb);
 				if (best == null || tentative < best) {
 					g.put(nb, tentative);
@@ -385,7 +385,43 @@ public final class ProvincePlotPool {
 	// cut lowers it for a ROAD-improved plot, so corridors hug roads.)
 	private static final int HILL_MOVE_PENALTY = 1;
 
-	private static double moveCost(Plot p) {
+	// --- elevation-aware movement (Tobler's hiking function) --------------------
+	// The directional step cost onto a plot is its flat Civ4 cost scaled by a slope factor
+	// derived from the real heightmap elevation gained/lost across the step, so a caravan's
+	// plot corridor climbs slowly (and bends around high ground) and descends briskly — see
+	// docs/caravan-march.md §6. Only the within-province plot corridor is elevation-aware;
+	// the coarse province-graph boundary hop stays flat.
+
+	// slope (rise/run) produced by a one-unit (0..255 heightmap) elevation difference between
+	// two adjacent plots — the single calibration constant folding the heightmap's vertical
+	// metres-per-unit and a plot's horizontal span into one tunable. The imported heightmap is
+	// smooth at plot resolution: adjacent plots almost always differ by ≤5 units (median 0–1),
+	// so the elevation cost is chiefly a *cumulative* charge along a corridor that climbs a
+	// province's relief, not a per-step shock. Calibrated (empirically, against real relief
+	// provinces) so crossing a hilly province costs ~15–30% more and the corridor visibly
+	// follows the contours, while the rare sharp ridge (Δ≳10) saturates the cap below and is
+	// routed around — the "reroute + meaningful cost" target. Flat ground is left untouched.
+	private static final double SLOPE_PER_ELEVATION_UNIT = 0.06;
+
+	// Tobler's hiking function: walking speed W = 6·exp(-3.5·|slope + 0.05|) km/h, peaking on
+	// a gentle (−5%) downhill and falling away on steep grades either side. We charge cost as
+	// the reciprocal speed relative to flat ground, so the slope factor is
+	// exp(3.5·(|slope + 0.05| − 0.05)): 1.0 on the flat, <1 on a gentle downhill, >1 on any
+	// steep grade — up, or a steep descent that brakes the marching column.
+	private static final double TOBLER_K = 3.5;
+	private static final double TOBLER_OFFSET = 0.05;
+
+	// the slope factor's floor (the fastest, gentle-downhill grade — the natural minimum of
+	// the unclamped factor) and a cap so one cliff cannot dominate the A* or a day's distance
+	// budget (a near-impassable step, short of an outright impassable peak)
+	private static final double SLOPE_FACTOR_MIN = Math.exp(-TOBLER_K * TOBLER_OFFSET); // ~0.84
+	private static final double SLOPE_FACTOR_CAP = 8.0;
+
+	// the flat Civ4 step cost onto a plot (elevation-independent): a feature's own <iMovement>
+	// when it has one (it replaces the terrain's, as in Civ4), else the terrain's, plus the
+	// hill penalty. The minimum is 1 (plains/grassland), so the cheapest possible step is
+	// SLOPE_FACTOR_MIN — the lower bound the heuristic relies on.
+	private static double flatCost(Plot p) {
 		int feature = p.feature() == null ? 0 : p.feature().movement();
 		double c = feature > 0 ? feature : p.terrain().movement();
 		if (p.plotType() == PlotType.HILL)
@@ -393,11 +429,27 @@ public final class ProvincePlotPool {
 		return c;
 	}
 
-	// straight-line (Euclidean) distance to the goal — admissible, since the minimum
-	// per-plot move cost is 1
+	// the directional cost to step from `from` onto `to`: the flat cost of the entered plot
+	// scaled by Tobler's slope factor for the elevation gained/lost across the step. Uphill
+	// costs more, a gentle downhill less, a steep descent more again.
+	private static double moveCost(Plot from, Plot to) {
+		return flatCost(to) * slopeFactor(to.elevation() - from.elevation());
+	}
+
+	// Tobler's slope factor for a heightmap elevation delta (plot entered minus plot left)
+	// between two adjacent plots, clamped to [SLOPE_FACTOR_MIN, SLOPE_FACTOR_CAP].
+	private static double slopeFactor(int elevationDelta) {
+		double slope = elevationDelta * SLOPE_PER_ELEVATION_UNIT;
+		double f = Math.exp(TOBLER_K * (Math.abs(slope + TOBLER_OFFSET) - TOBLER_OFFSET));
+		return Math.min(SLOPE_FACTOR_CAP, Math.max(SLOPE_FACTOR_MIN, f));
+	}
+
+	// straight-line (Euclidean) distance to the goal scaled by the cheapest possible step
+	// cost (a flat-min plot on the fastest gentle downhill) — an admissible lower bound now
+	// that a downhill step can cost below 1 (Tobler), so A* still returns least-cost corridors
 	private static double heuristic(Plot a, Plot goal) {
 		double dx = a.x() - goal.x(), dy = a.y() - goal.y();
-		return Math.sqrt(dx * dx + dy * dy);
+		return SLOPE_FACTOR_MIN * Math.sqrt(dx * dx + dy * dy);
 	}
 
 	// the workable plot nearest (x,y), the snap target for a border-portal anchor

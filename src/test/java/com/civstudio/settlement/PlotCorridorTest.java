@@ -73,9 +73,11 @@ class PlotCorridorTest {
 					"consecutive corridor plots are 4-neighbours");
 			assertTrue(b.isWorkable(), "a corridor never crosses an unworkable peak");
 		}
-		// each step costs at least 1, so the total is at least the number of steps
-		assertTrue(c.totalCost() >= c.plotCount() - 1 - 1e-9,
-				"total move cost is at least one per step");
+		// every step costs a positive amount, but a downhill (Tobler) step can cost below 1,
+		// so the total is no longer bounded by one-per-step — only that a corridor crossing
+		// more than one plot has a strictly positive move cost (docs/caravan-march.md §6)
+		if (c.plotCount() > 1)
+			assertTrue(c.totalCost() > 0, "a multi-plot corridor has a positive move cost");
 		// riverCrossings counts the river plots on the path (the fords the march charges a
 		// full day each — docs/caravan-march.md §6)
 		int riversOnPath = 0;

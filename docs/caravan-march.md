@@ -20,8 +20,13 @@ days (so a big/rough province takes several days to cross — e.g. Parusapa ≈ 
 Dhenijansar ≈ 5). **Rivers cost a full day**: `Plot` now carries a river flag, a
 `PlotCorridor` counts its `riverCrossings`, and each is a ford that halts the day's advance.
 The journal reports the **notable bonuses** encountered on the corridor and camps on a
-corridor plot. **Still deferred:** the road/terrain speed factor (the corridor `moveCost`
-road discount is a dormant hook, fed by `data/civ4/CIV4RouteInfos.xml` when roads are laid),
+corridor plot. **Elevation is live** (`docs/heightmap.md`): the per-plot corridor `moveCost`
+is now **directional**, the flat Civ4 cost of the entered plot scaled by **Tobler's hiking
+function** on the real heightmap slope between the plot left and the plot entered — climbing
+costs more, a gentle descent less, a steep descent more again — so corridors follow the
+contours and forced climbs slow the day (`ProvincePlotPool.slopeFactor`; corridor-only, the
+coarse province boundary hop stays flat). **Still deferred:** the road/terrain speed factor
+(the corridor `moveCost` road discount is a dormant hook, fed by `data/civ4/CIV4RouteInfos.xml` when roads are laid),
 and promoting the camp plot into the founding `HOLDING` seat on the settle decision.
 **Calibration note:** charging both the corridor *and* the full centroid hop double-counts a
 province's extent somewhat; with `KM_PER_PLOT`/edge weights still placeholders this is a

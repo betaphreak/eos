@@ -10,7 +10,16 @@ adjacency, `PEAK` impassable, cached per entry/exit). The per-plot `moveCost` is
 terrain's, as in Civ4), else the terrain's, plus a hill penalty — exported onto
 `Terrain`/`Feature` from the Civ4 XML (`TerrainExporter`/`FeatureExporter`), so desert,
 dunes, swamp, jungle and hills genuinely slow the march; a `ROAD` improvement lowering it is
-the road-ready hook.
+the road-ready hook. The `moveCost` is also **elevation-aware and directional**: that flat
+cost is scaled by **Tobler's hiking function** on the heightmap slope between the plot left
+and the plot entered (`ProvincePlotPool.slopeFactor`, `SLOPE_PER_ELEVATION_UNIT`), clamped
+`[~0.84, 8.0]` — so a corridor climbs a province's relief slowly and bends to follow the
+contours, while a rare sharp ridge saturates the cap and is routed around. The imported
+heightmap is smooth at plot resolution (adjacent plots almost always differ by ≤5 of 255), so
+the charge is chiefly *cumulative* over a climb, not a per-step shock; flat ground is
+unaffected. This makes the corridor cache key directional (already so) and slightly lowers the
+A* heuristic (the cheapest step can now cost below 1). Elevation applies to the within-province
+corridor only — the centroid-to-centroid boundary hop stays flat.
 The caravan consumes it: it **spends its daily distance `D` over the corridor plot costs**
 (`KM_PER_PLOT × corridor.totalCost` per province) plus the boundary hop, so rough/wild ground
 and larger provinces are slower (`MigrantCaravan.computeLeg`); **crossing a river costs a full
