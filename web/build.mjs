@@ -113,13 +113,52 @@ const terrainLayer = terrainLayerOrders();   // TERRAIN_* -> Civ4 LayerOrder (dr
 const terrainTiles = bakeTerrainTiles(terrainColors);
 const plotPack = packPlots(provinces);
 
+// ---- geographic label tiers (continent -> super-region -> region) ----------
+// Roll the committed hierarchy up into per-tier label records {name, lat, lon, w}, where
+// (lat, lon) is the plot-weighted centroid of the tier's land provinces and w its total
+// plots (label priority). The page reveals a coarser/finer tier per zoom band. Continent
+// display names mirror Continent.java displayName() (the Anbennar landmass per EU4 raw key);
+// both Americas map to Aelantir and merge by name.
+const CONTINENT_NAME = {
+  europe: 'Cannor', asia: 'Haless', africa: 'Sarhal', north_america: 'Aelantir',
+  south_america: 'Aelantir', serpentspine: 'Serpentspine', oceania: 'Hinuilands',
+};
+const superRegions = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/superregions.json'), 'utf8'));
+const regionsMeta = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/regions.json'), 'utf8'));
+const srNameByRegion = {};   // region key -> super-region display name
+for (const s of superRegions) for (const rk of s.regions) srNameByRegion[rk] = s.name;
+const regionDisplayName = {};   // region key -> display name
+for (const r of regionsMeta) regionDisplayName[r.key] = r.name;
+
+// plot-weighted centroid of the land provinces a nameFn buckets together
+function rollupTier(nameFn) {
+  const acc = new Map();
+  for (const id of sub) {
+    const p = byId.get(id);
+    if (!p || p.type !== 'LAND') continue;
+    const name = nameFn(p);
+    if (!name) continue;
+    const w = p.plots || 1;
+    const a = acc.get(name) || (acc.set(name, { name, sx: 0, sy: 0, w: 0 }).get(name));
+    a.sx += p.lon * w; a.sy += p.lat * w; a.w += w;
+  }
+  return [...acc.values()]
+    .map(a => ({ name: a.name, lon: +(a.sx / a.w).toFixed(3), lat: +(a.sy / a.w).toFixed(3), w: a.w }))
+    .sort((x, y) => y.w - x.w);   // largest first = label priority
+}
+const geo = {
+  continents: rollupTier(p => CONTINENT_NAME[p.continent]),
+  superRegions: rollupTier(p => srNameByRegion[p.region]),
+  regions: rollupTier(p => regionDisplayName[p.region] || null),
+};
+
 const bundle = {
   meta: {
     seed: +SEED, scenario,
     origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
-  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles,
+  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, geo,
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
 };
 
@@ -132,6 +171,7 @@ fs.writeFileSync(path.join(WEB, 'data.js'), dataJs);
 console.log(`Built web/data.js (${(dataJs.length / 1024).toFixed(0)} KB) + web/${map.src} (${(terrainBytes / 1024).toFixed(0)} KB) from seed ${SEED}`);
 console.log(`  ${journeys.length} journeys · ${provinces.length} provinces · ${bundle.meta.dateStart} → ${bundle.meta.dateEnd}`);
 console.log(`  terrain crop ${map.dw}×${map.dh}px`);
+console.log(`  geo labels: ${geo.continents.length} continents · ${geo.superRegions.length} super-regions · ${geo.regions.length} regions`);
 console.log(`  plots: ${plotPack.count} provinces packed into web/assets/plots.pack (${(plotPack.bytes / 1048576).toFixed(1)} MB, range-fetched per-plot terrain zoom)`);
 console.log(`  terrain tiles: ${terrainTiles ? terrainTiles.src + ' (' + Object.keys(terrainTiles.cols).length + ' textures)' : 'skipped (no terrain-art.json / LFS textures)'}`);
 for (const j of journeys) console.log(`  ${('→ ' + j.dest).padEnd(26)} ${j.provinceCount} prov · ${(j.days / 365.25).toFixed(1)}y · cargo ${j.cargoFinal}`);
