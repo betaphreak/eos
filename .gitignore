@@ -20,8 +20,6 @@
 /web/assets/terrain-tiles-*.png
 # derived, regenerable water tile for the river ribbon (build.mjs → bakeRiverTile)
 /web/assets/river-*.png
-# derived, regenerable coastscalemask blend atlas (build.mjs → bakeCoastTiles)
-/web/assets/coast-*.png
 # whole-world per-province plot caches — hundreds of MB, canonical/regenerable via
 # WorldPlotGenerator (the sim also regenerates any on demand). Too heavy to commit.
 /src/main/resources/map/provinces/*.json.gz

@@ -30,8 +30,8 @@ direction:
   dependency, so `WorldPlotGenerator` and the live `loadOrGenerate` regen identically.
 - **The mask (8-bit).** For each land pixel, which of its **8 neighbours** are water: low
   nibble = orthogonal **edges** (`1`=E, `2`=W, `4`=S, `8`=N — for the shoreline foam + coastal
-  gameplay), high nibble = diagonal **corners** (`16`=NW, `32`=NE, `64`=SE, `128`=SW — which
-  drive the §B blend, tile index = `coast >> 4`). `0` = inland. Computed in
+  gameplay), high nibble = diagonal **corners** (`16`=NW, `32`=NE, `64`=SE, `128`=SW — stored
+  for future use; the §B render uses only the edge nibble). `0` = inland. Computed in
   `ProvinceRaster.seaMask()` (global pixel access, E-W cylinder wrapped), threaded through
   `ProvinceMask.coast()` → `ProvincePlot` → `Plot.coast()`/`isCoastal()` →
   `ProvincePlotStore.StoredPlot`, exactly like the river code.
@@ -39,16 +39,21 @@ direction:
 Verified: grids regenerated; 34.4% of provinces have coastline (island 67%, largest
 interior province 0%); `mvn test` green.
 
-## Phase B — web: draw the shore — **procedural first cut DONE (2026-07)**
+## Phase B — web: draw the shore — **DONE (2026-07)**
 
 `drawCoast()` (`web/js/plots.mjs`) reads `q.coast` per plot in `buildPlotTexCanvas` (past
-`K_TEX`) and, for each water edge (bit `1`=E,`2`=W,`4`=S,`8`=N), draws a **shallow-water
-band** fading inward from the shoreline plus a thin **foam line** at the water's edge — so
-the hard land/sea boundary reads as a coast. No baked art, no `q.coast` → no draw (absent-
-tolerant). Verified headless on the Madala Islands (`verify-pack.mjs`, deep zoom): each
-island gets a shallows + surf rim, zero console errors. Only the textured layer draws it;
-the flat-tile overview (`K_PLOT`–`K_TEX`) and the background raster are unchanged.
+`K_TEX`) and, for each water **edge** (low nibble, `1`=E,`2`=W,`4`=S,`8`=N), draws a
+**shallow-water band reaching OUTWARD from the shoreline into the adjacent sea** (strongest at
+the shore, fading out), plus a thin **foam line** at the shoreline. The shallows ring the land
+*in the water*, aligned to the coast. The adjacent sea is not a plot of this province, so
+`buildPlotTexCanvas` pads its offscreen by one cell (`PAD`) to give room to bleed outward.
+Procedural (no baked art), absent-tolerant (`q.coast` 0 → no draw). Only the textured layer;
+the flat-tile overview and background raster are unchanged.
 
-**Optional fidelity swap (later):** replace the procedural band with the faithful 16-way
-`coastscalemask` blend, baked to a web atlas by a `bakeCoastTiles` (like `bakeTerrainTiles`)
-and keyed by the same edge mask — the river 1B → option-A pattern.
+**Why not the Civ4 `coastscalemask` blend** (tried and reverted): those 16 `.tga` masks are
+**diagonal-corner** ramps (decoded: bits TL=1,TR=2,BR=4,BL=8, dark=shallow) that draw the
+shallow *inside* the land cell — a half-cell **inland** of the true coast — and don't tile on
+our fine 1-pixel-per-plot staircase coastlines, so the shore didn't line up. They are built
+for Civ4's coarser grid where the shore straddles plot edges; the outward procedural band is
+the right fit for EU4-style pixel coastlines (cf. the river edge-tile mismatch,
+`docs/river-rendering.md` §4). The `bakeCoastTiles`/`tga.mjs` path was removed.
