@@ -128,6 +128,69 @@ function buildPlotCanvas(p, plots) {
   octx.putImageData(im, 0, 0);
   p._pcanvas = oc; p._pbox = { x0, y0, w, h };
 }
+
+// ---- movement-cost overlay: per-plot elevation traversal difficulty ----
+// Mirrors the engine's elevation-aware corridor cost (ProvincePlotPool.slopeFactor): the
+// flat plot cost is scaled by Tobler's hiking function exp(3.5·(|slope+0.05|−0.05)), with
+// slope = Δelevation·0.06, clamped to [~0.84, 8]. On this static map we colour each plot by
+// the STEEPEST step touching it — the max |Δelevation| to a 4-neighbour, taken as a climb —
+// i.e. the difficulty a caravan pays to cross it. Flat ground (factor ≈ 1) stays clear;
+// ridges and steep faces glow amber→red, showing where corridors slow and bend. Constants
+// track ProvincePlotPool exactly, so the overlay is faithful to the routing it explains.
+const COST_K = 0.06, COST_TK = 3.5, COST_OFF = 0.05, COST_CAP = 8;
+function costFactor(maxDelta) {
+  const s = maxDelta * COST_K;
+  return Math.min(COST_CAP, Math.exp(COST_TK * (Math.abs(s + COST_OFF) - COST_OFF)));
+}
+// green → yellow → orange → red ramp (matches the #costKey legend gradient), keyed on a log
+// scale over the factor's [1, cap] range so the mid climbs are legible, not crushed near red.
+const COST_STOPS = [[0, 90, 190, 70], [0.35, 230, 210, 40], [0.65, 240, 140, 30], [1, 214, 40, 42]];
+function costColor(f) {
+  const t = Math.min(1, Math.max(0, Math.log(f) / Math.log(COST_CAP)));
+  let i = 0; while (i < COST_STOPS.length - 2 && t > COST_STOPS[i + 1][0]) i++;
+  const a = COST_STOPS[i], b = COST_STOPS[i + 1], u = (t - a[0]) / (b[0] - a[0]);
+  return [lerp(a[1], b[1], u) | 0, lerp(a[2], b[2], u) | 0, lerp(a[3], b[3], u) | 0, t];
+}
+// rasterise a province's plots to a 1px/plot cost heat offscreen (built once, blitted scaled
+// and smoothed), transparent where the ground is effectively flat so the terrain reads through.
+function buildCostCanvas(p, plots) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const q of plots) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
+  const w = x1 - x0 + 1, h = y1 - y0 + 1;
+  const grid = new Map();
+  for (const q of plots) grid.set(q.x * 1e5 + q.y, q);
+  const oc = document.createElement("canvas"); oc.width = w; oc.height = h;
+  const octx = oc.getContext("2d"), im = octx.createImageData(w, h), d = im.data;
+  for (const q of plots) {
+    const e = q.elevation | 0; let md = 0;
+    for (const nb of NB4) { const n = grid.get((q.x + nb[0]) * 1e5 + (q.y + nb[1])); if (n) { const dd = Math.abs((n.elevation | 0) - e); if (dd > md) md = dd; } }
+    const o = ((q.y - y0) * w + (q.x - x0)) * 4;
+    const f = costFactor(md);
+    if (f < 1.03) { d[o + 3] = 0; continue; }               // effectively flat → clear
+    const c = costColor(f);
+    d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = (255 * (0.12 + 0.6 * c[3])) | 0;
+  }
+  octx.putImageData(im, 0, 0);
+  p._mcanvas = oc; p._mbox = { x0, y0, w, h };
+}
+// blit the cost overlay for the provinces in view (same cull/scale as drawPlots), when the
+// toggle is on and we are zoomed into the plot layer. Drawn over the terrain, under outlines.
+function drawCostOverlay() {
+  if (!showCost || cam.k < K_PLOT) return;
+  const a = Math.min(1, (cam.k - K_PLOT) / 1.5);
+  const smooth = ctx.imageSmoothingEnabled;
+  ctx.globalAlpha = a; ctx.imageSmoothingEnabled = true;
+  for (const p of P) {
+    if (!p.hasPlots || !p._plots) continue;                 // drawPlots requests the load
+    const bb = provSrcBox(p); if (!bb) continue;
+    const sx0 = pxr(bb.x0), sy0 = pyr(bb.y0), sx1 = pxr(bb.x1), sy1 = pyr(bb.y1);
+    if (sx1 < 0 || sy1 < 0 || sx0 > VIEW.w || sy0 > VIEW.h) continue;
+    if (!p._mcanvas) buildCostCanvas(p, p._plots);
+    const b = p._mbox, dX = pxr(b.x0), dY = pyr(b.y0);
+    ctx.drawImage(p._mcanvas, dX, dY, pxr(b.x0 + b.w) - dX, pyr(b.y0 + b.h) - dY);
+  }
+  ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = smooth;
+}
 // draw the plot layer for the provinces in view, fading in just past K_PLOT. Below
 // K_TEX each province blits its flat-colour 1px/plot offscreen (cheap overview); past
 // K_TEX (and not mid-pan) it draws real ground-texture tiles per plot.
@@ -254,6 +317,7 @@ function featureSprite(o, cx, cy, s, feature, sx, sy) {
 
 // ---- province polygons: choropleth heat by caravan-days, cached per view ----
 let showHeat = true;
+let showCost = false;          // terrain movement-cost overlay (elevation difficulty)
 // WorldMap is the base view; Caravan is a toggle-able overlay mode (routes/heat/timeline)
 let mode = /caravan/.test(location.hash) ? "caravan" : "world";
 const MAXD = BUNDLE.meta.maxDays;
@@ -324,6 +388,7 @@ function draw() {
       cam.x + cam.k*VIEW.dx, cam.y + cam.k*VIEW.dy, cam.k*VIEW.dw, cam.k*VIEW.dh);
   }
   drawPlots();   // crisp per-plot Civ4 terrain over the blurred raster when zoomed in
+  drawCostOverlay();   // elevation movement-cost heat over the terrain, when toggled on
 
   // choropleth: a full caravan-days overview while zoomed out, but once the terrain
   // plots/textures show (cam.k >= K_PLOT) only the hovered province is shaded — the
@@ -533,6 +598,12 @@ const heatBtn=document.getElementById("heatBtn");
 heatBtn.setAttribute("aria-pressed","true");
 heatBtn.onclick=()=>{ showHeat=!showHeat; heatBtn.setAttribute("aria-pressed",showHeat);
   heatBtn.style.opacity=showHeat?"":".5"; heatKey.style.display=showHeat?"":"none"; draw(); };
+
+// ---- movement-cost overlay toggle (terrain-zoom elevation difficulty) ----
+const costBtn=document.getElementById("costBtn"), costKey=document.getElementById("costKey");
+costBtn.setAttribute("aria-pressed","false"); costBtn.style.opacity=".5";
+costBtn.onclick=()=>{ showCost=!showCost; costBtn.setAttribute("aria-pressed",showCost);
+  costBtn.style.opacity=showCost?"":".5"; costKey.style.display=showCost?"":"none"; draw(); };
 
 // ---- interaction: hover province ----
 const tip=document.getElementById("tip");

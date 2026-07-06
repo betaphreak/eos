@@ -34,6 +34,15 @@
       <button class="themebtn" id="heatBtn" style="right:64px" title="Toggle caravan-days heat" aria-label="Toggle traffic heat">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3s5 4 5 8.5A5 5 0 0 1 7 11.5c0-1.6 1-2.9 1-2.9s.4 1.8 1.8 1.8C10.8 7.8 12.5 6 12 3z"/></svg>
       </button>
+      <button class="themebtn" id="costBtn" style="right:112px" title="Toggle terrain movement-cost overlay (zoom in)" aria-label="Toggle movement-cost overlay">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 19l6-11 4 6 2.5-4L21 19z"/></svg>
+      </button>
+
+      <div id="costKey" style="display:none;position:absolute;right:16px;top:56px;z-index:6;background:rgba(10,14,22,.72);border:1px solid rgba(190,205,230,.16);border-radius:8px;padding:8px 10px;backdrop-filter:blur(6px);font:600 10px system-ui,'Segoe UI',sans-serif;color:#9fb0c8;letter-spacing:.02em">
+        <div style="margin-bottom:5px">CLIMB COST · terrain</div>
+        <div style="height:8px;width:128px;border-radius:4px;background:linear-gradient(90deg,#5abe46,#e6d228,#f08c1e,#d6282a)"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px"><span>flat</span><span>×2</span><span>×8</span></div>
+      </div>
 
       <div class="legend" id="legend" aria-label="Caravan journeys"></div>
 
