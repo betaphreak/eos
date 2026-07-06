@@ -366,7 +366,7 @@ function terrainRealColors() {
   return map;
 }
 
-// average RGB of a Civ4 .dds texture resolved under UnpackedArt/art (case-insensitive);
+// average RGB of a Civ4 .dds texture resolved via resolveArt (data/civ4/assets, case-insensitive);
 // null if the file or its format can't be read (caller falls back)
 function avgDds(artPath) {
   const file = resolveArt(artPath);
@@ -378,12 +378,18 @@ function avgDds(artPath) {
   return [r / n | 0, g / n | 0, b / n | 0];
 }
 
-// resolve an "Art/Terrain/.../X.dds" path to a file under UnpackedArt/art,
-// case-insensitively (the XML paths and on-disk names differ in case); null if absent
+// resolve an "Art/Terrain/.../X.dds" path to a real file, case-insensitively (the XML paths and
+// on-disk names differ in case); null if absent. The web-baked textures live committed & non-LFS
+// under data/civ4/assets (moved out of the LFS art tree so the build needs no `git lfs pull`);
+// the full UnpackedArt/art LFS tree is a fallback for any other art not yet mirrored there.
 function resolveArt(artPath) {
   if (!artPath) return null;
   const rel = artPath.replace(/^Art\//i, '').split('/');
-  let dir = path.join(ROOT, 'UnpackedArt', 'art');
+  return resolveUnder(path.join(ROOT, 'data', 'civ4', 'assets'), rel)
+      || resolveUnder(path.join(ROOT, 'UnpackedArt', 'art'), rel);
+}
+function resolveUnder(base, rel) {
+  let dir = base;
   for (const seg of rel) {
     let ents;
     try { ents = fs.readdirSync(dir); } catch { return null; }

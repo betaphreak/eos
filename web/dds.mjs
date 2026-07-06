@@ -1,6 +1,6 @@
 // Minimal DDS reader + hand-rolled DXT1/DXT3/DXT5 block decoder — no dependencies.
 //
-// The Civ4/C2C terrain textures under UnpackedArt/art are DXT-compressed .dds
+// The Civ4/C2C terrain textures the build bakes (data/civ4/assets) are DXT-compressed .dds
 // (DirectDraw Surface), which browsers can't read and Node has no codec for. This
 // decodes the top mip level to raw RGBA so the build can bake web imagery from it.
 // Kept deliberately dependency-free, in the spirit of build.mjs's hand-rolled PNG
