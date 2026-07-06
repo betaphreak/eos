@@ -121,9 +121,21 @@ writes `src/main/resources/map/borders.json` — canonical geometry any UI can r
 ## Deploy (live at https://anbennar.civstudio.com)
 
 The site is hosted on **Azure Static Web Apps** (Free tier) in the **CivStudio**
-subscription — resource group `rg-anbennar-web`, app `anbennar-worldmap`. It is a
-prebuilt static folder (no CI/GitHub Action); deploy the `web/` folder straight from a
-build machine with the [SWA CLI](https://github.com/Azure/static-web-apps-cli):
+subscription — resource group `rg-anbennar-web`, app `anbennar-worldmap`.
+
+**Deploys are automatic** via the GitHub Action
+[`.github/workflows/deploy-web.yml`](../.github/workflows/deploy-web.yml): on every push
+to `master` touching `web/`, `src/`, or `data/anbennar/` (and via a manual **Run workflow**
+button) it rebuilds the gitignored, engine-generated inputs from source on a clean runner —
+`WorldPlotGenerator` (per-province plot grids, cached), `ParallelCaravansTest` (seed 24601
+caravan journals), then `node web/build.mjs` — and uploads the built `web/` folder with
+[`Azure/static-web-apps-deploy`](https://github.com/Azure/static-web-apps-deploy). The
+deploy token lives in the `AZURE_STATIC_WEB_APPS_API_TOKEN` repo secret (set once from
+`az staticwebapp secrets list -n anbennar-worldmap -g rg-anbennar-web`). Nothing large is
+committed — the ~15 MB `plots.pack` is regenerated each run, not stored in git.
+
+To **deploy by hand** (a local build machine, e.g. to test an unpushed change) the same
+folder ships straight with the [SWA CLI](https://github.com/Azure/static-web-apps-cli):
 
 ```bash
 node web/build.mjs                                    # produce data.js + assets/plots.pack (+ terrain PNGs)
