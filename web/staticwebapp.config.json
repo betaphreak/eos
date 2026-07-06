@@ -1,6 +1,7 @@
 {
   "mimeTypes": {
-    ".pack": "application/octet-stream"
+    ".pack": "application/octet-stream",
+    ".mjs": "text/javascript"
   },
   "routes": [
     {
@@ -12,6 +13,6 @@
   ],
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/assets/*", "*.js", "*.css", "*.png", "*.pack"]
+    "exclude": ["/assets/*", "/js/*", "*.js", "*.mjs", "*.css", "*.png", "*.pack"]
   }
 }
