@@ -76,10 +76,13 @@ public final class Plot {
 	// bonuses stay dormant, as their sectors are gated off in Settlement.plotYieldFactor.
 	private final Bonus bonus;
 
-	// whether a river pixel fell on this plot (from the province field). Read by the
-	// caravan land-routing corridors — fording a river costs a full day's march (see
-	// docs/land-routing.md / docs/caravan-march.md §6). False for a province-less plot.
-	private final boolean river;
+	// the river classification code on this plot (from the province field): 0 = no river;
+	// low digit = width level 1..4 (narrow → wide), tens digit = node marker (1 source,
+	// 2 confluence, 3 split) — see ProvinceRaster.classifyRiver / docs/river-rendering.md.
+	// river() reads it as a boolean for the caravan land-routing corridors, which ford any
+	// river at a full day's march (see docs/land-routing.md / docs/caravan-march.md §6);
+	// riverCode() exposes the width/node for the web map. 0 for a province-less plot.
+	private final int river;
 
 	// the real heightmap elevation (0..255) at this plot, or 0 for a province-less plot.
 	// A raster lookup (from the province field), for hillshading and future elevation-
@@ -134,7 +137,7 @@ public final class Plot {
 	 * @param feature  the wild feature overlaying it, or {@code null} if bare
 	 */
 	public Plot(int index, Terrain terrain, PlotType plotType, Feature feature) {
-		this(index, -1, -1, false, terrain, plotType, feature, null, 0);
+		this(index, -1, -1, 0, terrain, plotType, feature, null, 0);
 	}
 
 	/**
@@ -144,14 +147,15 @@ public final class Plot {
 	 *
 	 * @param x        the raster x of the plot in the province silhouette
 	 * @param y        the raster y of the plot in the province silhouette
-	 * @param river    whether a river pixel fell on this plot
+	 * @param river    the river classification code (0 = none; low digit width 1..4, tens
+	 *                 digit node marker) — see {@link #riverCode()}
 	 * @param terrain  the ground it sits on (non-null)
 	 * @param plotType the relief (flat/hill/peak; non-null)
 	 * @param feature   the wild feature overlaying it, or {@code null} if bare
 	 * @param bonus     the resource on it, or {@code null}
 	 * @param elevation the real heightmap elevation (0..255)
 	 */
-	public Plot(int x, int y, boolean river, Terrain terrain, PlotType plotType,
+	public Plot(int x, int y, int river, Terrain terrain, PlotType plotType,
 			Feature feature, Bonus bonus, int elevation) {
 		this(-1, x, y, river, terrain, plotType, feature, bonus, elevation);
 	}
@@ -168,10 +172,10 @@ public final class Plot {
 	 * @param bonus    the resource on it, or {@code null}
 	 */
 	public Plot(int x, int y, Terrain terrain, PlotType plotType, Feature feature, Bonus bonus) {
-		this(-1, x, y, false, terrain, plotType, feature, bonus, 0);
+		this(-1, x, y, 0, terrain, plotType, feature, bonus, 0);
 	}
 
-	private Plot(int index, int x, int y, boolean river, Terrain terrain, PlotType plotType,
+	private Plot(int index, int x, int y, int river, Terrain terrain, PlotType plotType,
 			Feature feature, Bonus bonus, int elevation) {
 		if (terrain == null)
 			throw new IllegalArgumentException("terrain must be non-null");
@@ -239,6 +243,17 @@ public final class Plot {
 
 	/** Whether a river runs through this plot (fording it costs a caravan a full day). */
 	public boolean river() {
+		return river != 0;
+	}
+
+	/**
+	 * The river classification code on this plot: {@code 0} = no river; the low digit is
+	 * the width level {@code 1..4} (narrow → wide), the tens digit the node marker
+	 * ({@code 1} source, {@code 2} confluence, {@code 3} split). Persisted for the web map
+	 * (the ribbon tapers by width); see {@link com.civstudio.geo.ProvinceRaster#classifyRiver}
+	 * and {@code docs/river-rendering.md} §1.
+	 */
+	public int riverCode() {
 		return river;
 	}
 

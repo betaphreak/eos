@@ -31,17 +31,24 @@ public final class ProvincePlotField {
 	 * One generated plot: its absolute raster position, whether it carried a river
 	 * pixel, its terrain, its relief, and (later) its wild feature.
 	 *
-	 * @param x        absolute raster x
-	 * @param y        absolute raster y
-	 * @param river    whether a river pixel fell on this plot
-	 * @param terrain  the ground (from the climate pool)
-	 * @param plotType the relief (flat/hill/peak; from {@link ReliefGenerator})
+	 * @param x         absolute raster x
+	 * @param y         absolute raster y
+	 * @param riverCode the river classification code (0 = none; low digit = width 1..4,
+	 *                  tens digit = node marker) from {@code rivers.bmp} — see
+	 *                  {@link ProvinceRaster#classifyRiver} and {@code docs/river-rendering.md}
+	 * @param terrain   the ground (from the climate pool)
+	 * @param plotType  the relief (flat/hill/peak; from {@link ReliefGenerator})
 	 * @param feature   the wild feature, or {@code null}
 	 * @param bonus     the resource on this plot, or {@code null}
 	 * @param elevation the real heightmap elevation (0..255), a raster lookup
 	 */
-	public record ProvincePlot(int x, int y, boolean river, Terrain terrain,
+	public record ProvincePlot(int x, int y, int riverCode, Terrain terrain,
 			PlotType plotType, Feature feature, Bonus bonus, int elevation) {
+
+		/** Whether a river runs through this plot (any non-zero {@link #riverCode()}). */
+		public boolean river() {
+			return riverCode != 0;
+		}
 	}
 
 	/**
@@ -101,7 +108,8 @@ public final class ProvincePlotField {
 				// relief is the rougher of the generator's clustered ranges and the real
 				// hill/mountain the terrain.bmp palette encodes, so map mountains survive
 				PlotType plotType = rougher(relief[idx], MapTerrainCodec.relief(mask.terrainIndex(lx, ly)));
-				boolean river = mask.isRiver(lx, ly);
+				int riverCode = mask.riverCode(lx, ly);
+				boolean river = riverCode != 0;
 				// the wild feature, in priority: flood plains on a valid flat riverside
 				// plot; else, where vegetation grew, the map's tree class (forest/jungle/
 				// …); else a sparse terrain-implied feature (swamp/cactus/…). Every choice
@@ -115,7 +123,7 @@ public final class ProvincePlotField {
 				// terrain/relief/feature/bonus draws — and thus the field — otherwise identical
 				int elevation = mask.elevation(lx, ly);
 				out.add(new ProvincePlot(mask.originX() + lx, mask.originY() + ly,
-						river, terrain, plotType, feature, bonus, elevation));
+						riverCode, terrain, plotType, feature, bonus, elevation));
 			}
 		}
 		return new ProvincePlotField(province, out);

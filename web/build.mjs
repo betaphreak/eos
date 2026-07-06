@@ -135,6 +135,7 @@ const map = bakeTerrain(provinces);
 const terrainColors = terrainDisplayColors(terrainRealColors());
 const terrainLayer = terrainLayerOrders();   // TERRAIN_* -> Civ4 LayerOrder (drives edge blending)
 const terrainTiles = bakeTerrainTiles(terrainColors);
+const river = bakeRiverTile();               // {src, tile} water tile, or null (flat-fill fallback)
 const plotPack = packPlots(provinces);
 
 // ---- geographic label tiers (continent -> super-region -> region) ----------
@@ -172,7 +173,7 @@ const bundle = {
     origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
-  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, geo,
+  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, geo,
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
 };
 
@@ -188,6 +189,7 @@ console.log(`  terrain crop ${map.dw}×${map.dh}px`);
 console.log(`  geo labels: ${geo.continents.length} continents · ${geo.superRegions.length} super-regions · ${geo.regions.length} regions`);
 console.log(`  plots: ${plotPack.count} provinces packed into web/assets/plots.pack (${(plotPack.bytes / 1048576).toFixed(1)} MB, range-fetched per-plot terrain zoom)`);
 console.log(`  terrain tiles: ${terrainTiles ? terrainTiles.src + ' (' + Object.keys(terrainTiles.cols).length + ' textures)' : 'skipped (no terrain-art.json / LFS textures)'}`);
+console.log(`  river tile: ${river ? river.src : 'skipped (no allriverssmall.dds / LFS)'}`);
 for (const j of journeys) console.log(`  ${('→ ' + j.dest).padEnd(26)} ${j.provinceCount} prov · ${(j.days / 365.25).toFixed(1)}y · cargo ${j.cargoFinal}`);
 
 // ---------------------------------------------------------------------------
@@ -477,6 +479,24 @@ function solidTile(rgbArr, T) {
   const out = Buffer.alloc(T * T * 3);
   for (let k = 0; k < T * T; k++) { out[k * 3] = rgbArr[0]; out[k * 3 + 1] = rgbArr[1]; out[k * 3 + 2] = rgbArr[2]; }
   return out;
+}
+
+// Slice C — bake one small water tile from the Civ4 river texture (routes/rivers/
+// allriverssmall.dds), recoloured (via detailTile) so its mean is the river hue that
+// cohered with the flat-fill colour the map used before. The plot renderer paints
+// rivers as a textured ribbon tapered by width (docs/river-rendering.md §2, Phase 1B)
+// instead of a flat blue cell. Returns {src, tile}, or null when the manifest art is
+// absent (LFS not pulled / file://) — the page then keeps the flat-fill fallback.
+function bakeRiverTile() {
+  const RIVER_RGB = [74, 124, 170];   // == the old rgba(74,124,170) river fill, kept cohesive
+  const T = 64;
+  const tile = detailTile('Art/Terrain/Routes/Rivers/allriverssmall.dds', RIVER_RGB, T);
+  if (!tile) return null;
+  const assets = path.join(WEB, 'assets');
+  fs.mkdirSync(assets, { recursive: true });
+  const file = `river-${SEED}.png`;
+  fs.writeFileSync(path.join(assets, file), encodePng(T, T, tile));
+  return { src: `assets/${file}`, tile: T };
 }
 
 // Pack every displayed province's canonical plot grid (map/provinces/<id>.json.gz,

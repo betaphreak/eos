@@ -20,7 +20,10 @@ public final class ProvinceMask {
 	private final int width;
 	private final int height;
 	private final boolean[] land; // row-major, width*height
-	private final boolean[] river;
+	// the river classification code per cell (0 = none; low digit = width 1..4, tens digit =
+	// node marker), from ProvinceRaster.classifyRiver over rivers.bmp — see that method and
+	// docs/river-rendering.md §1. Preserves the authored width/nodes rather than a bare flag.
+	private final int[] river;
 	// the real EU4 terrain.bmp / trees.bmp palette index per cell, or -1 where the
 	// overlay is absent (see ProvinceRaster); the plot field reads these to ground a
 	// plot on the real map and falls back to climate generation where they are -1
@@ -31,7 +34,7 @@ public final class ProvinceMask {
 	// field so each plot carries its elevation
 	private final int[] elevation;
 
-	ProvinceMask(int originX, int originY, int width, int height, boolean[] land, boolean[] river,
+	ProvinceMask(int originX, int originY, int width, int height, boolean[] land, int[] river,
 			int[] terrainIndex, int[] treeIndex, int[] elevation) {
 		this.originX = originX;
 		this.originY = originY;
@@ -73,8 +76,18 @@ public final class ProvinceMask {
 
 	/** Whether the local cell carried a river pixel (false outside the bbox). */
 	public boolean isRiver(int lx, int ly) {
+		return riverCode(lx, ly) != 0;
+	}
+
+	/**
+	 * The river classification code at the local cell (0 outside the bbox / no river):
+	 * the low digit is the width level 1..4, the tens digit the node marker (0 plain,
+	 * 1 source, 2 confluence, 3 split). See {@link ProvinceRaster#classifyRiver} and
+	 * {@code docs/river-rendering.md} §1.
+	 */
+	public int riverCode(int lx, int ly) {
 		if (lx < 0 || lx >= width || ly < 0 || ly >= height)
-			return false;
+			return 0;
 		return river[ly * width + lx];
 	}
 

@@ -39,8 +39,6 @@ public final class ProvinceRaster {
 	private static final String TREES_BMP = "data/anbennar/trees.bmp";
 	private static final String HEIGHTMAP_BMP = "data/anbennar/heightmap.bmp";
 
-	private static final int RIVER_NONE = 0xFFFFFF; // pure white = no river
-
 	private final Map<Integer, Integer> idToColor;
 
 	// lazily loaded raster (cached after the first mask() call)
@@ -111,14 +109,14 @@ public final class ProvinceRaster {
 		int target = color;
 		int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
 		int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-		List<int[]> hits = new ArrayList<>(); // x, y, riverFlag
+		List<int[]> hits = new ArrayList<>(); // x, y, riverCode
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
 				int i = y * width + x;
 				if ((pixels[i] & 0xFFFFFF) != target)
 					continue;
-				int riverFlag = (river[i] & 0xFFFFFF) != RIVER_NONE ? 1 : 0;
-				hits.add(new int[] { x, y, riverFlag });
+				int riverCode = classifyRiver(river[i] & 0xFFFFFF);
+				hits.add(new int[] { x, y, riverCode });
 				if (x < minX) minX = x;
 				if (x > maxX) maxX = x;
 				if (y < minY) minY = y;
@@ -131,7 +129,7 @@ public final class ProvinceRaster {
 		int w = maxX - minX + 1;
 		int h = maxY - minY + 1;
 		boolean[] landGrid = new boolean[w * h];
-		boolean[] riverGrid = new boolean[w * h];
+		int[] riverGrid = new int[w * h];
 		// per-cell EU4 terrain/tree palette indices, framed to the same bounding box
 		// (-1 where the overlay is absent or out of bounds — the mask treats it as
 		// "unmapped" and the plot field falls back to climate generation)
@@ -144,7 +142,7 @@ public final class ProvinceRaster {
 			int ax = hit[0], ay = hit[1];
 			int idx = (ay - minY) * w + (ax - minX);
 			landGrid[idx] = true;
-			riverGrid[idx] = hit[2] == 1;
+			riverGrid[idx] = hit[2];
 			if (terrainIdx != null)
 				terrainGrid[idx] = terrainIdx[ay * width + ax];
 			if (treeIdx != null)
@@ -162,6 +160,45 @@ public final class ProvinceRaster {
 		int tx = Math.min(treeWidth - 1, ax * treeWidth / width);
 		int ty = Math.min(treeHeight - 1, ay * treeHeight / height);
 		return treeIdx[ty * treeWidth + tx];
+	}
+
+	// Classify a rivers.bmp pixel (RGB) into a compact river code, preserving what the
+	// authored EU4 river map encodes instead of collapsing it to a boolean. The palette
+	// was pinned by histogramming data/anbennar/rivers.bmp (see docs/river-rendering.md §1):
+	// a blue ramp encodes width (cyan → deep blue = narrow → wide) and three marker colours
+	// encode network nodes (green source, red confluence/flow-in, yellow split). White (land)
+	// and grey (sea) are "no river". Since it is an indexed BMP the palette entries are exact
+	// (no anti-aliasing), so the dominant channel classifies unambiguously.
+	//
+	// Encoding: 0 = none; the low digit is the width level 1..4; the tens digit is the node
+	// marker (0 plain, 1 source, 2 confluence, 3 split). e.g. 3 = a plain width-3 river,
+	// 11 = a river source, 21 = a tributary confluence. Nodes carry nominal width 1.
+	static int classifyRiver(int rgb) {
+		int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+		int max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));
+		if (max - min < 40)
+			return 0; // white (land) or grey (sea) — greyscale, no river
+		if (b == max)
+			return widthLevel(g); // blue ramp — a plain river of that width
+		if (r > 150 && g > 150)
+			return 31; // yellow — river split node
+		if (g == max)
+			return 11; // green — river source node
+		if (r == max)
+			return 21; // red — tributary flow-in / confluence node
+		return 0;
+	}
+
+	// the river width level (1 narrow .. 4 wide) for a blue-ramp pixel, keyed on its green
+	// channel (the cyan headwater has the most green; the deep-blue mouth the least).
+	private static int widthLevel(int green) {
+		if (green >= 210)
+			return 1;
+		if (green >= 160)
+			return 2;
+		if (green >= 110)
+			return 3;
+		return 4;
 	}
 
 	private void ensureRaster() throws IOException {

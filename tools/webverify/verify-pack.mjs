@@ -7,9 +7,9 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 
-const [, , webDirArg, provId, out] = process.argv;
+const [, , webDirArg, provId, out, zoom = '40'] = process.argv;
 const webDir = path.resolve(webDirArg);
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
   '.png': 'image/png', '.json': 'application/json', '.pack': 'application/octet-stream',
   '.ico': 'image/x-icon' };
 
@@ -50,7 +50,7 @@ page.on('response', r => {
   if (r.status() === 404) notFound.push(r.url());
 });
 
-await page.goto(`${base}/index.html#p=${provId}&z=40`, { waitUntil: 'networkidle' });
+await page.goto(`${base}/index.html#p=${provId}&z=${zoom}`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(3000);
 
 const state = await page.evaluate((id) => {

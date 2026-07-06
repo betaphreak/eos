@@ -49,7 +49,11 @@ repeating pattern, with higher-`LayerOrder` terrains **feathered over their lowe
 neighbours** at shared edges (the Civ4 16-way blend, adapted to the raster). Relief is
 a real **hillshade** from the imported `heightmap.bmp` — each plot carries its elevation
 (`ProvincePlotStore` → `Plot.elevation`), and the renderer shades slope normals against a
-NW sun and snow-caps the highest ground. Zoom reaches 64×. This layer is
+NW sun and snow-caps the highest ground. **Rivers** draw as a water-textured ribbon
+(baked from the Civ4 river art into `assets/river-<seed>.png`) that follows the plot
+network and **tapers by the river's authored width** — recovered from `rivers.bmp` into
+each plot's river code rather than flattened to a flag (see `docs/river-rendering.md`).
+Zoom reaches 256×. This layer is
 mode-agnostic — the Caravan View just draws its routes/heat on top; other WorldMap map
 modes will reuse it. Because the static caravan-days choropleth would hide the terrain,
 it shows as a **full overview only while zoomed out**, and **hover-only** once the
@@ -125,7 +129,7 @@ applied because of `plots.pack`). Load order: `core → plots → labels → mai
 | module | role |
 |--------|------|
 | `core.mjs` | data prep, the lon/lat→pixel→screen **projection** + pan/zoom **camera**, the shared mutable **state object `S`**, constants (`K_PLOT`/`K_TEX`/…), and small utils. Everyone imports it. |
-| `plots.mjs` | the per-plot **terrain-zoom layer** (range-fetch, rasterise, flat tiles → textures → hillshade) and the elevation **movement-cost overlay**. |
+| `plots.mjs` | the per-plot **terrain-zoom layer** (range-fetch, rasterise, flat tiles → textures → hillshade → **river ribbon** → features) and the elevation **movement-cost overlay**. |
 | `labels.mjs` | map text: province names and the **zoom-banded geographic tiers** (continent → super-region → region). |
 | `main.mjs` | the **`draw()` orchestrator** (including the cylindrical **wrap** — it renders the scene once per on-screen world copy), the camera raster, zoom, and deep-link. |
 | `panel.mjs` | all **DOM interaction**: the sidebar (province detail, run summary, journeys), search, button tooltips, the caravan timeline, and pointer/keyboard events. |

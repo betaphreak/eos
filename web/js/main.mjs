@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, K_PLOT, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, K_PLOT, K_MAX, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 // the baked dark terrain raster (a real image asset), drawn under everything
@@ -123,7 +123,7 @@ function drawStar(cx,cy,r,color){
   ctx.strokeStyle=cssVar("--panel-2"); ctx.lineWidth=1.2; ctx.stroke();
 }
 function zoomAt(mx, my, factor) {
-  const k2 = Math.max(1, Math.min(64, cam.k * factor));   // deep enough to read individual plots
+  const k2 = Math.max(1, Math.min(K_MAX, cam.k * factor));   // deep enough to read individual plots
   if (k2 === cam.k) return;
   const f = k2 / cam.k;
   cam.x = mx - f * (mx - cam.x);     // keep the point under (mx,my) fixed
@@ -135,7 +135,7 @@ function zoomAt(mx, my, factor) {
 const Pby = new Map(P.map(p => [p.id, p]));
 function focusProvince(id, k) {
   const p = Pby.get(id); if (!p) return;
-  cam.k = Math.max(1, Math.min(64, k || 18));
+  cam.k = Math.max(1, Math.min(K_MAX, k || 18));
   cam.x = VIEW.w / 2 - cam.k * baseXr(sxSrc(p.lon));
   cam.y = VIEW.h / 2 - cam.k * baseYr(sySrc(p.lat));
   clampPan(); S.baseVersion++; draw();

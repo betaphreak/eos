@@ -1,8 +1,12 @@
-import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, TT, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
+import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, TT, RIVER, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { renderRail } from "./panel.mjs";
 let ttImg = null, ttReady = false, ttTiles = null;
 if (TT) { ttImg = new Image(); ttImg.onload = () => { extractTiles(); ttReady = true; draw(); }; ttImg.src = TT.src; }
+// the baked water tile for the river ribbon (docs/river-rendering.md §2); null when the
+// build could not decode the Civ4 river art (LFS/file://) → drawRiver keeps the flat fill
+let rvImg = null, rvReady = false;
+if (RIVER) { rvImg = new Image(); rvImg.onload = () => { rvReady = true; draw(); }; rvImg.src = RIVER.src; }
 // split the atlas strip into a per-terrain tile canvas, so each can be a repeating
 // pattern (continuous ground texture across plots, no per-plot tile seam)
 function extractTiles() {
@@ -166,6 +170,7 @@ function buildPlotTexCanvas(p) {
   const o = oc.getContext("2d"); o.imageSmoothingEnabled = true;
   const grid = new Map();
   for (const q of p._plots) grid.set(q.x * 1e5 + q.y, q);
+  const riverPat = rvReady && rvImg ? o.createPattern(rvImg, "repeat") : null;   // water texture, or null
   // 1) base terrain as continuous repeating patterns (no per-plot tile seam)
   const pat = {};
   for (const q of p._plots) {
@@ -209,9 +214,28 @@ function buildPlotTexCanvas(p) {
     else if (k < -0.01) { o.fillStyle = `rgba(12,16,28,${Math.min(0.5, -k).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
     if (e >= 165) { o.fillStyle = `rgba(232,238,247,${Math.min(0.6, (e - 165) / 50).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
     if (q.feature) featureSprite(o, cx, cy, tpp, q.feature, q.x, q.y);
-    if (q.river) { o.fillStyle = "rgba(74,124,170,.55)"; o.fillRect(cx, cy, tpp, tpp); }
+    if (q.river) drawRiver(o, cx, cy, tpp, q, grid, riverPat);
   }
   p._tcanvas = oc; p._tbox = { x0, y0, w, h };
+}
+// A river plot's segment: a water-textured ribbon from the cell centre out to each
+// 4-neighbour that also carries a river (to the shared edge), or a source blob when it
+// stands alone. The ribbon width tapers by the plot's authored river width — the low
+// digit of the packed river code (q.river % 10; node markers read as width 1). Uses the
+// baked water tile as a repeating pattern, falling back to the flat blue fill colour the
+// map used before when that tile is unavailable (LFS not pulled / file://).
+function drawRiver(o, cx, cy, s, q, grid, pat) {
+  const isR = d => { const n = grid.get((q.x + d[0]) * 1e5 + (q.y + d[1])); return n && n.river; };
+  const links = NB4.filter(isR);
+  const lvl = Math.min(4, (q.river % 10) || 1);            // width digit 1..4; guard 0
+  const mx = cx + s / 2, my = cy + s / 2, w = s * (0.16 + 0.06 * lvl);
+  o.save();
+  o.strokeStyle = pat || "rgba(74,124,170,.85)"; o.fillStyle = pat || "rgba(74,124,170,.85)";
+  o.lineWidth = w; o.lineCap = "round"; o.lineJoin = "round";
+  o.globalAlpha = pat ? 0.9 : 0.55;
+  if (!links.length) { o.beginPath(); o.arc(mx, my, w * 0.6, 0, 7); o.fill(); }
+  else for (const d of links) { o.beginPath(); o.moveTo(mx, my); o.lineTo(mx + d[0] * s / 2, my + d[1] * s / 2); o.stroke(); }
+  o.restore();
 }
 // small deterministic RNG seeded by a plot's coords, so feature sprites are stable
 function mkRng(seed) { let s = seed >>> 0 || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }

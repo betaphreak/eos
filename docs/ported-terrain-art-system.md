@@ -300,3 +300,63 @@ concern, exactly like the LFS source it reads from.
 
 **So the exporter set from §3 still holds, but each pairs with an asset-bake step,
 and the *deliverable* is web atlases + JSON, not Civ4 formats.**
+
+---
+
+## 11. As-built status (2026-07) — what's actually wired vs. §10's plan
+
+§1–§10 describe the *target*. This section is the **current implementation**, so the
+gap between "art available" and "art rendered" is explicit. **Only base ground is
+done.** Of the whole `terrain/` tree, the web client touches **only the 16 land
+ground detail textures**, and only as a *colour source*.
+
+**Done**
+
+- **`TerrainArtInfo` (ground) only.** `TerrainArtExporter` (`geo/export/TerrainArtExporter.java`)
+  parses `CIV4ArtDefines_Terrain.xml` for a curated `KEEP` set of **16 land terrains**
+  (GRASSLAND, LUSH, PLAINS, SCRUB, MARSH, MUDDY, ROCKY, BADLAND, JAGGED, BARREN, DESERT,
+  DUNES, SALT_FLATS, TAIGA, TUNDRA, PERMAFROST) → `src/main/resources/map/terrain-art.json`
+  (`path`/`grid`/`detail` paths, `layerOrder`, and the full 16-way `blend` table). The
+  §4.2–4.5 exporters (Feature/Bonus/Improvement/Route) are **not built**.
+- **The §10 "build.mjs can't decode `.dds`" caveat is resolved.** `web/dds.mjs` is a
+  **hand-rolled, dependency-free DXT1/3/5 decoder** used *at build time* by `web/build.mjs`
+  to read detail-texture mean colours and bake the recolored texture atlas. The runtime
+  page stays dependency-free; DDS decoding is offline, as §10 required.
+- **Per-plot data pipeline.** `ProvincePlotField` (via `MapTerrainCodec`, real
+  `terrain.bmp`/`trees.bmp`/`heightmap.bmp`) → `ProvincePlotStore` gzipped JSON per province
+  in `map/provinces/<id>.json.gz` → `build.mjs packPlots` concatenates into
+  `web/assets/plots.pack` + a byte-offset `plotIndex` in `data.js`. Each plot carries
+  `x, y, river, terrain, plotType(FLAT/HILL/PEAK), feature, bonus, elevation`.
+
+**As-built rendering, by camera scale `k`** (`web/js/plots.mjs`; thresholds in
+`web/js/core.mjs`: `K_PLOT = 5`, `K_TEX = 16`, zoom cap 64×):
+
+- **`k < 5`** — background raster `assets/terrain-<seed>.png`: a box-downsample of
+  `terrain.bmp` with **one flat muted colour per terrain category** (`terrainTint`),
+  optionally re-hued from real Civ4 detail averages. No texture, no relief.
+- **`k ≥ 5`** — per-plot **1px flat tiles**: flat `terrainRgb` + cheap tints
+  (forest/jungle darken, swamp desaturate, hill lighten, peak → grey, river → blue).
+- **`k ≥ 16`** — real Civ4 **detail** textures, but **recolored so each texture's mean
+  equals its flat display colour** (`terrain-tiles-<seed>.png`, gitignored) — real grain,
+  synthetic hue. Plus: a **16-way edge blend that is a colour *bleed*, not the real
+  `TextureBlend` alpha tiles** (§6.1 knowingly approximated); **hillshade** from real
+  `elevation` (NW sun) + snow cap; **procedural vector feature marks** (`featureSprite`:
+  trees = circles, swamp = reeds, cactus, oasis, savanna tufts; `FLOOD_PLAINS` left bare);
+  and **rivers as a flat translucent blue cell fill**.
+
+**Not built** (the visible half of §3–§6):
+
+- **Rivers now use real 2D water art** (Phase 1B, done 2026-07) — a texture ribbon baked
+  from `routes/rivers/allriverssmall.dds`, tapered by the authored width recovered from
+  `rivers.bmp` (`ProvinceRaster.classifyRiver`, no longer flattened to a boolean). See
+  `docs/river-rendering.md`. Directed/animated flow (Phase 2) and the faithful `borderNN`
+  edge tiles (Phase 3) are still open.
+- **No real feature, bonus, improvement, coastline/water, or natural-wonder art.**
+  Features are procedural JS marks; non-river water is a flat tint. These remain gated on
+  the offline `.nif`→sprite baker.
+- **The offline `.nif`→sprite baker (§10) does not exist** — this is the gating unlock for
+  Feature/Bonus/Improvement/Wonder art, which is all 3D `.nif`.
+- **The 16-way `TextureBlend` table is exported to `terrain-art.json` but never read by
+  `build.mjs`** — the on-screen blend is the colour-bleed approximation above.
+- **`bonus` is in every plot but never *rendered*.** It is read only for the info-panel
+  resource tally (`web/js/panel.mjs:230`), not drawn on the map.

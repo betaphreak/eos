@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * equals what any run would produce — a province's geography is a property of the map, not
  * of a particular run (see {@code docs/province-plots.md}).
  * <p>
- * A plot is stored as its raster position, river flag, and the Civ4 type keys of its
+ * A plot is stored as its raster position, river code, and the Civ4 type keys of its
  * terrain / relief / feature / bonus (resolved back through the {@link TerrainRegistry} on
  * load). The record is <b>gzip-compressed JSON</b> ({@code <id>.json.gz}) — the field is
  * highly repetitive (repeated type keys and field names), so gzip shrinks it ~25&times; over
@@ -50,8 +50,8 @@ public final class ProvincePlotStore {
 	private ProvincePlotStore() {
 	}
 
-	/** One persisted plot: raster position, river flag, elevation, and the type keys. */
-	private record StoredPlot(int x, int y, boolean river, String terrain, String plotType,
+	/** One persisted plot: raster position, river code, elevation, and the type keys. */
+	private record StoredPlot(int x, int y, int river, String terrain, String plotType,
 			String feature, String bonus, int elevation) {
 	}
 
@@ -93,7 +93,7 @@ public final class ProvincePlotStore {
 	public static void save(int provinceId, List<Plot> plots) {
 		List<StoredPlot> stored = new ArrayList<>(plots.size());
 		for (Plot p : plots)
-			stored.add(new StoredPlot(p.x(), p.y(), p.river(), p.terrain().type(),
+			stored.add(new StoredPlot(p.x(), p.y(), p.riverCode(), p.terrain().type(),
 					p.plotType().name(), p.feature() == null ? null : p.feature().type(),
 					p.bonus() == null ? null : p.bonus().type(), p.elevation()));
 		try {
