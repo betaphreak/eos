@@ -68,5 +68,4 @@ jobs:
           action: upload
           app_location: web          # upload the prebuilt folder as-is
           skip_app_build: true       # no Oryx build — build.mjs already produced everything
-          skip_api_build: true
           output_location: ''
