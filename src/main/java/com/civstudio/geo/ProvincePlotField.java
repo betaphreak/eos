@@ -28,28 +28,46 @@ import com.civstudio.util.Rng;
 public final class ProvincePlotField {
 
 	/**
-	 * One generated plot: its absolute raster position, whether it carried a river
-	 * pixel, its terrain, its relief, and (later) its wild feature.
+	 * One generated plot: its {@link PlotGeo raster-derived scalars} (position, river, elevation,
+	 * sea mask) plus its terrain, relief, wild feature and resource. The positional/raster
+	 * accessors delegate to {@link #geo()} — see {@link PlotGeo} for why they are grouped.
 	 *
-	 * @param x         absolute raster x
-	 * @param y         absolute raster y
-	 * @param riverCode the river classification code (0 = none; low digit = width 1..4,
-	 *                  tens digit = node marker) from {@code rivers.bmp} — see
-	 *                  {@link ProvinceRaster#classifyRiver} and {@code docs/river-rendering.md}
-	 * @param terrain   the ground (from the climate pool)
-	 * @param plotType  the relief (flat/hill/peak; from {@link ReliefGenerator})
-	 * @param feature   the wild feature, or {@code null}
-	 * @param bonus     the resource on this plot, or {@code null}
-	 * @param elevation the real heightmap elevation (0..255), a raster lookup
-	 * @param coast     the 4-bit sea-edge mask (which orthogonal neighbour is water:
-	 *                  1=E, 2=W, 4=S, 8=N; 0 = inland) — see {@code docs/coastlines.md}
+	 * @param geo      the raster-derived scalars (position, river code, elevation, sea mask)
+	 * @param terrain  the ground (from the climate pool)
+	 * @param plotType the relief (flat/hill/peak; from {@link ReliefGenerator})
+	 * @param feature  the wild feature, or {@code null}
+	 * @param bonus    the resource on this plot, or {@code null}
 	 */
-	public record ProvincePlot(int x, int y, int riverCode, Terrain terrain,
-			PlotType plotType, Feature feature, Bonus bonus, int elevation, int coast) {
+	public record ProvincePlot(PlotGeo geo, Terrain terrain, PlotType plotType, Feature feature, Bonus bonus) {
+
+		/** Absolute raster x. */
+		public int x() {
+			return geo.x();
+		}
+
+		/** Absolute raster y. */
+		public int y() {
+			return geo.y();
+		}
+
+		/** The packed river code (0 = none; see {@link ProvinceRaster#classifyRiver}). */
+		public int riverCode() {
+			return geo.river();
+		}
+
+		/** The real heightmap elevation (0..255). */
+		public int elevation() {
+			return geo.elevation();
+		}
+
+		/** The 8-bit sea mask (edges + corners; see {@code docs/coastlines.md}). */
+		public int coast() {
+			return geo.coast();
+		}
 
 		/** Whether a river runs through this plot (any non-zero {@link #riverCode()}). */
 		public boolean river() {
-			return riverCode != 0;
+			return geo.river() != 0;
 		}
 	}
 
@@ -125,8 +143,8 @@ public final class ProvincePlotField {
 				// terrain/relief/feature/bonus draws — and thus the field — otherwise identical
 				int elevation = mask.elevation(lx, ly);
 				int coast = mask.coast(lx, ly);
-				out.add(new ProvincePlot(mask.originX() + lx, mask.originY() + ly,
-						riverCode, terrain, plotType, feature, bonus, elevation, coast));
+				PlotGeo geo = new PlotGeo(mask.originX() + lx, mask.originY() + ly, riverCode, elevation, coast);
+				out.add(new ProvincePlot(geo, terrain, plotType, feature, bonus));
 			}
 		}
 		return new ProvincePlotField(province, out);

@@ -57,8 +57,7 @@ public final class WorldPlotGenerator {
 				ProvincePlotField field = ProvincePlotField.generate(p, registry, raster, rng);
 				List<Plot> plots = new ArrayList<>(field.size());
 				for (ProvincePlot pp : field.plots())
-					plots.add(new Plot(pp.x(), pp.y(), pp.riverCode(), pp.terrain(), pp.plotType(),
-							pp.feature(), pp.bonus(), pp.elevation(), pp.coast()));
+					plots.add(new Plot(pp.geo(), pp.terrain(), pp.plotType(), pp.feature(), pp.bonus()));
 				ProvincePlotStore.save(p.id(), plots);
 				gen++;
 				if (gen % 200 == 0)

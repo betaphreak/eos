@@ -7,6 +7,7 @@ import java.util.List;
 import com.civstudio.geo.Bonus;
 import com.civstudio.geo.Feature;
 import com.civstudio.geo.Improvement;
+import com.civstudio.geo.PlotGeo;
 import com.civstudio.geo.PlotType;
 import com.civstudio.geo.Terrain;
 import com.civstudio.good.ResourceType;
@@ -64,39 +65,18 @@ public final class Plot {
 	// it is the per-settlement claim rank, assigned by setIndex when claimed (-1 until).
 	private int index;
 
-	// the plot's raster pixel position in the province silhouette, or -1 for a plot
-	// not sourced from the province field (a legacy/province-less plot). See
-	// docs/province-plots.md.
-	private final int x;
-	private final int y;
+	// the plot's raster-derived scalars: its (x, y) position in the province silhouette and the
+	// fields read off the Anbennar rasters — the packed river code, the heightmap elevation, and
+	// the 8-bit sea mask. Grouped so a new raster attribute is one line in PlotGeo, not another
+	// Plot constructor parameter; the positional/raster accessors below delegate to it. PlotGeo.NONE
+	// for a province-less plot (position -1, no water/elevation). See PlotGeo / docs/plots.md.
+	private final PlotGeo geo;
 
 	// the resource on this plot (from the province field's bonus stage), or null. A
 	// necessity-class (food) bonus adds its food yield in yields() — the live cut of the
 	// bonus -> consumer-good connection (Bonus.resourceType()); enjoyment and strategic
 	// bonuses stay dormant, as their sectors are gated off in Settlement.plotYieldFactor.
 	private final Bonus bonus;
-
-	// the river classification code on this plot (from the province field): 0 = no river;
-	// low digit = width level 1..4 (narrow → wide), tens digit = downstream flow direction
-	// 1..8 (0 = sink/mouth), hundreds digit = node marker (1 source, 2 confluence, 3 split) —
-	// see ProvinceRaster.classifyRiver + RiverFlow / docs/river-rendering.md §1/§3. river()
-	// reads it as a boolean for the caravan land-routing corridors, which ford any river at a
-	// full day's march (see docs/land-routing.md / docs/caravan-march.md §6); riverWidth()/
-	// flowDir()/riverNode() decode the fields (flowDir is the seam for river navigation).
-	// 0 for a province-less plot.
-	private final int river;
-
-	// the real heightmap elevation (0..255) at this plot, or 0 for a province-less plot.
-	// A raster lookup (from the province field), for hillshading and future elevation-
-	// sensitive gameplay; orthogonal to plotType's flat/hill/peak class.
-	private final int elevation;
-
-	// the 8-bit sea mask on this plot — which of the 8 neighbours are water: low nibble = edges
-	// (1=E,2=W,4=S,8=N), high nibble = corners (16=NW,32=NE,64=SE,128=SW); 0 = inland. From the
-	// province field's global land/sea raster — the web draws the coastline from it (the corners
-	// index the Civ4 coastscalemask blend) and it is the seam for future coastal gameplay
-	// (ports / sea trade). See docs/coastlines.md. 0 for a province-less plot.
-	private final int coast;
 
 	// the settlement that has claimed this plot out of the shared province pool, or null
 	// while the plot is free (province-owned). Hybrid ownership: claiming transfers the
@@ -146,28 +126,22 @@ public final class Plot {
 	 * @param feature  the wild feature overlaying it, or {@code null} if bare
 	 */
 	public Plot(int index, Terrain terrain, PlotType plotType, Feature feature) {
-		this(index, -1, -1, 0, terrain, plotType, feature, null, 0, 0);
+		this(index, PlotGeo.NONE, terrain, plotType, feature, null);
 	}
 
 	/**
-	 * Create a vacant, undeveloped plot at a raster position in a province field, with
-	 * its resource — a plot for the shared province pool. Its ladder {@link #index()}
-	 * is unset ({@code -1}) until a settlement claims it (see {@link #setIndex(int)}).
+	 * Create a vacant, undeveloped plot at a raster position in a province field, with its
+	 * resource — a plot for the shared province pool. Its ladder {@link #index()} is unset
+	 * ({@code -1}) until a settlement claims it (see {@link #setIndex(int)}).
 	 *
-	 * @param x        the raster x of the plot in the province silhouette
-	 * @param y        the raster y of the plot in the province silhouette
-	 * @param river    the river classification code (0 = none; low digit width 1..4, tens
-	 *                 digit node marker) — see {@link #riverCode()}
+	 * @param geo      the raster-derived scalars — position, river code, elevation, sea mask
 	 * @param terrain  the ground it sits on (non-null)
 	 * @param plotType the relief (flat/hill/peak; non-null)
-	 * @param feature   the wild feature overlaying it, or {@code null} if bare
-	 * @param bonus     the resource on it, or {@code null}
-	 * @param elevation the real heightmap elevation (0..255)
-	 * @param coast     the 4-bit sea-edge mask (1=E, 2=W, 4=S, 8=N; 0 = inland)
+	 * @param feature  the wild feature overlaying it, or {@code null} if bare
+	 * @param bonus    the resource on it, or {@code null}
 	 */
-	public Plot(int x, int y, int river, Terrain terrain, PlotType plotType,
-			Feature feature, Bonus bonus, int elevation, int coast) {
-		this(-1, x, y, river, terrain, plotType, feature, bonus, elevation, coast);
+	public Plot(PlotGeo geo, Terrain terrain, PlotType plotType, Feature feature, Bonus bonus) {
+		this(-1, geo, terrain, plotType, feature, bonus);
 	}
 
 	/**
@@ -182,21 +156,16 @@ public final class Plot {
 	 * @param bonus    the resource on it, or {@code null}
 	 */
 	public Plot(int x, int y, Terrain terrain, PlotType plotType, Feature feature, Bonus bonus) {
-		this(-1, x, y, 0, terrain, plotType, feature, bonus, 0, 0);
+		this(-1, new PlotGeo(x, y, 0, 0, 0), terrain, plotType, feature, bonus);
 	}
 
-	private Plot(int index, int x, int y, int river, Terrain terrain, PlotType plotType,
-			Feature feature, Bonus bonus, int elevation, int coast) {
+	private Plot(int index, PlotGeo geo, Terrain terrain, PlotType plotType, Feature feature, Bonus bonus) {
 		if (terrain == null)
 			throw new IllegalArgumentException("terrain must be non-null");
 		if (plotType == null)
 			throw new IllegalArgumentException("plotType must be non-null");
 		this.index = index;
-		this.x = x;
-		this.y = y;
-		this.river = river;
-		this.elevation = elevation;
-		this.coast = coast;
+		this.geo = geo;
 		this.terrain = terrain;
 		this.plotType = plotType;
 		this.feature = feature;
@@ -213,14 +182,19 @@ public final class Plot {
 		this.index = index;
 	}
 
+	/** The plot's {@link PlotGeo raster-derived scalars} (position, river code, elevation, sea mask). */
+	public PlotGeo geo() {
+		return geo;
+	}
+
 	/** The plot's raster x in the province silhouette, or {@code -1} if not from a province field. */
 	public int x() {
-		return x;
+		return geo.x();
 	}
 
 	/** The plot's raster y in the province silhouette, or {@code -1} if not from a province field. */
 	public int y() {
-		return y;
+		return geo.y();
 	}
 
 	/**
@@ -254,7 +228,7 @@ public final class Plot {
 
 	/** Whether a river runs through this plot (fording it costs a caravan a full day). */
 	public boolean river() {
-		return river != 0;
+		return geo.river() != 0;
 	}
 
 	/**
@@ -266,12 +240,12 @@ public final class Plot {
 	 * see {@link com.civstudio.geo.RiverFlow} and {@code docs/river-rendering.md} §1/§3.
 	 */
 	public int riverCode() {
-		return river;
+		return geo.river();
 	}
 
 	/** The river width level on this plot ({@code 0} = no river, {@code 1..4} narrow→wide). */
 	public int riverWidth() {
-		return river % 10;
+		return geo.river() % 10;
 	}
 
 	/**
@@ -280,17 +254,17 @@ public final class Plot {
 	 * {@link com.civstudio.geo.RiverFlow} — the seam for caravan river-navigation.
 	 */
 	public int flowDir() {
-		return (river / 10) % 10;
+		return (geo.river() / 10) % 10;
 	}
 
 	/** The river node marker ({@code 0} plain/none, {@code 1} source, {@code 2} confluence, {@code 3} split). */
 	public int riverNode() {
-		return river / 100;
+		return geo.river() / 100;
 	}
 
 	/** The real heightmap elevation (0..255) at this plot; 0 for a province-less plot. */
 	public int elevation() {
-		return elevation;
+		return geo.elevation();
 	}
 
 	/**
@@ -301,12 +275,12 @@ public final class Plot {
 	 * for the web coastline and the seam for coastal gameplay. See {@code docs/coastlines.md}.
 	 */
 	public int coast() {
-		return coast;
+		return geo.coast();
 	}
 
 	/** Whether this plot borders water on any edge (a coastal plot). */
 	public boolean isCoastal() {
-		return coast != 0;
+		return geo.coast() != 0;
 	}
 
 	/** Whether a firm can occupy this plot (false for a {@link PlotType#PEAK peak}). */

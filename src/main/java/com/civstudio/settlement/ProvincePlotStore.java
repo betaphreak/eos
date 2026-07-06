@@ -11,10 +11,8 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import com.civstudio.geo.Bonus;
-import com.civstudio.geo.Feature;
+import com.civstudio.geo.PlotGeo;
 import com.civstudio.geo.PlotType;
-import com.civstudio.geo.Terrain;
 import com.civstudio.geo.TerrainRegistry;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,9 +48,30 @@ public final class ProvincePlotStore {
 	private ProvincePlotStore() {
 	}
 
-	/** One persisted plot: raster position, river code, sea-edge mask, elevation, type keys. */
+	/**
+	 * One persisted plot — the {@link Plot}'s {@link PlotGeo raster scalars} (kept flat, so the
+	 * JSON the web reads is unchanged) plus its terrain/relief/feature/bonus as Civ4 type keys.
+	 * The object&harr;key mapping lives here in {@link #of}/{@link #toPlot} rather than scattered
+	 * through {@code save}/{@code load}, so adding a field is a one-record change.
+	 */
 	private record StoredPlot(int x, int y, int river, String terrain, String plotType,
 			String feature, String bonus, int elevation, int coast) {
+
+		/** The persisted form of a runtime plot: its raster scalars + its type keys. */
+		static StoredPlot of(Plot p) {
+			PlotGeo g = p.geo();
+			return new StoredPlot(g.x(), g.y(), g.river(), p.terrain().type(), p.plotType().name(),
+					p.feature() == null ? null : p.feature().type(),
+					p.bonus() == null ? null : p.bonus().type(), g.elevation(), g.coast());
+		}
+
+		/** Resolve back to a runtime plot, looking the type keys up in {@code registry}. */
+		Plot toPlot(TerrainRegistry registry) {
+			return new Plot(new PlotGeo(x, y, river, elevation, coast),
+					registry.terrain(terrain), PlotType.valueOf(plotType),
+					feature == null ? null : registry.feature(feature),
+					bonus == null ? null : registry.bonus(bonus));
+		}
 	}
 
 	/**
@@ -70,13 +89,8 @@ public final class ProvincePlotStore {
 					new TypeReference<List<StoredPlot>>() {
 					});
 			List<Plot> plots = new ArrayList<>(stored.size());
-			for (StoredPlot sp : stored) {
-				Terrain terrain = registry.terrain(sp.terrain());
-				PlotType plotType = PlotType.valueOf(sp.plotType());
-				Feature feature = sp.feature() == null ? null : registry.feature(sp.feature());
-				Bonus bonus = sp.bonus() == null ? null : registry.bonus(sp.bonus());
-				plots.add(new Plot(sp.x(), sp.y(), sp.river(), terrain, plotType, feature, bonus, sp.elevation(), sp.coast()));
-			}
+			for (StoredPlot sp : stored)
+				plots.add(sp.toPlot(registry));
 			return plots;
 		} catch (IOException e) {
 			throw new UncheckedIOException(
@@ -93,9 +107,7 @@ public final class ProvincePlotStore {
 	public static void save(int provinceId, List<Plot> plots) {
 		List<StoredPlot> stored = new ArrayList<>(plots.size());
 		for (Plot p : plots)
-			stored.add(new StoredPlot(p.x(), p.y(), p.riverCode(), p.terrain().type(),
-					p.plotType().name(), p.feature() == null ? null : p.feature().type(),
-					p.bonus() == null ? null : p.bonus().type(), p.elevation(), p.coast()));
+			stored.add(StoredPlot.of(p));
 		try {
 			File dir = new File(WRITE_DIR);
 			dir.mkdirs();
