@@ -234,9 +234,11 @@ public final class Plot {
 	/**
 	 * The packed river classification code on this plot: {@code 0} = no river; low digit =
 	 * width level {@code 1..4}, tens digit = downstream flow direction {@code 1..8}, hundreds
-	 * digit = node marker ({@code 1} source, {@code 2} confluence, {@code 3} split). Decode
-	 * with {@link #riverWidth()}/{@link #flowDir()}/{@link #riverNode()}. Persisted for the
-	 * web map (whose ribbon tapers by width) and, via {@code flowDir}, for river navigation;
+	 * digit = node marker ({@code 1} source, {@code 2} confluence, {@code 3} split), thousands
+	 * digit = 4-bit river-adjacency mask ({@code 1}=E, {@code 2}=W, {@code 4}=S, {@code 8}=N).
+	 * Decode with {@link #riverWidth()}/{@link #flowDir()}/{@link #riverNode()}/{@link
+	 * #riverAdj()}. Persisted for the web map (whose ribbon tapers by width and links across
+	 * province seams via the adjacency mask) and, via {@code flowDir}, for river navigation;
 	 * see {@link com.civstudio.geo.RiverFlow} and {@code docs/river-rendering.md} §1/§3.
 	 */
 	public int riverCode() {
@@ -259,7 +261,17 @@ public final class Plot {
 
 	/** The river node marker ({@code 0} plain/none, {@code 1} source, {@code 2} confluence, {@code 3} split). */
 	public int riverNode() {
-		return geo.river() / 100;
+		return (geo.river() / 100) % 10;
+	}
+
+	/**
+	 * The 4-bit river-adjacency mask on this plot: which orthogonal neighbours are also river
+	 * cells ({@code 1}=E, {@code 2}=W, {@code 4}=S, {@code 8}=N; {@code 0} = no river neighbour).
+	 * Computed globally so it names neighbours in adjacent provinces too — the web ribbon reads
+	 * it to draw river links across province seams. See {@code docs/river-rendering.md} §1.
+	 */
+	public int riverAdj() {
+		return (geo.river() / 1000) % 16;
 	}
 
 	/** The real heightmap elevation (0..255) at this plot; 0 for a province-less plot. */

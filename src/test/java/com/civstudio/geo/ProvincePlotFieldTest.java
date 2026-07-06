@@ -69,6 +69,33 @@ class ProvincePlotFieldTest {
 	}
 
 	@Test
+	void riverAdjacencyMaskMatchesRiverNeighbours() throws Exception {
+		// the river code's thousands digit is a 4-bit mask (1=E,2=W,4=S,8=N) of which orthogonal
+		// neighbours are also river cells — the seam fix that lets the web ribbon link across
+		// provinces. Verify it agrees with the actual neighbours the mask can see (in-bounds);
+		// edge cells may set bits pointing into an adjacent province, which one mask cannot check.
+		ProvinceMask mask = ProvinceRaster.load().mask(dhenijansar().id());
+		int[][] dirs = { { 1, 0, 1 }, { -1, 0, 2 }, { 0, 1, 4 }, { 0, -1, 8 } };   // dx, dy, bit
+		int riverCells = 0;
+		for (int ly = 0; ly < mask.height(); ly++)
+			for (int lx = 0; lx < mask.width(); lx++) {
+				int code = mask.riverCode(lx, ly);
+				if (code == 0) continue;
+				riverCells++;
+				int adj = (code / 1000) % 16;
+				for (int[] d : dirs) {
+					int nx = lx + d[0], ny = ly + d[1];
+					if (nx < 0 || nx >= mask.width() || ny < 0 || ny >= mask.height()) continue;
+					boolean bitSet = (adj & d[2]) != 0;
+					boolean nbRiver = mask.riverCode(nx, ny) != 0;
+					assertEquals(nbRiver, bitSet,
+							"adjacency bit " + d[2] + " at (" + lx + "," + ly + ") must match a river neighbour");
+				}
+			}
+		assertTrue(riverCells > 0, "Dhenijansar carries river cells to exercise the mask");
+	}
+
+	@Test
 	void generationIsDeterministicPerSeed() throws Exception {
 		Province dh = dhenijansar();
 		TerrainRegistry reg = TerrainRegistry.load();

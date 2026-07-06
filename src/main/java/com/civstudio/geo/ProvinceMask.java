@@ -87,12 +87,14 @@ public final class ProvinceMask {
 
 	/**
 	 * The river classification code at the local cell (0 outside the bbox / no river). It
-	 * packs three fields as decimal digits: the <b>low</b> digit is the width level 1..4, the
+	 * packs four fields as decimal digits: the <b>low</b> digit is the width level 1..4, the
 	 * <b>tens</b> digit is the downstream flow direction 1..8 (0 = a sink/mouth; see {@link
-	 * RiverFlow}), and the <b>hundreds</b> digit is the node marker (0 plain, 1 source, 2
-	 * confluence, 3 split). e.g. {@code 53} = a width-3 river flowing direction 5 (W); {@code
-	 * 141} = a source (width 1) flowing direction 4. See {@link ProvinceRaster#classifyRiver}
-	 * and {@code docs/river-rendering.md} §1/§3.
+	 * RiverFlow}), the <b>hundreds</b> digit is the node marker (0 plain, 1 source, 2 confluence,
+	 * 3 split), and the <b>thousands</b> digit is a 4-bit river-adjacency mask (1=E, 2=W, 4=S,
+	 * 8=N) naming which orthogonal neighbours are also river cells — computed globally so the web
+	 * ribbon links across province seams. e.g. {@code 53} = a width-3 river flowing direction 5
+	 * (W); {@code 5141} = a source (width 1) flowing direction 4 with river neighbours E+S. See
+	 * {@link ProvinceRaster#classifyRiver} and {@code docs/river-rendering.md} §1/§3.
 	 */
 	public int riverCode(int lx, int ly) {
 		if (lx < 0 || lx >= width || ly < 0 || ly >= height)

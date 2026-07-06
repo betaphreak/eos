@@ -274,7 +274,15 @@ function drawCoast(o, cx, cy, s, mask) {
 // baked water tile as a repeating pattern, falling back to the flat blue fill colour the
 // map used before when that tile is unavailable (LFS not pulled / file://).
 function drawRiver(o, cx, cy, s, q, grid, pat) {
-  const isR = d => { const n = grid.get((q.x + d[0]) * 1e5 + (q.y + d[1])); return n && n.river; };
+  // links come from the packed adjacency mask (thousands digit: 1=E,2=W,4=S,8=N, in NB4 order),
+  // which is global — so a river links to a neighbour in the ADJACENT province, not just this
+  // one's grid. Fall back to the in-province grid when the mask is absent (older packs → 0).
+  const adj = Math.floor(q.river / 1000) % 16;
+  const isR = (d, i) => {
+    if (adj & (1 << i)) return true;                                    // global mask: neighbour is a river (maybe cross-province)
+    const n = grid.get((q.x + d[0]) * 1e5 + (q.y + d[1]));             // fallback for older packs (adj == 0)
+    return !!(n && n.river);
+  };
   const links = NB4.filter(isR);
   const lvl = Math.min(4, (q.river % 10) || 1);            // width digit 1..4; guard 0
   const mx = cx + s / 2, my = cy + s / 2, w = s * (0.16 + 0.06 * lvl);

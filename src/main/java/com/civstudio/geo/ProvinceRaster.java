@@ -155,7 +155,10 @@ public final class ProvinceRaster {
 			int ax = hit[0], ay = hit[1];
 			int idx = (ay - minY) * w + (ax - minX);
 			landGrid[idx] = true;
-			riverGrid[idx] = hit[2];
+			// fold the river-adjacency mask into the code's THOUSANDS digit, but only on an
+			// actual river cell — so a non-river plot stays 0 (river() boolean is preserved) and
+			// the web ribbon can link across province seams (a neighbour may sit in another mask).
+			riverGrid[idx] = hit[2] != 0 ? hit[2] + riverAdjMask(ax, ay) * 1000 : 0;
 			coastGrid[idx] = seaMask(ax, ay);
 			if (terrainIdx != null)
 				terrainGrid[idx] = terrainIdx[ay * width + ax];
@@ -184,6 +187,30 @@ public final class ProvinceRaster {
 		if (isWater(ax + 1, ay + 1)) m |= 64;    // SE (mask BR)
 		if (isWater(ax - 1, ay + 1)) m |= 128;   // SW (mask BL)
 		return m;
+	}
+
+	// the 4-bit river-adjacency mask of a river pixel: which of its orthogonal neighbours are
+	// ALSO river cells (1=E, 2=W, 4=S, 8=N — matching NB4 and the sea mask's low nibble).
+	// Global (checks the whole river raster), so the web ribbon links across province seams
+	// instead of stopping at the bbox edge; folded into the code's THOUSANDS digit (see
+	// riverCode / docs/river-rendering.md §1). 0 = no river neighbour → an isolated source blob.
+	private int riverAdjMask(int ax, int ay) {
+		int m = 0;
+		if (isRiver(ax + 1, ay)) m |= 1;   // E
+		if (isRiver(ax - 1, ay)) m |= 2;   // W
+		if (isRiver(ax, ay + 1)) m |= 4;   // S
+		if (isRiver(ax, ay - 1)) m |= 8;   // N
+		return m;
+	}
+
+	// whether the rivers.bmp pixel is a river cell (any non-white/grey classification); x wraps
+	// E-W like isWater, y beyond the poles → false. Same source as classifyRiver, so it agrees
+	// with the in-province grid for interior neighbours and extends it across the seam.
+	private boolean isRiver(int x, int y) {
+		if (y < 0 || y >= height)
+			return false;
+		int wx = ((x % width) + width) % width;
+		return classifyRiver(river[y * width + wx] & 0xFFFFFF) != 0;
 	}
 
 	// whether the pixel is a water (SEA/LAKE) province; x wraps E-W (the map is a cylinder),

@@ -75,13 +75,24 @@ The old `ProvinceRaster` collapsed every non-white `rivers.bmp` pixel to `1/0`. 
 `ProvinceRaster.classifyRiver(rgb)` classifies each pixel from the §1 palette and the
 result is carried, unflattened, all the way to the persisted grid.
 
-- **One packed int, not separate fields.** All three fields fit one int (compact record +
+- **One packed int, not separate fields.** All fields fit one int (compact record +
   JSON): `0` = none; the **low digit** is the width level `1..4` (narrow→wide); the **tens
   digit** is the downstream flow direction `1..8` (Phase 2 — `0` in 1A, filled later); the
-  **hundreds digit** is the node marker (`1` source, `2` confluence, `3` split). e.g. `3` =
-  a plain width-3 river, `101` = a source, `53` = a width-3 river flowing W. Nodes carry
-  nominal width 1. `classifyRiver` returns the static part (width + node); `RiverFlow` folds
-  in the flow digit (§3).
+  **hundreds digit** is the node marker (`1` source, `2` confluence, `3` split); the
+  **thousands digit** is a 4-bit river-adjacency mask (`1`=E, `2`=W, `4`=S, `8`=N — NB4 order)
+  naming which orthogonal neighbours are also river cells (§1B seam fix). e.g. `3` = a plain
+  width-3 river, `101` = a source, `53` = a width-3 river flowing W, `5141` = a source flowing
+  W with river neighbours E+S. Nodes carry nominal width 1. `classifyRiver` returns the static
+  part (width + node); `RiverFlow` folds in the flow digit (§3); `ProvinceRaster.riverAdjMask`
+  folds in the adjacency digit. **Kept decimal-digit, not bit-packed:** the code is stored as
+  gzipped-JSON *text* (`ProvincePlotStore`), so digits stay human-readable and gzip erases any
+  size gap — byte-alignment would only pay off under a future fixed-width binary pack.
+- **Why the mask (not the render-only fallback):** rivers are drawn per-province into
+  separate offscreen canvases, so `drawRiver`'s neighbour lookup over a province's own grid
+  stops at the bbox edge — a river **interrupts at every province seam**. The mask is computed
+  globally (like the coast sea-mask and `RiverFlow`, where a neighbour in the next province
+  *is* visible), so a border cell links across the seam and both sides meet at the shared edge.
+  `drawRiver` still falls back to the in-province grid when the mask is `0` (older packs).
 - **The field kept the name `river`, widened `boolean → int`.** Threaded through
   `ProvinceMask` (`int[] river`, new `riverCode(lx,ly)`) → `ProvincePlotField.ProvincePlot`
   (`int riverCode`) → `settlement.Plot` (`int river`) → `ProvincePlotStore.StoredPlot`
