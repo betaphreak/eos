@@ -204,15 +204,34 @@ future flow *cue* would be a **static** glyph (a chevron), never motion.
 
 ## 4. Phase 3 (optional) — faithful Civ4 edge tiles
 
-The real Civ4 `routes/rivers/borderNN[a-h].dds` are **edge** decals (rivers run
-*between* plots), so they need **per-edge** geometry — which *side* of a plot the river
-runs along — that none of the phases above produce (1A gives a per-cell width, not per
-edge). That means an extra Java export step (a per-plot edge mask off `rivers.bmp`),
-beyond 1A. If pursued: a small `RiverArtExporter` (clone of `TerrainArtExporter`)
-emitting `map/river-art.json` as a `edge-mask → {tile, rotation}` table, baked into a
-strip atlas by a `bakeRiverTiles` (clone of `bakeTerrainTiles`), picked per plot by the
-edge mask — the §6.3 auto-tiling model. Lower priority than the tapering ribbon; the
-ribbon reads better on a 2D raster than edge decals meant for Civ4's 3D tiles.
+The real Civ4 `routes/rivers/border*.dds` are **edge** decals (rivers run *between*
+plots), so they need **per-edge** geometry — which *side* of a plot the river runs along
+— that none of the phases above produce (1A gives a per-cell width, not per edge).
+
+**There is no Civ4 XML to bring over for this.** Verified: no file under `data/civ4/`
+references the river tiles (`border*`, `allrivers`, `Routes/Rivers` → zero hits), and
+rivers are not a route (`CIV4RouteInfos.xml` has no `ROUTE_RIVER`). Civ4 renders river
+edges in **engine C++** by a hardcoded convention, not a data-driven ArtDefine — so there
+is nothing to export, and **no `RiverArtExporter`** (an earlier draft of this doc wrongly
+proposed one). Phase 3 is therefore two hand-built pieces, not an XML→JSON export:
+
+1. **Engine — a per-plot river *edge* mask.** Extend the existing plot pipeline (not a new
+   exporter): `ProvinceRaster.classifyRiver` already reads `rivers.bmp` per pixel; also
+   record which of a plot's **sides** carry a river, threaded through `WorldPlotStore` as a
+   new `StoredPlot` field. This is the real prerequisite — the edge geometry 1A/2 lack.
+2. **Web — `bakeRiverTiles` + a hand table.** Decode `border*.dds` (+corners) via
+   `dds.mjs` into a web atlas (like `bakeTerrainTiles`), plus a **hand-authored
+   `edge-config → {tile, rotation}` table** reconstructing the engine's selection
+   convention (optionally committed as `map/river-art.json`, but *written*, not exported),
+   picked per plot by the edge mask — the §6.3 auto-tiling model.
+
+Lower priority than the tapering ribbon, which reads better on a 2D raster than edge
+decals meant for Civ4's tiles.
+
+> **Not to be confused with routes.** `data/civ4/CIV4RouteModelInfos.xml` (roads / rails /
+> paths / tunnels — no rivers) *is* XML-bound and drives the separate **routes** feature
+> (the natural one after rivers, `ported-terrain-art-system.md §6`) via a
+> `RouteModelExporter` → `map/route-models.json`. That is not part of Phase 3.
 
 ---
 
