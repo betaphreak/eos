@@ -136,7 +136,8 @@ const terrainColors = terrainDisplayColors(terrainRealColors());
 const terrainLayer = terrainLayerOrders();   // TERRAIN_* -> Civ4 LayerOrder (drives edge blending)
 const terrainTiles = bakeTerrainTiles(terrainColors);
 const river = bakeRiverTile();               // {src, tile} water tile, or null (flat-fill fallback)
-const sea = bakeSeaTile();                   // {src, tile} open-water tile, or null (void-fill fallback)
+const sea = bakeSeaTile();                   // {src, tile} greyscale ripple tile, or null (gradient-only fallback)
+const seaBands = bakeSeaBands();             // {trop, temp, polar} climate sea colours for the latitude gradient
 const plotPack = packPlots(provinces);
 
 // ---- geographic label tiers (continent -> super-region -> region) ----------
@@ -174,7 +175,7 @@ const bundle = {
     origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
-  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, geo,
+  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, seaBands, geo,
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
 };
 
@@ -191,7 +192,7 @@ console.log(`  geo labels: ${geo.continents.length} continents · ${geo.superReg
 console.log(`  plots: ${plotPack.count} provinces packed into web/assets/plots.pack (${(plotPack.bytes / 1048576).toFixed(1)} MB, range-fetched per-plot terrain zoom)`);
 console.log(`  terrain tiles: ${terrainTiles ? terrainTiles.src + ' (' + Object.keys(terrainTiles.cols).length + ' textures)' : 'skipped (no terrain-art.json / LFS textures)'}`);
 console.log(`  river tile: ${river ? river.src : 'skipped (no allriverssmall.dds / LFS)'}`);
-console.log(`  sea tile: ${sea ? sea.src : 'skipped (no seadetail.dds / LFS)'}`);
+console.log(`  sea tile: ${sea ? sea.src : 'skipped (no seadetail.dds / LFS)'} · bands trop/temp/polar ${JSON.stringify([seaBands.trop, seaBands.temp, seaBands.polar])}`);
 for (const j of journeys) console.log(`  ${('→ ' + j.dest).padEnd(26)} ${j.provinceCount} prov · ${(j.days / 365.25).toFixed(1)}y · cargo ${j.cargoFinal}`);
 
 // ---------------------------------------------------------------------------
@@ -529,22 +530,55 @@ function bakeRiverTile() {
   return { src: `assets/${file}`, tile: T };
 }
 
-// Bake a seamless tiling OPEN-WATER tile from the real Civ4 sea texture (textures/water/
-// seadetail.dds) for the map's ocean layer. Unlike the river ribbon (whose ripples are in
-// the DXT5 alpha), seadetail carries its wave pattern in RGB, so this reuses detailTile —
-// the same recolour-to-a-target-mean the ground textures use — keeping the wave luminance
-// variation but retinting it to a dark-theme sea blue. Returns {src, tile}, or null when the
-// art is absent (LFS not pulled / file://) — the renderer then keeps the flat void fill.
+// Bake a seamless GREYSCALE ripple tile from the real Civ4 sea texture (textures/water/
+// seadetail.dds) — the wave pattern only, centred on mid-grey (128). The ocean's COLOUR comes
+// from the climate latitude gradient (bakeSeaBands / the web renderer); this tile is drawn over
+// it with `soft-light`, so grey=128 leaves the colour untouched while darker/lighter texels
+// deepen/brighten it into ripples. (seadetail carries its pattern in RGB, so we read luminance,
+// unlike the river ribbon whose ripples are in the DXT5 alpha.) Returns {src, tile}, or null
+// when the art is absent (LFS not pulled / file://) — the renderer then draws the flat gradient.
 function bakeSeaTile() {
-  const SEA_RGB = [22, 42, 70];   // a touch richer than the flat crop tint, still dark-theme
   const T = 64;
-  const tile = detailTile('Art/Terrain/textures/water/seadetail.dds', SEA_RGB, T);
-  if (!tile) return null;
+  const artFile = resolveArt('Art/Terrain/textures/water/seadetail.dds');
+  if (!artFile) return null;
+  let img; try { img = decodeDds(fs.readFileSync(artFile)); } catch { return null; }
+  const bx = img.width / T, by = img.height / T;
+  const lum = new Float64Array(T * T); let mean = 0;
+  for (let j = 0; j < T; j++)
+    for (let i = 0; i < T; i++) {
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let y = Math.floor(j * by); y < Math.floor((j + 1) * by); y++)
+        for (let x = Math.floor(i * bx); x < Math.floor((i + 1) * bx); x++) {
+          const o = (y * img.width + x) * 4; r += img.rgba[o]; g += img.rgba[o + 1]; b += img.rgba[o + 2]; n++;
+        }
+      const L = (0.299 * r + 0.587 * g + 0.114 * b) / n;
+      lum[j * T + i] = L; mean += L;
+    }
+  mean /= T * T;
+  const rgb = Buffer.alloc(T * T * 3);
+  for (let k = 0; k < T * T; k++) {
+    const g = Math.max(0, Math.min(255, 128 + (lum[k] - mean) * 1.6)) | 0;   // neutral-mean ripple
+    rgb[k * 3] = g; rgb[k * 3 + 1] = g; rgb[k * 3 + 2] = g;
+  }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
   const file = `sea-${SEED}.png`;
-  fs.writeFileSync(path.join(assets, file), encodePng(T, T, tile));
+  fs.writeFileSync(path.join(assets, file), encodePng(T, T, rgb));
   return { src: `assets/${file}`, tile: T };
+}
+
+// The ocean's climate band colours: tropical / temperate / polar sea, keyed by |latitude| in
+// the web renderer's vertical gradient. Each takes the authentic HUE of the matching Civ4 sea
+// blend texture (seatrop/sea/seapol) rescaled to a hand-tuned dark-theme LUMINANCE (tropical
+// brightest/tealest, polar dimmest/greyest), mirroring how the land terrains are recoloured.
+// Falls back to the dark anchors when the art is absent (LFS not pulled).
+function bakeSeaBands() {
+  const band = (art, anchor) => { const c = avgDds(art); return c ? hueAtLuminance(anchor, c) : anchor; };
+  return {
+    trop:  band('Art/Terrain/textures/water/seatropblend.dds', [26, 56, 76]),
+    temp:  band('Art/Terrain/textures/water/seablend.dds',     [20, 42, 68]),
+    polar: band('Art/Terrain/textures/water/seapolblend.dds',  [32, 42, 54]),
+  };
 }
 
 // Pack every displayed province's canonical plot grid (map/provinces/<id>.json.gz,

@@ -34,13 +34,21 @@ const pxr = sp => cam.x + cam.k * baseXr(sp);
 const pyr = sp => cam.y + cam.k * baseYr(sp);
 const px = lon => pxr(sxSrc(lon));
 const py = lat => pyr(sySrc(lat));
+// inverse of py: the latitude at a screen y (undo camera → crop rect → source pixel → the
+// Mercator sySrc). Used to colour the ocean by climate band down the viewport.
+const latAtScreenY = y => {
+  const sp = MAP.y0 + (((y - cam.y) / cam.k - VIEW.dy) / VIEW.dh) * (MAP.y1 - MAP.y0);
+  const t = (1 - 2 * sp / MAP.H) * Math.PI;
+  return (2 * Math.atan(Math.exp(t)) - Math.PI / 2) * 180 / Math.PI;
+};
 const TCOL = BUNDLE.terrainColors || {};
 const K_PLOT = 5;                 // camera scale at which plots begin to fade in
 const K_TEX = 16;                 // camera scale at which flat tiles give way to real textures
 const K_MAX = 256;                // deepest zoom (4× past the old 64× cap — magnifies the plot layer)
 const TT = BUNDLE.terrainTiles;   // ground-texture atlas {src, tile, cols:{TERRAIN_*: column}} or null
 const RIVER = BUNDLE.river;        // water tile {src, tile} for the river ribbon, or null (flat-fill fallback)
-const SEA = BUNDLE.sea;            // open-water tile {src, tile} for the ocean layer, or null (void-fill fallback)
+const SEA = BUNDLE.sea;            // greyscale ripple tile {src, tile} for the ocean layer, or null (gradient only)
+const SEA_BANDS = BUNDLE.seaBands; // {trop, temp, polar} climate sea colours for the latitude gradient
 const LY = BUNDLE.terrainLayer || {};   // TERRAIN_* -> Civ4 LayerOrder (higher bleeds over lower)
 const NB4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const _rgb = {};                  // "#rrggbb" -> [r,g,b], memoised
@@ -128,4 +136,4 @@ export const S = {
 };
 S.curT = t0;
 
-export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };
+export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SEA_BANDS, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };

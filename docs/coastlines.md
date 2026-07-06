@@ -67,26 +67,35 @@ Phases A/B textured the *shore*; the open sea was still the flat crop tint (`SEA
 baked into the terrain raster — a dead navy void behind the continents. Phase C fills it with
 the real Civ4 sea art.
 
-- **A tiling sea tile.** `bakeSeaTile()` (`web/build.mjs`) recolours `textures/water/seadetail.dds`
-  to a dark-theme sea blue via the existing `detailTile` (mean→target, keeping the wave
-  luminance variation — seadetail carries its pattern in RGB, unlike the river ribbon whose
-  ripples are in the DXT5 alpha). Baked to `web/assets/sea-<seed>.png`, shipped as `BUNDLE.sea`,
-  exported from `core.mjs` as `SEA`.
+- **A greyscale ripple tile.** `bakeSeaTile()` (`web/build.mjs`) reads the wave luminance of
+  `textures/water/seadetail.dds` and bakes a **neutral-mean (128) greyscale** tile — the wave
+  pattern only, no colour. Baked to `web/assets/sea-<seed>.png`, shipped as `BUNDLE.sea` /
+  `core.SEA`. (The ocean's colour comes from the climate gradient below; the tile only ripples it
+  via `soft-light`, so grey=128 is a no-op and darker/lighter texels deepen/brighten the water.)
 - **Transparent sea in the raster.** `bakeTerrain` now bakes ocean/inland_ocean pixels (indices
   15/17) **transparent** — colour averages land sub-pixels only, alpha = the land fraction, so a
   downsampled coast pixel is a soft partly-transparent land edge over the water rather than a
   hard line. Needed `encodePng` to grow an optional alpha channel (colour type 6 / RGBA). Coast
   (35) stays opaque so its shore tint survives at world zoom.
-- **The water layer.** `main.mjs` draws `SEA` as a repeating **screen-space** pattern behind
-  everything (replacing the void fill); the transparent-sea raster then composites over it, so
-  land is opaque terrain and every non-land pixel shows moving-looking sea. The Phase B shallows
-  layer over it near shores. Absent-tolerant: `SEA` null (LFS not pulled / `file://`) → the flat
-  `#090d14` void fill, unchanged.
+- **The water layer.** `main.mjs`'s `drawSeaBase` paints the ocean behind everything (replacing
+  the void fill); the transparent-sea raster then composites over it, so land is opaque terrain
+  and every non-land pixel shows sea. **Colour is climate-banded** (below); **ripples** come from
+  the `SEA` tile drawn as a **screen-space** pattern with `soft-light`. The Phase B shallows layer
+  over it near shores. Absent-tolerant: no bands → flat sea fill; no ripple tile → gradient only;
+  neither → the flat `#070a10` void.
+- **Climate bands.** The sea colour is a **vertical latitude gradient** — tropical (≤23°) →
+  temperate (~40°) → polar (≥60°), symmetric about the equator, sampled down the viewport via the
+  `latAtScreenY` inverse Mercator. The three band colours (`bakeSeaBands`, `BUNDLE.seaBands`) take
+  the authentic HUE of the Civ4 `seatrop`/`sea`/`seapol` blend textures at a hand-tuned dark
+  LUMINANCE (tropical brightest/tealest, polar dimmest/greyest), mirroring the land recolour.
+- **±89° clip.** `draw()` clips the whole scene to `|lat| ≤ 89°` (the Mercator projection
+  diverges toward the poles and the source map has no data there), filling void beyond.
 
-Verified headless (`tools/webverify`) at world and coastal-deep zoom — ocean reads as real Civ4
-water, shore shallows frame the land over it, rivers unbroken, zero console errors.
+Verified headless (`tools/webverify`) at world, coastal-deep and northern zoom — ocean reads as
+real Civ4 water with warm tropics fading to grey-blue poles, shore shallows frame the land over
+it, rivers unbroken, nothing drawn past 89°, zero console errors.
 
-**Next (not done): climate-banded sea.** The art has `seatrop`/`seapol`/`seadeep`/`lake` blends;
-a follow-up can pick the tile per sea province's latitude/depth instead of one temperate tile.
-The screen-space pattern is also zoom-invariant (waves don't grow when zooming into the ocean);
-a geo-scaled variant is a possible refinement.
+**Next (not done): depth banding.** The art also has `seadeep`/`lake` blends; a follow-up could
+darken open ocean by a depth proxy (heightmap below sea level, or distance from land) and tint
+lakes separately. The ripple pattern is also zoom-invariant (waves don't grow when zooming into
+the ocean); a geo-scaled variant is a possible refinement.

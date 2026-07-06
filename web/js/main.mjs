@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, K_PLOT, K_MAX, SEA, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, K_PLOT, K_MAX, SEA, SEA_BANDS, latAtScreenY, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
@@ -7,11 +7,36 @@ const mapImg = new Image();
 let mapReady = false;
 mapImg.onload = () => { mapReady = true; draw(); };
 mapImg.src = MAP.src;
-// the open-water tile: a repeating screen-space pattern filling everything behind the land
-// raster, so the ocean reads as real Civ4 sea art instead of a flat void. null → void fill.
+// the ocean layer, drawn behind the (transparent-sea) land raster so it shows through only the
+// sea: a climate-banded COLOUR from a vertical latitude gradient (tropical → temperate → polar),
+// modulated by a screen-space greyscale RIPPLE tile via `soft-light`. Either half degrades: no
+// SEA_BANDS → a flat sea fill; no ripple tile → gradient only; neither → the flat void.
 const seaImg = new Image();
 let seaPat = null;
 if (SEA) { seaImg.onload = () => { seaPat = ctx.createPattern(seaImg, "repeat"); draw(); }; seaImg.src = SEA.src; }
+// piecewise sea colour by |latitude|: tropical (≤23°) → temperate (~40°) → polar (≥60°)
+function seaColorAt(lat) {
+  const B = SEA_BANDS, a = Math.abs(lat);
+  const mix = (u, v, f) => [u[0]+(v[0]-u[0])*f, u[1]+(v[1]-u[1])*f, u[2]+(v[2]-u[2])*f];
+  let c;
+  if (a <= 23) c = B.trop;
+  else if (a >= 60) c = B.polar;
+  else if (a <= 40) c = mix(B.trop, B.temp, (a - 23) / 17);
+  else c = mix(B.temp, B.polar, (a - 40) / 20);
+  return `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`;
+}
+// fill the viewport with the ocean base: the latitude colour gradient, then the ripple overlay
+function drawSeaBase(w, h) {
+  if (SEA_BANDS) {
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    for (let i = 0; i <= 12; i++) g.addColorStop(i / 12, seaColorAt(latAtScreenY((i / 12) * h)));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  } else { ctx.fillStyle = "#090d14"; ctx.fillRect(0, 0, w, h); }
+  if (seaPat) {                                   // ripples: soft-light so grey=128 keeps the colour
+    ctx.save(); ctx.globalCompositeOperation = "soft-light";
+    ctx.fillStyle = seaPat; ctx.fillRect(0, 0, w, h); ctx.restore();
+  }
+}
 function resize() {
   const r = stage.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio||1, 2);
   cv.width = r.width*dpr; cv.height = r.height*dpr; VIEW.dpr = dpr;
@@ -21,16 +46,24 @@ function draw() {
   const w=VIEW.w, h=VIEW.h, dpr=VIEW.dpr;
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
-  // the ocean: a repeating water tile behind everything (the land raster's sea is transparent,
-  // so this shows through it). Screen-space, drawn once. Falls back to the flat void when absent.
-  ctx.fillStyle = seaPat || "#090d14"; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle = "#070a10"; ctx.fillRect(0,0,w,h);   // void beyond the rendered latitude band
+
+  // clip the whole scene to |lat| ≤ 89°: the Mercator projection diverges toward the poles and
+  // the source map has no data there, so nothing (ocean, land, labels) is drawn above 89°.
+  const yN = py(89), yS = py(-89);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, Math.min(yN, yS), w, Math.abs(yS - yN)); ctx.clip();
+
+  // the ocean base behind everything (the land raster's sea is transparent, so this shows
+  // through it): a climate-banded latitude gradient + ripple overlay. Screen-space, drawn once.
+  drawSeaBase(w, h);
 
   // cylindrical wrap: render the scene once per world-copy that overlaps the viewport, by
   // shifting the camera one wrap-period at a time — so each copy's own viewport culling and
   // provPath cache stay correct. Deep zoom → a single copy → no extra work. viewVersion is
   // derived per copy from baseVersion so the path cache is distinct per copy yet reused when idle.
   const period = worldW();
-  if (!(period > 0)) { S.viewVersion = S.baseVersion * 16; renderScene(); return; }
+  if (!(period > 0)) { S.viewVersion = S.baseVersion * 16; renderScene(); ctx.restore(); return; }
   const L = cam.x + cam.k * VIEW.dx;                 // primary world's left screen edge
   const mMin = Math.floor((0 - L) / period), mMax = Math.floor((w - L) / period);
   const baseX = cam.x;
@@ -40,6 +73,7 @@ function draw() {
     renderScene();
   }
   cam.x = baseX;
+  ctx.restore();
 }
 function renderScene() {
   const w = VIEW.w, h = VIEW.h;
