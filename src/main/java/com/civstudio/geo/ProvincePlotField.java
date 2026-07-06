@@ -41,9 +41,11 @@ public final class ProvincePlotField {
 	 * @param feature   the wild feature, or {@code null}
 	 * @param bonus     the resource on this plot, or {@code null}
 	 * @param elevation the real heightmap elevation (0..255), a raster lookup
+	 * @param coast     the 4-bit sea-edge mask (which orthogonal neighbour is water:
+	 *                  1=E, 2=W, 4=S, 8=N; 0 = inland) — see {@code docs/coastlines.md}
 	 */
 	public record ProvincePlot(int x, int y, int riverCode, Terrain terrain,
-			PlotType plotType, Feature feature, Bonus bonus, int elevation) {
+			PlotType plotType, Feature feature, Bonus bonus, int elevation, int coast) {
 
 		/** Whether a river runs through this plot (any non-zero {@link #riverCode()}). */
 		public boolean river() {
@@ -122,8 +124,9 @@ public final class ProvincePlotField {
 				// elevation is a pure heightmap lookup (no rng), so adding it leaves the
 				// terrain/relief/feature/bonus draws — and thus the field — otherwise identical
 				int elevation = mask.elevation(lx, ly);
+				int coast = mask.coast(lx, ly);
 				out.add(new ProvincePlot(mask.originX() + lx, mask.originY() + ly,
-						riverCode, terrain, plotType, feature, bonus, elevation));
+						riverCode, terrain, plotType, feature, bonus, elevation, coast));
 			}
 		}
 		return new ProvincePlotField(province, out);

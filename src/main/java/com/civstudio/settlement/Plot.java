@@ -91,6 +91,12 @@ public final class Plot {
 	// sensitive gameplay; orthogonal to plotType's flat/hill/peak class.
 	private final int elevation;
 
+	// the 4-bit sea-edge mask on this plot (which orthogonal neighbour is water: 1=E, 2=W,
+	// 4=S, 8=N; 0 = inland), from the province field's global land/sea raster — the web draws
+	// the coastline from it and it is the seam for future coastal gameplay (ports / sea trade).
+	// See docs/coastlines.md. 0 for a province-less plot.
+	private final int coast;
+
 	// the settlement that has claimed this plot out of the shared province pool, or null
 	// while the plot is free (province-owned). Hybrid ownership: claiming transfers the
 	// plot to the settlement. Null for a legacy/province-less plot (no shared pool).
@@ -139,7 +145,7 @@ public final class Plot {
 	 * @param feature  the wild feature overlaying it, or {@code null} if bare
 	 */
 	public Plot(int index, Terrain terrain, PlotType plotType, Feature feature) {
-		this(index, -1, -1, 0, terrain, plotType, feature, null, 0);
+		this(index, -1, -1, 0, terrain, plotType, feature, null, 0, 0);
 	}
 
 	/**
@@ -156,10 +162,11 @@ public final class Plot {
 	 * @param feature   the wild feature overlaying it, or {@code null} if bare
 	 * @param bonus     the resource on it, or {@code null}
 	 * @param elevation the real heightmap elevation (0..255)
+	 * @param coast     the 4-bit sea-edge mask (1=E, 2=W, 4=S, 8=N; 0 = inland)
 	 */
 	public Plot(int x, int y, int river, Terrain terrain, PlotType plotType,
-			Feature feature, Bonus bonus, int elevation) {
-		this(-1, x, y, river, terrain, plotType, feature, bonus, elevation);
+			Feature feature, Bonus bonus, int elevation, int coast) {
+		this(-1, x, y, river, terrain, plotType, feature, bonus, elevation, coast);
 	}
 
 	/**
@@ -174,11 +181,11 @@ public final class Plot {
 	 * @param bonus    the resource on it, or {@code null}
 	 */
 	public Plot(int x, int y, Terrain terrain, PlotType plotType, Feature feature, Bonus bonus) {
-		this(-1, x, y, 0, terrain, plotType, feature, bonus, 0);
+		this(-1, x, y, 0, terrain, plotType, feature, bonus, 0, 0);
 	}
 
 	private Plot(int index, int x, int y, int river, Terrain terrain, PlotType plotType,
-			Feature feature, Bonus bonus, int elevation) {
+			Feature feature, Bonus bonus, int elevation, int coast) {
 		if (terrain == null)
 			throw new IllegalArgumentException("terrain must be non-null");
 		if (plotType == null)
@@ -188,6 +195,7 @@ public final class Plot {
 		this.y = y;
 		this.river = river;
 		this.elevation = elevation;
+		this.coast = coast;
 		this.terrain = terrain;
 		this.plotType = plotType;
 		this.feature = feature;
@@ -282,6 +290,21 @@ public final class Plot {
 	/** The real heightmap elevation (0..255) at this plot; 0 for a province-less plot. */
 	public int elevation() {
 		return elevation;
+	}
+
+	/**
+	 * The 4-bit sea-edge mask on this plot: which orthogonal neighbour borders water — bit
+	 * {@code 1} = E, {@code 2} = W, {@code 4} = S, {@code 8} = N (matching {@code NB4});
+	 * {@code 0} = inland. Non-zero means the plot is coastal. Persisted for the web coastline
+	 * and the seam for coastal gameplay (ports / sea trade). See {@code docs/coastlines.md}.
+	 */
+	public int coast() {
+		return coast;
+	}
+
+	/** Whether this plot borders water on any edge (a coastal plot). */
+	public boolean isCoastal() {
+		return coast != 0;
 	}
 
 	/** Whether a firm can occupy this plot (false for a {@link PlotType#PEAK peak}). */

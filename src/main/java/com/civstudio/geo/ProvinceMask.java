@@ -25,6 +25,9 @@ public final class ProvinceMask {
 	// ProvinceRaster.classifyRiver + RiverFlow — see docs/river-rendering.md §1/§3. Preserves
 	// the authored width/nodes and the derived flow rather than a bare flag.
 	private final int[] river;
+	// the 4-bit sea-edge mask per cell (which orthogonal neighbour is water: 1=E,2=W,4=S,8=N;
+	// 0 = inland), from ProvinceRaster over the global land/sea raster — see docs/coastlines.md.
+	private final int[] coast;
 	// the real EU4 terrain.bmp / trees.bmp palette index per cell, or -1 where the
 	// overlay is absent (see ProvinceRaster); the plot field reads these to ground a
 	// plot on the real map and falls back to climate generation where they are -1
@@ -36,13 +39,14 @@ public final class ProvinceMask {
 	private final int[] elevation;
 
 	ProvinceMask(int originX, int originY, int width, int height, boolean[] land, int[] river,
-			int[] terrainIndex, int[] treeIndex, int[] elevation) {
+			int[] coast, int[] terrainIndex, int[] treeIndex, int[] elevation) {
 		this.originX = originX;
 		this.originY = originY;
 		this.width = width;
 		this.height = height;
 		this.land = land;
 		this.river = river;
+		this.coast = coast;
 		this.terrainIndex = terrainIndex;
 		this.treeIndex = treeIndex;
 		this.elevation = elevation;
@@ -93,6 +97,18 @@ public final class ProvinceMask {
 		if (lx < 0 || lx >= width || ly < 0 || ly >= height)
 			return 0;
 		return river[ly * width + lx];
+	}
+
+	/**
+	 * The 4-bit sea-edge mask at the local cell (0 outside the bbox / inland): which
+	 * orthogonal neighbour borders water — bit {@code 1} = E, {@code 2} = W, {@code 4} = S,
+	 * {@code 8} = N (matching {@code NB4}). Non-zero means the cell is coastal. See {@code
+	 * docs/coastlines.md} §A.
+	 */
+	public int coast(int lx, int ly) {
+		if (lx < 0 || lx >= width || ly < 0 || ly >= height)
+			return 0;
+		return coast[ly * width + lx];
 	}
 
 	/**

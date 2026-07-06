@@ -50,9 +50,9 @@ public final class ProvincePlotStore {
 	private ProvincePlotStore() {
 	}
 
-	/** One persisted plot: raster position, river code, elevation, and the type keys. */
+	/** One persisted plot: raster position, river code, sea-edge mask, elevation, type keys. */
 	private record StoredPlot(int x, int y, int river, String terrain, String plotType,
-			String feature, String bonus, int elevation) {
+			String feature, String bonus, int elevation, int coast) {
 	}
 
 	/**
@@ -75,7 +75,7 @@ public final class ProvincePlotStore {
 				PlotType plotType = PlotType.valueOf(sp.plotType());
 				Feature feature = sp.feature() == null ? null : registry.feature(sp.feature());
 				Bonus bonus = sp.bonus() == null ? null : registry.bonus(sp.bonus());
-				plots.add(new Plot(sp.x(), sp.y(), sp.river(), terrain, plotType, feature, bonus, sp.elevation()));
+				plots.add(new Plot(sp.x(), sp.y(), sp.river(), terrain, plotType, feature, bonus, sp.elevation(), sp.coast()));
 			}
 			return plots;
 		} catch (IOException e) {
@@ -95,7 +95,7 @@ public final class ProvincePlotStore {
 		for (Plot p : plots)
 			stored.add(new StoredPlot(p.x(), p.y(), p.riverCode(), p.terrain().type(),
 					p.plotType().name(), p.feature() == null ? null : p.feature().type(),
-					p.bonus() == null ? null : p.bonus().type(), p.elevation()));
+					p.bonus() == null ? null : p.bonus().type(), p.elevation(), p.coast()));
 		try {
 			File dir = new File(WRITE_DIR);
 			dir.mkdirs();

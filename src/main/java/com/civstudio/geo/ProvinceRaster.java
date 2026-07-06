@@ -9,8 +9,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 
@@ -38,8 +40,12 @@ public final class ProvinceRaster {
 	private static final String TERRAIN_BMP = "data/anbennar/terrain.bmp";
 	private static final String TREES_BMP = "data/anbennar/trees.bmp";
 	private static final String HEIGHTMAP_BMP = "data/anbennar/heightmap.bmp";
+	private static final String DEFAULT_MAP = "data/anbennar/default.map";
 
 	private final Map<Integer, Integer> idToColor;
+	// the pixel colours of water (SEA/LAKE) provinces, from default.map's sea_starts + lakes
+	// blocks — for coastline detection (docs/coastlines.md §A). Built once in ensureRaster.
+	private Set<Integer> waterColors;
 
 	// lazily loaded raster (cached after the first mask() call)
 	private int[] pixels;
@@ -136,6 +142,7 @@ public final class ProvinceRaster {
 		int h = maxY - minY + 1;
 		boolean[] landGrid = new boolean[w * h];
 		int[] riverGrid = new int[w * h];
+		int[] coastGrid = new int[w * h]; // 4-bit water-neighbour (E/W/S/N) mask per land cell
 		// per-cell EU4 terrain/tree palette indices, framed to the same bounding box
 		// (-1 where the overlay is absent or out of bounds — the mask treats it as
 		// "unmapped" and the plot field falls back to climate generation)
@@ -149,6 +156,7 @@ public final class ProvinceRaster {
 			int idx = (ay - minY) * w + (ax - minX);
 			landGrid[idx] = true;
 			riverGrid[idx] = hit[2];
+			coastGrid[idx] = seaEdges(ax, ay);
 			if (terrainIdx != null)
 				terrainGrid[idx] = terrainIdx[ay * width + ax];
 			if (treeIdx != null)
@@ -156,7 +164,28 @@ public final class ProvinceRaster {
 			if (heightIdx != null)
 				elevationGrid[idx] = heightIdx[ay * width + ax];
 		}
-		return new ProvinceMask(minX, minY, w, h, landGrid, riverGrid, terrainGrid, treeGrid, elevationGrid);
+		return new ProvinceMask(minX, minY, w, h, landGrid, riverGrid, coastGrid, terrainGrid, treeGrid, elevationGrid);
+	}
+
+	// the 4-bit sea-edge mask of a land pixel: which orthogonal neighbours are water
+	// (bit 1 = E, 2 = W, 4 = S, 8 = N; matching NB4), 0 = inland. Global (a water neighbour
+	// can be a sea province outside this province's bbox), so coastlines are seamless.
+	private int seaEdges(int ax, int ay) {
+		int m = 0;
+		if (isWater(ax + 1, ay)) m |= 1; // E
+		if (isWater(ax - 1, ay)) m |= 2; // W
+		if (isWater(ax, ay + 1)) m |= 4; // S
+		if (isWater(ax, ay - 1)) m |= 8; // N
+		return m;
+	}
+
+	// whether the pixel is a water (SEA/LAKE) province; x wraps E-W (the map is a cylinder),
+	// y beyond the poles is treated as not-coast. Empty water set (default.map absent) → false.
+	private boolean isWater(int x, int y) {
+		if (y < 0 || y >= height)
+			return false;
+		int wx = ((x % width) + width) % width;
+		return waterColors.contains(pixels[y * width + wx] & 0xFFFFFF);
 	}
 
 	// the trees.bmp palette index covering an absolute province pixel: trees.bmp is
@@ -230,6 +259,39 @@ public final class ProvinceRaster {
 		for (int i = 0; i < widthGrid.length; i++)
 			widthGrid[i] = (byte) (classifyRiver(river[i] & 0xFFFFFF) % 10); // 0, or width 1..4
 		this.riverFlow = RiverFlow.direction(width, height, widthGrid, heightIdx);
+		this.waterColors = loadWaterColors();
+	}
+
+	// the pixel colours of water provinces, from default.map's sea_starts + lakes id blocks
+	// (the raw source ProvinceExporter reads), mapped through idToColor. Self-contained so
+	// every generation path classifies coast identically. Empty if default.map is absent.
+	private Set<Integer> loadWaterColors() throws IOException {
+		Set<Integer> colors = new HashSet<>();
+		File f = new File(DEFAULT_MAP);
+		if (!f.exists())
+			return colors;
+		String text = Files.readString(f.toPath(), StandardCharsets.UTF_8);
+		for (String key : new String[] { "sea_starts", "lakes" }) {
+			int k = text.indexOf(key);
+			if (k < 0)
+				continue;
+			int open = text.indexOf('{', k), close = text.indexOf('}', open);
+			if (open < 0 || close < 0)
+				continue;
+			String body = text.substring(open + 1, close).replaceAll("#[^\n]*", " "); // drop comments
+			for (String tok : body.trim().split("\\s+")) {
+				if (tok.isEmpty())
+					continue;
+				try {
+					Integer c = idToColor.get(Integer.parseInt(tok));
+					if (c != null)
+						colors.add(c);
+				} catch (NumberFormatException ignore) {
+					// stray token (e.g. a comment word) — skip
+				}
+			}
+		}
+		return colors;
 	}
 
 	// read an 8-bit indexed BMP's raw palette indices (not RGB) into a row-major
