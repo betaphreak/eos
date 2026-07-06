@@ -481,21 +481,38 @@ function solidTile(rgbArr, T) {
   return out;
 }
 
-// Slice C — bake one small water tile from the Civ4 river texture (routes/rivers/
-// allriverssmall.dds), recoloured (via detailTile) so its mean is the river hue that
-// cohered with the flat-fill colour the map used before. The plot renderer paints
-// rivers as a textured ribbon tapered by width (docs/river-rendering.md §2, Phase 1B)
-// instead of a flat blue cell. Returns {src, tile}, or null when the manifest art is
-// absent (LFS not pulled / file://) — the page then keeps the flat-fill fallback.
+// Slice C — bake a small WATER tile from the Civ4 river texture (routes/rivers/
+// allriverssmall.dds) for the plot river ribbon (docs/river-rendering.md §2, Phase 1B).
+// Unlike the terrain tiles (recoloured to a flat mean), this preserves the texture's wavy
+// water STRANDS — which live in the DXT5 *alpha* channel (the RGB is a near-flat water
+// colour) — by modulating the map's river-blue by per-texel strand coverage: darker water
+// between the strands, bright ripples on them. So the ribbon reads as flowing water rather
+// than a flat fill. Returns {src, tile}, or null when the art is absent (LFS not pulled /
+// file://) — the renderer then keeps the flat-fill fallback.
 function bakeRiverTile() {
-  const RIVER_RGB = [74, 124, 170];   // == the old rgba(74,124,170) river fill, kept cohesive
+  const RIVER_RGB = [74, 124, 170];   // cohesive with the map's river blue
   const T = 64;
-  const tile = detailTile('Art/Terrain/Routes/Rivers/allriverssmall.dds', RIVER_RGB, T);
-  if (!tile) return null;
+  const artFile = resolveArt('Art/Terrain/Routes/Rivers/allriverssmall.dds');
+  if (!artFile) return null;
+  let img; try { img = decodeDds(fs.readFileSync(artFile)); } catch { return null; }
+  const bx = img.width / T, by = img.height / T;
+  const rgb = Buffer.alloc(T * T * 3);
+  for (let j = 0; j < T; j++)
+    for (let i = 0; i < T; i++) {
+      let a = 0, n = 0;
+      for (let y = Math.floor(j * by); y < Math.floor((j + 1) * by); y++)
+        for (let x = Math.floor(i * bx); x < Math.floor((i + 1) * bx); x++) { a += img.rgba[(y * img.width + x) * 4 + 3]; n++; }
+      const strand = a / n / 255;         // 0..1 ripple coverage, from the water texture's alpha
+      const k = 0.6 + 1.5 * strand;       // dark water between strands → bright ripples on them
+      const o = (j * T + i) * 3;
+      rgb[o] = Math.min(255, RIVER_RGB[0] * k) | 0;
+      rgb[o + 1] = Math.min(255, RIVER_RGB[1] * k) | 0;
+      rgb[o + 2] = Math.min(255, RIVER_RGB[2] * k) | 0;
+    }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
   const file = `river-${SEED}.png`;
-  fs.writeFileSync(path.join(assets, file), encodePng(T, T, tile));
+  fs.writeFileSync(path.join(assets, file), encodePng(T, T, rgb));
   return { src: `assets/${file}`, tile: T };
 }
 

@@ -101,13 +101,21 @@ provinces; full `mvn test` green. `packPlots` picks the grids up on the next web
 
 ### Phase 1B — Web: bake the tile + draw the ribbon — **DONE (2026-07)**
 
-Built as sketched below: `bakeRiverTile()` (`web/build.mjs`) recolours
+Built as sketched below: `bakeRiverTile()` (`web/build.mjs`) bakes
 `allriverssmall.dds` into `web/assets/river-<seed>.png` and ships it as `BUNDLE.river`;
 `core.mjs` exports it as `RIVER`; `drawRiver()` (`web/js/plots.mjs`) replaces the flat
 cell fill with the tapered connectivity ribbon, reading width from `q.river % 10`.
 Verified headless (`tools/webverify/verify-pack.mjs`) on a river-rich province — the
 ribbon follows the network with the water texture, zero console errors; graceful
 fallback to the flat blue when the tile is absent (LFS/`file://`) is preserved.
+
+**Refinement — real water strands (option A).** `bakeRiverTile()` originally recoloured
+the Civ4 river texture to a flat *mean* (via `detailTile`), which discarded the water
+pattern — because the wavy ripple **strands live in the DXT5 *alpha* channel** (mean ≈49),
+not the near-flat RGB. It now bakes from that alpha: `k = 0.6 + 1.5·strand` modulates the
+river-blue, so ripples read as bright dashes over darker water and the ribbon looks like
+flowing water. This was chosen over Phase 3's Civ4 edge tiles (§4) — the faithful use of
+the real Civ4 river art that fits our center-line pixel rivers.
 
 **Build (`web/build.mjs`)** — bake one water tile, mirroring `bakeTerrainTiles`/`detailTile`
 (which already decode a `.dds`, downsample, and recolour mean→target):
@@ -202,36 +210,37 @@ future flow *cue* would be a **static** glyph (a chevron), never motion.
 
 ---
 
-## 4. Phase 3 (optional) — faithful Civ4 edge tiles
+## 4. Phase 3 — faithful Civ4 edge tiles — **investigated, not pursued (2026-07)**
 
-The real Civ4 `routes/rivers/border*.dds` are **edge** decals (rivers run *between*
-plots), so they need **per-edge** geometry — which *side* of a plot the river runs along
-— that none of the phases above produce (1A gives a per-cell width, not per edge).
+**Outcome: the Civ4 river edge tiles are the wrong art for our data.** After rendering the
+masks to look at them, the mismatch is fundamental, so Phase 3 was dropped in favour of the
+option-A water-strand ribbon (§2) — and the *edge-tile* idea is redirected to **coastlines**
+(`docs/coastlines.md`), where it actually fits.
 
-**There is no Civ4 XML to bring over for this.** Verified: no file under `data/civ4/`
-references the river tiles (`border*`, `allrivers`, `Routes/Rivers` → zero hits), and
-rivers are not a route (`CIV4RouteInfos.xml` has no `ROUTE_RIVER`). Civ4 renders river
-edges in **engine C++** by a hardcoded convention, not a data-driven ArtDefine — so there
-is nothing to export, and **no `RiverArtExporter`** (an earlier draft of this doc wrongly
-proposed one). Phase 3 is therefore two hand-built pieces, not an XML→JSON export:
+What the art is (all DXT5, decodable via `dds.mjs`): `allrivers*.dds` = the river **water
+fill**; `border00a` · `border01[a-h]` · `border02[a-h]` · `border03..05[a-d]` = **edge/
+corner alpha masks** (6 configs × 4–8 orientations = **29**, a river band along one edge
+with corner variants, rotated by the `a–h` suffix); `noriverborder`/`norivercurvedborder` =
+dry edges; `riverwisps0N` = foam. There is **no Civ4 XML** for any of it — no `data/civ4/`
+file references them and there is no `ROUTE_RIVER`; the engine picks tiles by convention.
 
-1. **Engine — a per-plot river *edge* mask.** Extend the existing plot pipeline (not a new
-   exporter): `ProvinceRaster.classifyRiver` already reads `rivers.bmp` per pixel; also
-   record which of a plot's **sides** carry a river, threaded through `WorldPlotStore` as a
-   new `StoredPlot` field. This is the real prerequisite — the edge geometry 1A/2 lack.
-2. **Web — `bakeRiverTiles` + a hand table.** Decode `border*.dds` (+corners) via
-   `dds.mjs` into a web atlas (like `bakeTerrainTiles`), plus a **hand-authored
-   `edge-config → {tile, rotation}` table** reconstructing the engine's selection
-   convention (optionally committed as `map/river-art.json`, but *written*, not exported),
-   picked per plot by the edge mask — the §6.3 auto-tiling model.
+Why it does not fit: these are **edge** decals for Civ4's **edge-based** rivers (a river
+runs along the boundary *between* two plots). Our rivers come from **EU4 `rivers.bmp`, which
+is pixel-based** — a river is a chain of *cells* whose line runs **through cell centres**
+(Phase 1B renders exactly that). An edge decal can draw "river along my north edge" but not
+"river passing through my centre N→S", so using the border tiles would require converting
+our centre-line rivers to an edge model — a lossy, half-cell-shifted reinterpretation that
+would look *worse* than the ribbon. So there is no `RiverArtExporter` and no
+`bakeRiverTiles`; the ribbon is the faithful-art answer for pixel rivers.
 
-Lower priority than the tapering ribbon, which reads better on a 2D raster than edge
-decals meant for Civ4's tiles.
+> **Where the edge machinery does belong — coastlines.** The land/sea boundary genuinely
+> *is* a plot edge, so the Civ4 coast art (`heightmap/coastblendmasks/coastscalemask00–15`,
+> `textures/water/*`) and a per-plot **sea-edge mask** (global, computed in `ProvinceRaster`
+> like the flow direction) fit cleanly. That is the next feature — see `docs/coastlines.md`.
 
 > **Not to be confused with routes.** `data/civ4/CIV4RouteModelInfos.xml` (roads / rails /
 > paths / tunnels — no rivers) *is* XML-bound and drives the separate **routes** feature
-> (the natural one after rivers, `ported-terrain-art-system.md §6`) via a
-> `RouteModelExporter` → `map/route-models.json`. That is not part of Phase 3.
+> via a `RouteModelExporter` → `map/route-models.json` (`ported-terrain-art-system.md §6`).
 
 ---
 
