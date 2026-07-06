@@ -213,10 +213,39 @@ function buildPlotTexCanvas(p) {
     if (k > 0.01) { o.fillStyle = `rgba(255,255,248,${Math.min(0.5, k).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
     else if (k < -0.01) { o.fillStyle = `rgba(12,16,28,${Math.min(0.5, -k).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
     if (e >= 165) { o.fillStyle = `rgba(232,238,247,${Math.min(0.6, (e - 165) / 50).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
+    if (q.coast) drawCoast(o, cx, cy, tpp, q.coast);
     if (q.feature) featureSprite(o, cx, cy, tpp, q.feature, q.x, q.y);
     if (q.river) drawRiver(o, cx, cy, tpp, q, grid, riverPat);
   }
   p._tcanvas = oc; p._tbox = { x0, y0, w, h };
+}
+// draw the coastline on a plot's water edges (from q.coast: bit 1=E,2=W,4=S,8=N — see
+// docs/coastlines.md): a bright shallow-water band fading inward from each shoreline, plus a
+// thin foam line at the water's edge, so the hard land/sea boundary reads as a coast. This is
+// the procedural first cut (Phase B); the faithful Civ4 coastscalemask blend is a later swap.
+const COAST_EDGES = [[1, 1, 0], [2, -1, 0], [4, 0, 1], [8, 0, -1]];   // bit, dx, dy (E,W,S,N)
+const SHALLOW = "116,178,196", FOAM = "224,240,244";
+function drawCoast(o, cx, cy, s, mask) {
+  const f = s * 0.55;                                  // how far the shallows reach inland
+  o.save();
+  for (const [bit, dx, dy] of COAST_EDGES) {
+    if (!(mask & bit)) continue;
+    let gr, rx, ry, rw, rh;
+    if (dx === 1) { gr = o.createLinearGradient(cx + s, 0, cx + s - f, 0); rx = cx + s - f; ry = cy; rw = f; rh = s; }
+    else if (dx === -1) { gr = o.createLinearGradient(cx, 0, cx + f, 0); rx = cx; ry = cy; rw = f; rh = s; }
+    else if (dy === 1) { gr = o.createLinearGradient(0, cy + s, 0, cy + s - f); rx = cx; ry = cy + s - f; rw = s; rh = f; }
+    else { gr = o.createLinearGradient(0, cy, 0, cy + f); rx = cx; ry = cy; rw = s; rh = f; }
+    gr.addColorStop(0, `rgba(${SHALLOW},.8)`); gr.addColorStop(1, `rgba(${SHALLOW},0)`);
+    o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
+    // a thin foam line right at the shoreline
+    o.fillStyle = `rgba(${FOAM},.5)`;
+    const t = Math.max(1, s * 0.09);
+    if (dx === 1) o.fillRect(cx + s - t, cy, t, s);
+    else if (dx === -1) o.fillRect(cx, cy, t, s);
+    else if (dy === 1) o.fillRect(cx, cy + s - t, s, t);
+    else o.fillRect(cx, cy, s, t);
+  }
+  o.restore();
 }
 // A river plot's segment: a water-textured ribbon from the cell centre out to each
 // 4-neighbour that also carries a river (to the shared edge), or a source blob when it

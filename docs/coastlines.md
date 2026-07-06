@@ -37,11 +37,16 @@ direction:
 Verify: regenerate grids; coastal provinces have nonzero masks, interior/land-locked ones
 are all 0; `mvn test` green.
 
-## Phase B — web: draw the shore — (next cut)
+## Phase B — web: draw the shore — **procedural first cut DONE (2026-07)**
 
-Read `q.coast` per plot; on each water edge draw a **shore band** into
-`buildPlotTexCanvas` (under the terrain, over the sea): either the faithful 16-way
-`coastscalemask` blend (shallow→shore→land, baked to a web atlas by a `bakeCoastTiles`, like
-`bakeTerrainTiles`) or, as a first cut, a lighter procedural surf/shallow-water gradient
-keyed by the edge mask. Absent-tolerant like the river tile (flat sea if the art/field is
-missing).
+`drawCoast()` (`web/js/plots.mjs`) reads `q.coast` per plot in `buildPlotTexCanvas` (past
+`K_TEX`) and, for each water edge (bit `1`=E,`2`=W,`4`=S,`8`=N), draws a **shallow-water
+band** fading inward from the shoreline plus a thin **foam line** at the water's edge — so
+the hard land/sea boundary reads as a coast. No baked art, no `q.coast` → no draw (absent-
+tolerant). Verified headless on the Madala Islands (`verify-pack.mjs`, deep zoom): each
+island gets a shallows + surf rim, zero console errors. Only the textured layer draws it;
+the flat-tile overview (`K_PLOT`–`K_TEX`) and the background raster are unchanged.
+
+**Optional fidelity swap (later):** replace the procedural band with the faithful 16-way
+`coastscalemask` blend, baked to a web atlas by a `bakeCoastTiles` (like `bakeTerrainTiles`)
+and keyed by the same edge mask — the river 1B → option-A pattern.
