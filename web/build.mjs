@@ -90,7 +90,8 @@ const superRegions = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resour
 const regionsMeta = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/regions.json'), 'utf8'));
 const areasMeta = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/areas.json'), 'utf8'));
 const srNameByRegion = {};   // region key -> super-region display name
-for (const s of superRegions) for (const rk of s.regions) srNameByRegion[rk] = s.name;
+const srKeyByRegion = {};    // region key -> super-region raw (Clausewitz) key
+for (const s of superRegions) for (const rk of s.regions) { srNameByRegion[rk] = s.name; srKeyByRegion[rk] = s.key; }
 const regionDisplayName = {};   // region key -> display name
 for (const r of regionsMeta) regionDisplayName[r.key] = r.name;
 const areaDisplayName = {};   // area key -> display name
@@ -100,11 +101,11 @@ const provinces = [...sub].map(id => byId.get(id)).filter(Boolean).map(p => ({
   id: p.id, name: p.name, lat: +p.lat.toFixed(3), lon: +p.lon.toFixed(3),
   plots: p.plots, waterPlots: p.waterPlots || 0, type: p.type, region: p.region,
   winter: p.winter || null,
-  geo: {                                 // resolved hierarchy display names (sidebar detail)
-    continent: CONTINENT_NAME[p.continent] || null,
-    superRegion: srNameByRegion[p.region] || null,
-    region: regionDisplayName[p.region] || null,
-    area: areaDisplayName[p.area] || null,
+  geo: {                                 // hierarchy tiers as [displayName, rawKey] (sidebar detail)
+    continent: [CONTINENT_NAME[p.continent] || null, p.continent || null],
+    superRegion: [srNameByRegion[p.region] || null, srKeyByRegion[p.region] || null],
+    region: [regionDisplayName[p.region] || null, p.region || null],
+    area: [areaDisplayName[p.area] || null, p.area || null],
   },
   nb: p.neighbors.filter(n => sub.has(n)),
   days: traffic.get(p.id) || 0,          // caravan-days spent here (0 for context provinces)

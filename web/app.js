@@ -829,8 +829,10 @@ function selectProvince(p) {
 }
 function provinceRail(p) {
   const g = p.geo || {};
-  const crumbs = [g.continent, g.superRegion, g.region, g.area].filter(Boolean)
-    .map(s=>`<span>${s}</span>`).join('<span class="crumb-sep">›</span>');
+  // each tier is [displayName, rawClausewitzKey]; show the key in parentheses after the name
+  const crumbs = [g.continent, g.superRegion, g.region, g.area].filter(t => t && t[0])
+    .map(t=>`<span>${t[0]}${t[1]?` <span class="pv-key">(${t[1]})</span>`:''}</span>`)
+    .join('<span class="crumb-sep">›</span>');
   const coord = `${Math.abs(p.lat).toFixed(2)}°${p.lat>=0?"N":"S"}, ${Math.abs(p.lon).toFixed(2)}°${p.lon>=0?"E":"W"}`;
   let terrainHtml;
   if (p._plots) {
