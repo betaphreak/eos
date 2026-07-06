@@ -75,11 +75,13 @@ The old `ProvinceRaster` collapsed every non-white `rivers.bmp` pixel to `1/0`. 
 `ProvinceRaster.classifyRiver(rgb)` classifies each pixel from the §1 palette and the
 result is carried, unflattened, all the way to the persisted grid.
 
-- **One packed int, not two fields.** A river pixel is *either* a width-blue *or* a node
-  marker, so both fit one int, keeping the record and JSON compact: `0` = none; the **low
-  digit** is the width level `1..4` (narrow→wide); the **tens digit** is the node marker
-  (`1` source, `2` confluence, `3` split). e.g. `3` = plain width-3 river, `11` = source,
-  `21` = confluence. Nodes carry nominal width 1.
+- **One packed int, not separate fields.** All three fields fit one int (compact record +
+  JSON): `0` = none; the **low digit** is the width level `1..4` (narrow→wide); the **tens
+  digit** is the downstream flow direction `1..8` (Phase 2 — `0` in 1A, filled later); the
+  **hundreds digit** is the node marker (`1` source, `2` confluence, `3` split). e.g. `3` =
+  a plain width-3 river, `101` = a source, `53` = a width-3 river flowing W. Nodes carry
+  nominal width 1. `classifyRiver` returns the static part (width + node); `RiverFlow` folds
+  in the flow digit (§3).
 - **The field kept the name `river`, widened `boolean → int`.** Threaded through
   `ProvinceMask` (`int[] river`, new `riverCode(lx,ly)`) → `ProvincePlotField.ProvincePlot`
   (`int riverCode`) → `settlement.Plot` (`int river`) → `ProvincePlotStore.StoredPlot`
@@ -129,8 +131,9 @@ Add `river: bakeRiverTile()` to the `BUNDLE` object written into `data.js` (besi
 **Runtime (`web/js/plots.mjs`)** — load the tile like `ttImg`/`ttReady`, then **replace
 line 212** inside `buildPlotTexCanvas` (where `grid` already maps coords→plot). Straight
 segments / bends / T-junctions fall out of 4-neighbour connectivity for free (the same
-`NB4` trick the terrain edge-blend uses). `q.river` is 1A's packed int, so the **width is
-`q.river % 10`** (and the node marker, for Phase 2, is `Math.floor(q.river / 10)`):
+`NB4` trick the terrain edge-blend uses). `q.river` is the packed int, so the **width is
+`q.river % 10`** (the flow direction is `Math.floor(q.river / 10) % 10`, the node marker
+`Math.floor(q.river / 100)` — neither used by the ribbon):
 
 ```js
 let rvImg = null, rvReady = false;
@@ -163,27 +166,39 @@ a ribbon is meaningless at 1px/plot.
 
 ---
 
-## 3. Phase 2 — flow direction & drainage width (no animation)
+## 3. Phase 2 — flow direction (data product, no animation) — **DONE (2026-07)**
 
-**The map stays static — no animated flow.** Phase 1 already conveys flow *implicitly*
-through the authored width taper; Phase 2 makes the flow *direction* explicit as a **data
-product** (for gameplay — navigation, downstream/upstream effects — and to unblock Phase 3's
-directional edge tiles) and refines the width. The only *rendering* change is a better taper.
+**The map is unchanged — flow direction is invisible data.** Phase 1 already conveys flow
+*implicitly* through the authored width taper; Phase 2 derives the flow *direction* per
+river cell as a **data product** — the seam for caravan river-navigation and downstream/
+upstream gameplay, and the basis for Phase 3's directional edge tiles.
 
-1. **Build a directed drainage graph** over river cells. Orient each edge by **(a)** the
-   authored signal — away from `source` nodes, toward higher width — and **(b)** the
-   elevation tie-break (downhill) where the palette is flat/ambiguous. This graph is the
-   deliverable; it need not change a single pixel.
-2. **Drainage-accumulation width** (optional): accumulate upstream contributing cells to
-   refine width where the authored levels are too coarse — the one visible change, a
-   smoother thin-headwater → thick-mouth taper. Everything else stays as Phase 1B.
+`RiverFlow.direction()` (`geo/RiverFlow.java`, pure + unit-tested) computes, for every river
+cell, the downstream 8-neighbour direction `1..8` (`0` = a sink/mouth):
 
-If a flow-direction *cue* is ever wanted it would be a **static** glyph (a chevron at
-confluences), never motion — out of scope here.
+- **Width leads, elevation only breaks ties.** A cell flows to its *widest* river neighbour
+  (a river grows toward its mouth); equal-width neighbours are settled by **lower
+  elevation** (downhill), and a deterministic **cell-index tie-break** settles the rest —
+  which also makes the directed graph **acyclic** (every edge points to a strictly greater
+  cell in the `(score, index)` order → a flow forest rooted at the width maxima). Because
+  width, not elevation, leads, the noisy near-flat valley-floor heightmap only *nudges* the
+  result — **no pit-filling / flat-resolution needed**, sidestepping the classic D8 problem.
+- **Global, not per-province.** Run once over the whole river raster in `ProvinceRaster`
+  (a cell's true downstream neighbour can sit in the next province), then folded into each
+  plot's code as the **tens digit** (§1A encoding). `river % 10` (width) is untouched, so
+  the Phase 1B ribbon renders identically.
+- **Decode:** `Plot.flowDir()` / `riverWidth()` / `riverNode()`; web `Math.floor(q.river/10)%10`.
 
-**Caveat if leaning on the heightmap:** condition the DEM first (pit-fill +
-flat-resolution) or steepest-descent misbehaves on the flat valley floors where rivers
-actually run. Prefer authored-primary, elevation-tie-break to sidestep most of this.
+Verified: `RiverFlowTest` (width-leads, elevation tie-break, width-beats-uphill, diagonal,
+acyclicity); grids regenerated (4710 provinces); flow distributed across all 8 directions
+with 12.3% sinks; width/node digit counts identical to pre-Phase-2; full `mvn test` green;
+headless render unchanged.
+
+**Dropped: drainage-accumulation width.** It was the doc's optional "one visible change,"
+but this map's authored width is coarse (≈80% width-1) *and* a computed accumulation would
+lean on the flat-valley heightmap — likely adding noise rather than a cleaner taper. The
+authored width (Phase 1B) is the better taper signal, so accumulation is not pursued. Any
+future flow *cue* would be a **static** glyph (a chevron), never motion.
 
 ---
 

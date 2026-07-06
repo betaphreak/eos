@@ -349,8 +349,9 @@ ground detail textures**, and only as a *colour source*.
 - **Rivers now use real 2D water art** (Phase 1B, done 2026-07) — a texture ribbon baked
   from `routes/rivers/allriverssmall.dds`, tapered by the authored width recovered from
   `rivers.bmp` (`ProvinceRaster.classifyRiver`, no longer flattened to a boolean). See
-  `docs/river-rendering.md`. Flow *direction* (Phase 2 — a data product, no animation) and
-  the faithful `borderNN` edge tiles (Phase 3) are still open.
+  `docs/river-rendering.md`. Flow *direction* (Phase 2 — an invisible data product for
+  river-navigation, `geo/RiverFlow`) is also done; the faithful `borderNN` edge tiles
+  (Phase 3) are still open.
 - **No real feature, bonus, improvement, coastline/water, or natural-wonder art.**
   Features are procedural JS marks; non-river water is a flat tint. These remain gated on
   the offline `.nif`→sprite baker.

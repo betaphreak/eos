@@ -58,6 +58,10 @@ public final class ProvinceRaster {
 	// the real heightmap.bmp elevation (8-bit grayscale, full resolution 1:1 with the
 	// province raster; the palette index equals the height). Optional — null if absent.
 	private int[] heightIdx;
+	// the downstream flow direction of every river pixel (1..8, 0 = none/sink), computed
+	// once over the whole river raster by RiverFlow (docs/river-rendering.md §3). Global on
+	// purpose: a cell's true downstream neighbour may lie in an adjacent province.
+	private byte[] riverFlow;
 
 	private ProvinceRaster(Map<Integer, Integer> idToColor) {
 		this.idToColor = idToColor;
@@ -116,6 +120,8 @@ public final class ProvinceRaster {
 				if ((pixels[i] & 0xFFFFFF) != target)
 					continue;
 				int riverCode = classifyRiver(river[i] & 0xFFFFFF);
+				if (riverCode != 0)
+					riverCode += riverFlow[i] * 10; // fold in the tens (flow-direction) digit
 				hits.add(new int[] { x, y, riverCode });
 				if (x < minX) minX = x;
 				if (x > maxX) maxX = x;
@@ -170,9 +176,12 @@ public final class ProvinceRaster {
 	// and grey (sea) are "no river". Since it is an indexed BMP the palette entries are exact
 	// (no anti-aliasing), so the dominant channel classifies unambiguously.
 	//
-	// Encoding: 0 = none; the low digit is the width level 1..4; the tens digit is the node
-	// marker (0 plain, 1 source, 2 confluence, 3 split). e.g. 3 = a plain width-3 river,
-	// 11 = a river source, 21 = a tributary confluence. Nodes carry nominal width 1.
+	// This returns the pixel's static classification only — the low digit is the width level
+	// 1..4 and the hundreds digit is the node marker (0 plain, 1 source, 2 confluence, 3
+	// split); the tens (flow-direction) digit is 0 here and filled in later from RiverFlow (a
+	// property of the whole network, not one pixel). See the full encoding on ProvinceMask
+	// #riverCode. e.g. 3 = a plain width-3 river, 101 = a river source, 201 = a confluence.
+	// Nodes carry nominal width 1.
 	static int classifyRiver(int rgb) {
 		int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
 		int max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));
@@ -181,11 +190,11 @@ public final class ProvinceRaster {
 		if (b == max)
 			return widthLevel(g); // blue ramp — a plain river of that width
 		if (r > 150 && g > 150)
-			return 31; // yellow — river split node
+			return 301; // yellow — river split node
 		if (g == max)
-			return 11; // green — river source node
+			return 101; // green — river source node
 		if (r == max)
-			return 21; // red — tributary flow-in / confluence node
+			return 201; // red — tributary flow-in / confluence node
 		return 0;
 	}
 
@@ -215,6 +224,12 @@ public final class ProvinceRaster {
 		this.terrainIdx = loadIndexed(TERRAIN_BMP, width, height);
 		this.treeIdx = loadTreeOverlay();
 		this.heightIdx = loadIndexed(HEIGHTMAP_BMP, width, height);
+		// derive the whole river network's downstream flow direction once (width leads,
+		// elevation only breaks ties — see RiverFlow); mask() folds it into each plot's code
+		byte[] widthGrid = new byte[width * height];
+		for (int i = 0; i < widthGrid.length; i++)
+			widthGrid[i] = (byte) (classifyRiver(river[i] & 0xFFFFFF) % 10); // 0, or width 1..4
+		this.riverFlow = RiverFlow.direction(width, height, widthGrid, heightIdx);
 	}
 
 	// read an 8-bit indexed BMP's raw palette indices (not RGB) into a row-major

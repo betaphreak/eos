@@ -77,11 +77,13 @@ public final class Plot {
 	private final Bonus bonus;
 
 	// the river classification code on this plot (from the province field): 0 = no river;
-	// low digit = width level 1..4 (narrow → wide), tens digit = node marker (1 source,
-	// 2 confluence, 3 split) — see ProvinceRaster.classifyRiver / docs/river-rendering.md.
-	// river() reads it as a boolean for the caravan land-routing corridors, which ford any
-	// river at a full day's march (see docs/land-routing.md / docs/caravan-march.md §6);
-	// riverCode() exposes the width/node for the web map. 0 for a province-less plot.
+	// low digit = width level 1..4 (narrow → wide), tens digit = downstream flow direction
+	// 1..8 (0 = sink/mouth), hundreds digit = node marker (1 source, 2 confluence, 3 split) —
+	// see ProvinceRaster.classifyRiver + RiverFlow / docs/river-rendering.md §1/§3. river()
+	// reads it as a boolean for the caravan land-routing corridors, which ford any river at a
+	// full day's march (see docs/land-routing.md / docs/caravan-march.md §6); riverWidth()/
+	// flowDir()/riverNode() decode the fields (flowDir is the seam for river navigation).
+	// 0 for a province-less plot.
 	private final int river;
 
 	// the real heightmap elevation (0..255) at this plot, or 0 for a province-less plot.
@@ -247,14 +249,34 @@ public final class Plot {
 	}
 
 	/**
-	 * The river classification code on this plot: {@code 0} = no river; the low digit is
-	 * the width level {@code 1..4} (narrow → wide), the tens digit the node marker
-	 * ({@code 1} source, {@code 2} confluence, {@code 3} split). Persisted for the web map
-	 * (the ribbon tapers by width); see {@link com.civstudio.geo.ProvinceRaster#classifyRiver}
-	 * and {@code docs/river-rendering.md} §1.
+	 * The packed river classification code on this plot: {@code 0} = no river; low digit =
+	 * width level {@code 1..4}, tens digit = downstream flow direction {@code 1..8}, hundreds
+	 * digit = node marker ({@code 1} source, {@code 2} confluence, {@code 3} split). Decode
+	 * with {@link #riverWidth()}/{@link #flowDir()}/{@link #riverNode()}. Persisted for the
+	 * web map (whose ribbon tapers by width) and, via {@code flowDir}, for river navigation;
+	 * see {@link com.civstudio.geo.RiverFlow} and {@code docs/river-rendering.md} §1/§3.
 	 */
 	public int riverCode() {
 		return river;
+	}
+
+	/** The river width level on this plot ({@code 0} = no river, {@code 1..4} narrow→wide). */
+	public int riverWidth() {
+		return river % 10;
+	}
+
+	/**
+	 * The downstream flow direction on this plot as an 8-neighbour code {@code 1..8} (E, NE,
+	 * N, NW, W, SW, S, SE), or {@code 0} for no river or a local sink/mouth. Derived by
+	 * {@link com.civstudio.geo.RiverFlow} — the seam for caravan river-navigation.
+	 */
+	public int flowDir() {
+		return (river / 10) % 10;
+	}
+
+	/** The river node marker ({@code 0} plain/none, {@code 1} source, {@code 2} confluence, {@code 3} split). */
+	public int riverNode() {
+		return river / 100;
 	}
 
 	/** The real heightmap elevation (0..255) at this plot; 0 for a province-less plot. */

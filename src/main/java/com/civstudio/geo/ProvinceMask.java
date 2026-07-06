@@ -21,8 +21,9 @@ public final class ProvinceMask {
 	private final int height;
 	private final boolean[] land; // row-major, width*height
 	// the river classification code per cell (0 = none; low digit = width 1..4, tens digit =
-	// node marker), from ProvinceRaster.classifyRiver over rivers.bmp — see that method and
-	// docs/river-rendering.md §1. Preserves the authored width/nodes rather than a bare flag.
+	// downstream flow direction 1..8, hundreds digit = node marker), from rivers.bmp via
+	// ProvinceRaster.classifyRiver + RiverFlow — see docs/river-rendering.md §1/§3. Preserves
+	// the authored width/nodes and the derived flow rather than a bare flag.
 	private final int[] river;
 	// the real EU4 terrain.bmp / trees.bmp palette index per cell, or -1 where the
 	// overlay is absent (see ProvinceRaster); the plot field reads these to ground a
@@ -80,10 +81,13 @@ public final class ProvinceMask {
 	}
 
 	/**
-	 * The river classification code at the local cell (0 outside the bbox / no river):
-	 * the low digit is the width level 1..4, the tens digit the node marker (0 plain,
-	 * 1 source, 2 confluence, 3 split). See {@link ProvinceRaster#classifyRiver} and
-	 * {@code docs/river-rendering.md} §1.
+	 * The river classification code at the local cell (0 outside the bbox / no river). It
+	 * packs three fields as decimal digits: the <b>low</b> digit is the width level 1..4, the
+	 * <b>tens</b> digit is the downstream flow direction 1..8 (0 = a sink/mouth; see {@link
+	 * RiverFlow}), and the <b>hundreds</b> digit is the node marker (0 plain, 1 source, 2
+	 * confluence, 3 split). e.g. {@code 53} = a width-3 river flowing direction 5 (W); {@code
+	 * 141} = a source (width 1) flowing direction 4. See {@link ProvinceRaster#classifyRiver}
+	 * and {@code docs/river-rendering.md} §1/§3.
 	 */
 	public int riverCode(int lx, int ly) {
 		if (lx < 0 || lx >= width || ly < 0 || ly >= height)
