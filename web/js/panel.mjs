@@ -4,6 +4,7 @@ import { loadPlots } from "./plots.mjs";
 stage.addEventListener("wheel", e => {
   e.preventDefault();
   const r = stage.getBoundingClientRect();
+  camBeforeFocus = null;                               // manual zoom discards the focus-return point
   zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0016));
 }, { passive: false });
 let lastX = 0, lastY = 0, panMoved = false;
@@ -15,7 +16,7 @@ stage.addEventListener("mousedown", e => {
 window.addEventListener("mousemove", e => {
   if (!S.dragging) return;
   const dx = e.clientX - lastX, dy = e.clientY - lastY;
-  if (Math.abs(dx) + Math.abs(dy) > 2) panMoved = true;
+  if (Math.abs(dx) + Math.abs(dy) > 2) { panMoved = true; camBeforeFocus = null; }   // dragging discards the focus-return point
   cam.x += dx; cam.y += dy; lastX = e.clientX; lastY = e.clientY;
   clampPan(); S.baseVersion++; draw();
 });
@@ -38,16 +39,18 @@ window.addEventListener("keydown", e => {
   if (e.target instanceof HTMLElement && e.target.matches("input, textarea")) return;   // don't hijack typing
   const step = Math.max(40, Math.min(VIEW.w, VIEW.h) * 0.12);
   switch (e.key) {
+    case "Escape": if (unfocusProvince()) { e.preventDefault(); } return;   // return from a focused province
     case "w": case "W": case "ArrowUp":    cam.y += step; break;
     case "s": case "S": case "ArrowDown":  cam.y -= step; break;
     case "a": case "A": case "ArrowLeft":  cam.x += step; break;
     case "d": case "D": case "ArrowRight": cam.x -= step; break;
-    case "+": case "=":  e.preventDefault(); return zoomAt(VIEW.w/2, VIEW.h/2, 1.5);
-    case "-": case "_":  e.preventDefault(); return zoomAt(VIEW.w/2, VIEW.h/2, 1/1.5);
-    case "0": case "Home":  e.preventDefault(); return resetView();
+    case "+": case "=":  e.preventDefault(); camBeforeFocus = null; return zoomAt(VIEW.w/2, VIEW.h/2, 1.5);
+    case "-": case "_":  e.preventDefault(); camBeforeFocus = null; return zoomAt(VIEW.w/2, VIEW.h/2, 1/1.5);
+    case "0": case "Home":  e.preventDefault(); camBeforeFocus = null; return resetView();
     case "f": case "F":  e.preventDefault(); return toggleFullscreen();
     default: return;                                   // leave other keys alone
   }
+  camBeforeFocus = null;                               // manual pan discards the focus-return point
   e.preventDefault(); clampPan(); S.baseVersion++; draw();
 });
 // ---- timeline ----
@@ -164,6 +167,12 @@ stage.addEventListener("click", e=>{
   // otherwise the click selects the province under the cursor (toggles off if re-clicked)
   const prov = provinceAt(mx, my);
   if (prov) selectProvince(S.selectedProv===prov ? null : prov);
+});
+// double-click zooms and centres the camera on the province under the cursor
+stage.addEventListener("dblclick", e=>{
+  const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+  const prov = provinceAt(mx, my);
+  if (prov) goToProvince(prov);
 });
 
 // ---- rail ----
@@ -440,9 +449,17 @@ const searchInput = document.getElementById("search");
 const searchResults = document.getElementById("searchResults");
 const searchClear = document.getElementById("searchClear");
 let searchMatches = [], searchActive = -1;
+let camBeforeFocus = null;        // camera snapshot to unwind with Esc after a focus
 function goToProvince(p, k = 9) {
-  focusProvince(p.id, k);        // zoom + centre the camera on it
-  selectProvince(p);             // and open its detail panel
+  camBeforeFocus = { ...cam };    // remember where we were so Esc can return
+  focusProvince(p.id, k);         // zoom + centre the camera on it
+  selectProvince(p);              // and open its detail panel
+}
+function unfocusProvince() {       // restore the pre-focus zoom/pan; returns false if nothing to undo
+  if (!camBeforeFocus) return false;
+  Object.assign(cam, camBeforeFocus); camBeforeFocus = null;
+  clampPan(); S.baseVersion++; draw();
+  return true;
 }
 function runSearch(raw) {
   const q = raw.trim().toLowerCase();
@@ -489,7 +506,10 @@ searchInput.addEventListener("input", () => runSearch(searchInput.value));
 searchInput.addEventListener("focus", () => { if (searchInput.value.trim()) runSearch(searchInput.value); });
 searchInput.addEventListener("blur", () => setTimeout(() => { searchResults.hidden = true; }, 150));
 searchInput.addEventListener("keydown", e => {
-  if (e.key === "Escape") { searchInput.value = ""; runSearch(""); searchInput.blur(); return; }
+  if (e.key === "Escape") {
+    if (unfocusProvince()) { e.preventDefault(); return; }   // first Esc returns from the focused province
+    searchInput.value = ""; runSearch(""); searchInput.blur(); return;
+  }
   if (searchResults.hidden || !searchMatches.length) return;
   if (e.key === "ArrowDown") { e.preventDefault(); searchActive = Math.min(searchActive + 1, searchMatches.length - 1); renderSearchResults(); }
   else if (e.key === "ArrowUp") { e.preventDefault(); searchActive = Math.max(searchActive - 1, 0); renderSearchResults(); }
