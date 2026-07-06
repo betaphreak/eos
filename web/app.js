@@ -989,6 +989,90 @@ function applyHash() {
 }
 window.addEventListener("hashchange", applyHash);
 
+// ---- shared button tooltips (positioned to stay within the stage) ----
+const btntip = document.getElementById("btntip");
+let tipTimer = 0;
+function showBtnTip(el) {
+  const text = el.getAttribute("data-tip"); if (!text) return;
+  btntip.textContent = text;
+  const sr = stage.getBoundingClientRect(), br = el.getBoundingClientRect();
+  const bw = btntip.offsetWidth, bh = btntip.offsetHeight;
+  let x = br.left - sr.left + br.width / 2 - bw / 2;       // centre on the button, clamp to stage
+  x = Math.max(6, Math.min(x, sr.width - bw - 6));
+  let y = br.top - sr.top - bh - 8;                        // above by default…
+  if (y < 6) y = br.bottom - sr.top + 8;                   // …flip below when there is no room
+  btntip.style.left = x + "px"; btntip.style.top = y + "px";
+  btntip.classList.add("on");
+}
+function hideBtnTip() { clearTimeout(tipTimer); btntip.classList.remove("on"); }
+stage.querySelectorAll("[data-tip]").forEach(el => {
+  el.addEventListener("mouseenter", () => { clearTimeout(tipTimer); tipTimer = setTimeout(() => showBtnTip(el), 320); });
+  el.addEventListener("mouseleave", hideBtnTip);
+  el.addEventListener("mousedown", hideBtnTip);
+});
+
+// ---- province search (by name or id → zoom to it) ----
+const searchInput = document.getElementById("search");
+const searchResults = document.getElementById("searchResults");
+const searchClear = document.getElementById("searchClear");
+let searchMatches = [], searchActive = -1;
+function goToProvince(p, k = 9) {
+  focusProvince(p.id, k);        // zoom + centre the camera on it
+  selectProvince(p);             // and open its detail panel
+}
+function runSearch(raw) {
+  const q = raw.trim().toLowerCase();
+  searchClear.hidden = !q;
+  if (!q) { searchResults.hidden = true; searchMatches = []; return; }
+  const isNum = /^\d+$/.test(q);
+  const scored = [];
+  for (const p of P) {
+    if (p.type !== "LAND") continue;
+    let score = -1;
+    if (isNum) { const ids = String(p.id); if (ids === q) score = 100; else if (ids.startsWith(q)) score = 55; }
+    if (score < 0) {
+      const name = p.name.toLowerCase();
+      if (name === q) score = 90; else if (name.startsWith(q)) score = 70; else if (name.includes(q)) score = 40;
+    }
+    if (score >= 0) scored.push({ p, score });
+  }
+  scored.sort((a, b) => b.score - a.score || b.p.plots - a.p.plots || a.p.name.localeCompare(b.p.name));
+  searchMatches = scored.slice(0, 12).map(s => s.p);
+  searchActive = searchMatches.length ? 0 : -1;
+  renderSearchResults();
+}
+function renderSearchResults() {
+  if (!searchMatches.length) {
+    searchResults.innerHTML = `<div class="search-empty">No province matches.</div>`;
+    searchResults.hidden = false; return;
+  }
+  searchResults.innerHTML = searchMatches.map((p, i) => {
+    const reg = (p.geo && p.geo.region && p.geo.region[0]) || "";
+    return `<div class="search-row${i === searchActive ? " active" : ""}" role="option" data-i="${i}">
+      <span class="sr-name">${p.name}</span><span class="sr-id">#${p.id}</span>
+      <span class="sr-meta">${reg}</span></div>`;
+  }).join("");
+  searchResults.hidden = false;
+  searchResults.querySelectorAll(".search-row").forEach(row =>
+    row.addEventListener("mousedown", e => { e.preventDefault(); pickSearch(+row.dataset.i); }));
+}
+function pickSearch(i) {
+  const p = searchMatches[i]; if (!p) return;
+  searchResults.hidden = true; searchInput.blur();
+  goToProvince(p);
+}
+searchInput.addEventListener("input", () => runSearch(searchInput.value));
+searchInput.addEventListener("focus", () => { if (searchInput.value.trim()) runSearch(searchInput.value); });
+searchInput.addEventListener("blur", () => setTimeout(() => { searchResults.hidden = true; }, 150));
+searchInput.addEventListener("keydown", e => {
+  if (e.key === "Escape") { searchInput.value = ""; runSearch(""); searchInput.blur(); return; }
+  if (searchResults.hidden || !searchMatches.length) return;
+  if (e.key === "ArrowDown") { e.preventDefault(); searchActive = Math.min(searchActive + 1, searchMatches.length - 1); renderSearchResults(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); searchActive = Math.max(searchActive - 1, 0); renderSearchResults(); }
+  else if (e.key === "Enter") { e.preventDefault(); if (searchActive >= 0) pickSearch(searchActive); }
+});
+searchClear.addEventListener("click", () => { searchInput.value = ""; runSearch(""); searchInput.focus(); });
+
 // ---- mode toggle ----
 document.querySelectorAll("#modeToggle button").forEach(b =>
   b.addEventListener("click", () => setMode(b.dataset.mode)));
