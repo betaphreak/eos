@@ -23,7 +23,33 @@ window.addEventListener("mouseup", () => { if (S.dragging) { S.dragging = false;
 
 document.getElementById("zoomIn").onclick = () => zoomAt(VIEW.w/2, VIEW.h/2, 1.5);
 document.getElementById("zoomOut").onclick = () => zoomAt(VIEW.w/2, VIEW.h/2, 1/1.5);
-document.getElementById("zoomReset").onclick = () => { cam.k = 1; cam.x = 0; cam.y = 0; clampPan(); S.baseVersion++; draw(); };
+// reset to the whole world (keyboard 0 / Home — the corner-icon button is now fullscreen)
+function resetView() { cam.k = 1; cam.x = 0; cam.y = 0; clampPan(); S.baseVersion++; draw(); }
+// fullscreen the map stage (canvas + its overlay controls); the resize handler re-fits on change
+function toggleFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else stage.requestFullscreen?.();
+}
+document.getElementById("zoomReset").onclick = toggleFullscreen;
+document.addEventListener("fullscreenchange", resize);
+// keyboard: WASD / arrows pan · +/- zoom · 0 or Home reset to world · F fullscreen
+window.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target instanceof HTMLElement && e.target.matches("input, textarea")) return;   // don't hijack typing
+  const step = Math.max(40, Math.min(VIEW.w, VIEW.h) * 0.12);
+  switch (e.key) {
+    case "w": case "W": case "ArrowUp":    cam.y += step; break;
+    case "s": case "S": case "ArrowDown":  cam.y -= step; break;
+    case "a": case "A": case "ArrowLeft":  cam.x += step; break;
+    case "d": case "D": case "ArrowRight": cam.x -= step; break;
+    case "+": case "=":  e.preventDefault(); return zoomAt(VIEW.w/2, VIEW.h/2, 1.5);
+    case "-": case "_":  e.preventDefault(); return zoomAt(VIEW.w/2, VIEW.h/2, 1/1.5);
+    case "0": case "Home":  e.preventDefault(); return resetView();
+    case "f": case "F":  e.preventDefault(); return toggleFullscreen();
+    default: return;                                   // leave other keys alone
+  }
+  e.preventDefault(); clampPan(); S.baseVersion++; draw();
+});
 // ---- timeline ----
 const scrub=document.getElementById("scrub"), dNow=document.getElementById("dNow");
 document.getElementById("dLo").textContent = fmtDate(t0);
