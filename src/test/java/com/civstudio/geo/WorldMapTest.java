@@ -138,7 +138,7 @@ class WorldMapTest {
 		Continent c = map.continentOf(d.id()).orElseThrow();
 		assertEquals(Continent.ASIA, c);
 		assertEquals("asia", c.rawKey());
-		assertEquals("Asia", c.displayName());
+		assertEquals("Haless", c.displayName());   // Anbennar landmass for the EU4 "asia" partition
 		assertTrue(map.provincesInContinent(Continent.ASIA).contains(d));
 		assertThrows(UnsupportedOperationException.class,
 				() -> map.provincesInContinent(Continent.ASIA).clear());

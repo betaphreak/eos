@@ -24,13 +24,18 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum Continent implements GeoTier {
 
-	EUROPE("europe", "Europe"),
+	// The constant identifiers and raw_keys stay the EU4/Clausewitz partition (the raw_key
+	// is the persisted tie in provinces.json and must not change); the display names are the
+	// Anbennar landmasses those partitions cover. Both Americas are Aelantir (one New-World
+	// continent — they share the Ruin Proper / Torn Gates super-regions), so they carry the
+	// same display name and merge wherever grouped by name.
+	EUROPE("europe", "Cannor"),
 	SERPENTSPINE("serpentspine", "Serpentspine"),
-	ASIA("asia", "Asia"),
-	AFRICA("africa", "Africa"),
-	NORTH_AMERICA("north_america", "North America"),
-	SOUTH_AMERICA("south_america", "South America"),
-	OCEANIA("oceania", "Oceania");
+	ASIA("asia", "Haless"),
+	AFRICA("africa", "Sarhal"),
+	NORTH_AMERICA("north_america", "Aelantir"),
+	SOUTH_AMERICA("south_america", "Aelantir"),
+	OCEANIA("oceania", "Hinuilands");
 
 	private final String rawKey;
 	private final String displayName;
