@@ -1,0 +1,17 @@
+{
+  "mimeTypes": {
+    ".pack": "application/octet-stream"
+  },
+  "routes": [
+    {
+      "route": "/assets/*",
+      "headers": {
+        "Cache-Control": "public, max-age=3600"
+      }
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/assets/*", "*.js", "*.css", "*.png", "*.pack"]
+  }
+}

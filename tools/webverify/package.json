@@ -1,0 +1,10 @@
+{
+  "name": "webverify",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Headless-browser verification for the web/ static site (screenshots + plots.pack range-fetch check)",
+  "dependencies": {
+    "playwright-core": "^1.61.1"
+  }
+}

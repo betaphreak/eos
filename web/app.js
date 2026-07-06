@@ -45,8 +45,8 @@ mapImg.src = MAP.src;
 // ---- per-plot terrain zoom layer (a base WorldMap layer; the Caravan View overlays
 // its routes/heat on top) ----
 // Past K_PLOT the blurry continent raster gives way to crisp per-plot Civ4 terrain:
-// each province's canonical plot grid (assets/plots/<id>.js, lazy-loaded on demand) is
-// rasterised once to an offscreen canvas at 1px/plot, then blitted scaled into place.
+// each province's canonical plot grid (a slice of assets/plots.pack, range-fetched on
+// demand) is rasterised once to an offscreen canvas at 1px/plot, then blitted scaled.
 const TCOL = BUNDLE.terrainColors || {};
 const K_PLOT = 5;                 // camera scale at which plots begin to fade in
 const K_TEX = 16;                 // camera scale at which flat tiles give way to real textures
@@ -81,20 +81,28 @@ function provSrcBox(p) {
   }
   return p._sbox = { x0, y0, x1, y1 };
 }
-window.__plots = window.__plots || {};
-// lazy-load a province's plot grid via a <script> tag (works off file://, where
-// fetch() of a local resource is blocked), then rasterise and redraw
-function loadPlots(p) {
+const PLOT_INDEX = BUNDLE.plotIndex || {};       // {provId: [byteOffset, len]} into plots.pack
+// lazy-load a province's plot grid: Range-fetch its slice of assets/plots.pack (each
+// slice is a standalone gzip member — the province's canonical .json.gz verbatim),
+// gunzip it in the browser, then rasterise and redraw. Any failure leaves the province
+// as the blurred raster (graceful degradation; e.g. file:// blocks fetch entirely).
+async function loadPlots(p) {
   if (p._loading || p._plots) return;
+  const slice = PLOT_INDEX[p.id];
+  if (!slice) return;                            // no plots for this province
   p._loading = true;
-  const s = document.createElement("script");
-  s.src = `assets/plots/${p.id}.js`;
-  s.onload = () => {
-    const arr = window.__plots[p.id]; delete window.__plots[p.id]; p._loading = false;
+  const [off, len] = slice;
+  try {
+    const res = await fetch("assets/plots.pack", { headers: { Range: `bytes=${off}-${off + len - 1}` } });
+    let buf = await res.arrayBuffer();
+    if (res.status === 200) buf = buf.slice(off, off + len);   // server ignored Range → slice ourselves
+    const stream = new Response(buf).body.pipeThrough(new DecompressionStream("gzip"));
+    const arr = JSON.parse(await new Response(stream).text());
+    p._loading = false;
     if (arr) { p._plots = arr; draw(); }         // kept for the textured pass; offscreen built lazily
-  };
-  s.onerror = () => { p.hasPlots = false; p._loading = false; };
-  document.head.appendChild(s);
+  } catch (e) {
+    p._loading = false; p.hasPlots = false;
+  }
 }
 // rasterise a province's plots to a 1px/plot offscreen canvas: terrain colour, relief
 // shading (hill lighter, peak toward rock-grey), a light feature tint, and river blend

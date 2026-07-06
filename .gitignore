@@ -10,7 +10,11 @@
 /.idea/
 /.claude/
 /full.log
-# derived, regenerable web copy of per-province plot grids (build.mjs → shipPlots)
+# webverify browser-test tooling deps (regenerable via `npm install`)
+/tools/webverify/node_modules/
+/tools/webverify/package-lock.json
+# derived, regenerable packed per-province plot grids (build.mjs → packPlots)
+/web/assets/plots.pack
 /web/assets/plots/
 # derived, regenerable high-res terrain-texture atlas (build.mjs → bakeTerrainTiles)
 /web/assets/terrain-tiles-*.png

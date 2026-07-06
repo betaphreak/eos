@@ -104,13 +104,14 @@ const allDates = journeys.flatMap(j => [j.startDate, j.endDate]).sort();
 const map = bakeTerrain(provinces);
 
 // per-plot terrain zoom layer (a base WorldMap layer the Caravan View draws over):
-// ship each displayed province's canonical plot grid as a lazy-loadable JS file, and
-// expose the terrain display colours the page tints plots with (docs §10). Slice B
-// also bakes a real ground-texture atlas the page draws per plot at deep zoom.
+// pack every displayed province's canonical plot grid into one range-fetched
+// plots.pack (index inlined below), and expose the terrain display colours the
+// page tints plots with (docs §10). Slice B also bakes a real ground-texture
+// atlas the page draws per plot at deep zoom.
 const terrainColors = terrainDisplayColors(terrainRealColors());
 const terrainLayer = terrainLayerOrders();   // TERRAIN_* -> Civ4 LayerOrder (drives edge blending)
 const terrainTiles = bakeTerrainTiles(terrainColors);
-const plotsShipped = shipPlots(provinces);
+const plotPack = packPlots(provinces);
 
 const bundle = {
   meta: {
@@ -119,6 +120,7 @@ const bundle = {
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
   provinces, journeys, map, terrainColors, terrainLayer, terrainTiles,
+  plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
 };
 
 // the run's data as a plain script the page (index.html) loads alongside the
@@ -130,7 +132,7 @@ fs.writeFileSync(path.join(WEB, 'data.js'), dataJs);
 console.log(`Built web/data.js (${(dataJs.length / 1024).toFixed(0)} KB) + web/${map.src} (${(terrainBytes / 1024).toFixed(0)} KB) from seed ${SEED}`);
 console.log(`  ${journeys.length} journeys · ${provinces.length} provinces · ${bundle.meta.dateStart} → ${bundle.meta.dateEnd}`);
 console.log(`  terrain crop ${map.dw}×${map.dh}px`);
-console.log(`  plots: ${plotsShipped} provinces shipped to web/assets/plots/ (lazy per-plot terrain zoom)`);
+console.log(`  plots: ${plotPack.count} provinces packed into web/assets/plots.pack (${(plotPack.bytes / 1048576).toFixed(1)} MB, range-fetched per-plot terrain zoom)`);
 console.log(`  terrain tiles: ${terrainTiles ? terrainTiles.src + ' (' + Object.keys(terrainTiles.cols).length + ' textures)' : 'skipped (no terrain-art.json / LFS textures)'}`);
 for (const j of journeys) console.log(`  ${('→ ' + j.dest).padEnd(26)} ${j.provinceCount} prov · ${(j.days / 365.25).toFixed(1)}y · cargo ${j.cargoFinal}`);
 
@@ -423,26 +425,33 @@ function solidTile(rgbArr, T) {
   return out;
 }
 
-// copy each displayed province's canonical plot grid (map/provinces/<id>.json.gz,
-// gzipped JSON) into web/assets/plots/<id>.js as a lazy-loadable assignment. Emitted
-// as a JS file (not the raw .gz) so the page can load it via a <script> tag — which
-// works off file:// where fetch() of a local resource is blocked (an HTTP deploy still
-// gzips the .js on the wire). Sets p.hasPlots; the dir is gitignored (regenerable).
-function shipPlots(provs) {
+// Pack every displayed province's canonical plot grid (map/provinces/<id>.json.gz,
+// each a complete standalone gzip member) into ONE web/assets/plots.pack by
+// concatenating the raw .gz bytes as-is (no gunzip/re-encode), and return a
+// byte-offset index {id: [offset, len]} the page inlines and range-fetches from.
+// One ~30 MB file replaces thousands of loose per-province .js files; the page
+// range-fetches a single province's slice and gunzips it in the browser. The
+// pack is gitignored (regenerable from the committed grids). Sets p.hasPlots.
+function packPlots(provs) {
   const srcDir = path.join(ROOT, 'src/main/resources/map/provinces');
-  const outDir = path.join(WEB, 'assets', 'plots');
-  fs.rmSync(outDir, { recursive: true, force: true });
+  const outDir = path.join(WEB, 'assets');
+  // drop the old loose-file layout if a previous build left it behind
+  fs.rmSync(path.join(outDir, 'plots'), { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
-  let n = 0;
+  const chunks = [];
+  const index = {};
+  let offset = 0;
   for (const p of provs) {
     const gz = path.join(srcDir, `${p.id}.json.gz`);
     if (!fs.existsSync(gz)) { p.hasPlots = false; continue; }
-    const json = zlib.gunzipSync(fs.readFileSync(gz)).toString('utf8');
-    fs.writeFileSync(path.join(outDir, `${p.id}.js`),
-      `window.__plots=window.__plots||{};window.__plots[${p.id}]=${json};\n`);
-    p.hasPlots = true; n++;
+    const buf = fs.readFileSync(gz);          // raw gzip bytes, used verbatim
+    chunks.push(buf);
+    index[p.id] = [offset, buf.length];
+    offset += buf.length;
+    p.hasPlots = true;
   }
-  return n;
+  fs.writeFileSync(path.join(outDir, 'plots.pack'), Buffer.concat(chunks));
+  return { index, count: Object.keys(index).length, bytes: offset };
 }
 
 // Minimal truecolour PNG encoder (Node has zlib but no image codec).
