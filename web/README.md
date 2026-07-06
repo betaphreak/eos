@@ -1,20 +1,21 @@
-# web — CivStudio visualization prototypes
+# CivStudio Web
 
 Read-only presentation layer for the headless engine. Nothing here runs during a
 simulation; each page is a **consumer** of a run's output under `output/<seed>/`,
 so it can never perturb the seed-reproducible run.
 
-It is laid out as an ordinary static site — `index.html` + `styles.css` + `app.js`,
-with the run's data in a generated `data.js` and the terrain as a real image asset
-under `assets/`. `build.mjs` writes both. No bundler or dependencies — just Node for
-the build; open `index.html` straight off disk.
+It is laid out as an ordinary static site — `index.html` + `styles.css` + `app.js`
+(a thin entry over the ES modules in `js/`, documented under **Files** below), with the
+run's data in a generated `data.js` and the terrain as a real image asset under
+`assets/`. `build.mjs` writes both. No bundler or dependencies — just Node for the build.
 
 ## The WorldMap (with a Caravan replay mode)
 
 The page is a **WorldMap** of the whole imported world (all ~4,710 land provinces),
 rendered from the engine's **real terrain** — the recolored `terrain.bmp` — with all
-province polygons, hover-to-read, pan/zoom, and the per-plot terrain zoom (textures,
-hillshade, rivers, features) on any province. A **World | Caravan** toggle switches to
+province polygons, hover-to-read, pan/zoom (the map **wraps east-west** — it is a
+cylinder), province search, a full province-detail sidebar, and the per-plot terrain zoom
+(textures, hillshade, rivers, features) on any province. A **World | Caravan** toggle switches to
 **Caravan mode**, which overlays a recorded **parallel directed-march** run: six
 caravans muster at one origin and trek to distant sites, foraging and hauling cargo,
 with routes, a timeline, and per-journey detail.
@@ -108,11 +109,31 @@ file.
 | file | role |
 |------|------|
 | `index.html` | the page markup — links `styles.css`, `data.js`, `app.js`, and the terrain image |
-| `styles.css` | all styling (theme tokens, layout, map chrome) |
-| `app.js` | rendering + interaction (projection, pan/zoom camera, choropleth, timeline, rail) |
+| `styles.css` | all styling (theme tokens, layout, map chrome, sidebar) |
+| `app.js` | **entry** — a `type="module"` script that loads the `js/` modules and boots |
+| `js/*.mjs` | the app, split into ES modules (see below) |
 | `data.js` | **generated** — `window.BUNDLE`, the run's data (no imagery inlined) |
 | `assets/terrain-<seed>.png` | **generated** — the dark-tinted terrain crop, a real image asset |
-| `build.mjs` | reads a run's caravan journals + the province map + outlines, tallies caravan-days per province, writes `data.js` and the terrain PNG |
+| `build.mjs` | reads a run's caravan journals + the province map + outlines + the geographic hierarchy, tallies caravan-days per province, writes `data.js` and the terrain PNG |
+
+**Modules** (`web/js/`). `app.js` was one ~1,100-line classic script; it is now a thin
+entry that imports five ES modules in dependency order. Module scripts are deferred, so
+the classic `data.js` still sets `window.BUNDLE` first. The site stays dependency-free —
+ES modules need no bundler, but they do need HTTP (the `file://` caveat above already
+applied because of `plots.pack`). Load order: `core → plots → labels → main → panel`.
+
+| module | role |
+|--------|------|
+| `core.mjs` | data prep, the lon/lat→pixel→screen **projection** + pan/zoom **camera**, the shared mutable **state object `S`**, constants (`K_PLOT`/`K_TEX`/…), and small utils. Everyone imports it. |
+| `plots.mjs` | the per-plot **terrain-zoom layer** (range-fetch, rasterise, flat tiles → textures → hillshade) and the elevation **movement-cost overlay**. |
+| `labels.mjs` | map text: province names and the **zoom-banded geographic tiers** (continent → super-region → region). |
+| `main.mjs` | the **`draw()` orchestrator** (including the cylindrical **wrap** — it renders the scene once per on-screen world copy), the camera raster, zoom, and deep-link. |
+| `panel.mjs` | all **DOM interaction**: the sidebar (province detail, run summary, journeys), search, button tooltips, the caravan timeline, and pointer/keyboard events. |
+
+The eight primitives read *and* written across module boundaries (`mode`, `selected`,
+`selectedProv`, `hoverProv`, `curT`, `showHeat`, `showCost`, `dragging`) plus the render
+versioning live on the shared `S` object in `core`, since ES-module bindings can be read
+across modules but not reassigned from outside their defining module.
 
 The province outlines come from `ProvinceBorderExporter` (in the engine), which traces
 each land province's silhouette from `provinces.bmp` into a simplified polygon and
