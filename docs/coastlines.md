@@ -30,8 +30,8 @@ direction:
   dependency, so `WorldPlotGenerator` and the live `loadOrGenerate` regen identically.
 - **The mask (8-bit).** For each land pixel, which of its **8 neighbours** are water: low
   nibble = orthogonal **edges** (`1`=E, `2`=W, `4`=S, `8`=N — for the shoreline foam + coastal
-  gameplay), high nibble = diagonal **corners** (`16`=NW, `32`=NE, `64`=SE, `128`=SW — stored
-  for future use; the §B render uses only the edge nibble). `0` = inland. Computed in
+  gameplay), high nibble = diagonal **corners** (`16`=NW, `32`=NE, `64`=SE, `128`=SW — the §B
+  render fills these diagonal sea corners so outer corners wrap round). `0` = inland. Computed in
   `ProvinceRaster.seaMask()` (global pixel access, E-W cylinder wrapped), threaded through
   `ProvinceMask.coast()` → `ProvincePlot` → `Plot.coast()`/`isCoastal()` →
   `ProvincePlotStore.StoredPlot`, exactly like the river code.
@@ -46,9 +46,12 @@ interior province 0%); `mvn test` green.
 **shallow-water band reaching OUTWARD from the shoreline into the adjacent sea** (strongest at
 the shore, fading out), plus a thin **foam line** at the shoreline. The shallows ring the land
 *in the water*, aligned to the coast. The adjacent sea is not a plot of this province, so
-`buildPlotTexCanvas` pads its offscreen by one cell (`PAD`) to give room to bleed outward.
-Procedural (no baked art), absent-tolerant (`q.coast` 0 → no draw). Only the textured layer;
-the flat-tile overview and background raster are unchanged.
+`buildPlotTexCanvas` pads its offscreen by one cell (`PAD`) to give room to bleed outward. The
+diagonal **corner** bits (high nibble) additionally fill the diagonal sea with a radial fade,
+so an outer corner (sea to the E *and* S → SE diagonal also sea) wraps round instead of leaving
+a square notch between the two edge bands. Procedural (no baked art), absent-tolerant
+(`q.coast` 0 → no draw). Only the textured layer; the flat-tile overview and background raster
+are unchanged.
 
 **Why not the Civ4 `coastscalemask` blend** (tried and reverted): those 16 `.tga` masks are
 **diagonal-corner** ramps (decoded: bits TL=1,TR=2,BR=4,BL=8, dark=shallow) that draw the

@@ -223,14 +223,17 @@ function buildPlotTexCanvas(p) {
   }
   p._tcanvas = oc; p._tbox = { x0, y0, w, h };
 }
-// draw the coastline on a plot from its sea mask's orthogonal-edge nibble (q.coast & 15 —
-// 1=E,2=W,4=S,8=N; see docs/coastlines.md). For each water edge, a shallow-water band reaches
-// OUTWARD from the shoreline INTO the adjacent sea (which is not a plot of this province — the
-// offscreen is padded a cell so there is room), strongest at the shore and fading out, plus a
-// thin foam line right at the shoreline. So the shallows ring the land in the water and line up
-// with the coast. (The Civ4 coastscalemask corner blend was tried but draws inside the land,
-// half a cell off — the wrong tool for our fine per-plot pixel coastlines.)
+// draw the coastline on a plot from its 8-bit sea mask (q.coast — see docs/coastlines.md):
+// for each water EDGE (low nibble 1=E,2=W,4=S,8=N) a shallow-water band reaches OUTWARD from
+// the shoreline INTO the adjacent sea (which is not a plot of this province — the offscreen is
+// padded a cell so there is room), and for each water diagonal CORNER (high nibble 16=NW,
+// 32=NE,64=SE,128=SW) a radial fade fills the diagonal sea so outer corners wrap round instead
+// of leaving a square notch between two edge bands. A thin foam line marks the shoreline. So
+// the shallows ring the land in the water and line up with the coast. (The Civ4 coastscalemask
+// corner blend was tried but draws inside the land, half a cell off — wrong tool for our fine
+// per-plot pixel coastlines.)
 const COAST_EDGES = [[1, 1, 0], [2, -1, 0], [4, 0, 1], [8, 0, -1]];   // bit, dx, dy (E,W,S,N)
+const COAST_CORNERS = [[16, 0, 0], [32, 1, 0], [64, 1, 1], [128, 0, 1]];   // bit, cell-corner ux,uy (NW,NE,SE,SW)
 const SHALLOW = "116,178,196", FOAM = "224,240,244";
 function drawCoast(o, cx, cy, s, mask) {
   o.save();
@@ -244,6 +247,16 @@ function drawCoast(o, cx, cy, s, mask) {
     else               { gr = o.createLinearGradient(0, cy, 0, cy - f);         rx = cx;         ry = cy - f; rw = s; rh = f; }  // N
     gr.addColorStop(0, `rgba(${SHALLOW},.85)`); gr.addColorStop(1, `rgba(${SHALLOW},0)`);
     o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
+  }
+  // fill the DIAGONAL sea corners too (high nibble: 16=NW,32=NE,64=SE,128=SW), so an outer
+  // corner (e.g. sea to the E and S → SE diagonal is sea) wraps round instead of leaving a
+  // square notch between the two edge bands. A radial fade from the plot's corner point.
+  for (const [bit, ux, uy] of COAST_CORNERS) {
+    if (!(mask & bit)) continue;
+    const px = cx + ux * s, py = cy + uy * s;            // the plot's corner point
+    const gr = o.createRadialGradient(px, py, 0, px, py, f);
+    gr.addColorStop(0, `rgba(${SHALLOW},.85)`); gr.addColorStop(1, `rgba(${SHALLOW},0)`);
+    o.fillStyle = gr; o.fillRect(px - (ux ? 0 : f), py - (uy ? 0 : f), f, f);
   }
   // a thin foam line right at the shoreline (the land-side edge of each water border)
   const t = Math.max(1, s * 0.09);
