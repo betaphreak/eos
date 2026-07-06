@@ -554,7 +554,7 @@ function bakeRiverTile() {
 // unlike the river ribbon whose ripples are in the DXT5 alpha.) Returns {src, tile}, or null
 // when the art is absent (LFS not pulled / file://) — the renderer then draws the flat gradient.
 function bakeSeaTile() {
-  const T = 64;
+  const T = 128;   // larger tile → the repeat is far less obvious than the old 64px grid
   const artFile = resolveArt('Art/Terrain/textures/water/seadetail.dds');
   if (!artFile) return null;
   let img; try { img = decodeDds(fs.readFileSync(artFile)); } catch { return null; }
@@ -573,7 +573,7 @@ function bakeSeaTile() {
   mean /= T * T;
   const rgb = Buffer.alloc(T * T * 3);
   for (let k = 0; k < T * T; k++) {
-    const g = Math.max(0, Math.min(255, 128 + (lum[k] - mean) * 1.6)) | 0;   // neutral-mean ripple
+    const g = Math.max(0, Math.min(255, 128 + (lum[k] - mean) * 1.1)) | 0;   // soft neutral-mean ripple
     rgb[k * 3] = g; rgb[k * 3 + 1] = g; rgb[k * 3 + 2] = g;
   }
   const assets = path.join(WEB, 'assets');

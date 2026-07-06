@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, K_PLOT, K_MAX, SEA, SEA_BANDS, latAtScreenY, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, latAtScreenY, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
@@ -14,7 +14,9 @@ mapImg.src = MAP.src;
 const seaImg = new Image();
 let seaPat = null;
 if (SEA) { seaImg.onload = () => { seaPat = ctx.createPattern(seaImg, "repeat"); draw(); }; seaImg.src = SEA.src; }
-// piecewise sea colour by |latitude|: tropical (≤23°) → temperate (~40°) → polar (≥60°)
+// piecewise sea colour by |latitude|: tropical (≤23°) → temperate (~40°) → polar (≥60°), then a
+// fade toward deep-ocean dark past 72° so the empty polar seas beyond the mapped land read as
+// deep water (and the soft-light ripple stops showing its tiling on that flat grey expanse).
 function seaColorAt(lat) {
   const B = SEA_BANDS, a = Math.abs(lat);
   const mix = (u, v, f) => [u[0]+(v[0]-u[0])*f, u[1]+(v[1]-u[1])*f, u[2]+(v[2]-u[2])*f];
@@ -23,18 +25,30 @@ function seaColorAt(lat) {
   else if (a >= 60) c = B.polar;
   else if (a <= 40) c = mix(B.trop, B.temp, (a - 23) / 17);
   else c = mix(B.temp, B.polar, (a - 40) / 20);
+  if (a > 72) c = mix(c, [12, 18, 28], Math.min(1, (a - 72) / 16));
   return `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`;
 }
 // fill the viewport with the ocean base: the latitude colour gradient, then the ripple overlay
+const SEA_WAVE = 1.0;   // ripple tile size, in map-raster px per texture px (world-view wave scale)
 function drawSeaBase(w, h) {
   if (SEA_BANDS) {
     const g = ctx.createLinearGradient(0, 0, 0, h);
-    for (let i = 0; i <= 12; i++) g.addColorStop(i / 12, seaColorAt(latAtScreenY((i / 12) * h)));
+    for (let i = 0; i <= 16; i++) g.addColorStop(i / 16, seaColorAt(latAtScreenY((i / 16) * h)));
     ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
   } else { ctx.fillStyle = "#090d14"; ctx.fillRect(0, 0, w, h); }
-  if (seaPat) {                                   // ripples: soft-light so grey=128 keeps the colour
-    ctx.save(); ctx.globalCompositeOperation = "soft-light";
-    ctx.fillStyle = seaPat; ctx.fillRect(0, 0, w, h); ctx.restore();
+  // ripples (soft-light so grey=128 keeps the gradient colour). The pattern is ANCHORED to the
+  // map — it pans and scales with the world instead of being a fixed screen grid — and fades out
+  // by deep zoom, where the upscaled tile would blur and open water is calm anyway.
+  if (seaPat) {
+    const fade = 1 - Math.max(0, Math.min(1, (cam.k - K_PLOT) / (K_TEX - K_PLOT)));   // 1 ≤K_PLOT → 0 ≥K_TEX
+    if (fade > 0.02) {
+      const s = cam.k * (VIEW.dw / MAP.dw) * SEA_WAVE;              // map px → screen, so it zooms with the map
+      seaPat.setTransform(new DOMMatrix([s, 0, 0, s, cam.x + cam.k * VIEW.dx, cam.y + cam.k * VIEW.dy]));
+      ctx.save();
+      ctx.globalCompositeOperation = "soft-light"; ctx.globalAlpha = fade;
+      ctx.fillStyle = seaPat; ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
   }
 }
 function resize() {
