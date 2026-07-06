@@ -142,7 +142,7 @@ public final class ProvinceRaster {
 		int h = maxY - minY + 1;
 		boolean[] landGrid = new boolean[w * h];
 		int[] riverGrid = new int[w * h];
-		int[] coastGrid = new int[w * h]; // 4-bit water-neighbour (E/W/S/N) mask per land cell
+		int[] coastGrid = new int[w * h]; // 8-bit water-neighbour mask (edges + corners) per land cell
 		// per-cell EU4 terrain/tree palette indices, framed to the same bounding box
 		// (-1 where the overlay is absent or out of bounds — the mask treats it as
 		// "unmapped" and the plot field falls back to climate generation)
@@ -156,7 +156,7 @@ public final class ProvinceRaster {
 			int idx = (ay - minY) * w + (ax - minX);
 			landGrid[idx] = true;
 			riverGrid[idx] = hit[2];
-			coastGrid[idx] = seaEdges(ax, ay);
+			coastGrid[idx] = seaMask(ax, ay);
 			if (terrainIdx != null)
 				terrainGrid[idx] = terrainIdx[ay * width + ax];
 			if (treeIdx != null)
@@ -167,15 +167,22 @@ public final class ProvinceRaster {
 		return new ProvinceMask(minX, minY, w, h, landGrid, riverGrid, coastGrid, terrainGrid, treeGrid, elevationGrid);
 	}
 
-	// the 4-bit sea-edge mask of a land pixel: which orthogonal neighbours are water
-	// (bit 1 = E, 2 = W, 4 = S, 8 = N; matching NB4), 0 = inland. Global (a water neighbour
-	// can be a sea province outside this province's bbox), so coastlines are seamless.
-	private int seaEdges(int ax, int ay) {
+	// the 8-bit sea mask of a land pixel: which of its 8 neighbours are water. The low nibble
+	// is the orthogonal EDGES (1=E, 2=W, 4=S, 8=N; matching NB4 — used for the shoreline foam
+	// and coastal gameplay); the high nibble is the diagonal CORNERS (16=NW, 32=NE, 64=SE,
+	// 128=SW), which drive the Civ4 coastscalemask 16-way blend — its tile index is
+	// (mask >> 4), with corner bit order NW/NE/SE/SW = the mask's TL/TR/BR/BL (docs/
+	// coastlines.md §B). 0 = inland. Global, so coastlines are seamless across provinces.
+	private int seaMask(int ax, int ay) {
 		int m = 0;
-		if (isWater(ax + 1, ay)) m |= 1; // E
-		if (isWater(ax - 1, ay)) m |= 2; // W
-		if (isWater(ax, ay + 1)) m |= 4; // S
-		if (isWater(ax, ay - 1)) m |= 8; // N
+		if (isWater(ax + 1, ay)) m |= 1;         // E
+		if (isWater(ax - 1, ay)) m |= 2;         // W
+		if (isWater(ax, ay + 1)) m |= 4;         // S
+		if (isWater(ax, ay - 1)) m |= 8;         // N
+		if (isWater(ax - 1, ay - 1)) m |= 16;    // NW (mask TL)
+		if (isWater(ax + 1, ay - 1)) m |= 32;    // NE (mask TR)
+		if (isWater(ax + 1, ay + 1)) m |= 64;    // SE (mask BR)
+		if (isWater(ax - 1, ay + 1)) m |= 128;   // SW (mask BL)
 		return m;
 	}
 

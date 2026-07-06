@@ -16,7 +16,7 @@ a plot edge, so a per-plot **sea-edge mask** + the Civ4 coast art compose cleanl
 - `textures/water/{shore,sea,seadeep,seatrop,seapol,trench,lake}.dds` + `coasttempblend` /
   `coasttropblend` / `coastpolarblend` — the shore/shallow textures per climate.
 
-## Phase A — engine: a per-plot sea-edge mask — **(this cut)**
+## Phase A — engine: a per-plot sea mask — **DONE (2026-07)**
 
 Coast is an edge property computed **globally** (a land plot's water neighbour can be a sea
 province the per-province mask can't see), so it belongs in `ProvinceRaster`, like the flow
@@ -28,14 +28,16 @@ direction:
   existing `idToColor`, and holds a `Set<Integer>` of **water colours** (`SEA`/`LAKE`;
   `IMPASSABLE` wasteland is **not** water → no shore). Deterministic, no `WorldMap`
   dependency, so `WorldPlotGenerator` and the live `loadOrGenerate` regen identically.
-- **The mask.** For each land pixel, a 4-bit **orthogonal edge** mask — which of E/W/S/N
-  borders a water pixel (bit order = `NB4`: `1=E, 2=W, 4=S, 8=N`); `0` = inland. Computed
-  in `ProvinceRaster.mask()` (global pixel access), threaded through `ProvinceMask.coast()`
-  → `ProvincePlot` → `Plot.coast()` → `ProvincePlotStore.StoredPlot` (new `coast` field),
-  exactly like the river code. Also useful later for gameplay (ports / sea trade).
+- **The mask (8-bit).** For each land pixel, which of its **8 neighbours** are water: low
+  nibble = orthogonal **edges** (`1`=E, `2`=W, `4`=S, `8`=N — for the shoreline foam + coastal
+  gameplay), high nibble = diagonal **corners** (`16`=NW, `32`=NE, `64`=SE, `128`=SW — which
+  drive the §B blend, tile index = `coast >> 4`). `0` = inland. Computed in
+  `ProvinceRaster.seaMask()` (global pixel access, E-W cylinder wrapped), threaded through
+  `ProvinceMask.coast()` → `ProvincePlot` → `Plot.coast()`/`isCoastal()` →
+  `ProvincePlotStore.StoredPlot`, exactly like the river code.
 
-Verify: regenerate grids; coastal provinces have nonzero masks, interior/land-locked ones
-are all 0; `mvn test` green.
+Verified: grids regenerated; 34.4% of provinces have coastline (island 67%, largest
+interior province 0%); `mvn test` green.
 
 ## Phase B — web: draw the shore — **procedural first cut DONE (2026-07)**
 

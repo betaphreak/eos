@@ -91,10 +91,11 @@ public final class Plot {
 	// sensitive gameplay; orthogonal to plotType's flat/hill/peak class.
 	private final int elevation;
 
-	// the 4-bit sea-edge mask on this plot (which orthogonal neighbour is water: 1=E, 2=W,
-	// 4=S, 8=N; 0 = inland), from the province field's global land/sea raster — the web draws
-	// the coastline from it and it is the seam for future coastal gameplay (ports / sea trade).
-	// See docs/coastlines.md. 0 for a province-less plot.
+	// the 8-bit sea mask on this plot — which of the 8 neighbours are water: low nibble = edges
+	// (1=E,2=W,4=S,8=N), high nibble = corners (16=NW,32=NE,64=SE,128=SW); 0 = inland. From the
+	// province field's global land/sea raster — the web draws the coastline from it (the corners
+	// index the Civ4 coastscalemask blend) and it is the seam for future coastal gameplay
+	// (ports / sea trade). See docs/coastlines.md. 0 for a province-less plot.
 	private final int coast;
 
 	// the settlement that has claimed this plot out of the shared province pool, or null
@@ -293,10 +294,11 @@ public final class Plot {
 	}
 
 	/**
-	 * The 4-bit sea-edge mask on this plot: which orthogonal neighbour borders water — bit
-	 * {@code 1} = E, {@code 2} = W, {@code 4} = S, {@code 8} = N (matching {@code NB4});
-	 * {@code 0} = inland. Non-zero means the plot is coastal. Persisted for the web coastline
-	 * and the seam for coastal gameplay (ports / sea trade). See {@code docs/coastlines.md}.
+	 * The 8-bit sea mask on this plot: which of the 8 neighbours border water. Low nibble =
+	 * orthogonal edges ({@code 1}=E, {@code 2}=W, {@code 4}=S, {@code 8}=N); high nibble =
+	 * diagonal corners ({@code 16}=NW, {@code 32}=NE, {@code 64}=SE, {@code 128}=SW), which
+	 * index the Civ4 coastscalemask blend ({@code coast >> 4}). {@code 0} = inland. Persisted
+	 * for the web coastline and the seam for coastal gameplay. See {@code docs/coastlines.md}.
 	 */
 	public int coast() {
 		return coast;

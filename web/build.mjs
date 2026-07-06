@@ -14,6 +14,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { decodeDds } from './dds.mjs';
+import { decodeTga } from './tga.mjs';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(WEB, '..');
@@ -136,6 +137,7 @@ const terrainColors = terrainDisplayColors(terrainRealColors());
 const terrainLayer = terrainLayerOrders();   // TERRAIN_* -> Civ4 LayerOrder (drives edge blending)
 const terrainTiles = bakeTerrainTiles(terrainColors);
 const river = bakeRiverTile();               // {src, tile} water tile, or null (flat-fill fallback)
+const coastTiles = bakeCoastTiles();         // {src, tile, n} coastscalemask atlas, or null (procedural surf)
 const plotPack = packPlots(provinces);
 
 // ---- geographic label tiers (continent -> super-region -> region) ----------
@@ -173,7 +175,7 @@ const bundle = {
     origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
-  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, geo,
+  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, coastTiles, geo,
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
 };
 
@@ -190,6 +192,7 @@ console.log(`  geo labels: ${geo.continents.length} continents · ${geo.superReg
 console.log(`  plots: ${plotPack.count} provinces packed into web/assets/plots.pack (${(plotPack.bytes / 1048576).toFixed(1)} MB, range-fetched per-plot terrain zoom)`);
 console.log(`  terrain tiles: ${terrainTiles ? terrainTiles.src + ' (' + Object.keys(terrainTiles.cols).length + ' textures)' : 'skipped (no terrain-art.json / LFS textures)'}`);
 console.log(`  river tile: ${river ? river.src : 'skipped (no allriverssmall.dds / LFS)'}`);
+console.log(`  coast tiles: ${coastTiles ? coastTiles.src + ' (16-way blend)' : 'skipped (no coastblendmasks / LFS)'}`);
 for (const j of journeys) console.log(`  ${('→ ' + j.dest).padEnd(26)} ${j.provinceCount} prov · ${(j.days / 365.25).toFixed(1)}y · cargo ${j.cargoFinal}`);
 
 // ---------------------------------------------------------------------------
@@ -555,6 +558,45 @@ function encodePng(w, h, rgb) {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 2; // 8-bit, truecolour RGB
   return Buffer.concat([sig, chunk('IHDR', ihdr), chunk('IDAT', idat), chunk('IEND', Buffer.alloc(0))]);
+}
+// same, but RGBA (colour type 6) — for masks that carry a real alpha channel (coast blend).
+function encodePngRGBA(w, h, rgba) {
+  const stride = w * 4;
+  const raw = Buffer.alloc((stride + 1) * h);
+  for (let y = 0; y < h; y++) { raw[y * (stride + 1)] = 0; rgba.copy(raw, y * (stride + 1) + 1, y * stride, y * stride + stride); }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 6; // 8-bit, truecolour + alpha
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw, { level: 9 })), chunk('IEND', Buffer.alloc(0))]);
+}
+// Slice D — bake the Civ4 coastscalemask 16-way blend into a web RGBA atlas: 16 tiles, each
+// the shallow-water colour with alpha = the mask's shallow weight (white=land→α0, dark→α
+// high). The plot renderer picks tile (coast>>4) — the diagonal-corner index — and composites
+// a faithful rounded coast per plot (docs/coastlines.md §B). Returns {src, tile, n} or null
+// when the masks are absent (LFS not pulled) — the page then keeps the procedural surf.
+function bakeCoastTiles() {
+  const COAST_MASK_DIR = 'UnpackedArt/art/terrain/heightmap/coastblendmasks';
+  const COAST_SHALLOW = [116, 178, 196];
+  const T = 16, N = 16, W = N * T;   // masks are 16×16; drawn scaled with smoothing
+  const rgba = Buffer.alloc(W * T * 4);
+  let decoded = 0;
+  for (let m = 0; m < N; m++) {
+    const f = path.join(ROOT, COAST_MASK_DIR, `coastscalemask${String(m).padStart(2, '0')}.tga`);
+    if (!fs.existsSync(f)) continue;
+    let mask; try { mask = decodeTga(fs.readFileSync(f)); } catch { continue; }
+    decoded++;
+    for (let y = 0; y < T; y++)
+      for (let x = 0; x < T; x++) {
+        const a = 255 - mask.gray[y * mask.width + x];   // shallow alpha = darkness of the mask
+        const d = (y * W + m * T + x) * 4;
+        rgba[d] = COAST_SHALLOW[0]; rgba[d + 1] = COAST_SHALLOW[1]; rgba[d + 2] = COAST_SHALLOW[2]; rgba[d + 3] = a;
+      }
+  }
+  if (!decoded) return null;
+  fs.mkdirSync(path.join(WEB, 'assets'), { recursive: true });
+  const file = `coast-${SEED}.png`;
+  fs.writeFileSync(path.join(WEB, 'assets', file), encodePngRGBA(W, T, rgba));
+  return { src: `assets/${file}`, tile: T, n: N };
 }
 function chunk(type, data) {
   const len = Buffer.alloc(4); len.writeUInt32BE(data.length, 0);

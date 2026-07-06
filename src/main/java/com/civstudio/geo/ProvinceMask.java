@@ -25,8 +25,9 @@ public final class ProvinceMask {
 	// ProvinceRaster.classifyRiver + RiverFlow — see docs/river-rendering.md §1/§3. Preserves
 	// the authored width/nodes and the derived flow rather than a bare flag.
 	private final int[] river;
-	// the 4-bit sea-edge mask per cell (which orthogonal neighbour is water: 1=E,2=W,4=S,8=N;
-	// 0 = inland), from ProvinceRaster over the global land/sea raster — see docs/coastlines.md.
+	// the 8-bit sea mask per cell — which of the 8 neighbours are water: low nibble = edges
+	// (1=E,2=W,4=S,8=N), high nibble = corners (16=NW,32=NE,64=SE,128=SW); 0 = inland. From
+	// ProvinceRaster over the global land/sea raster — see docs/coastlines.md.
 	private final int[] coast;
 	// the real EU4 terrain.bmp / trees.bmp palette index per cell, or -1 where the
 	// overlay is absent (see ProvinceRaster); the plot field reads these to ground a
@@ -100,10 +101,11 @@ public final class ProvinceMask {
 	}
 
 	/**
-	 * The 4-bit sea-edge mask at the local cell (0 outside the bbox / inland): which
-	 * orthogonal neighbour borders water — bit {@code 1} = E, {@code 2} = W, {@code 4} = S,
-	 * {@code 8} = N (matching {@code NB4}). Non-zero means the cell is coastal. See {@code
-	 * docs/coastlines.md} §A.
+	 * The 8-bit sea mask at the local cell (0 outside the bbox / inland): which of the 8
+	 * neighbours border water. Low nibble = orthogonal edges ({@code 1}=E, {@code 2}=W,
+	 * {@code 4}=S, {@code 8}=N); high nibble = diagonal corners ({@code 16}=NW, {@code 32}=NE,
+	 * {@code 64}=SE, {@code 128}=SW). The corners drive the Civ4 coastscalemask blend (tile
+	 * index = {@code mask >> 4}). Non-zero means coastal. See {@code docs/coastlines.md}.
 	 */
 	public int coast(int lx, int ly) {
 		if (lx < 0 || lx >= width || ly < 0 || ly >= height)

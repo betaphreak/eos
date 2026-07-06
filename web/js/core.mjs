@@ -40,6 +40,7 @@ const K_TEX = 16;                 // camera scale at which flat tiles give way t
 const K_MAX = 256;                // deepest zoom (4× past the old 64× cap — magnifies the plot layer)
 const TT = BUNDLE.terrainTiles;   // ground-texture atlas {src, tile, cols:{TERRAIN_*: column}} or null
 const RIVER = BUNDLE.river;        // water tile {src, tile} for the river ribbon, or null (flat-fill fallback)
+const COAST = BUNDLE.coastTiles;   // coastscalemask atlas {src, tile, n} for the coast blend, or null (procedural surf)
 const LY = BUNDLE.terrainLayer || {};   // TERRAIN_* -> Civ4 LayerOrder (higher bleeds over lower)
 const NB4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const _rgb = {};                  // "#rrggbb" -> [r,g,b], memoised
@@ -127,4 +128,4 @@ export const S = {
 };
 S.curT = t0;
 
-export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };
+export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, COAST, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };

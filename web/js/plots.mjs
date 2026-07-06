@@ -1,4 +1,4 @@
-import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, TT, RIVER, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
+import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, TT, RIVER, COAST, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { renderRail } from "./panel.mjs";
 let ttImg = null, ttReady = false, ttTiles = null;
@@ -7,6 +7,18 @@ if (TT) { ttImg = new Image(); ttImg.onload = () => { extractTiles(); ttReady = 
 // build could not decode the Civ4 river art (LFS/file://) → drawRiver keeps the flat fill
 let rvImg = null, rvReady = false;
 if (RIVER) { rvImg = new Image(); rvImg.onload = () => { rvReady = true; draw(); }; rvImg.src = RIVER.src; }
+// the Civ4 coastscalemask 16-way blend atlas (docs/coastlines.md §B), split into 16 per-index
+// tiles; null when the masks are absent (LFS/file://) → drawCoast keeps the procedural surf
+let csImg = null, csTiles = null;
+if (COAST) { csImg = new Image(); csImg.onload = () => { extractCoast(); draw(); }; csImg.src = COAST.src; }
+function extractCoast() {
+  csTiles = [];
+  for (let m = 0; m < COAST.n; m++) {
+    const c = document.createElement("canvas"); c.width = COAST.tile; c.height = COAST.tile;
+    c.getContext("2d").drawImage(csImg, m * COAST.tile, 0, COAST.tile, COAST.tile, 0, 0, COAST.tile, COAST.tile);
+    csTiles[m] = c;
+  }
+}
 // split the atlas strip into a per-terrain tile canvas, so each can be a repeating
 // pattern (continuous ground texture across plots, no per-plot tile seam)
 function extractTiles() {
@@ -219,32 +231,40 @@ function buildPlotTexCanvas(p) {
   }
   p._tcanvas = oc; p._tbox = { x0, y0, w, h };
 }
-// draw the coastline on a plot's water edges (from q.coast: bit 1=E,2=W,4=S,8=N — see
-// docs/coastlines.md): a bright shallow-water band fading inward from each shoreline, plus a
-// thin foam line at the water's edge, so the hard land/sea boundary reads as a coast. This is
-// the procedural first cut (Phase B); the faithful Civ4 coastscalemask blend is a later swap.
+// draw the coastline on a plot from its 8-bit sea mask (q.coast — low nibble = orthogonal
+// edges 1=E,2=W,4=S,8=N; high nibble = diagonal corners; see docs/coastlines.md). The
+// shallow water is the faithful Civ4 coastscalemask 16-way blend, indexed by the corner
+// nibble (coast>>4) — a smooth, rounded shore that tiles correctly — with a procedural surf
+// band as the fallback when the masks are absent (LFS/file://). A thin foam line at each
+// orthogonal water edge crisps the shoreline in both modes.
 const COAST_EDGES = [[1, 1, 0], [2, -1, 0], [4, 0, 1], [8, 0, -1]];   // bit, dx, dy (E,W,S,N)
 const SHALLOW = "116,178,196", FOAM = "224,240,244";
 function drawCoast(o, cx, cy, s, mask) {
-  const f = s * 0.55;                                  // how far the shallows reach inland
   o.save();
-  for (const [bit, dx, dy] of COAST_EDGES) {
-    if (!(mask & bit)) continue;
-    let gr, rx, ry, rw, rh;
-    if (dx === 1) { gr = o.createLinearGradient(cx + s, 0, cx + s - f, 0); rx = cx + s - f; ry = cy; rw = f; rh = s; }
-    else if (dx === -1) { gr = o.createLinearGradient(cx, 0, cx + f, 0); rx = cx; ry = cy; rw = f; rh = s; }
-    else if (dy === 1) { gr = o.createLinearGradient(0, cy + s, 0, cy + s - f); rx = cx; ry = cy + s - f; rw = s; rh = f; }
-    else { gr = o.createLinearGradient(0, cy, 0, cy + f); rx = cx; ry = cy; rw = s; rh = f; }
-    gr.addColorStop(0, `rgba(${SHALLOW},.8)`); gr.addColorStop(1, `rgba(${SHALLOW},0)`);
-    o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
-    // a thin foam line right at the shoreline
-    o.fillStyle = `rgba(${FOAM},.5)`;
-    const t = Math.max(1, s * 0.09);
-    if (dx === 1) o.fillRect(cx + s - t, cy, t, s);
-    else if (dx === -1) o.fillRect(cx, cy, t, s);
-    else if (dy === 1) o.fillRect(cx, cy + s - t, s, t);
-    else o.fillRect(cx, cy, s, t);
+  if (csTiles) {                                       // faithful Civ4 coastscalemask blend
+    const idx = (mask >> 4) & 15;                      // diagonal-corner index → blend tile
+    if (idx === 15) { o.fillStyle = `rgba(${SHALLOW},.72)`; o.fillRect(cx, cy, s, s); }   // fully surrounded (blank mask)
+    else if (idx !== 0 && csTiles[idx]) { o.imageSmoothingEnabled = true; o.drawImage(csTiles[idx], 0, 0, COAST.tile, COAST.tile, cx, cy, s, s); }
+  } else {                                             // procedural surf fallback
+    const f = s * 0.55;
+    for (const [bit, dx, dy] of COAST_EDGES) {
+      if (!(mask & bit)) continue;
+      let gr, rx, ry, rw, rh;
+      if (dx === 1) { gr = o.createLinearGradient(cx + s, 0, cx + s - f, 0); rx = cx + s - f; ry = cy; rw = f; rh = s; }
+      else if (dx === -1) { gr = o.createLinearGradient(cx, 0, cx + f, 0); rx = cx; ry = cy; rw = f; rh = s; }
+      else if (dy === 1) { gr = o.createLinearGradient(0, cy + s, 0, cy + s - f); rx = cx; ry = cy + s - f; rw = s; rh = f; }
+      else { gr = o.createLinearGradient(0, cy, 0, cy + f); rx = cx; ry = cy; rw = s; rh = f; }
+      gr.addColorStop(0, `rgba(${SHALLOW},.8)`); gr.addColorStop(1, `rgba(${SHALLOW},0)`);
+      o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
+    }
   }
+  // a thin foam line at each orthogonal water edge (crisp shoreline), both modes
+  const t = Math.max(1, s * 0.09);
+  o.fillStyle = `rgba(${FOAM},.5)`;
+  if (mask & 1) o.fillRect(cx + s - t, cy, t, s);      // E
+  if (mask & 2) o.fillRect(cx, cy, t, s);              // W
+  if (mask & 4) o.fillRect(cx, cy + s - t, s, t);      // S
+  if (mask & 8) o.fillRect(cx, cy, s, t);              // N
   o.restore();
 }
 // A river plot's segment: a water-textured ribbon from the cell centre out to each
