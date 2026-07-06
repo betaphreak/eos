@@ -234,6 +234,7 @@ function bakeTerrain(provs) {
   const WATER = new Set([15, 17]);
   const rgb = Buffer.alloc(dw * dh * 3);
   const alpha = Buffer.alloc(dw * dh);
+  const sea = new Uint8Array(dw * dh);      // 1 = a pure-ocean pixel (no land sub-pixel) — depth pass fills it
   for (let j = 0; j < dh; j++) {
     const by0 = y0 + Math.floor(j * scale), by1 = Math.max(by0 + 1, y0 + Math.floor((j + 1) * scale));
     for (let i = 0; i < dw; i++) {
@@ -246,10 +247,25 @@ function bakeTerrain(provs) {
           if (WATER.has(idx)) continue;      // sea sub-pixel: excluded from colour, lowers alpha
           const t = TINT[idx]; r += t[0]; g += t[1]; b += t[2]; nl++;
         }
-      const o = (j * dw + i) * 3;
-      if (nl > 0) { rgb[o] = r / nl | 0; rgb[o + 1] = g / nl | 0; rgb[o + 2] = b / nl | 0; }  // else 0 (fully transparent)
-      alpha[j * dw + i] = Math.round(nl / ntot * 255);
+      const k = j * dw + i, o = k * 3;
+      if (nl > 0) { rgb[o] = r / nl | 0; rgb[o + 1] = g / nl | 0; rgb[o + 2] = b / nl | 0; alpha[k] = Math.round(nl / ntot * 255); }
+      else sea[k] = 1;                       // pure ocean: rgb/alpha stay 0 until the depth pass below
     }
+  }
+
+  // depth banding: darken open ocean by distance from land (a bathymetry proxy — the heightmap
+  // has no sea-level datum here). A distance transform over the ocean gives each sea pixel its
+  // distance to the nearest coast; a smoothstep shelf→deep ramp becomes the alpha of a dark
+  // seadeep tint painted into the (otherwise transparent) sea pixels, so the climate gradient
+  // shows on the shelf and deep water reads dark. See docs/coastlines.md Phase C.
+  const dist = distanceToLand(sea, dw, dh);
+  const DEEP = seaDeepColor();               // dark deep-water tint (seadeepblend hue, dark theme)
+  const DMAX = 26, MAXA = 168;               // shelf width in crop px; peak darkening alpha
+  for (let k = 0; k < dw * dh; k++) {
+    if (!sea[k]) continue;
+    let t = Math.min(1, dist[k] / DMAX); t = t * t * (3 - 2 * t);   // smoothstep: 0 at the coast → 1 in the deep
+    alpha[k] = Math.round(t * MAXA);
+    const o = k * 3; rgb[o] = DEEP[0]; rgb[o + 1] = DEEP[1]; rgb[o + 2] = DEEP[2];
   }
 
   // write the terrain crop as a real image asset (not inlined into the data); RGBA so the sea is transparent
@@ -579,6 +595,42 @@ function bakeSeaBands() {
     temp:  band('Art/Terrain/textures/water/seablend.dds',     [20, 42, 68]),
     polar: band('Art/Terrain/textures/water/seapolblend.dds',  [32, 42, 54]),
   };
+}
+
+// The deep-ocean tint (for the depth-banding pass): the authentic hue of the Civ4 seadeep blend
+// at a very dark theme luminance, so open water reads far darker than the shelf. Dark fallback.
+function seaDeepColor() {
+  const c = avgDds('Art/Terrain/textures/water/seadeepblend.dds');
+  return c ? hueAtLuminance([10, 20, 34], c) : [11, 21, 35];
+}
+
+// Two-pass chamfer distance transform: for each ocean cell (`sea[k]===1`), the approximate
+// Euclidean distance in pixels to the nearest non-ocean (land/coast) cell; 0 on land. Cheap
+// (two linear sweeps), enough for a smooth shelf→deep ramp. No E-W wrap (a crop-edge effect
+// only, where open ocean is deep anyway).
+function distanceToLand(sea, w, h) {
+  const INF = 1e9, d = new Float64Array(w * h);
+  for (let k = 0; k < w * h; k++) d[k] = sea[k] ? INF : 0;
+  const D = 1, Q = Math.SQRT2;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const k = y * w + x; let v = d[k];
+      if (x > 0)          v = Math.min(v, d[k - 1] + D);
+      if (y > 0)          v = Math.min(v, d[k - w] + D);
+      if (x > 0 && y > 0) v = Math.min(v, d[k - w - 1] + Q);
+      if (x < w - 1 && y > 0) v = Math.min(v, d[k - w + 1] + Q);
+      d[k] = v;
+    }
+  for (let y = h - 1; y >= 0; y--)
+    for (let x = w - 1; x >= 0; x--) {
+      const k = y * w + x; let v = d[k];
+      if (x < w - 1)              v = Math.min(v, d[k + 1] + D);
+      if (y < h - 1)              v = Math.min(v, d[k + w] + D);
+      if (x < w - 1 && y < h - 1) v = Math.min(v, d[k + w + 1] + Q);
+      if (x > 0 && y < h - 1)     v = Math.min(v, d[k + w - 1] + Q);
+      d[k] = v;
+    }
+  return d;
 }
 
 // Pack every displayed province's canonical plot grid (map/provinces/<id>.json.gz,

@@ -95,7 +95,22 @@ Verified headless (`tools/webverify`) at world, coastal-deep and northern zoom �
 real Civ4 water with warm tropics fading to grey-blue poles, shore shallows frame the land over
 it, rivers unbroken, nothing drawn past 89°, zero console errors.
 
-**Next (not done): depth banding.** The art also has `seadeep`/`lake` blends; a follow-up could
-darken open ocean by a depth proxy (heightmap below sea level, or distance from land) and tint
-lakes separately. The ripple pattern is also zoom-invariant (waves don't grow when zooming into
-the ocean); a geo-scaled variant is a possible refinement.
+- **Depth banding.** Open ocean darkens with depth, using **distance from land** as the
+  bathymetry proxy (the heightmap has no sea-level datum here). `bakeTerrain` marks pure-ocean
+  crop pixels, runs a two-pass chamfer `distanceToLand` transform, and paints a dark `seaDeepColor`
+  (the `seadeepblend` hue at a very dark luminance) into those pixels at an alpha ramped by a
+  smoothstep over the distance (0 at the coast → peak in the deep). Since the sea is otherwise
+  transparent, the climate gradient shows on the shelf and open water reads dark — no render
+  change, it rides the same transparent-sea composite.
+
+**Lakes** ride the same path: EU4 paints them with the ocean indices (`15/17`) on `terrain.bmp`,
+so lake pixels are transparent and show the climate gradient + ripple like the sea. Being
+enclosed, their distance-to-land is small, so they stay shelf-coloured (not deep-dark) — right
+for shallow inland water. They are **not** tinted as distinct freshwater yet.
+
+**Next (not done): distinct lake tint.** `terrain.bmp` can't tell a lake from the sea (same
+indices); the province layer can (`ProvinceType.LAKE`, from `default.map`'s `lakes`). Tinting
+lakes with the Civ4 `lakeblend` hue would need a per-pixel lake mask — either a `provinces.bmp`
++ `definition.csv` load in `build.mjs`, or a global lake mask exported from `ProvinceRaster`
+like the coast/river masks. The ripple pattern is also zoom-invariant; a geo-scaled variant is a
+possible refinement.
