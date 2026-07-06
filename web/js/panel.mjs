@@ -1,4 +1,4 @@
-import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, lerpField, journeyPos, MAXD, heatColor, provPath, clampPan, destSet, S } from "./core.mjs";
+import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, S } from "./core.mjs";
 import { draw, zoomAt, resize, focusProvince, applyHash } from "./main.mjs";
 import { loadPlots } from "./plots.mjs";
 stage.addEventListener("wheel", e => {
@@ -17,13 +17,13 @@ window.addEventListener("mousemove", e => {
   const dx = e.clientX - lastX, dy = e.clientY - lastY;
   if (Math.abs(dx) + Math.abs(dy) > 2) panMoved = true;
   cam.x += dx; cam.y += dy; lastX = e.clientX; lastY = e.clientY;
-  clampPan(); S.viewVersion++; draw();
+  clampPan(); S.baseVersion++; draw();
 });
 window.addEventListener("mouseup", () => { if (S.dragging) { S.dragging = false; stage.classList.remove("grabbing"); draw(); } });
 
 document.getElementById("zoomIn").onclick = () => zoomAt(VIEW.w/2, VIEW.h/2, 1.5);
 document.getElementById("zoomOut").onclick = () => zoomAt(VIEW.w/2, VIEW.h/2, 1/1.5);
-document.getElementById("zoomReset").onclick = () => { cam.k = 1; cam.x = 0; cam.y = 0; clampPan(); S.viewVersion++; draw(); };
+document.getElementById("zoomReset").onclick = () => { cam.k = 1; cam.x = 0; cam.y = 0; clampPan(); S.baseVersion++; draw(); };
 // ---- timeline ----
 const scrub=document.getElementById("scrub"), dNow=document.getElementById("dNow");
 document.getElementById("dLo").textContent = fmtDate(t0);
@@ -98,9 +98,21 @@ function pointInProv(p, mx, my){
   return inside;
 }
 function provinceAt(mx, my){
-  for(const p of P){ if(p.rings && pointInProv(p, mx, my)) return p; }   // exact polygon hit
-  let best=null, bd=1e9;                                                  // else nearest centroid (seas)
-  for(const p of P){ const dx=px(p.lon)-mx, dy=py(p.lat)-my, d=dx*dx+dy*dy; if(d<bd){bd=d;best=p;} }
+  // the map wraps east-west, so test the cursor against each on-screen world copy by
+  // shifting it into that copy's primary space (mx - m·period)
+  const period = worldW();
+  const L = cam.x + cam.k*VIEW.dx;
+  const mMin = period>0 ? Math.floor((0-L)/period) : 0;
+  const mMax = period>0 ? Math.floor((VIEW.w-L)/period) : 0;
+  for(let m=mMin; m<=mMax; m++){
+    const sx = mx - m*period;
+    for(const p of P){ if(p.rings && pointInProv(p, sx, my)) return p; }   // exact polygon hit
+  }
+  let best=null, bd=1e9;                                                    // else nearest centroid (seas)
+  for(let m=mMin; m<=mMax; m++){
+    const sx = mx - m*period;
+    for(const p of P){ const dx=px(p.lon)-sx, dy=py(p.lat)-my, d=dx*dx+dy*dy; if(d<bd){bd=d;best=p;} }
+  }
   return bd<90 ? best : null;
 }
 stage.addEventListener("mousemove", e=>{
@@ -188,7 +200,7 @@ function worldRail(){
       <div class="metacell"><div class="k">Land provinces</div><div class="v">${P.length}</div></div>
       <div class="metacell"><div class="k">Zoom</div><div class="v" style="font-size:15px">to the plot</div></div>
     </div></div>
-    <p class="footnote">The full world, rendered from the engine's real terrain. Drag to pan, scroll to zoom — keep zooming past the continent view to resolve any province into its terrain plot by plot (textures, hillshade from the heightmap, rivers, features). Hover the map to read a province. Switch to <b>Caravan</b> S.mode to replay the six-band migration from Dhenijansar.</p>`;
+    <p class="footnote">The full world, rendered from the engine's real terrain. Drag to pan, scroll to zoom — keep zooming past the continent view to resolve any province into its terrain plot by plot (textures, hillshade from the heightmap, rivers, features). Hover the map to read a province. Switch to <b>Caravan</b> mode to replay the six-band migration from Dhenijansar.</p>`;
 }
 // show/hide the caravan-only chrome and swap the title for a mode
 function setMode(m){

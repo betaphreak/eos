@@ -25,7 +25,7 @@ function fitView(w, h) {
   const s = Math.min(w / cw, h / ch);                 // contain: whole crop visible at k=1
   VIEW.w = w; VIEW.h = h; VIEW.dw = cw * s; VIEW.dh = ch * s;
   VIEW.dx = (w - VIEW.dw) / 2; VIEW.dy = (h - VIEW.dh) / 2;
-  S.viewVersion++;
+  S.baseVersion++;
 }
 // base (unzoomed) screen coords, then the camera
 const baseXr = sp => VIEW.dx + (sp - MAP.x0) / (MAP.x1 - MAP.x0) * VIEW.dw;
@@ -99,15 +99,21 @@ function clampAxis(camv, base, dim, viewDim) {
   if (size <= viewDim) return (viewDim - size) / 2 - cam.k * base;   // centre, no pan on this axis
   return Math.min(0, Math.max(viewDim - size, pos)) - cam.k * base;
 }
+// the world's on-screen width (one full 360° of longitude) at the current zoom — the
+// horizontal wrap period of the cylindrical map
+function worldW() { return cam.k * VIEW.dw; }
 function clampPan() {
-  cam.x = clampAxis(cam.x, VIEW.dx, VIEW.dw, VIEW.w);
-  cam.y = clampAxis(cam.y, VIEW.dy, VIEW.dh, VIEW.h);
+  const w = worldW();
+  cam.x = ((cam.x % w) + w) % w;   // wrap east-west around the cylinder (seam is invisible: the
+                                   // draw loop tiles world copies to fill the viewport)
+  cam.y = clampAxis(cam.y, VIEW.dy, VIEW.dh, VIEW.h);   // but clamp north-south to the poles
 }
 
 // ---- shared mutable state (was top-level lets; folded into one object so the modules
 // can read/write it across the ES-module boundary) ----
 export const S = {
-  viewVersion: 0,        // bumped on projection/camera change → invalidates cached paths
+  baseVersion: 0,        // bumped on real projection/camera change (pan/zoom/resize)
+  viewVersion: 0,        // per-world-copy cache key derived from baseVersion in draw()
   showHeat: true,
   showCost: false,
   mode: /caravan/.test(location.hash) ? "caravan" : "world",
@@ -119,4 +125,4 @@ export const S = {
 };
 S.curT = t0;
 
-export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, TT, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, BUNDLE };
+export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, TT, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };

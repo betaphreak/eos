@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, sxSrc, sySrc, baseXr, baseYr, fitView, K_PLOT, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, K_PLOT, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 // the baked dark terrain raster (a real image asset), drawn under everything
@@ -15,9 +15,26 @@ function draw() {
   const w=VIEW.w, h=VIEW.h, dpr=VIEW.dpr;
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
+  ctx.fillStyle="#090d14"; ctx.fillRect(0,0,w,h);   // dark void behind everything (once)
 
-  // dark void + the baked terrain raster, aligned to the crop rectangle under the camera
-  ctx.fillStyle="#090d14"; ctx.fillRect(0,0,w,h);
+  // cylindrical wrap: render the scene once per world-copy that overlaps the viewport, by
+  // shifting the camera one wrap-period at a time — so each copy's own viewport culling and
+  // provPath cache stay correct. Deep zoom → a single copy → no extra work. viewVersion is
+  // derived per copy from baseVersion so the path cache is distinct per copy yet reused when idle.
+  const period = worldW();
+  if (!(period > 0)) { S.viewVersion = S.baseVersion * 16; renderScene(); return; }
+  const L = cam.x + cam.k * VIEW.dx;                 // primary world's left screen edge
+  const mMin = Math.floor((0 - L) / period), mMax = Math.floor((w - L) / period);
+  const baseX = cam.x;
+  for (let m = mMin; m <= mMax; m++) {
+    cam.x = baseX + m * period;
+    S.viewVersion = S.baseVersion * 16 + ((m - mMin) & 15);
+    renderScene();
+  }
+  cam.x = baseX;
+}
+function renderScene() {
+  const w = VIEW.w, h = VIEW.h;
   if (mapReady) {
     ctx.imageSmoothingEnabled=true;
     ctx.drawImage(mapImg, 0,0,MAP.dw,MAP.dh,
@@ -112,7 +129,7 @@ function zoomAt(mx, my, factor) {
   cam.x = mx - f * (mx - cam.x);     // keep the point under (mx,my) fixed
   cam.y = my - f * (my - cam.y);
   cam.k = k2;
-  clampPan(); S.viewVersion++; draw();
+  clampPan(); S.baseVersion++; draw();
 }
 // ---- deep link: index.html#p=<provinceId>&z=<zoom> focuses a province at a zoom ----
 const Pby = new Map(P.map(p => [p.id, p]));
@@ -121,7 +138,7 @@ function focusProvince(id, k) {
   cam.k = Math.max(1, Math.min(64, k || 18));
   cam.x = VIEW.w / 2 - cam.k * baseXr(sxSrc(p.lon));
   cam.y = VIEW.h / 2 - cam.k * baseYr(sySrc(p.lat));
-  clampPan(); S.viewVersion++; draw();
+  clampPan(); S.baseVersion++; draw();
 }
 function applyHash() {
   const p = /(?:^|[#&])p=(\d+)/.exec(location.hash);
