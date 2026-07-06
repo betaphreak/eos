@@ -26,10 +26,13 @@ jobs:
       - name: Checkout (no full LFS pull)
         uses: actions/checkout@v5
         with:
-          lfs: false          # UnpackedArt is 141 MB of LFS; we only need the land textures
+          lfs: false          # UnpackedArt is 141 MB of LFS; we only need a few art subtrees
 
-      - name: Fetch land ground textures (scoped LFS)
-        run: git lfs pull --include="UnpackedArt/art/terrain/textures/land"
+      - name: Fetch the web-baked art subtrees (scoped LFS)
+        # only what the web build bakes: land ground textures (terrain tiles), the river water
+        # texture (river ribbon), and the coastscalemask blend (coastlines). Anything not pulled
+        # makes its bake fall back gracefully — so keep this in sync with build.mjs.
+        run: git lfs pull --include="UnpackedArt/art/terrain/textures/land,UnpackedArt/art/terrain/routes/rivers,UnpackedArt/art/terrain/heightmap/coastblendmasks"
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
