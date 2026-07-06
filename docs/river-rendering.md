@@ -64,7 +64,8 @@ green/red/yellow → source/flow-in/split. See `ProvinceRaster.classifyRiver`.
 The first shippable river: a water-textured ribbon that follows the network and
 **tapers by the river's authored width** (thin at sources → wide at mouths). Width
 comes straight from `rivers.bmp`, so this already reads as flowing water with **no
-directed graph** — true directed/animated flow is Phase 2. Split into a Java data half
+directed graph** — explicit flow *direction* (a data product, no animation) is Phase 2.
+Split into a Java data half
 (1A) and a web render half (1B); they can land in either order, since 1B degrades to a
 fixed-width ribbon until 1A ships.
 
@@ -162,18 +163,23 @@ a ribbon is meaningless at 1px/plot.
 
 ---
 
-## 3. Phase 2 — true directed & animated flow
+## 3. Phase 2 — flow direction & drainage width (no animation)
 
-Phase 1 conveys flow *implicitly* through width. Phase 2 makes it explicit, using both
-signals from §1:
+**The map stays static — no animated flow.** Phase 1 already conveys flow *implicitly*
+through the authored width taper; Phase 2 makes the flow *direction* explicit as a **data
+product** (for gameplay — navigation, downstream/upstream effects — and to unblock Phase 3's
+directional edge tiles) and refines the width. The only *rendering* change is a better taper.
 
 1. **Build a directed drainage graph** over river cells. Orient each edge by **(a)** the
-   authored signal — away from `source` nodes, toward higher `riverWidth` — and **(b)**
-   the elevation tie-break (downhill) where the palette is flat/ambiguous.
+   authored signal — away from `source` nodes, toward higher width — and **(b)** the
+   elevation tie-break (downhill) where the palette is flat/ambiguous. This graph is the
+   deliverable; it need not change a single pixel.
 2. **Drainage-accumulation width** (optional): accumulate upstream contributing cells to
-   refine width where the authored levels are too coarse.
-3. **Render**: animate flow by scrolling the water pattern along each directed edge;
-   optionally arrowheads at confluences. Everything else stays as Phase 1B.
+   refine width where the authored levels are too coarse — the one visible change, a
+   smoother thin-headwater → thick-mouth taper. Everything else stays as Phase 1B.
+
+If a flow-direction *cue* is ever wanted it would be a **static** glyph (a chevron at
+confluences), never motion — out of scope here.
 
 **Caveat if leaning on the heightmap:** condition the DEM first (pit-fill +
 flat-resolution) or steepest-descent misbehaves on the flat valley floors where rivers
