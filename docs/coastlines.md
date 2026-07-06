@@ -60,3 +60,33 @@ our fine 1-pixel-per-plot staircase coastlines, so the shore didn't line up. The
 for Civ4's coarser grid where the shore straddles plot edges; the outward procedural band is
 the right fit for EU4-style pixel coastlines (cf. the river edge-tile mismatch,
 `docs/river-rendering.md` §4). The `bakeCoastTiles`/`tga.mjs` path was removed.
+
+## Phase C — web: open water (real sea texture) — **DONE (2026-07)**
+
+Phases A/B textured the *shore*; the open sea was still the flat crop tint (`SEA=[18,31,51]`)
+baked into the terrain raster — a dead navy void behind the continents. Phase C fills it with
+the real Civ4 sea art.
+
+- **A tiling sea tile.** `bakeSeaTile()` (`web/build.mjs`) recolours `textures/water/seadetail.dds`
+  to a dark-theme sea blue via the existing `detailTile` (mean→target, keeping the wave
+  luminance variation — seadetail carries its pattern in RGB, unlike the river ribbon whose
+  ripples are in the DXT5 alpha). Baked to `web/assets/sea-<seed>.png`, shipped as `BUNDLE.sea`,
+  exported from `core.mjs` as `SEA`.
+- **Transparent sea in the raster.** `bakeTerrain` now bakes ocean/inland_ocean pixels (indices
+  15/17) **transparent** — colour averages land sub-pixels only, alpha = the land fraction, so a
+  downsampled coast pixel is a soft partly-transparent land edge over the water rather than a
+  hard line. Needed `encodePng` to grow an optional alpha channel (colour type 6 / RGBA). Coast
+  (35) stays opaque so its shore tint survives at world zoom.
+- **The water layer.** `main.mjs` draws `SEA` as a repeating **screen-space** pattern behind
+  everything (replacing the void fill); the transparent-sea raster then composites over it, so
+  land is opaque terrain and every non-land pixel shows moving-looking sea. The Phase B shallows
+  layer over it near shores. Absent-tolerant: `SEA` null (LFS not pulled / `file://`) → the flat
+  `#090d14` void fill, unchanged.
+
+Verified headless (`tools/webverify`) at world and coastal-deep zoom — ocean reads as real Civ4
+water, shore shallows frame the land over it, rivers unbroken, zero console errors.
+
+**Next (not done): climate-banded sea.** The art has `seatrop`/`seapol`/`seadeep`/`lake` blends;
+a follow-up can pick the tile per sea province's latitude/depth instead of one temperate tile.
+The screen-space pattern is also zoom-invariant (waves don't grow when zooming into the ocean);
+a geo-scaled variant is a possible refinement.

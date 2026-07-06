@@ -1,11 +1,17 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, K_PLOT, K_MAX, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, K_PLOT, K_MAX, SEA, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
-// the baked dark terrain raster (a real image asset), drawn under everything
+// the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
+// transparent so the sea layer below shows through, land is opaque.
 const mapImg = new Image();
 let mapReady = false;
 mapImg.onload = () => { mapReady = true; draw(); };
 mapImg.src = MAP.src;
+// the open-water tile: a repeating screen-space pattern filling everything behind the land
+// raster, so the ocean reads as real Civ4 sea art instead of a flat void. null → void fill.
+const seaImg = new Image();
+let seaPat = null;
+if (SEA) { seaImg.onload = () => { seaPat = ctx.createPattern(seaImg, "repeat"); draw(); }; seaImg.src = SEA.src; }
 function resize() {
   const r = stage.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio||1, 2);
   cv.width = r.width*dpr; cv.height = r.height*dpr; VIEW.dpr = dpr;
@@ -15,7 +21,9 @@ function draw() {
   const w=VIEW.w, h=VIEW.h, dpr=VIEW.dpr;
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
-  ctx.fillStyle="#090d14"; ctx.fillRect(0,0,w,h);   // dark void behind everything (once)
+  // the ocean: a repeating water tile behind everything (the land raster's sea is transparent,
+  // so this shows through it). Screen-space, drawn once. Falls back to the flat void when absent.
+  ctx.fillStyle = seaPat || "#090d14"; ctx.fillRect(0,0,w,h);
 
   // cylindrical wrap: render the scene once per world-copy that overlaps the viewport, by
   // shifting the camera one wrap-period at a time — so each copy's own viewport culling and

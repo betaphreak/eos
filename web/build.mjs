@@ -136,6 +136,7 @@ const terrainColors = terrainDisplayColors(terrainRealColors());
 const terrainLayer = terrainLayerOrders();   // TERRAIN_* -> Civ4 LayerOrder (drives edge blending)
 const terrainTiles = bakeTerrainTiles(terrainColors);
 const river = bakeRiverTile();               // {src, tile} water tile, or null (flat-fill fallback)
+const sea = bakeSeaTile();                   // {src, tile} open-water tile, or null (void-fill fallback)
 const plotPack = packPlots(provinces);
 
 // ---- geographic label tiers (continent -> super-region -> region) ----------
@@ -173,7 +174,7 @@ const bundle = {
     origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
-  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, geo,
+  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, geo,
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
 };
 
@@ -190,6 +191,7 @@ console.log(`  geo labels: ${geo.continents.length} continents · ${geo.superReg
 console.log(`  plots: ${plotPack.count} provinces packed into web/assets/plots.pack (${(plotPack.bytes / 1048576).toFixed(1)} MB, range-fetched per-plot terrain zoom)`);
 console.log(`  terrain tiles: ${terrainTiles ? terrainTiles.src + ' (' + Object.keys(terrainTiles.cols).length + ' textures)' : 'skipped (no terrain-art.json / LFS textures)'}`);
 console.log(`  river tile: ${river ? river.src : 'skipped (no allriverssmall.dds / LFS)'}`);
+console.log(`  sea tile: ${sea ? sea.src : 'skipped (no seadetail.dds / LFS)'}`);
 for (const j of journeys) console.log(`  ${('→ ' + j.dest).padEnd(26)} ${j.provinceCount} prov · ${(j.days / 365.25).toFixed(1)}y · cargo ${j.cargoFinal}`);
 
 // ---------------------------------------------------------------------------
@@ -223,23 +225,34 @@ function bakeTerrain(provs) {
   const dw = Math.min(cropW, 2816);
   const scale = cropW / dw;
   const dh = Math.round(cropH / scale);
+  // ocean / inland_ocean pixels are baked TRANSPARENT so the animated water layer shows
+  // through them (main.mjs draws it under this raster); land stays opaque. Coast (35) is
+  // kept opaque so its shore tint survives at world zoom. Colour averages LAND sub-pixels
+  // only (sea tint never dilutes the land), and alpha is the land fraction — so a downsampled
+  // coast pixel is a soft, partly-transparent land edge over the water rather than a hard line.
+  const WATER = new Set([15, 17]);
   const rgb = Buffer.alloc(dw * dh * 3);
+  const alpha = Buffer.alloc(dw * dh);
   for (let j = 0; j < dh; j++) {
     const by0 = y0 + Math.floor(j * scale), by1 = Math.max(by0 + 1, y0 + Math.floor((j + 1) * scale));
     for (let i = 0; i < dw; i++) {
       const bx0 = x0 + Math.floor(i * scale), bx1 = Math.max(bx0 + 1, x0 + Math.floor((i + 1) * scale));
-      let r = 0, g = 0, b = 0, n = 0;
+      let r = 0, g = 0, b = 0, nl = 0, ntot = 0;
       for (let yy = by0; yy < by1 && yy <= y1; yy++)
         for (let xx = bx0; xx < bx1 && xx <= x1; xx++) {
-          const t = TINT[idxAt(xx, yy)]; r += t[0]; g += t[1]; b += t[2]; n++;
+          ntot++;
+          const idx = idxAt(xx, yy);
+          if (WATER.has(idx)) continue;      // sea sub-pixel: excluded from colour, lowers alpha
+          const t = TINT[idx]; r += t[0]; g += t[1]; b += t[2]; nl++;
         }
       const o = (j * dw + i) * 3;
-      rgb[o] = r / n | 0; rgb[o + 1] = g / n | 0; rgb[o + 2] = b / n | 0;
+      if (nl > 0) { rgb[o] = r / nl | 0; rgb[o + 1] = g / nl | 0; rgb[o + 2] = b / nl | 0; }  // else 0 (fully transparent)
+      alpha[j * dw + i] = Math.round(nl / ntot * 255);
     }
   }
 
-  // write the terrain crop as a real image asset (not inlined into the data)
-  const png = encodePng(dw, dh, rgb);
+  // write the terrain crop as a real image asset (not inlined into the data); RGBA so the sea is transparent
+  const png = encodePng(dw, dh, rgb, alpha);
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
   const file = `terrain-${SEED}.png`;
@@ -516,6 +529,24 @@ function bakeRiverTile() {
   return { src: `assets/${file}`, tile: T };
 }
 
+// Bake a seamless tiling OPEN-WATER tile from the real Civ4 sea texture (textures/water/
+// seadetail.dds) for the map's ocean layer. Unlike the river ribbon (whose ripples are in
+// the DXT5 alpha), seadetail carries its wave pattern in RGB, so this reuses detailTile —
+// the same recolour-to-a-target-mean the ground textures use — keeping the wave luminance
+// variation but retinting it to a dark-theme sea blue. Returns {src, tile}, or null when the
+// art is absent (LFS not pulled / file://) — the renderer then keeps the flat void fill.
+function bakeSeaTile() {
+  const SEA_RGB = [22, 42, 70];   // a touch richer than the flat crop tint, still dark-theme
+  const T = 64;
+  const tile = detailTile('Art/Terrain/textures/water/seadetail.dds', SEA_RGB, T);
+  if (!tile) return null;
+  const assets = path.join(WEB, 'assets');
+  fs.mkdirSync(assets, { recursive: true });
+  const file = `sea-${SEED}.png`;
+  fs.writeFileSync(path.join(assets, file), encodePng(T, T, tile));
+  return { src: `assets/${file}`, tile: T };
+}
+
 // Pack every displayed province's canonical plot grid (map/provinces/<id>.json.gz,
 // each a complete standalone gzip member) into ONE web/assets/plots.pack by
 // concatenating the raw .gz bytes as-is (no gunzip/re-encode), and return a
@@ -545,15 +576,27 @@ function packPlots(provs) {
   return { index, count: Object.keys(index).length, bytes: offset };
 }
 
-// Minimal truecolour PNG encoder (Node has zlib but no image codec).
-function encodePng(w, h, rgb) {
-  const stride = w * 3;
+// Minimal truecolour PNG encoder (Node has zlib but no image codec). Pass an optional
+// per-pixel `alpha` (Buffer of w*h) to emit RGBA (colour type 6) instead of RGB (type 2).
+function encodePng(w, h, rgb, alpha) {
+  const ch = alpha ? 4 : 3;
+  const stride = w * ch;
   const raw = Buffer.alloc((stride + 1) * h);
-  for (let y = 0; y < h; y++) { raw[y * (stride + 1)] = 0; rgb.copy(raw, y * (stride + 1) + 1, y * stride, y * stride + stride); }
+  if (!alpha) {
+    for (let y = 0; y < h; y++) { raw[y * (stride + 1)] = 0; rgb.copy(raw, y * (stride + 1) + 1, y * w * 3, y * w * 3 + w * 3); }
+  } else {
+    for (let y = 0; y < h; y++) {
+      const ro = y * (stride + 1); raw[ro] = 0;
+      for (let x = 0; x < w; x++) {
+        const si = y * w + x, di = ro + 1 + x * 4;
+        raw[di] = rgb[si * 3]; raw[di + 1] = rgb[si * 3 + 1]; raw[di + 2] = rgb[si * 3 + 2]; raw[di + 3] = alpha[si];
+      }
+    }
+  }
   const idat = zlib.deflateSync(raw, { level: 9 });
   const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
   const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 2; // 8-bit, truecolour RGB
+  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = ch === 4 ? 6 : 2; // 8-bit, truecolour (+alpha)
   return Buffer.concat([sig, chunk('IHDR', ihdr), chunk('IDAT', idat), chunk('IEND', Buffer.alloc(0))]);
 }
 function chunk(type, data) {
