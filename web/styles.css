@@ -69,16 +69,16 @@ body {
 }
 canvas#map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
 
-.titleblock {
-  position: absolute; top: 66px; left: 26px; max-width: 60%; z-index: 3;
-  pointer-events: none; text-shadow: 0 1px 12px color-mix(in srgb, var(--ground) 70%, transparent);
+/* top-left brand bar: the project wordmark (leftmost) + the zoom readout button */
+.brandbar { position: absolute; top: 18px; left: 22px; z-index: 5; display: flex; align-items: center; gap: 14px; }
+.brand {
+  font-family: "Constantia", "Cambria", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: 21px; font-weight: 600; letter-spacing: .005em; line-height: 1; white-space: nowrap;
+  text-shadow: 0 1px 12px rgba(4, 7, 12, .75);
 }
-.eyebrow {
-  font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
-  color: var(--accent); font-weight: 600; margin: 0 0 6px;
-}
-h1.title { font-size: clamp(22px, 3vw, 34px); margin: 0; font-weight: 600; line-height: 1.05; text-wrap: balance; letter-spacing: -.01em; }
-.subtitle { color: var(--ink-soft); margin: 8px 0 0; font-size: 13px; max-width: 44ch; }
+.brand-a { color: var(--accent); }                 /* CivStudio — gold */
+.brand-b { color: #eef2f8; }                        /* Anbennar — light */
+.brand-sep { color: var(--accent); opacity: .55; margin-right: .04em; }
 
 .legend {
   position: absolute; left: 26px; bottom: 92px; z-index: 3;
@@ -281,7 +281,7 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 /* top-left zoom readout — a text button in the same chrome as the theme/zoom controls; shows the
    live magnification and, when pressed, resets zoom + re-centres the world (resetView) */
 .zoomlvl {
-  position: absolute; top: 22px; left: 22px; z-index: 5; height: 34px; min-width: 34px;
+  height: 34px; min-width: 34px;
   padding: 0 11px; border-radius: 8px; border: 1px solid var(--line);
   background: color-mix(in srgb, var(--panel) 80%, transparent); color: var(--ink-soft);
   cursor: pointer; display: grid; place-items: center; backdrop-filter: blur(6px);
@@ -309,7 +309,6 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
   .stage.rail-open .searchbar,
   .stage.rail-open .themebtn,
   .stage.rail-open #costKey { transform: none; }        /* no room to shift on a phone — panel just overlays */
-  .titleblock { max-width: 76%; }
   .legend { bottom: 96px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

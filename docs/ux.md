@@ -47,8 +47,12 @@ The map overlays live in `.stage` and are pinned to the dark palette regardless 
 (the baked terrain is dark). Tooltips are automatic for any `[data-tip]` element inside `.stage`
 (`showBtnTip`, delegated in `panel.mjs`).
 
-- **Zoom readout button** (top-left). `#zoomLevel` shows the live magnification (`1×`…`256×`, updated
-  each `draw`) and, when clicked, runs `resetView`. Styled like the other chrome buttons.
+- **Brand wordmark** (top-left, leftmost). `CivStudio: Anbennar` in the project serif stack (Constantia /
+  Cambria / Georgia — system fonts, CSP-safe), gold + light two-tone, in a `.brandbar` flex row with the
+  zoom button beside it. Replaced the old two-line title block over the canvas (removed, freeing map height;
+  `setMode` no longer swaps a title).
+- **Zoom readout button** (top-left, beside the wordmark). `#zoomLevel` shows the live magnification
+  (`1×`…`256×`, updated each `draw`) and, when clicked, runs `resetView`. Styled like the other chrome buttons.
 - **Collapsible overlay sidebar.** `.app` is no longer a two-column grid — the map (`.stage`) is
   full-bleed and the rail (`.railwrap`) is an absolute right overlay that slides in via `.open`
   (`showRail` toggles it + `.stage.rail-open`). It opens on province / journey selection and on caravan

@@ -321,7 +321,7 @@ function worldRail(){
     </div></div>
     <p class="footnote">The full world, rendered from the engine's real terrain. Drag to pan, scroll to zoom — keep zooming past the continent view to resolve any province into its terrain plot by plot (textures, hillshade from the heightmap, rivers, features). Hover the map to read a province. Switch to <b>Caravan</b> mode to replay the six-band migration from Dhenijansar.</p>`;
 }
-// show/hide the caravan-only chrome and swap the title for a mode
+// show/hide the caravan-only chrome for a mode
 function setMode(m){
   S.mode = m;
   document.querySelectorAll("#modeToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.mode===m));
@@ -329,9 +329,6 @@ function setMode(m){
   legend.style.display = cara ? "" : "none";
   document.querySelector(".transport").style.display = cara ? "" : "none";
   heatBtn.style.display = cara ? "" : "none";
-  document.querySelector(".eyebrow").textContent = cara ? `CivStudio · seed ${BUNDLE.meta.seed} · replay` : "CivStudio · WorldMap";
-  document.querySelector(".title").textContent = cara ? "Migration from Dhenijansar" : "The World of Anbennar";
-  document.querySelector(".subtitle").style.display = cara ? "" : "none";
   if (!cara) { pause(); S.selected = null; }
   S.selectedProv = null;             // start each mode on its own overview
   showRail(cara);                    // caravan mode opens the panel on its overview; world starts collapsed

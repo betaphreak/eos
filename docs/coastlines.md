@@ -282,11 +282,33 @@ that up, both riding the existing per-province offscreen:
 - **No polar ripple tiling.** The ocean ripple (`drawSeaBase`, `main.mjs`) is now confined to the map
   raster's on-screen Y extent — beyond it (the empty polar seas between the map edge and the ±89° clip)
   the tile was repeating as a visible static grid; those bands now stay flat gradient.
-- **Resource icons → zoom-gated screen overlay.** `drawBonuses` (baked into the province texture, visible
-  from `K_TEX`) became `drawBonusOverlay` (`plots.mjs`), a screen-space pass drawn only at the deepest
-  zooms (`cam.k ≥ 64` → the 64/128/256 steps), each icon anchored in its plot's **bottom-left** corner and
-  sized to **21 px at `K_MAX`** (proportional below). Land + shelf water alike; cheap (few provinces in view
-  that deep).
+- **Resource icons → zoom-gated screen overlay.** `drawBonuses` (baked into the province texture) became
+  `drawBonusOverlay` (`plots.mjs`), a screen-space pass, each icon anchored in its plot's **bottom-left**
+  corner. Land + shelf water alike; cheap (few provinces in view that deep). Sizing/gate updated below.
+
+## Phase I — merged ice sheet, land-into-water coast, icon sizing — **DONE (2026-07)**
+
+Phase G/H's per-plot floes and land-erosion still read as squares/artefacts. The fixes reframe both around
+the right mental model: **the coast is a water tile**, and **ice is a field, not tiles**.
+
+- **Ice → one merged sheet** (`drawSeaIce`). The 70–90 %-coverage shelf is now filled as a **single Path2D**
+  (all ice cells), so interior seams vanish — no checkerboard. A cell's edge is inset (jittered) **only where
+  it faces open water**; ice-ice edges stay flush. A cool rim is stroked along the **outer boundary only**
+  (loose segments), never the interior. Dark leads show where the shelf isn't ice. One texture fill + a faint
+  sun sheen; flat pale sheet when the tile is absent.
+- **Coast → land extension, not land erosion** (`paintCoast`/`coastExtendPolys`/`extendCoast`). The coast is
+  the *water* shelf, so the shore is made organic by the coastal **LAND** cells **protruding into the coast
+  water**, never by eating land (the old `erodeCoast` filled carved land with teal → blue blotches on the
+  ground). Per water edge, a quad juts outward by a **corner-continuous** jittered depth (`coastDepth` keyed
+  on shared global corners → a wavy line across cells, not per-cell rectangles), filled with the plot's real
+  terrain pattern. Order: shallows (`drawCoastBands`, outward only) + ripple first, **then** the land bumps on
+  top — so the shore hue stays in the water and the boundary is a wavy land-into-shallows line. The wave-crest
+  foam and darkened beach apron (which lapped onto land) were dropped.
+- **Resource icon sizing.** `drawBonusOverlay` is hidden at `cam.k ≤ 16`; icon size is **21 px at 64×** and
+  scales linearly with zoom (→ 4× / 84 px at 256×).
+
+Verified headless via `?p=&z=` deep links (`tools/webverify/shot.mjs`) at a polar shelf (seamless ice, ragged
+edge, open leads) and a temperate coast (wavy land bumps into teal shallows, no blue on land), zero console errors.
 
 > Navigation, camera framing, and the web UI chrome (deep links, focus/pan, the collapsible sidebar,
-> floating search, status line, dark default) are documented in **[`docs/ux.md`](ux.md)**, not here.
+> floating search, status line, dark default, brand wordmark) are documented in **[`docs/ux.md`](ux.md)**, not here.
