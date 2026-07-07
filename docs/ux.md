@@ -43,26 +43,26 @@ present (`readDeepLink`/`applyHash` in `main.mjs`, also re-applied on `popstate`
 
 ## Chrome
 
-The map overlays live in `.stage` and are pinned to the dark palette regardless of the UI theme
-(the baked terrain is dark). Tooltips are automatic for any `[data-tip]` element inside `.stage`
-(`showBtnTip`, delegated in `panel.mjs`).
+**Dedicated top bar.** `.app` stacks a fixed-height header (`.topbar`, `--bar-h: 54px`) above the map:
+the map (`.stage`) and the sidebar (`.railwrap`) both start at `top: var(--bar-h)`, so **nothing overlays
+the map** — the title/buttons/search live in the bar, not over the canvas. The bar is pinned to the dark
+palette regardless of UI theme (like the map hero). Bottom map controls (`.zoomctl`, caravan `.transport`)
+still float over the map. Tooltips are automatic for any `[data-tip]` element (`showBtnTip`, `panel.mjs`).
 
-- **Brand wordmark** (top-left, leftmost). `CivStudio: Anbennar` in the project serif stack (Constantia /
-  Cambria / Georgia — system fonts, CSP-safe), gold + light two-tone, in a `.brandbar` flex row with the
-  zoom button beside it. Replaced the old two-line title block over the canvas (removed, freeing map height;
-  `setMode` no longer swaps a title).
-- **Zoom readout button** (top-left, beside the wordmark). `#zoomLevel` shows the live magnification
-  (`1×`…`256×`, updated each `draw`) and, when clicked, runs `resetView`. Styled like the other chrome buttons.
-- **Collapsible overlay sidebar.** `.app` is no longer a two-column grid — the map (`.stage`) is
-  full-bleed and the rail (`.railwrap`) is an absolute right overlay that slides in via `.open`
-  (`showRail` toggles it + `.stage.rail-open`). It opens on province / journey selection and on caravan
-  mode; it collapses on **Esc**, the **×** close button, or re-clicking the selected province
-  (`closePanel` also restores a focused camera). The top-right controls shift left in `.stage.rail-open`
-  (a `translateX(-392px)`) so they clear the open panel; disabled below 900px where the panel just
-  overlays. **Note:** the old sidebar intro/overview (province count + blurb) now shows only when the
-  panel is open — the default view is map-first.
-- **Floating search.** The search moved out of the sidebar into `.stage` as a top-right pill styled
-  like the buttons (`.searchbar`), always present as the rightmost control. Type a name or id → pick →
+Bar layout (left → right): **brand wordmark**, **zoom readout**, centered **mode toggle**, then a right
+group (`.topright`) of **cost / heat / theme** buttons and the **search** pill.
+
+- **Brand wordmark** (leftmost). `CivStudio: Anbennar` in the project serif stack (Constantia / Cambria /
+  Georgia — system fonts, CSP-safe), gold + light two-tone. Replaced the old two-line title block over the
+  canvas (`setMode` no longer swaps a title).
+- **Zoom readout button** (beside the wordmark). `#zoomLevel` shows the live magnification (`1×`…`256×`,
+  updated each `draw`) and, when clicked, runs `resetView`.
+- **Collapsible sidebar.** `.railwrap` is a right overlay (below the bar) that slides in via `.open`
+  (`showRail`). It opens on province / journey selection and on caravan mode; collapses on **Esc**, the
+  **×** close button, or re-clicking the selected province (`closePanel` also restores a focused camera).
+  Since the bar spans full width above it, the top controls no longer need to shift to clear it. **Note:**
+  the old sidebar intro/overview shows only when the panel is open — the default view is map-first.
+- **Search.** A pill in the bar's right group (`.searchbar`), always present. Type a name or id → pick →
   `goToProvince` fits + selects it.
 - **Bottom status line.** `#statusline` (fixed, slides up, colour-keyed by kind, click to dismiss,
   auto-hides) surfaces errors/warnings: `window.onerror` + `unhandledrejection` + wrapped

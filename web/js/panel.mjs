@@ -266,8 +266,8 @@ stage.addEventListener("dblclick", e=>{
 // ---- rail ----
 const rail=document.getElementById("rail");
 const railwrap=document.getElementById("railwrap");
-// open/collapse the right sidebar; the top-right controls shift left (.rail-open) to clear it
-function showRail(open){ railwrap.classList.toggle("open", !!open); stage.classList.toggle("rail-open", !!open); }
+// open/collapse the right sidebar (it slides below the top bar; the bar spans full width above it)
+function showRail(open){ railwrap.classList.toggle("open", !!open); }
 function selectJourney(idx){
   S.selectedProv=null;               // journey selection replaces any province detail
   S.selected=idx;

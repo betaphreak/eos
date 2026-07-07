@@ -49,14 +49,28 @@ body {
 
 .app {
   position: relative; height: 100vh; width: 100%; overflow: hidden;
+  --bar-h: 54px;                     /* dedicated top bar height; the map + rail sit below it */
 }
+/* ---------- TOP BAR ---------- */
+/* a dedicated header strip above the map — the brand, mode toggle, buttons and search live here so
+   nothing overlays the map. Pinned to the dark palette like the map chrome, regardless of UI theme. */
+.topbar {
+  position: absolute; top: 0; left: 0; right: 0; height: var(--bar-h); z-index: 9;
+  display: flex; align-items: center; gap: 14px; padding: 0 16px;
+  background: #0d1119; border-bottom: 1px solid #232c3c;
+  --panel: #141a26; --panel-2: #1a2130;
+  --ink: #e7ecf4; --ink-soft: #9aa6ba; --ink-faint: #6b7688;
+  --line: #232c3c; --line-soft: #1b2331; --accent: #e6b04a;
+  color: var(--ink);
+}
+.topright { margin-left: auto; display: flex; align-items: center; gap: 8px; }   /* buttons + search, right-aligned */
 /* ---------- MAP ---------- */
 /* the map hero stays dark in both UI themes — the baked terrain is dark-tinted,
    so the letterbox void around it is a matching near-black, and everything laid
    over the map (title, legend, transport, tooltip) is pinned to the dark palette
    regardless of the UI theme the rail follows. */
 .stage {
-  position: absolute; inset: 0; overflow: hidden; background: #090d14; cursor: grab;
+  position: absolute; top: var(--bar-h); left: 0; right: 0; bottom: 0; z-index: 0; overflow: hidden; background: #090d14; cursor: grab;
   --panel: #141a26; --panel-2: #1a2130;
   --ink: #e7ecf4; --ink-soft: #9aa6ba; --ink-faint: #6b7688;
   --line: #232c3c; --line-soft: #1b2331; --accent: #e6b04a;
@@ -69,8 +83,7 @@ body {
 }
 canvas#map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
 
-/* top-left brand bar: the project wordmark (leftmost) + the zoom readout button */
-.brandbar { position: absolute; top: 18px; left: 22px; z-index: 5; display: flex; align-items: center; gap: 14px; }
+/* the project wordmark (leftmost in the top bar) */
 .brand {
   font-family: "Constantia", "Cambria", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   font-size: 21px; font-weight: 600; letter-spacing: .005em; line-height: 1; white-space: nowrap;
@@ -161,7 +174,7 @@ input[type="range"].scrub::-moz-range-thumb {
 /* right sidebar: an overlay panel that slides in on selection and collapses away (Esc / re-click).
    z-index sits below the top-right controls, which shift left (.stage.rail-open) to clear it. */
 .railwrap {
-  position: absolute; top: 0; right: 0; bottom: 0; width: 392px; z-index: 8;
+  position: absolute; top: var(--bar-h); right: 0; bottom: 0; width: 392px; z-index: 8;
   background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--shadow);
   display: flex; flex-direction: column; min-height: 0; overflow: hidden;
   transform: translateX(100%); transition: transform .28s ease;
@@ -177,17 +190,11 @@ input[type="range"].scrub::-moz-range-thumb {
   flex: 1 1 auto; min-height: 0;
   overflow-y: auto; padding: 22px 22px 40px; display: flex; flex-direction: column; gap: 20px;
 }
-/* the top-right controls (search + theme/heat/cost buttons) slide left to clear the open sidebar */
-.searchbar, .themebtn { transition: transform .28s ease; }
-.stage.rail-open .searchbar,
-.stage.rail-open .themebtn,
-.stage.rail-open #costKey { transform: translateX(-392px); }
-/* province search: a top-right pill in the same chrome as the buttons */
+/* province search: a pill in the top bar's right group (flex child, not absolute) */
 .searchbar {
-  position: absolute; top: 22px; right: 22px; z-index: 6; width: 236px; height: 34px;
+  position: relative; width: 220px; height: 34px;
   display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 8px;
-  border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 80%, transparent);
-  backdrop-filter: blur(6px);
+  border: 1px solid var(--line); background: var(--panel-2);
 }
 .search-ico { width: 15px; height: 15px; color: var(--ink-faint); flex: none; }
 #search {
@@ -272,9 +279,9 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .footnote code { font-family: "Cascadia Code","Consolas",ui-monospace,monospace; color: var(--ink-soft); }
 
 .themebtn {
-  position: absolute; top: 22px; right: 22px; z-index: 5; width: 34px; height: 34px; border-radius: 8px;
-  border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 80%, transparent);
-  color: var(--ink-soft); cursor: pointer; display: grid; place-items: center; backdrop-filter: blur(6px);
+  flex: none; width: 34px; height: 34px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--panel-2);
+  color: var(--ink-soft); cursor: pointer; display: grid; place-items: center;
 }
 .themebtn:hover { color: var(--ink); }
 
@@ -306,9 +313,7 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 
 @media (max-width: 900px) {
   .railwrap { width: 100%; max-width: 420px; }         /* the overlay panel covers most of a phone screen */
-  .stage.rail-open .searchbar,
-  .stage.rail-open .themebtn,
-  .stage.rail-open #costKey { transform: none; }        /* no room to shift on a phone — panel just overlays */
+  .searchbar { width: 150px; }                          /* tighten so the top bar fits a phone */
   .legend { bottom: 96px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
