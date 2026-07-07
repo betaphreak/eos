@@ -22,6 +22,48 @@ window.addEventListener("mousemove", e => {
 });
 window.addEventListener("mouseup", () => { if (S.dragging) { S.dragging = false; stage.classList.remove("grabbing"); draw(); } });
 
+// --- touch: one finger drags to pan, two fingers pinch to zoom (mobile has no wheel/mouse) ---
+stage.style.touchAction = "none";                       // stop the browser scrolling/zooming the page
+let touchMode = 0, pinchDist = 0, pinchCX = 0, pinchCY = 0;   // 0 none · 1 pan · 2 pinch
+stage.addEventListener("touchstart", e => {
+  camBeforeFocus = null;
+  if (e.touches.length === 1) {
+    touchMode = 1; S.dragging = true; panMoved = false;
+    lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+  } else if (e.touches.length >= 2) {
+    const a = e.touches[0], b = e.touches[1], r = stage.getBoundingClientRect();
+    touchMode = 2; S.dragging = true; panMoved = true;
+    pinchDist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    pinchCX = (a.clientX + b.clientX) / 2 - r.left; pinchCY = (a.clientY + b.clientY) / 2 - r.top;
+  }
+}, { passive: true });
+stage.addEventListener("touchmove", e => {
+  e.preventDefault();                                   // we own the gesture (touch-action:none too)
+  if (touchMode === 1 && e.touches.length >= 1) {
+    const t = e.touches[0], dx = t.clientX - lastX, dy = t.clientY - lastY;
+    if (Math.abs(dx) + Math.abs(dy) > 2) panMoved = true;
+    cam.x += dx; cam.y += dy; lastX = t.clientX; lastY = t.clientY;
+    clampPan(); S.baseVersion++; draw();
+  } else if (touchMode === 2 && e.touches.length >= 2) {
+    const a = e.touches[0], b = e.touches[1], r = stage.getBoundingClientRect();
+    const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    const cx = (a.clientX + b.clientX) / 2 - r.left, cy = (a.clientY + b.clientY) / 2 - r.top;
+    cam.x += cx - pinchCX; cam.y += cy - pinchCY;       // pan by the pinch centre's movement…
+    if (pinchDist > 0) zoomAt(cx, cy, d / pinchDist);   // …then zoom by the finger-distance ratio (zoomAt draws)
+    else { clampPan(); S.baseVersion++; draw(); }
+    pinchDist = d; pinchCX = cx; pinchCY = cy;
+  }
+}, { passive: false });
+function endTouch(e) {
+  if (e.touches && e.touches.length === 1) {            // lifted one of two fingers → resume single-finger pan
+    touchMode = 1; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; return;
+  }
+  if (e.touches && e.touches.length > 0) return;
+  touchMode = 0; S.dragging = false; draw();
+}
+stage.addEventListener("touchend", endTouch);
+stage.addEventListener("touchcancel", endTouch);
+
 document.getElementById("zoomIn").onclick = () => zoomAt(VIEW.w/2, VIEW.h/2, 1.5);
 document.getElementById("zoomOut").onclick = () => zoomAt(VIEW.w/2, VIEW.h/2, 1/1.5);
 // reset to the whole world (keyboard 0 / Home — the corner-icon button is now fullscreen)
