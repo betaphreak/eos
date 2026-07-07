@@ -59,15 +59,6 @@
         <button id="zoomReset" data-tip="Fullscreen map (F) · 0 resets to the world" aria-label="Toggle fullscreen"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
       </div>
 
-      <div class="transport">
-        <button class="playbtn" id="playBtn" data-tip="Play / pause the migration" aria-label="Play"><svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-        <div class="tl-wrap">
-          <div class="tl-dates"><span id="dLo"></span><span class="datepill mono" id="dNow"></span><span id="dHi"></span></div>
-          <input type="range" class="scrub" id="scrub" min="0" max="1000" value="0" aria-label="Timeline">
-        </div>
-        <div class="speed" id="speed" role="group" aria-label="Playback speed"></div>
-      </div>
-
       <div class="tip" id="tip"></div>
       <div class="btntip" id="btntip" role="tooltip"></div>
     </div>
@@ -76,6 +67,18 @@
       <button id="railClose" class="railclose" data-tip="Close panel (Esc)" aria-label="Close panel">&times;</button>
       <div class="rail" id="rail"></div>
     </aside>
+
+    <!-- persistent bottom bar: the timeline / playback, below the map in all modes -->
+    <footer class="footbar">
+      <div class="transport">
+        <button class="playbtn" id="playBtn" data-tip="Play / pause the migration" aria-label="Play"><svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <div class="tl-wrap">
+          <div class="tl-dates"><span id="dLo"></span><span class="datepill mono" id="dNow"></span><span id="dHi"></span></div>
+          <input type="range" class="scrub" id="scrub" min="0" max="1000" value="0" aria-label="Timeline">
+        </div>
+        <div class="speed" id="speed" role="group" aria-label="Playback speed"></div>
+      </div>
+    </footer>
   </div>
 
   <!-- persistent bottom status line: surfaces errors/warnings (and any status message) -->

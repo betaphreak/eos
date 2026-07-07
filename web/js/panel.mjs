@@ -335,9 +335,8 @@ function setMode(m){
   document.querySelectorAll("#modeToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.mode===m));
   const cara = m === "caravan";
   legend.style.display = cara ? "" : "none";
-  document.querySelector(".transport").style.display = cara ? "" : "none";
   heatBtn.style.display = cara ? "" : "none";
-  if (!cara) { pause(); S.selected = null; }
+  if (!cara) { pause(); S.selected = null; }   // the timeline stays visible in the bottom bar (all modes)
   S.selectedProv = null;             // start each mode on its own overview
   showRail(cara);                    // caravan mode opens the panel on its overview; world starts collapsed
   renderRail(); draw();

@@ -43,11 +43,13 @@ present (`readDeepLink`/`applyHash` in `main.mjs`, also re-applied on `popstate`
 
 ## Chrome
 
-**Dedicated top bar.** `.app` stacks a fixed-height header (`.topbar`, `--bar-h: 54px`) above the map:
-the map (`.stage`) and the sidebar (`.railwrap`) both start at `top: var(--bar-h)`, so **nothing overlays
-the map** — the title/buttons/search live in the bar, not over the canvas. The bar is pinned to the dark
-palette regardless of UI theme (like the map hero). Bottom map controls (`.zoomctl`, caravan `.transport`)
-still float over the map. Tooltips are automatic for any `[data-tip]` element (`showBtnTip`, `panel.mjs`).
+**Dedicated top & bottom bars.** `.app` stacks a fixed-height header (`.topbar`, `--bar-h: 54px`) above the
+map and a footer (`.footbar`, `--foot-h: 58px`) below it; the map (`.stage`) and the sidebar (`.railwrap`)
+sit between them (`top: var(--bar-h); bottom: var(--foot-h)`), so **nothing overlays the map** — the
+title/buttons/search live in the top bar and the **timeline/playback lives in the bottom bar (all modes,
+not just caravan)**. Both bars are pinned to the dark palette regardless of UI theme (like the map hero).
+The small `.zoomctl` (+/−/fullscreen) and the caravan `.legend` still float in the map's bottom corners.
+Tooltips are automatic for any `[data-tip]` element (`showBtnTip`, `panel.mjs`).
 
 Bar layout (left → right): **brand wordmark**, **zoom readout**, centered **mode toggle**, then a right
 group (`.topright`) of **cost / heat / theme** buttons and the **search** pill.
