@@ -304,8 +304,14 @@ the right mental model: **the coast is a water tile**, and **ice is a field, not
   terrain pattern. Order: shallows (`drawCoastBands`, outward only) + ripple first, **then** the land bumps on
   top — so the shore hue stays in the water and the boundary is a wavy land-into-shallows line. The wave-crest
   foam and darkened beach apron (which lapped onto land) were dropped.
-- **Resource icon sizing.** `drawBonusOverlay` is hidden at `cam.k ≤ 16`; icon size is **21 px at 64×** and
-  scales linearly with zoom (→ 4× / 84 px at 256×).
+- **Resource icon sizing.** `drawBonusOverlay` is hidden at `cam.k ≤ 16`; icon size is **relative to the
+  on-screen plot size** (`(pxr(1)−pxr(0)) × 1.32` ≈ 21 px at 64× on desktop) rather than absolute px, so it
+  scales with the terrain on any viewport — a fixed-px icon covered too many plots on a narrow mobile screen.
+- **Terrain blend.** The 16-way edge blend now also feathers **equal-LayerOrder** neighbours (mutually, at
+  half strength) — previously only a strictly-higher neighbour bled, so same-layer boundaries (grass/plains/
+  tundra) met at a hard seam; feather widened `0.5→0.62` cell.
+- **Coast reach.** Land extension deepened (`coastDepth` `0.05–0.42 → 0.18–0.63` cell) and shallows reach
+  `1.1→1.35` cell, so the shore pushes further into the sea with a healthy shallows ring beyond the bumps.
 
 Verified headless via `?p=&z=` deep links (`tools/webverify/shot.mjs`) at a polar shelf (seamless ice, ragged
 edge, open leads) and a temperate coast (wavy land bumps into teal shallows, no blue on land), zero console errors.

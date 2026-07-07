@@ -71,3 +71,15 @@ The map overlays live in `.stage` and are pinned to the dark palette regardless 
   `info`/`warn`/`error`).
 - **Dark by default.** `index.html` ships `data-theme="dark"`; the theme toggle (`themeBtn`) still
   flips light/dark.
+
+## Redraw / compute
+
+- **rAF-coalesced redraw** (`main.mjs`). The public `draw()` only *requests* a paint — it sets a flag and
+  schedules one `requestAnimationFrame` that runs the real `paint()`. A burst of pan/zoom/pinch events
+  (mobile fires many `touchmove`s per frame) collapses into a single scene render per frame. All existing
+  `draw()` callers get this for free.
+- **Bonus overlay reuses the plot cull.** `drawPlots` collects the in-view provinces it already culled into a
+  `vis` list and hands it to `drawBonusOverlay`, so the icon pass doesn't re-scan all ~5088 provinces.
+- Engine (Java sim) compute is intentionally **not** optimized yet — ruler runs collapse in ~6–10 in-game
+  years (short) and the design is in flux; profile `market.clear()` / `agent.act()` under a *long* run once
+  survival calibration lands, before optimizing.

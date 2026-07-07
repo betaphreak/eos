@@ -61,7 +61,15 @@ function resize() {
   fitView(r.width, r.height); clampPan(); draw();
 }
 const zoomLabelEl = document.getElementById("zoomLevel");   // top-left live magnification readout
+// draw() is the public redraw request — it COALESCES to one paint per animation frame, so a burst of
+// pan/zoom/pinch events (mobile fires many touchmoves per frame) collapses into a single scene render.
+let rafPending = false;
 function draw() {
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; paint(); });
+}
+function paint() {
   if (zoomLabelEl) zoomLabelEl.textContent = Math.round(cam.k) + "×";   // 1× (world) … 256× (max)
   const w=VIEW.w, h=VIEW.h, dpr=VIEW.dpr;
   ctx.setTransform(dpr,0,0,dpr,0,0);

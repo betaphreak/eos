@@ -157,6 +157,7 @@ function drawPlots() {
   const a = Math.min(1, (cam.k - K_PLOT) / 1.5);
   const smooth = ctx.imageSmoothingEnabled;
   ctx.globalAlpha = a;
+  const vis = [];   // in-view provinces with plots loaded — reused by the bonus overlay (no 2nd P scan)
   for (const p of P) {
     if (!p.hasPlots) continue;
     const bb = provSrcBox(p);
@@ -165,6 +166,7 @@ function drawPlots() {
     else { const x = px(p.lon), y = py(p.lat); sx0 = x - 20; sy0 = y - 20; sx1 = x + 20; sy1 = y + 20; }
     if (sx1 < 0 || sy1 < 0 || sx0 > VIEW.w || sy0 > VIEW.h) continue;   // cull to viewport
     if (!p._plots) { loadPlots(p); continue; }
+    vis.push(p);
     if (textured) {
       if (!p._tcanvas) buildPlotTexCanvas(p);                 // textured offscreen, built once
       ctx.imageSmoothingEnabled = true;
@@ -178,7 +180,7 @@ function drawPlots() {
     ctx.drawImage(p._pcanvas, dX, dY, pxr(b.x0 + b.w) - dX, pyr(b.y0 + b.h) - dY);
   }
   ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = smooth;
-  drawBonusOverlay();   // resource icons: a screen-space overlay, deepest zooms only (≥64)
+  drawBonusOverlay(vis);   // resource icons: screen-space overlay over the in-view provinces only
 }
 // rasterise a province's plots to a textured offscreen — each plot drawn as its Civ4
 // ground-texture tile (from the atlas) at TPP px, plus relief/river overlays — built
@@ -213,16 +215,22 @@ function buildPlotTexCanvas(p) {
     if (pp) { o.fillStyle = pp; o.fillRect(cx, cy, tpp, tpp); }
     else { const g = terrainRgb(q.terrain); o.fillStyle = `rgb(${g[0]},${g[1]},${g[2]})`; o.fillRect(cx, cy, tpp, tpp); }
   }
-  // 2) 16-way edge blend: a higher-LayerOrder neighbour feathers over this plot across
-  // the shared edge (Civ4 §6.1, adapted to the raster — a colour bleed, not a tile swap)
-  const f = tpp * 0.5;
+  // 2) edge blend: a neighbour's colour feathers over this plot across the shared edge (Civ4 §6.1,
+  // adapted to the raster — a colour bleed, not a tile swap). A HIGHER-LayerOrder neighbour bleeds
+  // strongly; EQUAL-order neighbours bleed mutually at half strength (each side blends the other) so
+  // same-layer terrain boundaries — grass/plains/tundra etc. — soften instead of meeting at a hard
+  // seam; a LOWER neighbour is skipped here and handled when ITS cell bleeds this one back.
+  const f = tpp * 0.62;
   for (const q of p._plots) {
     const ql = LY[q.terrain] || 0, cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp;
     for (const d of NB4) {
       const n = grid.get((q.x + d[0]) * 1e5 + (q.y + d[1]));
-      if (!n || n.terrain === q.terrain || (LY[n.terrain] || 0) <= ql) continue;
+      if (!n || n.terrain === q.terrain) continue;
+      const nl = LY[n.terrain] || 0;
+      if (nl < ql) continue;                       // lower neighbour bleeds from its own side
+      const a = nl > ql ? 0.8 : 0.5;               // equal layers → softer mutual blend
       const g = terrainRgb(n.terrain);
-      const c0 = `rgba(${g[0]},${g[1]},${g[2]},.8)`, c1 = `rgba(${g[0]},${g[1]},${g[2]},0)`;
+      const c0 = `rgba(${g[0]},${g[1]},${g[2]},${a})`, c1 = `rgba(${g[0]},${g[1]},${g[2]},0)`;
       let gr, rx, ry, rw, rh;
       if (d[0] === 1) { gr = o.createLinearGradient(cx + tpp, 0, cx + tpp - f, 0); rx = cx + tpp - f; ry = cy; rw = f; rh = tpp; }
       else if (d[0] === -1) { gr = o.createLinearGradient(cx, 0, cx + f, 0); rx = cx; ry = cy; rw = f; rh = tpp; }
@@ -261,20 +269,19 @@ function buildPlotTexCanvas(p) {
 // provinces are in view. Categories (colour + shape): sea food, gems/luxuries, energy, metals,
 // farm/trade crops, livestock.
 const BONUS_HIDE_AT = 16;       // no resource icons at this zoom or below (textures only just appear)
-const BONUS_REF_PX = 21;        // icon size (px) at 64×; scales linearly with zoom → 4× (84px) at 256×
-function drawBonusOverlay() {
-  if (cam.k <= BONUS_HIDE_AT) return;
-  const size = BONUS_REF_PX * cam.k / 64;              // 21px at k=64, proportional above/below
-  const inset = Math.max(0.5, (pxr(1) - pxr(0)) * 0.06);   // nudge off the very corner (frac of a plot)
+const BONUS_PLOTS = 1.32;       // icon size in PLOTS (≈21px at 64× on desktop). Sized off the on-screen
+                                // plot size, not absolute px, so it scales with the terrain on any
+                                // viewport — fixes mobile pinch, where a fixed-px icon covered too many plots.
+function drawBonusOverlay(vis) {
+  if (cam.k <= BONUS_HIDE_AT || !vis.length) return;
+  const plotPx = pxr(1) - pxr(0);                      // one plot's on-screen size (tracks zoom AND viewport)
+  const size = plotPx * BONUS_PLOTS;
+  const inset = Math.max(0.5, plotPx * 0.06);          // nudge off the very corner (frac of a plot)
   const useIcons = BONUS_ICONS && biReady;
   ctx.save();
   ctx.lineWidth = Math.max(1, size * 0.06);
   ctx.strokeStyle = "rgba(8,12,20,.85)";               // dark keyline so glyphs read on any ground
-  for (const p of P) {
-    if (!p.hasPlots || !p._plots) continue;
-    const bb = provSrcBox(p); if (!bb) continue;
-    const sx0 = pxr(bb.x0), sy0 = pyr(bb.y0), sx1 = pxr(bb.x1), sy1 = pyr(bb.y1);
-    if (sx1 < 0 || sy1 < 0 || sx0 > VIEW.w || sy0 > VIEW.h) continue;   // cull to viewport
+  for (const p of vis) {                               // already culled to the viewport by drawPlots
     for (const q of p._plots) {
       if (!q.bonus) continue;
       const x = pxr(q.x) + inset, y = pyr(q.y + 1) - inset - size;      // plot bottom-left corner
@@ -398,7 +405,7 @@ const chash = (a, b) => ((Math.imul(a | 0, 2654435761) ^ Math.imul(b | 0, 40503)
 // How far the LAND protrudes into the coast water at a GLOBAL plot corner (0.05..0.42 cell). Keyed on
 // the shared corner coords, so adjacent coastal cells read the SAME depth there — the extended outer
 // edge is a continuous polyline across cells (a wavy shore), not per-cell rectangles.
-function coastDepth(gx, gy, s) { return s * (0.05 + 0.37 * chash(gx, gy)); }
+function coastDepth(gx, gy, s) { return s * (0.18 + 0.45 * chash(gx, gy)); }
 // The extension quads for a coastal cell — one per water edge, from the grid shoreline OUTWARD into the
 // coast water, the two ends reaching by the shared corner depths. Filled with the plot's terrain, so a
 // land bump juts into the shallows.
@@ -450,7 +457,7 @@ function outwardBands(o, cx, cy, s, mask, col, f, a0) {
 // sea (its alpha is the shape the shore ripple is clipped to). The land bumps are drawn OVER this
 // afterward, so the visible shallows ring sits just beyond the wavy shore.
 function drawCoastBands(o, cx, cy, s, mask) {
-  outwardBands(o, cx, cy, s, mask, SHORE_COL, s * 1.1, ".85");
+  outwardBands(o, cx, cy, s, mask, SHORE_COL, s * 1.35, ".85");
 }
 // A river plot's segment: a water-textured ribbon from the cell centre out to each
 // 4-neighbour that also carries a river (to the shared edge), or a source blob when it
