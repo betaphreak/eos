@@ -228,3 +228,33 @@ ocean. `WorldPlotGenerator` must run before the border exporter so the shelf gri
 plots draw the true Civ4 resource symbol, sliced from `GameFont.tga` by `FontButtonIndex` and atlased in
 the web build (no Blender). See `docs/bonus-sprite-bake.md`. The ripple pattern is still zoom-invariant;
 a geo-scaled variant is a possible refinement.
+
+## Phase G — real coast art, natural pack ice, no hillshade — **DONE (2026-07)**
+
+The shore had real ripple textures but the shoreline itself was a flat procedural white line, the coastal
+land ended in a hard square staircase, and — the biggest offender in the far north — polar shelf ice was
+drawn as **opaque pale squares** (`FEATURE_ICE` covers 70–90 % of a >66° sea's shelf), which read as a
+blocky white grid ringing every arctic coast. Three changes, all riding the existing per-province offscreen:
+
+- **Real shoreline foam.** `bakeFoamTile()` (`build.mjs`) keeps `waves/wave_crest.dds` as an RGBA strip
+  (white crest → clear); `drawFoamCrest` (`plots.mjs`) lays a per-plot slice of it along each water edge
+  (foam at the shore, fading seaward — one `setTransform`/`FOAM_XF` orients the strip for E/W/S/N). Its
+  naturally ragged crest breaks up the shoreline. Kept short/low-alpha so narrow sea channels stay open;
+  falls back to the old thin foam line when the art is absent.
+- **Beach apron.** `drawBeach` feathers each coastal land plot's own terrain colour (mildly darkened — a
+  wet shore reads darker) a jittered distance into the water, so the land dissolves into the shallows
+  instead of ending in a hard square. Shared `outwardBands` helper with the shallows.
+- **Pack-ice floes, real texture.** `bakeIceTile()` bakes the clean upper region of
+  `features/icepack/icepack_1024.dds` into a colour tile; `drawSeaIce` now draws each ice plot as a
+  **translucent floe** textured with it, inset per edge — touching neighbouring ice (a thin crack) but
+  pulling back from open water (a lead of dark shelf shows), corners jittered — so the shelf reads as
+  broken pack ice, not a white grid. Flat pale floe when the tile is absent.
+- **Hillshade removed.** The elevation-normal hillshade (`EXAG=4`) amplified the gentle continental
+  heightmap into a strong per-plot bright/dark **checker** on near-flat provinces (most of the map), which
+  itself read as square tiles. It is gone; the ground is now the flat Civ4 terrain texture and relief reads
+  from the terrain/feature mix. The high-ground snow cap (`elevation ≥ 165`) stays.
+
+New committed art (non-LFS, `data/civ4/assets/…`): `terrain/waves/wave_crest.dds`,
+`terrain/features/icepack/icepack_1024.dds`. Baked tiles (`foam-*.png`, `ice-*.png`) are gitignored/regen.
+Verified headless at arctic deep/moderate and temperate deep — clean terrain, floe-textured ice with open
+leads, foam + beach at the shore, zero console errors.

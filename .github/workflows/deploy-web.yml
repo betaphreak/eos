@@ -1,16 +1,16 @@
 name: Deploy WorldMap to Azure SWA
 
-# The web/ site is a prebuilt static folder whose inputs are all gitignored, generated
-# artifacts (per-province plot grids, caravan journals, plots.pack). So this job rebuilds
-# them from source with the Java engine, runs web/build.mjs, and uploads the result to
-# Azure Static Web Apps. See web/README.md "Deploy".
+# The web/ site is a fully prebuilt static folder: data.js AND every baked asset
+# (web/assets/*.png + plots.pack, ~20 MB) are committed to git, non-LFS. So this job just
+# uploads the folder as-is — no Java engine, no web/build.mjs, no LFS. Regenerate the assets
+# locally with `node web/build.mjs` (needs the per-province plot grids, which WorldPlotGenerator
+# builds/caches) and commit the result; the deploy ships exactly what is checked in.
+# See web/README.md "Deploy".
 on:
   push:
     branches: [master]
     paths:
-      - 'web/**'
-      - 'src/**'
-      - 'data/anbennar/**'
+      - 'web/**'                              # any change to the committed site or its baked assets
       - '.github/workflows/deploy-web.yml'
   workflow_dispatch:
 
@@ -20,44 +20,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (no LFS)
+      - name: Checkout (no LFS — everything the site needs is committed under web/)
         uses: actions/checkout@v5
         with:
-          lfs: false          # the web build's textures now live committed & non-LFS under
-                              # data/civ4/assets; UnpackedArt (141 MB LFS) is not needed here
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-
-      - name: Cache per-province plot grids
-        uses: actions/cache@v5
-        with:
-          path: src/main/resources/map/provinces
-          # the grids are a pure function of the plot generators + the source rasters, so
-          # rebuild the cache only when those change; WorldPlotGenerator skips grids already
-          # present, so a warm cache makes the generate step a near-instant no-op
-          key: plotgrids-${{ hashFiles('src/main/java/com/civstudio/geo/**', 'src/main/java/com/civstudio/settlement/ProvincePlot*.java', 'src/main/resources/terrains.json', 'src/main/resources/bonuses.json', 'data/anbennar/heightmap.bmp', 'data/anbennar/terrain.bmp', 'data/anbennar/provinces.bmp', 'data/anbennar/rivers.bmp', 'data/anbennar/trees.bmp', 'data/anbennar/default.map') }}
-
-      - name: Generate per-province plot grids (whole world; cached)
-        run: mvn -q -B compile exec:exec -Dsim.main=com.civstudio.geo.export.WorldPlotGenerator
-
-      - name: Generate caravan journals (seed 24601)
-        run: mvn -q -B -Dtest=ParallelCaravansTest test
-
-      - name: Set up Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-
-      - name: Build web bundle (data.js + assets)
-        run: node web/build.mjs
+          lfs: false
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
@@ -65,5 +34,5 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
           app_location: web          # upload the prebuilt folder as-is
-          skip_app_build: true       # no Oryx build — build.mjs already produced everything
+          skip_app_build: true       # no Oryx build — the committed web/ folder is complete
           output_location: ''

@@ -1,4 +1,4 @@
-import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, TT, RIVER, SHORE, BONUS_ICONS, SEA_BANDS, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
+import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, TT, RIVER, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, SEA_BANDS, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { renderRail } from "./panel.mjs";
 let ttImg = null, ttReady = false, ttTiles = null;
@@ -11,6 +11,14 @@ if (RIVER) { rvImg = new Image(); rvImg.onload = () => { rvReady = true; draw();
 // when the Civ4 shore art couldn't be decoded → the shallows stay flat-tinted, no ripple
 let shoreImg = null, shoreReady = false;
 if (SHORE) { shoreImg = new Image(); shoreImg.onload = () => { shoreReady = true; draw(); }; shoreImg.src = SHORE.src; }
+// the real Civ4 shoreline foam crest (docs/coastlines.md Phase G), waves/wave_crest.dds; null when
+// absent → drawFoam keeps the thin procedural foam line
+let foamImg = null, foamReady = false;
+if (FOAM_ART) { foamImg = new Image(); foamImg.onload = () => { foamReady = true; draw(); }; foamImg.src = FOAM_ART.src; }
+// the real Civ4 pack-ice tile (docs/coastlines.md Phase G), features/icepack; null when absent →
+// drawSeaIce falls back to flat pale floes
+let iceImg = null, iceReady = false, icePat = null;
+if (ICE_ART) { iceImg = new Image(); iceImg.onload = () => { iceReady = true; draw(); }; iceImg.src = ICE_ART.src; }
 // the shallows tint — the Civ4 shoreblend hue baked into the bundle, or the old teal fallback
 const SHORE_COL = (SEA_BANDS && SEA_BANDS.shore) ? SEA_BANDS.shore.join(",") : "116,178,196";
 // the real Civ4 resource-icon atlas (docs/bonus-sprite-bake.md), sliced from GameFont.tga; null when
@@ -222,20 +230,13 @@ function buildPlotTexCanvas(p) {
       o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
     }
   }
-  // 3) hillshade from real heightmap elevation (surface normal vs a NW light: slopes
-  // facing the light lighten, those in shadow darken), snow on the highest ground, then
-  // feature sprites and rivers. EXAG exaggerates the gentle continental slopes.
-  const EXAG = 4, STR = 1.5, SX = -0.42, SY = -0.42, SZ = 0.8;   // NW sun (SX/SY/SZ ≠ LY layer map)
+  // 3) snow on the highest ground. (The elevation-normal hillshade that used to sit here was
+  // removed: with EXAG amplifying the gentle continental heightmap, near-flat provinces — most of
+  // the map — picked up a strong per-plot bright/dark checker that just read as square tiles. The
+  // ground is now the flat Civ4 terrain texture; relief reads from the terrain/feature mix instead.)
   for (const q of p._plots) {
-    const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp, e = q.elevation | 0;
-    const gW = grid.get((q.x - 1) * 1e5 + q.y), gE = grid.get((q.x + 1) * 1e5 + q.y);
-    const gN = grid.get(q.x * 1e5 + (q.y - 1)), gS = grid.get(q.x * 1e5 + (q.y + 1));
-    const nx = ((gW ? gW.elevation : e) - (gE ? gE.elevation : e)) * EXAG;
-    const ny = ((gN ? gN.elevation : e) - (gS ? gS.elevation : e)) * EXAG;
-    const k = ((nx * SX + ny * SY + SZ) / Math.hypot(nx, ny, 1) - SZ) * STR;   // 0 on flat ground
-    if (k > 0.01) { o.fillStyle = `rgba(255,255,248,${Math.min(0.5, k).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
-    else if (k < -0.01) { o.fillStyle = `rgba(12,16,28,${Math.min(0.5, -k).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
-    if (e >= 165) { o.fillStyle = `rgba(232,238,247,${Math.min(0.6, (e - 165) / 50).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
+    const e = q.elevation | 0;
+    if (e >= 165) { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; o.fillStyle = `rgba(232,238,247,${Math.min(0.6, (e - 165) / 50).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
   }
   // 4) coast shallows: real Civ4 shore texture, drawn as one province-level pass so the ripple
   // blends over the whole shore region at once (paintCoast); then features + rivers on top, so a
@@ -280,16 +281,39 @@ function drawBonuses(o, plots, x0, y0, tpp) {
   }
   o.restore();
 }
-// Polar sea ice on a water province's shelf (docs/coastlines.md Phase E/F): a pale, slightly
-// translucent floe over each ice plot with a lighter top cap, so the frozen coast reads distinct
-// from open shelf water. Drawn under the resource glyphs.
+// Polar sea ice on a water province's shelf (docs/coastlines.md Phase E/G). Each ice plot is a
+// translucent FLOE, not an opaque square: it is textured with the real Civ4 pack-ice tile and inset
+// per edge — the inset is small where the neighbour is also ice (floes touch, a thin crack between),
+// large where it borders open water (the floe pulls back so a lead of dark shelf water shows). The
+// corners are jittered by a deterministic hash so the field reads as broken pack ice rather than a
+// grid of white tiles. Degrades to a flat pale floe when the ice tile isn't loaded.
 function drawSeaIce(o, plots, x0, y0, tpp) {
+  const ice = plots.filter(q => q.feature === "FEATURE_ICE");
+  if (!ice.length) return;
+  const grid = new Map();
+  for (const q of plots) grid.set(q.x * 1e5 + q.y, q);
+  const isIce = (x, y) => { const n = grid.get(x * 1e5 + y); return !!(n && n.feature === "FEATURE_ICE"); };
+  const hash = (x, y) => ((Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263)) >>> 0) / 4294967295;
+  // per-edge inset: touch neighbouring ice (thin crack), pull well back from open water (a lead)
+  const inset = (q, dx, dy) => (isIce(q.x + dx, q.y + dy) ? tpp * (0.02 + 0.05 * hash(q.x + dx * 7, q.y + dy * 7))
+                                                          : tpp * (0.2 + 0.16 * hash(q.x + dx * 7, q.y + dy * 7)));
+  if (iceReady) { icePat = icePat || o.createPattern(iceImg, "repeat");
+    const s = Math.max(0.25, tpp * 4 / ICE_ART.tile); icePat.setTransform(new DOMMatrix([s, 0, 0, s, 0, 0])); }
   o.save();
-  for (const q of plots) {
-    if (q.feature !== "FEATURE_ICE") continue;
+  for (const q of ice) {
     const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp;
-    o.fillStyle = "rgba(228,238,246,0.86)"; o.fillRect(cx, cy, tpp, tpp);            // pack ice
-    o.fillStyle = "rgba(255,255,255,0.32)"; o.fillRect(cx, cy, tpp, tpp * 0.4);      // lighter top cap
+    const mN = inset(q, 0, -1), mS = inset(q, 0, 1), mW = inset(q, -1, 0), mE = inset(q, 1, 0);
+    const x1 = cx + mW, x2 = cx + tpp - mE, y1 = cy + mN, y2 = cy + tpp - mS;
+    o.beginPath();                                     // the floe quad (inset per edge)
+    o.moveTo(x1, y1); o.lineTo(x2, y1); o.lineTo(x2, y2); o.lineTo(x1, y2); o.closePath();
+    if (icePat) {                                      // real pack-ice texture, ~4 plots per tile, translucent
+      o.globalAlpha = 0.9; o.fillStyle = icePat; o.fill();
+    } else {                                            // fallback: flat pale floe
+      o.globalAlpha = 0.85; o.fillStyle = "rgb(228,238,246)"; o.fill();
+    }
+    o.globalAlpha = 1;
+    o.fillStyle = "rgba(255,255,255,0.14)"; o.fillRect(x1, y1, x2 - x1, (y2 - y1) * 0.34);   // sun-lit top
+    o.strokeStyle = "rgba(140,170,190,0.5)"; o.lineWidth = Math.max(0.5, tpp * 0.03); o.stroke();  // cool rim
   }
   o.restore();
 }
@@ -314,29 +338,39 @@ function bonusGlyph(type) {
   for (const [re, style] of BONUS_CATEGORIES) if (re.test(type)) return style;
   return { c: "#c8d2e0", s: "circle" };                // uncategorised — pale dot
 }
-// Coast shallows from each plot's 8-bit sea mask (q.coast — see docs/coastlines.md): for each
-// water EDGE (low nibble 1=E,2=W,4=S,8=N) a shallow-water band reaches OUTWARD from the shoreline
-// INTO the adjacent sea (not a plot of this province — the offscreen is padded a cell for room),
-// and for each water diagonal CORNER (high nibble 16=NW,32=NE,64=SE,128=SW) a radial fade fills
-// the diagonal sea so outer corners wrap round instead of leaving a square notch. A thin foam
-// line marks the shoreline. The band's shore-hue COLOUR is the Civ4 shoreblend tint (SHORE_COL);
-// its real wave TEXTURE is the shoredetail ripple, blended over the whole shore region in
-// paintCoast. (The Civ4 coastscalemask corner blend was tried but draws inside the land, half a
-// cell off — wrong tool for our fine per-plot pixel coastlines.)
+// Coast rendering from each land plot's 8-bit sea mask (q.coast — see docs/coastlines.md): for each
+// water EDGE (low nibble 1=E,2=W,4=S,8=N) work reaches OUTWARD from the shoreline INTO the adjacent
+// sea (not a plot of this province — the offscreen is padded a cell for room), and each water diagonal
+// CORNER (high nibble 16=NW,32=NE,64=SE,128=SW) wraps the outer corner round. Three layers make the
+// shore, seaward → shoreward: (1) the shore-hue shallows band carrying the real shoredetail ripple;
+// (2) a BEACH APRON — the coastal land plot's own terrain colour feathered a little way into the water,
+// so the hard square land edge dissolves into the shallows instead of reading as a staircase of tiles;
+// (3) the real Civ4 wave-crest FOAM (waves/wave_crest.dds) laid along the shoreline, its naturally
+// irregular crest breaking up the grid. (The Civ4 coastscalemask corner blend was tried but draws
+// inside the land, half a cell off — wrong tool for our fine per-plot pixel coastlines.)
 const COAST_EDGES = [[1, 1, 0], [2, -1, 0], [4, 0, 1], [8, 0, -1]];   // bit, dx, dy (E,W,S,N)
 const COAST_CORNERS = [[16, 0, 0], [32, 1, 0], [64, 1, 1], [128, 0, 1]];   // bit, cell-corner ux,uy (NW,NE,SE,SW)
 const FOAM = "224,240,244";
-// Paint a whole province's coast shallows in one pass: the shore-hue bands + foam, then the real
-// Civ4 shore ripple blended over ONLY the shallows via `soft-light`. Two scratch canvases isolate
-// the ripple — it is clipped (destination-in) to the bands' own alpha so the wave rides the shore
-// water alone, not the land, and fades out exactly as the band does. Degrades to flat bands when
-// the shore tile is absent (LFS/file://). Mirrors the open-sea ripple in main.mjs's drawSeaBase.
+// per-edge affine (setTransform a,b,c,d,e,f) into a local frame X=along-shore 0..s, Y=into-water 0..1,
+// origin at the shoreline — so the wave crest (foam at Y=0) laps the shore and fades seaward. E,W,S,N.
+const FOAM_XF = {
+  1: (cx, cy, s) => [0, 1, 1, 0, cx + s, cy],   // E: into-water +x, along-shore +y
+  2: (cx, cy, s) => [0, 1, -1, 0, cx, cy],      // W: into-water -x
+  4: (cx, cy, s) => [1, 0, 0, 1, cx, cy + s],   // S: into-water +y
+  8: (cx, cy, s) => [1, 0, 0, -1, cx, cy],      // N: into-water -y
+};
 function paintCoast(o, W, H, plots, x0, y0, tpp) {
   const coastal = plots.filter(q => q.coast);
   if (!coastal.length) return;
+  // beach + foam are baked at the province's fixed build resolution (tpp, ~32 for most, dropping for
+  // very large provinces to bound the offscreen). Fade them out where tpp is small — there the per-plot
+  // crest/apron would be only a pixel or two and just muddy the shore — so only well-resolved provinces
+  // carry the detail. (This tracks offscreen resolution, NOT the on-screen zoom, which scales the blit.)
+  const ramp = Math.max(0, Math.min(1, (tpp - 8) / 12));
   const bands = ctx2 => { for (const q of coastal) drawCoastBands(ctx2, (q.x - x0) * tpp, (q.y - y0) * tpp, tpp, q.coast); };
-  const foam  = ()   => { for (const q of coastal) drawFoam(o, (q.x - x0) * tpp, (q.y - y0) * tpp, tpp, q.coast); };
-  if (!shoreReady) { bands(o); foam(); return; }        // no ripple art → flat shore-hue bands
+  const beach = ()   => { if (ramp > 0) for (const q of coastal) drawBeach(o, (q.x - x0) * tpp, (q.y - y0) * tpp, tpp, q.coast, terrainRgb(q.terrain), ramp); };
+  const foam  = ()   => { if (ramp > 0) for (const q of coastal) (foamReady ? drawFoamCrest : drawFoam)(o, (q.x - x0) * tpp, (q.y - y0) * tpp, tpp, q.coast, q, ramp); };
+  if (!shoreReady) { bands(o); beach(); foam(); return; }   // no ripple art → flat shore-hue bands
   // 1) shore-hue bands on a scratch layer (its alpha = the shallow-water shape)
   const cc = document.createElement("canvas"); cc.width = W; cc.height = H;
   bands(cc.getContext("2d"));
@@ -347,34 +381,64 @@ function paintCoast(o, W, H, plots, x0, y0, tpp) {
   pat.setTransform(new DOMMatrix([sc, 0, 0, sc, 0, 0]));
   r.fillStyle = pat; r.fillRect(0, 0, W, H);
   r.globalCompositeOperation = "destination-in"; r.drawImage(cc, 0, 0);
-  // 3) composite: colour first, ripple soft-light over it, crisp foam on top
+  // 3) composite, seaward → shoreward: shallows colour, ripple soft-light over it, then the beach
+  // apron (land dissolving into the shore), then the real foam crest lapping the shoreline on top
   o.drawImage(cc, 0, 0);
   o.save(); o.globalCompositeOperation = "soft-light"; o.globalAlpha = 0.9; o.drawImage(rc, 0, 0); o.restore();
+  beach();
   foam();
 }
-function drawCoastBands(o, cx, cy, s, mask) {
-  const f = s * 0.9;                                   // how far the shallows reach into the sea
+// an outward fade of `col` from the shoreline into the sea — edges as linear ramps, diagonal
+// corners as radial ones — reaching `f` px with peak alpha `a0`. Shared by the shallows and beach.
+function outwardBands(o, cx, cy, s, mask, col, f, a0) {
   for (const [bit, dx, dy] of COAST_EDGES) {
     if (!(mask & bit)) continue;
     let gr, rx, ry, rw, rh;
-    if (dx === 1)      { gr = o.createLinearGradient(cx + s, 0, cx + s + f, 0); rx = cx + s;     ry = cy;     rw = f; rh = s; }  // E
-    else if (dx === -1){ gr = o.createLinearGradient(cx, 0, cx - f, 0);         rx = cx - f;     ry = cy;     rw = f; rh = s; }  // W
-    else if (dy === 1) { gr = o.createLinearGradient(0, cy + s, 0, cy + s + f); rx = cx;         ry = cy + s; rw = s; rh = f; }  // S
-    else               { gr = o.createLinearGradient(0, cy, 0, cy - f);         rx = cx;         ry = cy - f; rw = s; rh = f; }  // N
-    gr.addColorStop(0, `rgba(${SHORE_COL},.85)`); gr.addColorStop(1, `rgba(${SHORE_COL},0)`);
+    if (dx === 1)      { gr = o.createLinearGradient(cx + s, 0, cx + s + f, 0); rx = cx + s; ry = cy;     rw = f; rh = s; }  // E
+    else if (dx === -1){ gr = o.createLinearGradient(cx, 0, cx - f, 0);         rx = cx - f; ry = cy;     rw = f; rh = s; }  // W
+    else if (dy === 1) { gr = o.createLinearGradient(0, cy + s, 0, cy + s + f); rx = cx;     ry = cy + s; rw = s; rh = f; }  // S
+    else               { gr = o.createLinearGradient(0, cy, 0, cy - f);         rx = cx;     ry = cy - f; rw = s; rh = f; }  // N
+    gr.addColorStop(0, `rgba(${col},${a0})`); gr.addColorStop(1, `rgba(${col},0)`);
     o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
   }
-  // fill the DIAGONAL sea corners too, so an outer corner (e.g. sea to the E and S → SE diagonal
-  // is sea) wraps round instead of leaving a square notch. A radial fade from the corner point.
   for (const [bit, ux, uy] of COAST_CORNERS) {
     if (!(mask & bit)) continue;
     const px = cx + ux * s, py = cy + uy * s;            // the plot's corner point
     const gr = o.createRadialGradient(px, py, 0, px, py, f);
-    gr.addColorStop(0, `rgba(${SHORE_COL},.85)`); gr.addColorStop(1, `rgba(${SHORE_COL},0)`);
+    gr.addColorStop(0, `rgba(${col},${a0})`); gr.addColorStop(1, `rgba(${col},0)`);
     o.fillStyle = gr; o.fillRect(px - (ux ? 0 : f), py - (uy ? 0 : f), f, f);
   }
 }
-// a thin foam line right at the shoreline (the land-side edge of each water border)
+// the shallow-water band: the Civ4 shoreblend hue reaching most of a cell into the sea
+function drawCoastBands(o, cx, cy, s, mask) { outwardBands(o, cx, cy, s, mask, SHORE_COL, s * 0.9, ".85"); }
+// the beach apron: this coastal land plot's own terrain colour (mildly DARKENED — wet shore reads
+// darker than dry land) feathered into the water, so the land dissolves into the shallows instead of
+// ending in a hard square edge. The reach is JITTERED per plot (a deterministic hash of its position),
+// so the apron's outer edge is irregular — that breaks up the square grid rather than merely softening
+// a straight edge. `ramp` fades it in with zoom (see paintCoast).
+function drawBeach(o, cx, cy, s, mask, rgb, ramp) {
+  const wet = rgb.map(v => v * 0.78 | 0).join(",");
+  const h = ((Math.imul(cx | 0, 2654435761) ^ Math.imul(cy | 0, 40503)) >>> 0) / 4294967295;   // 0..1
+  outwardBands(o, cx, cy, s, mask, wet, s * (0.32 + 0.42 * h), (0.8 * ramp).toFixed(3));
+}
+// The real Civ4 shoreline foam: lay the wave-crest strip along each water edge, its foam crest at the
+// shoreline fading seaward. A per-plot horizontal slice of the strip varies the crest so the shore
+// doesn't repeat, and the crest's own ragged top breaks up the square grid. setTransform maps a local
+// along-shore/into-water frame (FOAM_XF) so one drawImage orients the strip for any of the 4 edges.
+function drawFoamCrest(o, cx, cy, s, mask, q, ramp) {
+  const W = FOAM_ART.w, H = FOAM_ART.h, reach = s * 0.2;   // a thin lap at the shoreline — kept short so
+  const segW = Math.max(1, W * 0.5 | 0);                   // narrow sea channels between shores stay open
+  const sx = Math.abs(q.x * 37 + q.y * 17) % Math.max(1, W - segW);   // per-plot slice → varied crest
+  for (const bit of [1, 2, 4, 8]) {
+    if (!(mask & bit)) continue;
+    o.save();
+    o.setTransform(...FOAM_XF[bit](cx, cy, s));
+    o.globalAlpha = 0.5 * ramp;
+    o.drawImage(foamImg, sx, 0, segW, H, 0, 0, s, reach);
+    o.restore();
+  }
+}
+// fallback foam (no wave_crest art): a thin foam line right at the shoreline
 function drawFoam(o, cx, cy, s, mask) {
   const t = Math.max(1, s * 0.09);
   o.fillStyle = `rgba(${FOAM},.55)`;

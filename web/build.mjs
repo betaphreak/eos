@@ -149,6 +149,8 @@ const terrainTiles = bakeTerrainTiles(terrainColors);
 const river = bakeRiverTile();               // {src, tile} water tile, or null (flat-fill fallback)
 const sea = bakeSeaTile();                   // {src, tile} greyscale ripple tile, or null (gradient-only fallback)
 const shore = bakeShoreTile();               // {src, tile} greyscale shore-wave tile for the shallows, or null
+const foam = bakeFoamTile();                 // {src, w, h} real Civ4 wave-crest foam strip, or null (procedural foam line)
+const ice = bakeIceTile();                   // {src, tile} real Civ4 pack-ice tile, or null (procedural pale floes)
 const bonusIcons = bakeBonusIcons();         // {src, cell, cols, index:{type:i}} real Civ4 resource icons, or null
 const seaBands = bakeSeaBands();             // {trop, temp, polar, shore} climate sea + shore colours
 const plotPack = packPlots(provinces);
@@ -188,7 +190,7 @@ const bundle = {
     origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
-  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, bonusIcons, seaBands, geo,
+  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, foam, ice, bonusIcons, seaBands, geo,
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
 };
 
@@ -206,6 +208,8 @@ console.log(`  plots: ${plotPack.count} provinces packed into web/assets/plots.p
 console.log(`  terrain tiles: ${terrainTiles ? terrainTiles.src + ' (' + Object.keys(terrainTiles.cols).length + ' textures)' : 'skipped (no terrain-art.json / LFS textures)'}`);
 console.log(`  river tile: ${river ? river.src : 'skipped (no allriverssmall.dds / LFS)'}`);
 console.log(`  sea tile: ${sea ? sea.src : 'skipped (no seadetail.dds / LFS)'} · bands trop/temp/polar ${JSON.stringify([seaBands.trop, seaBands.temp, seaBands.polar])}`);
+console.log(`  foam strip: ${foam ? `${foam.src} (${foam.w}x${foam.h})` : 'skipped (no wave_crest.dds / LFS)'}`);
+console.log(`  ice tile: ${ice ? ice.src : 'skipped (no icepack_1024.dds / LFS)'}`);
 for (const j of journeys) console.log(`  ${('→ ' + j.dest).padEnd(26)} ${j.provinceCount} prov · ${(j.days / 365.25).toFixed(1)}y · cargo ${j.cargoFinal}`);
 
 // ---------------------------------------------------------------------------
@@ -579,6 +583,67 @@ function bakeSeaTile() { return bakeRippleTile('Art/Terrain/textures/water/seade
 // over the shallow band with `soft-light` so it ripples the shore hue without recolouring it.
 // A touch more contrast than the open sea so the near-shore chop reads. Null → flat shallows.
 function bakeShoreTile() { return bakeRippleTile('Art/Terrain/textures/water/shoredetail.dds', `shore-${SEED}.png`, 1.3); }
+
+// Bake a seamless COLOUR ice tile from the real Civ4 pack-ice texture (features/icepack/icepack_1024.dds).
+// The texture's upper ~65% is a clean cracked-ice surface (the lower strip is a fringe of edge icicles we
+// skip); we crop that clean region and downsample it to a square tile, keeping colour so the web can
+// texture the shelf ice floes with real art instead of flat white squares (docs/coastlines.md Phase G).
+// Returns {src, tile} or null (art absent → drawSeaIce keeps its procedural pale floes).
+function bakeIceTile() {
+  const artFile = resolveArt('Art/Terrain/features/icepack/icepack_1024.dds');
+  if (!artFile) return null;
+  let img; try { img = decodeDds(fs.readFileSync(artFile)); } catch { return null; }
+  const T = 256;
+  const CROP = Math.floor(img.height * 0.64);   // clean cracked-ice region (skip the bottom fringe strip)
+  const bx = CROP / T, by = CROP / T;           // sample a square crop of the clean region → square tile
+  const rgb = Buffer.alloc(T * T * 3);
+  for (let j = 0; j < T; j++)
+    for (let i = 0; i < T; i++) {
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let y = Math.floor(j * by); y < Math.floor((j + 1) * by); y++)
+        for (let x = Math.floor(i * bx); x < Math.floor((i + 1) * bx); x++) {
+          const o = (y * img.width + x) * 4; r += img.rgba[o]; g += img.rgba[o + 1]; b += img.rgba[o + 2]; n++;
+        }
+      const d = j * T + i; rgb[d * 3] = r / n | 0; rgb[d * 3 + 1] = g / n | 0; rgb[d * 3 + 2] = b / n | 0;
+    }
+  const assets = path.join(WEB, 'assets');
+  fs.mkdirSync(assets, { recursive: true });
+  const file = `ice-${SEED}.png`;
+  fs.writeFileSync(path.join(assets, file), encodePng(T, T, rgb));
+  return { src: `assets/${file}`, tile: T };
+}
+
+// Bake the real Civ4 shoreline foam (docs/coastlines.md Phase G) from waves/wave_crest.dds — a
+// horizontal foam-crest strip (white crest at the top, alpha fading to clear below). We keep it as
+// an RGBA PNG so the web can lay a true wave crest along every shoreline edge (fade reaching into
+// the water), replacing the old procedural white foam line. The strip is cropped vertically to the
+// rows that actually carry foam (the bottom of the source is fully transparent dead space) and left
+// full width (it tiles east-west along the shore). Returns {src, w, h} or null (art absent → the
+// procedural foam line stays). The crest RGB is clamped bright so the foam reads clean white.
+function bakeFoamTile() {
+  const artFile = resolveArt('Art/Terrain/waves/wave_crest.dds');
+  if (!artFile) return null;
+  let img; try { img = decodeDds(fs.readFileSync(artFile)); } catch { return null; }
+  const W = img.width, H = img.height;
+  // crop to the last row whose mean alpha is meaningful (the crest lives in the top band)
+  let hi = 0;
+  for (let y = 0; y < H; y++) { let a = 0; for (let x = 0; x < W; x++) a += img.rgba[(y * W + x) * 4 + 3]; if (a / W > 8) hi = y; }
+  const CH = Math.min(H, hi + 2);
+  const rgb = Buffer.alloc(W * CH * 3), alpha = Buffer.alloc(W * CH);
+  for (let y = 0; y < CH; y++)
+    for (let x = 0; x < W; x++) {
+      const so = (y * W + x) * 4, d = y * W + x;
+      const L = Math.max(img.rgba[so], img.rgba[so + 1], img.rgba[so + 2]);   // toward the crest's brightest channel
+      const g = Math.min(255, 190 + ((L * 65) / 255 | 0));                    // clamp bright: clean white foam
+      rgb[d * 3] = g; rgb[d * 3 + 1] = g; rgb[d * 3 + 2] = g;
+      alpha[d] = img.rgba[so + 3];
+    }
+  const assets = path.join(WEB, 'assets');
+  fs.mkdirSync(assets, { recursive: true });
+  const file = `foam-${SEED}.png`;
+  fs.writeFileSync(path.join(assets, file), encodePng(W, CH, rgb, alpha));
+  return { src: `assets/${file}`, w: W, h: CH };
+}
 
 // Slice the real Civ4 resource icons out of GameFont.tga into one atlas + a {bonusType: cellIndex}
 // manifest, so the web draws a true per-resource symbol on each resourced plot instead of the
