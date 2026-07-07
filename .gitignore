@@ -22,6 +22,8 @@
 /web/assets/river-*.png
 # derived, regenerable open-water tile for the ocean layer (build.mjs → bakeSeaTile)
 /web/assets/sea-*.png
+# derived, regenerable shore-wave tile for the coast shallows (build.mjs → bakeShoreTile)
+/web/assets/shore-*.png
 # whole-world per-province plot caches — hundreds of MB, canonical/regenerable via
 # WorldPlotGenerator (the sim also regenerates any on demand). Too heavy to commit.
 /src/main/resources/map/provinces/*.json.gz

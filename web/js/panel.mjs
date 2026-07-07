@@ -1,5 +1,5 @@
-import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, S } from "./core.mjs";
-import { draw, zoomAt, resize, focusProvince, applyHash } from "./main.mjs";
+import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, S } from "./core.mjs";
+import { draw, zoomAt, resize, focusProvince, focusProvinceFit, applyHash } from "./main.mjs";
 import { loadPlots } from "./plots.mjs";
 stage.addEventListener("wheel", e => {
   e.preventDefault();
@@ -137,19 +137,55 @@ function provinceAt(mx, my){
     const sx = mx - m*period;
     for(const p of P){ if(p.rings && pointInProv(p, sx, my)) return p; }   // exact polygon hit
   }
-  let best=null, bd=1e9;                                                    // else nearest centroid (seas)
+  let best=null, bd=1e9;                                                    // else nearest centroid
   for(let m=mMin; m<=mMax; m++){
     const sx = mx - m*period;
-    for(const p of P){ const dx=px(p.lon)-sx, dy=py(p.lat)-my, d=dx*dx+dy*dy; if(d<bd){bd=d;best=p;} }
+    // ring-less (sea/lake) provinces render their coastal resource plots but stay non-interactive
+    for(const p of P){ if(!p.rings) continue; const dx=px(p.lon)-sx, dy=py(p.lat)-my, d=dx*dx+dy*dy; if(d<bd){bd=d;best=p;} }
   }
   return bd<90 ? best : null;
 }
+// the plot under the cursor at texture zoom (where the per-province plot canvases + their grids
+// exist), across the E-W wrap copies — used for the resource tooltip. Ring-less sea provinces are
+// found too, so coastal resources tooltip like land ones. Returns the plot record, or null.
+function plotAt(mx, my){
+  if(cam.k < K_TEX) return null;
+  const period = worldW();
+  const L = cam.x + cam.k*VIEW.dx;
+  const mMin = period>0 ? Math.floor((0-L)/period) : 0;
+  const mMax = period>0 ? Math.floor((VIEW.w-L)/period) : 0;
+  for(let m=mMin; m<=mMax; m++){
+    const sx = mx - m*period;
+    for(const p of P){
+      if(!p._grid || !p._tbox) continue;                       // only provinces whose texture canvas is built
+      const b=p._tbox, X0=pxr(b.x0), X1=pxr(b.x0+b.w), Y0=pyr(b.y0), Y1=pyr(b.y0+b.h);
+      if(sx<X0 || sx>=X1 || my<Y0 || my>=Y1) continue;
+      const spx = b.x0 + Math.floor((sx-X0)/(X1-X0)*b.w);
+      const spy = b.y0 + Math.floor((my-Y0)/(Y1-Y0)*b.h);
+      const q = p._grid.get(spx*1e5 + spy);
+      if(q) return q;                                          // land plot found first; else the sea shelf plot
+    }
+  }
+  return null;
+}
+// a plot's resource label for the tooltip, or null: its bonus (or polar sea ice), Title Cased
+function resourceLabel(q){
+  if(q.bonus) return prettyKey(q.bonus);
+  if(q.feature === "FEATURE_ICE") return "Ice";
+  return null;
+}
+const prettyKey = t => t.replace(/^(BONUS|FEATURE)_/,"").toLowerCase().replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase());
 stage.addEventListener("mousemove", e=>{
   if(S.dragging) return;                       // panning — skip hover work
   const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
   const best = provinceAt(mx, my);
-  if(best){ S.hoverProv=best;
-    tip.innerHTML=`<b>${best.name}</b> <span class="r">${best.type.toLowerCase()}</span><br><span class="r">${(best.region||"—").replace(/_/g," ").replace(" region","")} · ${best.plots} plots${best.days?` · ${best.days} caravan-days`:""}</span>`;
+  const hit = plotAt(mx, my);                   // resourced plot under cursor (texture zoom)
+  const res = hit ? resourceLabel(hit) : null;
+  if(best || res){ S.hoverProv=best;
+    let html = "";
+    if(best) html = `<b>${best.name}</b> <span class="r">${best.type.toLowerCase()}</span><br><span class="r">${(best.region||"—").replace(/_/g," ").replace(" region","")} · ${best.plots} plots${best.days?` · ${best.days} caravan-days`:""}</span>`;
+    if(res) html += `${best?"<br>":""}<span class="r">◆ ${res}</span>`;
+    tip.innerHTML=html;
     tip.style.left=Math.min(mx+14, r.width-230)+"px"; tip.style.top=(my+14)+"px"; tip.classList.add("on");
   } else { S.hoverProv=null; tip.classList.remove("on"); }
   draw();
@@ -168,11 +204,11 @@ stage.addEventListener("click", e=>{
   const prov = provinceAt(mx, my);
   if (prov) selectProvince(S.selectedProv===prov ? null : prov);
 });
-// double-click zooms and centres the camera on the province under the cursor
+// double-click zooms so the whole province fits the viewport, centred on it
 stage.addEventListener("dblclick", e=>{
   const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
   const prov = provinceAt(mx, my);
-  if (prov) goToProvince(prov);
+  if (prov) goToProvinceFit(prov);
 });
 
 // ---- rail ----
@@ -454,6 +490,11 @@ function goToProvince(p, k = 9) {
   camBeforeFocus = { ...cam };    // remember where we were so Esc can return
   focusProvince(p.id, k);         // zoom + centre the camera on it
   selectProvince(p);              // and open its detail panel
+}
+function goToProvinceFit(p) {      // double-click: zoom so the whole province fits the viewport
+  camBeforeFocus = { ...cam };    // remember where we were so Esc can return
+  focusProvinceFit(p.id);
+  selectProvince(p);
 }
 function unfocusProvince() {       // restore the pre-focus zoom/pan; returns false if nothing to undo
   if (!camBeforeFocus) return false;

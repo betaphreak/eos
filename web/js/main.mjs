@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, latAtScreenY, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, latAtScreenY, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
@@ -196,10 +196,25 @@ function focusProvince(id, k) {
   cam.y = VIEW.h / 2 - cam.k * baseYr(sySrc(p.lat));
   clampPan(); S.baseVersion++; draw();
 }
+// Zoom so the WHOLE province fits the viewport (double-click), centred on its bounding box:
+// pick the scale that fits the box's screen extent within a margin, clamped to the zoom range,
+// and centre on the box centre. Falls back to a fixed zoom when the province has no polygon.
+function focusProvinceFit(id) {
+  const p = Pby.get(id); if (!p) return;
+  const box = provSrcBox(p);
+  if (!box) return focusProvince(id, 9);
+  const m = 0.82;                                                        // leave a little air around it
+  const wSrc = Math.max(1, (box.x1 - box.x0) / (MAP.x1 - MAP.x0) * VIEW.dw);   // province width in base screen px
+  const hSrc = Math.max(1, (box.y1 - box.y0) / (MAP.y1 - MAP.y0) * VIEW.dh);
+  cam.k = Math.max(1, Math.min(K_MAX, Math.min(VIEW.w * m / wSrc, VIEW.h * m / hSrc)));
+  cam.x = VIEW.w / 2 - cam.k * baseXr((box.x0 + box.x1) / 2);
+  cam.y = VIEW.h / 2 - cam.k * baseYr((box.y0 + box.y1) / 2);
+  clampPan(); S.baseVersion++; draw();
+}
 function applyHash() {
   const p = /(?:^|[#&])p=(\d+)/.exec(location.hash);
   const z = /(?:^|[#&])z=(\d+(?:\.\d+)?)/.exec(location.hash);
   if (p) focusProvince(+p[1], z ? +z[1] : 18);
 }
 window.addEventListener("hashchange", applyHash);
-export { draw, zoomAt, resize, focusProvince, applyHash };
+export { draw, zoomAt, resize, focusProvince, focusProvinceFit, applyHash };

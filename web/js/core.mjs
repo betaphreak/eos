@@ -48,7 +48,8 @@ const K_MAX = 256;                // deepest zoom (4× past the old 64× cap —
 const TT = BUNDLE.terrainTiles;   // ground-texture atlas {src, tile, cols:{TERRAIN_*: column}} or null
 const RIVER = BUNDLE.river;        // water tile {src, tile} for the river ribbon, or null (flat-fill fallback)
 const SEA = BUNDLE.sea;            // greyscale ripple tile {src, tile} for the ocean layer, or null (gradient only)
-const SEA_BANDS = BUNDLE.seaBands; // {trop, temp, polar} climate sea colours for the latitude gradient
+const SHORE = BUNDLE.shore;        // greyscale shore-wave tile {src, tile} for the shallows, or null (flat shallows)
+const SEA_BANDS = BUNDLE.seaBands; // {trop, temp, polar, shore} climate sea + shallows colours
 const LY = BUNDLE.terrainLayer || {};   // TERRAIN_* -> Civ4 LayerOrder (higher bleeds over lower)
 const NB4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const _rgb = {};                  // "#rrggbb" -> [r,g,b], memoised
@@ -59,7 +60,11 @@ function terrainRgb(type) {
 // a province's source-pixel bounding box (from its outline rings), cached; null for seas
 function provSrcBox(p) {
   if (p._sbox !== undefined) return p._sbox;
-  if (!p.rings) return p._sbox = null;
+  if (!p.rings) {
+    // ring-less (sea/lake) provinces carry a plot-extent bbox instead (build.mjs packPlots)
+    if (p.bbox) return p._sbox = { x0: p.bbox[0], y0: p.bbox[1], x1: p.bbox[2], y1: p.bbox[3] };
+    return p._sbox = null;
+  }
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   for (const ring of p.rings) for (const pt of ring) {
     if (pt[0] < x0) x0 = pt[0]; if (pt[0] > x1) x1 = pt[0];
@@ -136,4 +141,4 @@ export const S = {
 };
 S.curT = t0;
 
-export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SEA_BANDS, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };
+export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, SEA_BANDS, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };

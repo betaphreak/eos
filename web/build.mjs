@@ -76,6 +76,16 @@ for (const file of files) {
 // the caravan run only supplies the optional Caravan-mode overlay (routes/heat).
 const sub = new Set(allProv.filter(p => p.type === "LAND").map(p => p.id));
 
+// coastal water provinces (SEA/LAKE) that generated a shelf field also ship, so their near-shore
+// resource plots render (docs/coastlines.md Phase F). They carry NO ocean polygon — the border
+// exporter skips oceans — so a plot-extent bbox (computed in packPlots) drives their culling
+// instead. Deep-ocean provinces with no shelf have no grid and are left out.
+const provinceDir = path.join(ROOT, 'src/main/resources/map/provinces');
+const water = new Set(allProv
+  .filter(p => (p.type === "SEA" || p.type === "LAKE") && fs.existsSync(path.join(provinceDir, `${p.id}.json.gz`)))
+  .map(p => p.id));
+const shipped = new Set([...sub, ...water]);   // every province the page ships (land + coastal water)
+
 // canonical province outlines (source-pixel rings), attached to the displayed subset
 const borders = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/borders.json'), 'utf8'));
 const ringsById = new Map(borders.map(b => [b.id, b.rings]));
@@ -97,7 +107,7 @@ for (const r of regionsMeta) regionDisplayName[r.key] = r.name;
 const areaDisplayName = {};   // area key -> display name
 for (const a of areasMeta) areaDisplayName[a.key] = a.name;
 
-const provinces = [...sub].map(id => byId.get(id)).filter(Boolean).map(p => ({
+const provinces = [...shipped].map(id => byId.get(id)).filter(Boolean).map(p => ({
   id: p.id, name: p.name, lat: +p.lat.toFixed(3), lon: +p.lon.toFixed(3),
   plots: p.plots, waterPlots: p.waterPlots || 0, type: p.type, region: p.region,
   winter: p.winter || null,
@@ -107,9 +117,9 @@ const provinces = [...sub].map(id => byId.get(id)).filter(Boolean).map(p => ({
     region: [regionDisplayName[p.region] || null, p.region || null],
     area: [areaDisplayName[p.area] || null, p.area || null],
   },
-  nb: p.neighbors.filter(n => sub.has(n)),
+  nb: p.neighbors.filter(n => shipped.has(n)),
   days: traffic.get(p.id) || 0,          // caravan-days spent here (0 for context provinces)
-  rings: ringsById.get(p.id) || null,    // outline in source pixels (null for sea/lake)
+  rings: ringsById.get(p.id) || null,    // outline in source pixels (null for sea/lake → bbox culls, packPlots)
 }));
 const maxDays = Math.max(1, ...provinces.map(p => p.days));
 
@@ -137,7 +147,8 @@ const terrainLayer = terrainLayerOrders();   // TERRAIN_* -> Civ4 LayerOrder (dr
 const terrainTiles = bakeTerrainTiles(terrainColors);
 const river = bakeRiverTile();               // {src, tile} water tile, or null (flat-fill fallback)
 const sea = bakeSeaTile();                   // {src, tile} greyscale ripple tile, or null (gradient-only fallback)
-const seaBands = bakeSeaBands();             // {trop, temp, polar} climate sea colours for the latitude gradient
+const shore = bakeShoreTile();               // {src, tile} greyscale shore-wave tile for the shallows, or null
+const seaBands = bakeSeaBands();             // {trop, temp, polar, shore} climate sea + shore colours
 const plotPack = packPlots(provinces);
 
 // ---- geographic label tiers (continent -> super-region -> region) ----------
@@ -175,7 +186,7 @@ const bundle = {
     origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
-  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, seaBands, geo,
+  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, seaBands, geo,
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
 };
 
@@ -559,9 +570,21 @@ function bakeRiverTile() {
 // deepen/brighten it into ripples. (seadetail carries its pattern in RGB, so we read luminance,
 // unlike the river ribbon whose ripples are in the DXT5 alpha.) Returns {src, tile}, or null
 // when the art is absent (LFS not pulled / file://) — the renderer then draws the flat gradient.
-function bakeSeaTile() {
+function bakeSeaTile() { return bakeRippleTile('Art/Terrain/textures/water/seadetail.dds', `sea-${SEED}.png`, 1.1); }
+
+// The shore shallows carry the same treatment (docs/coastlines.md Phase D): a neutral-mean
+// greyscale ripple from the Civ4 shore wave texture (textures/water/shoredetail.dds), drawn
+// over the shallow band with `soft-light` so it ripples the shore hue without recolouring it.
+// A touch more contrast than the open sea so the near-shore chop reads. Null → flat shallows.
+function bakeShoreTile() { return bakeRippleTile('Art/Terrain/textures/water/shoredetail.dds', `shore-${SEED}.png`, 1.3); }
+
+// Bake a seamless GREYSCALE ripple tile from a Civ4 water detail texture — the wave pattern
+// only, centred on mid-grey (128) so a `soft-light` overlay leaves the base colour untouched
+// while darker/lighter texels deepen/brighten it. `contrast` scales the deviation from the
+// mean. Returns {src, tile}, or null when the art is absent (LFS not pulled / file://).
+function bakeRippleTile(artRel, file, contrast) {
   const T = 128;   // larger tile → the repeat is far less obvious than the old 64px grid
-  const artFile = resolveArt('Art/Terrain/textures/water/seadetail.dds');
+  const artFile = resolveArt(artRel);
   if (!artFile) return null;
   let img; try { img = decodeDds(fs.readFileSync(artFile)); } catch { return null; }
   const bx = img.width / T, by = img.height / T;
@@ -579,12 +602,11 @@ function bakeSeaTile() {
   mean /= T * T;
   const rgb = Buffer.alloc(T * T * 3);
   for (let k = 0; k < T * T; k++) {
-    const g = Math.max(0, Math.min(255, 128 + (lum[k] - mean) * 1.1)) | 0;   // soft neutral-mean ripple
+    const g = Math.max(0, Math.min(255, 128 + (lum[k] - mean) * contrast)) | 0;   // soft neutral-mean ripple
     rgb[k * 3] = g; rgb[k * 3 + 1] = g; rgb[k * 3 + 2] = g;
   }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  const file = `sea-${SEED}.png`;
   fs.writeFileSync(path.join(assets, file), encodePng(T, T, rgb));
   return { src: `assets/${file}`, tile: T };
 }
@@ -600,6 +622,10 @@ function bakeSeaBands() {
     trop:  band('Art/Terrain/textures/water/seatropblend.dds', [26, 56, 76]),
     temp:  band('Art/Terrain/textures/water/seablend.dds',     [20, 42, 68]),
     polar: band('Art/Terrain/textures/water/seapolblend.dds',  [32, 42, 54]),
+    // the shallows tint: the tropical sea HUE at a bright coastal-teal luminance — the shore is a
+    // brighter, lighter version of the open water. (shoreblend itself is a neutral sandy blend
+    // with no usable water hue, like the land blends.) See docs/coastlines.md Phase D.
+    shore: band('Art/Terrain/textures/water/seatropblend.dds', [116, 178, 196]),
   };
 }
 
@@ -663,9 +689,22 @@ function packPlots(provs) {
     index[p.id] = [offset, buf.length];
     offset += buf.length;
     p.hasPlots = true;
+    // ring-less provinces (sea/lake) have no polygon for provSrcBox to measure, so give them a
+    // plot-extent bbox (source px) for viewport culling — parse the grid once to bound it
+    if (!p.rings) p.bbox = plotBBox(buf);
   }
   fs.writeFileSync(path.join(outDir, 'plots.pack'), Buffer.concat(chunks));
   return { index, count: Object.keys(index).length, bytes: offset };
+}
+
+// the source-pixel bounding box [x0,y0,x1,y1] of a gzipped plot grid, or null if empty —
+// the ring-less (sea/lake) provinces' cull extent, since they ship no outline
+function plotBBox(gzBuf) {
+  const arr = JSON.parse(zlib.gunzipSync(gzBuf).toString());
+  if (!arr.length) return null;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const q of arr) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
+  return [x0, y0, x1, y1];
 }
 
 // Minimal truecolour PNG encoder (Node has zlib but no image codec). Pass an optional

@@ -1,4 +1,4 @@
-import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, TT, RIVER, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
+import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, TT, RIVER, SHORE, SEA_BANDS, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { renderRail } from "./panel.mjs";
 let ttImg = null, ttReady = false, ttTiles = null;
@@ -7,6 +7,12 @@ if (TT) { ttImg = new Image(); ttImg.onload = () => { extractTiles(); ttReady = 
 // build could not decode the Civ4 river art (LFS/file://) → drawRiver keeps the flat fill
 let rvImg = null, rvReady = false;
 if (RIVER) { rvImg = new Image(); rvImg.onload = () => { rvReady = true; draw(); }; rvImg.src = RIVER.src; }
+// the baked greyscale shore-wave tile for the coast shallows (docs/coastlines.md Phase D); null
+// when the Civ4 shore art couldn't be decoded → the shallows stay flat-tinted, no ripple
+let shoreImg = null, shoreReady = false;
+if (SHORE) { shoreImg = new Image(); shoreImg.onload = () => { shoreReady = true; draw(); }; shoreImg.src = SHORE.src; }
+// the shallows tint — the Civ4 shoreblend hue baked into the bundle, or the old teal fallback
+const SHORE_COL = (SEA_BANDS && SEA_BANDS.shore) ? SEA_BANDS.shore.join(",") : "116,178,196";
 // split the atlas strip into a per-terrain tile canvas, so each can be a repeating
 // pattern (continuous ground texture across plots, no per-plot tile seam)
 function extractTiles() {
@@ -47,7 +53,11 @@ function buildPlotCanvas(p, plots) {
   const w = x1 - x0 + 1, h = y1 - y0 + 1;
   const oc = document.createElement("canvas"); oc.width = w; oc.height = h;
   const octx = oc.getContext("2d"), im = octx.createImageData(w, h), d = im.data;
+  // a sea/lake province's shelf stays transparent in the flat overview (its resource glyphs only
+  // appear at texture zoom), so the mid-zoom map shows clean water rather than coloured blobs
+  const water = p.type === "SEA" || p.type === "LAKE";
   for (const q of plots) {
+    if (water) continue;                       // leave water cells transparent (imageData is zero-filled)
     const c = terrainRgb(q.terrain); let r = c[0], g = c[1], b = c[2];
     const f = q.feature;
     if (f) {
@@ -175,6 +185,11 @@ function buildPlotTexCanvas(p) {
   const grid = new Map();
   for (const q of p._plots) grid.set(q.x * 1e5 + q.y, q);
   const riverPat = rvReady && rvImg ? o.createPattern(rvImg, "repeat") : null;   // water texture, or null
+  // a sea/lake province's plots are all water — skip the land terrain/relief/shore/feature/river
+  // stages entirely (its cells stay transparent so the base sea layer shows through), leaving only
+  // the resource icons below. LAND and IMPASSABLE wasteland build the full ground.
+  const water = p.type === "SEA" || p.type === "LAKE";
+  if (!water) {
   // 1) base terrain as continuous repeating patterns (no per-plot tile seam)
   const pat = {};
   for (const q of p._plots) {
@@ -217,26 +232,113 @@ function buildPlotTexCanvas(p) {
     if (k > 0.01) { o.fillStyle = `rgba(255,255,248,${Math.min(0.5, k).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
     else if (k < -0.01) { o.fillStyle = `rgba(12,16,28,${Math.min(0.5, -k).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
     if (e >= 165) { o.fillStyle = `rgba(232,238,247,${Math.min(0.6, (e - 165) / 50).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
-    if (q.coast) drawCoast(o, cx, cy, tpp, q.coast);
+  }
+  // 4) coast shallows: real Civ4 shore texture, drawn as one province-level pass so the ripple
+  // blends over the whole shore region at once (paintCoast); then features + rivers on top, so a
+  // river reaching the sea sits over the shallows/foam rather than under them
+  paintCoast(o, oc.width, oc.height, p._plots, x0, y0, tpp);
+  for (const q of p._plots) {
+    const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp;
     if (q.feature) featureSprite(o, cx, cy, tpp, q.feature, q.x, q.y);
     if (q.river) drawRiver(o, cx, cy, tpp, q, grid, riverPat);
   }
-  p._tcanvas = oc; p._tbox = { x0, y0, w, h };
+  } // end land-only ground stages
+  if (water) drawSeaIce(o, p._plots, x0, y0, tpp);   // polar sea ice on the shelf water plots
+  // 5) resource icons: a procedural category glyph on every plot carrying a bonus — for both land
+  // and the coastal-shelf water plots — drawn last so they read over the ground/sea (Phase F)
+  drawBonuses(o, p._plots, x0, y0, tpp);
+  p._tcanvas = oc; p._tbox = { x0, y0, w, h }; p._grid = grid;   // grid: q.x*1e5+q.y → plot, for the resource tooltip
 }
-// draw the coastline on a plot from its 8-bit sea mask (q.coast — see docs/coastlines.md):
-// for each water EDGE (low nibble 1=E,2=W,4=S,8=N) a shallow-water band reaches OUTWARD from
-// the shoreline INTO the adjacent sea (which is not a plot of this province — the offscreen is
-// padded a cell so there is room), and for each water diagonal CORNER (high nibble 16=NW,
-// 32=NE,64=SE,128=SW) a radial fade fills the diagonal sea so outer corners wrap round instead
-// of leaving a square notch between two edge bands. A thin foam line marks the shoreline. So
-// the shallows ring the land in the water and line up with the coast. (The Civ4 coastscalemask
-// corner blend was tried but draws inside the land, half a cell off — wrong tool for our fine
-// per-plot pixel coastlines.)
+// Resource icons (docs/coastlines.md Phase F): each plot carrying a bonus gets a small procedural
+// category glyph — a coloured shape at the plot centre, sized to the tile — so resources read at
+// texture zoom with no sprite art (none survives the LFS cleanup). Grouped by CATEGORY (colour +
+// shape), not per resource: sea food, gems/luxuries, energy, metals, farm/trade crops, livestock.
+function drawBonuses(o, plots, x0, y0, tpp) {
+  const r = Math.max(2.5, tpp * 0.26);                 // glyph radius, ~a quarter tile
+  o.save();
+  o.lineWidth = Math.max(1, tpp * 0.06);
+  o.strokeStyle = "rgba(8,12,20,.85)";                 // dark keyline so glyphs read on any ground
+  for (const q of plots) {
+    if (!q.bonus) continue;
+    const g = bonusGlyph(q.bonus);
+    glyphPath(o, g.s, (q.x - x0) * tpp + tpp / 2, (q.y - y0) * tpp + tpp / 2, r);
+    o.fillStyle = g.c; o.fill(); o.stroke();
+  }
+  o.restore();
+}
+// Polar sea ice on a water province's shelf (docs/coastlines.md Phase E/F): a pale, slightly
+// translucent floe over each ice plot with a lighter top cap, so the frozen coast reads distinct
+// from open shelf water. Drawn under the resource glyphs.
+function drawSeaIce(o, plots, x0, y0, tpp) {
+  o.save();
+  for (const q of plots) {
+    if (q.feature !== "FEATURE_ICE") continue;
+    const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp;
+    o.fillStyle = "rgba(228,238,246,0.86)"; o.fillRect(cx, cy, tpp, tpp);            // pack ice
+    o.fillStyle = "rgba(255,255,255,0.32)"; o.fillRect(cx, cy, tpp, tpp * 0.4);      // lighter top cap
+  }
+  o.restore();
+}
+// the glyph outline for a category shape, centred at (cx,cy) with radius r
+function glyphPath(o, shape, cx, cy, r) {
+  o.beginPath();
+  if (shape === "circle") o.arc(cx, cy, r, 0, Math.PI * 2);
+  else if (shape === "diamond") { o.moveTo(cx, cy - r); o.lineTo(cx + r, cy); o.lineTo(cx, cy + r); o.lineTo(cx - r, cy); o.closePath(); }
+  else if (shape === "square") o.rect(cx - r * 0.82, cy - r * 0.82, r * 1.64, r * 1.64);
+  else { o.moveTo(cx, cy - r); o.lineTo(cx + r * 0.9, cy + r * 0.72); o.lineTo(cx - r * 0.9, cy + r * 0.72); o.closePath(); }   // triangle
+}
+// bonus type -> {colour, shape} by category (first keyword match wins); pale dot for the rest
+const BONUS_CATEGORIES = [
+  [/FISH|CRAB|CLAM|SHRIMP|LOBSTER|WHALE|OYSTER|SEAWEED|KELP/, { c: "#5fe3d0", s: "circle" }],       // sea food — teal circle
+  [/PEARL|GEM|GOLD|SILVER|DIAMOND|AMBER|JADE|CORAL|OPAL/,     { c: "#e879f9", s: "diamond" }],       // gems/luxury — magenta diamond
+  [/OIL|GAS|COAL|URANIUM|METHANE|HYDROTHERMAL|VENT|PEAT|TAR/, { c: "#f59e0b", s: "triangle" }],      // energy — amber triangle
+  [/IRON|COPPER|TIN|ALUMIN|LEAD|ZINC|NICKEL|TITAN|MITHRIL|ORE|MARBLE|STONE/, { c: "#9fb0c0", s: "square" }], // metal/stone — steel square
+  [/WHEAT|CORN|MAIZE|RICE|BANANA|POTATO|SUGAR|WINE|SPICE|COFFEE|TEA|TOBACCO|COTTON|SILK|DYE|INCENSE|OLIVE|CITRUS|WHEAT/, { c: "#84cc16", s: "circle" }], // farm/trade crop — green circle
+  [/COW|CATTLE|SHEEP|PIG|HORSE|DEER|BISON|CAMEL|ELEPHANT|GOAT|REINDEER|FUR|IVORY/, { c: "#d6a06a", s: "circle" }], // livestock/game — tan circle
+];
+function bonusGlyph(type) {
+  for (const [re, style] of BONUS_CATEGORIES) if (re.test(type)) return style;
+  return { c: "#c8d2e0", s: "circle" };                // uncategorised — pale dot
+}
+// Coast shallows from each plot's 8-bit sea mask (q.coast — see docs/coastlines.md): for each
+// water EDGE (low nibble 1=E,2=W,4=S,8=N) a shallow-water band reaches OUTWARD from the shoreline
+// INTO the adjacent sea (not a plot of this province — the offscreen is padded a cell for room),
+// and for each water diagonal CORNER (high nibble 16=NW,32=NE,64=SE,128=SW) a radial fade fills
+// the diagonal sea so outer corners wrap round instead of leaving a square notch. A thin foam
+// line marks the shoreline. The band's shore-hue COLOUR is the Civ4 shoreblend tint (SHORE_COL);
+// its real wave TEXTURE is the shoredetail ripple, blended over the whole shore region in
+// paintCoast. (The Civ4 coastscalemask corner blend was tried but draws inside the land, half a
+// cell off — wrong tool for our fine per-plot pixel coastlines.)
 const COAST_EDGES = [[1, 1, 0], [2, -1, 0], [4, 0, 1], [8, 0, -1]];   // bit, dx, dy (E,W,S,N)
 const COAST_CORNERS = [[16, 0, 0], [32, 1, 0], [64, 1, 1], [128, 0, 1]];   // bit, cell-corner ux,uy (NW,NE,SE,SW)
-const SHALLOW = "116,178,196", FOAM = "224,240,244";
-function drawCoast(o, cx, cy, s, mask) {
-  o.save();
+const FOAM = "224,240,244";
+// Paint a whole province's coast shallows in one pass: the shore-hue bands + foam, then the real
+// Civ4 shore ripple blended over ONLY the shallows via `soft-light`. Two scratch canvases isolate
+// the ripple — it is clipped (destination-in) to the bands' own alpha so the wave rides the shore
+// water alone, not the land, and fades out exactly as the band does. Degrades to flat bands when
+// the shore tile is absent (LFS/file://). Mirrors the open-sea ripple in main.mjs's drawSeaBase.
+function paintCoast(o, W, H, plots, x0, y0, tpp) {
+  const coastal = plots.filter(q => q.coast);
+  if (!coastal.length) return;
+  const bands = ctx2 => { for (const q of coastal) drawCoastBands(ctx2, (q.x - x0) * tpp, (q.y - y0) * tpp, tpp, q.coast); };
+  const foam  = ()   => { for (const q of coastal) drawFoam(o, (q.x - x0) * tpp, (q.y - y0) * tpp, tpp, q.coast); };
+  if (!shoreReady) { bands(o); foam(); return; }        // no ripple art → flat shore-hue bands
+  // 1) shore-hue bands on a scratch layer (its alpha = the shallow-water shape)
+  const cc = document.createElement("canvas"); cc.width = W; cc.height = H;
+  bands(cc.getContext("2d"));
+  // 2) the shore ripple, clipped to that shape — 8 plots per 128px tile → fine near-shore chop
+  const rc = document.createElement("canvas"); rc.width = W; rc.height = H;
+  const r = rc.getContext("2d"), pat = r.createPattern(shoreImg, "repeat");
+  const sc = Math.max(0.25, tpp / 16);
+  pat.setTransform(new DOMMatrix([sc, 0, 0, sc, 0, 0]));
+  r.fillStyle = pat; r.fillRect(0, 0, W, H);
+  r.globalCompositeOperation = "destination-in"; r.drawImage(cc, 0, 0);
+  // 3) composite: colour first, ripple soft-light over it, crisp foam on top
+  o.drawImage(cc, 0, 0);
+  o.save(); o.globalCompositeOperation = "soft-light"; o.globalAlpha = 0.9; o.drawImage(rc, 0, 0); o.restore();
+  foam();
+}
+function drawCoastBands(o, cx, cy, s, mask) {
   const f = s * 0.9;                                   // how far the shallows reach into the sea
   for (const [bit, dx, dy] of COAST_EDGES) {
     if (!(mask & bit)) continue;
@@ -245,27 +347,27 @@ function drawCoast(o, cx, cy, s, mask) {
     else if (dx === -1){ gr = o.createLinearGradient(cx, 0, cx - f, 0);         rx = cx - f;     ry = cy;     rw = f; rh = s; }  // W
     else if (dy === 1) { gr = o.createLinearGradient(0, cy + s, 0, cy + s + f); rx = cx;         ry = cy + s; rw = s; rh = f; }  // S
     else               { gr = o.createLinearGradient(0, cy, 0, cy - f);         rx = cx;         ry = cy - f; rw = s; rh = f; }  // N
-    gr.addColorStop(0, `rgba(${SHALLOW},.85)`); gr.addColorStop(1, `rgba(${SHALLOW},0)`);
+    gr.addColorStop(0, `rgba(${SHORE_COL},.85)`); gr.addColorStop(1, `rgba(${SHORE_COL},0)`);
     o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
   }
-  // fill the DIAGONAL sea corners too (high nibble: 16=NW,32=NE,64=SE,128=SW), so an outer
-  // corner (e.g. sea to the E and S → SE diagonal is sea) wraps round instead of leaving a
-  // square notch between the two edge bands. A radial fade from the plot's corner point.
+  // fill the DIAGONAL sea corners too, so an outer corner (e.g. sea to the E and S → SE diagonal
+  // is sea) wraps round instead of leaving a square notch. A radial fade from the corner point.
   for (const [bit, ux, uy] of COAST_CORNERS) {
     if (!(mask & bit)) continue;
     const px = cx + ux * s, py = cy + uy * s;            // the plot's corner point
     const gr = o.createRadialGradient(px, py, 0, px, py, f);
-    gr.addColorStop(0, `rgba(${SHALLOW},.85)`); gr.addColorStop(1, `rgba(${SHALLOW},0)`);
+    gr.addColorStop(0, `rgba(${SHORE_COL},.85)`); gr.addColorStop(1, `rgba(${SHORE_COL},0)`);
     o.fillStyle = gr; o.fillRect(px - (ux ? 0 : f), py - (uy ? 0 : f), f, f);
   }
-  // a thin foam line right at the shoreline (the land-side edge of each water border)
+}
+// a thin foam line right at the shoreline (the land-side edge of each water border)
+function drawFoam(o, cx, cy, s, mask) {
   const t = Math.max(1, s * 0.09);
   o.fillStyle = `rgba(${FOAM},.55)`;
   if (mask & 1) o.fillRect(cx + s - t, cy, t, s);      // E
   if (mask & 2) o.fillRect(cx, cy, t, s);              // W
   if (mask & 4) o.fillRect(cx, cy + s - t, s, t);      // S
   if (mask & 8) o.fillRect(cx, cy, s, t);              // N
-  o.restore();
 }
 // A river plot's segment: a water-textured ribbon from the cell centre out to each
 // 4-neighbour that also carries a river (to the shared edge), or a source blob when it

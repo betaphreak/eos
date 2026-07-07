@@ -115,6 +115,101 @@ so lake pixels are transparent and show the climate gradient + ripple like the s
 enclosed, their distance-to-land is small, so they stay shelf-coloured (not deep-dark) — right
 for shallow inland water. They are **not** tinted as distinct freshwater yet.
 
+## Phase D — web: real shore texture on the shallows — **DONE (2026-07)**
+
+Phase B drew the shallow bands as a flat procedural teal; Phase D gives them the real Civ4
+**shore wave texture**, the same soft-light treatment the open sea got in Phase C.
+
+- **A greyscale shore-wave tile.** `bakeShoreTile()` (`web/build.mjs`) bakes a **128px neutral-mean
+  greyscale** ripple from `textures/water/shoredetail.dds` (shared with the sea tile via
+  `bakeRippleTile`, at a touch more contrast — 1.3 vs 1.1 — so the near-shore chop reads). Shipped
+  as `BUNDLE.shore` / `core.SHORE`; null when the art is absent → the shallows stay flat-tinted.
+- **The shallows tint** is now the authentic **tropical-sea HUE at a bright coastal-teal luminance**
+  (`bakeSeaBands().shore`, `SEA_BANDS.shore` → `[88,193,190]`) — the shore reads as a brighter,
+  lighter version of the open water. (`shoreblend.dds` itself is a neutral sandy blend with no
+  usable water hue, like the land blends, so it is **not** used; only `shoredetail.dds` was moved
+  out of LFS into `data/civ4/assets`.)
+- **One province-level pass.** The per-plot `drawCoast` became `paintCoast` (`web/js/plots.mjs`),
+  run once per province after the hillshade pass (and before features/rivers, so a river mouth sits
+  over the shallows). It paints the shore-hue bands + corners on a scratch layer, clips the shore
+  ripple to that layer's alpha (`destination-in`), then composites colour + ripple (`soft-light`,
+  α 0.9) + crisp foam onto the offscreen. So the wave rides only the shore water and fades out
+  exactly as the band does. Degrades to flat bands when the shore tile isn't loaded.
+
+Verified headless (`tools/webverify`) at world, coastal and deep island zoom — the coast reads as a
+bright textured teal shallows ring fading into deep water, foam at the shoreline, zero console errors.
+
+## Phase E — engine: coastal water plots (features & bonuses) — **DONE (2026-07)**
+
+Civ4 places bonuses (fish, crab, clam, whale, pearls) and features (ice) on water tiles. The
+engine used to generate **land plots only**, so the shore had none. Phase E generates a
+**coastal-shelf water field** for every sea/lake province, owned by that province.
+
+- **Shelf water terrains in the registry.** `TerrainExporter` now keeps the shelf water terrains
+  (`TERRAIN_COAST`/`TERRAIN_SEA` + polar/tropical, `TERRAIN_LAKE_SHORE`/`TERRAIN_LAKE`) alongside
+  the 16 land terrains (deep sea/ocean/trench stay out). This wakes the sea bonuses in
+  `bonuses.json`, whose `validTerrains` reference them.
+- **A global distance-to-land field.** `ProvinceRaster` computes, once, the Chebyshev distance
+  from every pixel to the nearest dry land (two chamfer passes), exposed per cell on
+  `ProvinceMask.landDist`. It grades a sea province's own water cells into the shelf: `1` = COAST,
+  `2..SHELF_MAX(3)` = SEA; cells further out are deep water and get no plot.
+- **Water plot generation.** `ProvincePlotField.generate` branches on province type: SEA/LAKE grow
+  the shelf field (each shelf cell a `FLAT` water plot, its terrain from `MapTerrainCodec.water`
+  by depth + climate-by-latitude), and the **existing** `BonusGenerator.pick` places the sea
+  resource — fish/crab in temperate/tropical coast, crab/whale into polar, by the terrain's climate
+  variant. LAND and IMPASSABLE wasteland keep the land path. Deterministic off the same canonical
+  per-province terrain stream; land fields are untouched. Ice (a water feature) is deferred.
+- **All provinces generated.** `WorldPlotGenerator` now iterates every non-RNW province (RNW/Unused
+  already dropped upstream), writing land fields for LAND/IMPASSABLE and shelf fields for SEA/LAKE;
+  a deep-ocean province with no shelf writes nothing.
+
+One correctness fix landed here: Civ4's fishing bonuses (fish/crab/clam/whale/pearls/shrimp/lobster)
+declare **no relief flags** — water is gated by terrain, not flatlands/hills/peaks — so the land
+relief gate left only `OIL`/`NATURAL_GAS` (which are flat). `BonusGenerator.pick` gained a scoped
+`water` flag that skips the relief test on water plots (land placement byte-identical); sea provinces
+now carry the full mix (fish/crab/lobster/shrimp/pearls + offshore oil/gas + C2C deep-sea vents).
+Verified by `ProvincePlotFieldTest.seaProvinceGrowsAnEligibleCoastalShelf` (a coastal sea province
+grows a bounded shelf ring of flat water plots, COAST cells touch the shore, every placed resource is
+an eligible sea bonus, and a classic fishing bonus actually appears across a seed sweep).
+
+## Phase F — web: render coastal resources — **DONE (2026-07)**
+
+Phase E generated the data; Phase F makes it visible. The web used to ship **LAND provinces only**
+and draw **no resource icons at all**. The plot render loop (`drawPlots`) already tolerated ring-less
+provinces (it culls by bbox / centroid), so sea provinces joined without any ocean polygons.
+
+- **F-a — shelf plots into the bundle** (`build.mjs`). The packed set grew beyond LAND to the SEA/LAKE
+  provinces that have grids (309 sea + 69 lake): their plots pack into `plots.pack` + `plotIndex` like
+  land, and each gets a minimal province record (`id, type, lat, lon`, `hasPlots`, `rings:null`) plus a
+  **plot-extent bbox** (`packPlots` parses the grid once) that `provSrcBox` uses for viewport culling
+  in place of a polygon. The border exporter is unchanged (no giant ocean outlines).
+- **F-b — render water plots** (`plots.mjs`). `buildPlotTexCanvas` and the flat `buildPlotCanvas` skip
+  all the land ground stages for a sea/lake province (`p.type` SEA/LAKE), leaving its cells transparent
+  so the base sea gradient + ripple and the Phase-B/D shore shallows (drawn from the land side) show
+  through — only the resource glyphs are painted. Bounded: sea provinces hold only their thin shelf ring.
+- **F-c — a procedural resource-icon layer** (`drawBonuses`/`bonusGlyph`, new). No sprite art survives
+  the LFS cleanup, so each plot with a bonus gets a small procedural **category glyph** — colour + shape
+  keyed by category (sea food = teal circle, gems/luxury = magenta diamond, energy = amber triangle,
+  metal/stone = steel square, farm/trade crop = green circle, livestock/game = tan circle, else a pale
+  dot). Drawn into the per-province texture canvas, so it only appears past `K_TEX`. Shared by land and
+  sea, so **land** bonuses (wheat, iron, gold…) are now visible for the first time too.
+- **F-d — polish.** Glyphs are texture-zoom only; the flat overview shows clean water; sea/lake stay
+  **non-interactive** (labels already skip non-LAND; the click/centroid fallback skips ring-less
+  provinces). Verified headless at world / mid / texture zoom — coasts dotted with teal fishing markers
+  and offshore energy/pearl glyphs, land carries its resources, clean water at mid-zoom, zero console
+  errors.
+
+**Ice & tooltip (2026-07):** both landed. `FEATURE_ICE` joined the feature registry (`FeatureExporter`;
+its `validTerrains` are the polar sea/coast terrains) and `ProvincePlotField.generateWater` places it
+on polar shelf water with a coverage that ramps by latitude (~15% at 66° → 90% by ~82°), one climate
+band per province so the draw stays deterministic; `plots.mjs` `drawSeaIce` renders it as pale pack ice
+(open shelf shows a teal rim where coverage is partial). A hover **tooltip** (`plotAt` in `panel.mjs`,
+using each province's stored plot grid) names the resource under the cursor — `◆ Fish`, `◆ Ice`, `◆ Iron
+Ore` — for land and the ring-less sea shelf alike, at texture zoom.
+
+**Still deferred:** sourcing real Civ4 bonus button art (glyphs are procedural), and giving sea
+provinces simplified polygons so they hover/focus/select like land.
+
 **Next (not done): distinct lake tint.** `terrain.bmp` can't tell a lake from the sea (same
 indices); the province layer can (`ProvinceType.LAKE`, from `default.map`'s `lakes`). Tinting
 lakes with the Civ4 `lakeblend` hue would need a per-pixel lake mask — either a `provinces.bmp`
