@@ -41,12 +41,16 @@ function drawSeaBase(w, h) {
   // by deep zoom, where the upscaled tile would blur and open water is calm anyway.
   if (seaPat) {
     const fade = 1 - Math.max(0, Math.min(1, (cam.k - K_PLOT) / (K_TEX - K_PLOT)));   // 1 ≤K_PLOT → 0 ≥K_TEX
-    if (fade > 0.02) {
+    // confine the ripple to the mapped-latitude band (the raster's on-screen Y extent). Beyond it —
+    // the empty polar seas between the map's top/bottom edge and the ±89° scene clip — the tile would
+    // repeat as a visible static grid, so those bands stay flat gradient instead.
+    const my0 = Math.max(0, cam.y + cam.k * VIEW.dy), my1 = Math.min(h, cam.y + cam.k * (VIEW.dy + VIEW.dh));
+    if (fade > 0.02 && my1 > my0) {
       const s = cam.k * (VIEW.dw / MAP.dw) * SEA_WAVE;              // map px → screen, so it zooms with the map
       seaPat.setTransform(new DOMMatrix([s, 0, 0, s, cam.x + cam.k * VIEW.dx, cam.y + cam.k * VIEW.dy]));
       ctx.save();
       ctx.globalCompositeOperation = "soft-light"; ctx.globalAlpha = fade;
-      ctx.fillStyle = seaPat; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = seaPat; ctx.fillRect(0, my0, w, my1 - my0);
       ctx.restore();
     }
   }
@@ -56,7 +60,9 @@ function resize() {
   cv.width = r.width*dpr; cv.height = r.height*dpr; VIEW.dpr = dpr;
   fitView(r.width, r.height); clampPan(); draw();
 }
+const zoomLabelEl = document.getElementById("zoomLevel");   // top-left live magnification readout
 function draw() {
+  if (zoomLabelEl) zoomLabelEl.textContent = Math.round(cam.k) + "×";   // 1× (world) … 256× (max)
   const w=VIEW.w, h=VIEW.h, dpr=VIEW.dpr;
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
@@ -208,8 +214,8 @@ function focusProvince(id, k) {
 function focusProvinceFit(id) {
   const p = Pby.get(id); if (!p) return;
   const box = provSrcBox(p);
-  if (!box) return focusProvince(id, 9);
-  const m = 0.82;                                                        // leave a little air around it
+  if (!box) return focusProvince(id, 40);                               // ring-less province: a deep fixed zoom
+  const m = 0.9;                                                         // fill most of the canvas, a sliver of air
   const wSrc = Math.max(1, (box.x1 - box.x0) / (MAP.x1 - MAP.x0) * VIEW.dw);   // province width in base screen px
   const hSrc = Math.max(1, (box.y1 - box.y0) / (MAP.y1 - MAP.y0) * VIEW.dh);
   cam.k = Math.max(1, Math.min(K_MAX, Math.min(VIEW.w * m / wSrc, VIEW.h * m / hSrc)));
@@ -217,10 +223,24 @@ function focusProvinceFit(id) {
   cam.y = VIEW.h / 2 - cam.k * baseYr((box.y0 + box.y1) / 2);
   clampPan(); S.baseVersion++; draw();
 }
+// Deep link: focus a province from the URL. Accepts a QUERY string (?p=<id>&z=<zoom> — the
+// production/shareable form; on Azure SWA the navigationFallback rewrites /worldmap → index.html
+// so the pretty path works too) OR the #p=<id>&z=<zoom> hash (back-compat). The query wins when
+// both are present. z is optional (defaults to a deep texture zoom).
+function readDeepLink() {
+  const qs = new URLSearchParams(location.search);
+  let p = qs.get("p"), z = qs.get("z");
+  if (p == null) { const m = /(?:^|[#&])p=(\d+)/.exec(location.hash); if (m) p = m[1]; }
+  if (z == null) { const m = /(?:^|[#&])z=(\d+(?:\.\d+)?)/.exec(location.hash); if (m) z = m[1]; }
+  return { p: p == null || p === "" ? null : +p, z: z == null || z === "" ? null : +z };
+}
+function hasDeepLink() { return readDeepLink().p != null; }
 function applyHash() {
-  const p = /(?:^|[#&])p=(\d+)/.exec(location.hash);
-  const z = /(?:^|[#&])z=(\d+(?:\.\d+)?)/.exec(location.hash);
-  if (p) focusProvince(+p[1], z ? +z[1] : 18);
+  const { p, z } = readDeepLink();
+  if (p == null || Number.isNaN(p)) return;
+  if (z != null && !Number.isNaN(z)) focusProvince(p, z);   // explicit ?z= → that exact zoom
+  else focusProvinceFit(p);                                 // no zoom given → frame the whole province, centred
 }
 window.addEventListener("hashchange", applyHash);
-export { draw, zoomAt, resize, focusProvince, focusProvinceFit, applyHash };
+window.addEventListener("popstate", applyHash);   // browser back/forward between deep links
+export { draw, zoomAt, resize, focusProvince, focusProvinceFit, applyHash, hasDeepLink };

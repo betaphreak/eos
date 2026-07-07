@@ -186,3 +186,6 @@ http→https redirect). `plots.pack` is ~15 MB, so the whole site fits the Free 
   rather than floating over a schematic.
 - This is one directory in the engine's monorepo, not a separate frontend project;
   it has no build tooling beyond Node.
+- Interaction & chrome (URL deep links, focus framing, pan clamp, collapsible sidebar,
+  floating search, status line, theme) are documented in [`docs/ux.md`](../docs/ux.md);
+  the map-rendering pipeline (terrain, shore, sea, icons) in [`docs/coastlines.md`](../docs/coastlines.md).

@@ -258,3 +258,35 @@ New committed art (non-LFS, `data/civ4/assets/…`): `terrain/waves/wave_crest.d
 `terrain/features/icepack/icepack_1024.dds`. Baked tiles (`foam-*.png`, `ice-*.png`) are gitignored/regen.
 Verified headless at arctic deep/moderate and temperate deep — clean terrain, floe-textured ice with open
 leads, foam + beach at the shore, zero console errors.
+
+## Phase H — wider shallows + a ragged (non-square) land edge — **DONE (2026-07)**
+
+Phase G softened only the *water* side of the shore (beach apron feathering outward, foam at the
+shoreline), so a straight coast still read as a column of square land tiles with a thin fringe — the
+land/water boundary was always an unbroken grid line. Two changes in `paintCoast` (`plots.mjs`) break
+that up, both riding the existing per-province offscreen:
+
+- **Lever A — wider transition.** `PAD` grew `1 → 2` so the shore can bleed >1 cell into the sea; the
+  shallows band reach went `s·0.9 → s·1.25` and the beach apron `s·0.32–0.74 → s·0.45–1.0`, giving a
+  broader shore→deep gradient instead of a one-cell sliver.
+- **Lever B1 — carve the land edge.** Before the shore bands draw, `erodeCoast` bites a ragged,
+  per-plot-hash-jittered notch out of each coastal cell's water-facing edge (`coastBites` → K=4 spans,
+  depth 0..0.30·s, some spans left full so the coast mixes eroded and intact tiles → `clearRect`). The
+  shallows pass (`drawCoastBands`) then refills those exact bite rects with the shore hue, so the carved
+  land reads as wet shore — no transparent deep-sea gaps. The coastline meanders ±~0.3 cell off the grid,
+  so the land stops reading as squares. Same deterministic-hash idiom as `drawBeach`/`drawSeaIce`; gated on
+  `ramp>0` (well-resolved provinces only). Verified headless (before/after at temperate-coast plot zoom):
+  the hard square staircase becomes a wide teal shallows with an irregular shoreline, zero console errors.
+
+**Ocean & icon render polish (2026-07).** Two map-rendering adjustments alongside the chrome rework:
+- **No polar ripple tiling.** The ocean ripple (`drawSeaBase`, `main.mjs`) is now confined to the map
+  raster's on-screen Y extent — beyond it (the empty polar seas between the map edge and the ±89° clip)
+  the tile was repeating as a visible static grid; those bands now stay flat gradient.
+- **Resource icons → zoom-gated screen overlay.** `drawBonuses` (baked into the province texture, visible
+  from `K_TEX`) became `drawBonusOverlay` (`plots.mjs`), a screen-space pass drawn only at the deepest
+  zooms (`cam.k ≥ 64` → the 64/128/256 steps), each icon anchored in its plot's **bottom-left** corner and
+  sized to **21 px at `K_MAX`** (proportional below). Land + shelf water alike; cheap (few provinces in view
+  that deep).
+
+> Navigation, camera framing, and the web UI chrome (deep links, focus/pan, the collapsible sidebar,
+> floating search, status line, dark default) are documented in **[`docs/ux.md`](ux.md)**, not here.

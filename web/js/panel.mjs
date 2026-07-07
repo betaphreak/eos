@@ -1,5 +1,5 @@
 import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, S } from "./core.mjs";
-import { draw, zoomAt, resize, focusProvince, focusProvinceFit, applyHash } from "./main.mjs";
+import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
 import { loadPlots } from "./plots.mjs";
 stage.addEventListener("wheel", e => {
   e.preventDefault();
@@ -74,6 +74,7 @@ function toggleFullscreen() {
   else stage.requestFullscreen?.();
 }
 document.getElementById("zoomReset").onclick = toggleFullscreen;
+document.getElementById("zoomLevel").onclick = resetView;   // top-left readout doubles as reset-to-world
 document.addEventListener("fullscreenchange", resize);
 // keyboard: WASD / arrows pan · +/- zoom · 0 or Home reset to world · F fullscreen
 window.addEventListener("keydown", e => {
@@ -81,7 +82,7 @@ window.addEventListener("keydown", e => {
   if (e.target instanceof HTMLElement && e.target.matches("input, textarea")) return;   // don't hijack typing
   const step = Math.max(40, Math.min(VIEW.w, VIEW.h) * 0.12);
   switch (e.key) {
-    case "Escape": if (unfocusProvince()) { e.preventDefault(); } return;   // return from a focused province
+    case "Escape": if (closePanel()) { e.preventDefault(); } return;   // collapse the sidebar + restore camera
     case "w": case "W": case "ArrowUp":    cam.y += step; break;
     case "s": case "S": case "ArrowDown":  cam.y -= step; break;
     case "a": case "A": case "ArrowLeft":  cam.x += step; break;
@@ -256,10 +257,14 @@ stage.addEventListener("dblclick", e=>{
 
 // ---- rail ----
 const rail=document.getElementById("rail");
+const railwrap=document.getElementById("railwrap");
+// open/collapse the right sidebar; the top-right controls shift left (.rail-open) to clear it
+function showRail(open){ railwrap.classList.toggle("open", !!open); stage.classList.toggle("rail-open", !!open); }
 function selectJourney(idx){
   S.selectedProv=null;               // journey selection replaces any province detail
   S.selected=idx;
   J.forEach(j=> j._leg.setAttribute("aria-pressed", j.idx===idx));
+  showRail(idx!=null);               // a picked journey shows its detail; deselect collapses
   renderRail(); draw();
 }
 function railMeta(){
@@ -329,6 +334,7 @@ function setMode(m){
   document.querySelector(".subtitle").style.display = cara ? "" : "none";
   if (!cara) { pause(); S.selected = null; }
   S.selectedProv = null;             // start each mode on its own overview
+  showRail(cara);                    // caravan mode opens the panel on its overview; world starts collapsed
   renderRail(); draw();
 }
 // ---- province detail: the full-information sidebar for a selected province ----
@@ -356,6 +362,7 @@ function prettyId(s) {
 function selectProvince(p) {
   S.selectedProv = p;
   if (p && p.hasPlots !== false && !p._plots) loadPlots(p);   // stream in terrain for the breakdown
+  showRail(!!p);                     // selecting opens the info panel; deselecting collapses it
   renderRail(); draw();
 }
 function provinceRail(p) {
@@ -417,7 +424,7 @@ function provinceRail(p) {
       </div>
       ${terrainHtml}
     </div>`;
-  document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; renderRail(); draw(); };
+  document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; showRail(S.mode==="caravan"); renderRail(); draw(); };
 }
 function renderRail(){
   if (S.selectedProv) { provinceRail(S.selectedProv); return; }
@@ -532,9 +539,9 @@ const searchResults = document.getElementById("searchResults");
 const searchClear = document.getElementById("searchClear");
 let searchMatches = [], searchActive = -1;
 let camBeforeFocus = null;        // camera snapshot to unwind with Esc after a focus
-function goToProvince(p, k = 9) {
+function goToProvince(p) {
   camBeforeFocus = { ...cam };    // remember where we were so Esc can return
-  focusProvince(p.id, k);         // zoom + centre the camera on it
+  focusProvinceFit(p.id);         // frame the whole province (centred, filling most of the canvas)
   selectProvince(p);              // and open its detail panel
 }
 function goToProvinceFit(p) {      // double-click: zoom so the whole province fits the viewport
@@ -548,6 +555,16 @@ function unfocusProvince() {       // restore the pre-focus zoom/pan; returns fa
   clampPan(); S.baseVersion++; draw();
   return true;
 }
+// Esc / close button: collapse the sidebar and drop any selection, and restore a focused camera.
+// Returns true if it actually did something (so the caller can swallow the key).
+function closePanel() {
+  const acted = railwrap.classList.contains("open") || S.selectedProv || S.selected != null || camBeforeFocus;
+  unfocusProvince();
+  S.selectedProv = null; S.selected = null;
+  showRail(false); renderRail(); draw();
+  return !!acted;
+}
+document.getElementById("railClose").onclick = closePanel;
 function runSearch(raw) {
   const q = raw.trim().toLowerCase();
   searchClear.hidden = !q;
@@ -594,7 +611,7 @@ searchInput.addEventListener("focus", () => { if (searchInput.value.trim()) runS
 searchInput.addEventListener("blur", () => setTimeout(() => { searchResults.hidden = true; }, 150));
 searchInput.addEventListener("keydown", e => {
   if (e.key === "Escape") {
-    if (unfocusProvince()) { e.preventDefault(); return; }   // first Esc returns from the focused province
+    if (closePanel()) { e.preventDefault(); return; }        // first Esc collapses the panel / returns the camera
     searchInput.value = ""; runSearch(""); searchInput.blur(); return;
   }
   if (searchResults.hidden || !searchMatches.length) return;
@@ -614,6 +631,8 @@ export function boot() {
   resize();
   setT(t0);
   setMode(S.mode);            // paints the rail + chrome for the active mode (default: world)
-  applyHash();
-  if (S.mode === "caravan" && !reduce && !location.hash) setTimeout(play, 650);
+  // apply the ?p=/#p= deep link AFTER first layout — focusProvince needs a sized VIEW, so calling
+  // it inline at boot (before the stage has laid out) silently no-ops
+  requestAnimationFrame(() => requestAnimationFrame(applyHash));
+  if (S.mode === "caravan" && !reduce && !hasDeepLink()) setTimeout(play, 650);
 }

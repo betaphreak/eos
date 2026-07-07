@@ -116,7 +116,11 @@ const destSet = new Set(J.map(j=>j.destId));
 function clampAxis(camv, base, dim, viewDim) {
   const size = cam.k * dim, pos = camv + cam.k * base;
   if (size <= viewDim) return (viewDim - size) / 2 - cam.k * base;   // centre, no pan on this axis
-  return Math.min(0, Math.max(viewDim - size, pos)) - cam.k * base;
+  // allow the map to be panned until its top/bottom edge reaches the viewport centre (margin =
+  // viewDim/2), so a province at the very edge of the mapped latitudes can still be centred (e.g.
+  // a deep link to a far-north coast). Beyond the edge the polar sea gradient fills the gap.
+  const m = viewDim / 2;
+  return Math.min(m, Math.max(viewDim - size - m, pos)) - cam.k * base;
 }
 // the world's on-screen width (one full 360° of longitude) at the current zoom — the
 // horizontal wrap period of the cylindrical map
