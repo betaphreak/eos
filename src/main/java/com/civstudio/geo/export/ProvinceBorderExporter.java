@@ -29,10 +29,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * <p>
  * It reads the same source raster the other exporters do, {@code
  * data/anbennar/provinces.bmp} (24-bit, one colour per province), and resolves
- * colours to ids/names via {@code data/anbennar/definition.csv} — but keeps only
- * the provinces present in the committed {@code provinces.json} whose {@code type}
- * is neither {@code SEA} nor {@code LAKE} (oceans have enormous, wiggly coastlines
- * and are drawn as terrain, not as data provinces).
+ * colours to ids/names via {@code data/anbennar/definition.csv}. It keeps every land
+ * province plus the <b>coastal</b> sea/lake provinces — those that grew a shelf grid
+ * (so the web can hover/select them like land, {@code docs/coastlines.md} Phase F);
+ * deep-ocean provinces with no shelf are skipped (their huge outlines are pure clutter
+ * and they ship nothing).
  * <p>
  * For each kept province it: (1) frames the province's pixels to their bounding
  * box, (2) splits them into 8-connected components (islands/exclaves each become a
@@ -57,6 +58,7 @@ public final class ProvinceBorderExporter {
 	private static final String DEFINITIONS = "data/anbennar/definition.csv";
 	private static final String PROVINCES_BMP = "data/anbennar/provinces.bmp";
 	private static final String PROVINCES_JSON = "src/main/resources/map/provinces.json";
+	private static final String GRID_DIR = "src/main/resources/map/provinces";
 	private static final String OUTPUT = "src/main/resources/map/borders.json";
 
 	private static final Pattern PLACEHOLDER_NAME = Pattern.compile("Anbennar\\d+");
@@ -150,7 +152,13 @@ public final class ProvinceBorderExporter {
 		return idToColor;
 	}
 
-	/** The ids of every non-water province in {@code provinces.json}, in file order. */
+	/**
+	 * The ids to outline, in {@code provinces.json} order: every land province, plus the
+	 * <b>coastal</b> sea/lake provinces — those that grew a shelf grid ({@code
+	 * map/provinces/<id>.json.gz}), so the web can hover/select them like land. Deep-ocean
+	 * provinces with no shelf are skipped (their huge outlines would be pure clutter, and they
+	 * ship nothing). The grids must exist first ({@link WorldPlotGenerator}).
+	 */
 	private static List<Integer> loadLandProvinceIds() throws Exception {
 		ObjectMapper mapper = new ObjectMapper();
 		List<Map<String, Object>> provs = mapper.readValue(new File(PROVINCES_JSON),
@@ -159,8 +167,12 @@ public final class ProvinceBorderExporter {
 		List<Integer> ids = new ArrayList<>();
 		for (Map<String, Object> p : provs) {
 			String type = String.valueOf(p.get("type"));
-			if ("SEA".equals(type) || "LAKE".equals(type)) continue;
-			ids.add(((Number) p.get("id")).intValue());
+			int id = ((Number) p.get("id")).intValue();
+			// a sea/lake province ships (and so is outlined) only if it grew a coastal shelf
+			if (("SEA".equals(type) || "LAKE".equals(type))
+					&& !new File(GRID_DIR, id + ".json.gz").exists())
+				continue;
+			ids.add(id);
 		}
 		return ids;
 	}
