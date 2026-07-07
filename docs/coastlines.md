@@ -224,6 +224,7 @@ ocean. `WorldPlotGenerator` must run before the border exporter so the shelf gri
 - **Rail stat.** a selected sea/lake province shows *Water area* + *Shelf plots* instead of the
   land-only *Land/Water plots*.
 
-**Still deferred:** sourcing real Civ4 bonus button art — the resource glyphs stay procedural (no sprite
-art survives the LFS cleanup; `data/civ4` is XML only), so this needs the source assets. The ripple
-pattern is also zoom-invariant; a geo-scaled variant is a possible refinement.
+**Real resource icons (2026-07):** the procedural category glyphs are now the **fallback** — resourced
+plots draw the true Civ4 resource symbol, sliced from `GameFont.tga` by `FontButtonIndex` and atlased in
+the web build (no Blender). See `docs/bonus-sprite-bake.md`. The ripple pattern is still zoom-invariant;
+a geo-scaled variant is a possible refinement.

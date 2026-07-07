@@ -40,7 +40,9 @@ Key facts (from `Assets/art/Readme.txt`):
 
 **Java port implication:** you don't need FPK. Treat `UnpackedArt/art` as the asset
 root and resolve XML paths directly against it (case-insensitively). If you ever
-need the packed format, `Tools/PakBuild.exe` is the reference packer.
+need the packed format, `Tools/PakBuild.exe` is the reference packer. *(As built, the
+in-use textures have been copied out of LFS into `data/civ4/assets/` and `build.mjs`'s
+`resolveArt` reads there first, falling back to `UnpackedArt/art` — see §10/§11.)*
 
 ---
 
@@ -279,11 +281,14 @@ target). Concretely:
   (or replaced with hand-authored 2D art); the browser only ever sees the sprite.
 - **Terrain blend** — draw from a WebP tile atlas driven by the §4.1 16-way
   `TextureBlend` table (pre-composed tiles, or composited on the canvas).
-- **Consequence for the LFS source** — the `.nif`/`.kf`/`.kfm` mesh+anim tree is the
-  **bulk of the 141 MB and never ships**; it is touch-once source (used only to
-  pre-render sprites) and is a candidate to **prune from LFS** once the sprites are
-  baked. Only the ~40 land/water terrain textures + the chosen feature sprites are
-  actually shipped.
+- **Consequence for the LFS source** — the in-use terrain/water/river **textures have already been
+  extracted out of LFS** into `data/civ4/assets/` (32 `.dds`, ~15 MB, committed **non-LFS**): the 16
+  land terrains' blend/detail, the sea blend/detail set (`seablend`/`seadetail`/`seatrop`/`seapol`/
+  `seadeepblend`), `shoredetail`, and `allriverssmall`. `build.mjs`'s `resolveArt` reads there first
+  (falling back to `UnpackedArt/art`), so **CI bakes the web assets without pulling LFS at all**
+  (`deploy-web.yml` checks out `lfs: false`). What remains in `UnpackedArt` (Git-LFS, ~141 MB) is the
+  `.nif`/`.kf`/`.kfm` mesh+anim tree (the bulk) plus the unused textures — touch-once source for the
+  still-unbuilt sprite baker, and a candidate to prune once sprites are baked.
 
 *(3D WebGL — `.nif`→glTF/GLB + `.dds`→KTX2/Basis — is recorded only as the road not
 taken, should the client ever go 3D.)*
@@ -306,9 +311,12 @@ and the *deliverable* is web atlases + JSON, not Civ4 formats.**
 ## 11. As-built status (2026-07) — what's actually wired vs. §10's plan
 
 §1–§10 describe the *target*. This section is the **current implementation**, so the
-gap between "art available" and "art rendered" is explicit. **Only base ground is
-done.** Of the whole `terrain/` tree, the web client touches **only the 16 land
-ground detail textures**, and only as a *colour source*.
+gap between "art available" and "art rendered" is explicit. **Ground, water and rivers are done;
+features/bonuses/improvements/wonders are not.** Of the whole `terrain/` tree, the web client bakes
+the **16 land ground blend/detail textures** (as a colour source), the **sea/shore water textures**
+(climate gradient + ripple + shore shallows), and the **river ribbon** — all from the real `.dds` at
+build time. The 3D `.nif` feature/bonus/improvement/wonder meshes are untouched; on-map bonuses are
+drawn as procedural glyphs and land features as procedural marks.
 
 **Done**
 
@@ -318,6 +326,11 @@ ground detail textures**, and only as a *colour source*.
   DUNES, SALT_FLATS, TAIGA, TUNDRA, PERMAFROST) → `src/main/resources/map/terrain-art.json`
   (`path`/`grid`/`detail` paths, `layerOrder`, and the full 16-way `blend` table). The
   §4.2–4.5 exporters (Feature/Bonus/Improvement/Route) are **not built**.
+- **Water & coast art — baked directly in `build.mjs`, no `ArtInfo` exporter.** The sea/shore is
+  textures, not an `ART_DEF`: `bakeSeaBands`/`bakeSeaTile`/`bakeShoreTile` read `textures/water/*.dds`
+  via `dds.mjs` for the climate band hues, the open-sea ripple tile, and the shore-wave tile;
+  `ProvinceRaster` + `ProvincePlotField` add the global coast mask and the coastal-shelf water plots
+  (with sea bonuses + polar ice). See `docs/coastlines.md` (Phases A–F) and `docs/river-rendering.md`.
 - **The §10 "build.mjs can't decode `.dds`" caveat is resolved.** `web/dds.mjs` is a
   **hand-rolled, dependency-free DXT1/3/5 decoder** used *at build time* by `web/build.mjs`
   to read detail-texture mean colours and bake the recolored texture atlas. The runtime
@@ -342,7 +355,11 @@ ground detail textures**, and only as a *colour source*.
   `TextureBlend` alpha tiles** (§6.1 knowingly approximated); **hillshade** from real
   `elevation` (NW sun) + snow cap; **procedural vector feature marks** (`featureSprite`:
   trees = circles, swamp = reeds, cactus, oasis, savanna tufts; `FLOOD_PLAINS` left bare);
-  and **rivers as a flat translucent blue cell fill**.
+  **rivers as a real water-tile ribbon** tapered by authored width (`drawRiver`, see
+  `docs/river-rendering.md`); the **coast shallows** (real shore-wave texture); and, on sea/lake
+  provinces, the **coastal-shelf water plots** with **resource glyphs** + **polar pack ice**.
+  The open sea itself is a separate screen-space layer (climate gradient + ripple + depth band,
+  `main.mjs drawSeaBase`), drawn behind the land raster at every zoom.
 
 **Not built** (the visible half of §3–§6):
 
@@ -352,12 +369,21 @@ ground detail textures**, and only as a *colour source*.
   `docs/river-rendering.md`. Flow *direction* (Phase 2 — an invisible data product for
   river-navigation, `geo/RiverFlow`) is also done; the faithful `borderNN` edge tiles
   (Phase 3) are still open.
-- **No real feature, bonus, improvement, coastline/water, or natural-wonder art.**
-  Features are procedural JS marks; non-river water is a flat tint. These remain gated on
-  the offline `.nif`→sprite baker.
+- **Coast & open sea now use real Civ4 water art** (Phases A–F, done 2026-07 —
+  `docs/coastlines.md`): the shore shallows carry the `textures/water/shoredetail.dds` ripple over a
+  `shoreblend`-derived hue; the open ocean is a climate-banded gradient (`seatrop`/`sea`/`seapol`
+  blends) with the `seadetail` ripple and a distance-to-land depth band; and every sea/lake province
+  grows a coastal-shelf of water plots. All **baked from the real `.dds` via `web/dds.mjs`** — water
+  is textures, not meshes, so no `.nif` was needed.
+- **Still no real feature, improvement, or natural-wonder art.** Land features are procedural JS
+  marks (plus procedural polar **pack ice** on water plots); these stay gated on the offline
+  `.nif`→sprite baker. The 3D `.nif` mesh tree is untouched.
 - **The offline `.nif`→sprite baker (§10) does not exist** — this is the gating unlock for
   Feature/Bonus/Improvement/Wonder art, which is all 3D `.nif`.
 - **The 16-way `TextureBlend` table is exported to `terrain-art.json` but never read by
   `build.mjs`** — the on-screen blend is the colour-bleed approximation above.
-- **`bonus` is in every plot but never *rendered*.** It is read only for the info-panel
-  resource tally (`web/js/panel.mjs:230`), not drawn on the map.
+- **Bonuses are now rendered — as procedural category glyphs, not real Civ4 art** (Phase F,
+  `web/js/plots.mjs` `drawBonuses`/`bonusGlyph`): each resourced plot draws a small colour+shape
+  glyph keyed by category (sea food, gems/luxury, energy, metal/stone, crop, livestock) at texture
+  zoom, for land and coast alike, with a hover tooltip (`panel.mjs` `plotAt`) plus the info-panel
+  resource tally. Real `ART_DEF_BONUS_*` sprites (all 3D `.nif`) remain gated on the sprite baker.

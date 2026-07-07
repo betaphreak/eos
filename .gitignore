@@ -27,3 +27,7 @@
 # whole-world per-province plot caches — hundreds of MB, canonical/regenerable via
 # WorldPlotGenerator (the sim also regenerates any on demand). Too heavy to commit.
 /src/main/resources/map/provinces/*.json.gz
+# derived, regenerable resource-icon atlas (build.mjs → bakeBonusIcons, sliced from GameFont.tga)
+/web/assets/bonus-icons-*.png
+# derived .nif render sprites (the explored alternative to GameFont — docs/bonus-sprite-bake.md)
+/tools/nif-bake/out/

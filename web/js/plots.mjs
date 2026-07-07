@@ -1,4 +1,4 @@
-import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, TT, RIVER, SHORE, SEA_BANDS, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
+import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, TT, RIVER, SHORE, BONUS_ICONS, SEA_BANDS, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { renderRail } from "./panel.mjs";
 let ttImg = null, ttReady = false, ttTiles = null;
@@ -13,6 +13,10 @@ let shoreImg = null, shoreReady = false;
 if (SHORE) { shoreImg = new Image(); shoreImg.onload = () => { shoreReady = true; draw(); }; shoreImg.src = SHORE.src; }
 // the shallows tint — the Civ4 shoreblend hue baked into the bundle, or the old teal fallback
 const SHORE_COL = (SEA_BANDS && SEA_BANDS.shore) ? SEA_BANDS.shore.join(",") : "116,178,196";
+// the real Civ4 resource-icon atlas (docs/bonus-sprite-bake.md), sliced from GameFont.tga; null when
+// absent → drawBonuses keeps the procedural category glyphs
+let biImg = null, biReady = false;
+if (BONUS_ICONS) { biImg = new Image(); biImg.onload = () => { biReady = true; draw(); }; biImg.src = BONUS_ICONS.src; }
 // split the atlas strip into a per-terrain tile canvas, so each can be a repeating
 // pattern (continuous ground texture across plots, no per-plot tile seam)
 function extractTiles() {
@@ -255,14 +259,24 @@ function buildPlotTexCanvas(p) {
 // shape), not per resource: sea food, gems/luxuries, energy, metals, farm/trade crops, livestock.
 function drawBonuses(o, plots, x0, y0, tpp) {
   const r = Math.max(2.5, tpp * 0.26);                 // glyph radius, ~a quarter tile
+  const sz = Math.max(7, tpp * 0.72);                  // real-icon sprite size
+  const useIcons = BONUS_ICONS && biReady;
   o.save();
   o.lineWidth = Math.max(1, tpp * 0.06);
   o.strokeStyle = "rgba(8,12,20,.85)";                 // dark keyline so glyphs read on any ground
   for (const q of plots) {
     if (!q.bonus) continue;
-    const g = bonusGlyph(q.bonus);
-    glyphPath(o, g.s, (q.x - x0) * tpp + tpp / 2, (q.y - y0) * tpp + tpp / 2, r);
-    o.fillStyle = g.c; o.fill(); o.stroke();
+    const cx = (q.x - x0) * tpp + tpp / 2, cy = (q.y - y0) * tpp + tpp / 2;
+    const idx = useIcons ? BONUS_ICONS.index[q.bonus] : undefined;
+    if (idx !== undefined) {                           // real Civ4 GameFont symbol
+      const cell = BONUS_ICONS.cell, cols = BONUS_ICONS.cols;
+      o.imageSmoothingEnabled = true;
+      o.drawImage(biImg, (idx % cols) * cell, Math.floor(idx / cols) * cell, cell, cell,
+        cx - sz / 2, cy - sz / 2, sz, sz);
+    } else {                                            // fallback: procedural category glyph
+      glyphPath(o, bonusGlyph(q.bonus).s, cx, cy, r);
+      o.fillStyle = bonusGlyph(q.bonus).c; o.fill(); o.stroke();
+    }
   }
   o.restore();
 }

@@ -14,6 +14,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { decodeDds } from './dds.mjs';
+import { decodeTga } from './tga.mjs';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(WEB, '..');
@@ -148,6 +149,7 @@ const terrainTiles = bakeTerrainTiles(terrainColors);
 const river = bakeRiverTile();               // {src, tile} water tile, or null (flat-fill fallback)
 const sea = bakeSeaTile();                   // {src, tile} greyscale ripple tile, or null (gradient-only fallback)
 const shore = bakeShoreTile();               // {src, tile} greyscale shore-wave tile for the shallows, or null
+const bonusIcons = bakeBonusIcons();         // {src, cell, cols, index:{type:i}} real Civ4 resource icons, or null
 const seaBands = bakeSeaBands();             // {trop, temp, polar, shore} climate sea + shore colours
 const plotPack = packPlots(provinces);
 
@@ -186,7 +188,7 @@ const bundle = {
     origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
-  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, seaBands, geo,
+  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, bonusIcons, seaBands, geo,
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
 };
 
@@ -577,6 +579,62 @@ function bakeSeaTile() { return bakeRippleTile('Art/Terrain/textures/water/seade
 // over the shallow band with `soft-light` so it ripples the shore hue without recolouring it.
 // A touch more contrast than the open sea so the near-shore chop reads. Null → flat shallows.
 function bakeShoreTile() { return bakeRippleTile('Art/Terrain/textures/water/shoredetail.dds', `shore-${SEED}.png`, 1.3); }
+
+// Slice the real Civ4 resource icons out of GameFont.tga into one atlas + a {bonusType: cellIndex}
+// manifest, so the web draws a true per-resource symbol on each resourced plot instead of the
+// procedural category glyph (docs/bonus-sprite-bake.md). GameFont's resource block is a fixed
+// 25-column grid of 21px cells starting at (0,429); a bonus's cell is its FontButtonIndex
+// (CIV4ArtDefines_Bonus.xml), reached through its ArtDefineTag (CIV4BonusInfos.xml). Returns null if
+// any source is absent (the renderer keeps the procedural glyphs); a bonus with a negative index
+// (no unique font icon) or an out-of-grid cell is left out and also falls back to the glyph.
+function bakeBonusIcons() {
+  const gfPath = path.join(ROOT, 'data/civ4/res/Fonts/GameFont.tga');
+  const binfo = path.join(ROOT, 'data/civ4/CIV4BonusInfos.xml');
+  const adef = path.join(ROOT, 'data/civ4/CIV4ArtDefines_Bonus.xml');
+  if (!fs.existsSync(gfPath) || !fs.existsSync(binfo) || !fs.existsSync(adef)) return null;
+  let gf; try { gf = decodeTga(fs.readFileSync(gfPath)); } catch { return null; }
+  // BONUS_* → ArtDefineTag, then ArtDefineTag → FontButtonIndex (regex on the raw XML — Civ4's
+  // default namespace lives only on the root, so the child tags read literally)
+  const tagOf = {};
+  for (const m of fs.readFileSync(binfo, 'utf8').matchAll(/<BonusInfo>[\s\S]*?<Type>(BONUS_[A-Z0-9_]+)<\/Type>[\s\S]*?<\/BonusInfo>/g)) {
+    const a = m[0].match(/<ArtDefineTag>([^<]+)<\/ArtDefineTag>/); if (a) tagOf[m[1]] = a[1].trim();
+  }
+  const fbiOf = {};
+  for (const m of fs.readFileSync(adef, 'utf8').matchAll(/<BonusArtInfo>[\s\S]*?<Type>(ART_DEF_BONUS_[A-Z0-9_]+)<\/Type>[\s\S]*?<\/BonusArtInfo>/g)) {
+    const f = m[0].match(/<FontButtonIndex>(-?\d+)<\/FontButtonIndex>/); if (f) fbiOf[m[1]] = +f[1];
+  }
+  const bonuses = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/bonuses.json'), 'utf8')).map(b => b.type);
+  const CELL = 21, GRID_COLS = 25, X0 = 0, Y0 = 429;   // the resource grid (calibrated)
+  const picks = [];
+  for (const t of bonuses) {
+    const fbi = fbiOf[tagOf[t]];
+    if (fbi === undefined || fbi < 0) continue;        // no unique icon → procedural glyph
+    const sx = X0 + (fbi % GRID_COLS) * CELL, sy = Y0 + Math.floor(fbi / GRID_COLS) * CELL;
+    if (sx + CELL > gf.width || sy + CELL > gf.height) continue;   // outside the resource block
+    picks.push([t, sx, sy]);
+  }
+  if (!picks.length) return null;
+  const cols = 16, rows = Math.ceil(picks.length / cols);
+  const aw = cols * CELL, ah = rows * CELL;
+  const rgb = Buffer.alloc(aw * ah * 3), alpha = Buffer.alloc(aw * ah);
+  const index = {};
+  picks.forEach(([t, sx, sy], i) => {
+    index[t] = i;
+    const dx = (i % cols) * CELL, dy = Math.floor(i / cols) * CELL;
+    for (let y = 0; y < CELL; y++)
+      for (let x = 0; x < CELL; x++) {
+        const so = ((sy + y) * gf.width + (sx + x)) * 4, d = (dy + y) * aw + (dx + x);
+        rgb[d * 3] = gf.rgba[so]; rgb[d * 3 + 1] = gf.rgba[so + 1]; rgb[d * 3 + 2] = gf.rgba[so + 2];
+        alpha[d] = gf.rgba[so + 3];
+      }
+  });
+  const assets = path.join(WEB, 'assets');
+  fs.mkdirSync(assets, { recursive: true });
+  const file = `bonus-icons-${SEED}.png`;
+  fs.writeFileSync(path.join(assets, file), encodePng(aw, ah, rgb, alpha));
+  console.log(`  bonus icons: assets/${file} (${picks.length} GameFont resource symbols)`);
+  return { src: `assets/${file}`, cell: CELL, cols, count: picks.length, index };
+}
 
 // Bake a seamless GREYSCALE ripple tile from a Civ4 water detail texture — the wave pattern
 // only, centred on mid-grey (128) so a `soft-light` overlay leaves the base colour untouched
