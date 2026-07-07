@@ -1,6 +1,6 @@
 import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, S } from "./core.mjs";
 import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
-import { loadPlots } from "./plots.mjs";
+import { loadPlots, bonusIconRect } from "./plots.mjs";
 stage.addEventListener("wheel", e => {
   e.preventDefault();
   const r = stage.getBoundingClientRect();
@@ -206,6 +206,14 @@ function plotAt(mx, my){
       if(sx<X0 || sx>=X1 || my<Y0 || my>=Y1) continue;
       const spx = b.x0 + Math.floor((sx-X0)/(X1-X0)*b.w);
       const spy = b.y0 + Math.floor((my-Y0)/(Y1-Y0)*b.h);
+      // prefer a resource ICON under the cursor: the glyph is large and anchored at its plot's
+      // bottom-left, so it often overlaps a neighbouring cell — scan a small neighbourhood (owner is
+      // at-or-left, at-or-below the cursor) and return the plot whose icon rect covers (sx,my).
+      for(let gy=spy-1; gy<=spy+2; gy++) for(let gx=spx-2; gx<=spx; gx++){
+        const c = p._grid.get(gx*1e5 + gy); if(!c || !c.bonus) continue;
+        const rc = bonusIconRect(c);
+        if(rc && sx>=rc[0] && sx<=rc[2] && my>=rc[1] && my<=rc[3]) return c;
+      }
       const q = p._grid.get(spx*1e5 + spy);
       if(q) return q;                                          // land plot found first; else the sea shelf plot
     }

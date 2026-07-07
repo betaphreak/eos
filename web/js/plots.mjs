@@ -299,6 +299,15 @@ function drawBonusOverlay(vis) {
   }
   ctx.restore();
 }
+// the on-screen rect [x0,y0,x1,y1] of a plot's resource icon (primary world copy), or null when icons
+// are hidden or the plot has no bonus — MUST match drawBonusOverlay's geometry. Used by the hover
+// tooltip so pointing at the big bottom-left-anchored glyph hits its owning plot, not the cell under it.
+export function bonusIconRect(q) {
+  if (cam.k <= BONUS_HIDE_AT || !q || !q.bonus) return null;
+  const plotPx = pxr(1) - pxr(0), size = plotPx * BONUS_PLOTS, inset = Math.max(0.5, plotPx * 0.06);
+  const x = pxr(q.x) + inset, y = pyr(q.y + 1) - inset - size;
+  return [x, y, x + size, y + size];
+}
 // Polar sea ice on a water province's shelf (docs/coastlines.md Phase E/G). The shelf is 70–90% ice,
 // so drawing per-plot floes read as a checkerboard of white squares. Instead the whole ice field is
 // ONE merged sheet: each cell's edges stay flush where the neighbour is also ice (interior seams
