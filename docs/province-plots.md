@@ -11,6 +11,10 @@ geography axis (`com.civstudio.geo` — `Province` incl. `plots`/`waterPlots`/`t
 `Climate`/`WinterSeverity`/`Monsoon`) and the committed Anbennar rasters under
 `data/` with the Phase-5 raster reader (`docs/geography.md`); and the curated
 Civ4/C2C content layer (`geo/TerrainRegistry.java`).
+**Port gaps:** `docs/c2c-generator-port.md` — a slice-by-slice plan for bringing this
+generator into faithful agreement with the upstream `data/civ4/C2C_Planet_Generator_0_68.py`
+(feature seed-and-spread + terrain-rewriting, peak seeding, appearance-probability scatter,
+oasis/diversification, bonus rules), noting what eos already supersedes with the real map.
 **Related:** `docs/geography.md` — this **decides its open question** "Map scale
 vs. colony scale": **a province holds multiple settlements**, which share one
 generated plot field. `docs/village-founding.md` / `docs/caravan-trade.md` found
