@@ -140,7 +140,8 @@ function provinceAt(mx, my){
   let best=null, bd=1e9;                                                    // else nearest centroid
   for(let m=mMin; m<=mMax; m++){
     const sx = mx - m*period;
-    // ring-less (sea/lake) provinces render their coastal resource plots but stay non-interactive
+    // land + coastal sea/lake all carry rings now (they hover/select alike); a province with no
+    // outline (deep ocean, never shipped) has none and is skipped
     for(const p of P){ if(!p.rings) continue; const dx=px(p.lon)-sx, dy=py(p.lat)-my, d=dx*dx+dy*dy; if(d<bd){bd=d;best=p;} }
   }
   return bd<90 ? best : null;
@@ -360,8 +361,11 @@ function provinceRail(p) {
       <div class="rm-sub" style="color:var(--ink-soft);margin-top:-6px"><span class="r">${p.type.toLowerCase()}</span> · province ${p.id}</div>
       ${crumbs ? `<div class="pv-crumbs">${crumbs}</div>` : ""}
       <div class="statrow" style="margin-top:12px">
-        <div class="stat"><div class="k">Land plots</div><div class="v">${p.plots}</div></div>
-        <div class="stat"><div class="k">Water plots</div><div class="v">${p.waterPlots||0}</div></div>
+        ${p.type==="SEA"||p.type==="LAKE"
+          ? `<div class="stat"><div class="k">Water area</div><div class="v">${p.plots}</div></div>
+             <div class="stat"><div class="k">Shelf plots</div><div class="v">${p._plots?p._plots.length:"—"}</div></div>`
+          : `<div class="stat"><div class="k">Land plots</div><div class="v">${p.plots}</div></div>
+             <div class="stat"><div class="k">Water plots</div><div class="v">${p.waterPlots||0}</div></div>`}
         <div class="stat"><div class="k">Neighbours</div><div class="v">${(p.nb||[]).length}</div></div>
       </div>
       <div class="metagrid" style="margin-top:8px">

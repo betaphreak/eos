@@ -96,6 +96,12 @@ function renderScene() {
     ctx.drawImage(mapImg, 0,0,MAP.dw,MAP.dh,
       cam.x + cam.k*VIEW.dx, cam.y + cam.k*VIEW.dy, cam.k*VIEW.dw, cam.k*VIEW.dh);
   }
+  // freshwater lakes: EU4 paints them with the ocean indices, so the raster leaves them the blue
+  // sea gradient — tint each lake province's polygon a distinct green-teal over it so lakes read as
+  // fresh water, not ocean. Uses the lake outlines now shipped in the bundle (docs/coastlines.md).
+  ctx.save(); ctx.fillStyle = "rgba(74,150,128,0.42)";
+  for (const p of P) if (p.type === "LAKE" && p.rings) ctx.fill(provPath(p));
+  ctx.restore();
   drawPlots();   // crisp per-plot Civ4 terrain over the blurred raster when zoomed in
   drawCostOverlay();   // elevation movement-cost heat over the terrain, when toggled on
 

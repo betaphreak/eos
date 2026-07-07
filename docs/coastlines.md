@@ -207,12 +207,23 @@ band per province so the draw stays deterministic; `plots.mjs` `drawSeaIce` rend
 using each province's stored plot grid) names the resource under the cursor — `◆ Fish`, `◆ Ice`, `◆ Iron
 Ore` — for land and the ring-less sea shelf alike, at texture zoom.
 
-**Still deferred:** sourcing real Civ4 bonus button art (glyphs are procedural), and giving sea
-provinces simplified polygons so they hover/focus/select like land.
+**Interactive sea provinces (2026-07):** `ProvinceBorderExporter` now also outlines the **coastal**
+sea/lake provinces (those that grew a shelf grid — deep ocean stays skipped), tracing + Douglas–Peucker
+simplifying them like land (+~100 KB in `borders.json`, avg ~27 pts/ring). With rings in the bundle they
+hover, highlight, click-select and populate the detail rail exactly like land — terrain mix (Sea/Coast
+Polar), the ice feature count, and the sea-resource breakdown — and faint sea-zone outlines divide the
+ocean. `WorldPlotGenerator` must run before the border exporter so the shelf grids exist.
 
-**Next (not done): distinct lake tint.** `terrain.bmp` can't tell a lake from the sea (same
-indices); the province layer can (`ProvinceType.LAKE`, from `default.map`'s `lakes`). Tinting
-lakes with the Civ4 `lakeblend` hue would need a per-pixel lake mask — either a `provinces.bmp`
-+ `definition.csv` load in `build.mjs`, or a global lake mask exported from `ProvinceRaster`
-like the coast/river masks. The ripple pattern is also zoom-invariant; a geo-scaled variant is a
-possible refinement.
+**Map polish (2026-07):** three finishing touches once sea/lake provinces ship with outlines.
+- **Freshwater lake tint.** `main.mjs` `renderScene` fills each `LAKE` province's polygon a distinct
+  green-teal over the (blue) sea base, so lakes read as fresh water rather than ocean — no per-pixel
+  raster mask needed; it rides the lake outlines now in the bundle.
+- **Sea/lake labels.** `labels.mjs` names water provinces in a cool italic, in a secondary pass drawn
+  after (and lower priority than) land names, fading in deeper (`cam.k` 8.5→10.5) so they don't clutter
+  the world view.
+- **Rail stat.** a selected sea/lake province shows *Water area* + *Shelf plots* instead of the
+  land-only *Land/Water plots*.
+
+**Still deferred:** sourcing real Civ4 bonus button art — the resource glyphs stay procedural (no sprite
+art survives the LFS cleanup; `data/civ4` is XML only), so this needs the source assets. The ripple
+pattern is also zoom-invariant; a geo-scaled variant is a possible refinement.

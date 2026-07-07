@@ -56,6 +56,24 @@ function drawLabels() {
       for (let i=0; i<inView.length && i<90; i++)
         label(inView[i].p.name, inView[i].x, inView[i].y, { font:F2, size:10.5, color:"#9fb0c8" });
       ctx.restore();
+      // sea/lake names: secondary, deeper in (they'd clutter the world view), a cool italic and
+      // drawn AFTER land so land wins any label-collision. Uses the coastal water provinces now shipped.
+      const wpa = Math.min(1, Math.max(0, (cam.k - 8.5) / 2));   // fade in over cam.k 8.5 -> 10.5
+      if (wpa > 0.01) {
+        const water = [];
+        for (const p of P) {
+          if (p.type!=="SEA" && p.type!=="LAKE") continue;
+          const x = px(p.lon), y = py(p.lat);
+          if (x < -40 || y < -20 || x > VIEW.w+40 || y > VIEW.h+20) continue;
+          water.push({ p, x, y });
+        }
+        water.sort((a,b)=> b.p.plots - a.p.plots);
+        ctx.save(); ctx.globalAlpha = wpa;
+        const FW="italic 500 10px system-ui,'Segoe UI',sans-serif";
+        for (let i=0; i<water.length && i<40; i++)
+          label(water[i].p.name, water[i].x, water[i].y, { font:FW, size:10, color:"#82b2cc" });
+        ctx.restore();
+      }
     }
   }
 }
