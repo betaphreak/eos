@@ -1,4 +1,14 @@
 [ {
+  "type" : "FEATURE_ICE",
+  "yieldChanges" : [ 0, 0, 0 ],
+  "clearCost" : 0,
+  "requiresFlatlands" : false,
+  "requiresRiver" : false,
+  "validTerrains" : [ "TERRAIN_COAST_POLAR", "TERRAIN_OCEAN_POLAR", "TERRAIN_SEA_POLAR", "TERRAIN_TRENCH_POLAR" ],
+  "healthPercent" : 0,
+  "growth" : 0,
+  "movement" : 2
+}, {
   "type" : "FEATURE_JUNGLE",
   "yieldChanges" : [ -1, 0, 0 ],
   "clearCost" : 40,

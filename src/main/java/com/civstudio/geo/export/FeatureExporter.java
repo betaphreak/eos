@@ -30,12 +30,16 @@ public final class FeatureExporter {
 	private static final String INPUT = "data/civ4/CIV4FeatureInfos.xml";
 	private static final String OUTPUT = "src/main/resources/features.json";
 
-	/** The curated land-feature subset, in {@code docs/plots.md} order. */
+	/**
+	 * The curated feature subset, in {@code docs/plots.md} order: the land features, plus
+	 * {@code FEATURE_ICE} — the one water feature, placed on polar coastal-shelf water
+	 * (its {@code validTerrains} are the polar sea/coast terrains). See {@code docs/coastlines.md}.
+	 */
 	private static final Set<String> KEEP = new LinkedHashSet<>(List.of(
 			"FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_JUNGLE",
 			"FEATURE_BAMBOO", "FEATURE_SAVANNA", "FEATURE_VERY_TALL_GRASS",
 			"FEATURE_CACTUS", "FEATURE_OASIS", "FEATURE_FLOOD_PLAINS",
-			"FEATURE_SWAMP"));
+			"FEATURE_SWAMP", "FEATURE_ICE"));
 
 	private FeatureExporter() {
 	}

@@ -43,11 +43,15 @@ public final class WorldPlotGenerator {
 		File dir = new File("src/main/resources/map/provinces");
 		dir.mkdirs();
 
-		List<Province> land = map.provinces().stream().filter(Province::isSettleable).toList();
-		int total = land.size(), gen = 0, skip = 0, fail = 0;
+		// every non-RNW province: LAND + IMPASSABLE wasteland grow a land field, SEA/LAKE grow a
+		// coastal-shelf water field (ProvincePlotField branches on type). RNW/Unused are already
+		// dropped upstream (not in the WorldMap). A deep-ocean province with no shelf yields an
+		// empty field and is not written (the web keeps drawing it as the open-sea ripple).
+		java.util.Collection<Province> all = map.provinces();
+		int total = all.size(), gen = 0, skip = 0, empty = 0, fail = 0;
 		long t0 = System.currentTimeMillis();
-		System.out.println("generating plot fields for " + total + " settleable land provinces...");
-		for (Province p : land) {
+		System.out.println("generating plot fields for " + total + " provinces (land + coastal shelf)...");
+		for (Province p : all) {
 			if (new File(dir, p.id() + ".json.gz").exists()) {
 				skip++;
 				continue;
@@ -55,21 +59,25 @@ public final class WorldPlotGenerator {
 			try {
 				Rng rng = rngSeed.forProvinceCanonical(RngSeed.Stream.TERRAIN, p.id());
 				ProvincePlotField field = ProvincePlotField.generate(p, registry, raster, rng);
+				if (field.size() == 0) { // deep-water province with no coastal shelf — nothing to store
+					empty++;
+					continue;
+				}
 				List<Plot> plots = new ArrayList<>(field.size());
 				for (ProvincePlot pp : field.plots())
 					plots.add(new Plot(pp.geo(), pp.terrain(), pp.plotType(), pp.feature(), pp.bonus()));
 				ProvincePlotStore.save(p.id(), plots);
 				gen++;
 				if (gen % 200 == 0)
-					System.out.printf("  generated %d (skipped %d) of %d, %ds elapsed%n",
-							gen, skip, total, (System.currentTimeMillis() - t0) / 1000);
+					System.out.printf("  generated %d (skipped %d, empty %d) of %d, %ds elapsed%n",
+							gen, skip, empty, total, (System.currentTimeMillis() - t0) / 1000);
 			} catch (Exception e) {
 				fail++;
 				if (fail <= 20)
 					System.out.println("  skip province " + p.id() + ": " + e.getMessage());
 			}
 		}
-		System.out.printf("done: %d generated, %d already present, %d failed, of %d land provinces in %ds%n",
-				gen, skip, fail, total, (System.currentTimeMillis() - t0) / 1000);
+		System.out.printf("done: %d generated, %d already present, %d empty (no shelf), %d failed, of %d provinces in %ds%n",
+				gen, skip, empty, fail, total, (System.currentTimeMillis() - t0) / 1000);
 	}
 }

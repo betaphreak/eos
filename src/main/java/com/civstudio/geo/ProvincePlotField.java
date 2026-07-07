@@ -80,6 +80,15 @@ public final class ProvincePlotField {
 	private static final double SWAMP_CHANCE = 0.85;
 	private static final double SPARSE_CHANCE = 0.35;
 
+	/**
+	 * How far (Chebyshev pixels) from dry land a sea/lake province still gets water plots — its
+	 * <b>coastal shelf</b>. {@code 1} = COAST (touching land), {@code 2..SHELF_MAX} = SEA;
+	 * cells further out get no plot (the web draws them as the open-sea ripple). This is where
+	 * the Civ4 sea bonuses live, so it bounds the added plot count to a near-shore ring. See
+	 * {@code docs/coastlines.md}.
+	 */
+	private static final int SHELF_MAX = 3;
+
 	private final Province province;
 	private final List<ProvincePlot> plots;
 
@@ -102,6 +111,10 @@ public final class ProvincePlotField {
 	 */
 	public static ProvincePlotField generate(Province province, TerrainRegistry registry,
 			ProvinceRaster raster, Rng rng) throws IOException {
+		// sea/lake provinces grow a coastal-shelf water field instead of the land field; every
+		// other type (LAND, and IMPASSABLE wasteland) goes through the land path below
+		if (province.type() == ProvinceType.SEA || province.type() == ProvinceType.LAKE)
+			return generateWater(province, registry, raster, rng);
 		ProvinceMask mask = raster.mask(province.id());
 		PlotType[] relief = ReliefGenerator.generate(mask, ReliefGenerator.Params.forProvince(province), rng);
 		TerrainGenerator terrainGen = new TerrainGenerator(registry, province.climate(),
@@ -145,6 +158,53 @@ public final class ProvincePlotField {
 				int coast = mask.coast(lx, ly);
 				PlotGeo geo = new PlotGeo(mask.originX() + lx, mask.originY() + ly, riverCode, elevation, coast);
 				out.add(new ProvincePlot(geo, terrain, plotType, feature, bonus));
+			}
+		}
+		return new ProvincePlotField(province, out);
+	}
+
+	/**
+	 * The coastal-shelf water field of a sea/lake province: each of its own water cells within
+	 * {@link #SHELF_MAX} pixels of dry land becomes a {@code FLAT} water plot — COAST (touching
+	 * land) or SEA further out, in the province's climate variant ({@link MapTerrainCodec#water})
+	 * — carrying a sea resource from the same {@link BonusGenerator} the land uses (fish, crab,
+	 * whale, pearls, … place themselves by the water terrain). Deep-water cells beyond the shelf
+	 * get no plot, so the added count is a near-shore ring and the web keeps drawing open water as
+	 * the sea ripple. No wild feature yet (ice is future work). Deterministic off the same
+	 * per-province terrain stream as the land path — it consumes only the bonus draws, in
+	 * row-major order. See {@code docs/coastlines.md}.
+	 */
+	private static ProvincePlotField generateWater(Province province, TerrainRegistry registry,
+			ProvinceRaster raster, Rng rng) throws IOException {
+		ProvinceMask mask = raster.mask(province.id());
+		boolean lake = province.type() == ProvinceType.LAKE;
+		List<Bonus> bonuses = registry.bonuses();
+		double latitude = province.latitude();
+		// FEATURE_ICE covers polar water — sea ice thickening toward the pole. A province is one
+		// climate band (its latitude), so either all its water is polar (ice draws) or none is;
+		// that keeps the per-cell draw order deterministic. Absent registry ice → no ice, no draws.
+		Feature ice = registry.feature("FEATURE_ICE");
+		boolean polar = Math.abs(latitude) >= 66.0 && ice != null;   // matches MapTerrainCodec's polar band
+		double iceCover = polar ? Math.min(0.9, 0.15 + (Math.abs(latitude) - 66.0) / 16.0 * 0.75) : 0;
+		int w = mask.width(), h = mask.height();
+		List<ProvincePlot> out = new ArrayList<>();
+		for (int ly = 0; ly < h; ly++) {
+			for (int lx = 0; lx < w; lx++) {
+				if (!mask.isLand(lx, ly)) // the province's own water pixels
+					continue;
+				int dist = mask.landDist(lx, ly);
+				if (dist < 1 || dist > SHELF_MAX) // keep only the near-shore shelf ring
+					continue;
+				Terrain terrain = MapTerrainCodec.water(lake, dist, latitude, registry);
+				if (terrain == null) // registry lacks the shelf water terrains — no water plots
+					continue;
+				// polar sea ice, validity-gated to the polar water terrain (freshwater lakes get none)
+				Feature feature = polar && rng.uniform() < iceCover
+						&& ice.validTerrains().contains(terrain.type()) ? ice : null;
+				Bonus bonus = BonusGenerator.pick(terrain, PlotType.FLAT, feature, latitude, bonuses, rng, true);
+				PlotGeo geo = new PlotGeo(mask.originX() + lx, mask.originY() + ly, 0,
+						mask.elevation(lx, ly), mask.coast(lx, ly));
+				out.add(new ProvincePlot(geo, terrain, PlotType.FLAT, feature, bonus));
 			}
 		}
 		return new ProvincePlotField(province, out);

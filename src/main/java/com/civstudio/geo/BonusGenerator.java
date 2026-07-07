@@ -45,27 +45,45 @@ public final class BonusGenerator {
 	 */
 	public static Bonus pick(Terrain terrain, PlotType relief, Feature feature,
 			double latitude, List<Bonus> bonuses, Rng rng) {
+		return pick(terrain, relief, feature, latitude, bonuses, rng, false);
+	}
+
+	/**
+	 * As {@link #pick(Terrain, PlotType, Feature, double, List, Rng)}, but {@code water}
+	 * marks a coastal-shelf water plot: the relief flags are a <b>land</b> concept, so Civ4's
+	 * sea bonuses (fish, crab, whale, pearls, …) carry none of them and are gated purely by
+	 * their water {@code validTerrains}. On water we therefore skip the relief test and let the
+	 * terrain list decide (land placement is unchanged — it passes {@code water = false}).
+	 */
+	public static Bonus pick(Terrain terrain, PlotType relief, Feature feature,
+			double latitude, List<Bonus> bonuses, Rng rng, boolean water) {
 		if (rng.uniform() >= PLACEMENT_CHANCE)
 			return null;
 		List<Bonus> eligible = new ArrayList<>();
 		for (Bonus b : bonuses)
-			if (eligible(b, terrain, relief, feature, latitude))
+			if (eligible(b, terrain, relief, feature, latitude, water))
 				eligible.add(b);
 		if (eligible.isEmpty())
 			return null;
 		return eligible.get(rng.uniform(eligible.size()));
 	}
 
+	/** Land eligibility (relief-gated) — {@link #eligible(Bonus, Terrain, PlotType, Feature, double, boolean)} with {@code water = false}. */
+	static boolean eligible(Bonus b, Terrain terrain, PlotType relief, Feature feature, double latitude) {
+		return eligible(b, terrain, relief, feature, latitude, false);
+	}
+
 	/**
 	 * Whether a bonus's placement constraints admit this plot — the engine's test:
 	 * the latitude band, the relief flag, and either the bare-terrain list (no
-	 * feature) or the feature + feature-terrain lists (featured plot).
+	 * feature) or the feature + feature-terrain lists (featured plot). On a {@code water}
+	 * plot the relief flag is skipped (sea bonuses declare no relief; the water terrain gates).
 	 */
-	static boolean eligible(Bonus b, Terrain terrain, PlotType relief, Feature feature, double latitude) {
+	static boolean eligible(Bonus b, Terrain terrain, PlotType relief, Feature feature, double latitude, boolean water) {
 		double absLat = Math.abs(latitude);
 		if (absLat < b.minLatitude() || absLat > b.maxLatitude())
 			return false;
-		boolean reliefOk = switch (relief) {
+		boolean reliefOk = water || switch (relief) {
 			case FLAT -> b.flatlands();
 			case HILL -> b.hills();
 			case PEAK -> b.peaks();

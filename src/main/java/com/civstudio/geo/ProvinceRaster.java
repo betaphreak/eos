@@ -68,6 +68,12 @@ public final class ProvinceRaster {
 	// once over the whole river raster by RiverFlow (docs/river-rendering.md §3). Global on
 	// purpose: a cell's true downstream neighbour may lie in an adjacent province.
 	private byte[] riverFlow;
+	// the Chebyshev distance (in pixels) from every cell to the nearest dry-land pixel: 0 on
+	// land, 1 for a water pixel touching land, growing out to sea. Computed once over the whole
+	// raster (two chamfer passes). Global on purpose: a coastal shelf cell of a sea province is
+	// classified COAST/SEA by how far it sits from land in ANY adjacent province — see the
+	// coastal-shelf water plots in ProvincePlotField (docs/coastlines.md).
+	private int[] landDistance;
 
 	private ProvinceRaster(Map<Integer, Integer> idToColor) {
 		this.idToColor = idToColor;
@@ -149,12 +155,14 @@ public final class ProvinceRaster {
 		int[] terrainGrid = new int[w * h];
 		int[] treeGrid = new int[w * h];
 		int[] elevationGrid = new int[w * h]; // 0 (sea level) where the heightmap is absent
+		int[] landDistGrid = new int[w * h];  // Chebyshev pixels to dry land (0 on land) — shelf classifier
 		java.util.Arrays.fill(terrainGrid, -1);
 		java.util.Arrays.fill(treeGrid, -1);
 		for (int[] hit : hits) {
 			int ax = hit[0], ay = hit[1];
 			int idx = (ay - minY) * w + (ax - minX);
 			landGrid[idx] = true;
+			landDistGrid[idx] = landDistance[ay * width + ax];
 			// fold the river-adjacency mask into the code's THOUSANDS digit, but only on an
 			// actual river cell — so a non-river plot stays 0 (river() boolean is preserved) and
 			// the web ribbon can link across province seams (a neighbour may sit in another mask).
@@ -167,7 +175,7 @@ public final class ProvinceRaster {
 			if (heightIdx != null)
 				elevationGrid[idx] = heightIdx[ay * width + ax];
 		}
-		return new ProvinceMask(minX, minY, w, h, landGrid, riverGrid, coastGrid, terrainGrid, treeGrid, elevationGrid);
+		return new ProvinceMask(minX, minY, w, h, landGrid, riverGrid, coastGrid, terrainGrid, treeGrid, elevationGrid, landDistGrid);
 	}
 
 	// the 8-bit sea mask of a land pixel: which of its 8 neighbours are water. The low nibble
@@ -294,6 +302,45 @@ public final class ProvinceRaster {
 			widthGrid[i] = (byte) (classifyRiver(river[i] & 0xFFFFFF) % 10); // 0, or width 1..4
 		this.riverFlow = RiverFlow.direction(width, height, widthGrid, heightIdx);
 		this.waterColors = loadWaterColors();
+		this.landDistance = computeLandDistance();
+	}
+
+	// the Chebyshev distance from every pixel to the nearest dry-land (non-water) pixel: 0 on
+	// land, 1..N out into the sea. Two chamfer passes (forward TL→BR, backward BR→TL) with an
+	// 8-connected step of 1, which yields the exact Chebyshev distance. Dry land = any pixel
+	// whose colour is not a water (SEA/LAKE) province colour, so a shelf cell is measured to the
+	// real coast regardless of which land province it belongs to. No E-W wrap (a seam-only
+	// effect out in open ocean, which is deep anyway). Empty water set → all-land → all 0.
+	private int[] computeLandDistance() {
+		final int INF = width + height; // larger than any real distance; the cap SHELF work needs
+		int[] d = new int[width * height];
+		for (int i = 0; i < d.length; i++)
+			d[i] = waterColors.contains(pixels[i] & 0xFFFFFF) ? INF : 0;
+		for (int y = 0; y < height; y++)
+			for (int x = 0; x < width; x++) {
+				int i = y * width + x;
+				if (d[i] == 0)
+					continue;
+				int best = d[i];
+				if (x > 0) best = Math.min(best, d[i - 1] + 1);
+				if (y > 0) best = Math.min(best, d[i - width] + 1);
+				if (y > 0 && x > 0) best = Math.min(best, d[i - width - 1] + 1);
+				if (y > 0 && x < width - 1) best = Math.min(best, d[i - width + 1] + 1);
+				d[i] = best;
+			}
+		for (int y = height - 1; y >= 0; y--)
+			for (int x = width - 1; x >= 0; x--) {
+				int i = y * width + x;
+				if (d[i] == 0)
+					continue;
+				int best = d[i];
+				if (x < width - 1) best = Math.min(best, d[i + 1] + 1);
+				if (y < height - 1) best = Math.min(best, d[i + width] + 1);
+				if (y < height - 1 && x < width - 1) best = Math.min(best, d[i + width + 1] + 1);
+				if (y < height - 1 && x > 0) best = Math.min(best, d[i + width - 1] + 1);
+				d[i] = best;
+			}
+		return d;
 	}
 
 	// the pixel colours of water provinces, from default.map's sea_starts + lakes id blocks

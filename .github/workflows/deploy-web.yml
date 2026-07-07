@@ -43,7 +43,7 @@ jobs:
           # the grids are a pure function of the plot generators + the source rasters, so
           # rebuild the cache only when those change; WorldPlotGenerator skips grids already
           # present, so a warm cache makes the generate step a near-instant no-op
-          key: plotgrids-${{ hashFiles('src/main/java/com/civstudio/geo/**', 'src/main/java/com/civstudio/settlement/ProvincePlot*.java', 'data/anbennar/heightmap.bmp', 'data/anbennar/terrain.bmp', 'data/anbennar/provinces.bmp', 'data/anbennar/rivers.bmp', 'data/anbennar/trees.bmp') }}
+          key: plotgrids-${{ hashFiles('src/main/java/com/civstudio/geo/**', 'src/main/java/com/civstudio/settlement/ProvincePlot*.java', 'src/main/resources/terrains.json', 'src/main/resources/bonuses.json', 'data/anbennar/heightmap.bmp', 'data/anbennar/terrain.bmp', 'data/anbennar/provinces.bmp', 'data/anbennar/rivers.bmp', 'data/anbennar/trees.bmp', 'data/anbennar/default.map') }}
 
       - name: Generate per-province plot grids (whole world; cached)
         run: mvn -q -B compile exec:exec -Dsim.main=com.civstudio.geo.export.WorldPlotGenerator

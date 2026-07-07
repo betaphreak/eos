@@ -22,9 +22,11 @@ class TerrainRegistryTest {
 	@Test
 	void loadsTheCuratedSubsets() {
 		TerrainRegistry reg = TerrainRegistry.load();
-		// the curated subset sizes pinned in docs/plots.md
-		assertEquals(16, reg.terrains().size(), "curated land terrains");
-		assertEquals(10, reg.features().size(), "curated land features");
+		// the curated subset sizes pinned in docs/plots.md — 16 settleable land
+		// terrains plus the 8 shelf water terrains (coast/sea + polar/tropical, lake
+		// shore/lake) the coastal-shelf plots ground on (see docs/coastlines.md)
+		assertEquals(24, reg.terrains().size(), "curated land + shelf water terrains");
+		assertEquals(11, reg.features().size(), "curated land features + FEATURE_ICE");
 		assertEquals(12, reg.improvements().size(), "curated firm-building improvements");
 		// bonuses are exported in full (no curated subset), so the count is the
 		// whole CIV4BonusInfos.xml set

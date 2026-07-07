@@ -24,21 +24,33 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * </pre>
  *
  * Hills and peaks are deliberately excluded — they are a per-plot {@code PlotType}
- * axis, not a terrain (see {@code docs/plots.md}). Water/polar/ice terrains are
- * deferred (coastal fishing is future work).
+ * axis, not a terrain (see {@code docs/plots.md}). The <b>shelf water</b> terrains
+ * (coast/sea + their polar/tropical climate variants, lake shore/lake) are kept so
+ * the coastal-shelf plot generation can ground water plots and the sea bonuses'
+ * {@code validTerrains} resolve (see {@code docs/coastlines.md}); the deep-ocean /
+ * trench terrains stay excluded (the map generates no deep-water plots).
  */
 public final class TerrainExporter {
 
 	private static final String INPUT = "data/civ4/CIV4TerrainInfos.xml";
 	private static final String OUTPUT = "src/main/resources/terrains.json";
 
-	/** The curated land subset, in the order they appear in {@code docs/plots.md}. */
+	/**
+	 * The curated subset: the settleable land terrains (in {@code docs/plots.md}
+	 * order) followed by the <b>shelf water</b> terrains — coast/sea with their
+	 * polar/tropical climate variants, plus lake shore/lake — that the coastal-shelf
+	 * generation grounds water plots on. Deep sea/ocean/trench stay out.
+	 */
 	private static final Set<String> KEEP = new LinkedHashSet<>(List.of(
 			"TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_PLAINS", "TERRAIN_SCRUB",
 			"TERRAIN_MARSH", "TERRAIN_MUDDY", "TERRAIN_ROCKY", "TERRAIN_BADLAND",
 			"TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_DUNES",
 			"TERRAIN_SALT_FLATS", "TERRAIN_TAIGA", "TERRAIN_TUNDRA",
-			"TERRAIN_PERMAFROST"));
+			"TERRAIN_PERMAFROST",
+			// shelf water — the coastal plots the sea bonuses attach to
+			"TERRAIN_COAST", "TERRAIN_COAST_POLAR", "TERRAIN_COAST_TROPICAL",
+			"TERRAIN_SEA", "TERRAIN_SEA_POLAR", "TERRAIN_SEA_TROPICAL",
+			"TERRAIN_LAKE_SHORE", "TERRAIN_LAKE"));
 
 	private TerrainExporter() {
 	}

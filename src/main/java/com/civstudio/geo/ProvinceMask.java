@@ -38,9 +38,14 @@ public final class ProvinceMask {
 	// 0 where the overlay is absent; a raster lookup (no generation), read by the plot
 	// field so each plot carries its elevation
 	private final int[] elevation;
+	// the Chebyshev distance (pixels) from each cell to the nearest dry land: 0 on a land
+	// province's own cells, 1..N out into the sea for a water province's cells. Global (see
+	// ProvinceRaster#computeLandDistance); the coastal-shelf water plots read it to keep only
+	// the near-shore ring and to grade COAST (1) vs SEA (2..N). See docs/coastlines.md.
+	private final int[] landDist;
 
 	ProvinceMask(int originX, int originY, int width, int height, boolean[] land, int[] river,
-			int[] coast, int[] terrainIndex, int[] treeIndex, int[] elevation) {
+			int[] coast, int[] terrainIndex, int[] treeIndex, int[] elevation, int[] landDist) {
 		this.originX = originX;
 		this.originY = originY;
 		this.width = width;
@@ -51,6 +56,7 @@ public final class ProvinceMask {
 		this.terrainIndex = terrainIndex;
 		this.treeIndex = treeIndex;
 		this.elevation = elevation;
+		this.landDist = landDist;
 	}
 
 	/** Absolute raster x of local column 0 (the bounding-box left edge). */
@@ -146,6 +152,19 @@ public final class ProvinceMask {
 		if (lx < 0 || lx >= width || ly < 0 || ly >= height)
 			return 0;
 		return elevation[ly * width + lx];
+	}
+
+	/**
+	 * The Chebyshev distance in pixels from the local cell to the nearest dry land (0 on a
+	 * land province's own cells; 1 for a water cell touching land, growing seaward), or {@code
+	 * 0} outside the bbox. For a sea/lake province this grades its cells into the coastal shelf
+	 * — {@code 1} = COAST, {@code 2..N} = SEA — that the water plot generation keeps. See
+	 * {@link ProvinceRaster} and {@code docs/coastlines.md}.
+	 */
+	public int landDist(int lx, int ly) {
+		if (lx < 0 || lx >= width || ly < 0 || ly >= height)
+			return 0;
+		return landDist[ly * width + lx];
 	}
 
 	/** The number of land cells (== the province's plot count). */

@@ -110,4 +110,60 @@
   "buildModifier" : 20,
   "healthPercent" : 0,
   "movement" : 2
+}, {
+  "type" : "TERRAIN_COAST",
+  "yields" : [ 2, 0, 1 ],
+  "bFound" : false,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 2
+}, {
+  "type" : "TERRAIN_COAST_POLAR",
+  "yields" : [ 2, 0, 1 ],
+  "bFound" : false,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 2
+}, {
+  "type" : "TERRAIN_COAST_TROPICAL",
+  "yields" : [ 2, 0, 1 ],
+  "bFound" : false,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 2
+}, {
+  "type" : "TERRAIN_SEA",
+  "yields" : [ 1, 0, 1 ],
+  "bFound" : false,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 2
+}, {
+  "type" : "TERRAIN_SEA_POLAR",
+  "yields" : [ 1, 0, 1 ],
+  "bFound" : false,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 2
+}, {
+  "type" : "TERRAIN_SEA_TROPICAL",
+  "yields" : [ 1, 0, 1 ],
+  "bFound" : false,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 2
+}, {
+  "type" : "TERRAIN_LAKE_SHORE",
+  "yields" : [ 3, 0, 1 ],
+  "bFound" : false,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 2
+}, {
+  "type" : "TERRAIN_LAKE",
+  "yields" : [ 2, 0, 1 ],
+  "bFound" : false,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 2
 } ]

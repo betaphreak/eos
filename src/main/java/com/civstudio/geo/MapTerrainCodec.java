@@ -77,6 +77,42 @@ public final class MapTerrainCodec {
 	}
 
 	/**
+	 * The Civ4 water terrain for a coastal-shelf plot: {@code COAST} (touching land, {@code
+	 * landDist} 1) or {@code SEA} (further out) in the province's climate variant (polar /
+	 * tropical / temperate by absolute latitude), or freshwater {@code LAKE_SHORE}/{@code LAKE}
+	 * for a lake province. Resolves against the registry's shelf water terrains ({@link
+	 * com.civstudio.geo.export.TerrainExporter} keeps them); {@code null} if the key is absent.
+	 * The water counterpart of {@link #ground}: the coastal-shelf plots ground on it and the sea
+	 * bonuses (fish/crab/whale/…) place by it. See {@code docs/coastlines.md}.
+	 *
+	 * @param lake     whether the province is a lake (freshwater) rather than open sea
+	 * @param landDist Chebyshev pixels to the nearest dry land (1 = coast, higher = further out)
+	 * @param latitude the province latitude (its magnitude picks the climate variant)
+	 * @param reg      the terrain registry
+	 * @return the water terrain, or {@code null} if the registry lacks the key
+	 */
+	public static Terrain water(boolean lake, int landDist, double latitude, TerrainRegistry reg) {
+		String key;
+		if (lake) {
+			key = landDist <= 1 ? "TERRAIN_LAKE_SHORE" : "TERRAIN_LAKE";
+		} else {
+			key = (landDist <= 1 ? "TERRAIN_COAST" : "TERRAIN_SEA") + climateBand(latitude);
+		}
+		return reg.terrain(key);
+	}
+
+	// the climate suffix for a sea terrain by absolute latitude: polar (≥66°), tropical (≤23°),
+	// or temperate (no suffix) between — the same banding the web sea gradient uses.
+	private static String climateBand(double latitude) {
+		double a = Math.abs(latitude);
+		if (a >= 66.0)
+			return "_POLAR";
+		if (a <= 23.0)
+			return "_TROPICAL";
+		return "";
+	}
+
+	/**
 	 * The {@link PlotType relief} EU4 encodes for a {@code terrain.bmp} palette index
 	 * — its palette conflates relief with ground, so {@code hills}/{@code highlands}
 	 * are {@link PlotType#HILL} and {@code mountain}/{@code snow} are {@link
