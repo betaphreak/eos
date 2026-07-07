@@ -1,4 +1,4 @@
-import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, K_MAX, TT, RIVER, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, SEA_BANDS, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
+import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, K_MAX, TT, RIVER, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { renderRail } from "./panel.mjs";
 let ttImg = null, ttReady = false, ttTiles = null;
@@ -25,6 +25,14 @@ const SHORE_COL = (SEA_BANDS && SEA_BANDS.shore) ? SEA_BANDS.shore.join(",") : "
 // absent → drawBonusOverlay keeps the procedural category glyphs
 let biImg = null, biReady = false;
 if (BONUS_ICONS) { biImg = new Image(); biImg.onload = () => { biReady = true; draw(); }; biImg.src = BONUS_ICONS.src; }
+// the real Civ4 foliage sprite atlases (docs/features-art.md): {leafy,palm,swamp} strips of tree
+// cutouts; per-group Image + ready flag, null/absent → featureSprite keeps the procedural blobs
+const treeImg = {}, treeReady = {};
+if (TREES) for (const k of Object.keys(TREES)) {
+  // sprites are baked into each province's texture canvas, so a late-loading atlas must invalidate
+  // those cached canvases (they rebuilt with procedural blobs before the art arrived)
+  const im = new Image(); im.onload = () => { treeReady[k] = true; for (const p of P) p._tcanvas = null; draw(); }; im.src = TREES[k].src; treeImg[k] = im;
+}
 // split the atlas strip into a per-terrain tile canvas, so each can be a repeating
 // pattern (continuous ground texture across plots, no per-plot tile seam)
 function extractTiles() {
@@ -500,8 +508,36 @@ function mkRng(seed) { let s = seed >>> 0 || 1; return () => { s = (s * 1664525 
 // draw a procedural 2D sprite for a plot's Civ4 feature into cell (cx,cy) of size s.
 // (The real feature art is 3D .nif — pre-rendering it to sprites is a later toolchain;
 // these keyed vector marks read cleanly on the 2D map and cover the features in play.)
+// feature → foliage sprite group + density/scale; null for features with no atlas (CACTUS) or none
+function treeGroupFor(feature) {
+  if (/JUNGLE|RAINFOREST/.test(feature))         return { key: "leafy", lo: 3, hi: 5, scale: 0.60 };  // dense
+  if (/SWAMP|BOG|MARSH|WETLAND/.test(feature))   return { key: "swamp", lo: 2, hi: 3, scale: 0.44 };
+  if (/SAVANNA/.test(feature))                   return { key: "palm",  lo: 1, hi: 2, scale: 0.6 };   // sparse
+  if (/OASIS/.test(feature))                     return { key: "palm",  lo: 1, hi: 2, scale: 0.55 };
+  if (/FOREST|WOOD|TAIGA|MANGROVE/.test(feature)) return { key: "leafy", lo: 2, hi: 4, scale: 0.55 };
+  return null;
+}
+// stamp real Civ4 tree cutouts into a plot: N sprites at jittered positions, back-to-front, each sized
+// to the plot. Returns false when the group's atlas isn't loaded (caller falls back to procedural).
+function stampTrees(o, cx, cy, s, g, rng) {
+  const meta = TREES && TREES[g.key], img = treeImg[g.key];
+  if (!meta || !treeReady[g.key]) return false;
+  const n = g.lo + (rng() * (g.hi - g.lo + 1) | 0), items = [];
+  for (let i = 0; i < n; i++) {
+    const sp = meta.sprites[rng() * meta.sprites.length | 0];
+    const th = s * g.scale * (0.82 + 0.36 * rng()), tw = th * sp[2] / sp[3];
+    items.push({ sp, tw, th, px: cx + s * (0.16 + 0.68 * rng()), py: cy + s * (0.22 + 0.6 * rng()) });
+  }
+  items.sort((a, b) => a.py - b.py);                    // nearer (lower) trees drawn last → natural overlap
+  for (const it of items) o.drawImage(img, it.sp[0], it.sp[1], it.sp[2], it.sp[3], it.px - it.tw / 2, it.py - it.th / 2, it.tw, it.th);
+  return true;
+}
 function featureSprite(o, cx, cy, s, feature, sx, sy) {
   const rng = mkRng((sx * 73856093) ^ (sy * 19349663));
+  if (/OASIS/.test(feature)) { o.fillStyle = "#2f6f8a"; o.beginPath(); o.arc(cx + s * 0.52, cy + s * 0.58, s * 0.19, 0, 7); o.fill(); }  // water pool under the palms
+  const g = treeGroupFor(feature);
+  if (g && stampTrees(o, cx, cy, s, g, rng)) return;    // real foliage sprites
+  // --- procedural fallback: art absent / not yet loaded, or CACTUS (no atlas) ---
   const trees = (col, shadow, count, rad) => {
     for (let i = 0; i < count; i++) {
       const px = cx + s * (0.18 + 0.64 * rng()), py = cy + s * (0.24 + 0.58 * rng()), r = s * rad * (0.8 + 0.5 * rng());
@@ -521,7 +557,7 @@ function featureSprite(o, cx, cy, s, feature, sx, sy) {
     o.beginPath(); o.moveTo(px, py); o.lineTo(px, py - hgt);
     o.moveTo(px, py - hgt * 0.55); o.lineTo(px + s * 0.13, py - hgt * 0.55); o.lineTo(px + s * 0.13, py - hgt * 0.82); o.stroke();
   }
-  else if (/OASIS/.test(feature)) { o.fillStyle = "#2f6f8a"; o.beginPath(); o.arc(cx + s * 0.52, cy + s * 0.56, s * 0.2, 0, 7); o.fill(); trees("#2e6a2a", "rgba(0,0,0,.3)", 1, 0.14); }
+  else if (/OASIS/.test(feature)) { trees("#2e6a2a", "rgba(0,0,0,.3)", 1, 0.14); }   // pool already drawn above
   else if (/SAVANNA/.test(feature)) {
     if (rng() > 0.45) { o.fillStyle = "#556a30"; o.beginPath(); o.arc(cx + s * 0.5, cy + s * 0.4, s * 0.17, 0, 7); o.fill(); o.strokeStyle = "#3a3020"; o.lineWidth = Math.max(1, s * 0.035); o.beginPath(); o.moveTo(cx + s * 0.5, cy + s * 0.5); o.lineTo(cx + s * 0.5, cy + s * 0.74); o.stroke(); }
   }

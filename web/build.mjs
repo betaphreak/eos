@@ -152,6 +152,7 @@ const shore = bakeShoreTile();               // {src, tile} greyscale shore-wave
 const foam = bakeFoamTile();                 // {src, w, h} real Civ4 wave-crest foam strip, or null (procedural foam line)
 const ice = bakeIceTile();                   // {src, tile} real Civ4 pack-ice tile, or null (procedural pale floes)
 const bonusIcons = bakeBonusIcons();         // {src, cell, cols, index:{type:i}} real Civ4 resource icons, or null
+const trees = bakeFeatureSprites();          // {leafy,palm,swamp:{src,w,h,sprites}} real foliage cutouts, or null
 const seaBands = bakeSeaBands();             // {trop, temp, polar, shore} climate sea + shore colours
 const plotPack = packPlots(provinces);
 
@@ -190,7 +191,7 @@ const bundle = {
     origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
-  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, foam, ice, bonusIcons, seaBands, geo,
+  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, foam, ice, bonusIcons, trees, seaBands, geo,
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
 };
 
@@ -611,6 +612,78 @@ function bakeIceTile() {
   const file = `ice-${SEED}.png`;
   fs.writeFileSync(path.join(assets, file), encodePng(T, T, rgb));
   return { src: `assets/${file}`, tile: T };
+}
+
+// Bake real Civ4 foliage sprites so the plot layer can stamp actual trees/palms/reeds instead of the
+// procedural blobs (docs/features-art.md). The Civ4 `trees_*.dds` files are irregular billboard sheets
+// (individual cutouts on a transparent background, UV-mapped by their .nif). We extract the cutouts by
+// CONNECTED-COMPONENT labelling of the alpha (no .nif needed): flood every opaque island, keep the
+// tree-like ones (moderate size, foliage fill fraction, green-dominant so bark/snow/autumn variants are
+// skipped), and pack the chosen cutouts into one horizontal RGBA strip. Returns {group:{src,w,h,sprites:
+// [[x,y,w,h]...]}} keyed by feature group, or null when the art is absent (procedural blobs stay).
+function bakeFeatureSprites() {
+  const groups = {
+    leafy: 'Art/Terrain/features/treeleafy/trees_1024.dds',   // FOREST / JUNGLE
+    palm:  'Art/Terrain/features/savanna/palms_1024.dds',     // SAVANNA / OASIS
+    swamp: 'Art/Terrain/features/swamp/trees1.dds',           // SWAMP
+  };
+  const out = {};
+  for (const [name, art] of Object.entries(groups)) {
+    const g = bakeSpriteGroup(art, name);
+    if (g) out[name] = g;
+  }
+  return Object.keys(out).length ? out : null;
+}
+function bakeSpriteGroup(artPath, name) {
+  const file = resolveArt(artPath);
+  if (!file) return null;
+  let img; try { img = decodeDds(fs.readFileSync(file)); } catch { return null; }
+  const { width: W, height: H, rgba } = img;
+  const A = 48;                                  // alpha threshold: a pixel is "solid" foliage
+  const lab = new Uint8Array(W * H);             // visited flags
+  const comps = [], stack = [];
+  for (let y0 = 0; y0 < H; y0++) for (let x0 = 0; x0 < W; x0++) {
+    const start = y0 * W + x0;
+    if (lab[start] || rgba[start * 4 + 3] < A) continue;
+    let minx = x0, maxx = x0, miny = y0, maxy = y0, cnt = 0, sr = 0, sg = 0, sb = 0;
+    lab[start] = 1; stack.length = 0; stack.push(start);
+    while (stack.length) {
+      const p = stack.pop(), px = p % W, py = (p / W) | 0;
+      cnt++; sr += rgba[p * 4]; sg += rgba[p * 4 + 1]; sb += rgba[p * 4 + 2];
+      if (px < minx) minx = px; if (px > maxx) maxx = px; if (py < miny) miny = py; if (py > maxy) maxy = py;
+      if (px > 0     && !lab[p - 1] && rgba[(p - 1) * 4 + 3] >= A) { lab[p - 1] = 1; stack.push(p - 1); }
+      if (px < W - 1 && !lab[p + 1] && rgba[(p + 1) * 4 + 3] >= A) { lab[p + 1] = 1; stack.push(p + 1); }
+      if (py > 0     && !lab[p - W] && rgba[(p - W) * 4 + 3] >= A) { lab[p - W] = 1; stack.push(p - W); }
+      if (py < H - 1 && !lab[p + W] && rgba[(p + W) * 4 + 3] >= A) { lab[p + W] = 1; stack.push(p + W); }
+    }
+    const bw = maxx - minx + 1, bh = maxy - miny + 1;
+    comps.push({ minx, miny, bw, bh, fill: cnt / (bw * bh), mr: sr / cnt, mg: sg / cnt, mb: sb / cnt, area: cnt });
+  }
+  const green = c => c.mg >= c.mr * 0.9 && c.mg >= c.mb * 0.95 && (c.mr + c.mg + c.mb) / 3 < 185;
+  const shape = c => c.bw >= 22 && c.bw <= 190 && c.bh >= 22 && c.bh <= 210 && c.fill >= 0.1 && c.fill <= 0.85
+    && c.bw / c.bh < 2.2 && c.bh / c.bw < 3.2;
+  let cand = comps.filter(c => shape(c) && green(c));
+  if (cand.length < 3) cand = comps.filter(shape);           // relax colour if the sheet isn't green-dominant
+  cand.sort((a, b) => b.area - a.area);
+  const chosen = cand.slice(0, 10);
+  if (!chosen.length) return null;
+  const GAP = 1, maxH = Math.max(...chosen.map(c => c.bh));
+  let totW = 0; for (const c of chosen) totW += c.bw + GAP;
+  const rgb = Buffer.alloc(totW * maxH * 3), alpha = Buffer.alloc(totW * maxH);
+  const sprites = []; let ox = 0;
+  for (const c of chosen) {
+    for (let y = 0; y < c.bh; y++) for (let x = 0; x < c.bw; x++) {
+      const so = ((c.miny + y) * W + (c.minx + x)) * 4, d = y * totW + (ox + x);
+      rgb[d * 3] = rgba[so]; rgb[d * 3 + 1] = rgba[so + 1]; rgb[d * 3 + 2] = rgba[so + 2]; alpha[d] = rgba[so + 3];
+    }
+    sprites.push([ox, 0, c.bw, c.bh]);
+    ox += c.bw + GAP;
+  }
+  const assets = path.join(WEB, 'assets');
+  fs.mkdirSync(assets, { recursive: true });
+  const fileOut = `trees-${name}-${SEED}.png`;
+  fs.writeFileSync(path.join(assets, fileOut), encodePng(totW, maxH, rgb, alpha));
+  return { src: `assets/${fileOut}`, w: totW, h: maxH, sprites };
 }
 
 // Bake the real Civ4 shoreline foam (docs/coastlines.md Phase G) from waves/wave_crest.dds — a
