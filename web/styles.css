@@ -125,6 +125,8 @@ canvas#map { position: absolute; inset: 0; width: 100%; height: 100%; display: b
 .legrow.reset { color: var(--ink-faint); }
 .legrow .km { margin-left: auto; font-size: 11px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
 /* political legend: a coverage-ranked, scrollable swatch list (Nations/Cultures/Religions) */
+/* the `hidden` attribute must beat `.legend { display:flex }` (author class > UA [hidden] rule) */
+.legend[hidden] { display: none; }
 #polLegend { max-width: 230px; }
 #polLegend .leg-scroll { display: flex; flex-direction: column; gap: 1px; margin-top: 2px;
   max-height: 42vh; overflow-y: auto; overscroll-behavior: contain; }
