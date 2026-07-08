@@ -17,8 +17,9 @@ export const CELL = 25, COLS = 25, X0 = 0, Y0 = 72, RESOURCE_ROW = 17;
 // named game symbols → [col, row] in the icon grid (row 0 = first icon row), calibrated
 // from GameFont_120.tga by alpha-projection + eye (see docs/tech-tree.md, cost beaker)
 export const SYMBOL = {
-  BEAKER: [1, 0],   // research (the blue flask)
-  GOLD: [2, 0],     // commerce (the gold coin)
+  BEAKER: [1, 1],   // research (the green conical flask)
+  HAMMER: [1, 0],   // production (the blue hammer) — the future red-beaker source
+  GOLD: [0, 1],     // treasury (the gold coin stack)
 };
 
 let _gf = null, _tried = false;
