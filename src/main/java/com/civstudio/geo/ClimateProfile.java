@@ -56,4 +56,45 @@ public record ClimateProfile(double temperature, double humidity) {
 	public boolean isHot() {
 		return temperature > 32;
 	}
+
+	/**
+	 * The C2C map option {@code temperature} — the equator temperature of the
+	 * {@link #pyTemperature(double) latitudinal tent} ({@code getTileTemperature},
+	 * L3301). The default the script falls back to when the option is unset.
+	 */
+	public static final double CLIMATE_TEMPERATURE = 40.0;
+
+	/**
+	 * The C2C map option {@code variation} — how far the poles cool below the
+	 * {@linkplain #CLIMATE_TEMPERATURE equator} (default; L387/L3296).
+	 */
+	public static final double CLIMATE_VARIATION = 0.4;
+
+	/**
+	 * The pole temperature of the tent: {@code (climateTemperature + 50)·variation − 50}
+	 * (L3304). With the defaults this is {@code (90·0.4) − 50 = −14}.
+	 */
+	public static final double LOWEST_TEMPERATURE = (CLIMATE_TEMPERATURE + 50.0) * CLIMATE_VARIATION - 50.0;
+
+	/**
+	 * The C2C per-tile temperature on the <b>Python scale</b> for a latitude, porting
+	 * {@code getTileTemperature(y, h)} (L3301–3310). The script keys its terrain and
+	 * feature weights off this value — a latitudinal tent from {@link
+	 * #CLIMATE_TEMPERATURE} at the equator down to {@link #LOWEST_TEMPERATURE} at the
+	 * poles — so its thresholds ({@code > 30}, {@code > 40}, {@code 5..−10}, {@code
+	 * < −20}, …) only transfer verbatim when the temperature is on the same scale.
+	 * This reproduces the tent from the province latitude (rather than the eos
+	 * {@link #temperature()} scale) so the ported feature weights apply unchanged.
+	 * <p>
+	 * The tent is linear in the distance from the equator: {@code y > half} and
+	 * {@code y < half} are symmetric about the equator in the script, so here the
+	 * absolute latitude (equator {@code 0} … pole {@code ±90}) drives it directly.
+	 *
+	 * @param latitude the plot/province latitude in decimal degrees (north positive)
+	 * @return the C2C-scale temperature (≈ {@code −14 … 40} with the defaults)
+	 */
+	public static double pyTemperature(double latitude) {
+		double fractionToPole = Math.min(1.0, Math.abs(latitude) / 90.0);
+		return CLIMATE_TEMPERATURE + (LOWEST_TEMPERATURE - CLIMATE_TEMPERATURE) * fractionToPole;
+	}
 }

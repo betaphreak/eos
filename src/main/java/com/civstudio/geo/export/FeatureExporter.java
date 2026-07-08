@@ -62,7 +62,8 @@ public final class FeatureExporter {
 							"TerrainType", "bTerrain"),
 					Civ4Xml.intVal(info, "iHealthPercent", 0),
 					Civ4Xml.intVal(info, "iGrowth", 0),
-					Civ4Xml.intVal(info, "iMovement", 0)));
+					Civ4Xml.intVal(info, "iMovement", 0),
+					Civ4Xml.intVal(info, "iAppearance", 0)));
 			seen.add(type);
 		}
 		Set<String> missing = new LinkedHashSet<>(KEEP);

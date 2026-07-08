@@ -13,7 +13,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ALCOHOL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -29,7 +36,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ALGAE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -45,7 +59,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ALUMINUM_INGOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -61,7 +82,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_AMMUNITION",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -77,7 +105,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ANDROIDS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -93,7 +128,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ANTI_GRAVITY_FIELD_GENERATORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -109,7 +151,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LEVITATION_GENERATORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -125,7 +174,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ANTIMATTER",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -141,7 +197,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_AUTOMOBILES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -157,7 +220,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BAMBOO",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -173,7 +243,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BARK",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -189,7 +266,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BARRELS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -205,7 +289,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BASKETS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -221,7 +312,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BEADS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -237,7 +335,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BERLINITE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -253,7 +358,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BERRIES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -269,7 +381,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BICYCLES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -285,7 +404,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BIOFUEL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -301,7 +427,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BIONIC_SUITS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -317,7 +450,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BIOPOLYMERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -333,7 +473,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BLENDER",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -349,7 +496,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BONE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -365,7 +519,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BOOKS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -381,7 +542,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BORAX",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -397,7 +565,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BRASS_INSTRUMENTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -413,7 +588,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BREAD",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -429,7 +611,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BRICKS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -445,7 +634,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BUGS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -461,7 +657,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CAESIUM_ORE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -477,7 +680,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CALCULATORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -493,7 +703,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CANDLES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -509,7 +726,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CANDY",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -525,7 +749,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CANNED_FOOD",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -541,7 +772,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CARCASS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -557,7 +795,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CARPETS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -573,7 +818,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CAT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -589,7 +841,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CELLPHONES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -605,7 +864,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CELLULASE_CAPSULES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -621,7 +887,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CEMENT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -637,7 +910,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CHALK",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -653,7 +933,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CHARCOAL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -669,7 +956,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CHEESE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -685,7 +979,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CHEMICALS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -701,7 +1002,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CHOCOLATE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -717,7 +1025,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CHROMITE_ORE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -733,7 +1048,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CINNABAR_ORE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -749,7 +1071,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CLAY",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -765,7 +1094,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CLOTH",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -781,7 +1117,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CLOTHING",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -797,7 +1140,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_COBALT_ORE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -813,7 +1163,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_COMPUTERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -829,7 +1186,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_COPPER_WIRES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -845,7 +1209,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_COTTON_FIBERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -861,7 +1232,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CYBERNETIC_CHLOROPLASTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -877,7 +1255,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PETROLEUM_PRODUCTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -893,7 +1278,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DIGITIZED_MEMBRANES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -909,7 +1301,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DISHWASHERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -925,7 +1324,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DISKETTES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -941,7 +1347,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DOG",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -957,7 +1370,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DRIED_FISH",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -973,7 +1393,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DRIED_FRUIT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -989,7 +1416,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DRIED_MEAT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1005,7 +1439,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DRUGS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1021,7 +1462,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DYE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1037,7 +1485,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ECSTASY",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1053,7 +1508,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_EGGS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1069,7 +1531,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ELECTROACTIVE_POLYMERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1085,7 +1554,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ELECTROLYTIC_CELLS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1101,7 +1577,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ENERGY_DRINK",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1117,7 +1600,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ENZYMES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1133,7 +1623,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_EXOSKELETONS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1149,7 +1646,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FEATHERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1165,7 +1669,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FERTILIZERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1181,7 +1692,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FIBERGLASS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1197,7 +1715,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FIBER_OPTIC_CABLES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1213,7 +1738,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FIREARMS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1229,7 +1761,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FIRECRACKERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1245,7 +1784,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FISH_OIL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1261,7 +1807,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FLASH_MEMORY_DEVICES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1277,7 +1830,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FLAX_FIBERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1293,7 +1853,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FLINT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1309,7 +1876,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FLOUR",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1325,7 +1899,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FLOWERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1341,7 +1922,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FOSSILS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1357,7 +1945,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FRUIT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1373,7 +1968,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FURNITURE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1389,7 +1991,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FUR",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1405,7 +2014,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GEMSTONE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1421,7 +2037,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GEOGLYPH_PLANS",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -1437,7 +2060,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GHEE_OIL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1453,7 +2083,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GLASSWARE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1469,7 +2106,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GRAINS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1485,7 +2129,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GRAPHENE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1501,7 +2152,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GRAPHITE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1517,7 +2175,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GRASS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1533,7 +2198,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GRAVITY_GENERATORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1549,7 +2221,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HATS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1565,7 +2244,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HEAVY_WATER",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -1581,7 +2267,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HELICOPTERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1597,7 +2290,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HAEMATITE_ORE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1613,7 +2313,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HEMP_FIBERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1629,7 +2336,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HIDE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1645,7 +2359,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HOLOGRAPHIC_PROJECTORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1661,7 +2382,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HONEY",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1677,7 +2405,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HOVERCRAFTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1693,7 +2428,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HYDROGEN",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1709,7 +2451,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HYPOSPRAYS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1725,7 +2474,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ICE_CREAM",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1741,7 +2497,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_IMMUNITY_DRUGS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1757,7 +2520,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BRASS_INGOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1773,7 +2543,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_COPPER_INGOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1789,7 +2566,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ELECTRUM_INGOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1805,7 +2589,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GOLD_INGOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1821,7 +2612,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_IRON_INGOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1837,7 +2635,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LEAD_INGOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1853,7 +2658,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PLATINUM_INGOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1869,7 +2681,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SILVER_INGOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1885,7 +2704,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TIN_INGOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1901,7 +2727,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TITANIUM_INGOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1917,7 +2750,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_IVORY",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1933,7 +2773,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_JET_ENGINES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1949,7 +2796,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_JEWELRY",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1965,7 +2819,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_KEROSENE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1981,7 +2842,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_KEVLAR",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -1997,7 +2865,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LACQUERWARE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2013,7 +2888,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LARD",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2029,7 +2911,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LAZULITE_ORE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2045,7 +2934,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LEATHER",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2061,7 +2957,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LITHIUM",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2077,7 +2980,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LIZARDS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2093,7 +3003,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LSD",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2109,7 +3026,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LYE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2125,7 +3049,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MAGNESIUM_ORE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2141,7 +3072,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MARTIAN_ROCKS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2157,7 +3095,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MARZIPAN",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2173,7 +3118,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MASCAGNITE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2189,7 +3141,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MASKS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2205,7 +3164,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MECHS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2221,7 +3187,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MEDICAL_TRICORDERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2237,7 +3210,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_METHAMPHETAMINE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2253,7 +3233,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MICROGENERATORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2269,7 +3256,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MICROWAVE_OVENS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2285,7 +3279,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MILK",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2301,7 +3302,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MOON_ROCKS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2317,7 +3325,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NANOACTUATORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2333,7 +3348,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NANOBOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2349,7 +3371,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NANOGENERATORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2365,7 +3394,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NANOTUBES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2381,7 +3417,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FISHING_NETS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2397,7 +3440,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NEUROIMPLANTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2413,7 +3463,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NEWSPAPERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2429,7 +3486,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NICKEL_ORE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2445,7 +3509,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NOVUS_CHEMICALS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2461,7 +3532,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NUTELLA",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2477,7 +3555,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NUTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2493,7 +3578,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NYLON",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2509,7 +3601,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_OLIVE_OIL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2525,7 +3624,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_OMEGA_FATTY_ACID",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2541,7 +3647,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ORGANIC_COMPUTERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2557,7 +3670,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ORGANIC_PHOTONIC_CELLS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2573,7 +3693,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PAPER",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2589,7 +3716,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PARTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2605,7 +3739,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PASTA",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2621,7 +3762,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PEAT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2637,7 +3785,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PELTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2653,7 +3808,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PENCILS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2669,7 +3831,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PERCUSSION_INSTRUMENTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2685,7 +3854,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PERFUME",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2701,7 +3877,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PERSONAL_ELECTRONICS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2717,7 +3900,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_REPLICATORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2733,7 +3923,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PHARMACEUTICALS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2749,7 +3946,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PHONOGRAPHS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2765,7 +3969,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PLASMA_GENERATORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2781,7 +3992,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PLASTIC",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2797,7 +4015,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_POISON",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2813,7 +4038,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_POTASH",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2829,7 +4061,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_POTATO_CHIPS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2845,7 +4084,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_POTTERY",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2861,7 +4107,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_POWER_TOOLS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2877,7 +4130,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PUMICE_STONE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2893,7 +4153,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PYRITE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2909,7 +4176,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_RADIOS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2925,7 +4199,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_RAW_FISH",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2941,7 +4222,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_RAW_MEAT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2957,7 +4245,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_REEDS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2973,7 +4268,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_REFRIGERATORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -2989,7 +4291,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_REPLACEMENT_ORGANS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3005,7 +4314,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ROASTED_COFFEE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3021,7 +4337,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ROCKET_FUEL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3037,7 +4360,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ROPE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3053,7 +4383,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SADDLES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3069,7 +4406,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SAILS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3085,7 +4429,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SAND",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3101,7 +4452,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SAUSAGE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3117,7 +4475,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SCROLLS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3133,7 +4498,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NOK_SCULPTURES",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -3149,7 +4521,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SCULPTURES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3165,7 +4544,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SEASONING",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3181,7 +4567,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MICROCHIPS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3197,7 +4590,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SERVICE_BOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3213,7 +4613,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SHELLFISH",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3229,7 +4636,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SHOCKWAVE_ENGINES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3245,7 +4659,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SHOES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3261,7 +4682,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SILK_FIBERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3277,7 +4705,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SKIS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3293,7 +4728,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SMART_MEDICINE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3309,7 +4751,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SOAP",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3325,7 +4774,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SODA_POP",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3341,7 +4797,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SOYLENT_GREEN",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3357,7 +4820,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SPONGES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3373,7 +4843,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_STEEL_INGOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3389,7 +4866,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_STIM_PACKS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3405,7 +4889,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_STONE_TOOLS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3421,7 +4912,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_STRAW",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3437,7 +4935,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_STRING_INSTRUMENTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3453,7 +4958,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SYNTHETIC_RUBBER",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3469,7 +4981,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TABLETS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3485,7 +5004,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TANKS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3501,7 +5027,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TANNIN",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3517,7 +5050,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TAPESTRIES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3533,7 +5073,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TAR",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3549,7 +5096,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TELEVISIONS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3565,7 +5119,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TIRES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3581,7 +5142,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TOOLS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3597,7 +5165,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TOYS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3613,7 +5188,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TRANSISTORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3629,7 +5211,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TUNGSTEN",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3645,7 +5234,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TYPEWRITERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3661,7 +5257,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_UNMANNED_AIRCRAFTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3677,7 +5280,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ULTRAFUEL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3693,7 +5303,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_VACUUM_CLEANERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3709,7 +5326,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_VEGETABLES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3725,7 +5349,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_VIDEO_GAMES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3741,7 +5372,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_VINES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3757,7 +5395,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_VULCANIZED_RUBBER",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3773,7 +5418,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ALUMINUM_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3789,7 +5441,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BRASS_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3805,7 +5464,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BRONZE_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3821,7 +5487,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_COPPER_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3837,7 +5510,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ELECTRUM_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3853,7 +5533,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GOLD_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3869,7 +5556,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_IRON_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3885,7 +5579,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LEAD_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3901,7 +5602,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PLATINUM_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3917,7 +5625,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SILVER_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3933,7 +5648,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_STEEL_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3949,7 +5671,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TIN_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3965,7 +5694,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TITANIUM_WARES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3981,7 +5717,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LIQUID_METAL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -3997,7 +5740,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MEGASTRONG_ALLOYS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4013,7 +5763,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_METAMATERIALS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4029,7 +5786,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PORCELAIN",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4045,7 +5809,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SUPERSTRONG_ALLOYS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4061,7 +5832,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TERRACOTTA",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4077,7 +5855,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_WASHER_DRYER",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4093,7 +5878,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_WATER_BOTTLES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4109,7 +5901,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_WAX",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4125,7 +5924,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_WHALE_OIL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4141,7 +5947,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_WOOD",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4157,7 +5970,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_WOODWIND_INSTRUMENTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4173,7 +5993,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_WOOL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4189,7 +6016,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ZINC_ORE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4205,7 +6039,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HIERACOSPHINX",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -4221,7 +6062,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_JACKALOPE",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -4237,7 +6085,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PEGASUS",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -4253,7 +6108,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PHOENIX",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -4269,7 +6131,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_QILIN",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -4285,7 +6154,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_QUETZALCOATL",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -4301,7 +6177,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_RAINBOW_SERPENT",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -4317,7 +6200,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PUNCH_CARDS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4333,7 +6223,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CARBON_FIBER",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4349,7 +6246,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_RARE_EARTH_MINERALS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4365,7 +6269,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CERMET",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4381,7 +6292,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_QUANTUM_DOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4397,7 +6315,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_AEROGEL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4413,7 +6338,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_METALLIC_HYDROGEN",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4429,7 +6361,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SYNTHETIC_DIAMOND",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4445,7 +6384,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FULLERENE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4461,7 +6407,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_METAL_FOAM",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4477,7 +6430,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NANOTRUSSES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4493,7 +6453,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TRANSPARENT_ALUMINUM",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4509,7 +6476,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MARTIAN_VEGETABLES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4525,7 +6499,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MARTIAN_MANUFACTURED_GOODS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4541,7 +6522,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CARBYNE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4557,7 +6545,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MARTIAN_ELECTRONICS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4573,7 +6568,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MARTIAN_ALGAE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4589,7 +6591,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DIAMOND_NANOTHREADS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4605,7 +6614,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PLASTEEL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4621,7 +6637,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MARTIAN_FRUIT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4637,7 +6660,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SUPERINTELLIGENT_COMPUTERS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4653,7 +6683,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CLAYTRONIC_ATOMS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4669,7 +6706,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DEEP_SPACE_NANOBOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4685,7 +6729,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DEEP_SPACE_LIFEFORMS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4701,7 +6752,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SUPERSOLID_MATERIAL",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4717,7 +6775,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NANOMORPHIC_HABITATS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4733,7 +6798,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MARTIAN_CROPS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4749,7 +6821,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ADVANCED_REPLICATORS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4765,7 +6844,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ATOMICALLY_PRECISE_ALLOYS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4781,7 +6867,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PERSONAL_SPACECRAFT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4797,7 +6890,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_YGGDRASIL_SEEDS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4813,7 +6913,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_COMPUTRONIUM",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4829,7 +6936,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_KUGELBLITZ",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4845,7 +6959,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_WARP_DRIVES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4861,7 +6982,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_AB_MATTER",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4877,7 +7005,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FEMTOBOTS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4893,7 +7028,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PERSONAL_STARCRAFT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4909,7 +7051,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TIME_CRYSTALS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4925,7 +7074,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_VIBRANIUM",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4941,7 +7097,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DARK_MATTER",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4957,7 +7120,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MAGNETIC_MONOPOLES",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4973,7 +7143,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ALICE_MATTER",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -4989,7 +7166,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CHRONOTON",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -5005,7 +7189,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MITHRIL",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -5021,7 +7212,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CONSCIOUS_MATERIALS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -5037,7 +7235,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ORICHALCUM",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -5053,7 +7258,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NEUTRONIUM",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -5069,7 +7281,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CHAOS_WANDS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -5085,7 +7304,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ARTISAN_PLANETS",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -5101,7 +7327,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PERSONAL_HYPERCRAFT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -5117,7 +7350,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TESSERACT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -5133,7 +7373,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_POCKET_UNIVERSE",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -5149,7 +7396,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_UNOBTAINIUM",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -5165,7 +7419,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_WATERPROOF_CEMENT",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -5181,7 +7442,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_THEREMIN",
   "bonusClass" : "BONUSCLASS_MANUFACTURED",
@@ -5197,7 +7465,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MACHU_PICCHU_PLANS",
   "bonusClass" : "BONUSCLASS_WONDER",
@@ -5213,5 +7488,12 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 0,
+  "randApps" : [ 0, 0, 0, 0 ],
+  "tilesPer" : 0,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 } ]

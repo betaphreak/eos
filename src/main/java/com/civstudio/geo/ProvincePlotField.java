@@ -17,13 +17,17 @@ import com.civstudio.util.Rng;
  * <p>
  * <b>This phase</b> assembles four stages: the relief ({@link PlotType}
  * flat/hill/peak) from the C2C-ported {@link ReliefGenerator} (spatially clustered
- * ranges), the ground {@link Terrain} from the province's climate-weighted pool
- * ({@link TerrainGenerator#next}), the wild {@link Feature} from the C2C-ported
- * {@link FeatureGenerator} (water-seeded forest/jungle) plus river <b>flood
- * plains</b> (flat, riverside), and the {@link Bonus} resource from {@link
+ * ranges); the ground {@link Terrain} from the <b>real {@code terrain.bmp}</b> ({@link
+ * MapTerrainCodec#ground}), with the province's climate-weighted pool ({@link
+ * TerrainGenerator#next}) as the fallback for unmapped pixels; the wild {@link Feature}
+ * from the C2C-ported {@link FeatureGenerator} (the {@code addFeatures} seed-and-spread
+ * — per-cell weighted jungle/forest/swamp with peak-seeding and the jungle→forest cold
+ * substitution), plus river <b>flood plains</b> and the generic <b>appearance-probability
+ * scatter</b> ({@link #featureFor}); and the {@link Bonus} resource from {@link
  * BonusGenerator} (placed by each bonus's own terrain/feature/relief/latitude
- * constraints). The one remaining C2C stage — the temperature-driven terrain
- * refinement — is deferred (see {@code docs/province-plots.md}).
+ * constraints). The C2C stage's <b>terrain rewriting</b> (jungle greening desert, …) is
+ * deliberately not applied — eos's ground is the real EU4 map and is left intact (see
+ * {@code docs/c2c-generator-port.md} §2, "feature consequences only").
  */
 public final class ProvincePlotField {
 
@@ -116,48 +120,83 @@ public final class ProvincePlotField {
 		if (province.type() == ProvinceType.SEA || province.type() == ProvinceType.LAKE)
 			return generateWater(province, registry, raster, rng);
 		ProvinceMask mask = raster.mask(province.id());
+		int w = mask.width(), h = mask.height();
 		PlotType[] relief = ReliefGenerator.generate(mask, ReliefGenerator.Params.forProvince(province), rng);
 		TerrainGenerator terrainGen = new TerrainGenerator(registry, province.climate(),
 				province.winter(), province.monsoon());
 		ClimateProfile climate = ClimateProfile.of(province);
+
+		// ground each land cell first, so the feature stage can read the whole terrain +
+		// relief grid (it seeds off peaks and chooses per-cell by terrain category). The
+		// ground is the real terrain.bmp where the map classifies it, with a
+		// climate-weighted draw as the fallback for unmapped pixels (always drawn, in
+		// row-major order, so the rng stream stays deterministic per seed); the composed
+		// relief is the rougher of the generator's clustered ranges and the map's
+		// hill/mountain, so real mountains survive.
+		Terrain[] ground = new Terrain[w * h];
+		PlotType[] composed = new PlotType[w * h];
+		for (int ly = 0; ly < h; ly++)
+			for (int lx = 0; lx < w; lx++) {
+				if (!mask.isLand(lx, ly))
+					continue;
+				int idx = ly * w + lx;
+				Terrain drawn = terrainGen.next(rng);
+				Terrain mapped = MapTerrainCodec.ground(mask.terrainIndex(lx, ly), registry);
+				ground[idx] = mapped != null ? mapped : drawn;
+				composed[idx] = rougher(relief[idx], MapTerrainCodec.relief(mask.terrainIndex(lx, ly)));
+			}
+
+		// the C2C-ported feature seed-and-spread: the per-cell vegetation intent
+		// (jungle/forest/swamp or bare), which this loop validity-gates below
 		double treeCover = treeCover(mask);
-		Feature[] vegetation = FeatureGenerator.generate(mask, climate, treeCover, registry, rng);
+		Feature[] vegetation = FeatureGenerator.generate(mask, ground, composed,
+				province.latitude(), climate, treeCover, registry, rng);
 		Feature floodPlains = registry.feature("FEATURE_FLOOD_PLAINS");
 		List<Bonus> bonuses = registry.bonuses();
 
-		int w = mask.width(), h = mask.height();
+		// resolve the wild feature of every land cell into a grid, in priority: flood
+		// plains on a valid flat riverside plot; else the C2C vegetation pick
+		// (validity-gated, with the real tree-class fallback for an invalid host); else a
+		// sparse terrain-implied feature (swamp/cactus/…) or the appearance scatter. Every
+		// choice is validity-gated (see featureFor). A grid (not the final plot) so the
+		// oasis pass can score a cell's neighbours before the bonuses read the feature.
+		Feature[] feature = new Feature[w * h];
+		List<int[]> cells = new ArrayList<>(mask.landCount());
+		for (int ly = 0; ly < h; ly++)
+			for (int lx = 0; lx < w; lx++) {
+				if (!mask.isLand(lx, ly))
+					continue;
+				int idx = ly * w + lx;
+				cells.add(new int[] { lx, ly });
+				feature[idx] = featureFor(ground[idx], composed[idx], mask.riverCode(lx, ly) != 0,
+						vegetation[idx], mask.treeIndex(lx, ly), mask.terrainIndex(lx, ly),
+						climate, floodPlains, registry, rng);
+			}
+		// C2C oasis scoring (slice 5, addFeatures L3076–3135): scatters oases across the
+		// best inland-desert cells, scored by their surroundings — a feature-only pass,
+		// so it never rewrites the real ground
+		placeOases(mask, ground, composed, feature, registry.feature("FEATURE_OASIS"), rng);
+		// C2C bonus placement (slice 8): a per-province pass, resources laid in placement
+		// order at target densities with group spacing (see BonusGenerator)
+		Bonus[] bonusGrid = BonusGenerator.place(w, h, cells, ground, composed, feature,
+				province.latitude(), bonuses, rng, false);
+
 		List<ProvincePlot> out = new ArrayList<>(mask.landCount());
 		for (int ly = 0; ly < h; ly++) {
 			for (int lx = 0; lx < w; lx++) {
 				if (!mask.isLand(lx, ly))
 					continue;
 				int idx = ly * w + lx;
-				// ground the plot on the real terrain.bmp where the map classifies it,
-				// keeping a climate-weighted draw as the fallback for water/unmapped
-				// pixels (always drawn, so the rng stream stays deterministic per seed)
-				Terrain drawn = terrainGen.next(rng);
-				Terrain mapped = MapTerrainCodec.ground(mask.terrainIndex(lx, ly), registry);
-				Terrain terrain = mapped != null ? mapped : drawn;
-				// relief is the rougher of the generator's clustered ranges and the real
-				// hill/mountain the terrain.bmp palette encodes, so map mountains survive
-				PlotType plotType = rougher(relief[idx], MapTerrainCodec.relief(mask.terrainIndex(lx, ly)));
+				Terrain terrain = ground[idx];
+				PlotType plotType = composed[idx];
 				int riverCode = mask.riverCode(lx, ly);
-				boolean river = riverCode != 0;
-				// the wild feature, in priority: flood plains on a valid flat riverside
-				// plot; else, where vegetation grew, the map's tree class (forest/jungle/
-				// …); else a sparse terrain-implied feature (swamp/cactus/…). Every choice
-				// is validity-gated against the plot's terrain/relief (see featureFor).
-				Feature feature = featureFor(terrain, plotType, river, vegetation[idx] != null,
-						mask.treeIndex(lx, ly), mask.terrainIndex(lx, ly), climate, floodPlains,
-						registry, rng);
-				Bonus bonus = BonusGenerator.pick(terrain, plotType, feature,
-						province.latitude(), bonuses, rng);
+				Bonus bonus = bonusGrid[idx];
 				// elevation is a pure heightmap lookup (no rng), so adding it leaves the
 				// terrain/relief/feature/bonus draws — and thus the field — otherwise identical
 				int elevation = mask.elevation(lx, ly);
 				int coast = mask.coast(lx, ly);
 				PlotGeo geo = new PlotGeo(mask.originX() + lx, mask.originY() + ly, riverCode, elevation, coast);
-				out.add(new ProvincePlot(geo, terrain, plotType, feature, bonus));
+				out.add(new ProvincePlot(geo, terrain, plotType, feature[idx], bonus));
 			}
 		}
 		return new ProvincePlotField(province, out);
@@ -170,9 +209,10 @@ public final class ProvincePlotField {
 	 * — carrying a sea resource from the same {@link BonusGenerator} the land uses (fish, crab,
 	 * whale, pearls, … place themselves by the water terrain). Deep-water cells beyond the shelf
 	 * get no plot, so the added count is a near-shore ring and the web keeps drawing open water as
-	 * the sea ripple. No wild feature yet (ice is future work). Deterministic off the same
-	 * per-province terrain stream as the land path — it consumes only the bonus draws, in
-	 * row-major order. See {@code docs/coastlines.md}.
+	 * the sea ripple. Cold water carries {@code FEATURE_ICE} (the C2C polar-cap + drift-ice model).
+	 * Deterministic off the same per-province terrain stream as the land path — an ice draw per
+	 * cell only where ice can form, then the bonus draws, in row-major order. See {@code
+	 * docs/coastlines.md}.
 	 */
 	private static ProvincePlotField generateWater(Province province, TerrainRegistry registry,
 			ProvinceRaster raster, Rng rng) throws IOException {
@@ -184,11 +224,33 @@ public final class ProvincePlotField {
 		// climate band (its latitude), so either all its water is polar (ice draws) or none is;
 		// that keeps the per-cell draw order deterministic. Absent registry ice → no ice, no draws.
 		Feature ice = registry.feature("FEATURE_ICE");
-		boolean polar = Math.abs(latitude) >= 66.0 && ice != null;   // matches MapTerrainCodec's polar band
-		double iceCover = polar ? Math.min(0.9, 0.15 + (Math.abs(latitude) - 66.0) / 16.0 * 0.75) : 0;
+		// C2C sea ice (addFeatures §3, L2746–2780): a polar-cap coverage that thickens
+		// toward the pole, combined with temperature-driven drift ice on cold open water.
+		// A province is one climate band (its latitude), so either all its water ices or
+		// none does, keeping the per-cell draw order deterministic. Absent registry ice →
+		// no ice, no draws. With the default temperature tent the 0 °C isotherm sits at
+		// ~67°, where the water terrain already bands to its polar variant (the only host
+		// FEATURE_ICE lists), so the drift-ice term coincides with the polar cap here — it
+		// generalises the mechanism should the climate model change.
+		double temp = ClimateProfile.pyTemperature(latitude);
+		final double ICE_ON_WATER = 0.5;
+		double driftIce = temp < -40 ? ICE_ON_WATER * 2   // L2766–2780
+				: temp < -25 ? ICE_ON_WATER
+				: temp < -10 ? ICE_ON_WATER / 2
+				: temp < -5 ? ICE_ON_WATER / 3
+				: temp < 0 ? ICE_ON_WATER / 4
+				: 0;
+		double polarCap = Math.abs(latitude) >= 66.0   // matches MapTerrainCodec's polar band
+				? Math.min(0.9, 0.15 + (Math.abs(latitude) - 66.0) / 16.0 * 0.75) : 0;
+		double iceCover = Math.min(0.95, Math.max(polarCap, driftIce));
+		boolean anyIce = ice != null && iceCover > 0;
 		int w = mask.width(), h = mask.height();
-		List<ProvincePlot> out = new ArrayList<>();
-		for (int ly = 0; ly < h; ly++) {
+		// first pass: assemble the shelf cells and their terrain/ice grids (the ice draw
+		// per cell, in row-major order, so the stream stays deterministic)
+		Terrain[] terrainGrid = new Terrain[w * h];
+		Feature[] featureGrid = new Feature[w * h];
+		List<int[]> cells = new ArrayList<>();
+		for (int ly = 0; ly < h; ly++)
 			for (int lx = 0; lx < w; lx++) {
 				if (!mask.isLand(lx, ly)) // the province's own water pixels
 					continue;
@@ -198,14 +260,23 @@ public final class ProvincePlotField {
 				Terrain terrain = MapTerrainCodec.water(lake, dist, latitude, registry);
 				if (terrain == null) // registry lacks the shelf water terrains — no water plots
 					continue;
-				// polar sea ice, validity-gated to the polar water terrain (freshwater lakes get none)
-				Feature feature = polar && rng.uniform() < iceCover
+				int idx = ly * w + lx;
+				terrainGrid[idx] = terrain;
+				// sea ice, validity-gated to the polar water terrain (freshwater lakes get none)
+				featureGrid[idx] = anyIce && rng.uniform() < iceCover
 						&& ice.validTerrains().contains(terrain.type()) ? ice : null;
-				Bonus bonus = BonusGenerator.pick(terrain, PlotType.FLAT, feature, latitude, bonuses, rng, true);
-				PlotGeo geo = new PlotGeo(mask.originX() + lx, mask.originY() + ly, 0,
-						mask.elevation(lx, ly), mask.coast(lx, ly));
-				out.add(new ProvincePlot(geo, terrain, PlotType.FLAT, feature, bonus));
+				cells.add(new int[] { lx, ly });
 			}
+		// sea resources (fish/crab/whale/…) via the same per-province placement pass (relief-free)
+		Bonus[] bonusGrid = BonusGenerator.place(w, h, cells, terrainGrid, null, featureGrid,
+				latitude, bonuses, rng, true);
+
+		List<ProvincePlot> out = new ArrayList<>(cells.size());
+		for (int[] c : cells) {
+			int lx = c[0], ly = c[1], idx = ly * w + lx;
+			PlotGeo geo = new PlotGeo(mask.originX() + lx, mask.originY() + ly, 0,
+					mask.elevation(lx, ly), mask.coast(lx, ly));
+			out.add(new ProvincePlot(geo, terrainGrid[idx], PlotType.FLAT, featureGrid[idx], bonusGrid[idx]));
 		}
 		return new ProvincePlotField(province, out);
 	}
@@ -243,18 +314,134 @@ public final class ProvincePlotField {
 	// against the plot's terrain/relief so no invalid terrain/feature combo is placed
 	// (which would mis-gate bonus eligibility and yields):
 	//  1. flood plains on a valid flat riverside plot;
-	//  2. where vegetation grew (FeatureGenerator's water-seeded spread), the feature
-	//     the map's tree class implies — forest/jungle/oasis/savanna/swamp — falling
-	//     back to the climate kind / forest / savanna for an invalid host;
+	//  2. the C2C vegetation pick (FeatureGenerator's seed-and-spread) where it grew,
+	//     used directly if a valid host of this terrain/relief, else falling back to the
+	//     map's tree class / climate kind / forest / savanna (vegetationFeature) — this
+	//     is where the curated eos feature/terrain rules override the C2C intent;
 	//  3. otherwise a sparse terrain-implied feature (swamp on marsh, cactus on desert).
 	private static Feature featureFor(Terrain terrain, PlotType relief, boolean river,
-			boolean vegetated, int treeIdx, int terrainIdx, ClimateProfile climate,
+			Feature vegetation, int treeIdx, int terrainIdx, ClimateProfile climate,
 			Feature floodPlains, TerrainRegistry reg, Rng rng) {
+		Feature feature;
 		if (river && relief == PlotType.FLAT && valid(floodPlains, terrain, relief))
-			return floodPlains;
-		if (vegetated)
-			return vegetationFeature(terrain, relief, treeIdx, climate, reg);
-		return terrainDrivenFeature(terrain, relief, terrainIdx, reg, rng);
+			feature = floodPlains;
+		else if (vegetation != null)
+			feature = valid(vegetation, terrain, relief) ? vegetation
+					: vegetationFeature(terrain, relief, treeIdx, climate, reg);
+		else
+			feature = terrainDrivenFeature(terrain, relief, terrainIdx, reg, rng);
+		// C2C generic appearance-probability scatter (slice 4, addFeatures L3168): any
+		// plot still bare rolls each curated feature's <iAppearance> — this is the only
+		// path that places the rarer curated features (forest_ancient / bamboo /
+		// very_tall_grass), which no seed-and-spread or terrain-implied rule reaches
+		if (feature == null)
+			feature = appearanceScatter(terrain, relief, river, reg, rng);
+		return feature;
+	}
+
+	// C2C oasis scoring & placement (addFeatures L3076–3135). Two steps over the resolved
+	// feature grid: (1) score every eligible inland-desert cell (a valid, flat, bare oasis
+	// host that is neither riverside/fresh nor coastal) by its 8 neighbours — water and
+	// wet/green/featured neighbours drag the score down, dry empty desert lifts it; (2)
+	// place an oasis on a random third of the positive-scoring candidates, skipping any
+	// adjacent to an oasis already placed, aborting after 20 such misses. Mutates {@code
+	// feature} in place; a feature-only pass (no ground rewrite). Consumes one rng draw
+	// per candidate placement, so the stream stays deterministic.
+	private static void placeOases(ProvinceMask mask, Terrain[] ground, PlotType[] relief,
+			Feature[] feature, Feature oasis, Rng rng) {
+		if (oasis == null)
+			return;
+		int w = mask.width(), h = mask.height();
+		List<Integer> candidates = new ArrayList<>();
+		for (int ly = 0; ly < h; ly++)
+			for (int lx = 0; lx < w; lx++) {
+				if (!mask.isLand(lx, ly))
+					continue;
+				int idx = ly * w + lx;
+				// eligible = a bare, valid flat oasis host (desert-category), not fresh/riverside
+				// and not coastal — the dry interior the oasis punctuates
+				if (feature[idx] != null || !valid(oasis, ground[idx], relief[idx])
+						|| mask.isRiver(lx, ly) || coastal(mask, lx, ly))
+					continue;
+				int score = 10;
+				for (int[] d : DIRS8) {
+					int nx = lx + d[0], ny = ly + d[1];
+					if (!mask.isLand(nx, ny))
+						continue; // out-of-province / open water neighbour — unreadable, skip
+					int ni = ny * w + nx;
+					if (mask.isRiver(nx, ny))
+						score -= 40;       // a river cell is both fresh and riverside (−20 each)
+					if (relief[ni] == PlotType.PEAK)
+						score -= 2;
+					Feature nf = feature[ni];
+					if (nf == null)
+						score += 1;
+					else if ("FEATURE_JUNGLE".equals(nf.type()))
+						score -= 5;
+					else if ("FEATURE_FOREST".equals(nf.type()))
+						score -= 3;
+					else if ("FEATURE_FLOOD_PLAINS".equals(nf.type()))
+						score -= 20;
+					score += switch (PyTerrain.of(ground[ni])) {
+						case DESERT -> 1;
+						case PLAINS -> -2;
+						case GRASS -> -6;
+						case TUNDRA, SNOW -> -20;   // script terrainTundra / terrainSnow
+						default -> 0;
+					};
+					if (score < 0)
+						break; // the script bails as soon as the neighbourhood is hostile
+				}
+				if (score > 0)
+					candidates.add(idx);
+			}
+		int place = candidates.size() / 3;
+		int misses = 0;
+		for (int i = 0; i < place && !candidates.isEmpty(); i++) {
+			int c = candidates.remove(rng.uniform(candidates.size())); // random, without replacement
+			int cx = c % w, cy = c / w;
+			boolean nearOasis = false;
+			for (int[] d : DIRS8) {
+				int nx = cx + d[0], ny = cy + d[1];
+				if (mask.isLand(nx, ny) && feature[ny * w + nx] == oasis) {
+					nearOasis = true;
+					break;
+				}
+			}
+			if (nearOasis) {
+				if (++misses > 20)
+					break;
+				continue;
+			}
+			feature[c] = oasis;
+		}
+	}
+
+	// the 8 neighbour offsets (oasis scoring reads the full neighbourhood)
+	private static final int[][] DIRS8 = {
+			{ -1, 0 }, { -1, 1 }, { 0, 1 }, { 1, 1 }, { 1, 0 }, { 1, -1 }, { 0, -1 }, { -1, -1 } };
+
+	// a land cell is coastal if an orthogonal neighbour is outside the province (open sea)
+	private static boolean coastal(ProvinceMask mask, int x, int y) {
+		return !mask.isLand(x - 1, y) || !mask.isLand(x + 1, y)
+				|| !mask.isLand(x, y - 1) || !mask.isLand(x, y + 1);
+	}
+
+	// the generic appearance-probability pass over an otherwise-bare plot (L3171–3175):
+	// each curated feature whose <iAppearance> is set and whose terrain/relief/river the
+	// plot satisfies is rolled at prob appearance/10000; the last that hits is placed
+	// (matching the script's overwrite). One rng draw per valid candidate, so the stream
+	// stays deterministic whether or not a feature lands.
+	private static Feature appearanceScatter(Terrain terrain, PlotType relief, boolean river,
+			TerrainRegistry reg, Rng rng) {
+		Feature chosen = null;
+		for (Feature f : reg.features()) {
+			if (f.appearance() <= 0 || !valid(f, terrain, relief) || (f.requiresRiver() && !river))
+				continue;
+			if (rng.uniform() < f.appearance() / 10000.0)
+				chosen = f;
+		}
+		return chosen;
 	}
 
 	// the feature for a vegetated cell: the first of {the map tree class, the climate

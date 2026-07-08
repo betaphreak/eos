@@ -1,6 +1,7 @@
 package com.civstudio.geo;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import com.civstudio.util.Rng;
@@ -9,63 +10,143 @@ import com.civstudio.util.Rng;
  * Places Civ4 {@link Bonus} resources (wheat, iron, banana, …) onto a province's
  * plots. The Caveman2Cosmos planet generator does <b>not</b> place bonuses itself
  * — its {@code addBonuses} delegates to the engine
- * ({@code CvMapGeneratorUtil.placeC2CBonuses}) — and the engine places each bonus
- * purely by the <b>placement constraints</b> baked into its definition. Those
- * constraints already ride on our {@link Bonus} record (imported from {@code
- * CIV4BonusInfos.xml} but dormant until now): the valid host terrains/features,
- * the flat/hill/peak relief flags, and the latitude band. This generator wakes
- * that data, choosing a resource for a plot only among the bonuses whose
- * constraints the plot satisfies. See {@code docs/province-plots.md}.
+ * ({@code CvMapGeneratorUtil.placeC2CBonuses}) — which places each bonus by the
+ * <b>placement constraints and rarity data</b> baked into its definition: the valid
+ * host terrains/features, the flat/hill/peak relief flags, the latitude band, and
+ * (ported here) the {@code iPlacementOrder}, target density ({@code iTilesPer} +
+ * {@code iConstAppearance}/{@code Rands}), {@code iMinAreaSize} and cluster
+ * ({@code iGroupRange}/{@code iGroupRand}) fields.
  * <p>
- * Rarity here is a single flat per-plot {@link #PLACEMENT_CHANCE} (a placeholder —
- * the engine's appearance probabilities and group spacing are not in the exported
- * data), so resources land sparsely and, among the eligible, uniformly. The
- * generation stays deterministic off the terrain {@code rng}.
+ * The engine runs this map-wide; eos generates and caches plot fields <b>one province
+ * at a time</b> (lazily, seed-independently), so {@link #place} runs the algorithm
+ * <b>per province</b> — the fields' natural scope. Each bonus, in placement order,
+ * gets a target count of {@code appearance% · eligibleTiles / tilesPer} scattered over
+ * that province's eligible plots, kept apart by a spacing derived from its group range
+ * and optionally clustered by {@code iGroupRand}. The one fidelity gap versus the
+ * engine is that counts and spacing are province-local rather than global (there is no
+ * cross-province coordination in the lazy model). Deterministic off the terrain {@code
+ * rng}. See {@code docs/province-plots.md} and {@code docs/c2c-generator-port.md} §8.
  */
 public final class BonusGenerator {
 
-	/** Per-plot chance to even attempt a resource (then gated again by eligibility). */
-	private static final double PLACEMENT_CHANCE = 0.08;
+	/** Same-bonus minimum spacing (Chebyshev) when a bonus declares no cluster range. */
+	private static final int DEFAULT_SPACING = 2;
 
 	private BonusGenerator() {
 	}
 
 	/**
-	 * Choose a resource for one plot, or {@code null}. Consumes one terrain-{@code
-	 * rng} draw to decide whether to attempt, and a second to pick among the
-	 * eligible bonuses when it does — so placement is deterministic per seed.
+	 * Place resources across a province's plots, returning a {@code width*height} grid of
+	 * the placed bonus per cell ({@code null} = none). Bonuses are laid down in ascending
+	 * {@link Bonus#placementOrder()}: each maps its eligible, still-empty plots, derives a
+	 * target count from its appearance rolls and {@link Bonus#tilesPer()} density, then
+	 * scatters that many, skipping any within its spacing of a same-bonus already placed
+	 * and clustering extra copies by {@link Bonus#groupRand()}. A bonus whose
+	 * {@link Bonus#minAreaSize()} exceeds the province's plot count is skipped.
 	 *
-	 * @param terrain  the plot's ground
-	 * @param relief   the plot's relief (flat/hill/peak)
-	 * @param feature  the plot's wild feature, or {@code null}
+	 * @param w        the grid width
+	 * @param h        the grid height
+	 * @param cells    the plottable cells as {@code {x, y}} (land cells, or shelf water cells)
+	 * @param terrain  the per-cell ground grid ({@code w*h}, row-major; entries at {@code cells})
+	 * @param relief   the per-cell relief grid, or {@code null} for all-flat (water)
+	 * @param feature  the per-cell feature grid ({@code w*h}; {@code null} where bare)
 	 * @param latitude the province latitude (the bonus latitude band is absolute)
 	 * @param bonuses  the curated bonus set ({@code registry.bonuses()})
 	 * @param rng      the dedicated terrain stream (not the economic one)
-	 * @return the placed bonus, or {@code null}
+	 * @param water    whether these are coastal-shelf water cells (skips the land relief gate)
+	 * @return a {@code w*h} grid of placed bonuses ({@code null} = no resource)
 	 */
-	public static Bonus pick(Terrain terrain, PlotType relief, Feature feature,
-			double latitude, List<Bonus> bonuses, Rng rng) {
-		return pick(terrain, relief, feature, latitude, bonuses, rng, false);
+	public static Bonus[] place(int w, int h, List<int[]> cells, Terrain[] terrain,
+			PlotType[] relief, Feature[] feature, double latitude, List<Bonus> bonuses,
+			Rng rng, boolean water) {
+		Bonus[] result = new Bonus[w * h];
+		int provinceSize = cells.size();
+		if (provinceSize == 0)
+			return result;
+		// place in ascending iPlacementOrder so constrained resources claim plots first
+		List<Bonus> ordered = new ArrayList<>(bonuses);
+		ordered.sort(Comparator.comparingInt(Bonus::placementOrder));
+
+		for (Bonus b : ordered) {
+			if (!b.mapPlaced() || provinceSize < b.minAreaSize())
+				continue;
+			List<int[]> eligible = new ArrayList<>();
+			for (int[] c : cells) {
+				int idx = c[1] * w + c[0];
+				if (result[idx] == null && eligible(b, terrain[idx],
+						relief == null ? PlotType.FLAT : relief[idx], feature[idx], latitude, water))
+					eligible.add(c);
+			}
+			if (eligible.isEmpty())
+				continue;
+			// appearance percent = const + four rolled rands (always four draws, so the
+			// stream stays deterministic); target = appearance% · eligible / tilesPer
+			int pct = b.constAppearance();
+			for (int k = 0; k < 4; k++)
+				pct += rng.uniform(b.randApps()[k]);
+			int target = (int) Math.round(pct / 100.0 * (eligible.size() / (double) b.tilesPer()));
+			if (target <= 0)
+				continue;
+
+			int spacing = b.groupRange() > 0 ? b.groupRange() + 1 : DEFAULT_SPACING;
+			int placed = 0;
+			while (placed < target && !eligible.isEmpty()) {
+				int[] seed = eligible.remove(rng.uniform(eligible.size()));
+				int sIdx = seed[1] * w + seed[0];
+				if (result[sIdx] != null || sameBonusWithin(result, w, h, seed[0], seed[1], spacing, b))
+					continue; // taken by a cluster, or too close to a same-bonus group
+				result[sIdx] = b;
+				placed++;
+				placed += cluster(result, w, h, seed[0], seed[1], b, terrain, relief, feature,
+						latitude, water, rng);
+			}
+		}
+		return result;
 	}
 
-	/**
-	 * As {@link #pick(Terrain, PlotType, Feature, double, List, Rng)}, but {@code water}
-	 * marks a coastal-shelf water plot: the relief flags are a <b>land</b> concept, so Civ4's
-	 * sea bonuses (fish, crab, whale, pearls, …) carry none of them and are gated purely by
-	 * their water {@code validTerrains}. On water we therefore skip the relief test and let the
-	 * terrain list decide (land placement is unchanged — it passes {@code water = false}).
-	 */
-	public static Bonus pick(Terrain terrain, PlotType relief, Feature feature,
-			double latitude, List<Bonus> bonuses, Rng rng, boolean water) {
-		if (rng.uniform() >= PLACEMENT_CHANCE)
-			return null;
-		List<Bonus> eligible = new ArrayList<>();
-		for (Bonus b : bonuses)
-			if (eligible(b, terrain, relief, feature, latitude, water))
-				eligible.add(b);
-		if (eligible.isEmpty())
-			return null;
-		return eligible.get(rng.uniform(eligible.size()));
+	// scatter clustered copies of a just-placed bonus: every plottable, eligible, empty
+	// cell within the bonus's group range takes another copy with probability groupRand%
+	// (iGroupRand is a per-plot percent, not a count). Returns how many extra were placed.
+	private static int cluster(Bonus[] result, int w, int h, int sx, int sy, Bonus b,
+			Terrain[] terrain, PlotType[] relief, Feature[] feature, double latitude,
+			boolean water, Rng rng) {
+		int range = b.groupRange();
+		if (range <= 0 || b.groupRand() <= 0)
+			return 0;
+		int extra = 0;
+		for (int dy = -range; dy <= range; dy++)
+			for (int dx = -range; dx <= range; dx++) {
+				if (dx == 0 && dy == 0)
+					continue;
+				int nx = sx + dx, ny = sy + dy;
+				if (nx < 0 || nx >= w || ny < 0 || ny >= h)
+					continue;
+				int nIdx = ny * w + nx;
+				if (result[nIdx] != null || terrain[nIdx] == null)
+					continue; // occupied, or not a plottable cell of this province
+				if (!eligible(b, terrain[nIdx], relief == null ? PlotType.FLAT : relief[nIdx],
+						feature[nIdx], latitude, water))
+					continue;
+				if (rng.uniform() * 100.0 < b.groupRand()) {
+					result[nIdx] = b;
+					extra++;
+				}
+			}
+		return extra;
+	}
+
+	// whether a same-bonus placement already sits within `spacing` Chebyshev cells —
+	// keeps distinct groups of one resource apart
+	private static boolean sameBonusWithin(Bonus[] result, int w, int h, int x, int y, int spacing, Bonus b) {
+		for (int dy = -spacing; dy <= spacing; dy++)
+			for (int dx = -spacing; dx <= spacing; dx++) {
+				int nx = x + dx, ny = y + dy;
+				if (nx < 0 || nx >= w || ny < 0 || ny >= h)
+					continue;
+				if (result[ny * w + nx] == b)
+					return true;
+			}
+		return false;
 	}
 
 	/** Land eligibility (relief-gated) — {@link #eligible(Bonus, Terrain, PlotType, Feature, double, boolean)} with {@code water = false}. */

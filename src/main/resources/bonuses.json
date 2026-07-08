@@ -13,7 +13,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_GRASSLAND" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT" ],
+  "placementOrder" : 6,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 64,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CORN",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -29,7 +36,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_LUSH" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS" ],
-  "validFeatureTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_SCRUB" ]
+  "validFeatureTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_SCRUB" ],
+  "placementOrder" : 6,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 64,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MELONS",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -45,7 +59,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_MARSH" ],
   "validFeatures" : [ "FEATURE_JUNGLE", "FEATURE_FLOOD_PLAINS" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_DESERT", "TERRAIN_SCRUB" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_DESERT", "TERRAIN_SCRUB" ],
+  "placementOrder" : 7,
+  "constAppearance" : 150,
+  "randApps" : [ 30, 30, 30, 30 ],
+  "tilesPer" : 72,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_POTATOES",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -61,7 +82,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_PLAINS", "TERRAIN_ROCKY", "TERRAIN_TAIGA" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 6,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PUMPKIN",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -77,7 +105,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH", "TERRAIN_GRASSLAND", "TERRAIN_PLAINS" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 14
 }, {
   "type" : "BONUS_RICE",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -93,7 +128,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH" ],
   "validFeatures" : [ "FEATURE_SWAMP", "FEATURE_FLOOD_PLAINS" ],
-  "validFeatureTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_SCRUB", "TERRAIN_DESERT" ]
+  "validFeatureTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_SCRUB", "TERRAIN_DESERT" ],
+  "placementOrder" : 6,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 64,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SQUASH",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -109,7 +151,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 7,
+  "constAppearance" : 150,
+  "randApps" : [ 30, 30, 30, 30 ],
+  "tilesPer" : 72,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 14
 }, {
   "type" : "BONUS_WHEAT",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -125,7 +174,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_PLAINS" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_PLAINS" ],
+  "placementOrder" : 6,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 16,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ALMONDS",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -141,7 +197,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_PLAINS" ],
   "validFeatures" : [ "FEATURE_CACTUS", "FEATURE_OASIS", "FEATURE_SAVANNA", "FEATURE_VERY_TALL_GRASS" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_SCRUB" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_SCRUB" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 80,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_APPLE",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -157,7 +220,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT" ],
-  "validFeatureTerrains" : [ "TERRAIN_LUSH", "TERRAIN_GRASSLAND", "TERRAIN_PLAINS" ]
+  "validFeatureTerrains" : [ "TERRAIN_LUSH", "TERRAIN_GRASSLAND", "TERRAIN_PLAINS" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 200,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 14
 }, {
   "type" : "BONUS_BANANA",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -173,7 +243,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_JUNGLE" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 20
 }, {
   "type" : "BONUS_COCONUT",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -189,7 +266,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_JUNGLE", "FEATURE_SAVANNA", "FEATURE_VERY_TALL_GRASS" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MUDDY", "TERRAIN_PLAINS" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MUDDY", "TERRAIN_PLAINS" ],
+  "placementOrder" : 5,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 24,
+  "minAreaSize" : 0,
+  "groupRange" : 2,
+  "groupRand" : 12
 }, {
   "type" : "BONUS_DATES",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -205,7 +289,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_SCRUB" ],
   "validFeatures" : [ "FEATURE_OASIS", "FEATURE_FLOOD_PLAINS", "FEATURE_SAVANNA", "FEATURE_VERY_TALL_GRASS" ],
-  "validFeatureTerrains" : [ "TERRAIN_DUNES", "TERRAIN_DESERT" ]
+  "validFeatureTerrains" : [ "TERRAIN_DUNES", "TERRAIN_DESERT" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 60,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FIG",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -221,7 +312,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS" ],
   "validFeatures" : [ "FEATURE_CACTUS", "FEATURE_FLOOD_PLAINS", "FEATURE_OASIS", "FEATURE_SAVANNA" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_SCRUB" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_SCRUB" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GUAVAS",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -237,7 +335,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH" ],
   "validFeatures" : [ "FEATURE_JUNGLE" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MUDDY" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MUDDY" ],
+  "placementOrder" : 8,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LEMONS",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -253,7 +358,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH" ],
   "validFeatures" : [ "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_JUNGLE" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 16
 }, {
   "type" : "BONUS_MANGO",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -269,7 +381,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH" ],
   "validFeatures" : [ "FEATURE_JUNGLE" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_MUDDY" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_MUDDY" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PAPAYA",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -285,7 +404,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH" ],
   "validFeatures" : [ "FEATURE_JUNGLE" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_MUDDY" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_MUDDY" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PISTACHIO",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -301,7 +427,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_SCRUB" ],
   "validFeatures" : [ "FEATURE_OASIS", "FEATURE_SAVANNA", "FEATURE_VERY_TALL_GRASS" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_DUNES" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_DUNES" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 60,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_POMEGRANATE",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -317,7 +450,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_SCRUB" ],
   "validFeatures" : [ "FEATURE_OASIS", "FEATURE_SAVANNA", "FEATURE_VERY_TALL_GRASS" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_DUNES" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_DUNES" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_OLIVES",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -333,7 +473,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_FLOOD_PLAINS" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_SCRUB" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_SCRUB" ],
+  "placementOrder" : 5,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 16
 }, {
   "type" : "BONUS_RESIN",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -349,7 +496,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_SAVANNA", "FEATURE_JUNGLE", "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_BAMBOO" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_MARSH", "TERRAIN_MUDDY", "TERRAIN_ROCKY", "TERRAIN_TAIGA", "TERRAIN_SCRUB" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_MARSH", "TERRAIN_MUDDY", "TERRAIN_ROCKY", "TERRAIN_TAIGA", "TERRAIN_SCRUB" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 200,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_RUBBER",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -365,7 +519,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_JUNGLE" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY" ],
+  "placementOrder" : 1,
+  "constAppearance" : 400,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 200,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SPICES",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -381,7 +542,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_PLAINS", "TERRAIN_SCRUB", "TERRAIN_LUSH", "TERRAIN_MUDDY" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_SAVANNA", "FEATURE_CACTUS" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 144,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 14
 }, {
   "type" : "BONUS_HEMP",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -397,7 +565,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_SCRUB" ],
   "validFeatures" : [ "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT" ],
-  "validFeatureTerrains" : [ "TERRAIN_LUSH", "TERRAIN_GRASSLAND" ]
+  "validFeatureTerrains" : [ "TERRAIN_LUSH", "TERRAIN_GRASSLAND" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 16
 }, {
   "type" : "BONUS_COCA",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -413,7 +588,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH" ],
   "validFeatures" : [ "FEATURE_JUNGLE" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MUDDY" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MUDDY" ],
+  "placementOrder" : 6,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 156,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 16
 }, {
   "type" : "BONUS_COCOA",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -429,7 +611,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH" ],
   "validFeatures" : [ "FEATURE_JUNGLE" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MUDDY" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MUDDY" ],
+  "placementOrder" : 8,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 40,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_COFFEE",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -445,7 +634,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_PLAINS" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_SAVANNA" ],
-  "validFeatureTerrains" : [ "TERRAIN_BADLAND", "TERRAIN_DESERT", "TERRAIN_ROCKY", "TERRAIN_SCRUB" ]
+  "validFeatureTerrains" : [ "TERRAIN_BADLAND", "TERRAIN_DESERT", "TERRAIN_ROCKY", "TERRAIN_SCRUB" ],
+  "placementOrder" : 7,
+  "constAppearance" : 200,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 72,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 16
 }, {
   "type" : "BONUS_COTTON",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -461,7 +657,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_PLAINS" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_SAVANNA" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_SCRUB" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_SCRUB" ],
+  "placementOrder" : 6,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 72,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 16
 }, {
   "type" : "BONUS_FLAX",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -477,7 +680,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MARSH", "TERRAIN_MUDDY" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_PLAINS", "TERRAIN_SCRUB" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_PLAINS", "TERRAIN_SCRUB" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HENNA",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -493,7 +703,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_SCRUB" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_OASIS", "FEATURE_SAVANNA" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_DUNES" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_DUNES" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 16
 }, {
   "type" : "BONUS_INCENSE",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -509,7 +726,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_CACTUS", "FEATURE_FLOOD_PLAINS", "FEATURE_OASIS", "FEATURE_SAVANNA" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_DUNES", "TERRAIN_SCRUB" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_DUNES", "TERRAIN_SCRUB" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 16
 }, {
   "type" : "BONUS_INDIGO",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -525,7 +749,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_JUNGLE", "FEATURE_SWAMP", "FEATURE_SAVANNA", "FEATURE_BAMBOO", "FEATURE_VERY_TALL_GRASS" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_PLAINS", "TERRAIN_DESERT", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_SCRUB" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_PLAINS", "TERRAIN_DESERT", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_SCRUB" ],
+  "placementOrder" : 7,
+  "constAppearance" : 160,
+  "randApps" : [ 30, 30, 30, 30 ],
+  "tilesPer" : 200,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 16
 }, {
   "type" : "BONUS_KAVA",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -541,7 +772,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_JUNGLE" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY" ],
+  "placementOrder" : 8,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 50,
+  "minAreaSize" : 1,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PAPYRUS",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -557,7 +795,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_OASIS", "FEATURE_SWAMP" ],
-  "validFeatureTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_MUDDY", "TERRAIN_MARSH", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES" ]
+  "validFeatureTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_MUDDY", "TERRAIN_MARSH", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES" ],
+  "placementOrder" : 5,
+  "constAppearance" : 140,
+  "randApps" : [ 40, 40, 40, 40 ],
+  "tilesPer" : 72,
+  "minAreaSize" : 3,
+  "groupRange" : 2,
+  "groupRand" : 8
 }, {
   "type" : "BONUS_PEYOTE",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -573,7 +818,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_SCRUB" ],
   "validFeatures" : [ "FEATURE_CACTUS" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT" ],
+  "placementOrder" : 1,
+  "constAppearance" : 300,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 30,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PRICKLY_PEAR",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -589,7 +841,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_SCRUB" ],
   "validFeatures" : [ "FEATURE_CACTUS" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT" ],
+  "placementOrder" : 7,
+  "constAppearance" : 300,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 30,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_OPIUM",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -605,7 +864,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_SCRUB" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 7,
+  "constAppearance" : 200,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 2,
+  "groupRand" : 8
 }, {
   "type" : "BONUS_SUGAR",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -621,7 +887,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_MARSH", "TERRAIN_MUDDY", "TERRAIN_LUSH" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_JUNGLE", "FEATURE_VERY_TALL_GRASS" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 64,
+  "minAreaSize" : 3,
+  "groupRange" : 2,
+  "groupRand" : 8
 }, {
   "type" : "BONUS_TEA",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -637,7 +910,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_BAMBOO", "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT" ],
-  "validFeatureTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH" ]
+  "validFeatureTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH" ],
+  "placementOrder" : 7,
+  "constAppearance" : 400,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 2,
+  "groupRand" : 8
 }, {
   "type" : "BONUS_TOBACCO",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -653,7 +933,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_JUNGLE", "FEATURE_VERY_TALL_GRASS" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 64,
+  "minAreaSize" : 3,
+  "groupRange" : 2,
+  "groupRand" : 8
 }, {
   "type" : "BONUS_VANILLA",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -669,7 +956,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_JUNGLE", "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MUDDY", "TERRAIN_LUSH", "TERRAIN_MARSH" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MUDDY", "TERRAIN_LUSH", "TERRAIN_MARSH" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 64,
+  "minAreaSize" : 3,
+  "groupRange" : 2,
+  "groupRand" : 8
 }, {
   "type" : "BONUS_GRAPES",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -685,7 +979,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_SCRUB" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 5,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 80,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 16
 }, {
   "type" : "BONUS_MUSHROOMS",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -701,7 +1002,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_JUNGLE", "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_BAMBOO" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_TAIGA" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_TAIGA" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 16
 }, {
   "type" : "BONUS_PRIME_TIMBER",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -717,7 +1025,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_JUNGLE" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_TAIGA", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH", "TERRAIN_ROCKY" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_TAIGA", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH", "TERRAIN_ROCKY" ],
+  "placementOrder" : 6,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 100,
+  "minAreaSize" : 5,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CAMEL",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -733,7 +1048,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_SCRUB" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_OASIS", "FEATURE_CACTUS" ],
-  "validFeatureTerrains" : [ "TERRAIN_DUNES" ]
+  "validFeatureTerrains" : [ "TERRAIN_DUNES" ],
+  "placementOrder" : 0,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 16,
+  "minAreaSize" : 4,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_COW",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -749,7 +1071,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH", "TERRAIN_GRASSLAND" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_VERY_TALL_GRASS" ],
-  "validFeatureTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_SCRUB", "TERRAIN_DESERT" ]
+  "validFeatureTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_SCRUB", "TERRAIN_DESERT" ],
+  "placementOrder" : 6,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 10
 }, {
   "type" : "BONUS_DONKEY",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -765,7 +1094,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_PLAINS" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_VERY_TALL_GRASS", "FEATURE_SAVANNA", "FEATURE_CACTUS" ],
-  "validFeatureTerrains" : [ "TERRAIN_SCRUB", "TERRAIN_DESERT" ]
+  "validFeatureTerrains" : [ "TERRAIN_SCRUB", "TERRAIN_DESERT" ],
+  "placementOrder" : 3,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 100,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HORSE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -781,7 +1117,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH", "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_TAIGA" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_VERY_TALL_GRASS", "FEATURE_SAVANNA" ],
-  "validFeatureTerrains" : [ "TERRAIN_SCRUB", "TERRAIN_DESERT" ]
+  "validFeatureTerrains" : [ "TERRAIN_SCRUB", "TERRAIN_DESERT" ],
+  "placementOrder" : 1,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LLAMA",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -797,7 +1140,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_SCRUB", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_ROCKY", "TERRAIN_BADLAND" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 0,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 4,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PIG",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -813,7 +1163,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_JUNGLE", "FEATURE_FLOOD_PLAINS" ],
-  "validFeatureTerrains" : [ "TERRAIN_SCRUB", "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH" ]
+  "validFeatureTerrains" : [ "TERRAIN_SCRUB", "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH" ],
+  "placementOrder" : 6,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 10
 }, {
   "type" : "BONUS_SHEEP",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -829,7 +1186,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_ROCKY", "TERRAIN_SCRUB" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 6,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 10
 }, {
   "type" : "BONUS_BEAVERS",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -845,7 +1209,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_SWAMP", "FEATURE_FLOOD_PLAINS" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MARSH", "TERRAIN_MUDDY", "TERRAIN_PLAINS", "TERRAIN_TAIGA", "TERRAIN_TUNDRA" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MARSH", "TERRAIN_MUDDY", "TERRAIN_PLAINS", "TERRAIN_TAIGA", "TERRAIN_TUNDRA" ],
+  "placementOrder" : 5,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 10
 }, {
   "type" : "BONUS_BISON",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -861,7 +1232,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_SCRUB", "TERRAIN_LUSH" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 6,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DEER",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -877,7 +1255,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_BAMBOO", "FEATURE_SWAMP" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_PLAINS", "TERRAIN_TAIGA", "TERRAIN_SCRUB", "TERRAIN_ROCKY" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_PLAINS", "TERRAIN_TAIGA", "TERRAIN_SCRUB", "TERRAIN_ROCKY" ],
+  "placementOrder" : 6,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 2,
+  "groupRange" : 1,
+  "groupRand" : 10
 }, {
   "type" : "BONUS_ELEPHANTS",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -893,7 +1278,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH", "TERRAIN_GRASSLAND" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_JUNGLE", "FEATURE_SAVANNA", "FEATURE_VERY_TALL_GRASS" ],
-  "validFeatureTerrains" : [ "TERRAIN_MUDDY", "TERRAIN_PLAINS", "TERRAIN_SCRUB", "TERRAIN_DESERT" ]
+  "validFeatureTerrains" : [ "TERRAIN_MUDDY", "TERRAIN_PLAINS", "TERRAIN_SCRUB", "TERRAIN_DESERT" ],
+  "placementOrder" : 3,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GUINEA_PIGS",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -909,7 +1301,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_LUSH", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND" ],
   "validFeatures" : [ "FEATURE_VERY_TALL_GRASS" ],
-  "validFeatureTerrains" : [ "TERRAIN_SCRUB" ]
+  "validFeatureTerrains" : [ "TERRAIN_SCRUB" ],
+  "placementOrder" : 6,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 64,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_KANGAROO",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -925,7 +1324,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_PLAINS", "TERRAIN_SCRUB", "TERRAIN_ROCKY" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 5,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 32,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 10
 }, {
   "type" : "BONUS_MAMMOTH",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -941,7 +1347,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 3,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 5,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PARROTS",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -957,7 +1370,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_JUNGLE", "FEATURE_VERY_TALL_GRASS", "FEATURE_OASIS", "FEATURE_MANGROVE" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_PLAINS", "TERRAIN_DUNES", "TERRAIN_SCRUB", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_PLAINS", "TERRAIN_DUNES", "TERRAIN_SCRUB", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH" ],
+  "placementOrder" : 6,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 100,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_POULTRY",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -973,7 +1393,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_PLAINS", "TERRAIN_TAIGA", "TERRAIN_LUSH", "TERRAIN_MARSH" ],
   "validFeatures" : [ "FEATURE_JUNGLE", "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_SWAMP", "FEATURE_SAVANNA", "FEATURE_BAMBOO", "FEATURE_FLOOD_PLAINS", "FEATURE_OASIS", "FEATURE_VERY_TALL_GRASS", "FEATURE_CACTUS" ],
-  "validFeatureTerrains" : [ "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_MUDDY" ]
+  "validFeatureTerrains" : [ "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_MUDDY" ],
+  "placementOrder" : 7,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 200,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 10
 }, {
   "type" : "BONUS_RABBIT",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -989,7 +1416,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 6,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SEA_LION_AND_SEAL",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1005,7 +1439,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_ICE", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_TAIGA", "TERRAIN_ROCKY", "TERRAIN_JAGGED", "TERRAIN_BARREN" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 5,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 20,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_WALRUS",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1021,7 +1462,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_ICE", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_TAIGA" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 5,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 20,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CLAM",
   "bonusClass" : "BONUSCLASS_SEAFOOD",
@@ -1037,7 +1485,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_COAST", "TERRAIN_COAST_TROPICAL", "TERRAIN_SEA", "TERRAIN_SEA_TROPICAL", "TERRAIN_LAKE_SHORE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 8,
+  "constAppearance" : 500,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 64,
+  "minAreaSize" : 10,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_CRAB",
   "bonusClass" : "BONUSCLASS_SEAFOOD",
@@ -1053,7 +1508,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_COAST", "TERRAIN_COAST_POLAR", "TERRAIN_COAST_TROPICAL", "TERRAIN_SEA", "TERRAIN_SEA_POLAR", "TERRAIN_SEA_TROPICAL", "TERRAIN_LAKE_SHORE", "TERRAIN_LAKE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 8,
+  "constAppearance" : 500,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 64,
+  "minAreaSize" : 8,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FISH",
   "bonusClass" : "BONUSCLASS_SEAFOOD",
@@ -1069,7 +1531,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_COAST", "TERRAIN_COAST_POLAR", "TERRAIN_COAST_TROPICAL", "TERRAIN_SEA", "TERRAIN_SEA_POLAR", "TERRAIN_SEA_TROPICAL", "TERRAIN_SEA_DEEP", "TERRAIN_SEA_DEEP_POLAR", "TERRAIN_SEA_DEEP_TROPICAL", "TERRAIN_OCEAN", "TERRAIN_OCEAN_POLAR", "TERRAIN_OCEAN_TROPICAL", "TERRAIN_LAKE_SHORE", "TERRAIN_LAKE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 8,
+  "constAppearance" : 500,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 4,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LOBSTER",
   "bonusClass" : "BONUSCLASS_SEAFOOD",
@@ -1085,7 +1554,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_COAST", "TERRAIN_COAST_POLAR", "TERRAIN_COAST_TROPICAL", "TERRAIN_SEA", "TERRAIN_SEA_POLAR", "TERRAIN_SEA_TROPICAL", "TERRAIN_SEA_DEEP", "TERRAIN_SEA_DEEP_POLAR", "TERRAIN_SEA_DEEP_TROPICAL", "TERRAIN_OCEAN", "TERRAIN_OCEAN_POLAR", "TERRAIN_OCEAN_TROPICAL" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 9,
+  "constAppearance" : 500,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 100,
+  "minAreaSize" : 16,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MUREX",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1101,7 +1577,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_COAST", "TERRAIN_COAST_TROPICAL", "TERRAIN_SEA", "TERRAIN_SEA_TROPICAL" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 8,
+  "constAppearance" : 500,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 64,
+  "minAreaSize" : 10,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PEARLS",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1117,7 +1600,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_COAST", "TERRAIN_COAST_POLAR", "TERRAIN_COAST_TROPICAL", "TERRAIN_SEA", "TERRAIN_SEA_POLAR", "TERRAIN_SEA_TROPICAL", "TERRAIN_LAKE_SHORE", "TERRAIN_LAKE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 8,
+  "constAppearance" : 500,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 10,
+  "groupRange" : 2,
+  "groupRand" : 8
 }, {
   "type" : "BONUS_SHRIMP",
   "bonusClass" : "BONUSCLASS_SEAFOOD",
@@ -1133,7 +1623,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_COAST", "TERRAIN_COAST_POLAR", "TERRAIN_COAST_TROPICAL", "TERRAIN_SEA", "TERRAIN_SEA_POLAR", "TERRAIN_SEA_TROPICAL", "TERRAIN_SEA_DEEP", "TERRAIN_SEA_DEEP_POLAR", "TERRAIN_SEA_DEEP_TROPICAL", "TERRAIN_OCEAN", "TERRAIN_OCEAN_POLAR", "TERRAIN_OCEAN_TROPICAL", "TERRAIN_LAKE_SHORE", "TERRAIN_LAKE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 8,
+  "constAppearance" : 500,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 10,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_WHALE",
   "bonusClass" : "BONUSCLASS_SEAFOOD",
@@ -1149,7 +1646,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_SEA_DEEP", "TERRAIN_SEA_DEEP_POLAR", "TERRAIN_SEA_DEEP_TROPICAL", "TERRAIN_OCEAN", "TERRAIN_OCEAN_POLAR", "TERRAIN_OCEAN_TROPICAL", "TERRAIN_TRENCH", "TERRAIN_TRENCH_POLAR", "TERRAIN_TRENCH_TROPICAL" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 8,
+  "constAppearance" : 500,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 32,
+  "groupRange" : 2,
+  "groupRand" : 5
 }, {
   "type" : "BONUS_SILK",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1165,7 +1669,14 @@
   "peaks" : false,
   "validTerrains" : [ ],
   "validFeatures" : [ "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_JUNGLE", "FEATURE_BAMBOO" ],
-  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_MUDDY" ]
+  "validFeatureTerrains" : [ "TERRAIN_GRASSLAND", "TERRAIN_MARSH", "TERRAIN_PLAINS", "TERRAIN_LUSH", "TERRAIN_MUDDY" ],
+  "placementOrder" : 5,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 3,
+  "groupRange" : 2,
+  "groupRand" : 10
 }, {
   "type" : "BONUS_AMBER",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1181,7 +1692,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA" ],
   "validFeatures" : [ "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_JUNGLE", "FEATURE_SAVANNA", "FEATURE_BAMBOO", "FEATURE_PEAT_BOG" ],
-  "validFeatureTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_MUDDY", "TERRAIN_MARSH", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ]
+  "validFeatureTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_MUDDY", "TERRAIN_MARSH", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
+  "placementOrder" : 7,
+  "constAppearance" : 160,
+  "randApps" : [ 30, 30, 30, 30 ],
+  "tilesPer" : 200,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_BAUXITE_ORE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1197,7 +1715,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 3,
+  "constAppearance" : 300,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 500,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_COAL",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1213,7 +1738,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 2,
+  "constAppearance" : 400,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 400,
+  "minAreaSize" : 4,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_COPPER_ORE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1229,7 +1761,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 1,
+  "constAppearance" : 400,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_DIAMOND",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1245,7 +1784,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 7,
+  "constAppearance" : 250,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 200,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GEODE",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1261,7 +1807,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED" ],
   "validFeatures" : [ "FEATURE_DARK_ROCK_ARCH", "FEATURE_DARK_ROCK_ARCH2", "FEATURE_DARK_ROCK_FORM1", "FEATURE_DARK_ROCK_FORM2", "FEATURE_DARK_ROCK_FORM3", "FEATURE_DARK_ROCK_FORM4", "FEATURE_ROCK_ARCH", "FEATURE_ROCK_ARCH2", "FEATURE_ROCK_FORM1", "FEATURE_ROCK_FORM2", "FEATURE_ROCK_FORM3", "FEATURE_ROCK_FORM4", "FEATURE_POLAR_ROCK_ARCH", "FEATURE_POLAR_ROCK_ARCH2", "FEATURE_POLAR_ROCK_FORM1", "FEATURE_POLAR_ROCK_FORM2", "FEATURE_POLAR_ROCK_FORM3", "FEATURE_POLAR_ROCK_FORM4", "FEATURE_CAVES", "FEATURE_CRATER" ],
-  "validFeatureTerrains" : [ "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ]
+  "validFeatureTerrains" : [ "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 20,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GOLD_ORE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1277,7 +1830,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 5,
+  "constAppearance" : 400,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 400,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 12
 }, {
   "type" : "BONUS_IRON_ORE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1293,7 +1853,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 1,
+  "constAppearance" : 400,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 400,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_LEAD_ORE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1309,7 +1876,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 4,
+  "constAppearance" : 250,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 280,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_MANGANESE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1325,7 +1899,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 6,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 200,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_PLATINUM_ORE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1341,7 +1922,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 5,
+  "constAppearance" : 300,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 500,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_RUBIES",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1357,7 +1945,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SAPPHIRES",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1373,7 +1968,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SILVER_ORE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1389,7 +1991,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 5,
+  "constAppearance" : 400,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 400,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 12
 }, {
   "type" : "BONUS_SULPHUR",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1405,7 +2014,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA" ],
   "validFeatures" : [ "FEATURE_CRATER" ],
-  "validFeatureTerrains" : [ "TERRAIN_DUNES", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ]
+  "validFeatureTerrains" : [ "TERRAIN_DUNES", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
+  "placementOrder" : 2,
+  "constAppearance" : 300,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 14
 }, {
   "type" : "BONUS_TIN_ORE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1421,7 +2037,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 5,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TITANIUM_ORE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1437,7 +2060,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 4,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 168,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_URANIUM",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1453,7 +2083,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_SALT_FLATS", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 2,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 512,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FINE_CLAY",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1469,7 +2106,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH" ],
   "validFeatures" : [ "FEATURE_FLOOD_PLAINS", "FEATURE_OASIS", "FEATURE_JUNGLE", "FEATURE_SWAMP", "FEATURE_BAMBOO", "FEATURE_MANGROVE", "FEATURE_PEAT_BOG" ],
-  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_PLAINS", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST" ]
+  "validFeatureTerrains" : [ "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_PLAINS", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST" ],
+  "placementOrder" : 5,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 80,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_JADE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1485,7 +2129,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 1,
+  "groupRand" : 16
 }, {
   "type" : "BONUS_MARBLE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1501,7 +2152,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 2,
+  "constAppearance" : 200,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 150,
+  "minAreaSize" : 3,
+  "groupRange" : 2,
+  "groupRand" : 5
 }, {
   "type" : "BONUS_NATRON",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1517,7 +2175,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_SALT_FLATS" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 4,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 10,
+  "minAreaSize" : 0,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_OBSIDIAN",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1533,7 +2198,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 3,
+  "constAppearance" : 250,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 280,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_SALT",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1549,7 +2221,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_SALT_FLATS", "TERRAIN_PLAINS" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 4,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 80,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_STONE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1565,7 +2244,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_BARREN", "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 1,
+  "constAppearance" : 400,
+  "randApps" : [ 30, 30, 30, 30 ],
+  "tilesPer" : 200,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_TURQUOISE",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1581,7 +2267,14 @@
   "peaks" : true,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 8,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_FOSSIL_BEDS",
   "bonusClass" : "BONUSCLASS_MISC",
@@ -1597,7 +2290,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_SALT_FLATS", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 5,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 256,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_HYDROTHERMAL_VENT",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1613,7 +2313,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_SEA", "TERRAIN_SEA_POLAR", "TERRAIN_SEA_TROPICAL", "TERRAIN_SEA_DEEP", "TERRAIN_SEA_DEEP_POLAR", "TERRAIN_SEA_DEEP_TROPICAL", "TERRAIN_OCEAN", "TERRAIN_OCEAN_POLAR", "TERRAIN_OCEAN_TROPICAL", "TERRAIN_TRENCH", "TERRAIN_TRENCH_POLAR", "TERRAIN_TRENCH_TROPICAL", "TERRAIN_LAKE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 8,
+  "constAppearance" : 500,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 100,
+  "minAreaSize" : 10,
+  "groupRange" : 2,
+  "groupRand" : 6
 }, {
   "type" : "BONUS_METHANE_ICE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1629,7 +2336,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_SEA", "TERRAIN_SEA_POLAR", "TERRAIN_SEA_TROPICAL", "TERRAIN_SEA_DEEP", "TERRAIN_SEA_DEEP_POLAR", "TERRAIN_SEA_DEEP_TROPICAL", "TERRAIN_OCEAN", "TERRAIN_OCEAN_POLAR", "TERRAIN_OCEAN_TROPICAL", "TERRAIN_TRENCH", "TERRAIN_TRENCH_POLAR", "TERRAIN_TRENCH_TROPICAL", "TERRAIN_LAKE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 8,
+  "constAppearance" : 500,
+  "randApps" : [ 50, 50, 50, 50 ],
+  "tilesPer" : 100,
+  "minAreaSize" : 5,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_NATURAL_GAS",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1645,7 +2359,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_SALT_FLATS", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE", "TERRAIN_SEA", "TERRAIN_SEA_POLAR", "TERRAIN_SEA_TROPICAL", "TERRAIN_SEA_DEEP", "TERRAIN_SEA_DEEP_POLAR", "TERRAIN_SEA_DEEP_TROPICAL", "TERRAIN_OCEAN", "TERRAIN_OCEAN_POLAR", "TERRAIN_OCEAN_TROPICAL", "TERRAIN_LAKE_SHORE", "TERRAIN_LAKE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 8,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 92,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_OIL",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1661,7 +2382,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_SALT_FLATS", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE", "TERRAIN_SEA", "TERRAIN_SEA_POLAR", "TERRAIN_SEA_TROPICAL", "TERRAIN_SEA_DEEP", "TERRAIN_SEA_DEEP_POLAR", "TERRAIN_SEA_DEEP_TROPICAL", "TERRAIN_OCEAN", "TERRAIN_OCEAN_POLAR", "TERRAIN_OCEAN_TROPICAL", "TERRAIN_LAKE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 2,
+  "constAppearance" : 400,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 400,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_GEOTHERMAL_ENERGY",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1677,7 +2405,14 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_ROCKY", "TERRAIN_BADLAND", "TERRAIN_JAGGED", "TERRAIN_BARREN", "TERRAIN_DESERT", "TERRAIN_SCRUB", "TERRAIN_DUNES", "TERRAIN_SALT_FLATS", "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY", "TERRAIN_MARSH", "TERRAIN_TAIGA", "TERRAIN_TUNDRA", "TERRAIN_PERMAFROST", "TERRAIN_ICE" ],
   "validFeatures" : [ ],
-  "validFeatureTerrains" : [ ]
+  "validFeatureTerrains" : [ ],
+  "placementOrder" : 7,
+  "constAppearance" : 100,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 10,
+  "groupRange" : 0,
+  "groupRand" : 0
 }, {
   "type" : "BONUS_ANCIENT_RELICS",
   "bonusClass" : "BONUSCLASS_MISC",
@@ -1693,5 +2428,12 @@
   "peaks" : false,
   "validTerrains" : [ "TERRAIN_DESERT", "TERRAIN_MARSH", "TERRAIN_DUNES" ],
   "validFeatures" : [ "FEATURE_JUNGLE", "FEATURE_SWAMP", "FEATURE_BAMBOO" ],
-  "validFeatureTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY" ]
+  "validFeatureTerrains" : [ "TERRAIN_PLAINS", "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY" ],
+  "placementOrder" : 7,
+  "constAppearance" : 50,
+  "randApps" : [ 25, 25, 25, 25 ],
+  "tilesPer" : 128,
+  "minAreaSize" : 3,
+  "groupRange" : 0,
+  "groupRand" : 0
 } ]

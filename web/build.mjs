@@ -6,9 +6,15 @@
 // map (src/main/resources/map/provinces.json) + outlines (borders.json), distils
 // them into one JSON bundle written to web/data.js (which index.html loads), and
 // bakes a dark-tinted crop of the real EU4 terrain raster (data/anbennar/terrain.bmp)
-// into a real image asset at web/assets/terrain-<seed>.png that the page references —
+// into a real image asset at web/assets/terrain.png that the page references —
 // the image is never inlined into the data. The output/ run must exist first —
 // generate it by running the caravan scenario (e.g. ParallelCaravansTest) for that seed.
+//
+// The baked art assets (terrain.png crop, terrain-tiles/river/sea/shore/foam/ice/
+// trees/bonus-icons) are seed-independent — their content comes from the Civ4 art and
+// the whole-world raster, not the run — so they carry stable names (no seed suffix);
+// only data.js is per-seed. The page loads each by the exact filename the bundle
+// records (BUNDLE.<asset>.src), so stable names need no page change.
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -290,7 +296,7 @@ function bakeTerrain(provs) {
   const png = encodePng(dw, dh, rgb, alpha);
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  const file = `terrain-${SEED}.png`;
+  const file = `terrain.png`;
   fs.writeFileSync(path.join(assets, file), png);
 
   return {
@@ -495,7 +501,7 @@ function bakeTerrainTiles(colorsHex) {
   const png = encodePng(W, H, rgb);
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  const file = `terrain-tiles-${SEED}.png`;
+  const file = `terrain-tiles.png`;
   fs.writeFileSync(path.join(assets, file), png);
   return { src: `assets/${file}`, tile: T, cols };
 }
@@ -565,7 +571,7 @@ function bakeRiverTile() {
     }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  const file = `river-${SEED}.png`;
+  const file = `river.png`;
   fs.writeFileSync(path.join(assets, file), encodePng(T, T, rgb));
   return { src: `assets/${file}`, tile: T };
 }
@@ -577,13 +583,13 @@ function bakeRiverTile() {
 // deepen/brighten it into ripples. (seadetail carries its pattern in RGB, so we read luminance,
 // unlike the river ribbon whose ripples are in the DXT5 alpha.) Returns {src, tile}, or null
 // when the art is absent (LFS not pulled / file://) — the renderer then draws the flat gradient.
-function bakeSeaTile() { return bakeRippleTile('Art/Terrain/textures/water/seadetail.dds', `sea-${SEED}.png`, 1.1); }
+function bakeSeaTile() { return bakeRippleTile('Art/Terrain/textures/water/seadetail.dds', `sea.png`, 1.1); }
 
 // The shore shallows carry the same treatment (docs/coastlines.md Phase D): a neutral-mean
 // greyscale ripple from the Civ4 shore wave texture (textures/water/shoredetail.dds), drawn
 // over the shallow band with `soft-light` so it ripples the shore hue without recolouring it.
 // A touch more contrast than the open sea so the near-shore chop reads. Null → flat shallows.
-function bakeShoreTile() { return bakeRippleTile('Art/Terrain/textures/water/shoredetail.dds', `shore-${SEED}.png`, 1.3); }
+function bakeShoreTile() { return bakeRippleTile('Art/Terrain/textures/water/shoredetail.dds', `shore.png`, 1.3); }
 
 // Bake a seamless COLOUR ice tile from the real Civ4 pack-ice texture (features/icepack/icepack_1024.dds).
 // The texture's upper ~65% is a clean cracked-ice surface (the lower strip is a fringe of edge icicles we
@@ -609,7 +615,7 @@ function bakeIceTile() {
     }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  const file = `ice-${SEED}.png`;
+  const file = `ice.png`;
   fs.writeFileSync(path.join(assets, file), encodePng(T, T, rgb));
   return { src: `assets/${file}`, tile: T };
 }
@@ -681,7 +687,7 @@ function bakeSpriteGroup(artPath, name) {
   }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  const fileOut = `trees-${name}-${SEED}.png`;
+  const fileOut = `trees-${name}.png`;
   fs.writeFileSync(path.join(assets, fileOut), encodePng(totW, maxH, rgb, alpha));
   return { src: `assets/${fileOut}`, w: totW, h: maxH, sprites };
 }
@@ -713,7 +719,7 @@ function bakeFoamTile() {
     }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  const file = `foam-${SEED}.png`;
+  const file = `foam.png`;
   fs.writeFileSync(path.join(assets, file), encodePng(W, CH, rgb, alpha));
   return { src: `assets/${file}`, w: W, h: CH };
 }
@@ -768,7 +774,7 @@ function bakeBonusIcons() {
   });
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  const file = `bonus-icons-${SEED}.png`;
+  const file = `bonus-icons.png`;
   fs.writeFileSync(path.join(assets, file), encodePng(aw, ah, rgb, alpha));
   console.log(`  bonus icons: assets/${file} (${picks.length} GameFont resource symbols)`);
   return { src: `assets/${file}`, cell: CELL, cols, count: picks.length, index };

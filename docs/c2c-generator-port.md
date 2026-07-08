@@ -11,6 +11,24 @@ Java side to touch: `com.civstudio.geo.FeatureGenerator`, `ProvincePlotField`, `
 
 ---
 
+## Status (2026-07-08)
+
+| Slice | State | Notes |
+|---|---|---|
+| Prereqs (temp/pyCategory/WeightedPick) | **done** | `ClimateProfile.pyTemperature`, `PyTerrain`, `WeightedPick` (+ `C2CFeaturePrereqTest`) |
+| 1–3 feature choice + spread | **done** | rewrote `FeatureGenerator` (seed-and-spread, peak seeding, 8-conn, river-crossing block, weighted stop, jungle→forest-on-cold). **§2 decided: "feature consequences only" — no ground rewrite** (see the `c2c-feature-port-no-terrain-rewrite` memory). Tests: `C2CFeatureSpreadTest`, `ProvincePlotFieldTest` |
+| 4 appearance scatter | **done** | `<iAppearance>` exported onto `Feature`; `ProvincePlotField.appearanceScatter` — unlocks forest_ancient/bamboo/very_tall_grass |
+| 5 oasis scoring | **done** | `ProvincePlotField.placeOases` (feature-only) |
+| 7 mid-latitude ice | **done** | temperature-driven drift ice in `generateWater`; coincides with the polar band under the default tent |
+| 6 terrain diversification | **declined** | rewrites real ground → conflicts with the §2 decision and the `terrainComesFromTheRealMapNotTheClimatePool` test (asserts LUSH/MUDDY==0). Would only be admissible gated to unmapped pixels, which is near-inert |
+| 8 bonus placement | **done** (per-province) | exported the placement fields (`iPlacementOrder`/`iConstAppearance`/`Rands`/`iTilesPer`/`iMinAreaSize`/`iGroupRange`/`iGroupRand`) onto `Bonus`; `BonusGenerator.place` runs the constrained placement **per province** (order + target density + group spacing/clustering). Faithful in-spirit; counts/spacing are province-local, not global — the one gap forced by eos's lazy per-province caching. Test: `BonusPlacementTest` |
+
+The whole-world plot caches + `web/assets/plots.pack` are regenerated after any of these change
+(`WorldPlotGenerator` then `node web/build.mjs <seed>`); the caches are gitignored and the generator
+skips already-present provinces, so a regen must delete them first.
+
+---
+
 ## 0. Scope — what to port vs. what eos already supersedes
 
 eos is a **hybrid**: it imports the real EU4/Civ4 map (`terrain.bmp`, `trees.bmp`, `heightmap.bmp`,

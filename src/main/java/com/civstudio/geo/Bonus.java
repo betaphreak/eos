@@ -41,6 +41,21 @@ import com.civstudio.good.ResourceType;
  *                             {@code <FeatureBooleans>})
  * @param validFeatureTerrains terrains valid only when carrying a feature (from
  *                             {@code <FeatureTerrainBooleans>})
+ * @param placementOrder       {@code <iPlacementOrder>} — the pass order (ascending)
+ *                             the placement stage lays resources down in, so
+ *                             constrained bonuses claim their plots before common ones
+ * @param constAppearance      {@code <iConstAppearance>} — the base appearance percent
+ *                             the target count scales by
+ * @param randApps             the four {@code <iRandApp1..4>} — extra appearance percent
+ *                             each rolled {@code [0, iRandAppK)} and summed (length 4)
+ * @param tilesPer             {@code <iTilesPer>} — one bonus per this many eligible
+ *                             tiles (the density; {@code 0} = not map-placed)
+ * @param minAreaSize          {@code <iMinAreaSize>} — the smallest landmass (here,
+ *                             province plot count) the bonus may appear on
+ * @param groupRange           {@code <iGroupRange>} — the cluster radius: extra copies
+ *                             scatter within this Chebyshev distance of a placement
+ * @param groupRand            {@code <iGroupRand>} — how many extra clustered copies
+ *                             (rolled {@code [0, iGroupRand]}) accompany a placement
  */
 public record Bonus(
 		String type,
@@ -57,15 +72,35 @@ public record Bonus(
 		boolean peaks,
 		List<String> validTerrains,
 		List<String> validFeatures,
-		List<String> validFeatureTerrains) {
+		List<String> validFeatureTerrains,
+		int placementOrder,
+		int constAppearance,
+		int[] randApps,
+		int tilesPer,
+		int minAreaSize,
+		int groupRange,
+		int groupRand) {
 
-	/** Normalize yields to length 3 and copy the valid-type lists. */
+	/** Normalize yields to length 3, the rand-appearance array to length 4, and copy the valid-type lists. */
 	public Bonus {
 		yieldChanges = Terrain.pad3(yieldChanges);
+		randApps = pad4(randApps);
 		validTerrains = validTerrains == null ? List.of() : List.copyOf(validTerrains);
 		validFeatures = validFeatures == null ? List.of() : List.copyOf(validFeatures);
 		validFeatureTerrains = validFeatureTerrains == null ? List.of()
 				: List.copyOf(validFeatureTerrains);
+	}
+
+	private static int[] pad4(int[] in) {
+		int[] out = new int[4];
+		if (in != null)
+			System.arraycopy(in, 0, out, 0, Math.min(in.length, 4));
+		return out;
+	}
+
+	/** Whether the map-placement stage lays this resource down (a natural bonus with a tile density). */
+	public boolean mapPlaced() {
+		return tilesPer > 0;
 	}
 
 	/** A yield-change component by index (0 = food, 1 = production, 2 = commerce). */

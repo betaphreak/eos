@@ -25,9 +25,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * mvn compile exec:exec -Dsim.main=com.civstudio.geo.export.BonusExporter
  * </pre>
  *
- * Only economically-relevant fields are kept; the map-generator/AI internals
+ * The economically-relevant fields plus the <b>map-placement</b> constraints
  * ({@code iPlacementOrder}, {@code Rands}, {@code iTilesPer}, {@code
- * iConstAppearance}, {@code iAITradeModifier}, art/sounds) are dropped. The bonus
+ * iConstAppearance}, {@code iMinAreaSize}, {@code iGroupRange}/{@code iGroupRand}) that
+ * {@link com.civstudio.geo.BonusGenerator} places by are kept; the AI internals
+ * ({@code iAITradeModifier}, art/sounds) are dropped. The bonus
  * classes themselves are a fixed taxonomy modeled as the {@link BonusClass} enum
  * (from {@code data/civ4/CIV4BonusClassInfos.xml}), not a separate resource. See {@code
  * docs/plots.md}.
@@ -50,6 +52,13 @@ public final class BonusExporter {
 				continue;
 			if (!seen.add(type))
 				throw new IllegalStateException("duplicate bonus type in XML: " + type);
+			// the four appearance rands live in a nested <Rands> element
+			Element rands = Civ4Xml.child(info, "Rands");
+			int[] randApps = {
+					rands == null ? 0 : Civ4Xml.intVal(rands, "iRandApp1", 0),
+					rands == null ? 0 : Civ4Xml.intVal(rands, "iRandApp2", 0),
+					rands == null ? 0 : Civ4Xml.intVal(rands, "iRandApp3", 0),
+					rands == null ? 0 : Civ4Xml.intVal(rands, "iRandApp4", 0) };
 			out.add(new Bonus(
 					type,
 					BonusClass.fromKey(Civ4Xml.text(info, "BonusClassType")),
@@ -68,7 +77,14 @@ public final class BonusExporter {
 					Civ4Xml.validTypes(info, "FeatureBooleans", "FeatureBoolean",
 							"FeatureType", "bFeature"),
 					Civ4Xml.validTypes(info, "FeatureTerrainBooleans", "FeatureTerrainBoolean",
-							"TerrainType", "bFeatureTerrain")));
+							"TerrainType", "bFeatureTerrain"),
+					Civ4Xml.intVal(info, "iPlacementOrder", 0),
+					Civ4Xml.intVal(info, "iConstAppearance", 0),
+					randApps,
+					Civ4Xml.intVal(info, "iTilesPer", 0),
+					Civ4Xml.intVal(info, "iMinAreaSize", 0),
+					Civ4Xml.intVal(info, "iGroupRange", 0),
+					Civ4Xml.intVal(info, "iGroupRand", 0)));
 		}
 		if (out.isEmpty())
 			throw new IllegalStateException("no bonuses found in " + INPUT);

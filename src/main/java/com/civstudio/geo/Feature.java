@@ -26,6 +26,12 @@ import java.util.List;
  * @param movement          the Civ4 {@code <iMovement>} — the movement cost to enter a
  *                          plot carrying this feature (0 = no feature penalty, the host
  *                          terrain's cost applies); read by the caravan corridor
+ * @param appearance        the Civ4 {@code <iAppearance>} — the per-plot chance out of
+ *                          {@code 10000} this feature scatters onto an otherwise-bare
+ *                          valid plot (the C2C {@code getAppearanceProbability}; drives
+ *                          {@code ProvincePlotField}'s final feature-scatter pass). {@code
+ *                          0} for the seed-and-spread features (forest/jungle/ice), which
+ *                          are placed by {@link FeatureGenerator} instead
  */
 public record Feature(
 		String type,
@@ -36,7 +42,8 @@ public record Feature(
 		List<String> validTerrains,
 		int healthPercent,
 		int growth,
-		int movement) {
+		int movement,
+		int appearance) {
 
 	/** Normalize yields to length 3 and copy the valid-terrains list. */
 	public Feature {

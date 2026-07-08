@@ -69,7 +69,9 @@ public final class ManufacturedBonusExporter {
 					Civ4Xml.validTypes(info, "FeatureBooleans", "FeatureBoolean",
 							"FeatureType", "bFeature"),
 					Civ4Xml.validTypes(info, "FeatureTerrainBooleans", "FeatureTerrainBoolean",
-							"TerrainType", "bFeatureTerrain")));
+							"TerrainType", "bFeatureTerrain"),
+					// manufactured bonuses are crafted, never map-placed — no placement data
+					0, 0, new int[4], 0, 0, 0, 0));
 		}
 		if (out.isEmpty())
 			throw new IllegalStateException("no bonuses found in " + INPUT);
