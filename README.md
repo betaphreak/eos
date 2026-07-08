@@ -1,5 +1,10 @@
 # CivStudio
 
+> ⚠️ **Proof of concept.** CivStudio is an early prototype and technical exploration —
+> not a finished game or product. It is headless, actively changing, and full of rough
+> edges; interfaces, data and mechanics can break between commits. Treat everything here
+> as a work in progress meant to demonstrate the approach, not to ship.
+
 **CivStudio** is a proof-of-concept **game engine** for a civilization-scale
 strategy game — built as a living, agent-based simulation rather than a set of
 scripted mechanics. Nothing in it is faked with a formula where it can instead

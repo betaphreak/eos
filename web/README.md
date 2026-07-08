@@ -1,5 +1,8 @@
 # CivStudio Web
 
+> ⚠️ **Proof of concept.** This map/visualization is a prototype demo of the engine, not a
+> finished product — expect rough edges and breaking changes.
+
 Read-only presentation layer for the headless engine. Nothing here runs during a
 simulation; each page is a **consumer** of a run's output under `output/<seed>/`,
 so it can never perturb the seed-reproducible run.
