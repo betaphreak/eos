@@ -1,0 +1,13 @@
+{
+  "name": "civstudio-web-build",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Build tooling for the CivStudio web (build.mjs). The site itself is dependency-free; this holds only the build-time image encoder.",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "sharp": "^0.33.5"
+  }
+}

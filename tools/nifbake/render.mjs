@@ -161,6 +161,9 @@ export function bakeNifGroup(variants, name, webAssets, size = 220, opts = {}) {
     }
     sprites.push([ox, 0, c.bw, c.bh]); ox += c.bw + GAP;
   }
+  // let the caller encode the atlas (build.mjs routes it to WebP via opts.emit(name, w, h, rgba));
+  // absent one, fall back to writing the PNG directly (the standalone/debug path).
+  if (opts.emit) return { src: opts.emit(name, totW, maxH, rgba), w: totW, h: maxH, sprites };
   const file = `trees-${name}.png`;
   fs.writeFileSync(path.join(webAssets, file), encodePng(totW, maxH, rgba));
   return { src: `assets/${file}`, w: totW, h: maxH, sprites };

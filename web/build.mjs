@@ -22,9 +22,55 @@ import { fileURLToPath } from 'node:url';
 import { decodeDds } from './dds.mjs';
 import { decodeTga } from './tga.mjs';
 import { bakeNifGroup } from '../tools/nifbake/render.mjs';
+import sharp from 'sharp';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(WEB, '..');
+
+// Baked art assets ship as WebP (see docs) rather than PNG: the ground-texture atlas alone drops
+// ~2.7 MB → ~0.37 MB, and the whole eager image payload roughly quarters, with no visible loss.
+// sharp's encoder is async, so bakes stay synchronous and just QUEUE their raw pixels here (the
+// same contiguous (rgb, alpha) buffers the bakes build); flushImages() encodes the queue to WebP in one async
+// pass before the bundle is written. Photographic layers (terrain raster, tile atlas, water tiles)
+// use lossy quality; hard-edged sprites/icons use a high quality with full-quality alpha so their
+// cut-out edges stay crisp. Browser support for WebP is universal, so no fallback is shipped.
+const IMAGE_QUEUE = [];
+// Interleave a contiguous rgb (w·h·3) + optional alpha (w·h) — the layout the bakes produce — into
+// the RGB/RGBA buffer sharp's raw input wants.
+function toRaw(w, h, rgb, alpha) {
+  if (!alpha) return { raw: rgb, channels: 3 };
+  const out = Buffer.allocUnsafe(w * h * 4);
+  for (let i = 0; i < w * h; i++) {
+    out[i * 4] = rgb[i * 3]; out[i * 4 + 1] = rgb[i * 3 + 1];
+    out[i * 4 + 2] = rgb[i * 3 + 2]; out[i * 4 + 3] = alpha[i];
+  }
+  return { raw: out, channels: 4 };
+}
+// Queue an image for WebP encoding and return its `assets/<name>.webp` src.
+function queueWebp(name, w, h, rgb, alpha, opts = {}) {
+  const { raw, channels } = toRaw(w, h, rgb, alpha);
+  IMAGE_QUEUE.push({ name, w, h, raw, channels, quality: opts.quality ?? 82 });
+  return `assets/${name}.webp`;
+}
+// Queue a pre-interleaved RGBA buffer (w·h·4) — used by the nif sprite baker, which builds RGBA.
+function queueWebpRGBA(name, w, h, rgba, opts = {}) {
+  IMAGE_QUEUE.push({ name, w, h, raw: rgba, channels: 4, quality: opts.quality ?? 82 });
+  return `assets/${name}.webp`;
+}
+// Encode every queued image to assets/<name>.webp; returns {name.webp: byteLength} for the size logs.
+async function flushImages(assets) {
+  fs.mkdirSync(assets, { recursive: true });
+  const sizes = {};
+  for (const im of IMAGE_QUEUE) {
+    const buf = await sharp(im.raw, { raw: { width: im.w, height: im.h, channels: im.channels } })
+      .webp({ quality: im.quality, alphaQuality: 100, effort: 5 })
+      .toBuffer();
+    const file = `${im.name}.webp`;
+    fs.writeFileSync(path.join(assets, file), buf);
+    sizes[file] = buf.length;
+  }
+  return sizes;
+}
 const SEED = process.argv[2] || '24601';
 const DIR = path.join(ROOT, 'output', SEED, 'by-caravan');
 
@@ -167,6 +213,10 @@ const trees = bakeFeatureSprites();          // {leafy,palm,swamp:{src,w,h,sprit
 const seaBands = bakeSeaBands();             // {trop, temp, polar, shore} climate sea + shore colours
 const plotPack = packPlots(provinces);
 
+// encode every queued art asset to WebP (one async pass now the bakes have run); imgSizes feeds the
+// size logs below. The bundle records each asset's .webp src, so the page loads them unchanged.
+const imgSizes = await flushImages(path.join(WEB, 'assets'));
+
 // ---- geographic label tiers (continent -> super-region -> region) ----------
 // Roll the committed hierarchy up into per-tier label records {name, lat, lon, w}, where
 // (lat, lon) is the plot-weighted centroid of the tier's land provinces and w its total
@@ -249,7 +299,7 @@ const bundle = {
 
 // the run's data as a plain script the page (index.html) loads alongside the
 // terrain image asset — the image stays a binary file, never inlined into the data.
-const terrainBytes = map.bytes; delete map.bytes;
+const terrainBytes = imgSizes[map.src.replace('assets/', '')] || 0;
 const dataJs = `window.BUNDLE = ${JSON.stringify(bundle)};\n`;
 fs.writeFileSync(path.join(WEB, 'data.js'), dataJs);
 
@@ -339,15 +389,14 @@ function bakeTerrain(provs) {
     const o = k * 3; rgb[o] = DEEP[0]; rgb[o + 1] = DEEP[1]; rgb[o + 2] = DEEP[2];
   }
 
-  // write the terrain crop as a real image asset (not inlined into the data); RGBA so the sea is transparent
-  const png = encodePng(dw, dh, rgb, alpha);
-  const assets = path.join(WEB, 'assets');
-  fs.mkdirSync(assets, { recursive: true });
-  const file = `terrain.png`;
-  fs.writeFileSync(path.join(assets, file), png);
+  // the terrain crop is a real image asset (not inlined into the data); RGBA so the sea is
+  // transparent. Lossy WebP with full-quality alpha: the raster is the blurred base under the crisp
+  // per-plot terrain and shown small at world view, so lossy RGB is invisible while alphaQuality 100
+  // keeps the coastline cut-out sharp.
+  const src = queueWebp('terrain', dw, dh, rgb, alpha, { quality: 80 });
 
   return {
-    src: `assets/${file}`, bytes: png.length,
+    src,
     // the crop's extent in source-pixel space; the page re-derives sx/sy and
     // places dots at (sx-x0)/(x1-x0), (sy-y0)/(y1-y0) over this same image.
     x0, y0, x1, y1, W, H, dw, dh,
@@ -404,8 +453,8 @@ function terrainTint(real) {
   return t;
 }
 
-// rec.601 luminance of an [r,g,b] (function decl: hoisted, so the top-level
-// bakeTerrain() call can reach it — see the crc32 note below)
+// rec.601 luminance of an [r,g,b] (function decl: hoisted, so the top-level bakeTerrain() call
+// above it can reach it)
 function luma(c) { return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]; }
 
 // `real`'s hue rescaled to `base`'s luminance — authentic colour, theme brightness
@@ -545,12 +594,10 @@ function bakeTerrainTiles(colorsHex) {
     cols[e.terrain] = idx++;
   }
   if (!decoded) return null;   // no textures decoded (LFS not pulled) → keep flat colours
-  const png = encodePng(W, H, rgb);
-  const assets = path.join(WEB, 'assets');
-  fs.mkdirSync(assets, { recursive: true });
-  const file = `terrain-tiles.png`;
-  fs.writeFileSync(path.join(assets, file), png);
-  return { src: `assets/${file}`, tile: T, cols };
+  // the ground-texture atlas — the biggest asset. Its 256px columns align to WebP's block grid, so
+  // slicing per-terrain tiles (extractTiles) stays clean; lossy quality is invisible on ground.
+  const src = queueWebp('terrain-tiles', W, H, rgb, null, { quality: 82 });
+  return { src, tile: T, cols };
 }
 // downsample a detail .dds to a T×T RGB tile, then recolour so its mean = target
 function detailTile(artPath, target, T) {
@@ -616,11 +663,7 @@ function bakeRiverTile() {
       rgb[o + 1] = Math.min(255, RIVER_RGB[1] * k) | 0;
       rgb[o + 2] = Math.min(255, RIVER_RGB[2] * k) | 0;
     }
-  const assets = path.join(WEB, 'assets');
-  fs.mkdirSync(assets, { recursive: true });
-  const file = `river.png`;
-  fs.writeFileSync(path.join(assets, file), encodePng(T, T, rgb));
-  return { src: `assets/${file}`, tile: T };
+  return { src: queueWebp('river', T, T, rgb, null, { quality: 85 }), tile: T };
 }
 
 // Bake a seamless GREYSCALE ripple tile from the real Civ4 sea texture (textures/water/
@@ -630,13 +673,13 @@ function bakeRiverTile() {
 // deepen/brighten it into ripples. (seadetail carries its pattern in RGB, so we read luminance,
 // unlike the river ribbon whose ripples are in the DXT5 alpha.) Returns {src, tile}, or null
 // when the art is absent (LFS not pulled / file://) — the renderer then draws the flat gradient.
-function bakeSeaTile() { return bakeRippleTile('Art/Terrain/textures/water/seadetail.dds', `sea.png`, 1.1); }
+function bakeSeaTile() { return bakeRippleTile('Art/Terrain/textures/water/seadetail.dds', `sea`, 1.1); }
 
 // The shore shallows carry the same treatment (docs/coastlines.md Phase D): a neutral-mean
 // greyscale ripple from the Civ4 shore wave texture (textures/water/shoredetail.dds), drawn
 // over the shallow band with `soft-light` so it ripples the shore hue without recolouring it.
 // A touch more contrast than the open sea so the near-shore chop reads. Null → flat shallows.
-function bakeShoreTile() { return bakeRippleTile('Art/Terrain/textures/water/shoredetail.dds', `shore.png`, 1.3); }
+function bakeShoreTile() { return bakeRippleTile('Art/Terrain/textures/water/shoredetail.dds', `shore`, 1.3); }
 
 // Bake a seamless COLOUR ice tile from the real Civ4 pack-ice texture (features/icepack/icepack_1024.dds).
 // The texture's upper ~65% is a clean cracked-ice surface (the lower strip is a fringe of edge icicles we
@@ -662,9 +705,7 @@ function bakeIceTile() {
     }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  const file = `ice.png`;
-  fs.writeFileSync(path.join(assets, file), encodePng(T, T, rgb));
-  return { src: `assets/${file}`, tile: T };
+  return { src: queueWebp('ice', T, T, rgb, null, { quality: 85 }), tile: T };
 }
 
 // Bake real Civ4 foliage sprites so the plot layer can stamp actual trees/palms/reeds instead of the
@@ -697,8 +738,11 @@ function bakeFeatureSprites() {
       if (g) out[name] = g;
     } catch (e) { console.log(`  ${name}: nif render skipped (${e.message})`); }
   };
-  nif('kaktus/kaktus2.nif', 'kaktus/cactus01.dds', 'cactus', { size: 220 });
-  nif('sword_grass/wheat.nif', 'sword_grass/sword_grass.dds', 'grass', { size: 200, flat: 'low' });
+  // emit: route the nif atlas (interleaved RGBA) through the WebP queue as trees-<name>.webp, like
+  // the billboard groups, so every foliage sprite ships WebP too
+  const emit = (n, w, h, rgba) => queueWebpRGBA(`trees-${n}`, w, h, rgba, { quality: 90 });
+  nif('kaktus/kaktus2.nif', 'kaktus/cactus01.dds', 'cactus', { size: 220, emit });
+  nif('sword_grass/wheat.nif', 'sword_grass/sword_grass.dds', 'grass', { size: 200, flat: 'low', emit });
   return Object.keys(out).length ? out : null;
 }
 function bakeSpriteGroup(artPath, name) {
@@ -748,9 +792,8 @@ function bakeSpriteGroup(artPath, name) {
   }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  const fileOut = `trees-${name}.png`;
-  fs.writeFileSync(path.join(assets, fileOut), encodePng(totW, maxH, rgb, alpha));
-  return { src: `assets/${fileOut}`, w: totW, h: maxH, sprites };
+  const src = queueWebp(`trees-${name}`, totW, maxH, rgb, alpha, { quality: 90 });
+  return { src, w: totW, h: maxH, sprites };
 }
 
 // Bake the real Civ4 shoreline foam (docs/coastlines.md Phase G) from waves/wave_crest.dds — a
@@ -780,20 +823,19 @@ function bakeFoamTile() {
     }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  const file = `foam.png`;
-  fs.writeFileSync(path.join(assets, file), encodePng(W, CH, rgb, alpha));
-  return { src: `assets/${file}`, w: W, h: CH };
+  return { src: queueWebp('foam', W, CH, rgb, alpha, { quality: 90 }), w: W, h: CH };
 }
 
-// Slice the real Civ4 resource icons out of GameFont.tga into one atlas + a {bonusType: cellIndex}
+// Slice the real Civ4 resource icons out of GameFont_120.tga into one atlas + a {bonusType: cellIndex}
 // manifest, so the web draws a true per-resource symbol on each resourced plot instead of the
-// procedural category glyph (docs/bonus-sprite-bake.md). GameFont's resource block is a fixed
-// 25-column grid of 21px cells starting at (0,429); a bonus's cell is its FontButtonIndex
+// procedural category glyph (docs/bonus-sprite-bake.md). GameFont_120 is the higher-resolution font
+// (25px cells vs the base GameFont.tga's 21px — crisper icons at deep zoom); its resource block is a
+// fixed 25-column grid of 25px cells starting at (0,497); a bonus's cell is its FontButtonIndex
 // (CIV4ArtDefines_Bonus.xml), reached through its ArtDefineTag (CIV4BonusInfos.xml). Returns null if
 // any source is absent (the renderer keeps the procedural glyphs); a bonus with a negative index
 // (no unique font icon) or an out-of-grid cell is left out and also falls back to the glyph.
 function bakeBonusIcons() {
-  const gfPath = path.join(ROOT, 'data/civ4/res/Fonts/GameFont.tga');
+  const gfPath = path.join(ROOT, 'data/civ4/res/Fonts/GameFont_120.tga');
   const binfo = path.join(ROOT, 'data/civ4/CIV4BonusInfos.xml');
   const adef = path.join(ROOT, 'data/civ4/CIV4ArtDefines_Bonus.xml');
   if (!fs.existsSync(gfPath) || !fs.existsSync(binfo) || !fs.existsSync(adef)) return null;
@@ -809,7 +851,7 @@ function bakeBonusIcons() {
     const f = m[0].match(/<FontButtonIndex>(-?\d+)<\/FontButtonIndex>/); if (f) fbiOf[m[1]] = +f[1];
   }
   const bonuses = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/bonuses.json'), 'utf8')).map(b => b.type);
-  const CELL = 21, GRID_COLS = 25, X0 = 0, Y0 = 429;   // the resource grid (calibrated)
+  const CELL = 25, GRID_COLS = 25, X0 = 0, Y0 = 497;   // the resource grid (GameFont_120, calibrated)
   const picks = [];
   for (const t of bonuses) {
     const fbi = fbiOf[tagOf[t]];
@@ -833,19 +875,16 @@ function bakeBonusIcons() {
         alpha[d] = gf.rgba[so + 3];
       }
   });
-  const assets = path.join(WEB, 'assets');
-  fs.mkdirSync(assets, { recursive: true });
-  const file = `bonus-icons.png`;
-  fs.writeFileSync(path.join(assets, file), encodePng(aw, ah, rgb, alpha));
-  console.log(`  bonus icons: assets/${file} (${picks.length} GameFont resource symbols)`);
-  return { src: `assets/${file}`, cell: CELL, cols, count: picks.length, index };
+  const src = queueWebp('bonus-icons', aw, ah, rgb, alpha, { quality: 90 });
+  console.log(`  bonus icons: ${src} (${picks.length} GameFont resource symbols)`);
+  return { src, cell: CELL, cols, count: picks.length, index };
 }
 
 // Bake a seamless GREYSCALE ripple tile from a Civ4 water detail texture — the wave pattern
 // only, centred on mid-grey (128) so a `soft-light` overlay leaves the base colour untouched
 // while darker/lighter texels deepen/brighten it. `contrast` scales the deviation from the
 // mean. Returns {src, tile}, or null when the art is absent (LFS not pulled / file://).
-function bakeRippleTile(artRel, file, contrast) {
+function bakeRippleTile(artRel, name, contrast) {
   const T = 128;   // larger tile → the repeat is far less obvious than the old 64px grid
   const artFile = resolveArt(artRel);
   if (!artFile) return null;
@@ -868,10 +907,7 @@ function bakeRippleTile(artRel, file, contrast) {
     const g = Math.max(0, Math.min(255, 128 + (lum[k] - mean) * contrast)) | 0;   // soft neutral-mean ripple
     rgb[k * 3] = g; rgb[k * 3 + 1] = g; rgb[k * 3 + 2] = g;
   }
-  const assets = path.join(WEB, 'assets');
-  fs.mkdirSync(assets, { recursive: true });
-  fs.writeFileSync(path.join(assets, file), encodePng(T, T, rgb));
-  return { src: `assets/${file}`, tile: T };
+  return { src: queueWebp(name, T, T, rgb, null, { quality: 85 }), tile: T };
 }
 
 // The ocean's climate band colours: tropical / temperate / polar sea, keyed by |latitude| in
@@ -970,42 +1006,3 @@ function plotBBox(gzBuf) {
   return [x0, y0, x1, y1];
 }
 
-// Minimal truecolour PNG encoder (Node has zlib but no image codec). Pass an optional
-// per-pixel `alpha` (Buffer of w*h) to emit RGBA (colour type 6) instead of RGB (type 2).
-function encodePng(w, h, rgb, alpha) {
-  const ch = alpha ? 4 : 3;
-  const stride = w * ch;
-  const raw = Buffer.alloc((stride + 1) * h);
-  if (!alpha) {
-    for (let y = 0; y < h; y++) { raw[y * (stride + 1)] = 0; rgb.copy(raw, y * (stride + 1) + 1, y * w * 3, y * w * 3 + w * 3); }
-  } else {
-    for (let y = 0; y < h; y++) {
-      const ro = y * (stride + 1); raw[ro] = 0;
-      for (let x = 0; x < w; x++) {
-        const si = y * w + x, di = ro + 1 + x * 4;
-        raw[di] = rgb[si * 3]; raw[di + 1] = rgb[si * 3 + 1]; raw[di + 2] = rgb[si * 3 + 2]; raw[di + 3] = alpha[si];
-      }
-    }
-  }
-  const idat = zlib.deflateSync(raw, { level: 9 });
-  const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = ch === 4 ? 6 : 2; // 8-bit, truecolour (+alpha)
-  return Buffer.concat([sig, chunk('IHDR', ihdr), chunk('IDAT', idat), chunk('IEND', Buffer.alloc(0))]);
-}
-function chunk(type, data) {
-  const len = Buffer.alloc(4); len.writeUInt32BE(data.length, 0);
-  const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
-  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(body) >>> 0, 0);
-  return Buffer.concat([len, body, crc]);
-}
-var CRC_TABLE;   // var: hoisted so top-level bakeTerrain() can call crc32 before this line
-function crc32(buf) {
-  if (!CRC_TABLE) {
-    CRC_TABLE = new Uint32Array(256);
-    for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; CRC_TABLE[n] = c >>> 0; }
-  }
-  let c = 0xffffffff;
-  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
-}
