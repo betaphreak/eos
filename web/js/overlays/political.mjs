@@ -3,7 +3,7 @@
 // coloured by the active dimension (core.polOf / S.overlay), zoom-banded so the map yields to the
 // physical terrain as you dive in, plus the legend/search spotlight. The chrome (legend, entity
 // search, sidebar Politics block) lives in panel.mjs; this module owns only the canvas render.
-import { ctx, cam, P, provPath, polOf, isPolitical, COUNTRIES, CULTURES, RELIGIONS, K_PLOT, K_TEX, lerp, S } from "../core.mjs";
+import { ctx, cam, P, provPath, polOf, isPolitical, COUNTRIES, CULTURES, RELIGIONS, K_PLOT, K_TEX, lerp, VIEW, provSrcBox, pxr, pyr, worldW, S } from "../core.mjs";
 import { draw, focusProvinceFit } from "../main.mjs";
 
 // "#rrggbb" + alpha -> an rgba() string, memoised (the nation/culture/faith fills)
@@ -64,18 +64,61 @@ export function coverage() {
 }
 const polTable = () => S.overlay === "culture" ? CULTURES : S.overlay === "faith" ? RELIGIONS : COUNTRIES;
 
-// the coverage-ranked, scrollable legend (Nations/Cultures/Religions); hides when not political
+// whether a province's polygon is at least partly on-screen right now (its source-pixel bbox,
+// projected through the camera, intersects the viewport). Accounts for the cylindrical E-W wrap.
+function inViewport(p) {
+  const box = provSrcBox(p);
+  if (!box) return false;
+  const x0 = pxr(box.x0), x1 = pxr(box.x1), y0 = pyr(box.y0), y1 = pyr(box.y1);
+  const sy0 = Math.min(y0, y1), sy1 = Math.max(y0, y1);
+  if (sy1 < 0 || sy0 > VIEW.h) return false;
+  let sx0 = Math.min(x0, x1), sx1 = Math.max(x0, x1);
+  const w = worldW();
+  for (let k = -1; k <= 1; k++) if (sx1 + k * w >= 0 && sx0 + k * w <= VIEW.w) return true;
+  return false;
+}
+
+// province coverage counts restricted to the current viewport (the ledger lists only what's visible)
+function viewportCoverage() {
+  const m = new Map();
+  for (const p of P) { const k = polOf(p).key; if (k && inViewport(p)) m.set(k, (m.get(k) || 0) + 1); }
+  return m;
+}
+
+// rebuild the legend a beat after the camera settles (called from main.draw on every paint); the
+// timer resets while panning so the (DOM-heavy) rebuild runs once movement stops
+let legendTimer = 0;
+export function scheduleLegendRefresh() {
+  if (!isPolitical() || polLegend.hidden) return;
+  clearTimeout(legendTimer);
+  legendTimer = setTimeout(renderPolLegend, 140);
+}
+
+// collapsed state persists across re-renders; defaults collapsed on small screens (a docked bottom
+// sheet there) so the polity list doesn't cover the map — expand it by tapping the header
+let legendCollapsed = null;
+
+// the coverage-ranked (province count, descending), scrollable, collapsible legend
+// (Nations/Cultures/Religions); hides when not political
 export function renderPolLegend() {
   if (!isPolitical()) { polLegend.hidden = true; return; }
-  const table = polTable(), cov = coverage();
+  const table = polTable(), cov = viewportCoverage();   // only polities visible in the viewport
   const rows = [...cov.entries()].filter(([k]) => table[k]).sort((a, b) => b[1] - a[1] || table[a[0]].name.localeCompare(table[b[0]].name));
   const title = S.overlay === "culture" ? "Cultures" : S.overlay === "faith" ? "Religions" : "Nations";
-  let html = `<div class="lg-h">${title} · ${rows.length}</div><div class="leg-scroll">`;
+  if (legendCollapsed === null) legendCollapsed = matchMedia("(max-width: 640px)").matches;
+  let html = `<button class="lg-h lg-toggle" aria-expanded="${!legendCollapsed}">${title} · ${rows.length}<span class="lg-caret" aria-hidden="true">▾</span></button><div class="leg-scroll">`;
   for (const [k, n] of rows) { const e = table[k];
     html += `<button class="legrow" data-key="${k}"><span class="sw" style="background:${e.color}"></span><span class="leg-nm">${e.name}</span><span class="km">${n}</span></button>`;
   }
   polLegend.innerHTML = html + `</div>`;
   polLegend.hidden = false;
+  polLegend.classList.toggle("collapsed", legendCollapsed);
+  const toggle = polLegend.querySelector(".lg-toggle");
+  toggle.addEventListener("click", () => {
+    legendCollapsed = !legendCollapsed;
+    polLegend.classList.toggle("collapsed", legendCollapsed);
+    toggle.setAttribute("aria-expanded", !legendCollapsed);
+  });
   polLegend.querySelectorAll(".legrow").forEach(b => {
     b.addEventListener("mouseenter", () => { S.polHi = b.dataset.key; draw(); });
     b.addEventListener("mouseleave", () => { if (S.polHi === b.dataset.key) { S.polHi = null; draw(); } });

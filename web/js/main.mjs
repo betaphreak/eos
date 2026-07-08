@@ -1,7 +1,7 @@
 import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, px, py, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, latAtScreenY, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
-import { drawPolitical } from "./overlays/political.mjs";
+import { drawPolitical, scheduleLegendRefresh } from "./overlays/political.mjs";
 import { drawCaravanHeat, drawCaravan } from "./overlays/caravan.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
 // transparent so the sea layer below shows through, land is opaque.
@@ -93,7 +93,7 @@ let rafPending = false;
 function draw() {
   if (rafPending) return;
   rafPending = true;
-  requestAnimationFrame(() => { rafPending = false; paint(); });
+  requestAnimationFrame(() => { rafPending = false; paint(); scheduleLegendRefresh(); });
 }
 function paint() {
   if (zoomLabelEl) zoomLabelEl.textContent = Math.round(cam.k) + "×";   // 1× (world) … 256× (max)
