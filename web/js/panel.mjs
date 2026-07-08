@@ -738,6 +738,19 @@ if (menuBtn) {
   });
 }
 
+// on phones the whole bar collapses to brand + hamburger — the search and clock move into the
+// drawer alongside the toggle groups, and back to the top-right on wider screens
+const searchBarEl = document.querySelector(".searchbar");
+const clockEl = document.getElementById("clock");
+const topRightEl = document.querySelector(".topright");
+const phoneMq = matchMedia("(max-width: 520px)");
+function applyBarLayout() {
+  if (phoneMq.matches) { mapControlsEl.append(searchBarEl, clockEl); }
+  else { topRightEl.append(searchBarEl, clockEl); }   // append restores the original trailing order
+}
+phoneMq.addEventListener("change", applyBarLayout);
+applyBarLayout();
+
 // ---- plane + overlay toggles ----
 document.querySelectorAll("#planeToggle button").forEach(b =>
   b.addEventListener("click", () => setPlane(b.dataset.plane)));
