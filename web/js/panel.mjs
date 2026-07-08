@@ -304,11 +304,11 @@ stage.addEventListener("click", e=>{
   const prov = provinceAt(mx, my);
   if (prov) selectProvince(S.selectedProv===prov ? null : prov);
 });
-// double-click zooms so the whole province fits the viewport, centred on it
+// double-click / double-tap zooms in, centred on the point (touch double-tap fires dblclick too)
 stage.addEventListener("dblclick", e=>{
-  const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
-  const prov = provinceAt(mx, my);
-  if (prov) goToProvinceFit(prov);
+  const r=stage.getBoundingClientRect();
+  S.camBeforeFocus = null;
+  zoomAt(e.clientX-r.left, e.clientY-r.top, 2.5);
 });
 
 // ---- rail ----
@@ -610,11 +610,6 @@ function goToProvince(p) {
   S.camBeforeFocus = { ...cam };    // remember where we were so Esc can return
   focusProvinceFit(p.id);         // frame the whole province (centred, filling most of the canvas)
   selectProvince(p);              // and open its detail panel
-}
-function goToProvinceFit(p) {      // double-click: zoom so the whole province fits the viewport
-  S.camBeforeFocus = { ...cam };    // remember where we were so Esc can return
-  focusProvinceFit(p.id);
-  selectProvince(p);
 }
 function unfocusProvince() {       // restore the pre-focus zoom/pan; returns false if nothing to undo
   if (!S.camBeforeFocus) return false;

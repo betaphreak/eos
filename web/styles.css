@@ -438,6 +438,15 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
   #costBtn { display: none; }                          /* niche dev overlay — hide on small screens */
   .searchbar { flex-basis: 150px; min-width: 96px; }
 }
+@media (max-width: 560px) {
+  /* rail polish on phones: tighter padding/type, no shadow (it's a full-screen overlay) */
+  .rail { padding: 16px 16px 30px; gap: 16px; }
+  .railwrap { box-shadow: none; }
+  .d-head h2 { font-size: 18px; }
+  .metacell { padding: 9px 10px; }
+  .metacell .v { font-size: 16px; }
+  .pv-crumbs { font-size: 11px; }
+}
 @media (max-width: 520px) {
   #heatBtn, #themeBtn { display: none !important; }    /* trim to the essentials on phones */
   .zoomlvl { display: none; }                          /* drop the zoom readout */
