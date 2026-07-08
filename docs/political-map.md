@@ -52,27 +52,36 @@ in the sim consumes ownership yet — it is the seam future taxation/claims plug
 
 ## Web rendering
 
-`web/build.mjs` writes the political layer to a **separate `web/political.js`** (`window.POLITICAL` —
-the trimmed country/culture/religion tables + per-province `{owner, controller, culture, religion}`),
-fetched lazily by `panel.ensurePolitical()` the first time Political mode is entered, so World/Caravan
-never download it. On load it enriches the in-memory province objects in place. (Provinces in
-`data.js` carry only raw geo keys; display-name crumbs resolve client-side through the shipped
-`BUNDLE.geoNames` dictionaries via `core.provGeo` — interning them cut ~850 KB of duplicated names
-from `data.js`.) The `Political` toggle
-(`index.html #modeToggle`, `panel.mjs setMode`, also reachable via a `#political` URL hash) switches
-`S.mode`. A political-only sub-toggle (`#polByToggle`, **Nation / Culture / Faith**) sets `S.polBy`;
-`core.polOf(p)` resolves the active dimension's `{name, color}` entry for a province, so the same
-render path colours by nation, culture or religion. `main.mjs renderScene` fills province polygons by
-that colour, **zoom-banded** on the existing `K_PLOT`/`K_TEX` constants so the political map yields to
-the physical terrain as you dive in:
+**Controls.** The top bar has two segmented groups (`index.html`): a **plane** (`#planeToggle` —
+`Overworld | Underworld`, exclusive; Underworld disabled until it has data) setting `S.plane`, and an
+**overlay** (`#overlayToggle` — `None · Nation · Culture · Faith · Caravan`, one at a time) setting
+`S.overlay`. `panel.setPlane`/`setOverlay` drive them; a `#nation`/`#culture`/`#faith`/`#caravan` URL
+hash deep-links an overlay. `core.polOf(p)` resolves the active overlay's `{name, color}` entry for a
+province, so one render path colours by nation, culture or religion; `core.isPolitical()` gates it.
+
+**Data.** `web/build.mjs` writes the political layer to a **separate `web/political.js`**
+(`window.POLITICAL` — the trimmed country/culture/religion tables + per-province `{owner, controller,
+culture, religion}`), fetched lazily by `political.ensurePolitical()` the first time a political
+overlay is entered (a `#spinner` shows meanwhile), so Overworld/Caravan never download it. On load it
+enriches the in-memory province objects in place. (Provinces in `data.js` carry only raw geo keys;
+display-name crumbs resolve client-side through the shipped `BUNDLE.geoNames` dictionaries via
+`core.provGeo` — interning them cut ~850 KB of duplicated names.)
+
+**Modules.** Each overlay's rendering + chrome lives in its own module: **`js/overlays/political.mjs`**
+(`drawPolitical` map fill, the coverage-ranked `renderPolLegend`, `focusEntity` spotlight,
+`overlayEntity` search context, `politicsBlock` sidebar, and the `ensurePolitical` loader) and
+**`js/overlays/caravan.mjs`** (`drawCaravanHeat`/`drawCaravan`). `main.renderScene` and `panel`
+dispatch to them by `S.overlay`. The political fill is **zoom-banded** on `K_PLOT`/`K_TEX` so the map
+yields to the physical terrain as you dive in:
 
 - `cam.k < K_PLOT` (≈1–5×): full-opacity fills — the overview.
 - `K_PLOT ≤ cam.k < K_TEX` (≈5–16×): fill alpha fades (0.5→0.15) as the per-plot terrain appears.
 - `cam.k ≥ K_TEX` (>16×): coloured province borders + a fill on only the hovered province.
 
-A province with no value for the active dimension never fills. Hover tooltip shows the active
-dimension's entry; the sidebar detail panel (`panel.mjs politicsBlock`) always shows nation, culture
-and faith together.
+A province with no value for the active overlay never fills. The legend (`#polLegend`) ranks polities
+by coverage with hover-to-spotlight; the search box switches context (find a nation/culture/religion,
+picking one zooms to its largest province). Hover tooltip shows the active overlay's entry; the
+sidebar detail panel (`politicsBlock`) always shows nation, culture and faith together.
 
 Verify with `tools/webverify/political-shot.mjs` (serves `web/` with Range support, screenshots a
 world overview + a zoomed province in Political mode).

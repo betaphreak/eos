@@ -1,10 +1,11 @@
-import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, S } from "./core.mjs";
+import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, provGeo, polOf, isPolitical, S } from "./core.mjs";
 import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
 import { loadPlots, bonusIconRect } from "./plots.mjs";
+import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
 stage.addEventListener("wheel", e => {
   e.preventDefault();
   const r = stage.getBoundingClientRect();
-  camBeforeFocus = null;                               // manual zoom discards the focus-return point
+  S.camBeforeFocus = null;                               // manual zoom discards the focus-return point
   zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0016));
 }, { passive: false });
 let lastX = 0, lastY = 0, panMoved = false;
@@ -16,7 +17,7 @@ stage.addEventListener("mousedown", e => {
 window.addEventListener("mousemove", e => {
   if (!S.dragging) return;
   const dx = e.clientX - lastX, dy = e.clientY - lastY;
-  if (Math.abs(dx) + Math.abs(dy) > 2) { panMoved = true; camBeforeFocus = null; }   // dragging discards the focus-return point
+  if (Math.abs(dx) + Math.abs(dy) > 2) { panMoved = true; S.camBeforeFocus = null; }   // dragging discards the focus-return point
   cam.x += dx; cam.y += dy; lastX = e.clientX; lastY = e.clientY;
   clampPan(); S.baseVersion++; draw();
 });
@@ -26,7 +27,7 @@ window.addEventListener("mouseup", () => { if (S.dragging) { S.dragging = false;
 stage.style.touchAction = "none";                       // stop the browser scrolling/zooming the page
 let touchMode = 0, pinchDist = 0, pinchCX = 0, pinchCY = 0;   // 0 none · 1 pan · 2 pinch
 stage.addEventListener("touchstart", e => {
-  camBeforeFocus = null;
+  S.camBeforeFocus = null;
   if (e.touches.length === 1) {
     touchMode = 1; S.dragging = true; panMoved = false;
     lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
@@ -87,13 +88,13 @@ window.addEventListener("keydown", e => {
     case "s": case "S": case "ArrowDown":  cam.y -= step; break;
     case "a": case "A": case "ArrowLeft":  cam.x += step; break;
     case "d": case "D": case "ArrowRight": cam.x -= step; break;
-    case "+": case "=":  e.preventDefault(); camBeforeFocus = null; return zoomAt(VIEW.w/2, VIEW.h/2, 1.5);
-    case "-": case "_":  e.preventDefault(); camBeforeFocus = null; return zoomAt(VIEW.w/2, VIEW.h/2, 1/1.5);
-    case "0": case "Home":  e.preventDefault(); camBeforeFocus = null; return resetView();
+    case "+": case "=":  e.preventDefault(); S.camBeforeFocus = null; return zoomAt(VIEW.w/2, VIEW.h/2, 1.5);
+    case "-": case "_":  e.preventDefault(); S.camBeforeFocus = null; return zoomAt(VIEW.w/2, VIEW.h/2, 1/1.5);
+    case "0": case "Home":  e.preventDefault(); S.camBeforeFocus = null; return resetView();
     case "f": case "F":  e.preventDefault(); return toggleFullscreen();
     default: return;                                   // leave other keys alone
   }
-  camBeforeFocus = null;                               // manual pan discards the focus-return point
+  S.camBeforeFocus = null;                               // manual pan discards the focus-return point
   e.preventDefault(); clampPan(); S.baseVersion++; draw();
 });
 // ---- timeline ----
@@ -150,43 +151,6 @@ const spinnerEl=document.getElementById("spinner");
 function showSpinner(text){ if(!spinnerEl) return; spinnerEl.querySelector(".sp-txt").textContent = text||"Loading…"; spinnerEl.hidden=false; }
 function hideSpinner(){ if(spinnerEl) spinnerEl.hidden=true; }
 
-// ---- political legend (Nations / Cultures / Religions) ----
-const polLegend=document.getElementById("polLegend");
-// per-overlay province coverage counts (key -> #provinces), cached until the overlay changes;
-// shared by the legend and the entity search so neither rescans P on every keystroke
-let _cov = { overlay: null, map: null };
-function coverage(){
-  if (_cov.overlay === S.overlay && _cov.map) return _cov.map;
-  const m = new Map();
-  for (const p of P){ const k = polOf(p).key; if (k) m.set(k, (m.get(k)||0)+1); }
-  _cov = { overlay: S.overlay, map: m };
-  return m;
-}
-const polTable=()=> S.overlay==="culture"?CULTURES : S.overlay==="faith"?RELIGIONS : COUNTRIES;
-function renderPolLegend(){
-  if (!isPolitical()){ polLegend.hidden = true; return; }
-  const table = polTable(), cov = coverage();
-  const rows = [...cov.entries()].filter(([k])=>table[k]).sort((a,b)=> b[1]-a[1] || table[a[0]].name.localeCompare(table[b[0]].name));
-  const title = S.overlay==="culture"?"Cultures" : S.overlay==="faith"?"Religions" : "Nations";
-  let html = `<div class="lg-h">${title} · ${rows.length}</div><div class="leg-scroll">`;
-  for (const [k,n] of rows){ const e = table[k];
-    html += `<button class="legrow" data-key="${k}"><span class="sw" style="background:${e.color}"></span><span class="leg-nm">${e.name}</span><span class="km">${n}</span></button>`;
-  }
-  polLegend.innerHTML = html + `</div>`;
-  polLegend.hidden = false;
-  polLegend.querySelectorAll(".legrow").forEach(b=>{
-    b.addEventListener("mouseenter", ()=>{ S.polHi = b.dataset.key; draw(); });
-    b.addEventListener("mouseleave", ()=>{ if(S.polHi===b.dataset.key){ S.polHi=null; draw(); } });
-    b.addEventListener("click", ()=> focusEntity(b.dataset.key));
-  });
-}
-// frame a polity: focus its largest province and keep it spotlighted
-function focusEntity(key){
-  let best=null; for (const p of P) if (polOf(p).key===key && p.rings && (!best || p.plots>best.plots)) best=p;
-  S.polHi = key;
-  if (best){ camBeforeFocus = { ...cam }; focusProvinceFit(best.id); }
-  draw();
-}
 const heatBtn=document.getElementById("heatBtn");
 heatBtn.setAttribute("aria-pressed","true");
 heatBtn.onclick=()=>{ S.showHeat=!S.showHeat; heatBtn.setAttribute("aria-pressed",S.showHeat);
@@ -387,33 +351,6 @@ function worldRail(){
     </div></div>
     <p class="footnote">The full world, rendered from the engine's real terrain. Drag to pan, scroll to zoom — keep zooming past the continent view to resolve any province into its terrain plot by plot (textures, hillshade from the heightmap, rivers, features). Hover the map to read a province. Switch to <b>Caravan</b> mode to replay the six-band migration from Dhenijansar.</p>`;
 }
-// the political layer (owner/culture/religion + the country/culture/religion tables) lives in a
-// separate web/political.js, fetched only the first time Political mode is entered — so World and
-// Caravan never download it. Once loaded it enriches the province objects in place, so the sidebar's
-// nation/culture/faith detail then works in every mode too.
-let politicalLoaded = false, politicalLoading = null;
-function ensurePolitical(){
-  if (politicalLoaded) return Promise.resolve();
-  if (politicalLoading) return politicalLoading;
-  politicalLoading = new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = "political.js";
-    s.onload = () => { applyPolitical(window.POLITICAL || {}); politicalLoaded = true; resolve(); };
-    s.onerror = () => { politicalLoading = null; reject(new Error("failed to load political.js")); };
-    document.head.appendChild(s);
-  });
-  return politicalLoading;
-}
-function applyPolitical(POL){
-  Object.assign(COUNTRIES, POL.countries || {});
-  Object.assign(CULTURES, POL.cultures || {});
-  Object.assign(RELIGIONS, POL.religions || {});
-  const byId = new Map(P.map(p => [p.id, p]));
-  for (const r of (POL.provinces || [])) {
-    const p = byId.get(r.id); if (!p) continue;
-    p.owner = r.o; p.controller = r.ct || r.o; p.culture = r.c; p.religion = r.r;
-  }
-}
 // the map plane (Overworld/Underworld) — the physical base; Underworld has no data yet
 function setPlane(pl){
   S.plane = pl;
@@ -427,16 +364,17 @@ function setOverlay(ov){
   const cara = ov === "caravan", pol = isPolitical();
   legend.style.display = cara ? "" : "none";       // caravan journey legend
   heatBtn.style.display = cara ? "" : "none";
-  polLegend.hidden = !pol;                          // political legend (rebuilt once the layer loads)
   S.polHi = null;
   if (!cara) { pause(); S.selected = null; }        // the timeline stays visible in the bottom bar (all overlays)
   S.selectedProv = null;                            // start each overlay on its own overview
   showRail(cara);                                   // caravan opens the panel on its overview; others start collapsed
   updateSearchContext();                            // the search box searches provinces / nations / cultures / faiths
   if (pol) {
-    if (!politicalLoaded) showSpinner("Loading political data…");   // the lazy political.js fetch
+    if (!politicalReady()) showSpinner("Loading political data…");  // the lazy political.js fetch
     ensurePolitical().then(() => { hideSpinner(); renderPolLegend(); renderRail(); draw(); })
       .catch(() => hideSpinner());
+  } else {
+    renderPolLegend();                              // not political → hide the political legend
   }
   renderRail(); draw();
 }
@@ -461,22 +399,6 @@ function provinceStats(plots) {
 function prettyId(s) {
   return String(s).replace(/^(TERRAIN|FEATURE|BONUS)_/,"").toLowerCase().replace(/_/g," ")
     .replace(/\b\w/g, c=>c.toUpperCase());
-}
-// the political metagrid (nation / culture / faith) for a province's detail panel;
-// empty for an unowned province (sea, uncolonized wasteland)
-function politicsBlock(p) {
-  const owner = p.owner && COUNTRIES[p.owner];
-  const cult = p.culture && CULTURES[p.culture];
-  const relig = p.religion && RELIGIONS[p.religion];
-  if (!owner && !cult && !relig) return "";
-  const dot = c => `<span class="dot" style="background:${c.color}"></span>`;
-  const cell = (k, v) => `<div class="metacell"><div class="k">${k}</div><div class="v" style="font-size:13px">${v}</div></div>`;
-  return `<p class="sectlabel" style="margin-top:12px">Politics</p>
-    <div class="metagrid">
-      ${owner ? cell("Nation", `${dot(owner)}${owner.name}`) : cell("Nation", "Unclaimed")}
-      ${cult ? cell("Culture", `${dot(cult)}${cult.name}`) : ""}
-      ${relig ? cell("Faith", `${dot(relig)}${relig.name}`) : ""}
-    </div>`;
 }
 function selectProvince(p) {
   S.selectedProv = p;
@@ -658,41 +580,32 @@ const searchInput = document.getElementById("search");
 const searchResults = document.getElementById("searchResults");
 const searchClear = document.getElementById("searchClear");
 let searchMatches = [], searchActive = -1;
-let camBeforeFocus = null;        // camera snapshot to unwind with Esc after a focus
 function goToProvince(p) {
-  camBeforeFocus = { ...cam };    // remember where we were so Esc can return
+  S.camBeforeFocus = { ...cam };    // remember where we were so Esc can return
   focusProvinceFit(p.id);         // frame the whole province (centred, filling most of the canvas)
   selectProvince(p);              // and open its detail panel
 }
 function goToProvinceFit(p) {      // double-click: zoom so the whole province fits the viewport
-  camBeforeFocus = { ...cam };    // remember where we were so Esc can return
+  S.camBeforeFocus = { ...cam };    // remember where we were so Esc can return
   focusProvinceFit(p.id);
   selectProvince(p);
 }
 function unfocusProvince() {       // restore the pre-focus zoom/pan; returns false if nothing to undo
-  if (!camBeforeFocus) return false;
-  Object.assign(cam, camBeforeFocus); camBeforeFocus = null;
+  if (!S.camBeforeFocus) return false;
+  Object.assign(cam, S.camBeforeFocus); S.camBeforeFocus = null;
   clampPan(); S.baseVersion++; draw();
   return true;
 }
 // Esc / close button: collapse the sidebar and drop any selection, and restore a focused camera.
 // Returns true if it actually did something (so the caller can swallow the key).
 function closePanel() {
-  const acted = railwrap.classList.contains("open") || S.selectedProv || S.selected != null || camBeforeFocus;
+  const acted = railwrap.classList.contains("open") || S.selectedProv || S.selected != null || S.camBeforeFocus;
   unfocusProvince();
   S.selectedProv = null; S.selected = null;
   showRail(false); renderRail(); draw();
   return !!acted;
 }
 document.getElementById("railClose").onclick = closePanel;
-// the search context follows the overlay: an entity search (nation/culture/faith) or, by default
-// (physical / caravan), the province search
-function overlayEntity() {
-  if (S.overlay === "nation")  return { table: COUNTRIES, kind: "nation",  ph: "Find a nation…" };
-  if (S.overlay === "culture") return { table: CULTURES,  kind: "culture", ph: "Find a culture…" };
-  if (S.overlay === "faith")   return { table: RELIGIONS, kind: "faith",   ph: "Find a religion…" };
-  return null;
-}
 function updateSearchContext() {
   const e = overlayEntity();
   searchInput.placeholder = e ? e.ph : "Find a province…";
