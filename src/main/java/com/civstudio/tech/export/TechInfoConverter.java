@@ -59,6 +59,11 @@ public final class TechInfoConverter {
 			"C2C_ERA_PREHISTORIC", "C2C_ERA_ANCIENT", "C2C_ERA_CLASSICAL",
 			"C2C_ERA_MEDIEVAL", "C2C_ERA_RENAISSANCE");
 
+	// the one exception kept from beyond the ceiling: the Industrial entry tech, retained
+	// as the tree's visual end-cap (where the Renaissance leads). The engine still drops it
+	// at load (its era is past MAX_TECH_ERA), so only the web tech-tree view shows it.
+	private static final String CAP = "TECH_INDUSTRIAL_LIFESTYLE";
+
 	// the religion-founding techs (and Clockpunk) are dropped: eos has no religion-as-tech
 	// model, and C2C keeps their display names outside the tech localization file anyway.
 	// They are leaves in the graph (no kept tech depends on them), so dropping is clean.
@@ -89,7 +94,7 @@ public final class TechInfoConverter {
 			Element tech = (Element) all.item(i);
 			String type = directText(tech, "Type");
 			String era = directText(tech, "Era");
-			if (era == null || !IN_SCOPE.contains(era)) {
+			if (era == null || (!IN_SCOPE.contains(era) && !CAP.equals(type))) {
 				dropped++;
 				continue;
 			}

@@ -25,7 +25,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { decodeDds } from './dds.mjs';
-import { loadGameFont, symbolRGBA, CELL as GF_CELL } from './gamefont.mjs';
+import { loadGameFont, symbolRGBA, recolorHue, CELL as GF_CELL } from './gamefont.mjs';
 import sharp from 'sharp';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
@@ -37,7 +37,6 @@ const SRC = path.join(ROOT, 'src/main/resources/techs.json');
 // in-page DecompressionStream and hard-fails the fetch (ERR_CONTENT_DECODING_FAILED).
 const OUT_PACK = path.join(WEB, 'assets', 'techs.pack');
 const OUT_ICONS = path.join(WEB, 'assets', 'tech-icons.webp');
-const OUT_BEAKER = path.join(WEB, 'assets', 'tech-beaker.webp');
 
 const CELL = 64;   // Civ4 tech buttons are 64×64
 const COLS = 16;   // sprite-sheet grid width
@@ -97,6 +96,17 @@ function iconCell(file) {
 
 const techs = JSON.parse(fs.readFileSync(SRC, 'utf8'));
 
+// interim: which techs cost GREEN (naval) beakers instead of the blue default. C2C has no
+// naval flavour, so this is a curated set until eos models a research currency per tech —
+// edit freely. Everything else defaults to blue (the human science tree).
+const NAVAL = new Set([
+  "TECH_TRAP_FISHING", "TECH_SPEARFISHING", "TECH_FISHING", "TECH_RAFT_BUILDING",
+  "TECH_BOAT_BUILDING", "TECH_SAILING", "TECH_SEAFARING", "TECH_NAVAL_WARFARE",
+  "TECH_SHIP_BUILDING", "TECH_COMMERCIAL_WHALING", "TECH_CARTOGRAPHY", "TECH_COMPASS",
+  "TECH_ASTROLABE", "TECH_NAVIGATION", "TECH_NAVAL_CANNON", "TECH_NAVAL_TACTICS",
+]);
+for (const t of techs) if (NAVAL.has(t.Type)) t.beaker = "green";
+
 // --- bake the icon sprite sheet, tagging each tech with its cell rect --------------
 const cells = [];   // decoded CELL×CELL RGBA buffers, in placement order
 let missing = 0;
@@ -128,12 +138,18 @@ await sharp(sheet, { raw: { width: sheetW, height: sheetH, channels: 4 } })
   .toFile(OUT_ICONS);
 const iconBytes = fs.statSync(OUT_ICONS).size;
 
-// --- bake the research beaker (the cost unit) from the shared GameFont reader --------
+// --- mint the beaker cost icons from the one GameFont beaker glyph -------------------
+// CivStudio's research currencies are the same beaker recoloured: blue (science, the
+// human tree's default), green (naval research), red (converted from hammers), yellow
+// (race-specific). The green GameFont beaker's liquid is recoloured to each hue; the
+// glass is left grey.
 const beaker = symbolRGBA(loadGameFont(ROOT), 'BEAKER');
 if (beaker)
-  await sharp(beaker, { raw: { width: GF_CELL, height: GF_CELL, channels: 4 } })
-    .webp({ quality: 90, alphaQuality: 100, effort: 5 })
-    .toFile(OUT_BEAKER);
+  for (const [name, hue] of [["tech-beaker", 210], ["tech-beaker-green", 135],
+                             ["tech-beaker-red", 2], ["tech-beaker-yellow", 48]])
+    await sharp(recolorHue(beaker, hue), { raw: { width: GF_CELL, height: GF_CELL, channels: 4 } })
+      .webp({ quality: 90, alphaQuality: 100, effort: 5 })
+      .toFile(path.join(WEB, 'assets', `${name}.webp`));
 
 // --- gzip the enriched graph (minified; the committed src techs.json stays pretty) ---
 const minified = JSON.stringify(techs);

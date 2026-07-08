@@ -372,10 +372,12 @@ It is a read-only consumer of the generated data, never the engine. See
 - **Icons**: real Civ4 tech-button art baked to one sprite sheet (`tech-icons.webp`); the ~47
   vanilla-BTS icons C2C doesn't ship fall back to an advisor-colour chip.
 - **Cost / beakers**: shown with the GameFont research beaker (`tech-beaker.webp`, via the
-  shared `web/gamefont.mjs`). CivStudio will have **three research currencies** — blue
-  beakers (science, the default for this **human** common tree), red (converted from hammers)
-  and yellow (race-specific) — and **per-race tech trees** (e.g. Harimari have no naval line);
-  the cost renderer is keyed by beaker type so the other two slot in later. See `docs/race.md`.
+  shared `web/gamefont.mjs`). CivStudio will have **four research currencies** — blue
+  beakers (science, the default for this **human** common tree), green (naval techs), red
+  (converted from hammers) and yellow (race-specific) — each the one GameFont beaker glyph
+  recoloured (`gamefont.mjs` `recolorHue`). Techs carry a per-tech `beaker` type (naval → green,
+  curated in `build-techs.mjs`); default blue. Tech trees are **per-race** (e.g. Harimari have
+  no naval line). See `docs/race.md`.
 
 ## Open questions deferred to later
 

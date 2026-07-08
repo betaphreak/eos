@@ -12959,4 +12959,46 @@
   "Sound" : "AS2D_TECH_GRAND_WAR",
   "SoundMP" : "AS2D_TECH_GRAND_WAR",
   "Button" : ",Art/Interface/Buttons/TechTree/Grand_war.dds,Art/Interface/Buttons/RoM_Techtree_Atlas.dds,3,8"
+}, {
+  "Type" : "TECH_INDUSTRIAL_LIFESTYLE",
+  "name" : "Industrial Lifestyle",
+  "help" : "The Industrial Revolution was the transition to new manufacturing processes in the period from about 1760 to sometime between 1820 and 1840. This transition included going from hand production methods to machines, new chemical manufacturing and iron production processes, the increasing use of steam power, the development of machine tools and the rise of the factory system.Textiles were the dominant industry of the Industrial Revolution in terms of employment, value of output and capital invested; the textile industry was also the first to use modern production methods.The Industrial Revolution began in Great Britain, and many of the technological innovations were British. By the mid-18th century Britain controlled a global trading empire with colonies in North America and Africa, and with some political influence on the Indian subcontinent, through the activities of the East India Company. The development of trade and the rise of business were major causes of the Industrial Revolution.The Industrial Revolution marks a major turning point in history; almost every aspect of daily life was influenced in some way. In particular, average income and population began to exhibit unprecedented sustained growth. Some economists say that the major impact of the Industrial Revolution was that the standard of living for the general population began to increase consistently for the first time in history, although others have said that it did not begin to meaningfully improve until the late 19th and 20th centuries.GDP per capita was broadly stable before the Industrial Revolution and the emergence of the modern capitalist economy, while the Industrial Revolution began an era of per-capita economic growth in capitalist economies. Economic historians are in agreement that the onset of the Industrial Revolution is the most important event in the history of humanity since the domestication of animals and plants.The precise start and end of the Industrial Revolution is still debated among historians, as is the pace of economic and social changes. Eric Hobsbawm held that the Industrial Revolution began in Britain in the 1780s and was not fully felt until the 1830s or 1840s, while T. S. Ashton held that it occurred roughly between 1760 and 1830. Rapid industrialization first began in Britain, starting with mechanized spinning in the 1780s, with high rates of growth in steam power and iron production occurring after 1800. Mechanized textile production spread from Great Britain to continental Europe and the United States in the early 19th century, with important centres of textiles, iron and coal emerging in Belgium and the United States and later textiles in France.An economic recession occurred from the late 1830s to the early 1840s when the adoption of the original innovations of the Industrial Revolution, such as mechanized spinning and weaving, slowed and their markets matured. Innovations developed late in the period, such as the increasing adoption of locomotives, steamboats and steamships, hot blast iron smelting and new technologies, such as the electrical telegraph, widely introduced in the 1840s and 1850s, were not powerful enough to drive high rates of growth. Rapid economic growth began to occur after 1870, springing from a new group of innovations in what has been called the Second Industrial Revolution. These new innovations included new steel making processes, the large-scale manufacture of machine tools and the use of increasingly advanced machinery in steam-powered factories.",
+  "quote" : "\"It is not enough to be industrious; so are the ants. What are you industrious about?\" - Henry David Thoreau",
+  "Description" : "TXT_KEY_TECH_INDUSTRIAL_LIFESTYLE",
+  "Civilopedia" : "TXT_KEY_TECH_INDUSTRIAL_LIFESTYLE_PEDIA",
+  "Advisor" : "ADVISOR_ECONOMY",
+  "iCost" : "4925",
+  "Era" : "C2C_ERA_INDUSTRIAL",
+  "iAsset" : "40",
+  "bTrade" : "1",
+  "iGridX" : "61",
+  "iGridY" : "9",
+  "Flavors" : {
+    "Flavor" : [ {
+      "FlavorType" : "FLAVOR_MILITARY",
+      "iFlavor" : "8"
+    }, {
+      "FlavorType" : "FLAVOR_PRODUCTION",
+      "iFlavor" : "8"
+    }, {
+      "FlavorType" : "FLAVOR_GOLD",
+      "iFlavor" : "1"
+    }, {
+      "FlavorType" : "FLAVOR_SCIENCE",
+      "iFlavor" : "5"
+    }, {
+      "FlavorType" : "FLAVOR_GROWTH",
+      "iFlavor" : "8"
+    } ]
+  },
+  "OrPreReqs" : {
+    "PrereqTech" : "TECH_REPRESENTATIVE_DEMOCRACY"
+  },
+  "AndPreReqs" : {
+    "PrereqTech" : [ "TECH_REPLACEABLE_PARTS", "TECH_MILITARY_TRADITION", "TECH_GRAND_WAR" ]
+  },
+  "Quote" : "TXT_KEY_TECH_INDUSTRIAL_LIFESTYLE_QUOTE",
+  "Sound" : "AS2D_TECH_INDUSTRIAL_LIFESTYLE",
+  "SoundMP" : "AS2D_TECH_INDUSTRIAL_LIFESTYLE",
+  "Button" : "Art/Interface/Buttons/TechTree/industriallifestyle.dds"
 } ]

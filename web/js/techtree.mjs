@@ -24,13 +24,13 @@ const ADV_SECTOR = {
 const ERAS = [
   ["C2C_ERA_PREHISTORIC", "Prehistoric"], ["C2C_ERA_ANCIENT", "Ancient"],
   ["C2C_ERA_CLASSICAL", "Classical"], ["C2C_ERA_MEDIEVAL", "Medieval"],
-  ["C2C_ERA_RENAISSANCE", "Renaissance"],
+  ["C2C_ERA_RENAISSANCE", "Renaissance"], ["C2C_ERA_INDUSTRIAL", "Industrial"],
 ];
 const ERA_NAME = Object.fromEntries(ERAS);
 
-const COL_W = 200, ROW_H = 92, PAD = 48, CARD_W = 172, CARD_H = 52;
+const COL_W = 240, ROW_H = 78, PAD = 48, CARD_W = 215, CARD_H = 46;
 const SHEET = "assets/tech-icons.webp", SHEET_W = 1024, SHEET_H = 1216, ICON = 40;
-const KMIN = 0.4, KMAX = 1.8, KSTEP = 1.2;
+const KMAX = 1.8, KSTEP = 1.2;   // min zoom is dynamic — see minZoom() (fit-to-height)
 
 const $ = id => document.getElementById(id);
 
@@ -90,7 +90,8 @@ function ancestry(type) {
 // blue (science, the default), red (converted from hammers) and yellow (race-specific);
 // the human common tree is all blue. data-beaker lets the other two slot in later as
 // hue variants without touching this call site.
-function beakerCost(t, beaker = "blue") {
+function beakerCost(t) {
+  const beaker = t.beaker || "blue";   // per-tech currency (naval → green); default blue science
   return `<span class="tech-bk" data-beaker="${beaker}" aria-hidden="true"></span>${(+t.iCost).toLocaleString()}`;
 }
 
@@ -276,8 +277,14 @@ function applyZoom(anchor) {
   vp.scrollTop = cy * k - ay;
   els._k = k;
 }
+// the smallest zoom that still fills the viewport height: you can zoom out until the
+// whole tree fits vertically, but no further (no dead space below the tree)
+function minZoom() {
+  const vh = els && els.viewport ? els.viewport.clientHeight : 0;
+  return (vh && contentH) ? Math.min(1, vh / contentH) : 0.4;
+}
 function zoomBy(f, anchor) {
-  k = Math.min(KMAX, Math.max(KMIN, k * f));
+  k = Math.min(KMAX, Math.max(minZoom(), k * f));
   applyZoom(anchor);
 }
 
@@ -323,6 +330,7 @@ async function open() {
     await ensureLoaded();
     build();
     buildEraTabs();
+    k = Math.max(k, minZoom());   // never open zoomed out past the fit-to-height floor
     applyZoom();
     syncEraTab();
   } catch (e) {
@@ -369,6 +377,28 @@ export function initTechTree() {
   $("techZoomOut").addEventListener("click", () => zoomBy(1 / KSTEP));
   const vp = $("techViewport");
   vp.addEventListener("scroll", syncEraTab, { passive: true });
+
+  // drag anywhere on the canvas to pan (grab cursor); a drag that moved swallows the
+  // click so it doesn't also select the node under the pointer
+  let dragging = false, sx = 0, sy = 0, sl = 0, st = 0, moved = false;
+  vp.addEventListener("mousedown", e => {
+    if (e.button !== 0) return;
+    dragging = true; moved = false;
+    sx = e.clientX; sy = e.clientY; sl = vp.scrollLeft; st = vp.scrollTop;
+    vp.classList.add("grabbing");
+  });
+  window.addEventListener("mousemove", e => {
+    if (!dragging) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+    vp.scrollLeft = sl - dx; vp.scrollTop = st - dy;
+  });
+  window.addEventListener("mouseup", () => {
+    if (dragging) { dragging = false; vp.classList.remove("grabbing"); }
+  });
+  vp.addEventListener("click", e => {
+    if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
+  }, true);   // capture: kill the click that ends a drag before it reaches a node
   // ctrl/⌘ + wheel (or trackpad pinch) zooms at the cursor; plain wheel scrolls natively
   vp.addEventListener("wheel", e => {
     if (!(e.ctrlKey || e.metaKey)) return;
