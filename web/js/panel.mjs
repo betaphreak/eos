@@ -297,6 +297,8 @@ stage.addEventListener("mousemove", e=>{
 stage.addEventListener("mouseleave", ()=>{ S.hoverProv=null; tip.classList.remove("on"); draw(); });
 stage.addEventListener("click", e=>{
   if(panMoved){ panMoved=false; return; }    // this "click" was the end of a drag
+  if(e.detail>1) return;                      // 2nd click of a double-click: dblclick zooms — don't
+                                              // toggle the just-selected province back off (the flash)
   const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
   // in caravan mode a click near a route's current marker selects that journey
   if (S.overlay==="caravan") {
