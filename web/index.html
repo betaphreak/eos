@@ -10,6 +10,11 @@
     #modeToggle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1;display:flex;gap:2px;background:rgba(10,14,22,.55);border:1px solid rgba(190,205,230,.16);border-radius:9px;padding:3px}
     #modeToggle button{font:600 11px system-ui,'Segoe UI',sans-serif;letter-spacing:.02em;color:#9fb0c8;background:transparent;border:0;border-radius:6px;padding:5px 12px;cursor:pointer}
     #modeToggle button[aria-pressed="true"]{background:rgba(190,205,230,.16);color:#eef2f8}
+    /* Political sub-toggle: colour dimension, floats just below the mode toggle, political mode only */
+    #polByToggle{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:9;display:flex;gap:2px;background:rgba(10,14,22,.72);border:1px solid rgba(190,205,230,.14);border-radius:8px;padding:2px 3px;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+    #polByToggle[hidden]{display:none}
+    #polByToggle button{font:600 10.5px system-ui,'Segoe UI',sans-serif;letter-spacing:.02em;color:#9fb0c8;background:transparent;border:0;border-radius:6px;padding:4px 11px;cursor:pointer}
+    #polByToggle button[aria-pressed="true"]{background:rgba(190,205,230,.16);color:#eef2f8}
   </style>
 </head>
 <body>
@@ -20,8 +25,13 @@
 
       <div id="modeToggle" role="group" aria-label="Map mode">
         <button data-mode="world" aria-pressed="true" data-tip="Whole-world physical map view">World</button>
-        <button data-mode="political" aria-pressed="false" data-tip="Colour provinces by their owning nation at game start">Political</button>
+        <button data-mode="political" aria-pressed="false" data-tip="Colour provinces by nation, culture or faith at game start">Political</button>
         <button data-mode="caravan" aria-pressed="false" data-tip="Replay the six-band caravan migration">Caravan</button>
+      </div>
+      <div id="polByToggle" role="group" aria-label="Political colouring" hidden>
+        <button data-polby="owner" aria-pressed="true" data-tip="Colour by owning nation">Nation</button>
+        <button data-polby="culture" aria-pressed="false" data-tip="Colour by culture">Culture</button>
+        <button data-polby="religion" aria-pressed="false" data-tip="Colour by religion">Faith</button>
       </div>
 
       <div class="topright">

@@ -60,15 +60,19 @@ never download it. On load it enriches the in-memory province objects in place. 
 `BUNDLE.geoNames` dictionaries via `core.provGeo` — interning them cut ~850 KB of duplicated names
 from `data.js`.) The `Political` toggle
 (`index.html #modeToggle`, `panel.mjs setMode`, also reachable via a `#political` URL hash) switches
-`S.mode`. `main.mjs renderScene` fills province polygons by owner colour, **zoom-banded** on the
-existing `K_PLOT`/`K_TEX` constants so the political map yields to the physical terrain as you dive in:
+`S.mode`. A political-only sub-toggle (`#polByToggle`, **Nation / Culture / Faith**) sets `S.polBy`;
+`core.polOf(p)` resolves the active dimension's `{name, color}` entry for a province, so the same
+render path colours by nation, culture or religion. `main.mjs renderScene` fills province polygons by
+that colour, **zoom-banded** on the existing `K_PLOT`/`K_TEX` constants so the political map yields to
+the physical terrain as you dive in:
 
-- `cam.k < K_PLOT` (≈1–5×): full-opacity nation fills — the overview.
+- `cam.k < K_PLOT` (≈1–5×): full-opacity fills — the overview.
 - `K_PLOT ≤ cam.k < K_TEX` (≈5–16×): fill alpha fades (0.5→0.15) as the per-plot terrain appears.
-- `cam.k ≥ K_TEX` (>16×): nation-coloured province borders + a fill on only the hovered province.
+- `cam.k ≥ K_TEX` (>16×): coloured province borders + a fill on only the hovered province.
 
-Hover tooltip and the sidebar detail panel (`panel.mjs politicsBlock`) show the owning nation
-(with its colour swatch), culture and religion.
+A province with no value for the active dimension never fills. Hover tooltip shows the active
+dimension's entry; the sidebar detail panel (`panel.mjs politicsBlock`) always shows nation, culture
+and faith together.
 
 Verify with `tools/webverify/political-shot.mjs` (serves `web/` with Range support, screenshots a
 world overview + a zoomed province in Political mode).

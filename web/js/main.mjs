@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, COUNTRIES, lerp, latAtScreenY, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, polOf, lerp, latAtScreenY, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
@@ -133,29 +133,27 @@ function renderScene() {
     if (cam.k < K_PLOT) { for (const p of P) if (p.rings && p.days) { ctx.fillStyle=heatColor(p.days); ctx.fill(provPath(p)); } }
     else if (S.hoverProv && S.hoverProv.rings && S.hoverProv.days) { ctx.fillStyle=heatColor(S.hoverProv.days); ctx.fill(provPath(S.hoverProv)); }
   }
-  // political choropleth: nation-coloured province fills, zoom-banded so the map
-  // yields to the physical terrain as you dive in. Below K_PLOT it is a full-opacity
-  // overview; through K_PLOT→K_TEX the fill fades as the terrain plots appear; past
-  // K_TEX only nation-coloured borders remain (plus the hovered province), letting the
-  // per-plot terrain read underneath. Unowned provinces (sea, wasteland) never fill.
+  // political choropleth: province fills coloured by the active dimension (nation / culture /
+  // religion — S.polBy, via polOf), zoom-banded so the map yields to the physical terrain as you
+  // dive in. Below K_PLOT it is a full-opacity overview; through K_PLOT→K_TEX the fill fades as the
+  // terrain plots appear; past K_TEX only coloured borders remain (plus the hovered province),
+  // letting the per-plot terrain read underneath. Provinces with no value for the dimension never fill.
   if (S.mode === "political") {
     if (cam.k < K_TEX) {
       const a = cam.k < K_PLOT ? 0.58
         : lerp(0.5, 0.15, (cam.k - K_PLOT) / (K_TEX - K_PLOT));
-      for (const p of P) if (p.rings && p.owner) {
-        const c = COUNTRIES[p.owner];
-        if (c) { ctx.fillStyle = hexA(c.color, a); ctx.fill(provPath(p)); }
+      for (const p of P) if (p.rings) {
+        const e = polOf(p).e;
+        if (e) { ctx.fillStyle = hexA(e.color, a); ctx.fill(provPath(p)); }
       }
     } else {
       ctx.lineWidth = 1.4;
-      for (const p of P) if (p.rings && p.owner) {
-        const c = COUNTRIES[p.owner];
-        if (c) { ctx.strokeStyle = hexA(c.color, 0.9); ctx.stroke(provPath(p)); }
+      for (const p of P) if (p.rings) {
+        const e = polOf(p).e;
+        if (e) { ctx.strokeStyle = hexA(e.color, 0.9); ctx.stroke(provPath(p)); }
       }
-      const hi = S.hoverProv;
-      if (hi && hi.rings && hi.owner && COUNTRIES[hi.owner]) {
-        ctx.fillStyle = hexA(COUNTRIES[hi.owner].color, 0.35); ctx.fill(provPath(hi));
-      }
+      const hi = S.hoverProv, he = hi && hi.rings && polOf(hi).e;
+      if (he) { ctx.fillStyle = hexA(he.color, 0.35); ctx.fill(provPath(hi)); }
     }
   }
   // province outlines

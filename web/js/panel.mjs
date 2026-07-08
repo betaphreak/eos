@@ -1,4 +1,4 @@
-import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, COUNTRIES, CULTURES, RELIGIONS, provGeo, S } from "./core.mjs";
+import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, S } from "./core.mjs";
 import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
 import { loadPlots, bonusIconRect } from "./plots.mjs";
 stage.addEventListener("wheel", e => {
@@ -145,6 +145,13 @@ heatKey.innerHTML=`<div class="lg-h">Caravan-days · shading</div><div class="hk
 legend.appendChild(heatKey);
 
 // ---- heat toggle ----
+const polByToggle=document.getElementById("polByToggle");
+// Political-mode colour dimension (nation/culture/faith) — only meaningful while the layer is loaded
+function setPolBy(by){
+  S.polBy = by;
+  polByToggle.querySelectorAll("button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.polby===by));
+  draw();
+}
 const heatBtn=document.getElementById("heatBtn");
 heatBtn.setAttribute("aria-pressed","true");
 heatBtn.onclick=()=>{ S.showHeat=!S.showHeat; heatBtn.setAttribute("aria-pressed",S.showHeat);
@@ -236,9 +243,9 @@ stage.addEventListener("mousemove", e=>{
   if(best || res){ S.hoverProv=best;
     let html = "";
     if(best) html = `<b>${best.name}</b> <span class="r">${best.type.toLowerCase()}</span><br><span class="r">${(best.region||"—").replace(/_/g," ").replace(" region","")} · ${best.plots} plots${best.days?` · ${best.days} caravan-days`:""}</span>`;
-    if(best && S.mode==="political"){                     // owning nation, with its map colour
-      const c = best.owner && COUNTRIES[best.owner];
-      html += `<br><span class="r">${c ? `<span class="dot" style="background:${c.color}"></span>${c.name}` : "Unclaimed"}</span>`;
+    if(best && S.mode==="political"){                     // active dimension (nation/culture/faith)
+      const e = polOf(best).e;
+      html += `<br><span class="r">${e ? `<span class="dot" style="background:${e.color}"></span>${e.name}` : "—"}</span>`;
     }
     if(res) html += `${best?"<br>":""}<span class="r">◆ ${res}</span>`;
     tip.innerHTML=html;
@@ -367,6 +374,7 @@ function setMode(m){
   const cara = m === "caravan";
   legend.style.display = cara ? "" : "none";
   heatBtn.style.display = cara ? "" : "none";
+  polByToggle.hidden = m !== "political";       // the nation/culture/faith sub-toggle is political-only
   if (!cara) { pause(); S.selected = null; }   // the timeline stays visible in the bottom bar (all modes)
   S.selectedProv = null;             // start each mode on its own overview
   showRail(cara);                    // caravan mode opens the panel on its overview; world starts collapsed
@@ -676,6 +684,8 @@ searchClear.addEventListener("click", () => { searchInput.value = ""; runSearch(
 // ---- mode toggle ----
 document.querySelectorAll("#modeToggle button").forEach(b =>
   b.addEventListener("click", () => setMode(b.dataset.mode)));
+polByToggle.querySelectorAll("button").forEach(b =>
+  b.addEventListener("click", () => setPolBy(b.dataset.polby)));
 
 export { renderRail };
 
