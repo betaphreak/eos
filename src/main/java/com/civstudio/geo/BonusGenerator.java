@@ -32,6 +32,13 @@ public final class BonusGenerator {
 	/** Same-bonus minimum spacing (Chebyshev) when a bonus declares no cluster range. */
 	private static final int DEFAULT_SPACING = 2;
 
+	/**
+	 * Global scale on every bonus's target count — the one knob for overall resource
+	 * density. The engine's raw appearance figures pack the map densely; scaling the
+	 * per-province target thins that to a lived-in-but-not-blanketed look. Lower = sparser.
+	 */
+	private static final double DENSITY_SCALE = 0.55;
+
 	private BonusGenerator() {
 	}
 
@@ -84,7 +91,8 @@ public final class BonusGenerator {
 			int pct = b.constAppearance();
 			for (int k = 0; k < 4; k++)
 				pct += rng.uniform(b.randApps()[k]);
-			int target = (int) Math.round(pct / 100.0 * (eligible.size() / (double) b.tilesPer()));
+			int target = (int) Math.round(
+					DENSITY_SCALE * pct / 100.0 * (eligible.size() / (double) b.tilesPer()));
 			if (target <= 0)
 				continue;
 
