@@ -29,3 +29,6 @@
 # (new-master). See docs/political-map.md.
 /data/anbennar/history/
 /data/anbennar/common/
+# vendored Anbennar loading-screen art (.dds) — baked to web/assets/loading-*.jpg (committed) by
+# web/bake-loading.mjs. Raw art kept out of git; re-download from the mod to re-bake.
+/data/anbennar/loadingscreens/

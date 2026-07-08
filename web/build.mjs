@@ -227,6 +227,14 @@ const political = {
 };
 fs.writeFileSync(path.join(WEB, 'political.js'), `window.POLITICAL = ${JSON.stringify(political)};\n`);
 
+// committed Anbennar loading-screen art (baked locally by web/bake-loading.mjs — System.Drawing JPEG);
+// the page shows one at random 1:1 (viewport crops) while the map loads. Absent → the page skips it.
+const loadingDir = path.join(WEB, 'assets');
+const loading = fs.existsSync(loadingDir)
+  ? fs.readdirSync(loadingDir).filter(f => /^loading-\d+\.jpg$/.test(f))
+      .sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/))).map(f => `assets/${f}`)
+  : [];
+
 const bundle = {
   meta: {
     seed: +SEED, scenario,
@@ -235,6 +243,7 @@ const bundle = {
   },
   provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, foam, ice, bonusIcons, trees, seaBands, geo,
   geoNames,                           // raw-key -> display-name dictionaries for province crumbs
+  loading,                            // committed loading-screen art (assets/loading-*.jpg), or []
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
 };
 

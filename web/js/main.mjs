@@ -1,13 +1,27 @@
-import { MAP, VIEW, cam, ctx, cv, stage, P, provPath, px, py, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, latAtScreenY, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, px, py, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, latAtScreenY, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 import { drawPolitical } from "./overlays/political.mjs";
 import { drawCaravanHeat, drawCaravan } from "./overlays/caravan.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
 // transparent so the sea layer below shows through, land is opaque.
+// loading screen: show a random Anbennar splash (1:1, viewport-cropped) until the map's first paint
+const loadEl = document.getElementById("loading");
+if (loadEl) {
+  const art = loadEl.querySelector(".ld-art");
+  const set = BUNDLE.loading && BUNDLE.loading.length;
+  if (set) art.src = BUNDLE.loading[Math.floor(Math.random() * BUNDLE.loading.length)];
+  else loadEl.classList.add("gone");          // no art baked → don't block on an empty overlay
+}
+function hideLoading() {
+  if (!loadEl) return;
+  loadEl.classList.add("gone");
+  setTimeout(() => loadEl.remove(), 700);      // after the fade
+}
+
 const mapImg = new Image();
 let mapReady = false;
-mapImg.onload = () => { mapReady = true; draw(); };
+mapImg.onload = () => { mapReady = true; draw(); hideLoading(); };
 mapImg.src = MAP.src;
 // the ocean layer, drawn behind the (transparent-sea) land raster so it shows through only the
 // sea: a climate-banded COLOUR from a vertical latitude gradient (tropical → temperate → polar),
