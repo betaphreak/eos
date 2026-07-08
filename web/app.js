@@ -11,6 +11,8 @@ import "./js/labels.mjs";
 import "./js/main.mjs";
 import { boot } from "./js/panel.mjs";
 import { initTechTree } from "./js/techtree.mjs";
+import { initShortcuts } from "./js/shortcuts.mjs";
 
 boot();
 initTechTree();
+initShortcuts();

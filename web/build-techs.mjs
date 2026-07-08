@@ -5,7 +5,7 @@
 // Two committed, run-INDEPENDENT assets (the tech tree is static reference data, unlike
 // build.mjs which needs an output/<seed> run):
 //
-//   web/assets/techs.json.gz   the engine's tech graph (src/main/resources/techs.json —
+//   web/assets/techs.pack     the engine's tech graph (src/main/resources/techs.json —
 //                              produced by com.civstudio.tech.export.TechInfoConverter,
 //                              trimmed to the Prehistoric→Renaissance techs eos models,
 //                              carrying every field + the resolved English name/help/
@@ -32,7 +32,10 @@ const WEB = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(WEB, '..');
 
 const SRC = path.join(ROOT, 'src/main/resources/techs.json');
-const OUT_GZ = path.join(WEB, 'assets', 'techs.json.gz');
+// gzip bytes, but named .pack (served as application/octet-stream, like plots.pack) — a
+// .gz extension makes Azure SWA/CDN set Content-Encoding: gzip, which collides with the
+// in-page DecompressionStream and hard-fails the fetch (ERR_CONTENT_DECODING_FAILED).
+const OUT_PACK = path.join(WEB, 'assets', 'techs.pack');
 const OUT_ICONS = path.join(WEB, 'assets', 'tech-icons.webp');
 const OUT_BEAKER = path.join(WEB, 'assets', 'tech-beaker.webp');
 
@@ -135,10 +138,10 @@ if (beaker)
 // --- gzip the enriched graph (minified; the committed src techs.json stays pretty) ---
 const minified = JSON.stringify(techs);
 const gz = zlib.gzipSync(Buffer.from(minified, 'utf8'), { level: 9 });
-fs.mkdirSync(path.dirname(OUT_GZ), { recursive: true });
-fs.writeFileSync(OUT_GZ, gz);
+fs.mkdirSync(path.dirname(OUT_PACK), { recursive: true });
+fs.writeFileSync(OUT_PACK, gz);
 
-console.log(`Built web/assets/techs.json.gz — ${techs.length} techs, `
+console.log(`Built web/assets/techs.pack — ${techs.length} techs, `
   + `${(minified.length / 1024).toFixed(0)} KB JSON → ${(gz.length / 1024).toFixed(0)} KB gzipped`);
 console.log(`Built web/assets/tech-icons.webp — ${cells.length} icons `
   + `(${sheetW}×${sheetH}, ${(iconBytes / 1024).toFixed(0)} KB), ${missing} without art (colour-chip fallback)`);

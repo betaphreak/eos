@@ -50,19 +50,24 @@ body {
 .app {
   position: relative; height: 100vh; width: 100%; overflow: hidden;
   --bar-h: 54px;                     /* dedicated top bar height; the map + rail sit below it */
-  --foot-h: 0px;                     /* no bottom bar — the clock moved to the top bar; map fills down */
+  --foot-h: 30px;                    /* the bottom shortcut bar (.hotbar) height; reserved below the map */
 }
-/* ---------- BOTTOM BAR (timeline) ---------- */
-/* a persistent footer strip below the map holding the timeline/playback (all modes), so it never
-   overlays the canvas. Pinned dark like the top bar. */
-.footbar {
+/* ---------- BOTTOM BAR (keyboard shortcuts) ---------- */
+/* a slim persistent strip below the map listing the global hotkeys, pinned dark like the top
+   bar; --foot-h reserves its height so the map and rail never sit under it. */
+.hotbar {
   position: absolute; bottom: 0; left: 0; right: 0; height: var(--foot-h); z-index: 9;
-  display: flex; align-items: center; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; padding: 0 16px;
   background: #0d1119; border-top: 1px solid #232c3c;
-  --panel: #141a26; --panel-2: #1a2130;
-  --ink: #e7ecf4; --ink-soft: #9aa6ba; --ink-faint: #6b7688;
-  --line: #232c3c; --line-soft: #1b2331; --accent: #e6b04a;
-  color: var(--ink);
+  font: 500 11px system-ui, 'Segoe UI', sans-serif; color: #8b95a8;
+  overflow-x: auto; scrollbar-width: none;
+}
+.hotbar::-webkit-scrollbar { display: none; }
+.hotbar .hk { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: #8b95a8; }
+.hotbar .hk kbd {
+  font: 600 10px ui-monospace, 'Cascadia Code', monospace; color: #cdd6e6;
+  background: #1a2130; border: 1px solid #2b3546; border-bottom-width: 2px;
+  border-radius: 4px; padding: 1px 6px; min-width: 9px; text-align: center;
 }
 /* ---------- TOP BAR ---------- */
 /* a dedicated header strip above the map — the brand, mode toggle, buttons and search live here so

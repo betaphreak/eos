@@ -1,6 +1,6 @@
 // The technology tree — a full-screen modal over the map. Self-contained: it owns its
 // DOM (the #techModal markup in index.html), loads its data lazily on first open
-// (assets/techs.json.gz, gunzipped in-page via DecompressionStream — the plots.mjs
+// (assets/techs.pack, gunzipped in-page via DecompressionStream — the plots.mjs
 // pattern), and while it is up the map's paint() bails (S.techOpen), so nothing renders
 // behind it. Esc or a click outside closes it and repaints the map.
 //
@@ -10,6 +10,7 @@
 // lights its whole prerequisite chain in gold while the rest dims.
 import { S } from "./core.mjs";
 import { draw } from "./main.mjs";
+import { pausePlayback } from "./panel.mjs";
 
 // advisor → spine colour (muted, works in both themes) and → eos firm sector
 const ADV_COLOR = {
@@ -54,9 +55,19 @@ function allPrereqs(t) { return [...prereqList(t, "OrPreReqs"), ...prereqList(t,
 
 async function ensureLoaded() {
   if (loaded) return true;
-  const res = await fetch(SHEET.replace(/tech-icons\.webp$/, "") + "techs.json.gz");
-  const stream = res.body.pipeThrough(new DecompressionStream("gzip"));
-  techs = JSON.parse(await new Response(stream).text());
+  const res = await fetch("assets/techs.pack");
+  if (!res.ok) throw new Error(`HTTP ${res.status} for assets/techs.pack`);
+  const buf = await res.arrayBuffer();
+  // the bytes are gzip; gunzip them in-page — but tolerate a host/CDN that already
+  // decompressed via Content-Encoding (then the buffer is plain JSON text)
+  let text;
+  try {
+    const stream = new Response(buf).body.pipeThrough(new DecompressionStream("gzip"));
+    text = await new Response(stream).text();
+  } catch {
+    text = new TextDecoder().decode(buf);
+  }
+  techs = JSON.parse(text);
   byType = new Map(techs.map(t => [t.Type, t]));
   for (const t of techs) parents.set(t.Type, allPrereqs(t).filter(p => byType.has(p)));
   loaded = true;
@@ -307,6 +318,7 @@ async function open() {
   cacheEls();
   els.modal.hidden = false;      // reveal the shell (also makes viewport measurable)
   S.techOpen = true;
+  pausePlayback();               // modals always run in paused mode
   try {
     await ensureLoaded();
     build();
@@ -315,7 +327,7 @@ async function open() {
     syncEraTab();
   } catch (e) {
     els.viewport.innerHTML = `<div style="padding:40px;color:var(--ink-soft);max-width:520px">
-      Couldn't load the tech data. The tree reads <code>assets/techs.json.gz</code> over HTTP —
+      Couldn't load the tech data. The tree reads <code>assets/techs.pack</code> over HTTP —
       open the site through a server (not <code>file://</code>). <br><br>${e.message}</div>`;
   }
 }
@@ -337,13 +349,18 @@ function cacheEls() {
   };
 }
 
+/** Open the tree if closed, close it if open — the F7 shortcut (see shortcuts.mjs). */
+export function toggleTech() { S.techOpen ? close() : open(); }
+
+/** Close the tree if open — the Escape shortcut while the modal is up. */
+export function closeTech() { close(); }
+
 export function initTechTree() {
   const btn = $("techBtn");
   if (!btn) return;
   btn.addEventListener("click", open);
-  document.addEventListener("keydown", e => {
-    if (e.key === "Escape" && S.techOpen) { e.preventDefault(); close(); }
-  });
+  // F7 (toggle) and Escape (close) are dispatched centrally by js/shortcuts.mjs, which
+  // calls toggleTech() / closeTech() below.
   // Esc / click outside / the ✕ all return to the map
   $("techModal").addEventListener("click", e => {
     if (e.target.closest("[data-tech-close]")) close();

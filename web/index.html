@@ -50,7 +50,7 @@
       </div>
 
       <div class="topright">
-        <button class="themebtn" id="techBtn" data-tip="Technology tree" aria-label="Open the technology tree">
+        <button class="themebtn" id="techBtn" data-tip="Technology tree (F7)" aria-label="Open the technology tree">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="2.3"/><circle cx="18" cy="5.5" r="2.3"/><circle cx="18" cy="18.5" r="2.3"/><path d="M7.2 11l8.6-4.6M7.2 13l8.6 4.6"/></svg>
         </button>
         <button class="themebtn" id="costBtn" data-tip="Terrain movement-cost overlay — zoom in to see it" aria-label="Toggle movement-cost overlay">
@@ -109,6 +109,9 @@
       <div class="rail" id="rail"></div>
     </aside>
 
+    <!-- shortcut hints; populated from js/shortcuts.mjs (the single source for the bar) -->
+    <footer class="hotbar" id="hotbar" aria-label="Keyboard shortcuts"></footer>
+
   </div>
 
   <!-- Technology tree: a full-screen modal over the map (map rendering pauses while it is up).
@@ -117,7 +120,7 @@
     <div class="tech-backdrop" data-tech-close></div>
     <div class="tech-shell" role="document">
       <header class="tech-head">
-        <div class="tech-brand">Technology</div>
+        <div class="tech-brand">Tech Tree (F7)</div>
         <div id="techEras" class="segToggle tech-eras" role="group" aria-label="Jump to era"></div>
         <button class="tech-close" data-tech-close data-tip="Close (Esc)" aria-label="Close technology tree">&times;</button>
       </header>

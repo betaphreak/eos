@@ -364,7 +364,7 @@ It is a read-only consumer of the generated data, never the engine. See
 [`web/README.md`](../web/README.md); the pieces:
 
 - **Data**: `web/build-techs.mjs` gzips `techs.json` (with the English `name`/`help`/`quote`
-  and a per-tech `icon` rect) to `web/assets/techs.json.gz`, fetched and gunzipped in-page.
+  and a per-tech `icon` rect) to `web/assets/techs.pack`, fetched and gunzipped in-page.
 - **Layout**: cards on the C2C `iGridX` (era-timeline column) / `iGridY` (lane) grid, with
   hairline SVG prerequisite elbows (solid AND, dashed OR) and quiet era strata. The era tabs
   jump to each age's entry (its lowest-`iGridX` tech). Hovering a tech lights its whole

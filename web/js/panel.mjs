@@ -77,27 +77,8 @@ function toggleFullscreen() {
 document.getElementById("zoomReset").onclick = toggleFullscreen;
 document.getElementById("zoomLevel").onclick = resetView;   // top-left readout doubles as reset-to-world
 document.addEventListener("fullscreenchange", resize);
-// keyboard: WASD / arrows pan · +/- zoom · 0 or Home reset to world · F fullscreen
-window.addEventListener("keydown", e => {
-  if (e.metaKey || e.ctrlKey || e.altKey) return;
-  if (e.target instanceof HTMLElement && e.target.matches("input, textarea")) return;   // don't hijack typing
-  const step = Math.max(40, Math.min(VIEW.w, VIEW.h) * 0.12);
-  switch (e.key) {
-    case "Escape": if (closePanel()) { e.preventDefault(); } return;   // collapse the sidebar + restore camera
-    case "w": case "W": case "ArrowUp":    cam.y += step; break;
-    case "s": case "S": case "ArrowDown":  cam.y -= step; break;
-    case "a": case "A": case "ArrowLeft":  cam.x += step; break;
-    case "d": case "D": case "ArrowRight": cam.x -= step; break;
-    case "+": case "=":  e.preventDefault(); S.camBeforeFocus = null; return zoomAt(VIEW.w/2, VIEW.h/2, 1.5);
-    case "-": case "_":  e.preventDefault(); S.camBeforeFocus = null; return zoomAt(VIEW.w/2, VIEW.h/2, 1/1.5);
-    case "0": case "Home":  e.preventDefault(); S.camBeforeFocus = null; return resetView();
-    case "f": case "F":  e.preventDefault(); return toggleFullscreen();
-    case " ": case "Spacebar":  e.preventDefault(); return playing ? pause() : play();   // play/pause
-    default: return;                                   // leave other keys alone
-  }
-  S.camBeforeFocus = null;                               // manual pan discards the focus-return point
-  e.preventDefault(); clampPan(); S.baseVersion++; draw();
-});
+// The global keyboard shortcuts (pan / zoom / reset / fullscreen / play / Escape) are
+// dispatched centrally by js/shortcuts.mjs, which calls the actions exported below.
 // ---- clock: EU4-style date/time + play-pause + speed chevrons (top bar) ----
 const cDate=document.getElementById("cDate"), cTime=document.getElementById("cTime");
 const playBtn=document.getElementById("playBtn"), playIcon=document.getElementById("playIcon");
@@ -144,6 +125,10 @@ function pause(){
   playIcon.innerHTML = PLAY_ICON; playBtn.setAttribute("aria-label", "Play");
   renderSpeed();
 }
+/** Toggle playback — used by the play button and the centralized Space shortcut. */
+function togglePlay(){ playing ? pause() : play(); }
+/** Force paused — modals always run in paused mode, so opening one calls this. */
+function pausePlayback(){ if (playing) pause(); }
 function setSpeed(s){ speed = Math.max(1, Math.min(5, s)); if (!playing) play(); else renderSpeed(); }
 playBtn.addEventListener("click", () => playing ? pause() : play());
 // the speed selector: five chevrons ( › .. ›››››  ), the active level lit; clicking one sets the speed
@@ -769,7 +754,7 @@ document.querySelectorAll(".topbar [data-tip]").forEach(el => {
   el.addEventListener("mousedown", hideBtnTip);
 });
 
-export { renderRail };
+export { renderRail, resetView, toggleFullscreen, togglePlay, pausePlayback, closePanel };
 
 export function boot() {
   window.addEventListener("resize", resize);
