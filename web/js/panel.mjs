@@ -92,43 +92,69 @@ window.addEventListener("keydown", e => {
     case "-": case "_":  e.preventDefault(); S.camBeforeFocus = null; return zoomAt(VIEW.w/2, VIEW.h/2, 1/1.5);
     case "0": case "Home":  e.preventDefault(); S.camBeforeFocus = null; return resetView();
     case "f": case "F":  e.preventDefault(); return toggleFullscreen();
+    case " ": case "Spacebar":  e.preventDefault(); return playing ? pause() : play();   // play/pause
     default: return;                                   // leave other keys alone
   }
   S.camBeforeFocus = null;                               // manual pan discards the focus-return point
   e.preventDefault(); clampPan(); S.baseVersion++; draw();
 });
-// ---- timeline ----
-const scrub=document.getElementById("scrub"), dNow=document.getElementById("dNow");
-document.getElementById("dLo").textContent = fmtDate(t0);
-document.getElementById("dHi").textContent = fmtDate(t1);
-function setT(t, fromInput){
-  S.curT = Math.max(t0, Math.min(t1, t));
-  dNow.textContent = fmtDate(S.curT);
-  if(!fromInput) scrub.value = Math.round((S.curT-t0)/(t1-t0)*1000);
-  draw();
-  if (S.selected!==null) updateDetailLive();
-}
-scrub.addEventListener("input", ()=> setT(t0 + (+scrub.value/1000)*(t1-t0), true));
-
-let playing=false, speed=2, raf=0, lastTs=0;
-const DAYS_PER_SEC = {1:120, 2:340, 3:900};
+// ---- clock: EU4-style date/time + play-pause + speed chevrons (top bar) ----
+const cDate=document.getElementById("cDate"), cTime=document.getElementById("cTime");
 const playBtn=document.getElementById("playBtn"), playIcon=document.getElementById("playIcon");
+const speedBox=document.getElementById("speed");
+// speeds 1..5 = in-game time advanced per real second (the clock names). Paused is the un-playing state.
+const SPEEDS = [null,
+  { name: "1 second / s", dps: 1/86400 },
+  { name: "1 minute / s", dps: 1/1440 },
+  { name: "1 hour / s",   dps: 1/24 },
+  { name: "1 day / s",    dps: 1 },
+  { name: "Max",          dps: 30 }];
+let speed = 4, playing = false, raf = 0, lastTs = 0;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const PAUSE_ICON = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>', PLAY_ICON = '<path d="M8 5v14l11-7z"/>';
+
+function updateClock(){
+  cDate.textContent = fmtDate(S.curT);
+  const secs = Math.floor(((S.curT % 1) + 1) % 1 * 86400);   // fractional day -> time of day
+  const p2 = n => String(n).padStart(2, "0");
+  cTime.textContent = `${p2(secs/3600|0)}:${p2(secs%3600/60|0)}:${p2(secs%60)}`;
+}
+function renderSpeed(){
+  [...speedBox.children].forEach((c, i) => c.classList.toggle("on", (i + 1) <= speed));
+  speedBox.classList.toggle("paused", !playing);
+}
+function setT(t){
+  S.curT = Math.max(t0, Math.min(t1, t));
+  updateClock(); draw();
+  if (S.selected !== null) updateDetailLive();
+}
 function tick(ts){
   if(!playing) return;
-  if(lastTs){ const dt=(ts-lastTs)/1000; setT(S.curT + dt*DAYS_PER_SEC[speed]); if(S.curT>=t1){ pause(); } }
+  if(lastTs){ const dt=(ts-lastTs)/1000; setT(S.curT + dt*SPEEDS[speed].dps); if(S.curT>=t1){ pause(); } }
   lastTs=ts; raf=requestAnimationFrame(tick);
 }
-function play(){ if(S.curT>=t1) setT(t0); playing=true; lastTs=0; playIcon.innerHTML='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>'; playBtn.setAttribute("aria-label","Pause"); raf=requestAnimationFrame(tick); }
-function pause(){ playing=false; cancelAnimationFrame(raf); playIcon.innerHTML='<path d="M8 5v14l11-7z"/>'; playBtn.setAttribute("aria-label","Play"); }
-playBtn.addEventListener("click", ()=> playing?pause():play());
-const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-const speedBox=document.getElementById("speed");
-[[1,"0.5×"],[2,"1×"],[3,"2×"]].forEach(([v,lab])=>{
-  const b=document.createElement("button"); b.textContent=lab; b.setAttribute("aria-pressed", v===speed);
-  b.onclick=()=>{ speed=v; [...speedBox.children].forEach(c=>c.setAttribute("aria-pressed", c===b)); };
+function play(){
+  if (S.curT >= t1) S.curT = t0;                 // restart from the top if parked at the end
+  playing = true; lastTs = 0;
+  playIcon.innerHTML = PAUSE_ICON; playBtn.setAttribute("aria-label", "Pause");
+  renderSpeed(); raf = requestAnimationFrame(tick);
+}
+function pause(){
+  playing = false; cancelAnimationFrame(raf);
+  playIcon.innerHTML = PLAY_ICON; playBtn.setAttribute("aria-label", "Play");
+  renderSpeed();
+}
+function setSpeed(s){ speed = Math.max(1, Math.min(5, s)); if (!playing) play(); else renderSpeed(); }
+playBtn.addEventListener("click", () => playing ? pause() : play());
+// the speed selector: five chevrons ( › .. ›››››  ), the active level lit; clicking one sets the speed
+SPEEDS.slice(1).forEach((sp, i) => {
+  const b = document.createElement("button");
+  b.className = "chev"; b.textContent = "›";
+  b.setAttribute("data-tip", sp.name); b.setAttribute("aria-label", sp.name);
+  b.onclick = () => setSpeed(i + 1);
   speedBox.appendChild(b);
 });
+updateClock(); renderSpeed();
 
 // ---- legend ----
 const legend=document.getElementById("legend");
@@ -686,6 +712,21 @@ searchInput.addEventListener("keydown", e => {
   else if (e.key === "Enter") { e.preventDefault(); if (searchActive >= 0) pickSearch(searchActive); }
 });
 searchClear.addEventListener("click", () => { searchInput.value = ""; runSearch(""); searchInput.focus(); });
+// ---- camera POV toggle (God / Timeline / Replay <seed>) ----
+const povToggle = document.getElementById("povToggle");
+const replaySeedInput = document.getElementById("replaySeed");
+function setPov(pov){
+  S.pov = pov;
+  povToggle.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.pov === pov));
+  replaySeedInput.hidden = pov !== "replay";     // the seed textbox shows only for Replay
+  if (pov === "replay") replaySeedInput.focus();
+  draw();
+}
+povToggle.querySelectorAll("button").forEach(b =>
+  b.addEventListener("click", () => { if (!b.disabled) setPov(b.dataset.pov); }));
+replaySeedInput.addEventListener("input", () => { S.replaySeed = replaySeedInput.value.trim(); });
+replaySeedInput.addEventListener("keydown", e => { if (e.key === "Enter") replaySeedInput.blur(); });
+
 // ---- plane + overlay toggles ----
 document.querySelectorAll("#planeToggle button").forEach(b =>
   b.addEventListener("click", () => setPlane(b.dataset.plane)));
@@ -704,6 +745,7 @@ export function boot() {
   window.addEventListener("resize", resize);
   resize();
   setT(t0);
+  setPov(S.pov);              // paints the camera-POV toggle (default: God)
   setPlane(S.plane);          // paints the plane toggle
   setOverlay(S.overlay);      // paints the overlay chrome/rail (default: none → plain Overworld)
   // apply the ?p=/#p= deep link AFTER first layout — focusProvince needs a sized VIEW, so calling

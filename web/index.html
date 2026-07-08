@@ -7,12 +7,16 @@
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="stylesheet" href="styles.css">
   <style>
-    /* two centred segmented controls: the map plane (exclusive) + the overlay (one at a time) */
-    #mapControls{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1;display:flex;gap:8px;align-items:center}
-    .segToggle{display:flex;gap:2px;background:rgba(10,14,22,.55);border:1px solid rgba(190,205,230,.16);border-radius:9px;padding:3px}
-    .segToggle button{font:600 11px system-ui,'Segoe UI',sans-serif;letter-spacing:.02em;color:#9fb0c8;background:transparent;border:0;border-radius:6px;padding:5px 12px;cursor:pointer}
+    /* the control groups (POV · plane · overlay) flow in the top bar between the brand and the
+       search/clock; in-flow (not absolutely centred) so they never overlap the right-hand group */
+    #mapControls{display:flex;gap:6px;align-items:center;flex:0 1 auto;min-width:0}
+    .segToggle{display:flex;gap:2px;background:rgba(10,14,22,.55);border:1px solid rgba(190,205,230,.16);border-radius:9px;padding:3px;flex:none}
+    .segToggle button{font:600 11px system-ui,'Segoe UI',sans-serif;letter-spacing:.02em;color:#9fb0c8;background:transparent;border:0;border-radius:6px;padding:5px 10px;cursor:pointer;white-space:nowrap}
     .segToggle button[aria-pressed="true"]{background:rgba(190,205,230,.16);color:#eef2f8}
     .segToggle button:disabled{opacity:.38;cursor:not-allowed}
+    .segToggle .seed-input{width:62px;margin-left:3px;font:600 11px system-ui,'Segoe UI',sans-serif;color:#eef2f8;background:rgba(190,205,230,.10);border:1px solid rgba(190,205,230,.18);border-radius:6px;padding:4px 7px}
+    .segToggle .seed-input::placeholder{color:#6b7688}
+    .segToggle .seed-input[hidden]{display:none}
   </style>
 </head>
 <body>
@@ -23,6 +27,12 @@
       <button class="zoomlvl" id="zoomLevel" data-tip="Reset zoom · re-centre the world map" aria-label="Reset zoom to the world view">1×</button>
 
       <div id="mapControls">
+        <div id="povToggle" class="segToggle" role="group" aria-label="Camera POV">
+          <button data-pov="god" aria-pressed="true" data-tip="Free god-view camera over the world">God</button>
+          <button data-pov="timeline" aria-pressed="false" data-tip="Timeline camera — coming soon" disabled>Timeline</button>
+          <button data-pov="replay" aria-pressed="false" data-tip="Replay a recorded run by its seed">Replay</button>
+          <input id="replaySeed" class="seed-input" type="text" inputmode="numeric" placeholder="seed" aria-label="Replay seed" hidden>
+        </div>
         <div id="planeToggle" class="segToggle" role="group" aria-label="Map plane">
           <button data-plane="overworld" aria-pressed="true" data-tip="Surface world — the physical terrain map">Overworld</button>
           <button data-plane="underworld" aria-pressed="false" data-tip="Subterranean world — coming soon" disabled>Underworld</button>
@@ -51,6 +61,12 @@
           <input type="text" id="search" placeholder="Find a province…" autocomplete="off" spellcheck="false" aria-label="Search provinces">
           <button id="searchClear" class="search-clear" aria-label="Clear search" hidden>&times;</button>
           <div class="search-results" id="searchResults" role="listbox" hidden></div>
+        </div>
+        <!-- EU4-style clock: date/time + play-pause (Space) + speed chevrons -->
+        <div id="clock" role="group" aria-label="Date and playback speed">
+          <button class="playbtn" id="playBtn" data-tip="Play / pause (Space)" aria-label="Play"><svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+          <div class="clk-dt"><span id="cDate" class="clk-date"></span><span id="cTime" class="clk-time mono"></span></div>
+          <div class="clk-speed" id="speed" role="group" aria-label="Speed"></div>
         </div>
       </div>
     </header>
@@ -87,17 +103,6 @@
       <div class="rail" id="rail"></div>
     </aside>
 
-    <!-- persistent bottom bar: the timeline / playback, below the map in all modes -->
-    <footer class="footbar">
-      <div class="transport">
-        <button class="playbtn" id="playBtn" data-tip="Play / pause the migration" aria-label="Play"><svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-        <div class="tl-wrap">
-          <div class="tl-dates"><span id="dLo"></span><span class="datepill mono" id="dNow"></span><span id="dHi"></span></div>
-          <input type="range" class="scrub" id="scrub" min="0" max="1000" value="0" aria-label="Timeline">
-        </div>
-        <div class="speed" id="speed" role="group" aria-label="Playback speed"></div>
-      </div>
-    </footer>
   </div>
 
   <!-- persistent bottom status line: surfaces errors/warnings (and any status message) -->

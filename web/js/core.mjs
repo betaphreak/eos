@@ -171,6 +171,8 @@ export const S = {
   viewVersion: 0,        // per-world-copy cache key derived from baseVersion in draw()
   showHeat: true,
   showCost: false,
+  pov: "god",            // camera POV: "god" (free look) | "timeline" | "replay" (a seed's run)
+  replaySeed: "",        // the seed typed into the Replay textbox
   // the map plane (exclusive base) and the overlay (one at a time), from the URL hash for deep links
   plane: /underworld/.test(location.hash) ? "underworld" : "overworld",
   overlay: /caravan/.test(location.hash) ? "caravan"

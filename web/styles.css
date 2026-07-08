@@ -50,7 +50,7 @@ body {
 .app {
   position: relative; height: 100vh; width: 100%; overflow: hidden;
   --bar-h: 54px;                     /* dedicated top bar height; the map + rail sit below it */
-  --foot-h: 58px;                    /* dedicated bottom bar (timeline) height; the map + rail sit above it */
+  --foot-h: 0px;                     /* no bottom bar — the clock moved to the top bar; map fills down */
 }
 /* ---------- BOTTOM BAR (timeline) ---------- */
 /* a persistent footer strip below the map holding the timeline/playback (all modes), so it never
@@ -69,14 +69,28 @@ body {
    nothing overlays the map. Pinned to the dark palette like the map chrome, regardless of UI theme. */
 .topbar {
   position: absolute; top: 0; left: 0; right: 0; height: var(--bar-h); z-index: 9;
-  display: flex; align-items: center; gap: 14px; padding: 0 16px;
+  display: flex; align-items: center; gap: 10px; padding: 0 14px;
   background: #0d1119; border-bottom: 1px solid #232c3c;
   --panel: #141a26; --panel-2: #1a2130;
   --ink: #e7ecf4; --ink-soft: #9aa6ba; --ink-faint: #6b7688;
   --line: #232c3c; --line-soft: #1b2331; --accent: #e6b04a;
   color: var(--ink);
 }
-.topright { margin-left: auto; display: flex; align-items: center; gap: 8px; }   /* buttons + search, right-aligned */
+.topright { margin-left: auto; display: flex; align-items: center; gap: 8px; }   /* buttons + search + clock, right-aligned */
+/* ---------- CLOCK (EU4-style date/time + play/speed, top-right) ---------- */
+#clock { display: flex; align-items: center; gap: 9px; padding: 3px 9px 3px 4px;
+  border-radius: 10px; background: rgba(10,14,22,.5); border: 1px solid rgba(190,205,230,.12); }
+#clock .playbtn { width: 28px; height: 28px; }
+#clock .playbtn svg { width: 14px; height: 14px; }
+#clock .clk-dt { display: flex; align-items: baseline; gap: 7px; }
+#clock .clk-date { font: 600 12.5px system-ui, 'Segoe UI', sans-serif; color: #eef2f8; letter-spacing: .02em; white-space: nowrap; }
+#clock .clk-time { font-size: 11px; color: #9fb0c8; font-variant-numeric: tabular-nums; }
+#clock .clk-speed { display: flex; gap: 0; transition: opacity .12s; }
+#clock .clk-speed.paused { opacity: .4; }
+#clock .clk-speed .chev { font: 800 14px 'Cascadia Code', ui-monospace, monospace; line-height: 1;
+  color: #3c4658; background: none; border: 0; padding: 0; width: 9px; cursor: pointer; transition: color .1s; }
+#clock .clk-speed .chev.on { color: #e6b04a; }
+#clock .clk-speed .chev:hover { color: #eef2f8; }
 /* ---------- LOADING SCREEN ---------- */
 /* an Anbennar splash shown until the map's first paint. It lives inside .stage so it covers only the
    MAP AREA — the top bar, timeline and rail (all above .stage's z-index:0 context) stay uncovered.
@@ -253,7 +267,7 @@ input[type="range"].scrub::-moz-range-thumb {
 }
 /* province search: a pill in the top bar's right group (flex child, not absolute) */
 .searchbar {
-  position: relative; width: 220px; height: 34px;
+  position: relative; flex: 0 1 200px; min-width: 120px; height: 34px;
   display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 8px;
   border: 1px solid var(--line); background: var(--panel-2);
 }
