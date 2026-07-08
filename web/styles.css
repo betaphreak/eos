@@ -395,10 +395,42 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .zoomctl button:hover { color: var(--ink); }
 .zoomctl button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; }
 
+/* ---------- RESPONSIVE TOP BAR ---------- */
+/* the hamburger that opens the control groups on narrow screens (hidden on wide) */
+.menubtn { display: none; align-items: center; justify-content: center; flex: none;
+  width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--panel-2); color: var(--ink-soft); cursor: pointer; }
+.menubtn:hover { color: var(--ink); }
+.menubtn[aria-expanded="true"] { color: var(--ink); background: var(--panel); }
+
+/* below this width the POV/plane/overlay toggles no longer fit inline — collapse them into a
+   dropdown opened by the hamburger, so they never overlap the search/clock */
+@media (max-width: 1180px) {
+  .menubtn { display: inline-flex; }
+  #mapControls {
+    position: absolute; top: calc(var(--bar-h) - 2px); left: 10px; z-index: 20;
+    flex-direction: column; align-items: stretch; gap: 6px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 8px; box-shadow: var(--shadow); display: none;
+  }
+  body.menu-open #mapControls { display: flex; }
+  #mapControls .segToggle { justify-content: flex-start; }
+}
 @media (max-width: 900px) {
   .railwrap { width: 100%; max-width: 420px; }         /* the overlay panel covers most of a phone screen */
-  .searchbar { width: 150px; }                          /* tighten so the top bar fits a phone */
-  .legend { bottom: 16px; }
+  .legend { bottom: 16px; max-width: 200px; }
+}
+@media (max-width: 720px) {
+  .brand-sep, .brand-b { display: none; }              /* "CivStudio" only */
+  #costBtn { display: none; }                          /* niche dev overlay — hide on small screens */
+  .searchbar { flex-basis: 150px; min-width: 96px; }
+}
+@media (max-width: 520px) {
+  #heatBtn, #themeBtn { display: none !important; }    /* trim to the essentials on phones */
+  .zoomlvl { display: none; }                          /* drop the zoom readout */
+  #clock .clk-time { display: none; }                  /* date only */
+  #clock .playbtn { width: 26px; height: 26px; }
+  .searchbar { min-width: 88px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

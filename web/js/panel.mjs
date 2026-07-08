@@ -727,6 +727,22 @@ povToggle.querySelectorAll("button").forEach(b =>
 replaySeedInput.addEventListener("input", () => { S.replaySeed = replaySeedInput.value.trim(); });
 replaySeedInput.addEventListener("keydown", e => { if (e.key === "Enter") replaySeedInput.blur(); });
 
+// ---- responsive controls menu: the hamburger tucks the toggle groups on narrow screens ----
+const menuBtn = document.getElementById("menuBtn");
+const mapControlsEl = document.getElementById("mapControls");
+if (menuBtn) {
+  menuBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    const open = document.body.classList.toggle("menu-open");
+    menuBtn.setAttribute("aria-expanded", open);
+  });
+  document.addEventListener("click", e => {          // click outside the dropdown closes it
+    if (!document.body.classList.contains("menu-open")) return;
+    if (mapControlsEl.contains(e.target) || menuBtn.contains(e.target)) return;
+    document.body.classList.remove("menu-open"); menuBtn.setAttribute("aria-expanded", "false");
+  });
+}
+
 // ---- plane + overlay toggles ----
 document.querySelectorAll("#planeToggle button").forEach(b =>
   b.addEventListener("click", () => setPlane(b.dataset.plane)));
