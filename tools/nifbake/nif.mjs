@@ -1,0 +1,342 @@
+// Minimal NIF (Gamebryo) reader for Civ4 feature models — version 20.0.0.4, userVer 0.
+// Parses the block stream sequentially (there is no per-block size array in this version,
+// so every block type present must be parsed byte-exactly). It extracts what a 2D
+// billboard render needs: NiNode transforms, NiTriShape geometry refs, and the vertex /
+// UV / triangle arrays in NiTriShapeData. Correctness is validated by landing exactly on
+// the file footer. See tools/nifbake/README once this is wired.
+import fs from 'node:fs';
+
+class Reader {
+  constructor(buf) { this.b = buf; this.o = 0; }
+  u8() { return this.b[this.o++]; }
+  bool() { return this.b[this.o++] !== 0; }
+  u16() { const v = this.b.readUInt16LE(this.o); this.o += 2; return v; }
+  u32() { const v = this.b.readUInt32LE(this.o); this.o += 4; return v; }
+  i32() { const v = this.b.readInt32LE(this.o); this.o += 4; return v; }
+  f32() { const v = this.b.readFloatLE(this.o); this.o += 4; return v; }
+  vec3() { return [this.f32(), this.f32(), this.f32()]; }
+  mat33() { const m = []; for (let i = 0; i < 9; i++) m.push(this.f32()); return m; }
+  str() { const n = this.u32(); const s = this.b.toString('latin1', this.o, this.o + n); this.o += n; return s; }
+  refs(n) { const a = []; for (let i = 0; i < n; i++) a.push(this.i32()); return a; }
+}
+
+// --- common bases (20.0.0.4, userVer 0) ---
+function niObjectNET(r) {
+  const name = r.str();
+  const numExtra = r.u32(); r.refs(numExtra);   // Extra Data List
+  r.i32();                                       // Controller ref
+  return { name };
+}
+function niAVObject(r) {
+  const base = niObjectNET(r);
+  const flags = r.u16();
+  const translation = r.vec3();
+  const rotation = r.mat33();
+  const scale = r.f32();
+  const numProps = r.u32(); const props = r.refs(numProps);
+  const collision = r.i32();                      // >= 10.0.1.0
+  return { ...base, flags, translation, rotation, scale, props, collision };
+}
+
+// --- block bodies ---
+function niNode(r) {
+  const av = niAVObject(r);
+  const numChildren = r.u32(); const children = r.refs(numChildren);
+  const numEffects = r.u32(); r.refs(numEffects);
+  return { kind: 'NiNode', ...av, children };
+}
+function niTriShape(r) {
+  const av = niAVObject(r);
+  const data = r.i32();                           // NiGeometryData ref
+  r.i32();                                         // Skin Instance ref
+  const numMaterials = r.u32();
+  for (let i = 0; i < numMaterials; i++) r.str();  // Material Names
+  for (let i = 0; i < numMaterials; i++) r.i32();  // Material Extra Data
+  r.i32();                                          // Active Material
+  const hasShader = r.bool();
+  if (hasShader) { r.str(); r.i32(); }             // Shader Name + Unknown Integer
+  return { kind: 'NiTriShape', ...av, data };
+}
+// NiGeometryData — vertices / normals / UVs, shared by NiTriShapeData and NiTriStripsData
+function niGeometryData(r) {
+  r.i32();                                          // Group ID (>=10.1.0.0)
+  const numVertices = r.u16();
+  r.u8(); r.u8();                                  // Keep Flags, Compress Flags (>=10.1.0.0)
+  const hasVertices = r.bool();
+  const vertices = [];
+  if (hasVertices) for (let i = 0; i < numVertices; i++) vertices.push(r.vec3());
+  const vectorFlags = r.u16();                     // BS Vector Flags (>=10.0.1.0): bits 0-5 = #UV sets, bit 12 = tangents
+  const hasNormals = r.bool();
+  if (hasNormals) for (let i = 0; i < numVertices; i++) r.vec3();
+  if (hasNormals && (vectorFlags & 4096))          // tangents + bitangents
+    for (let i = 0; i < numVertices * 2; i++) r.vec3();
+  r.vec3(); r.f32();                               // Center, Radius
+  const hasColors = r.bool();
+  if (hasColors) for (let i = 0; i < numVertices; i++) { r.f32(); r.f32(); r.f32(); r.f32(); }
+  const numUV = vectorFlags & 63;                  // UV set count (no separate Has UV field at 20.0.0.4)
+  const uvs = [];
+  for (let s = 0; s < numUV; s++) {
+    const set = [];
+    for (let i = 0; i < numVertices; i++) set.push([r.f32(), r.f32()]);
+    if (s === 0) uvs.push(...set);
+  }
+  r.u16();                                          // Consistency Flags
+  r.i32();                                          // Additional Data ref (>=20.0.0.4)
+  return { numVertices, vertices, uvs };
+}
+function niTriShapeData(r) {
+  const g = niGeometryData(r);
+  const numTriangles = r.u16();
+  r.u32();                                          // Num Triangle Points
+  const hasTriangles = r.bool();
+  const triangles = [];
+  if (hasTriangles) for (let i = 0; i < numTriangles; i++) triangles.push([r.u16(), r.u16(), r.u16()]);
+  const numMatch = r.u16();
+  for (let i = 0; i < numMatch; i++) { const n = r.u16(); for (let j = 0; j < n; j++) r.u16(); }
+  return { kind: 'NiTriShapeData', ...g, triangles };
+}
+function niTriStripsData(r) {
+  const g = niGeometryData(r);
+  r.u16();                                          // Num Triangles
+  const numStrips = r.u16();
+  const lengths = []; for (let i = 0; i < numStrips; i++) lengths.push(r.u16());
+  const hasPoints = r.bool();
+  const triangles = [];
+  if (hasPoints) for (let s = 0; s < numStrips; s++) {
+    const strip = []; for (let i = 0; i < lengths[s]; i++) strip.push(r.u16());
+    for (let i = 0; i < strip.length - 2; i++) {          // strip → triangle list
+      const a = strip[i], b = strip[i + 1], c = strip[i + 2];
+      if (a === b || b === c || a === c) continue;         // degenerate
+      triangles.push(i & 1 ? [a, c, b] : [a, b, c]);       // flip winding on odd
+    }
+  }
+  return { kind: 'NiTriShapeData', ...g, triangles };       // report as data with a triangle list
+}
+function niTexturingProperty(r) {
+  niObjectNET(r);
+  r.u16();                                          // Flags
+  r.u32();                                          // Apply Mode
+  const texCount = r.u32();                         // Texture Count
+  // parse each texture desc; we only need to advance. Base Texture is index 0.
+  for (let i = 0; i < texCount; i++) {
+    const hasTex = r.bool();
+    if (hasTex) {
+      r.i32();                                       // Source ref (NiSourceTexture)
+      r.u32();                                       // Clamp Mode
+      r.u32();                                       // Filter Mode
+      r.u32();                                       // UV Set
+      // (has texture transform) bool + transform — present >=10.1.0.0
+      const hasTransform = r.bool();
+      if (hasTransform) { r.f32(); r.f32(); r.f32(); r.f32(); r.f32(); r.u32(); r.f32(); r.f32(); }
+    }
+    // Shader textures (index >= base set) may carry a Shader map index; Civ4 base props
+    // usually have small texCount (<=7). If desync appears, refine here.
+  }
+  return { kind: 'NiTexturingProperty' };
+}
+function niSourceTexture(r) {
+  niObjectNET(r);
+  const useExternal = r.u8();
+  let file = null;
+  if (useExternal === 1) { file = r.str(); r.i32(); }  // File Name + Unknown Ref
+  else { r.bool(); r.i32(); }                           // (internal) — rare for Civ4
+  r.u32();                                               // Pixel Layout
+  r.u32();                                               // Use Mipmaps
+  r.u32();                                               // Alpha Format
+  r.bool();                                              // Is Static
+  r.bool();                                              // Direct Render (>=20.0.0.4)
+  return { kind: 'NiSourceTexture', file };
+}
+function niMaterialProperty(r) {
+  niObjectNET(r);
+  r.u16();                                          // Flags
+  r.vec3(); r.vec3(); r.vec3(); r.vec3();           // Ambient, Diffuse, Specular, Emissive
+  r.f32(); r.f32();                                 // Glossiness, Alpha
+  return { kind: 'NiMaterialProperty' };
+}
+function niAlphaProperty(r) { niObjectNET(r); r.u16(); r.u8(); return { kind: 'NiAlphaProperty' }; }
+function niSpecularProperty(r) { niObjectNET(r); r.u16(); return { kind: 'NiSpecularProperty' }; }
+function niStencilProperty(r) { niObjectNET(r); r.u16(); r.u8(); r.u32(); r.u32(); r.u32(); r.u32(); r.u32(); return { kind: 'NiStencilProperty' }; }
+function niCollisionData(r) {
+  niAVObject(r);
+  r.u32(); r.u32(); const hasBV = r.bool();        // Propagation Mode, Collision Mode, Has Bounding Volume
+  if (hasBV) { const t = r.u32(); skipBoundingVolume(r, t); }
+  return { kind: 'NiCollisionData' };
+}
+function skipBoundingVolume(r, t) {
+  if (t === 0) { r.vec3(); r.f32(); }                          // sphere
+  else if (t === 1) { r.vec3(); r.mat33(); r.f32(); r.f32(); r.f32(); } // box
+  else if (t === 5) { r.vec3(); r.vec3(); r.f32(); }           // half-space
+  // other types unlikely for Civ4 features
+}
+
+function niStringExtraData(r) { const name = r.str(); r.str(); return { kind: 'NiStringExtraData', name }; }
+function niVertexColorProperty(r) { niObjectNET(r); r.u16(); r.u32(); r.u32(); return { kind: 'NiVertexColorProperty' }; }
+
+const PARSERS = {
+  NiNode: niNode, NiTriShape: niTriShape, NiTriShapeData: niTriShapeData,
+  NiTriStrips: niTriShape, NiTriStripsData: niTriStripsData,
+  NiTexturingProperty: niTexturingProperty, NiSourceTexture: niSourceTexture,
+  NiMaterialProperty: niMaterialProperty, NiAlphaProperty: niAlphaProperty,
+  NiSpecularProperty: niSpecularProperty, NiStencilProperty: niStencilProperty,
+  NiCollisionData: niCollisionData, NiStringExtraData: niStringExtraData,
+  NiVertexColorProperty: niVertexColorProperty,
+};
+
+export function parseNif(buf, debug = false, lenient = false) {
+  const r = new Reader(buf);
+  while (r.b[r.o] !== 0x0A) r.o++;
+  const header = r.b.toString('latin1', 0, r.o); r.o++;
+  const version = r.u32(); const endian = r.u8(); const userVer = r.u32();
+  const numBlocks = r.u32();
+  const numTypes = r.u16();
+  const types = []; for (let i = 0; i < numTypes; i++) types.push(r.str());
+  const typeIdx = []; for (let i = 0; i < numBlocks; i++) typeIdx.push(r.u16() & 0x7fff);
+  r.u32();   // trailing header field (num groups = 0 in these Civ4 20.0.0.4 exports)
+
+  // Only the scene graph + geometry need exact parsing; every other block type
+  // (materials, textures, collision, extra data — whose Gamebryo 20.0.0.4 layouts are
+  // fiddly and irrelevant to a billboard) is a "gap". A run of consecutive gap blocks is
+  // skipped in one brute-force resync: find the byte offset at which the next must-parse
+  // block — and thus the whole tail to EOF — parses cleanly. The full-tail check makes a
+  // wrong offset astronomically unlikely, so the first hit is the real boundary.
+  const MUSTPARSE = new Set(['NiNode', 'NiTriShape', 'NiTriShapeData', 'NiTriStrips', 'NiTriStripsData']);
+
+  // strong per-block sanity — a wrong resync offset almost never yields a block whose
+  // counts, indices and refs are all in range, so this locates real boundaries without
+  // the exponential cost of validating the whole tail.
+  function sane(type, b) {
+    if (!b) return false;
+    if (type === 'NiTriShapeData' || type === 'NiTriStripsData')
+      return b.numVertices >= 3 && b.numVertices < 20000 && b.vertices.length === b.numVertices
+        && b.triangles.length > 0 && b.uvs.length === b.numVertices
+        && b.triangles.every(t => t[0] < b.numVertices && t[1] < b.numVertices && t[2] < b.numVertices)
+        && b.uvs.every(u => u[0] > -2 && u[0] < 3 && u[1] > -2 && u[1] < 3);
+    // NiNode / NiTriShape: printable name, refs & transform in range
+    const printable = [...(b.name || '')].every(c => c.charCodeAt(0) >= 32 && c.charCodeAt(0) < 127);
+    const refsOk = (b.props || []).concat(b.children || []).every(x => x >= -1 && x < numBlocks);
+    const scaleOk = b.scale > 0.0001 && b.scale < 100000;
+    const dataOk = (type !== 'NiTriShape' && type !== 'NiTriStrips') || (b.data >= 0 && b.data < numBlocks);
+    return printable && refsOk && scaleOk && dataOk;
+  }
+
+  function parseFrom(reader, from, sink) {
+    for (let i = from; i < numBlocks;) {
+      const type = types[typeIdx[i]];
+      if (!MUSTPARSE.has(type)) {
+        let j = i; while (j < numBlocks && !MUSTPARSE.has(types[typeIdx[j]])) j++;  // end of gap run
+        const start = reader.o;
+        let found = -1;
+        for (let n = start + 4; n <= start + 8192 && n <= buf.length; n++) {
+          const probe = new Reader(buf); probe.o = n;
+          try {
+            if (j >= numBlocks) { if (footer(probe)) { found = n; break; } }
+            else { const b = PARSERS[types[typeIdx[j]]](probe); if (sane(types[typeIdx[j]], b)) { found = n; break; } }
+          } catch { /* keep scanning */ }
+        }
+        if (found < 0) throw new Error(`resync failed skipping gap blocks ${i}..${j - 1} at ${start}`);
+        if (sink) for (let k = i; k < j; k++) sink[k] = { kind: types[typeIdx[k]], gap: true };
+        reader.o = found;
+        i = j;
+        continue;
+      }
+      const start = reader.o;
+      const blk = PARSERS[type](reader);
+      if (sink && debug) console.error(`  #${i} ${type} [${start}..${reader.o}] name=${JSON.stringify(blk.name || '')}${blk.numVertices ? ` verts=${blk.numVertices} tris=${blk.triangles ? blk.triangles.length : '?'}` : ''}`);
+      if (sink) sink[i] = blk;
+      i++;
+    }
+    return footer(reader);
+  }
+  function footer(reader) {
+    const numRoots = reader.u32();
+    if (numRoots > 1000) throw new Error('bad footer');
+    for (let i = 0; i < numRoots; i++) reader.i32();
+    return reader.o === buf.length;
+  }
+
+  const blocks = [];
+  try {
+    if (!parseFrom(r, 0, blocks) && !lenient)
+      throw new Error(`parse desync: did not land on EOF (${buf.length})`);
+  } catch (e) {
+    // lenient: a tail block (often an animated/rarely-used mesh) can desync; keep the
+    // geometry parsed so far, which is all the renderer needs
+    if (!lenient || !blocks.some(b => b && b.kind === 'NiTriShapeData')) throw e;
+  }
+  if (debug) blocks.forEach((b, i) => console.error(`#${i} ${types[typeIdx[i]]} name=${JSON.stringify(b && b.name || '')}${b && b.resyncTo ? ` (resync ${b.resyncFrom}->${b.resyncTo})` : ''}`));
+  return { header, version, userVer, blocks, roots: [] };
+}
+
+// debug: NIF_SCANDATA="from:to" scans for a plausible NiTriShapeData start (sane vertex
+// and triangle counts, in-range indices, UVs in [-1,2]) and prints its parsed extent
+if (process.env.NIF_SCANDATA && process.argv[1] && /nif\.mjs$/.test(process.argv[1])) {
+  const [from, to] = process.env.NIF_SCANDATA.split(':').map(Number);
+  const buf = fs.readFileSync(process.argv[2]);
+  for (let n = from; n < to; n++) {
+    try {
+      const r = new Reader(buf); r.o = n;
+      const d = niTriShapeData(r);
+      if (d.numVertices < 3 || d.numVertices > 20000) continue;
+      if (!d.vertices.length || !d.triangles.length) continue;
+      if (d.uvs.length !== d.numVertices) continue;
+      if (!d.triangles.every(t => t[0] < d.numVertices && t[1] < d.numVertices && t[2] < d.numVertices)) continue;
+      const uvok = d.uvs.every(u => u[0] > -2 && u[0] < 3 && u[1] > -2 && u[1] < 3);
+      if (!uvok) continue;
+      console.error(`data @${n}: verts=${d.numVertices} tris=${d.triangles.length} end=${r.o}`);
+    } catch { /* keep scanning */ }
+  }
+  process.exit(0);
+}
+
+// debug: NIF_SCAN="from:to" scans that offset range for a plausible NiTriShape start
+// (printable name, small property count, valid data ref) to locate a real block boundary
+if (process.env.NIF_SCAN && process.argv[1] && /nif\.mjs$/.test(process.argv[1])) {
+  const [from, to] = process.env.NIF_SCAN.split(':').map(Number);
+  const buf = fs.readFileSync(process.argv[2]);
+  for (let n = from; n < to; n++) {
+    try {
+      const r = new Reader(buf); r.o = n;
+      const nameLen = r.u32(); if (nameLen > 40) continue;
+      const name = buf.toString('latin1', r.o, r.o + nameLen); r.o += nameLen;
+      if (![...name].every(c => c.charCodeAt(0) >= 32 && c.charCodeAt(0) < 127)) continue;
+      const numExtra = r.u32(); if (numExtra > 8) continue; r.refs(numExtra);
+      const ctrl = r.i32(); if (ctrl < -1 || ctrl > 100) continue;
+      const flags = r.u16();
+      const tr = r.vec3(), rot = r.mat33(), sc = r.f32();
+      if (!(sc > 0.001 && sc < 1000)) continue;
+      const numProps = r.u32(); if (numProps > 16) continue; r.refs(numProps);
+      const coll = r.i32(); if (coll < -1 || coll > 100) continue;
+      const data = r.i32(); if (data < 0 || data > 100) continue;
+      console.error(`candidate @${n}: name=${JSON.stringify(name)} numProps=${numProps} dataRef=${data} scale=${sc.toFixed(3)} tr=[${tr.map(x=>x.toFixed(1))}]`);
+    } catch { /* keep scanning */ }
+  }
+  process.exit(0);
+}
+
+// debug: NIF_FROM="index:offset" parses only the tail from a known block start with no
+// error-catching, so a downstream parser bug shows exactly where it desyncs
+if (process.env.NIF_FROM && process.argv[1] && /nif\.mjs$/.test(process.argv[1])) {
+  const [idx, off] = process.env.NIF_FROM.split(':').map(Number);
+  const buf = fs.readFileSync(process.argv[2]);
+  // rebuild header context minimally
+  let o = 0; while (buf[o] !== 0x0A) o++; o++; o += 9; const numBlocks = buf.readUInt32LE(o); o += 4;
+  const numTypes = buf.readUInt16LE(o); o += 2; const types = [];
+  for (let i = 0; i < numTypes; i++) { const n = buf.readUInt32LE(o); o += 4; types.push(buf.toString('latin1', o, o + n)); o += n; }
+  const typeIdx = []; for (let i = 0; i < numBlocks; i++) { typeIdx.push(buf.readUInt16LE(o) & 0x7fff); o += 2; }
+  const r = new Reader(buf); r.o = off;
+  for (let i = idx; i < numBlocks; i++) {
+    const t = types[typeIdx[i]]; const start = r.o;
+    const b = PARSERS[t](r);
+    console.error(`#${i} ${t} [${start}..${r.o}] name=${JSON.stringify(b && b.name || '')}`);
+  }
+  const nr = r.u32(); for (let i = 0; i < nr; i++) r.i32();
+  console.error(`footer end=${r.o} len=${buf.length} clean=${r.o === buf.length}`);
+  process.exit(0);
+}
+
+if (process.argv[1] && /nif\.mjs$/.test(process.argv[1]) && process.argv[2]) {
+  const res = parseNif(fs.readFileSync(process.argv[2]), true);
+  const shapes = res.blocks.filter(b => b.kind === 'NiTriShapeData');
+  console.error(`OK: ${res.blocks.length} blocks; ${shapes.length} trishape-data; verts ${shapes.map(s => s.numVertices)}`);
+}

@@ -21,6 +21,7 @@ import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { decodeDds } from './dds.mjs';
 import { decodeTga } from './tga.mjs';
+import { bakeNifGroup } from '../tools/nifbake/render.mjs';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(WEB, '..');
@@ -628,16 +629,30 @@ function bakeIceTile() {
 // skipped), and pack the chosen cutouts into one horizontal RGBA strip. Returns {group:{src,w,h,sprites:
 // [[x,y,w,h]...]}} keyed by feature group, or null when the art is absent (procedural blobs stay).
 function bakeFeatureSprites() {
+  // billboard-imposter (*_1024.dds) atlases the connected-component extractor handles
   const groups = {
-    leafy: 'Art/Terrain/features/treeleafy/trees_1024.dds',   // FOREST / JUNGLE
-    palm:  'Art/Terrain/features/savanna/palms_1024.dds',     // SAVANNA / OASIS
-    swamp: 'Art/Terrain/features/swamp/trees1.dds',           // SWAMP
+    leafy:  'Art/Terrain/features/treeleafy/trees_1024.dds',   // FOREST / JUNGLE
+    palm:   'Art/Terrain/features/savanna/palms_1024.dds',     // SAVANNA / OASIS
+    swamp:  'Art/Terrain/features/swamp/trees1.dds',           // SWAMP
+    bamboo: 'Art/Terrain/features/bamboo/bambooattachments.dds', // BAMBOO (leaf-cluster atlas)
   };
   const out = {};
   for (const [name, art] of Object.entries(groups)) {
     const g = bakeSpriteGroup(art, name);
     if (g) out[name] = g;
   }
+  // Cactus and very-tall-grass are 3D-model-only (no billboard atlas), so render their
+  // Civ4 .nif models to sprite sheets via tools/nifbake (see docs/features-art.md).
+  const nif = (rel, tex, name, opts) => {
+    const nifPath = resolveArt('Art/Terrain/features/' + rel), texPath = resolveArt('Art/Terrain/features/' + tex);
+    if (!nifPath || !texPath) return;
+    try {
+      const g = bakeNifGroup([{ nif: nifPath, tex: texPath }], name, path.join(WEB, 'assets'), opts.size, opts);
+      if (g) out[name] = g;
+    } catch (e) { console.log(`  ${name}: nif render skipped (${e.message})`); }
+  };
+  nif('kaktus/kaktus2.nif', 'kaktus/cactus01.dds', 'cactus', { size: 220 });
+  nif('sword_grass/wheat.nif', 'sword_grass/sword_grass.dds', 'grass', { size: 200, flat: 'low' });
   return Object.keys(out).length ? out : null;
 }
 function bakeSpriteGroup(artPath, name) {

@@ -6,20 +6,33 @@ actually places.
 
 ## Which features are rendered
 
-The Java terrain generator (`FeatureGenerator`, `ProvincePlotField`, `MapTerrainCodec.treeFeatureKey`/
-`terrainFeatureKey`) only ever places this set — everything else in the `FeatureExporter` registry
-(`FOREST_ANCIENT`, `BAMBOO`, `VERY_TALL_GRASS`) is **defined but never generated**, so it isn't worth art:
+The Java terrain generator (`FeatureGenerator`, `ProvincePlotField`, `MapTerrainCodec`) places all of the
+set below — including `CACTUS`, `BAMBOO` and `VERY_TALL_GRASS`, which the C2C `addFeatures` port now
+generates (see `c2c-generator-port.md`). Every one either has a real Civ4 sprite atlas or is left as bare
+terrain; there are **no procedural stand-ins** — a feature with no atlas simply draws no foliage:
 
 | Feature | Sprite group | Source atlas |
 |---|---|---|
-| `FEATURE_FOREST` | `leafy` | `treeleafy/trees_1024.dds` |
+| `FEATURE_FOREST` / `FEATURE_FOREST_ANCIENT` | `leafy` | `treeleafy/trees_1024.dds` |
 | `FEATURE_JUNGLE` | `leafy` (denser) | `treeleafy/trees_1024.dds` (no dedicated jungle sheet) |
 | `FEATURE_SAVANNA` | `palm` | `savanna/palms_1024.dds` |
-| `FEATURE_OASIS` | `palm` + water pool | `savanna/palms_1024.dds` |
+| `FEATURE_OASIS` | `palm` | `savanna/palms_1024.dds` |
 | `FEATURE_SWAMP` | `swamp` | `swamp/trees1.dds` |
-| `FEATURE_CACTUS` | — (procedural) | no cactus art exists in the tree set |
+| `FEATURE_BAMBOO` | `bamboo` | `bamboo/bambooattachments.dds` (leaf-cluster atlas) |
+| `FEATURE_CACTUS` | `cactus` | **`kaktus/kaktus2.nif` rendered** (`tools/nifbake`) — no billboard atlas exists |
+| `FEATURE_VERY_TALL_GRASS` | `grass` | **`sword_grass/wheat.nif` rendered** (`tools/nifbake`) |
 | `FEATURE_FLOOD_PLAINS` | — | a ground quality, not foliage |
 | `FEATURE_ICE` | (its own path) | `features/icepack` — see `coastlines.md` |
+
+## Rendering 3D-model-only features — `tools/nifbake`
+
+Cactus and very-tall-grass have no `*_1024.dds` billboard imposter in the Civ4 art — they exist only as 3D
+`.nif` models. `tools/nifbake` bakes them into sprite sheets at build time: `nif.mjs` is a focused
+Gamebryo **20.0.0.4** reader (it parses the scene graph + `NiTriShape`/`NiTriStrips` geometry exactly and
+skips every other block type by a resync that lands on the next must-parse block), and `render.mjs`
+software-rasterizes the textured triangles in an orthographic front view (Z up), drops near-horizontal
+ground planes, and extracts each plant as a sprite via the same connected-component packing the `*_1024`
+atlases use. `web/build.mjs` calls `bakeNifGroup` for the cactus/grass groups.
 
 The atlases were moved out of the LFS `UnpackedArt/` tree into non-LFS `data/civ4/assets/terrain/features/`
 so the build needs no `git lfs pull` (same as the icepack/wave-crest assets).
@@ -42,6 +55,7 @@ background, UV-mapped by their `.nif` (no clean grid, so an even slice won't wor
 
 Each vegetated plot stamps **N deterministic sprites** (count/scale per `treeGroupFor` — jungle densest,
 savanna sparsest), positions jittered by the plot's hash RNG, drawn back-to-front for natural overlap,
-sized to the plot. Falls back to the procedural blobs when an atlas is absent or hasn't loaded yet — and a
+sized to the plot. A feature whose atlas is absent or hasn't loaded yet draws **no foliage** (the terrain
+shows through) — the old procedural blobs were removed once every generated feature had real art. A
 late-loading atlas invalidates the cached province texture canvases (the sprites are baked into them). The
 atlas images load like the other baked assets (`treeImg`/`treeReady`).

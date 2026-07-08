@@ -277,9 +277,10 @@ function buildPlotTexCanvas(p) {
 // provinces are in view. Categories (colour + shape): sea food, gems/luxuries, energy, metals,
 // farm/trade crops, livestock.
 const BONUS_HIDE_AT = 16;       // no resource icons at this zoom or below (textures only just appear)
-const BONUS_PLOTS = 1.32;       // icon size in PLOTS (≈21px at 64× on desktop). Sized off the on-screen
-                                // plot size, not absolute px, so it scales with the terrain on any
-                                // viewport — fixes mobile pinch, where a fixed-px icon covered too many plots.
+const BONUS_PLOTS = 0.66;       // icon size in PLOTS (≈0.66 of a plot). Sized off the on-screen plot size,
+                                // not absolute px, so it scales with the terrain on any viewport — fixes
+                                // mobile pinch, where a fixed-px icon covered too many plots. Kept small so
+                                // resources don't crowd the deep (256×) city-building zoom.
 function drawBonusOverlay(vis) {
   if (cam.k <= BONUS_HIDE_AT || !vis.length) return;
   const plotPx = pxr(1) - pxr(0);                      // one plot's on-screen size (tracks zoom AND viewport)
@@ -505,16 +506,19 @@ function drawRiver(o, cx, cy, s, q, grid, pat) {
 }
 // small deterministic RNG seeded by a plot's coords, so feature sprites are stable
 function mkRng(seed) { let s = seed >>> 0 || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
-// draw a procedural 2D sprite for a plot's Civ4 feature into cell (cx,cy) of size s.
-// (The real feature art is 3D .nif — pre-rendering it to sprites is a later toolchain;
-// these keyed vector marks read cleanly on the 2D map and cover the features in play.)
-// feature → foliage sprite group + density/scale; null for features with no atlas (CACTUS) or none
+// feature → real Civ4 foliage sprite atlas + density/scale, or null for a feature with no
+// atlas (drawn as bare terrain). CACTUS and VERY_TALL_GRASS have no billboard imposter in
+// the Civ4 art, so tools/nifbake renders their 3D .nif models to sprite sheets at build
+// time (docs/features-art.md); the rest come from the *_1024.dds billboards.
 function treeGroupFor(feature) {
-  if (/JUNGLE|RAINFOREST/.test(feature))         return { key: "leafy", lo: 3, hi: 5, scale: 0.60 };  // dense
-  if (/SWAMP|BOG|MARSH|WETLAND/.test(feature))   return { key: "swamp", lo: 2, hi: 3, scale: 0.44 };
-  if (/SAVANNA/.test(feature))                   return { key: "palm",  lo: 1, hi: 2, scale: 0.6 };   // sparse
-  if (/OASIS/.test(feature))                     return { key: "palm",  lo: 1, hi: 2, scale: 0.55 };
-  if (/FOREST|WOOD|TAIGA|MANGROVE/.test(feature)) return { key: "leafy", lo: 2, hi: 4, scale: 0.55 };
+  if (/JUNGLE|RAINFOREST/.test(feature))         return { key: "leafy",  lo: 3, hi: 5, scale: 0.60 };  // dense
+  if (/SWAMP|BOG|MARSH|WETLAND/.test(feature))   return { key: "swamp",  lo: 2, hi: 3, scale: 0.44 };
+  if (/SAVANNA/.test(feature))                   return { key: "palm",   lo: 1, hi: 2, scale: 0.6 };   // sparse
+  if (/OASIS/.test(feature))                     return { key: "palm",   lo: 1, hi: 2, scale: 0.55 };
+  if (/CACTUS|KAKTUS/.test(feature))             return { key: "cactus", lo: 1, hi: 2, scale: 0.55 };  // real Civ4 cactus (nif)
+  if (/BAMBOO/.test(feature))                    return { key: "bamboo", lo: 2, hi: 3, scale: 0.55 };
+  if (/VERY_TALL_GRASS|SWORD_GRASS|TALL_GRASS/.test(feature)) return { key: "grass", lo: 2, hi: 3, scale: 0.5 };
+  if (/FOREST|WOOD|TAIGA|MANGROVE/.test(feature)) return { key: "leafy",  lo: 2, hi: 4, scale: 0.55 };
   return null;
 }
 // stamp real Civ4 tree cutouts into a plot: N sprites at jittered positions, back-to-front, each sized
@@ -533,34 +537,13 @@ function stampTrees(o, cx, cy, s, g, rng) {
   return true;
 }
 function featureSprite(o, cx, cy, s, feature, sx, sy) {
-  const rng = mkRng((sx * 73856093) ^ (sy * 19349663));
-  if (/OASIS/.test(feature)) { o.fillStyle = "#2f6f8a"; o.beginPath(); o.arc(cx + s * 0.52, cy + s * 0.58, s * 0.19, 0, 7); o.fill(); }  // water pool under the palms
+  // every feature is now a real baked Civ4 sprite atlas (foliage or nif-rendered) or
+  // nothing — the procedural vector stand-ins were removed once cactus/bamboo/grass got
+  // real art. A feature with no atlas (e.g. FLOOD_PLAINS, a ground quality) draws no
+  // foliage; the plot's terrain shows through.
   const g = treeGroupFor(feature);
-  if (g && stampTrees(o, cx, cy, s, g, rng)) return;    // real foliage sprites
-  // --- procedural fallback: art absent / not yet loaded, or CACTUS (no atlas) ---
-  const trees = (col, shadow, count, rad) => {
-    for (let i = 0; i < count; i++) {
-      const px = cx + s * (0.18 + 0.64 * rng()), py = cy + s * (0.24 + 0.58 * rng()), r = s * rad * (0.8 + 0.5 * rng());
-      o.fillStyle = shadow; o.beginPath(); o.arc(px + r * 0.28, py + r * 0.5, r, 0, 7); o.fill();
-      o.fillStyle = col; o.beginPath(); o.arc(px, py, r, 0, 7); o.fill();
-    }
-  };
-  if (/JUNGLE|RAINFOREST/.test(feature)) trees("#274a18", "rgba(8,16,6,.38)", 3 + (rng() * 2 | 0), 0.18);
-  else if (/FOREST|WOOD|MANGROVE|TAIGA/.test(feature)) trees("#345320", "rgba(8,16,6,.32)", 2 + (rng() * 2 | 0), 0.155);
-  else if (/SWAMP|BOG|MARSH|WETLAND/.test(feature)) {
-    o.strokeStyle = "#66743c"; o.lineWidth = Math.max(1, s * 0.045); o.lineCap = "round";
-    for (let i = 0; i < 3; i++) { const px = cx + s * (0.24 + 0.52 * rng()), py = cy + s * 0.72; o.beginPath(); o.moveTo(px, py); o.lineTo(px + s * 0.05 * (rng() - 0.5), py - s * (0.22 + 0.16 * rng())); o.stroke(); }
-  }
-  else if (/CACTUS|KAKTUS/.test(feature)) {
-    o.strokeStyle = "#5a7a44"; o.lineWidth = Math.max(1.2, s * 0.075); o.lineCap = "round"; o.lineJoin = "round";
-    const px = cx + s * (0.34 + 0.3 * rng()), py = cy + s * 0.76, hgt = s * (0.34 + 0.16 * rng());
-    o.beginPath(); o.moveTo(px, py); o.lineTo(px, py - hgt);
-    o.moveTo(px, py - hgt * 0.55); o.lineTo(px + s * 0.13, py - hgt * 0.55); o.lineTo(px + s * 0.13, py - hgt * 0.82); o.stroke();
-  }
-  else if (/OASIS/.test(feature)) { trees("#2e6a2a", "rgba(0,0,0,.3)", 1, 0.14); }   // pool already drawn above
-  else if (/SAVANNA/.test(feature)) {
-    if (rng() > 0.45) { o.fillStyle = "#556a30"; o.beginPath(); o.arc(cx + s * 0.5, cy + s * 0.4, s * 0.17, 0, 7); o.fill(); o.strokeStyle = "#3a3020"; o.lineWidth = Math.max(1, s * 0.035); o.beginPath(); o.moveTo(cx + s * 0.5, cy + s * 0.5); o.lineTo(cx + s * 0.5, cy + s * 0.74); o.stroke(); }
-  }
-  // FLOOD_PLAINS: a ground quality, not foliage — left as terrain
+  if (!g) return;
+  const rng = mkRng((sx * 73856093) ^ (sy * 19349663));
+  stampTrees(o, cx, cy, s, g, rng);              // real foliage sprites; nothing if not yet loaded
 }
 export { drawPlots, drawCostOverlay, loadPlots };
