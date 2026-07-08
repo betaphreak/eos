@@ -86,10 +86,15 @@ function viewportCoverage() {
 }
 
 // rebuild the legend a beat after the camera settles (called from main.draw on every paint); the
-// timer resets while panning so the (DOM-heavy) rebuild runs once movement stops
-let legendTimer = 0;
+// timer resets while panning so the (DOM-heavy) rebuild runs once movement stops. Gated on
+// baseVersion: the ledger's rows depend only on the VIEWPORT (which polities are visible), so a
+// redraw that didn't move the camera — e.g. spotlighting a row on hover — must NOT rebuild the DOM.
+// Rebuilding under the cursor re-fires the row's mouseleave/mouseenter, which draw()s again, which
+// would reschedule this — the runaway redraw loop this guard breaks.
+let legendTimer = 0, legendVersion = -1;
 export function scheduleLegendRefresh() {
   if (!isPolitical() || polLegend.hidden) return;
+  if (S.baseVersion === legendVersion) return;   // viewport unchanged since the last build → nothing to redo
   clearTimeout(legendTimer);
   legendTimer = setTimeout(renderPolLegend, 140);
 }
@@ -102,8 +107,15 @@ let legendCollapsed = null;
 // (Nations/Cultures/Religions); hides when not political
 export function renderPolLegend() {
   if (!isPolitical()) { polLegend.hidden = true; return; }
-  const table = polTable(), cov = viewportCoverage();   // only polities visible in the viewport
-  const rows = [...cov.entries()].filter(([k]) => table[k]).sort((a, b) => b[1] - a[1] || table[a[0]].name.localeCompare(table[b[0]].name));
+  legendVersion = S.baseVersion;                        // the legend now reflects this viewport (see scheduleLegendRefresh)
+  const table = polTable();
+  // the ledger LISTS the polities visible in the viewport, but the count shown per row is each
+  // polity's TOTAL province count across the whole map (coverage()), not just the visible tally —
+  // so a nation you've zoomed in on still reads its true size, not "1 of the 50 it owns".
+  const vis = viewportCoverage(), total = coverage();
+  const rows = [...vis.keys()].filter(k => table[k])
+    .map(k => [k, total.get(k) || 0])
+    .sort((a, b) => b[1] - a[1] || table[a[0]].name.localeCompare(table[b[0]].name));
   const title = S.overlay === "culture" ? "Cultures" : S.overlay === "faith" ? "Religions" : "Nations";
   if (legendCollapsed === null) legendCollapsed = matchMedia("(max-width: 640px)").matches;
   let html = `<button class="lg-h lg-toggle" aria-expanded="${!legendCollapsed}">${title} · ${rows.length}<span class="lg-caret" aria-hidden="true">▾</span></button><div class="leg-scroll">`;
