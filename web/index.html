@@ -50,6 +50,9 @@
       </div>
 
       <div class="topright">
+        <button class="themebtn" id="techBtn" data-tip="Technology tree" aria-label="Open the technology tree">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="2.3"/><circle cx="18" cy="5.5" r="2.3"/><circle cx="18" cy="18.5" r="2.3"/><path d="M7.2 11l8.6-4.6M7.2 13l8.6 4.6"/></svg>
+        </button>
         <button class="themebtn" id="costBtn" data-tip="Terrain movement-cost overlay — zoom in to see it" aria-label="Toggle movement-cost overlay">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 19l6-11 4 6 2.5-4L21 19z"/></svg>
         </button>
@@ -106,6 +109,33 @@
       <div class="rail" id="rail"></div>
     </aside>
 
+  </div>
+
+  <!-- Technology tree: a full-screen modal over the map (map rendering pauses while it is up).
+       Populated by js/overlays/techtree.mjs on first open. -->
+  <div id="techModal" class="tech-modal" hidden role="dialog" aria-modal="true" aria-label="Technology tree">
+    <div class="tech-backdrop" data-tech-close></div>
+    <div class="tech-shell" role="document">
+      <header class="tech-head">
+        <div class="tech-brand">Technology</div>
+        <div id="techEras" class="segToggle tech-eras" role="group" aria-label="Jump to era"></div>
+        <button class="tech-close" data-tech-close data-tip="Close (Esc)" aria-label="Close technology tree">&times;</button>
+      </header>
+      <div class="tech-body">
+        <div id="techViewport" class="tech-viewport">
+          <div id="techSizer" class="tech-sizer">
+            <div id="techCanvas" class="tech-canvas">
+              <svg id="techEdges" class="tech-edges" aria-hidden="true"></svg>
+            </div>
+          </div>
+        </div>
+        <div class="tech-zoomctl zoomctl" aria-label="Zoom">
+          <button id="techZoomIn" data-tip="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button id="techZoomOut" data-tip="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+        </div>
+        <aside id="techDetail" class="tech-detail" hidden aria-live="polite"></aside>
+      </div>
+    </div>
   </div>
 
   <!-- persistent bottom status line: surfaces errors/warnings (and any status message) -->

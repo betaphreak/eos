@@ -27,11 +27,17 @@ class TechTreeTest {
 	private static final TechTree TREE = TechTree.load();
 
 	@Test
-	void dropsTheOutOfScopeIndustrialNode() {
-		// 366 techs in the source, the lone Industrial node dropped -> 365 kept
-		assertEquals(365, TREE.size());
+	void keepsOnlyInScopeTechs() {
+		// the C2C source has 943 techs across many eras; the converter
+		// (TechInfoConverter) keeps only Prehistoric..Renaissance and drops the
+		// religion-founding techs, Clockpunk, and disabled placeholders -> 338 kept
+		assertEquals(338, TREE.size());
 		assertNull(TREE.get("TECH_INDUSTRIAL_LIFESTYLE"),
-				"the out-of-scope Industrial tech should be dropped");
+				"an out-of-scope Industrial tech should be dropped");
+		assertNull(TREE.get("TECH_CHRISTIANITY"),
+				"religion-founding techs should be dropped");
+		assertNull(TREE.get("TECH_DUMMY"),
+				"the disabled placeholder tech should be dropped");
 		assertTrue(TREE.getAll().stream().allMatch(t -> t.era() != null),
 				"every kept tech maps to an in-scope era");
 	}
@@ -41,11 +47,11 @@ class TechTreeTest {
 		Map<Era, Integer> counts = new EnumMap<>(Era.class);
 		for (Tech t : TREE.getAll())
 			counts.merge(t.era(), 1, Integer::sum);
-		assertEquals(99, counts.get(Era.PREHISTORIC));
-		assertEquals(94, counts.get(Era.ANCIENT));
-		assertEquals(59, counts.get(Era.CLASSICAL));
-		assertEquals(54, counts.get(Era.MEDIEVAL));
-		assertEquals(59, counts.get(Era.RENAISSANCE));
+		assertEquals(89, counts.get(Era.PREHISTORIC));
+		assertEquals(88, counts.get(Era.ANCIENT));
+		assertEquals(52, counts.get(Era.CLASSICAL));
+		assertEquals(51, counts.get(Era.MEDIEVAL));
+		assertEquals(58, counts.get(Era.RENAISSANCE));
 	}
 
 	@Test
@@ -61,19 +67,22 @@ class TechTreeTest {
 
 	@Test
 	void rootTechHasNoPrereqsAndIsTriviallyResearchable() {
-		Tech root = TREE.get("TECH_PREHISTORIC_LIFESTYLE");
+		// the prehistoric tree opens on a few prereq-less roots (cave dwelling,
+		// nomadism, language); any is researchable from an empty known set
+		Tech root = TREE.get("TECH_CAVE_DWELLING");
 		assertNotNull(root);
 		assertTrue(root.orPrereqs().isEmpty() && root.andPrereqs().isEmpty());
 		assertTrue(TREE.prereqsSatisfied(root, Set.of()),
-				"the root tech is researchable from nothing");
+				"a root tech is researchable from nothing");
 	}
 
 	@Test
 	void preKnownThroughMedievalIsEveryPreRenaissanceTech() {
 		Set<String> known = TREE.preKnownThrough(Era.MEDIEVAL);
-		// 99 + 94 + 59 + 54 = 306 techs at or before the Medieval era
-		assertEquals(306, known.size());
-		assertTrue(known.contains("TECH_PREHISTORIC_LIFESTYLE"));
+		// 89 + 88 + 52 + 51 = 280 techs at or before the Medieval era
+		assertEquals(280, known.size());
+		assertTrue(known.contains("TECH_CAVE_DWELLING"));
+		assertTrue(known.contains("TECH_MEDIEVAL_LIFESTYLE"));
 		assertFalse(known.contains("TECH_RENAISSANCE_LIFESTYLE"),
 				"a Renaissance tech is not pre-known at a Medieval start");
 	}

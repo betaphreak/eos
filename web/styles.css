@@ -509,3 +509,134 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
   background: var(--panel-2); border: 1px solid var(--line-soft); font-size: 11px; color: var(--ink-soft); }
 .pv-chip b { color: var(--ink); font-weight: 700; }
 .pv-none { color: var(--ink-faint); font-size: 12px; }
+
+/* ============================================================================
+   Technology tree — a full-screen modal over the map (js/overlays/techtree.mjs).
+   Reuses the theme tokens and the .segToggle era tabs; the one bold stroke is the
+   hover-ancestry highlight (a tech lights its whole prerequisite chain in --accent
+   while the rest dims). Everything else stays quiet.
+   ========================================================================== */
+.tech-modal { position: fixed; inset: 0; z-index: 50; display: flex; }
+.tech-modal[hidden] { display: none; }
+.tech-backdrop { position: absolute; inset: 0; background: rgba(6,9,14,.62); backdrop-filter: blur(3px); }
+.tech-shell {
+  position: relative; margin: auto; width: 94vw; height: 92vh; max-width: 1680px;
+  display: flex; flex-direction: column; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.tech-head {
+  flex: none; display: flex; align-items: center; gap: 16px;
+  padding: 12px 14px 12px 20px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+}
+.tech-brand {
+  font: 700 12px system-ui,'Segoe UI',sans-serif; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--ink-soft); white-space: nowrap;
+}
+.tech-eras { margin: 0 auto; flex-wrap: wrap; justify-content: center; }
+.tech-close {
+  flex: none; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel-2); color: var(--ink-soft); font-size: 22px; line-height: 1; cursor: pointer;
+}
+.tech-close:hover { color: var(--ink); border-color: var(--ink-faint); }
+
+.tech-body { position: relative; flex: 1 1 auto; min-height: 0; }
+.tech-viewport {
+  position: absolute; inset: 0; overflow: auto; overflow-x: scroll;
+  scrollbar-width: thin; scrollbar-color: var(--line) transparent;   /* Firefox */
+  background:
+    radial-gradient(1200px 500px at 20% -10%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 60%),
+    var(--ground);
+}
+.tech-viewport::-webkit-scrollbar { width: 12px; height: 12px; }
+.tech-viewport::-webkit-scrollbar-track { background: transparent; }
+.tech-viewport::-webkit-scrollbar-thumb {
+  background: var(--line); border-radius: 7px; border: 3px solid transparent; background-clip: padding-box;
+}
+.tech-viewport::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); border-width: 2px; }
+.tech-viewport::-webkit-scrollbar-corner { background: transparent; }
+
+.tech-sizer { position: relative; }
+.tech-canvas { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.tech-edges { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
+
+/* era strata: quiet alternating vertical bands with a rotated label */
+.tech-band { position: absolute; top: 0; box-sizing: border-box; border-right: 1px dashed var(--line-soft); }
+.tech-band:nth-child(even) { background: color-mix(in srgb, var(--ink) 3%, transparent); }
+.tech-band-label {
+  position: sticky; top: 10px; padding: 4px 10px; width: max-content;
+  font: 700 11px system-ui,'Segoe UI',sans-serif; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* nodes: compact cards with an advisor-coloured spine + the real Civ4 icon */
+.tech-node {
+  position: absolute; display: flex; align-items: center; gap: 9px; width: 172px; box-sizing: border-box;
+  padding: 7px 9px 7px 10px; background: var(--panel-2); color: var(--ink);
+  border: 1px solid var(--line); border-left: 3px solid var(--adv, var(--line)); border-radius: 9px;
+  cursor: pointer; transition: opacity .12s, border-color .12s, box-shadow .12s;
+}
+.tech-node:hover { border-color: var(--adv, var(--ink-faint)); box-shadow: 0 2px 10px rgba(0,0,0,.18); }
+.tech-node.sel { box-shadow: 0 0 0 2px var(--accent); }
+.tech-ico { flex: none; width: 40px; height: 40px; border-radius: 6px; background-repeat: no-repeat; }
+.tech-ico.chip {
+  display: grid; place-items: center; font: 800 15px system-ui,sans-serif; color: #fff;
+  background: var(--adv, var(--ink-faint));
+}
+.tech-tx { min-width: 0; }
+.tech-nm { font: 650 12px/1.15 system-ui,'Segoe UI',sans-serif; color: var(--ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tech-ct { margin-top: 2px; display: flex; align-items: center; gap: 3px;
+  font: 600 10px system-ui,sans-serif; color: var(--ink-faint); letter-spacing: .02em; }
+/* research cost beaker (baked from GameFont). Blue = science (default human tree);
+   red = hammer-converted, yellow = race-specific — future variants as hue shifts. */
+.tech-bk { display: inline-block; width: 12px; height: 12px; vertical-align: -2px; flex: none;
+  background: url(assets/tech-beaker.webp) center/contain no-repeat; }
+.tech-bk[data-beaker="red"] { filter: hue-rotate(150deg) saturate(1.3); }
+.tech-bk[data-beaker="yellow"] { filter: hue-rotate(205deg) saturate(1.5) brightness(1.1); }
+.tech-d-tag .tech-bk { width: 13px; height: 13px; }
+
+/* signature: hover a node → its prerequisite chain lit in gold, the rest dimmed */
+.tech-canvas.dim .tech-node { opacity: .28; }
+.tech-canvas.dim .tech-node.lit { opacity: 1; }
+.tech-canvas.dim .tech-node.root { opacity: 1; border-color: var(--accent); }
+.tech-edges path { fill: none; stroke: var(--line); stroke-width: 1.4; }
+.tech-edges path.oredge { stroke-dasharray: 4 4; }
+.tech-edges.dim path { opacity: .1; }
+.tech-edges.dim path.lit { opacity: 1; stroke: var(--accent); stroke-width: 2; }
+
+.tech-zoomctl { position: absolute; right: 16px; bottom: 16px; z-index: 3; }
+
+/* detail panel: slides in from the right when a node is chosen */
+.tech-detail {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 340px; z-index: 4;
+  overflow-y: auto; padding: 20px 22px 32px; background: var(--panel);
+  border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(0,0,0,.22);
+  scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+}
+.tech-detail[hidden] { display: none; }
+.tech-detail::-webkit-scrollbar { width: 10px; }
+.tech-detail::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; border: 3px solid transparent; background-clip: padding-box; }
+.tech-d-close { float: right; background: none; border: 0; color: var(--ink-faint); font-size: 20px; cursor: pointer; line-height: 1; }
+.tech-d-era { font: 700 10px system-ui,sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--adv, var(--ink-faint)); }
+.tech-d-name { margin: 4px 0 10px; font: 700 20px/1.15 system-ui,'Segoe UI',sans-serif; color: var(--ink); }
+.tech-d-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.tech-d-tag { font: 600 11px system-ui,sans-serif; padding: 3px 9px; border-radius: 20px;
+  background: var(--panel-2); border: 1px solid var(--line-soft); color: var(--ink-soft); }
+.tech-d-tag b { color: var(--ink); }
+.tech-d-h { font: 700 10px system-ui,sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); margin: 16px 0 6px; }
+.tech-d-help { font: 400 12.5px/1.55 system-ui,'Segoe UI',sans-serif; color: var(--ink-soft); }
+.tech-d-quote { margin-top: 12px; padding-left: 12px; border-left: 2px solid var(--adv, var(--line));
+  font: italic 400 12.5px/1.5 Georgia,serif; color: var(--ink-soft); }
+.tech-d-pre { display: flex; flex-direction: column; gap: 5px; }
+.tech-d-prereq { text-align: left; background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 7px;
+  padding: 6px 9px; font: 600 12px system-ui,sans-serif; color: var(--ink); cursor: pointer; }
+.tech-d-prereq:hover { border-color: var(--accent); }
+.tech-d-prereq .k { font: 600 9px system-ui,sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); margin-left: 6px; }
+
+@media (max-width: 720px) {
+  .tech-shell { width: 100vw; height: 100vh; border-radius: 0; }
+  .tech-detail { width: 84vw; }
+  .tech-brand { display: none; }
+}

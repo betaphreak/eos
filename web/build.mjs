@@ -20,7 +20,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { decodeDds } from './dds.mjs';
-import { decodeTga } from './tga.mjs';
+import { loadGameFont, resourceCellRGBA, CELL as GF_CELL } from './gamefont.mjs';
 import { bakeNifGroup } from '../tools/nifbake/render.mjs';
 import sharp from 'sharp';
 
@@ -835,11 +835,10 @@ function bakeFoamTile() {
 // any source is absent (the renderer keeps the procedural glyphs); a bonus with a negative index
 // (no unique font icon) or an out-of-grid cell is left out and also falls back to the glyph.
 function bakeBonusIcons() {
-  const gfPath = path.join(ROOT, 'data/civ4/res/Fonts/GameFont_120.tga');
   const binfo = path.join(ROOT, 'data/civ4/CIV4BonusInfos.xml');
   const adef = path.join(ROOT, 'data/civ4/CIV4ArtDefines_Bonus.xml');
-  if (!fs.existsSync(gfPath) || !fs.existsSync(binfo) || !fs.existsSync(adef)) return null;
-  let gf; try { gf = decodeTga(fs.readFileSync(gfPath)); } catch { return null; }
+  const gf = loadGameFont(ROOT);   // shared GameFont reader (gamefont.mjs)
+  if (!gf || !fs.existsSync(binfo) || !fs.existsSync(adef)) return null;
   // BONUS_* → ArtDefineTag, then ArtDefineTag → FontButtonIndex (regex on the raw XML — Civ4's
   // default namespace lives only on the root, so the child tags read literally)
   const tagOf = {};
@@ -851,33 +850,27 @@ function bakeBonusIcons() {
     const f = m[0].match(/<FontButtonIndex>(-?\d+)<\/FontButtonIndex>/); if (f) fbiOf[m[1]] = +f[1];
   }
   const bonuses = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/bonuses.json'), 'utf8')).map(b => b.type);
-  const CELL = 25, GRID_COLS = 25, X0 = 0, Y0 = 497;   // the resource grid (GameFont_120, calibrated)
-  const picks = [];
+  const picks = [];   // [type, rgbaCell] — the shared reader returns each cell's pixels
   for (const t of bonuses) {
-    const fbi = fbiOf[tagOf[t]];
-    if (fbi === undefined || fbi < 0) continue;        // no unique icon → procedural glyph
-    const sx = X0 + (fbi % GRID_COLS) * CELL, sy = Y0 + Math.floor(fbi / GRID_COLS) * CELL;
-    if (sx + CELL > gf.width || sy + CELL > gf.height) continue;   // outside the resource block
-    picks.push([t, sx, sy]);
+    const cell = resourceCellRGBA(gf, fbiOf[tagOf[t]]);   // null → no unique icon / out of grid
+    if (cell) picks.push([t, cell]);
   }
   if (!picks.length) return null;
   const cols = 16, rows = Math.ceil(picks.length / cols);
-  const aw = cols * CELL, ah = rows * CELL;
-  const rgb = Buffer.alloc(aw * ah * 3), alpha = Buffer.alloc(aw * ah);
+  const aw = cols * GF_CELL, ah = rows * GF_CELL;
+  const rgba = Buffer.alloc(aw * ah * 4);
   const index = {};
-  picks.forEach(([t, sx, sy], i) => {
+  picks.forEach(([t, cell], i) => {
     index[t] = i;
-    const dx = (i % cols) * CELL, dy = Math.floor(i / cols) * CELL;
-    for (let y = 0; y < CELL; y++)
-      for (let x = 0; x < CELL; x++) {
-        const so = ((sy + y) * gf.width + (sx + x)) * 4, d = (dy + y) * aw + (dx + x);
-        rgb[d * 3] = gf.rgba[so]; rgb[d * 3 + 1] = gf.rgba[so + 1]; rgb[d * 3 + 2] = gf.rgba[so + 2];
-        alpha[d] = gf.rgba[so + 3];
-      }
+    const dx = (i % cols) * GF_CELL, dy = Math.floor(i / cols) * GF_CELL;
+    for (let y = 0; y < GF_CELL; y++) {
+      const so = y * GF_CELL * 4, d = ((dy + y) * aw + dx) * 4;
+      cell.copy(rgba, d, so, so + GF_CELL * 4);
+    }
   });
-  const src = queueWebp('bonus-icons', aw, ah, rgb, alpha, { quality: 90 });
+  const src = queueWebpRGBA('bonus-icons', aw, ah, rgba, { quality: 90 });
   console.log(`  bonus icons: ${src} (${picks.length} GameFont resource symbols)`);
-  return { src, cell: CELL, cols, count: picks.length, index };
+  return { src, cell: GF_CELL, cols, count: picks.length, index };
 }
 
 // Bake a seamless GREYSCALE ripple tile from a Civ4 water detail texture — the wave pattern

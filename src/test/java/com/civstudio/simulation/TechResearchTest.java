@@ -25,8 +25,8 @@ class TechResearchTest {
 		assertTrue(research.getCompletedCount() >= 1,
 				"expected at least one tech completed before collapse, got "
 						+ research.getCompletedCount());
-		// known set grew past the pre-known Classical-complete baseline (252 techs)
-		assertTrue(research.getKnownCount() > 252,
+		// known set grew past the pre-known Classical-complete baseline (229 techs)
+		assertTrue(research.getKnownCount() > 229,
 				"known techs should grow as research completes");
 	}
 

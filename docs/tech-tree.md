@@ -27,27 +27,51 @@ as downstream consumers of the "unlock / gate" effects — the rank ladder
 
 ## The imported data
 
-`techs.json` is a Civ4-mod tech graph: **366 techs** across 6 eras (Prehistoric 99,
-Ancient 94, Classical 59, Medieval 54, Renaissance 59, Industrial 1 — the lone
-Industrial node is a truncation boundary; the tree effectively ends at Renaissance).
-Each tech carries:
+`techs.json` is a Civ4-mod tech graph, **regenerated from the vendored Caveman2Cosmos
+source** by `com.civstudio.tech.export.TechInfoConverter` (see below). It keeps **338
+techs** across the 5 eras eos models — Prehistoric 89, Ancient 88, Classical 52,
+Medieval 51, Renaissance 58 — the Prehistoric→Renaissance slice of C2C's 943-tech tree,
+with the religion-founding techs, Clockpunk, and disabled placeholders (`TECH_DUMMY`)
+dropped. Each tech carries:
 
 - `Type` (id, e.g. `TECH_MERCANTILISM`), `Era`, `Advisor` (one of 6 categories:
   Military, Economy, Growth, Culture, Religion, Science), `iCost` (research cost,
   1 in Prehistoric rising to ~4000 in late Renaissance);
 - `OrPreReqs` (need **any one** of the listed `PrereqTech`) and often `AndPreReqs`
   (need **all** of them) — standard Civ4 prerequisite semantics;
-- `iGridX`/`iGridY` (tree-layout coordinates, display only) and `Flavors` (AI
-  weighting);
+- `iGridX`/`iGridY` (tree-layout coordinates — the horizontal era timeline column and
+  the vertical lane; used by the web tech-tree view) and `Flavors` (AI weighting);
 - a long tail of **Civ4-specific effect flags** (`iWorkerSpeedModifier`,
   `bIrrigation`, `bBridgeBuilding`, `FirstFreeUnit`, combat `DomainType`,
   `bEmbassyTrading`, …) and localization/asset keys (`Description`, `Quote`,
   `Sound`, `Button`) — **none of which map to anything in eos** (no units, terrain
-  improvements, or combat). These are ignored.
+  improvements, or combat).
 
-So we reuse the **graph** (nodes, eras, costs, prereqs, categories) and **discard the
-effects**, supplying eos-native effects through a separate overlay (below). The
-imported file stays pristine — it is read-only reference data.
+The **engine** reuses only the **graph** (nodes, eras, costs, prereqs, categories) and
+**discards the effects** ({@link com.civstudio.tech.TechTree} parses six fields;
+`FAIL_ON_UNKNOWN_PROPERTIES` is off, so the rest are inert), supplying eos-native
+effects through a separate overlay (below). But `techs.json` itself is a **faithful,
+lossless transliteration of every field** — plus the resolved English `name` / `help`
+(the pedia paragraph) / `quote` the source keeps only as `TXT_KEY_*` references — so the
+**web tech-tree view** has the full graph and readable labels to draw.
+
+### Regeneration — `TechInfoConverter`
+
+`techs.json` is **generated, not hand-authored**, by the dev tool
+`com.civstudio.tech.export.TechInfoConverter`:
+
+```
+mvn -q compile exec:exec -Dsim.main=com.civstudio.tech.export.TechInfoConverter
+```
+
+It reads the Caveman2Cosmos sources vendored under `data/civ4/assets/XML/` (mirroring
+the original C2C `Assets/` layout) — `Technologies/CIV4TechInfos.xml` (the graph) and
+`GameText/Tech_CIV4GameText.xml` (the `TXT_KEY_* → English` localization) — generically
+transliterates each in-scope `<TechInfo>` to JSON (scalars stay strings, as before),
+joins the English strings, and writes the file. Trimming is by era (Prehistoric→
+Renaissance) plus the explicit religion/Clockpunk drop-set and any `bDisable=1`
+placeholder. Fetch the vendored sources via authenticated `gh api`, never
+`raw.githubusercontent.com` (which rate-limits).
 
 ## Decided behaviour (from the design questions)
 
@@ -159,7 +183,7 @@ A tech may carry **several** effects (e.g. `TECH_MERCANTILISM` → +Export produ
 **and** unlock a trade building). The default, for any Renaissance tech with **no**
 overlay entry, is a single small `SECTOR_PRODUCTIVITY` on its advisor-mapped sector
 (Military techs map to nothing, so they default to **inert**) — which is what makes a
-purely-formulaic coverage strategy possible later without authoring 59 entries by
+purely-formulaic coverage strategy possible later without authoring 58 entries by
 hand.
 
 ## Architecture mapping
@@ -277,7 +301,7 @@ economically near-neutral (the existing smoke suite stays green).
   so the full suite stays green and behaviour is unchanged. The graph queries
   (`preKnownThrough(era)`, `prereqsSatisfied(tech, known)`, `researchableFrontier(known)`)
   land here as pure functions of a known set. `tech.com.civstudio.TechTreeTest` covers graph
-  integrity: 365 kept techs, the era partition counts (99/94/59/54/59), every prereq
+  integrity: 338 kept techs, the era partition counts (89/88/52/51/58), every prereq
   resolves, and a Medieval-complete start's frontier is exactly the single Renaissance
   entry tech (`TECH_RENAISSANCE_LIFESTYLE`).
 - **Phase 2 — the effect schema + overlay. (Implemented.)** `TechEffect` is a
@@ -331,6 +355,27 @@ economically near-neutral (the existing smoke suite stays green).
 - **Phase 4 — wire `UNLOCK` / `SOCIAL_GATE` to real consumers (future, separate
   notes).** As `BURGHER`, `CITY`, caravan trade, and any new goods/firms land, give
   them tech preconditions through the gate flags. No schema change expected.
+
+## Web view (the tech tree in the frontend)
+
+The web app renders the tree as a **full-screen modal** over the WorldMap (opened from the
+header; Esc / click-outside / ✕ closes it, and the map's `paint()` pauses while it is up).
+It is a read-only consumer of the generated data, never the engine. See
+[`web/README.md`](../web/README.md); the pieces:
+
+- **Data**: `web/build-techs.mjs` gzips `techs.json` (with the English `name`/`help`/`quote`
+  and a per-tech `icon` rect) to `web/assets/techs.json.gz`, fetched and gunzipped in-page.
+- **Layout**: cards on the C2C `iGridX` (era-timeline column) / `iGridY` (lane) grid, with
+  hairline SVG prerequisite elbows (solid AND, dashed OR) and quiet era strata. The era tabs
+  jump to each age's entry (its lowest-`iGridX` tech). Hovering a tech lights its whole
+  prerequisite chain in gold. `js/techtree.mjs`.
+- **Icons**: real Civ4 tech-button art baked to one sprite sheet (`tech-icons.webp`); the ~47
+  vanilla-BTS icons C2C doesn't ship fall back to an advisor-colour chip.
+- **Cost / beakers**: shown with the GameFont research beaker (`tech-beaker.webp`, via the
+  shared `web/gamefont.mjs`). CivStudio will have **three research currencies** — blue
+  beakers (science, the default for this **human** common tree), red (converted from hammers)
+  and yellow (race-specific) — and **per-race tech trees** (e.g. Harimari have no naval line);
+  the cost renderer is keyed by beaker type so the other two slot in later. See `docs/race.md`.
 
 ## Open questions deferred to later
 

@@ -96,6 +96,7 @@ function draw() {
   requestAnimationFrame(() => { rafPending = false; paint(); scheduleLegendRefresh(); });
 }
 function paint() {
+  if (S.techOpen) return;   // tech-tree modal is in front — don't spend frames drawing the hidden map
   if (zoomLabelEl) zoomLabelEl.textContent = Math.round(cam.k) + "×";   // 1× (world) … 256× (max)
   const w=VIEW.w, h=VIEW.h, dpr=VIEW.dpr;
   ctx.setTransform(dpr,0,0,dpr,0,0);

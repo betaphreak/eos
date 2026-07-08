@@ -210,6 +210,7 @@ export const S = {
   selected: null,        // journey idx or null
   selectedProv: null,    // province whose full detail fills the sidebar, or null
   curT: 0,               // set to t0 at boot
+  techOpen: false,       // the tech-tree modal is up — paint() pauses map rendering behind it
 };
 S.curT = t0;
 

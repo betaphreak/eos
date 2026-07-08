@@ -127,6 +127,12 @@ file.
 | `data.js` | **generated** — `window.BUNDLE`, the run's data (no imagery inlined) |
 | `assets/terrain-<seed>.png` | **generated** — the dark-tinted terrain crop, a real image asset |
 | `build.mjs` | reads a run's caravan journals + the province map + outlines + the geographic hierarchy, tallies caravan-days per province, writes `data.js` and the terrain PNG |
+| `js/techtree.mjs` | the **technology tree** — a full-screen modal over the map (map `paint()` pauses while it is up). Cards laid out on the C2C `iGridX`/`iGridY` grid, hairline SVG prereq elbows (solid AND / dashed OR), era-tab jumps, zoom + custom scrollbars, and a hover-ancestry gold highlight. Loads `assets/techs.json.gz` on first open |
+| `gamefont.mjs` | shared reader for `GameFont_120.tga` glyph geometry (icon grid @ y=72, 25px cells) — used by the bonus-icon bake (`build.mjs`) and the research beaker + future commerce/yield symbols (`build-techs.mjs`) |
+| `build-techs.mjs` | **generated → `assets/techs.json.gz` + `tech-icons.webp` + `tech-beaker.webp`** — gzips the engine's `src/main/resources/techs.json` (tech graph + English names, enriched with a per-tech icon rect), bakes the tech-button icon sprite sheet from the vendored Civ4 art, and extracts the research-beaker glyph; run-independent (needs no `output/<seed>` run) |
+| `assets/techs.json.gz` | **generated** — the whole tech graph (grid coords, eras, advisors, prereqs, name/help/quote, `icon` rect), fetched and gunzipped in-page via `DecompressionStream` |
+| `assets/tech-icons.webp` | **generated** — one sprite sheet (16-wide, 64px cells) of the real Civ4 tech-button icons; a tech's `icon:[x,y,w,h]` indexes into it (the ~47 techs whose icon is a vanilla-BTS file C2C doesn't ship fall back to an advisor-colour chip) |
+| `assets/tech-beaker.webp` | **generated** — the GameFont research-beaker (the cost unit; blue = science, the human tree's default) |
 
 **Modules** (`web/js/`). `app.js` was one ~1,100-line classic script; it is now a thin
 entry that imports five ES modules in dependency order. Module scripts are deferred, so

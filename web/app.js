@@ -10,5 +10,7 @@ import "./js/plots.mjs";
 import "./js/labels.mjs";
 import "./js/main.mjs";
 import { boot } from "./js/panel.mjs";
+import { initTechTree } from "./js/techtree.mjs";
 
 boot();
+initTechTree();
