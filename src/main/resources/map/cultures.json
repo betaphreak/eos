@@ -1,0 +1,3086 @@
+[ {
+  "key" : "abalg_centaur",
+  "name" : "Abalg Centaur",
+  "group" : "centaur",
+  "color" : "#4e5585"
+}, {
+  "key" : "abtazari",
+  "name" : "Abtazari",
+  "group" : "bulwari",
+  "color" : "#688a72"
+}, {
+  "key" : "adenner",
+  "name" : "Adenner",
+  "group" : "escanni",
+  "color" : "#6b3ea0"
+}, {
+  "key" : "advakhalla",
+  "name" : "Advakhalla",
+  "group" : "taychendi_ruinborn_elf",
+  "color" : "#47c9b0"
+}, {
+  "key" : "adzalanas_lizardfolk",
+  "name" : "Adzalanas Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#78a39c"
+}, {
+  "key" : "agate_dwarf",
+  "name" : "Agate Dwarf",
+  "group" : "dwarven",
+  "color" : "#6b6391"
+}, {
+  "key" : "ahzdara_lizardfolk",
+  "name" : "Ahzdara Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#ba8861"
+}, {
+  "key" : "aldresian",
+  "name" : "Aldresian",
+  "group" : "anbennarian",
+  "color" : "#6bb865"
+}, {
+  "key" : "alenic_half_elf",
+  "name" : "Alenic Half Elf",
+  "group" : "alenic",
+  "color" : "#c0559c"
+}, {
+  "key" : "alenori",
+  "name" : "Alenori",
+  "group" : "escanni",
+  "color" : "#6ea886"
+}, {
+  "key" : "aliiula",
+  "name" : "Aliiula",
+  "group" : "tagaala",
+  "color" : "#5b76bc"
+}, {
+  "key" : "alloy_dwarf",
+  "name" : "Alloy Dwarf",
+  "group" : "dwarven",
+  "color" : "#6a9ea7"
+}, {
+  "key" : "amber_dwarf",
+  "name" : "Amber Dwarf",
+  "group" : "dwarven",
+  "color" : "#427a6d"
+}, {
+  "key" : "ambhen",
+  "name" : "Ambhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#b77150"
+}, {
+  "key" : "amethyst_dwarf",
+  "name" : "Amethyst Dwarf",
+  "group" : "dwarven",
+  "color" : "#4c5583"
+}, {
+  "key" : "amezatany",
+  "name" : "Amezatany",
+  "group" : "halfling",
+  "color" : "#94bfdb"
+}, {
+  "key" : "amgrebhen",
+  "name" : "Amgrebhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#b999b1"
+}, {
+  "key" : "anarkhudi",
+  "name" : "Anarkhudi",
+  "group" : "khudi",
+  "color" : "#7b5aa5"
+}, {
+  "key" : "anbenncoster",
+  "name" : "Anbenncoster",
+  "group" : "anbennarian",
+  "color" : "#c688be"
+}, {
+  "key" : "ancardian",
+  "name" : "Ancardian",
+  "group" : "escanni",
+  "color" : "#b5b44f"
+}, {
+  "key" : "anisibhen",
+  "name" : "Anisibhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#3d73ac"
+}, {
+  "key" : "antmvura",
+  "name" : "Antmvura",
+  "group" : "inyaswarosa",
+  "color" : "#d0a565"
+}, {
+  "key" : "anuar_centaur",
+  "name" : "Anuar Centaur",
+  "group" : "centaur",
+  "color" : "#8c553f"
+}, {
+  "key" : "apikhobhen",
+  "name" : "Apikhobhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#c36558"
+}, {
+  "key" : "arannese",
+  "name" : "Arannese",
+  "group" : "anbennarian",
+  "color" : "#63977c"
+}, {
+  "key" : "arbarani",
+  "name" : "Arbarani",
+  "group" : "anbennarian",
+  "color" : "#5660db"
+}, {
+  "key" : "arbcoster",
+  "name" : "Arbcoster",
+  "group" : "lencori",
+  "color" : "#a772d4"
+}, {
+  "key" : "ardimyan",
+  "name" : "Ardimyan",
+  "group" : "baashidi",
+  "color" : "#6b8054"
+}, {
+  "key" : "arpebhen",
+  "name" : "Arpebhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#516a90"
+}, {
+  "key" : "arraskay_lizardfolk",
+  "name" : "Arraskay Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#a944bd"
+}, {
+  "key" : "arthaman",
+  "name" : "Arthaman",
+  "group" : "anbennarian",
+  "color" : "#da51ad"
+}, {
+  "key" : "asbaiwix",
+  "name" : "Asbaiwix",
+  "group" : "kheteratan",
+  "color" : "#aab69d"
+}, {
+  "key" : "ashamadi",
+  "name" : "Ashamadi",
+  "group" : "baashidi",
+  "color" : "#80c83c"
+}, {
+  "key" : "ashfall_mechanim",
+  "name" : "Ashfall Mechanim",
+  "group" : "mechanim",
+  "color" : "#787578"
+}, {
+  "key" : "ashhana_lizardfolk",
+  "name" : "Ashhana Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#97684d"
+}, {
+  "key" : "ashwoven_harimari",
+  "name" : "Ashwoven Harimari",
+  "group" : "harimari",
+  "color" : "#65d7b5"
+}, {
+  "key" : "astolbhen",
+  "name" : "Astolbhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#6ac34e"
+}, {
+  "key" : "atuganum",
+  "name" : "Atuganum",
+  "group" : "utubodi",
+  "color" : "#46afa1"
+}, {
+  "key" : "avil_centaur",
+  "name" : "Avil Centaur",
+  "group" : "centaur",
+  "color" : "#cb9a6a"
+}, {
+  "key" : "awoken_mechanim",
+  "name" : "Awoken Mechanim",
+  "group" : "mechanim",
+  "color" : "#ceaac2"
+}, {
+  "key" : "azepyanunin",
+  "name" : "Azepyanunin",
+  "group" : "wuhyun",
+  "color" : "#5c5564"
+}, {
+  "key" : "badak_orc",
+  "name" : "Badak Orc",
+  "group" : "orcish",
+  "color" : "#8c65a6"
+}, {
+  "key" : "badarari",
+  "name" : "Badarari",
+  "group" : "utubodi",
+  "color" : "#5ecf5c"
+}, {
+  "key" : "bahari",
+  "name" : "Bahari",
+  "group" : "bulwari",
+  "color" : "#8bd1be"
+}, {
+  "key" : "baindundhi",
+  "name" : "Baindundhi",
+  "group" : "yenbenmirra",
+  "color" : "#68b779"
+}, {
+  "key" : "banche",
+  "name" : "Banche",
+  "group" : "amadian_ruinborn_elf",
+  "color" : "#ad72c1"
+}, {
+  "key" : "bangowla",
+  "name" : "Bangowla",
+  "group" : "yenbenmirra",
+  "color" : "#d18780"
+}, {
+  "key" : "banyak",
+  "name" : "Banyak",
+  "group" : "yanglam",
+  "color" : "#90c3c1"
+}, {
+  "key" : "barumand_orc",
+  "name" : "Barumand Orc",
+  "group" : "orcish",
+  "color" : "#c9b09f"
+}, {
+  "key" : "basalt_dwarf",
+  "name" : "Basalt Dwarf",
+  "group" : "dwarven",
+  "color" : "#749157"
+}, {
+  "key" : "basobhar",
+  "name" : "Basobhar",
+  "group" : "devandi_ruinborn_elf",
+  "color" : "#6ebcb3"
+}, {
+  "key" : "beikling",
+  "name" : "Beikling",
+  "group" : "yan",
+  "color" : "#b7a6a7"
+}, {
+  "key" : "bekauta",
+  "name" : "Bekauta",
+  "group" : "taychendi_ruinborn_elf",
+  "color" : "#c59289"
+}, {
+  "key" : "berrirghe",
+  "name" : "Berrirghe",
+  "group" : "eltibhari_ruinborn_elf",
+  "color" : "#d46db1"
+}, {
+  "key" : "besolabhen",
+  "name" : "Besolabhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#3fb984"
+}, {
+  "key" : "biengdi",
+  "name" : "Biengdi",
+  "group" : "bom",
+  "color" : "#d859ce"
+}, {
+  "key" : "binhrung",
+  "name" : "Binhrung",
+  "group" : "kai",
+  "color" : "#794e41"
+}, {
+  "key" : "binwarji",
+  "name" : "Binwarji",
+  "group" : "west_sarhaly",
+  "color" : "#7cc96d"
+}, {
+  "key" : "black_castanorian",
+  "name" : "Black Castanorian",
+  "group" : "escanni",
+  "color" : "#43d5d3"
+}, {
+  "key" : "black_demesner",
+  "name" : "Black Demesner",
+  "group" : "escanni",
+  "color" : "#9dc5d2"
+}, {
+  "key" : "black_orc",
+  "name" : "Black Orc",
+  "group" : "orcish",
+  "color" : "#3cd24a"
+}, {
+  "key" : "black_reachman",
+  "name" : "Black Reachman",
+  "group" : "reachman",
+  "color" : "#43bf67"
+}, {
+  "key" : "bladesworn_goblin",
+  "name" : "Bladesworn Goblin",
+  "group" : "goblin",
+  "color" : "#639170"
+}, {
+  "key" : "blooded_orc",
+  "name" : "Blooded Orc",
+  "group" : "orcish",
+  "color" : "#5641a9"
+}, {
+  "key" : "bloodfeeders",
+  "name" : "Bloodfeeders",
+  "group" : "degenerated_elf",
+  "color" : "#8a7fc5"
+}, {
+  "key" : "bloodtooth_ogre",
+  "name" : "Bloodtooth Ogre",
+  "group" : "ogre",
+  "color" : "#9842a7"
+}, {
+  "key" : "blue_reachman",
+  "name" : "Blue Reachman",
+  "group" : "alenic",
+  "color" : "#68d560"
+}, {
+  "key" : "blue_reachman_r",
+  "name" : "Blue Reachman R",
+  "group" : "reachman",
+  "color" : "#bb5ed7"
+}, {
+  "key" : "bluefoot_halfling",
+  "name" : "Bluefoot Halfling",
+  "group" : "halfling",
+  "color" : "#5cadd8"
+}, {
+  "key" : "bluescale_kobold",
+  "name" : "Bluescale Kobold",
+  "group" : "kobold",
+  "color" : "#b4774b"
+}, {
+  "key" : "boar_command",
+  "name" : "Boar Command",
+  "group" : "hobgoblin",
+  "color" : "#665d89"
+}, {
+  "key" : "boek",
+  "name" : "Boek",
+  "group" : "north_ruinborn_elf",
+  "color" : "#cfd56a"
+}, {
+  "key" : "bokai",
+  "name" : "Bokai",
+  "group" : "kai",
+  "color" : "#62ced5"
+}, {
+  "key" : "bom_half_elf",
+  "name" : "Bom Half Elf",
+  "group" : "bom",
+  "color" : "#cecebd"
+}, {
+  "key" : "brasanni",
+  "name" : "Brasanni",
+  "group" : "bulwari",
+  "color" : "#86523d"
+}, {
+  "key" : "brelari",
+  "name" : "Brelari",
+  "group" : "ynnic_ruinborn_elf",
+  "color" : "#3d5a88"
+}, {
+  "key" : "brown_orc",
+  "name" : "Brown Orc",
+  "group" : "orcish",
+  "color" : "#d39093"
+}, {
+  "key" : "bulwari_half_elf",
+  "name" : "Bulwari Half Elf",
+  "group" : "bulwari",
+  "color" : "#d4d04b"
+}, {
+  "key" : "busilari",
+  "name" : "Busilari",
+  "group" : "businori",
+  "color" : "#51a39f"
+}, {
+  "key" : "businori_half_elf",
+  "name" : "Businori Half Elf",
+  "group" : "businori",
+  "color" : "#4d83d1"
+}, {
+  "key" : "caamas",
+  "name" : "Caamas",
+  "group" : "eordan_ruinborn_elf",
+  "color" : "#584690"
+}, {
+  "key" : "cagodic",
+  "name" : "Cagodic",
+  "group" : "tyvorkan",
+  "color" : "#94c8ca"
+}, {
+  "key" : "cardesti",
+  "name" : "Cardesti",
+  "group" : "dostanorian_g",
+  "color" : "#cf7666"
+}, {
+  "key" : "carnetori",
+  "name" : "Carnetori",
+  "group" : "lencori",
+  "color" : "#d99086"
+}, {
+  "key" : "castanorian",
+  "name" : "Castanorian",
+  "group" : "escanni",
+  "color" : "#638daa"
+}, {
+  "key" : "castellyrian",
+  "name" : "Castellyrian",
+  "group" : "escanni",
+  "color" : "#d363d8"
+}, {
+  "key" : "cave_goblin",
+  "name" : "Cave Goblin",
+  "group" : "goblin",
+  "color" : "#45bcc0"
+}, {
+  "key" : "cave_troll",
+  "name" : "Cave Troll",
+  "group" : "giantkind",
+  "color" : "#7b4345"
+}, {
+  "key" : "cavelurker_orc",
+  "name" : "Cavelurker Orc",
+  "group" : "orcish",
+  "color" : "#798b93"
+}, {
+  "key" : "cestirmarker",
+  "name" : "Cestirmarker",
+  "group" : "trollsbayer",
+  "color" : "#425197"
+}, {
+  "key" : "chainforged_mechanim",
+  "name" : "Chainforged Mechanim",
+  "group" : "mechanim",
+  "color" : "#cb92af"
+}, {
+  "key" : "chamullach",
+  "name" : "Chamullach",
+  "group" : "amadian_ruinborn_elf",
+  "color" : "#7eaa94"
+}, {
+  "key" : "chaqanel",
+  "name" : "Chaqanel",
+  "group" : "amadian_ruinborn_elf",
+  "color" : "#859ec4"
+}, {
+  "key" : "chendhyan",
+  "name" : "Chendhyan",
+  "group" : "devandi_ruinborn_elf",
+  "color" : "#90a089"
+}, {
+  "key" : "chengrong",
+  "name" : "Chengrong",
+  "group" : "middle_raheni",
+  "color" : "#cb6eb8"
+}, {
+  "key" : "cheshoshi",
+  "name" : "Cheshoshi",
+  "group" : "north_ruinborn_elf",
+  "color" : "#56928d"
+}, {
+  "key" : "chippengarder_half_orc",
+  "name" : "Chippengarder Half Orc",
+  "group" : "ynnsman",
+  "color" : "#8957d6"
+}, {
+  "key" : "chiunife",
+  "name" : "Chiunife",
+  "group" : "harafic_ruinborn_elf",
+  "color" : "#a7b749"
+}, {
+  "key" : "citrine_dwarf",
+  "name" : "Citrine Dwarf",
+  "group" : "dwarven",
+  "color" : "#5bc6b7"
+}, {
+  "key" : "city_goblin",
+  "name" : "City Goblin",
+  "group" : "goblin",
+  "color" : "#a7a9da"
+}, {
+  "key" : "cliff_gnome",
+  "name" : "Cliff Gnome",
+  "group" : "gnomish",
+  "color" : "#9dc089"
+}, {
+  "key" : "coaleater_mechanim",
+  "name" : "Coaleater Mechanim",
+  "group" : "mechanim",
+  "color" : "#bb6d69"
+}, {
+  "key" : "cobalt_dwarf",
+  "name" : "Cobalt Dwarf",
+  "group" : "dwarven",
+  "color" : "#727aca"
+}, {
+  "key" : "coldcave_goblin",
+  "name" : "Coldcave Goblin",
+  "group" : "goblin",
+  "color" : "#619770"
+}, {
+  "key" : "common_goblin",
+  "name" : "Common Goblin",
+  "group" : "goblin",
+  "color" : "#67485e"
+}, {
+  "key" : "copper_dwarf",
+  "name" : "Copper Dwarf",
+  "group" : "dwarven",
+  "color" : "#58dabc"
+}, {
+  "key" : "corinsfielder",
+  "name" : "Corinsfielder",
+  "group" : "ynnsman",
+  "color" : "#9b859e"
+}, {
+  "key" : "corintari",
+  "name" : "Corintari",
+  "group" : "escanni",
+  "color" : "#abc9cc"
+}, {
+  "key" : "corvurian",
+  "name" : "Corvurian",
+  "group" : "dostanorian_g",
+  "color" : "#a5c03d"
+}, {
+  "key" : "covenbladic",
+  "name" : "Covenbladic",
+  "group" : "escanni",
+  "color" : "#d651ce"
+}, {
+  "key" : "crawler_goblin",
+  "name" : "Crawler Goblin",
+  "group" : "goblin",
+  "color" : "#9e5f57"
+}, {
+  "key" : "creek_gnome",
+  "name" : "Creek Gnome",
+  "group" : "gnomish",
+  "color" : "#d9866e"
+}, {
+  "key" : "creekfoot_halfling",
+  "name" : "Creekfoot Halfling",
+  "group" : "halfling",
+  "color" : "#ba63bf"
+}, {
+  "key" : "criodhi",
+  "name" : "Criodhi",
+  "group" : "lencori",
+  "color" : "#ac5a88"
+}, {
+  "key" : "cromorri",
+  "name" : "Cromorri",
+  "group" : "lencori",
+  "color" : "#6397d4"
+}, {
+  "key" : "crownsman",
+  "name" : "Crownsman",
+  "group" : "anbennarian",
+  "color" : "#ba6dc1"
+}, {
+  "key" : "cuaplatmi",
+  "name" : "Cuaplatmi",
+  "group" : "yanacotle",
+  "color" : "#9687b7"
+}, {
+  "key" : "cursed_ones",
+  "name" : "Cursed Ones",
+  "group" : "degenerated_elf",
+  "color" : "#b67c87"
+}, {
+  "key" : "cyazizeta_lizardfolk",
+  "name" : "Cyazizeta Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#a77979"
+}, {
+  "key" : "dagrite_dwarf",
+  "name" : "Dagrite Dwarf",
+  "group" : "dwarven",
+  "color" : "#b1db56"
+}, {
+  "key" : "darkscale_kobold",
+  "name" : "Darkscale Kobold",
+  "group" : "kobold",
+  "color" : "#908c7a"
+}, {
+  "key" : "dawn_elf",
+  "name" : "Dawn Elf",
+  "group" : "elven",
+  "color" : "#b0d9d9"
+}, {
+  "key" : "daxug",
+  "name" : "Daxug",
+  "group" : "yan",
+  "color" : "#89534b"
+}, {
+  "key" : "deathwalker_mechanim",
+  "name" : "Deathwalker Mechanim",
+  "group" : "mechanim",
+  "color" : "#9f80bd"
+}, {
+  "key" : "deep_goblin",
+  "name" : "Deep Goblin",
+  "group" : "goblin",
+  "color" : "#46a28c"
+}, {
+  "key" : "degabhen",
+  "name" : "Degabhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#66934f"
+}, {
+  "key" : "delta_gnome",
+  "name" : "Delta Gnome",
+  "group" : "gnomish",
+  "color" : "#b5744a"
+}, {
+  "key" : "derannic",
+  "name" : "Derannic",
+  "group" : "lencori",
+  "color" : "#86cd59"
+}, {
+  "key" : "desert_elf",
+  "name" : "Desert Elf",
+  "group" : "elven",
+  "color" : "#71b5c0"
+}, {
+  "key" : "desha",
+  "name" : "Desha",
+  "group" : "akasi",
+  "color" : "#a7d04c"
+}, {
+  "key" : "deyebhen",
+  "name" : "Deyebhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#b8cc9e"
+}, {
+  "key" : "dhanaenno",
+  "name" : "Dhanaenno",
+  "group" : "anbennarian",
+  "color" : "#9696c9"
+}, {
+  "key" : "dhebiji",
+  "name" : "Dhebiji",
+  "group" : "baashidi",
+  "color" : "#a3ab80"
+}, {
+  "key" : "dhukharuved",
+  "name" : "Dhukharuved",
+  "group" : "south_raheni",
+  "color" : "#9b9557"
+}, {
+  "key" : "diamond_dwarf",
+  "name" : "Diamond Dwarf",
+  "group" : "dwarven",
+  "color" : "#d392a5"
+}, {
+  "key" : "divnskr",
+  "name" : "Divnskr",
+  "group" : "gerudian",
+  "color" : "#99cdaa"
+}, {
+  "key" : "dolindhan",
+  "name" : "Dolindhan",
+  "group" : "ynnic_ruinborn_elf",
+  "color" : "#53c6c4"
+}, {
+  "key" : "dostanorian",
+  "name" : "Dostanorian",
+  "group" : "dostanorian_g",
+  "color" : "#568f93"
+}, {
+  "key" : "dostanorian_half_elf",
+  "name" : "Dostanorian Half Elf",
+  "group" : "dostanorian_g",
+  "color" : "#54b5a9"
+}, {
+  "key" : "dovesworn_gnoll",
+  "name" : "Dovesworn Gnoll",
+  "group" : "gnollish",
+  "color" : "#7262d2"
+}, {
+  "key" : "dragon_command",
+  "name" : "Dragon Command",
+  "group" : "hobgoblin",
+  "color" : "#db5d40"
+}, {
+  "key" : "dragonfire_kobold",
+  "name" : "Dragonfire Kobold",
+  "group" : "kobold",
+  "color" : "#5b786f"
+}, {
+  "key" : "dragonmask_kobold",
+  "name" : "Dragonmask Kobold",
+  "group" : "kobold",
+  "color" : "#658e50"
+}, {
+  "key" : "drakeclaw_orc",
+  "name" : "Drakeclaw Orc",
+  "group" : "orcish",
+  "color" : "#c99275"
+}, {
+  "key" : "draktaya_lizardfolk",
+  "name" : "Draktaya Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#8cdbda"
+}, {
+  "key" : "dudimkkun",
+  "name" : "Dudimkkun",
+  "group" : "gowon",
+  "color" : "#6cbe6f"
+}, {
+  "key" : "duguihi",
+  "name" : "Duguihi",
+  "group" : "effelai_ruinborn_elf",
+  "color" : "#873d54"
+}, {
+  "key" : "dunesole_ogre",
+  "name" : "Dunesole Ogre",
+  "group" : "ogre",
+  "color" : "#69d2a3"
+}, {
+  "key" : "dunguthapka",
+  "name" : "Dunguthapka",
+  "group" : "yenbenmirra",
+  "color" : "#c0d5b5"
+}, {
+  "key" : "duskers",
+  "name" : "Duskers",
+  "group" : "north_ruinborn_elf",
+  "color" : "#995e58"
+}, {
+  "key" : "dustman",
+  "name" : "Dustman",
+  "group" : "ynnsman",
+  "color" : "#44d15d"
+}, {
+  "key" : "eagle_command",
+  "name" : "Eagle Command",
+  "group" : "hobgoblin",
+  "color" : "#4c8c52"
+}, {
+  "key" : "east_dalr",
+  "name" : "East Dalr",
+  "group" : "gerudian",
+  "color" : "#a195b6"
+}, {
+  "key" : "east_damerian",
+  "name" : "East Damerian",
+  "group" : "anbennarian",
+  "color" : "#d79a5c"
+}, {
+  "key" : "echenka",
+  "name" : "Echenka",
+  "group" : "irsukuba",
+  "color" : "#c5c24a"
+}, {
+  "key" : "eclipse_elf",
+  "name" : "Eclipse Elf",
+  "group" : "elven",
+  "color" : "#43964a"
+}, {
+  "key" : "effe",
+  "name" : "Effe",
+  "group" : "effelai_ruinborn_elf",
+  "color" : "#9cd16b"
+}, {
+  "key" : "egilshibi",
+  "name" : "Egilshibi",
+  "group" : "vurebindu",
+  "color" : "#d251d3"
+}, {
+  "key" : "elephant_command",
+  "name" : "Elephant Command",
+  "group" : "hobgoblin",
+  "color" : "#79d4c6"
+}, {
+  "key" : "elikhander",
+  "name" : "Elikhander",
+  "group" : "escanni",
+  "color" : "#814acd"
+}, {
+  "key" : "elnarfolk",
+  "name" : "Elnarfolk",
+  "group" : "gerudian",
+  "color" : "#9c6364"
+}, {
+  "key" : "eltibhar",
+  "name" : "Eltibhar",
+  "group" : "eltibhari_ruinborn_elf",
+  "color" : "#8f5abb"
+}, {
+  "key" : "eltibhen",
+  "name" : "Eltibhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#675abb"
+}, {
+  "key" : "emerald_dwarf",
+  "name" : "Emerald Dwarf",
+  "group" : "dwarven",
+  "color" : "#a383b1"
+}, {
+  "key" : "emerald_orc",
+  "name" : "Emerald Orc",
+  "group" : "orcish",
+  "color" : "#415697"
+}, {
+  "key" : "empkhebhen",
+  "name" : "Empkhebhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#4b4c8c"
+}, {
+  "key" : "enebhen",
+  "name" : "Enebhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#6776c3"
+}, {
+  "key" : "enigrax",
+  "name" : "Enigrax",
+  "group" : "akasi",
+  "color" : "#9e7f5e"
+}, {
+  "key" : "epednar",
+  "name" : "Epednar",
+  "group" : "harafic_ruinborn_elf",
+  "color" : "#71c66e"
+}, {
+  "key" : "esmari",
+  "name" : "Esmari",
+  "group" : "anbennarian",
+  "color" : "#55689d"
+}, {
+  "key" : "estairey",
+  "name" : "Estairey",
+  "group" : "escanni",
+  "color" : "#94d179"
+}, {
+  "key" : "esthili",
+  "name" : "Esthili",
+  "group" : "escanni",
+  "color" : "#c0b0c2"
+}, {
+  "key" : "exodus_goblin",
+  "name" : "Exodus Goblin",
+  "group" : "goblin",
+  "color" : "#8c6b78"
+}, {
+  "key" : "exwesser",
+  "name" : "Exwesser",
+  "group" : "anbennarian",
+  "color" : "#8a9194"
+}, {
+  "key" : "faalte",
+  "name" : "Faalte",
+  "group" : "amadian_ruinborn_elf",
+  "color" : "#73cfae"
+}, {
+  "key" : "far_akasi",
+  "name" : "Far Akasi",
+  "group" : "akasi",
+  "color" : "#c1c29e"
+}, {
+  "key" : "farrani_half_elf",
+  "name" : "Farrani Half Elf",
+  "group" : "escanni",
+  "color" : "#8d699f"
+}, {
+  "key" : "fathide_ogre",
+  "name" : "Fathide Ogre",
+  "group" : "ogre",
+  "color" : "#ab57d2"
+}, {
+  "key" : "fenghuang_command",
+  "name" : "Fenghuang Command",
+  "group" : "hobgoblin",
+  "color" : "#3d5f9a"
+}, {
+  "key" : "feytouched_mechanim",
+  "name" : "Feytouched Mechanim",
+  "group" : "mechanim",
+  "color" : "#c57e63"
+}, {
+  "key" : "fiadionni",
+  "name" : "Fiadionni",
+  "group" : "anbennarian",
+  "color" : "#d9b378"
+}, {
+  "key" : "fieldstalker_gnoll",
+  "name" : "Fieldstalker Gnoll",
+  "group" : "gnollish",
+  "color" : "#779379"
+}, {
+  "key" : "firanyan_harpy",
+  "name" : "Firanyan Harpy",
+  "group" : "harpy",
+  "color" : "#49a665"
+}, {
+  "key" : "fjord_troll",
+  "name" : "Fjord Troll",
+  "group" : "giantkind",
+  "color" : "#cb97d9"
+}, {
+  "key" : "flamemarked_gnoll",
+  "name" : "Flamemarked Gnoll",
+  "group" : "gnollish",
+  "color" : "#4480b3"
+}, {
+  "key" : "flameweaver_mechanim",
+  "name" : "Flameweaver Mechanim",
+  "group" : "mechanim",
+  "color" : "#c6c7c6"
+}, {
+  "key" : "flint_dwarf",
+  "name" : "Flint Dwarf",
+  "group" : "dwarven",
+  "color" : "#a8da71"
+}, {
+  "key" : "fograc",
+  "name" : "Fograc",
+  "group" : "eordan_ruinborn_elf",
+  "color" : "#d246d7"
+}, {
+  "key" : "fomarati",
+  "name" : "Fomarati",
+  "group" : "halfling",
+  "color" : "#bdbe94"
+}, {
+  "key" : "forest_goblin",
+  "name" : "Forest Goblin",
+  "group" : "goblin",
+  "color" : "#b59aac"
+}, {
+  "key" : "forest_troll",
+  "name" : "Forest Troll",
+  "group" : "giantkind",
+  "color" : "#8b7870"
+}, {
+  "key" : "frontier_gnome",
+  "name" : "Frontier Gnome",
+  "group" : "gnomish",
+  "color" : "#6ac1b0"
+}, {
+  "key" : "gangim",
+  "name" : "Gangim",
+  "group" : "yan",
+  "color" : "#d35c89"
+}, {
+  "key" : "garnet_dwarf",
+  "name" : "Garnet Dwarf",
+  "group" : "dwarven",
+  "color" : "#64a3d8"
+}, {
+  "key" : "gataw",
+  "name" : "Gataw",
+  "group" : "kelino",
+  "color" : "#aca875"
+}, {
+  "key" : "gawedi",
+  "name" : "Gawedi",
+  "group" : "alenic",
+  "color" : "#a9ab8d"
+}, {
+  "key" : "gelkar",
+  "name" : "Gelkar",
+  "group" : "bulwari",
+  "color" : "#4a3fc1"
+}, {
+  "key" : "gerudian_reachman",
+  "name" : "Gerudian Reachman",
+  "group" : "gerudian",
+  "color" : "#4f677f"
+}, {
+  "key" : "ghankedhen",
+  "name" : "Ghankedhen",
+  "group" : "south_raheni",
+  "color" : "#b18669"
+}, {
+  "key" : "ghanzamh_centaur",
+  "name" : "Ghanzamh Centaur",
+  "group" : "centaur",
+  "color" : "#a3bf7e"
+}, {
+  "key" : "ghavaanaj",
+  "name" : "Ghavaanaj",
+  "group" : "upper_raheni",
+  "color" : "#5dd55b"
+}, {
+  "key" : "giltpetal_mechanim",
+  "name" : "Giltpetal Mechanim",
+  "group" : "mechanim",
+  "color" : "#894f7d"
+}, {
+  "key" : "giteuni",
+  "name" : "Giteuni",
+  "group" : "gowon",
+  "color" : "#b981bd"
+}, {
+  "key" : "glacier_gnome",
+  "name" : "Glacier Gnome",
+  "group" : "gnomish",
+  "color" : "#cc9d7e"
+}, {
+  "key" : "gliosine",
+  "name" : "Gliosine",
+  "group" : "anbennarian",
+  "color" : "#b4d154"
+}, {
+  "key" : "glorybound_mechanim",
+  "name" : "Glorybound Mechanim",
+  "group" : "mechanim",
+  "color" : "#7c5374"
+}, {
+  "key" : "gold_dwarf",
+  "name" : "Gold Dwarf",
+  "group" : "dwarven",
+  "color" : "#5f58b7"
+}, {
+  "key" : "goldscale_kobold",
+  "name" : "Goldscale Kobold",
+  "group" : "kobold",
+  "color" : "#7a6ea7"
+}, {
+  "key" : "goldtooth_goblin",
+  "name" : "Goldtooth Goblin",
+  "group" : "goblin",
+  "color" : "#ca55a9"
+}, {
+  "key" : "golemkin_mechanim",
+  "name" : "Golemkin Mechanim",
+  "group" : "mechanim",
+  "color" : "#85d25c"
+}, {
+  "key" : "gomzumu",
+  "name" : "Gomzumu",
+  "group" : "vurebindu",
+  "color" : "#c49ca1"
+}, {
+  "key" : "gon",
+  "name" : "Gon",
+  "group" : "bom",
+  "color" : "#c28c3d"
+}, {
+  "key" : "granite_dwarf",
+  "name" : "Granite Dwarf",
+  "group" : "dwarven",
+  "color" : "#4155c9"
+}, {
+  "key" : "gray_orc",
+  "name" : "Gray Orc",
+  "group" : "orcish",
+  "color" : "#a05b77"
+}, {
+  "key" : "green_orc",
+  "name" : "Green Orc",
+  "group" : "orcish",
+  "color" : "#804f54"
+}, {
+  "key" : "green_reachman",
+  "name" : "Green Reachman",
+  "group" : "reachman",
+  "color" : "#5f64bb"
+}, {
+  "key" : "greenscale_kobold",
+  "name" : "Greenscale Kobold",
+  "group" : "kobold",
+  "color" : "#bdc160"
+}, {
+  "key" : "grombar_half_orc",
+  "name" : "Grombar Half Orc",
+  "group" : "escanni",
+  "color" : "#a56a84"
+}, {
+  "key" : "grombar_orc",
+  "name" : "Grombar Orc",
+  "group" : "orcish",
+  "color" : "#677c7c"
+}, {
+  "key" : "gumzemo",
+  "name" : "Gumzemo",
+  "group" : "irsukuba",
+  "color" : "#c8d33d"
+}, {
+  "key" : "guryadagga",
+  "name" : "Guryadagga",
+  "group" : "baashidi",
+  "color" : "#54825c"
+}, {
+  "key" : "guwaadun",
+  "name" : "Guwaadun",
+  "group" : "gowon",
+  "color" : "#5076a3"
+}, {
+  "key" : "guyan",
+  "name" : "Guyan",
+  "group" : "yan",
+  "color" : "#94727e"
+}, {
+  "key" : "haiwai",
+  "name" : "Haiwai",
+  "group" : "yan",
+  "color" : "#abca5c"
+}, {
+  "key" : "half_elf",
+  "name" : "Half Elf",
+  "group" : "anbennarian",
+  "color" : "#af62c8"
+}, {
+  "key" : "half_orc",
+  "name" : "Half Orc",
+  "group" : "escanni",
+  "color" : "#d088c8"
+}, {
+  "key" : "haloalao",
+  "name" : "Haloalao",
+  "group" : "anakue",
+  "color" : "#51b7a7"
+}, {
+  "key" : "hapremiti",
+  "name" : "Hapremiti",
+  "group" : "kheteratan",
+  "color" : "#d7a37f"
+}, {
+  "key" : "harafe",
+  "name" : "Harafe",
+  "group" : "harafic_ruinborn_elf",
+  "color" : "#63cf60"
+}, {
+  "key" : "havoric",
+  "name" : "Havoric",
+  "group" : "anbennarian",
+  "color" : "#56a6bd"
+}, {
+  "key" : "heartman",
+  "name" : "Heartman",
+  "group" : "escanni",
+  "color" : "#5083ce"
+}, {
+  "key" : "high_lorentish",
+  "name" : "High Lorentish",
+  "group" : "lencori",
+  "color" : "#61a15c"
+}, {
+  "key" : "highhold_orc",
+  "name" : "Highhold Orc",
+  "group" : "orcish",
+  "color" : "#be5395"
+}, {
+  "key" : "hill_gnoll",
+  "name" : "Hill Gnoll",
+  "group" : "gnollish",
+  "color" : "#46cc5e"
+}, {
+  "key" : "hill_troll",
+  "name" : "Hill Troll",
+  "group" : "giantkind",
+  "color" : "#cfcf77"
+}, {
+  "key" : "hillsworn_harimari",
+  "name" : "Hillsworn Harimari",
+  "group" : "harimari",
+  "color" : "#90b7db"
+}, {
+  "key" : "hinphat",
+  "name" : "Hinphat",
+  "group" : "kai",
+  "color" : "#747dd3"
+}, {
+  "key" : "hishakaya_lizardfolk",
+  "name" : "Hishakaya Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#b0687a"
+}, {
+  "key" : "holohana_culture",
+  "name" : "Holohana Culture",
+  "group" : "holohana_culture_group",
+  "color" : "#418259"
+}, {
+  "key" : "holoino",
+  "name" : "Holoino",
+  "group" : "anakue",
+  "color" : "#bc7253"
+}, {
+  "key" : "homunculi",
+  "name" : "Homunculi",
+  "group" : "construct",
+  "color" : "#8ac376"
+}, {
+  "key" : "honolitzlo",
+  "name" : "Honolitzlo",
+  "group" : "yanacotle",
+  "color" : "#6aa49c"
+}, {
+  "key" : "horakheti",
+  "name" : "Horakheti",
+  "group" : "kheteratan",
+  "color" : "#83a34c"
+}, {
+  "key" : "horizon_elf",
+  "name" : "Horizon Elf",
+  "group" : "elven",
+  "color" : "#77b76e"
+}, {
+  "key" : "horned_ogre",
+  "name" : "Horned Ogre",
+  "group" : "ogre",
+  "color" : "#847ac0"
+}, {
+  "key" : "huinui",
+  "name" : "Huinui",
+  "group" : "anakue",
+  "color" : "#a2a1d6"
+}, {
+  "key" : "hujan",
+  "name" : "Hujan",
+  "group" : "yanglam",
+  "color" : "#86918c"
+}, {
+  "key" : "ice_sleepers",
+  "name" : "Ice Sleepers",
+  "group" : "degenerated_elf",
+  "color" : "#9f5a6e"
+}, {
+  "key" : "ichiadza_lizardfolk",
+  "name" : "Ichiadza Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#d4bb76"
+}, {
+  "key" : "ikaniwagain",
+  "name" : "Ikaniwagain",
+  "group" : "wuhyun",
+  "color" : "#7f5f91"
+}, {
+  "key" : "ikilshebe",
+  "name" : "Ikilshebe",
+  "group" : "irsukuba",
+  "color" : "#aa526a"
+}, {
+  "key" : "ilatani",
+  "name" : "Ilatani",
+  "group" : "businori",
+  "color" : "#4289a2"
+}, {
+  "key" : "imperial_gnome",
+  "name" : "Imperial Gnome",
+  "group" : "gnomish",
+  "color" : "#b8c0c4"
+}, {
+  "key" : "imperial_halfling",
+  "name" : "Imperial Halfling",
+  "group" : "halfling",
+  "color" : "#894873"
+}, {
+  "key" : "inaer_centaur",
+  "name" : "Inaer Centaur",
+  "group" : "centaur",
+  "color" : "#9cd7bf"
+}, {
+  "key" : "iochander",
+  "name" : "Iochander",
+  "group" : "lencori",
+  "color" : "#d5afbb"
+}, {
+  "key" : "ionnic",
+  "name" : "Ionnic",
+  "group" : "escanni",
+  "color" : "#7cd158"
+}, {
+  "key" : "irdu_centaur",
+  "name" : "Irdu Centaur",
+  "group" : "centaur",
+  "color" : "#8d8cbd"
+}, {
+  "key" : "irikin_lizardfolk",
+  "name" : "Irikin Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#69c8d2"
+}, {
+  "key" : "iron_dwarf",
+  "name" : "Iron Dwarf",
+  "group" : "dwarven",
+  "color" : "#c79ed9"
+}, {
+  "key" : "ironheart_mechanim",
+  "name" : "Ironheart Mechanim",
+  "group" : "mechanim",
+  "color" : "#6bd2c9"
+}, {
+  "key" : "irsmahapan",
+  "name" : "Irsmahapan",
+  "group" : "kheteratan",
+  "color" : "#a25c70"
+}, {
+  "key" : "isobeliner",
+  "name" : "Isobeliner",
+  "group" : "trollsbayer",
+  "color" : "#7288bb"
+}, {
+  "key" : "istranari",
+  "name" : "Istranari",
+  "group" : "ynnsman",
+  "color" : "#bf5eba"
+}, {
+  "key" : "itayzemby_lizardfolk",
+  "name" : "Itayzemby Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#a395d6"
+}, {
+  "key" : "itrahuresi",
+  "name" : "Itrahuresi",
+  "group" : "bulwari",
+  "color" : "#acd77e"
+}, {
+  "key" : "jade_dwarf",
+  "name" : "Jade Dwarf",
+  "group" : "dwarven",
+  "color" : "#974d92"
+}, {
+  "key" : "jahe_half_elf",
+  "name" : "Jahe Half Elf",
+  "group" : "kelino",
+  "color" : "#7aad7f"
+}, {
+  "key" : "jahe_half_elf_cannorianise",
+  "name" : "Jahe Half Elf Cannorianise",
+  "group" : "kelino",
+  "color" : "#a3cf86"
+}, {
+  "key" : "jahe_kelino",
+  "name" : "Jahe Kelino",
+  "group" : "kelino",
+  "color" : "#7fa6ae"
+}, {
+  "key" : "jarnklo_harpy",
+  "name" : "Jarnklo Harpy",
+  "group" : "harpy",
+  "color" : "#da71a3"
+}, {
+  "key" : "jatukyu_kobold",
+  "name" : "Jatukyu Kobold",
+  "group" : "kobold",
+  "color" : "#754480"
+}, {
+  "key" : "jiangszun",
+  "name" : "Jiangszun",
+  "group" : "yan",
+  "color" : "#57b5a0"
+}, {
+  "key" : "jiangyang",
+  "name" : "Jiangyang",
+  "group" : "yan",
+  "color" : "#b891a2"
+}, {
+  "key" : "jiromji",
+  "name" : "Jiromji",
+  "group" : "west_sarhaly",
+  "color" : "#6c91d7"
+}, {
+  "key" : "kahuipa",
+  "name" : "Kahuipa",
+  "group" : "anakue",
+  "color" : "#d368cd"
+}, {
+  "key" : "kai_half_elf",
+  "name" : "Kai Half Elf",
+  "group" : "kai",
+  "color" : "#bb7354"
+}, {
+  "key" : "kaino",
+  "name" : "Kaino",
+  "group" : "west_sarhaly",
+  "color" : "#509ead"
+}, {
+  "key" : "kalavendhi",
+  "name" : "Kalavendhi",
+  "group" : "taychendi_ruinborn_elf",
+  "color" : "#cdd9d6"
+}, {
+  "key" : "kamgoro",
+  "name" : "Kamgoro",
+  "group" : "utubodi",
+  "color" : "#b8d76d"
+}, {
+  "key" : "kamtarhid",
+  "name" : "Kamtarhid",
+  "group" : "upper_raheni",
+  "color" : "#5192ae"
+}, {
+  "key" : "kano_kelino",
+  "name" : "Kano Kelino",
+  "group" : "kelino",
+  "color" : "#7c5499"
+}, {
+  "key" : "kapelami",
+  "name" : "Kapelami",
+  "group" : "anakue",
+  "color" : "#788eb6"
+}, {
+  "key" : "karakhanbari_orc",
+  "name" : "Karakhanbari Orc",
+  "group" : "orcish",
+  "color" : "#42a0d1"
+}, {
+  "key" : "karashari_orc",
+  "name" : "Karashari Orc",
+  "group" : "orcish",
+  "color" : "#9bb8ac"
+}, {
+  "key" : "karshyray_lizardfolk",
+  "name" : "Karshyray Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#d7cebd"
+}, {
+  "key" : "kaukai",
+  "name" : "Kaukai",
+  "group" : "anakue",
+  "color" : "#905b80"
+}, {
+  "key" : "kaztubari_half_orc",
+  "name" : "Kaztubari Half Orc",
+  "group" : "escanni",
+  "color" : "#b44860"
+}, {
+  "key" : "kaztubari_orc",
+  "name" : "Kaztubari Orc",
+  "group" : "orcish",
+  "color" : "#b8a4c7"
+}, {
+  "key" : "kehepo",
+  "name" : "Kehepo",
+  "group" : "yanacotle",
+  "color" : "#d2bcb2"
+}, {
+  "key" : "kelino",
+  "name" : "Kelino",
+  "group" : "kelino",
+  "color" : "#74bcb4"
+}, {
+  "key" : "keyobhen",
+  "name" : "Keyobhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#5b5153"
+}, {
+  "key" : "khamgunai",
+  "name" : "Khamgunai",
+  "group" : "triunic",
+  "color" : "#db58cf"
+}, {
+  "key" : "khasani",
+  "name" : "Khasani",
+  "group" : "akasi",
+  "color" : "#89897b"
+}, {
+  "key" : "khedarid",
+  "name" : "Khedarid",
+  "group" : "upper_raheni",
+  "color" : "#64a5ca"
+}, {
+  "key" : "kherkabhen",
+  "name" : "Kherkabhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#6bc594"
+}, {
+  "key" : "khetfeaster_gnoll",
+  "name" : "Khetfeaster Gnoll",
+  "group" : "gnollish",
+  "color" : "#499c99"
+}, {
+  "key" : "khethakran",
+  "name" : "Khethakran",
+  "group" : "bom",
+  "color" : "#b5cea6"
+}, {
+  "key" : "kimabhen",
+  "name" : "Kimabhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#5dad4d"
+}, {
+  "key" : "kintonan",
+  "name" : "Kintonan",
+  "group" : "wuhyun",
+  "color" : "#6ca393"
+}, {
+  "key" : "kiohan_harpy",
+  "name" : "Kiohan Harpy",
+  "group" : "harpy",
+  "color" : "#8388b1"
+}, {
+  "key" : "klereyen",
+  "name" : "Klereyen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#87a7aa"
+}, {
+  "key" : "knightsworn_goblin",
+  "name" : "Knightsworn Goblin",
+  "group" : "goblin",
+  "color" : "#9868b4"
+}, {
+  "key" : "kobildzani_kobold",
+  "name" : "Kobildzani Kobold",
+  "group" : "kobold",
+  "color" : "#bfcaa1"
+}, {
+  "key" : "kombedak",
+  "name" : "Kombedak",
+  "group" : "inyaswarosa",
+  "color" : "#7e5682"
+}, {
+  "key" : "kooras",
+  "name" : "Kooras",
+  "group" : "harafic_ruinborn_elf",
+  "color" : "#95a4a2"
+}, {
+  "key" : "korosheshi",
+  "name" : "Korosheshi",
+  "group" : "kheteratan",
+  "color" : "#81739a"
+}, {
+  "key" : "kronium_dwarf",
+  "name" : "Kronium Dwarf",
+  "group" : "dwarven",
+  "color" : "#da5d8a"
+}, {
+  "key" : "kudemtu",
+  "name" : "Kudemtu",
+  "group" : "irsukuba",
+  "color" : "#9fa04e"
+}, {
+  "key" : "kudenta",
+  "name" : "Kudenta",
+  "group" : "vurebindu",
+  "color" : "#8ca44e"
+}, {
+  "key" : "kuichahiu",
+  "name" : "Kuichahiu",
+  "group" : "yanacotle",
+  "color" : "#73ce65"
+}, {
+  "key" : "kuivanhi",
+  "name" : "Kuivanhi",
+  "group" : "vurebindu",
+  "color" : "#c1828c"
+}, {
+  "key" : "kuivendi",
+  "name" : "Kuivendi",
+  "group" : "irsukuba",
+  "color" : "#c1738e"
+}, {
+  "key" : "kukatodic",
+  "name" : "Kukatodic",
+  "group" : "triunic",
+  "color" : "#9fbb57"
+}, {
+  "key" : "kuldaakin",
+  "name" : "Kuldaakin",
+  "group" : "yan",
+  "color" : "#8abf6a"
+}, {
+  "key" : "kuuldaar",
+  "name" : "Kuuldaar",
+  "group" : "khantaar",
+  "color" : "#6b6a7a"
+}, {
+  "key" : "kuzarami",
+  "name" : "Kuzarami",
+  "group" : "bulwari",
+  "color" : "#58614e"
+}, {
+  "key" : "kwineh",
+  "name" : "Kwineh",
+  "group" : "north_ruinborn_elf",
+  "color" : "#509770"
+}, {
+  "key" : "laautele",
+  "name" : "Laautele",
+  "group" : "tagaala",
+  "color" : "#cf73c4"
+}, {
+  "key" : "laii",
+  "name" : "Laii",
+  "group" : "effelai_ruinborn_elf",
+  "color" : "#91cd6e"
+}, {
+  "key" : "larankarha",
+  "name" : "Larankarha",
+  "group" : "taychendi_ruinborn_elf",
+  "color" : "#c74bce"
+}, {
+  "key" : "layang",
+  "name" : "Layang",
+  "group" : "yanglam",
+  "color" : "#d2c156"
+}, {
+  "key" : "lead_dwarf",
+  "name" : "Lead Dwarf",
+  "group" : "dwarven",
+  "color" : "#5b8a4d"
+}, {
+  "key" : "leechmen",
+  "name" : "Leechmen",
+  "group" : "degenerated_elf",
+  "color" : "#4144ad"
+}, {
+  "key" : "lencori_half_elf",
+  "name" : "Lencori Half Elf",
+  "group" : "lencori",
+  "color" : "#d6537d"
+}, {
+  "key" : "lesser_undead",
+  "name" : "Lesser Undead",
+  "group" : "undead",
+  "color" : "#72504c"
+}, {
+  "key" : "lich",
+  "name" : "Lich",
+  "group" : "undead",
+  "color" : "#7e4a6e"
+}, {
+  "key" : "lion_command",
+  "name" : "Lion Command",
+  "group" : "hobgoblin",
+  "color" : "#a4d690"
+}, {
+  "key" : "lokebhen",
+  "name" : "Lokebhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#c8cb82"
+}, {
+  "key" : "low_lorentish",
+  "name" : "Low Lorentish",
+  "group" : "lencori",
+  "color" : "#93b0bf"
+}, {
+  "key" : "luciander",
+  "name" : "Luciander",
+  "group" : "escanni",
+  "color" : "#d1a244"
+}, {
+  "key" : "luoxian",
+  "name" : "Luoxian",
+  "group" : "yan",
+  "color" : "#a0cfb8"
+}, {
+  "key" : "macamairghe",
+  "name" : "Macamairghe",
+  "group" : "eltibhari_ruinborn_elf",
+  "color" : "#d1d783"
+}, {
+  "key" : "magitek_mechanim",
+  "name" : "Magitek Mechanim",
+  "group" : "mechanim",
+  "color" : "#655e52"
+}, {
+  "key" : "malachite_dwarf",
+  "name" : "Malachite Dwarf",
+  "group" : "dwarven",
+  "color" : "#8b9c53"
+}, {
+  "key" : "malacnari",
+  "name" : "Malacnari",
+  "group" : "ynnic_ruinborn_elf",
+  "color" : "#c085be"
+}, {
+  "key" : "malogadin",
+  "name" : "Malogadin",
+  "group" : "yenbenmirra",
+  "color" : "#b43db5"
+}, {
+  "key" : "mangalclimber_mechanim",
+  "name" : "Mangalclimber Mechanim",
+  "group" : "mechanim",
+  "color" : "#5f6cc6"
+}, {
+  "key" : "manhunter_orc",
+  "name" : "Manhunter Orc",
+  "group" : "orcish",
+  "color" : "#7756b7"
+}, {
+  "key" : "mantimatu",
+  "name" : "Mantimatu",
+  "group" : "west_sarhaly",
+  "color" : "#60a8cb"
+}, {
+  "key" : "maqeti",
+  "name" : "Maqeti",
+  "group" : "bulwari",
+  "color" : "#b947c8"
+}, {
+  "key" : "marble_dwarf",
+  "name" : "Marble Dwarf",
+  "group" : "dwarven",
+  "color" : "#3cd157"
+}, {
+  "key" : "march_goblin",
+  "name" : "March Goblin",
+  "group" : "goblin",
+  "color" : "#8fcd6a"
+}, {
+  "key" : "marcher",
+  "name" : "Marcher",
+  "group" : "escanni",
+  "color" : "#8cb63e"
+}, {
+  "key" : "marlliander",
+  "name" : "Marlliander",
+  "group" : "trollsbayer",
+  "color" : "#d556c0"
+}, {
+  "key" : "marrodic",
+  "name" : "Marrodic",
+  "group" : "alenic",
+  "color" : "#5f725b"
+}, {
+  "key" : "mashkay_lizardfolk",
+  "name" : "Mashkay Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#3f5ac1"
+}, {
+  "key" : "masiddu_mechanim",
+  "name" : "Masiddu Mechanim",
+  "group" : "mechanim",
+  "color" : "#9e94b6"
+}, {
+  "key" : "masnsih",
+  "name" : "Masnsih",
+  "group" : "bulwari",
+  "color" : "#7f9751"
+}, {
+  "key" : "maukepa",
+  "name" : "Maukepa",
+  "group" : "anakue",
+  "color" : "#48556c"
+}, {
+  "key" : "maupalo",
+  "name" : "Maupalo",
+  "group" : "anakue",
+  "color" : "#71ac6e"
+}, {
+  "key" : "mautpokla",
+  "name" : "Mautpokla",
+  "group" : "yanacotle",
+  "color" : "#8a997a"
+}, {
+  "key" : "mayte",
+  "name" : "Mayte",
+  "group" : "harafic_ruinborn_elf",
+  "color" : "#724ac9"
+}, {
+  "key" : "mazava",
+  "name" : "Mazava",
+  "group" : "halfling",
+  "color" : "#c28fcc"
+}, {
+  "key" : "mboala",
+  "name" : "Mboala",
+  "group" : "halfling",
+  "color" : "#b845d5"
+}, {
+  "key" : "merine",
+  "name" : "Merine",
+  "group" : "escanni",
+  "color" : "#c24760"
+}, {
+  "key" : "metobesebi",
+  "name" : "Metobesebi",
+  "group" : "mengi",
+  "color" : "#cb589c"
+}, {
+  "key" : "metsamic",
+  "name" : "Metsamic",
+  "group" : "triunic",
+  "color" : "#798ca5"
+}, {
+  "key" : "mithril_dwarf",
+  "name" : "Mithril Dwarf",
+  "group" : "dwarven",
+  "color" : "#c44284"
+}, {
+  "key" : "mogirga",
+  "name" : "Mogirga",
+  "group" : "besholgi",
+  "color" : "#a4ac6a"
+}, {
+  "key" : "moilona",
+  "name" : "Moilona",
+  "group" : "anakue",
+  "color" : "#99cd87"
+}, {
+  "key" : "mokaika",
+  "name" : "Mokaika",
+  "group" : "anakue",
+  "color" : "#c3c69e"
+}, {
+  "key" : "molopai",
+  "name" : "Molopai",
+  "group" : "anakue",
+  "color" : "#afb3b3"
+}, {
+  "key" : "moltenbrand_orc",
+  "name" : "Moltenbrand Orc",
+  "group" : "orcish",
+  "color" : "#b142d9"
+}, {
+  "key" : "momoki",
+  "name" : "Momoki",
+  "group" : "utubodi",
+  "color" : "#7e434b"
+}, {
+  "key" : "moon_elf",
+  "name" : "Moon Elf",
+  "group" : "elven",
+  "color" : "#7dc6b4"
+}, {
+  "key" : "moorman",
+  "name" : "Moorman",
+  "group" : "alenic",
+  "color" : "#718c3e"
+}, {
+  "key" : "moorman_r",
+  "name" : "Moorman R",
+  "group" : "reachman",
+  "color" : "#649eab"
+}, {
+  "key" : "moredhalic",
+  "name" : "Moredhalic",
+  "group" : "escanni",
+  "color" : "#5a48d4"
+}, {
+  "key" : "mossmouth_ogre",
+  "name" : "Mossmouth Ogre",
+  "group" : "ogre",
+  "color" : "#8183b8"
+}, {
+  "key" : "motlapaxi",
+  "name" : "Motlapaxi",
+  "group" : "yanacotle",
+  "color" : "#455dcb"
+}, {
+  "key" : "motzaikli",
+  "name" : "Motzaikli",
+  "group" : "yanacotle",
+  "color" : "#54ab4c"
+}, {
+  "key" : "mteibhar",
+  "name" : "Mteibhar",
+  "group" : "devandi_ruinborn_elf",
+  "color" : "#7e4a9e"
+}, {
+  "key" : "mteirghe",
+  "name" : "Mteirghe",
+  "group" : "eltibhari_ruinborn_elf",
+  "color" : "#b9aca5"
+}, {
+  "key" : "muthadhaya",
+  "name" : "Muthadhaya",
+  "group" : "middle_raheni",
+  "color" : "#7c8d50"
+}, {
+  "key" : "naamjyut",
+  "name" : "Naamjyut",
+  "group" : "yan",
+  "color" : "#497191"
+}, {
+  "key" : "naamzau",
+  "name" : "Naamzau",
+  "group" : "yan",
+  "color" : "#abb059"
+}, {
+  "key" : "naleni_harpy",
+  "name" : "Naleni Harpy",
+  "group" : "harpy",
+  "color" : "#46a147"
+}, {
+  "key" : "nariandi",
+  "name" : "Nariandi",
+  "group" : "businori",
+  "color" : "#589397"
+}, {
+  "key" : "nathalairey",
+  "name" : "Nathalairey",
+  "group" : "dostanorian_g",
+  "color" : "#88a041"
+}, {
+  "key" : "ndurubu",
+  "name" : "Ndurubu",
+  "group" : "west_sarhaly",
+  "color" : "#914354"
+}, {
+  "key" : "nephrite_dwarf",
+  "name" : "Nephrite Dwarf",
+  "group" : "dwarven",
+  "color" : "#d6c7b3"
+}, {
+  "key" : "neratican",
+  "name" : "Neratican",
+  "group" : "dostanorian_g",
+  "color" : "#d1baba"
+}, {
+  "key" : "new_havoric",
+  "name" : "New Havoric",
+  "group" : "ynnsman",
+  "color" : "#97d6ba"
+}, {
+  "key" : "newfoot_halfling",
+  "name" : "Newfoot Halfling",
+  "group" : "halfling",
+  "color" : "#b6b5b6"
+}, {
+  "key" : "nightengine_mechanim",
+  "name" : "Nightengine Mechanim",
+  "group" : "mechanim",
+  "color" : "#cfb597"
+}, {
+  "key" : "nuraryi_harpy",
+  "name" : "Nuraryi Harpy",
+  "group" : "harpy",
+  "color" : "#aba59e"
+}, {
+  "key" : "nurcestiran",
+  "name" : "Nurcestiran",
+  "group" : "escanni",
+  "color" : "#409086"
+}, {
+  "key" : "nuzenapu_harpy",
+  "name" : "Nuzenapu Harpy",
+  "group" : "harpy",
+  "color" : "#a96f6b"
+}, {
+  "key" : "nzeri_harpy",
+  "name" : "Nzeri Harpy",
+  "group" : "harpy",
+  "color" : "#af69b8"
+}, {
+  "key" : "obsidian_dwarf",
+  "name" : "Obsidian Dwarf",
+  "group" : "dwarven",
+  "color" : "#7a715f"
+}, {
+  "key" : "ofehibi",
+  "name" : "Ofehibi",
+  "group" : "mengi",
+  "color" : "#529f5e"
+}, {
+  "key" : "oinukhudi",
+  "name" : "Oinukhudi",
+  "group" : "khudi",
+  "color" : "#58788c"
+}, {
+  "key" : "oktibhen",
+  "name" : "Oktibhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#bc40c1"
+}, {
+  "key" : "olavish",
+  "name" : "Olavish",
+  "group" : "gerudian",
+  "color" : "#687469"
+}, {
+  "key" : "old_alenic",
+  "name" : "Old Alenic",
+  "group" : "alenic",
+  "color" : "#42d39f"
+}, {
+  "key" : "old_rzentur",
+  "name" : "Old Rzentur",
+  "group" : "ynnic_ruinborn_elf",
+  "color" : "#c46144"
+}, {
+  "key" : "oonoi",
+  "name" : "Oonoi",
+  "group" : "effelai_ruinborn_elf",
+  "color" : "#444c4c"
+}, {
+  "key" : "opal_dwarf",
+  "name" : "Opal Dwarf",
+  "group" : "dwarven",
+  "color" : "#8b7cac"
+}, {
+  "key" : "orachav",
+  "name" : "Orachav",
+  "group" : "triunic",
+  "color" : "#745f9d"
+}, {
+  "key" : "orderwrought_mechanim",
+  "name" : "Orderwrought Mechanim",
+  "group" : "mechanim",
+  "color" : "#656a8c"
+}, {
+  "key" : "ormabhen",
+  "name" : "Ormabhen",
+  "group" : "kheionai_ruinborn_elf",
+  "color" : "#c276ca"
+}, {
+  "key" : "ourdi",
+  "name" : "Ourdi",
+  "group" : "dostanorian_g",
+  "color" : "#4d944f"
+}, {
+  "key" : "ozgar_orc",
+  "name" : "Ozgar Orc",
+  "group" : "orcish",
+  "color" : "#aa60d2"
+}, {
+  "key" : "paru",
+  "name" : "Paru",
+  "group" : "yanglam",
+  "color" : "#50bf70"
+}, {
+  "key" : "parura",
+  "name" : "Parura",
+  "group" : "effelai_ruinborn_elf",
+  "color" : "#5f4147"
+}, {
+  "key" : "pashainey",
+  "name" : "Pashainey",
+  "group" : "anbennarian",
+  "color" : "#50588b"
+}, {
+  "key" : "pasindesh",
+  "name" : "Pasindesh",
+  "group" : "south_raheni",
+  "color" : "#d97c75"
+}, {
+  "key" : "pearlsedger",
+  "name" : "Pearlsedger",
+  "group" : "anbennarian",
+  "color" : "#c45554"
+}, {
+  "key" : "peitar",
+  "name" : "Peitar",
+  "group" : "eordan_ruinborn_elf",
+  "color" : "#6da27b"
+}, {
+  "key" : "peridot_dwarf",
+  "name" : "Peridot Dwarf",
+  "group" : "dwarven",
+  "color" : "#5c61c1"
+}, {
+  "key" : "perlatter",
+  "name" : "Perlatter",
+  "group" : "gerudian",
+  "color" : "#bb6942"
+}, {
+  "key" : "pezarangi_harpy",
+  "name" : "Pezarangi Harpy",
+  "group" : "harpy",
+  "color" : "#c48c9a"
+}, {
+  "key" : "phonan",
+  "name" : "Phonan",
+  "group" : "kai",
+  "color" : "#808ca8"
+}, {
+  "key" : "pinghoi",
+  "name" : "Pinghoi",
+  "group" : "yan",
+  "color" : "#4c61c1"
+}, {
+  "key" : "pipefoot_halfling",
+  "name" : "Pipefoot Halfling",
+  "group" : "halfling",
+  "color" : "#a86463"
+}, {
+  "key" : "plain_centaur",
+  "name" : "Plain Centaur",
+  "group" : "centaur",
+  "color" : "#7dc265"
+}, {
+  "key" : "plateau_runsukhi",
+  "name" : "Plateau Runsukhi",
+  "group" : "khantaar",
+  "color" : "#d0d8b9"
+}, {
+  "key" : "platinum_dwarf",
+  "name" : "Platinum Dwarf",
+  "group" : "dwarven",
+  "color" : "#ab5148"
+}, {
+  "key" : "poplacoa",
+  "name" : "Poplacoa",
+  "group" : "yanacotle",
+  "color" : "#abb871"
+}, {
+  "key" : "primal_harimari",
+  "name" : "Primal Harimari",
+  "group" : "harimari",
+  "color" : "#c54ac1"
+}, {
+  "key" : "pure_mechanim",
+  "name" : "Pure Mechanim",
+  "group" : "mechanim",
+  "color" : "#d1a482"
+}, {
+  "key" : "pyreclaw_gnoll",
+  "name" : "Pyreclaw Gnoll",
+  "group" : "gnollish",
+  "color" : "#607561"
+}, {
+  "key" : "pyrite_dwarf",
+  "name" : "Pyrite Dwarf",
+  "group" : "dwarven",
+  "color" : "#509365"
+}, {
+  "key" : "quartz_dwarf",
+  "name" : "Quartz Dwarf",
+  "group" : "dwarven",
+  "color" : "#baaece"
+}, {
+  "key" : "quchamar",
+  "name" : "Quchamar",
+  "group" : "amadian_ruinborn_elf",
+  "color" : "#42ae70"
+}, {
+  "key" : "quruwei",
+  "name" : "Quruwei",
+  "group" : "amadian_ruinborn_elf",
+  "color" : "#70d6a0"
+}, {
+  "key" : "rabhidarubsad",
+  "name" : "Rabhidarubsad",
+  "group" : "south_raheni",
+  "color" : "#a44c51"
+}, {
+  "key" : "raghamidesh",
+  "name" : "Raghamidesh",
+  "group" : "south_raheni",
+  "color" : "#3f487d"
+}, {
+  "key" : "rajnadhid",
+  "name" : "Rajnadhid",
+  "group" : "upper_raheni",
+  "color" : "#c95856"
+}, {
+  "key" : "ramsteel_dwarf",
+  "name" : "Ramsteel Dwarf",
+  "group" : "dwarven",
+  "color" : "#6cd6d8"
+}, {
+  "key" : "ranilau",
+  "name" : "Ranilau",
+  "group" : "bom",
+  "color" : "#726967"
+}, {
+  "key" : "rasarhid",
+  "name" : "Rasarhid",
+  "group" : "middle_raheni",
+  "color" : "#aa8868"
+}, {
+  "key" : "ravenmarcher",
+  "name" : "Ravenmarcher",
+  "group" : "escanni",
+  "color" : "#3cad5c"
+}, {
+  "key" : "ravenmarcher_d",
+  "name" : "Ravenmarcher D",
+  "group" : "dostanorian_g",
+  "color" : "#4191c5"
+}, {
+  "key" : "redfoot_halfling",
+  "name" : "Redfoot Halfling",
+  "group" : "halfling",
+  "color" : "#c5b6c7"
+}, {
+  "key" : "redscale_kobold",
+  "name" : "Redscale Kobold",
+  "group" : "kobold",
+  "color" : "#ab85d9"
+}, {
+  "key" : "redtusk_orc",
+  "name" : "Redtusk Orc",
+  "group" : "orcish",
+  "color" : "#c73d78"
+}, {
+  "key" : "reeflight_mechanim",
+  "name" : "Reeflight Mechanim",
+  "group" : "mechanim",
+  "color" : "#67a7ba"
+}, {
+  "key" : "reishao_harpy",
+  "name" : "Reishao Harpy",
+  "group" : "harpy",
+  "color" : "#586d8c"
+}, {
+  "key" : "reverian",
+  "name" : "Reverian",
+  "group" : "gerudian",
+  "color" : "#625fb7"
+}, {
+  "key" : "rhada_lizardfolk",
+  "name" : "Rhada Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#5189cc"
+}, {
+  "key" : "rinonokegyun",
+  "name" : "Rinonokegyun",
+  "group" : "wuhyun",
+  "color" : "#7a5e4b"
+}, {
+  "key" : "risbeko",
+  "name" : "Risbeko",
+  "group" : "bom",
+  "color" : "#7f7c91"
+}, {
+  "key" : "roaming_harimari",
+  "name" : "Roaming Harimari",
+  "group" : "harimari",
+  "color" : "#9d6db4"
+}, {
+  "key" : "rogieran",
+  "name" : "Rogieran",
+  "group" : "escanni",
+  "color" : "#b57570"
+}, {
+  "key" : "roilsardi",
+  "name" : "Roilsardi",
+  "group" : "lencori",
+  "color" : "#c54fd3"
+}, {
+  "key" : "rosanda",
+  "name" : "Rosanda",
+  "group" : "escanni",
+  "color" : "#3c9cce"
+}, {
+  "key" : "royal_harimari",
+  "name" : "Royal Harimari",
+  "group" : "harimari",
+  "color" : "#af7569"
+}, {
+  "key" : "ruby_dwarf",
+  "name" : "Ruby Dwarf",
+  "group" : "dwarven",
+  "color" : "#79aa91"
+}, {
+  "key" : "rugan_orc",
+  "name" : "Rugan Orc",
+  "group" : "orcish",
+  "color" : "#ce4fc1"
+}, {
+  "key" : "ruinchander",
+  "name" : "Ruinchander",
+  "group" : "north_ruinborn_elf",
+  "color" : "#73af82"
+}, {
+  "key" : "ruinscourge_gnoll",
+  "name" : "Ruinscourge Gnoll",
+  "group" : "gnollish",
+  "color" : "#d76e62"
+}, {
+  "key" : "runescribed_mechanim",
+  "name" : "Runescribed Mechanim",
+  "group" : "mechanim",
+  "color" : "#a99a7f"
+}, {
+  "key" : "runsukhi",
+  "name" : "Runsukhi",
+  "group" : "khantaar",
+  "color" : "#dbbd9b"
+}, {
+  "key" : "rustroad_goblin",
+  "name" : "Rustroad Goblin",
+  "group" : "goblin",
+  "color" : "#aeafba"
+}, {
+  "key" : "rzentur",
+  "name" : "Rzentur",
+  "group" : "ynnic_ruinborn_elf",
+  "color" : "#3c43b4"
+}, {
+  "key" : "sadnatu",
+  "name" : "Sadnatu",
+  "group" : "bulwari",
+  "color" : "#c6b843"
+}, {
+  "key" : "sandfang_gnoll",
+  "name" : "Sandfang Gnoll",
+  "group" : "gnollish",
+  "color" : "#3d8fbd"
+}, {
+  "key" : "sapphire_dwarf",
+  "name" : "Sapphire Dwarf",
+  "group" : "dwarven",
+  "color" : "#81cf41"
+}, {
+  "key" : "sarda",
+  "name" : "Sarda",
+  "group" : "ynnic_ruinborn_elf",
+  "color" : "#5d5b7e"
+}, {
+  "key" : "sarihaddi",
+  "name" : "Sarihaddi",
+  "group" : "taychendi_ruinborn_elf",
+  "color" : "#879e66"
+}, {
+  "key" : "sarisungi",
+  "name" : "Sarisungi",
+  "group" : "middle_raheni",
+  "color" : "#457e6a"
+}, {
+  "key" : "sarnik",
+  "name" : "Sarnik",
+  "group" : "ynnsman",
+  "color" : "#48af65"
+}, {
+  "key" : "sarniryabsad",
+  "name" : "Sarniryabsad",
+  "group" : "south_raheni",
+  "color" : "#abb06e"
+}, {
+  "key" : "sea_elf",
+  "name" : "Sea Elf",
+  "group" : "elven",
+  "color" : "#4b50a5"
+}, {
+  "key" : "seacrest_ogre",
+  "name" : "Seacrest Ogre",
+  "group" : "ogre",
+  "color" : "#7e48ba"
+}, {
+  "key" : "seascourge_gnoll",
+  "name" : "Seascourge Gnoll",
+  "group" : "gnollish",
+  "color" : "#b070c9"
+}, {
+  "key" : "seasong_mechanim",
+  "name" : "Seasong Mechanim",
+  "group" : "mechanim",
+  "color" : "#c54b82"
+}, {
+  "key" : "seedthrall",
+  "name" : "Seedthrall",
+  "group" : "degenerated_elf",
+  "color" : "#907260"
+}, {
+  "key" : "selphereg",
+  "name" : "Selphereg",
+  "group" : "eordan_ruinborn_elf",
+  "color" : "#9dc0b9"
+}, {
+  "key" : "semifire_harpy",
+  "name" : "Semifire Harpy",
+  "group" : "harpy",
+  "color" : "#c371b3"
+}, {
+  "key" : "serene_harimari",
+  "name" : "Serene Harimari",
+  "group" : "harimari",
+  "color" : "#bad879"
+}, {
+  "key" : "shagashay_lizardfolk",
+  "name" : "Shagashay Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#667283"
+}, {
+  "key" : "shagatyn_lizardfolk",
+  "name" : "Shagatyn Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#76436e"
+}, {
+  "key" : "shamadhan",
+  "name" : "Shamadhan",
+  "group" : "upper_raheni",
+  "color" : "#6db256"
+}, {
+  "key" : "shamakhadi",
+  "name" : "Shamakhadi",
+  "group" : "upper_raheni",
+  "color" : "#8546da"
+}, {
+  "key" : "shandibad",
+  "name" : "Shandibad",
+  "group" : "upper_raheni",
+  "color" : "#7ac158"
+}, {
+  "key" : "shasouran",
+  "name" : "Shasouran",
+  "group" : "kheteratan",
+  "color" : "#ceafc0"
+}, {
+  "key" : "shuokyuan",
+  "name" : "Shuokyuan",
+  "group" : "yan",
+  "color" : "#a1acd3"
+}, {
+  "key" : "shuvuush",
+  "name" : "Shuvuush",
+  "group" : "khantaar",
+  "color" : "#676148"
+}, {
+  "key" : "shyashkay_lizardfolk",
+  "name" : "Shyashkay Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#48b7c2"
+}, {
+  "key" : "siadunan_harpy",
+  "name" : "Siadunan Harpy",
+  "group" : "harpy",
+  "color" : "#bed37c"
+}, {
+  "key" : "sikai",
+  "name" : "Sikai",
+  "group" : "kai",
+  "color" : "#59c381"
+}, {
+  "key" : "silent_harimari",
+  "name" : "Silent Harimari",
+  "group" : "harimari",
+  "color" : "#8158cc"
+}, {
+  "key" : "silent_watchers",
+  "name" : "Silent Watchers",
+  "group" : "degenerated_elf",
+  "color" : "#5dc671"
+}, {
+  "key" : "silver_dwarf",
+  "name" : "Silver Dwarf",
+  "group" : "dwarven",
+  "color" : "#ac954f"
+}, {
+  "key" : "sirimadsik_kobold",
+  "name" : "Sirimadsik Kobold",
+  "group" : "kobold",
+  "color" : "#5247b9"
+}, {
+  "key" : "sirtana",
+  "name" : "Sirtana",
+  "group" : "yanglam",
+  "color" : "#787f52"
+}, {
+  "key" : "sitewosi",
+  "name" : "Sitewosi",
+  "group" : "mengi",
+  "color" : "#71c68a"
+}, {
+  "key" : "skamvin",
+  "name" : "Skamvin",
+  "group" : "gerudian",
+  "color" : "#938149"
+}, {
+  "key" : "skarakara_lizardfolk",
+  "name" : "Skarakara Lizardfolk",
+  "group" : "lizardfolk",
+  "color" : "#3cda6f"
+}, {
+  "key" : "skinburner_goblin",
+  "name" : "Skinburner Goblin",
+  "group" : "goblin",
+  "color" : "#993cb0"
+}, {
+  "key" : "skull_orc",
+  "name" : "Skull Orc",
+  "group" : "orcish",
+  "color" : "#7adaba"
+}, {
+  "key" : "skyfall_ogre",
+  "name" : "Skyfall Ogre",
+  "group" : "ogre",
+  "color" : "#8a5067"
+}, {
+  "key" : "smokevein_mechanim",
+  "name" : "Smokevein Mechanim",
+  "group" : "mechanim",
+  "color" : "#466a96"
+}, {
+  "key" : "snecboth",
+  "name" : "Snecboth",
+  "group" : "eordan_ruinborn_elf",
+  "color" : "#d683cb"
+}, {
+  "key" : "sobhagand",
+  "name" : "Sobhagand",
+  "group" : "upper_raheni",
+  "color" : "#ab71be"
+}, {
+  "key" : "sochar_centaur",
+  "name" : "Sochar Centaur",
+  "group" : "centaur",
+  "color" : "#45d48c"
+}, {
+  "key" : "songheart_mechanim",
+  "name" : "Songheart Mechanim",
+  "group" : "mechanim",
+  "color" : "#d867ac"
+}, {
+  "key" : "soot_goblin",
+  "name" : "Soot Goblin",
+  "group" : "goblin",
+  "color" : "#d15042"
+}, {
+  "key" : "sorncosti",
+  "name" : "Sorncosti",
+  "group" : "lencori",
+  "color" : "#40afbf"
+}, {
+  "key" : "sornicandi",
+  "name" : "Sornicandi",
+  "group" : "lencori",
+  "color" : "#a0d167"
+}, {
+  "key" : "sorrowmane_gnoll",
+  "name" : "Sorrowmane Gnoll",
+  "group" : "gnollish",
+  "color" : "#749c3d"
+}, {
+  "key" : "soruinic",
+  "name" : "Soruinic",
+  "group" : "south_ruinborn_elf",
+  "color" : "#ba6fa1"
+}, {
+  "key" : "soulcycle_mechanim",
+  "name" : "Soulcycle Mechanim",
+  "group" : "mechanim",
+  "color" : "#567773"
+}, {
+  "key" : "soullistener_mechanim",
+  "name" : "Soullistener Mechanim",
+  "group" : "mechanim",
+  "color" : "#c2513d"
+}, {
+  "key" : "soulseeker_ogre",
+  "name" : "Soulseeker Ogre",
+  "group" : "ogre",
+  "color" : "#8ed14a"
+}, {
+  "key" : "sparkdrive_mechanim",
+  "name" : "Sparkdrive Mechanim",
+  "group" : "mechanim",
+  "color" : "#5caa6e"
+}, {
+  "key" : "spiritfire_mechanim",
+  "name" : "Spiritfire Mechanim",
+  "group" : "mechanim",
+  "color" : "#a2c76c"
+}, {
+  "key" : "sporewalker_mechanim",
+  "name" : "Sporewalker Mechanim",
+  "group" : "mechanim",
+  "color" : "#6eabdb"
+}, {
+  "key" : "stalboric",
+  "name" : "Stalboric",
+  "group" : "escanni",
+  "color" : "#8f52a3"
+}, {
+  "key" : "star_elf",
+  "name" : "Star Elf",
+  "group" : "elven",
+  "color" : "#8e618f"
+}, {
+  "key" : "starborn",
+  "name" : "Starborn",
+  "group" : "north_ruinborn_elf",
+  "color" : "#77a490"
+}, {
+  "key" : "stargrasper_mechanim",
+  "name" : "Stargrasper Mechanim",
+  "group" : "mechanim",
+  "color" : "#9b6593"
+}, {
+  "key" : "steadsman",
+  "name" : "Steadsman",
+  "group" : "ynnsman",
+  "color" : "#4a5db4"
+}, {
+  "key" : "steel_dwarf",
+  "name" : "Steel Dwarf",
+  "group" : "dwarven",
+  "color" : "#4a6d8c"
+}, {
+  "key" : "steelfolk_mechanim",
+  "name" : "Steelfolk Mechanim",
+  "group" : "mechanim",
+  "color" : "#d6a946"
+}, {
+  "key" : "steelscale_kobold",
+  "name" : "Steelscale Kobold",
+  "group" : "kobold",
+  "color" : "#45b754"
+}, {
+  "key" : "steelsworn_mechanim",
+  "name" : "Steelsworn Mechanim",
+  "group" : "mechanim",
+  "color" : "#8d916a"
+}, {
+  "key" : "stone_dwarf",
+  "name" : "Stone Dwarf",
+  "group" : "dwarven",
+  "color" : "#a45877"
+}, {
+  "key" : "stonewing_harpy",
+  "name" : "Stonewing Harpy",
+  "group" : "harpy",
+  "color" : "#8fd7a7"
+}, {
+  "key" : "straggler_goblin",
+  "name" : "Straggler Goblin",
+  "group" : "goblin",
+  "color" : "#c945d4"
+}, {
+  "key" : "suhratbi",
+  "name" : "Suhratbi",
+  "group" : "baashidi",
+  "color" : "#c2a8a8"
+}, {
+  "key" : "sun_elf",
+  "name" : "Sun Elf",
+  "group" : "elven",
+  "color" : "#a8ccca"
+}, {
+  "key" : "suncrown_gnoll",
+  "name" : "Suncrown Gnoll",
+  "group" : "gnollish",
+  "color" : "#7090db"
+}, {
+  "key" : "sunrise_elf",
+  "name" : "Sunrise Elf",
+  "group" : "elven",
+  "color" : "#71c45e"
+}, {
+  "key" : "sunset_elf",
+  "name" : "Sunset Elf",
+  "group" : "elven",
+  "color" : "#5263b7"
+}, {
+  "key" : "surani",
+  "name" : "Surani",
+  "group" : "bulwari",
+  "color" : "#48753f"
+}, {
+  "key" : "swallow_command",
+  "name" : "Swallow Command",
+  "group" : "hobgoblin",
+  "color" : "#4d40b5"
+}, {
+  "key" : "swamp_troll",
+  "name" : "Swamp Troll",
+  "group" : "giantkind",
+  "color" : "#ae5eb8"
+}, {
+  "key" : "szitu",
+  "name" : "Szitu",
+  "group" : "yan",
+  "color" : "#5f5889"
+}, {
+  "key" : "taafi",
+  "name" : "Taafi",
+  "group" : "west_sarhaly",
+  "color" : "#93738c"
+}, {
+  "key" : "talderannic",
+  "name" : "Talderannic",
+  "group" : "gerudian",
+  "color" : "#453dcd"
+}, {
+  "key" : "talilibeti",
+  "name" : "Talilibeti",
+  "group" : "mengi",
+  "color" : "#bba6bf"
+}, {
+  "key" : "tamajoba",
+  "name" : "Tamajoba",
+  "group" : "west_sarhaly",
+  "color" : "#61a4a9"
+}, {
+  "key" : "tamran",
+  "name" : "Tamran",
+  "group" : "kai",
+  "color" : "#bb50d8"
+}, {
+  "key" : "tanizu",
+  "name" : "Tanizu",
+  "group" : "inyaswarosa",
+  "color" : "#bfa6d8"
+}, {
+  "key" : "tarakar_orc",
+  "name" : "Tarakar Orc",
+  "group" : "orcish",
+  "color" : "#7d75b0"
+}, {
+  "key" : "taric",
+  "name" : "Taric",
+  "group" : "tyvorkan",
+  "color" : "#5bb38c"
+}, {
+  "key" : "taric_gerudian",
+  "name" : "Taric Gerudian",
+  "group" : "gerudian",
+  "color" : "#8fc3ac"
+}, {
+  "key" : "taupotzlo",
+  "name" : "Taupotzlo",
+  "group" : "yanacotle",
+  "color" : "#ccc69a"
+}, {
+  "key" : "tefori",
+  "name" : "Tefori",
+  "group" : "businori",
+  "color" : "#ad566d"
+}, {
+  "key" : "tefskr",
+  "name" : "Tefskr",
+  "group" : "gerudian",
+  "color" : "#81646d"
+}, {
+  "key" : "teira",
+  "name" : "Teira",
+  "group" : "north_ruinborn_elf",
+  "color" : "#a3848e"
+}, {
+  "key" : "telgeiran",
+  "name" : "Telgeiran",
+  "group" : "anbennarian",
+  "color" : "#4bbc59"
+}, {
+  "key" : "teplin",
+  "name" : "Teplin",
+  "group" : "bom",
+  "color" : "#ce7671"
+}, {
+  "key" : "thamvoii",
+  "name" : "Thamvoii",
+  "group" : "effelai_ruinborn_elf",
+  "color" : "#55cbc9"
+}, {
+  "key" : "thekvrystana",
+  "name" : "Thekvrystana",
+  "group" : "taychendi_ruinborn_elf",
+  "color" : "#cc884d"
+}, {
+  "key" : "themarian",
+  "name" : "Themarian",
+  "group" : "anbennarian",
+  "color" : "#a5cf7a"
+}, {
+  "key" : "thornish",
+  "name" : "Thornish",
+  "group" : "lencori",
+  "color" : "#634190"
+}, {
+  "key" : "tiger_command",
+  "name" : "Tiger Command",
+  "group" : "hobgoblin",
+  "color" : "#8743c4"
+}, {
+  "key" : "tijarikheti",
+  "name" : "Tijarikheti",
+  "group" : "kheteratan",
+  "color" : "#d6778c"
+}, {
+  "key" : "tinker_gnome",
+  "name" : "Tinker Gnome",
+  "group" : "gnomish",
+  "color" : "#9c7a69"
+}, {
+  "key" : "titanium_dwarf",
+  "name" : "Titanium Dwarf",
+  "group" : "dwarven",
+  "color" : "#9450a5"
+}, {
+  "key" : "tluinuhi",
+  "name" : "Tluinuhi",
+  "group" : "yanacotle",
+  "color" : "#b0ba47"
+}, {
+  "key" : "toelnran",
+  "name" : "Toelnran",
+  "group" : "bom",
+  "color" : "#af5cd7"
+}, {
+  "key" : "togavaopaolo",
+  "name" : "Togavaopaolo",
+  "group" : "tagaala",
+  "color" : "#ce7d48"
+}, {
+  "key" : "topaz_dwarf",
+  "name" : "Topaz Dwarf",
+  "group" : "dwarven",
+  "color" : "#cd9964"
+}, {
+  "key" : "towerfoot_halfling",
+  "name" : "Towerfoot Halfling",
+  "group" : "halfling",
+  "color" : "#cd4a83"
+}, {
+  "key" : "trolltamer_goblin",
+  "name" : "Trolltamer Goblin",
+  "group" : "goblin",
+  "color" : "#568153"
+}, {
+  "key" : "true_giant",
+  "name" : "True Giant",
+  "group" : "giantkind",
+  "color" : "#90bb94"
+}, {
+  "key" : "tuathak",
+  "name" : "Tuathak",
+  "group" : "eordan_ruinborn_elf",
+  "color" : "#9aab83"
+}, {
+  "key" : "tuugalak",
+  "name" : "Tuugalak",
+  "group" : "besholgi",
+  "color" : "#a4d47d"
+}, {
+  "key" : "udzalkerho_mechanim",
+  "name" : "Udzalkerho Mechanim",
+  "group" : "mechanim",
+  "color" : "#8075b3"
+}, {
+  "key" : "uelairey",
+  "name" : "Uelairey",
+  "group" : "anbennarian",
+  "color" : "#9ebd4e"
+}, {
+  "key" : "ulukungu",
+  "name" : "Ulukungu",
+  "group" : "besholgi",
+  "color" : "#d06ac8"
+}, {
+  "key" : "umsoroh_mechanim",
+  "name" : "Umsoroh Mechanim",
+  "group" : "mechanim",
+  "color" : "#928050"
+}, {
+  "key" : "umsozidak",
+  "name" : "Umsozidak",
+  "group" : "inyaswarosa",
+  "color" : "#47cfa1"
+}, {
+  "key" : "undergrowth_goblin",
+  "name" : "Undergrowth Goblin",
+  "group" : "goblin",
+  "color" : "#733dcf"
+}, {
+  "key" : "ungulan_half_orc",
+  "name" : "Ungulan Half Orc",
+  "group" : "escanni",
+  "color" : "#9d7bc5"
+}, {
+  "key" : "ungulan_orc",
+  "name" : "Ungulan Orc",
+  "group" : "orcish",
+  "color" : "#4fa044"
+}, {
+  "key" : "unitsan_kobold",
+  "name" : "Unitsan Kobold",
+  "group" : "kobold",
+  "color" : "#a85bc1"
+}, {
+  "key" : "urmanki",
+  "name" : "Urmanki",
+  "group" : "triunic",
+  "color" : "#776bcb"
+}, {
+  "key" : "vaikazelhi",
+  "name" : "Vaikazelhi",
+  "group" : "taychendi_ruinborn_elf",
+  "color" : "#4ace47"
+}, {
+  "key" : "valorman",
+  "name" : "Valorman",
+  "group" : "trollsbayer",
+  "color" : "#52aa40"
+}, {
+  "key" : "vanburian",
+  "name" : "Vanburian",
+  "group" : "anbennarian",
+  "color" : "#d690c7"
+}, {
+  "key" : "vernman",
+  "name" : "Vernman",
+  "group" : "anbennarian",
+  "color" : "#8ba08e"
+}, {
+  "key" : "vertesker",
+  "name" : "Vertesker",
+  "group" : "alenic",
+  "color" : "#d5905b"
+}, {
+  "key" : "veykodan",
+  "name" : "Veykodan",
+  "group" : "north_ruinborn_elf",
+  "color" : "#7f5a4e"
+}, {
+  "key" : "visfoot_halfling",
+  "name" : "Visfoot Halfling",
+  "group" : "halfling",
+  "color" : "#56679b"
+}, {
+  "key" : "vrendzani_kobold",
+  "name" : "Vrendzani Kobold",
+  "group" : "kobold",
+  "color" : "#83db64"
+}, {
+  "key" : "vymafyzemby_mechanim",
+  "name" : "Vymafyzemby Mechanim",
+  "group" : "mechanim",
+  "color" : "#ba5b46"
+}, {
+  "key" : "vyoronsi",
+  "name" : "Vyoronsi",
+  "group" : "halfling",
+  "color" : "#b7b1bd"
+}, {
+  "key" : "vytash_mechanim",
+  "name" : "Vytash Mechanim",
+  "group" : "mechanim",
+  "color" : "#443f65"
+}, {
+  "key" : "wailana",
+  "name" : "Wailana",
+  "group" : "anakue",
+  "color" : "#a3b181"
+}, {
+  "key" : "wakoodak",
+  "name" : "Wakoodak",
+  "group" : "inyaswarosa",
+  "color" : "#c97f8b"
+}, {
+  "key" : "walgakan",
+  "name" : "Walgakan",
+  "group" : "yenbenmirra",
+  "color" : "#78d988"
+}, {
+  "key" : "west_dalr",
+  "name" : "West Dalr",
+  "group" : "gerudian",
+  "color" : "#8fd78a"
+}, {
+  "key" : "west_damerian",
+  "name" : "West Damerian",
+  "group" : "anbennarian",
+  "color" : "#654579"
+}, {
+  "key" : "westman",
+  "name" : "Westman",
+  "group" : "alenic",
+  "color" : "#a74d65"
+}, {
+  "key" : "wexonard",
+  "name" : "Wexonard",
+  "group" : "alenic",
+  "color" : "#c6aed2"
+}, {
+  "key" : "white_reachman",
+  "name" : "White Reachman",
+  "group" : "escanni",
+  "color" : "#99d2b1"
+}, {
+  "key" : "white_reachman_r",
+  "name" : "White Reachman R",
+  "group" : "reachman",
+  "color" : "#ac5b8d"
+}, {
+  "key" : "whitescale_kobold",
+  "name" : "Whitescale Kobold",
+  "group" : "kobold",
+  "color" : "#a3959c"
+}, {
+  "key" : "windcast_mechanim",
+  "name" : "Windcast Mechanim",
+  "group" : "mechanim",
+  "color" : "#629581"
+}, {
+  "key" : "windhowler_gnoll",
+  "name" : "Windhowler Gnoll",
+  "group" : "gnollish",
+  "color" : "#96d773"
+}, {
+  "key" : "woitlono",
+  "name" : "Woitlono",
+  "group" : "yanacotle",
+  "color" : "#c38f9d"
+}, {
+  "key" : "wolf_command",
+  "name" : "Wolf Command",
+  "group" : "hobgoblin",
+  "color" : "#7a766e"
+}, {
+  "key" : "wonju",
+  "name" : "Wonju",
+  "group" : "gowon",
+  "color" : "#5d88bd"
+}, {
+  "key" : "wood_elf",
+  "name" : "Wood Elf",
+  "group" : "elven",
+  "color" : "#c9bc93"
+}, {
+  "key" : "worthy_harimari",
+  "name" : "Worthy Harimari",
+  "group" : "harimari",
+  "color" : "#8b575a"
+}, {
+  "key" : "wuhyun_half_orc",
+  "name" : "Wuhyun Half Orc",
+  "group" : "wuhyun",
+  "color" : "#47bf6f"
+}, {
+  "key" : "xoitlonua",
+  "name" : "Xoitlonua",
+  "group" : "yanacotle",
+  "color" : "#b1d9b8"
+}, {
+  "key" : "yak_command",
+  "name" : "Yak Command",
+  "group" : "hobgoblin",
+  "color" : "#4b8178"
+}, {
+  "key" : "yan_half_orc",
+  "name" : "Yan Half Orc",
+  "group" : "yan",
+  "color" : "#c95aba"
+}, {
+  "key" : "yan_kelino",
+  "name" : "Yan Kelino",
+  "group" : "kelino",
+  "color" : "#4d88aa"
+}, {
+  "key" : "yawasichya_kobold",
+  "name" : "Yawasichya Kobold",
+  "group" : "kobold",
+  "color" : "#af85ae"
+}, {
+  "key" : "yeteferen",
+  "name" : "Yeteferen",
+  "group" : "mengi",
+  "color" : "#bb9744"
+}, {
+  "key" : "yodhanpir",
+  "name" : "Yodhanpir",
+  "group" : "taychendi_ruinborn_elf",
+  "color" : "#aec8a8"
+}, {
+  "key" : "yulitja",
+  "name" : "Yulitja",
+  "group" : "yenbenmirra",
+  "color" : "#ae64d8"
+}, {
+  "key" : "zabatlari",
+  "name" : "Zabatlari",
+  "group" : "triunic",
+  "color" : "#96be68"
+}, {
+  "key" : "zanite",
+  "name" : "Zanite",
+  "group" : "bulwari",
+  "color" : "#af7975"
+}, {
+  "key" : "zanlibi",
+  "name" : "Zanlibi",
+  "group" : "trollsbayer",
+  "color" : "#c7b55b"
+}, {
+  "key" : "zohebidi",
+  "name" : "Zohebidi",
+  "group" : "halfling",
+  "color" : "#ba9894"
+}, {
+  "key" : "zovanwe",
+  "name" : "Zovanwe",
+  "group" : "irsukuba",
+  "color" : "#989f4a"
+}, {
+  "key" : "zuvunwa",
+  "name" : "Zuvunwa",
+  "group" : "vurebindu",
+  "color" : "#9aca90"
+} ]

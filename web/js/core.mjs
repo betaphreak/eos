@@ -54,6 +54,23 @@ const ICE_ART = BUNDLE.ice;        // real Civ4 pack-ice tile {src, tile}, or nu
 const BONUS_ICONS = BUNDLE.bonusIcons;  // real Civ4 resource icons {src, cell, cols, index:{type:i}}, or null (procedural glyphs)
 const TREES = BUNDLE.trees;        // real Civ4 foliage sprites {leafy,palm,swamp:{src,w,h,sprites}}, or null (procedural blobs)
 const SEA_BANDS = BUNDLE.seaBands; // {trop, temp, polar, shore} climate sea + shallows colours
+// political layer: filled lazily from web/political.js on first switch to Political mode
+// (see panel.ensurePolitical). Kept as stable object refs so importers see the populated tables.
+const COUNTRIES = {};   // owner tag -> {name, color}
+const CULTURES = {};     // culture key -> {name, group, color}
+const RELIGIONS = {};    // religion key -> {name, group, color}
+const GEO_NAMES = BUNDLE.geoNames || {};   // raw-key -> display-name dictionaries for province crumbs
+// resolve a province's geographic crumb tiers ([displayName, rawKey] each, or null) from its raw
+// keys — the names live once in GEO_NAMES instead of being duplicated onto every province
+function provGeo(p) {
+  const reg = p.region, area = p.area, cont = p.continent;
+  return {
+    continent: cont ? [GEO_NAMES.continent?.[cont] || null, cont] : null,
+    superRegion: reg ? [GEO_NAMES.superByRegion?.[reg] || null, GEO_NAMES.superKeyByRegion?.[reg] || null] : null,
+    region: reg ? [GEO_NAMES.region?.[reg] || null, reg] : null,
+    area: area ? [GEO_NAMES.area?.[area] || null, area] : null,
+  };
+}
 const LY = BUNDLE.terrainLayer || {};   // TERRAIN_* -> Civ4 LayerOrder (higher bleeds over lower)
 const NB4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const _rgb = {};                  // "#rrggbb" -> [r,g,b], memoised
@@ -140,7 +157,8 @@ export const S = {
   viewVersion: 0,        // per-world-copy cache key derived from baseVersion in draw()
   showHeat: true,
   showCost: false,
-  mode: /caravan/.test(location.hash) ? "caravan" : "world",
+  mode: /caravan/.test(location.hash) ? "caravan"
+    : /political/.test(location.hash) ? "political" : "world",
   hoverProv: null,
   dragging: false,       // mid-pan (drawPlots skips textures while panning)
   selected: null,        // journey idx or null
@@ -149,4 +167,4 @@ export const S = {
 };
 S.curT = t0;
 
-export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };
+export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, COUNTRIES, CULTURES, RELIGIONS, provGeo, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };

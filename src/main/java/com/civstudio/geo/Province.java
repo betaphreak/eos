@@ -48,6 +48,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *                   default — never {@code null})
  * @param neighbors  the {@code province_id}s of the adjacent provinces (an
  *                   undirected graph; symmetry is materialized at export time)
+ * @param ownerTag   the tag of the {@link Country} that owns this province at the
+ *                   game-start bookmark (e.g. {@code "A04"}), or {@code null} for
+ *                   an unowned/uncolonized/wasteland province; the {@link WorldMap}
+ *                   joins it to a {@link Country} via {@link WorldMap#country(String)}.
+ *                   Stamped from the Anbennar {@code history/provinces} files by
+ *                   {@link com.civstudio.geo.export.ProvinceHistoryExporter}
+ * @param controllerTag the tag of the {@link Country} that <em>controls</em> the
+ *                   province at the start date (equal to {@link #ownerTag()} outside
+ *                   of an occupation), or {@code null}
+ * @param culture    the {@code raw_key} of the province's {@link Culture} (e.g.
+ *                   {@code "west_damerian"}), or {@code null}; joined via
+ *                   {@link WorldMap#culture(String)}
+ * @param religion   the {@code raw_key} of the province's {@link Religion} (e.g.
+ *                   {@code "regent_court"}), or {@code null}; joined via
+ *                   {@link WorldMap#religion(String)}
  */
 public record Province(
 		int id,
@@ -63,7 +78,11 @@ public record Province(
 		Climate climate,
 		WinterSeverity winter,
 		Monsoon monsoon,
-		List<Integer> neighbors) {
+		List<Integer> neighbors,
+		@JsonProperty("owner") String ownerTag,
+		@JsonProperty("controller") String controllerTag,
+		String culture,
+		String religion) {
 
 	/**
 	 * Defensive copy of the neighbor list, and the environmental-attribute

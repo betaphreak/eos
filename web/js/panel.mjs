@@ -1,4 +1,4 @@
-import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, S } from "./core.mjs";
+import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, COUNTRIES, CULTURES, RELIGIONS, provGeo, S } from "./core.mjs";
 import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
 import { loadPlots, bonusIconRect } from "./plots.mjs";
 stage.addEventListener("wheel", e => {
@@ -236,6 +236,10 @@ stage.addEventListener("mousemove", e=>{
   if(best || res){ S.hoverProv=best;
     let html = "";
     if(best) html = `<b>${best.name}</b> <span class="r">${best.type.toLowerCase()}</span><br><span class="r">${(best.region||"—").replace(/_/g," ").replace(" region","")} · ${best.plots} plots${best.days?` · ${best.days} caravan-days`:""}</span>`;
+    if(best && S.mode==="political"){                     // owning nation, with its map colour
+      const c = best.owner && COUNTRIES[best.owner];
+      html += `<br><span class="r">${c ? `<span class="dot" style="background:${c.color}"></span>${c.name}` : "Unclaimed"}</span>`;
+    }
     if(res) html += `${best?"<br>":""}<span class="r">◆ ${res}</span>`;
     tip.innerHTML=html;
     tip.style.left=Math.min(mx+14, r.width-230)+"px"; tip.style.top=(my+14)+"px"; tip.classList.add("on");
@@ -329,6 +333,33 @@ function worldRail(){
     </div></div>
     <p class="footnote">The full world, rendered from the engine's real terrain. Drag to pan, scroll to zoom — keep zooming past the continent view to resolve any province into its terrain plot by plot (textures, hillshade from the heightmap, rivers, features). Hover the map to read a province. Switch to <b>Caravan</b> mode to replay the six-band migration from Dhenijansar.</p>`;
 }
+// the political layer (owner/culture/religion + the country/culture/religion tables) lives in a
+// separate web/political.js, fetched only the first time Political mode is entered — so World and
+// Caravan never download it. Once loaded it enriches the province objects in place, so the sidebar's
+// nation/culture/faith detail then works in every mode too.
+let politicalLoaded = false, politicalLoading = null;
+function ensurePolitical(){
+  if (politicalLoaded) return Promise.resolve();
+  if (politicalLoading) return politicalLoading;
+  politicalLoading = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "political.js";
+    s.onload = () => { applyPolitical(window.POLITICAL || {}); politicalLoaded = true; resolve(); };
+    s.onerror = () => { politicalLoading = null; reject(new Error("failed to load political.js")); };
+    document.head.appendChild(s);
+  });
+  return politicalLoading;
+}
+function applyPolitical(POL){
+  Object.assign(COUNTRIES, POL.countries || {});
+  Object.assign(CULTURES, POL.cultures || {});
+  Object.assign(RELIGIONS, POL.religions || {});
+  const byId = new Map(P.map(p => [p.id, p]));
+  for (const r of (POL.provinces || [])) {
+    const p = byId.get(r.id); if (!p) continue;
+    p.owner = r.o; p.controller = r.ct || r.o; p.culture = r.c; p.religion = r.r;
+  }
+}
 // show/hide the caravan-only chrome for a mode
 function setMode(m){
   S.mode = m;
@@ -339,6 +370,7 @@ function setMode(m){
   if (!cara) { pause(); S.selected = null; }   // the timeline stays visible in the bottom bar (all modes)
   S.selectedProv = null;             // start each mode on its own overview
   showRail(cara);                    // caravan mode opens the panel on its overview; world starts collapsed
+  if (m === "political") ensurePolitical().then(() => { renderRail(); draw(); }).catch(()=>{});
   renderRail(); draw();
 }
 // ---- province detail: the full-information sidebar for a selected province ----
@@ -363,6 +395,22 @@ function prettyId(s) {
   return String(s).replace(/^(TERRAIN|FEATURE|BONUS)_/,"").toLowerCase().replace(/_/g," ")
     .replace(/\b\w/g, c=>c.toUpperCase());
 }
+// the political metagrid (nation / culture / faith) for a province's detail panel;
+// empty for an unowned province (sea, uncolonized wasteland)
+function politicsBlock(p) {
+  const owner = p.owner && COUNTRIES[p.owner];
+  const cult = p.culture && CULTURES[p.culture];
+  const relig = p.religion && RELIGIONS[p.religion];
+  if (!owner && !cult && !relig) return "";
+  const dot = c => `<span class="dot" style="background:${c.color}"></span>`;
+  const cell = (k, v) => `<div class="metacell"><div class="k">${k}</div><div class="v" style="font-size:13px">${v}</div></div>`;
+  return `<p class="sectlabel" style="margin-top:12px">Politics</p>
+    <div class="metagrid">
+      ${owner ? cell("Nation", `${dot(owner)}${owner.name}`) : cell("Nation", "Unclaimed")}
+      ${cult ? cell("Culture", `${dot(cult)}${cult.name}`) : ""}
+      ${relig ? cell("Faith", `${dot(relig)}${relig.name}`) : ""}
+    </div>`;
+}
 function selectProvince(p) {
   S.selectedProv = p;
   if (p && p.hasPlots !== false && !p._plots) loadPlots(p);   // stream in terrain for the breakdown
@@ -370,7 +418,7 @@ function selectProvince(p) {
   renderRail(); draw();
 }
 function provinceRail(p) {
-  const g = p.geo || {};
+  const g = provGeo(p);
   // each tier is [displayName, rawClausewitzKey]; show the key in parentheses after the name
   const crumbs = [g.continent, g.superRegion, g.region, g.area].filter(t => t && t[0])
     .map(t=>`<span>${t[0]}${t[1]?` <span class="pv-key">(${t[1]})</span>`:''}</span>`)
@@ -426,6 +474,7 @@ function provinceRail(p) {
         <div class="metacell"><div class="k">Winter</div><div class="v" style="font-size:13px">${p.winter?prettyId(p.winter):"—"}</div></div>
         ${p.days?`<div class="metacell"><div class="k">Caravan-days</div><div class="v">${p.days}</div></div>`:""}
       </div>
+      ${politicsBlock(p)}
       ${terrainHtml}
     </div>`;
   document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; showRail(S.mode==="caravan"); renderRail(); draw(); };
@@ -596,7 +645,7 @@ function renderSearchResults() {
     searchResults.hidden = false; return;
   }
   searchResults.innerHTML = searchMatches.map((p, i) => {
-    const reg = (p.geo && p.geo.region && p.geo.region[0]) || "";
+    const reg = (provGeo(p).region || [])[0] || "";
     return `<div class="search-row${i === searchActive ? " active" : ""}" role="option" data-i="${i}">
       <span class="sr-name">${p.name}</span><span class="sr-id">#${p.id}</span>
       <span class="sr-meta">${reg}</span></div>`;

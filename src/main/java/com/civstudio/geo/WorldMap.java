@@ -51,6 +51,9 @@ public final class WorldMap {
 	private static final String SUPERREGIONS_RESOURCE = "/map/superregions.json";
 	private static final String EDGES_RESOURCE = "/map/edges.json";
 	private static final String PORTALS_RESOURCE = "/map/portals.json";
+	private static final String COUNTRIES_RESOURCE = "/map/countries.json";
+	private static final String CULTURES_RESOURCE = "/map/cultures.json";
+	private static final String RELIGIONS_RESOURCE = "/map/religions.json";
 
 	/** Mean Earth radius in km — the great-circle scale for {@link #distanceKm}. */
 	private static final double EARTH_RADIUS_KM = 6371.0;
@@ -77,6 +80,16 @@ public final class WorldMap {
 	private final Map<String, List<Region>> regionsBySuperRegion;
 	private final Map<String, String> regionKeyByArea;
 	private final Map<String, String> superRegionKeyByRegion;
+	// political reference data (committed /map/{countries,cultures,religions}.json),
+	// keyed by tag/raw_key, plus the derived province membership indices. Empty when a
+	// resource is absent (e.g. while an exporter bootstraps the map). See the political
+	// stampers (ProvinceHistoryExporter) and metadata exporters.
+	private final Map<String, Country> countriesByTag;
+	private final Map<String, Culture> culturesByKey;
+	private final Map<String, Religion> religionsByKey;
+	private final Map<String, List<Province>> provincesByOwner;
+	private final Map<String, List<Province>> provincesByCulture;
+	private final Map<String, List<Province>> provincesByReligion;
 	// committed per-edge great-circle km, keyed by province id and aligned to that
 	// province's neighbors() order (from the LandRouteExporter's /map/edges.json). Empty
 	// when the resource is absent (e.g. while the exporter itself bootstraps the map),
@@ -90,6 +103,7 @@ public final class WorldMap {
 
 	private WorldMap(List<Province> provinces, List<Area> areas,
 			List<Region> regions, List<SuperRegion> superRegions,
+			List<Country> countries, List<Culture> cultures, List<Religion> religions,
 			List<ProvinceEdges> edges, List<ProvincePortals> portals) {
 		Map<Integer, Province> byId = new LinkedHashMap<>(provinces.size() * 2);
 		for (Province p : provinces)
@@ -209,6 +223,40 @@ public final class WorldMap {
 		this.provincesByWinter = provByWinter;
 		this.provincesByMonsoon = provByMonsoon;
 
+		// political reference tables, keyed by tag/raw_key (absent resource -> empty map)
+		Map<String, Country> byTag = new LinkedHashMap<>(countries.size() * 2);
+		for (Country c : countries)
+			byTag.put(c.tag(), c);
+		this.countriesByTag = Collections.unmodifiableMap(byTag);
+		Map<String, Culture> byCultureKey = new LinkedHashMap<>(cultures.size() * 2);
+		for (Culture c : cultures)
+			byCultureKey.put(c.key(), c);
+		this.culturesByKey = Collections.unmodifiableMap(byCultureKey);
+		Map<String, Religion> byReligionKey = new LinkedHashMap<>(religions.size() * 2);
+		for (Religion r : religions)
+			byReligionKey.put(r.key(), r);
+		this.religionsByKey = Collections.unmodifiableMap(byReligionKey);
+
+		// derived political partitions, grouped from each province's own tag/key
+		// (owner/culture/religion may be null — unowned/uncolonized provinces are skipped)
+		Map<String, List<Province>> provByOwner = new LinkedHashMap<>();
+		Map<String, List<Province>> provByCulture = new LinkedHashMap<>();
+		Map<String, List<Province>> provByReligion = new LinkedHashMap<>();
+		for (Province p : byId.values()) {
+			if (p.ownerTag() != null)
+				provByOwner.computeIfAbsent(p.ownerTag(), k -> new ArrayList<>()).add(p);
+			if (p.culture() != null)
+				provByCulture.computeIfAbsent(p.culture(), k -> new ArrayList<>()).add(p);
+			if (p.religion() != null)
+				provByReligion.computeIfAbsent(p.religion(), k -> new ArrayList<>()).add(p);
+		}
+		provByOwner.replaceAll((k, ps) -> Collections.unmodifiableList(ps));
+		provByCulture.replaceAll((k, ps) -> Collections.unmodifiableList(ps));
+		provByReligion.replaceAll((k, ps) -> Collections.unmodifiableList(ps));
+		this.provincesByOwner = Collections.unmodifiableMap(provByOwner);
+		this.provincesByCulture = Collections.unmodifiableMap(provByCulture);
+		this.provincesByReligion = Collections.unmodifiableMap(provByReligion);
+
 		// committed edge weights, if the /map/edges.json resource is present: each
 		// entry's km[] aligns to the province's neighbors() order (validated), so an
 		// edge weight is a plain index lookup. Absent -> empty, and edgeKm falls back
@@ -276,7 +324,20 @@ public final class WorldMap {
 		List<ProvincePortals> portals = loadListOptional(PORTALS_RESOURCE,
 				new TypeReference<List<ProvincePortals>>() {
 				});
-		return new WorldMap(provinces, areas, regions, superRegions, edges, portals);
+		// the political reference tables are optional: absent while their exporters
+		// bootstrap, in which case the country/culture/religion lookups are empty and
+		// the derived owner/culture/religion indices carry no entries
+		List<Country> countries = loadListOptional(COUNTRIES_RESOURCE,
+				new TypeReference<List<Country>>() {
+				});
+		List<Culture> cultures = loadListOptional(CULTURES_RESOURCE,
+				new TypeReference<List<Culture>>() {
+				});
+		List<Religion> religions = loadListOptional(RELIGIONS_RESOURCE,
+				new TypeReference<List<Religion>>() {
+				});
+		return new WorldMap(provinces, areas, regions, superRegions,
+				countries, cultures, religions, edges, portals);
 	}
 
 	private static <T> List<T> loadList(String resource,
@@ -465,6 +526,91 @@ public final class WorldMap {
 	public List<Province> provincesInRegion(String key) {
 		region(key); // validate
 		return provincesByRegion.get(key);
+	}
+
+	// ---- political layer (owner / culture / religion) -------------------------
+
+	/**
+	 * The {@link Country} with this tag, if the {@code countries.json} resource is
+	 * loaded and carries it.
+	 *
+	 * @param tag a country tag (e.g. {@code "A04"}) — see {@link Province#ownerTag()}
+	 * @return the country, or empty
+	 */
+	public Optional<Country> country(String tag) {
+		return Optional.ofNullable(countriesByTag.get(tag));
+	}
+
+	/**
+	 * The {@link Culture} with this key, if the {@code cultures.json} resource is
+	 * loaded and carries it.
+	 *
+	 * @param key a culture {@code raw_key} (e.g. {@code "west_damerian"})
+	 * @return the culture, or empty
+	 */
+	public Optional<Culture> culture(String key) {
+		return Optional.ofNullable(culturesByKey.get(key));
+	}
+
+	/**
+	 * The {@link Religion} with this key, if the {@code religions.json} resource is
+	 * loaded and carries it.
+	 *
+	 * @param key a religion {@code raw_key} (e.g. {@code "regent_court"})
+	 * @return the religion, or empty
+	 */
+	public Optional<Religion> religion(String key) {
+		return Optional.ofNullable(religionsByKey.get(key));
+	}
+
+	/** All loaded countries (unmodifiable, in tag order; empty if the resource is absent). */
+	public Collection<Country> countries() {
+		return countriesByTag.values();
+	}
+
+	/** All loaded cultures (unmodifiable, in key order; empty if the resource is absent). */
+	public Collection<Culture> cultures() {
+		return culturesByKey.values();
+	}
+
+	/** All loaded religions (unmodifiable, in key order; empty if the resource is absent). */
+	public Collection<Religion> religions() {
+		return religionsByKey.values();
+	}
+
+	/** The tags that own at least one province (the keys of the owner index). */
+	public Collection<String> owners() {
+		return provincesByOwner.keySet();
+	}
+
+	/**
+	 * The provinces owned by a country at the game-start bookmark.
+	 *
+	 * @param tag a country tag
+	 * @return that country's provinces (unmodifiable, possibly empty)
+	 */
+	public List<Province> provincesOwnedBy(String tag) {
+		return provincesByOwner.getOrDefault(tag, List.of());
+	}
+
+	/**
+	 * The provinces of a culture.
+	 *
+	 * @param key a culture {@code raw_key}
+	 * @return that culture's provinces (unmodifiable, possibly empty)
+	 */
+	public List<Province> provincesOfCulture(String key) {
+		return provincesByCulture.getOrDefault(key, List.of());
+	}
+
+	/**
+	 * The provinces of a religion.
+	 *
+	 * @param key a religion {@code raw_key}
+	 * @return that religion's provinces (unmodifiable, possibly empty)
+	 */
+	public List<Province> provincesOfReligion(String key) {
+		return provincesByReligion.getOrDefault(key, List.of());
 	}
 
 	/**

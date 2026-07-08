@@ -57,6 +57,7 @@ Subsystem map — one line each; the as-built detail for all of them is in [`doc
 - **Calendar** — `DayType` (workday/weekend/holiday) gates which firms operate; the couplings that make rest days survivable are calibration-sensitive. §The liturgical calendar; `docs/calendar.md`.
 - **Tech tree** — ruler-funded science from the aristocracy's INTELLECTUAL labor; per-sector productivity multipliers. `docs/tech-tree.md`.
 - **Races** — per-person ancestry varying names, mortality, calendar and tech overlay. `docs/race.md`.
+- **Political layer** — canonical Anbennar province ownership (`Province.ownerTag`/`culture`/`religion` + `Country`/`Culture`/`Religion` records + `WorldMap.provincesByOwner`/`ByCulture`/`ByReligion`), stamped from vendored EU4 history by dev-tool exporters; drives the web **Political** map mode. `docs/political-map.md`.
 
 ## Tests
 

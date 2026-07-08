@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, latAtScreenY, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, COUNTRIES, lerp, latAtScreenY, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
@@ -7,6 +7,13 @@ const mapImg = new Image();
 let mapReady = false;
 mapImg.onload = () => { mapReady = true; draw(); };
 mapImg.src = MAP.src;
+// "#rrggbb" + alpha -> an rgba() string (for the political nation fills), memoised
+const _rgbaCache = {};
+function hexA(hex, a) {
+  const key = hex + "|" + a.toFixed(3);
+  return _rgbaCache[key] || (_rgbaCache[key] =
+    `rgba(${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5),16)},${parseInt(hex.slice(5,7),16)},${a.toFixed(3)})`);
+}
 // the ocean layer, drawn behind the (transparent-sea) land raster so it shows through only the
 // sea: a climate-banded COLOUR from a vertical latitude gradient (tropical → temperate → polar),
 // modulated by a screen-space greyscale RIPPLE tile via `soft-light`. Either half degrades: no
@@ -125,6 +132,31 @@ function renderScene() {
   if (S.showHeat && S.mode === "caravan") {
     if (cam.k < K_PLOT) { for (const p of P) if (p.rings && p.days) { ctx.fillStyle=heatColor(p.days); ctx.fill(provPath(p)); } }
     else if (S.hoverProv && S.hoverProv.rings && S.hoverProv.days) { ctx.fillStyle=heatColor(S.hoverProv.days); ctx.fill(provPath(S.hoverProv)); }
+  }
+  // political choropleth: nation-coloured province fills, zoom-banded so the map
+  // yields to the physical terrain as you dive in. Below K_PLOT it is a full-opacity
+  // overview; through K_PLOT→K_TEX the fill fades as the terrain plots appear; past
+  // K_TEX only nation-coloured borders remain (plus the hovered province), letting the
+  // per-plot terrain read underneath. Unowned provinces (sea, wasteland) never fill.
+  if (S.mode === "political") {
+    if (cam.k < K_TEX) {
+      const a = cam.k < K_PLOT ? 0.58
+        : lerp(0.5, 0.15, (cam.k - K_PLOT) / (K_TEX - K_PLOT));
+      for (const p of P) if (p.rings && p.owner) {
+        const c = COUNTRIES[p.owner];
+        if (c) { ctx.fillStyle = hexA(c.color, a); ctx.fill(provPath(p)); }
+      }
+    } else {
+      ctx.lineWidth = 1.4;
+      for (const p of P) if (p.rings && p.owner) {
+        const c = COUNTRIES[p.owner];
+        if (c) { ctx.strokeStyle = hexA(c.color, 0.9); ctx.stroke(provPath(p)); }
+      }
+      const hi = S.hoverProv;
+      if (hi && hi.rings && hi.owner && COUNTRIES[hi.owner]) {
+        ctx.fillStyle = hexA(COUNTRIES[hi.owner].color, 0.35); ctx.fill(provPath(hi));
+      }
+    }
   }
   // province outlines
   ctx.strokeStyle="rgba(190,205,230,.18)"; ctx.lineWidth=0.8;

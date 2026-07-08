@@ -22,3 +22,10 @@
 /src/main/resources/map/provinces/*.json.gz
 # derived .nif render sprites (the explored alternative to GameFont — docs/bonus-sprite-bake.md)
 /tools/nif-bake/out/
+# vendored Anbennar EU4 political history — build-time inputs for the political-map exporters
+# (ProvinceHistoryExporter / Country|Culture|ReligionExporter). Thousands of small files; kept OUT
+# of git. The *derived* map/{countries,cultures,religions}.json + owner-stamped provinces.json ARE
+# committed. To re-run the exporters, re-checkout these from gitlab.com/anbennar/anbennar-eu4-dev
+# (new-master). See docs/political-map.md.
+/data/anbennar/history/
+/data/anbennar/common/

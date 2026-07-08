@@ -1,0 +1,5857 @@
+[ {
+  "tag" : "A01",
+  "name" : "Lorent",
+  "color" : "#5a0000"
+}, {
+  "tag" : "A02",
+  "name" : "Deranne",
+  "color" : "#aa25f6"
+}, {
+  "tag" : "A03",
+  "name" : "Redglades",
+  "color" : "#bf3737"
+}, {
+  "tag" : "A04",
+  "name" : "Wesdam",
+  "color" : "#258aa4"
+}, {
+  "tag" : "A05",
+  "name" : "Reveria",
+  "color" : "#8781bd"
+}, {
+  "tag" : "A06",
+  "name" : "Nimscodd",
+  "color" : "#fecfff"
+}, {
+  "tag" : "A07",
+  "name" : "North Viswall",
+  "color" : "#dddddd"
+}, {
+  "tag" : "A08",
+  "name" : "South Viswall",
+  "color" : "#b2b2b2"
+}, {
+  "tag" : "A09",
+  "name" : "Sorncost",
+  "color" : "#823c6c"
+}, {
+  "tag" : "A10",
+  "name" : "Minaran Temple",
+  "color" : "#df26ba"
+}, {
+  "tag" : "A11",
+  "name" : "Pearlsedge",
+  "color" : "#fff9e8"
+}, {
+  "tag" : "A12",
+  "name" : "Beepeck",
+  "color" : "#fff264"
+}, {
+  "tag" : "A13",
+  "name" : "Gawed",
+  "color" : "#30336c"
+}, {
+  "tag" : "A14",
+  "name" : "Madelaire",
+  "color" : "#c8a09b"
+}, {
+  "tag" : "A15",
+  "name" : "Eilisin",
+  "color" : "#b96161"
+}, {
+  "tag" : "A16",
+  "name" : "Wineport",
+  "color" : "#422b53"
+}, {
+  "tag" : "A17",
+  "name" : "Great Ording",
+  "color" : "#aa8f6f"
+}, {
+  "tag" : "A18",
+  "name" : "Rubenaire",
+  "color" : "#782828"
+}, {
+  "tag" : "A19",
+  "name" : "Portnamm",
+  "color" : "#cfff7b"
+}, {
+  "tag" : "A20",
+  "name" : "Rubyhold",
+  "color" : "#ef3434"
+}, {
+  "tag" : "A21",
+  "name" : "Venail",
+  "color" : "#99efde"
+}, {
+  "tag" : "A22",
+  "name" : "Neckcliffe",
+  "color" : "#777777"
+}, {
+  "tag" : "A23",
+  "name" : "Vertesk",
+  "color" : "#395157"
+}, {
+  "tag" : "A24",
+  "name" : "Westmoors",
+  "color" : "#475466"
+}, {
+  "tag" : "A25",
+  "name" : "Damescrown",
+  "color" : "#ddc681"
+}, {
+  "tag" : "A26",
+  "name" : "Redscale Clan",
+  "color" : "#ae4b4b"
+}, {
+  "tag" : "A27",
+  "name" : "Bluescale Clan",
+  "color" : "#4b93ae"
+}, {
+  "tag" : "A28",
+  "name" : "Greenscale Clan",
+  "color" : "#81975e"
+}, {
+  "tag" : "A29",
+  "name" : "Busilar",
+  "color" : "#d35504"
+}, {
+  "tag" : "A30",
+  "name" : "Wex",
+  "color" : "#610089"
+}, {
+  "tag" : "A31",
+  "name" : "Moonhaven",
+  "color" : "#c4f3f6"
+}, {
+  "tag" : "A32",
+  "name" : "Ibevar",
+  "color" : "#86d9ff"
+}, {
+  "tag" : "A33",
+  "name" : "Verne",
+  "color" : "#960000"
+}, {
+  "tag" : "A34",
+  "name" : "Bisan",
+  "color" : "#2a9617"
+}, {
+  "tag" : "A35",
+  "name" : "Konwell",
+  "color" : "#a74600"
+}, {
+  "tag" : "A36",
+  "name" : "Derwing",
+  "color" : "#a48fc0"
+}, {
+  "tag" : "A37",
+  "name" : "Terr",
+  "color" : "#ab7a40"
+}, {
+  "tag" : "A38",
+  "name" : "Anbenncost",
+  "color" : "#5fb2ba"
+}, {
+  "tag" : "A39",
+  "name" : "Bennon",
+  "color" : "#5b7aa9"
+}, {
+  "tag" : "A40",
+  "name" : "Exwes",
+  "color" : "#7db6c0"
+}, {
+  "tag" : "A41",
+  "name" : "Damish Temple",
+  "color" : "#7fbfff"
+}, {
+  "tag" : "A42",
+  "name" : "Silvelar",
+  "color" : "#c7c7c7"
+}, {
+  "tag" : "A43",
+  "name" : "Ryalan Temple",
+  "color" : "#e9e9e9"
+}, {
+  "tag" : "A44",
+  "name" : "Esmaraine",
+  "color" : "#cb8548"
+}, {
+  "tag" : "A45",
+  "name" : "Istralore",
+  "color" : "#94c9c7"
+}, {
+  "tag" : "A46",
+  "name" : "Arbaran",
+  "color" : "#87a6a5"
+}, {
+  "tag" : "A47",
+  "name" : "Eborthil",
+  "color" : "#cfb664"
+}, {
+  "tag" : "A48",
+  "name" : "Sugamber",
+  "color" : "#465abe"
+}, {
+  "tag" : "A49",
+  "name" : "Xanzerbexis",
+  "color" : "#b97a57"
+}, {
+  "tag" : "A50",
+  "name" : "Greatmarch",
+  "color" : "#528298"
+}, {
+  "tag" : "A51",
+  "name" : "Ginnfield",
+  "color" : "#b1b1b1"
+}, {
+  "tag" : "A52",
+  "name" : "Eaglecrest",
+  "color" : "#899ffa"
+}, {
+  "tag" : "A53",
+  "name" : "Aramari Temple",
+  "color" : "#ffc90f"
+}, {
+  "tag" : "A54",
+  "name" : "Crothan",
+  "color" : "#269ca2"
+}, {
+  "tag" : "A55",
+  "name" : "Menibor",
+  "color" : "#e6e632"
+}, {
+  "tag" : "A56",
+  "name" : "Celliande",
+  "color" : "#447a0d"
+}, {
+  "tag" : "A57",
+  "name" : "Toarnen",
+  "color" : "#bd6f39"
+}, {
+  "tag" : "A58",
+  "name" : "Dameria",
+  "color" : "#00a5bb"
+}, {
+  "tag" : "A59",
+  "name" : "Corvuria",
+  "color" : "#787878"
+}, {
+  "tag" : "A60",
+  "name" : "Asheniande",
+  "color" : "#454545"
+}, {
+  "tag" : "A61",
+  "name" : "Bluehart",
+  "color" : "#3250e1"
+}, {
+  "tag" : "A62",
+  "name" : "Telgeir",
+  "color" : "#75868f"
+}, {
+  "tag" : "A63",
+  "name" : "Cowskeep",
+  "color" : "#585858"
+}, {
+  "tag" : "A64",
+  "name" : "Appleton",
+  "color" : "#d10036"
+}, {
+  "tag" : "A65",
+  "name" : "Pearview",
+  "color" : "#e2e06a"
+}, {
+  "tag" : "A66",
+  "name" : "Butterburn",
+  "color" : "#e8dca2"
+}, {
+  "tag" : "A67",
+  "name" : "Bigwheat",
+  "color" : "#d1b048"
+}, {
+  "tag" : "A68",
+  "name" : "Thomsbridge",
+  "color" : "#57aa75"
+}, {
+  "tag" : "A69",
+  "name" : "Coppertown",
+  "color" : "#c44b0b"
+}, {
+  "tag" : "A70",
+  "name" : "Elkmarch",
+  "color" : "#296b42"
+}, {
+  "tag" : "A71",
+  "name" : "Greymill",
+  "color" : "#bcbcbc"
+}, {
+  "tag" : "A72",
+  "name" : "Arannen",
+  "color" : "#1f318a"
+}, {
+  "tag" : "A73",
+  "name" : "Silverforge",
+  "color" : "#b1b1b1"
+}, {
+  "tag" : "A74",
+  "name" : "Nathalaire",
+  "color" : "#424242"
+}, {
+  "tag" : "A75",
+  "name" : "Gisden",
+  "color" : "#1baa78"
+}, {
+  "tag" : "A76",
+  "name" : "Uelaire",
+  "color" : "#67fccc"
+}, {
+  "tag" : "A77",
+  "name" : "Orda Aldresia",
+  "color" : "#32ffff"
+}, {
+  "tag" : "A78",
+  "name" : "Roilsard",
+  "color" : "#ee0d79"
+}, {
+  "tag" : "A79",
+  "name" : "Gnomish Hierarchy",
+  "color" : "#ff69b4"
+}, {
+  "tag" : "A80",
+  "name" : "Iochand",
+  "color" : "#93ff72"
+}, {
+  "tag" : "A81",
+  "name" : "Giberd",
+  "color" : "#d23ee6"
+}, {
+  "tag" : "A82",
+  "name" : "Napesbay",
+  "color" : "#dcb496"
+}, {
+  "tag" : "A83",
+  "name" : "Silent Repose",
+  "color" : "#319f9f"
+}, {
+  "tag" : "A84",
+  "name" : "Galeinn",
+  "color" : "#f8f8f8"
+}, {
+  "tag" : "A85",
+  "name" : "Magisterium",
+  "color" : "#dedede"
+}, {
+  "tag" : "A86",
+  "name" : "Tellum",
+  "color" : "#ee88da"
+}, {
+  "tag" : "A87",
+  "name" : "Saloren",
+  "color" : "#f05135"
+}, {
+  "tag" : "A88",
+  "name" : "Woodwell",
+  "color" : "#4e9a6f"
+}, {
+  "tag" : "A89",
+  "name" : "Aranmas",
+  "color" : "#7e83ce"
+}, {
+  "tag" : "A90",
+  "name" : "Seinathil",
+  "color" : "#cd458f"
+}, {
+  "tag" : "A91",
+  "name" : "Deamoine",
+  "color" : "#97e2b2"
+}, {
+  "tag" : "A92",
+  "name" : "Leslinpar",
+  "color" : "#f8f08f"
+}, {
+  "tag" : "A93",
+  "name" : "Estallen",
+  "color" : "#b984a4"
+}, {
+  "tag" : "A94",
+  "name" : "Gabmorionn",
+  "color" : "#7db2cb"
+}, {
+  "tag" : "A95",
+  "name" : "Themarenn",
+  "color" : "#52d2e8"
+}, {
+  "tag" : "A96",
+  "name" : "Lasean",
+  "color" : "#63234e"
+}, {
+  "tag" : "A97",
+  "name" : "Small Country",
+  "color" : "#c58a63"
+}, {
+  "tag" : "A98",
+  "name" : "Cestirande",
+  "color" : "#262262"
+}, {
+  "tag" : "A99",
+  "name" : "Varaine",
+  "color" : "#99c29f"
+}, {
+  "tag" : "B00",
+  "name" : "Kaztubar",
+  "color" : "#007a5b"
+}, {
+  "tag" : "B01",
+  "name" : "Greentide",
+  "color" : "#529720"
+}, {
+  "tag" : "B02",
+  "name" : "Corintar",
+  "color" : "#e95256"
+}, {
+  "tag" : "B03",
+  "name" : "Cobalt Company",
+  "color" : "#0047ab"
+}, {
+  "tag" : "B04",
+  "name" : "Order of the Ashen Rose",
+  "color" : "#833436"
+}, {
+  "tag" : "B05",
+  "name" : "Pioneers Guild",
+  "color" : "#d1a06b"
+}, {
+  "tag" : "B06",
+  "name" : "Warriors of Ancard",
+  "color" : "#e2baa5"
+}, {
+  "tag" : "B07",
+  "name" : "Sons of Dameria",
+  "color" : "#529eb5"
+}, {
+  "tag" : "B08",
+  "name" : "Gallant Friends",
+  "color" : "#b6c4eb"
+}, {
+  "tag" : "B09",
+  "name" : "House of Riches",
+  "color" : "#e2c86b"
+}, {
+  "tag" : "B10",
+  "name" : "Small Fellows",
+  "color" : "#b56a6a"
+}, {
+  "tag" : "B11",
+  "name" : "Company of the Thorn",
+  "color" : "#882403"
+}, {
+  "tag" : "B12",
+  "name" : "Brave Brothers",
+  "color" : "#f63603"
+}, {
+  "tag" : "B13",
+  "name" : "Stalwart Band",
+  "color" : "#a491df"
+}, {
+  "tag" : "B14",
+  "name" : "Raven Banner",
+  "color" : "#707099"
+}, {
+  "tag" : "B15",
+  "name" : "New Wanderers",
+  "color" : "#e87679"
+}, {
+  "tag" : "B16",
+  "name" : "Freeflower Vanguard",
+  "color" : "#4d409d"
+}, {
+  "tag" : "B17",
+  "name" : "Asra Expedition",
+  "color" : "#8f781c"
+}, {
+  "tag" : "B18",
+  "name" : "Iron Hammers",
+  "color" : "#d9e7e8"
+}, {
+  "tag" : "B19",
+  "name" : "Sword Covenant",
+  "color" : "#a8d3f4"
+}, {
+  "tag" : "B20",
+  "name" : "Order of the Iron Sceptre",
+  "color" : "#232628"
+}, {
+  "tag" : "B21",
+  "name" : "Heartgrinder Clan",
+  "color" : "#808000"
+}, {
+  "tag" : "B22",
+  "name" : "Venomtooth Clan",
+  "color" : "#728c00"
+}, {
+  "tag" : "B23",
+  "name" : "Rotcleaver Clan",
+  "color" : "#9acd32"
+}, {
+  "tag" : "B24",
+  "name" : "Clouded Eye Clan",
+  "color" : "#f0fff0"
+}, {
+  "tag" : "B25",
+  "name" : "Bladebreaker Clan",
+  "color" : "#49796b"
+}, {
+  "tag" : "B26",
+  "name" : "Severed Ear Clan",
+  "color" : "#00693e"
+}, {
+  "tag" : "B27",
+  "name" : "Bonecarver Clan",
+  "color" : "#a9ba9e"
+}, {
+  "tag" : "B28",
+  "name" : "Dogeater Clan",
+  "color" : "#3eb489"
+}, {
+  "tag" : "B29",
+  "name" : "Deadfang Clan",
+  "color" : "#365e3b"
+}, {
+  "tag" : "B30",
+  "name" : "Bloodgorger Clan",
+  "color" : "#50c878"
+}, {
+  "tag" : "B31",
+  "name" : "Castellyr",
+  "color" : "#9090c8"
+}, {
+  "tag" : "B32",
+  "name" : "Castanor",
+  "color" : "#ffffff"
+}, {
+  "tag" : "B33",
+  "name" : "Blademarches",
+  "color" : "#e6d8a6"
+}, {
+  "tag" : "B34",
+  "name" : "Luciande",
+  "color" : "#882409"
+}, {
+  "tag" : "B35",
+  "name" : "Ancardia",
+  "color" : "#e2baa5"
+}, {
+  "tag" : "B36",
+  "name" : "Marrhold",
+  "color" : "#9d7973"
+}, {
+  "tag" : "B37",
+  "name" : "Rogieria",
+  "color" : "#529eb5"
+}, {
+  "tag" : "B38",
+  "name" : "Elikhand",
+  "color" : "#e87679"
+}, {
+  "tag" : "B39",
+  "name" : "Wyvernheart",
+  "color" : "#f63603"
+}, {
+  "tag" : "B40",
+  "name" : "Alenor",
+  "color" : "#0047ab"
+}, {
+  "tag" : "B41",
+  "name" : "Earworm Tribe",
+  "color" : "#321932"
+}, {
+  "tag" : "B42",
+  "name" : "Groundhawk Tribe",
+  "color" : "#64aa1e"
+}, {
+  "tag" : "B43",
+  "name" : "Flying Hound Tribe",
+  "color" : "#aa1e64"
+}, {
+  "tag" : "B44",
+  "name" : "Flung Head Tribe",
+  "color" : "#1e64aa"
+}, {
+  "tag" : "B45",
+  "name" : "Headwearer Tribe",
+  "color" : "#146428"
+}, {
+  "tag" : "B46",
+  "name" : "Grasshopper Muncher Tribe",
+  "color" : "#914883"
+}, {
+  "tag" : "B47",
+  "name" : "Stalbor",
+  "color" : "#a491df"
+}, {
+  "tag" : "B48",
+  "name" : "Ravenmarch",
+  "color" : "#3b3448"
+}, {
+  "tag" : "B49",
+  "name" : "Araionn",
+  "color" : "#e2c86b"
+}, {
+  "tag" : "B50",
+  "name" : "Newshire",
+  "color" : "#b56a6a"
+}, {
+  "tag" : "B51",
+  "name" : "Estaire",
+  "color" : "#b6c4eb"
+}, {
+  "tag" : "B52",
+  "name" : "Cael_Deinn",
+  "color" : "#a12a2a"
+}, {
+  "tag" : "B53",
+  "name" : "Nurcestir",
+  "color" : "#d1a06b"
+}, {
+  "tag" : "B54",
+  "name" : "Esthil",
+  "color" : "#232628"
+}, {
+  "tag" : "B55",
+  "name" : "Counts League",
+  "color" : "#646464"
+}, {
+  "tag" : "B56",
+  "name" : "Badakhan",
+  "color" : "#0f75bb"
+}, {
+  "tag" : "B57",
+  "name" : "Cardest",
+  "color" : "#b6832e"
+}, {
+  "tag" : "B58",
+  "name" : "Adenica",
+  "color" : "#0f75bb"
+}, {
+  "tag" : "B59",
+  "name" : "Pashaine",
+  "color" : "#82378c"
+}, {
+  "tag" : "B60",
+  "name" : "Farranean",
+  "color" : "#a0b955"
+}, {
+  "tag" : "B61",
+  "name" : "Edhardrachon Breakaway",
+  "color" : "#c0c0c0"
+}, {
+  "tag" : "B62",
+  "name" : "Moredhal",
+  "color" : "#daa520"
+}, {
+  "tag" : "B63",
+  "name" : "Grudgeknights",
+  "color" : "#8b0000"
+}, {
+  "tag" : "B64",
+  "name" : "Passionates",
+  "color" : "#00008b"
+}, {
+  "tag" : "B65",
+  "name" : "Devotees",
+  "color" : "#008b00"
+}, {
+  "tag" : "B66",
+  "name" : "Havoral",
+  "color" : "#7f90a8"
+}, {
+  "tag" : "B67",
+  "name" : "Honderaak",
+  "color" : "#bdabd4"
+}, {
+  "tag" : "B68",
+  "name" : "Kyliande",
+  "color" : "#43529a"
+}, {
+  "tag" : "B69",
+  "name" : "Crovania",
+  "color" : "#2c5977"
+}, {
+  "tag" : "B70",
+  "name" : "Ilvandet",
+  "color" : "#4b833c"
+}, {
+  "tag" : "B71",
+  "name" : "Southroy",
+  "color" : "#4696d9"
+}, {
+  "tag" : "B72",
+  "name" : "Ionnidar",
+  "color" : "#874e94"
+}, {
+  "tag" : "B73",
+  "name" : "Darom",
+  "color" : "#8223c8"
+}, {
+  "tag" : "B74",
+  "name" : "Wesmar",
+  "color" : "#aa786e"
+}, {
+  "tag" : "B75",
+  "name" : "Ainethan",
+  "color" : "#e1b346"
+}, {
+  "tag" : "B76",
+  "name" : "Horsegarden",
+  "color" : "#d282a5"
+}, {
+  "tag" : "B77",
+  "name" : "Saddleglade",
+  "color" : "#823232"
+}, {
+  "tag" : "B78",
+  "name" : "Carneter",
+  "color" : "#318f4b"
+}, {
+  "tag" : "B79",
+  "name" : "Jazhkredu",
+  "color" : "#313f00"
+}, {
+  "tag" : "B80",
+  "name" : "Windtower",
+  "color" : "#55dca0"
+}, {
+  "tag" : "B81",
+  "name" : "Hortosare",
+  "color" : "#8d241c"
+}, {
+  "tag" : "B82",
+  "name" : "Petalmasher",
+  "color" : "#9eb28b"
+}, {
+  "tag" : "B83",
+  "name" : "Gerwick",
+  "color" : "#b69340"
+}, {
+  "tag" : "B84",
+  "name" : "Westmounts",
+  "color" : "#176bce"
+}, {
+  "tag" : "B85",
+  "name" : "Varlosen",
+  "color" : "#643232"
+}, {
+  "tag" : "B86",
+  "name" : "Havorton",
+  "color" : "#3c78a5"
+}, {
+  "tag" : "B87",
+  "name" : "Byshade",
+  "color" : "#320541"
+}, {
+  "tag" : "B88",
+  "name" : "Cannleigh",
+  "color" : "#fae164"
+}, {
+  "tag" : "B89",
+  "name" : "Eastbright",
+  "color" : "#7de1e1"
+}, {
+  "tag" : "B90",
+  "name" : "Elensbridge",
+  "color" : "#c84646"
+}, {
+  "tag" : "B91",
+  "name" : "Thanallen",
+  "color" : "#32960f"
+}, {
+  "tag" : "B92",
+  "name" : "Esmaryan Temple",
+  "color" : "#c3a087"
+}, {
+  "tag" : "B93",
+  "name" : "Ildumar",
+  "color" : "#faa401"
+}, {
+  "tag" : "B94",
+  "name" : "Milcorissia",
+  "color" : "#fbffe3"
+}, {
+  "tag" : "B95",
+  "name" : "Uanced",
+  "color" : "#15581b"
+}, {
+  "tag" : "B96",
+  "name" : "Salceran",
+  "color" : "#5575ba"
+}, {
+  "tag" : "B97",
+  "name" : "Ravenhill",
+  "color" : "#4f0014"
+}, {
+  "tag" : "B98",
+  "name" : "The Reach",
+  "color" : "#416496"
+}, {
+  "tag" : "B99",
+  "name" : "Aranthil",
+  "color" : "#7d91a0"
+}, {
+  "tag" : "F21",
+  "name" : "Birsartanses",
+  "color" : "#cf62ad"
+}, {
+  "tag" : "F22",
+  "name" : "Dartaxagerdim",
+  "color" : "#49c634"
+}, {
+  "tag" : "F23",
+  "name" : "Ovdal Tungr",
+  "color" : "#cc7515"
+}, {
+  "tag" : "F24",
+  "name" : "Brasan",
+  "color" : "#cde9e8"
+}, {
+  "tag" : "F25",
+  "name" : "Sareyand",
+  "color" : "#454545"
+}, {
+  "tag" : "F26",
+  "name" : "Gelkalis",
+  "color" : "#36b8c6"
+}, {
+  "tag" : "F27",
+  "name" : "Ayarallen",
+  "color" : "#c8a9a8"
+}, {
+  "tag" : "F28",
+  "name" : "Tluukt",
+  "color" : "#947a4a"
+}, {
+  "tag" : "F29",
+  "name" : "Zokka",
+  "color" : "#aba596"
+}, {
+  "tag" : "F30",
+  "name" : "Kumarkand",
+  "color" : "#317d0e"
+}, {
+  "tag" : "F31",
+  "name" : "Eduz-Vacyn",
+  "color" : "#71e818"
+}, {
+  "tag" : "F32",
+  "name" : "Drolakand",
+  "color" : "#990330"
+}, {
+  "tag" : "F33",
+  "name" : "Akalses",
+  "color" : "#475995"
+}, {
+  "tag" : "F34",
+  "name" : "Azka-Evran",
+  "color" : "#2fdca9"
+}, {
+  "tag" : "F35",
+  "name" : "Azkabar",
+  "color" : "#c2fe75"
+}, {
+  "tag" : "F36",
+  "name" : "Harklum",
+  "color" : "#9b9e1a"
+}, {
+  "tag" : "F37",
+  "name" : "Irrliam",
+  "color" : "#f2ce3d"
+}, {
+  "tag" : "F38",
+  "name" : "Phoenix Empire",
+  "color" : "#e3b134"
+}, {
+  "tag" : "F39",
+  "name" : "Bulwar",
+  "color" : "#d56275"
+}, {
+  "tag" : "F40",
+  "name" : "Anzabad",
+  "color" : "#133eea"
+}, {
+  "tag" : "F41",
+  "name" : "Zanbar",
+  "color" : "#1ac0fb"
+}, {
+  "tag" : "F42",
+  "name" : "Varamhar",
+  "color" : "#0238a9"
+}, {
+  "tag" : "F43",
+  "name" : "Zansap",
+  "color" : "#57b1c8"
+}, {
+  "tag" : "F44",
+  "name" : "Kalib",
+  "color" : "#914316"
+}, {
+  "tag" : "F45",
+  "name" : "Hasr",
+  "color" : "#374df5"
+}, {
+  "tag" : "F46",
+  "name" : "Jaddari",
+  "color" : "#f18732"
+}, {
+  "tag" : "F47",
+  "name" : "Verkal Gulan",
+  "color" : "#ffc600"
+}, {
+  "tag" : "F48",
+  "name" : "Siadan",
+  "color" : "#ade4db"
+}, {
+  "tag" : "F49",
+  "name" : "Elaienna",
+  "color" : "#fdf950"
+}, {
+  "tag" : "F50",
+  "name" : "Mulen",
+  "color" : "#d9937d"
+}, {
+  "tag" : "F51",
+  "name" : "Jadd Empire",
+  "color" : "#f18732"
+}, {
+  "tag" : "F52",
+  "name" : "Surakes",
+  "color" : "#d56a62"
+}, {
+  "tag" : "F53",
+  "name" : "Musaskalam",
+  "color" : "#313961"
+}, {
+  "tag" : "F54",
+  "name" : "Koggraffa",
+  "color" : "#b26c36"
+}, {
+  "tag" : "F55",
+  "name" : "Kogzalla",
+  "color" : "#822314"
+}, {
+  "tag" : "F56",
+  "name" : "Dasmatus",
+  "color" : "#bebe32"
+}, {
+  "tag" : "F57",
+  "name" : "Khasa",
+  "color" : "#5a8741"
+}, {
+  "tag" : "F58",
+  "name" : "Akasik",
+  "color" : "#c83c14"
+}, {
+  "tag" : "F60",
+  "name" : "Samsumbat",
+  "color" : "#dc0014"
+}, {
+  "tag" : "F61",
+  "name" : "Muhaqaar",
+  "color" : "#ba599d"
+}, {
+  "tag" : "F62",
+  "name" : "Duwarkani",
+  "color" : "#009900"
+}, {
+  "tag" : "F63",
+  "name" : "Aramoole",
+  "color" : "#b2c2a2"
+}, {
+  "tag" : "F64",
+  "name" : "Prakheta",
+  "color" : "#613333"
+}, {
+  "tag" : "F65",
+  "name" : "Tzilekal",
+  "color" : "#057319"
+}, {
+  "tag" : "F66",
+  "name" : "Konolkhatep",
+  "color" : "#780a0a"
+}, {
+  "tag" : "F67",
+  "name" : "Zinhakan",
+  "color" : "#22ad92"
+}, {
+  "tag" : "F68",
+  "name" : "Rombeni",
+  "color" : "#2d1650"
+}, {
+  "tag" : "F69",
+  "name" : "Irkorzik",
+  "color" : "#59491d"
+}, {
+  "tag" : "F70",
+  "name" : "Mattabo",
+  "color" : "#008296"
+}, {
+  "tag" : "F71",
+  "name" : "Rakkaz",
+  "color" : "#965a00"
+}, {
+  "tag" : "F72",
+  "name" : "Haraagtseda",
+  "color" : "#a06e6e"
+}, {
+  "tag" : "F73",
+  "name" : "Mokatanga",
+  "color" : "#5a642d"
+}, {
+  "tag" : "F74",
+  "name" : "Anzarzax",
+  "color" : "#ffff9b"
+}, {
+  "tag" : "F75",
+  "name" : "Avamezan",
+  "color" : "#ab3657"
+}, {
+  "tag" : "F76",
+  "name" : "Medurubar",
+  "color" : "#005564"
+}, {
+  "tag" : "F77",
+  "name" : "Kuzaram",
+  "color" : "#506464"
+}, {
+  "tag" : "F78",
+  "name" : "The Overclan",
+  "color" : "#6464c8"
+}, {
+  "tag" : "F79",
+  "name" : "Sihrusam",
+  "color" : "#c2b669"
+}, {
+  "tag" : "F80",
+  "name" : "Nansalen",
+  "color" : "#8fb0ea"
+}, {
+  "tag" : "F81",
+  "name" : "Hytiranyalen",
+  "color" : "#410056"
+}, {
+  "tag" : "F82",
+  "name" : "Firanyalen",
+  "color" : "#32641e"
+}, {
+  "tag" : "F83",
+  "name" : "Setadazar",
+  "color" : "#0fbea0"
+}, {
+  "tag" : "F84",
+  "name" : "Kinvefirel",
+  "color" : "#6419ff"
+}, {
+  "tag" : "F85",
+  "name" : "Annail",
+  "color" : "#ed1f3d"
+}, {
+  "tag" : "F86",
+  "name" : "Krahahga",
+  "color" : "#f4fff4"
+}, {
+  "tag" : "F87",
+  "name" : "Panuses",
+  "color" : "#ff3f6f"
+}, {
+  "tag" : "F88",
+  "name" : "Lawassar",
+  "color" : "#303698"
+}, {
+  "tag" : "F89",
+  "name" : "Arkasul",
+  "color" : "#66190c"
+}, {
+  "tag" : "F90",
+  "name" : "Misarallen",
+  "color" : "#f0502d"
+}, {
+  "tag" : "F91",
+  "name" : "Jixobix",
+  "color" : "#b06500"
+}, {
+  "tag" : "F92",
+  "name" : "Taladzan",
+  "color" : "#ffa836"
+}, {
+  "tag" : "F93",
+  "name" : "Arrtukerr",
+  "color" : "#ca3433"
+}, {
+  "tag" : "F94",
+  "name" : "Zhavekal",
+  "color" : "#629888"
+}, {
+  "tag" : "F95",
+  "name" : "Iskurthid",
+  "color" : "#3457d5"
+}, {
+  "tag" : "F96",
+  "name" : "Xhurekal",
+  "color" : "#a80037"
+}, {
+  "tag" : "F97",
+  "name" : "Bastard Empire",
+  "color" : "#ac273c"
+}, {
+  "tag" : "F98",
+  "name" : "Harpylen",
+  "color" : "#c8a9a8"
+}, {
+  "tag" : "F99",
+  "name" : "Jadd Civil War",
+  "color" : "#ac1e0b"
+}, {
+  "tag" : "G00",
+  "name" : "Ameion Civil War",
+  "color" : "#ac281f"
+}, {
+  "tag" : "G01",
+  "name" : "Boek",
+  "color" : "#6464ff"
+}, {
+  "tag" : "G02",
+  "name" : "Mayte",
+  "color" : "#411328"
+}, {
+  "tag" : "G03",
+  "name" : "Kooras",
+  "color" : "#3a595e"
+}, {
+  "tag" : "G04",
+  "name" : "Yanek",
+  "color" : "#3771e3"
+}, {
+  "tag" : "G05",
+  "name" : "Kwineh",
+  "color" : "#be6363"
+}, {
+  "tag" : "G06",
+  "name" : "Cheshoshoanta",
+  "color" : "#636363"
+}, {
+  "tag" : "G07",
+  "name" : "Dokanto",
+  "color" : "#524191"
+}, {
+  "tag" : "G08",
+  "name" : "Shofa",
+  "color" : "#9aac48"
+}, {
+  "tag" : "G09",
+  "name" : "Soru",
+  "color" : "#be6363"
+}, {
+  "tag" : "G10",
+  "name" : "Ruinsail",
+  "color" : "#2d211d"
+}, {
+  "tag" : "G15",
+  "name" : "Sel'parura",
+  "color" : "#add7f7"
+}, {
+  "tag" : "G16",
+  "name" : "Aen Saldayno",
+  "color" : "#7a5272"
+}, {
+  "tag" : "G17",
+  "name" : "XotiGuao",
+  "color" : "#89877b"
+}, {
+  "tag" : "G18",
+  "name" : "Kamaraka",
+  "color" : "#eac000"
+}, {
+  "tag" : "G19",
+  "name" : "Ingani",
+  "color" : "#0a6b22"
+}, {
+  "tag" : "G20",
+  "name" : "Araya",
+  "color" : "#32a17a"
+}, {
+  "tag" : "G21",
+  "name" : "Pomvasonn",
+  "color" : "#159509"
+}, {
+  "tag" : "G22",
+  "name" : "Svemel",
+  "color" : "#6d7f1d"
+}, {
+  "tag" : "G23",
+  "name" : "Juzondezan",
+  "color" : "#71167e"
+}, {
+  "tag" : "G24",
+  "name" : "Gomosengha",
+  "color" : "#c3cfc9"
+}, {
+  "tag" : "G25",
+  "name" : "Stantirshalas",
+  "color" : "#d58421"
+}, {
+  "tag" : "G26",
+  "name" : "Amacimst",
+  "color" : "#dc12f5"
+}, {
+  "tag" : "G27",
+  "name" : "Brelar",
+  "color" : "#4d4d41"
+}, {
+  "tag" : "G28",
+  "name" : "Grebniesth",
+  "color" : "#ead0e3"
+}, {
+  "tag" : "G29",
+  "name" : "Drevkenuc",
+  "color" : "#904d13"
+}, {
+  "tag" : "G30",
+  "name" : "Mocvare",
+  "color" : "#1280e0"
+}, {
+  "tag" : "G31",
+  "name" : "Vareynn",
+  "color" : "#eedf36"
+}, {
+  "tag" : "G32",
+  "name" : "Malacnar",
+  "color" : "#b71a2e"
+}, {
+  "tag" : "G33",
+  "name" : "Bosancovac",
+  "color" : "#303e7c"
+}, {
+  "tag" : "G34",
+  "name" : "Arganjuzorn",
+  "color" : "#639368"
+}, {
+  "tag" : "G35",
+  "name" : "Arverynn",
+  "color" : "#267355"
+}, {
+  "tag" : "G36",
+  "name" : "Trompolere",
+  "color" : "#5e1df6"
+}, {
+  "tag" : "G37",
+  "name" : "Fadhevych",
+  "color" : "#b83178"
+}, {
+  "tag" : "G38",
+  "name" : "Vels Fadhecai",
+  "color" : "#b55aed"
+}, {
+  "tag" : "G39",
+  "name" : "Adbrabohvi",
+  "color" : "#8bacd4"
+}, {
+  "tag" : "G40",
+  "name" : "Tehanek",
+  "color" : "#9c43f3"
+}, {
+  "tag" : "G41",
+  "name" : "Jayek",
+  "color" : "#c1aeca"
+}, {
+  "tag" : "G42",
+  "name" : "Inek",
+  "color" : "#06214c"
+}, {
+  "tag" : "G43",
+  "name" : "Haraf",
+  "color" : "#a0807a"
+}, {
+  "tag" : "G44",
+  "name" : "Leptone",
+  "color" : "#ffff99"
+}, {
+  "tag" : "G45",
+  "name" : "Benter",
+  "color" : "#6c23bc"
+}, {
+  "tag" : "G46",
+  "name" : "Degakheion",
+  "color" : "#e12858"
+}, {
+  "tag" : "G47",
+  "name" : "Oktikheion",
+  "color" : "#31a326"
+}, {
+  "tag" : "G48",
+  "name" : "Kherka",
+  "color" : "#cdcdcd"
+}, {
+  "tag" : "G49",
+  "name" : "Lokemeion",
+  "color" : "#132824"
+}, {
+  "tag" : "G50",
+  "name" : "Ormam",
+  "color" : "#21b596"
+}, {
+  "tag" : "G51",
+  "name" : "Arpedifer",
+  "color" : "#28e4ed"
+}, {
+  "tag" : "G52",
+  "name" : "Ameion",
+  "color" : "#0412e1"
+}, {
+  "tag" : "G53",
+  "name" : "Empkeios",
+  "color" : "#0ca0e4"
+}, {
+  "tag" : "G54",
+  "name" : "Besolaki",
+  "color" : "#be16f7"
+}, {
+  "tag" : "G55",
+  "name" : "Eneion",
+  "color" : "#81185e"
+}, {
+  "tag" : "G56",
+  "name" : "Deyeion",
+  "color" : "#d97152"
+}, {
+  "tag" : "G57",
+  "name" : "Apikhoxi",
+  "color" : "#440510"
+}, {
+  "tag" : "G58",
+  "name" : "Keyolion",
+  "color" : "#7595ed"
+}, {
+  "tag" : "G59",
+  "name" : "Anisikheion",
+  "color" : "#7d8158"
+}, {
+  "tag" : "G60",
+  "name" : "Eltikan",
+  "color" : "#a19c4c"
+}, {
+  "tag" : "G61",
+  "name" : "Kimanis",
+  "color" : "#3b1e58"
+}, {
+  "tag" : "G62",
+  "name" : "Amgremos",
+  "color" : "#9f82bc"
+}, {
+  "tag" : "G63",
+  "name" : "Mteibhara",
+  "color" : "#b5c9e1"
+}, {
+  "tag" : "G64",
+  "name" : "Larankar",
+  "color" : "#b4753f"
+}, {
+  "tag" : "G65",
+  "name" : "Sedregenhi",
+  "color" : "#ff7f31"
+}, {
+  "tag" : "G66",
+  "name" : "Clematar",
+  "color" : "#73cffb"
+}, {
+  "tag" : "G67",
+  "name" : "Royakottar",
+  "color" : "#d85543"
+}, {
+  "tag" : "G68",
+  "name" : "Nakar Mlerek",
+  "color" : "#f5e0ca"
+}, {
+  "tag" : "G69",
+  "name" : "Nakar Kilaiek",
+  "color" : "#2d1802"
+}, {
+  "tag" : "G70",
+  "name" : "Nakar Kriadvai",
+  "color" : "#704e64"
+}, {
+  "tag" : "G71",
+  "name" : "Orenkoraim",
+  "color" : "#18ceb7"
+}, {
+  "tag" : "G72",
+  "name" : "Enlarmai",
+  "color" : "#a9242f"
+}, {
+  "tag" : "G73",
+  "name" : "Ahartadyam",
+  "color" : "#6f271e"
+}, {
+  "tag" : "G74",
+  "name" : "Gophira",
+  "color" : "#646464"
+}, {
+  "tag" : "G75",
+  "name" : "Sibisimra",
+  "color" : "#35e935"
+}, {
+  "tag" : "G76",
+  "name" : "Tirsin",
+  "color" : "#4c99d9"
+}, {
+  "tag" : "G77",
+  "name" : "Marhed Rayodana",
+  "color" : "#adbf62"
+}, {
+  "tag" : "G78",
+  "name" : "Ethanamara",
+  "color" : "#c59d98"
+}, {
+  "tag" : "G79",
+  "name" : "Vuls Tenvach",
+  "color" : "#6b6ee2"
+}, {
+  "tag" : "G80",
+  "name" : "Imarchend",
+  "color" : "#8c860e"
+}, {
+  "tag" : "G81",
+  "name" : "Sthanan ith Vussam",
+  "color" : "#7b1ee0"
+}, {
+  "tag" : "G82",
+  "name" : "Nagar Vyechei",
+  "color" : "#362a27"
+}, {
+  "tag" : "G83",
+  "name" : "Korrimutren",
+  "color" : "#181b30"
+}, {
+  "tag" : "G84",
+  "name" : "Vels Bacar",
+  "color" : "#65eedd"
+}, {
+  "tag" : "G85",
+  "name" : "Thromshana",
+  "color" : "#d4ee59"
+}, {
+  "tag" : "G86",
+  "name" : "Stanyrhrada",
+  "color" : "#00542b"
+}, {
+  "tag" : "G87",
+  "name" : "Chaqway",
+  "color" : "#3e5058"
+}, {
+  "tag" : "G88",
+  "name" : "Arapache",
+  "color" : "#5e6e64"
+}, {
+  "tag" : "G89",
+  "name" : "Imeqitahp",
+  "color" : "#4b3e1e"
+}, {
+  "tag" : "G90",
+  "name" : "Asraport",
+  "color" : "#f3781c"
+}, {
+  "tag" : "G91",
+  "name" : "Isobelin",
+  "color" : "#623436"
+}, {
+  "tag" : "G92",
+  "name" : "Saamirses",
+  "color" : "#d5629d"
+}, {
+  "tag" : "G93",
+  "name" : "Mykx",
+  "color" : "#4a3a82"
+}, {
+  "tag" : "G94",
+  "name" : "Argezvale",
+  "color" : "#b1b1c8"
+}, {
+  "tag" : "G95",
+  "name" : "Marlliande",
+  "color" : "#1f31ee"
+}, {
+  "tag" : "G96",
+  "name" : "Thilvis",
+  "color" : "#b2b2b2"
+}, {
+  "tag" : "G97",
+  "name" : "Vanbury Guild",
+  "color" : "#75868f"
+}, {
+  "tag" : "G98",
+  "name" : "Calasanni Trading Company",
+  "color" : "#236441"
+}, {
+  "tag" : "G99",
+  "name" : "Deranne Trade Company",
+  "color" : "#821bba"
+}, {
+  "tag" : "H00",
+  "name" : "Saerraeg",
+  "color" : "#ffcb45"
+}, {
+  "tag" : "H01",
+  "name" : "Arakeprun",
+  "color" : "#700bbb"
+}, {
+  "tag" : "H02",
+  "name" : "Murdkather",
+  "color" : "#0bbb80"
+}, {
+  "tag" : "H03",
+  "name" : "Dearktir",
+  "color" : "#de41d0"
+}, {
+  "tag" : "H04",
+  "name" : "Elchos",
+  "color" : "#6ee5d6"
+}, {
+  "tag" : "H05",
+  "name" : "Kairncal",
+  "color" : "#850d07"
+}, {
+  "tag" : "H06",
+  "name" : "Sidpar",
+  "color" : "#12a603"
+}, {
+  "tag" : "H07",
+  "name" : "Bagcatir",
+  "color" : "#fbffe3"
+}, {
+  "tag" : "H08",
+  "name" : "Pelomar",
+  "color" : "#e99a40"
+}, {
+  "tag" : "H09",
+  "name" : "Iadth",
+  "color" : "#566e1e"
+}, {
+  "tag" : "H10",
+  "name" : "Einnsag",
+  "color" : "#1669a3"
+}, {
+  "tag" : "H11",
+  "name" : "Sglard",
+  "color" : "#ece1a6"
+}, {
+  "tag" : "H12",
+  "name" : "Raithtall",
+  "color" : "#0d6d2a"
+}, {
+  "tag" : "H13",
+  "name" : "Jhorgashirr",
+  "color" : "#695e8a"
+}, {
+  "tag" : "H14",
+  "name" : "Eighard",
+  "color" : "#516f80"
+}, {
+  "tag" : "H15",
+  "name" : "Slegcal",
+  "color" : "#e5bbd3"
+}, {
+  "tag" : "H16",
+  "name" : "Gemradcurt",
+  "color" : "#eeeeee"
+}, {
+  "tag" : "H17",
+  "name" : "Reotcrab",
+  "color" : "#82d1c6"
+}, {
+  "tag" : "H18",
+  "name" : "Gelcolle",
+  "color" : "#91a97b"
+}, {
+  "tag" : "H19",
+  "name" : "Strutmar",
+  "color" : "#937ba9"
+}, {
+  "tag" : "H20",
+  "name" : "Trimgarb",
+  "color" : "#bbd3e5"
+}, {
+  "tag" : "H21",
+  "name" : "Eordand",
+  "color" : "#d4af37"
+}, {
+  "tag" : "H22",
+  "name" : "Kheios",
+  "color" : "#3c78b4"
+}, {
+  "tag" : "H23",
+  "name" : "Kaeorg",
+  "color" : "#84bed7"
+}, {
+  "tag" : "H24",
+  "name" : "Dragon Dominion",
+  "color" : "#005800"
+}, {
+  "tag" : "H25",
+  "name" : "Stenurynn",
+  "color" : "#ededed"
+}, {
+  "tag" : "H26",
+  "name" : "Vels Domfan",
+  "color" : "#91c17a"
+}, {
+  "tag" : "H27",
+  "name" : "Ynnic Empire",
+  "color" : "#ad1b05"
+}, {
+  "tag" : "H28",
+  "name" : "Durasyar",
+  "color" : "#7f974b"
+}, {
+  "tag" : "H29",
+  "name" : "Tsidarok",
+  "color" : "#ffaa1e"
+}, {
+  "tag" : "H30",
+  "name" : "Gommoport",
+  "color" : "#f5d9e9"
+}, {
+  "tag" : "H31",
+  "name" : "Zurzumexia",
+  "color" : "#aeb5bd"
+}, {
+  "tag" : "H32",
+  "name" : "Mestikardu",
+  "color" : "#7dfab9"
+}, {
+  "tag" : "H33",
+  "name" : "Cestirmark",
+  "color" : "#262280"
+}, {
+  "tag" : "H34",
+  "name" : "Ebenmas",
+  "color" : "#aa8f83"
+}, {
+  "tag" : "H35",
+  "name" : "Corinsfield",
+  "color" : "#e97a56"
+}, {
+  "tag" : "H36",
+  "name" : "Valorpoint",
+  "color" : "#f6364d"
+}, {
+  "tag" : "H37",
+  "name" : "Themaria",
+  "color" : "#b6d2e8"
+}, {
+  "tag" : "H38",
+  "name" : "Zanlib",
+  "color" : "#a76275"
+}, {
+  "tag" : "H39",
+  "name" : "Ozgarom",
+  "color" : "#4eb414"
+}, {
+  "tag" : "H40",
+  "name" : "Sornic Sons",
+  "color" : "#790a41"
+}, {
+  "tag" : "H41",
+  "name" : "Sornicande",
+  "color" : "#790a41"
+}, {
+  "tag" : "H42",
+  "name" : "Onyx Legion",
+  "color" : "#212121"
+}, {
+  "tag" : "H43",
+  "name" : "Neratica",
+  "color" : "#222222"
+}, {
+  "tag" : "H44",
+  "name" : "Shining Circle",
+  "color" : "#e1cd6b"
+}, {
+  "tag" : "H45",
+  "name" : "Beggaston",
+  "color" : "#e1cd6b"
+}, {
+  "tag" : "H46",
+  "name" : "Istralorian Crusaders",
+  "color" : "#94c9b1"
+}, {
+  "tag" : "H47",
+  "name" : "Istranar",
+  "color" : "#94c9b1"
+}, {
+  "tag" : "H48",
+  "name" : "Menibor Free Company",
+  "color" : "#e6d131"
+}, {
+  "tag" : "H49",
+  "name" : "Tiru Moine",
+  "color" : "#e6d131"
+}, {
+  "tag" : "H50",
+  "name" : "Varbuks Freemen",
+  "color" : "#42f5c8"
+}, {
+  "tag" : "H51",
+  "name" : "Freemarches",
+  "color" : "#42f5c8"
+}, {
+  "tag" : "H52",
+  "name" : "House of Reflection",
+  "color" : "#81d9eb"
+}, {
+  "tag" : "H53",
+  "name" : "Elathael",
+  "color" : "#81d9eb"
+}, {
+  "tag" : "H54",
+  "name" : "Tipney Pioneers",
+  "color" : "#d182cb"
+}, {
+  "tag" : "H55",
+  "name" : "West Tipney",
+  "color" : "#d182cb"
+}, {
+  "tag" : "H56",
+  "name" : "Havoral Band",
+  "color" : "#406fa9"
+}, {
+  "tag" : "H57",
+  "name" : "New Havoral",
+  "color" : "#406fa9"
+}, {
+  "tag" : "H58",
+  "name" : "Chipped Tooth Company",
+  "color" : "#d1c59a"
+}, {
+  "tag" : "H59",
+  "name" : "Chippengard",
+  "color" : "#d1c59a"
+}, {
+  "tag" : "H60",
+  "name" : "Plumwall Expedition",
+  "color" : "#9664c8"
+}, {
+  "tag" : "H61",
+  "name" : "Plumstead",
+  "color" : "#9664c8"
+}, {
+  "tag" : "H62",
+  "name" : "Brigade Magnificent",
+  "color" : "#108a90"
+}, {
+  "tag" : "H63",
+  "name" : "Nur Dhanaenn",
+  "color" : "#108a90"
+}, {
+  "tag" : "H64",
+  "name" : "Bardswood Band",
+  "color" : "#8a2476"
+}, {
+  "tag" : "H65",
+  "name" : "Tellumtir",
+  "color" : "#8a2476"
+}, {
+  "tag" : "H66",
+  "name" : "Jaherian Exemplars",
+  "color" : "#cfb134"
+}, {
+  "tag" : "H67",
+  "name" : "Rezankand",
+  "color" : "#cf8c34"
+}, {
+  "tag" : "H68",
+  "name" : "Ruby Company",
+  "color" : "#af3434"
+}, {
+  "tag" : "H69",
+  "name" : "Forgemaster Union",
+  "color" : "#6482d2"
+}, {
+  "tag" : "H70",
+  "name" : "Company of Duran Blueshield",
+  "color" : "#28c8e1"
+}, {
+  "tag" : "H71",
+  "name" : "Blackbeard Cartel",
+  "color" : "#737373"
+}, {
+  "tag" : "H72",
+  "name" : "Shattered Crown",
+  "color" : "#649918"
+}, {
+  "tag" : "H73",
+  "name" : "Skewered Drake",
+  "color" : "#b2872e"
+}, {
+  "tag" : "H74",
+  "name" : "Chaingrasper",
+  "color" : "#00693e"
+}, {
+  "tag" : "H75",
+  "name" : "Railskulker",
+  "color" : "#0d352e"
+}, {
+  "tag" : "H76",
+  "name" : "Arg-Ordstun",
+  "color" : "#c8c8c8"
+}, {
+  "tag" : "H77",
+  "name" : "Ovdal Lodhum",
+  "color" : "#f7b3d7"
+}, {
+  "tag" : "H78",
+  "name" : "Seghdihr",
+  "color" : "#24608f"
+}, {
+  "tag" : "H79",
+  "name" : "Ovdal Kanzad",
+  "color" : "#b09225"
+}, {
+  "tag" : "H80",
+  "name" : "Siegebreaker",
+  "color" : "#a1d28d"
+}, {
+  "tag" : "H81",
+  "name" : "Masked Butcher",
+  "color" : "#33030e"
+}, {
+  "tag" : "H82",
+  "name" : "Greedy Grin",
+  "color" : "#94eae3"
+}, {
+  "tag" : "H83",
+  "name" : "Shadowdreamer",
+  "color" : "#93858c"
+}, {
+  "tag" : "H84",
+  "name" : "Mountainshark",
+  "color" : "#3e1929"
+}, {
+  "tag" : "H85",
+  "name" : "Truedagger",
+  "color" : "#e9e9ff"
+}, {
+  "tag" : "H86",
+  "name" : "Wretched Skull",
+  "color" : "#efdcab"
+}, {
+  "tag" : "H87",
+  "name" : "Thieving Arrow",
+  "color" : "#af817b"
+}, {
+  "tag" : "H88",
+  "name" : "Ambersniffer",
+  "color" : "#ed9441"
+}, {
+  "tag" : "H89",
+  "name" : "Snotfinger",
+  "color" : "#facfb9"
+}, {
+  "tag" : "H90",
+  "name" : "Spiderwretch",
+  "color" : "#292869"
+}, {
+  "tag" : "H91",
+  "name" : "Roadwarrior",
+  "color" : "#0dd246"
+}, {
+  "tag" : "H92",
+  "name" : "Poisoned Rock",
+  "color" : "#d6c09b"
+}, {
+  "tag" : "H93",
+  "name" : "Dirtwater",
+  "color" : "#444e3e"
+}, {
+  "tag" : "H94",
+  "name" : "Obsidian Legions",
+  "color" : "#080e2a"
+}, {
+  "tag" : "H95",
+  "name" : "Began's Expedition",
+  "color" : "#dcd9ec"
+}, {
+  "tag" : "H96",
+  "name" : "Mithril-Arm Cartel",
+  "color" : "#96b1f0"
+}, {
+  "tag" : "H97",
+  "name" : "Company of the Grudgebearers",
+  "color" : "#424242"
+}, {
+  "tag" : "H98",
+  "name" : "Axebellow Cartel",
+  "color" : "#3c0b16"
+}, {
+  "tag" : "H99",
+  "name" : "Feyslicer",
+  "color" : "#b22222"
+}, {
+  "tag" : "I00",
+  "name" : "Soyzkaru",
+  "color" : "#0d0305"
+}, {
+  "tag" : "I01",
+  "name" : "Amldihr",
+  "color" : "#3c2850"
+}, {
+  "tag" : "I02",
+  "name" : "Krakdhumvror",
+  "color" : "#94c9e6"
+}, {
+  "tag" : "I03",
+  "name" : "Dur-Vazhatun",
+  "color" : "#001977"
+}, {
+  "tag" : "I04",
+  "name" : "Orlazam-az-dihr",
+  "color" : "#4a6f79"
+}, {
+  "tag" : "I05",
+  "name" : "Mithradhum",
+  "color" : "#51e7d5"
+}, {
+  "tag" : "I06",
+  "name" : "Er-Natvir",
+  "color" : "#93bf9b"
+}, {
+  "tag" : "I07",
+  "name" : "Khugdihr",
+  "color" : "#958365"
+}, {
+  "tag" : "I08",
+  "name" : "Haraz Orldhum",
+  "color" : "#4a5061"
+}, {
+  "tag" : "I09",
+  "name" : "Verkal Kozenad",
+  "color" : "#ffe4d8"
+}, {
+  "tag" : "I10",
+  "name" : "Hul-Jorkad",
+  "color" : "#a0729e"
+}, {
+  "tag" : "I11",
+  "name" : "Shazstundihr",
+  "color" : "#f1f2e3"
+}, {
+  "tag" : "I12",
+  "name" : "Orlghelovar",
+  "color" : "#0047ab"
+}, {
+  "tag" : "I13",
+  "name" : "Verkal Skomdihr",
+  "color" : "#37905a"
+}, {
+  "tag" : "I14",
+  "name" : "Gor Vazumbrog",
+  "color" : "#92a0a1"
+}, {
+  "tag" : "I15",
+  "name" : "Hehodovar",
+  "color" : "#0f52ba"
+}, {
+  "tag" : "I16",
+  "name" : "Gor Burad",
+  "color" : "#f04848"
+}, {
+  "tag" : "I17",
+  "name" : "Gor Ozumbrog",
+  "color" : "#5da19a"
+}, {
+  "tag" : "I18",
+  "name" : "Grozumdihr",
+  "color" : "#87e187"
+}, {
+  "tag" : "I19",
+  "name" : "Ovdal-az-An",
+  "color" : "#72cae3"
+}, {
+  "tag" : "I20",
+  "name" : "Hul-az-Krakazol",
+  "color" : "#996ccc"
+}, {
+  "tag" : "I21",
+  "name" : "Tuwad-Dhumankon",
+  "color" : "#1bfd66"
+}, {
+  "tag" : "I22",
+  "name" : "Gronstunad",
+  "color" : "#00a86b"
+}, {
+  "tag" : "I23",
+  "name" : "Haraz Dhumankon",
+  "color" : "#382b46"
+}, {
+  "tag" : "I24",
+  "name" : "Aul Dwarov",
+  "color" : "#214060"
+}, {
+  "tag" : "I25",
+  "name" : "Verkal Dromak",
+  "color" : "#007d41"
+}, {
+  "tag" : "I26",
+  "name" : "Salla Elyn",
+  "color" : "#3a88ef"
+}, {
+  "tag" : "I27",
+  "name" : "Salla Myna",
+  "color" : "#cb45a5"
+}, {
+  "tag" : "I28",
+  "name" : "Salla Drennen",
+  "color" : "#64c371"
+}, {
+  "tag" : "I29",
+  "name" : "Salla Cenag",
+  "color" : "#fffcde"
+}, {
+  "tag" : "I30",
+  "name" : "Salla Fealgarn",
+  "color" : "#ce8d2f"
+}, {
+  "tag" : "I31",
+  "name" : "Salla Scotha",
+  "color" : "#ee357b"
+}, {
+  "tag" : "I32",
+  "name" : "Salla Ahain",
+  "color" : "#2b3890"
+}, {
+  "tag" : "I33",
+  "name" : "Salla Ayeth",
+  "color" : "#9f9e9f"
+}, {
+  "tag" : "I34",
+  "name" : "Salla Ghul",
+  "color" : "#662d91"
+}, {
+  "tag" : "I35",
+  "name" : "Brambleskinner",
+  "color" : "#c4a2ba"
+}, {
+  "tag" : "I36",
+  "name" : "Spiked Log",
+  "color" : "#6a5622"
+}, {
+  "tag" : "I37",
+  "name" : "Verminhusk",
+  "color" : "#ce7303"
+}, {
+  "tag" : "I38",
+  "name" : "Beasteater",
+  "color" : "#f0f85f"
+}, {
+  "tag" : "I39",
+  "name" : "Blightseed",
+  "color" : "#4cf242"
+}, {
+  "tag" : "I40",
+  "name" : "Cursed Howl",
+  "color" : "#a7b20c"
+}, {
+  "tag" : "I41",
+  "name" : "Sapchopper",
+  "color" : "#c0db50"
+}, {
+  "tag" : "I42",
+  "name" : "Blackmoon",
+  "color" : "#976c0e"
+}, {
+  "tag" : "I43",
+  "name" : "Silentblade",
+  "color" : "#0b1a04"
+}, {
+  "tag" : "I44",
+  "name" : "Silvertusk",
+  "color" : "#814504"
+}, {
+  "tag" : "I45",
+  "name" : "Cyranvar",
+  "color" : "#0a5f0d"
+}, {
+  "tag" : "I46",
+  "name" : "Tugund-Darakh",
+  "color" : "#50dc64"
+}, {
+  "tag" : "I47",
+  "name" : "Northern Wind",
+  "color" : "#f1219c"
+}, {
+  "tag" : "I48",
+  "name" : "Silent Quake",
+  "color" : "#141414"
+}, {
+  "tag" : "I49",
+  "name" : "Thunderborn",
+  "color" : "#342c68"
+}, {
+  "tag" : "I50",
+  "name" : "Ruin Bringer",
+  "color" : "#326e0a"
+}, {
+  "tag" : "I51",
+  "name" : "Battlesong",
+  "color" : "#2e77a0"
+}, {
+  "tag" : "I52",
+  "name" : "Winged Blade",
+  "color" : "#20c00e"
+}, {
+  "tag" : "I53",
+  "name" : "White Shadow",
+  "color" : "#d5e5ae"
+}, {
+  "tag" : "I54",
+  "name" : "Moon Tracker",
+  "color" : "#59fead"
+}, {
+  "tag" : "I55",
+  "name" : "Black Herd",
+  "color" : "#ba03e8"
+}, {
+  "tag" : "I56",
+  "name" : "Lightning Wielder",
+  "color" : "#6469e8"
+}, {
+  "tag" : "I57",
+  "name" : "Golden Tremor",
+  "color" : "#fba809"
+}, {
+  "tag" : "I58",
+  "name" : "Warsight",
+  "color" : "#23fd99"
+}, {
+  "tag" : "I59",
+  "name" : "Glorious Charge",
+  "color" : "#657219"
+}, {
+  "tag" : "I60",
+  "name" : "Skyblot",
+  "color" : "#0ad2e1"
+}, {
+  "tag" : "I61",
+  "name" : "Serpent Shadow",
+  "color" : "#3a6557"
+}, {
+  "tag" : "I62",
+  "name" : "Lakefoe",
+  "color" : "#348944"
+}, {
+  "tag" : "I63",
+  "name" : "Thousand Voices",
+  "color" : "#0914f2"
+}, {
+  "tag" : "I64",
+  "name" : "Blazing Sky",
+  "color" : "#5bcb96"
+}, {
+  "tag" : "I65",
+  "name" : "Burning Hooves",
+  "color" : "#f49752"
+}, {
+  "tag" : "I66",
+  "name" : "Cloudbane",
+  "color" : "#fc634f"
+}, {
+  "tag" : "I67",
+  "name" : "Endless Arrows",
+  "color" : "#512398"
+}, {
+  "tag" : "I68",
+  "name" : "Quiet Hoof",
+  "color" : "#5c56d6"
+}, {
+  "tag" : "I69",
+  "name" : "Star Rider",
+  "color" : "#8528a2"
+}, {
+  "tag" : "I70",
+  "name" : "Crashing Wave",
+  "color" : "#f1e9fa"
+}, {
+  "tag" : "I71",
+  "name" : "Hundred Hooves",
+  "color" : "#18f94b"
+}, {
+  "tag" : "I72",
+  "name" : "City Razer",
+  "color" : "#93a5ac"
+}, {
+  "tag" : "I73",
+  "name" : "Nightmare",
+  "color" : "#e4dd50"
+}, {
+  "tag" : "I74",
+  "name" : "Bloodbringer",
+  "color" : "#ec81ee"
+}, {
+  "tag" : "I75",
+  "name" : "Great Rally",
+  "color" : "#f6d924"
+}, {
+  "tag" : "I76",
+  "name" : "Silence Breaker",
+  "color" : "#e1249c"
+}, {
+  "tag" : "I77",
+  "name" : "Mensbane",
+  "color" : "#845d0a"
+}, {
+  "tag" : "I78",
+  "name" : "Wild Hunt",
+  "color" : "#69141e"
+}, {
+  "tag" : "I79",
+  "name" : "Silvermane",
+  "color" : "#f453b8"
+}, {
+  "tag" : "I80",
+  "name" : "Great Storm",
+  "color" : "#44f096"
+}, {
+  "tag" : "I81",
+  "name" : "Green Flame",
+  "color" : "#d28568"
+}, {
+  "tag" : "I82",
+  "name" : "Red Stallion",
+  "color" : "#b31666"
+}, {
+  "tag" : "I83",
+  "name" : "Sunrider",
+  "color" : "#33c7c3"
+}, {
+  "tag" : "I84",
+  "name" : "Doomhorde",
+  "color" : "#a1d2d0"
+}, {
+  "tag" : "I85",
+  "name" : "Stormsinger",
+  "color" : "#9859d2"
+}, {
+  "tag" : "I86",
+  "name" : "Blackcharge",
+  "color" : "#d3ee4b"
+}, {
+  "tag" : "I87",
+  "name" : "Great Hoof",
+  "color" : "#9ccc20"
+}, {
+  "tag" : "I88",
+  "name" : "Blood Spear",
+  "color" : "#dcd228"
+}, {
+  "tag" : "I89",
+  "name" : "Khuraen Ulaeg",
+  "color" : "#640f0f"
+}, {
+  "tag" : "I90",
+  "name" : "Maghargma",
+  "color" : "#c4b484"
+}, {
+  "tag" : "I91",
+  "name" : "Burning Spear",
+  "color" : "#cfa937"
+}, {
+  "tag" : "I92",
+  "name" : "Verdant Bliss",
+  "color" : "#6e9640"
+}, {
+  "tag" : "I93",
+  "name" : "Tiger Bane",
+  "color" : "#966464"
+}, {
+  "tag" : "I94",
+  "name" : "Desert Mane",
+  "color" : "#fa6464"
+}, {
+  "tag" : "I95",
+  "name" : "Raging Blizzard",
+  "color" : "#2d73d7"
+}, {
+  "tag" : "I96",
+  "name" : "Rosen Rider",
+  "color" : "#b90505"
+}, {
+  "tag" : "I97",
+  "name" : "Vine Tearer",
+  "color" : "#325a32"
+}, {
+  "tag" : "I98",
+  "name" : "Ves Udzenklan",
+  "color" : "#22d800"
+}, {
+  "tag" : "I99",
+  "name" : "Nizhn Korvesto",
+  "color" : "#ffb3e6"
+}, {
+  "tag" : "J01",
+  "name" : "Kovtalzar",
+  "color" : "#f1219c"
+}, {
+  "tag" : "J02",
+  "name" : "Zurkanrek",
+  "color" : "#70ed7d"
+}, {
+  "tag" : "J03",
+  "name" : "Yarumudh",
+  "color" : "#bcb39a"
+}, {
+  "tag" : "J04",
+  "name" : "Khirntozgon",
+  "color" : "#78f2ac"
+}, {
+  "tag" : "J05",
+  "name" : "Haraigizenhi Bulrek",
+  "color" : "#1454bb"
+}, {
+  "tag" : "J06",
+  "name" : "Khugatseig",
+  "color" : "#acea0e"
+}, {
+  "tag" : "J07",
+  "name" : "Tzidoilhol",
+  "color" : "#0992a8"
+}, {
+  "tag" : "J08",
+  "name" : "Kozuurigur",
+  "color" : "#b43e8a"
+}, {
+  "tag" : "J09",
+  "name" : "Lankuuhsta",
+  "color" : "#ffcdb5"
+}, {
+  "tag" : "J10",
+  "name" : "Vahjevgiiv",
+  "color" : "#258015"
+}, {
+  "tag" : "J11",
+  "name" : "Bazur Qarshtuluu",
+  "color" : "#80d37d"
+}, {
+  "tag" : "J12",
+  "name" : "Zurka Qarshtuluu",
+  "color" : "#b922b7"
+}, {
+  "tag" : "J13",
+  "name" : "Negechimudh",
+  "color" : "#41bbbc"
+}, {
+  "tag" : "J14",
+  "name" : "Orilgbulrek",
+  "color" : "#98151e"
+}, {
+  "tag" : "J15",
+  "name" : "Yizuqkeyil",
+  "color" : "#442ff3"
+}, {
+  "tag" : "J16",
+  "name" : "Tolgusrek",
+  "color" : "#cef3f8"
+}, {
+  "tag" : "J17",
+  "name" : "Mizaqtoch",
+  "color" : "#dc5ffc"
+}, {
+  "tag" : "J18",
+  "name" : "Narkel",
+  "color" : "#4bc1b8"
+}, {
+  "tag" : "J19",
+  "name" : "Jungyukaroy",
+  "color" : "#994459"
+}, {
+  "tag" : "J20",
+  "name" : "Bozkuqayla",
+  "color" : "#7c7019"
+}, {
+  "tag" : "J21",
+  "name" : "Marekiiv",
+  "color" : "#6eccdc"
+}, {
+  "tag" : "J22",
+  "name" : "Tayerigliq",
+  "color" : "#da9a18"
+}, {
+  "tag" : "J23",
+  "name" : "Yikashlay",
+  "color" : "#e456c4"
+}, {
+  "tag" : "J24",
+  "name" : "Zabyos'tlar",
+  "color" : "#98711a"
+}, {
+  "tag" : "J25",
+  "name" : "Buruvaqoyla",
+  "color" : "#175754"
+}, {
+  "tag" : "J26",
+  "name" : "Raattakod",
+  "color" : "#5c3b22"
+}, {
+  "tag" : "J27",
+  "name" : "Sinesadma",
+  "color" : "#74c6b5"
+}, {
+  "tag" : "J28",
+  "name" : "Valralahdi",
+  "color" : "#33a261"
+}, {
+  "tag" : "J29",
+  "name" : "Vantnhasadma",
+  "color" : "#1ccc66"
+}, {
+  "tag" : "J30",
+  "name" : "Lankina",
+  "color" : "#7b35e8"
+}, {
+  "tag" : "J31",
+  "name" : "Akuutengen",
+  "color" : "#fc3254"
+}, {
+  "tag" : "J32",
+  "name" : "Mire Maw",
+  "color" : "#4ead47"
+}, {
+  "tag" : "J33",
+  "name" : "Kalsyto",
+  "color" : "#1432d2"
+}, {
+  "tag" : "J34",
+  "name" : "Qarshtuluu",
+  "color" : "#80d37d"
+}, {
+  "tag" : "J35",
+  "name" : "Iltklerd",
+  "color" : "#634626"
+}, {
+  "tag" : "J36",
+  "name" : "Kvakolba",
+  "color" : "#646464"
+}, {
+  "tag" : "J37",
+  "name" : "Olkhajukh",
+  "color" : "#425077"
+}, {
+  "tag" : "J38",
+  "name" : "Remlygenjrot",
+  "color" : "#a97878"
+}, {
+  "tag" : "J39",
+  "name" : "Achtejardon",
+  "color" : "#380000"
+}, {
+  "tag" : "J40",
+  "name" : "Garsvulshim",
+  "color" : "#232e47"
+}, {
+  "tag" : "J41",
+  "name" : "Bronzegut",
+  "color" : "#a76823"
+}, {
+  "tag" : "J42",
+  "name" : "Grey Fist",
+  "color" : "#989898"
+}, {
+  "tag" : "J43",
+  "name" : "Ironclaw",
+  "color" : "#684c4e"
+}, {
+  "tag" : "J44",
+  "name" : "Skull Gnasher",
+  "color" : "#d3d3d3"
+}, {
+  "tag" : "J45",
+  "name" : "Trunk Basher",
+  "color" : "#361c00"
+}, {
+  "tag" : "J46",
+  "name" : "Frosthide",
+  "color" : "#5ec3bb"
+}, {
+  "tag" : "J47",
+  "name" : "Skurkokli",
+  "color" : "#c09f44"
+}, {
+  "tag" : "J48",
+  "name" : "Ghavamregh",
+  "color" : "#162d16"
+}, {
+  "tag" : "J49",
+  "name" : "Qorondulyuz",
+  "color" : "#94b5b2"
+}, {
+  "tag" : "J50",
+  "name" : "Sunijalla",
+  "color" : "#dac53f"
+}, {
+  "tag" : "J51",
+  "name" : "Ponjogde",
+  "color" : "#36e9e9"
+}, {
+  "tag" : "J52",
+  "name" : "Ikogshaantus",
+  "color" : "#074a4a"
+}, {
+  "tag" : "J53",
+  "name" : "Zabutodask",
+  "color" : "#46290c"
+}, {
+  "tag" : "J54",
+  "name" : "Altorzamh",
+  "color" : "#037bfc"
+}, {
+  "tag" : "J55",
+  "name" : "Lejdazamh",
+  "color" : "#0b8a48"
+}, {
+  "tag" : "J56",
+  "name" : "Taryeanzamh",
+  "color" : "#6b13d7"
+}, {
+  "tag" : "J57",
+  "name" : "Gladedancer",
+  "color" : "#5cffeb"
+}, {
+  "tag" : "J58",
+  "name" : "Burning Frost",
+  "color" : "#c43718"
+}, {
+  "tag" : "J68",
+  "name" : "Tirboilte",
+  "color" : "#ffee57"
+}, {
+  "tag" : "J69",
+  "name" : "Gomairenu",
+  "color" : "#6a14a3"
+}, {
+  "tag" : "J70",
+  "name" : "Oremvand",
+  "color" : "#ffe6e1"
+}, {
+  "tag" : "J71",
+  "name" : "Sarihaddu",
+  "color" : "#d5a464"
+}, {
+  "tag" : "J72",
+  "name" : "Darkalyndar",
+  "color" : "#440930"
+}, {
+  "tag" : "J73",
+  "name" : "Zaernmaera",
+  "color" : "#4e86a6"
+}, {
+  "tag" : "J74",
+  "name" : "Caergaraen",
+  "color" : "#371640"
+}, {
+  "tag" : "J75",
+  "name" : "Rakkabuttai",
+  "color" : "#56050f"
+}, {
+  "tag" : "J76",
+  "name" : "Banderuttai",
+  "color" : "#b4b4c6"
+}, {
+  "tag" : "J77",
+  "name" : "Kattisangamar",
+  "color" : "#1b1b20"
+}, {
+  "tag" : "J78",
+  "name" : "Uesrennu",
+  "color" : "#08203d"
+}, {
+  "tag" : "J79",
+  "name" : "Katalperai",
+  "color" : "#619062"
+}, {
+  "tag" : "J80",
+  "name" : "Vettakaramai",
+  "color" : "#f75288"
+}, {
+  "tag" : "J81",
+  "name" : "Parahechend",
+  "color" : "#d19d2d"
+}, {
+  "tag" : "J82",
+  "name" : "Varamraya",
+  "color" : "#2d6823"
+}, {
+  "tag" : "J83",
+  "name" : "Airoa Naditari",
+  "color" : "#00b836"
+}, {
+  "tag" : "J84",
+  "name" : "Taychend",
+  "color" : "#b44600"
+}, {
+  "tag" : "J85",
+  "name" : "Nanru Nakar",
+  "color" : "#aa0020"
+}, {
+  "tag" : "J86",
+  "name" : "Inifoeyu",
+  "color" : "#5a583c"
+}, {
+  "tag" : "J87",
+  "name" : "Tanafali",
+  "color" : "#503e58"
+}, {
+  "tag" : "J88",
+  "name" : "Udralach",
+  "color" : "#52d039"
+}, {
+  "tag" : "J89",
+  "name" : "Chaparun",
+  "color" : "#f9effc"
+}, {
+  "tag" : "J90",
+  "name" : "Cara Lafquen",
+  "color" : "#a6d1de"
+}, {
+  "tag" : "J91",
+  "name" : "Iruasawid",
+  "color" : "#f96c8d"
+}, {
+  "tag" : "J92",
+  "name" : "Trigica",
+  "color" : "#f3fa8f"
+}, {
+  "tag" : "J93",
+  "name" : "Hinediu Yulas",
+  "color" : "#4b3e1e"
+}, {
+  "tag" : "J95",
+  "name" : "Rhasail",
+  "color" : "#d50027"
+}, {
+  "tag" : "J96",
+  "name" : "Lamentaire",
+  "color" : "#2c3341"
+}, {
+  "tag" : "J97",
+  "name" : "Trollshaunt",
+  "color" : "#c8e1e4"
+}, {
+  "tag" : "J98",
+  "name" : "Port Palegold",
+  "color" : "#e6e73e"
+}, {
+  "tag" : "J99",
+  "name" : "Validaunea",
+  "color" : "#002454"
+}, {
+  "tag" : "L01",
+  "name" : "Kuiika",
+  "color" : "#cc8200"
+}, {
+  "tag" : "L02",
+  "name" : "Jagab Faru",
+  "color" : "#fad673"
+}, {
+  "tag" : "L03",
+  "name" : "Isagumze",
+  "color" : "#669900"
+}, {
+  "tag" : "L04",
+  "name" : "Saqraxat",
+  "color" : "#ffcc00"
+}, {
+  "tag" : "L05",
+  "name" : "Iqhekabi",
+  "color" : "#666699"
+}, {
+  "tag" : "L06",
+  "name" : "Zena",
+  "color" : "#ccffff"
+}, {
+  "tag" : "L07",
+  "name" : "Imbushid",
+  "color" : "#ff9904"
+}, {
+  "tag" : "L08",
+  "name" : "Kulugiash",
+  "color" : "#d2b48c"
+}, {
+  "tag" : "L09",
+  "name" : "Zuvavim",
+  "color" : "#0066ff"
+}, {
+  "tag" : "L10",
+  "name" : "Kunolo",
+  "color" : "#6699ff"
+}, {
+  "tag" : "L11",
+  "name" : "Chibuswa",
+  "color" : "#33cc33"
+}, {
+  "tag" : "L12",
+  "name" : "Gomuvuri",
+  "color" : "#cccc00"
+}, {
+  "tag" : "L13",
+  "name" : "Samishesha",
+  "color" : "#66ffff"
+}, {
+  "tag" : "L14",
+  "name" : "Negefaama",
+  "color" : "#5c5c5c"
+}, {
+  "tag" : "L15",
+  "name" : "Bokiya",
+  "color" : "#63860f"
+}, {
+  "tag" : "L16",
+  "name" : "Atijoko",
+  "color" : "#ff9900"
+}, {
+  "tag" : "L17",
+  "name" : "Taafisi",
+  "color" : "#ffff99"
+}, {
+  "tag" : "L18",
+  "name" : "Mausarjirad",
+  "color" : "#3654a7"
+}, {
+  "tag" : "L19",
+  "name" : "Adaru",
+  "color" : "#233920"
+}, {
+  "tag" : "L20",
+  "name" : "Maikirow",
+  "color" : "#325432"
+}, {
+  "tag" : "L21",
+  "name" : "Dendugma",
+  "color" : "#800020"
+}, {
+  "tag" : "L22",
+  "name" : "Binwarji",
+  "color" : "#c0c0c0"
+}, {
+  "tag" : "L23",
+  "name" : "Fangaula",
+  "color" : "#b9dcdc"
+}, {
+  "tag" : "L24",
+  "name" : "Nenfi Remuj",
+  "color" : "#9c4e35"
+}, {
+  "tag" : "L25",
+  "name" : "Sakul",
+  "color" : "#000580"
+}, {
+  "tag" : "L26",
+  "name" : "Irsmahap",
+  "color" : "#dbd923"
+}, {
+  "tag" : "L27",
+  "name" : "Shasoura",
+  "color" : "#c9ada5"
+}, {
+  "tag" : "L28",
+  "name" : "Koroshesh",
+  "color" : "#5aaa96"
+}, {
+  "tag" : "L29",
+  "name" : "Kartakhet",
+  "color" : "#06114f"
+}, {
+  "tag" : "L30",
+  "name" : "Vurebindika",
+  "color" : "#b45014"
+}, {
+  "tag" : "L31",
+  "name" : "Irsukumbha",
+  "color" : "#64d60b"
+}, {
+  "tag" : "L32",
+  "name" : "Vadokizy",
+  "color" : "#228b22"
+}, {
+  "tag" : "L33",
+  "name" : "Afakoyuzemby",
+  "color" : "#4b0082"
+}, {
+  "tag" : "L34",
+  "name" : "Tvarateram",
+  "color" : "#f98b41"
+}, {
+  "tag" : "L35",
+  "name" : "Mpirelmasi",
+  "color" : "#1fd1b3"
+}, {
+  "tag" : "L36",
+  "name" : "Lelanan",
+  "color" : "#ff8080"
+}, {
+  "tag" : "L37",
+  "name" : "Mihitarab",
+  "color" : "#9dc5dc"
+}, {
+  "tag" : "L38",
+  "name" : "Rayafo",
+  "color" : "#ffff00"
+}, {
+  "tag" : "L39",
+  "name" : "Jakannakazy",
+  "color" : "#a795ad"
+}, {
+  "tag" : "L40",
+  "name" : "Maranakavi",
+  "color" : "#d60000"
+}, {
+  "tag" : "L41",
+  "name" : "Hasakely",
+  "color" : "#6e2532"
+}, {
+  "tag" : "L42",
+  "name" : "Tibokbo",
+  "color" : "#6662ec"
+}, {
+  "tag" : "L43",
+  "name" : "Sisinybohi",
+  "color" : "#e53e6f"
+}, {
+  "tag" : "L44",
+  "name" : "Ananiltra",
+  "color" : "#37dcdc"
+}, {
+  "tag" : "L45",
+  "name" : "Oronsinoma",
+  "color" : "#11ad43"
+}, {
+  "tag" : "L46",
+  "name" : "Amezajik",
+  "color" : "#001e52"
+}, {
+  "tag" : "L47",
+  "name" : "Mazanosy",
+  "color" : "#ba55d3"
+}, {
+  "tag" : "L48",
+  "name" : "Ataturozi",
+  "color" : "#1bd176"
+}, {
+  "tag" : "L49",
+  "name" : "Kaino Federation",
+  "color" : "#14321e"
+}, {
+  "tag" : "L50",
+  "name" : "Tsanizadai",
+  "color" : "#ff760d"
+}, {
+  "tag" : "L51",
+  "name" : "Vumarano",
+  "color" : "#fffd7b"
+}, {
+  "tag" : "L52",
+  "name" : "Bamdikizy",
+  "color" : "#ec602d"
+}, {
+  "tag" : "L53",
+  "name" : "Tiboktsamo",
+  "color" : "#a56226"
+}, {
+  "tag" : "L54",
+  "name" : "Berihrica",
+  "color" : "#827717"
+}, {
+  "tag" : "L55",
+  "name" : "Naleni",
+  "color" : "#ff8a65"
+}, {
+  "tag" : "L56",
+  "name" : "Dakmender",
+  "color" : "#5e42b5"
+}, {
+  "tag" : "L57",
+  "name" : "Boyebareti",
+  "color" : "#e3f2fd"
+}, {
+  "tag" : "L58",
+  "name" : "Yetmesira",
+  "color" : "#b39ddb"
+}, {
+  "tag" : "L59",
+  "name" : "Bwa_Tanizu",
+  "color" : "#f832b4"
+}, {
+  "tag" : "L60",
+  "name" : "Keledugu",
+  "color" : "#fa9b1c"
+}, {
+  "tag" : "L61",
+  "name" : "Irkan Eparta",
+  "color" : "#b0b300"
+}, {
+  "tag" : "L62",
+  "name" : "Vandipha",
+  "color" : "#0a3232"
+}, {
+  "tag" : "L63",
+  "name" : "Butuguzi",
+  "color" : "#d5ccff"
+}, {
+  "tag" : "L64",
+  "name" : "Pegosi",
+  "color" : "#8d6e63"
+}, {
+  "tag" : "L65",
+  "name" : "Melakmengi",
+  "color" : "#149eb6"
+}, {
+  "tag" : "L66",
+  "name" : "Simegasa",
+  "color" : "#9e8400"
+}, {
+  "tag" : "L67",
+  "name" : "Kidsit Yiti",
+  "color" : "#1a2849"
+}, {
+  "tag" : "L68",
+  "name" : "Karassk",
+  "color" : "#e16699"
+}, {
+  "tag" : "L69",
+  "name" : "Zerat",
+  "color" : "#66e199"
+}, {
+  "tag" : "L70",
+  "name" : "Khugra",
+  "color" : "#ffffff"
+}, {
+  "tag" : "L71",
+  "name" : "Nazhni",
+  "color" : "#071314"
+}, {
+  "tag" : "L72",
+  "name" : "Zatsuti",
+  "color" : "#00ff00"
+}, {
+  "tag" : "L73",
+  "name" : "Karashan",
+  "color" : "#00b8d4"
+}, {
+  "tag" : "L74",
+  "name" : "Zatal",
+  "color" : "#cc66ff"
+}, {
+  "tag" : "L75",
+  "name" : "Kakhazajar",
+  "color" : "#6a072f"
+}, {
+  "tag" : "L76",
+  "name" : "Gasha",
+  "color" : "#ccff33"
+}, {
+  "tag" : "L77",
+  "name" : "Karach",
+  "color" : "#fabc37"
+}, {
+  "tag" : "L78",
+  "name" : "Charach",
+  "color" : "#cc6600"
+}, {
+  "tag" : "L79",
+  "name" : "Rshak",
+  "color" : "#43f099"
+}, {
+  "tag" : "L80",
+  "name" : "Zulbur",
+  "color" : "#cc0ac0"
+}, {
+  "tag" : "L81",
+  "name" : "Yassa",
+  "color" : "#2551a0"
+}, {
+  "tag" : "L82",
+  "name" : "Way Pointing Tchoken",
+  "color" : "#00cc99"
+}, {
+  "tag" : "L83",
+  "name" : "Shangra",
+  "color" : "#ccff66"
+}, {
+  "tag" : "L84",
+  "name" : "Shalazar",
+  "color" : "#000c6c"
+}, {
+  "tag" : "L85",
+  "name" : "Ashakani",
+  "color" : "#51e54a"
+}, {
+  "tag" : "L86",
+  "name" : "Ishyaga",
+  "color" : "#cc33ff"
+}, {
+  "tag" : "L87",
+  "name" : "Adzalan",
+  "color" : "#300071"
+}, {
+  "tag" : "L88",
+  "name" : "Abussa",
+  "color" : "#d95242"
+}, {
+  "tag" : "L89",
+  "name" : "Tsuz",
+  "color" : "#a5b543"
+}, {
+  "tag" : "L90",
+  "name" : "Ashkha",
+  "color" : "#3479ef"
+}, {
+  "tag" : "L91",
+  "name" : "Alashkatsa",
+  "color" : "#666c0c"
+}, {
+  "tag" : "L92",
+  "name" : "Tsurin",
+  "color" : "#3b2f60"
+}, {
+  "tag" : "L93",
+  "name" : "Lata",
+  "color" : "#65dd4f"
+}, {
+  "tag" : "L94",
+  "name" : "Shagadyrra",
+  "color" : "#2e37eb"
+}, {
+  "tag" : "L95",
+  "name" : "Rayaz",
+  "color" : "#00aba0"
+}, {
+  "tag" : "L96",
+  "name" : "Asarta",
+  "color" : "#0a4432"
+}, {
+  "tag" : "L97",
+  "name" : "Arazin",
+  "color" : "#0a6978"
+}, {
+  "tag" : "L98",
+  "name" : "Yushyn",
+  "color" : "#1cc77c"
+}, {
+  "tag" : "L99",
+  "name" : "Katsanada",
+  "color" : "#639e75"
+}, {
+  "tag" : "M01",
+  "name" : "Grizehud",
+  "color" : "#974fa8"
+}, {
+  "tag" : "M02",
+  "name" : "Dursikari",
+  "color" : "#bf9d6f"
+}, {
+  "tag" : "M03",
+  "name" : "Svaikzenszel",
+  "color" : "#edd226"
+}, {
+  "tag" : "M04",
+  "name" : "Tarakar",
+  "color" : "#283029"
+}, {
+  "tag" : "M05",
+  "name" : "Burnt Skin",
+  "color" : "#cc5500"
+}, {
+  "tag" : "M10",
+  "name" : "Taokakurekohurukauaia",
+  "color" : "#35cdbe"
+}, {
+  "tag" : "M11",
+  "name" : "Taurite",
+  "color" : "#e0e5c1"
+}, {
+  "tag" : "M12",
+  "name" : "Kaora To Tatau To",
+  "color" : "#e2953c"
+}, {
+  "tag" : "M13",
+  "name" : "Kamutu Taratu Mahikou Amatou",
+  "color" : "#7637ac"
+}, {
+  "tag" : "M14",
+  "name" : "Tohuhanga",
+  "color" : "#a6324d"
+}, {
+  "tag" : "M15",
+  "name" : "Konei Hei Awhina",
+  "color" : "#d0643d"
+}, {
+  "tag" : "M16",
+  "name" : "Matakirua",
+  "color" : "#ba1818"
+}, {
+  "tag" : "M17",
+  "name" : "Ru Ana A Tangura",
+  "color" : "#5ee46b"
+}, {
+  "tag" : "M18",
+  "name" : "Tamariki Poupou",
+  "color" : "#2a76da"
+}, {
+  "tag" : "M19",
+  "name" : "Sa'paomi",
+  "color" : "#6371c9"
+}, {
+  "tag" : "M20",
+  "name" : "Toa Tangaroa",
+  "color" : "#77bd80"
+}, {
+  "tag" : "M21",
+  "name" : "Kamatoi Haeraitou",
+  "color" : "#12507a"
+}, {
+  "tag" : "M22",
+  "name" : "Kiretua",
+  "color" : "#6af2fa"
+}, {
+  "tag" : "M23",
+  "name" : "Rangitema",
+  "color" : "#715e81"
+}, {
+  "tag" : "M24",
+  "name" : "Anahira",
+  "color" : "#e0a458"
+}, {
+  "tag" : "M25",
+  "name" : "Pa-Aroha",
+  "color" : "#060033"
+}, {
+  "tag" : "M26",
+  "name" : "Rakauma",
+  "color" : "#0d220c"
+}, {
+  "tag" : "M27",
+  "name" : "Taikatanga",
+  "color" : "#1a4598"
+}, {
+  "tag" : "M28",
+  "name" : "Motu-Ahi",
+  "color" : "#be2f2a"
+}, {
+  "tag" : "M29",
+  "name" : "Wairuakore",
+  "color" : "#5eda55"
+}, {
+  "tag" : "M30",
+  "name" : "I-Numbe",
+  "color" : "#ffffff"
+}, {
+  "tag" : "M31",
+  "name" : "Haeata",
+  "color" : "#f89393"
+}, {
+  "tag" : "M32",
+  "name" : "Kaikoura",
+  "color" : "#00660d"
+}, {
+  "tag" : "M33",
+  "name" : "Toka'ra",
+  "color" : "#ff7b00"
+}, {
+  "tag" : "M34",
+  "name" : "Tiauna",
+  "color" : "#e1442a"
+}, {
+  "tag" : "M35",
+  "name" : "Maniakoura",
+  "color" : "#033b37"
+}, {
+  "tag" : "M50",
+  "name" : "dummy_filustkhuga",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M51",
+  "name" : "dummy_irdukhuga",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M52",
+  "name" : "dummy_maslekhuga",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M53",
+  "name" : "dummy_malukhuga",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M54",
+  "name" : "dummy_starry_eye",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M55",
+  "name" : "dummy_radiant_sun",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M56",
+  "name" : "dummy_orange_sash",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M57",
+  "name" : "dummy_golden_palace",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M58",
+  "name" : "dummy_unbroken_claw",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M59",
+  "name" : "dummy_silk_turban",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M60",
+  "name" : "dummy_ascendant_soul",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M61",
+  "name" : "dummy_synthetic_truth",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M62",
+  "name" : "dummy_final_paradigm",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M63",
+  "name" : "dummy_fate_sculptors",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M64",
+  "name" : "dummy_being_sculptors",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M65",
+  "name" : "dummy_blade_and_needle",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M66",
+  "name" : "dummy_great_cycle",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M67",
+  "name" : "dummy_humble_zeal",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M68",
+  "name" : "dummy_soul_song",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M69",
+  "name" : "dummy_piercing_fang",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M70",
+  "name" : "dummy_demons_of_the_sorrow",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M71",
+  "name" : "dummy_monstrous_pedigrees",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M72",
+  "name" : "dummy_children_of_goxma",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M73",
+  "name" : "dummy_kult_of_the_packmother",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M74",
+  "name" : "dummy_demonic_shamans",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M75",
+  "name" : "dummy_umbral_bargains",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M76",
+  "name" : "dummy_way_of_iron",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M77",
+  "name" : "dummy_way_of_bones",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M78",
+  "name" : "dummy_xhazobain_primacy",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M79",
+  "name" : "dummy_colors_of_life",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M80",
+  "name" : "dummy_seafaring_demonborns",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M81",
+  "name" : "dummy_water_school",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M82",
+  "name" : "dummy_water_earth_school",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M83",
+  "name" : "dummy_water_fire_school",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M84",
+  "name" : "dummy_earth_school",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M85",
+  "name" : "dummy_earth_water_school",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M86",
+  "name" : "dummy_earth_fire_school",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M87",
+  "name" : "dummy_fire_school",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M88",
+  "name" : "dummy_fire_water_school",
+  "color" : "#bcec99"
+}, {
+  "tag" : "M89",
+  "name" : "dummy_fire_earth_school",
+  "color" : "#bcec99"
+}, {
+  "tag" : "N00",
+  "name" : "Ahetl Mulyatl",
+  "color" : "#000096"
+}, {
+  "tag" : "N01",
+  "name" : "Maulu",
+  "color" : "#e0003e"
+}, {
+  "tag" : "N02",
+  "name" : "Quilomao Hueytila",
+  "color" : "#008000"
+}, {
+  "tag" : "N03",
+  "name" : "Mamca Pelehuac",
+  "color" : "#b3b300"
+}, {
+  "tag" : "N04",
+  "name" : "Eletic Awayan",
+  "color" : "#00c8e6"
+}, {
+  "tag" : "N05",
+  "name" : "Hapali'naina",
+  "color" : "#80ffff"
+}, {
+  "tag" : "N06",
+  "name" : "Kalatl Tlahpuni",
+  "color" : "#838996"
+}, {
+  "tag" : "N07",
+  "name" : "Keotlepoz",
+  "color" : "#e3e0cd"
+}, {
+  "tag" : "N08",
+  "name" : "Nueikumutlau",
+  "color" : "#004d0d"
+}, {
+  "tag" : "N09",
+  "name" : "Yahou Lapahtol",
+  "color" : "#ff8000"
+}, {
+  "tag" : "N10",
+  "name" : "Makalio",
+  "color" : "#b00b69"
+}, {
+  "tag" : "N11",
+  "name" : "Cuezaltol Heiau",
+  "color" : "#3c3c3c"
+}, {
+  "tag" : "N12",
+  "name" : "MtKaui Keakol",
+  "color" : "#0f7fd4"
+}, {
+  "tag" : "N13",
+  "name" : "Houhaliaa",
+  "color" : "#006a80"
+}, {
+  "tag" : "N14",
+  "name" : "Iztakai Callhale",
+  "color" : "#ffe6ea"
+}, {
+  "tag" : "N15",
+  "name" : "Hemotla Papoyan",
+  "color" : "#d919ff"
+}, {
+  "tag" : "N16",
+  "name" : "Yayacahai",
+  "color" : "#be2d64"
+}, {
+  "tag" : "N17",
+  "name" : "Pa Cemihcalhuili",
+  "color" : "#806a00"
+}, {
+  "tag" : "N18",
+  "name" : "Pulo Rawuh",
+  "color" : "#a4fc56"
+}, {
+  "tag" : "N19",
+  "name" : "Haupoaka",
+  "color" : "#3ce6c8"
+}, {
+  "tag" : "N20",
+  "name" : "Comezkahuaina",
+  "color" : "#950000"
+}, {
+  "tag" : "N21",
+  "name" : "Atl Kakau Hale",
+  "color" : "#5cbad2"
+}, {
+  "tag" : "N22",
+  "name" : "Xihatlele",
+  "color" : "#7d1010"
+}, {
+  "tag" : "N23",
+  "name" : "Tauhakelehali",
+  "color" : "#cc7722"
+}, {
+  "tag" : "N24",
+  "name" : "Aupulehu",
+  "color" : "#fff200"
+}, {
+  "tag" : "N25",
+  "name" : "Amendra",
+  "color" : "#b47c33"
+}, {
+  "tag" : "N26",
+  "name" : "Rahang Lancip",
+  "color" : "#d3d3d3"
+}, {
+  "tag" : "N27",
+  "name" : "Myaika Nhouaka",
+  "color" : "#d42a2a"
+}, {
+  "tag" : "N28",
+  "name" : "Mokuakua",
+  "color" : "#6a8000"
+}, {
+  "tag" : "N29",
+  "name" : "Malikanawa",
+  "color" : "#5500ff"
+}, {
+  "tag" : "N30",
+  "name" : "Koatepec",
+  "color" : "#e6665e"
+}, {
+  "tag" : "N31",
+  "name" : "Okeahui",
+  "color" : "#007d33"
+}, {
+  "tag" : "N32",
+  "name" : "Huahou",
+  "color" : "#9d33a7"
+}, {
+  "tag" : "N33",
+  "name" : "Kitetl",
+  "color" : "#400b0b"
+}, {
+  "tag" : "N34",
+  "name" : "Kahiyotl",
+  "color" : "#ff57c1"
+}, {
+  "tag" : "N35",
+  "name" : "Kusaimauna",
+  "color" : "#fa523c"
+}, {
+  "tag" : "N36",
+  "name" : "Haifumana",
+  "color" : "#041bc9"
+}, {
+  "tag" : "N37",
+  "name" : "Aomauna",
+  "color" : "#e67300"
+}, {
+  "tag" : "N38",
+  "name" : "Leholi",
+  "color" : "#e6ffff"
+}, {
+  "tag" : "N39",
+  "name" : "Makiamoe",
+  "color" : "#ff9b9b"
+}, {
+  "tag" : "N40",
+  "name" : "Hopilina",
+  "color" : "#909090"
+}, {
+  "tag" : "N41",
+  "name" : "Koahou",
+  "color" : "#09ffcc"
+}, {
+  "tag" : "N42",
+  "name" : "Pohaimeli",
+  "color" : "#fce205"
+}, {
+  "tag" : "N43",
+  "name" : "Pukamana",
+  "color" : "#381d50"
+}, {
+  "tag" : "N44",
+  "name" : "Waimauna",
+  "color" : "#e0c40d"
+}, {
+  "tag" : "N45",
+  "name" : "Pelemakina",
+  "color" : "#a00000"
+}, {
+  "tag" : "N46",
+  "name" : "Halia",
+  "color" : "#00ff72"
+}, {
+  "tag" : "N47",
+  "name" : "Na Kiai",
+  "color" : "#0059b3"
+}, {
+  "tag" : "N48",
+  "name" : "Huia Koluila",
+  "color" : "#efe8a9"
+}, {
+  "tag" : "N49",
+  "name" : "Kaponaihoku",
+  "color" : "#79fc9c"
+}, {
+  "tag" : "N50",
+  "name" : "Kheteawepha",
+  "color" : "#b5a642"
+}, {
+  "tag" : "N51",
+  "name" : "Lakohe Iamoku",
+  "color" : "#eba169"
+}, {
+  "tag" : "N52",
+  "name" : "Nuio Hopuana",
+  "color" : "#12b0c2"
+}, {
+  "tag" : "N53",
+  "name" : "Ponhamuphona",
+  "color" : "#9ab973"
+}, {
+  "tag" : "N54",
+  "name" : "Nohakai",
+  "color" : "#ccccff"
+}, {
+  "tag" : "N55",
+  "name" : "Kapamoku",
+  "color" : "#c1a788"
+}, {
+  "tag" : "N56",
+  "name" : "Poni Kuahoii",
+  "color" : "#000046"
+}, {
+  "tag" : "N57",
+  "name" : "Wapohai",
+  "color" : "#edc74a"
+}, {
+  "tag" : "N58",
+  "name" : "Kaioh-Thau",
+  "color" : "#8c64c8"
+}, {
+  "tag" : "N59",
+  "name" : "Kunahkitla",
+  "color" : "#550080"
+}, {
+  "tag" : "N60",
+  "name" : "Harjo",
+  "color" : "#ee762a"
+}, {
+  "tag" : "N61",
+  "name" : "Wao Nakahea",
+  "color" : "#bc634f"
+}, {
+  "tag" : "N62",
+  "name" : "Maxkanil Momi",
+  "color" : "#f2b3ff"
+}, {
+  "tag" : "N63",
+  "name" : "Suryakutha",
+  "color" : "#2a2223"
+}, {
+  "tag" : "N64",
+  "name" : "Ilang Tentara",
+  "color" : "#a00058"
+}, {
+  "tag" : "N65",
+  "name" : "Kotli Komhitzi",
+  "color" : "#880808"
+}, {
+  "tag" : "N66",
+  "name" : "Kuthamogara",
+  "color" : "#0b3bfc"
+}, {
+  "tag" : "N67",
+  "name" : "Paus-Biru",
+  "color" : "#18ce04"
+}, {
+  "tag" : "N68",
+  "name" : "Tungall Turahan",
+  "color" : "#ff00c8"
+}, {
+  "tag" : "N69",
+  "name" : "Aqtlapuai",
+  "color" : "#fdfeca"
+}, {
+  "tag" : "N70",
+  "name" : "Houmokaika",
+  "color" : "#e46fb5"
+}, {
+  "tag" : "N71",
+  "name" : "Houpunikaupuni",
+  "color" : "#ffa229"
+}, {
+  "tag" : "N72",
+  "name" : "Himenitztli",
+  "color" : "#0095b3"
+}, {
+  "tag" : "N73",
+  "name" : "Satrialaam",
+  "color" : "#ad235e"
+}, {
+  "tag" : "N74",
+  "name" : "Kangyarang",
+  "color" : "#5e23ad"
+}, {
+  "tag" : "N75",
+  "name" : "Huio Pamokai",
+  "color" : "#4c3164"
+}, {
+  "tag" : "N76",
+  "name" : "Dopabari",
+  "color" : "#ffcc99"
+}, {
+  "tag" : "N77",
+  "name" : "Serulumatay",
+  "color" : "#ff7900"
+}, {
+  "tag" : "N78",
+  "name" : "Nispac",
+  "color" : "#ffcc99"
+}, {
+  "tag" : "N79",
+  "name" : "Cafana",
+  "color" : "#95b300"
+}, {
+  "tag" : "N80",
+  "name" : "Rokadie",
+  "color" : "#d278cc"
+}, {
+  "tag" : "N81",
+  "name" : "Coapoco",
+  "color" : "#ffaf51"
+}, {
+  "tag" : "N82",
+  "name" : "Dimang",
+  "color" : "#0037ff"
+}, {
+  "tag" : "N83",
+  "name" : "Imbabo",
+  "color" : "#694014"
+}, {
+  "tag" : "N84",
+  "name" : "Tiogara",
+  "color" : "#301934"
+}, {
+  "tag" : "N85",
+  "name" : "Tekariga",
+  "color" : "#8cf9ff"
+}, {
+  "tag" : "N86",
+  "name" : "Likat Nu Tsilal",
+  "color" : "#9d33a7"
+}, {
+  "tag" : "N87",
+  "name" : "Gor Auri",
+  "color" : "#be0032"
+}, {
+  "tag" : "N88",
+  "name" : "Kokou",
+  "color" : "#ad553d"
+}, {
+  "tag" : "N89",
+  "name" : "Cilapaktu",
+  "color" : "#b39500"
+}, {
+  "tag" : "N90",
+  "name" : "Kabakige",
+  "color" : "#a92f02"
+}, {
+  "tag" : "N91",
+  "name" : "Sirimadsik",
+  "color" : "#172329"
+}, {
+  "tag" : "N92",
+  "name" : "Kan-En-Zaya",
+  "color" : "#75cbff"
+}, {
+  "tag" : "N93",
+  "name" : "Marunuma",
+  "color" : "#8c8caa"
+}, {
+  "tag" : "N94",
+  "name" : "Izimaa",
+  "color" : "#570404"
+}, {
+  "tag" : "N95",
+  "name" : "Saan Matama",
+  "color" : "#32a852"
+}, {
+  "tag" : "N96",
+  "name" : "Begat Opu",
+  "color" : "#1c8bc7"
+}, {
+  "tag" : "N97",
+  "name" : "Kakunor",
+  "color" : "#c8cccf"
+}, {
+  "tag" : "N98",
+  "name" : "Igotudi Muniabutu",
+  "color" : "#bc5353"
+}, {
+  "tag" : "N99",
+  "name" : "Torami",
+  "color" : "#ffe608"
+}, {
+  "tag" : "NAT",
+  "name" : "Natives",
+  "color" : "#cba467"
+}, {
+  "tag" : "NPC",
+  "name" : "NPC",
+  "color" : "#5c4625"
+}, {
+  "tag" : "P01",
+  "name" : "Uchaimauna",
+  "color" : "#8b07de"
+}, {
+  "tag" : "P10",
+  "name" : "Yurratowa",
+  "color" : "#3c8005"
+}, {
+  "tag" : "P11",
+  "name" : "Dhongutja",
+  "color" : "#4c47c8"
+}, {
+  "tag" : "P12",
+  "name" : "Gokogarrad",
+  "color" : "#e20100"
+}, {
+  "tag" : "P13",
+  "name" : "Malogabatha",
+  "color" : "#45013b"
+}, {
+  "tag" : "P14",
+  "name" : "Muyambla",
+  "color" : "#00010b"
+}, {
+  "tag" : "P15",
+  "name" : "Gongumbarra",
+  "color" : "#c812fa"
+}, {
+  "tag" : "P16",
+  "name" : "Wayula",
+  "color" : "#ced4d7"
+}, {
+  "tag" : "P17",
+  "name" : "Dhandhemoongerra",
+  "color" : "#de1cce"
+}, {
+  "tag" : "P18",
+  "name" : "Bomowoka",
+  "color" : "#0280fb"
+}, {
+  "tag" : "P19",
+  "name" : "Dungudirrama",
+  "color" : "#001c74"
+}, {
+  "tag" : "P20",
+  "name" : "Muphna",
+  "color" : "#defc38"
+}, {
+  "tag" : "P21",
+  "name" : "Seila Agaga",
+  "color" : "#cc42e6"
+}, {
+  "tag" : "P22",
+  "name" : "Anatu'agao",
+  "color" : "#ff8901"
+}, {
+  "tag" : "P23",
+  "name" : "Ati'ita'ala",
+  "color" : "#606060"
+}, {
+  "tag" : "P24",
+  "name" : "Le Folafola",
+  "color" : "#990000"
+}, {
+  "tag" : "P25",
+  "name" : "Fave Tasaai",
+  "color" : "#80ff00"
+}, {
+  "tag" : "P26",
+  "name" : "Ta'ita'i Ata O Le 'Amu",
+  "color" : "#141d6c"
+}, {
+  "tag" : "P30",
+  "name" : "Parmalchaa",
+  "color" : "#fcba03"
+}, {
+  "tag" : "P31",
+  "name" : "Pachapuru",
+  "color" : "#4287f5"
+}, {
+  "tag" : "P32",
+  "name" : "Chakturri",
+  "color" : "#1cd119"
+}, {
+  "tag" : "P33",
+  "name" : "Purapuraxasqa Kawsay",
+  "color" : "#d12819"
+}, {
+  "tag" : "P34",
+  "name" : "Ganna Rassoo",
+  "color" : "#6e34eb"
+}, {
+  "tag" : "P35",
+  "name" : "Rinakaru",
+  "color" : "#eb32d2"
+}, {
+  "tag" : "P36",
+  "name" : "Kuchiyarku",
+  "color" : "#641928"
+}, {
+  "tag" : "P37",
+  "name" : "Charkuchar",
+  "color" : "#6e6e96"
+}, {
+  "tag" : "P67",
+  "name" : "Liufang",
+  "color" : "#9cacab"
+}, {
+  "tag" : "P99",
+  "name" : "HolohanaCountry",
+  "color" : "#0a0a0a"
+}, {
+  "tag" : "PAP",
+  "name" : "Papal",
+  "color" : "#d3dcb2"
+}, {
+  "tag" : "PIR",
+  "name" : "Pirates",
+  "color" : "#0a0a0a"
+}, {
+  "tag" : "Q00",
+  "name" : "Golkora",
+  "color" : "#e9e80f"
+}, {
+  "tag" : "Q01",
+  "name" : "Itizaxho",
+  "color" : "#b73f30"
+}, {
+  "tag" : "Q02",
+  "name" : "Yzhetaladz",
+  "color" : "#042209"
+}, {
+  "tag" : "Q04",
+  "name" : "Krysaxon",
+  "color" : "#c69b58"
+}, {
+  "tag" : "Q05",
+  "name" : "Yaikoft",
+  "color" : "#6191f2"
+}, {
+  "tag" : "Q06",
+  "name" : "Syngrax",
+  "color" : "#643500"
+}, {
+  "tag" : "Q07",
+  "name" : "Rramiwix",
+  "color" : "#3f6455"
+}, {
+  "tag" : "R00",
+  "name" : "Lohanparayan",
+  "color" : "#730606"
+}, {
+  "tag" : "R01",
+  "name" : "Avhavubhiya",
+  "color" : "#71b032"
+}, {
+  "tag" : "R02",
+  "name" : "Sarkhashabid",
+  "color" : "#46cc72"
+}, {
+  "tag" : "R03",
+  "name" : "Davharral",
+  "color" : "#924b21"
+}, {
+  "tag" : "R04",
+  "name" : "Iyarhashar",
+  "color" : "#182f77"
+}, {
+  "tag" : "R05",
+  "name" : "Tughayasa",
+  "color" : "#d1e4ff"
+}, {
+  "tag" : "R06",
+  "name" : "Babhagama",
+  "color" : "#916623"
+}, {
+  "tag" : "R07",
+  "name" : "Rajnadhaga",
+  "color" : "#b40000"
+}, {
+  "tag" : "R08",
+  "name" : "Tiltaghar",
+  "color" : "#353753"
+}, {
+  "tag" : "R09",
+  "name" : "Parraj",
+  "color" : "#89e598"
+}, {
+  "tag" : "R10",
+  "name" : "Sarnavan",
+  "color" : "#6e4a99"
+}, {
+  "tag" : "R11",
+  "name" : "Khadisrapur",
+  "color" : "#627c5a"
+}, {
+  "tag" : "R12",
+  "name" : "Tilathi",
+  "color" : "#d4be82"
+}, {
+  "tag" : "R13",
+  "name" : "Ghavaghuundakhan",
+  "color" : "#eacd2b"
+}, {
+  "tag" : "R14",
+  "name" : "Maldeelakhan",
+  "color" : "#cc8120"
+}, {
+  "tag" : "R15",
+  "name" : "Nundujisbid",
+  "color" : "#a7a0a2"
+}, {
+  "tag" : "R16",
+  "name" : "Banjisbid",
+  "color" : "#e4e4e4"
+}, {
+  "tag" : "R17",
+  "name" : "Banjiraal",
+  "color" : "#eb0b00"
+}, {
+  "tag" : "R18",
+  "name" : "Buhaanjirghal",
+  "color" : "#0f1511"
+}, {
+  "tag" : "R19",
+  "name" : "Sharaajaghal",
+  "color" : "#3c1928"
+}, {
+  "tag" : "R20",
+  "name" : "Pordhatti",
+  "color" : "#00cbd8"
+}, {
+  "tag" : "R21",
+  "name" : "Sarisung",
+  "color" : "#005f07"
+}, {
+  "tag" : "R22",
+  "name" : "Khirnadhiman",
+  "color" : "#94d02a"
+}, {
+  "tag" : "R23",
+  "name" : "Keyattordha",
+  "color" : "#e1756a"
+}, {
+  "tag" : "R24",
+  "name" : "Thadarsaghol",
+  "color" : "#7225bb"
+}, {
+  "tag" : "R25",
+  "name" : "Rayavhatimana",
+  "color" : "#d13981"
+}, {
+  "tag" : "R26",
+  "name" : "Khiraspid",
+  "color" : "#99ceec"
+}, {
+  "tag" : "R27",
+  "name" : "Tekharal Makhan",
+  "color" : "#236864"
+}, {
+  "tag" : "R28",
+  "name" : "Dakhilamvi",
+  "color" : "#046c2d"
+}, {
+  "tag" : "R29",
+  "name" : "Shekivad",
+  "color" : "#7b3728"
+}, {
+  "tag" : "R30",
+  "name" : "Alkayivad",
+  "color" : "#2037ab"
+}, {
+  "tag" : "R31",
+  "name" : "Sheramvi",
+  "color" : "#e0f816"
+}, {
+  "tag" : "R32",
+  "name" : "Dagari",
+  "color" : "#f84ba9"
+}, {
+  "tag" : "R33",
+  "name" : "Ghattub",
+  "color" : "#778516"
+}, {
+  "tag" : "R34",
+  "name" : "Kamapar",
+  "color" : "#0fc447"
+}, {
+  "tag" : "R35",
+  "name" : "Banjibang",
+  "color" : "#85789c"
+}, {
+  "tag" : "R36",
+  "name" : "Endhuvi",
+  "color" : "#881e09"
+}, {
+  "tag" : "R37",
+  "name" : "Kethur",
+  "color" : "#0028b4"
+}, {
+  "tag" : "R38",
+  "name" : "Bhuvauri",
+  "color" : "#1e3a12"
+}, {
+  "tag" : "R39",
+  "name" : "Amtarim",
+  "color" : "#151d4b"
+}, {
+  "tag" : "R40",
+  "name" : "Ghundagar",
+  "color" : "#d46bf6"
+}, {
+  "tag" : "R41",
+  "name" : "Amtujsaat",
+  "color" : "#f6ca6b"
+}, {
+  "tag" : "R42",
+  "name" : "Tudhina",
+  "color" : "#c15921"
+}, {
+  "tag" : "R43",
+  "name" : "Tujgal",
+  "color" : "#a8a8a8"
+}, {
+  "tag" : "R44",
+  "name" : "Shenral",
+  "color" : "#74141d"
+}, {
+  "tag" : "R45",
+  "name" : "Umdaj",
+  "color" : "#12d7d9"
+}, {
+  "tag" : "R46",
+  "name" : "Setarudhar",
+  "color" : "#6462b6"
+}, {
+  "tag" : "R47",
+  "name" : "Setarbul",
+  "color" : "#9c4545"
+}, {
+  "tag" : "R48",
+  "name" : "Setapsim",
+  "color" : "#b5bf87"
+}, {
+  "tag" : "R49",
+  "name" : "Parusad Bhola",
+  "color" : "#ff4877"
+}, {
+  "tag" : "R50",
+  "name" : "Rabaghekhur",
+  "color" : "#331f00"
+}, {
+  "tag" : "R51",
+  "name" : "Dhenijanraj",
+  "color" : "#2d1b48"
+}, {
+  "tag" : "R52",
+  "name" : "Rabhidaraj",
+  "color" : "#012f00"
+}, {
+  "tag" : "R53",
+  "name" : "Dhenijansar",
+  "color" : "#2c506f"
+}, {
+  "tag" : "R54",
+  "name" : "Parusahan Saya",
+  "color" : "#6f6d8a"
+}, {
+  "tag" : "R55",
+  "name" : "Dhurajaghan",
+  "color" : "#209a2b"
+}, {
+  "tag" : "R56",
+  "name" : "Saddathar",
+  "color" : "#4f91ff"
+}, {
+  "tag" : "R57",
+  "name" : "Parus Panasur",
+  "color" : "#e4a028"
+}, {
+  "tag" : "R58",
+  "name" : "Sardiphadin",
+  "color" : "#5797ee"
+}, {
+  "tag" : "R59",
+  "name" : "Khappur",
+  "color" : "#0078e1"
+}, {
+  "tag" : "R60",
+  "name" : "Sarkhani",
+  "color" : "#5c8171"
+}, {
+  "tag" : "R61",
+  "name" : "Pasiragha",
+  "color" : "#c8c800"
+}, {
+  "tag" : "R62",
+  "name" : "The Command",
+  "color" : "#994c00"
+}, {
+  "tag" : "R63",
+  "name" : "Thunderfist Clan",
+  "color" : "#967d50"
+}, {
+  "tag" : "R64",
+  "name" : "Bloodsong Clan",
+  "color" : "#935b42"
+}, {
+  "tag" : "R65",
+  "name" : "Blackstep Clan",
+  "color" : "#14321e"
+}, {
+  "tag" : "R66",
+  "name" : "Stolen Gem Clan",
+  "color" : "#5b4f2c"
+}, {
+  "tag" : "R67",
+  "name" : "Tiger Command",
+  "color" : "#b03b17"
+}, {
+  "tag" : "R68",
+  "name" : "Elephant Command",
+  "color" : "#284b63"
+}, {
+  "tag" : "R69",
+  "name" : "Dragon Command",
+  "color" : "#b31e1e"
+}, {
+  "tag" : "R70",
+  "name" : "Harimraj",
+  "color" : "#521aae"
+}, {
+  "tag" : "R71",
+  "name" : "Rahenraj",
+  "color" : "#bcec99"
+}, {
+  "tag" : "R72",
+  "name" : "Dhugajir",
+  "color" : "#54504d"
+}, {
+  "tag" : "R73",
+  "name" : "Nadimraj",
+  "color" : "#2171aa"
+}, {
+  "tag" : "R74",
+  "name" : "Ghankedhen",
+  "color" : "#ea4d00"
+}, {
+  "tag" : "R75",
+  "name" : "Dhujat",
+  "color" : "#354672"
+}, {
+  "tag" : "R76",
+  "name" : "Sardhasi",
+  "color" : "#194a13"
+}, {
+  "tag" : "R77",
+  "name" : "Vanrahar",
+  "color" : "#3c020b"
+}, {
+  "tag" : "R78",
+  "name" : "Sir",
+  "color" : "#8c3e5b"
+}, {
+  "tag" : "R79",
+  "name" : "Ghatasak",
+  "color" : "#464c2f"
+}, {
+  "tag" : "R80",
+  "name" : "Sarilavhan",
+  "color" : "#287cf9"
+}, {
+  "tag" : "R81",
+  "name" : "Jade March",
+  "color" : "#436f4e"
+}, {
+  "tag" : "R82",
+  "name" : "Xerdgonfa",
+  "color" : "#ffe13d"
+}, {
+  "tag" : "R83",
+  "name" : "Semifire",
+  "color" : "#cffdbc"
+}, {
+  "tag" : "R84",
+  "name" : "Phabar",
+  "color" : "#82e85d"
+}, {
+  "tag" : "R85",
+  "name" : "Udapana",
+  "color" : "#996db5"
+}, {
+  "tag" : "R86",
+  "name" : "Lingyuk",
+  "color" : "#8a2476"
+}, {
+  "tag" : "R87",
+  "name" : "Petamuya",
+  "color" : "#55c9ed"
+}, {
+  "tag" : "R88",
+  "name" : "Sharaja",
+  "color" : "#d93d3d"
+}, {
+  "tag" : "R89",
+  "name" : "Nadiral",
+  "color" : "#db7f2e"
+}, {
+  "tag" : "R90",
+  "name" : "Li Btei",
+  "color" : "#ff99bb"
+}, {
+  "tag" : "R91",
+  "name" : "Tanyatta",
+  "color" : "#e04f26"
+}, {
+  "tag" : "R92",
+  "name" : "Reanthung",
+  "color" : "#5138b5"
+}, {
+  "tag" : "R93",
+  "name" : "Bieng Phang",
+  "color" : "#a7b54e"
+}, {
+  "tag" : "R94",
+  "name" : "Boar Command",
+  "color" : "#65200d"
+}, {
+  "tag" : "R95",
+  "name" : "Lion Command",
+  "color" : "#8c5301"
+}, {
+  "tag" : "R96",
+  "name" : "Wolf Command",
+  "color" : "#413a38"
+}, {
+  "tag" : "R97",
+  "name" : "Raghajandi",
+  "color" : "#d9bb37"
+}, {
+  "tag" : "R98",
+  "name" : "Sanghariyar",
+  "color" : "#0c2c7e"
+}, {
+  "tag" : "R99",
+  "name" : "Suryavar",
+  "color" : "#dc143c"
+}, {
+  "tag" : "REB",
+  "name" : "Rebels",
+  "color" : "#1e1e1e"
+}, {
+  "tag" : "S11",
+  "name" : "Sea Roaming Inyubi",
+  "color" : "#7d136a"
+}, {
+  "tag" : "S12",
+  "name" : "Foul Mouthed Kazatsa",
+  "color" : "#714b7c"
+}, {
+  "tag" : "S13",
+  "name" : "Golkhi",
+  "color" : "#ddd95b"
+}, {
+  "tag" : "S14",
+  "name" : "Ishalani",
+  "color" : "#84a42a"
+}, {
+  "tag" : "S15",
+  "name" : "Karshyr",
+  "color" : "#2e2be0"
+}, {
+  "tag" : "S16",
+  "name" : "Uwakila_Baashi",
+  "color" : "#fafff5"
+}, {
+  "tag" : "S17",
+  "name" : "Qabiika_Baddabi",
+  "color" : "#644807"
+}, {
+  "tag" : "S18",
+  "name" : "Qabiika_Beeragga",
+  "color" : "#e18f15"
+}, {
+  "tag" : "S19",
+  "name" : "Qabiika_Weggabiga",
+  "color" : "#004800"
+}, {
+  "tag" : "S20",
+  "name" : "Qabiika_Dadubakha",
+  "color" : "#b42121"
+}, {
+  "tag" : "S21",
+  "name" : "Kabilu_Gawakhiza",
+  "color" : "#395dcc"
+}, {
+  "tag" : "S22",
+  "name" : "Hisraad",
+  "color" : "#878400"
+}, {
+  "tag" : "S23",
+  "name" : "Hisost Yamok",
+  "color" : "#8517a6"
+}, {
+  "tag" : "S24",
+  "name" : "Fuulmana",
+  "color" : "#1e1d4d"
+}, {
+  "tag" : "S25",
+  "name" : "Fetengoni",
+  "color" : "#6448c4"
+}, {
+  "tag" : "S26",
+  "name" : "Saposakosa",
+  "color" : "#5f4d92"
+}, {
+  "tag" : "S27",
+  "name" : "Kaziradoka",
+  "color" : "#005ae6"
+}, {
+  "tag" : "S28",
+  "name" : "Inshibonde",
+  "color" : "#b3001e"
+}, {
+  "tag" : "S29",
+  "name" : "Degumwamba",
+  "color" : "#e67300"
+}, {
+  "tag" : "S30",
+  "name" : "Death_Bringing_Cobra",
+  "color" : "#001a11"
+}, {
+  "tag" : "S31",
+  "name" : "Eusiwuni",
+  "color" : "#009999"
+}, {
+  "tag" : "S32",
+  "name" : "Gumti",
+  "color" : "#6414c8"
+}, {
+  "tag" : "S33",
+  "name" : "T_Red_Fanged_Gorilla",
+  "color" : "#fa3737"
+}, {
+  "tag" : "S34",
+  "name" : "T_Cunning_River_Eel",
+  "color" : "#46d5b0"
+}, {
+  "tag" : "S35",
+  "name" : "T_Well_Fed_Elephant",
+  "color" : "#de8644"
+}, {
+  "tag" : "S36",
+  "name" : "T_Stealthy_Duiker",
+  "color" : "#5e635b"
+}, {
+  "tag" : "S37",
+  "name" : "T_Swift_Legged_Bongo",
+  "color" : "#f6f583"
+}, {
+  "tag" : "S38",
+  "name" : "T_Work_Doing_Hippo",
+  "color" : "#9921a6"
+}, {
+  "tag" : "S39",
+  "name" : "T_Hut_Building_Weaver_Bird",
+  "color" : "#ec4124"
+}, {
+  "tag" : "S40",
+  "name" : "T_Forest_Hiding_Okapi",
+  "color" : "#2d7c7e"
+}, {
+  "tag" : "S41",
+  "name" : "T_Prey_Finding_Leopard",
+  "color" : "#01454b"
+}, {
+  "tag" : "S42",
+  "name" : "T_Friend_Helping_Parrot",
+  "color" : "#0487c3"
+}, {
+  "tag" : "S43",
+  "name" : "T_Violent_Hearted_Goose",
+  "color" : "#fff5f5"
+}, {
+  "tag" : "S44",
+  "name" : "Matamot",
+  "color" : "#520c0a"
+}, {
+  "tag" : "S45",
+  "name" : "Huugeta",
+  "color" : "#499b80"
+}, {
+  "tag" : "S46",
+  "name" : "Dugiti",
+  "color" : "#58e045"
+}, {
+  "tag" : "S47",
+  "name" : "Dubishan",
+  "color" : "#420e1d"
+}, {
+  "tag" : "S48",
+  "name" : "Tikur Adayni",
+  "color" : "#e72a6f"
+}, {
+  "tag" : "S49",
+  "name" : "Poson",
+  "color" : "#bcf4b1"
+}, {
+  "tag" : "S50",
+  "name" : "Yemotaferi",
+  "color" : "#bce0ef"
+}, {
+  "tag" : "S51",
+  "name" : "Sedarketema",
+  "color" : "#de71b6"
+}, {
+  "tag" : "S52",
+  "name" : "Teleksemayi",
+  "color" : "#307c45"
+}, {
+  "tag" : "S53",
+  "name" : "Averilibet",
+  "color" : "#f08502"
+}, {
+  "tag" : "S54",
+  "name" : "Layinret",
+  "color" : "#bc6145"
+}, {
+  "tag" : "S55",
+  "name" : "Ketemcaka",
+  "color" : "#bc187e"
+}, {
+  "tag" : "S56",
+  "name" : "Enikmesiki",
+  "color" : "#01de45"
+}, {
+  "tag" : "S57",
+  "name" : "Shelokmengi",
+  "color" : "#3a75c6"
+}, {
+  "tag" : "S58",
+  "name" : "Werikgeta",
+  "color" : "#042e02"
+}, {
+  "tag" : "S59",
+  "name" : "Wezingoa",
+  "color" : "#a1456e"
+}, {
+  "tag" : "S60",
+  "name" : "Meretgaban",
+  "color" : "#9418ff"
+}, {
+  "tag" : "S61",
+  "name" : "Ibekisedara",
+  "color" : "#0843d7"
+}, {
+  "tag" : "S62",
+  "name" : "Kadamuu",
+  "color" : "#dbedaf"
+}, {
+  "tag" : "S63",
+  "name" : "Bosonkikon",
+  "color" : "#05f1ff"
+}, {
+  "tag" : "S64",
+  "name" : "Lipmekat",
+  "color" : "#c7f6ff"
+}, {
+  "tag" : "S65",
+  "name" : "Mukis",
+  "color" : "#0f7a73"
+}, {
+  "tag" : "S66",
+  "name" : "Mewomender",
+  "color" : "#2d4d73"
+}, {
+  "tag" : "S67",
+  "name" : "Manta",
+  "color" : "#9e81d7"
+}, {
+  "tag" : "S68",
+  "name" : "Kirksan",
+  "color" : "#3018ff"
+}, {
+  "tag" : "S69",
+  "name" : "Mewojala",
+  "color" : "#947cff"
+}, {
+  "tag" : "S70",
+  "name" : "Yezel Mora",
+  "color" : "#282828"
+}, {
+  "tag" : "S71",
+  "name" : "Fahvanosy",
+  "color" : "#eeba7e"
+}, {
+  "tag" : "S72",
+  "name" : "Vyoronsi",
+  "color" : "#a5d2fd"
+}, {
+  "tag" : "S73",
+  "name" : "Selodarch",
+  "color" : "#e1ab04"
+}, {
+  "tag" : "S74",
+  "name" : "Tnismoted",
+  "color" : "#f54286"
+}, {
+  "tag" : "S75",
+  "name" : "Biribitid",
+  "color" : "#fcf6ac"
+}, {
+  "tag" : "S76",
+  "name" : "Gnidi",
+  "color" : "#40397d"
+}, {
+  "tag" : "S77",
+  "name" : "Amiratsamo",
+  "color" : "#8319df"
+}, {
+  "tag" : "S78",
+  "name" : "Maakhibkhii",
+  "color" : "#2f095b"
+}, {
+  "tag" : "S79",
+  "name" : "Umoji Baashidi",
+  "color" : "#f8f7cd"
+}, {
+  "tag" : "S80",
+  "name" : "Adirkhaz",
+  "color" : "#f80035"
+}, {
+  "tag" : "S81",
+  "name" : "Khatalashya",
+  "color" : "#3b6b4e"
+}, {
+  "tag" : "S82",
+  "name" : "Munzeri",
+  "color" : "#327d9f"
+}, {
+  "tag" : "S83",
+  "name" : "Katidariga",
+  "color" : "#84de02"
+}, {
+  "tag" : "S84",
+  "name" : "Bwa Dakinshi",
+  "color" : "#ff0000"
+}, {
+  "tag" : "S85",
+  "name" : "Qasriga",
+  "color" : "#fff096"
+}, {
+  "tag" : "S86",
+  "name" : "Wattoi",
+  "color" : "#e6bfff"
+}, {
+  "tag" : "S87",
+  "name" : "Amubariz",
+  "color" : "#8fb57b"
+}, {
+  "tag" : "S88",
+  "name" : "Rijalsahil",
+  "color" : "#c1eeff"
+}, {
+  "tag" : "S89",
+  "name" : "Yehatirha",
+  "color" : "#ffec2a"
+}, {
+  "tag" : "S90",
+  "name" : "Umbral Covenant",
+  "color" : "#c8bec8"
+}, {
+  "tag" : "S91",
+  "name" : "Ardimya",
+  "color" : "#e7e494"
+}, {
+  "tag" : "S92",
+  "name" : "Jinnakah",
+  "color" : "#3489ac"
+}, {
+  "tag" : "S93",
+  "name" : "Alefisol",
+  "color" : "#64010a"
+}, {
+  "tag" : "S94",
+  "name" : "Jarafarin",
+  "color" : "#8080ff"
+}, {
+  "tag" : "S95",
+  "name" : "Kuraoko",
+  "color" : "#c3c30b"
+}, {
+  "tag" : "S96",
+  "name" : "Maymunah",
+  "color" : "#dea0ea"
+}, {
+  "tag" : "S97",
+  "name" : "Damisi",
+  "color" : "#efe4b0"
+}, {
+  "tag" : "S98",
+  "name" : "Bibyobi",
+  "color" : "#00ff80"
+}, {
+  "tag" : "S99",
+  "name" : "Bankartineni",
+  "color" : "#64ff80"
+}, {
+  "tag" : "SS0",
+  "name" : "Romutha",
+  "color" : "#262626"
+}, {
+  "tag" : "SS1",
+  "name" : "Agradent",
+  "color" : "#b55447"
+}, {
+  "tag" : "SS2",
+  "name" : "Zulkanez",
+  "color" : "#c0c0c0"
+}, {
+  "tag" : "SS3",
+  "name" : "Shagatan",
+  "color" : "#0e6bbd"
+}, {
+  "tag" : "SS4",
+  "name" : "Teinglios",
+  "color" : "#aaf2ff"
+}, {
+  "tag" : "SS5",
+  "name" : "Zangea",
+  "color" : "#062bad"
+}, {
+  "tag" : "SS6",
+  "name" : "Atamumba",
+  "color" : "#c6c44f"
+}, {
+  "tag" : "SS7",
+  "name" : "Rakh",
+  "color" : "#005d0b"
+}, {
+  "tag" : "U01",
+  "name" : "Kheterata",
+  "color" : "#db9423"
+}, {
+  "tag" : "U02",
+  "name" : "Nirat",
+  "color" : "#2470c2"
+}, {
+  "tag" : "U04",
+  "name" : "Aakheta",
+  "color" : "#704a07"
+}, {
+  "tag" : "U05",
+  "name" : "Elizna",
+  "color" : "#6880b1"
+}, {
+  "tag" : "U06",
+  "name" : "Deshak",
+  "color" : "#4492c2"
+}, {
+  "tag" : "U07",
+  "name" : "Viakkoc",
+  "color" : "#22ad92"
+}, {
+  "tag" : "U08",
+  "name" : "Ekha",
+  "color" : "#cedec7"
+}, {
+  "tag" : "U09",
+  "name" : "Gnollakaz",
+  "color" : "#a07d5d"
+}, {
+  "tag" : "U10",
+  "name" : "Brrtekuh",
+  "color" : "#96957a"
+}, {
+  "tag" : "U11",
+  "name" : "Landshark Clan",
+  "color" : "#c8ea64"
+}, {
+  "tag" : "U12",
+  "name" : "Oubbligschild Clan",
+  "color" : "#2be82b"
+}, {
+  "tag" : "U13",
+  "name" : "Greysheep Clan",
+  "color" : "#7d7d7d"
+}, {
+  "tag" : "U14",
+  "name" : "Mountainhugger Clan",
+  "color" : "#585058"
+}, {
+  "tag" : "U15",
+  "name" : "Marble Head Clan",
+  "color" : "#f6f690"
+}, {
+  "tag" : "U16",
+  "name" : "Ourdia",
+  "color" : "#5a783c"
+}, {
+  "tag" : "U17",
+  "name" : "Crathanor",
+  "color" : "#3b94eb"
+}, {
+  "tag" : "U18",
+  "name" : "Reuyel",
+  "color" : "#c976b1"
+}, {
+  "tag" : "U19",
+  "name" : "Aqatbahar",
+  "color" : "#2b6e60"
+}, {
+  "tag" : "U20",
+  "name" : "Azka-Sur",
+  "color" : "#f5cf89"
+}, {
+  "tag" : "U21",
+  "name" : "Veykoda",
+  "color" : "#435cb7"
+}, {
+  "tag" : "U22",
+  "name" : "Veykodirzag",
+  "color" : "#4d3fa8"
+}, {
+  "tag" : "U23",
+  "name" : "Selocshana",
+  "color" : "#ff6d7e"
+}, {
+  "tag" : "U24",
+  "name" : "Arvezl",
+  "color" : "#dc7630"
+}, {
+  "tag" : "U25",
+  "name" : "Adbraseloc",
+  "color" : "#0524ff"
+}, {
+  "tag" : "U26",
+  "name" : "Lisicalrevo",
+  "color" : "#b75040"
+}, {
+  "tag" : "U27",
+  "name" : "Theinos",
+  "color" : "#7e1b85"
+}, {
+  "tag" : "U28",
+  "name" : "Kooyaahse",
+  "color" : "#509ab2"
+}, {
+  "tag" : "U29",
+  "name" : "Kaiinpi",
+  "color" : "#c8713f"
+}, {
+  "tag" : "U30",
+  "name" : "Quitl",
+  "color" : "#180c1b"
+}, {
+  "tag" : "U31",
+  "name" : "Triarchy",
+  "color" : "#1f51ff"
+}, {
+  "tag" : "U32",
+  "name" : "Lesnikpansvo",
+  "color" : "#ff4423"
+}, {
+  "tag" : "U33",
+  "name" : "Vizkaladr",
+  "color" : "#960000"
+}, {
+  "tag" : "U34",
+  "name" : "Solansash",
+  "color" : "#717882"
+}, {
+  "tag" : "U35",
+  "name" : "Qashdeam",
+  "color" : "#a3c288"
+}, {
+  "tag" : "U36",
+  "name" : "Zmandfaes",
+  "color" : "#e6d925"
+}, {
+  "tag" : "U37",
+  "name" : "Behzmukijabu",
+  "color" : "#3e7349"
+}, {
+  "tag" : "U38",
+  "name" : "Ordejwad",
+  "color" : "#e38497"
+}, {
+  "tag" : "U39",
+  "name" : "Orenvalyam",
+  "color" : "#200a00"
+}, {
+  "tag" : "U40",
+  "name" : "Drisleak",
+  "color" : "#33004d"
+}, {
+  "tag" : "U41",
+  "name" : "Ghrannblath",
+  "color" : "#ffca00"
+}, {
+  "tag" : "U42",
+  "name" : "Urdea Samrad",
+  "color" : "#22cc00"
+}, {
+  "tag" : "U43",
+  "name" : "Seraeddun",
+  "color" : "#00d0e1"
+}, {
+  "tag" : "U44",
+  "name" : "Snecdath",
+  "color" : "#ffffff"
+}, {
+  "tag" : "U45",
+  "name" : "Daraela",
+  "color" : "#babaff"
+}, {
+  "tag" : "U46",
+  "name" : "Sidmargbal",
+  "color" : "#ffff33"
+}, {
+  "tag" : "U47",
+  "name" : "Shyarayan",
+  "color" : "#96201e"
+}, {
+  "tag" : "U48",
+  "name" : "Cataboek",
+  "color" : "#6c3082"
+}, {
+  "tag" : "U49",
+  "name" : "Dalaire",
+  "color" : "#0c3066"
+}, {
+  "tag" : "U50",
+  "name" : "Leidhancost",
+  "color" : "#cae00f"
+}, {
+  "tag" : "U52",
+  "name" : "Endralliande",
+  "color" : "#454596"
+}, {
+  "tag" : "U53",
+  "name" : "Obaithail",
+  "color" : "#2e3192"
+}, {
+  "tag" : "U54",
+  "name" : "Morail",
+  "color" : "#964552"
+}, {
+  "tag" : "U55",
+  "name" : "Noruin",
+  "color" : "#32a096"
+}, {
+  "tag" : "U56",
+  "name" : "Bloodgroves",
+  "color" : "#870000"
+}, {
+  "tag" : "U57",
+  "name" : "Cheshoshmar",
+  "color" : "#736464"
+}, {
+  "tag" : "U60",
+  "name" : "Soruin",
+  "color" : "#50d26c"
+}, {
+  "tag" : "U61",
+  "name" : "Turtleback Isle",
+  "color" : "#234abe"
+}, {
+  "tag" : "U62",
+  "name" : "Malatel",
+  "color" : "#234abe"
+}, {
+  "tag" : "U64",
+  "name" : "Alecand",
+  "color" : "#205e8c"
+}, {
+  "tag" : "U66",
+  "name" : "Nortiochand",
+  "color" : "#004272"
+}, {
+  "tag" : "U67",
+  "name" : "Daughters of the Hills",
+  "color" : "#e68c8c"
+}, {
+  "tag" : "U68",
+  "name" : "Kiohalen",
+  "color" : "#ee2e2e"
+}, {
+  "tag" : "U69",
+  "name" : "Sarda",
+  "color" : "#00d1ff"
+}, {
+  "tag" : "U70",
+  "name" : "Dolindha",
+  "color" : "#ffb618"
+}, {
+  "tag" : "U71",
+  "name" : "Rzenta",
+  "color" : "#397c40"
+}, {
+  "tag" : "U72",
+  "name" : "Vrendzan",
+  "color" : "#004b4d"
+}, {
+  "tag" : "U73",
+  "name" : "Ravenous Isle",
+  "color" : "#00410f"
+}, {
+  "tag" : "U76",
+  "name" : "Horizona",
+  "color" : "#c75b2e"
+}, {
+  "tag" : "U99",
+  "name" : "Kashayar",
+  "color" : "#f0d2c7"
+}, {
+  "tag" : "V01",
+  "name" : "Oinukhudi",
+  "color" : "#dff72c"
+}, {
+  "tag" : "V02",
+  "name" : "Dolontugiin",
+  "color" : "#531196"
+}, {
+  "tag" : "V03",
+  "name" : "Khezkhagak",
+  "color" : "#22b14c"
+}, {
+  "tag" : "V04",
+  "name" : "Hakuukulga",
+  "color" : "#1512de"
+}, {
+  "tag" : "V05",
+  "name" : "Cangji",
+  "color" : "#e0dcc5"
+}, {
+  "tag" : "V06",
+  "name" : "Bazuneizar",
+  "color" : "#fff200"
+}, {
+  "tag" : "V07",
+  "name" : "Olkhalsu",
+  "color" : "#00a2e8"
+}, {
+  "tag" : "V08",
+  "name" : "Suldokli",
+  "color" : "#70442c"
+}, {
+  "tag" : "V09",
+  "name" : "Shevhedil",
+  "color" : "#880015"
+}, {
+  "tag" : "V10",
+  "name" : "Motelisamok",
+  "color" : "#ffaec9"
+}, {
+  "tag" : "V11",
+  "name" : "Zugi Yusan",
+  "color" : "#5c6356"
+}, {
+  "tag" : "V12",
+  "name" : "Kuenan Nirokyu",
+  "color" : "#fa6e11"
+}, {
+  "tag" : "V13",
+  "name" : "Nunsan Banbe",
+  "color" : "#309c24"
+}, {
+  "tag" : "V14",
+  "name" : "Nutean Kezen",
+  "color" : "#3f48cc"
+}, {
+  "tag" : "V15",
+  "name" : "Anarkhudi",
+  "color" : "#8cb7c1"
+}, {
+  "tag" : "V16",
+  "name" : "Samisalik Bolki",
+  "color" : "#76572f"
+}, {
+  "tag" : "V17",
+  "name" : "Nirenun Syul",
+  "color" : "#05cdff"
+}, {
+  "tag" : "V18",
+  "name" : "Samthalsu",
+  "color" : "#e97451"
+}, {
+  "tag" : "V19",
+  "name" : "Yanszin",
+  "color" : "#34699f"
+}, {
+  "tag" : "V20",
+  "name" : "Zoherin Apunsorya",
+  "color" : "#15197e"
+}, {
+  "tag" : "V21",
+  "name" : "Chinhu",
+  "color" : "#e9a600"
+}, {
+  "tag" : "V22",
+  "name" : "Jianlin",
+  "color" : "#82f2f2"
+}, {
+  "tag" : "V23",
+  "name" : "Luzhong",
+  "color" : "#281414"
+}, {
+  "tag" : "V24",
+  "name" : "Ashag Kuulgo",
+  "color" : "#d08b62"
+}, {
+  "tag" : "V25",
+  "name" : "Hus Bhal",
+  "color" : "#5a5f82"
+}, {
+  "tag" : "V26",
+  "name" : "Zunk Kuulgo",
+  "color" : "#b986db"
+}, {
+  "tag" : "V27",
+  "name" : "Nuwenara",
+  "color" : "#a02d2d"
+}, {
+  "tag" : "V28",
+  "name" : "Baztungh Khayus",
+  "color" : "#82b4f0"
+}, {
+  "tag" : "V29",
+  "name" : "Nirunkhupen",
+  "color" : "#801c3e"
+}, {
+  "tag" : "V30",
+  "name" : "Bawa Simpat",
+  "color" : "#114204"
+}, {
+  "tag" : "V98",
+  "name" : "Shaman-Home",
+  "color" : "#5a0f14"
+}, {
+  "tag" : "V99",
+  "name" : "Kimni Solenh",
+  "color" : "#846cc1"
+}, {
+  "tag" : "Y00",
+  "name" : "Sunrise Empire",
+  "color" : "#964114"
+}, {
+  "tag" : "Y01",
+  "name" : "Azjakuma",
+  "color" : "#c03246"
+}, {
+  "tag" : "Y02",
+  "name" : "Jinqiu",
+  "color" : "#302b32"
+}, {
+  "tag" : "Y03",
+  "name" : "Hubao",
+  "color" : "#af8f44"
+}, {
+  "tag" : "Y04",
+  "name" : "Anjiang",
+  "color" : "#6a94c4"
+}, {
+  "tag" : "Y05",
+  "name" : "Lanjinhui",
+  "color" : "#176bce"
+}, {
+  "tag" : "Y06",
+  "name" : "Yangcheng",
+  "color" : "#293269"
+}, {
+  "tag" : "Y07",
+  "name" : "Guhe",
+  "color" : "#1f6a91"
+}, {
+  "tag" : "Y08",
+  "name" : "Yanzhong",
+  "color" : "#43548c"
+}, {
+  "tag" : "Y09",
+  "name" : "Bianfang",
+  "color" : "#e8e8e8"
+}, {
+  "tag" : "Y10",
+  "name" : "Yingzhen",
+  "color" : "#1d4072"
+}, {
+  "tag" : "Y11",
+  "name" : "Wudikmen",
+  "color" : "#2037ab"
+}, {
+  "tag" : "Y12",
+  "name" : "Fengzhaobu",
+  "color" : "#dc12f5"
+}, {
+  "tag" : "Y13",
+  "name" : "Jiangdu",
+  "color" : "#d37c30"
+}, {
+  "tag" : "Y14",
+  "name" : "Zhiqian",
+  "color" : "#0b1145"
+}, {
+  "tag" : "Y15",
+  "name" : "Beikdugang",
+  "color" : "#7763bc"
+}, {
+  "tag" : "Y16",
+  "name" : "Jiantsiang",
+  "color" : "#3f2a6b"
+}, {
+  "tag" : "Y17",
+  "name" : "Gushuokguan",
+  "color" : "#fab404"
+}, {
+  "tag" : "Y18",
+  "name" : "Sziangnu",
+  "color" : "#b892ff"
+}, {
+  "tag" : "Y19",
+  "name" : "Tianlou",
+  "color" : "#9cacab"
+}, {
+  "tag" : "Y20",
+  "name" : "Feiten",
+  "color" : "#1a9ec9"
+}, {
+  "tag" : "Y21",
+  "name" : "Xiyun",
+  "color" : "#103377"
+}, {
+  "tag" : "Y22",
+  "name" : "Chajin",
+  "color" : "#c8aaaf"
+}, {
+  "tag" : "Y23",
+  "name" : "Zyujyut",
+  "color" : "#c32a1e"
+}, {
+  "tag" : "Y24",
+  "name" : "Luoyip",
+  "color" : "#ebb50d"
+}, {
+  "tag" : "Y25",
+  "name" : "Zongji",
+  "color" : "#f0a740"
+}, {
+  "tag" : "Y26",
+  "name" : "Yinquan",
+  "color" : "#8a2476"
+}, {
+  "tag" : "Y27",
+  "name" : "Kohai",
+  "color" : "#e6d8a6"
+}, {
+  "tag" : "Y28",
+  "name" : "Jiangliusi",
+  "color" : "#dcd232"
+}, {
+  "tag" : "Y29",
+  "name" : "Jilin",
+  "color" : "#d35504"
+}, {
+  "tag" : "Y30",
+  "name" : "Aoshan",
+  "color" : "#aa4c42"
+}, {
+  "tag" : "Y31",
+  "name" : "Rang Nartak",
+  "color" : "#7684fa"
+}, {
+  "tag" : "Y32",
+  "name" : "Yumaomen",
+  "color" : "#5fb2ba"
+}, {
+  "tag" : "Y33",
+  "name" : "Vidvakhoka",
+  "color" : "#e2baa5"
+}, {
+  "tag" : "Y34",
+  "name" : "Nay Kwhan",
+  "color" : "#133eea"
+}, {
+  "tag" : "Y35",
+  "name" : "Liukhexingzhe",
+  "color" : "#440510"
+}, {
+  "tag" : "Y36",
+  "name" : "Lo Pashong",
+  "color" : "#e2c86b"
+}, {
+  "tag" : "Y37",
+  "name" : "Mudrabagha",
+  "color" : "#d10036"
+}, {
+  "tag" : "Y38",
+  "name" : "Bommak",
+  "color" : "#c8c8c8"
+}, {
+  "tag" : "Y39",
+  "name" : "Pezarang",
+  "color" : "#700bbb"
+}, {
+  "tag" : "Y40",
+  "name" : "He Preahsang",
+  "color" : "#639368"
+}, {
+  "tag" : "Y41",
+  "name" : "Xaram",
+  "color" : "#ffc90f"
+}, {
+  "tag" : "Y42",
+  "name" : "Linquanzhuang",
+  "color" : "#7e83ce"
+}, {
+  "tag" : "Y43",
+  "name" : "Tsiancukmen",
+  "color" : "#214060"
+}, {
+  "tag" : "Y44",
+  "name" : "Shanyutian",
+  "color" : "#23b017"
+}, {
+  "tag" : "Y45",
+  "name" : "Jinhusi",
+  "color" : "#cdd4f4"
+}, {
+  "tag" : "Y46",
+  "name" : "Jianxusi",
+  "color" : "#28e4ed"
+}, {
+  "tag" : "Y47",
+  "name" : "Yizeikwu",
+  "color" : "#c0802d"
+}, {
+  "tag" : "Y48",
+  "name" : "Yantrakari",
+  "color" : "#267355"
+}, {
+  "tag" : "Y49",
+  "name" : "Qiansimiao",
+  "color" : "#85789c"
+}, {
+  "tag" : "Y50",
+  "name" : "Phangban",
+  "color" : "#454545"
+}, {
+  "tag" : "Y51",
+  "name" : "Bim Lau",
+  "color" : "#23995a"
+}, {
+  "tag" : "Y52",
+  "name" : "Semphrerong",
+  "color" : "#cd5789"
+}, {
+  "tag" : "Y53",
+  "name" : "Prukakhin",
+  "color" : "#a0465f"
+}, {
+  "tag" : "Y54",
+  "name" : "Risbek",
+  "color" : "#f3781c"
+}, {
+  "tag" : "Y55",
+  "name" : "Khabtei Teleni",
+  "color" : "#88a5a4"
+}, {
+  "tag" : "Y56",
+  "name" : "Pheuon Duan",
+  "color" : "#55f0cd"
+}, {
+  "tag" : "Y57",
+  "name" : "Phaethmen Di",
+  "color" : "#78d764"
+}, {
+  "tag" : "Y58",
+  "name" : "Lot Dekkhang",
+  "color" : "#e34f4f"
+}, {
+  "tag" : "Y59",
+  "name" : "Thirabnir",
+  "color" : "#49796b"
+}, {
+  "tag" : "Y60",
+  "name" : "Lo Ngoen",
+  "color" : "#14321e"
+}, {
+  "tag" : "Y61",
+  "name" : "Rongbek",
+  "color" : "#976c0e"
+}, {
+  "tag" : "Y62",
+  "name" : "Khao Elnak",
+  "color" : "#546fc0"
+}, {
+  "tag" : "Y63",
+  "name" : "Verkal Ozovar",
+  "color" : "#9fe0d0"
+}, {
+  "tag" : "Y64",
+  "name" : "Pinghoi",
+  "color" : "#fa4159"
+}, {
+  "tag" : "Y65",
+  "name" : "Arawkelin",
+  "color" : "#a07314"
+}, {
+  "tag" : "Y66",
+  "name" : "Hon Sai",
+  "color" : "#d5d55a"
+}, {
+  "tag" : "Y67",
+  "name" : "Mo Hoang",
+  "color" : "#f0c814"
+}, {
+  "tag" : "Y68",
+  "name" : "Nagon",
+  "color" : "#6ee6a0"
+}, {
+  "tag" : "Y69",
+  "name" : "Brenulan",
+  "color" : "#733635"
+}, {
+  "tag" : "Y70",
+  "name" : "Phonan",
+  "color" : "#d4af37"
+}, {
+  "tag" : "Y71",
+  "name" : "Kudet Kai",
+  "color" : "#1669a3"
+}, {
+  "tag" : "Y72",
+  "name" : "Chien Binhrung",
+  "color" : "#b50014"
+}, {
+  "tag" : "Y73",
+  "name" : "Sirtan",
+  "color" : "#b96161"
+}, {
+  "tag" : "Y74",
+  "name" : "Pelimkana",
+  "color" : "#3c7314"
+}, {
+  "tag" : "Y75",
+  "name" : "Tlagapatung",
+  "color" : "#3eb489"
+}, {
+  "tag" : "Y76",
+  "name" : "Jaya Raya",
+  "color" : "#93bf9b"
+}, {
+  "tag" : "Y77",
+  "name" : "Kaplakawan",
+  "color" : "#444e3e"
+}, {
+  "tag" : "Y78",
+  "name" : "Bukit Bantay",
+  "color" : "#81185e"
+}, {
+  "tag" : "Y79",
+  "name" : "Lelak",
+  "color" : "#71e818"
+}, {
+  "tag" : "Y80",
+  "name" : "Menek Poko",
+  "color" : "#296b42"
+}, {
+  "tag" : "Y81",
+  "name" : "Kuplukamba",
+  "color" : "#df7c3a"
+}, {
+  "tag" : "Y82",
+  "name" : "Labanyak",
+  "color" : "#516f80"
+}, {
+  "tag" : "Y83",
+  "name" : "Kuta",
+  "color" : "#a9242f"
+}, {
+  "tag" : "Y84",
+  "name" : "Lembingtana",
+  "color" : "#fdf950"
+}, {
+  "tag" : "Y85",
+  "name" : "Balrijin",
+  "color" : "#d0aa2d"
+}, {
+  "tag" : "Y86",
+  "name" : "Azkare",
+  "color" : "#881e09"
+}, {
+  "tag" : "Y87",
+  "name" : "Tidtam",
+  "color" : "#6ecdb4"
+}, {
+  "tag" : "Y88",
+  "name" : "Hinphat",
+  "color" : "#aab491"
+}, {
+  "tag" : "Y89",
+  "name" : "Yuanszi",
+  "color" : "#0b7b85"
+}, {
+  "tag" : "Y90",
+  "name" : "Tsuista Khul",
+  "color" : "#461e1e"
+}, {
+  "tag" : "Y91",
+  "name" : "Nuugdan Tsarai",
+  "color" : "#7d7878"
+}, {
+  "tag" : "Y92",
+  "name" : "Rung Igedch",
+  "color" : "#3273a8"
+}, {
+  "tag" : "Y93",
+  "name" : "Danggun",
+  "color" : "#3ca078"
+}, {
+  "tag" : "Y94",
+  "name" : "Dalmangaji",
+  "color" : "#440510"
+}, {
+  "tag" : "Y95",
+  "name" : "Baegye",
+  "color" : "#c0c0c0"
+}, {
+  "tag" : "Y96",
+  "name" : "Guwaamud",
+  "color" : "#0f5a7d"
+}, {
+  "tag" : "Y97",
+  "name" : "Baihon Xinh",
+  "color" : "#ffae00"
+}, {
+  "tag" : "Y98",
+  "name" : "Daxugo",
+  "color" : "#917446"
+}, {
+  "tag" : "Y99",
+  "name" : "One Xia",
+  "color" : "#990330"
+}, {
+  "tag" : "Z01",
+  "name" : "Empire of Anbennar",
+  "color" : "#ffffff"
+}, {
+  "tag" : "Z02",
+  "name" : "Magdalaire",
+  "color" : "#8ba8a9"
+}, {
+  "tag" : "Z03",
+  "name" : "Bellacaire",
+  "color" : "#c36ea5"
+}, {
+  "tag" : "Z04",
+  "name" : "Indlebury",
+  "color" : "#5f4f9f"
+}, {
+  "tag" : "Z05",
+  "name" : "Tretun",
+  "color" : "#bb7a57"
+}, {
+  "tag" : "Z06",
+  "name" : "Brinkmarches",
+  "color" : "#dcc624"
+}, {
+  "tag" : "Z07",
+  "name" : "Dostanor",
+  "color" : "#a20002"
+}, {
+  "tag" : "Z08",
+  "name" : "Bjarnrik",
+  "color" : "#b97a57"
+}, {
+  "tag" : "Z09",
+  "name" : "Skaldskola",
+  "color" : "#eac8c8"
+}, {
+  "tag" : "Z10",
+  "name" : "Revrhavn",
+  "color" : "#506496"
+}, {
+  "tag" : "Z11",
+  "name" : "Sidaett",
+  "color" : "#90b2a3"
+}, {
+  "tag" : "Z12",
+  "name" : "Naugsvol",
+  "color" : "#4c1bb7"
+}, {
+  "tag" : "Z13",
+  "name" : "Redgarhavn",
+  "color" : "#de5757"
+}, {
+  "tag" : "Z14",
+  "name" : "Avnkaup",
+  "color" : "#cdd4f4"
+}, {
+  "tag" : "Z15",
+  "name" : "Urviksten",
+  "color" : "#46311a"
+}, {
+  "tag" : "Z16",
+  "name" : "Olavlund",
+  "color" : "#6e4250"
+}, {
+  "tag" : "Z17",
+  "name" : "Obrtrol",
+  "color" : "#99d9ea"
+}, {
+  "tag" : "Z18",
+  "name" : "Frozenmaw",
+  "color" : "#7da4b0"
+}, {
+  "tag" : "Z19",
+  "name" : "Broken Jaw",
+  "color" : "#8894a6"
+}, {
+  "tag" : "Z20",
+  "name" : "Hideguzzler",
+  "color" : "#969b75"
+}, {
+  "tag" : "Z21",
+  "name" : "Serpentgard",
+  "color" : "#41b25a"
+}, {
+  "tag" : "Z22",
+  "name" : "Celmaldor",
+  "color" : "#8585a0"
+}, {
+  "tag" : "Z23",
+  "name" : "Esald",
+  "color" : "#df7c3a"
+}, {
+  "tag" : "Z24",
+  "name" : "Envermarck",
+  "color" : "#be16f7"
+}, {
+  "tag" : "Z25",
+  "name" : "Dinesck",
+  "color" : "#fa4159"
+}, {
+  "tag" : "Z26",
+  "name" : "Adshaw",
+  "color" : "#5c4625"
+}, {
+  "tag" : "Z27",
+  "name" : "Cedevik",
+  "color" : "#0e1430"
+}, {
+  "tag" : "Z28",
+  "name" : "Bayvic",
+  "color" : "#638ac5"
+}, {
+  "tag" : "Z29",
+  "name" : "Coldmarket",
+  "color" : "#5457ff"
+}, {
+  "tag" : "Z30",
+  "name" : "Everwharf",
+  "color" : "#812d43"
+}, {
+  "tag" : "Z31",
+  "name" : "Reachspier",
+  "color" : "#9a3d17"
+}, {
+  "tag" : "Z32",
+  "name" : "Alencay",
+  "color" : "#506be8"
+}, {
+  "tag" : "Z33",
+  "name" : "Frostwall",
+  "color" : "#63b1c8"
+}, {
+  "tag" : "Z34",
+  "name" : "Black Castanor",
+  "color" : "#000000"
+}, {
+  "tag" : "Z35",
+  "name" : "Rosande",
+  "color" : "#833436"
+}, {
+  "tag" : "Z36",
+  "name" : "Hammerhome",
+  "color" : "#d9e7e8"
+}, {
+  "tag" : "Z37",
+  "name" : "Covenblad",
+  "color" : "#a8d3f4"
+}, {
+  "tag" : "Z38",
+  "name" : "Kobildzan",
+  "color" : "#ccb5bd"
+}, {
+  "tag" : "Z39",
+  "name" : "Viswall",
+  "color" : "#c8c8c8"
+}, {
+  "tag" : "Z40",
+  "name" : "Acromton",
+  "color" : "#ffd799"
+}, {
+  "tag" : "Z41",
+  "name" : "Plumwall",
+  "color" : "#5f32ff"
+}, {
+  "tag" : "Z42",
+  "name" : "Varivar",
+  "color" : "#af6f49"
+}, {
+  "tag" : "Z43",
+  "name" : "Aelnar",
+  "color" : "#1c1f96"
+}, {
+  "tag" : "Z44",
+  "name" : "Silblaidd orda",
+  "color" : "#9170c8"
+}, {
+  "tag" : "Z45",
+  "name" : "Vrorenmarch",
+  "color" : "#80ffff"
+}, {
+  "tag" : "Z46",
+  "name" : "Esmaria",
+  "color" : "#f1ae76"
+}, {
+  "tag" : "Z47",
+  "name" : "Doombringer Clan",
+  "color" : "#aca6d9"
+}, {
+  "tag" : "Z48",
+  "name" : "Rivsby",
+  "color" : "#3a7cdf"
+}, {
+  "tag" : "Z49",
+  "name" : "Eskerborg",
+  "color" : "#35a43a"
+}, {
+  "tag" : "Z50",
+  "name" : "Grombar",
+  "color" : "#657d86"
+}, {
+  "tag" : "Z51",
+  "name" : "Khozrugan",
+  "color" : "#64b464"
+}, {
+  "tag" : "Z52",
+  "name" : "Unguldavor",
+  "color" : "#14a03c"
+}, {
+  "tag" : "Z53",
+  "name" : "Barumand",
+  "color" : "#dcd232"
+}, {
+  "tag" : "Z54",
+  "name" : "Karakhanbar",
+  "color" : "#5a1919"
+}, {
+  "tag" : "Z55",
+  "name" : "Darkscale",
+  "color" : "#bd0808"
+}, {
+  "tag" : "Z56",
+  "name" : "Kuxhezte",
+  "color" : "#511010"
+}, {
+  "tag" : "Z57",
+  "name" : "Karashar",
+  "color" : "#1c1414"
+}, {
+  "tag" : "Z58",
+  "name" : "Lamwun",
+  "color" : "#829141"
+}, {
+  "tag" : "Z59",
+  "name" : "Szicheng",
+  "color" : "#28afff"
+}, {
+  "tag" : "Z60",
+  "name" : "Tsukqiao",
+  "color" : "#b49b95"
+}, {
+  "tag" : "Z61",
+  "name" : "Xiongxiap",
+  "color" : "#755555"
+}, {
+  "tag" : "Z62",
+  "name" : "Thangoya",
+  "color" : "#aac841"
+}, {
+  "tag" : "Z63",
+  "name" : "Thidinkai",
+  "color" : "#877d55"
+}, {
+  "tag" : "Z64",
+  "name" : "Damoh Yangla",
+  "color" : "#d7327d"
+}, {
+  "tag" : "Z65",
+  "name" : "Yanshen",
+  "color" : "#bebebe"
+}, {
+  "tag" : "Z66",
+  "name" : "Dahui",
+  "color" : "#96c8c8"
+}, {
+  "tag" : "Z67",
+  "name" : "Lianzhou",
+  "color" : "#ff5532"
+}, {
+  "tag" : "Z68",
+  "name" : "Toarnaire",
+  "color" : "#981c66"
+}, {
+  "tag" : "Z69",
+  "name" : "Aelnar_Lithiel",
+  "color" : "#1c28b4"
+}, {
+  "tag" : "Z70",
+  "name" : "Aelnar_Kayd",
+  "color" : "#3c3296"
+}, {
+  "tag" : "Z71",
+  "name" : "Aelnar_Aelthanas",
+  "color" : "#1c3296"
+}, {
+  "tag" : "Z72",
+  "name" : "Aelnar_Sicrheior",
+  "color" : "#5f3296"
+}, {
+  "tag" : "Z73",
+  "name" : "Aelnar_Dahvar",
+  "color" : "#461f96"
+}, {
+  "tag" : "Z74",
+  "name" : "Gerudaghot",
+  "color" : "#3e78b2"
+}, {
+  "tag" : "Z75",
+  "name" : "The First Acolyte",
+  "color" : "#505050"
+}, {
+  "tag" : "Z76",
+  "name" : "The Second Acolyte",
+  "color" : "#303030"
+}, {
+  "tag" : "Z77",
+  "name" : "The Third Acolyte",
+  "color" : "#16111b"
+}, {
+  "tag" : "Z78",
+  "name" : "The Fourth Acolyte",
+  "color" : "#190f0f"
+}, {
+  "tag" : "Z79",
+  "name" : "The Fifth Acolyte",
+  "color" : "#191919"
+}, {
+  "tag" : "Z80",
+  "name" : "The Sixth Acolyte",
+  "color" : "#070e15"
+}, {
+  "tag" : "Z81",
+  "name" : "The Seventh Acolyte",
+  "color" : "#19141d"
+}, {
+  "tag" : "Z82",
+  "name" : "Kar-Ankash",
+  "color" : "#0a1208"
+}, {
+  "tag" : "Z83",
+  "name" : "Blodfjell",
+  "color" : "#780013"
+}, {
+  "tag" : "Z84",
+  "name" : "Varheim",
+  "color" : "#2c5c39"
+}, {
+  "tag" : "Z85",
+  "name" : "Frostbrygja",
+  "color" : "#068e9b"
+}, {
+  "tag" : "Z86",
+  "name" : "Soyzkaru Cartel",
+  "color" : "#971616"
+}, {
+  "tag" : "Z87",
+  "name" : "Akluztajo",
+  "color" : "#133a14"
+}, {
+  "tag" : "Z88",
+  "name" : "Vaengheim",
+  "color" : "#d7daff"
+}, {
+  "tag" : "Z89",
+  "name" : "Digoveda",
+  "color" : "#ef8383"
+}, {
+  "tag" : "Z90",
+  "name" : "Turnwell",
+  "color" : "#aca67d"
+}, {
+  "tag" : "Z91",
+  "name" : "Jarvema",
+  "color" : "#141f6b"
+}, {
+  "tag" : "Z92",
+  "name" : "Cagodor",
+  "color" : "#146b1c"
+}, {
+  "tag" : "Z97",
+  "name" : "Ravelian State",
+  "color" : "#454545"
+}, {
+  "tag" : "Z99",
+  "name" : "Black Demesne",
+  "color" : "#060606"
+} ]

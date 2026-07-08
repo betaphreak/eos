@@ -60,6 +60,38 @@ class WorldMapTest {
 	}
 
 	@Test
+	void loadsThePoliticalLayer() {
+		WorldMap map = WorldMap.load();
+		// Wesdam (province 10) is owned by A04, West Damerian, Regent Court
+		Province wesdam = map.province(10);
+		assertEquals("A04", wesdam.ownerTag());
+		assertEquals("A04", wesdam.controllerTag());
+		assertEquals("west_damerian", wesdam.culture());
+		assertEquals("regent_court", wesdam.religion());
+
+		// the owner tag resolves to a country carrying a hex map colour
+		Country a04 = map.country("A04").orElseThrow();
+		assertEquals("Wesdam", a04.name());
+		assertTrue(a04.color().matches("#[0-9a-f]{6}"), "country colour is #rrggbb");
+
+		// culture and religion resolve to metadata records with colours
+		Culture wd = map.culture("west_damerian").orElseThrow();
+		assertEquals("anbennarian", wd.group());
+		assertTrue(wd.color().matches("#[0-9a-f]{6}"));
+		Religion rc = map.religion("regent_court").orElseThrow();
+		assertEquals("cannorian", rc.group());
+		assertTrue(rc.color().matches("#[0-9a-f]{6}"));
+
+		// the derived membership indices are populated and Wesdam is in each
+		assertTrue(map.provincesOwnedBy("A04").contains(wesdam));
+		assertTrue(map.provincesOfCulture("west_damerian").contains(wesdam));
+		assertTrue(map.provincesOfReligion("regent_court").contains(wesdam));
+		assertFalse(map.owners().isEmpty(), "some countries own provinces");
+		// not every province is owned (seas, uncolonized wasteland)
+		assertTrue(map.provincesOwnedBy("A04").size() < map.size());
+	}
+
+	@Test
 	void pathWalksTheNeighborGraph() {
 		WorldMap map = WorldMap.load();
 		Province d = map.findByName("Dhenijansar").orElseThrow();

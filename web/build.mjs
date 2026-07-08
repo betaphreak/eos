@@ -115,16 +115,20 @@ for (const r of regionsMeta) regionDisplayName[r.key] = r.name;
 const areaDisplayName = {};   // area key -> display name
 for (const a of areasMeta) areaDisplayName[a.key] = a.name;
 
+// political reference tables (optional resources; the political map mode colours
+// province polygons by their owner tag, and joins culture/religion for the sidebar)
+const readJsonOpt = f => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, f), 'utf8')); } catch { return []; } };
+const countryByTag = Object.fromEntries(readJsonOpt('src/main/resources/map/countries.json').map(c => [c.tag, { name: c.name, color: c.color }]));
+const cultureByKey = Object.fromEntries(readJsonOpt('src/main/resources/map/cultures.json').map(c => [c.key, { name: c.name, group: c.group, color: c.color }]));
+const religionByKey = Object.fromEntries(readJsonOpt('src/main/resources/map/religions.json').map(r => [r.key, { name: r.name, group: r.group, color: r.color }]));
+
 const provinces = [...shipped].map(id => byId.get(id)).filter(Boolean).map(p => ({
   id: p.id, name: p.name, lat: +p.lat.toFixed(3), lon: +p.lon.toFixed(3),
-  plots: p.plots, waterPlots: p.waterPlots || 0, type: p.type, region: p.region,
+  plots: p.plots, waterPlots: p.waterPlots || 0, type: p.type,
+  // geography as raw Clausewitz keys only; display names are resolved client-side from the shipped
+  // `geoNames` dictionaries (interning them here duplicated ~850 KB of names across all provinces)
+  region: p.region || null, area: p.area || null, continent: p.continent || null,
   winter: p.winter || null,
-  geo: {                                 // hierarchy tiers as [displayName, rawKey] (sidebar detail)
-    continent: [CONTINENT_NAME[p.continent] || null, p.continent || null],
-    superRegion: [srNameByRegion[p.region] || null, srKeyByRegion[p.region] || null],
-    region: [regionDisplayName[p.region] || null, p.region || null],
-    area: [areaDisplayName[p.area] || null, p.area || null],
-  },
   nb: p.neighbors.filter(n => shipped.has(n)),
   days: traffic.get(p.id) || 0,          // caravan-days spent here (0 for context provinces)
   rings: ringsById.get(p.id) || null,    // outline in source pixels (null for sea/lake → bbox culls, packPlots)
@@ -192,6 +196,37 @@ const geo = {
   regions: rollupTier(p => regionDisplayName[p.region] || null),
 };
 
+// geography display-name dictionaries, trimmed to the tiers the shipped provinces reference.
+// Provinces carry only raw keys; the client resolves crumb names through these (see core.provGeo).
+const usedRegions = new Set(provinces.map(p => p.region).filter(Boolean));
+const usedAreas = new Set(provinces.map(p => p.area).filter(Boolean));
+const usedContinents = new Set(provinces.map(p => p.continent).filter(Boolean));
+const pickKeys = (src, keys) => Object.fromEntries([...keys].filter(k => src[k] != null).map(k => [k, src[k]]));
+const geoNames = {
+  continent: pickKeys(CONTINENT_NAME, usedContinents),
+  region: pickKeys(regionDisplayName, usedRegions),
+  area: pickKeys(areaDisplayName, usedAreas),
+  superByRegion: pickKeys(srNameByRegion, usedRegions),      // region key -> super-region display name
+  superKeyByRegion: pickKeys(srKeyByRegion, usedRegions),    // region key -> super-region raw key
+};
+
+// the political layer is split into web/political.js, fetched lazily on first switch to Political
+// mode — World/Caravan never pay for it. Tables trimmed to the tags/keys owned provinces reference;
+// controller shipped only when it differs from owner (occupation), else the client defaults it.
+const shippedRaw = [...shipped].map(id => byId.get(id)).filter(Boolean);
+const pickBy = (src, keys) => { const o = {}; for (const k of keys) if (k && src[k] && !o[k]) o[k] = src[k]; return o; };
+const political = {
+  countries: pickBy(countryByTag, shippedRaw.map(p => p.owner)),
+  cultures: pickBy(cultureByKey, shippedRaw.map(p => p.culture)),
+  religions: pickBy(religionByKey, shippedRaw.map(p => p.religion)),
+  provinces: shippedRaw.filter(p => p.owner || p.culture || p.religion).map(p => ({
+    id: p.id, o: p.owner || null,
+    ct: (p.controller && p.controller !== p.owner) ? p.controller : null,
+    c: p.culture || null, r: p.religion || null,
+  })),
+};
+fs.writeFileSync(path.join(WEB, 'political.js'), `window.POLITICAL = ${JSON.stringify(political)};\n`);
+
 const bundle = {
   meta: {
     seed: +SEED, scenario,
@@ -199,6 +234,7 @@ const bundle = {
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
   provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, foam, ice, bonusIcons, trees, seaBands, geo,
+  geoNames,                           // raw-key -> display-name dictionaries for province crumbs
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
 };
 
@@ -208,7 +244,8 @@ const terrainBytes = map.bytes; delete map.bytes;
 const dataJs = `window.BUNDLE = ${JSON.stringify(bundle)};\n`;
 fs.writeFileSync(path.join(WEB, 'data.js'), dataJs);
 
-console.log(`Built web/data.js (${(dataJs.length / 1024).toFixed(0)} KB) + web/${map.src} (${(terrainBytes / 1024).toFixed(0)} KB) from seed ${SEED}`);
+const politicalKb = (fs.statSync(path.join(WEB, 'political.js')).size / 1024).toFixed(0);
+console.log(`Built web/data.js (${(dataJs.length / 1024).toFixed(0)} KB) + web/political.js (${politicalKb} KB, lazy) + web/${map.src} (${(terrainBytes / 1024).toFixed(0)} KB) from seed ${SEED}`);
 console.log(`  ${journeys.length} journeys · ${provinces.length} provinces · ${bundle.meta.dateStart} → ${bundle.meta.dateEnd}`);
 console.log(`  terrain crop ${map.dw}×${map.dh}px`);
 console.log(`  geo labels: ${geo.continents.length} continents · ${geo.superRegions.length} super-regions · ${geo.regions.length} regions`);
