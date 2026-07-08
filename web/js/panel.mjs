@@ -145,6 +145,11 @@ heatKey.innerHTML=`<div class="lg-h">Caravan-days · shading</div><div class="hk
 legend.appendChild(heatKey);
 
 // ---- heat toggle ----
+// ---- a small reusable spinner for secondary async loads ----
+const spinnerEl=document.getElementById("spinner");
+function showSpinner(text){ if(!spinnerEl) return; spinnerEl.querySelector(".sp-txt").textContent = text||"Loading…"; spinnerEl.hidden=false; }
+function hideSpinner(){ if(spinnerEl) spinnerEl.hidden=true; }
+
 // ---- political legend (Nations / Cultures / Religions) ----
 const polLegend=document.getElementById("polLegend");
 // per-overlay province coverage counts (key -> #provinces), cached until the overlay changes;
@@ -428,7 +433,11 @@ function setOverlay(ov){
   S.selectedProv = null;                            // start each overlay on its own overview
   showRail(cara);                                   // caravan opens the panel on its overview; others start collapsed
   updateSearchContext();                            // the search box searches provinces / nations / cultures / faiths
-  if (pol) ensurePolitical().then(() => { renderPolLegend(); renderRail(); draw(); }).catch(()=>{});
+  if (pol) {
+    if (!politicalLoaded) showSpinner("Loading political data…");   // the lazy political.js fetch
+    ensurePolitical().then(() => { hideSpinner(); renderPolLegend(); renderRail(); draw(); })
+      .catch(() => hideSpinner());
+  }
   renderRail(); draw();
 }
 // ---- province detail: the full-information sidebar for a selected province ----

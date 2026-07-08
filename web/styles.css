@@ -101,6 +101,23 @@ body {
 @keyframes ld-slide { to { left: 100%; } }
 @media (prefers-reduced-motion: reduce) { #loading .ld-bar::after { animation: none; left: 0; width: 100%; opacity: .5; } }
 
+/* a small reusable spinner pill for secondary async loads (e.g. the lazy political.js fetch) */
+#spinner {
+  position: fixed; top: calc(var(--bar-h, 52px) + 12px); left: 50%; transform: translateX(-50%);
+  z-index: 20; display: flex; align-items: center; gap: 8px; padding: 6px 13px 6px 11px;
+  border-radius: 20px; background: color-mix(in srgb, #141a26 82%, transparent);
+  backdrop-filter: blur(8px); border: 1px solid #232c3c; box-shadow: 0 6px 20px rgba(0,0,0,.35);
+  font-size: 12px; color: #cdd6e4;
+}
+#spinner[hidden] { display: none; }
+.sp-ring {
+  width: 14px; height: 14px; border-radius: 50%; flex: none;
+  border: 2px solid rgba(190,205,230,.25); border-top-color: #e6b04a;
+  animation: sp-rot .7s linear infinite;
+}
+@keyframes sp-rot { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sp-ring { animation-duration: 1.6s; } }
+
 /* ---------- MAP ---------- */
 /* the map hero stays dark in both UI themes — the baked terrain is dark-tinted,
    so the letterbox void around it is a matching near-black, and everything laid
