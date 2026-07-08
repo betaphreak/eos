@@ -124,6 +124,14 @@ canvas#map { position: absolute; inset: 0; width: 100%; height: 100%; display: b
 .legrow .dot { width: 11px; height: 3px; border-radius: 2px; flex: none; }
 .legrow.reset { color: var(--ink-faint); }
 .legrow .km { margin-left: auto; font-size: 11px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+/* political legend: a coverage-ranked, scrollable swatch list (Nations/Cultures/Religions) */
+#polLegend { max-width: 230px; }
+#polLegend .leg-scroll { display: flex; flex-direction: column; gap: 1px; margin-top: 2px;
+  max-height: 42vh; overflow-y: auto; overscroll-behavior: contain; }
+#polLegend .leg-scroll::-webkit-scrollbar { width: 7px; }
+#polLegend .leg-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; flex: none; }
+.legrow .leg-nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .heatkey { margin-top: 5px; padding-top: 7px; border-top: 1px solid var(--line-soft); }
 .hk-bar { height: 8px; border-radius: 4px; margin-top: 2px;
   background: linear-gradient(90deg, rgba(236,178,96,.30), rgba(228,96,56,.95)); }

@@ -26,7 +26,7 @@ function drawLabels() {
     }
   };
   const F1="600 12px system-ui,'Segoe UI',sans-serif", F2="500 10.5px system-ui,'Segoe UI',sans-serif";
-  if (S.mode === "caravan") {
+  if (S.overlay === "caravan") {
     label(BUNDLE.meta.origin.name, px(BUNDLE.meta.origin.lon), py(BUNDLE.meta.origin.lat),
       { font:F1, size:12, color:cssVar("--accent") });
     J.forEach(j => {
@@ -46,7 +46,7 @@ function drawLabels() {
         if (p.type!=="LAND") continue;
         // origin/destinations carry their own journey labels in Caravan mode; in World mode
         // they are ordinary provinces and get named like the rest
-        if (S.mode==="caravan" && (p.id===BUNDLE.meta.origin.id || destSet.has(p.id))) continue;
+        if (S.overlay==="caravan" && (p.id===BUNDLE.meta.origin.id || destSet.has(p.id))) continue;
         const x = px(p.lon), y = py(p.lat);
         if (x < -40 || y < -20 || x > VIEW.w+40 || y > VIEW.h+20) continue;   // cull to viewport
         inView.push({ p, x, y });

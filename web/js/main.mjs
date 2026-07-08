@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, polOf, lerp, latAtScreenY, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, J, heatColor, provPath, px, py, journeyPos, lerpField, fmtInt, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, polOf, isPolitical, lerp, latAtScreenY, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
@@ -129,16 +129,16 @@ function renderScene() {
   // choropleth: a full caravan-days overview while zoomed out, but once the terrain
   // plots/textures show (cam.k >= K_PLOT) only the hovered province is shaded — the
   // static heat would otherwise hide the real terrain colours under it.
-  if (S.showHeat && S.mode === "caravan") {
+  if (S.showHeat && S.overlay === "caravan") {
     if (cam.k < K_PLOT) { for (const p of P) if (p.rings && p.days) { ctx.fillStyle=heatColor(p.days); ctx.fill(provPath(p)); } }
     else if (S.hoverProv && S.hoverProv.rings && S.hoverProv.days) { ctx.fillStyle=heatColor(S.hoverProv.days); ctx.fill(provPath(S.hoverProv)); }
   }
   // political choropleth: province fills coloured by the active dimension (nation / culture /
-  // religion — S.polBy, via polOf), zoom-banded so the map yields to the physical terrain as you
+  // religion — S.overlay, via polOf), zoom-banded so the map yields to the physical terrain as you
   // dive in. Below K_PLOT it is a full-opacity overview; through K_PLOT→K_TEX the fill fades as the
   // terrain plots appear; past K_TEX only coloured borders remain (plus the hovered province),
   // letting the per-plot terrain read underneath. Provinces with no value for the dimension never fill.
-  if (S.mode === "political") {
+  if (isPolitical()) {
     if (cam.k < K_TEX) {
       const a = cam.k < K_PLOT ? 0.58
         : lerp(0.5, 0.15, (cam.k - K_PLOT) / (K_TEX - K_PLOT));
@@ -154,6 +154,15 @@ function renderScene() {
       }
       const hi = S.hoverProv, he = hi && hi.rings && polOf(hi).e;
       if (he) { ctx.fillStyle = hexA(he.color, 0.35); ctx.fill(provPath(hi)); }
+    }
+    // spotlight one polity (hovered in the legend / picked from search): brighten its provinces
+    if (S.polHi) {
+      ctx.save(); ctx.lineWidth = 2;
+      for (const p of P) if (p.rings && polOf(p).key === S.polHi) {
+        ctx.fillStyle = "rgba(255,255,255,.16)"; ctx.fill(provPath(p));
+        ctx.strokeStyle = "#fff"; ctx.stroke(provPath(p));
+      }
+      ctx.restore();
     }
   }
   // province outlines
@@ -178,8 +187,8 @@ function renderScene() {
     ctx.strokeStyle=cssVar("--accent")||"#e8b76a"; ctx.lineWidth=2; ctx.stroke();
   }
 
-  // caravan overlay (routes, origin, moving bands) — only in Caravan mode
-  if (S.mode === "caravan") {
+  // caravan overlay (routes, origin, moving bands) — only in Caravan overlay
+  if (S.overlay === "caravan") {
   // routes (dim when another is selected), with a soft shadow to read over terrain
   J.forEach(j => {
     const dim = S.selected!==null && S.selected!==j.idx;

@@ -1,4 +1,4 @@
-import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, S } from "./core.mjs";
+import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, S } from "./core.mjs";
 import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
 import { loadPlots, bonusIconRect } from "./plots.mjs";
 stage.addEventListener("wheel", e => {
@@ -145,11 +145,41 @@ heatKey.innerHTML=`<div class="lg-h">Caravan-days · shading</div><div class="hk
 legend.appendChild(heatKey);
 
 // ---- heat toggle ----
-const polByToggle=document.getElementById("polByToggle");
-// Political-mode colour dimension (nation/culture/faith) — only meaningful while the layer is loaded
-function setPolBy(by){
-  S.polBy = by;
-  polByToggle.querySelectorAll("button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.polby===by));
+// ---- political legend (Nations / Cultures / Religions) ----
+const polLegend=document.getElementById("polLegend");
+// per-overlay province coverage counts (key -> #provinces), cached until the overlay changes;
+// shared by the legend and the entity search so neither rescans P on every keystroke
+let _cov = { overlay: null, map: null };
+function coverage(){
+  if (_cov.overlay === S.overlay && _cov.map) return _cov.map;
+  const m = new Map();
+  for (const p of P){ const k = polOf(p).key; if (k) m.set(k, (m.get(k)||0)+1); }
+  _cov = { overlay: S.overlay, map: m };
+  return m;
+}
+const polTable=()=> S.overlay==="culture"?CULTURES : S.overlay==="faith"?RELIGIONS : COUNTRIES;
+function renderPolLegend(){
+  if (!isPolitical()){ polLegend.hidden = true; return; }
+  const table = polTable(), cov = coverage();
+  const rows = [...cov.entries()].filter(([k])=>table[k]).sort((a,b)=> b[1]-a[1] || table[a[0]].name.localeCompare(table[b[0]].name));
+  const title = S.overlay==="culture"?"Cultures" : S.overlay==="faith"?"Religions" : "Nations";
+  let html = `<div class="lg-h">${title} · ${rows.length}</div><div class="leg-scroll">`;
+  for (const [k,n] of rows){ const e = table[k];
+    html += `<button class="legrow" data-key="${k}"><span class="sw" style="background:${e.color}"></span><span class="leg-nm">${e.name}</span><span class="km">${n}</span></button>`;
+  }
+  polLegend.innerHTML = html + `</div>`;
+  polLegend.hidden = false;
+  polLegend.querySelectorAll(".legrow").forEach(b=>{
+    b.addEventListener("mouseenter", ()=>{ S.polHi = b.dataset.key; draw(); });
+    b.addEventListener("mouseleave", ()=>{ if(S.polHi===b.dataset.key){ S.polHi=null; draw(); } });
+    b.addEventListener("click", ()=> focusEntity(b.dataset.key));
+  });
+}
+// frame a polity: focus its largest province and keep it spotlighted
+function focusEntity(key){
+  let best=null; for (const p of P) if (polOf(p).key===key && p.rings && (!best || p.plots>best.plots)) best=p;
+  S.polHi = key;
+  if (best){ camBeforeFocus = { ...cam }; focusProvinceFit(best.id); }
   draw();
 }
 const heatBtn=document.getElementById("heatBtn");
@@ -234,6 +264,23 @@ function resourceLabel(q){
   return null;
 }
 const prettyKey = t => t.replace(/^(BONUS|FEATURE)_/,"").toLowerCase().replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+// hover tooltip body — the info shown depends on the active overlay: physical (region · plots),
+// political (the active dimension + region), or caravan (region · caravan-days)
+function provTip(best){
+  const reg = (best.region||"—").replace(/_/g," ").replace(" region","");
+  let h = `<b>${best.name}</b> <span class="r">${best.type.toLowerCase()}</span>`;
+  if (isPolitical()){
+    const e = polOf(best).e;
+    const label = S.overlay==="culture"?"Culture" : S.overlay==="faith"?"Faith" : "Nation";
+    h += `<br><span class="r">${e ? `<span class="dot" style="background:${e.color}"></span>${label} · ${e.name}` : `${label} · —`}</span>`
+       + `<br><span class="r">${reg}</span>`;
+  } else if (S.overlay==="caravan"){
+    h += `<br><span class="r">${reg}${best.days?` · ${best.days} caravan-days`:""}</span>`;
+  } else {
+    h += `<br><span class="r">${reg} · ${best.plots} plots</span>`;
+  }
+  return h;
+}
 stage.addEventListener("mousemove", e=>{
   if(S.dragging) return;                       // panning — skip hover work
   const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
@@ -241,12 +288,7 @@ stage.addEventListener("mousemove", e=>{
   const hit = plotAt(mx, my);                   // resourced plot under cursor (texture zoom)
   const res = hit ? resourceLabel(hit) : null;
   if(best || res){ S.hoverProv=best;
-    let html = "";
-    if(best) html = `<b>${best.name}</b> <span class="r">${best.type.toLowerCase()}</span><br><span class="r">${(best.region||"—").replace(/_/g," ").replace(" region","")} · ${best.plots} plots${best.days?` · ${best.days} caravan-days`:""}</span>`;
-    if(best && S.mode==="political"){                     // active dimension (nation/culture/faith)
-      const e = polOf(best).e;
-      html += `<br><span class="r">${e ? `<span class="dot" style="background:${e.color}"></span>${e.name}` : "—"}</span>`;
-    }
+    let html = best ? provTip(best) : "";
     if(res) html += `${best?"<br>":""}<span class="r">◆ ${res}</span>`;
     tip.innerHTML=html;
     tip.style.left=Math.min(mx+14, r.width-230)+"px"; tip.style.top=(my+14)+"px"; tip.classList.add("on");
@@ -258,7 +300,7 @@ stage.addEventListener("click", e=>{
   if(panMoved){ panMoved=false; return; }    // this "click" was the end of a drag
   const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
   // in caravan mode a click near a route's current marker selects that journey
-  if (S.mode==="caravan") {
+  if (S.overlay==="caravan") {
     let best=null,bd=1e9;
     J.forEach(j=>{ const d=j.keys[j.keys.length-1]; const dx=px(d.lon)-mx,dy=py(d.lat)-my,dd=dx*dx+dy*dy; if(dd<bd){bd=dd;best=j;} });
     if(best && bd<160){ selectJourney(S.selected===best.idx?null:best.idx); return; }
@@ -367,18 +409,26 @@ function applyPolitical(POL){
     p.owner = r.o; p.controller = r.ct || r.o; p.culture = r.c; p.religion = r.r;
   }
 }
-// show/hide the caravan-only chrome for a mode
-function setMode(m){
-  S.mode = m;
-  document.querySelectorAll("#modeToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.mode===m));
-  const cara = m === "caravan";
-  legend.style.display = cara ? "" : "none";
+// the map plane (Overworld/Underworld) — the physical base; Underworld has no data yet
+function setPlane(pl){
+  S.plane = pl;
+  document.querySelectorAll("#planeToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.plane===pl));
+  draw();
+}
+// the overlay (None / Nation / Culture / Faith / Caravan) — one at a time over the active plane
+function setOverlay(ov){
+  S.overlay = ov;
+  document.querySelectorAll("#overlayToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.ov===ov));
+  const cara = ov === "caravan", pol = isPolitical();
+  legend.style.display = cara ? "" : "none";       // caravan journey legend
   heatBtn.style.display = cara ? "" : "none";
-  polByToggle.hidden = m !== "political";       // the nation/culture/faith sub-toggle is political-only
-  if (!cara) { pause(); S.selected = null; }   // the timeline stays visible in the bottom bar (all modes)
-  S.selectedProv = null;             // start each mode on its own overview
-  showRail(cara);                    // caravan mode opens the panel on its overview; world starts collapsed
-  if (m === "political") ensurePolitical().then(() => { renderRail(); draw(); }).catch(()=>{});
+  polLegend.hidden = !pol;                          // political legend (rebuilt once the layer loads)
+  S.polHi = null;
+  if (!cara) { pause(); S.selected = null; }        // the timeline stays visible in the bottom bar (all overlays)
+  S.selectedProv = null;                            // start each overlay on its own overview
+  showRail(cara);                                   // caravan opens the panel on its overview; others start collapsed
+  updateSearchContext();                            // the search box searches provinces / nations / cultures / faiths
+  if (pol) ensurePolitical().then(() => { renderPolLegend(); renderRail(); draw(); }).catch(()=>{});
   renderRail(); draw();
 }
 // ---- province detail: the full-information sidebar for a selected province ----
@@ -485,11 +535,11 @@ function provinceRail(p) {
       ${politicsBlock(p)}
       ${terrainHtml}
     </div>`;
-  document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; showRail(S.mode==="caravan"); renderRail(); draw(); };
+  document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; showRail(S.overlay==="caravan"); renderRail(); draw(); };
 }
 function renderRail(){
   if (S.selectedProv) { provinceRail(S.selectedProv); return; }
-  if (S.mode === "world") { rail.innerHTML = worldRail(); return; }
+  if (S.overlay !== "caravan") { rail.innerHTML = worldRail(); return; }
   if(S.selected===null){
     const rows = J.map(j=>`<tr class="click" data-idx="${j.idx}">
         <td><div class="destcell"><span class="dot" style="background:${j.color}"></span>${j.dest}</div></td>
@@ -626,46 +676,79 @@ function closePanel() {
   return !!acted;
 }
 document.getElementById("railClose").onclick = closePanel;
+// the search context follows the overlay: an entity search (nation/culture/faith) or, by default
+// (physical / caravan), the province search
+function overlayEntity() {
+  if (S.overlay === "nation")  return { table: COUNTRIES, kind: "nation",  ph: "Find a nation…" };
+  if (S.overlay === "culture") return { table: CULTURES,  kind: "culture", ph: "Find a culture…" };
+  if (S.overlay === "faith")   return { table: RELIGIONS, kind: "faith",   ph: "Find a religion…" };
+  return null;
+}
+function updateSearchContext() {
+  const e = overlayEntity();
+  searchInput.placeholder = e ? e.ph : "Find a province…";
+  if (searchInput.value.trim()) runSearch(searchInput.value);
+  else { searchResults.hidden = true; searchMatches = []; }
+}
 function runSearch(raw) {
   const q = raw.trim().toLowerCase();
   searchClear.hidden = !q;
   if (!q) { searchResults.hidden = true; searchMatches = []; return; }
-  const isNum = /^\d+$/.test(q);
-  const scored = [];
-  for (const p of P) {
-    if (p.type !== "LAND") continue;
-    let score = -1;
-    if (isNum) { const ids = String(p.id); if (ids === q) score = 100; else if (ids.startsWith(q)) score = 55; }
-    if (score < 0) {
-      const name = p.name.toLowerCase();
-      if (name === q) score = 90; else if (name.startsWith(q)) score = 70; else if (name.includes(q)) score = 40;
+  const ent = overlayEntity();
+  if (ent) {                                          // search nations / cultures / religions
+    if (!Object.keys(ent.table).length) {             // political layer still loading
+      searchMatches = []; searchResults.innerHTML = `<div class="search-empty">Loading…</div>`;
+      searchResults.hidden = false; return;
     }
-    if (score >= 0) scored.push({ p, score });
+    const cov = coverage(), scored = [];
+    for (const [key, e] of Object.entries(ent.table)) {
+      const name = e.name.toLowerCase(); let score = -1;
+      if (name === q) score = 90; else if (name.startsWith(q)) score = 70; else if (name.includes(q)) score = 40;
+      if (score >= 0) scored.push({ kind: ent.kind, key, name: e.name, color: e.color, n: cov.get(key) || 0, score });
+    }
+    scored.sort((a, b) => b.score - a.score || b.n - a.n || a.name.localeCompare(b.name));
+    searchMatches = scored.slice(0, 12);
+  } else {                                            // province search (by name or id)
+    const isNum = /^\d+$/.test(q), scored = [];
+    for (const p of P) {
+      if (p.type !== "LAND") continue;
+      let score = -1;
+      if (isNum) { const ids = String(p.id); if (ids === q) score = 100; else if (ids.startsWith(q)) score = 55; }
+      if (score < 0) { const name = p.name.toLowerCase(); if (name === q) score = 90; else if (name.startsWith(q)) score = 70; else if (name.includes(q)) score = 40; }
+      if (score >= 0) scored.push({ p, score });
+    }
+    scored.sort((a, b) => b.score - a.score || b.p.plots - a.p.plots || a.p.name.localeCompare(b.p.name));
+    searchMatches = scored.slice(0, 12).map(s => ({ kind: "province", p: s.p }));
   }
-  scored.sort((a, b) => b.score - a.score || b.p.plots - a.p.plots || a.p.name.localeCompare(b.p.name));
-  searchMatches = scored.slice(0, 12).map(s => s.p);
   searchActive = searchMatches.length ? 0 : -1;
   renderSearchResults();
 }
 function renderSearchResults() {
   if (!searchMatches.length) {
-    searchResults.innerHTML = `<div class="search-empty">No province matches.</div>`;
+    searchResults.innerHTML = `<div class="search-empty">No matches.</div>`;
     searchResults.hidden = false; return;
   }
-  searchResults.innerHTML = searchMatches.map((p, i) => {
-    const reg = (provGeo(p).region || [])[0] || "";
-    return `<div class="search-row${i === searchActive ? " active" : ""}" role="option" data-i="${i}">
-      <span class="sr-name">${p.name}</span><span class="sr-id">#${p.id}</span>
-      <span class="sr-meta">${reg}</span></div>`;
+  searchResults.innerHTML = searchMatches.map((m, i) => {
+    const act = i === searchActive ? " active" : "";
+    if (m.kind === "province") {
+      const reg = (provGeo(m.p).region || [])[0] || "";
+      return `<div class="search-row${act}" role="option" data-i="${i}">
+        <span class="sr-name">${m.p.name}</span><span class="sr-id">#${m.p.id}</span>
+        <span class="sr-meta">${reg}</span></div>`;
+    }
+    return `<div class="search-row${act}" role="option" data-i="${i}">
+      <span class="sw" style="background:${m.color}"></span><span class="sr-name">${m.name}</span>
+      <span class="sr-meta">${m.n} prov</span></div>`;
   }).join("");
   searchResults.hidden = false;
   searchResults.querySelectorAll(".search-row").forEach(row =>
     row.addEventListener("mousedown", e => { e.preventDefault(); pickSearch(+row.dataset.i); }));
 }
 function pickSearch(i) {
-  const p = searchMatches[i]; if (!p) return;
+  const m = searchMatches[i]; if (!m) return;
   searchResults.hidden = true; searchInput.blur();
-  goToProvince(p);
+  if (m.kind === "province") { goToProvince(m.p); return; }
+  focusEntity(m.key);                                 // zoom to the polity's largest province + spotlight it
 }
 searchInput.addEventListener("input", () => runSearch(searchInput.value));
 searchInput.addEventListener("focus", () => { if (searchInput.value.trim()) runSearch(searchInput.value); });
@@ -681,11 +764,17 @@ searchInput.addEventListener("keydown", e => {
   else if (e.key === "Enter") { e.preventDefault(); if (searchActive >= 0) pickSearch(searchActive); }
 });
 searchClear.addEventListener("click", () => { searchInput.value = ""; runSearch(""); searchInput.focus(); });
-// ---- mode toggle ----
-document.querySelectorAll("#modeToggle button").forEach(b =>
-  b.addEventListener("click", () => setMode(b.dataset.mode)));
-polByToggle.querySelectorAll("button").forEach(b =>
-  b.addEventListener("click", () => setPolBy(b.dataset.polby)));
+// ---- plane + overlay toggles ----
+document.querySelectorAll("#planeToggle button").forEach(b =>
+  b.addEventListener("click", () => setPlane(b.dataset.plane)));
+document.querySelectorAll("#overlayToggle button").forEach(b =>
+  b.addEventListener("click", () => setOverlay(b.dataset.ov)));
+// top-bar buttons carry data-tip too — wire them into the same tooltip mechanism as the map buttons
+document.querySelectorAll(".topbar [data-tip]").forEach(el => {
+  el.addEventListener("mouseenter", () => { clearTimeout(tipTimer); tipTimer = setTimeout(() => showBtnTip(el), 320); });
+  el.addEventListener("mouseleave", hideBtnTip);
+  el.addEventListener("mousedown", hideBtnTip);
+});
 
 export { renderRail };
 
@@ -693,9 +782,10 @@ export function boot() {
   window.addEventListener("resize", resize);
   resize();
   setT(t0);
-  setMode(S.mode);            // paints the rail + chrome for the active mode (default: world)
+  setPlane(S.plane);          // paints the plane toggle
+  setOverlay(S.overlay);      // paints the overlay chrome/rail (default: none → plain Overworld)
   // apply the ?p=/#p= deep link AFTER first layout — focusProvince needs a sized VIEW, so calling
   // it inline at boot (before the stage has laid out) silently no-ops
   requestAnimationFrame(() => requestAnimationFrame(applyHash));
-  if (S.mode === "caravan" && !reduce && !hasDeepLink()) setTimeout(play, 650);
+  if (S.overlay === "caravan" && !reduce && !hasDeepLink()) setTimeout(play, 650);
 }

@@ -71,13 +71,18 @@ function provGeo(p) {
     area: area ? [GEO_NAMES.area?.[area] || null, area] : null,
   };
 }
-// the active political dimension for a province in Political mode (S.polBy): its raw key + the
-// {name, color} table entry, or a null entry when the province has no value for that dimension
+// whether the active overlay is a political colouring (nation/culture/faith)
+function isPolitical() {
+  return S.overlay === "nation" || S.overlay === "culture" || S.overlay === "faith";
+}
+// the active political dimension for a province under the current overlay: its raw key + the
+// {name, color} table entry, or a null entry when the overlay isn't political / the province has none
 function polOf(p) {
-  switch (S.polBy) {
-    case "culture":  return { key: p.culture,  e: p.culture  && CULTURES[p.culture] };
-    case "religion": return { key: p.religion, e: p.religion && RELIGIONS[p.religion] };
-    default:         return { key: p.owner,    e: p.owner    && COUNTRIES[p.owner] };
+  switch (S.overlay) {
+    case "nation":  return { key: p.owner,    e: p.owner    && COUNTRIES[p.owner] };
+    case "culture": return { key: p.culture,  e: p.culture  && CULTURES[p.culture] };
+    case "faith":   return { key: p.religion, e: p.religion && RELIGIONS[p.religion] };
+    default:        return { key: null, e: null };
   }
 }
 const LY = BUNDLE.terrainLayer || {};   // TERRAIN_* -> Civ4 LayerOrder (higher bleeds over lower)
@@ -166,9 +171,13 @@ export const S = {
   viewVersion: 0,        // per-world-copy cache key derived from baseVersion in draw()
   showHeat: true,
   showCost: false,
-  mode: /caravan/.test(location.hash) ? "caravan"
-    : /political/.test(location.hash) ? "political" : "world",
-  polBy: "owner",        // Political-mode colour dimension: "owner" | "culture" | "religion"
+  // the map plane (exclusive base) and the overlay (one at a time), from the URL hash for deep links
+  plane: /underworld/.test(location.hash) ? "underworld" : "overworld",
+  overlay: /caravan/.test(location.hash) ? "caravan"
+    : /nation|political/.test(location.hash) ? "nation"
+    : /culture/.test(location.hash) ? "culture"
+    : /faith|religion/.test(location.hash) ? "faith" : "none",
+  polHi: null,           // a nation/culture/faith key to spotlight on the map (legend/search hover)
   hoverProv: null,
   dragging: false,       // mid-pan (drawPlots skips textures while panning)
   selected: null,        // journey idx or null
@@ -177,4 +186,4 @@ export const S = {
 };
 S.curT = t0;
 
-export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };
+export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };
