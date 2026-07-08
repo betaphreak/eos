@@ -3,7 +3,7 @@
 // coloured by the active dimension (core.polOf / S.overlay), zoom-banded so the map yields to the
 // physical terrain as you dive in, plus the legend/search spotlight. The chrome (legend, entity
 // search, sidebar Politics block) lives in panel.mjs; this module owns only the canvas render.
-import { ctx, cam, P, provPath, polOf, isPolitical, COUNTRIES, CULTURES, RELIGIONS, K_PLOT, K_TEX, lerp, VIEW, provSrcBox, pxr, pyr, worldW, S } from "../core.mjs";
+import { ctx, cam, P, provPath, provOnScreen, polOf, isPolitical, COUNTRIES, CULTURES, RELIGIONS, K_PLOT, K_TEX, lerp, VIEW, provSrcBox, pxr, pyr, worldW, S } from "../core.mjs";
 import { draw, focusProvinceFit } from "../main.mjs";
 
 // "#rrggbb" + alpha -> an rgba() string, memoised (the nation/culture/faith fills)
@@ -22,13 +22,13 @@ export function drawPolitical() {
   if (cam.k < K_TEX) {
     const a = cam.k < K_PLOT ? 0.58
       : lerp(0.5, 0.15, (cam.k - K_PLOT) / (K_TEX - K_PLOT));
-    for (const p of P) if (p.rings) {
+    for (const p of P) if (p.rings && provOnScreen(p)) {
       const e = polOf(p).e;
       if (e) { ctx.fillStyle = hexA(e.color, a); ctx.fill(provPath(p)); }
     }
   } else {
     ctx.lineWidth = 1.4;
-    for (const p of P) if (p.rings) {
+    for (const p of P) if (p.rings && provOnScreen(p)) {
       const e = polOf(p).e;
       if (e) { ctx.strokeStyle = hexA(e.color, 0.9); ctx.stroke(provPath(p)); }
     }
@@ -38,7 +38,7 @@ export function drawPolitical() {
   // spotlight one polity (hovered in the legend / picked from search): brighten its provinces
   if (S.polHi) {
     ctx.save(); ctx.lineWidth = 2;
-    for (const p of P) if (p.rings && polOf(p).key === S.polHi) {
+    for (const p of P) if (p.rings && provOnScreen(p) && polOf(p).key === S.polHi) {
       ctx.fillStyle = "rgba(255,255,255,.16)"; ctx.fill(provPath(p));
       ctx.strokeStyle = "#fff"; ctx.stroke(provPath(p));
     }

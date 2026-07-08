@@ -107,6 +107,30 @@ function provSrcBox(p) {
   }
   return p._sbox = { x0, y0, x1, y1 };
 }
+// viewport cull: whether a province's projected source-pixel bbox intersects the viewport at the
+// CURRENT camera. Non-wrap-aware by design — the callers that wrap (renderScene, provinceAt) already
+// shift the camera / cursor one world-copy at a time, so each pass tests against its own copy. The
+// bbox is cached (provSrcBox), so this is 4 transforms + compares. Ring-less provinces (no bbox) →
+// false. Mirrors the cull drawPlots already applies, now shared by the polygon layers.
+function provOnScreen(p) {
+  const box = provSrcBox(p);
+  if (!box) return false;
+  const ax = pxr(box.x0), bx = pxr(box.x1), ay = pyr(box.y0), by = pyr(box.y1);
+  return Math.max(ax, bx) >= 0 && Math.min(ax, bx) <= VIEW.w
+      && Math.max(ay, by) >= 0 && Math.min(ay, by) <= VIEW.h;
+}
+// whether screen point (sx,sy) lies within a province's projected bbox, optionally grown by `margin`
+// px. A cheap pre-filter for the hover hit-test: a bbox miss cannot be a polygon hit, so this culls
+// the expensive point-in-polygon / nearest-centroid scans to the few provinces actually under the
+// cursor. Projected at the current camera, exactly as the hit-test itself is, so it never changes the
+// result (a strict superset of the polygon test; margin covers the centroid pass's radius).
+function provBoxHas(p, sx, sy, margin = 0) {
+  const box = provSrcBox(p);
+  if (!box) return false;
+  const ax = pxr(box.x0), bx = pxr(box.x1), ay = pyr(box.y0), by = pyr(box.y1);
+  return sx >= Math.min(ax, bx) - margin && sx <= Math.max(ax, bx) + margin
+      && sy >= Math.min(ay, by) - margin && sy <= Math.max(ay, by) + margin;
+}
 const PLOT_INDEX = BUNDLE.plotIndex || {};       // {provId: [byteOffset, len]} into plots.pack
 const MAXD = BUNDLE.meta.maxDays;
 const lerp = (a,b,t) => a + (b-a)*t;
@@ -189,4 +213,4 @@ export const S = {
 };
 S.curT = t0;
 
-export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };
+export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };

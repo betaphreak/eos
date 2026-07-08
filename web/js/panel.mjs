@@ -1,4 +1,4 @@
-import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, clampPan, destSet, provGeo, polOf, isPolitical, S } from "./core.mjs";
+import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, provBoxHas, clampPan, destSet, provGeo, polOf, isPolitical, S } from "./core.mjs";
 import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
 import { loadPlots, bonusIconRect } from "./plots.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
@@ -210,14 +210,18 @@ function provinceAt(mx, my){
   const mMax = period>0 ? Math.floor((VIEW.w-L)/period) : 0;
   for(let m=mMin; m<=mMax; m++){
     const sx = mx - m*period;
-    for(const p of P){ if(p.rings && pointInProv(p, sx, my)) return p; }   // exact polygon hit
+    // cheap bbox pre-filter before the full point-in-polygon: a bbox miss can't be a polygon hit,
+    // so this skips all but the few provinces actually under the cursor (same projection space, so
+    // the result is identical). provBoxHas is a strict superset of pointInProv.
+    for(const p of P){ if(p.rings && provBoxHas(p, sx, my) && pointInProv(p, sx, my)) return p; }
   }
   let best=null, bd=1e9;                                                    // else nearest centroid
   for(let m=mMin; m<=mMax; m++){
     const sx = mx - m*period;
     // land + coastal sea/lake all carry rings now (they hover/select alike); a province with no
-    // outline (deep ocean, never shipped) has none and is skipped
-    for(const p of P){ if(!p.rings) continue; const dx=px(p.lon)-sx, dy=py(p.lat)-my, d=dx*dx+dy*dy; if(d<bd){bd=d;best=p;} }
+    // outline (deep ocean, never shipped) has none and is skipped. Only a province whose bbox
+    // (grown by the 9.5px centroid radius, √90) reaches the cursor can win, so cull by that first.
+    for(const p of P){ if(!p.rings || !provBoxHas(p, sx, my, 10)) continue; const dx=px(p.lon)-sx, dy=py(p.lat)-my, d=dx*dx+dy*dy; if(d<bd){bd=d;best=p;} }
   }
   return bd<90 ? best : null;
 }

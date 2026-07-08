@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, px, py, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, latAtScreenY, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, latAtScreenY, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 import { drawPolitical, scheduleLegendRefresh } from "./overlays/political.mjs";
@@ -140,7 +140,7 @@ function renderScene() {
   // sea gradient — tint each lake province's polygon a distinct green-teal over it so lakes read as
   // fresh water, not ocean. Uses the lake outlines now shipped in the bundle (docs/coastlines.md).
   ctx.save(); ctx.fillStyle = "rgba(74,150,128,0.42)";
-  for (const p of P) if (p.type === "LAKE" && p.rings) ctx.fill(provPath(p));
+  for (const p of P) if (p.type === "LAKE" && p.rings && provOnScreen(p)) ctx.fill(provPath(p));
   ctx.restore();
   drawPlots();   // crisp per-plot Civ4 terrain over the blurred raster when zoomed in
   drawCostOverlay();   // elevation movement-cost heat over the terrain, when toggled on
@@ -149,7 +149,7 @@ function renderScene() {
   if (isPolitical()) drawPolitical();                             // nation/culture/faith fills
   // province outlines
   ctx.strokeStyle="rgba(190,205,230,.18)"; ctx.lineWidth=0.8;
-  for (const p of P) if (p.rings) ctx.stroke(provPath(p));
+  for (const p of P) if (p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
   // hovered province highlight (polygon if we have one, else a centroid ring for seas)
   if (S.hoverProv && S.hoverProv.rings) {
     const hp = provPath(S.hoverProv);
