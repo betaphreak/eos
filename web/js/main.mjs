@@ -5,18 +5,28 @@ import { drawPolitical } from "./overlays/political.mjs";
 import { drawCaravanHeat, drawCaravan } from "./overlays/caravan.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
 // transparent so the sea layer below shows through, land is opaque.
-// loading screen: show a random Anbennar splash (1:1, viewport-cropped) until the map's first paint
+// loading screen: show a random Anbennar splash (1:1, stage-cropped) until the map's first paint,
+// held for at least MIN_LOADING_MS so a fast load doesn't flash the splash for a fraction of a second
 const loadEl = document.getElementById("loading");
+const loadStart = performance.now();
+const MIN_LOADING_MS = 3000;
+let loadingActive = false;
 if (loadEl) {
-  const art = loadEl.querySelector(".ld-art");
-  const set = BUNDLE.loading && BUNDLE.loading.length;
-  if (set) art.src = BUNDLE.loading[Math.floor(Math.random() * BUNDLE.loading.length)];
-  else loadEl.classList.add("gone");          // no art baked → don't block on an empty overlay
+  if (BUNDLE.loading && BUNDLE.loading.length) {
+    loadEl.querySelector(".ld-art").src = BUNDLE.loading[Math.floor(Math.random() * BUNDLE.loading.length)];
+    loadingActive = true;
+  } else {
+    loadEl.remove();                           // no art baked → no loading screen at all
+  }
 }
 function hideLoading() {
-  if (!loadEl) return;
-  loadEl.classList.add("gone");
-  setTimeout(() => loadEl.remove(), 700);      // after the fade
+  if (!loadingActive) return;
+  loadingActive = false;
+  const wait = Math.max(0, MIN_LOADING_MS - (performance.now() - loadStart));
+  setTimeout(() => {
+    loadEl.classList.add("gone");
+    setTimeout(() => loadEl.remove(), 700);    // after the fade
+  }, wait);
 }
 
 const mapImg = new Image();

@@ -78,11 +78,12 @@ body {
 }
 .topright { margin-left: auto; display: flex; align-items: center; gap: 8px; }   /* buttons + search, right-aligned */
 /* ---------- LOADING SCREEN ---------- */
-/* an Anbennar splash shown until the map's first paint. The art is displayed 1:1 and the viewport
-   crops it; it only scales up when the viewport is larger than the image (object-fit:cover on a box
-   that is >= the image keeps 100% and never distorts). */
+/* an Anbennar splash shown until the map's first paint. It lives inside .stage so it covers only the
+   MAP AREA — the top bar, timeline and rail (all above .stage's z-index:0 context) stay uncovered.
+   The art is displayed 1:1 and the stage crops it; it only scales up when the stage is larger than
+   the image (object-fit:cover on a box that is >= the image keeps 100% and never distorts). */
 #loading {
-  position: fixed; inset: 0; z-index: 1000; overflow: hidden;
+  position: absolute; inset: 0; z-index: 7; overflow: hidden;
   background: #0a0e16; display: grid; place-items: center;
   transition: opacity .6s ease;
 }
