@@ -75,7 +75,9 @@ public final class BonusGenerator {
 		ordered.sort(Comparator.comparingInt(Bonus::placementOrder));
 
 		for (Bonus b : ordered) {
-			if (!b.mapPlaced() || provinceSize < b.minAreaSize())
+			// skip un-placed resources, provinces too small, and anything revealed only in the
+			// industrial era or later — the map stays pre-industrial (no oil/coal/uranium/…)
+			if (!b.mapPlaced() || provinceSize < b.minAreaSize() || b.techEra() >= Bonus.ERA_INDUSTRIAL)
 				continue;
 			List<int[]> eligible = new ArrayList<>();
 			for (int[] c : cells) {
@@ -91,8 +93,9 @@ public final class BonusGenerator {
 			int pct = b.constAppearance();
 			for (int k = 0; k < 4; k++)
 				pct += rng.uniform(b.randApps()[k]);
-			int target = (int) Math.round(
-					DENSITY_SCALE * pct / 100.0 * (eligible.size() / (double) b.tilesPer()));
+			// sea resources are placed at half the land density (the shelves read too busy otherwise)
+			double density = DENSITY_SCALE * (water ? 0.5 : 1.0);
+			int target = (int) Math.round(density * pct / 100.0 * (eligible.size() / (double) b.tilesPer()));
 			if (target <= 0)
 				continue;
 

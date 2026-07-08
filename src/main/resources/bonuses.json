@@ -20,7 +20,8 @@
   "tilesPer" : 64,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_CORN",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -43,7 +44,8 @@
   "tilesPer" : 64,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_MELONS",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -66,7 +68,8 @@
   "tilesPer" : 72,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_POTATOES",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -89,7 +92,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_PUMPKIN",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -112,7 +116,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 14
+  "groupRand" : 14,
+  "techEra" : 0
 }, {
   "type" : "BONUS_RICE",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -135,7 +140,8 @@
   "tilesPer" : 64,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_SQUASH",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -158,7 +164,8 @@
   "tilesPer" : 72,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 14
+  "groupRand" : 14,
+  "techEra" : 0
 }, {
   "type" : "BONUS_WHEAT",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -181,7 +188,8 @@
   "tilesPer" : 16,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_ALMONDS",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -204,7 +212,8 @@
   "tilesPer" : 80,
   "minAreaSize" : 0,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_APPLE",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -227,7 +236,8 @@
   "tilesPer" : 200,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 14
+  "groupRand" : 14,
+  "techEra" : 0
 }, {
   "type" : "BONUS_BANANA",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -250,7 +260,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 20
+  "groupRand" : 20,
+  "techEra" : 0
 }, {
   "type" : "BONUS_COCONUT",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -273,7 +284,8 @@
   "tilesPer" : 24,
   "minAreaSize" : 0,
   "groupRange" : 2,
-  "groupRand" : 12
+  "groupRand" : 12,
+  "techEra" : 0
 }, {
   "type" : "BONUS_DATES",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -296,7 +308,8 @@
   "tilesPer" : 60,
   "minAreaSize" : 0,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_FIG",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -319,7 +332,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_GUAVAS",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -342,7 +356,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_LEMONS",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -365,7 +380,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 16
+  "groupRand" : 16,
+  "techEra" : 0
 }, {
   "type" : "BONUS_MANGO",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -388,7 +404,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_PAPAYA",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -411,7 +428,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_PISTACHIO",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -434,7 +452,8 @@
   "tilesPer" : 60,
   "minAreaSize" : 0,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_POMEGRANATE",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -457,7 +476,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 0,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_OLIVES",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -480,7 +500,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 16
+  "groupRand" : 16,
+  "techEra" : 0
 }, {
   "type" : "BONUS_RESIN",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -503,7 +524,8 @@
   "tilesPer" : 200,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_RUBBER",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -526,7 +548,8 @@
   "tilesPer" : 200,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_SPICES",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -549,7 +572,8 @@
   "tilesPer" : 144,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 14
+  "groupRand" : 14,
+  "techEra" : 0
 }, {
   "type" : "BONUS_HEMP",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -572,7 +596,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 16
+  "groupRand" : 16,
+  "techEra" : 0
 }, {
   "type" : "BONUS_COCA",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -595,7 +620,8 @@
   "tilesPer" : 156,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 16
+  "groupRand" : 16,
+  "techEra" : 0
 }, {
   "type" : "BONUS_COCOA",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -618,7 +644,8 @@
   "tilesPer" : 40,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_COFFEE",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -641,7 +668,8 @@
   "tilesPer" : 72,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 16
+  "groupRand" : 16,
+  "techEra" : 0
 }, {
   "type" : "BONUS_COTTON",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -664,7 +692,8 @@
   "tilesPer" : 72,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 16
+  "groupRand" : 16,
+  "techEra" : 0
 }, {
   "type" : "BONUS_FLAX",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -687,7 +716,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_HENNA",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -710,7 +740,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 16
+  "groupRand" : 16,
+  "techEra" : 0
 }, {
   "type" : "BONUS_INCENSE",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -733,7 +764,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 16
+  "groupRand" : 16,
+  "techEra" : 0
 }, {
   "type" : "BONUS_INDIGO",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -756,7 +788,8 @@
   "tilesPer" : 200,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 16
+  "groupRand" : 16,
+  "techEra" : 0
 }, {
   "type" : "BONUS_KAVA",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -779,7 +812,8 @@
   "tilesPer" : 50,
   "minAreaSize" : 1,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_PAPYRUS",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -802,7 +836,8 @@
   "tilesPer" : 72,
   "minAreaSize" : 3,
   "groupRange" : 2,
-  "groupRand" : 8
+  "groupRand" : 8,
+  "techEra" : 0
 }, {
   "type" : "BONUS_PEYOTE",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -825,7 +860,8 @@
   "tilesPer" : 30,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_PRICKLY_PEAR",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -848,7 +884,8 @@
   "tilesPer" : 30,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_OPIUM",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -871,7 +908,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 2,
-  "groupRand" : 8
+  "groupRand" : 8,
+  "techEra" : 0
 }, {
   "type" : "BONUS_SUGAR",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -894,7 +932,8 @@
   "tilesPer" : 64,
   "minAreaSize" : 3,
   "groupRange" : 2,
-  "groupRand" : 8
+  "groupRand" : 8,
+  "techEra" : 0
 }, {
   "type" : "BONUS_TEA",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -917,7 +956,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 2,
-  "groupRand" : 8
+  "groupRand" : 8,
+  "techEra" : 0
 }, {
   "type" : "BONUS_TOBACCO",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -940,7 +980,8 @@
   "tilesPer" : 64,
   "minAreaSize" : 3,
   "groupRange" : 2,
-  "groupRand" : 8
+  "groupRand" : 8,
+  "techEra" : 0
 }, {
   "type" : "BONUS_VANILLA",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -963,7 +1004,8 @@
   "tilesPer" : 64,
   "minAreaSize" : 3,
   "groupRange" : 2,
-  "groupRand" : 8
+  "groupRand" : 8,
+  "techEra" : 0
 }, {
   "type" : "BONUS_GRAPES",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -986,7 +1028,8 @@
   "tilesPer" : 80,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 16
+  "groupRand" : 16,
+  "techEra" : 0
 }, {
   "type" : "BONUS_MUSHROOMS",
   "bonusClass" : "BONUSCLASS_CROP",
@@ -1009,7 +1052,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 16
+  "groupRand" : 16,
+  "techEra" : 0
 }, {
   "type" : "BONUS_PRIME_TIMBER",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1032,7 +1076,8 @@
   "tilesPer" : 100,
   "minAreaSize" : 5,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_CAMEL",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1055,7 +1100,8 @@
   "tilesPer" : 16,
   "minAreaSize" : 4,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_COW",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1078,7 +1124,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 10
+  "groupRand" : 10,
+  "techEra" : 0
 }, {
   "type" : "BONUS_DONKEY",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1101,7 +1148,8 @@
   "tilesPer" : 100,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_HORSE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1124,7 +1172,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_LLAMA",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1147,7 +1196,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 4,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_PIG",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1170,7 +1220,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 10
+  "groupRand" : 10,
+  "techEra" : 0
 }, {
   "type" : "BONUS_SHEEP",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1193,7 +1244,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 10
+  "groupRand" : 10,
+  "techEra" : 0
 }, {
   "type" : "BONUS_BEAVERS",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1216,7 +1268,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 10
+  "groupRand" : 10,
+  "techEra" : 0
 }, {
   "type" : "BONUS_BISON",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1239,7 +1292,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_DEER",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1262,7 +1316,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 2,
   "groupRange" : 1,
-  "groupRand" : 10
+  "groupRand" : 10,
+  "techEra" : 0
 }, {
   "type" : "BONUS_ELEPHANTS",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1285,7 +1340,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_GUINEA_PIGS",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1308,7 +1364,8 @@
   "tilesPer" : 64,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_KANGAROO",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1331,7 +1388,8 @@
   "tilesPer" : 32,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 10
+  "groupRand" : 10,
+  "techEra" : 0
 }, {
   "type" : "BONUS_MAMMOTH",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1354,7 +1412,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 5,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_PARROTS",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1377,7 +1436,8 @@
   "tilesPer" : 100,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_POULTRY",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1400,7 +1460,8 @@
   "tilesPer" : 200,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 10
+  "groupRand" : 10,
+  "techEra" : 0
 }, {
   "type" : "BONUS_RABBIT",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1423,7 +1484,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_SEA_LION_AND_SEAL",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1446,7 +1508,8 @@
   "tilesPer" : 20,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_WALRUS",
   "bonusClass" : "BONUSCLASS_LIVESTOCK",
@@ -1469,7 +1532,8 @@
   "tilesPer" : 20,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_CLAM",
   "bonusClass" : "BONUSCLASS_SEAFOOD",
@@ -1492,7 +1556,8 @@
   "tilesPer" : 64,
   "minAreaSize" : 10,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_CRAB",
   "bonusClass" : "BONUSCLASS_SEAFOOD",
@@ -1515,7 +1580,8 @@
   "tilesPer" : 64,
   "minAreaSize" : 8,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_FISH",
   "bonusClass" : "BONUSCLASS_SEAFOOD",
@@ -1538,7 +1604,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 4,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_LOBSTER",
   "bonusClass" : "BONUSCLASS_SEAFOOD",
@@ -1561,7 +1628,8 @@
   "tilesPer" : 100,
   "minAreaSize" : 16,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_MUREX",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1584,7 +1652,8 @@
   "tilesPer" : 64,
   "minAreaSize" : 10,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_PEARLS",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1607,7 +1676,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 10,
   "groupRange" : 2,
-  "groupRand" : 8
+  "groupRand" : 8,
+  "techEra" : 0
 }, {
   "type" : "BONUS_SHRIMP",
   "bonusClass" : "BONUSCLASS_SEAFOOD",
@@ -1630,7 +1700,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 10,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_WHALE",
   "bonusClass" : "BONUSCLASS_SEAFOOD",
@@ -1653,7 +1724,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 32,
   "groupRange" : 2,
-  "groupRand" : 5
+  "groupRand" : 5,
+  "techEra" : 0
 }, {
   "type" : "BONUS_SILK",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1676,7 +1748,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 3,
   "groupRange" : 2,
-  "groupRand" : 10
+  "groupRand" : 10,
+  "techEra" : 0
 }, {
   "type" : "BONUS_AMBER",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1699,7 +1772,8 @@
   "tilesPer" : 200,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_BAUXITE_ORE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1722,7 +1796,8 @@
   "tilesPer" : 500,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 6
 }, {
   "type" : "BONUS_COAL",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1745,7 +1820,8 @@
   "tilesPer" : 400,
   "minAreaSize" : 4,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 3
 }, {
   "type" : "BONUS_COPPER_ORE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1768,7 +1844,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_DIAMOND",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1791,7 +1868,8 @@
   "tilesPer" : 200,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 1
 }, {
   "type" : "BONUS_GEODE",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1814,7 +1892,8 @@
   "tilesPer" : 20,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 4
 }, {
   "type" : "BONUS_GOLD_ORE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1837,7 +1916,8 @@
   "tilesPer" : 400,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 12
+  "groupRand" : 12,
+  "techEra" : 0
 }, {
   "type" : "BONUS_IRON_ORE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -1860,7 +1940,8 @@
   "tilesPer" : 400,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 1
 }, {
   "type" : "BONUS_LEAD_ORE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1883,7 +1964,8 @@
   "tilesPer" : 280,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 1
 }, {
   "type" : "BONUS_MANGANESE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1906,7 +1988,8 @@
   "tilesPer" : 200,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 4
 }, {
   "type" : "BONUS_PLATINUM_ORE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1929,7 +2012,8 @@
   "tilesPer" : 500,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 1
 }, {
   "type" : "BONUS_RUBIES",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1952,7 +2036,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 1
 }, {
   "type" : "BONUS_SAPPHIRES",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -1975,7 +2060,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 1
 }, {
   "type" : "BONUS_SILVER_ORE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -1998,7 +2084,8 @@
   "tilesPer" : 400,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 12
+  "groupRand" : 12,
+  "techEra" : 0
 }, {
   "type" : "BONUS_SULPHUR",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -2021,7 +2108,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 14
+  "groupRand" : 14,
+  "techEra" : 1
 }, {
   "type" : "BONUS_TIN_ORE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -2044,7 +2132,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_TITANIUM_ORE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -2067,7 +2156,8 @@
   "tilesPer" : 168,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 6
 }, {
   "type" : "BONUS_URANIUM",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -2090,7 +2180,8 @@
   "tilesPer" : 512,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 6
 }, {
   "type" : "BONUS_FINE_CLAY",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -2113,7 +2204,8 @@
   "tilesPer" : 80,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_JADE",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -2136,7 +2228,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 1,
-  "groupRand" : 16
+  "groupRand" : 16,
+  "techEra" : 0
 }, {
   "type" : "BONUS_MARBLE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -2159,7 +2252,8 @@
   "tilesPer" : 150,
   "minAreaSize" : 3,
   "groupRange" : 2,
-  "groupRand" : 5
+  "groupRand" : 5,
+  "techEra" : 0
 }, {
   "type" : "BONUS_NATRON",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -2182,7 +2276,8 @@
   "tilesPer" : 10,
   "minAreaSize" : 0,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 1
 }, {
   "type" : "BONUS_OBSIDIAN",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -2205,7 +2300,8 @@
   "tilesPer" : 280,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_SALT",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -2228,7 +2324,8 @@
   "tilesPer" : 80,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_STONE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -2251,7 +2348,8 @@
   "tilesPer" : 200,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_TURQUOISE",
   "bonusClass" : "BONUSCLASS_LUXURY",
@@ -2274,7 +2372,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 0
 }, {
   "type" : "BONUS_FOSSIL_BEDS",
   "bonusClass" : "BONUSCLASS_MISC",
@@ -2297,7 +2396,8 @@
   "tilesPer" : 256,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 4
 }, {
   "type" : "BONUS_HYDROTHERMAL_VENT",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -2320,7 +2420,8 @@
   "tilesPer" : 100,
   "minAreaSize" : 10,
   "groupRange" : 2,
-  "groupRand" : 6
+  "groupRand" : 6,
+  "techEra" : 6
 }, {
   "type" : "BONUS_METHANE_ICE",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -2343,7 +2444,8 @@
   "tilesPer" : 100,
   "minAreaSize" : 5,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 6
 }, {
   "type" : "BONUS_NATURAL_GAS",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -2366,7 +2468,8 @@
   "tilesPer" : 92,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 4
 }, {
   "type" : "BONUS_OIL",
   "bonusClass" : "BONUSCLASS_STRATEGIC",
@@ -2389,7 +2492,8 @@
   "tilesPer" : 400,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 4
 }, {
   "type" : "BONUS_GEOTHERMAL_ENERGY",
   "bonusClass" : "BONUSCLASS_PRODUCTION",
@@ -2412,7 +2516,8 @@
   "tilesPer" : 128,
   "minAreaSize" : 10,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 6
 }, {
   "type" : "BONUS_ANCIENT_RELICS",
   "bonusClass" : "BONUSCLASS_MISC",
@@ -2435,5 +2540,6 @@
   "tilesPer" : 128,
   "minAreaSize" : 3,
   "groupRange" : 0,
-  "groupRand" : 0
+  "groupRand" : 0,
+  "techEra" : 4
 } ]

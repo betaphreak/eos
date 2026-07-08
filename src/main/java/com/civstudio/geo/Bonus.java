@@ -56,6 +56,11 @@ import com.civstudio.good.ResourceType;
  *                             scatter within this Chebyshev distance of a placement
  * @param groupRand            {@code <iGroupRand>} — how many extra clustered copies
  *                             (rolled {@code [0, iGroupRand]}) accompany a placement
+ * @param techEra              the era ordinal of {@link #techReveal}'s tech (0 = prehistoric …
+ *                             5 = industrial, {@link #ERA_MODERN} = a modern tech beyond the
+ *                             tree, {@link #ERA_NONE} = revealed by no tech) — the map-placement
+ *                             stage skips {@code techEra >= }{@link #ERA_INDUSTRIAL} so the map
+ *                             carries no anachronistic modern resources
  */
 public record Bonus(
 		String type,
@@ -79,7 +84,15 @@ public record Bonus(
 		int tilesPer,
 		int minAreaSize,
 		int groupRange,
-		int groupRand) {
+		int groupRand,
+		int techEra) {
+
+	/** Era ordinal of the first map era ({@code C2C_ERA_PREHISTORIC}); a bonus with no reveal tech. */
+	public static final int ERA_NONE = 0;
+	/** Era ordinal of {@code C2C_ERA_INDUSTRIAL} — the cutoff at/after which map placement is skipped. */
+	public static final int ERA_INDUSTRIAL = 5;
+	/** Era ordinal for a reveal tech beyond the exported tree (a modern/future tech). */
+	public static final int ERA_MODERN = 6;
 
 	/** Normalize yields to length 3, the rand-appearance array to length 4, and copy the valid-type lists. */
 	public Bonus {

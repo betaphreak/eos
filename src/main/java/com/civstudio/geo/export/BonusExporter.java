@@ -2,8 +2,10 @@ package com.civstudio.geo.export;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.w3c.dom.Document;
@@ -11,6 +13,7 @@ import org.w3c.dom.Element;
 
 import com.civstudio.geo.Bonus;
 import com.civstudio.geo.BonusClass;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -38,12 +41,25 @@ public final class BonusExporter {
 
 	private static final String INPUT = "data/civ4/CIV4BonusInfos.xml";
 	private static final String OUTPUT = "src/main/resources/bonuses.json";
+	private static final String TECHS = "src/main/resources/techs.json";
+
+	// C2C era key → ordinal (later = higher); the exported tree stops at industrial, so a reveal
+	// tech absent from it is a modern/future tech (Bonus.ERA_MODERN).
+	private static final Map<String, Integer> ERA_ORDINAL = Map.of(
+			"C2C_ERA_PREHISTORIC", 0, "C2C_ERA_ANCIENT", 1, "C2C_ERA_CLASSICAL", 2,
+			"C2C_ERA_MEDIEVAL", 3, "C2C_ERA_RENAISSANCE", 4, "C2C_ERA_INDUSTRIAL", 5);
 
 	private BonusExporter() {
 	}
 
 	public static void main(String[] args) throws Exception {
 		Document doc = Civ4Xml.parse(INPUT);
+		// tech Type → era ordinal, so each bonus can carry its reveal tech's era
+		Map<String, Integer> techEras = new HashMap<>();
+		for (Map<String, Object> t : new ObjectMapper().readValue(new File(TECHS),
+				new TypeReference<List<Map<String, Object>>>() {
+				}))
+			techEras.put((String) t.get("Type"), ERA_ORDINAL.getOrDefault(t.get("Era"), Bonus.ERA_MODERN));
 		List<Bonus> out = new ArrayList<>();
 		Set<String> seen = new LinkedHashSet<>();
 		for (Element info : Civ4Xml.infos(doc, "BonusInfo")) {
@@ -59,6 +75,10 @@ public final class BonusExporter {
 					rands == null ? 0 : Civ4Xml.intVal(rands, "iRandApp2", 0),
 					rands == null ? 0 : Civ4Xml.intVal(rands, "iRandApp3", 0),
 					rands == null ? 0 : Civ4Xml.intVal(rands, "iRandApp4", 0) };
+			// the reveal tech's era (no tech → prehistoric/none; tech beyond the tree → modern)
+			String techReveal = Civ4Xml.text(info, "TechReveal");
+			int techEra = (techReveal == null || techReveal.isEmpty()) ? Bonus.ERA_NONE
+					: techEras.getOrDefault(techReveal, Bonus.ERA_MODERN);
 			out.add(new Bonus(
 					type,
 					BonusClass.fromKey(Civ4Xml.text(info, "BonusClassType")),
@@ -84,7 +104,8 @@ public final class BonusExporter {
 					Civ4Xml.intVal(info, "iTilesPer", 0),
 					Civ4Xml.intVal(info, "iMinAreaSize", 0),
 					Civ4Xml.intVal(info, "iGroupRange", 0),
-					Civ4Xml.intVal(info, "iGroupRand", 0)));
+					Civ4Xml.intVal(info, "iGroupRand", 0),
+					techEra));
 		}
 		if (out.isEmpty())
 			throw new IllegalStateException("no bonuses found in " + INPUT);
