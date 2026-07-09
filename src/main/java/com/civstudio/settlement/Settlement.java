@@ -91,6 +91,20 @@ public class Settlement {
 	public static final int MIN_FOUNDING_PLOTS = 28;
 
 	/**
+	 * The fixed working day, in hours, a sunless underground ({@link
+	 * com.civstudio.geo.ProvinceType#CAVERN cavern}) colony runs on in place of solar
+	 * daylight — the lamplit "sweatshop" schedule. It is longer than the surface
+	 * full-output reference ({@code LaborMarket.FULL_OUTPUT_DAYLIGHT_HOURS = 8}), so
+	 * underground labor is correspondingly more productive per worker. See {@code
+	 * docs/underworld.md}.
+	 */
+	public static final double CAVERN_WORK_HOURS = 14.0;
+
+	// the fixed "lights on" time of the underground working day; chosen so sunrise +
+	// CAVERN_WORK_HOURS stays within the day (05:00 + 14h = 19:00, no midnight wrap)
+	private static final LocalTime CAVERN_SUNRISE = LocalTime.of(5, 0);
+
+	/**
 	 * The plot-count ceiling for a colony founded at <b>bare coordinates</b> (no
 	 * province): an effectively-unbounded cap, since such analytical colonies never
 	 * approach it (they collapse first). A province-founded colony is capped at its
@@ -442,7 +456,11 @@ public class Settlement {
 		// and the builder's queue (it caps growth at the province's plots, and rejects a
 		// province too small to hold the founding floor). See PlotField.
 		this.plotField = new PlotField(this, terrainRegistry, terrainRng, province);
-		this.solarClock = new SolarClock(latitude, longitude);
+		// underground (cavern) colonies have no sun: they run a fixed lamplit work
+		// schedule instead of solar daylight (see FixedDaylightClock, docs/underworld.md)
+		this.solarClock = (province != null && province.isUnderground())
+				? new FixedDaylightClock(latitude, longitude, CAVERN_SUNRISE, CAVERN_WORK_HOURS)
+				: new SolarClock(latitude, longitude);
 		// every household knows how to produce its own heir; register one built-in
 		// policy that asks each dead household to do so, tried before any the
 		// simulation adds. Self-replacing types (nobles, the ruler) are succeeded

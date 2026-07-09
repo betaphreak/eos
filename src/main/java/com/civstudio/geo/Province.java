@@ -27,7 +27,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *                   bounding-box centroid at export time)
  * @param plots      land cells — the hard ceiling on settlement size
  * @param waterPlots water cells — {@code > 0} marks the province coastal
- * @param type       terrain class (only {@link ProvinceType#LAND} is settleable)
+ * @param type       terrain class ({@link ProvinceType#LAND} and the underground
+ *                   {@link ProvinceType#CAVERN} are settleable)
  * @param regionKey  the stable {@code raw_key} of the region this province
  *                   belongs to (e.g. {@code "rahen_coast_region"}), or
  *                   {@code null} if it has none (some open-ocean provinces)
@@ -99,8 +100,9 @@ public record Province(
 
 	/**
 	 * Whether a colony may be founded into this province (its {@link
-	 * ProvinceType#isSettleable()}). Only {@link ProvinceType#LAND} qualifies at
-	 * this stage; water and {@link ProvinceType#IMPASSABLE} wasteland do not.
+	 * ProvinceType#isSettleable()}). {@link ProvinceType#LAND} and the underground
+	 * {@link ProvinceType#CAVERN} qualify; water and {@link ProvinceType#IMPASSABLE}
+	 * wasteland do not.
 	 *
 	 * @return {@code true} if this is land a settlement can occupy
 	 */
@@ -121,7 +123,8 @@ public record Province(
 
 	/**
 	 * Whether this is dry land a caravan can march over on foot (its {@link
-	 * ProvinceType#isLand()}) — {@link ProvinceType#LAND} only. Land routing
+	 * ProvinceType#isLand()}) — {@link ProvinceType#LAND} or the underground {@link
+	 * ProvinceType#CAVERN}. Land routing
 	 * ({@link com.civstudio.geo.LandRouter}) traverses on this, not {@link
 	 * #isPassable()}: water is passable (for the future sea graph) but a foot
 	 * caravan must not cross it.
@@ -130,6 +133,20 @@ public record Province(
 	 */
 	public boolean isLand() {
 		return type.isLand();
+	}
+
+	/**
+	 * Whether this is an underground (cave) province — {@link ProvinceType#CAVERN},
+	 * the Serpentspine/Dwarovar. Underground colonies are sunless: they run on a fixed
+	 * lamplit work schedule instead of solar daylight (see {@link
+	 * com.civstudio.settlement.FixedDaylightClock} and {@code docs/underworld.md}).
+	 * This is the single membership test for the Underworld, read by both the engine
+	 * and the web viewer's plane.
+	 *
+	 * @return {@code true} if this province lies underground
+	 */
+	public boolean isUnderground() {
+		return type == ProvinceType.CAVERN;
 	}
 
 	/**
