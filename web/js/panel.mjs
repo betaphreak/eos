@@ -368,7 +368,8 @@ function worldRail(){
     </div></div>
     <p class="footnote">The full world, rendered from the engine's real terrain. Drag to pan, scroll to zoom — keep zooming past the continent view to resolve any province into its terrain plot by plot (textures, hillshade from the heightmap, rivers, features). Hover the map to read a province. Switch to <b>Caravan</b> mode to replay the six-band migration from Dhenijansar.</p>`;
 }
-// the map plane (Overworld/Underworld) — the physical base; Underworld has no data yet
+// the map plane (Overworld/Underworld) — the physical base. Underworld dims the surface to
+// a ghost and lights the underground CAVERN provinces in place (see main.drawUnderworld).
 function setPlane(pl){
   S.plane = pl;
   document.querySelectorAll("#planeToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.plane===pl));

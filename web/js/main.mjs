@@ -151,6 +151,9 @@ function renderScene() {
   // province outlines
   ctx.strokeStyle="rgba(190,205,230,.18)"; ctx.lineWidth=0.8;
   for (const p of P) if (p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
+
+  if (S.plane === "underworld") drawUnderworld();   // dim the surface, relight the caves beneath
+
   // hovered province highlight (polygon if we have one, else a centroid ring for seas)
   if (S.hoverProv && S.hoverProv.rings) {
     const hp = provPath(S.hoverProv);
@@ -172,6 +175,28 @@ function renderScene() {
 
   if (S.overlay === "caravan") drawCaravan();   // routes, origin star, moving caravans
   drawLabels();
+}
+
+// The Underworld plane (docs/underworld.md): veil this world-copy's map extent so the
+// surface recedes to a faint ghost, then relight the CAVERN provinces at their true
+// Serpentspine positions — the underground shown in place beneath the dimmed world above.
+// Per world-copy: the veil is the raster's own rect, so adjacent copies abut (no additive
+// double-darkening). Runs before the hover/selected highlights so those stay crisp on top.
+function drawUnderworld() {
+  ctx.save();
+  // veil exactly the map raster's rect for this copy (abuts the neighbour copy seamlessly)
+  ctx.fillStyle = "rgba(6,5,11,0.72)";
+  ctx.fillRect(cam.x + cam.k*VIEW.dx, cam.y + cam.k*VIEW.dy, cam.k*VIEW.dw, cam.k*VIEW.dh);
+  // the cave provinces below, lit: a warm rock floor with an amber rim
+  for (const p of P) {
+    if (p.type !== "CAVERN" || !p.rings || !provOnScreen(p)) continue;
+    const path = provPath(p);
+    ctx.fillStyle = "rgba(60,46,40,0.92)";
+    ctx.fill(path);
+    ctx.strokeStyle = "rgba(230,180,120,0.6)"; ctx.lineWidth = 1.0;
+    ctx.stroke(path);
+  }
+  ctx.restore();
 }
 
 // place province name labels over the map with a halo, skipping any that would

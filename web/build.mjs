@@ -126,9 +126,13 @@ for (const file of files) {
   });
 }
 
-// WorldMap: ship every LAND province (the whole world), not just the caravan crop —
-// the caravan run only supplies the optional Caravan-mode overlay (routes/heat).
-const sub = new Set(allProv.filter(p => p.type === "LAND").map(p => p.id));
+// land-like province types: dry surface LAND and the underground CAVERN (the Serpentspine
+// Underworld plane) — both settleable, both shipped and rendered. See docs/underworld.md.
+const LANDLIKE = new Set(["LAND", "CAVERN"]);
+
+// WorldMap: ship every land-like province (the whole world, surface + underground), not
+// just the caravan crop — the caravan run only supplies the optional Caravan-mode overlay.
+const sub = new Set(allProv.filter(p => LANDLIKE.has(p.type)).map(p => p.id));
 
 // coastal water provinces (SEA/LAKE) that generated a shelf field also ship, so their near-shore
 // resource plots render (docs/coastlines.md Phase F). They carry NO ocean polygon — the border
@@ -229,7 +233,7 @@ function rollupTier(nameFn) {
   const acc = new Map();
   for (const id of sub) {
     const p = byId.get(id);
-    if (!p || p.type !== 'LAND') continue;
+    if (!p || !LANDLIKE.has(p.type)) continue;
     const name = nameFn(p);
     if (!name) continue;
     const w = p.plots || 1;

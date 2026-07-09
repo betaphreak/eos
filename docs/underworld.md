@@ -160,7 +160,7 @@ exists (`panel.mjs:372`) — but **nothing in the render path reads `S.plane`**,
 plane tag on baked province records, and the toggle button is `disabled` in
 `index.html:41`. So flipping the plane currently changes nothing.
 
-### Work
+### Work *(done, Phase 4 — see the phased plan below for the as-built summary)*
 
 1. **Bake a plane tag** onto each province record in `web/build.mjs` (the province
    assembly at `build.mjs:171–181`), from `type == CAVERN` in `provinces.json`.
@@ -220,9 +220,16 @@ The pieces are separable; suggested order keeps something runnable at each step.
    membership question: mushroom forest is **surface**, not cave. `CavernTerrainTest`
    covers it; full suite green (253 tests). Yield rebalance vs. food economy still pending
    real underground colonies. *(engine economy)*
-4. **Viewer plane.** Bake the plane tag into `build.mjs`; make `renderScene`/`drawPlots`/
-   `drawPolitical` honor `S.plane` with the dimmed-surface-ghost treatment; hash write-back;
-   un-disable the button. *(frontend, works with flat-colour cave polygons)*
+4. ~~**Viewer plane.**~~ **Done.** `build.mjs` now ships `CAVERN` provinces (a `LANDLIKE`
+   set replacing the two `type === "LAND"` filters); the frontend keys the plane off the
+   baked `p.type === "CAVERN"` (no separate tag needed). `main.drawUnderworld()` applies the
+   dimmed-surface-ghost: a per-world-copy veil over the map raster (abutting copies, no
+   additive darkening) then the cavern provinces relit as warm amber-rimmed rock floors in
+   place, drawn before the hover/selected highlights so those stay crisp. Button un-disabled
+   in `index.html`; `setPlane` drives it. Hash write-back skipped for parity (the overlay
+   toggle doesn't sync the hash either; `#underworld` still deep-links in). Verified headless
+   (msedge): toggle flips `aria-pressed`, 212 caverns lit, no console errors, world + zoom
+   views correct. Cave polygons are flat-lit — per-plot cave *art* is Phase 5.
 5. **Cave art.** Source/author cavern + mushroom-forest ground textures; add
    `terrain-art.json` entries + the three `build.mjs` maps; optionally repurpose
    `cave.nif`/`mushrooms.nif` as feature overlays. Rebuild `plots.pack`. *(art)*
