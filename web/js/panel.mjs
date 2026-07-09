@@ -2,6 +2,7 @@ import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, 
 import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
 import { loadPlots, bonusIconRect } from "./plots.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
+import { createSearchBox } from "./searchbox.mjs";
 stage.addEventListener("wheel", e => {
   e.preventDefault();
   const r = stage.getBoundingClientRect();
@@ -600,7 +601,6 @@ stage.querySelectorAll("[data-tip]").forEach(el => {
 const searchInput = document.getElementById("search");
 const searchResults = document.getElementById("searchResults");
 const searchClear = document.getElementById("searchClear");
-let searchMatches = [], searchActive = -1;
 function goToProvince(p) {
   S.camBeforeFocus = { ...cam };    // remember where we were so Esc can return
   focusProvinceFit(p.id);         // frame the whole province (centred, filling most of the canvas)
@@ -622,32 +622,26 @@ function closePanel() {
   return !!acted;
 }
 document.getElementById("railClose").onclick = closePanel;
-function updateSearchContext() {
-  const e = overlayEntity();
-  searchInput.placeholder = e ? e.ph : "Find a province…";
-  if (searchInput.value.trim()) runSearch(searchInput.value);
-  else { searchResults.hidden = true; searchMatches = []; }
-}
-function runSearch(raw) {
-  const q = raw.trim().toLowerCase();
-  searchClear.hidden = !q;
-  if (!q) { searchResults.hidden = true; searchMatches = []; return; }
-  const ent = overlayEntity();
-  if (ent) {                                          // search nations / cultures / religions
-    if (!Object.keys(ent.table).length) {             // political layer still loading
-      searchMatches = []; searchResults.innerHTML = `<div class="search-empty">Loading…</div>`;
-      searchResults.hidden = false; return;
+// the top-bar search: provinces by name/id, or — in a political overlay — nations / cultures /
+// faiths. Behaviour (keyboard nav, dropdown, clear, blur) lives in the shared searchbox widget;
+// here we supply just the query, the row markup and what a pick does.
+const provinceSearch = createSearchBox({
+  input: searchInput, results: searchResults, clear: searchClear,
+  search(q) {
+    q = q.toLowerCase();
+    const ent = overlayEntity();
+    if (ent) {                                          // nations / cultures / religions
+      if (!Object.keys(ent.table).length) return [];    // political layer still loading (see renderEmpty)
+      const cov = coverage(), scored = [];
+      for (const [key, e] of Object.entries(ent.table)) {
+        const name = e.name.toLowerCase(); let score = -1;
+        if (name === q) score = 90; else if (name.startsWith(q)) score = 70; else if (name.includes(q)) score = 40;
+        if (score >= 0) scored.push({ kind: ent.kind, key, name: e.name, color: e.color, n: cov.get(key) || 0, score });
+      }
+      scored.sort((a, b) => b.score - a.score || b.n - a.n || a.name.localeCompare(b.name));
+      return scored.slice(0, 12);
     }
-    const cov = coverage(), scored = [];
-    for (const [key, e] of Object.entries(ent.table)) {
-      const name = e.name.toLowerCase(); let score = -1;
-      if (name === q) score = 90; else if (name.startsWith(q)) score = 70; else if (name.includes(q)) score = 40;
-      if (score >= 0) scored.push({ kind: ent.kind, key, name: e.name, color: e.color, n: cov.get(key) || 0, score });
-    }
-    scored.sort((a, b) => b.score - a.score || b.n - a.n || a.name.localeCompare(b.name));
-    searchMatches = scored.slice(0, 12);
-  } else {                                            // province search (by name or id)
-    const isNum = /^\d+$/.test(q), scored = [];
+    const isNum = /^\d+$/.test(q), scored = [];        // province search (by name or id)
     for (const p of P) {
       if (p.type !== "LAND") continue;
       let score = -1;
@@ -656,18 +650,10 @@ function runSearch(raw) {
       if (score >= 0) scored.push({ p, score });
     }
     scored.sort((a, b) => b.score - a.score || b.p.plots - a.p.plots || a.p.name.localeCompare(b.p.name));
-    searchMatches = scored.slice(0, 12).map(s => ({ kind: "province", p: s.p }));
-  }
-  searchActive = searchMatches.length ? 0 : -1;
-  renderSearchResults();
-}
-function renderSearchResults() {
-  if (!searchMatches.length) {
-    searchResults.innerHTML = `<div class="search-empty">No matches.</div>`;
-    searchResults.hidden = false; return;
-  }
-  searchResults.innerHTML = searchMatches.map((m, i) => {
-    const act = i === searchActive ? " active" : "";
+    return scored.slice(0, 12).map(s => ({ kind: "province", p: s.p }));
+  },
+  renderRow(m, i, active) {
+    const act = active ? " active" : "";
     if (m.kind === "province") {
       const reg = (provGeo(m.p).region || [])[0] || "";
       return `<div class="search-row${act}" role="option" data-i="${i}">
@@ -677,31 +663,26 @@ function renderSearchResults() {
     return `<div class="search-row${act}" role="option" data-i="${i}">
       <span class="sw" style="background:${m.color}"></span><span class="sr-name">${m.name}</span>
       <span class="sr-meta">${m.n} prov</span></div>`;
-  }).join("");
-  searchResults.hidden = false;
-  searchResults.querySelectorAll(".search-row").forEach(row =>
-    row.addEventListener("mousedown", e => { e.preventDefault(); pickSearch(+row.dataset.i); }));
-}
-function pickSearch(i) {
-  const m = searchMatches[i]; if (!m) return;
-  searchResults.hidden = true; searchInput.blur();
-  if (m.kind === "province") { goToProvince(m.p); return; }
-  focusEntity(m.key);                                 // zoom to the polity's largest province + spotlight it
-}
-searchInput.addEventListener("input", () => runSearch(searchInput.value));
-searchInput.addEventListener("focus", () => { if (searchInput.value.trim()) runSearch(searchInput.value); });
-searchInput.addEventListener("blur", () => setTimeout(() => { searchResults.hidden = true; }, 150));
-searchInput.addEventListener("keydown", e => {
-  if (e.key === "Escape") {
-    if (closePanel()) { e.preventDefault(); return; }        // first Esc collapses the panel / returns the camera
-    searchInput.value = ""; runSearch(""); searchInput.blur(); return;
-  }
-  if (searchResults.hidden || !searchMatches.length) return;
-  if (e.key === "ArrowDown") { e.preventDefault(); searchActive = Math.min(searchActive + 1, searchMatches.length - 1); renderSearchResults(); }
-  else if (e.key === "ArrowUp") { e.preventDefault(); searchActive = Math.max(searchActive - 1, 0); renderSearchResults(); }
-  else if (e.key === "Enter") { e.preventDefault(); if (searchActive >= 0) pickSearch(searchActive); }
+  },
+  onPick(m) {
+    if (m.kind === "province") goToProvince(m.p);
+    else focusEntity(m.key);                           // zoom to the polity's largest province + spotlight it
+  },
+  renderEmpty() {
+    const ent = overlayEntity();
+    if (ent && !Object.keys(ent.table).length) return `<div class="search-empty">Loading…</div>`;
+    return `<div class="search-empty">No matches.</div>`;
+  },
+  // first Esc collapses the panel / returns the camera; otherwise clear the box and blur
+  onEscape(e, api) {
+    if (closePanel()) { e.preventDefault(); return; }
+    api.reset(); searchInput.blur();
+  },
 });
-searchClear.addEventListener("click", () => { searchInput.value = ""; runSearch(""); searchInput.focus(); });
+function updateSearchContext() {
+  searchInput.placeholder = (overlayEntity() || {}).ph || "Find a province…";
+  provinceSearch.refresh();
+}
 // ---- camera POV toggle (God / Timeline / Replay <seed>) ----
 const povToggle = document.getElementById("povToggle");
 const replaySeedInput = document.getElementById("replaySeed");

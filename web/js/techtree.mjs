@@ -11,6 +11,7 @@
 import { S } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { pausePlayback } from "./panel.mjs";
+import { createSearchBox } from "./searchbox.mjs";
 
 // advisor → spine colour (muted, works in both themes) and → eos firm sector
 const ADV_COLOR = {
@@ -28,7 +29,7 @@ const ERAS = [
 ];
 const ERA_NAME = Object.fromEntries(ERAS);
 
-const COL_W = 240, ROW_H = 78, PAD = 48, CARD_W = 215, CARD_H = 46;
+const COL_W = 240, ROW_H = 64, PAD = 48, CARD_W = 215, CARD_H = 56;
 const SHEET = "assets/tech-icons.webp", SHEET_W = 1024, SHEET_H = 1216, ICON = 40;
 const KMAX = 1.8, KSTEP = 1.2;   // min zoom is dynamic — see minZoom() (fit-to-height)
 
@@ -41,6 +42,7 @@ let eraEntryX = {};        // era key → its entry (min-gridX) column, for the 
 const nodeEl = new Map();  // type → card element
 const edgeEls = [];        // {el, from, to}
 let els = null;            // cached DOM handles, filled on first open
+let searchApi = null;      // the header search box (createSearchBox), wired once in initTechTree
 
 // --- data ------------------------------------------------------------------
 
@@ -292,6 +294,16 @@ function scrollToType(type) {
   const t = byType.get(type); if (!t) return;
   els.viewport.scrollTo({ left: nodeX(t) * k - 60, behavior: "smooth" });
 }
+// bring a node to the centre of the viewport (both axes) — used by the search box
+function centerOnType(type) {
+  const t = byType.get(type); if (!t) return;
+  const vp = els.viewport;
+  vp.scrollTo({
+    left: (nodeX(t) + CARD_W / 2) * k - vp.clientWidth / 2,
+    top: (nodeY(t) + CARD_H / 2) * k - vp.clientHeight / 2,
+    behavior: "smooth",
+  });
+}
 function scrollToEra(key) {
   const x = eraEntryX[key]; if (x == null) return;
   els.viewport.scrollTo({ left: (PAD + x * COL_W) * k - 40, behavior: "smooth" });
@@ -344,6 +356,7 @@ function close() {
   S.techOpen = false;
   els.modal.hidden = true;
   els.detail.hidden = true;
+  searchApi?.reset();
   clearHighlight();
   draw();   // repaint the map that was frozen behind the modal
 }
@@ -375,6 +388,32 @@ export function initTechTree() {
   });
   $("techZoomIn").addEventListener("click", () => zoomBy(KSTEP));
   $("techZoomOut").addEventListener("click", () => zoomBy(1 / KSTEP));
+
+  // header search: match techs by name (or Type), and on pick select + centre the node. The
+  // dropdown/keyboard/clear behaviour is the shared searchbox widget (see searchbox.mjs).
+  searchApi = createSearchBox({
+    input: $("techSearch"), results: $("techSearchResults"), clear: $("techSearchClear"),
+    search(q) {
+      if (!techs) return [];
+      q = q.toLowerCase();
+      const scored = [];
+      for (const t of techs) {
+        const nm = (t.name || t.Type.replace("TECH_", "")).toLowerCase();
+        let score = -1;
+        if (nm === q) score = 100; else if (nm.startsWith(q)) score = 70; else if (nm.includes(q)) score = 40;
+        else if (t.Type.toLowerCase().includes(q)) score = 20;
+        if (score >= 0) scored.push({ t, score });
+      }
+      scored.sort((a, b) => b.score - a.score || (+a.t.iCost) - (+b.t.iCost) || (a.t.name || "").localeCompare(b.t.name || ""));
+      return scored.slice(0, 12).map(s => s.t);
+    },
+    renderRow(t, i, active) {
+      const nm = t.name || t.Type.replace("TECH_", "");
+      return `<div class="search-row${active ? " active" : ""}" role="option" data-i="${i}">
+        <span class="sr-name">${nm}</span><span class="sr-meta">${ERA_NAME[t.Era] || ""}</span></div>`;
+    },
+    onPick(t) { select(t.Type); centerOnType(t.Type); },
+  });
   const vp = $("techViewport");
   vp.addEventListener("scroll", syncEraTab, { passive: true });
 

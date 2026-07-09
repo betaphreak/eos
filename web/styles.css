@@ -299,11 +299,13 @@ input[type="range"].scrub::-moz-range-thumb {
   border: 1px solid var(--line); background: var(--panel-2);
 }
 .search-ico { width: 15px; height: 15px; color: var(--ink-faint); flex: none; }
-#search {
+#search, #techSearch {
   flex: 1 1 auto; min-width: 0; background: transparent; border: 0; outline: none;
   color: var(--ink); font: 500 13px system-ui, 'Segoe UI', sans-serif;
 }
-#search::placeholder { color: var(--ink-faint); }
+#search::placeholder, #techSearch::placeholder { color: var(--ink-faint); }
+/* the tech-tree header search reuses .searchbar; give it a fixed slot beside the era tabs */
+.tech-searchbar { flex: 0 1 220px; }
 .search-clear { flex: none; border: 0; background: transparent; color: var(--ink-faint);
   cursor: pointer; font-size: 18px; line-height: 1; padding: 0 2px; }
 .search-clear:hover { color: var(--ink); }

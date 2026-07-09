@@ -122,6 +122,12 @@
       <header class="tech-head">
         <div class="tech-brand">Tech Tree (F7)</div>
         <div id="techEras" class="segToggle tech-eras" role="group" aria-label="Jump to era"></div>
+        <div class="searchbar tech-searchbar" role="search">
+          <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="techSearch" placeholder="Search techs…" autocomplete="off" spellcheck="false" aria-label="Search technologies">
+          <button id="techSearchClear" class="search-clear" aria-label="Clear search" hidden>&times;</button>
+          <div class="search-results" id="techSearchResults" role="listbox" hidden></div>
+        </div>
         <button class="tech-close" data-tech-close data-tip="Close (Esc)" aria-label="Close technology tree">&times;</button>
       </header>
       <div class="tech-body">
