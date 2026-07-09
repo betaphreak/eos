@@ -180,4 +180,46 @@
   "buildModifier" : 0,
   "healthPercent" : 0,
   "movement" : 1
+}, {
+  "type" : "TERRAIN_ANCIENT_FOREST",
+  "yields" : [ 1, 2, 0 ],
+  "bFound" : true,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 1
+}, {
+  "type" : "TERRAIN_GLADEWAY",
+  "yields" : [ 2, 0, 1 ],
+  "bFound" : true,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 1
+}, {
+  "type" : "TERRAIN_FEY_GLADEWAY",
+  "yields" : [ 2, 0, 1 ],
+  "bFound" : true,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 1
+}, {
+  "type" : "TERRAIN_BLOODGROVES",
+  "yields" : [ 1, 1, 0 ],
+  "bFound" : true,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 1
+}, {
+  "type" : "TERRAIN_SHADOW_SWAMP",
+  "yields" : [ 1, 1, 0 ],
+  "bFound" : true,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 1
+}, {
+  "type" : "TERRAIN_GLACIER",
+  "yields" : [ 0, 0, 0 ],
+  "bFound" : true,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 1
 } ]

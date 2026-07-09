@@ -54,11 +54,14 @@ public enum PyTerrain {
 					"TERRAIN_SCRUB", "TERRAIN_BADLAND" -> DESERT;
 			case "TERRAIN_PLAINS", "TERRAIN_BARREN", "TERRAIN_ROCKY", "TERRAIN_JAGGED" -> PLAINS;
 			case "TERRAIN_GRASSLAND", "TERRAIN_LUSH", "TERRAIN_MUDDY" -> GRASS;
-			case "TERRAIN_MARSH" -> MARSH;
+			// the Anbennar forest-family terrains are grass-based, so foliage still spawns
+			case "TERRAIN_ANCIENT_FOREST", "TERRAIN_GLADEWAY", "TERRAIN_FEY_GLADEWAY",
+					"TERRAIN_BLOODGROVES" -> GRASS;
+			case "TERRAIN_MARSH", "TERRAIN_SHADOW_SWAMP" -> MARSH;
 			case "TERRAIN_TAIGA" -> TUNDRA;         // script "tundra"
 			case "TERRAIN_TUNDRA" -> PERMAFROST;    // script "permafrost"
-			case "TERRAIN_ICE", "TERRAIN_PERMAFROST" -> SNOW; // script "snow"
-			default -> OTHER;
+			case "TERRAIN_ICE", "TERRAIN_PERMAFROST", "TERRAIN_GLACIER" -> SNOW; // script "snow"
+			default -> OTHER;                       // TERRAIN_CAVERN, TERRAIN_MUSHROOM_FOREST, …
 		};
 	}
 

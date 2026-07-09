@@ -398,4 +398,76 @@
     "14" : "14,0",
     "15" : "15,0 16,0 18,0 19,0 20,0 21,0 22,0 23,0 24,0 25,0 26,0 27,0 28,0 29,0 30,0 31,0 32,0"
   }
+}, {
+  "terrain" : "TERRAIN_CAVERN",
+  "artTag" : "ART_DEF_TERRAIN_CAVERN",
+  "path" : "Art/Terrain/Textures/Land/RockyBlend.dds",
+  "grid" : "Art/Terrain/Textures/Land/RockyGrid.dds",
+  "detail" : "Art/Terrain/Textures/Land/RockyDetail.dds",
+  "layerOrder" : 13,
+  "alphaShader" : false,
+  "blend" : { }
+}, {
+  "terrain" : "TERRAIN_MUSHROOM_FOREST",
+  "artTag" : "ART_DEF_TERRAIN_MUSHROOM_FOREST",
+  "path" : "Art/Terrain/Textures/Land/LushBlend.dds",
+  "grid" : "Art/Terrain/Textures/Land/LushGrid.dds",
+  "detail" : "Art/Terrain/Textures/Land/LushDetail.dds",
+  "layerOrder" : 9,
+  "alphaShader" : false,
+  "blend" : { }
+}, {
+  "terrain" : "TERRAIN_ANCIENT_FOREST",
+  "artTag" : "ART_DEF_TERRAIN_ANCIENT_FOREST",
+  "path" : "Art/Terrain/Textures/Land/LushBlend.dds",
+  "grid" : "Art/Terrain/Textures/Land/LushGrid.dds",
+  "detail" : "Art/Terrain/Textures/Land/LushDetail.dds",
+  "layerOrder" : 9,
+  "alphaShader" : false,
+  "blend" : { }
+}, {
+  "terrain" : "TERRAIN_GLADEWAY",
+  "artTag" : "ART_DEF_TERRAIN_GLADEWAY",
+  "path" : "Art/Terrain/Textures/Land/LushBlend.dds",
+  "grid" : "Art/Terrain/Textures/Land/LushGrid.dds",
+  "detail" : "Art/Terrain/Textures/Land/LushDetail.dds",
+  "layerOrder" : 9,
+  "alphaShader" : false,
+  "blend" : { }
+}, {
+  "terrain" : "TERRAIN_FEY_GLADEWAY",
+  "artTag" : "ART_DEF_TERRAIN_FEY_GLADEWAY",
+  "path" : "Art/Terrain/Textures/Land/LushBlend.dds",
+  "grid" : "Art/Terrain/Textures/Land/LushGrid.dds",
+  "detail" : "Art/Terrain/Textures/Land/LushDetail.dds",
+  "layerOrder" : 9,
+  "alphaShader" : false,
+  "blend" : { }
+}, {
+  "terrain" : "TERRAIN_BLOODGROVES",
+  "artTag" : "ART_DEF_TERRAIN_BLOODGROVES",
+  "path" : "Art/Terrain/Textures/Land/LushBlend.dds",
+  "grid" : "Art/Terrain/Textures/Land/LushGrid.dds",
+  "detail" : "Art/Terrain/Textures/Land/LushDetail.dds",
+  "layerOrder" : 9,
+  "alphaShader" : false,
+  "blend" : { }
+}, {
+  "terrain" : "TERRAIN_SHADOW_SWAMP",
+  "artTag" : "ART_DEF_TERRAIN_SHADOW_SWAMP",
+  "path" : "Art/Terrain/Textures/Land/TundraBlend.dds",
+  "grid" : "Art/Terrain/Textures/Land/TundraGrids.dds",
+  "detail" : "Art/Terrain/Textures/Land/MarshDetail.dds",
+  "layerOrder" : 5,
+  "alphaShader" : false,
+  "blend" : { }
+}, {
+  "terrain" : "TERRAIN_GLACIER",
+  "artTag" : "ART_DEF_TERRAIN_GLACIER",
+  "path" : "Art/Terrain/Textures/Land/IceBlend.dds",
+  "grid" : "Art/Terrain/Textures/Land/IceGrid.dds",
+  "detail" : "Art/Terrain/Textures/Land/PermafrostDetail.dds",
+  "layerOrder" : 2,
+  "alphaShader" : false,
+  "blend" : { }
 } ]

@@ -19,38 +19,78 @@ The four shaping decisions (chosen 2026-07-09):
 | Axis | Decision |
 | --- | --- |
 | **Scope** | Full engine semantics — underground provinces simulate differently, not just a viewer layer. |
-| **Province type** | A new `ProvinceType.CAVERN` enum value, stamped from the `cavern` terrain in `terrain.txt`. |
+| **Province type** | Four new underground `ProvinceType`s — `CAVERN`, `DWARVEN_HOLD`, `DWARVEN_HOLD_SURFACE`, `DWARVEN_ROAD` — stamped from the matching Dwarovar terrain blocks in `terrain.txt`. |
 | **Viewer layout** | Dimmed surface *ghost* — surface stays faintly visible beneath the lit underground, no auto-framing. |
 | **Cave art** | Port real Civ4/C2C cavern + mushroom-forest terrain into the per-plot zoom, matching surface fidelity. |
 | **Work schedule** | Underground runs a fixed **14-hour "sweatshop" day** in place of solar daylight. |
 
 ## Which provinces are underground
 
-**The `cavern` terrain is authoritative — not the `serpentspine` continent.** The two
-sets cross-cut and neither contains the other, so the continent must *not* be used to
-decide underworld membership:
+**Membership is defined by the four Dwarovar *terrain blocks* in
+`data/anbennar/terrain.txt`, not the `serpentspine` continent.** The continent cross-cuts
+the underground both ways, so it must *not* be used:
 
-- Some `serpentspine`-continent provinces are **surface**, not underworld (mountain passes
-  and open Serpentspine terrain that happen to fall in the continent).
-- Some underworld provinces sit under **mountains on other continents** — e.g.
-  Dragonheights (185–189, …), the Deepwoods (3069–3070), the Ruby Mountains (4232, 4241,
-  4343) — outside the `serpentspine` continent entirely.
+- Some `serpentspine`-continent provinces are **surface** — the impassable mountain walls
+  (`Serpentspine Mountains`, `The Serpentreach`) and mixed surface passes (`northern_pass`:
+  valleys, foothills, forests, lakes) — and stay surface.
+- Some underground provinces sit under **mountains on other continents** — e.g.
+  Dragonheights, the Deepwoods, holds like Marrhold (Cannor) and Ovdal Tungr (Sarhal) —
+  outside the `serpentspine` continent entirely.
 
-So underworld membership is defined purely by the `cavern` terrain block in
-`data/anbennar/terrain.txt` (line 1387: `type = mountains`, cave-tuned movement/supply,
-with a `terrain_override` province list). That set is what `CavernExporter` stamps as
-**`ProvinceType.CAVERN`** — and `type == CAVERN` **is** the underworld membership test,
-end to end: the engine reads it for the sun-free clock and the web viewer reads it for the
-plane. The `serpentspine` continent (`Continent.SERPENTSPINE`, already persisted) stays a
-purely descriptive lore-region grouping and plays no part in membership.
+So the underworld is the union of the `terrain_override` lists of the four underground
+terrain blocks, each mapped to its **own** province type by `CavernExporter` (applied over
+`LAND`, and re-runnable over an already-underground type; water/`IMPASSABLE` walls are left
+alone):
 
-`terrain.txt` also has a separate `mushroom_forest_terrain` (line 1425, 8 provinces
-2367–2374) — and these turn out to be **surface, not underworld**: they are the Haless
-`mushroom_forest_region` on the `south_america` continent, plain `LAND`, nowhere near the
-Serpentspine. So mushroom forest is a surface fungal-woodland biome, *not* part of the
-Underworld; it plays no role in cavern membership and its provinces stay `LAND` (and
-sunlit). The underground's own food comes from the `TERRAIN_CAVERN` floor itself (cave
-fungus), not from mushroom forests.
+| terrain block | `ProvinceType` | what it is | count |
+| --- | --- | --- | --- |
+| `cavern` | `CAVERN` | open cavern floor | 212 |
+| `dwarven_hold` | `DWARVEN_HOLD` | sub-surface holds (karaks) | 21 |
+| `dwarven_hold_surface` | `DWARVEN_HOLD_SURFACE` | surface-gate holds (Verkal Dromak, Khugdihr, Marrhold, Ovdal Tungr…) | 16 |
+| `dwarven_road` | `DWARVEN_ROAD` | the Dwarovrod tunnel network | 136 |
+
+**385 underground provinces.** `ProvinceType.isUnderground()` (true for all four) is the
+single membership test, end to end — the engine reads it for the sun-free clock, the web
+viewer for the plane. All four render the same cave floor for now; distinct per-type art
+(a hold hall, a paved tunnel) is possible later. The `serpentspine` continent
+(`Continent.SERPENTSPINE`) stays a purely descriptive lore grouping.
+
+The underground's own food comes from the `TERRAIN_CAVERN` floor itself (cave fungus), not
+from any surface terrain.
+
+## Special surface terrains
+
+The same `CavernExporter` + synthetic-terrain machinery also promotes **seven distinctive
+Anbennar *surface* terrains** to their own province types, so they no longer flatten onto
+generic `LAND`/forest. These are *not* underground (sunlit, on the Overworld plane); they
+share the pipeline only because the mechanism is identical. Each has its own
+`ProvinceType`, per-plot `TERRAIN_*` (yields + recolored art), and — where fitting — a
+signature feature:
+
+| terrain block | `ProvinceType` | `TERRAIN_*` (yields F/P/C) | look | feature |
+| --- | --- | --- | --- | --- |
+| `ancient_forest` | `ANCIENT_FOREST` | `TERRAIN_ANCIENT_FOREST` (1/2/0) | deep old-growth green | ~90% `FEATURE_FOREST` |
+| `gladeway` | `GLADEWAY` | `TERRAIN_GLADEWAY` (2/0/1) | verdant fey green | ~90% forest |
+| `fey_gladeway` | `FEY_GLADEWAY` | `TERRAIN_FEY_GLADEWAY` (2/0/1) | teal fey | ~90% forest |
+| `bloodgroves` | `BLOODGROVES` | `TERRAIN_BLOODGROVES` (1/1/0) | crimson blood-magic forest | ~90% forest |
+| `mushroom_forest_terrain` | `MUSHROOM_FOREST` | `TERRAIN_MUSHROOM_FOREST` (2/1/0) | fungal violet (Haless) | — |
+| `shadow_swamp_terrain` | `SHADOW_SWAMP` | `TERRAIN_SHADOW_SWAMP` (1/1/0) | shadowed marsh | ~90% `FEATURE_SWAMP` |
+| `glacier` | `GLACIER` | `TERRAIN_GLACIER` (0/0/0) | pale ice | — |
+
+Implementation notes:
+
+- **Art** — reused from existing Civ4 textures (forests → `Lush`, swamp → `Marsh`, glacier →
+  `Ice/Permafrost`), recolored in the web bake to each terrain's authored display colour;
+  the colour is forced to win over the measured texture average (`AUTHORED` set in
+  `terrainDisplayColors`).
+- **Features** — a terrain-override province has no `trees.bmp` coverage, so the C2C
+  feature stage leaves it bare. `ProvincePlotField` therefore stamps the signature feature
+  over ~90% of non-peak plots directly (`SPECIAL_FEATURE`, `SPECIAL_FEATURE_COVER`), and
+  `FeatureExporter` adds these terrains to `FEATURE_FOREST`/`FEATURE_SWAMP`'s
+  `validTerrains` so the placement passes the validity gate. Forest terrains fold to
+  `PyTerrain.GRASS`.
+- **`city_terrain` is deferred** — cities need real urban plots and their encircling walls,
+  a future phase; those provinces stay generic `LAND` for now.
 
 ## Engine semantics
 

@@ -285,7 +285,7 @@ class WorldMapTest {
 		WorldMap map = WorldMap.load();
 		boolean sawWater = false;
 		for (Province p : map.provinces())
-			if (p.type() != ProvinceType.LAND && p.type() != ProvinceType.CAVERN) {
+			if (!p.type().isLand()) {   // water + impassable — everything that isn't dry land
 				assertFalse(p.isSettleable());
 				sawWater = true;
 			}

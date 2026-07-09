@@ -69,7 +69,14 @@ public final class TerrainExporter {
 	 */
 	private static final List<Terrain> SYNTHETIC = List.of(
 			new Terrain("TERRAIN_CAVERN", new int[] { 1, 2, 0 }, true, 0, 0, 1),
-			new Terrain("TERRAIN_MUSHROOM_FOREST", new int[] { 2, 1, 0 }, true, 0, 0, 1));
+			new Terrain("TERRAIN_MUSHROOM_FOREST", new int[] { 2, 1, 0 }, true, 0, 0, 1),
+			// special Anbennar surface terrains (see docs/underworld.md §special terrains)
+			new Terrain("TERRAIN_ANCIENT_FOREST", new int[] { 1, 2, 0 }, true, 0, 0, 1),
+			new Terrain("TERRAIN_GLADEWAY", new int[] { 2, 0, 1 }, true, 0, 0, 1),
+			new Terrain("TERRAIN_FEY_GLADEWAY", new int[] { 2, 0, 1 }, true, 0, 0, 1),
+			new Terrain("TERRAIN_BLOODGROVES", new int[] { 1, 1, 0 }, true, 0, 0, 1),
+			new Terrain("TERRAIN_SHADOW_SWAMP", new int[] { 1, 1, 0 }, true, 0, 0, 1),
+			new Terrain("TERRAIN_GLACIER", new int[] { 0, 0, 0 }, true, 0, 0, 1));
 
 	private TerrainExporter() {
 	}

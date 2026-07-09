@@ -3,6 +3,7 @@ package com.civstudio.geo;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.civstudio.util.Rng;
 
@@ -81,6 +82,35 @@ public final class ProvincePlotField {
 	 * desert/savanna feature places sparsely ({@link #SPARSE_CHANCE}) so the ground
 	 * reads as a mix of bare and featured rather than a uniform blanket.
 	 */
+	// special-terrain province types → the single ground terrain that fills the whole province,
+	// replacing the raster's per-plot palette (see docs/underworld.md §special terrains). The four
+	// underground types share the flat cavern floor; the surface terrains keep their relief and
+	// (grass-based ones) their trees.
+	private static final Map<ProvinceType, String> SPECIAL_TERRAIN = Map.ofEntries(
+			Map.entry(ProvinceType.CAVERN, "TERRAIN_CAVERN"),
+			Map.entry(ProvinceType.DWARVEN_HOLD, "TERRAIN_CAVERN"),
+			Map.entry(ProvinceType.DWARVEN_HOLD_SURFACE, "TERRAIN_CAVERN"),
+			Map.entry(ProvinceType.DWARVEN_ROAD, "TERRAIN_CAVERN"),
+			Map.entry(ProvinceType.ANCIENT_FOREST, "TERRAIN_ANCIENT_FOREST"),
+			Map.entry(ProvinceType.GLADEWAY, "TERRAIN_GLADEWAY"),
+			Map.entry(ProvinceType.FEY_GLADEWAY, "TERRAIN_FEY_GLADEWAY"),
+			Map.entry(ProvinceType.BLOODGROVES, "TERRAIN_BLOODGROVES"),
+			Map.entry(ProvinceType.MUSHROOM_FOREST, "TERRAIN_MUSHROOM_FOREST"),
+			Map.entry(ProvinceType.SHADOW_SWAMP, "TERRAIN_SHADOW_SWAMP"),
+			Map.entry(ProvinceType.GLACIER, "TERRAIN_GLACIER"));
+
+	// special surface terrains whose signature feature the trees.bmp density signal misses (they
+	// are terrain-override provinces, not painted wooded/marshy): the forests carry FEATURE_FOREST,
+	// the shadow swamp FEATURE_SWAMP, over most of their plots (see SPECIAL_FEATURE_COVER).
+	private static final Map<ProvinceType, String> SPECIAL_FEATURE = Map.of(
+			ProvinceType.ANCIENT_FOREST, "FEATURE_FOREST",
+			ProvinceType.GLADEWAY, "FEATURE_FOREST",
+			ProvinceType.FEY_GLADEWAY, "FEATURE_FOREST",
+			ProvinceType.BLOODGROVES, "FEATURE_FOREST",
+			ProvinceType.SHADOW_SWAMP, "FEATURE_SWAMP");
+	// fraction of a special-terrain province's (non-peak) plots that carry its signature feature
+	private static final double SPECIAL_FEATURE_COVER = 0.90;
+
 	private static final double SWAMP_CHANCE = 0.85;
 	private static final double SPARSE_CHANCE = 0.35;
 
@@ -146,24 +176,23 @@ public final class ProvincePlotField {
 				composed[idx] = rougher(relief[idx], MapTerrainCodec.relief(mask.terrainIndex(lx, ly)));
 			}
 
-		// underground (CAVERN) provinces read as mountains in the raster; replace their
-		// ground with the flat, low-food cave floor (TERRAIN_CAVERN) so farms sit on a
-		// walkable cavern floor rather than peaks. The surface Haless mushroom_forest_region
-		// likewise gets its fungal-woodland ground. Done before the feature/bonus stages so
-		// they read the real cave ground (cavern folds to PyTerrain.OTHER → no tree cover).
-		// See docs/underworld.md.
-		Terrain undergroundGround = province.isUnderground()
-				? registry.terrain("TERRAIN_CAVERN")
-				: "mushroom_forest_region".equals(province.regionKey())
-						? registry.terrain("TERRAIN_MUSHROOM_FOREST")
-						: null;
-		if (undergroundGround != null)
+		// special-terrain provinces replace the raster's per-plot ground with a single terrain
+		// (a cave floor, an ancient forest, a glacier, …) — the raster reads them as generic
+		// mountain/forest, so membership drives the ground instead. Done before the feature/bonus
+		// stages so those read the real ground (grass-based terrains still spawn trees; underground
+		// folds to PyTerrain.OTHER → bare). The underground types also flatten relief to a walkable
+		// floor; surface terrains keep their hills/peaks. See docs/underworld.md.
+		String specialKey = SPECIAL_TERRAIN.get(province.type());
+		if (specialKey != null) {
+			Terrain specialGround = registry.terrain(specialKey);
+			boolean flatten = province.isUnderground();
 			for (int idx = 0; idx < ground.length; idx++)
 				if (ground[idx] != null) { // land cells only (water/off-mask stay null)
-					ground[idx] = undergroundGround;
-					if (province.isUnderground())
-						composed[idx] = PlotType.FLAT; // a flat cave floor, not the raster's peaks
+					ground[idx] = specialGround;
+					if (flatten)
+						composed[idx] = PlotType.FLAT;
 				}
+		}
 
 		// the C2C-ported feature seed-and-spread: the per-cell vegetation intent
 		// (jungle/forest/swamp or bare), which this loop validity-gates below
@@ -191,6 +220,21 @@ public final class ProvincePlotField {
 						vegetation[idx], mask.treeIndex(lx, ly), mask.terrainIndex(lx, ly),
 						climate, floodPlains, registry, rng);
 			}
+		// special forest/swamp terrains: the C2C stage above leaves them bare (no trees.bmp
+		// coverage), so stamp their signature feature over ~90% of non-peak plots. See
+		// docs/underworld.md.
+		String specialFeatureKey = SPECIAL_FEATURE.get(province.type());
+		if (specialFeatureKey != null) {
+			Feature specialFeature = registry.feature(specialFeatureKey);
+			for (int ly = 0; ly < h; ly++)
+				for (int lx = 0; lx < w; lx++) {
+					if (!mask.isLand(lx, ly))
+						continue;
+					int idx = ly * w + lx;
+					feature[idx] = composed[idx] != PlotType.PEAK
+							&& rng.uniform() < SPECIAL_FEATURE_COVER ? specialFeature : null;
+				}
+		}
 		// C2C oasis scoring (slice 5, addFeatures L3076–3135): scatters oases across the
 		// best inland-desert cells, scored by their surroundings — a feature-only pass,
 		// so it never rewrites the real ground

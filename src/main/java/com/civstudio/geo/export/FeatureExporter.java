@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.w3c.dom.Document;
@@ -41,6 +42,21 @@ public final class FeatureExporter {
 			"FEATURE_CACTUS", "FEATURE_OASIS", "FEATURE_FLOOD_PLAINS",
 			"FEATURE_SWAMP", "FEATURE_ICE"));
 
+	/**
+	 * Extra host terrains appended to a feature's {@code validTerrains}. The authored,
+	 * source-less Anbennar terrains (see {@link TerrainExporter#SYNTHETIC}) have no XML
+	 * feature bindings, so without this trees/swamps would be rejected on them by the
+	 * {@code ProvincePlotField} validity gate — a bloodgrove would be bare. The
+	 * forest-family terrains host the forest features; the shadow swamp hosts the swamp.
+	 * See {@code docs/underworld.md}.
+	 */
+	private static final Map<String, List<String>> EXTRA_HOSTS = Map.of(
+			"FEATURE_FOREST", List.of("TERRAIN_ANCIENT_FOREST", "TERRAIN_GLADEWAY",
+					"TERRAIN_FEY_GLADEWAY", "TERRAIN_BLOODGROVES"),
+			"FEATURE_FOREST_ANCIENT", List.of("TERRAIN_ANCIENT_FOREST", "TERRAIN_GLADEWAY",
+					"TERRAIN_FEY_GLADEWAY", "TERRAIN_BLOODGROVES"),
+			"FEATURE_SWAMP", List.of("TERRAIN_SHADOW_SWAMP"));
+
 	private FeatureExporter() {
 	}
 
@@ -52,14 +68,17 @@ public final class FeatureExporter {
 			String type = Civ4Xml.text(info, "Type");
 			if (type == null || !KEEP.contains(type))
 				continue;
+			// the XML host terrains, plus any authored Anbennar terrains this feature hosts
+			List<String> validTerrains = new ArrayList<>(Civ4Xml.validTypes(info,
+					"TerrainBooleans", "TerrainBoolean", "TerrainType", "bTerrain"));
+			validTerrains.addAll(EXTRA_HOSTS.getOrDefault(type, List.of()));
 			out.add(new Feature(
 					type,
 					Civ4Xml.yields(info, "YieldChanges", "iYieldChange"),
 					Civ4Xml.intVal(info, "iAdvancedStartRemoveCost", 0),
 					Civ4Xml.boolVal(info, "bRequiresFlatlands"),
 					Civ4Xml.boolVal(info, "bRequiresRiver"),
-					Civ4Xml.validTypes(info, "TerrainBooleans", "TerrainBoolean",
-							"TerrainType", "bTerrain"),
+					validTerrains,
 					Civ4Xml.intVal(info, "iHealthPercent", 0),
 					Civ4Xml.intVal(info, "iGrowth", 0),
 					Civ4Xml.intVal(info, "iMovement", 0),

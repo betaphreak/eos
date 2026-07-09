@@ -58,7 +58,7 @@ Subsystem map — one line each; the as-built detail for all of them is in [`doc
 - **Tech tree** — ruler-funded science from the aristocracy's INTELLECTUAL labor; per-sector productivity multipliers. `docs/tech-tree.md`.
 - **Races** — per-person ancestry varying names, mortality, calendar and tech overlay. `docs/race.md`.
 - **Political layer** — canonical Anbennar province ownership (`Province.ownerTag`/`culture`/`religion` + `Country`/`Culture`/`Religion` records + `WorldMap.provincesByOwner`/`ByCulture`/`ByReligion`), stamped from vendored EU4 history by dev-tool exporters; drives the web **Political** map mode. `docs/political-map.md`.
-- **Underworld** *(in progress)* — a second map plane for the underground Serpentspine, defined by the `cavern` terrain → new `ProvinceType.CAVERN` (stamped by `CavernExporter`): sun-free 14h "sweatshop" labor, cavern/mushroom terrain, dimmed-surface-ghost viewer plane. Phases 1–4 done (the `CAVERN` type + sun-free `FixedDaylightClock` + food-scarce `TERRAIN_CAVERN` floor + the web viewer's dimmed-ghost Underworld plane); per-plot cave art planned. `docs/underworld.md`.
+- **Underworld + special terrains** — the underground Serpentspine as a second map plane (four Dwarovar `ProvinceType`s — `CAVERN`/`DWARVEN_HOLD`/`DWARVEN_HOLD_SURFACE`/`DWARVEN_ROAD` — stamped by `CavernExporter`): sun-free 14h `FixedDaylightClock`, food-scarce `TERRAIN_CAVERN`, dimmed-ghost viewer plane. The same machinery promotes seven distinctive **surface** terrains (ancient/fey/blood forests, mushroom, shadow swamp, glacier) to their own types with bespoke terrain/art/yields (`city_terrain` deferred). `docs/underworld.md`.
 
 ## Tests
 

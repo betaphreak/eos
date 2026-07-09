@@ -50,6 +50,50 @@ public final class TerrainArtExporter {
 			"TERRAIN_SALT_FLATS", "TERRAIN_TAIGA", "TERRAIN_TUNDRA",
 			"TERRAIN_PERMAFROST"));
 
+	/**
+	 * Art bindings for the authored, source-less terrains (see {@link
+	 * TerrainExporter#SYNTHETIC}) — they have no {@code CIV4ArtDefines_Terrain.xml} entry,
+	 * so their art is <b>repurposed</b> from an existing Civ4 ground texture and recoloured
+	 * in the web bake to the terrain's authored display colour (a dark, warm cavern floor;
+	 * a fungal-violet mushroom ground). {@code TERRAIN_CAVERN} reuses the rocky ground
+	 * textures; {@code TERRAIN_MUSHROOM_FOREST} the lush ones. The blend table is empty:
+	 * both terrains fill homogeneous provinces, so no cross-terrain auto-tiling is needed.
+	 * See {@code docs/underworld.md}.
+	 */
+	private static final List<TerrainArtInfo> SYNTHETIC = List.of(
+			new TerrainArtInfo("TERRAIN_CAVERN", "ART_DEF_TERRAIN_CAVERN",
+					"Art/Terrain/Textures/Land/RockyBlend.dds",
+					"Art/Terrain/Textures/Land/RockyGrid.dds",
+					"Art/Terrain/Textures/Land/RockyDetail.dds",
+					13, false, Map.of()),
+			// the forest-family Anbennar terrains reuse the lush ground (green forest floor),
+			// recoloured per terrain in the web bake; their trees come from the tree overlay
+			lushArt("TERRAIN_MUSHROOM_FOREST", "ART_DEF_TERRAIN_MUSHROOM_FOREST"),
+			lushArt("TERRAIN_ANCIENT_FOREST", "ART_DEF_TERRAIN_ANCIENT_FOREST"),
+			lushArt("TERRAIN_GLADEWAY", "ART_DEF_TERRAIN_GLADEWAY"),
+			lushArt("TERRAIN_FEY_GLADEWAY", "ART_DEF_TERRAIN_FEY_GLADEWAY"),
+			lushArt("TERRAIN_BLOODGROVES", "ART_DEF_TERRAIN_BLOODGROVES"),
+			// shadow swamp reuses the marsh ground; glacier the ice/permafrost ground
+			new TerrainArtInfo("TERRAIN_SHADOW_SWAMP", "ART_DEF_TERRAIN_SHADOW_SWAMP",
+					"Art/Terrain/Textures/Land/TundraBlend.dds",
+					"Art/Terrain/Textures/Land/TundraGrids.dds",
+					"Art/Terrain/Textures/Land/MarshDetail.dds",
+					5, false, Map.of()),
+			new TerrainArtInfo("TERRAIN_GLACIER", "ART_DEF_TERRAIN_GLACIER",
+					"Art/Terrain/Textures/Land/IceBlend.dds",
+					"Art/Terrain/Textures/Land/IceGrid.dds",
+					"Art/Terrain/Textures/Land/PermafrostDetail.dds",
+					2, false, Map.of()));
+
+	/** A {@link TerrainArtInfo} reusing the lush (green forest) ground textures. */
+	private static TerrainArtInfo lushArt(String terrain, String tag) {
+		return new TerrainArtInfo(terrain, tag,
+				"Art/Terrain/Textures/Land/LushBlend.dds",
+				"Art/Terrain/Textures/Land/LushGrid.dds",
+				"Art/Terrain/Textures/Land/LushDetail.dds",
+				9, false, Map.of());
+	}
+
 	private TerrainArtExporter() {
 	}
 
@@ -89,6 +133,10 @@ public final class TerrainArtExporter {
 					Civ4Xml.boolVal(ai, "AlphaShader"),
 					blendTable(ai)));
 		}
+
+		// the authored, source-less terrains (cavern floor, surface mushroom forest) reuse
+		// an existing ground texture, recoloured in the web bake — see SYNTHETIC
+		out.addAll(SYNTHETIC);
 
 		File f = new File(OUTPUT);
 		f.getParentFile().mkdirs();

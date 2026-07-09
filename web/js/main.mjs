@@ -182,20 +182,24 @@ function renderScene() {
 // Serpentspine positions — the underground shown in place beneath the dimmed world above.
 // Per world-copy: the veil is the raster's own rect, so adjacent copies abut (no additive
 // double-darkening). Runs before the hover/selected highlights so those stay crisp on top.
+// the four underground Dwarovar province types (open caves, the holds, and the roads) — all
+// lit on the Underworld plane. Matches Province.isUnderground()/ProvinceType.isUnderground().
+const UNDERGROUND_TYPES = new Set(["CAVERN", "DWARVEN_HOLD", "DWARVEN_HOLD_SURFACE", "DWARVEN_ROAD"]);
+const isUnderground = p => UNDERGROUND_TYPES.has(p.type);
 function drawUnderworld() {
   ctx.save();
   // veil exactly the map raster's rect for this copy (abuts the neighbour copy seamlessly)
   ctx.fillStyle = "rgba(6,5,11,0.72)";
   ctx.fillRect(cam.x + cam.k*VIEW.dx, cam.y + cam.k*VIEW.dy, cam.k*VIEW.dw, cam.k*VIEW.dh);
-  // the cave provinces below, lit: a warm rock floor with an amber rim
-  for (const p of P) {
-    if (p.type !== "CAVERN" || !p.rings || !provOnScreen(p)) continue;
-    const path = provPath(p);
-    ctx.fillStyle = "rgba(60,46,40,0.92)";
-    ctx.fill(path);
-    ctx.strokeStyle = "rgba(230,180,120,0.6)"; ctx.lineWidth = 1.0;
-    ctx.stroke(path);
-  }
+  // a warm flat cave floor on every underground polygon — the overview look, and the fallback
+  // beneath the per-plot layer for provinces whose plots haven't streamed in yet
+  ctx.fillStyle = "rgba(60,46,40,0.92)";
+  for (const p of P) if (isUnderground(p) && p.rings && provOnScreen(p)) ctx.fill(provPath(p));
+  // zoomed in: relight the underground provinces' real per-plot cave terrain over the veil
+  if (cam.k >= K_PLOT) drawPlots(isUnderground);
+  // an amber rim on every underground province, at all zooms, so the caves read as lit
+  ctx.strokeStyle = "rgba(230,180,120,0.6)"; ctx.lineWidth = 1.0;
+  for (const p of P) if (isUnderground(p) && p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
   ctx.restore();
 }
 

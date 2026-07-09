@@ -100,9 +100,8 @@ public record Province(
 
 	/**
 	 * Whether a colony may be founded into this province (its {@link
-	 * ProvinceType#isSettleable()}). {@link ProvinceType#LAND} and the underground
-	 * {@link ProvinceType#CAVERN} qualify; water and {@link ProvinceType#IMPASSABLE}
-	 * wasteland do not.
+	 * ProvinceType#isSettleable()}). {@link ProvinceType#LAND} and the underground types
+	 * qualify; water and {@link ProvinceType#IMPASSABLE} wasteland do not.
 	 *
 	 * @return {@code true} if this is land a settlement can occupy
 	 */
@@ -123,8 +122,7 @@ public record Province(
 
 	/**
 	 * Whether this is dry land a caravan can march over on foot (its {@link
-	 * ProvinceType#isLand()}) — {@link ProvinceType#LAND} or the underground {@link
-	 * ProvinceType#CAVERN}. Land routing
+	 * ProvinceType#isLand()}) — {@link ProvinceType#LAND} or any underground type. Land routing
 	 * ({@link com.civstudio.geo.LandRouter}) traverses on this, not {@link
 	 * #isPassable()}: water is passable (for the future sea graph) but a foot
 	 * caravan must not cross it.
@@ -136,17 +134,17 @@ public record Province(
 	}
 
 	/**
-	 * Whether this is an underground (cave) province — {@link ProvinceType#CAVERN},
-	 * the Serpentspine/Dwarovar. Underground colonies are sunless: they run on a fixed
-	 * lamplit work schedule instead of solar daylight (see {@link
-	 * com.civstudio.settlement.FixedDaylightClock} and {@code docs/underworld.md}).
-	 * This is the single membership test for the Underworld, read by both the engine
-	 * and the web viewer's plane.
+	 * Whether this is an underground province — any of the Serpentspine/Dwarovar types
+	 * ({@link ProvinceType#isUnderground()}: cavern, hold, surface hold or road).
+	 * Underground colonies are sunless: they run on a fixed lamplit work schedule instead
+	 * of solar daylight (see {@link com.civstudio.settlement.FixedDaylightClock} and {@code
+	 * docs/underworld.md}). This is the single membership test for the Underworld, read by
+	 * both the engine and the web viewer's plane.
 	 *
 	 * @return {@code true} if this province lies underground
 	 */
 	public boolean isUnderground() {
-		return type == ProvinceType.CAVERN;
+		return type.isUnderground();
 	}
 
 	/**

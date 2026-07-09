@@ -161,7 +161,10 @@ function drawCostOverlay() {
 // draw the plot layer for the provinces in view, fading in just past K_PLOT. Below
 // K_TEX each province blits its flat-colour 1px/plot offscreen (cheap overview); past
 // K_TEX (and not mid-pan) it draws real ground-texture tiles per plot.
-function drawPlots() {
+// `only` (optional): a province predicate — draw just the provinces it accepts. The
+// Underworld plane uses it to relight the cavern provinces' plots over its surface veil
+// (see main.drawUnderworld); called with no argument it draws the whole world.
+function drawPlots(only) {
   if (cam.k < K_PLOT) return;
   const textured = cam.k >= K_TEX && ttReady && !S.dragging;   // flat tiles while panning (cheap)
   const a = Math.min(1, (cam.k - K_PLOT) / 1.5);
@@ -170,6 +173,7 @@ function drawPlots() {
   const vis = [];   // in-view provinces with plots loaded — reused by the bonus overlay (no 2nd P scan)
   for (const p of P) {
     if (!p.hasPlots) continue;
+    if (only && !only(p)) continue;
     const bb = provSrcBox(p);
     let sx0, sy0, sx1, sy1;
     if (bb) { sx0 = pxr(bb.x0); sy0 = pyr(bb.y0); sx1 = pxr(bb.x1); sy1 = pyr(bb.y1); }
