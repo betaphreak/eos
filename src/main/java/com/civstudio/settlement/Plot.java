@@ -395,7 +395,25 @@ public final class Plot {
 	 */
 	public double yieldFactor(Sector sector) {
 		int idx = yieldIndex(sector);
-		return Math.max(YIELD_FLOOR, yields()[idx] / YIELD_REFERENCE[idx]);
+		double factor = yields()[idx] / YIELD_REFERENCE[idx];
+		// cold ground farms poorly (frost, a short growing season) — scale down FOOD only, so a
+		// tundra/glacier colony is food-scarce however it improves the land (the +2 farm bonus no
+		// longer papers over the arctic). Production/commerce are unaffected: the cold can still mine.
+		if (sector == Sector.NECESSITY)
+			factor *= coldFoodPenalty(terrain.type());
+		return Math.max(YIELD_FLOOR, factor);
+	}
+
+	// the food multiplier for a cold terrain — 1.0 for temperate ground, dropping toward the poles
+	// so arctic colonies genuinely struggle to feed themselves (see docs; pairs with LatitudeClimate)
+	private static double coldFoodPenalty(String terrainType) {
+		return switch (terrainType) {
+			case "TERRAIN_GLACIER" -> 0.12;      // ~unfarmable ice
+			case "TERRAIN_PERMAFROST" -> 0.30;
+			case "TERRAIN_TUNDRA" -> 0.45;
+			case "TERRAIN_TAIGA" -> 0.70;        // boreal — some food
+			default -> 1.0;
+		};
 	}
 
 	// the Civ4 yield channel (0 = food, 1 = production, 2 = commerce) a sector reads

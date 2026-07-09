@@ -112,6 +112,31 @@ class PlotYieldTest {
 				"a food bonus raises the necessity yield factor");
 	}
 
+	// the NECESSITY yield factor of a developed FARM on the given terrain
+	private static double farmedFood(Terrain terrain) {
+		Plot p = new Plot(0, 0, terrain, PlotType.FLAT, null, null);
+		p.raiseImprovement(FARM, true);
+		return p.yieldFactor(Sector.NECESSITY);
+	}
+
+	@Test
+	void coldTerrainFarmsFoodPoorly() {
+		// a developed FARM (+2 food) on grassland vs the cold terrains: the same improvement, but the
+		// cold-food penalty makes an arctic farm yield a fraction of a temperate one, so a tundra /
+		// glacier colony is food-scarce however it works the land (arctic colonies feel the harshness)
+		double grass = farmedFood(GRASSLAND);
+		double taiga = farmedFood(REG.terrain("TERRAIN_TAIGA"));
+		double tundra = farmedFood(REG.terrain("TERRAIN_TUNDRA"));
+		double permafrost = farmedFood(REG.terrain("TERRAIN_PERMAFROST"));
+		double glacier = farmedFood(REG.terrain("TERRAIN_GLACIER"));
+
+		assertTrue(tundra < grass * 0.5,
+				"a tundra farm feeds far worse than grassland (" + tundra + " vs " + grass + ")");
+		assertTrue(taiga < grass, "boreal taiga feeds worse than temperate grassland");
+		assertTrue(permafrost < tundra, "permafrost is harsher than tundra");
+		assertTrue(glacier <= permafrost, "glacier is the harshest cold ground");
+	}
+
 	@Test
 	void aNonFoodBonusDoesNotAddFood() {
 		// BONUS_OLIVES is a LUXURY (enjoyment) resource and carries food in its raw yield,
