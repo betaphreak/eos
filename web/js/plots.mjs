@@ -75,20 +75,21 @@ function buildPlotCanvas(p, plots) {
   const w = x1 - x0 + 1, h = y1 - y0 + 1;
   const oc = document.createElement("canvas"); oc.width = w; oc.height = h;
   const octx = oc.getContext("2d"), im = octx.createImageData(w, h), d = im.data;
-  // a sea/lake province's shelf stays transparent in the flat overview (its resource glyphs only
-  // appear at texture zoom), so the mid-zoom map shows clean water rather than coloured blobs
+  // a sea/lake province's shelf plots render as flat water terrain (coast→sea depth ramp from the
+  // terrain key); the land-only relief/feature/river tints below are skipped for them
   const water = p.type === "SEA" || p.type === "LAKE";
   for (const q of plots) {
-    if (water) continue;                       // leave water cells transparent (imageData is zero-filled)
     const c = terrainRgb(q.terrain); let r = c[0], g = c[1], b = c[2];
-    const f = q.feature;
-    if (f) {
-      if (/FOREST|JUNGLE|WOOD/.test(f)) { r = r * 0.7 | 0; g = g * 0.82 + 16 | 0; b = b * 0.6 | 0; }
-      else if (/SWAMP|MARSH|BOG/.test(f)) { r = r * 0.82 | 0; g = g * 0.86 | 0; b = b * 0.82 | 0; }
+    if (!water) {
+      const f = q.feature;
+      if (f) {
+        if (/FOREST|JUNGLE|WOOD/.test(f)) { r = r * 0.7 | 0; g = g * 0.82 + 16 | 0; b = b * 0.6 | 0; }
+        else if (/SWAMP|MARSH|BOG/.test(f)) { r = r * 0.82 | 0; g = g * 0.86 | 0; b = b * 0.82 | 0; }
+      }
+      if (q.plotType === "HILL") { r = Math.min(255, r * 1.14 + 8) | 0; g = Math.min(255, g * 1.14 + 8) | 0; b = Math.min(255, b * 1.14 + 8) | 0; }
+      else if (q.plotType === "PEAK") { r = (r + 150) / 2 | 0; g = (g + 152) / 2 | 0; b = (b + 158) / 2 | 0; }
+      if (q.river) { r = r * 0.45 + 33 | 0; g = g * 0.45 + 61 | 0; b = b * 0.45 + 91 | 0; }
     }
-    if (q.plotType === "HILL") { r = Math.min(255, r * 1.14 + 8) | 0; g = Math.min(255, g * 1.14 + 8) | 0; b = Math.min(255, b * 1.14 + 8) | 0; }
-    else if (q.plotType === "PEAK") { r = (r + 150) / 2 | 0; g = (g + 152) / 2 | 0; b = (b + 158) / 2 | 0; }
-    if (q.river) { r = r * 0.45 + 33 | 0; g = g * 0.45 + 61 | 0; b = b * 0.45 + 91 | 0; }
     const o = ((q.y - y0) * w + (q.x - x0)) * 4;
     d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = 255;
   }
@@ -215,11 +216,10 @@ function buildPlotTexCanvas(p) {
   const grid = new Map();
   for (const q of p._plots) grid.set(q.x * 1e5 + q.y, q);
   const riverPat = rvReady && rvImg ? o.createPattern(rvImg, "repeat") : null;   // water texture, or null
-  // a sea/lake province's plots are all water — skip the land terrain/relief/shore/feature/river
-  // stages entirely (its cells stay transparent so the base sea layer shows through), leaving only
-  // the resource icons below. LAND and IMPASSABLE wasteland build the full ground.
+  // a sea/lake province's plots are all water: they still get the flat terrain fill (stage 1) and
+  // the soft same-layer edge blend (stage 2) — softening the coast→sea shelf ramp — but skip the
+  // land-only snow/coast-shallows/feature/river stages (3-4). LAND and wasteland build the full ground.
   const water = p.type === "SEA" || p.type === "LAKE";
-  if (!water) {
   // 1) base terrain as continuous repeating patterns (no per-plot tile seam)
   const pat = {};
   for (const q of p._plots) {
@@ -254,6 +254,7 @@ function buildPlotTexCanvas(p) {
       o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
     }
   }
+  if (!water) {
   // 3) snow on the highest ground. (The elevation-normal hillshade that used to sit here was
   // removed: with EXAG amplifying the gentle continental heightmap, near-flat provinces — most of
   // the map — picked up a strong per-plot bright/dark checker that just read as square tiles. The

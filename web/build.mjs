@@ -599,13 +599,21 @@ function terrainDisplayColors(real) {
     TERRAIN_ANCIENT_FOREST: [30, 52, 22], TERRAIN_GLADEWAY: [56, 116, 52],
     TERRAIN_FEY_GLADEWAY: [42, 112, 98], TERRAIN_BLOODGROVES: [96, 36, 34],
     TERRAIN_SHADOW_SWAMP: [48, 46, 60], TERRAIN_GLACIER: [180, 198, 210],
+    // water (coastal-shelf plots only — deep ocean has no plots and stays the animated base
+    // gradient). COAST is the bright shallow shelf, SEA the darker shelf edge, so the terrain
+    // key alone gives a coast→sea depth ramp; polar reads greyer, tropical more turquoise.
+    TERRAIN_COAST: [92, 156, 178], TERRAIN_COAST_POLAR: [120, 158, 172], TERRAIN_COAST_TROPICAL: [102, 178, 190],
+    TERRAIN_SEA: [52, 104, 140], TERRAIN_SEA_POLAR: [64, 96, 120], TERRAIN_SEA_TROPICAL: [46, 120, 150],
+    TERRAIN_LAKE: [54, 118, 128], TERRAIN_LAKE_SHORE: [86, 150, 150],
   };
   // the synthetic terrains repurpose an existing ground texture (rocky/lush), so their
   // MEASURED average (via terrainRealColors) is the wrong hue — a cavern must read dark and
   // warm, not rocky grey. Force these to their authored colour, overriding the real average.
   const AUTHORED = ['TERRAIN_CAVERN', 'TERRAIN_MUSHROOM_FOREST', 'TERRAIN_ANCIENT_FOREST',
     'TERRAIN_GLADEWAY', 'TERRAIN_FEY_GLADEWAY', 'TERRAIN_BLOODGROVES', 'TERRAIN_SHADOW_SWAMP',
-    'TERRAIN_GLACIER'];
+    'TERRAIN_GLACIER',
+    'TERRAIN_COAST', 'TERRAIN_COAST_POLAR', 'TERRAIN_COAST_TROPICAL', 'TERRAIN_SEA',
+    'TERRAIN_SEA_POLAR', 'TERRAIN_SEA_TROPICAL', 'TERRAIN_LAKE', 'TERRAIN_LAKE_SHORE'];
   const hex = c => '#' + [0, 1, 2].map(k => Math.max(0, Math.min(255, c[k] | 0)).toString(16).padStart(2, '0')).join('');
   // the plot zoom is a detail dive, so lift the blend×detail averages into a vibrant,
   // map-like range rather than the dark-theme tint the background bake uses
