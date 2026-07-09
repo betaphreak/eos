@@ -231,9 +231,10 @@ function drawCaveEntrances() {
 // adjacencies draw on the Overworld; tunnels (an underground endpoint) draw on the Underworld,
 // where the caves they link are lit. Centroid to centroid. See docs (adjacencies).
 const ADJ_RED = "rgba(224,66,52,0.9)";   // EU4 strait/connection red
+const ADJ_MIN_ZOOM = 10;                 // only draw connection lines once zoomed to a region
 function drawAdjacencies() {
   const adj = BUNDLE.adjacencies;
-  if (!adj || !adj.length) return;
+  if (!adj || !adj.length || cam.k < ADJ_MIN_ZOOM) return;   // hidden at world/continent view
   const under = S.plane === "underworld";
   ctx.save();
   ctx.lineWidth = 1.4;
