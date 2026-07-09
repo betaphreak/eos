@@ -293,6 +293,26 @@ const loading = fs.existsSync(loadingDir)
       .sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/))).map(f => `assets/${f}`)
   : [];
 
+// EU4 special adjacencies (straits/canals/lake crossings/Dwarovar tunnels) between provinces that
+// are not visually adjacent. Short ones draw as red dotted connection lines; ones too far to draw a
+// sensible line are flagged teleport=1 and the viewer marks each endpoint instead (a "teleporter",
+// like the cave-entrance markers). Compact as [from, to, type, teleport]; both endpoints must ship.
+const provLL = new Map(provinces.map(p => [p.id, p]));
+const gcKm = (a, b) => {
+  const la1 = a.lat * Math.PI / 180, la2 = b.lat * Math.PI / 180;
+  const dLa = la2 - la1, dLo = (b.lon - a.lon) * Math.PI / 180;
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLo / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+};
+const TELEPORT_KM = 800;   // beyond this a straight connection line would sprawl across the map
+const adjacencies = (readJsonOpt('src/main/resources/map/adjacencies.json') || [])
+  .filter(a => shipped.has(a.from) && shipped.has(a.to))
+  .map(a => {
+    const pa = provLL.get(a.from), pb = provLL.get(a.to);
+    const teleport = pa && pb && gcKm(pa, pb) > TELEPORT_KM ? 1 : 0;
+    return [a.from, a.to, a.type || '', teleport];
+  });
+
 const bundle = {
   meta: {
     seed: +SEED, scenario,
@@ -300,6 +320,7 @@ const bundle = {
     dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
   },
   provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, foam, ice, bonusIcons, trees, seaBands, geo,
+  adjacencies,                        // EU4 straits/canals/tunnels: [from, to, type] connection lines
   geoNames,                           // raw-key -> display-name dictionaries for province crumbs
   loading,                            // committed loading-screen art (assets/loading-*.jpg), or []
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack

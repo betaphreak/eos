@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.Optional;
 
@@ -50,6 +51,7 @@ public final class WorldMap {
 	private static final String REGIONS_RESOURCE = "/map/regions.json";
 	private static final String SUPERREGIONS_RESOURCE = "/map/superregions.json";
 	private static final String EDGES_RESOURCE = "/map/edges.json";
+	private static final String ADJACENCIES_RESOURCE = "/map/adjacencies.json";
 	private static final String PORTALS_RESOURCE = "/map/portals.json";
 	private static final String COUNTRIES_RESOURCE = "/map/countries.json";
 	private static final String CULTURES_RESOURCE = "/map/cultures.json";
@@ -95,6 +97,14 @@ public final class WorldMap {
 	// when the resource is absent (e.g. while the exporter itself bootstraps the map),
 	// in which case edgeKm falls back to the runtime centroid distance. See docs/land-routing.md.
 	private final Map<Integer, double[]> edgeKmById;
+
+	// the special EU4 adjacencies (straits/canals/tunnels/passes) as extra graph edges: per
+	// province, its pixel neighbours() PLUS the adjacency endpoints (deduped). Only provinces that
+	// have an adjacency edge appear; every other province routes on its neighbours() directly.
+	// Empty when /map/adjacencies.json is absent. See Adjacency / docs/land-routing.md.
+	private final Map<Integer, List<Integer>> combinedNeighbors;
+	// the raw adjacency records, for callers that need the connection metadata (type/comment)
+	private final List<Adjacency> adjacencies;
 	// committed border-portal anchors, keyed by the directed edge (from<<32 | to) ->
 	// {x, y} raster pixel on `from`'s side of the shared border (from /map/portals.json,
 	// the PortalExporter). Empty when the resource is absent (edgeless routing / the
@@ -104,7 +114,8 @@ public final class WorldMap {
 	private WorldMap(List<Province> provinces, List<Area> areas,
 			List<Region> regions, List<SuperRegion> superRegions,
 			List<Country> countries, List<Culture> cultures, List<Religion> religions,
-			List<ProvinceEdges> edges, List<ProvincePortals> portals) {
+			List<ProvinceEdges> edges, List<ProvincePortals> portals,
+			List<Adjacency> adjacencies) {
 		Map<Integer, Province> byId = new LinkedHashMap<>(provinces.size() * 2);
 		for (Province p : provinces)
 			if (byId.put(p.id(), p) != null)
@@ -117,6 +128,28 @@ public final class WorldMap {
 					throw new IllegalStateException("province " + p.id()
 							+ " has dangling neighbor " + n);
 		this.byId = byId;
+
+		// merge the special EU4 adjacencies (straits/canals/tunnels/passes) into the graph as extra
+		// bidirectional edges, so routing (LandRouter, path) traverses a tunnel/strait the raster
+		// pixel adjacency never captured. Endpoints not present in the map are skipped (defensive).
+		this.adjacencies = List.copyOf(adjacencies);
+		Map<Integer, Set<Integer>> extra = new HashMap<>();
+		for (Adjacency a : adjacencies) {
+			if (!byId.containsKey(a.from()) || !byId.containsKey(a.to()) || a.from() == a.to())
+				continue;
+			extra.computeIfAbsent(a.from(), k -> new LinkedHashSet<>()).add(a.to());
+			extra.computeIfAbsent(a.to(), k -> new LinkedHashSet<>()).add(a.from());
+		}
+		Map<Integer, List<Integer>> combined = new HashMap<>(extra.size() * 2);
+		for (Map.Entry<Integer, Set<Integer>> e : extra.entrySet()) {
+			List<Integer> base = byId.get(e.getKey()).neighbors();
+			List<Integer> all = new ArrayList<>(base);
+			for (int n : e.getValue())
+				if (!base.contains(n))
+					all.add(n);
+			combined.put(e.getKey(), List.copyOf(all));
+		}
+		this.combinedNeighbors = combined;
 
 		Map<String, Area> areasByKey = new LinkedHashMap<>(areas.size() * 2);
 		for (Area a : areas)
@@ -324,6 +357,11 @@ public final class WorldMap {
 		List<ProvincePortals> portals = loadListOptional(PORTALS_RESOURCE,
 				new TypeReference<List<ProvincePortals>>() {
 				});
+		// the special EU4 adjacencies (straits/canals/tunnels/passes) are optional too — absent
+		// while the exporter bootstraps, in which case the graph is the raster pixel adjacency alone
+		List<Adjacency> adjacencies = loadListOptional(ADJACENCIES_RESOURCE,
+				new TypeReference<List<Adjacency>>() {
+				});
 		// the political reference tables are optional: absent while their exporters
 		// bootstrap, in which case the country/culture/religion lookups are empty and
 		// the derived owner/culture/religion indices carry no entries
@@ -337,7 +375,18 @@ public final class WorldMap {
 				new TypeReference<List<Religion>>() {
 				});
 		return new WorldMap(provinces, areas, regions, superRegions,
-				countries, cultures, religions, edges, portals);
+				countries, cultures, religions, edges, portals, adjacencies);
+	}
+
+	/**
+	 * The special EU4 {@link Adjacency adjacencies} (straits/canals/tunnels/passes) merged into
+	 * this map's routing graph — the connections between provinces that are not visually adjacent.
+	 * Empty if {@code /map/adjacencies.json} was absent.
+	 *
+	 * @return an unmodifiable view of the adjacency records
+	 */
+	public List<Adjacency> adjacencies() {
+		return adjacencies;
 	}
 
 	private static <T> List<T> loadList(String resource,
@@ -409,7 +458,8 @@ public final class WorldMap {
 	 * @throws IllegalArgumentException if no province has that id
 	 */
 	public List<Integer> neighbors(int id) {
-		return province(id).neighbors();
+		List<Integer> combined = combinedNeighbors.get(id);
+		return combined != null ? combined : province(id).neighbors();
 	}
 
 	/** The settleable ({@link ProvinceType#LAND}) provinces, in load order. */
@@ -870,11 +920,17 @@ public final class WorldMap {
 	public double edgeKm(int from, int to) {
 		List<Integer> nb = province(from).neighbors();
 		int i = nb.indexOf(to);
-		if (i < 0)
-			throw new IllegalArgumentException(
-					"province " + to + " is not a neighbour of " + from);
-		double[] km = edgeKmById.get(from);
-		return km != null ? km[i] : distanceKm(from, to);
+		if (i >= 0) {
+			double[] km = edgeKmById.get(from);
+			return km != null ? km[i] : distanceKm(from, to);
+		}
+		// a special adjacency edge (strait/canal/tunnel/pass), not in the pixel neighbours: its
+		// weight isn't in the /map/edges.json table, so cost it by the great-circle distance
+		List<Integer> combined = combinedNeighbors.get(from);
+		if (combined != null && combined.contains(to))
+			return distanceKm(from, to);
+		throw new IllegalArgumentException(
+				"province " + to + " is not a neighbour of " + from);
 	}
 
 	/**

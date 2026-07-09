@@ -291,4 +291,18 @@ class WorldMapTest {
 			}
 		assertTrue(sawWater);
 	}
+
+	@Test
+	void specialAdjacenciesAreMergedIntoTheGraph() {
+		WorldMap map = WorldMap.load();
+		assertFalse(map.adjacencies().isEmpty(), "the EU4 adjacencies loaded");
+		// the Dwarovar tunnel Dwarovrod 24 (2884) <-> 25 (2885) is a real, bidirectional graph edge
+		// though the two are not visually adjacent (from map/adjacencies.csv, not the raster pixels),
+		// so routing/caravans can traverse it; its cost is a positive great-circle distance
+		assertTrue(map.neighbors(2884).contains(2885), "the Dwarovar tunnel is a neighbour edge");
+		assertTrue(map.neighbors(2885).contains(2884), "the tunnel edge is bidirectional");
+		assertFalse(map.province(2884).neighbors().contains(2885),
+				"the tunnel is NOT a raster pixel neighbour (it is an adjacency)");
+		assertTrue(map.edgeKm(2884, 2885) > 0, "the tunnel edge has a distance cost");
+	}
 }

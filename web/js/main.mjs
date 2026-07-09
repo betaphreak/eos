@@ -156,6 +156,7 @@ function renderScene() {
 
   if (S.plane === "underworld") drawUnderworld();   // dim the surface, relight the caves beneath
   else drawCaveEntrances();                         // overworld: mark where caves adjoin the surface
+  drawAdjacencies();                                // EU4-style red dotted straits/canals/tunnels
 
   // hovered province highlight (polygon if we have one, else a centroid ring for seas)
   if (S.hoverProv && S.hoverProv.rings) {
@@ -223,6 +224,47 @@ function drawCaveEntrances() {
     }
   }
   ctx.restore();
+}
+
+// EU4-style red dotted connection lines for the special adjacencies (straits, canals, lake
+// crossings, Dwarovar tunnels) between provinces that are not visually adjacent. Surface
+// adjacencies draw on the Overworld; tunnels (an underground endpoint) draw on the Underworld,
+// where the caves they link are lit. Centroid to centroid. See docs (adjacencies).
+const ADJ_RED = "rgba(224,66,52,0.9)";   // EU4 strait/connection red
+function drawAdjacencies() {
+  const adj = BUNDLE.adjacencies;
+  if (!adj || !adj.length) return;
+  const under = S.plane === "underworld";
+  ctx.save();
+  ctx.lineWidth = 1.4;
+  ctx.strokeStyle = ADJ_RED;
+  for (const [fromId, toId, , teleport] of adj) {
+    const a = Pby.get(fromId), b = Pby.get(toId);
+    if (!a || !b) continue;
+    const tunnel = isUnderground(a) || isUnderground(b);
+    if (under ? !tunnel : tunnel) continue;   // show tunnels only underground, straits only above
+    const x1 = px(a.lon), y1 = py(a.lat), x2 = px(b.lon), y2 = py(b.lat);
+    if (teleport) {
+      // too far for a sensible line — a teleporter: mark each endpoint instead (cave-entrance style)
+      teleportMark(x1, y1);
+      teleportMark(x2, y2);
+    } else {
+      if (Math.max(x1, x2) < 0 || Math.min(x1, x2) > VIEW.w
+          || Math.max(y1, y2) < 0 || Math.min(y1, y2) > VIEW.h) continue;   // off-screen cull
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+  ctx.restore();
+}
+// a teleporter endpoint marker — a small red dot with a dark centre (cf. drawCaveEntrances)
+function teleportMark(x, y) {
+  if (x < -10 || x > VIEW.w + 10 || y < -10 || y > VIEW.h + 10) return;
+  ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 7);
+  ctx.fillStyle = ADJ_RED; ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y, 1.9, 0, 7);
+  ctx.fillStyle = "rgba(18,6,6,0.92)"; ctx.fill();
 }
 
 // place province name labels over the map with a halo, skipping any that would

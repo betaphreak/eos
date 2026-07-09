@@ -89,16 +89,21 @@ class LandRouterTest {
 	}
 
 	@Test
-	void noLandRouteToASeaLockedIsland() {
+	void aRouteToAnIslandUsesAStraitNotAPavedSea() {
 		WorldMap map = WorldMap.load();
-		// precondition: Nathalaire is land, but its sole neighbour is open ocean
+		// precondition: Nathalaire is land, but its RASTER neighbours are all open ocean — before
+		// the EU4 adjacencies it was sea-locked and unreachable by land
 		assertEquals(ProvinceType.LAND, map.province(NATHALAIRE).type());
-		assertTrue(map.neighbors(NATHALAIRE).stream()
-				.noneMatch(nb -> map.province(nb).isLand()), "island has no land neighbour");
-		// so there is no land route to it — the old passable A* reached it only by
-		// paving the sea province between the mainland and the island (the reported bug)
-		assertTrue(new LandRouter(map).route(MAINLAND, NATHALAIRE).isEmpty(),
-				"a foot caravan cannot march to a sea-locked island");
+		assertTrue(map.province(NATHALAIRE).neighbors().stream()
+				.noneMatch(nb -> map.province(nb).isLand()),
+				"the island has no raster (pixel-adjacent) land neighbour");
+		// a strait adjacency now connects it, so a route may exist — but it must still be ALL LAND:
+		// the old bug reached the island by paving the sea province between it and the mainland, and
+		// that stays fixed (a strait is a land↔land edge, never a SEA/LAKE stepping stone)
+		Route r = new LandRouter(map).route(MAINLAND, NATHALAIRE);
+		for (int id : r.provinces())
+			assertTrue(map.province(id).isLand(),
+					"province " + id + " on the route is " + map.province(id).type() + ", not land");
 	}
 
 	@Test
