@@ -75,6 +75,11 @@ function provGeo(p) {
 function isPolitical() {
   return S.overlay === "nation" || S.overlay === "culture" || S.overlay === "faith";
 }
+// the four underground Dwarovar province types (open caves, holds, roads) — matches
+// ProvinceType.isUnderground(). They are lit only on the Underworld plane and hidden on the
+// Overworld (there is nothing to see of them from the surface). See docs/underworld.md.
+const UNDERGROUND_TYPES = new Set(["CAVERN", "DWARVEN_HOLD", "DWARVEN_HOLD_SURFACE", "DWARVEN_ROAD"]);
+const isUnderground = p => UNDERGROUND_TYPES.has(p.type);
 // the active political dimension for a province under the current overlay: its raw key + the
 // {name, color} table entry, or a null entry when the overlay isn't political / the province has none
 function polOf(p) {
@@ -214,4 +219,4 @@ export const S = {
 };
 S.curT = t0;
 
-export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };
+export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };

@@ -44,10 +44,12 @@ class CavernTerrainTest {
 				cave, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(7));
 
 		assertTrue(field.size() > 0, "cave province has land plots");
-		for (ProvincePlot p : field.plots()) {
-			assertEquals("TERRAIN_CAVERN", p.terrain().type(), "every plot is cave floor");
+		// the ground generates from the cavern pool (mostly TERRAIN_CAVERN, a little rocky), so
+		// most plots are cave floor and every plot is flat (a walkable floor, not the raster's peaks)
+		long cavern = field.plots().stream().filter(p -> "TERRAIN_CAVERN".equals(p.terrain().type())).count();
+		assertTrue(cavern > field.size() * 0.6, "most plots are cave floor (" + cavern + "/" + field.size() + ")");
+		for (ProvincePlot p : field.plots())
 			assertEquals(PlotType.FLAT, p.plotType(), "flat cave floor, not the raster's peaks");
-		}
 	}
 
 	@Test
@@ -60,8 +62,10 @@ class CavernTerrainTest {
 		ProvincePlotField field = ProvincePlotField.generate(
 				shroom, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(7));
 
-		for (ProvincePlot p : field.plots())
-			assertEquals("TERRAIN_MUSHROOM_FOREST", p.terrain().type(),
-					"surface mushroom forest ground");
+		// the ground generates from the mushroom pool — mostly TERRAIN_MUSHROOM_FOREST
+		long shroomPlots = field.plots().stream()
+				.filter(p -> "TERRAIN_MUSHROOM_FOREST".equals(p.terrain().type())).count();
+		assertTrue(shroomPlots > field.size() * 0.6,
+				"most plots are mushroom forest (" + shroomPlots + "/" + field.size() + ")");
 	}
 }

@@ -82,22 +82,34 @@ public final class ProvincePlotField {
 	 * desert/savanna feature places sparsely ({@link #SPARSE_CHANCE}) so the ground
 	 * reads as a mix of bare and featured rather than a uniform blanket.
 	 */
-	// special-terrain province types → the single ground terrain that fills the whole province,
-	// replacing the raster's per-plot palette (see docs/underworld.md §special terrains). The four
-	// underground types share the flat cavern floor; the surface terrains keep their relief and
-	// (grass-based ones) their trees.
-	private static final Map<ProvinceType, String> SPECIAL_TERRAIN = Map.ofEntries(
-			Map.entry(ProvinceType.CAVERN, "TERRAIN_CAVERN"),
-			Map.entry(ProvinceType.DWARVEN_HOLD, "TERRAIN_CAVERN"),
-			Map.entry(ProvinceType.DWARVEN_HOLD_SURFACE, "TERRAIN_CAVERN"),
-			Map.entry(ProvinceType.DWARVEN_ROAD, "TERRAIN_CAVERN"),
-			Map.entry(ProvinceType.ANCIENT_FOREST, "TERRAIN_ANCIENT_FOREST"),
-			Map.entry(ProvinceType.GLADEWAY, "TERRAIN_GLADEWAY"),
-			Map.entry(ProvinceType.FEY_GLADEWAY, "TERRAIN_FEY_GLADEWAY"),
-			Map.entry(ProvinceType.BLOODGROVES, "TERRAIN_BLOODGROVES"),
-			Map.entry(ProvinceType.MUSHROOM_FOREST, "TERRAIN_MUSHROOM_FOREST"),
-			Map.entry(ProvinceType.SHADOW_SWAMP, "TERRAIN_SHADOW_SWAMP"),
-			Map.entry(ProvinceType.GLACIER, "TERRAIN_GLACIER"));
+	// special-terrain province types → a weighted terrain pool their plots generate from,
+	// replacing the raster's per-plot palette (see docs/underworld.md §special terrains). Each pool
+	// is dominated by the type's signature terrain but mixes in a little compatible ground so the
+	// province reads as generated, not a flat monolith. The four underground types share the cavern
+	// pool (and flatten relief to a floor); the surface terrains keep their relief and trees.
+	private static final Map<ProvinceType, Map<String, Double>> SPECIAL_POOL = Map.ofEntries(
+			Map.entry(ProvinceType.CAVERN, cavernPool()),
+			Map.entry(ProvinceType.DWARVEN_HOLD, cavernPool()),
+			Map.entry(ProvinceType.DWARVEN_HOLD_SURFACE, cavernPool()),
+			Map.entry(ProvinceType.DWARVEN_ROAD, cavernPool()),
+			Map.entry(ProvinceType.ANCIENT_FOREST,
+					Map.of("TERRAIN_ANCIENT_FOREST", 7.0, "TERRAIN_GRASSLAND", 1.0, "TERRAIN_LUSH", 1.0)),
+			Map.entry(ProvinceType.GLADEWAY,
+					Map.of("TERRAIN_GLADEWAY", 7.0, "TERRAIN_GRASSLAND", 2.0)),
+			Map.entry(ProvinceType.FEY_GLADEWAY,
+					Map.of("TERRAIN_FEY_GLADEWAY", 7.0, "TERRAIN_LUSH", 2.0)),
+			Map.entry(ProvinceType.BLOODGROVES,
+					Map.of("TERRAIN_BLOODGROVES", 7.0, "TERRAIN_GRASSLAND", 1.0)),
+			Map.entry(ProvinceType.MUSHROOM_FOREST,
+					Map.of("TERRAIN_MUSHROOM_FOREST", 7.0, "TERRAIN_MARSH", 1.0, "TERRAIN_MUDDY", 1.0)),
+			Map.entry(ProvinceType.SHADOW_SWAMP,
+					Map.of("TERRAIN_SHADOW_SWAMP", 6.0, "TERRAIN_MARSH", 2.0, "TERRAIN_MUDDY", 1.0)),
+			Map.entry(ProvinceType.GLACIER,
+					Map.of("TERRAIN_GLACIER", 6.0, "TERRAIN_PERMAFROST", 2.0, "TERRAIN_TUNDRA", 1.0)));
+
+	private static Map<String, Double> cavernPool() {
+		return Map.of("TERRAIN_CAVERN", 8.0, "TERRAIN_ROCKY", 1.0);
+	}
 
 	// special surface terrains whose signature feature the trees.bmp density signal misses (they
 	// are terrain-override provinces, not painted wooded/marshy): the forests carry FEATURE_FOREST,
@@ -176,19 +188,20 @@ public final class ProvincePlotField {
 				composed[idx] = rougher(relief[idx], MapTerrainCodec.relief(mask.terrainIndex(lx, ly)));
 			}
 
-		// special-terrain provinces replace the raster's per-plot ground with a single terrain
-		// (a cave floor, an ancient forest, a glacier, …) — the raster reads them as generic
-		// mountain/forest, so membership drives the ground instead. Done before the feature/bonus
-		// stages so those read the real ground (grass-based terrains still spawn trees; underground
-		// folds to PyTerrain.OTHER → bare). The underground types also flatten relief to a walkable
-		// floor; surface terrains keep their hills/peaks. See docs/underworld.md.
-		String specialKey = SPECIAL_TERRAIN.get(province.type());
-		if (specialKey != null) {
-			Terrain specialGround = registry.terrain(specialKey);
+		// special-terrain provinces generate their ground from a type-specific weighted pool
+		// (a cavern floor, an ancient forest, a glacier, …) instead of the raster's per-plot
+		// palette — the raster reads them as generic mountain/forest, so membership drives the
+		// ground. Done before the feature/bonus stages so those read the real ground (grass-based
+		// terrains still spawn trees; underground folds to PyTerrain.OTHER → bare). The underground
+		// types also flatten relief to a walkable floor; surface terrains keep their hills/peaks.
+		// See docs/underworld.md.
+		Map<String, Double> specialPool = SPECIAL_POOL.get(province.type());
+		if (specialPool != null) {
+			TerrainGenerator specialGen = new TerrainGenerator(registry, specialPool);
 			boolean flatten = province.isUnderground();
 			for (int idx = 0; idx < ground.length; idx++)
 				if (ground[idx] != null) { // land cells only (water/off-mask stay null)
-					ground[idx] = specialGround;
+					ground[idx] = specialGen.next(rng);
 					if (flatten)
 						composed[idx] = PlotType.FLAT;
 				}

@@ -73,10 +73,19 @@ public final class TerrainGenerator {
 	 */
 	public TerrainGenerator(TerrainRegistry registry, Climate climate,
 			WinterSeverity winter, Monsoon monsoon) {
-		Map<String, Double> weights = baseWeights(climate);
-		applyWinter(weights, winter);
-		applyMonsoon(weights, monsoon);
+		this(registry, climateWeights(climate, winter, monsoon));
+	}
 
+	/**
+	 * Build a generator from an <b>explicit</b> weighted terrain pool, bypassing the
+	 * climate model — used for the special Anbennar terrains, whose provinces generate a
+	 * pool dominated by their signature terrain rather than a climate mix (see {@link
+	 * ProvincePlotField} and {@code docs/underworld.md}).
+	 *
+	 * @param registry the curated terrain/feature/improvement definitions
+	 * @param weights  terrain key → relative weight (a plot draws one per {@link #next})
+	 */
+	public TerrainGenerator(TerrainRegistry registry, Map<String, Double> weights) {
 		List<Terrain> terrains = new ArrayList<>();
 		List<Double> cum = new ArrayList<>();
 		double running = 0;
@@ -182,6 +191,16 @@ public final class TerrainGenerator {
 		if (i >= valid.size())
 			i = valid.size() - 1; // floating-point guard
 		return valid.get(i);
+	}
+
+	// the full climate-derived weight pool: the base climate weights shifted by winter and
+	// monsoon. LinkedHashMap throughout so the pool order (hence the draw) is deterministic.
+	private static Map<String, Double> climateWeights(Climate climate, WinterSeverity winter,
+			Monsoon monsoon) {
+		Map<String, Double> weights = baseWeights(climate);
+		applyWinter(weights, winter);
+		applyMonsoon(weights, monsoon);
+		return weights;
 	}
 
 	// the base climate pool (placeholder weights pending the Phase-2 food-balance

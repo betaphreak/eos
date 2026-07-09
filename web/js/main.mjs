@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, latAtScreenY, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, isUnderground, latAtScreenY, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 import { drawPolitical, scheduleLegendRefresh } from "./overlays/political.mjs";
@@ -143,16 +143,19 @@ function renderScene() {
   ctx.save(); ctx.fillStyle = "rgba(74,150,128,0.42)";
   for (const p of P) if (p.type === "LAKE" && p.rings && provOnScreen(p)) ctx.fill(provPath(p));
   ctx.restore();
-  drawPlots();   // crisp per-plot Civ4 terrain over the blurred raster when zoomed in
+  // surface plots only — underground provinces are never drawn here (hidden on the Overworld;
+  // relit by drawUnderworld on the Underworld plane). See docs/underworld.md.
+  drawPlots(isSurface);   // crisp per-plot Civ4 terrain over the blurred raster when zoomed in
   drawCostOverlay();   // elevation movement-cost heat over the terrain, when toggled on
 
   if (S.showHeat && S.overlay === "caravan") drawCaravanHeat();   // caravan-days choropleth
   if (isPolitical()) drawPolitical();                             // nation/culture/faith fills
-  // province outlines
+  // province outlines (surface only; underground gets its lit rim from drawUnderworld)
   ctx.strokeStyle="rgba(190,205,230,.18)"; ctx.lineWidth=0.8;
-  for (const p of P) if (p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
+  for (const p of P) if (isSurface(p) && p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
 
   if (S.plane === "underworld") drawUnderworld();   // dim the surface, relight the caves beneath
+  else drawCaveEntrances();                         // overworld: mark where caves adjoin the surface
 
   // hovered province highlight (polygon if we have one, else a centroid ring for seas)
   if (S.hoverProv && S.hoverProv.rings) {
@@ -182,10 +185,6 @@ function renderScene() {
 // Serpentspine positions — the underground shown in place beneath the dimmed world above.
 // Per world-copy: the veil is the raster's own rect, so adjacent copies abut (no additive
 // double-darkening). Runs before the hover/selected highlights so those stay crisp on top.
-// the four underground Dwarovar province types (open caves, the holds, and the roads) — all
-// lit on the Underworld plane. Matches Province.isUnderground()/ProvinceType.isUnderground().
-const UNDERGROUND_TYPES = new Set(["CAVERN", "DWARVEN_HOLD", "DWARVEN_HOLD_SURFACE", "DWARVEN_ROAD"]);
-const isUnderground = p => UNDERGROUND_TYPES.has(p.type);
 function drawUnderworld() {
   ctx.save();
   // veil exactly the map raster's rect for this copy (abuts the neighbour copy seamlessly)
@@ -200,6 +199,29 @@ function drawUnderworld() {
   // an amber rim on every underground province, at all zooms, so the caves read as lit
   ctx.strokeStyle = "rgba(230,180,120,0.6)"; ctx.lineWidth = 1.0;
   for (const p of P) if (isUnderground(p) && p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
+  ctx.restore();
+}
+const isSurface = p => !isUnderground(p);
+
+// On the Overworld, underground provinces are hidden — so mark the cave entrances: where a
+// surface province borders a hidden underground one (a descent point / gate-hold like Marrhold),
+// draw a small amber cave-mouth glyph on their shared border. Lets you see, from the surface,
+// that a neighbour lies underground. See docs/underworld.md.
+function drawCaveEntrances() {
+  ctx.save();
+  for (const p of P) {
+    if (isUnderground(p) || !p.nb || !p.rings || !provOnScreen(p)) continue;
+    for (const nbId of p.nb) {
+      const nb = Pby.get(nbId);
+      if (!nb || !isUnderground(nb)) continue;
+      // the shared border is ~midway between the two centroids; bias toward the cave side
+      const mx = px(p.lon) * 0.45 + px(nb.lon) * 0.55, my = py(p.lat) * 0.45 + py(nb.lat) * 0.55;
+      ctx.beginPath(); ctx.arc(mx, my, 4.5, 0, 7);
+      ctx.fillStyle = "rgba(232,183,106,0.9)"; ctx.fill();
+      ctx.beginPath(); ctx.arc(mx, my, 1.9, 0, 7);
+      ctx.fillStyle = "rgba(18,10,6,0.92)"; ctx.fill();   // the dark cave mouth
+    }
+  }
   ctx.restore();
 }
 
