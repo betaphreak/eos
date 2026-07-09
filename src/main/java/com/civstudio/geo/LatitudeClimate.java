@@ -61,27 +61,23 @@ public final class LatitudeClimate {
 		return temperature(latitude) - winterOffset(winter);
 	}
 
-	// Regions whose climate runs warmer than their latitude would dictate — the Forbidden Lands
-	// (forbidden_lands_superregion), a lore anomaly kept temperate despite sitting in the deep
-	// north. Provinces here get WARM_ANOMALY_OFFSET added to their effective temperature, and
-	// permafrost is suppressed (see ProvincePlotField), so the far-north freeze reads as harsh
-	// boreal rather than glaciated waste. Region raw_keys taken from superregion.txt.
-	private static final java.util.Set<String> WARM_ANOMALY_REGIONS = java.util.Set.of(
-			"yyl_moista_region", "ogre_valley_region", "west_forbidden_plains_region",
-			"east_forbidden_plains_region", "serpent_gift_region", "south_yarikhoi_region",
-			"north_yarikhoi_region", "nuzurbokh_region");
+	// Per-region relative temperature modifier (°C), added to a province's effective temperature on
+	// top of its latitude + winter — so permafrost/taiga/glaciation all follow from the shifted
+	// temperature. A CivStudio climate knob, not an EU4 concept (Anbennar's climate is per-province
+	// in climate.txt, with no regional offset): a lore anomaly where a region runs warmer (positive)
+	// or colder (negative) than its latitude dictates. Keyed on the region raw_key that
+	// Province#regionKey carries (from region.txt); a region absent from the map reads 0.
+	//
+	// North + South Yarikhoi (in the Forbidden Lands) run 20°C warm, a temperate pocket in the
+	// deep north.
+	private static final Map<String, Double> REGION_TEMP_OFFSET = Map.of(
+			"north_yarikhoi_region", 20.0,
+			"south_yarikhoi_region", 20.0);
 
-	/** Extra warmth (°C) the warm-anomaly regions (Forbidden Lands) run above their latitude. */
-	public static final double WARM_ANOMALY_OFFSET = 20.0;
-
-	/** Whether a province lies in a warm-climate anomaly region (the Forbidden Lands). */
-	public static boolean isWarmAnomaly(Province province) {
-		return province.regionKey() != null && WARM_ANOMALY_REGIONS.contains(province.regionKey());
-	}
-
-	/** The regional warmth (°C) added to a province's effective temperature — {@link #WARM_ANOMALY_OFFSET} in the anomaly, else 0. */
-	public static double regionalWarmth(Province province) {
-		return isWarmAnomaly(province) ? WARM_ANOMALY_OFFSET : 0.0;
+	/** The relative temperature modifier (°C) for a province's region — 0 if its region has none. */
+	public static double regionTempOffset(Province province) {
+		Double off = province.regionKey() == null ? null : REGION_TEMP_OFFSET.get(province.regionKey());
+		return off == null ? 0.0 : off;
 	}
 
 	// the temperature below which the imported warm terrain starts being cooled (taiga band top),
@@ -135,22 +131,6 @@ public final class LatitudeClimate {
 			bump(w, "TERRAIN_TUNDRA", temperature < -10 ? 15 * (h / 2 + 0.75) : 7 * (h / 2 + 0.75));      // its "permafrost"
 		if (w.isEmpty())
 			w.put("TERRAIN_TAIGA", 1.0);
-		return w;
-	}
-
-	/**
-	 * The cold-terrain pool, optionally with permafrost suppressed — the warm-anomaly regions
-	 * (Forbidden Lands) keep their boreal cool but never glaciate, so their coldest ground is
-	 * tundra/taiga rather than {@code TERRAIN_PERMAFROST}. Falls back to tundra if dropping
-	 * permafrost would empty the pool (only possible below the anomaly's warmed range).
-	 */
-	public static Map<String, Double> coldPool(double temperature, boolean allowPermafrost) {
-		Map<String, Double> w = coldPool(temperature);
-		if (!allowPermafrost) {
-			w.remove("TERRAIN_PERMAFROST");
-			if (w.isEmpty())
-				w.put("TERRAIN_TUNDRA", 1.0);
-		}
 		return w;
 	}
 

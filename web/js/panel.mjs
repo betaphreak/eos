@@ -111,14 +111,17 @@ function setT(t){
 }
 function tick(ts){
   if(!playing) return;
-  if(lastTs){ const dt=(ts-lastTs)/1000; setT(S.curT + dt*SPEEDS[speed].dps); if(S.curT>=t1){ pause(); } }
+  if(lastTs){ const dt=(ts-lastTs)/1000; setT(S.curT + dt*SPEEDS[speed].dps); if(S.curT>=t1){ pause(); return; } }
   lastTs=ts; raf=requestAnimationFrame(tick);
 }
 function play(){
+  if (playing) return;                           // already running — never start a 2nd rAF chain (a
+                                                 // stray play() while playing would leak a parallel
+                                                 // tick loop the single `raf` handle can't cancel)
   if (S.curT >= t1) S.curT = t0;                 // restart from the top if parked at the end
   playing = true; lastTs = 0;
   playIcon.innerHTML = PAUSE_ICON; playBtn.setAttribute("aria-label", "Pause");
-  renderSpeed(); raf = requestAnimationFrame(tick);
+  renderSpeed(); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
 }
 function pause(){
   playing = false; cancelAnimationFrame(raf);
