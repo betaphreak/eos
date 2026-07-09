@@ -1,0 +1,57 @@
+name: Build & push spectator server image
+
+# Builds the live spectator server image (docs/client-server.md) and pushes it to the shared
+# registry (civstudio.azurecr.io). It does NOT deploy the Container App: the project
+# subscription is accessed by a *guest* identity that can create/manage resources but cannot
+# create role assignments, so no CI service principal can be granted ARM rights. Rolling the
+# app to a new image is therefore a one-liner run from an authenticated session (see
+# docs/client-server.md §Deployment → "Updating"). CI's job is the part that can't be done on
+# the dev box: building the image (no local Docker; ACR Tasks are absent in the registry's
+# belgiumcentral region, so `az acr build` can't run there either — we build with Docker on
+# the runner and push, which is region-independent).
+#
+# Auth: ACR admin credentials as repo secrets ACR_USERNAME / ACR_PASSWORD (no Azure AD login,
+# no service principal). Enable this workflow by adding those two secrets; until then it is a
+# no-op you can trigger manually.
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/**'                                  # the engine + server
+      - 'pom.xml'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'data/anbennar/**'                        # the runtime rasters baked into the image
+      - 'web/live.html'                           # the thin-client page the server serves
+      - '.github/workflows/deploy-server.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: build-server-image
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Log in to ACR
+        run: |
+          echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ vars.ACR_LOGIN_SERVER }}" \
+            --username "${{ secrets.ACR_USERNAME }}" --password-stdin
+
+      - name: Build and push image
+        run: |
+          IMG="${{ vars.ACR_LOGIN_SERVER }}/civstudio-server"
+          docker build -f Dockerfile -t "$IMG:${{ github.sha }}" -t "$IMG:latest" .
+          docker push "$IMG:${{ github.sha }}"
+          docker push "$IMG:latest"
+
+      - name: Next step (manual deploy)
+        run: |
+          echo "Image pushed: ${{ vars.ACR_LOGIN_SERVER }}/civstudio-server:${{ github.sha }}"
+          echo "Roll the app from an authenticated az session:"
+          echo "  az containerapp update -n civstudio-server -g civstudio \\"
+          echo "    --image ${{ vars.ACR_LOGIN_SERVER }}/civstudio-server:${{ github.sha }}"

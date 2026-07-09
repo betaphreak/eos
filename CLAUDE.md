@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`eos` (public name **CivStudio**) is an agent-based civilization simulation in plain Java 21: settlements of laborer/noble/ruler households, firms, multi-currency banks and daily-clearing markets, founded into a real imported world map (Anbennar EU4) with per-plot terrain, solar daylight, a liturgical rest-day calendar, RimWorld-style skills, real mortality, weddings and births, a peasant labor pool, wandering caravans and a tech tree. Runs are headless — CSV time series plus an event log under `output/<seed>/` — and seed-reproducible (economic, naming, mortality, skill and terrain draws ride separate salted RNG streams).
+`eos` (public name **CivStudio**) is an agent-based civilization simulation in plain Java 25: settlements of laborer/noble/ruler households, firms, multi-currency banks and daily-clearing markets, founded into a real imported world map (Anbennar EU4) with per-plot terrain, solar daylight, a liturgical rest-day calendar, RimWorld-style skills, real mortality, weddings and births, a peasant labor pool, wandering caravans and a tech tree. Runs are headless — CSV time series plus an event log under `output/<seed>/` — and seed-reproducible (economic, naming, mortality, skill and terrain draws ride separate salted RNG streams).
 
 The root package is `com.civstudio` (the repository directory is named `eos`, but the Java package is not), standard Maven layout under `src/main/java/com/civstudio/`.
 
 ## Build & run
 
-Maven project, Java 21, JUnit 5. Toolchain on this machine: Temurin JDK 21 at `C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot` (user `JAVA_HOME`), Maven 3.9.9 at `C:\Users\Eu\tools\apache-maven-3.9.9` (both on the user `PATH`).
+Maven project, Java 25, JUnit 5. Toolchain on this machine: Temurin JDK 25 at `C:\Users\Eu\tools\jdk-25.0.3.9-hotspot` (user `JAVA_HOME`), Maven 3.9.9 at `C:\Users\Eu\tools\apache-maven-3.9.9` (both on the user `PATH`).
 
 ```powershell
 mvn clean compile          # compile to target/classes
@@ -59,10 +59,11 @@ Subsystem map — one line each; the as-built detail for all of them is in [`doc
 - **Races** — per-person ancestry varying names, mortality, calendar and tech overlay. `docs/race.md`.
 - **Political layer** — canonical Anbennar province ownership (`Province.ownerTag`/`culture`/`religion` + `Country`/`Culture`/`Religion` records + `WorldMap.provincesByOwner`/`ByCulture`/`ByReligion`), stamped from vendored EU4 history by dev-tool exporters; drives the web **Political** map mode. `docs/political-map.md`.
 - **Underworld + special terrains** — the underground Serpentspine as a second map plane (four Dwarovar `ProvinceType`s — `CAVERN`/`DWARVEN_HOLD`/`DWARVEN_HOLD_SURFACE`/`DWARVEN_ROAD` — stamped by `CavernExporter`): sun-free 14h `FixedDaylightClock`, food-scarce `TERRAIN_CAVERN`, dimmed-ghost viewer plane. The same machinery promotes seven distinctive **surface** terrains (ancient/fey/blood forests, mushroom, shadow swamp, glacier) to their own types with bespoke terrain/art/yields (`city_terrain` deferred). `docs/underworld.md`.
+- **Client/server (spectator)** — `com.civstudio.server`: a tick-authoritative `HostedSession` (pausable/rate-limited lockstep loop + tick-stamped `CommandLog` seam) that `SessionHost` runs many-per-JVM, streaming a read-only render snapshot to the browser over SSE (`http.FeedServer`, `web/live.html`); `ServerMain` hosts the six-caravan demo. Factorio-shaped spine, browser as thin render-client; the session's savegame is its `SessionSpec` + command log, replayed deterministically. **Deployed live** on Azure Container Apps at `live.civstudio.com` (the caravan demo). `docs/client-server.md` (incl. §Deployment — the guest-identity/ACR-region constraints that shape it).
 
 ## Tests
 
-`mvn test` runs each scenario full-length as a smoke test; ruler-colony tests assert a **clean collapse**, `SmallOpenEconomyTest` asserts growth and stability, and targeted tests cover individual mechanisms (the inventory is in `docs/architecture.md` §Scenarios). Surefire keeps `reuseForks=false` — the `SimLog` handler is a process-global static, so each test class gets a fresh JVM (which also keeps `-ea` on).
+`mvn test` runs each scenario full-length as a smoke test; ruler-colony tests assert a **clean collapse**, `SmallOpenEconomyTest` asserts growth and stability, and targeted tests cover individual mechanisms (the inventory is in `docs/architecture.md` §Scenarios). All sim state is per-instance — including the event log, now routed per session rather than through a process-global handler (the client/server Phase 0 work) — so Surefire runs the suite in one reused JVM (`reuseForks=true`, assertions on).
 
 ## Conventions
 

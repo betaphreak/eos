@@ -1,0 +1,380 @@
+# Design & plan: client/server — a session is a seed
+
+**Status (by phase):**
+- **Phase 0 — de-globalize the process singletons (per-`GameSession` logging and
+  output routing).** ✅ **Implemented** (2026-07-09). *Prerequisite for everything below.*
+- **Phase A — spectator server: authoritative sim + live state feed to the browser.**
+  ✅ **Implemented** (2026-07-09). Factorio-shaped spine (tick authority + command-log
+  seam + resume-by-replay), browser as thin render-client over SSE.
+- **Phase B — interactive server: a client command channel + player action model,
+  server-authoritative, persisted as an ordered command log.** Proposed / later.
+- **Phase C — persistence, resume, and horizontal hosting (snapshotting, replay,
+  multi-node).** Proposed / later.
+
+**Date:** design 2026-07-09.
+
+**Decision inputs (2026-07-09):** target is **spectator first, then interactive**;
+hosting model is **many sessions per JVM**; this document is the deliverable (no code
+yet).
+
+**Depends on:** `GameSession` (the seed owner and per-colony RNG partitioning — see
+`settlement/GameSession.java` and `util/RngSeed`); `Settlement`'s externally-drivable
+step API (`start()` / `newDay()` / `isDead()` / `finishRun()`); `SessionRunner`'s
+lockstep day-barrier (`simulation/SessionRunner.java`); the `SimLog` process-global
+logging setup (`io/SimLog.java`); the printer/CSV output convention (`output/<seed>/`);
+and the static web viewer that consumes it (`web/build.mjs` → `web/data.js`).
+
+**Related:** `docs/architecture.md` §The step loop (the phase order this server drives),
+§Goods, printers, utils (the reporting this feed replaces/augments); `docs/caravan-trade.md`
+and `docs/village-founding.md` (the near-term gameplay the interactive phase will expose);
+the project direction (playable game long-term, player seat deferred, stability-first).
+
+---
+
+## Motivation
+
+The engine is already a headless, seed-reproducible authoritative simulation. A
+`GameSession` owns a seed, derives every random stream off it (`RngSeed`), and holds the
+cross-colony state (world map, tech tree, wandering bands, shared name pools). The same
+seed yields a byte-identical run. `Settlement.newDay()` advances exactly one in-game day
+and is already driven from an external loop (`SessionRunner`).
+
+What is missing is not a simulation core — it is (1) **isolation** (the process assumes
+one run at a time) and (2) a **live surface** (state is dumped to CSV at end-of-run and
+read by a static web build; nothing streams incremental state to a subscriber, and no
+serializable state snapshot exists).
+
+The central design fact that makes this tractable:
+
+> **Authoritative state is a pure function of the seed and the ordered input log.**
+> Today the input log is empty, so state = *f*(seed, tick). Add player commands and
+> state = *f*(seed, command-log). This gives cheap persistence (store the log, not the
+> state), free replay, and natural spectate — *provided* the RNG discipline the codebase
+> already enforces is never broken.
+
+So the seed is the reproducibility root. It is **not**, on its own, the session identity:
+two sessions with the same seed but a different founding config (era, province, scenario)
+diverge on day 0. Identity is a small spec:
+
+```
+SessionSpec { long seed; Era era; FoundingConfig founding }   // hashes to a sessionId
+```
+
+`seed` is the deterministic salt underneath; `sessionId = hash(SessionSpec)` is the key a
+client asks for. Two clients requesting the same spec land in the same world; "resume
+session X" replays deterministically from its spec + log.
+
+---
+
+## What is already server-ready
+
+- **The session object exists.** `GameSession` is the natural per-session unit — seed,
+  RNG streams, shared reference data, cross-colony bands.
+- **The step loop is externally drivable.** `Settlement.newDay()` is public; `start()`,
+  `isDead()`, `finishRun()` complete a clean stepping API. `SessionRunner` already owns
+  the loop instead of `Settlement.run()`.
+- **Determinism is enforced as law.** Per-colony salted streams
+  (`rngSeed.forColony(Stream.ECONOMIC, idx)`, …); "never consume from the economic RNG
+  for a new feature" is a standing convention. This is exactly the invariant a
+  server-authoritative + replay design needs.
+- **In-session concurrency is solved.** One thread per colony, `Phaser` day-barrier,
+  per-colony RNG/name/mortality partitioning, synchronized cross-colony seams. A single
+  hosted session with N colonies works today.
+
+## What blocks it (ranked by cost)
+
+1. **Process-global singletons — the #1 refactor.** `SimLog` is `static`, init-once-
+   per-process, hard-wired to one `output/<seed>/`. Tests already run
+   `reuseForks=false` *because* of this. With **many sessions per JVM** (the chosen
+   hosting model), two sessions collide on the log handler and output directory.
+   Everything session-scoped — logging, output routing, the `output/<seed>/` convention —
+   must move from process-global to per-`GameSession`. Mechanical but pervasive; this is
+   Phase 0 and gates all of A/B/C.
+2. **Output is batch file I/O, not a live stream.** Printers write CSV at end-of-run; the
+   web reads a *static* `data.js` (`web/build.mjs`). There is no "state after tick N"
+   surface and **no serializable state snapshot** — state is a live object graph across
+   agents/markets/banks. A live client needs a snapshot/delta DTO layer that does not
+   exist yet.
+3. **No serialization / no save-load.** A running session cannot be persisted or resumed.
+   Determinism *partially* covers this (spec + log → replay), but replay cost grows with
+   game length, so long sessions eventually need real snapshotting (Phase C).
+4. **Run-to-completion, collapse-by-design mindset.** Scenarios are `static run()` that
+   build → run → exit, and ruler colonies deliberately collapse (`docs/food-balance.md`).
+   A playable session needs an open-ended, pausable, server-owned loop and colonies that
+   persist. This is a *prerequisite for B*, not for A: a spectator server can happily
+   stream a colony that collapses.
+5. **No player-input surface.** Everything is autonomous agents; there is no command/
+   action model. Until one exists, client/server can only be **spectator**. The player
+   seat is deferred by project direction — so it is deferred to Phase B here too.
+
+---
+
+## Phase 0 — de-globalize the singletons
+
+Goal: `N` `GameSession`s coexist in one JVM with no shared mutable process state.
+
+- **`SimLog` → per-session.** Replace the `static initialized` / single file handler
+  with a logging context owned by (or keyed by) the `GameSession`. The per-thread `Ctx`
+  ThreadLocal already scopes *which colony* prefixes a record; what remains global is the
+  *handler + output file*. Route each session's records to its own `output/<sessionId>/`
+  (see below). Options, cheapest first: (a) a per-session `Logger` name hierarchy with a
+  per-session file handler attached; (b) an MDC-style session key on the ThreadLocal that
+  a single handler demultiplexes to per-session files. (a) is closest to the current
+  design.
+- **Output directory → per-session.** Everything currently under `output/<seed>/`
+  (CSVs, the `.log`, the merged tables from `CsvMerger`) becomes `output/<sessionId>/`.
+  For the spectator server the CSVs may become optional (the live feed supersedes them),
+  but keep them behind a flag — they are the current viewer's data source and the natural
+  audit trail.
+- **Audit for other statics.** Sweep for `static` mutable state on the hot path before
+  declaring isolation (grep for `static` non-`final` fields under `agent/`, `market/`,
+  `bank/`, `io/`). The RNG streams are already per-session; the risk is incidental caches.
+
+Deliverable: two sessions run concurrently in one JVM to completion, each writing a clean,
+non-interleaved `output/<sessionId>/`. This is independently valuable — it also lets the
+test suite drop `reuseForks=false`.
+
+**As built (2026-07-09).** The audit found `SimLog.initialized` + its single root file
+handler to be the *only* mutable process-global state on the output path across
+`agent/market/bank/io/settlement/simulation` — RNG is already per-session (via
+`GameSession`/`RngSeed`), and CSV output is already per-session (each `Settlement` owns a
+`CsvRowSinkFactory` scoped to `output/<seed>/`, installed by `Settlement.setSession`). So
+Phase 0 was one contained refactor of `io/SimLog.java`: the single global file handler
+became a **session-demultiplexing** handler that routes each record to a per-session file
+sink (keyed by the log path, so a session's colonies share one file and distinct sessions
+in one JVM stay separate), resolved from the colony bound on the emitting thread. Process
+handlers install once; per-session sinks open lazily and are released by a new
+`SimLog.closeSession(Settlement)` (the host's session-teardown seam). The console handler
+(WARNING+ to stderr) stays genuinely shared. Directory naming stays `output/<seed>/` for
+now (distinct seeds → distinct dirs); the `output/<sessionId>/` rename is deferred to when
+same-seed/different-spec sessions become real (see the `SessionSpec` note above).
+Regression test: `io/SimLogSessionRoutingTest` runs two sessions in one JVM and asserts
+each log holds only its own records. Dropping `reuseForks=false` is now *possible* but was
+left as a separate change (it touches the Surefire config, not the engine).
+
+## Phase A — the spectator server
+
+Server runs the authoritative sim; browsers watch live. This upgrades the web viewer from
+static-snapshot to live feed and, not incidentally, forces the isolation + snapshot work
+that B also needs.
+
+**Components:**
+
+- **`SessionHost`** — owns a registry of `GameSession`s keyed by `sessionId`, a tick
+  scheduler, and the transport. Creating a session = resolve/validate a `SessionSpec`,
+  build the `GameSession` + its colonies (the existing harness founding sequence), and
+  register it. Virtual threads (`Thread.ofVirtual`) fit the existing one-thread-per-colony
+  model well and make many-sessions-per-JVM cheap; the `Phaser` day-barrier is reused
+  per session.
+- **Tick scheduler.** A server owns the loop `SessionRunner` owns today, but ticks on a
+  clock (e.g. configurable in-game-days per wall-second) or on demand (pause/resume/step),
+  instead of running flat-out to collapse. This is a variation on
+  `SessionRunner.runConcurrently` with (a) a rate limiter and (b) a pause gate at the
+  day-barrier.
+- **State snapshot DTO.** The real new work: a serializable projection of a colony's
+  state at a tick — the same shape a save file would later take. Derive it from what the
+  printers already read (prices, volumes, banks, population, plots, POIs, band positions).
+  Emit a full snapshot on client join and per-tick (or per-in-game-month) **deltas**
+  after. Keep it a *projection*, never the live graph — the sim must not be reachable
+  from the wire.
+- **Transport.** WebSocket to the browser you already have (`web/`). Protocol:
+  `subscribe(sessionId) → {full snapshot} then {delta}*`. Control messages
+  (`pause`/`resume`/`setRate`/`step`) are spectator-scoped in this phase (they affect
+  playback/hosting, not the sim's decisions).
+
+**Web-side:** `web/app.js` gains a live-feed data source alongside the static `data.js`
+one — the map/caravan replay it already renders, fed by the socket instead of the baked
+file. `web/build.mjs` stays for offline/static viewing.
+
+Deliverable: open the site, pick a session (seed+spec), watch it advance live.
+
+**As built (2026-07-09).** The `com.civstudio.server` package:
+- **`SessionSpec`** {seed, scenario, provinceId} → `id()` = `<scenario>-<seed>`. The
+  savegame key: state = *f*(spec, command log), so the spec + log *is* the resume format
+  (no object-graph serializer built — replay is the resume path; a bit-serialized
+  fast-resume snapshot stays the Phase C optimization).
+- **`HostedSession`** — the tick authority. One virtual thread runs a lockstep loop
+  advancing each colony one in-game day per tick <em>sequentially</em> (bit-identical to
+  `SessionRunner`'s concurrent lockstep, since colonies never read each other mid-day —
+  disjoint RNG/name/mortality partitions), plus `tickBands` for the wandering caravans.
+  Pause/resume/step/rate gate only wall-clock timing, never results. Commands drain at the
+  deterministic top-of-tick. Snapshots are assembled on the session thread between ticks
+  and cached, so the projection never races `newDay` and a slow subscriber never stalls
+  the sim.
+- **`command.GameCommand` / `CommandLog`** — the tick-stamped input spine (empty during
+  spectator; the ordered applied history is the replay log). Verified: a command scheduled
+  for tick N applies at exactly tick N.
+- **`render.{SessionSnapshot,ColonyView,CaravanView,Snapshots}`** — the read-only render
+  projection (colony aggregates + caravan positions/vitals), never the live graph.
+- **`http.FeedServer`** — the transport. **SSE over the JDK `HttpServer`, not WebSocket**:
+  a spectator feed is one-way server→client, so SSE fits and keeps the zero-runtime-
+  dependency ethos (JDK + the already-present Jackson; the JDK has no WS server). Each SSE
+  connection has its own bounded queue the session thread offers into (drop-oldest if the
+  client lags), drained by the connection's own virtual thread — so a slow spectator can
+  never stall the simulation. Endpoints: list/create sessions, `…/stream` (SSE),
+  `…/control` (pause/resume/step/rate), `…/commands` (the Phase-B seam, a 202 no-op today).
+- **`ServerMain`** + **`web/live.html`** — launcher and a self-contained thin client
+  (`EventSource` → canvas map of the caravans with trails + a live colony/caravan panel +
+  the controls). The demo hosts one caravan-demo session (a standard colony founded into
+  Dhenijansar plus **six directed caravans** marching to distant graph-reachable
+  provinces) and ticks it ~one in-game day per second.
+
+Verified end-to-end: `HostedSessionTest` (snapshot shape, caravans march over 40 days,
+tick-exact command application, pause holds the clock), `FeedServerTest` (SSE round-trip),
+and a live run — the six caravans fan out across the map and the pause/resume/rate controls
+drive the running session.
+
+## Deployment (Phase A)
+
+The site and the server are **two deployables** that talk over HTTPS — because they are
+opposite shapes:
+
+```
+   civstudio.com  ──────────  Azure Static Web Apps          (unchanged: web/ → deploy-web.yml)
+   (index.html, app.js, data.js, baked map assets — a prebuilt static folder)
+          │
+          │  EventSource (SSE) + fetch (control)
+          ▼
+   live.civstudio.com  ──────  Azure Container App           (new: Dockerfile → deploy-server.yml)
+   (the fat jar: HostedSessions + FeedServer, one always-on replica)
+```
+
+The static viewer stays on Static Web Apps exactly as before. The spectator server is a
+**stateful, always-on JVM** (sessions live in memory, tick on threads, stream over SSE), so
+it cannot run on Static Web Apps or serverless Functions — it needs a persistent compute
+host. **Azure Container Apps** with **min-replicas = 1** (no scale-to-zero, so sessions
+survive) is the target; SSE works over its ingress out of the box.
+
+**Build artifact.** `mvn package` produces a self-contained executable fat jar
+(`maven-shade-plugin`, `Main-Class = com.civstudio.server.ServerMain`, Jackson folded in) —
+it does not affect `mvn test`/`exec:exec`. The `Dockerfile` builds that jar and copies, onto
+a slim JRE 25, the two things the engine reads **from disk at runtime**: `data/anbennar/`
+(the province-raster BMPs, ~95 MB — the JSON/name tables are already on the classpath inside
+the jar) and `web/live.html` (the page the server serves). `data/civ4` is excluded
+(`.dockerignore`) — it feeds only the web asset baker, never the Java runtime.
+
+**Where it lives (as deployed).** The project subscription (`CivStudio`) already has the
+pieces we reuse, so there is almost no greenfield infra:
+
+| Resource | Name | Region | Note |
+|---|---|---|---|
+| Resource group | `civstudio` | belgiumcentral | shared |
+| Container registry | `civstudio` (`civstudio.azurecr.io`) | belgiumcentral | shared, admin-enabled |
+| Managed environment | `civstudio-managed-env` | West Europe | shared |
+| **Container App** | **`civstudio-server`** | West Europe | port 8080, external ingress, min/max-replicas 1, 1 CPU / 2 GiB |
+
+The same environment also hosts an unrelated app (`civstudio-backend-app`, port 1337); the
+spectator server is a separate app on port 8080 and does not touch it. As deployed the app
+answers at `civstudio-server.<env-hash>.westeurope.azurecontainerapps.io` and pulls from the
+ACR with the registry's **admin credentials** (managed-identity pull would need a role
+assignment — see below — that the deploying identity can't create).
+
+**The identity constraint that shapes everything.** The `CivStudio` subscription is accessed
+by a **guest** account (`…#EXT#@…`) that holds **Contributor, not Owner/User Access
+Administrator**. It can create and manage *resources* (it created all of the above) but it
+**cannot create role assignments** — every `az role assignment …` returns a misleading
+`MissingSubscription`. Consequences:
+- **No CI service principal.** An SP can be *created* but not *granted a role*, so it's
+  useless for ARM. Automated deploy-from-CI is therefore not possible from this identity;
+  a subscription **Owner** would have to grant a role (or grant the guest User Access
+  Administrator) to enable it.
+- **Deploy is done from an authenticated `az` session**, not CI. Creating/updating the
+  Container App and binding the hostname are *resource* ops the guest can do.
+
+**Building the image (the one thing the dev box can't do).** No local Docker, and ACR
+**Tasks** are absent in **belgiumcentral** (`az acr build` against `civstudio` fails with
+`NoRegisteredProviderFound`; push/pull work there fine). The first image was built by a
+**throwaway ACR in West Europe** (where Tasks exist): `az acr create civstudiobuild …` →
+`az acr build` → `az acr import` into `civstudio` → `az acr delete civstudiobuild`. The same
+trick (or `docker build`+push from any machine with Docker) produces later images.
+
+**CI (`deploy-server.yml`) — build & push only.** Given the above, the workflow builds the
+image with Docker **on the GitHub runner** and pushes it to the ACR using **admin
+credentials** (repo secrets `ACR_USERNAME` / `ACR_PASSWORD`; no Azure AD login, no SP). It
+does **not** deploy — it prints the `az containerapp update` one-liner to run. It's a no-op
+until those two secrets are added. Repo **variables** `ACR_NAME`, `ACR_LOGIN_SERVER`,
+`CONTAINERAPP_NAME`, `CONTAINERAPP_ENV`, `AZURE_RG` are set (the deploy one-liner reads them).
+
+**Updating.**
+```bash
+# build a new image (throwaway-ACR trick, or CI, or any Docker host), tag it into civstudio, then:
+az containerapp update -n civstudio-server -g civstudio \
+  --image civstudio.azurecr.io/civstudio-server:<tag>
+```
+
+**Custom domain (`live.civstudio.com`).** `civstudio.com` DNS is **not** in Azure DNS
+(no zone in the subscription), so the two validation records are added at the external DNS
+provider by hand, then bound:
+
+```bash
+# after the app exists, read its verification id and default FQDN:
+az containerapp show -n civstudio-server -g civstudio \
+  --query "{fqdn:properties.configuration.ingress.fqdn, verify:properties.customDomainVerificationId}" -o json
+# add at the DNS provider:  CNAME  live       -> <fqdn>
+#                           TXT    asuid.live -> <verify>
+# then bind + provision a managed cert:
+az containerapp hostname add  -n civstudio-server -g civstudio --hostname live.civstudio.com
+az containerapp hostname bind -n civstudio-server -g civstudio --hostname live.civstudio.com \
+  --environment civstudio-managed-env --validation-method CNAME
+```
+
+**Notes / limits.**
+- **Instance affinity.** A session's state is in one replica's memory, so a spectator must
+  reach the replica hosting it — fine at one replica; scaling out later needs sticky routing
+  by session id (the Factorio "a game lives on one host" constraint).
+- **Memory.** Each session loads its own `WorldMap` (~1 MB) + rasters; 2 GiB comfortably
+  holds the demo. Cap/evict idle sessions once many-per-JVM is real (`SessionHost.remove`).
+- **Ephemerality.** Sessions and their in-memory command logs don't survive a restart;
+  `ServerMain` re-creates the demo session on boot. Durable sessions (persist the command
+  log → replay) is Phase C.
+- **Cross-origin.** The demo is same-origin (the server serves `live.html`). Wiring the
+  SWA-hosted `app.js` to the feed (Phase B) needs CORS headers on the server, or an SWA route
+  proxying `/api/*` to the Container App.
+
+## Phase B — the interactive server
+
+Add a client → server command channel and a player action model on top of A's
+infrastructure.
+
+- **Action model.** Define the first player-actionable decisions. The natural first
+  targets align with project direction: taxation levers (the ruler's tax rates already
+  exist as config — `bankProfitTaxRate`, `nobleIncomeTaxRate`) and caravan/trade
+  sponsorship (`docs/caravan-trade.md` Phase B). Each action is a small, validated,
+  serializable command.
+- **The command log is the persistence format.** Commands append to a per-session ordered
+  log, consumed at a **single deterministic point** in `newDay()` (before agents act, so
+  the effect is reproducible). state = *f*(spec, command-log) holds, so the log *is* the
+  save file and the replay/spectate stream.
+- **Authority + validation.** The server is authoritative; a command is validated against
+  session state before it enters the log. Determinism means a spectator can be promoted to
+  a replay of any past tick, and a reconnecting client re-derives state from spec + log
+  (bounded by snapshot cadence from Phase C).
+- **Prerequisite:** colonies that *persist* rather than collapse-by-design — i.e. the
+  food/survival calibration flagged in project memory (`docs/food-balance.md`,
+  `docs/births.md`). Spectating a doomed colony is fine; *playing* one is not.
+
+## Phase C — persistence, resume, horizontal hosting
+
+- **Snapshotting.** Real serialization of session state so resume/reconnect doesn't replay
+  from tick 0. The Phase A snapshot DTO is the starting point; a *full* save additionally
+  needs the RNG cursor positions and any state the projection omits.
+- **Resume = snapshot + tail of the command log.** Restore nearest snapshot, replay the
+  log tail. Determinism guarantees correctness.
+- **Multi-node.** Sessions are independent (share only immutable reference data), so
+  hosting shards cleanly across nodes by `sessionId` once state is serializable.
+
+---
+
+## Key decisions still open
+
+- **Snapshot granularity & cadence** — per-tick vs per-in-game-month deltas; how much of
+  the colony state the projection carries (drives both wire cost and how much a Phase-C
+  save must add).
+- **Tick-rate policy** — fixed in-game-days/second, client-adjustable, or catch-up-on-
+  join (replay fast to present, then live).
+- **Transport & format** — WebSocket + JSON is the low-friction default for the existing
+  browser client; a binary framing is a later optimization.
+- **Session lifecycle & GC** — when an idle session is evicted, snapshotted, or torn down;
+  the eviction policy for many-sessions-per-JVM.
+- **Where the command log lives** (Phase B) — in-memory + append-only file per session,
+  vs a shared store; ties into the Phase C persistence choice.

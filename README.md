@@ -14,7 +14,7 @@ mortality schedule, and geography from imported real map data. The engine is
 currently **headless** — a run produces CSV time-series and an event log for
 analysis — and fully **deterministic**: the same seed produces the same world.
 
-Written in plain Java 21 (root package `com.civstudio`; the repository keeps its
+Written in plain Java 25 (root package `com.civstudio`; the repository keeps its
 original codename `eos`), with only two runtime dependencies (Jackson, Lombok).
 
 ## What the engine simulates
@@ -91,7 +91,7 @@ colony declines). The smoke-test suite asserts colonies reach that collapse
 
 ## Build & run
 
-Requirements: **JDK 21** and **Maven**.
+Requirements: **JDK 25** and **Maven**.
 
 ```bash
 mvn clean compile          # compile
@@ -151,6 +151,14 @@ the rest. (Byte-identical output *across* code versions is not a goal.)
 A run's output can be visualized: [`web/`](web/) holds self-contained, read-only
 HTML views built from `output/<seed>/`. `web/dashboard.html` is a map-led replay
 of a parallel directed-march caravan run — see [`web/README.md`](web/README.md).
+
+A run can also be **watched live**. `com.civstudio.server` wraps a session in a
+tick-authoritative, pausable host — Factorio-shaped, where authoritative state is
+*f*(seed, ordered command log) and the browser is a thin render-client — and
+streams a read-only snapshot over Server-Sent Events. A public demo of six
+caravans marching over the world map in real time runs at
+**[live.civstudio.com](https://live.civstudio.com)**; design and deployment notes
+are in [`docs/client-server.md`](docs/client-server.md).
 
 ## Roadmap
 

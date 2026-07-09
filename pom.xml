@@ -20,11 +20,12 @@
     </licenses>
 
     <properties>
-        <maven.compiler.release>21</maven.compiler.release>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Which simulation `mvn exec:exec` runs; override with -Dsim.main=com.civstudio.simulation.SmallOpenEconomy -->
         <sim.main>com.civstudio.simulation.HomogeneousEconomy</sim.main>
-        <lombok.version>1.18.34</lombok.version>
+        <!-- 1.18.42 (Sep 2025) is the first Lombok with JDK 25 support -->
+        <lombok.version>1.18.42</lombok.version>
     </properties>
 
     <dependencies>
@@ -87,20 +88,67 @@
             </plugin>
 
             <!--
-              Each simulation test runs the full colony. Settlement state is
-              per-instance now, but the SimLog logging handler is still a
-              process-global static, so a fresh JVM is forked per test class
-              (reuseForks=false) to isolate it. Assertions stay on, matching
-              how the simulations run under exec.
+              Each simulation test runs the full colony. All simulation state is
+              per-instance: Settlement state, the RNG streams (per GameSession), the
+              CSV output (per-settlement sink factory), and — since the client/server
+              Phase 0 work — the event log (SimLog now routes per session rather than
+              through a single process-global file handler; see docs/client-server.md).
+              So the tests share one reused JVM (reuseForks=true, the default forkCount
+              of 1). Assertions stay on, matching how the simulations run under exec.
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
                 <configuration>
-                    <reuseForks>false</reuseForks>
+                    <reuseForks>true</reuseForks>
                     <enableAssertions>true</enableAssertions>
                 </configuration>
+            </plugin>
+
+            <!--
+              `mvn package` builds a self-contained executable jar (the engine + its
+              runtime deps, e.g. Jackson, folded in) whose Main-Class is the spectator
+              server. This is what the Docker image runs (see Dockerfile / docs/client-server.md
+              §Deployment). It does not affect `mvn test` or `mvn exec:exec` (neither runs the
+              package phase), so local scenario runs are unchanged. Lombok is provided-scope
+              and stays out of the jar (compile-time only).
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.civstudio.server.ServerMain</mainClass>
+                                </transformer>
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                            </transformers>
+                            <filters>
+                                <!-- drop signature files from signed deps so the fat jar verifies -->
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>module-info.class</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

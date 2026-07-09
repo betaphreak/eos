@@ -1,0 +1,18 @@
+# Keep the Docker build context small. The runtime image needs only the jar (built in the
+# maven stage from src/ + pom.xml) plus data/anbennar (BMP rasters) and web/live.html.
+
+.git
+target
+output
+**/node_modules
+
+# Civ4 art source — used only by web/build.mjs to bake the web assets, never read by the
+# Java runtime (its data was pre-exported to the classpath JSON). ~30 MB, not needed here.
+data/civ4
+
+# baked web assets and the rest of the web viewer (served from Azure Static Web Apps, not
+# from the server image — only web/live.html is copied in explicitly by the Dockerfile)
+web/assets
+web/*.pack
+web/node_modules
+tools

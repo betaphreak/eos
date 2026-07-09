@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CivStudio — live session</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #0e1116; color: #d7dce3;
+    font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  header {
+    display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+    padding: 0.7rem 1rem; border-bottom: 1px solid #222a35; background: #131924;
+  }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; letter-spacing: 0.02em; }
+  header .meta { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #8b95a3; }
+  header .date { color: #e8c37a; font-family: ui-monospace, monospace; font-size: 15px; }
+  .badge { padding: 0.05rem 0.5rem; border-radius: 999px; font-size: 12px;
+           font-family: ui-monospace, monospace; }
+  .badge.RUNNING { background: #14351f; color: #6bd08a; }
+  .badge.PAUSED  { background: #3a2f10; color: #e8c37a; }
+  .badge.STOPPED { background: #3a1616; color: #e07a7a; }
+  .badge.CREATED { background: #1c2430; color: #8b95a3; }
+  main { display: grid; grid-template-columns: 1fr 340px; gap: 0; height: calc(100vh - 52px); }
+  #map { width: 100%; height: 100%; display: block; background:
+         radial-gradient(1200px 800px at 50% 40%, #0f1622, #0a0d12); }
+  aside { border-left: 1px solid #222a35; padding: 1rem; overflow-y: auto; background: #10151d; }
+  aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+             color: #6f7a89; margin: 1.2rem 0 0.5rem; }
+  aside h2:first-child { margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 0.15rem 0; }
+  td:last-child { text-align: right; font-family: ui-monospace, monospace; color: #cfe3ff; }
+  .car { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0;
+         border-top: 1px solid #1a212c; font-size: 13px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+  .car .who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .car .where { color: #8b95a3; font-family: ui-monospace, monospace; font-size: 11px; }
+  .car.settled .who { color: #6bd08a; }
+  .controls { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;
+              margin-top: 0.3rem; }
+  button { background: #1c2635; color: #d7dce3; border: 1px solid #2c3a4e;
+           border-radius: 6px; padding: 0.3rem 0.7rem; cursor: pointer; font-size: 13px; }
+  button:hover { background: #24344a; }
+  .controls label { color: #8b95a3; font-size: 12px; }
+  input[type=range] { width: 120px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<header>
+  <h1>CivStudio</h1>
+  <span class="meta" id="sid">connecting…</span>
+  <span class="badge CREATED" id="state">—</span>
+  <span class="meta">tick <b id="tick">0</b></span>
+  <span class="date" id="date"></span>
+  <span class="controls" style="margin-left:auto">
+    <button onclick="ctl('resume')">▶ Resume</button>
+    <button onclick="ctl('pause')">⏸ Pause</button>
+    <button onclick="ctl('step',1)">⏭ Step</button>
+    <label>rate <input type="range" min="0" max="2000" value="1000" step="100"
+       oninput="rate.textContent=this.value+'ms'; ctl('rate', +this.value)"></label>
+    <span class="meta" id="rate">1000ms</span>
+  </span>
+</header>
+<main>
+  <canvas id="map"></canvas>
+  <aside>
+    <h2>Colony</h2>
+    <table id="colony"></table>
+    <h2 id="carHead">Caravans</h2>
+    <div id="caravans"></div>
+  </aside>
+</main>
+<script>
+const palette = ['#e8c37a','#6bd08a','#7aa2e0','#e07a9e','#9e7ae0','#e0a97a','#7ae0d0','#c0e07a'];
+const trails = {};           // label -> [{x,y}...] in lat/long space
+let bounds = null;           // {latMin,latMax,lonMin,lonMax}, auto-fitted & only expanding
+let sessionId = null;
+
+const canvas = document.getElementById('map');
+const ctx = canvas.getContext('2d');
+function fit() { canvas.width = canvas.clientWidth * devicePixelRatio;
+                 canvas.height = canvas.clientHeight * devicePixelRatio;
+                 ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); }
+addEventListener('resize', fit); fit();
+
+function expand(lat, lon) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+  if (!bounds) bounds = {latMin:lat,latMax:lat,lonMin:lon,lonMax:lon};
+  bounds.latMin = Math.min(bounds.latMin, lat); bounds.latMax = Math.max(bounds.latMax, lat);
+  bounds.lonMin = Math.min(bounds.lonMin, lon); bounds.lonMax = Math.max(bounds.lonMax, lon);
+}
+function project(lat, lon) {
+  const w = canvas.clientWidth, h = canvas.clientHeight, pad = 44;
+  const dLat = Math.max(0.5, bounds.latMax - bounds.latMin);
+  const dLon = Math.max(0.5, bounds.lonMax - bounds.lonMin);
+  const x = pad + (lon - bounds.lonMin) / dLon * (w - 2*pad);
+  const y = pad + (bounds.latMax - lat) / dLat * (h - 2*pad); // north up
+  return [x, y];
+}
+
+function render(snap) {
+  document.getElementById('sid').textContent = snap.sessionId;
+  document.getElementById('tick').textContent = snap.tick;
+  document.getElementById('date').textContent = snap.date;
+  const badge = document.getElementById('state');
+  badge.textContent = snap.state; badge.className = 'badge ' + snap.state;
+
+  const colony = snap.colonies[0] || {};
+  expand(colony.latitude, colony.longitude);
+  snap.caravans.forEach(c => expand(c.latitude, c.longitude));
+
+  // colony stats
+  document.getElementById('colony').innerHTML = colony.name ? `
+    <tr><td>${colony.name}</td><td>${colony.date||''}</td></tr>
+    <tr><td>population</td><td>${colony.population}</td></tr>
+    <tr><td>children</td><td>${colony.children}</td></tr>
+    <tr><td>nobles</td><td>${colony.nobles}</td></tr>
+    <tr><td>firms</td><td>${colony.firms}</td></tr>
+    <tr><td>peasant pool</td><td>${colony.poolSize}</td></tr>
+    <tr><td>plots</td><td>${colony.plotCount} / ${colony.maxPlots}</td></tr>
+    <tr><td>food price</td><td>${(colony.necessityPrice||0).toFixed(2)}</td></tr>
+    <tr><td>CPI</td><td>${(colony.cpi||0).toFixed(1)}</td></tr>` : '';
+
+  // caravan roster
+  document.getElementById('carHead').textContent = `Caravans (${snap.caravans.length})`;
+  document.getElementById('caravans').innerHTML = snap.caravans.map((c,i) => `
+    <div class="car ${c.settled?'settled':''}">
+      <span class="dot" style="background:${palette[i%palette.length]}"></span>
+      <span class="who">${c.leader}</span>
+      <span class="where">${c.province} · ${c.bandSize}👤 · 🍞${Math.round(c.larder)}</span>
+    </div>`).join('');
+
+  // record trails
+  snap.caravans.forEach((c,i) => {
+    (trails[c.leader] = trails[c.leader] || []).push([c.latitude, c.longitude]);
+    if (trails[c.leader].length > 400) trails[c.leader].shift();
+  });
+
+  draw(snap, colony);
+}
+
+function draw(snap, colony) {
+  if (!bounds) return;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  ctx.clearRect(0,0,w,h);
+
+  // colony marker
+  if (Number.isFinite(colony.latitude)) {
+    const [x,y] = project(colony.latitude, colony.longitude);
+    ctx.fillStyle = '#cbd5e1'; ctx.fillRect(x-4, y-4, 8, 8);
+    ctx.fillStyle = '#8b95a3'; ctx.font = '12px ui-monospace, monospace';
+    ctx.fillText(colony.name || 'colony', x+8, y+4);
+  }
+  // trails + caravans
+  snap.caravans.forEach((c,i) => {
+    const col = palette[i % palette.length];
+    const tr = trails[c.leader] || [];
+    ctx.strokeStyle = col + '66'; ctx.lineWidth = 1.5; ctx.beginPath();
+    tr.forEach((p,k) => { const [x,y]=project(p[0],p[1]); k?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.stroke();
+    const [x,y] = project(c.latitude, c.longitude);
+    ctx.fillStyle = col; ctx.beginPath();
+    ctx.arc(x, y, c.settled?7:5, 0, 7); ctx.fill();
+    if (c.settled) { ctx.strokeStyle = '#0e1116'; ctx.lineWidth = 2; ctx.stroke(); }
+  });
+}
+
+async function ctl(action, value) {
+  if (!sessionId) return;
+  await fetch(`/api/sessions/${sessionId}/control`,
+    {method:'POST', headers:{'Content-Type':'application/json'},
+     body: JSON.stringify(value===undefined ? {action} : {action, value})});
+}
+
+async function connect() {
+  let list = await (await fetch('/api/sessions')).json();
+  if (!list.length) {
+    await fetch('/api/sessions', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({})});
+    list = await (await fetch('/api/sessions')).json();
+  }
+  sessionId = list[0].id;
+  const es = new EventSource(`/api/sessions/${sessionId}/stream`);
+  es.onmessage = e => { try { render(JSON.parse(e.data)); } catch (err) { console.error(err); } };
+  es.onerror = () => { document.getElementById('sid').textContent = sessionId + ' (reconnecting…)'; };
+}
+connect();
+</script>
+</body>
+</html>
