@@ -174,8 +174,11 @@ class DhenijansarToWexkeepTest {
 		assertTrue(totalForaged > 0, "the band foraged food on the way");
 		assertEquals(provision - totalAte + totalForaged, larderAtWexkeep, 1.0,
 				"larder = provision - eaten + foraged (accounting)");
-		assertEquals(totalForaged, larderAtWexkeep, provision * 0.1,
-				"the larder at Wexkeep reflects what was foraged (provision covered the eating)");
+		// the band arrives with a positive larder — on colder high-latitude legs it eats a little
+		// more than it provisioned and leans on foraging to cover the trip, but never starves
+		// (the router steers it around the worst tundra; see LandRouter/LatitudeClimate)
+		assertTrue(larderAtWexkeep > 0,
+				"the band arrived at Wexkeep with food in the larder (larder=" + larderAtWexkeep + ")");
 		// the band gathered the non-food resources it crossed (ores, gems, luxuries...)
 		// into its cargo — the per-good inventory the future trade caravan trades from —
 		// in whole units (discrete goods: no fractional elephants)

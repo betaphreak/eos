@@ -70,7 +70,11 @@ public final class LandRouter {
 			for (int nb : map.neighbors(cur)) {
 				if (!map.province(nb).isLand())
 					continue; // land-only: never route a foot caravan over water or wasteland
-				double tentative = gc + map.edgeKm(cur, nb);
+				// weight the search by forageability so bands prefer routes they can eat along, and
+				// detour around un-forageable ground (ice, cold tundra, the sunless Dwarovar) where
+				// the destination allows. The march still spends REAL km (build() uses edgeKm), so this
+				// shifts path CHOICE only; a penalty ≥ 1 keeps the km heuristic admissible.
+				double tentative = gc + map.edgeKm(cur, nb) * forageHarshness(map.province(nb));
 				Double best = g.get(nb);
 				if (best == null || tentative < best) {
 					g.put(nb, tentative);
@@ -81,6 +85,24 @@ public final class LandRouter {
 			}
 		}
 		return Route.NONE;
+	}
+
+	/**
+	 * A {@code >= 1} multiplier on an edge's <b>search</b> cost by how un-forageable its
+	 * destination province is, so the router prefers routes a marching band can eat along.
+	 * The real march distance is unchanged (this shifts path choice only): glacier ice and
+	 * the sunless Dwarovar forage almost nothing, and the latitude-cooled tundra (see {@link
+	 * LatitudeClimate}) forages progressively less as it turns cold. Temperate land and the
+	 * special forest terrains forage fine ({@code 1.0}).
+	 */
+	private static double forageHarshness(Province p) {
+		return switch (p.type()) {
+			case GLACIER -> 6.0;                          // barren ice
+			case CAVERN, DWARVEN_HOLD, DWARVEN_HOLD_SURFACE, DWARVEN_ROAD -> 4.0; // sunless, little forage
+			case LAND -> 1.0 + 2.5 * LatitudeClimate.coldFraction(
+					LatitudeClimate.effectiveTemperature(p.latitude(), p.winter())); // 1 → 3.5 toward the poles
+			default -> 1.0;                               // forests / temperate ground forage fine
+		};
 	}
 
 	// reconstruct the province sequence and its per-hop km from the came-from chain

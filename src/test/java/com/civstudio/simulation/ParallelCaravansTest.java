@@ -101,7 +101,9 @@ class ParallelCaravansTest {
 			bands.add(band);
 		}
 
-		// one thread per band; each with its own Rng and its own journal writer
+		// one thread per band; each with its own Rng and its own journal writer. Even the arctic
+		// cities (e.g. Damescrown, lat ~72°) arrive well within this horizon because the router now
+		// steers bands around the un-forageable latitude-cooled tundra (LandRouter.forageHarshness).
 		int maxDays = 365 * 20;
 		LocalDate start = LocalDate.of(1445, 6, 1);
 		ExecutorService pool = Executors.newFixedThreadPool(bands.size());

@@ -188,6 +188,23 @@ public final class ProvincePlotField {
 				composed[idx] = rougher(relief[idx], MapTerrainCodec.relief(mask.terrainIndex(lx, ly)));
 			}
 
+		// latitude climate: the imported terrain.bmp ignores latitude (it paints the far north green
+		// grassland), so cool a normal LAND province's warm ground toward taiga/tundra/permafrost as
+		// its latitude — and its winter severity — rise. Ported from the C2C planet generator (see
+		// LatitudeClimate); ramped by coldFraction so the temperate zone is untouched. Special-terrain
+		// provinces (glacier/forests/caves) keep their biome (handled below), and mountains stay.
+		if (province.type() == ProvinceType.LAND) {
+			double temp = LatitudeClimate.effectiveTemperature(province.latitude(), province.winter());
+			double coldFrac = LatitudeClimate.coldFraction(temp);
+			if (coldFrac > 0) {
+				TerrainGenerator coldGen = new TerrainGenerator(registry, LatitudeClimate.coldPool(temp));
+				for (int idx = 0; idx < ground.length; idx++)
+					if (ground[idx] != null && LatitudeClimate.isWarm(ground[idx])
+							&& rng.uniform() < coldFrac)
+						ground[idx] = coldGen.next(rng);
+			}
+		}
+
 		// special-terrain provinces generate their ground from a type-specific weighted pool
 		// (a cavern floor, an ancient forest, a glacier, …) instead of the raster's per-plot
 		// palette — the raster reads them as generic mountain/forest, so membership drives the

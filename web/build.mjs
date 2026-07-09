@@ -349,6 +349,13 @@ function bakeTerrain(provs) {
   const dataOff = buf.readUInt32LE(10);
   const idxAt = (x, y) => buf[dataOff + (H - 1 - y) * W + x];  // 8-bit, bottom-up, W is 4-aligned
   const TINT = terrainTint(terrainRealColors());
+  // latitude cooling: terrain.bmp ignores latitude (it paints the far north green), so tint the
+  // high-latitude land pixels toward a pale tundra tone by the C2C temperature model — mirrors
+  // geo/LatitudeClimate (temp = 40 - 0.6·|lat|, cool below 12°, full below -6°). Per-pixel here, so
+  // latitude-only; the per-plot terrain layer additionally folds in each province's winter severity.
+  const COLD_TINT = [120, 128, 135];
+  const latOfSrcY = sp => { const t = (1 - 2 * sp / H) * Math.PI; return (2 * Math.atan(Math.exp(t)) - Math.PI / 2) * 180 / Math.PI; };
+  const coldBlendAt = lat => { const temp = 40 - 54 * Math.min(1, Math.abs(lat) / 90); return (temp >= 12 ? 0 : temp <= -6 ? 1 : (12 - temp) / 18) * 0.7; };
 
   // downsample by box-averaging the tinted colours (index averaging is meaningless);
   // the whole-world crop needs more pixels than the old caravan crop to stay legible
@@ -366,6 +373,7 @@ function bakeTerrain(provs) {
   const sea = new Uint8Array(dw * dh);      // 1 = a pure-ocean pixel (no land sub-pixel) — depth pass fills it
   for (let j = 0; j < dh; j++) {
     const by0 = y0 + Math.floor(j * scale), by1 = Math.max(by0 + 1, y0 + Math.floor((j + 1) * scale));
+    const cf = coldBlendAt(latOfSrcY((by0 + by1) / 2));   // latitude cooling blend for this row
     for (let i = 0; i < dw; i++) {
       const bx0 = x0 + Math.floor(i * scale), bx1 = Math.max(bx0 + 1, x0 + Math.floor((i + 1) * scale));
       let r = 0, g = 0, b = 0, nl = 0, ntot = 0;
@@ -377,8 +385,11 @@ function bakeTerrain(provs) {
           const t = TINT[idx]; r += t[0]; g += t[1]; b += t[2]; nl++;
         }
       const k = j * dw + i, o = k * 3;
-      if (nl > 0) { rgb[o] = r / nl | 0; rgb[o + 1] = g / nl | 0; rgb[o + 2] = b / nl | 0; alpha[k] = Math.round(nl / ntot * 255); }
-      else sea[k] = 1;                       // pure ocean: rgb/alpha stay 0 until the depth pass below
+      if (nl > 0) {
+        let cr = r / nl, cg = g / nl, cb = b / nl;
+        if (cf > 0) { cr = cr * (1 - cf) + COLD_TINT[0] * cf; cg = cg * (1 - cf) + COLD_TINT[1] * cf; cb = cb * (1 - cf) + COLD_TINT[2] * cf; }
+        rgb[o] = cr | 0; rgb[o + 1] = cg | 0; rgb[o + 2] = cb | 0; alpha[k] = Math.round(nl / ntot * 255);
+      } else sea[k] = 1;                     // pure ocean: rgb/alpha stay 0 until the depth pass below
     }
   }
 
