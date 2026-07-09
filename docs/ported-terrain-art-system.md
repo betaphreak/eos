@@ -14,6 +14,13 @@ This is a Civ4 (Gamebryo/BTS) mod — **Caveman2Cosmos (C2C)**. The notes below
 describe the *data model and rendering rules*, not the C++ engine internals, so a
 Java port can reproduce the behaviour with its own renderer.
 
+> **As-built note (2026-07):** this repo no longer vendors `UnpackedArt/` and no longer
+> uses **Git-LFS** — both were removed. The build's sole art source is the committed,
+> **non-LFS** `data/civ4/assets/` subset (~24 MB), and `resolveArt` reads only there.
+> The `UnpackedArt/…` paths throughout this doc describe the **upstream C2C mod's** layout
+> (where the art originates) and the earlier vendoring — not this repo's current tree. To
+> add more upstream art, copy it into `data/civ4/assets/`.
+
 ---
 
 ## 1. Asset pipeline (why the folder is called *Unpacked*Art)
@@ -41,8 +48,8 @@ Key facts (from `Assets/art/Readme.txt`):
 **Java port implication:** you don't need FPK. Treat `UnpackedArt/art` as the asset
 root and resolve XML paths directly against it (case-insensitively). If you ever
 need the packed format, `Tools/PakBuild.exe` is the reference packer. *(As built, the
-in-use textures have been copied out of LFS into `data/civ4/assets/` and `build.mjs`'s
-`resolveArt` reads there first, falling back to `UnpackedArt/art` — see §10/§11.)*
+in-use textures are committed non-LFS under `data/civ4/assets/` and `build.mjs`'s
+`resolveArt` reads only there; the `UnpackedArt/` tree and LFS were removed — see §10/§11.)*
 
 ---
 
@@ -264,13 +271,12 @@ map, `web/app.js`; no Three.js/Babylon). So the art must be **delivered to the
 browser as pre-converted, web-optimised assets** — §8's "load `.nif`/`.dds` at
 runtime" is the wrong target for the client.
 
-**Hard rule — source vs. deliverable.** `UnpackedArt/art` (~141 MB, Git-LFS) is
-**offline source only**; it must **never ship to the client**. The browser
-receives a **curated, converted, atlased subset** (target: a few MB total, lazy
-where possible). `web/assets` today is ~124 KB; that order of magnitude is the
-budget to defend. The 3D `.nif` meshes are the bulk of the 141 MB and are **not
-runtime assets** for a 2D client — most of the tree is reference/source, not
-shipped.
+**Hard rule — source vs. deliverable.** The upstream C2C `UnpackedArt/art` tree is
+**offline source only**; it must **never ship to the client**. The browser receives a
+**curated, converted, atlased subset** (target: a few MB total, lazy where possible). The
+in-use subset is committed **non-LFS** under `data/civ4/assets/` (~24 MB); the full
+upstream tree (the 3D `.nif` meshes are its bulk, and are **not** runtime assets for a 2D
+client) is **no longer vendored here** — pull from upstream C2C if you need more.
 
 **Decided: 2D sprites** (matches today's `<canvas>` renderer; 3D WebGL is not the
 target). Concretely:
@@ -281,14 +287,12 @@ target). Concretely:
   (or replaced with hand-authored 2D art); the browser only ever sees the sprite.
 - **Terrain blend** — draw from a WebP tile atlas driven by the §4.1 16-way
   `TextureBlend` table (pre-composed tiles, or composited on the canvas).
-- **Consequence for the LFS source** — the in-use terrain/water/river **textures have already been
-  extracted out of LFS** into `data/civ4/assets/` (32 `.dds`, ~15 MB, committed **non-LFS**): the 16
-  land terrains' blend/detail, the sea blend/detail set (`seablend`/`seadetail`/`seatrop`/`seapol`/
-  `seadeepblend`), `shoredetail`, and `allriverssmall`. `build.mjs`'s `resolveArt` reads there first
-  (falling back to `UnpackedArt/art`), so **CI bakes the web assets without pulling LFS at all**
-  (`deploy-web.yml` checks out `lfs: false`). What remains in `UnpackedArt` (Git-LFS, ~141 MB) is the
-  `.nif`/`.kf`/`.kfm` mesh+anim tree (the bulk) plus the unused textures — touch-once source for the
-  still-unbuilt sprite baker, and a candidate to prune once sprites are baked.
+- **Art source (as built)** — every in-use texture (terrain, water/sea, river, feature/tree, bonus)
+  lives committed **non-LFS** under `data/civ4/assets/`, and `build.mjs`'s `resolveArt` reads only
+  there. **Git-LFS and the `UnpackedArt/` tree were removed entirely** (2026-07): the build is fully
+  self-sufficient on `data/civ4/assets` (verified — terrain tiles, trees, bonus icons and the
+  sea/river/foam/ice art all bake without UnpackedArt), and `deploy-web.yml` just uploads the
+  prebuilt `web/` folder. To add more upstream art, copy the files into `data/civ4/assets/`.
 
 *(3D WebGL — `.nif`→glTF/GLB + `.dds`→KTX2/Basis — is recorded only as the road not
 taken, should the client ever go 3D.)*

@@ -9,7 +9,7 @@ This is the feature the Civ4 **edge-tile** machinery actually fits: unlike river
 pixel/centre-line — see `docs/river-rendering.md` §4), the land/sea boundary genuinely *is*
 a plot edge, so a per-plot **sea-edge mask** + the Civ4 coast art compose cleanly.
 
-## The art (Civ4, `UnpackedArt/art/terrain`, DXT — decodable via `web/dds.mjs`)
+## The art (Civ4, committed non-LFS under `data/civ4/assets/terrain`, DXT — decodable via `web/dds.mjs`)
 
 - `heightmap/coastblendmasks/coastscalemask00–15.tga` — a **16-way blend mask set** (the
   same auto-tiling idea as the terrain blend), for feathering shore/shallow water into land.

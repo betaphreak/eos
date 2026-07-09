@@ -231,12 +231,13 @@ by `bakeTerrainTiles`. Adding the two cave terrains touches three spots in
 (`:533`). `web/js/plots.mjs` needs no change — it keys off `q.terrain` automatically once
 the string and build maps are present.
 
-**Art sourcing gap (open).** The repo's Civ4/C2C port has **no cave *ground* texture**.
-`UnpackedArt/art/terrain/` holds `features/cave/cave.nif` + `caveshadow.dds` (a 3D feature
-billboard, not a tiling floor) and `resources/162)mushrooms/mushrooms.dds` (a resource
-model), but no `detail`/`blend` .dds usable as a cavern floor. So the ground textures for
-`TERRAIN_CAVERN` / `TERRAIN_MUSHROOM_FOREST` must be **sourced or authored**; the existing
-`cave.nif` / `mushrooms.nif` can be repurposed as feature/bonus *overlays* on top.
+**Art sourcing (resolved).** There is no bespoke cave *ground* texture in the committed art
+(`data/civ4/assets`), so the underground and the special surface terrains **repurpose existing
+Civ4 ground textures**, recoloured in the bake to an authored hue: cavern → rocky, forests →
+lush, glacier → ice/permafrost, shadow swamp → marsh (see `TerrainArtExporter.SYNTHETIC` and
+`build.mjs`'s authored display colours). No new `.dds` had to be sourced. *(The old Git-LFS
+`UnpackedArt/` tree — which held some cave/mushroom `.nif` models — was removed entirely in
+2026-07; all art now resolves from `data/civ4/assets`.)*
 
 ## Phased implementation plan
 

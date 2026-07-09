@@ -258,7 +258,7 @@ would look *worse* than the ribbon. So there is no `RiverArtExporter` and no
 ## 5. Verification
 
 - `node web/build.mjs <seed>` → `web/assets/river-<seed>.png` written; **absent-tolerant**
-  (rename `UnpackedArt` away, rebuild → page still renders, flat-fill fallback).
+  (the river texture resolves from `data/civ4/assets`; if absent, the page flat-fills the ribbon).
 - Serve over **HTTP** (terrain zoom needs HTTP, not `file://`); eyeball a river province
   past 16× with `tools/webverify`.
 - Phase 2/3: assert the river network is connected and (for directed edges) acyclic per

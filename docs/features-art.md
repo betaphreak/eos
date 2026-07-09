@@ -34,8 +34,9 @@ software-rasterizes the textured triangles in an orthographic front view (Z up),
 ground planes, and extracts each plant as a sprite via the same connected-component packing the `*_1024`
 atlases use. `web/build.mjs` calls `bakeNifGroup` for the cactus/grass groups.
 
-The atlases were moved out of the LFS `UnpackedArt/` tree into non-LFS `data/civ4/assets/terrain/features/`
-so the build needs no `git lfs pull` (same as the icepack/wave-crest assets).
+The atlases live committed **non-LFS** under `data/civ4/assets/terrain/features/` (same as the
+icepack/wave-crest assets). Git-LFS and the old `UnpackedArt/` source tree were **removed** (2026-07);
+the build resolves all feature art from `data/civ4/assets` and needs no LFS.
 
 ## Bake — `bakeFeatureSprites` (`web/build.mjs`)
 

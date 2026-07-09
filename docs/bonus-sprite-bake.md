@@ -29,13 +29,16 @@ The web plot layer renders a **bonus** per resourced plot. Until now that was a 
 colour+shape glyph (no sprite art survived the LFS cleanup). Civ4 ships a 3D `.nif` model per
 resource; Blender can render those to flat transparent PNGs offline, giving real per-resource art.
 
-## Sources (all committed under `data/civ4/`, art under LFS `UnpackedArt/`)
+## Sources (committed **non-LFS** under `data/civ4/`)
 - `data/civ4/CIV4BonusInfos.xml` — `BONUS_* → ArtDefineTag` (and the economic data → `bonuses.json`).
 - `data/civ4/CIV4ArtDefines_Bonus.xml` — `ArtDefineTag → NIF path` **and** `FontButtonIndex`
   (the resource's cell in GameFont). 109 `BonusArtInfo` entries.
-- `UnpackedArt/art/terrain/resources/**/*.nif` (+ `.dds`) — 301 models. **This snapshot is an older
-  C2C build than the master-branch XML**, so ~14 NIF paths differ (`Fish.nif` on disk is
-  `fish_fx.nif`); the resolver tries the `_fx` animated variant too.
+
+> **As-built:** the shipped bonus icons are baked from **GameFont** (`assets/bonus-icons.webp`,
+> the `FontButtonIndex` cells), not from 3D `.nif` resource models. The old `.nif`-based bake below
+> is historical: the `UnpackedArt/art/terrain/resources/**` `.nif` models it used lived in the
+> Git-LFS `UnpackedArt/` tree, which was **removed** (2026-07, along with LFS). Reviving a
+> `.nif`-render path would mean re-fetching those models from upstream C2C into `data/civ4/assets/`.
 - `data/civ4/res/Fonts/GameFont.tga` (528×640) — the master symbol sheet; its lower block is the
   per-bonus icons, addressed by `FontButtonIndex`. The **fallback** source for bonuses with no `.nif`.
 
