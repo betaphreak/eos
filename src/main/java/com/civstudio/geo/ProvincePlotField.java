@@ -146,6 +146,25 @@ public final class ProvincePlotField {
 				composed[idx] = rougher(relief[idx], MapTerrainCodec.relief(mask.terrainIndex(lx, ly)));
 			}
 
+		// underground (CAVERN) provinces read as mountains in the raster; replace their
+		// ground with the flat, low-food cave floor (TERRAIN_CAVERN) so farms sit on a
+		// walkable cavern floor rather than peaks. The surface Haless mushroom_forest_region
+		// likewise gets its fungal-woodland ground. Done before the feature/bonus stages so
+		// they read the real cave ground (cavern folds to PyTerrain.OTHER → no tree cover).
+		// See docs/underworld.md.
+		Terrain undergroundGround = province.isUnderground()
+				? registry.terrain("TERRAIN_CAVERN")
+				: "mushroom_forest_region".equals(province.regionKey())
+						? registry.terrain("TERRAIN_MUSHROOM_FOREST")
+						: null;
+		if (undergroundGround != null)
+			for (int idx = 0; idx < ground.length; idx++)
+				if (ground[idx] != null) { // land cells only (water/off-mask stay null)
+					ground[idx] = undergroundGround;
+					if (province.isUnderground())
+						composed[idx] = PlotType.FLAT; // a flat cave floor, not the raster's peaks
+				}
+
 		// the C2C-ported feature seed-and-spread: the per-cell vegetation intent
 		// (jungle/forest/swamp or bare), which this loop validity-gates below
 		double treeCover = treeCover(mask);

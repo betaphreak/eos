@@ -45,9 +45,12 @@ plane. The `serpentspine` continent (`Continent.SERPENTSPINE`, already persisted
 purely descriptive lore-region grouping and plays no part in membership.
 
 `terrain.txt` also has a separate `mushroom_forest_terrain` (line 1425, 8 provinces
-2367–2374). Whether those are underground fungal farmland (and so also `CAVERN`) or
-surface is deferred to Phase 3, where the mushroom-forest food terrain is wired; Phase 1's
-`CAVERN` stamp uses the `cavern` block only.
+2367–2374) — and these turn out to be **surface, not underworld**: they are the Haless
+`mushroom_forest_region` on the `south_america` continent, plain `LAND`, nowhere near the
+Serpentspine. So mushroom forest is a surface fungal-woodland biome, *not* part of the
+Underworld; it plays no role in cavern membership and its provinces stay `LAND` (and
+sunlit). The underground's own food comes from the `TERRAIN_CAVERN` floor itself (cave
+fungus), not from mushroom forests.
 
 ## Engine semantics
 
@@ -97,41 +100,48 @@ no longer `== LAND`. Every existing `type == LAND` test must be audited so it al
 `CAVERN`) / `isSettleable()` helpers and migrate call sites to them rather than sprinkling
 `|| == CAVERN`. This audit is a first-class task, not an afterthought.
 
-### 3. Cave food & economy
+### 3. Cave food & economy *(done, Phase 3)*
 
 "Cave economy" falls out of terrain yields rather than special-casing. Plot food yield
 feeds farm TFP through `Plot.yieldFactor(Sector.NECESSITY)` (`Plot.java:396`,
-`yields()[0] / YIELD_REFERENCE[0]`). So the economic character of the underground is set
-by the food yields we give the two new terrains:
+`yields()[0] / YIELD_REFERENCE[0]`, food reference `3.4`). The underground's character is
+set by the cave floor's yields:
 
-- **`TERRAIN_CAVERN`** — bare rock floor: low/near-zero food (caves don't feed you).
-- **`TERRAIN_MUSHROOM_FOREST`** — fungal farmland: the food-bearing cave terrain
-  (mushroom/fungus agriculture), a modest positive food yield.
+- **`TERRAIN_CAVERN`** — the cave floor every underground plot sits on. `[food 1, prod 2,
+  commerce 0]`: meager cave-fungus food (0.29 farm TFP, vs 0.59 for grassland) but ore-rich
+  production. Food-scarce, so it partly offsets the 1.75× labor boost — the key balance
+  lever. Assigned to all `CAVERN`-province plots in `ProvincePlotField.generate()`, which
+  also flattens their relief (the raster reads them as mountains; a cavern plot is a flat,
+  walkable, farmable floor rather than an un-buildable peak).
+- **`TERRAIN_MUSHROOM_FOREST`** — a *surface* fungal woodland, `[food 2, prod 1, commerce
+  0]`, assigned to the Haless `mushroom_forest_region` provinces. Not underground; included
+  here only because it shares the same authoring path. It plays no part in the cave economy.
 
-This makes the underground food-scarce except where fungus grows — a natural pressure that
-partly offsets the 1.75× labor boost. No farm/market code changes needed; only terrain
-yield authoring. Deeper cave-economy ideas (ore-driven mining sectors, no agriculture at
-all) are **(open)** and out of this first cut.
+Both terrains are authored (no Civ4 XML source) in `TerrainExporter.SYNTHETIC` and exported
+to `terrains.json`. No farm/market code changes were needed — only terrain yield authoring
+plus the per-plot assignment. Deeper cave-economy ideas (ore-driven mining sectors,
+import-dependent food) remain **(open)** and out of this first cut; watch whether 1 food is
+too generous or too harsh once colonies actually run underground.
 
 ## Data model & pipeline changes
 
 ### Terrain definitions & per-plot assignment
 
 The live terrain pipeline is `ProvincePlotField` + real `terrain.bmp` via
-`MapTerrainCodec` (not the stale climate-pool path). Adding the two cave terrains touches:
+`MapTerrainCodec` (not the stale climate-pool path). As built, the two cave terrains were
+wired *without* touching `CIV4TerrainInfos.xml` or `MapTerrainCodec` (underground provinces
+have no distinct `terrain.bmp` index — they read as mountains — so the raster can't drive
+them). Instead:
 
-1. Define `TERRAIN_CAVERN` and `TERRAIN_MUSHROOM_FOREST` (with `[food, production, commerce]`
-   yields) — authored into `CIV4TerrainInfos.xml` or injected — added to
-   `TerrainExporter.KEEP` (`TerrainExporter.java:44`), re-exported to
-   `src/main/resources/terrains.json`.
-2. Map underground plots to them: a branch in `MapTerrainCodec.groundKey`
-   (`MapTerrainCodec.java:52–77`) / `ProvincePlotField.generate()`
-   (`ProvincePlotField.java:138–147`). Underground provinces don't have a distinct
-   `terrain.bmp` palette index in the base map (they read as mountains), so assignment is
-   driven by province membership (`type == CAVERN`) rather than the raster — a synthetic
-   source, distinct from surface plots.
-3. Optional `PyTerrain.of()` branch (else the C2C feature-weight tables treat them as
-   `OTHER`, disabling cave-specific feature weighting).
+1. **Authored, source-less terrains** — `TERRAIN_CAVERN` and `TERRAIN_MUSHROOM_FOREST` are
+   defined with hand-set yields in `TerrainExporter.SYNTHETIC` and appended to
+   `terrains.json` (they have no Civ4 XML peer, so they are *not* in the `KEEP` XML curation).
+2. **Membership-driven per-plot assignment** — `ProvincePlotField.generate()` overrides the
+   ground of every land cell to `TERRAIN_CAVERN` when `province.isUnderground()` (and to
+   `TERRAIN_MUSHROOM_FOREST` when `regionKey == "mushroom_forest_region"`), flattening
+   cavern relief to a walkable floor. The override runs before the feature/bonus stages so
+   they read the real cave ground. `PyTerrain.of()` was left untouched: cavern folds to
+   `OTHER`, which correctly disables surface tree-cover weighting underground.
 
 ### Exporters
 
@@ -203,9 +213,13 @@ The pieces are separable; suggested order keeps something runnable at each step.
    = 14`, sunrise fixed at 05:00. A cavern colony reports 14h year-round → the labor market's
    `daylightFactor` is a steady **1.75×** (14/8). `CavernDaylightTest` covers it; full suite
    green (250 tests). *(engine behavior)*
-3. **Cave terrains + yields.** Define `TERRAIN_CAVERN` / `TERRAIN_MUSHROOM_FOREST`, wire
-   `TerrainExporter.KEEP` + `MapTerrainCodec`, set food yields; confirm farm TFP responds.
-   Rebalance hours/yields against food balance. *(engine economy)*
+3. ~~**Cave terrains + yields.**~~ **Done.** Authored `TERRAIN_CAVERN` `[1,2,0]` and the
+   surface `TERRAIN_MUSHROOM_FOREST` `[2,1,0]` in `TerrainExporter.SYNTHETIC` →
+   `terrains.json` (26 terrains). `ProvincePlotField.generate()` overrides underground
+   plots to the flat cavern floor (and the mushroom region to its ground). Resolved the
+   membership question: mushroom forest is **surface**, not cave. `CavernTerrainTest`
+   covers it; full suite green (253 tests). Yield rebalance vs. food economy still pending
+   real underground colonies. *(engine economy)*
 4. **Viewer plane.** Bake the plane tag into `build.mjs`; make `renderScene`/`drawPlots`/
    `drawPolitical` honor `S.plane` with the dimmed-surface-ghost treatment; hash write-back;
    un-disable the button. *(frontend, works with flat-colour cave polygons)*
@@ -215,9 +229,6 @@ The pieces are separable; suggested order keeps something runnable at each step.
 
 ## Open questions
 
-- **Mushroom-forest membership** — are the 8 `mushroom_forest_terrain` provinces
-  (2367–2374) underground (→ also `CAVERN`) or surface? Resolve when Phase 3 wires the
-  mushroom food terrain.
 - **Labor calibration** — is 1.75× the intended net output, or should the 14h/8h reference
   be retuned once food scarcity is in?
 - **Cave economy depth** — do we stop at terrain-yield-driven food, or add mining sectors /

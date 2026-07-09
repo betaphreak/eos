@@ -166,4 +166,18 @@
   "buildModifier" : 0,
   "healthPercent" : 0,
   "movement" : 2
+}, {
+  "type" : "TERRAIN_CAVERN",
+  "yields" : [ 1, 2, 0 ],
+  "bFound" : true,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 1
+}, {
+  "type" : "TERRAIN_MUSHROOM_FOREST",
+  "yields" : [ 2, 1, 0 ],
+  "bFound" : true,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 1
 } ]

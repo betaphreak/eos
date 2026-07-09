@@ -52,6 +52,25 @@ public final class TerrainExporter {
 			"TERRAIN_SEA", "TERRAIN_SEA_POLAR", "TERRAIN_SEA_TROPICAL",
 			"TERRAIN_LAKE_SHORE", "TERRAIN_LAKE"));
 
+	/**
+	 * Authored terrains with <b>no Civ4 XML source</b> — appended after the curated XML
+	 * subset. These are Anbennar-specific grounds the base game has no peer for, with
+	 * hand-set yields:
+	 * <ul>
+	 * <li>{@code TERRAIN_CAVERN} — the underground Serpentspine cave floor (see {@code
+	 * docs/underworld.md}). Food-scarce (meager cave-fungus farming) but production-rich
+	 * (ore/stone): {@code [food 1, prod 2, commerce 0]}. Assigned to {@link
+	 * com.civstudio.geo.ProvinceType#CAVERN} provinces by {@link
+	 * com.civstudio.geo.ProvincePlotField}, replacing the mountain the raster reads.</li>
+	 * <li>{@code TERRAIN_MUSHROOM_FOREST} — the <em>surface</em> fungal woodland of the
+	 * Haless {@code mushroom_forest_region} (not underground). Food-bearing: {@code
+	 * [food 2, prod 1, commerce 0]}.</li>
+	 * </ul>
+	 */
+	private static final List<Terrain> SYNTHETIC = List.of(
+			new Terrain("TERRAIN_CAVERN", new int[] { 1, 2, 0 }, true, 0, 0, 1),
+			new Terrain("TERRAIN_MUSHROOM_FOREST", new int[] { 2, 1, 0 }, true, 0, 0, 1));
+
 	private TerrainExporter() {
 	}
 
@@ -76,6 +95,9 @@ public final class TerrainExporter {
 		missing.removeAll(seen);
 		if (!missing.isEmpty())
 			throw new IllegalStateException("curated terrains not found in XML: " + missing);
+
+		// the authored, source-less terrains (cavern floor, surface mushroom forest)
+		out.addAll(SYNTHETIC);
 
 		File f = new File(OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(f, out);
