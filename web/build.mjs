@@ -176,6 +176,82 @@ const countryByTag = Object.fromEntries(readJsonOpt('src/main/resources/map/coun
 const cultureByKey = Object.fromEntries(readJsonOpt('src/main/resources/map/cultures.json').map(c => [c.key, { name: c.name, group: c.group, color: c.color }]));
 const religionByKey = Object.fromEntries(readJsonOpt('src/main/resources/map/religions.json').map(r => [r.key, { name: r.name, group: r.group, color: r.color }]));
 
+// ---- EU4-style label baseline (phase b): the curved spine a province name is laid along ----
+// Approximates the polygon's medial axis: scanline-rasterise the interior, take the shape's
+// principal axis (PCA), then slice the interior perpendicular to that axis and take each slice's
+// mid-line — the sequence of slice midpoints is a curve that bends with the shape. Returns
+// { t: <thickness px>, p: [[x,y],…] } in SOURCE pixels (a few smoothed control points), or null
+// for a ring-less / too-thin province (the client then falls back to the straight principal axis).
+function labelBaseline(rings) {
+  if (!rings || !rings.length) return null;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  const edges = [];
+  for (const ring of rings) for (let i = 0; i < ring.length; i++) {
+    const a = ring[i], b = ring[(i + 1) % ring.length];
+    edges.push([a[0], a[1], b[0], b[1]]);
+    if (a[0] < x0) x0 = a[0]; if (a[0] > x1) x1 = a[0]; if (a[1] < y0) y0 = a[1]; if (a[1] > y1) y1 = a[1];
+  }
+  const W = x1 - x0, H = y1 - y0;
+  if (W < 3 || H < 3) return null;
+  const step = Math.max(1, Math.round(Math.max(W, H) / 110));   // ~110 samples across the long side
+  // scanline fill → interior sample points (even-odd rule)
+  const pts = [];
+  for (let y = y0 + step / 2; y < y1; y += step) {
+    const xs = [];
+    for (const [ax, ay, bx, by] of edges)
+      if ((ay <= y) !== (by <= y)) xs.push(ax + (y - ay) / (by - ay) * (bx - ax));
+    xs.sort((a, b) => a - b);
+    for (let i = 0; i + 1 < xs.length; i += 2)
+      for (let x = xs[i] + step / 2; x < xs[i + 1]; x += step) pts.push([x, y]);
+  }
+  if (pts.length < 8) return null;
+  // PCA over the interior samples → principal (long) direction u, perpendicular v
+  let n = pts.length, cx = 0, cy = 0;
+  for (const [x, y] of pts) { cx += x; cy += y; }
+  cx /= n; cy /= n;
+  let sxx = 0, syy = 0, sxy = 0;
+  for (const [x, y] of pts) { const dx = x - cx, dy = y - cy; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+  const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+  const ux = Math.cos(ang), uy = Math.sin(ang), vx = -uy, vy = ux;
+  // bin the interior by axis coordinate t; each bin's mean perpendicular s is a spine point, its
+  // s-range is the local width (→ thickness)
+  let tmin = 1e9, tmax = -1e9;
+  const T = pts.map(([x, y]) => { const t = (x - cx) * ux + (y - cy) * uy; if (t < tmin) tmin = t; if (t > tmax) tmax = t; return t; });
+  const K = 8, span = (tmax - tmin) || 1;
+  const sum = new Array(K).fill(0), cnt = new Array(K).fill(0), smin = new Array(K).fill(1e9), smax = new Array(K).fill(-1e9);
+  for (let i = 0; i < n; i++) {
+    const k = Math.max(0, Math.min(K - 1, Math.floor((T[i] - tmin) / span * K)));
+    const s = (pts[i][0] - cx) * vx + (pts[i][1] - cy) * vy;
+    sum[k] += s; cnt[k]++; if (s < smin[k]) smin[k] = s; if (s > smax[k]) smax[k] = s;
+  }
+  const mean = [], widths = [];
+  for (let k = 0; k < K; k++) if (cnt[k]) { mean[k] = sum[k] / cnt[k]; widths.push(smax[k] - smin[k]); } else mean[k] = null;
+  if (widths.length < 2) return null;
+  // smooth the spine (moving average over the filled bins), then emit a control point per filled bin
+  const out = [];
+  for (let k = 0; k < K; k++) {
+    if (mean[k] == null) continue;
+    let acc = 0, m = 0;
+    for (let d = -1; d <= 1; d++) if (mean[k + d] != null) { acc += mean[k + d]; m++; }
+    const s = acc / m, t = tmin + (k + 0.5) / K * span;
+    out.push([Math.round(cx + t * ux + s * vx), Math.round(cy + t * uy + s * vy)]);
+  }
+  if (out.length < 2) return null;
+  widths.sort((a, b) => a - b);
+  const thick = widths[widths.length >> 1];   // thickness = median slice width
+  // only ship a curved baseline when the spine actually bends: a straight/convex province is served
+  // identically by the client's own principal-axis fallback, so shipping it would just bloat data.js.
+  // Keep it when the max deviation of the spine from its end-to-end chord is ≥ ~a fifth of the width.
+  const a = out[0], b = out[out.length - 1], cl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+  let maxDev = 0;
+  for (let i = 1; i < out.length - 1; i++) {
+    const d = Math.abs((b[0] - a[0]) * (a[1] - out[i][1]) - (a[0] - out[i][0]) * (b[1] - a[1])) / cl;
+    if (d > maxDev) maxDev = d;
+  }
+  if (maxDev < thick * 0.22) return null;
+  return { t: Math.round(thick), p: out };
+}
+
 const provinces = [...shipped].map(id => byId.get(id)).filter(Boolean).map(p => ({
   id: p.id, name: p.name, lat: +p.lat.toFixed(3), lon: +p.lon.toFixed(3),
   plots: p.plots, waterPlots: p.waterPlots || 0, type: p.type,
@@ -186,6 +262,7 @@ const provinces = [...shipped].map(id => byId.get(id)).filter(Boolean).map(p => 
   nb: p.neighbors.filter(n => shipped.has(n)),
   days: traffic.get(p.id) || 0,          // caravan-days spent here (0 for context provinces)
   rings: ringsById.get(p.id) || null,    // outline in source pixels (null for sea/lake → bbox culls, packPlots)
+  lab: labelBaseline(ringsById.get(p.id)),   // curved label baseline (medial spine); null → client uses the straight axis
 }));
 const maxDays = Math.max(1, ...provinces.map(p => p.days));
 

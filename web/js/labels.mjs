@@ -38,6 +38,38 @@ function labelAxis(p) {
   });
 }
 
+// the source-space baseline the name rides: the offline curved medial spine (p.lab, phase b) when
+// present, else the straight principal axis (phase a). { pts:[[x,y],…], thick } or null.
+function labelPath(p) {
+  if (p.lab) return { pts: p.lab.p, thick: p.lab.t };
+  const ax = labelAxis(p);
+  if (!ax) return null;
+  return {
+    pts: [[ax.cx - ax.ux * ax.half, ax.cy - ax.uy * ax.half],
+          [ax.cx + ax.ux * ax.half, ax.cy + ax.uy * ax.half]],
+    thick: ax.thick,
+  };
+}
+
+// Catmull-Rom subdivision, so the few control points of a curved baseline read as one smooth curve
+// (glyph tangents flow instead of kinking at each point). `seg` sub-segments per span.
+function smoothPolyline(P, seg) {
+  if (P.length < 3) return P;
+  const out = [];
+  for (let i = 0; i < P.length - 1; i++) {
+    const p0 = P[i - 1] || P[i], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2] || P[i + 1];
+    for (let j = 0; j < seg; j++) {
+      const t = j / seg, t2 = t * t, t3 = t2 * t;
+      out.push([
+        0.5 * (2 * p1[0] + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3),
+        0.5 * (2 * p1[1] + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3),
+      ]);
+    }
+  }
+  out.push(P[P.length - 1]);
+  return out;
+}
+
 // lay `name` glyph-by-glyph along a screen-space polyline `pts` ([[x,y],…]), each glyph rotated to
 // the local tangent and centred on the path, with a dark halo behind. Canvas has no text-on-path,
 // so we advance by measured glyph widths. `track` = extra px between glyphs (spread to fill).
@@ -103,16 +135,18 @@ function drawLabels() {
   // span it. Culls to the viewport and collides against `placed` via the label's own screen AABB,
   // so nothing is drawn for an off-screen or overlapped province.
   const drawProvLabel = (p, o) => {
-    const ax = labelAxis(p);
-    if (!ax) return;
-    let Ax = pxr(ax.cx - ax.ux * ax.half), Ay = pyr(ax.cy - ax.uy * ax.half);
-    let Bx = pxr(ax.cx + ax.ux * ax.half), By = pyr(ax.cy + ax.uy * ax.half);
-    if (Bx < Ax) { const x = Ax, y = Ay; Ax = Bx; Ay = By; Bx = x; By = y; }   // keep text upright
-    const L = Math.hypot(Bx - Ax, By - Ay);
+    const lp = labelPath(p);
+    if (!lp) return;
+    let spts = lp.pts.map(([x, y]) => [pxr(x), pyr(y)]);    // source → screen
+    if (spts.length > 2) spts = smoothPolyline(spts, 5);    // smooth a curved (phase-b) baseline
+    if (spts[spts.length - 1][0] < spts[0][0]) spts.reverse();   // keep text left-to-right (never upside-down)
+    // arc length on screen (for scale + text spanning) and in source (for the thickness scale)
+    let L = 0; for (let i = 1; i < spts.length; i++) L += Math.hypot(spts[i][0] - spts[i - 1][0], spts[i][1] - spts[i - 1][1]);
     if (L < 14) return;                                     // too small on screen to read
-    const thick = ax.thick * (L / (2 * ax.half || 1));      // shape half-thickness on screen
-    // fit: cap glyph height by the thickness, fit width to ~88% of the axis, and spread the leftover
-    // length as inter-letter tracking (EU4 tracks names out to span the region)
+    let srcL = 0; for (let i = 1; i < lp.pts.length; i++) srcL += Math.hypot(lp.pts[i][0] - lp.pts[i - 1][0], lp.pts[i][1] - lp.pts[i - 1][1]);
+    const thick = lp.thick * (L / (srcL || 1));             // shape thickness on screen
+    // fit: cap glyph height by the thickness, fit width to ~88% of the baseline, and spread the
+    // leftover length as inter-letter tracking (EU4 tracks names out to span the region)
     const target = L * 0.88, n = [...p.name].length;
     ctx.font = `${o.weight} 100px ${LABEL_FAM}`;
     const w100 = p._nw ?? (p._nw = ctx.measureText(p.name).width);
@@ -121,17 +155,14 @@ function drawLabels() {
     if (natW > target) size *= target / natW;               // shrink to fit the length
     else { track = (target - natW) / Math.max(1, n - 1); if (track > size * 0.5) track = size * 0.5; }
     if (size < o.min) return;                               // too cramped — leave it unlabeled
-    // the oriented text ribbon → screen AABB (for the viewport cull + overlap test)
-    const dxu = (Bx - Ax) / L, dyu = (By - Ay) / L, hh = size * 0.62;
+    // the baseline's screen AABB, padded by half a glyph height, for the viewport cull + overlap test
     let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
-    for (const [bx, by] of [[Ax, Ay], [Bx, By]]) for (const sgn of [1, -1]) {
-      const X = bx - dyu * hh * sgn, Y = by + dxu * hh * sgn;
-      if (X < minx) minx = X; if (X > maxx) maxx = X; if (Y < miny) miny = Y; if (Y > maxy) maxy = Y;
-    }
-    const box = { x: minx, y: miny, w: maxx - minx, h: maxy - miny };
+    for (const [x, y] of spts) { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
+    const hh = size * 0.62;
+    const box = { x: minx - hh, y: miny - hh, w: (maxx - minx) + 2 * hh, h: (maxy - miny) + 2 * hh };
     if (!fits(box)) return;                                 // off-viewport (fits() rejects edge overflow) or overlapping
     placed.push(box);
-    drawTextOnPath(p.name, [[Ax, Ay], [Bx, By]], size, track, o.weight, o.color);
+    drawTextOnPath(p.name, spts, size, track, o.weight, o.color);
   };
   const F1="600 12px system-ui,'Segoe UI',sans-serif";
   if (S.overlay === "caravan") {
