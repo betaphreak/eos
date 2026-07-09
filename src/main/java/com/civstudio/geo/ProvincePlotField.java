@@ -194,10 +194,14 @@ public final class ProvincePlotField {
 		// LatitudeClimate); ramped by coldFraction so the temperate zone is untouched. Special-terrain
 		// provinces (glacier/forests/caves) keep their biome (handled below), and mountains stay.
 		if (province.type() == ProvinceType.LAND) {
-			double temp = LatitudeClimate.effectiveTemperature(province.latitude(), province.winter());
+			// warm-anomaly regions (the Forbidden Lands) run WARM_ANOMALY_OFFSET warmer than their
+			// latitude and never glaciate, so the deep-north freeze reads as boreal, not permafrost
+			double temp = LatitudeClimate.effectiveTemperature(province.latitude(), province.winter())
+					+ LatitudeClimate.regionalWarmth(province);
+			boolean allowPermafrost = !LatitudeClimate.isWarmAnomaly(province);
 			double coldFrac = LatitudeClimate.coldFraction(temp);
 			if (coldFrac > 0) {
-				TerrainGenerator coldGen = new TerrainGenerator(registry, LatitudeClimate.coldPool(temp));
+				TerrainGenerator coldGen = new TerrainGenerator(registry, LatitudeClimate.coldPool(temp, allowPermafrost));
 				for (int idx = 0; idx < ground.length; idx++)
 					if (ground[idx] != null && LatitudeClimate.isWarm(ground[idx])
 							&& rng.uniform() < coldFrac)
@@ -222,6 +226,17 @@ public final class ProvincePlotField {
 					if (flatten)
 						composed[idx] = PlotType.FLAT;
 				}
+		}
+
+		// warm-anomaly regions (the Forbidden Lands) never glaciate: demote any permafrost — from
+		// the map's snow pixels (terrain.bmp index 16), the latitude cold override, or a glacier
+		// province's special pool — to tundra, so no permafrost survives anywhere in the region.
+		// Runs after both ground passes; deterministic (no rng), so later stages are unshifted.
+		if (LatitudeClimate.isWarmAnomaly(province)) {
+			Terrain tundra = registry.terrain("TERRAIN_TUNDRA");
+			for (int idx = 0; idx < ground.length; idx++)
+				if (ground[idx] != null && ground[idx].type().equals("TERRAIN_PERMAFROST"))
+					ground[idx] = tundra;
 		}
 
 		// the C2C-ported feature seed-and-spread: the per-cell vegetation intent

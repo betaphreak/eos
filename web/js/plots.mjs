@@ -337,19 +337,19 @@ function drawSeaIce(o, plots, x0, y0, tpp) {
   const hash = (x, y) => ((Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263)) >>> 0) / 4294967295;
   if (iceReady) { icePat = icePat || o.createPattern(iceImg, "repeat");
     const s = Math.max(0.25, tpp * 4 / ICE_ART.tile); icePat.setTransform(new DOMMatrix([s, 0, 0, s, 0, 0])); }
-  const rw = tpp * 0.06;                                // rim width (the cool floe edge)
+  const rw = tpp * 0.05;                                // rim width (the cool floe edge)
   const rim = new Path2D(), field = new Path2D();
   for (const q of ice) {
     const cx = (q.x - x0) * tpp + tpp / 2, cy = (q.y - y0) * tpp + tpp / 2;
-    // radius > 0.5·tpp so orthogonal neighbours overlap (floes merge) and dense ice fills solid;
-    // jittered per-cell so floe outlines vary instead of reading as uniform discs
-    const r = tpp * (0.62 + 0.14 * hash(q.x * 7 + 1, q.y * 7 + 3));
+    // radius < 0.5·tpp so floes stay discrete islands with open water between them (rather than
+    // overlapping into a solid sheet of big white discs); jittered per-cell so outlines vary
+    const r = tpp * (0.34 + 0.12 * hash(q.x * 7 + 1, q.y * 7 + 3));
     rim.moveTo(cx + r + rw, cy); rim.arc(cx, cy, r + rw, 0, Math.PI * 2);
     field.moveTo(cx + r, cy); field.arc(cx, cy, r, 0, Math.PI * 2);
   }
   o.save();
-  o.fillStyle = "rgba(150,178,198,0.18)"; o.fill(rim);       // cool rim shows only past the floe edge
-  o.globalAlpha = 0.34; o.fillStyle = icePat || "rgb(226,236,245)"; o.fill(field);   // ~66% transparent — the sea reads through the floes
+  o.fillStyle = "rgba(150,178,198,0.12)"; o.fill(rim);       // cool rim shows only past the floe edge
+  o.globalAlpha = 0.2; o.fillStyle = icePat || "rgb(226,236,245)"; o.fill(field);   // ~80% transparent — the sea reads through the floes
   o.restore();
 }
 // the glyph outline for a category shape, centred at (cx,cy) with radius r
