@@ -26,11 +26,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Deploy to Azure Static Web Apps
-        uses: Azure/static-web-apps-deploy@v1
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: upload
-          app_location: web          # upload the prebuilt folder as-is
-          skip_app_build: true       # no Oryx build — the committed web/ folder is complete
-          output_location: ''
+          node-version: 20
+
+      # Deploy the prebuilt web/ folder with the Static Web Apps CLI (a plain Node tool) rather than
+      # the Azure/static-web-apps-deploy Docker action: no container image to pull, and it runs on any
+      # glibc Linux runner. Uploads ./web as-is (no build). The CLI reads the deployment token from
+      # SWA_CLI_DEPLOYMENT_TOKEN; --env production targets the live environment (a master push).
+      - name: Deploy to Azure Static Web Apps
+        env:
+          SWA_CLI_DEPLOYMENT_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+        run: npx -y @azure/static-web-apps-cli@2 deploy ./web --env production
