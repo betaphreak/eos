@@ -29,13 +29,16 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       # Deploy the prebuilt web/ folder with the Static Web Apps CLI (a plain Node tool) rather than
       # the Azure/static-web-apps-deploy Docker action: no container image to pull, and it runs on any
       # glibc Linux runner. Uploads ./web as-is (no build). The CLI reads the deployment token from
       # SWA_CLI_DEPLOYMENT_TOKEN; --env production targets the live environment (a master push).
+      # NPM_CONFIG_LOGLEVEL=error mutes npm's deprecation warnings for the CLI's own transitive deps
+      # (inflight/glob/rimraf/… — nothing we can fix here), keeping the deploy log clean.
       - name: Deploy to Azure Static Web Apps
         env:
           SWA_CLI_DEPLOYMENT_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          NPM_CONFIG_LOGLEVEL: error
         run: npx -y @azure/static-web-apps-cli@2 deploy ./web --env production
