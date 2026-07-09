@@ -336,11 +336,25 @@ az containerapp hostname bind -n civstudio-server -g civstudio --hostname live.c
 Add a client → server command channel and a player action model on top of A's
 infrastructure.
 
-- **Action model.** Define the first player-actionable decisions. The natural first
-  targets align with project direction: taxation levers (the ruler's tax rates already
-  exist as config — `bankProfitTaxRate`, `nobleIncomeTaxRate`) and caravan/trade
-  sponsorship (`docs/caravan-trade.md` Phase B). Each action is a small, validated,
-  serializable command.
+**✅ Command channel + first action — taxation (Implemented, 2026-07-10).** The interactive
+seam is live end to end: `POST /api/sessions/{id}/commands` with
+`{type:"setTaxRate", lever:"bankProfit"|"nobleIncome", rate:0..1}` builds a {@link
+SetTaxRateCommand} and `HostedSession.submit`s it; it applies at the deterministic top of the
+**next** tick (never retro-mutating the in-flight day), moving the ruler's now-mutable tax
+levers (clamped to [0,1], inherited by a successor). The rates ride the render snapshot
+(`ColonyView.bankProfitTax`/`nobleIncomeTax`), and `web/live.html` gained a *Policy* panel
+(two inputs + Apply) that shows the live rates and posts the command. Covered by
+`SetTaxRateCommandTest` (apply/clamp/snapshot) and `FeedServerTest` (the HTTP path). This is
+the whole Factorio spine exercised for real: authoritative state = *f*(spec, command log).
+
+Still open on the action side:
+- **More actions.** Extend the action model beyond taxation. The natural next targets align
+  with project direction: caravan/trade sponsorship (`docs/caravan-trade.md` Phase B). Each
+  action is a small, validated, serializable command on the same seam.
+- **Real map viewer on the live feed.** Wire the full `web/app.js` **WorldMap** (real terrain)
+  to the SSE feed — today only the minimal `live.html` thin-client consumes it — including the
+  CORS/route-proxy seam between the SWA site and the Container App (see the cross-origin note
+  above).
 - **The command log is the persistence format.** Commands append to a per-session ordered
   log, consumed at a **single deterministic point** in `newDay()` (before agents act, so
   the effect is reproducible). state = *f*(spec, command-log) holds, so the log *is* the

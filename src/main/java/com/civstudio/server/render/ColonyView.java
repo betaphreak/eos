@@ -22,9 +22,11 @@ package com.civstudio.server.render;
  * @param maxPlots       the colony's plot ceiling (its province cap)
  * @param latitude       the colony's latitude (decimal degrees) — the map anchor
  * @param longitude      the colony's longitude (decimal degrees)
+ * @param bankProfitTax  the ruler's bank-profit tax rate (the player-set lever), 0 if none
+ * @param nobleIncomeTax the ruler's noble-income tax rate (the player-set lever), 0 if none
  */
 public record ColonyView(String name, boolean alive, String date, int population,
 		int children, int nobles, int firms, int poolSize, double cpi,
 		double necessityPrice, double enjoymentPrice, int plotCount, int maxPlots,
-		double latitude, double longitude) {
+		double latitude, double longitude, double bankProfitTax, double nobleIncomeTax) {
 }

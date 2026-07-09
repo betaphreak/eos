@@ -51,9 +51,12 @@ public class Ruler extends AbstractHousehold {
 	private final double consumptionRate;
 
 	// per-step tax rates: a fraction of each bank's distributable profit and of
-	// each noble's income, skimmed into the treasury (0 disables — the default)
-	private final double bankProfitTaxRate;
-	private final double nobleIncomeTaxRate;
+	// each noble's income, skimmed into the treasury (0 disables — the default).
+	// Mutable: the founding value comes from config, but a player can adjust it at
+	// runtime through the Phase-B command channel (see SetTaxRateCommand), applied
+	// deterministically at the top of a tick; a successor inherits the live value.
+	private double bankProfitTaxRate;
+	private double nobleIncomeTaxRate;
 
 	// cumulative tax collected over the ruler's life (for reporting/tests)
 	@Getter
@@ -255,6 +258,42 @@ public class Ruler extends AbstractHousehold {
 		log.fine(getHead().fullName() + (surname == null
 				? " founded the ruling house" : " succeeded as ruler")
 				+ " of the settlement.");
+	}
+
+	/** The current bank-profit tax rate — fraction of each public bank's distributable profit. */
+	public double getBankProfitTaxRate() {
+		return bankProfitTaxRate;
+	}
+
+	/** The current noble-income tax rate — fraction of each noble's income. */
+	public double getNobleIncomeTaxRate() {
+		return nobleIncomeTaxRate;
+	}
+
+	/**
+	 * Set the bank-profit tax rate, clamped to [0, 1] — the interactive tax lever (see {@code
+	 * com.civstudio.server.command.SetTaxRateCommand}). Applied at the deterministic top of a
+	 * tick and inherited by the ruler's successor, so a run stays a pure function of its spec
+	 * and command log.
+	 *
+	 * @param rate the new rate (clamped to [0, 1])
+	 */
+	public void setBankProfitTaxRate(double rate) {
+		this.bankProfitTaxRate = clampRate(rate);
+	}
+
+	/**
+	 * Set the noble-income tax rate, clamped to [0, 1] — the interactive tax lever (see {@code
+	 * com.civstudio.server.command.SetTaxRateCommand}).
+	 *
+	 * @param rate the new rate (clamped to [0, 1])
+	 */
+	public void setNobleIncomeTaxRate(double rate) {
+		this.nobleIncomeTaxRate = clampRate(rate);
+	}
+
+	private static double clampRate(double rate) {
+		return Math.max(0, Math.min(1, rate));
 	}
 
 	/**

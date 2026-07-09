@@ -47,6 +47,8 @@
   button:hover { background: #24344a; }
   .controls label { color: #8b95a3; font-size: 12px; }
   input[type=range] { width: 120px; vertical-align: middle; }
+  input[type=number] { width: 62px; background: #0e141d; color: #cfe3ff; border: 1px solid #2c3a4e;
+                       border-radius: 5px; padding: 0.2rem 0.35rem; font: inherit; }
 </style>
 </head>
 <body>
@@ -70,6 +72,17 @@
   <aside>
     <h2>Colony</h2>
     <table id="colony"></table>
+    <h2>Policy — taxation</h2>
+    <table id="policy">
+      <tr><td>bank-profit tax</td><td id="curBankTax">—</td></tr>
+      <tr><td>noble-income tax</td><td id="curNobleTax">—</td></tr>
+    </table>
+    <div class="controls">
+      <label>bank <input id="bankTax" type="number" min="0" max="1" step="0.01"></label>
+      <label>noble <input id="nobleTax" type="number" min="0" max="1" step="0.01"></label>
+      <button onclick="applyTax()">Apply</button>
+    </div>
+    <div class="meta" id="taxMsg" style="min-height:1.2em; color:#8b95a3; font-size:12px"></div>
     <h2 id="carHead">Caravans</h2>
     <div id="caravans"></div>
   </aside>
@@ -79,6 +92,7 @@ const palette = ['#e8c37a','#6bd08a','#7aa2e0','#e07a9e','#9e7ae0','#e0a97a','#7
 const trails = {};           // label -> [{x,y}...] in lat/long space
 let bounds = null;           // {latMin,latMax,lonMin,lonMax}, auto-fitted & only expanding
 let sessionId = null;
+let policyInit = false;      // prefill the tax inputs from the first snapshot only
 
 const canvas = document.getElementById('map');
 const ctx = canvas.getContext('2d');
@@ -124,6 +138,16 @@ function render(snap) {
     <tr><td>plots</td><td>${colony.plotCount} / ${colony.maxPlots}</td></tr>
     <tr><td>food price</td><td>${(colony.necessityPrice||0).toFixed(2)}</td></tr>
     <tr><td>CPI</td><td>${(colony.cpi||0).toFixed(1)}</td></tr>` : '';
+
+  // taxation policy: show the ruler's current levers, and prefill the inputs once so the
+  // player edits from the live values rather than from blank
+  document.getElementById('curBankTax').textContent = (colony.bankProfitTax||0).toFixed(3);
+  document.getElementById('curNobleTax').textContent = (colony.nobleIncomeTax||0).toFixed(3);
+  if (!policyInit && colony.name) {
+    document.getElementById('bankTax').value = (colony.bankProfitTax||0).toFixed(2);
+    document.getElementById('nobleTax').value = (colony.nobleIncomeTax||0).toFixed(2);
+    policyInit = true;
+  }
 
   // caravan roster
   document.getElementById('carHead').textContent = `Caravans (${snap.caravans.length})`;
@@ -174,6 +198,26 @@ async function ctl(action, value) {
   await fetch(`/api/sessions/${sessionId}/control`,
     {method:'POST', headers:{'Content-Type':'application/json'},
      body: JSON.stringify(value===undefined ? {action} : {action, value})});
+}
+
+// POST one player command; returns the server's ack (or null on error)
+async function cmd(body) {
+  if (!sessionId) return null;
+  const r = await fetch(`/api/sessions/${sessionId}/commands`,
+    {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  return r.ok ? r.json() : null;
+}
+
+// apply the two tax levers as SetTaxRate commands; they take effect at the next tick
+async function applyTax() {
+  const msg = document.getElementById('taxMsg');
+  const bank = parseFloat(document.getElementById('bankTax').value);
+  const noble = parseFloat(document.getElementById('nobleTax').value);
+  const acks = [];
+  if (Number.isFinite(bank))  acks.push(await cmd({type:'setTaxRate', lever:'bankProfit',  rate:bank}));
+  if (Number.isFinite(noble)) acks.push(await cmd({type:'setTaxRate', lever:'nobleIncome', rate:noble}));
+  const ticks = acks.filter(a => a && a.tick != null).map(a => a.tick);
+  msg.textContent = ticks.length ? `applied at tick ${Math.max(...ticks)}` : 'nothing to apply';
 }
 
 async function connect() {

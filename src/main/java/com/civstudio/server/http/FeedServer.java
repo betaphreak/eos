@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
 import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.SessionSpec;
+import com.civstudio.server.command.SetTaxRateCommand;
 import com.civstudio.server.render.SessionSnapshot;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
@@ -36,7 +37,8 @@ import com.sun.net.httpserver.HttpServer;
  * <li>{@code POST /api/sessions}              — found+start a session from a spec.</li>
  * <li>{@code GET  /api/sessions/{id}/stream}  — subscribe to the snapshot feed (SSE).</li>
  * <li>{@code POST /api/sessions/{id}/control} — {@code {action:pause|resume|step|rate|stop}}.</li>
- * <li>{@code POST /api/sessions/{id}/commands}— submit a command (the Phase-B seam).</li>
+ * <li>{@code POST /api/sessions/{id}/commands}— submit a player command, e.g.
+ * {@code {type:setTaxRate, lever:bankProfit|nobleIncome, rate:0..1}} (Phase B).</li>
  * </ul>
  * A slow spectator never stalls the sim: each SSE connection has its own bounded queue that
  * the session thread offers into (dropping the oldest frame if the client falls behind),
@@ -101,7 +103,7 @@ public final class FeedServer {
 				controlSession(ex, idFrom(path, "/control"));
 			} else if (path.startsWith("/api/sessions/") && path.endsWith("/commands")
 					&& method.equals("POST")) {
-				sendJson(ex, 202, Map.of("accepted", true)); // Phase-B seam (no-op today)
+				submitCommand(ex, idFrom(path, "/commands"));
 			} else {
 				sendJson(ex, 404, Map.of("error", "not found: " + method + " " + path));
 			}
@@ -172,6 +174,50 @@ public final class FeedServer {
 			}
 		}
 		sendJson(ex, 200, Map.of("id", id, "state", hs.state().name(), "tick", hs.tick()));
+	}
+
+	// submit a player command (the Phase-B interactive seam). A command is tick-stamped and
+	// applied at the deterministic top of its tick, so it defaults to the NEXT tick (never
+	// retro-mutating the in-flight day) unless a later tick is given.
+	private void submitCommand(HttpExchange ex, String id) throws IOException {
+		HostedSession hs = host.get(id);
+		if (hs == null) {
+			sendJson(ex, 404, Map.of("error", "no session " + id));
+			return;
+		}
+		Map<String, Object> body = readJson(ex);
+		String type = String.valueOf(body.getOrDefault("type", ""));
+		long next = hs.tick() + 1;
+		long tick = Math.max(next, ((Number) body.getOrDefault("tick", next)).longValue());
+		switch (type) {
+			case "setTaxRate" -> {
+				SetTaxRateCommand.Lever lever = parseLever(body.get("lever"));
+				if (lever == null) {
+					sendJson(ex, 400, Map.of("error", "unknown lever: " + body.get("lever")));
+					return;
+				}
+				double rate = ((Number) body.getOrDefault("rate", 0)).doubleValue();
+				if (!(rate >= 0 && rate <= 1)) {
+					sendJson(ex, 400, Map.of("error", "rate must be in [0,1], got " + rate));
+					return;
+				}
+				hs.submit(new SetTaxRateCommand(tick, lever, rate));
+				sendJson(ex, 202, Map.of("accepted", true, "type", type, "lever",
+						lever.name(), "rate", rate, "tick", tick));
+			}
+			default -> sendJson(ex, 400, Map.of("error", "unknown command type: " + type));
+		}
+	}
+
+	// map the wire lever name (camelCase from the browser, or the enum name) to the enum
+	private static SetTaxRateCommand.Lever parseLever(Object wire) {
+		if (wire == null)
+			return null;
+		return switch (String.valueOf(wire)) {
+			case "bankProfit", "BANK_PROFIT" -> SetTaxRateCommand.Lever.BANK_PROFIT;
+			case "nobleIncome", "NOBLE_INCOME" -> SetTaxRateCommand.Lever.NOBLE_INCOME;
+			default -> null;
+		};
 	}
 
 	// open a Server-Sent-Events stream of the session's snapshots. The session thread offers

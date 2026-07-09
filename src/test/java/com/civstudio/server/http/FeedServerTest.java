@@ -1,6 +1,7 @@
 package com.civstudio.server.http;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -85,6 +86,52 @@ class FeedServerTest {
 				} while (next.tick() <= first.tick());
 				assertTrue(next.tick() >= 1, "the streamed tick advances after stepping");
 			}
+		} finally {
+			hs.stop();
+			server.stop();
+		}
+	}
+
+	@Test
+	@Timeout(90)
+	void taxRateCommandOverHttpMovesTheRulerLever() throws Exception {
+		SessionHost host = new SessionHost();
+		HostedSession hs = host.create(SessionSpec.caravanDemo(4242L, DHENIJANSAR));
+		hs.startPaused(); // paused at tick 0; the command lands on the next tick
+		FeedServer server = new FeedServer(host, 0);
+		server.start();
+		HttpClient client = HttpClient.newHttpClient();
+		try {
+			assertNotNull(hs.colonies().get(0).getRuler(), "the demo colony has a ruler");
+
+			// POST a real player command; the endpoint accepts it and reports the apply tick
+			HttpResponse<String> ok = client.send(
+					HttpRequest.newBuilder(uri(server, "/api/sessions/" + hs.id() + "/commands"))
+							.header("Content-Type", "application/json")
+							.POST(HttpRequest.BodyPublishers.ofString(
+									"{\"type\":\"setTaxRate\",\"lever\":\"bankProfit\",\"rate\":0.3}"))
+							.build(),
+					HttpResponse.BodyHandlers.ofString());
+			assertEquals(202, ok.statusCode());
+			assertTrue(ok.body().contains("\"accepted\":true"), ok.body());
+
+			// step past the command's tick; the ruler's lever moves to the commanded rate
+			hs.step(3);
+			long deadline = System.nanoTime() + 60_000_000_000L;
+			while (hs.colonies().get(0).getRuler().getBankProfitTaxRate() < 0.3
+					&& System.nanoTime() < deadline)
+				Thread.sleep(5);
+			assertEquals(0.3, hs.colonies().get(0).getRuler().getBankProfitTaxRate(), 1e-9,
+					"the HTTP command should have moved the bank-profit tax lever");
+
+			// an unknown command type is rejected, not silently accepted
+			HttpResponse<String> bad = client.send(
+					HttpRequest.newBuilder(uri(server, "/api/sessions/" + hs.id() + "/commands"))
+							.header("Content-Type", "application/json")
+							.POST(HttpRequest.BodyPublishers.ofString("{\"type\":\"bogus\"}"))
+							.build(),
+					HttpResponse.BodyHandlers.ofString());
+			assertEquals(400, bad.statusCode());
 		} finally {
 			hs.stop();
 			server.stop();

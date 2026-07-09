@@ -84,9 +84,15 @@ public final class Snapshots {
 		}
 		double necessity = marketPrice(c, "Necessity");
 		double enjoyment = marketPrice(c, "Enjoyment");
+		// the ruler's current tax levers (0 when the colony has no ruler) — the read-side of
+		// the Phase-B tax command, so a client sees policy changes land
+		com.civstudio.agent.ruler.Ruler ruler = c.getRuler();
+		double bankProfitTax = ruler == null ? 0 : ruler.getBankProfitTaxRate();
+		double nobleIncomeTax = ruler == null ? 0 : ruler.getNobleIncomeTaxRate();
 		return new ColonyView(c.getName(), c.isAlive(), date.toString(), population,
 				children, nobles, firms, pool, c.getInflation(), necessity, enjoyment,
-				c.getPlotCount(), c.getMaxPlots(), c.getLatitude(), c.getLongitude());
+				c.getPlotCount(), c.getMaxPlots(), c.getLatitude(), c.getLongitude(),
+				bankProfitTax, nobleIncomeTax);
 	}
 
 	// the last clearing price of a colony's consumer-good market by good name (0 if absent)
