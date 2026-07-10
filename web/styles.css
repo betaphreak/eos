@@ -78,6 +78,7 @@ body {
   position: relative; height: 100vh; width: 100%; overflow: hidden;
   --bar-h: 54px;                     /* dedicated top bar height; the map + rail sit below it */
   --foot-h: 30px;                    /* the bottom shortcut bar (.hotbar) height; reserved below the map */
+  --rail-w: 392px;                   /* the right panel's width; user-draggable (js/panel.rail resize) */
 }
 /* ---------- BOTTOM BAR (keyboard shortcuts) ---------- */
 /* a slim persistent strip below the map listing the global hotkeys, pinned dark like the top
@@ -233,6 +234,7 @@ body {
    regardless of the UI theme the rail follows. */
 .stage {
   position: absolute; top: var(--bar-h); left: 0; right: 0; bottom: var(--foot-h); z-index: 0; overflow: hidden; background: #090d14; cursor: grab;
+  transition: right .22s ease;   /* the panel resizes the map (see .app.rail-open); a ResizeObserver refits the canvas */
   --panel: #141a26; --panel-2: #1a2130;
   --ink: #e7ecf4; --ink-soft: #9aa6ba; --ink-faint: #6b7688;
   --line: #232c3c; --line-soft: #1b2331; --accent: #e6b04a;
@@ -355,15 +357,32 @@ input[type="range"].scrub::-moz-range-thumb {
 .tip .r { color: var(--ink-faint); font-size: 11px; }
 
 /* ---------- RAIL ---------- */
-/* right sidebar: an overlay panel that slides in on selection and collapses away (Esc / re-click).
-   z-index sits below the top-right controls, which shift left (.stage.rail-open) to clear it. */
+/* right sidebar: a panel that slides in on selection and RESIZES the map (the stage shrinks to its
+   left edge — .app.rail-open below — so it never draws over the map). Its width is user-draggable
+   via the .rail-resize handle. On narrow screens it falls back to an overlay (media query further down). */
 .railwrap {
-  position: absolute; top: var(--bar-h); right: 0; bottom: var(--foot-h); width: 392px; z-index: 8;
+  position: absolute; top: var(--bar-h); right: 0; bottom: var(--foot-h); width: var(--rail-w); z-index: 8;
   background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--shadow);
   display: flex; flex-direction: column; min-height: 0; overflow: hidden;
-  transform: translateX(100%); transition: transform .28s ease;
+  transform: translateX(100%); transition: transform .22s ease;
 }
 .railwrap.open { transform: none; }
+/* the panel reserves layout space by pushing the stage's right edge in — the map (and every control
+   inside .stage) shrinks to fit rather than being covered. The ResizeObserver in panel.mjs refits
+   the canvas as this animates. */
+.app.rail-open .stage { right: var(--rail-w); }
+/* while dragging the handle, kill the transitions so the map tracks the pointer 1:1 */
+.app.rail-resizing .stage, .app.rail-resizing .railwrap { transition: none; }
+.app.rail-resizing { cursor: ew-resize; user-select: none; }
+/* drag handle on the panel's left edge: a hit strip with a centred grip pill */
+.rail-resize {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 8px; z-index: 4; cursor: ew-resize; touch-action: none;
+}
+.rail-resize::before {
+  content: ""; position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 46px; border-radius: 2px; background: var(--line); transition: background .15s;
+}
+.rail-resize:hover::before, .app.rail-resizing .rail-resize::before { background: var(--accent); }
 .railclose {
   position: absolute; top: 12px; right: 14px; z-index: 2; width: 28px; height: 28px;
   border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); color: var(--ink-soft);
@@ -548,6 +567,8 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 @media (max-width: 900px) {
   .railwrap { width: 100%; max-width: 420px; }         /* the overlay panel covers most of a phone screen */
   .legend { bottom: 16px; max-width: 200px; }
+  .app.rail-open .stage { right: 0; }                  /* too narrow to split — overlay the map instead of shrinking it */
+  .rail-resize { display: none; }                      /* and no drag-resize on small screens */
 }
 @media (max-width: 720px) {
   .brand-sep, .brand-b { display: none; }              /* "CivStudio" only */

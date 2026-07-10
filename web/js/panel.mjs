@@ -292,8 +292,39 @@ stage.addEventListener("dblclick", e=>{
 // ---- rail ----
 const rail=document.getElementById("rail");
 const railwrap=document.getElementById("railwrap");
-// open/collapse the right sidebar (it slides below the top bar; the bar spans full width above it)
-function showRail(open){ railwrap.classList.toggle("open", !!open); }
+const appEl=document.querySelector(".app");
+// open/collapse the right sidebar. `.rail-open` on .app pushes the stage's right edge in so the map
+// RESIZES to fit beside the panel (styles.css) instead of being covered; the ResizeObserver below
+// refits the canvas as it animates.
+function showRail(open){ railwrap.classList.toggle("open", !!open); appEl.classList.toggle("rail-open", !!open); }
+
+// --- user-resizable panel width: drag the .rail-resize handle on the panel's left edge. The map
+// (the stage) shrinks/grows with it live; the chosen width persists across sessions. ---
+(function initRailResize(){
+  const handle=document.getElementById("railResize");
+  if(!handle) return;
+  const MIN=300, MAX=680;
+  const saved=parseInt(localStorage.getItem("railWidth")||"",10);
+  if(saved>=MIN && saved<=MAX) appEl.style.setProperty("--rail-w", saved+"px");
+  let startX=0, startW=0;
+  function onMove(e){
+    const w=Math.max(MIN, Math.min(MAX, startW + (startX - e.clientX)));   // drag left → wider
+    appEl.style.setProperty("--rail-w", w+"px");
+  }
+  function onUp(){
+    appEl.classList.remove("rail-resizing");
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    localStorage.setItem("railWidth", String(Math.round(railwrap.getBoundingClientRect().width)));
+  }
+  handle.addEventListener("pointerdown", e=>{
+    e.preventDefault();
+    startX=e.clientX; startW=railwrap.getBoundingClientRect().width;
+    appEl.classList.add("rail-resizing");
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  });
+})();
 function worldRail(){
   return `<div class="runmeta">
     <div class="rm-title serif" style="font-size:16px">WorldMap</div>
@@ -601,7 +632,11 @@ document.querySelectorAll(".topbar [data-tip]").forEach(el => {
 export { renderRail, resetView, toggleFullscreen, togglePlay, pausePlayback, closePanel };
 
 export function boot() {
-  window.addEventListener("resize", resize);
+  // Refit the canvas whenever the stage's box changes — window resize, fullscreen, AND the panel
+  // opening/closing or being drag-resized (all of which shrink/grow the stage). One observer covers
+  // every case, including live tracking during the width transition. (Replaces the window resize
+  // listener; fullscreenchange still calls resize directly above as a belt-and-braces.)
+  new ResizeObserver(() => resize()).observe(stage);
   resize();
   setPov(S.pov);              // paints the camera-POV toggle (default: God)
   setPlane(S.plane);          // paints the plane toggle
