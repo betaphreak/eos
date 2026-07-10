@@ -1,5 +1,6 @@
 package com.civstudio.server.web;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -194,6 +195,64 @@ class ServerApiTest {
 		assertEquals("gzip", gz.headers().firstValue("Content-Encoding").orElse(null));
 		try (var in = new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(gz.body()))) {
 			assertEquals(provinceCount, json.readTree(in).get("provinces").size());
+		}
+	}
+
+	@Test
+	@Timeout(120)
+	void serveTiersReturnsTheTierOutlinesAndGzips() throws Exception {
+		// /api/tiers is the dissolved geographic-tier outlines, served verbatim from the engine jar
+		// (was the committed web/assets/tiers.json). Plain GET is JSON with the three tier keys.
+		HttpResponse<byte[]> res = client.send(
+				HttpRequest.newBuilder(uri("/api/tiers")).GET().build(),
+				HttpResponse.BodyHandlers.ofByteArray());
+		assertEquals(200, res.statusCode());
+		assertTrue(res.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
+		var tiers = json.readTree(res.body());
+		for (String key : new String[] { "continents", "superRegions", "regions" })
+			assertTrue(tiers.has(key), "tiers missing key: " + key);
+
+		// it is byte-identical to the engine resource it re-serves
+		byte[] resource = getClass().getResourceAsStream("/map/tierborders.json").readAllBytes();
+		assertArrayEquals(resource, res.body(), "/api/tiers must serve tierborders.json verbatim");
+
+		// Accept-Encoding: gzip ships the gzipped copy; it gunzips to the same JSON
+		HttpResponse<byte[]> gz = client.send(
+				HttpRequest.newBuilder(uri("/api/tiers")).header("Accept-Encoding", "gzip").GET().build(),
+				HttpResponse.BodyHandlers.ofByteArray());
+		assertEquals("gzip", gz.headers().firstValue("Content-Encoding").orElse(null));
+		try (var in = new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(gz.body()))) {
+			assertArrayEquals(resource, in.readAllBytes());
+		}
+	}
+
+	@Test
+	@Timeout(120)
+	void serveTechsReturnsTheGzippedTechGraphWithArtMetadata() throws Exception {
+		// /api/techs is the tech graph (from the jar's techs.json) merged with the art-coupled
+		// icon/beaker metadata, gzipped and served as octet-stream — the client gunzips it in-page,
+		// so there is deliberately NO Content-Encoding header (was the committed techs.pack).
+		HttpResponse<byte[]> res = client.send(
+				HttpRequest.newBuilder(uri("/api/techs")).header("Accept-Encoding", "gzip").GET().build(),
+				HttpResponse.BodyHandlers.ofByteArray());
+		assertEquals(200, res.statusCode());
+		assertTrue(res.headers().firstValue("Content-Type").orElse("").startsWith("application/octet-stream"));
+		assertTrue(res.headers().firstValue("Content-Encoding").isEmpty(),
+				"the pack is gunzipped in-page, so the response must not be Content-Encoding: gzip");
+
+		try (var in = new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(res.body()))) {
+			var techs = json.readTree(in);
+			assertTrue(techs.isArray() && techs.size() > 300, "expected the full tech graph");
+			int withIcon = 0, withBeaker = 0;
+			for (var t : techs) {
+				assertTrue(t.has("Type") && t.has("iGridX"), "tech missing graph fields");
+				if (t.has("icon"))
+					withIcon++;
+				if (t.has("beaker"))
+					withBeaker++;
+			}
+			assertTrue(withIcon > 200, "the art metadata (icon rects) should be merged in, got " + withIcon);
+			assertTrue(withBeaker > 0, "the beaker metadata should be merged in");
 		}
 	}
 

@@ -1,11 +1,12 @@
 "use strict";
 // Geographic-tier boundaries — region / super-region / continent outlines, precomputed in
-// Java (TierBorderExporter, dissolved from the province raster) and shipped as the committed
-// assets/tiers.json. Drawn zoom-banded on the SAME bands as the tier labels (labels.GEO_TIERS):
-// zooming out coarsens the visible boundaries (province → region → super-region → continent),
-// and province borders fade out under them (see main.renderScene). Rings are absolute source
-// pixels, so they reuse the province projection (pxr/pyr) and pin to the terrain 1:1.
-import { ctx, cam, pxr, pyr, S } from "../core.mjs";
+// Java (TierBorderExporter, dissolved from the province raster) and served by the spectator
+// server (GET /api/tiers, from the engine jar's map/tierborders.json). Drawn zoom-banded on the
+// SAME bands as the tier labels (labels.GEO_TIERS): zooming out coarsens the visible boundaries
+// (province → region → super-region → continent), and province borders fade out under them (see
+// main.renderScene). Rings are absolute source pixels, so they reuse the province projection
+// (pxr/pyr) and pin to the terrain 1:1.
+import { ctx, cam, pxr, pyr, S, apiUrl } from "../core.mjs";
 
 // { continents:{key:[[[x,y]…]…]}, superRegions:{…}, regions:{…} } — fetched lazily on first
 // approach to a tier zoom band, so the 90 KB (gzipped) asset never loads for a purely
@@ -36,7 +37,7 @@ export function tiersReady() { return TIERS !== null; }
 export function ensureTiers(redraw) {
   if (TIERS || loading) return;
   loading = true;
-  fetch("assets/tiers.json")
+  fetch(apiUrl("/api/tiers"))
     .then(r => r.ok ? r.json() : Promise.reject(r.status))
     .then(d => { TIERS = d; loading = false; if (redraw) redraw(); })
     .catch(() => { loading = false; });   // no tiers → the map just keeps province borders

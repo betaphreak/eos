@@ -64,12 +64,12 @@ async function loadPlots(p) {
     p._loading = false;
     if (arr) { p._plots = arr; draw(); if (S.selectedProv === p) renderRail(); }   // fill the detail panel too
   } catch (e) {
+    // the per-plot terrain feed (assets/plots.pack) failed to fetch or decode for THIS province.
+    // Degrade gracefully — leave it as the blurred raster (hasPlots=false stops the draw loop from
+    // re-requesting it) — and do NOT drop to the server picker: plots.pack is a per-province lazy
+    // load from the static site (not the server), so one failed slice is no reason to tear down the
+    // whole session. (A truly unreachable server is still surfaced by the bundle fetch / live SSE.)
     p._loading = false; p.hasPlots = false;
-    // the per-plot terrain feed (assets/plots.pack) failed to fetch or decode — a broken data
-    // connection (e.g. a server/site version mismatch). Surface it by dropping the user to server
-    // selection rather than silently blanking the terrain. .lost() opens the picker at most once.
-    if (window.__picker && window.__picker.lost)
-      window.__picker.lost("Map data unavailable — the terrain feed (plots.pack) failed to load");
   }
 }
 // rasterise a province's plots to a 1px/plot offscreen canvas: terrain colour, relief

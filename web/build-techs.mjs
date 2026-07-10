@@ -5,13 +5,15 @@
 // Two committed, run-INDEPENDENT assets (the tech tree is static reference data, unlike
 // build.mjs which needs an output/<seed> run):
 //
-//   web/assets/techs.pack     the engine's tech graph (civstudio-engine/src/main/resources/techs.json —
-//                              produced by com.civstudio.tech.export.TechInfoConverter,
-//                              trimmed to the Prehistoric→Renaissance techs eos models,
-//                              carrying every field + the resolved English name/help/
-//                              quote), enriched with a per-tech `icon` rect and gzipped.
-//                              The page fetches it and gunzips in-browser via
-//                              DecompressionStream (the plots.mjs pattern).
+//   civstudio-engine/src/main/resources/techs-meta.json
+//                              the art-coupled per-tech metadata the server can't regenerate —
+//                              each tech's `icon` sprite rect (a cell in tech-icons.webp) and its
+//                              curated `beaker` colour — keyed by tech Type. The tech GRAPH itself
+//                              is NOT baked here anymore: the server serves it straight from the
+//                              engine jar's techs.json, merged with this meta, at GET /api/techs
+//                              (gzipped, gunzipped in-page via DecompressionStream — the plots.mjs
+//                              pattern). This ships in the engine jar, so the server is the single
+//                              source of the graph again (the data.js → /api/bundle rationale).
 //   web/assets/tech-icons.webp one sprite sheet of the real Civ4 tech-button icons,
 //                              decoded from the DDS art and packed CELL×CELL per tech.
 //
@@ -22,7 +24,6 @@
 // field; the page falls back to an advisor-colour chip for them.
 import fs from 'node:fs';
 import path from 'node:path';
-import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { decodeDds } from './dds.mjs';
 import { loadGameFont, symbolRGBA, recolorHue, CELL as GF_CELL } from './gamefont.mjs';
@@ -32,10 +33,10 @@ const WEB = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(WEB, '..');
 
 const SRC = path.join(ROOT, 'civstudio-engine/src/main/resources/techs.json');
-// gzip bytes, but named .pack (served as application/octet-stream, like plots.pack) — a
-// .gz extension makes Azure SWA/CDN set Content-Encoding: gzip, which collides with the
-// in-page DecompressionStream and hard-fails the fetch (ERR_CONTENT_DECODING_FAILED).
-const OUT_PACK = path.join(WEB, 'assets', 'techs.pack');
+// the art-coupled per-tech metadata (icon rects + beaker colour), merged onto techs.json by the
+// server (com.civstudio.server.web.TechBundle) at GET /api/techs. Lives in the engine resources
+// so it ships in the server jar alongside its techs.json source.
+const OUT_META = path.join(ROOT, 'civstudio-engine/src/main/resources/techs-meta.json');
 const OUT_ICONS = path.join(WEB, 'assets', 'tech-icons.webp');
 
 const CELL = 64;   // Civ4 tech buttons are 64×64
@@ -151,13 +152,20 @@ if (beaker)
       .webp({ quality: 90, alphaQuality: 100, effort: 5 })
       .toFile(path.join(WEB, 'assets', `${name}.webp`));
 
-// --- gzip the enriched graph (minified; the committed src techs.json stays pretty) ---
-const minified = JSON.stringify(techs);
-const gz = zlib.gzipSync(Buffer.from(minified, 'utf8'), { level: 9 });
-fs.mkdirSync(path.dirname(OUT_PACK), { recursive: true });
-fs.writeFileSync(OUT_PACK, gz);
+// --- emit the art-coupled per-tech metadata (icon rects + beaker colour) -------------
+// Only the two fields the server can't derive from techs.json; keyed by tech Type. The server
+// merges these onto techs.json and gzips the result on demand (TechBundle) — so the drift-prone
+// graph stays single-sourced in the engine jar and only this stable art metadata is committed.
+const meta = {};
+for (const t of techs) {
+  const m = {};
+  if (t.icon) m.icon = t.icon;
+  if (t.beaker) m.beaker = t.beaker;
+  if (Object.keys(m).length) meta[t.Type] = m;
+}
+fs.writeFileSync(OUT_META, JSON.stringify(meta, null, 0) + '\n');
 
-console.log(`Built web/assets/techs.pack — ${techs.length} techs, `
-  + `${(minified.length / 1024).toFixed(0)} KB JSON → ${(gz.length / 1024).toFixed(0)} KB gzipped`);
+console.log(`Built ${path.relative(ROOT, OUT_META)} — ${Object.keys(meta).length}/${techs.length} techs `
+  + `with icon/beaker metadata (${(fs.statSync(OUT_META).size / 1024).toFixed(0)} KB)`);
 console.log(`Built web/assets/tech-icons.webp — ${cells.length} icons `
   + `(${sheetW}×${sheetH}, ${(iconBytes / 1024).toFixed(0)} KB), ${missing} without art (colour-chip fallback)`);

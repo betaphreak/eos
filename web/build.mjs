@@ -3,7 +3,7 @@
 //   node web/build.mjs [seed]        (seed only names the baked terrain asset; default 24601)
 //
 // Reads the committed province map (civstudio-engine/src/main/resources/map/provinces.json) + outlines
-// (borders.json, tierborders.json) + geographic hierarchy + tech tree, distils them into one
+// (borders.json) + geographic hierarchy + tech tree, distils them into one
 // JSON bundle written to web/data.js (which index.html loads), and bakes a dark-tinted crop of
 // the real EU4 terrain raster (data/anbennar/terrain.bmp) into a real image asset at
 // web/assets/terrain.png that the page references — the image is never inlined into the data.
@@ -105,13 +105,9 @@ const shipped = new Set([...sub, ...water]);   // every province the page ships 
 const borders = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/map/borders.json'), 'utf8'));
 const ringsById = new Map(borders.map(b => [b.id, b.rings]));
 
-// geographic-tier boundary polygons (continent / super-region / region), precomputed by
-// TierBorderExporter into map/tierborders.json — shipped verbatim as the committed
-// assets/tiers.json the page lazy-fetches (web/js/overlays/tiers.mjs). Run-independent, so it
-// is just copied through; regenerate the source with the exporter when the map changes.
-const tierBordersSrc = path.join(ROOT, 'civstudio-engine/src/main/resources/map/tierborders.json');
-if (fs.existsSync(tierBordersSrc))
-  fs.writeFileSync(path.join(WEB, 'assets', 'tiers.json'), fs.readFileSync(tierBordersSrc));
+// The geographic-tier boundary polygons (continent / super-region / region) are no longer baked
+// here: the server serves them straight from the engine jar's map/tierborders.json at GET
+// /api/tiers (web/js/overlays/tiers.mjs), so there is no committed assets/tiers.json to copy.
 
 // geographic hierarchy display names, keyed for per-province lookup and the label rollup.
 // Continent names mirror Continent.java displayName() (the Anbennar landmass per EU4 raw key).

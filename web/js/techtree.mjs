@@ -1,14 +1,14 @@
 // The technology tree — a full-screen modal over the map. Self-contained: it owns its
 // DOM (the #techModal markup in index.html), loads its data lazily on first open
-// (assets/techs.pack, gunzipped in-page via DecompressionStream — the plots.mjs
-// pattern), and while it is up the map's paint() bails (S.techOpen), so nothing renders
-// behind it. Esc or a click outside closes it and repaints the map.
+// (GET /api/techs from the spectator server, gunzipped in-page via DecompressionStream —
+// the plots.mjs pattern), and while it is up the map's paint() bails (S.techOpen), so
+// nothing renders behind it. Esc or a click outside closes it and repaints the map.
 //
 // Layout is driven by the C2C grid: iGridX is the horizontal era-timeline column,
 // iGridY the vertical lane (see docs/tech-tree.md). Cards sit on that lattice, hairline
 // SVG elbows draw the prerequisites (solid = AND, dashed = OR), and hovering a tech
 // lights its whole prerequisite chain in gold while the rest dims.
-import { S } from "./core.mjs";
+import { S, apiUrl } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { pausePlayback } from "./panel.mjs";
 import { createSearchBox } from "./searchbox.mjs";
@@ -57,8 +57,8 @@ function allPrereqs(t) { return [...prereqList(t, "OrPreReqs"), ...prereqList(t,
 
 async function ensureLoaded() {
   if (loaded) return true;
-  const res = await fetch("assets/techs.pack");
-  if (!res.ok) throw new Error(`HTTP ${res.status} for assets/techs.pack`);
+  const res = await fetch(apiUrl("/api/techs"));
+  if (!res.ok) throw new Error(`HTTP ${res.status} for /api/techs`);
   const buf = await res.arrayBuffer();
   // the bytes are gzip; gunzip them in-page — but tolerate a host/CDN that already
   // decompressed via Content-Encoding (then the buffer is plain JSON text)
@@ -347,8 +347,8 @@ async function open() {
     syncEraTab();
   } catch (e) {
     els.viewport.innerHTML = `<div style="padding:40px;color:var(--ink-soft);max-width:520px">
-      Couldn't load the tech data. The tree reads <code>assets/techs.pack</code> over HTTP —
-      open the site through a server (not <code>file://</code>). <br><br>${e.message}</div>`;
+      Couldn't load the tech data. The tree reads <code>/api/techs</code> from the spectator
+      server — check the server is reachable. <br><br>${e.message}</div>`;
   }
 }
 function close() {

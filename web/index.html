@@ -336,7 +336,8 @@
     }
 
     // the running app re-opens the picker over the live map: js/panel.mjs on the title click (a
-    // voluntary "switch server"), or on a lost connection (plots.mjs / live.mjs call .lost()). Both
+    // voluntary "switch server"), or on a lost live connection (live.mjs calls .lost() when the SSE
+    // stream drops). A failed plots.pack slice does NOT — it degrades to the blurred raster. Both
     // route through window because this boot IIFE owns the server list + probes and the module app
     // can't reach into its closure otherwise.
     function isOpenSwitch() { return mode === "switch" && !picker.hidden; }

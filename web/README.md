@@ -110,9 +110,10 @@ mvn -q compile exec:exec -Dsim.main=com.civstudio.geo.export.ProvinceBorderExpor
 mvn -q compile exec:exec -Dsim.main=com.civstudio.geo.export.TierBorderExporter
 ```
 
-`build.mjs` copies `tierborders.json` through to the committed `assets/tiers.json` the page
-lazy-fetches; the tier outlines draw **zoom-banded** (region → super-region → continent) with
-province borders fading out under them as you zoom out (`web/js/overlays/tiers.mjs`).
+`tierborders.json` is **served by the server** (`GET /api/tiers`, straight from the engine jar —
+there is no committed `assets/tiers.json` anymore); the tier outlines draw **zoom-banded** (region
+→ super-region → continent) with province borders fading out under them as you zoom out
+(`web/js/overlays/tiers.mjs`).
 
 ```bash
 node web/build.mjs            # -> src/main/resources/map/web-asset-manifest.json + web/assets/* (no run needed)
@@ -121,8 +122,9 @@ node web/build.mjs            # -> src/main/resources/map/web-asset-manifest.jso
 **Everything the site serves statically is committed** (non-LFS): the whole `assets/` folder —
 the terrain crop, the texture atlas, `plots.pack`, and every baked tile
 (`sea/shore/foam/ice/river/bonus-icons.webp`), ~20 MB in all — plus the manifest (committed under
-`src/main/resources/map/`, so it ships inside the server jar). The **`window.BUNDLE` JSON itself
-is not committed anywhere**; it is assembled on demand by the server. `node web/build.mjs`
+`src/main/resources/map/`, so it ships inside the server jar). The **`window.BUNDLE` JSON, the tier
+outlines (`/api/tiers`) and the tech graph (`/api/techs`) are not committed as static assets**;
+they are assembled on demand by the server from the engine jar. `node web/build.mjs`
 regenerates the assets + manifest in place (from the plot grids + the Civ4 art) — run it and
 commit the result whenever the engine, the source rasters, or the build change. Only the heavy
 build *inputs* stay out of git: the per-province plot grids `map/provinces/*.json.gz` (hundreds
@@ -142,13 +144,13 @@ the deployed site) and point it at a server (`?live=<url>`, default `https://dev
 | `app.js` | **entry** — a module that loads the `js/` modules and boots (imported by the bootstrap once `window.BUNDLE` is populated) |
 | `js/*.mjs` | the app, split into ES modules (see below) |
 | `assets/terrain.webp` | **generated** — the dark-tinted terrain crop, a real image asset |
-| `build.mjs` | bakes the binary art assets and writes `assets/tiers.json` + `src/main/resources/map/web-asset-manifest.json` (the asset descriptors the server merges into the bundle). It no longer writes the map/geo bundle — that is the server's `WorldBundle` (run-independent) |
+| `build.mjs` | bakes the binary art assets and writes `src/main/resources/map/web-asset-manifest.json` (the asset descriptors the server merges into the bundle). It no longer writes the map/geo bundle (server's `WorldBundle`) nor the tier outlines (server's `GET /api/tiers`) — both run-independent |
 | _(the bundle)_ | `window.BUNDLE` is **not a file** — the server assembles it (`com.civstudio.server.web.WorldBundle`) from the committed map resources + the manifest and serves it at `GET /api/bundle` |
-| `js/techtree.mjs` | the **technology tree** — a full-screen modal over the map (map `paint()` pauses while it is up). Cards laid out on the C2C `iGridX`/`iGridY` grid, hairline SVG prereq elbows (solid AND / dashed OR), era-tab jumps, zoom + custom scrollbars, and a hover-ancestry gold highlight. Loads `assets/techs.pack` on first open |
+| `js/techtree.mjs` | the **technology tree** — a full-screen modal over the map (map `paint()` pauses while it is up). Cards laid out on the C2C `iGridX`/`iGridY` grid, hairline SVG prereq elbows (solid AND / dashed OR), era-tab jumps, zoom + custom scrollbars, and a hover-ancestry gold highlight. Fetches the tech graph from the server (`GET /api/techs`) on first open |
 | `js/shortcuts.mjs` | the single declarative source for the **bottom shortcut bar** (`#hotbar`) — renders the hint chips (F7 tech tree, Space, F, 0, WASD, Esc). Key handlers stay with their feature (map nav in `panel.mjs`, F7 in `techtree.mjs`); this owns only the display |
 | `gamefont.mjs` | shared reader for `GameFont_120.tga` glyph geometry (icon grid @ y=72, 25px cells) — used by the bonus-icon bake (`build.mjs`) and the research beaker + future commerce/yield symbols (`build-techs.mjs`) |
-| `build-techs.mjs` | **generated → `assets/techs.pack` + `tech-icons.webp` + `tech-beaker.webp`** — gzips the engine's `src/main/resources/techs.json` (tech graph + English names, enriched with a per-tech icon rect), bakes the tech-button icon sprite sheet from the vendored Civ4 art, and extracts the research-beaker glyph; run-independent (needs no `output/<seed>` run) |
-| `assets/techs.pack` | **generated** — the whole tech graph (grid coords, eras, advisors, prereqs, name/help/quote, `icon` rect), fetched and gunzipped in-page via `DecompressionStream` |
+| `build-techs.mjs` | **generated → `src/main/resources/techs-meta.json` + `assets/tech-icons.webp` + `tech-beaker.webp`** — bakes the tech-button icon sprite sheet from the vendored Civ4 art and extracts the research-beaker glyph, and emits the art-coupled per-tech metadata (icon rect + beaker colour) the server merges onto `techs.json`. The tech graph itself is **no longer baked** — the server serves it (`GET /api/techs`); run-independent (needs no `output/<seed>` run) |
+| `GET /api/techs` | **server-assembled** — the whole tech graph (grid coords, eras, advisors, prereqs, name/help/quote, `icon` rect), gzipped and gunzipped in-page via `DecompressionStream`. `TechBundle` merges the engine jar's `techs.json` with `techs-meta.json` (replaces the old committed `assets/techs.pack`) |
 | `assets/tech-icons.webp` | **generated** — one sprite sheet (16-wide, 64px cells) of the real Civ4 tech-button icons; a tech's `icon:[x,y,w,h]` indexes into it (the ~47 techs whose icon is a vanilla-BTS file C2C doesn't ship fall back to an advisor-colour chip) |
 | `assets/tech-beaker.webp` | **generated** — the GameFont research-beaker (the cost unit; blue = science, the human tree's default) |
 
