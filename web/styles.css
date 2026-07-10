@@ -573,6 +573,28 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
   #mapControls #clock .clk-speed { display: flex; }
 }
 
+/* ---------- update toast: shown when a new web build is detected (index.html update detector) ---------- */
+.update-toast {
+  position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 140%);
+  z-index: 40; display: flex; align-items: center; gap: 12px;
+  padding: 10px 10px 10px 16px; border-radius: 12px;
+  background: color-mix(in srgb, #141a26 88%, transparent); backdrop-filter: blur(8px);
+  border: 1px solid rgba(230,176,74,.45); box-shadow: 0 10px 34px rgba(0,0,0,.5);
+  font: 500 13px system-ui, 'Segoe UI', sans-serif; color: #eef2f8;
+  opacity: 0; transition: transform .3s ease, opacity .3s ease;
+}
+.update-toast.on { transform: translate(-50%, 0); opacity: 1; }
+.update-toast .ut-reload {
+  font: 600 13px system-ui, sans-serif; color: #12160f; background: var(--accent);
+  border: 0; border-radius: 8px; padding: 7px 14px; cursor: pointer;
+}
+.update-toast .ut-reload:hover { filter: brightness(1.08); }
+.update-toast .ut-x {
+  font: 400 18px system-ui, sans-serif; line-height: 1; color: #9fb0c8;
+  background: transparent; border: 0; padding: 2px 6px; cursor: pointer;
+}
+.update-toast .ut-x:hover { color: #eef2f8; }
+
 /* ---------- TOUCH: enlarge hit targets on coarse pointers (~40-44px) ---------- */
 @media (pointer: coarse) {
   .themebtn, .zoomctl button, .zoomlvl, .menubtn { width: 42px; height: 42px; }

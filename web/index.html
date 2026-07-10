@@ -378,5 +378,59 @@
     }
   })();
   </script>
+
+  <!-- Update detector: Azure Static Web Apps stamps every asset with one deployment-wide ETag, so a
+       changed ETag means a new web build shipped. We capture it at boot and re-check on tab-focus
+       (throttled) plus a slow backstop timer — NOT a tight poll. On a change we offer a reload (a
+       reload drops the current map view, so we let the user choose) — unless they're still on the
+       loading/picker screen, where reloading is seamless so we just do it. -->
+  <script>
+  (function () {
+    var FOCUS_GAP = 180000;    // re-check on focus at most once per 3 min
+    var BACKSTOP  = 900000;    // and once per 15 min for a tab left focused
+    var bootTag = null, lastCheck = 0, notified = false;
+
+    function readTag() {
+      // no-store bypasses the 30 s asset cache so we read the CURRENT deployment's ETag
+      return fetch(location.pathname, { method: "HEAD", cache: "no-store" })
+        .then(function (r) { return r.ok ? (r.headers.get("etag") || r.headers.get("last-modified")) : null; })
+        .catch(function () { return null; });
+    }
+    function check() {
+      if (notified) return;
+      var now = Date.now();
+      if (now - lastCheck < FOCUS_GAP) return;
+      lastCheck = now;
+      readTag().then(function (tag) {
+        if (!tag) return;
+        if (bootTag == null) { bootTag = tag; return; }   // first successful read seeds the baseline
+        if (tag === bootTag) return;
+        notified = true;
+        // still on the loading/picker screen (not connected) → reloading is seamless, just do it
+        var l = document.getElementById("loading");
+        if (l && !l.classList.contains("gone")) { location.reload(); return; }
+        showUpdateToast();
+      });
+    }
+    function showUpdateToast() {
+      if (document.querySelector(".update-toast")) return;
+      var t = document.createElement("div");
+      t.className = "update-toast";
+      t.innerHTML = '<span class="ut-msg">A new version of CivStudio is available.</span>' +
+        '<button class="ut-reload" type="button">Reload</button>' +
+        '<button class="ut-x" type="button" aria-label="Dismiss">×</button>';
+      document.body.appendChild(t);
+      t.querySelector(".ut-reload").addEventListener("click", function () { location.reload(); });
+      t.querySelector(".ut-x").addEventListener("click", function () { t.remove(); });
+      requestAnimationFrame(function () { t.classList.add("on"); });
+    }
+
+    readTag().then(function (tag) { bootTag = tag; });     // seed the baseline at boot
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) check(); });
+    setInterval(check, BACKSTOP);
+    // expose for verification (headless test drives this without waiting on focus/timer)
+    window.__updateCheck = check;
+  })();
+  </script>
 </body>
 </html>
