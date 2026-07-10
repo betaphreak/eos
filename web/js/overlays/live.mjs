@@ -7,7 +7,7 @@
 // pure consumer + command client — it never touches engine internals. The map projection
 // (px/py) already pins anything with a lon/lat onto the terrain, so the feed's colonies and
 // caravans place with no new geometry.
-import { ctx, S, px, py, cssVar, cam, VIEW, baseXr, baseYr, sxSrc, sySrc, BUNDLE } from "../core.mjs";
+import { ctx, S, px, py, cssVar, cam, VIEW, baseXr, baseYr, sxSrc, sySrc, BUNDLE, LABEL_FONT } from "../core.mjs";
 
 // where the feed lives: the build can inject BUNDLE.live.base; a ?live=<url> query overrides
 // it for local testing; otherwise the deployed server.
@@ -128,7 +128,7 @@ export function drawLive() {
     ctx.fillStyle = cssVar("--accent") || "#e8b76a";
     ctx.strokeStyle = "#0b0f16"; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.rect(x - 5, y - 5, 10, 10); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "#eef2f8"; ctx.font = "12px ui-monospace, monospace";
+    ctx.fillStyle = "#eef2f8"; ctx.font = `600 13px ${LABEL_FONT}`;
     ctx.fillText(colony.name || "colony", x + 9, y + 4);
   }
 }

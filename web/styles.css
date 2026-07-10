@@ -1,3 +1,15 @@
+/* Map-label typeface: TeX Gyre Pagella (a free Palatino clone — the Paradox/EU4 map look),
+   bundled as woff2 so it is pixel-identical across OSes. GUST Font License; see
+   assets/fonts/GUST-FONT-LICENSE.txt. Used by every canvas map label via core.LABEL_FONT. */
+@font-face {
+  font-family: 'TeX Gyre Pagella'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("assets/fonts/texgyrepagella-regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: 'TeX Gyre Pagella'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("assets/fonts/texgyrepagella-bold.woff2") format("woff2");
+}
+
 :root {
   --ground: #e9edf2; --panel: #f3f6fa; --panel-2: #ffffff;
   --ink: #18202e; --ink-soft: #56617a; --ink-faint: #8b95a8;

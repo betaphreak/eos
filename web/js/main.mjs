@@ -326,4 +326,15 @@ function applyHash() {
 }
 window.addEventListener("hashchange", applyHash);
 window.addEventListener("popstate", applyHash);   // browser back/forward between deep links
+// Canvas text does not trigger webfont loading the way laid-out DOM text does, so the first
+// paint would use the serif fallback until some later redraw. Explicitly fetch the bundled
+// map-label faces (see core.LABEL_FONT / styles.css) and redraw once they are ready. Guarded
+// for browsers without the Font Loading API (they just keep the CSS fallback).
+if (typeof document !== "undefined" && document.fonts && document.fonts.load) {
+  Promise.all([
+    document.fonts.load('400 16px "TeX Gyre Pagella"'),
+    document.fonts.load('700 16px "TeX Gyre Pagella"'),
+  ]).then(() => draw()).catch(() => {});
+}
+
 export { draw, zoomAt, resize, focusProvince, focusProvinceFit, applyHash, hasDeepLink };

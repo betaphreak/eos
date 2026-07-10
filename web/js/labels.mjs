@@ -1,8 +1,7 @@
-import { J, P, BUNDLE, px, py, pxr, pyr, cam, VIEW, ctx, destSet, cssVar, S } from "./core.mjs";
+import { J, P, BUNDLE, px, py, pxr, pyr, cam, VIEW, ctx, destSet, cssVar, S, LABEL_FONT } from "./core.mjs";
 
-// Paradox/EU4-style map lettering: an old-style humanist serif (the EU4 map label look),
-// not the UI sans. System fallbacks cover Windows/macOS/Linux without bundling a webfont.
-const LABEL_FAM = "'Palatino Linotype','Book Antiqua',Palatino,'URW Palladio L',Georgia,serif";
+// Paradox/EU4-style map lettering: the shared bundled serif (see core.LABEL_FONT).
+const LABEL_FAM = LABEL_FONT;
 
 // EU4-style province labels: the name is laid on the polygon's own long axis (angled) and scaled
 // to span it, instead of horizontal beside the centroid. Phase (a) uses a STRAIGHT baseline — the
@@ -166,7 +165,7 @@ function drawLabels() {
     placed.push(box);
     drawTextOnPath(p.name, spts, size, track, o.weight, o.color);
   };
-  const F1="600 12px system-ui,'Segoe UI',sans-serif";
+  const F1=`600 12px ${LABEL_FAM}`;
   if (S.overlay === "caravan") {
     label(BUNDLE.meta.origin.name, px(BUNDLE.meta.origin.lon), py(BUNDLE.meta.origin.lat),
       { font:F1, size:12, color:cssVar("--accent") });
@@ -210,7 +209,7 @@ function drawLabels() {
         }
         water.sort((a,b)=> b.p.plots - a.p.plots);
         ctx.save(); ctx.globalAlpha = wpa;
-        const FW="italic 500 10px system-ui,'Segoe UI',sans-serif";
+        const FW=`italic 500 10px ${LABEL_FAM}`;
         for (let i=0; i<water.length && i<40; i++)
           label(water[i].p.name, water[i].x, water[i].y, { font:FW, size:10, color:"#82b2cc" });
         ctx.restore();

@@ -1,7 +1,8 @@
 {
   "mimeTypes": {
     ".pack": "application/octet-stream",
-    ".mjs": "text/javascript"
+    ".mjs": "text/javascript",
+    ".woff2": "font/woff2"
   },
   "routes": [
     {

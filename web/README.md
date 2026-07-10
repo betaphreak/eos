@@ -201,6 +201,13 @@ http→https redirect). `plots.pack` is ~15 MB, so the whole site fits the Free 
   **web-mercator source-pixel space** — the exact inverse of the `lon`/`lat` maps
   `ProvinceExporter` used — so the province dots and routes pin to the terrain
   rather than floating over a schematic.
+- **Map-label font.** All canvas map labels (province names, geographic tiers, caravan/water
+  labels, the Live overlay) use **TeX Gyre Pagella** — a free Palatino clone giving the
+  Paradox/EU4 map look — bundled as `assets/fonts/*.woff2` (regular + bold) and `@font-face`d
+  in `styles.css`, so it is pixel-identical across OSes rather than depending on a system
+  serif. The single source of the family is `core.LABEL_FONT`. GUST Font License
+  (`assets/fonts/GUST-FONT-LICENSE.txt`). `main.mjs` force-loads the faces and redraws, since
+  canvas text does not trigger webfont loading on its own.
 - This is one directory in the engine's monorepo, not a separate frontend project;
   it has no build tooling beyond Node.
 - Interaction & chrome (URL deep links, focus framing, pan clamp, collapsible sidebar,
