@@ -24,6 +24,7 @@ import com.civstudio.server.SessionSpec;
 import com.civstudio.server.command.SetTaxRateCommand;
 import com.civstudio.server.render.SessionSnapshot;
 
+import jakarta.servlet.http.HttpServletRequest;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -52,10 +53,12 @@ public class SessionController {
 
 	private final SessionHost host;
 	private final ObjectMapper json;
+	private final CurrentUserResolver currentUser;
 
-	public SessionController(SessionHost host, ObjectMapper json) {
+	public SessionController(SessionHost host, ObjectMapper json, CurrentUserResolver currentUser) {
 		this.host = host;
 		this.json = json;
+		this.currentUser = currentUser;
 	}
 
 	@GetMapping
@@ -68,22 +71,29 @@ public class SessionController {
 	}
 
 	@PostMapping
-	public ResponseEntity<Object> create(@RequestBody(required = false) CreateRequest req) {
+	public ResponseEntity<Object> create(@RequestBody(required = false) CreateRequest req,
+			HttpServletRequest http) {
 		CreateRequest r = req == null ? new CreateRequest(null, null, null) : req;
 		long seed = r.seed() != null ? r.seed() : 7654321L;
 		String scenario = r.scenario() != null ? r.scenario() : SessionSpec.CARAVAN_DEMO;
 		int provinceId = r.provinceId() != null ? r.provinceId() : 4411;
-		HostedSession hs = host.create(new SessionSpec(seed, scenario, provinceId));
+		// the founder owns the session; an anonymous founder creates an unowned/public session
+		// (open to all — the demo). Phase 2 (docs/authentication.md) will require login to found.
+		String owner = currentUser.userId(http);
+		HostedSession hs = host.create(new SessionSpec(seed, scenario, provinceId), owner);
 		if (hs.state() == HostedSession.State.CREATED)
 			hs.start();
 		return ResponseEntity.status(201).body(Map.of("id", hs.id(), "state", hs.state().name()));
 	}
 
 	@PostMapping("/{id}/control")
-	public ResponseEntity<Object> control(@PathVariable String id, @RequestBody ControlRequest req) {
+	public ResponseEntity<Object> control(@PathVariable String id, @RequestBody ControlRequest req,
+			HttpServletRequest http) {
 		HostedSession hs = host.get(id);
 		if (hs == null)
 			return notFound(id);
+		if (!canWrite(hs, http))
+			return forbidden(id);
 		String action = req.action() == null ? "" : req.action();
 		switch (action) {
 			case "pause" -> hs.pause();
@@ -102,10 +112,13 @@ public class SessionController {
 	// deterministic top of its tick, so it defaults to the NEXT tick (never retro-mutating the
 	// in-flight day) unless a later tick is given.
 	@PostMapping("/{id}/commands")
-	public ResponseEntity<Object> command(@PathVariable String id, @RequestBody CommandRequest req) {
+	public ResponseEntity<Object> command(@PathVariable String id, @RequestBody CommandRequest req,
+			HttpServletRequest http) {
 		HostedSession hs = host.get(id);
 		if (hs == null)
 			return notFound(id);
+		if (!canWrite(hs, http))
+			return forbidden(id);
 		String type = req.type() == null ? "" : req.type();
 		long next = hs.tick() + 1;
 		long tick = Math.max(next, req.tick() != null ? req.tick() : next);
@@ -196,8 +209,23 @@ public class SessionController {
 		}
 	}
 
+	// may the caller write (control/command) to this session? An unowned/public session (the
+	// demo) is open to everyone — unchanged from before ownership existed; an owned session only
+	// to its owner. Read/spectate endpoints (list, stream) stay open regardless. Admin override
+	// arrives with real roles in Phase 2 (docs/authentication.md).
+	private boolean canWrite(HostedSession hs, HttpServletRequest http) {
+		String owner = hs.owner();
+		if (owner == null)
+			return true;
+		return owner.equals(currentUser.userId(http));
+	}
+
 	private static ResponseEntity<Object> notFound(String id) {
 		return ResponseEntity.status(404).body(Map.of("error", "no session " + id));
+	}
+
+	private static ResponseEntity<Object> forbidden(String id) {
+		return ResponseEntity.status(403).body(Map.of("error", "not the owner of session " + id));
 	}
 
 	// map the wire lever name (camelCase from the browser, or the enum name) to the enum

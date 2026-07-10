@@ -53,6 +53,11 @@ public final class HostedSession {
 	}
 
 	private final String id;
+	// the app_user id that owns this run, or null for an unowned (public) session such as the
+	// server-seeded demo. Write commands/control are gated on this (see SessionController); an
+	// unowned session stays open to anyone, an owned one only to its owner. Phase 1 of the auth
+	// work (docs/authentication.md) — real owners arrive with login in Phase 2.
+	private final String owner;
 	private final SessionSpec spec;
 	private final GameSession session;
 	private final List<Settlement> colonies;
@@ -86,15 +91,21 @@ public final class HostedSession {
 
 	/**
 	 * Build a hosted session over an already-founded (not yet started) session and its
-	 * colonies. The {@link SessionHost} founds these from a {@link SessionSpec}.
+	 * colonies. The {@link SessionHost} founds these from a {@link SessionSpec} and assigns the
+	 * surrogate id and owner (the id keys the {@link SessionHost} registry and the command log;
+	 * the owner gates writes — see {@code docs/authentication.md}).
 	 *
-	 * @param spec     the founding spec (its {@link SessionSpec#id()} is this session's id)
+	 * @param id       the session's surrogate id (registry + command-log key)
+	 * @param owner    the owning {@code app_user} id, or {@code null} for an unowned/public
+	 *                 session (the server-seeded demo)
+	 * @param spec     the founding spec (seed/scenario/province — the determinism root)
 	 * @param session  the game session (owns the seed, world map and wandering bands)
 	 * @param colonies the session's colonies (advanced in lockstep each tick)
 	 */
-	public HostedSession(SessionSpec spec, GameSession session, List<Settlement> colonies,
-			CommandStore commandStore) {
-		this.id = spec.id();
+	public HostedSession(String id, String owner, SessionSpec spec, GameSession session,
+			List<Settlement> colonies, CommandStore commandStore) {
+		this.id = id;
+		this.owner = owner;
 		this.spec = spec;
 		this.session = session;
 		this.colonies = List.copyOf(colonies);
@@ -225,6 +236,15 @@ public final class HostedSession {
 	/** This session's id. */
 	public String id() {
 		return id;
+	}
+
+	/**
+	 * The owning {@code app_user} id, or {@code null} if this is an unowned/public session
+	 * (the server-seeded demo). Control/command writes are gated on this — an unowned session
+	 * is open to anyone, an owned one only to its owner (see {@code docs/authentication.md}).
+	 */
+	public String owner() {
+		return owner;
 	}
 
 	/** This session's founding spec. */

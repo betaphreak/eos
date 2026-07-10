@@ -15,6 +15,7 @@ public class CivStudioProperties {
 
 	private final Demo demo = new Demo();
 	private final Cors cors = new Cors();
+	private final Auth auth = new Auth();
 
 	public Demo getDemo() {
 		return demo;
@@ -22,6 +23,10 @@ public class CivStudioProperties {
 
 	public Cors getCors() {
 		return cors;
+	}
+
+	public Auth getAuth() {
+		return auth;
 	}
 
 	/** The caravan-demo session founded on startup (see {@link DemoSessionSeeder}). */
@@ -65,6 +70,30 @@ public class CivStudioProperties {
 
 		public void setTickRateMillis(long tickRateMillis) {
 			this.tickRateMillis = tickRateMillis;
+		}
+	}
+
+	/**
+	 * Authentication / ownership config (see {@code docs/authentication.md}). Phase 1 ships the
+	 * ownership plumbing without a login provider yet; {@link #trustDevUserHeader} is the only
+	 * knob — a development/test seam for supplying the caller's identity before real login lands.
+	 */
+	public static class Auth {
+		/**
+		 * When {@code true}, {@link com.civstudio.server.web.CurrentUserResolver} trusts the
+		 * {@code X-CivStudio-User} request header as the caller's user id. This is a
+		 * <b>development/test-only</b> stand-in for real authentication (a spoofable header must
+		 * never be trusted in production) and stays {@code false} by default; Phase 2 replaces it
+		 * with the Spring Security {@code SecurityContext}.
+		 */
+		private boolean trustDevUserHeader = false;
+
+		public boolean isTrustDevUserHeader() {
+			return trustDevUserHeader;
+		}
+
+		public void setTrustDevUserHeader(boolean trustDevUserHeader) {
+			this.trustDevUserHeader = trustDevUserHeader;
 		}
 	}
 

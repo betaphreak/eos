@@ -77,15 +77,47 @@ public final class SessionHost {
 	}
 
 	/**
-	 * Found and register a session from {@code spec} (idempotent by id: an existing session
-	 * with the same id is returned as-is). The session is built but not started — the caller
-	 * sets the tick rate and starts it.
+	 * Found and register an <em>unowned</em> (public) session from {@code spec} — the
+	 * server-seeded demo and the existing tests. Equivalent to {@link #create(SessionSpec,
+	 * String) create(spec, null)}.
 	 *
 	 * @param spec the founding spec
 	 * @return the hosted session
 	 */
 	public HostedSession create(SessionSpec spec) {
-		return sessions.computeIfAbsent(spec.id(), k -> build(spec));
+		return create(spec, null);
+	}
+
+	/**
+	 * Found and register a session from {@code spec} owned by {@code owner} (idempotent by the
+	 * derived {@linkplain #sessionKey key}: re-founding the same spec+owner returns the existing
+	 * session, so a persisted command log replays onto it — {@code state = f(spec, log)}). Two
+	 * different owners founding the same spec get two independent sessions. The session is built
+	 * but not started — the caller sets the tick rate and starts it.
+	 *
+	 * @param spec  the founding spec (the determinism root — ownership is metadata alongside it,
+	 *              never part of the spec)
+	 * @param owner the owning {@code app_user} id, or {@code null} for an unowned/public session
+	 * @return the hosted session
+	 */
+	public HostedSession create(SessionSpec spec, String owner) {
+		String id = sessionKey(spec, owner);
+		return sessions.computeIfAbsent(id, k -> build(id, owner, spec));
+	}
+
+	/**
+	 * The surrogate session id: the spec id for an unowned session (unchanged — the demo keeps
+	 * its stable {@code "caravan-demo-<seed>"} id), else the spec id tagged with the owner so
+	 * owned runs of the same spec (and different owners' runs) never collide. Kept deterministic
+	 * so a re-founded spec+owner resumes its command log; Phase 2's session registry can replace
+	 * this with an opaque minted id (see {@code docs/authentication.md}).
+	 *
+	 * @param spec  the founding spec
+	 * @param owner the owning user id, or {@code null}/blank for an unowned/public session
+	 * @return the session key
+	 */
+	public static String sessionKey(SessionSpec spec, String owner) {
+		return owner == null || owner.isBlank() ? spec.id() : spec.id() + "@" + owner.trim();
 	}
 
 	/** The session with this id, or {@code null}. */
@@ -124,7 +156,7 @@ public final class SessionHost {
 
 	// found the session's world from the spec. Only the caravan demo is wired for Phase A;
 	// other scenario ids reuse the same standard-colony founding without the bands.
-	private HostedSession build(SessionSpec spec) {
+	private HostedSession build(String id, String owner, SessionSpec spec) {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		// SimulationHarness.create builds the GameSession, founds the colony into the
 		// province, and installs the (now per-session) log — see docs/client-server.md
@@ -135,10 +167,10 @@ public final class SessionHost {
 		GameSession session = colony.getSession();
 		if (SessionSpec.CARAVAN_DEMO.equals(spec.scenario()))
 			seedDemoCaravans(session, colony, spec.provinceId());
-		HostedSession hs = new HostedSession(spec, session, List.of(colony), commandStore);
-		// resume: replay any previously-persisted commands into the fresh session's log so
-		// state = f(spec, command log) holds across a restart
-		for (GameCommand cmd : commandStore.load(spec.id()))
+		HostedSession hs = new HostedSession(id, owner, spec, session, List.of(colony), commandStore);
+		// resume: replay any previously-persisted commands (keyed by the surrogate id) into the
+		// fresh session's log so state = f(spec, command log) holds across a restart
+		for (GameCommand cmd : commandStore.load(id))
 			hs.replay(cmd);
 		return hs;
 	}
