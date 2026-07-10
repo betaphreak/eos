@@ -50,6 +50,14 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <!-- Spring Security: the SecurityFilterChain + SecurityContext that Steam/OIDC login
+             (docs/authentication.md, phase 2) establishes; the authenticated principal the
+             ownership checks read. All endpoints stay permitAll — authz is per-session in the
+             controller — so the server keeps serving spectators anonymously. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
         <!-- health (liveness/readiness) + metrics for the Container App probes -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

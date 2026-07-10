@@ -1,9 +1,10 @@
 # Design & plan: authentication, users & session ownership
 
-**Status:** **Phase 1 (ownership plumbing) implemented (2026-07-11)**; login providers
-(Phases 2–4) proposed. This note scopes the work so the server picks up a real user model
-before interactive play (Phase B) opens the command channel to the public. See §Suggested
-phasing for the per-phase status.
+**Status:** **Phases 1–2 implemented (2026-07-11)** — ownership plumbing + Steam OpenID 2.0
+browser sign-in (the default provider); secondary OIDC providers and the native-client JWT path
+(Phases 3–4) proposed. This note scopes the work so the server picks up a real user model before
+interactive play (Phase B) opens the command channel to the public. See §Suggested phasing for
+the per-phase status.
 
 **Goal (decided 2026-07-11):** **player accounts + session ownership**, with **Steam as the
 default sign-in** — both the web "Sign in through Steam" flow and the native Steam client's
@@ -236,9 +237,30 @@ Phase 2, the `game_session` registry), so the command rows stay lean.
    a dev-only `X-CivStudio-User` header, honored only when `civstudio.auth.trust-dev-user-header`
    is set (default off), a spoof-safe stand-in that Phase 2 swaps for the `SecurityContext`.
    Covered by `SessionOwnershipTest`.
-2. **Steam OpenID 2.0 browser login** (the default path): the custom filter +
-   `check_authentication` verify, `app_user` upsert, `.civstudio.com` cookie, CORS→credentials.
-   First real end-to-end login; add a "Sign in through Steam" control to `live.html`/`app.js`.
+2. **Steam OpenID 2.0 browser login** (the default path). ✅ **Implemented (2026-07-11).**
+   Spring Security is on the classpath with a **permit-all** `SecurityFilterChain` (authz stays
+   per-session in `SessionController`; spectating stays anonymous) that only establishes and
+   carries the principal. The Steam flow is `auth.SteamAuthController` over the hand-rolled
+   `SteamOpenId` (`HttpSteamOpenId` does the `check_authentication` re-post; the interface lets
+   tests stub the network): `GET /api/auth/steam/login` → Steam, `GET /api/auth/steam/return`
+   verifies + upserts the `app_user` + saves an authenticated context into the session,
+   `GET /api/auth/me`, `POST /api/auth/logout`. `UserStore` follows the command-store pattern
+   (`InMemoryUserStore` default, `JdbcUserStore` + `app_user` table when a datasource is set).
+   `CurrentUserResolver` now reads the `SecurityContext` (dev header only as fallback). CORS moved
+   to a credentialed `CorsConfigurationSource` (Security + MVC share it); the session cookie is
+   `HttpOnly` + `SameSite=Lax`, with `domain`/`secure` env-driven for the `.civstudio.com`
+   cross-subdomain case. **UI:** the same-origin `live.html` diagnostic client and the main map
+   site both sign in. On the main site the live client is `web/js/overlays/live.mjs` — it already
+   spectated + controlled + sent tax commands over the picked server (`LIVE_BASE`), so its
+   owner-gated `/control` and `/commands` fetches gained `credentials: "include"` (cross-origin,
+   so the cookie would otherwise be dropped) and its live HUD gained a "Sign in through Steam"
+   control that targets `LIVE_BASE/api/auth/steam/login` and returns to the site. Because the
+   cookie rides cross-origin only when site and server are *same-site*, this works for the
+   `civstudio.com` cloud servers (and localhost dev); signing into a `local`/custom server from
+   the cloud site is genuinely cross-site and out of scope. Covered by `SteamAuthTest` (login
+   redirect + full sign-in → ownership → logout). **Deferred within this phase:** persona/avatar
+   enrichment via `GetPlayerSummaries` (the SteamID is the display name until an API key is
+   configured) and requiring login to found (still anonymous-permissive).
 3. **OIDC browser login** (`oauth2-client`, secondary providers e.g. Google) — reuses the
    `app_user` upsert and cookie/CORS work from Phase 2; each provider is opt-in via config.
 4. **Bearer/JWT + Steam session-ticket** path — only once a native client exists.

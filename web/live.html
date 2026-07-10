@@ -49,6 +49,12 @@
   input[type=range] { width: 120px; vertical-align: middle; }
   input[type=number] { width: 62px; background: #0e141d; color: #cfe3ff; border: 1px solid #2c3a4e;
                        border-radius: 5px; padding: 0.2rem 0.35rem; font: inherit; }
+  .auth { display: inline-flex; align-items: center; gap: 0.45rem; margin-left: 0.6rem;
+          padding-left: 0.6rem; border-left: 1px solid #2c3a4e; }
+  .auth .who { color: #6bd08a; font-size: 12px; max-width: 12rem; overflow: hidden;
+               text-overflow: ellipsis; white-space: nowrap; }
+  .auth button.steam { background: #1b2838; border-color: #316282; color: #c7d5e0; }
+  .auth button.steam:hover { background: #223449; }
 </style>
 </head>
 <body>
@@ -65,6 +71,7 @@
     <label>rate <input type="range" min="0" max="2000" value="1000" step="100"
        oninput="rate.textContent=this.value+'ms'; ctl('rate', +this.value)"></label>
     <span class="meta" id="rate">1000ms</span>
+    <span class="auth" id="auth"></span>
   </span>
 </header>
 <main>
@@ -219,6 +226,33 @@ async function applyTax() {
   const ticks = acks.filter(a => a && a.tick != null).map(a => a.tick);
   msg.textContent = ticks.length ? `applied at tick ${Math.max(...ticks)}` : 'nothing to apply';
 }
+
+// --- Steam sign-in (docs/authentication.md). live.html is served same-origin by the server, so
+// the session cookie rides these requests automatically. ---
+function signIn() {
+  const back = location.pathname + location.search;
+  location.href = '/api/auth/steam/login?redirect=' + encodeURIComponent(back);
+}
+async function signOut() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  refreshAuth();
+}
+async function refreshAuth() {
+  const el = document.getElementById('auth');
+  try {
+    const me = await (await fetch('/api/auth/me')).json();
+    if (me.authenticated) {
+      const who = me.displayName || me.id;
+      el.innerHTML = `<span class="who" title="${who}">🎮 ${who}</span>`
+        + `<button onclick="signOut()">Sign out</button>`;
+    } else {
+      el.innerHTML = `<button class="steam" onclick="signIn()">🎮 Sign in through Steam</button>`;
+    }
+  } catch (e) {
+    el.innerHTML = '';
+  }
+}
+refreshAuth();
 
 async function connect() {
   let list = await (await fetch('/api/sessions')).json();

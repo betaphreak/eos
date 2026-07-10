@@ -3,21 +3,29 @@ package com.civstudio.server.web;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.civstudio.server.CivStudioProperties;
 
 /**
  * Declarative CORS for the browser: the static map site (Static Web Apps) calls this server's
- * {@code /api/**} feed and polls {@code /actuator/health} from a different origin. Replaces the
- * hand-rolled CORS handling in the old {@code FeedServer}. Allowed origins come from
- * {@link CivStudioProperties.Cors} (default: the production sites); any {@code localhost} port is
- * additionally allowed for local development.
+ * {@code /api/**} feed from a different origin, and — since login (phase 2) rides an httpOnly
+ * session cookie scoped to the shared parent domain — those requests are <b>credentialed</b>. The
+ * config therefore allows credentials and echoes a specific allowed origin (never {@code *}, which
+ * is illegal with credentials). Allowed origins come from {@link CivStudioProperties.Cors}
+ * (default: the production sites); any {@code localhost} port is additionally allowed for local
+ * development.
+ * <p>
+ * Exposed as a {@link CorsConfigurationSource} bean so Spring Security's CORS filter uses the same
+ * rules (see {@link com.civstudio.server.auth.SecurityConfig}); the Actuator health poll is
+ * CORS-allowed separately via {@code management.endpoints.web.cors} in {@code application.yml}.
  */
 @Configuration
-public class WebConfig implements WebMvcConfigurer {
+public class WebConfig {
 
 	private final CivStudioProperties props;
 
@@ -25,23 +33,24 @@ public class WebConfig implements WebMvcConfigurer {
 		this.props = props;
 	}
 
-	@Override
-	public void addCorsMappings(CorsRegistry registry) {
-		// the JSON feed + SSE stream + control/command POSTs. (The site's /actuator/health poll is
-		// CORS-allowed separately via management.endpoints.web.cors in application.yml — Actuator
-		// endpoints have their own handler mapping and don't see this CorsRegistry.)
-		registry.addMapping("/api/**")
-				.allowedOriginPatterns(originPatterns())
-				.allowedMethods("GET", "POST", "OPTIONS")
-				.allowedHeaders("*")
-				.maxAge(600);
+	@Bean
+	CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration cfg = new CorsConfiguration();
+		cfg.setAllowedOriginPatterns(originPatterns());
+		cfg.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+		cfg.setAllowedHeaders(List.of("*"));
+		cfg.setAllowCredentials(true); // the session cookie must ride cross-subdomain
+		cfg.setMaxAge(600L);
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/api/**", cfg);
+		return source;
 	}
 
 	// the configured origins plus any localhost port (allowedOriginPatterns supports the wildcard)
-	private String[] originPatterns() {
+	private List<String> originPatterns() {
 		List<String> patterns = new ArrayList<>(props.getCors().getOrigins());
 		patterns.add("http://localhost:*");
 		patterns.add("http://127.0.0.1:*");
-		return patterns.toArray(new String[0]);
+		return patterns;
 	}
 }

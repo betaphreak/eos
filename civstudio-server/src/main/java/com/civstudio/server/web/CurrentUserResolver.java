@@ -1,5 +1,8 @@
 package com.civstudio.server.web;
 
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.civstudio.server.CivStudioProperties;
@@ -7,16 +10,13 @@ import com.civstudio.server.CivStudioProperties;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Resolves the authenticated caller's {@code app_user} id for a request — the seam the
- * ownership checks in {@link SessionController} consult. This is the <b>Phase 1</b> stand-in
- * for real authentication (see {@code docs/authentication.md}): there is no login provider yet,
- * so a request is anonymous ({@code null}) unless the development-only {@code X-CivStudio-User}
- * header is supplied <em>and</em> trusted via {@code civstudio.auth.trust-dev-user-header}
+ * Resolves the authenticated caller's {@code app_user} id for a request — the seam the ownership
+ * checks in {@link SessionController} consult (see {@code docs/authentication.md}). The real
+ * source is the Spring Security {@code SecurityContext} established by login (phase 2): its
+ * principal name is the surrogate user id. When there is no logged-in principal the request is
+ * anonymous ({@code null}), except that a development-only {@code X-CivStudio-User} header is
+ * honored as a fallback when — and only when — {@code civstudio.auth.trust-dev-user-header} is set
  * (default off, since a spoofable header must never be trusted in production).
- * <p>
- * Phase 2 (Steam / OIDC login) replaces the body of {@link #userId(HttpServletRequest)} with a
- * read of the Spring Security {@code SecurityContext}; the callers and the whole ownership model
- * stay unchanged.
  */
 @Component
 public class CurrentUserResolver {
@@ -37,11 +37,14 @@ public class CurrentUserResolver {
 	 * @return the authenticated user id, or {@code null}
 	 */
 	public String userId(HttpServletRequest request) {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken))
+			return auth.getName();
 		if (trustDevHeader) {
 			String header = request.getHeader(DEV_USER_HEADER);
 			if (header != null && !header.isBlank())
 				return header.trim();
 		}
-		return null; // Phase 1: no real auth. Phase 2 reads the SecurityContext here.
+		return null;
 	}
 }

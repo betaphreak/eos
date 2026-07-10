@@ -82,11 +82,13 @@ public class CivStudioProperties {
 		/**
 		 * When {@code true}, {@link com.civstudio.server.web.CurrentUserResolver} trusts the
 		 * {@code X-CivStudio-User} request header as the caller's user id. This is a
-		 * <b>development/test-only</b> stand-in for real authentication (a spoofable header must
-		 * never be trusted in production) and stays {@code false} by default; Phase 2 replaces it
-		 * with the Spring Security {@code SecurityContext}.
+		 * <b>development/test-only</b> fallback used only when there is no logged-in
+		 * {@code SecurityContext} (a spoofable header must never be trusted in production) and stays
+		 * {@code false} by default.
 		 */
 		private boolean trustDevUserHeader = false;
+
+		private final Steam steam = new Steam();
 
 		public boolean isTrustDevUserHeader() {
 			return trustDevUserHeader;
@@ -94,6 +96,43 @@ public class CivStudioProperties {
 
 		public void setTrustDevUserHeader(boolean trustDevUserHeader) {
 			this.trustDevUserHeader = trustDevUserHeader;
+		}
+
+		public Steam getSteam() {
+			return steam;
+		}
+
+		/** Steam "Sign in through Steam" (OpenID 2.0) config — the default sign-in provider. */
+		public static class Steam {
+			/**
+			 * The OpenID realm = this server's public origin (e.g. {@code
+			 * https://dev.civstudio.com}). Optional: when blank the realm is derived from the
+			 * request, which is correct for local runs but may be wrong behind a proxy — set it in
+			 * production (env {@code CIVSTUDIO_AUTH_STEAM_REALM}).
+			 */
+			private String realm = "";
+
+			/**
+			 * The Steam Web API key used to enrich the persona name / avatar after sign-in
+			 * (optional; sign-in works without it — the SteamID is used as the display name).
+			 */
+			private String apiKey = "";
+
+			public String getRealm() {
+				return realm;
+			}
+
+			public void setRealm(String realm) {
+				this.realm = realm;
+			}
+
+			public String getApiKey() {
+				return apiKey;
+			}
+
+			public void setApiKey(String apiKey) {
+				this.apiKey = apiKey;
+			}
 		}
 	}
 

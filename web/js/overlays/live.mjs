@@ -43,6 +43,7 @@ export async function startLive(onRedraw, onSessionState) {
   onState = onSessionState || onState;
   framed = false;
   hud(true);
+  refreshAuth();
   setHudStatus("connecting…");
   try {
     const list = await (await fetch(LIVE_BASE + "/api/sessions")).json();
@@ -70,8 +71,11 @@ export async function controlLive(action, value) {
   if (!sid) return;
   const body = value === undefined ? { action } : { action, value };
   try {
+    // credentials: the owner check reads the session cookie; a write to an owned session needs it
+    // (cross-origin to LIVE_BASE, so the default same-origin credentials mode would drop the cookie)
     await fetch(LIVE_BASE + "/api/sessions/" + sid + "/control",
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      { method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   } catch (err) { /* the next snapshot will reflect the true state anyway */ }
 }
 
@@ -180,8 +184,10 @@ function renderHud() {
 
 async function postCommand(body) {
   if (!sid) return null;
+  // credentials: player commands are owner-gated (see docs/authentication.md) — send the cookie
   const r = await fetch(LIVE_BASE + "/api/sessions/" + sid + "/commands",
-    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    { method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.ok ? r.json() : null;
 }
 
@@ -193,4 +199,33 @@ async function applyTax() {
   if (Number.isFinite(noble)) acks.push(await postCommand({ type: "setTaxRate", lever: "nobleIncome", rate: noble }));
   const ticks = acks.filter(a => a && a.tick != null).map(a => a.tick);
   msg.textContent = ticks.length ? "applied at tick " + Math.max(...ticks) : "nothing to apply";
+}
+
+// ---- Steam sign-in for the picked server (docs/authentication.md). All auth calls target
+// LIVE_BASE (the chosen server, cross-origin) and carry the session cookie. ----
+function signIn() {
+  // come back to exactly where we are (hash + query preserved) after the round trip through Steam
+  location.href = LIVE_BASE + "/api/auth/steam/login?redirect=" + encodeURIComponent(location.href);
+}
+async function signOut() {
+  try { await fetch(LIVE_BASE + "/api/auth/logout", { method: "POST", credentials: "include" }); }
+  catch (err) { /* fall through and re-render as anonymous */ }
+  refreshAuth();
+}
+async function refreshAuth() {
+  const box = el("liveAuth");
+  if (!box) return;
+  try {
+    const me = await (await fetch(LIVE_BASE + "/api/auth/me", { credentials: "include" })).json();
+    if (me.authenticated) {
+      const who = me.displayName || me.id;
+      box.innerHTML = `<span class="who" title="${who}">🎮 ${who}</span><button id="liveSignOut">Sign out</button>`;
+      el("liveSignOut").onclick = signOut;
+    } else {
+      box.innerHTML = `<button class="steam" id="liveSignIn">🎮 Sign in through Steam</button>`;
+      el("liveSignIn").onclick = signIn;
+    }
+  } catch (err) {
+    box.innerHTML = ""; // server unreachable / CORS — leave the auth row empty rather than erroring
+  }
 }
