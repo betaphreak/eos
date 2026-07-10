@@ -95,7 +95,7 @@ export function drawMinimap() {
   mctx.clearRect(0, 0, mmW, mmH);
   mctx.imageSmoothingEnabled = true;
   mctx.drawImage(img, 0, 0, mmW, mmH);
-  mctx.fillStyle = under ? "rgba(6,5,11,0.72)" : "rgba(6,9,14,0.42)"; mctx.fillRect(0, 0, mmW, mmH);   // dim the whole thumbnail…
+  mctx.fillStyle = under ? "rgba(6,5,11,0.72)" : "rgba(6,9,14,0.22)"; mctx.fillRect(0, 0, mmW, mmH);   // dim the whole thumbnail…
 
   const ry = fy0 * mmH, rh = Math.max(2, fh * mmH), rw = fw * mmW, rx = fx0 * mmW;
   // …the framed rect may straddle the east-west seam → draw it in up to two pieces
