@@ -22,21 +22,20 @@ export function drawPolitical() {
   // on the Overworld the underground provinces are hidden, so they take no political colour;
   // on the Underworld plane they may (they carry owner/culture/faith too)
   const shown = p => S.plane === "underworld" || !isUnderground(p);
-  if (cam.k < K_TEX) {
-    const a = cam.k < K_PLOT ? 0.58
-      : lerp(0.5, 0.15, (cam.k - K_PLOT) / (K_TEX - K_PLOT));
-    for (const p of P) if (p.rings && provOnScreen(p) && shown(p)) {
-      const e = polOf(p).e;
-      if (e) { ctx.fillStyle = hexA(e.color, a); ctx.fill(provPath(p)); }
-    }
-  } else {
+  // Political overlays no longer fade to reveal per-plot terrain (main.renderScene suppresses plots
+  // under them), so the fill stays readable at EVERY zoom — a gentle taper past K_PLOT keeps some
+  // terrain context — and crisp coloured borders are added once zoomed in for province legibility.
+  const a = cam.k < K_PLOT ? 0.58 : lerp(0.52, 0.42, Math.min(1, (cam.k - K_PLOT) / (K_TEX - K_PLOT)));
+  for (const p of P) if (p.rings && provOnScreen(p) && shown(p)) {
+    const e = polOf(p).e;
+    if (e) { ctx.fillStyle = hexA(e.color, a); ctx.fill(provPath(p)); }
+  }
+  if (cam.k >= K_PLOT) {
     ctx.lineWidth = 1.4;
     for (const p of P) if (p.rings && provOnScreen(p) && shown(p)) {
       const e = polOf(p).e;
       if (e) { ctx.strokeStyle = hexA(e.color, 0.9); ctx.stroke(provPath(p)); }
     }
-    const hi = S.hoverProv, he = hi && hi.rings && polOf(hi).e;
-    if (he) { ctx.fillStyle = hexA(he.color, 0.35); ctx.fill(provPath(hi)); }
   }
   // spotlight one polity (hovered in the legend / picked from search): brighten its provinces
   if (S.polHi) {

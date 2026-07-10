@@ -146,8 +146,10 @@ function renderScene() {
   for (const p of P) if (p.type === "LAKE" && p.rings && provOnScreen(p)) ctx.fill(provPath(p));
   ctx.restore();
   // surface plots only — underground provinces are never drawn here (hidden on the Overworld;
-  // relit by drawUnderworld on the Underworld plane). See docs/underworld.md.
-  drawPlots(isSurface);   // crisp per-plot Civ4 terrain over the blurred raster when zoomed in
+  // relit by drawUnderworld on the Underworld plane). See docs/underworld.md. Per-plot terrain is
+  // a physical view: only the None (and live Caravans) overlays render it — the Nation/Culture/Faith
+  // political colourings have no use for per-plot terrain, so they suppress it.
+  if (!isPolitical()) drawPlots(isSurface);   // crisp per-plot Civ4 terrain over the blurred raster when zoomed in
   drawCostOverlay();   // elevation movement-cost heat over the terrain, when toggled on
 
   if (isPolitical()) drawPolitical();                             // nation/culture/faith fills
@@ -209,7 +211,8 @@ function drawUnderworld() {
   ctx.fillStyle = "rgba(60,46,40,0.92)";
   for (const p of P) if (isUnderground(p) && p.rings && provOnScreen(p)) ctx.fill(provPath(p));
   // zoomed in: relight the underground provinces' real per-plot cave terrain over the veil
-  if (cam.k >= K_PLOT) drawPlots(isUnderground);
+  // (physical view only — the political overlays suppress plots, same as the surface)
+  if (cam.k >= K_PLOT && !isPolitical()) drawPlots(isUnderground);
   // an amber rim on every underground province, at all zooms, so the caves read as lit
   ctx.strokeStyle = "rgba(230,180,120,0.6)"; ctx.lineWidth = 1.0;
   for (const p of P) if (isUnderground(p) && p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
