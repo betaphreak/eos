@@ -1,5 +1,7 @@
 # Project exclude paths
 /target/
+civstudio-engine/target/
+civstudio-server/target/
 /out/
 /output/
 /eos.iml
@@ -22,7 +24,7 @@
 # Only the heavy build *inputs* stay out of git:
 # whole-world per-province plot caches — hundreds of MB, canonical/regenerable via
 # WorldPlotGenerator (the sim also regenerates any on demand). Too heavy to commit.
-/src/main/resources/map/provinces/*.json.gz
+/civstudio-engine/src/main/resources/map/provinces/*.json.gz
 # derived .nif render sprites (the explored alternative to GameFont — docs/bonus-sprite-bake.md)
 /tools/nif-bake/out/
 # vendored Anbennar EU4 political history — build-time inputs for the political-map exporters

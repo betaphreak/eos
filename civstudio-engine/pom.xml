@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.civstudio</groupId>
+        <artifactId>civstudio-parent</artifactId>
+        <version>0.9.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>civstudio-engine</artifactId>
+    <packaging>jar</packaging>
+    <name>civstudio-engine</name>
+    <description>The plain-Java deterministic civilization-simulation core. No framework.</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+        <!-- Parses the name tables and map/tech JSON in src/main/resources. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+              Runs a simulation in a forked JVM with assertions enabled (-ea). The working
+              directory is the reactor root (not this module) so output/<seed>/ and the
+              data/anbennar rasters resolve exactly as they did before the split.
+              Usage: mvn -pl civstudio-engine compile exec:exec
+                     mvn -pl civstudio-engine compile exec:exec -Dsim.main=com.civstudio.simulation.SmallOpenEconomy
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <executable>${java.home}/bin/java</executable>
+                    <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
+                    <arguments>
+                        <argument>-ea</argument>
+                        <argument>-classpath</argument>
+                        <classpath/>
+                        <argument>${sim.main}</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

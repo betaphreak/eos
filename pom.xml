@@ -5,11 +5,23 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.civstudio</groupId>
-    <artifactId>civstudio</artifactId>
+    <artifactId>civstudio-parent</artifactId>
     <version>0.9.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
-    <name>civstudio</name>
+    <name>civstudio-parent</name>
+
+    <!--
+      Reactor root. Two modules, opposite shapes (see docs/spring-boot-migration.md):
+        civstudio-engine — the plain-Java deterministic sim core (no framework, ever).
+        civstudio-server — the spectator/interactive server that depends on the engine
+                           (Spring Boot lands here in a later step; still plain today).
+      The physical split keeps any future Spring component-scanning off the engine.
+    -->
+    <modules>
+        <module>civstudio-engine</module>
+        <module>civstudio-server</module>
+    </modules>
 
     <licenses>
         <license>
@@ -22,134 +34,93 @@
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- Which simulation `mvn exec:exec` runs; override with -Dsim.main=com.civstudio.simulation.SmallOpenEconomy -->
+        <!-- Which simulation `mvn exec:exec` runs (engine module); override with
+             -Dsim.main=com.civstudio.simulation.SmallOpenEconomy -->
         <sim.main>com.civstudio.simulation.HomogeneousEconomy</sim.main>
         <!-- 1.18.42 (Sep 2025) is the first Lombok with JDK 25 support -->
         <lombok.version>1.18.42</lombok.version>
+        <jackson.version>2.18.2</jackson.version>
+        <junit.version>5.11.3</junit.version>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>5.11.3</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- Parses the name tables in src/main/resources (see eos.name). -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.18.2</version>
-        </dependency>
-    </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <!-- the reactor sibling, so modules reference it without repeating the version -->
+            <dependency>
+                <groupId>com.civstudio</groupId>
+                <artifactId>civstudio-engine</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
+        <pluginManagement>
+            <plugins>
+                <!-- Lombok annotation processing, shared by both modules. -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                    <configuration>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
 
-            <!--
-              Runs a simulation in a forked JVM with assertions enabled (-ea).
-              The original code uses `assert` as real invariant checks, so we keep them on.
-              Usage: mvn compile exec:exec   (HomogeneousEconomy by default)
-                     mvn compile exec:exec -Dsim.main=com.civstudio.simulation.SmallOpenEconomy
-            -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.5.0</version>
-                <configuration>
-                    <executable>${java.home}/bin/java</executable>
-                    <arguments>
-                        <argument>-ea</argument>
-                        <argument>-classpath</argument>
-                        <classpath/>
-                        <argument>${sim.main}</argument>
-                    </arguments>
-                </configuration>
-            </plugin>
+                <!--
+                  Each simulation/server test runs full-length with assertions enabled (the
+                  code uses `assert` as real invariant checks). All state is per-instance, so
+                  the suite shares one reused JVM. Crucially, tests read data/anbennar and
+                  write output/ RELATIVE TO THE WORKING DIRECTORY, so both modules pin the
+                  working directory to the reactor root (the .mvn/ marker makes
+                  maven.multiModuleProjectDirectory resolve here) rather than the module dir.
+                -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.5.2</version>
+                    <configuration>
+                        <reuseForks>true</reuseForks>
+                        <enableAssertions>true</enableAssertions>
+                        <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
+                    </configuration>
+                </plugin>
 
-            <!--
-              Each simulation test runs the full colony. All simulation state is
-              per-instance: Settlement state, the RNG streams (per GameSession), the
-              CSV output (per-settlement sink factory), and — since the client/server
-              Phase 0 work — the event log (SimLog now routes per session rather than
-              through a single process-global file handler; see docs/client-server.md).
-              So the tests share one reused JVM (reuseForks=true, the default forkCount
-              of 1). Assertions stay on, matching how the simulations run under exec.
-            -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
-                <configuration>
-                    <reuseForks>true</reuseForks>
-                    <enableAssertions>true</enableAssertions>
-                </configuration>
-            </plugin>
-
-            <!--
-              `mvn package` builds a self-contained executable jar (the engine + its
-              runtime deps, e.g. Jackson, folded in) whose Main-Class is the spectator
-              server. This is what the Docker image runs (see Dockerfile / docs/client-server.md
-              §Deployment). It does not affect `mvn test` or `mvn exec:exec` (neither runs the
-              package phase), so local scenario runs are unchanged. Lombok is provided-scope
-              and stays out of the jar (compile-time only).
-            -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <transformers>
-                                <transformer
-                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.civstudio.server.ServerMain</mainClass>
-                                </transformer>
-                                <transformer
-                                    implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-                            </transformers>
-                            <filters>
-                                <!-- drop signature files from signed deps so the fat jar verifies -->
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                        <exclude>module-info.class</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
+                <!-- Version pins for plugins the modules configure themselves. -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>3.5.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>3.6.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 </project>

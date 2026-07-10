@@ -5,16 +5,22 @@
 # ---- build: produce the executable fat jar (Main-Class = com.civstudio.server.ServerMain) ----
 FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /build
-# resolve dependencies against the POM first, so the layer caches unless the POM changes
+# resolve dependencies against the POMs first, so the layer caches unless a POM changes.
+# Multi-module reactor: the parent + both module POMs, then go-offline (excluding the
+# reactor-sibling civstudio-engine, which isn't in a repo yet — the reactor supplies it).
 COPY pom.xml .
-RUN mvn -q -e -B dependency:go-offline
-COPY src ./src
+COPY .mvn ./.mvn
+COPY civstudio-engine/pom.xml ./civstudio-engine/
+COPY civstudio-server/pom.xml ./civstudio-server/
+RUN mvn -q -e -B dependency:go-offline -DexcludeArtifactIds=civstudio-engine
+COPY civstudio-engine/src ./civstudio-engine/src
+COPY civstudio-server/src ./civstudio-server/src
 RUN mvn -q -B -DskipTests package
 
 # ---- runtime: the jar + the on-disk resources the engine loads at runtime ----
 FROM eclipse-temurin:25-jre
 WORKDIR /app
-COPY --from=build /build/target/civstudio-*.jar app.jar
+COPY --from=build /build/civstudio-server/target/civstudio-server-*.jar app.jar
 # the province rasters ProvinceRaster reads from the filesystem (definition.csv +
 # provinces/rivers/terrain/trees/heightmap BMPs — ~95 MB). The classpath JSON/name tables
 # are already inside the jar; only these BMPs live on disk. See .dockerignore (data/civ4,
