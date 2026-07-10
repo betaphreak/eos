@@ -30,13 +30,13 @@ import tools.jackson.databind.ObjectMapper;
  * load). The record is <b>gzip-compressed JSON</b> ({@code <id>.json.gz}) — the field is
  * highly repetitive (repeated type keys and field names), so gzip shrinks it ~25&times; over
  * plain JSON while staying trivially (de)serialized. Writes go to {@code
- * src/main/resources/map/provinces/} (relative to the working directory, the project root
- * under Maven — the committed resource location); reads prefer that file, then fall back to
- * the packaged classpath resource.
+ * civstudio-engine/src/main/resources/map/provinces/} (relative to the working directory, the
+ * repo root under Maven — the engine module's committed resource location after the reactor
+ * split); reads prefer that file, then fall back to the packaged classpath resource.
  */
 public final class ProvincePlotStore {
 
-	private static final String WRITE_DIR = "src/main/resources/map/provinces";
+	private static final String WRITE_DIR = "civstudio-engine/src/main/resources/map/provinces";
 	private static final String RESOURCE_DIR = "/map/provinces";
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 

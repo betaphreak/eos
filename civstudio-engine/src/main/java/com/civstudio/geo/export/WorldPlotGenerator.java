@@ -40,7 +40,7 @@ public final class WorldPlotGenerator {
 		TerrainRegistry registry = TerrainRegistry.load();
 		ProvinceRaster raster = ProvinceRaster.load();
 		RngSeed rngSeed = new RngSeed(1); // canonical stream is seed-independent
-		File dir = new File("src/main/resources/map/provinces");
+		File dir = new File("civstudio-engine/src/main/resources/map/provinces");
 		dir.mkdirs();
 
 		// every non-RNW province: LAND + IMPASSABLE wasteland grow a land field, SEA/LAKE grow a

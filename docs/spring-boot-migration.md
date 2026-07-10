@@ -89,6 +89,16 @@ Consequences to wire:
 - **Runtime disk resources** (`data/anbennar/` rasters, `web/live.html`) are read by the
   engine/server at runtime from the working directory — unchanged; the Dockerfile still
   copies them (see Deployment).
+- **Committed engine resources moved to `civstudio-engine/src/main/resources/`** (from the
+  old repo-root `src/main/resources/`). Anything that reads/writes them relative to the
+  repo root had to follow: `web/build.mjs` + `web/build-techs.mjs` (retargeted to
+  `civstudio-engine/src/main/resources/…`), `ProvincePlotStore.WRITE_DIR` and
+  `WorldPlotGenerator` (the plot-grid cache now writes to
+  `civstudio-engine/src/main/resources/map/provinces/`). `data/` stays at the repo root.
+  **Gotcha:** `mvn -pl civstudio-server spring-boot:run` binds the engine from the installed
+  `~/.m2` jar, so after regenerating grids / the web-asset manifest you must
+  `mvn -pl civstudio-engine install` before restarting the server, or it serves the stale
+  `plotIndex` (blank per-plot terrain, no error).
 
 ---
 

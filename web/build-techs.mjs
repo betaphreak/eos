@@ -5,7 +5,7 @@
 // Two committed, run-INDEPENDENT assets (the tech tree is static reference data, unlike
 // build.mjs which needs an output/<seed> run):
 //
-//   web/assets/techs.pack     the engine's tech graph (src/main/resources/techs.json —
+//   web/assets/techs.pack     the engine's tech graph (civstudio-engine/src/main/resources/techs.json —
 //                              produced by com.civstudio.tech.export.TechInfoConverter,
 //                              trimmed to the Prehistoric→Renaissance techs eos models,
 //                              carrying every field + the resolved English name/help/
@@ -31,7 +31,7 @@ import sharp from 'sharp';
 const WEB = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(WEB, '..');
 
-const SRC = path.join(ROOT, 'src/main/resources/techs.json');
+const SRC = path.join(ROOT, 'civstudio-engine/src/main/resources/techs.json');
 // gzip bytes, but named .pack (served as application/octet-stream, like plots.pack) — a
 // .gz extension makes Azure SWA/CDN set Content-Encoding: gzip, which collides with the
 // in-page DecompressionStream and hard-fails the fetch (ERR_CONTENT_DECODING_FAILED).
