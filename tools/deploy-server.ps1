@@ -44,8 +44,10 @@ $repoRoot = Split-Path -Parent $PSScriptRoot  # tools/ -> repo root
 Push-Location $repoRoot
 try {
   if (-not $Tag) {
-    $sha   = (git rev-parse HEAD).Trim()
-    $dirty = (git status --porcelain).Trim()
+    # string-coerce: a clean tree makes `git status --porcelain` emit nothing → $null, and .Trim()
+    # on $null throws. "$(...)" flattens null/multi-line output to a single string first.
+    $sha   = "$(git rev-parse HEAD)".Trim()
+    $dirty = "$(git status --porcelain)".Trim()
     $Tag   = if ($dirty) { "$sha-dirty" } else { $sha }
   }
   $image = "$LOGIN/$REPO`:$Tag"
@@ -60,8 +62,8 @@ try {
     az acr login -n $REGISTRY | Out-Null
 
     # build identity baked into /actuator/info (the .git is not in the image context, so pass it in)
-    $buildNumber = (git rev-list --count HEAD).Trim()      # auto-incrementing monotonic build number
-    $buildCommit = (git rev-parse --short HEAD).Trim()
+    $buildNumber = "$(git rev-list --count HEAD)".Trim()   # auto-incrementing monotonic build number
+    $buildCommit = "$(git rev-parse --short HEAD)".Trim()
     Write-Host "==> docker build (build #$buildNumber, commit $buildCommit)" -ForegroundColor Cyan
     docker build -t $image `
       --build-arg BUILD_NUMBER=$buildNumber `
