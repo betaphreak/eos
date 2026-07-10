@@ -47,6 +47,16 @@ public final class SetTaxRateCommand implements GameCommand {
 		return tick;
 	}
 
+	/** Which lever this command sets (for the persistence codec). */
+	public Lever lever() {
+		return lever;
+	}
+
+	/** The target rate (for the persistence codec). */
+	public double rate() {
+		return rate;
+	}
+
 	@Override
 	public void apply(HostedSession session) {
 		for (Settlement colony : session.colonies()) {

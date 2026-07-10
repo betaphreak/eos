@@ -56,6 +56,25 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- durable command log (opt-in): JdbcTemplate + HikariCP, active only when a
+             datasource is configured (spring.datasource.url) — see PersistenceConfig -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <!-- Postgres in production (reuse the subscription's server via env); runtime-only -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- H2 gives the persistence tests a real datasource without Docker -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- used directly by WorldBundle / the controllers (also via starter-web); Jackson 3 -->
         <dependency>
             <groupId>tools.jackson.core</groupId>

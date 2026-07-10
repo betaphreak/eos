@@ -19,9 +19,13 @@ import com.civstudio.geo.Province;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
+import com.civstudio.server.command.CommandStore;
+import com.civstudio.server.command.GameCommand;
+import com.civstudio.server.command.NoOpCommandStore;
 import com.civstudio.simulation.SimulationConfig;
 import com.civstudio.simulation.SimulationHarness;
 import jakarta.annotation.PreDestroy;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -55,6 +59,22 @@ public final class SessionHost {
 	private static final int DEMO_MAX_HOPS = 40;
 
 	private final ConcurrentMap<String, HostedSession> sessions = new ConcurrentHashMap<>();
+
+	private final CommandStore commandStore;
+
+	/** In-memory only — for constructing a host directly (e.g. in a test), no persistence. */
+	public SessionHost() {
+		this(new NoOpCommandStore());
+	}
+
+	/**
+	 * @param commandStore durable command-log storage — a {@link NoOpCommandStore} when no
+	 *                     datasource is configured (see {@code PersistenceConfig})
+	 */
+	@Autowired
+	public SessionHost(CommandStore commandStore) {
+		this.commandStore = commandStore;
+	}
 
 	/**
 	 * Found and register a session from {@code spec} (idempotent by id: an existing session
@@ -115,7 +135,12 @@ public final class SessionHost {
 		GameSession session = colony.getSession();
 		if (SessionSpec.CARAVAN_DEMO.equals(spec.scenario()))
 			seedDemoCaravans(session, colony, spec.provinceId());
-		return new HostedSession(spec, session, List.of(colony));
+		HostedSession hs = new HostedSession(spec, session, List.of(colony), commandStore);
+		// resume: replay any previously-persisted commands into the fresh session's log so
+		// state = f(spec, command log) holds across a restart
+		for (GameCommand cmd : commandStore.load(spec.id()))
+			hs.replay(cmd);
+		return hs;
 	}
 
 	// seed the demo's six directed caravans at the founding province, each marching toward a

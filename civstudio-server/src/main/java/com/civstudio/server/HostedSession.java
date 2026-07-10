@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.civstudio.agent.Caravan;
 import com.civstudio.io.SimLog;
 import com.civstudio.server.command.CommandLog;
+import com.civstudio.server.command.CommandStore;
 import com.civstudio.server.command.GameCommand;
 import com.civstudio.server.render.SessionSnapshot;
 import com.civstudio.server.render.Snapshots;
@@ -56,6 +57,7 @@ public final class HostedSession {
 	private final GameSession session;
 	private final List<Settlement> colonies;
 	private final CommandLog commandLog = new CommandLog();
+	private final CommandStore commandStore;
 	private final List<Consumer<SessionSnapshot>> subscribers = new CopyOnWriteArrayList<>();
 
 	// the authoritative tick — in-game days elapsed; volatile so control/HTTP threads read
@@ -90,11 +92,13 @@ public final class HostedSession {
 	 * @param session  the game session (owns the seed, world map and wandering bands)
 	 * @param colonies the session's colonies (advanced in lockstep each tick)
 	 */
-	public HostedSession(SessionSpec spec, GameSession session, List<Settlement> colonies) {
+	public HostedSession(SessionSpec spec, GameSession session, List<Settlement> colonies,
+			CommandStore commandStore) {
 		this.id = spec.id();
 		this.spec = spec;
 		this.session = session;
 		this.colonies = List.copyOf(colonies);
+		this.commandStore = commandStore;
 	}
 
 	/** Start ticking freely (paced by the tick rate). */
@@ -186,6 +190,18 @@ public final class HostedSession {
 	 * @param command the command to enqueue
 	 */
 	public void submit(GameCommand command) {
+		commandStore.append(id, command); // durable first, so a restart can replay it
+		commandLog.append(command);
+	}
+
+	/**
+	 * Append a persisted command to the log without re-persisting it — the resume path. Called
+	 * by {@link SessionHost} when it re-founds a session, so the loaded command log replays at
+	 * its recorded ticks as the session advances (state = f(spec, command log)).
+	 *
+	 * @param command a command loaded from the {@link CommandStore}
+	 */
+	public void replay(GameCommand command) {
 		commandLog.append(command);
 	}
 

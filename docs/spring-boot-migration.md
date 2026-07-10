@@ -10,7 +10,11 @@
   kept); `SessionHost` a bean with `@PreDestroy`; Actuator health (liveness/readiness) the site
   polls during its splash; config/CORS declarative. Also folded in: step 4's declarative CORS,
   the site's health-gated boot (no more 3s min-splash), and a Maven wrapper.
-- **Steps 4–5 — (config/CORS done early) → multiplayer features.** Proposed.
+- **Step 5a — durable command log (opt-in Spring Data JDBC + Postgres).** ✅ Implemented
+  (2026-07-10). Persists each session's tick-stamped command log; a re-founded session replays
+  it (state = *f*(spec, command log)). Off unless `spring.datasource.url` is set — verified on
+  H2, Postgres-ready. See §Persistence below.
+- **Step 5b — accounts / auth (Spring Security) + fast-forward resume.** Proposed.
 
 **Date:** design 2026-07-10.
 
@@ -232,6 +236,43 @@ Boot repackage jar drops into that pipeline unchanged.
 
 ---
 
+## Persistence (durable command log)
+
+Opt-in: with no datasource the command log lives in memory (the default — the running demo,
+local runs, and CI are unaffected). Set `spring.datasource.url` and it persists to SQL; a
+re-founded session (`SessionHost.create`) loads and replays it.
+
+- **How it wires.** `ServerMain` excludes `DataSourceAutoConfiguration`; `PersistenceConfig`
+  builds a pooled `DataSource` only when `spring.datasource.url` is set, and the `CommandStore`
+  bean is a `JdbcCommandStore` when a `JdbcTemplate` is available, else a `NoOpCommandStore`.
+  The one table (`session_command`) is created with `CREATE TABLE IF NOT EXISTS` (portable
+  H2/Postgres), so it is safe on a **shared** database. `CommandCodec` (de)serializes each
+  command as `(type, payload-JSON)`; add a `case` there per new command type.
+
+- **Reusing the subscription's Postgres.** No new server needed. On the existing Flexible
+  Server, create an isolated database + login, then point the Container App at it:
+  ```bash
+  # once, against the existing server (psql/portal): a dedicated DB + role for isolation
+  CREATE ROLE civstudio LOGIN PASSWORD '<pw>';
+  CREATE DATABASE civstudio OWNER civstudio;
+
+  # the app connects via standard Spring env vars (Azure Postgres requires TLS):
+  az containerapp update -n civstudio-server -g civstudio --set-env-vars \
+    SPRING_DATASOURCE_URL='jdbc:postgresql://<server>.postgres.database.azure.com:5432/civstudio?sslmode=require' \
+    SPRING_DATASOURCE_USERNAME='civstudio' \
+    SPRING_DATASOURCE_PASSWORD='<pw>'
+  ```
+  Ensure the Container App can reach the server (Postgres firewall "allow Azure services", or a
+  private endpoint). On boot the app creates `session_command` and starts persisting; unset the
+  vars to fall back to in-memory.
+
+- **What it does / doesn't yet.** The log is durable and replays on re-founding (state =
+  *f*(spec, log)). It does **not** yet fast-forward: a resumed session replays at its recorded
+  ticks in real time (fine now — the demo's log is empty). Instant resume (replay to present,
+  then live) + a snapshot cache are 5b / Phase C.
+
+---
+
 ## Suggested sequencing (each step independently verifiable)
 
 1. ✅ **Module split, no Spring, no Jackson change.** Carve engine vs server, keep the JDK
@@ -256,8 +297,12 @@ Boot repackage jar drops into that pipeline unchanged.
 4. ✅ **Config + declarative CORS** (`application.yml` + `@ConfigurationProperties`,
    `WebConfig`), env-var parsing retired; Container App **sized up to 2 vCPU / 4 GiB** — done
    as part of step 3.
-5. **Multiplayer features land on Spring** as Phase B/C arrives: Security (accounts) then
-   Data (durable command log).
+5. **Multiplayer features land on Spring** as Phase B/C arrives:
+   - ✅ **5a — durable command log** (Spring Data JDBC, opt-in). `CommandStore` (`JdbcCommandStore`
+     / `NoOpCommandStore`), `CommandCodec`, wired through `SessionHost`/`HostedSession`; a
+     re-founded session replays its persisted log. See §Persistence.
+   - **5b — accounts / auth** (Spring Security) and **fast-forward resume** (replay to present
+     instantly, then live — the log persists today but a live resume still replays in real time).
 
 Steps 1–4 are pure infrastructure with a run-for-run-identical engine; only step 5 adds
 gameplay surface.

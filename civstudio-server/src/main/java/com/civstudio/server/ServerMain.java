@@ -3,6 +3,7 @@ package com.civstudio.server;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 
 /**
  * The Spring Boot entry point for the CivStudio spectator/interactive server (see
@@ -19,7 +20,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  * The port follows {@code server.port} (defaulting to {@code $PORT} then 8080 — see
  * {@code application.yml}), the container-ingress convention.
  */
-@SpringBootApplication
+// DataSourceAutoConfiguration is excluded so the server starts with no database by default;
+// PersistenceConfig builds a datasource only when spring.datasource.url is set (see it).
+@SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
 @EnableConfigurationProperties(CivStudioProperties.class)
 public class ServerMain {
 
