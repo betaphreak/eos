@@ -78,6 +78,20 @@ function toggleFullscreen() {
 }
 document.getElementById("zoomReset").onclick = toggleFullscreen;
 document.getElementById("zoomLevel").onclick = resetView;   // top-left readout doubles as reset-to-world
+// the title acts as "home": reset to the world view and re-open the server picker (index.html's
+// boot flow exposes it on window.__picker) as a dismissable overlay over the live map — Esc or a
+// click outside returns to the map; picking a different server reloads into it. Falls back to a
+// reload-to-picker if the overlay isn't available (defensive; it always is after boot).
+const brandEl = document.getElementById("brand");
+if (brandEl) {
+  const home = () => {
+    resetView();
+    if (window.__picker && window.__picker.open) window.__picker.open();
+    else location.href = location.pathname;
+  };
+  brandEl.onclick = home;
+  brandEl.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); home(); } };
+}
 document.addEventListener("fullscreenchange", resize);
 // The global keyboard shortcuts (pan / zoom / reset / fullscreen / play / Escape) are
 // dispatched centrally by js/shortcuts.mjs, which calls the actions exported below.

@@ -23,7 +23,7 @@
   <div id="spinner" role="status" hidden><span class="sp-ring"></span><span class="sp-txt"></span></div>
   <div class="app">
     <header class="topbar">
-      <span class="brand"><span class="brand-a">CivStudio</span><span class="brand-sep">:</span> <span class="brand-b">Anbennar</span></span>
+      <span class="brand" id="brand" role="button" tabindex="0" data-tip="Back to server selection · reset to the world view" aria-label="Back to server selection"><span class="brand-a">CivStudio</span><span class="brand-sep">:</span> <span class="brand-b">Anbennar</span></span>
       <button class="zoomlvl" id="zoomLevel" data-tip="Reset zoom · re-centre the world map" aria-label="Reset zoom to the world view">1×</button>
       <button id="menuBtn" class="menubtn" aria-label="Map controls" aria-expanded="false" data-tip="Map controls">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -119,6 +119,7 @@
           <div class="ld-title">CivStudio</div>
           <div class="ld-sub">Choose a server</div>
           <div class="ld-servers" id="ldServers" role="listbox" aria-label="Servers"></div>
+          <div class="ld-hint">Press <kbd>Esc</kbd> or click outside to dismiss</div>
         </div>
       </div>
     </div>
@@ -222,16 +223,26 @@
     if (bar) bar.hidden = true;                     // no progress bar until a server is picked
 
     var connecting = false;
+    var mode = "boot";        // "boot" = first load: pick → connect + import the app. "switch" =
+                              // already connected (title re-opened it): picking reloads into that
+                              // server, and the overlay is dismissable (Esc / click-outside) back
+                              // to the running map.
+    var sub  = loading && loading.querySelector(".ld-sub");
 
-    // one row per server: label · host · online version · status dot. A row is clickable only once
-    // its probe says "up"; the default server's row is pre-highlighted but we WAIT for a click.
+    function currentBase() { return (window.BUNDLE && window.BUNDLE.live && window.BUNDLE.live.base) || null; }
+
+    // one row per server: label · host · online version · status dot. A row is clickable once its
+    // probe says "up". In switch mode the currently-connected server is marked; otherwise the
+    // default server's row is pre-highlighted.
     function render() {
       listEl.textContent = "";
+      var cur = mode === "switch" ? currentBase() : null;
       servers.forEach(function (s) {
+        var isCurrent = cur && s.base === cur;
         var row = document.createElement("button");
-        row.className = "ld-srv" + (s.id === defaultId ? " is-default" : "");
+        row.className = "ld-srv" + (s.id === defaultId ? " is-default" : "") + (isCurrent ? " is-current" : "");
         row.type = "button"; row.setAttribute("role", "option");
-        row.setAttribute("aria-selected", s.id === defaultId ? "true" : "false");
+        row.setAttribute("aria-selected", (isCurrent || (mode !== "switch" && s.id === defaultId)) ? "true" : "false");
         row.disabled = connecting || s.status !== "up";
 
         var name = document.createElement("span"); name.className = "srv-name"; name.textContent = s.label;
@@ -239,13 +250,17 @@
         host.textContent = s.base.replace(/^https?:\/\//, "");
         var meta = document.createElement("span"); meta.className = "srv-meta";
         var ver  = document.createElement("span"); ver.className = "srv-ver";
-        ver.textContent = s.status === "up" ? (s.version || "unknown")
+        ver.textContent = isCurrent ? ((s.version || "unknown") + " · connected")
+          : s.status === "up" ? (s.version || "unknown")
           : s.status === "down" ? "offline" : "checking…";
         var dot  = document.createElement("span"); dot.className = "srv-dot srv-" + (s.status || "wait");
         meta.appendChild(ver); meta.appendChild(dot);
 
         row.appendChild(name); row.appendChild(host); row.appendChild(meta);
-        row.addEventListener("click", function () { if (!connecting && s.status === "up") connect(s); });
+        row.addEventListener("click", function () {
+          if (connecting || s.status !== "up") return;
+          if (mode === "switch") select(s); else connect(s);
+        });
         listEl.appendChild(row);
       });
     }
@@ -253,7 +268,18 @@
     var probing = false;
     function startPicker() {                      // reveal the picker + (once) begin probing on an interval
       showPicker(); render();
-      if (!probing) { probing = true; probeAll(); setInterval(probeAll, 5000); }
+      if (!probing) { probing = true; setInterval(probeAll, 5000); }
+      probeAll();                                 // refresh statuses immediately (also on every re-open)
+    }
+
+    // switch to another server while already connected: a fresh page load is required (the app
+    // boots once), so navigate with ?server=<id> (carrying ?live for a custom entry). Re-picking
+    // the current server just dismisses the overlay.
+    function select(s) {
+      if (currentBase() === s.base) { closePicker(); return; }
+      var q = "?server=" + encodeURIComponent(s.id);
+      if (s.id === "custom") q += "&live=" + encodeURIComponent(s.base);
+      location.href = location.pathname + q;
     }
 
     // probe a server's /actuator/info (CORS-allowed) for reachability + build.version. A response
@@ -291,6 +317,39 @@
           startPicker();                        // auto-connect failed → reveal the picker (and start probing)
         });
     }
+
+    // dismiss the overlay back to the running map — only in switch mode (in boot mode there is no
+    // map yet, so a pick is mandatory and Esc/click-outside do nothing).
+    function closePicker() {
+      if (mode !== "switch" || picker.hidden) return;
+      picker.hidden = true;
+      loading.classList.remove("switch");
+      loading.classList.add("gone");
+    }
+
+    // the running app (js/panel.mjs, on the title click) re-opens the picker as a dismissable
+    // "switch server" overlay over the live map. Exposed on window because this boot IIFE owns the
+    // server list + probes and the module app can't reach into its closure otherwise.
+    window.__picker = {
+      open: function () {
+        mode = "switch"; connecting = false;
+        if (sub) sub.textContent = "Switch server";
+        if (bar) bar.hidden = true;
+        loading.classList.remove("gone");
+        loading.classList.add("switch");        // transparent modal over the map (styles.css)
+        loading.hidden = false;
+        startPicker();
+      },
+      close: closePicker,
+      isOpen: function () { return mode === "switch" && !picker.hidden; }
+    };
+    // Esc, or a click on the dimmed backdrop (outside the panel), dismisses the switch overlay.
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && mode === "switch" && !picker.hidden) { e.preventDefault(); closePicker(); }
+    });
+    loading.addEventListener("click", function (e) {
+      if (mode === "switch" && !picker.hidden && !picker.contains(e.target)) closePicker();
+    });
 
     // ?server=<id> (dev|local|custom) bypasses the picker and connects straight to that server; on
     // failure connect() reveals the picker. A bare ?live=<url> also auto-connects (to its custom

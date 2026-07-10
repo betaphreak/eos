@@ -18,19 +18,16 @@ let loadingActive = false;
 if (loadEl) {
   if (BUNDLE.loading && BUNDLE.loading.length) {
     loadEl.querySelector(".ld-art").src = BUNDLE.loading[Math.floor(Math.random() * BUNDLE.loading.length)];
-    loadingActive = true;
-  } else {
-    loadEl.remove();                           // no art baked → no loading screen at all
   }
+  loadingActive = true;                        // always manage it so first paint hides it (below)
 }
+// hide on first paint but KEEP the element in the DOM — the title (js/panel.mjs) re-opens its
+// server picker as a dismissable overlay, so the markup must survive. Just fade it out.
 function hideLoading() {
   if (!loadingActive) return;
   loadingActive = false;
   const wait = Math.max(0, MIN_LOADING_MS - (performance.now() - loadStart));
-  setTimeout(() => {
-    loadEl.classList.add("gone");
-    setTimeout(() => loadEl.remove(), 700);    // after the fade
-  }, wait);
+  setTimeout(() => { loadEl.classList.add("gone"); }, wait);
 }
 
 const mapImg = new Image();
