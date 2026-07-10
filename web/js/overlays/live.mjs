@@ -85,7 +85,7 @@ function onSnapshot(s) {
   });
   if (!framed && s.colonies[0]) { frameOn(s.colonies[0].latitude, s.colonies[0].longitude, 6); framed = true; }
   renderHud();
-  onState(s.state);   // sync the transport controls (play icon, speed chevrons) to the server
+  onState(s.state, s.date);   // sync the transport controls (play icon, speed, date) to the server
   redraw();
 }
 

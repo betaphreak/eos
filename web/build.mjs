@@ -1,14 +1,14 @@
-// Build the caravan-migration dashboard's data from a recorded run.
+// Build the WorldMap's data from the committed map resources — run-independent.
 //
-//   node web/build.mjs [seed]        (default seed: 24601, ParallelCaravansTest)
+//   node web/build.mjs [seed]        (seed only names the baked terrain asset; default 24601)
 //
-// Reads output/<seed>/by-caravan/*-CaravanMarch.csv and the committed province
-// map (src/main/resources/map/provinces.json) + outlines (borders.json), distils
-// them into one JSON bundle written to web/data.js (which index.html loads), and
-// bakes a dark-tinted crop of the real EU4 terrain raster (data/anbennar/terrain.bmp)
-// into a real image asset at web/assets/terrain.png that the page references —
-// the image is never inlined into the data. The output/ run must exist first —
-// generate it by running the caravan scenario (e.g. ParallelCaravansTest) for that seed.
+// Reads the committed province map (src/main/resources/map/provinces.json) + outlines
+// (borders.json, tierborders.json) + geographic hierarchy + tech tree, distils them into one
+// JSON bundle written to web/data.js (which index.html loads), and bakes a dark-tinted crop of
+// the real EU4 terrain raster (data/anbennar/terrain.bmp) into a real image asset at
+// web/assets/terrain.png that the page references — the image is never inlined into the data.
+// The live caravans come from the spectator server (the Caravans view), so NO output/<seed>
+// run is needed.
 //
 // The baked art assets (terrain.png crop, terrain-tiles/river/sea/shore/foam/ice/
 // trees/bonus-icons) are seed-independent — their content comes from the Civ4 art and
@@ -71,60 +71,13 @@ async function flushImages(assets) {
   }
   return sizes;
 }
+// The map is run-independent: the site's live caravans come from the server (see Caravans
+// view / docs/client-server.md), so build.mjs no longer reads a recorded run — only the
+// committed map/geo/terrain/tech resources. SEED still names the baked terrain assets.
 const SEED = process.argv[2] || '24601';
-const DIR = path.join(ROOT, 'output', SEED, 'by-caravan');
-
-if (!fs.existsSync(DIR)) {
-  console.error(`No caravan journals at ${path.relative(ROOT, DIR)} — run the scenario for seed ${SEED} first.`);
-  process.exit(1);
-}
 
 const allProv = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/provinces.json'), 'utf8'));
 const byId = new Map(allProv.map(p => [p.id, p]));
-const nameOf = p => (p ? p.name : '?');
-const idOf = s => { const m = s.match(/\((\d+)\)\s*$/); return m ? +m[1] : null; };
-
-const files = fs.readdirSync(DIR).filter(f => /-CaravanMarch\.csv$/.test(f)).sort();
-const journeys = [];
-const visited = new Set();
-const traffic = new Map();     // province id -> caravan-days spent there (across all bands)
-
-for (const file of files) {
-  const dest = file.replace(/^[^-]+-/, '').replace(/-CaravanMarch\.csv$/, '');
-  const rows = fs.readFileSync(path.join(DIR, file), 'utf8').split(/\r?\n/).filter(Boolean);
-  const col = Object.fromEntries(rows[0].split(',').map((h, i) => [h, i]));
-  const data = rows.slice(1).map(r => r.split(','));
-
-  const keys = [];
-  let lastProv = null;
-  data.forEach((f, i) => {
-    const pid = idOf(f[col.Province]);
-    visited.add(pid);
-    traffic.set(pid, (traffic.get(pid) || 0) + 1);   // one row = one caravan-day in that province
-    if (pid !== lastProv || i === 0 || i === data.length - 1) {
-      const p = byId.get(pid);
-      keys.push({
-        date: f[col.Date], pid, prov: nameOf(p),
-        lat: p ? +p.lat.toFixed(3) : null, lon: p ? +p.lon.toFixed(3) : null,
-        band: +f[col.BandSize] || 0, larder: Math.round(+f[col.Larder] || 0),
-        cargo: +f[col.Cargo] || 0, daylight: +f[col.DaylightH] || 0,
-        camp: (f[col.Camp] || '').trim(),
-      });
-      lastProv = pid;
-    }
-  });
-  const last = data[data.length - 1];
-  journeys.push({
-    dest, destId: idOf(last[col.Province]),
-    startDate: data[0][col.Date], endDate: last[col.Date], days: data.length,
-    provinceCount: new Set(data.map(f => idOf(f[col.Province]))).size,
-    cargoFinal: +last[col.Cargo] || 0,
-    carryingFinal: (last[col.Carrying] || '').replace(/"/g, '').trim(),
-    larderFinal: Math.round(+last[col.Larder] || 0),
-    bandFinal: +last[col.BandSize] || 0,
-    keys,
-  });
-}
 
 // land-like province types: dry surface LAND, the four underground Dwarovar types, and the
 // seven special Anbennar surface terrains — all settleable, all shipped and rendered. See
@@ -268,17 +221,9 @@ const provinces = [...shipped].map(id => byId.get(id)).filter(Boolean).map(p => 
   region: p.region || null, area: p.area || null, continent: p.continent || null,
   winter: p.winter || null,
   nb: p.neighbors.filter(n => shipped.has(n)),
-  days: traffic.get(p.id) || 0,          // caravan-days spent here (0 for context provinces)
   rings: ringsById.get(p.id) || null,    // outline in source pixels (null for sea/lake → bbox culls, packPlots)
   lab: labelBaseline(ringsById.get(p.id)),   // curved label baseline (medial spine); null → client uses the straight axis
 }));
-const maxDays = Math.max(1, ...provinces.map(p => p.days));
-
-// origin = the shared first province of the journeys
-const originId = journeys[0].keys[0].pid;
-const origin = byId.get(originId);
-const scenario = journeys.length > 1 ? 'ParallelCaravansTest' : 'DhenijansarToWexkeepTest';
-const allDates = journeys.flatMap(j => [j.startDate, j.endDate]).sort();
 
 // ---- bake the dark terrain background from the real EU4 raster ----
 // provinces.json derived each province's coordinates from terrain.bmp pixels:
@@ -400,11 +345,9 @@ const adjacencies = (readJsonOpt('src/main/resources/map/adjacencies.json') || [
 
 const bundle = {
   meta: {
-    seed: +SEED, scenario,
-    origin: { id: originId, name: origin.name, lat: +origin.lat.toFixed(3), lon: +origin.lon.toFixed(3), region: origin.region },
-    dateStart: allDates[0], dateEnd: allDates[allDates.length - 1], maxDays,
+    seed: +SEED,
   },
-  provinces, journeys, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, foam, ice, bonusIcons, trees, seaBands, geo,
+  provinces, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, foam, ice, bonusIcons, trees, seaBands, geo,
   adjacencies,                        // EU4 straits/canals/tunnels: [from, to, type] connection lines
   geoNames,                           // raw-key -> display-name dictionaries for province crumbs
   loading,                            // committed loading-screen art (assets/loading-*.jpg), or []
@@ -419,7 +362,7 @@ fs.writeFileSync(path.join(WEB, 'data.js'), dataJs);
 
 const politicalKb = (fs.statSync(path.join(WEB, 'political.js')).size / 1024).toFixed(0);
 console.log(`Built web/data.js (${(dataJs.length / 1024).toFixed(0)} KB) + web/political.js (${politicalKb} KB, lazy) + web/${map.src} (${(terrainBytes / 1024).toFixed(0)} KB) from seed ${SEED}`);
-console.log(`  ${journeys.length} journeys · ${provinces.length} provinces · ${bundle.meta.dateStart} → ${bundle.meta.dateEnd}`);
+console.log(`  ${provinces.length} provinces (run-independent — live caravans come from the server)`);
 console.log(`  terrain crop ${map.dw}×${map.dh}px`);
 console.log(`  geo labels: ${geo.continents.length} continents · ${geo.superRegions.length} super-regions · ${geo.regions.length} regions`);
 console.log(`  plots: ${plotPack.count} provinces packed into web/assets/plots.pack (${(plotPack.bytes / 1048576).toFixed(1)} MB, range-fetched per-plot terrain zoom)`);
@@ -428,7 +371,6 @@ console.log(`  river tile: ${river ? river.src : 'skipped (no allriverssmall.dds
 console.log(`  sea tile: ${sea ? sea.src : 'skipped (no seadetail.dds / LFS)'} · bands trop/temp/polar ${JSON.stringify([seaBands.trop, seaBands.temp, seaBands.polar])}`);
 console.log(`  foam strip: ${foam ? `${foam.src} (${foam.w}x${foam.h})` : 'skipped (no wave_crest.dds / LFS)'}`);
 console.log(`  ice tile: ${ice ? ice.src : 'skipped (no icepack_1024.dds / LFS)'}`);
-for (const j of journeys) console.log(`  ${('→ ' + j.dest).padEnd(26)} ${j.provinceCount} prov · ${(j.days / 365.25).toFixed(1)}y · cargo ${j.cargoFinal}`);
 
 // ---------------------------------------------------------------------------
 // terrain baking

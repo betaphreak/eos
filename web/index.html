@@ -33,8 +33,6 @@
         <div id="povToggle" class="segToggle" role="group" aria-label="Camera POV">
           <button data-pov="god" aria-pressed="true" data-tip="Free god-view camera over the world">God</button>
           <button data-pov="timeline" aria-pressed="false" data-tip="Timeline camera — coming soon" disabled>Timeline</button>
-          <button data-pov="replay" aria-pressed="false" data-tip="Replay a recorded run by its seed">Replay</button>
-          <input id="replaySeed" class="seed-input" type="text" inputmode="numeric" placeholder="seed" aria-label="Replay seed" hidden>
         </div>
         <div id="planeToggle" class="segToggle" role="group" aria-label="Map plane">
           <button data-plane="overworld" aria-pressed="true" data-tip="Surface world — the physical terrain map">Overworld</button>
@@ -45,8 +43,7 @@
           <button data-ov="nation" aria-pressed="false" data-tip="Colour provinces by owning nation at game start">Nation</button>
           <button data-ov="culture" aria-pressed="false" data-tip="Colour provinces by culture">Culture</button>
           <button data-ov="faith" aria-pressed="false" data-tip="Colour provinces by religion">Faith</button>
-          <button data-ov="caravan" aria-pressed="false" data-tip="Replay the six-band caravan migration">Caravan</button>
-          <button data-ov="live" aria-pressed="false" data-tip="Watch the live server session (caravans + colony) in real time">Live</button>
+          <button data-ov="live" aria-pressed="false" data-tip="Watch the live server session — the colony and its caravans — in real time">Caravans</button>
         </div>
       </div>
 
@@ -56,9 +53,6 @@
         </button>
         <button class="themebtn" id="costBtn" data-tip="Terrain movement-cost overlay — zoom in to see it" aria-label="Toggle movement-cost overlay">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 19l6-11 4 6 2.5-4L21 19z"/></svg>
-        </button>
-        <button class="themebtn" id="heatBtn" data-tip="Toggle caravan-days heat" aria-label="Toggle traffic heat">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3s5 4 5 8.5A5 5 0 0 1 7 11.5c0-1.6 1-2.9 1-2.9s.4 1.8 1.8 1.8C10.8 7.8 12.5 6 12 3z"/></svg>
         </button>
         <button class="themebtn" id="themeBtn" data-tip="Toggle light / dark theme" aria-label="Toggle theme">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>
@@ -72,7 +66,7 @@
         <!-- EU4-style clock: date/time + play-pause (Space) + speed chevrons -->
         <div id="clock" role="group" aria-label="Date and playback speed">
           <button class="playbtn" id="playBtn" data-tip="Play / pause (Space)" aria-label="Play"><svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-          <div class="clk-dt"><span id="cDate" class="clk-date"></span><span id="cTime" class="clk-time mono"></span></div>
+          <div class="clk-dt"><span id="cDate" class="clk-date"></span></div>
           <div class="clk-speed" id="speed" role="group" aria-label="Speed"></div>
         </div>
       </div>
@@ -87,7 +81,6 @@
         <div style="display:flex;justify-content:space-between;margin-top:3px"><span>flat</span><span>×2</span><span>×8</span></div>
       </div>
 
-      <div class="legend" id="legend" aria-label="Caravan journeys"></div>
       <div class="legend" id="polLegend" aria-label="Political legend" hidden></div>
 
       <div class="live-hud" id="liveHud" aria-label="Live session" hidden>

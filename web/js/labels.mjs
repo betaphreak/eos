@@ -1,4 +1,4 @@
-import { J, P, BUNDLE, px, py, pxr, pyr, cam, VIEW, ctx, destSet, cssVar, S, LABEL_FONT } from "./core.mjs";
+import { P, BUNDLE, px, py, pxr, pyr, cam, VIEW, ctx, cssVar, S, LABEL_FONT } from "./core.mjs";
 
 // Paradox/EU4-style map lettering: the shared bundled serif (see core.LABEL_FONT).
 const LABEL_FAM = LABEL_FONT;
@@ -165,28 +165,15 @@ function drawLabels() {
     placed.push(box);
     drawTextOnPath(p.name, spts, size, track, o.weight, o.color);
   };
-  const F1=`600 12px ${LABEL_FAM}`;
-  if (S.overlay === "caravan") {
-    label(BUNDLE.meta.origin.name, px(BUNDLE.meta.origin.lon), py(BUNDLE.meta.origin.lat),
-      { font:F1, size:12, color:cssVar("--accent") });
-    J.forEach(j => {
-      if (S.selected!==null && S.selected!==j.idx) return;
-      const d = j.keys[j.keys.length-1];
-      label(j.dest, px(d.lon), py(d.lat), { font:F1, size:12, color:"#eaf0f8", dot:j.color, dotR:3.6 });
-    });
-  }
   // province names fade in only once zoomed in (below that the geographic tiers own the
   // map): label the provinces actually on screen, largest first and collision-culled, so
   // names resolve wherever you zoom rather than only for the globally-biggest few
-  if (S.selected===null) {
+  {
     const pa = Math.min(1, Math.max(0, (cam.k - 6.5) / 2));   // fade in over cam.k 6.5 -> 8.5
     if (pa > 0.01) {
       const inView = [];
       for (const p of P) {
         if (p.type!=="LAND") continue;
-        // origin/destinations carry their own journey labels in Caravan mode; in World mode
-        // they are ordinary provinces and get named like the rest
-        if (S.overlay==="caravan" && (p.id===BUNDLE.meta.origin.id || destSet.has(p.id))) continue;
         const x = px(p.lon), y = py(p.lat);
         if (x < -40 || y < -20 || x > VIEW.w+40 || y > VIEW.h+20) continue;   // cull to viewport
         inView.push({ p, x, y });

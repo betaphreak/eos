@@ -348,14 +348,16 @@ levers (clamped to [0,1], inherited by a successor). The rates ride the render s
 the whole Factorio spine exercised for real: authoritative state = *f*(spec, command log).
 
 **✅ Real map viewer on the live feed (Implemented, 2026-07-10).** The full `web/app.js`
-**WorldMap** (real Anbennar terrain) now has a **Live** overlay (`web/js/overlays/live.mjs`, a
-5th button on the World/Political/Caravan toggle) that subscribes to the SSE feed and draws
-the running session over the terrain: the colony marker + the marching caravans (with trails),
-placed by the map's existing `px`/`py` lon-lat projection — the feed already carries every
-entity's `latitude`/`longitude`, so no new geometry. A floating HUD shows session state / tick
-/ date / colony stats and carries the **taxation command**, and the map's **transport controls
-(play/pause + speed chevrons + Space)** drive the *hosted session* over `/control` while Live is
-active (reflecting the server's state back). Cross-origin is handled by **CORS on `FeedServer`**
+**WorldMap** (real Anbennar terrain) has a **Caravans** overlay (`web/js/overlays/live.mjs`, on
+the World/Political/Caravans toggle) that subscribes to the SSE feed and draws the running
+session over the terrain: the colony marker + the marching caravans (with trails), placed by the
+map's existing `px`/`py` lon-lat projection — the feed already carries every entity's
+`latitude`/`longitude`, so no new geometry. A floating HUD shows session state / tick / date /
+colony stats and carries the **taxation command**, and the top-bar **clock/play/speed** drive the
+*hosted session* over `/control` while the view is active (reflecting the server's state back).
+This **replaced** the old recorded-caravan replay entirely: the caravans come live from the
+server, so the site's `data.js`/`build.mjs` are now **run-independent** (no `output/<seed>` run,
+no baked journeys). Cross-origin is handled by **CORS on `FeedServer`**
 (option A): responses carry `Access-Control-Allow-Origin` for the site origin and the JSON POST
 is preflighted; the allowed origins default to the production site + localhost, overridable via
 `EOS_CORS_ORIGINS`. The base feed URL defaults to `https://live.civstudio.com` (override with

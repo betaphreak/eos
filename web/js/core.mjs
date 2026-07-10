@@ -1,16 +1,10 @@
 "use strict";
 "use strict";
 const BUNDLE = window.BUNDLE;
-const ROUTE_COLORS = ["#d9603b", "#3d9bd1", "#57b368", "#9b7bd4", "#d98cae", "#c9a227"];
 
 // ---- data prep ----
-const J = BUNDLE.journeys.map((j, i) => ({ ...j, color: ROUTE_COLORS[i % ROUTE_COLORS.length], idx: i }));
 const P = BUNDLE.provinces;
-const day = s => Date.UTC(+s.slice(0,4), +s.slice(5,7)-1, +s.slice(8,10)) / 864e5;
-const t0 = day(BUNDLE.meta.dateStart), t1 = day(BUNDLE.meta.dateEnd);
-const fmtDate = t => { const d = new Date(t*864e5); return d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"}); };
 const fmtInt = n => Math.round(n).toLocaleString("en-US");
-J.forEach(j => j.keys.forEach(k => k.t = day(k.date)));
 // projection: lon/lat -> the exact source pixel on terrain.bmp (the inverse of the
 // maps ProvinceExporter used) -> the baked crop's fit rectangle -> screen, with a
 // pan/zoom camera (cam.k scale, cam.x/cam.y translate) applied last. Using the same
@@ -141,12 +135,7 @@ function provBoxHas(p, sx, sy, margin = 0) {
       && sy >= Math.min(ay, by) - margin && sy <= Math.max(ay, by) + margin;
 }
 const PLOT_INDEX = BUNDLE.plotIndex || {};       // {provId: [byteOffset, len]} into plots.pack
-const MAXD = BUNDLE.meta.maxDays;
 const lerp = (a,b,t) => a + (b-a)*t;
-function heatColor(days) {                      // amber (low) -> red (high), over dark terrain
-  const t = Math.pow(days/MAXD, 0.5);
-  return `rgba(${lerp(236,228,t)|0},${lerp(178,96,t)|0},${lerp(96,56,t)|0},${(0.12+0.6*t).toFixed(3)})`;
-}
 function provPath(p) {                           // Path2D of a province's rings, rebuilt on view change
   if (p._pv === S.viewVersion) return p._path;
   const path = new Path2D();
@@ -159,25 +148,6 @@ function provPath(p) {                           // Path2D of a province's rings
 const cv = document.getElementById("map"), ctx = cv.getContext("2d");
 const stage = document.getElementById("stage");
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-function journeyPos(j, t) {
-  const ks = j.keys;
-  if (t <= ks[0].t) return { lon: ks[0].lon, lat: ks[0].lat, k: ks[0], arrived: false, started: t >= t0 };
-  const last = ks[ks.length-1];
-  if (t >= last.t) return { lon: last.lon, lat: last.lat, k: last, arrived: true, started: true };
-  let i = 0; while (i < ks.length-1 && ks[i+1].t <= t) i++;
-  const a = ks[i], b = ks[i+1], f = (t - a.t) / Math.max(1, b.t - a.t);
-  return { lon: a.lon + (b.lon-a.lon)*f, lat: a.lat + (b.lat-a.lat)*f, k: a, arrived: false, started: true };
-}
-// interpolate a scalar telemetry field along keyframes
-function lerpField(j, t, field) {
-  const ks = j.keys;
-  if (t <= ks[0].t) return ks[0][field];
-  const last = ks[ks.length-1]; if (t >= last.t) return last[field];
-  let i=0; while (i<ks.length-1 && ks[i+1].t<=t) i++;
-  const a=ks[i], b=ks[i+1], f=(t-a.t)/Math.max(1,b.t-a.t);
-  return a[field] + (b[field]-a[field])*f;
-}
-const destSet = new Set(J.map(j=>j.destId));
 function clampAxis(camv, base, dim, viewDim) {
   const size = cam.k * dim, pos = camv + cam.k * base;
   if (size <= viewDim) return (viewDim - size) / 2 - cam.k * base;   // centre, no pan on this axis
@@ -204,8 +174,7 @@ export const S = {
   viewVersion: 0,        // per-world-copy cache key derived from baseVersion in draw()
   showHeat: true,
   showCost: false,
-  pov: "god",            // camera POV: "god" (free look) | "timeline" | "replay" (a seed's run)
-  replaySeed: "",        // the seed typed into the Replay textbox
+  pov: "god",            // camera POV: "god" (free look) | "timeline" (coming soon)
   // the map plane (exclusive base) and the overlay (one at a time), from the URL hash for deep links
   plane: /underworld/.test(location.hash) ? "underworld" : "overworld",
   overlay: /caravan/.test(location.hash) ? "caravan"
@@ -218,9 +187,7 @@ export const S = {
   dragging: false,       // mid-pan (drawPlots skips textures while panning)
   selected: null,        // journey idx or null
   selectedProv: null,    // province whose full detail fills the sidebar, or null
-  curT: 0,               // set to t0 at boot
   techOpen: false,       // the tech-tree modal is up — paint() pauses map rendering behind it
 };
-S.curT = t0;
 
-export { J, P, day, t0, t1, fmtDate, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, PLOT_INDEX, MAXD, lerp, heatColor, provPath, cv, ctx, stage, cssVar, journeyPos, lerpField, destSet, clampAxis, clampPan, worldW, BUNDLE };
+export { P, fmtInt, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, PLOT_INDEX, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };

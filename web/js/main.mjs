@@ -2,7 +2,6 @@ import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, 
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 import { drawPolitical, scheduleLegendRefresh } from "./overlays/political.mjs";
-import { drawCaravanHeat, drawCaravan } from "./overlays/caravan.mjs";
 import { drawLive } from "./overlays/live.mjs";
 import { ensureTiers, drawTiers } from "./overlays/tiers.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
@@ -150,7 +149,6 @@ function renderScene() {
   drawPlots(isSurface);   // crisp per-plot Civ4 terrain over the blurred raster when zoomed in
   drawCostOverlay();   // elevation movement-cost heat over the terrain, when toggled on
 
-  if (S.showHeat && S.overlay === "caravan") drawCaravanHeat();   // caravan-days choropleth
   if (isPolitical()) drawPolitical();                             // nation/culture/faith fills
   // geographic-tier boundaries (region → super-region → continent), zoom-banded. Lazily loaded
   // as we approach their zoom range, and drawn under the province borders.
@@ -191,7 +189,6 @@ function renderScene() {
     ctx.strokeStyle=cssVar("--accent")||"#e8b76a"; ctx.lineWidth=2; ctx.stroke();
   }
 
-  if (S.overlay === "caravan") drawCaravan();   // routes, origin star, moving caravans
   if (S.overlay === "live") drawLive();         // live session: colony + marching caravans from the feed
   drawLabels();
 }

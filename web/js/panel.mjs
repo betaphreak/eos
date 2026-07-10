@@ -1,4 +1,4 @@
-import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, lerpField, journeyPos, worldW, MAXD, heatColor, provPath, provBoxHas, clampPan, destSet, provGeo, polOf, isPolitical, S } from "./core.mjs";
+import { BUNDLE, P, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, worldW, provPath, provBoxHas, clampPan, provGeo, polOf, isPolitical, S } from "./core.mjs";
 import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
 import { loadPlots, bonusIconRect } from "./plots.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
@@ -82,88 +82,58 @@ document.addEventListener("fullscreenchange", resize);
 // The global keyboard shortcuts (pan / zoom / reset / fullscreen / play / Escape) are
 // dispatched centrally by js/shortcuts.mjs, which calls the actions exported below.
 // ---- clock: EU4-style date/time + play-pause + speed chevrons (top bar) ----
-const cDate=document.getElementById("cDate"), cTime=document.getElementById("cTime");
+const cDate=document.getElementById("cDate");
 const playBtn=document.getElementById("playBtn"), playIcon=document.getElementById("playIcon");
 const speedBox=document.getElementById("speed");
-// speeds 1..5 = in-game time advanced per real second (the clock names). Paused is the un-playing state.
+// speeds 1..5 = the live session's tick rate (in-game days per real second); see live.LIVE_RATES.
+// Paused is the un-playing state.
 const SPEEDS = [null,
-  { name: "1 second / s", dps: 1/86400 },
-  { name: "1 minute / s", dps: 1/1440 },
-  { name: "1 hour / s",   dps: 1/24 },
-  { name: "1 day / s",    dps: 1 },
-  { name: "Max",          dps: 30 }];
-let speed = 4, playing = false, raf = 0, lastTs = 0;
-const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  { name: "1 day / s" },
+  { name: "2 days / s" },
+  { name: "4 days / s" },
+  { name: "10 days / s" },
+  { name: "Max" }];
+let speed = 1, playing = false;
 const PAUSE_ICON = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>', PLAY_ICON = '<path d="M8 5v14l11-7z"/>';
 
-function updateClock(){
-  cDate.textContent = fmtDate(S.curT);
-  const secs = Math.floor(((S.curT % 1) + 1) % 1 * 86400);   // fractional day -> time of day
-  const p2 = n => String(n).padStart(2, "0");
-  cTime.textContent = `${p2(secs/3600|0)}:${p2(secs%3600/60|0)}:${p2(secs%60)}`;
-}
 function renderSpeed(){
   [...speedBox.children].forEach((c, i) => c.classList.toggle("on", (i + 1) <= speed));
   speedBox.classList.toggle("paused", !playing);
 }
-function setT(t){
-  S.curT = Math.max(t0, Math.min(t1, t));
-  updateClock(); draw();
-  if (S.selected !== null) updateDetailLive();
-}
-function tick(ts){
-  if(!playing) return;
-  if(lastTs){ const dt=(ts-lastTs)/1000; setT(S.curT + dt*SPEEDS[speed].dps); if(S.curT>=t1){ pause(); return; } }
-  lastTs=ts; raf=requestAnimationFrame(tick);
-}
-function play(){
-  if (playing) return;                           // already running — never start a 2nd rAF chain (a
-                                                 // stray play() while playing would leak a parallel
-                                                 // tick loop the single `raf` handle can't cancel)
-  if (S.curT >= t1) S.curT = t0;                 // restart from the top if parked at the end
-  playing = true; lastTs = 0;
-  playIcon.innerHTML = PAUSE_ICON; playBtn.setAttribute("aria-label", "Pause");
-  renderSpeed(); cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
-}
-function pause(){
-  playing = false; cancelAnimationFrame(raf);
-  playIcon.innerHTML = PLAY_ICON; playBtn.setAttribute("aria-label", "Play");
-  renderSpeed();
-}
 /**
- * Toggle playback — used by the play button and the centralized Space shortcut. In Live mode
- * this drives the SERVER (pause/resume the hosted session over /control) instead of the local
- * replay timeline; the play icon then reflects the session state from the feed.
+ * The clock/play/speed drive the LIVE hosted session — the only thing time means now that the
+ * recorded replay is gone (its data came from the server; see docs/client-server.md). Play/pause
+ * toggles the session over /control; the play icon reflects the server's state from the feed.
+ * The controls are inert (and the clock hidden) outside the Caravans view.
  */
 function togglePlay(){
-  if (liveActive()) { controlLive(liveState() === "RUNNING" ? "pause" : "resume"); return; }
-  playing ? pause() : play();
+  if (liveActive()) controlLive(liveState() === "RUNNING" ? "pause" : "resume");
 }
-/** Force paused — modals always run in paused mode, so opening one calls this. */
-function pausePlayback(){ if (playing) pause(); }
-function setSpeed(s){ speed = Math.max(1, Math.min(5, s)); if (!playing) play(); else renderSpeed(); }
-// a speed chevron: in Live mode it sets the server's tick rate (days/second) over /control;
-// otherwise it sets the local replay speed
+/** Force paused — modals call this on open; the live session keeps ticking, so this is a no-op. */
+function pausePlayback(){}
+// a speed chevron sets the live session's tick rate (in-game days per second) over /control
 function onSpeed(level){
-  if (liveActive()) {
-    speed = Math.max(1, Math.min(5, level));
-    controlLive("rate", LIVE_RATES[speed]);
-    renderSpeed();
-    return;
-  }
-  setSpeed(level);
+  if (!liveActive()) return;
+  speed = Math.max(1, Math.min(5, level));
+  controlLive("rate", LIVE_RATES[speed]);
+  renderSpeed();
 }
-// reflect the live session's control state on the transport UI (play icon + chevron lit state).
-// Called on every snapshot while in Live mode; the replay rAF is not running here.
-function syncLiveTransport(state){
+// reflect the live session's control state (and date) on the transport UI, per snapshot
+function syncLiveTransport(state, date){
   const running = state === "RUNNING";
   playing = running;
   playIcon.innerHTML = running ? PAUSE_ICON : PLAY_ICON;
   playBtn.setAttribute("aria-label", running ? "Pause" : "Play");
+  if (date != null) cDate.textContent = date;
   renderSpeed();
 }
+// show the clock (live controls) only in the Caravans/live view; clear it otherwise
+function showClock(on){
+  document.getElementById("clock").style.display = on ? "" : "none";
+  if (!on) cDate.textContent = "";
+}
 playBtn.addEventListener("click", togglePlay);
-// the speed selector: five chevrons ( › .. ›››››  ), the active level lit; clicking one sets the speed
+// the speed selector: five chevrons ( › .. ›››››  ), the active level lit; clicking one sets the rate
 SPEEDS.slice(1).forEach((sp, i) => {
   const b = document.createElement("button");
   b.className = "chev"; b.textContent = "›";
@@ -171,33 +141,12 @@ SPEEDS.slice(1).forEach((sp, i) => {
   b.onclick = () => onSpeed(i + 1);
   speedBox.appendChild(b);
 });
-updateClock(); renderSpeed();
+renderSpeed();
 
-// ---- legend ----
-const legend=document.getElementById("legend");
-legend.innerHTML = '<div class="lg-h">Caravans → destination</div>';
-J.forEach(j=>{
-  const b=document.createElement("button"); b.className="legrow"; b.setAttribute("aria-pressed","false");
-  b.innerHTML = `<span class="dot" style="background:${j.color}"></span><span>${j.dest}</span><span class="km">${j.provinceCount} prov</span>`;
-  b.onclick=()=> selectJourney(S.selected===j.idx?null:j.idx);
-  j._leg=b; legend.appendChild(b);
-});
-// choropleth key
-const heatKey=document.createElement("div"); heatKey.className="heatkey"; heatKey.id="heatkey";
-heatKey.innerHTML=`<div class="lg-h">Caravan-days · shading</div><div class="hk-bar"></div>
-  <div class="hk-scale"><span>less</span><span>${MAXD}</span></div>`;
-legend.appendChild(heatKey);
-
-// ---- heat toggle ----
 // ---- a small reusable spinner for secondary async loads ----
 const spinnerEl=document.getElementById("spinner");
 function showSpinner(text){ if(!spinnerEl) return; spinnerEl.querySelector(".sp-txt").textContent = text||"Loading…"; spinnerEl.hidden=false; }
 function hideSpinner(){ if(spinnerEl) spinnerEl.hidden=true; }
-
-const heatBtn=document.getElementById("heatBtn");
-heatBtn.setAttribute("aria-pressed","true");
-heatBtn.onclick=()=>{ S.showHeat=!S.showHeat; heatBtn.setAttribute("aria-pressed",S.showHeat);
-  heatBtn.style.opacity=S.showHeat?"":".5"; heatKey.style.display=S.showHeat?"":"none"; draw(); };
 
 // ---- movement-cost overlay toggle (terrain-zoom elevation difficulty) ----
 const costBtn=document.getElementById("costBtn"), costKey=document.getElementById("costKey");
@@ -280,8 +229,8 @@ function resourceLabel(q){
   return null;
 }
 const prettyKey = t => t.replace(/^(BONUS|FEATURE)_/,"").toLowerCase().replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase());
-// hover tooltip body — the info shown depends on the active overlay: physical (region · plots),
-// political (the active dimension + region), or caravan (region · caravan-days)
+// hover tooltip body — the info shown depends on the active overlay: physical (region · plots)
+// or political (the active dimension + region)
 function provTip(best){
   const reg = (best.region||"—").replace(/_/g," ").replace(" region","");
   let h = `<b>${best.name}</b> <span class="r">${best.type.toLowerCase()}</span>`;
@@ -290,8 +239,6 @@ function provTip(best){
     const label = S.overlay==="culture"?"Culture" : S.overlay==="faith"?"Faith" : "Nation";
     h += `<br><span class="r">${e ? `<span class="dot" style="background:${e.color}"></span>${label} · ${e.name}` : `${label} · —`}</span>`
        + `<br><span class="r">${reg}</span>`;
-  } else if (S.overlay==="caravan"){
-    h += `<br><span class="r">${reg}${best.days?` · ${best.days} caravan-days`:""}</span>`;
   } else {
     h += `<br><span class="r">${reg} · ${best.plots} plots</span>`;
   }
@@ -317,13 +264,7 @@ stage.addEventListener("click", e=>{
   if(e.detail>1) return;                      // 2nd click of a double-click: dblclick zooms — don't
                                               // toggle the just-selected province back off (the flash)
   const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
-  // in caravan mode a click near a route's current marker selects that journey
-  if (S.overlay==="caravan") {
-    let best=null,bd=1e9;
-    J.forEach(j=>{ const d=j.keys[j.keys.length-1]; const dx=px(d.lon)-mx,dy=py(d.lat)-my,dd=dx*dx+dy*dy; if(dd<bd){bd=dd;best=j;} });
-    if(best && bd<160){ selectJourney(S.selected===best.idx?null:best.idx); return; }
-  }
-  // otherwise the click selects the province under the cursor (toggles off if re-clicked)
+  // the click selects the province under the cursor (toggles off if re-clicked)
   const prov = provinceAt(mx, my);
   if (prov) selectProvince(S.selectedProv===prov ? null : prov);
 });
@@ -339,57 +280,6 @@ const rail=document.getElementById("rail");
 const railwrap=document.getElementById("railwrap");
 // open/collapse the right sidebar (it slides below the top bar; the bar spans full width above it)
 function showRail(open){ railwrap.classList.toggle("open", !!open); }
-function selectJourney(idx){
-  S.selectedProv=null;               // journey selection replaces any province detail
-  S.selected=idx;
-  J.forEach(j=> j._leg.setAttribute("aria-pressed", j.idx===idx));
-  showRail(idx!=null);               // a picked journey shows its detail; deselect collapses
-  renderRail(); draw();
-}
-function railMeta(){
-  const m=BUNDLE.meta;
-  const span = ((t1-t0)/365.25).toFixed(1);
-  return `<div class="runmeta">
-    <div class="rm-title serif" style="font-size:16px">Run summary</div>
-    <div class="rm-sub"><code class="mono" style="color:var(--accent)">${m.scenario}</code> · seed ${m.seed}</div>
-    <div class="metagrid">
-      <div class="metacell"><div class="k">Caravans</div><div class="v">${J.length}</div></div>
-      <div class="metacell"><div class="k">Provinces mapped</div><div class="v">${P.length}</div></div>
-      <div class="metacell"><div class="k">Origin</div><div class="v" style="font-size:15px">${m.origin.name}</div></div>
-      <div class="metacell"><div class="k">Span</div><div class="v">${span}<small> yrs</small></div></div>
-    </div></div>`;
-}
-function sparkline(j, field, color, opts={}){
-  const ks=j.keys, W=300, H=96, pad=6;
-  const xs=ks.map(k=>k.t), ys=ks.map(k=>k[field]);
-  const xmin=xs[0], xmax=xs[xs.length-1], ymax=Math.max(opts.ymax||0, ...ys), ymin=0;
-  const X=t=> pad + (t-xmin)/(xmax-xmin)*(W-2*pad);
-  const Y=v=> H-pad - (v-ymin)/((ymax-ymin)||1)*(H-2*pad);
-  let d="", area="";
-  ks.forEach((k,i)=>{ const x=X(k.t),y=Y(k[field]); d+=(i?"L":"M")+x.toFixed(1)+" "+y.toFixed(1)+" "; });
-  area = d + `L ${X(xmax).toFixed(1)} ${(H-pad)} L ${X(xmin).toFixed(1)} ${(H-pad)} Z`;
-  // now marker
-  const nv = lerpField(j, S.curT, field), nx = X(Math.max(xmin,Math.min(xmax,S.curT))), ny=Y(nv);
-  const grid=[0.5].map(f=>`<line x1="${pad}" y1="${(Y(ymax*f)).toFixed(1)}" x2="${W-pad}" y2="${(Y(ymax*f)).toFixed(1)}" stroke="var(--line-soft)" stroke-width="1"/>`).join("");
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-    <defs><linearGradient id="g${field}${j.idx}" x1="0" x2="0" y1="0" y2="1">
-      <stop offset="0" stop-color="${color}" stop-opacity="0.28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/>
-    </linearGradient></defs>
-    ${grid}
-    <path d="${area}" fill="url(#g${field}${j.idx})"/>
-    <path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
-    <line x1="${nx.toFixed(1)}" y1="${pad}" x2="${nx.toFixed(1)}" y2="${H-pad}" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="2 3"/>
-    <circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="3.5" fill="${color}" stroke="var(--panel-2)" stroke-width="1.5"/>
-  </svg>`;
-}
-function parseCarrying(s){
-  if(!s) return {items:[], more:0};
-  const more = (s.match(/\(\+(\d+) more\)/)||[])[1];
-  const items = s.replace(/\s*\(\+\d+ more\)/,"").split(";").map(x=>x.trim()).filter(Boolean).map(x=>{
-    const m=x.match(/^(.*?)\s+(\d+)$/); return m?{name:m[1].replace(/_/g," "), n:+m[2]}:{name:x,n:0};
-  });
-  return {items, more: more?+more:0};
-}
 function worldRail(){
   return `<div class="runmeta">
     <div class="rm-title serif" style="font-size:16px">WorldMap</div>
@@ -398,7 +288,7 @@ function worldRail(){
       <div class="metacell"><div class="k">Land provinces</div><div class="v">${P.length}</div></div>
       <div class="metacell"><div class="k">Zoom</div><div class="v" style="font-size:15px">to the plot</div></div>
     </div></div>
-    <p class="footnote">The full world, rendered from the engine's real terrain. Drag to pan, scroll to zoom — keep zooming past the continent view to resolve any province into its terrain plot by plot (textures, hillshade from the heightmap, rivers, features). Hover the map to read a province. Switch to <b>Caravan</b> mode to replay the six-band migration from Dhenijansar.</p>`;
+    <p class="footnote">The full world, rendered from the engine's real terrain. Drag to pan, scroll to zoom — keep zooming past the continent view to resolve any province into its terrain plot by plot (textures, hillshade from the heightmap, rivers, features). Hover the map to read a province. Switch to <b>Caravans</b> to watch the live server session — the colony and its marching bands — in real time.</p>`;
 }
 // the map plane (Overworld/Underworld) — the physical base. Underworld dims the surface to
 // a ghost and lights the underground CAVERN provinces in place (see main.drawUnderworld).
@@ -407,22 +297,22 @@ function setPlane(pl){
   document.querySelectorAll("#planeToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.plane===pl));
   draw();
 }
-// the overlay (None / Nation / Culture / Faith / Caravan) — one at a time over the active plane
+// the overlay (None / Nation / Culture / Faith / Caravans) — one at a time over the active plane.
+// "Caravans" is the live server view (S.overlay === "live"): the running colony + its caravans.
 function setOverlay(ov){
   const was = S.overlay;
+  const live = ov === "live";
   S.overlay = ov;
   document.querySelectorAll("#overlayToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.ov===ov));
-  const cara = ov === "caravan", pol = isPolitical();
-  legend.style.display = cara ? "" : "none";       // caravan journey legend
-  heatBtn.style.display = cara ? "" : "none";
+  const pol = isPolitical();
   S.polHi = null;
-  if (!cara) { pause(); S.selected = null; }        // the timeline stays visible in the bottom bar (all overlays)
-  // Live mode: connect/disconnect the server feed. The transport controls (play/pause + speed)
-  // drive the hosted session while it's active (see togglePlay/onSpeed).
-  if (was === "live" && ov !== "live") stopLive();
-  if (ov === "live") { speed = 1; startLive(draw, syncLiveTransport); }
+  // the clock/play/speed only mean something in the live Caravans view — show them there, drive
+  // the hosted session (togglePlay/onSpeed); connect/disconnect the SSE feed on enter/leave.
+  showClock(live);
+  if (was === "live" && !live) stopLive();
+  if (live) { speed = 1; startLive(draw, syncLiveTransport); }
   S.selectedProv = null;                            // start each overlay on its own overview
-  showRail(cara);                                   // caravan opens the panel on its overview; others start collapsed
+  showRail(false);
   updateSearchContext();                            // the search box searches provinces / nations / cultures / faiths
   if (pol) {
     if (!politicalReady()) showSpinner("Loading political data…");  // the lazy political.js fetch
@@ -516,89 +406,15 @@ function provinceRail(p) {
       <div class="metagrid" style="margin-top:8px">
         <div class="metacell"><div class="k">Coordinates</div><div class="v" style="font-size:13px">${coord}</div></div>
         <div class="metacell"><div class="k">Winter</div><div class="v" style="font-size:13px">${p.winter?prettyId(p.winter):"—"}</div></div>
-        ${p.days?`<div class="metacell"><div class="k">Caravan-days</div><div class="v">${p.days}</div></div>`:""}
       </div>
       ${politicsBlock(p)}
       ${terrainHtml}
     </div>`;
-  document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; showRail(S.overlay==="caravan"); renderRail(); draw(); };
+  document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; showRail(false); renderRail(); draw(); };
 }
 function renderRail(){
   if (S.selectedProv) { provinceRail(S.selectedProv); return; }
-  if (S.overlay !== "caravan") { rail.innerHTML = worldRail(); return; }
-  if(S.selected===null){
-    const rows = J.map(j=>`<tr class="click" data-idx="${j.idx}">
-        <td><div class="destcell"><span class="dot" style="background:${j.color}"></span>${j.dest}</div></td>
-        <td class="num">${j.provinceCount}</td>
-        <td class="num">${(j.days/365.25).toFixed(1)}y</td>
-        <td class="num" style="color:var(--cargo)">${j.cargoFinal}</td>
-      </tr>`).join("");
-    rail.innerHTML = railMeta() + `
-      <div>
-        <p class="sectlabel">The six journeys</p>
-        <table class="cmp">
-          <thead><tr><th>Destination</th><th class="num">Prov</th><th class="num">Time</th><th class="num">Cargo</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-      <p class="footnote">All six bands leave <b>${BUNDLE.meta.origin.name}</b> on <span class="mono">${BUNDLE.meta.dateStart}</span> and march the province graph one daylight-bounded leg per day, foraging food and gathering trade goods into a capacity-capped cargo. Drag to pan, scroll to zoom — keep zooming past the continent view to resolve each province into its real Civ4 terrain, plot by plot. Hover the map to read a province; pick a route on the map or a row below to follow one band. Scrub or press play to watch them travel.</p>`;
-    rail.querySelectorAll("tr.click").forEach(tr=> tr.onclick=()=> selectJourney(+tr.dataset.idx));
-  } else {
-    const j=J[S.selected];
-    rail.innerHTML = `
-      <button class="backbtn" id="back">← All caravans</button>
-      <div class="detail">
-        <div class="d-head"><span class="route-dot" style="background:${j.color}"></span>
-          <h2 class="serif">${j.dest}</h2></div>
-        <div class="rm-sub" style="color:var(--ink-soft);margin-top:-8px">from ${BUNDLE.meta.origin.name} · <span class="mono">${j.startDate}</span> → <span class="mono">${j.endDate}</span></div>
-        <div class="statrow">
-          <div class="stat"><div class="k">Provinces</div><div class="v">${j.provinceCount}</div></div>
-          <div class="stat"><div class="k">Duration</div><div class="v">${(j.days/365.25).toFixed(1)}<small style="font-size:11px;color:var(--ink-soft)"> yr</small></div></div>
-          <div class="stat"><div class="k">Band now</div><div class="v" id="bandNow">–</div></div>
-        </div>
-        <div class="chart">
-          <div class="c-head"><span class="c-title">Cargo hauled</span><span class="c-now mono" id="cargoNow" style="color:var(--cargo)"></span></div>
-          ${sparkline(j,"cargo",cssVar("--cargo"),{ymax:500})}
-        </div>
-        <div class="chart">
-          <div class="c-head"><span class="c-title">Larder (food carried)</span><span class="c-now mono" id="larderNow" style="color:var(--good)"></span></div>
-          ${sparkline(j,"larder",cssVar("--good"))}
-        </div>
-        <div>
-          <p class="sectlabel">Cargo on arrival · ${j.cargoFinal} units</p>
-          <div class="cargo-list" id="cargoList"></div>
-        </div>
-        <p class="footnote">Foraging refills the larder while daylight allows; surplus daylight is spent gathering the trade goods the band crosses — only those whose reveal-tech it knows — into <code>Cargo</code>, capped at hold capacity. This band arrives at <b>${j.dest}</b> carrying the goods below.</p>
-      </div>`;
-    document.getElementById("back").onclick=()=> selectJourney(null);
-    const {items,more}=parseCarrying(j.carryingFinal);
-    const mx=Math.max(...items.map(i=>i.n),1);
-    document.getElementById("cargoList").innerHTML = items.map(it=>`
-      <div class="cargo-item"><span class="cname" title="${it.name}">${it.name}</span>
-        <span class="cargo-bar"><i style="width:${(it.n/mx*100).toFixed(0)}%"></i></span>
-        <span class="cval">${it.n}</span></div>`).join("") + (more?`<div class="cargo-more">+ ${more} more goods</div>`:"");
-    updateDetailLive();
-  }
-}
-function updateDetailLive(){
-  const j=J[S.selected]; if(!j) return;
-  const cn=document.getElementById("cargoNow"), ln=document.getElementById("larderNow"), bn=document.getElementById("bandNow");
-  if(cn) cn.textContent = fmtInt(lerpField(j,S.curT,"cargo"))+" u";
-  if(ln) ln.textContent = fmtInt(lerpField(j,S.curT,"larder"));
-  if(bn) bn.textContent = Math.round(lerpField(j,S.curT,"band"));
-  // re-render sparkline now-markers cheaply by redrawing rail charts' vertical line:
-  const charts=rail.querySelectorAll(".chart svg");
-  const fields=["cargo","larder"];
-  charts.forEach((svg,i)=>{
-    const ks=j.keys, W=300,H=96,pad=6, xmin=ks[0].t, xmax=ks[ks.length-1].t;
-    const X=t=> pad+(t-xmin)/(xmax-xmin)*(W-2*pad);
-    const ymax=(fields[i]==="cargo")?500:Math.max(...ks.map(k=>k.larder));
-    const Y=v=> H-pad-(v/((ymax)||1))*(H-2*pad);
-    const nx=X(Math.max(xmin,Math.min(xmax,S.curT))), nv=lerpField(j,S.curT,fields[i]), ny=Y(nv);
-    const line=svg.querySelector("line[stroke-dasharray]"), c=svg.querySelector("circle");
-    if(line){ line.setAttribute("x1",nx.toFixed(1)); line.setAttribute("x2",nx.toFixed(1)); }
-    if(c){ c.setAttribute("cx",nx.toFixed(1)); c.setAttribute("cy",ny.toFixed(1)); }
-  });
+  rail.innerHTML = worldRail();
 }
 // ---- theme toggle ----
 const themeBtn=document.getElementById("themeBtn");
@@ -716,20 +532,15 @@ function updateSearchContext() {
   searchInput.placeholder = (overlayEntity() || {}).ph || "Find a province…";
   provinceSearch.refresh();
 }
-// ---- camera POV toggle (God / Timeline / Replay <seed>) ----
+// ---- camera POV toggle (God / Timeline) ----
 const povToggle = document.getElementById("povToggle");
-const replaySeedInput = document.getElementById("replaySeed");
 function setPov(pov){
   S.pov = pov;
   povToggle.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.pov === pov));
-  replaySeedInput.hidden = pov !== "replay";     // the seed textbox shows only for Replay
-  if (pov === "replay") replaySeedInput.focus();
   draw();
 }
 povToggle.querySelectorAll("button").forEach(b =>
   b.addEventListener("click", () => { if (!b.disabled) setPov(b.dataset.pov); }));
-replaySeedInput.addEventListener("input", () => { S.replaySeed = replaySeedInput.value.trim(); });
-replaySeedInput.addEventListener("keydown", e => { if (e.key === "Enter") replaySeedInput.blur(); });
 
 // ---- responsive controls menu: the hamburger tucks the toggle groups on narrow screens ----
 const menuBtn = document.getElementById("menuBtn");
@@ -777,12 +588,10 @@ export { renderRail, resetView, toggleFullscreen, togglePlay, pausePlayback, clo
 export function boot() {
   window.addEventListener("resize", resize);
   resize();
-  setT(t0);
   setPov(S.pov);              // paints the camera-POV toggle (default: God)
   setPlane(S.plane);          // paints the plane toggle
   setOverlay(S.overlay);      // paints the overlay chrome/rail (default: none → plain Overworld)
   // apply the ?p=/#p= deep link AFTER first layout — focusProvince needs a sized VIEW, so calling
   // it inline at boot (before the stage has laid out) silently no-ops
   requestAnimationFrame(() => requestAnimationFrame(applyHash));
-  if (S.overlay === "caravan" && !reduce && !hasDeepLink()) setTimeout(play, 650);
 }
