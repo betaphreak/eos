@@ -214,11 +214,19 @@
       if (window.__status) window.__status(msg, "error");
     }
 
-    // Is Spring Boot up? Poll Actuator health — UP means the server is ready to serve the bundle.
-    function serverUp() {
+    // Is the server reachable and ready to serve the bundle? Prefer Spring Boot's Actuator health,
+    // but tolerate a server without Actuator (e.g. an older build, or a web deploy that landed ahead
+    // of the server one): a 404 means the server is up and can still serve /api/bundle. Only a
+    // network error or a 5xx (down, or Boot still starting) keeps us on the Maintenance splash.
+    function serverReady() {
       return fetch(base + "/actuator/health", { credentials: "omit", cache: "no-store" })
-        .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)); })
-        .then(function (h) { if (!h || h.status !== "UP") throw new Error("status " + (h && h.status)); });
+        .then(function (r) {
+          if (r.status === 404) return;                   // up, no Actuator — fall through to the bundle
+          if (!r.ok) throw new Error("HTTP " + r.status);  // 5xx/503: down or still starting → retry
+          return r.json().then(function (h) {
+            if (!h || h.status !== "UP") throw new Error("status " + (h && h.status));
+          });
+        });
     }
 
     // Fetch the map/geo bundle and boot the module app (core.mjs reads window.BUNDLE at eval time).
@@ -228,11 +236,11 @@
         .then(function (b) { b.live = { base: base }; window.BUNDLE = b; return import("./app.js"); });
     }
 
-    // Wait for the server (health UP), then boot. While it is down, hold the Maintenance Mode
-    // splash and retry with a capped backoff — the page comes up on its own once the server does.
+    // Wait for the server (ready), then boot. While it is down, hold the Maintenance Mode splash
+    // and retry with a capped backoff — the page comes up on its own once the server does.
     var tries = 0;
     (function attempt() {
-      serverUp().then(boot).catch(function () {
+      serverReady().then(boot).catch(function () {
         maintenance("Maintenance Mode — waiting for the map server (" + base + ")…");
         tries++;
         setTimeout(attempt, Math.min(1000 + tries * 500, 5000));

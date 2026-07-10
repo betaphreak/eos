@@ -17,8 +17,10 @@ on:
   push:
     branches: [master]
     paths:
-      - 'src/**'                                  # the engine + server
-      - 'pom.xml'
+      - 'civstudio-engine/**'                     # the sim core (source + module pom)
+      - 'civstudio-server/**'                     # the Spring Boot server (source + module pom)
+      - 'pom.xml'                                 # the reactor parent
+      - '.mvn/**'                                 # the Maven wrapper config
       - 'Dockerfile'
       - '.dockerignore'
       - 'data/anbennar/**'                        # the runtime rasters baked into the image
