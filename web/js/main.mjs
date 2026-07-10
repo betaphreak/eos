@@ -3,6 +3,7 @@ import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 import { drawPolitical, scheduleLegendRefresh } from "./overlays/political.mjs";
 import { drawCaravanHeat, drawCaravan } from "./overlays/caravan.mjs";
+import { drawLive } from "./overlays/live.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
 // transparent so the sea layer below shows through, land is opaque.
 // loading screen: show a random Anbennar splash (1:1, stage-cropped) until the map's first paint,
@@ -178,6 +179,7 @@ function renderScene() {
   }
 
   if (S.overlay === "caravan") drawCaravan();   // routes, origin star, moving caravans
+  if (S.overlay === "live") drawLive();         // live session: colony + marching caravans from the feed
   drawLabels();
 }
 

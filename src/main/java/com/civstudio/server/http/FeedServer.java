@@ -7,8 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
@@ -43,6 +45,11 @@ import com.sun.net.httpserver.HttpServer;
  * A slow spectator never stalls the sim: each SSE connection has its own bounded queue that
  * the session thread offers into (dropping the oldest frame if the client falls behind),
  * while the connection's own (virtual) thread drains it to the socket.
+ * <p>
+ * <b>CORS.</b> The map site (`web/app.js`) is served from a different origin (Static Web
+ * Apps) than this feed (a Container App), so responses carry {@code Access-Control-Allow-
+ * Origin} for the site's origin and the JSON {@code POST} is preflighted. The allowed origins
+ * default to the production site and localhost; override with {@code EOS_CORS_ORIGINS}.
  */
 public final class FeedServer {
 
@@ -50,9 +57,21 @@ public final class FeedServer {
 	// are dropped rather than blocking the session thread
 	private static final int SSE_QUEUE_CAPACITY = 64;
 
+	// the site (web/app.js) is served cross-origin (Static Web Apps) from this feed
+	// (a Container App), so browser access needs CORS. The production SWA origins are
+	// allowed by default; override with the EOS_CORS_ORIGINS env var (comma-separated,
+	// or "*" for any). localhost (any port) is always allowed for local development.
+	private static final Set<String> DEFAULT_ORIGINS = Set.of(
+			"https://anbennar.civstudio.com", "https://civstudio.com",
+			"https://www.civstudio.com");
+
 	private final SessionHost host;
 	private final HttpServer http;
 	private final ObjectMapper json = new ObjectMapper();
+
+	// the exact origins allowed (echoed back), and whether any origin is allowed ("*")
+	private final Set<String> allowedOrigins;
+	private final boolean allowAnyOrigin;
 
 	/**
 	 * Create a server bound to {@code port} (0 picks an ephemeral port) over {@code host}.
@@ -67,6 +86,22 @@ public final class FeedServer {
 		// a virtual thread per request — long-lived SSE connections are cheap this way
 		this.http.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 		this.http.createContext("/", this::dispatch);
+
+		String cfg = System.getenv("EOS_CORS_ORIGINS");
+		if (cfg == null || cfg.isBlank()) {
+			this.allowedOrigins = DEFAULT_ORIGINS;
+			this.allowAnyOrigin = false;
+		} else if (cfg.trim().equals("*")) {
+			this.allowedOrigins = Set.of();
+			this.allowAnyOrigin = true;
+		} else {
+			Set<String> set = new LinkedHashSet<>();
+			for (String o : cfg.split(","))
+				if (!o.isBlank())
+					set.add(o.trim());
+			this.allowedOrigins = set;
+			this.allowAnyOrigin = false;
+		}
 	}
 
 	/** Start accepting connections. */
@@ -89,6 +124,12 @@ public final class FeedServer {
 		try {
 			String path = ex.getRequestURI().getPath();
 			String method = ex.getRequestMethod();
+			// stamp the CORS allow-origin on every response (SSE, JSON, errors alike)
+			applyCors(ex);
+			if (method.equals("OPTIONS")) {
+				preflight(ex); // browser preflight for the JSON POST
+				return;
+			}
 			if (path.equals("/") || path.equals("/live.html")) {
 				servePage(ex);
 			} else if (path.equals("/api/sessions") && method.equals("GET")) {
@@ -112,6 +153,39 @@ public final class FeedServer {
 		} finally {
 			ex.close();
 		}
+	}
+
+	// set Access-Control-Allow-Origin for an allowed request Origin (echoed, or "*"). A
+	// non-browser request (no Origin) or a disallowed one simply gets no CORS header.
+	private void applyCors(HttpExchange ex) {
+		String origin = ex.getRequestHeaders().getFirst("Origin");
+		String allow = allowOriginFor(origin);
+		if (allow != null) {
+			ex.getResponseHeaders().set("Access-Control-Allow-Origin", allow);
+			ex.getResponseHeaders().add("Vary", "Origin");
+		}
+	}
+
+	// the value to echo in Access-Control-Allow-Origin, or null if this origin isn't allowed
+	private String allowOriginFor(String origin) {
+		if (origin == null)
+			return null; // same-origin / non-browser: no CORS needed
+		if (allowAnyOrigin)
+			return "*";
+		if (allowedOrigins.contains(origin))
+			return origin;
+		// any localhost port is allowed for local development
+		if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:"))
+			return origin;
+		return null;
+	}
+
+	// answer a CORS preflight (OPTIONS): the allow-origin is already set by applyCors
+	private void preflight(HttpExchange ex) throws IOException {
+		ex.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+		ex.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+		ex.getResponseHeaders().set("Access-Control-Max-Age", "600");
+		ex.sendResponseHeaders(204, -1); // no body
 	}
 
 	// the {id} between "/api/sessions/" and the trailing "/<verb>"

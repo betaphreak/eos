@@ -347,14 +347,24 @@ levers (clamped to [0,1], inherited by a successor). The rates ride the render s
 `SetTaxRateCommandTest` (apply/clamp/snapshot) and `FeedServerTest` (the HTTP path). This is
 the whole Factorio spine exercised for real: authoritative state = *f*(spec, command log).
 
+**✅ Real map viewer on the live feed (Implemented, 2026-07-10).** The full `web/app.js`
+**WorldMap** (real Anbennar terrain) now has a **Live** overlay (`web/js/overlays/live.mjs`, a
+5th button on the World/Political/Caravan toggle) that subscribes to the SSE feed and draws
+the running session over the terrain: the colony marker + the marching caravans (with trails),
+placed by the map's existing `px`/`py` lon-lat projection — the feed already carries every
+entity's `latitude`/`longitude`, so no new geometry. A floating HUD shows session state / tick
+/ date / colony stats and carries the **taxation command**, and the map's **transport controls
+(play/pause + speed chevrons + Space)** drive the *hosted session* over `/control` while Live is
+active (reflecting the server's state back). Cross-origin is handled by **CORS on `FeedServer`**
+(option A): responses carry `Access-Control-Allow-Origin` for the site origin and the JSON POST
+is preflighted; the allowed origins default to the production site + localhost, overridable via
+`EOS_CORS_ORIGINS`. The base feed URL defaults to `https://live.civstudio.com` (override with
+`?live=<url>` for local testing). Verified headless (`tools/webverify/live-shot.mjs`).
+
 Still open on the action side:
 - **More actions.** Extend the action model beyond taxation. The natural next targets align
   with project direction: caravan/trade sponsorship (`docs/caravan-trade.md` Phase B). Each
   action is a small, validated, serializable command on the same seam.
-- **Real map viewer on the live feed.** Wire the full `web/app.js` **WorldMap** (real terrain)
-  to the SSE feed — today only the minimal `live.html` thin-client consumes it — including the
-  CORS/route-proxy seam between the SWA site and the Container App (see the cross-origin note
-  above).
 - **The command log is the persistence format.** Commands append to a per-session ordered
   log, consumed at a **single deterministic point** in `newDay()` (before agents act, so
   the effect is reproducible). state = *f*(spec, command-log) holds, so the log *is* the

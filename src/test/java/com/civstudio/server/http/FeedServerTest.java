@@ -138,6 +138,47 @@ class FeedServerTest {
 		}
 	}
 
+	@Test
+	@Timeout(90)
+	void corsAllowsTheSiteOriginAndPreflightsThePost() throws Exception {
+		SessionHost host = new SessionHost();
+		HostedSession hs = host.create(SessionSpec.caravanDemo(7654321L, DHENIJANSAR));
+		hs.startPaused();
+		FeedServer server = new FeedServer(host, 0);
+		server.start();
+		HttpClient client = HttpClient.newHttpClient();
+		try {
+			// a production site origin is echoed in Access-Control-Allow-Origin
+			HttpResponse<String> allowed = client.send(
+					HttpRequest.newBuilder(uri(server, "/api/sessions"))
+							.header("Origin", "https://anbennar.civstudio.com").GET().build(),
+					HttpResponse.BodyHandlers.ofString());
+			assertEquals("https://anbennar.civstudio.com",
+					allowed.headers().firstValue("Access-Control-Allow-Origin").orElse(null));
+
+			// an unknown origin gets no CORS grant
+			HttpResponse<String> denied = client.send(
+					HttpRequest.newBuilder(uri(server, "/api/sessions"))
+							.header("Origin", "https://evil.example").GET().build(),
+					HttpResponse.BodyHandlers.ofString());
+			assertTrue(denied.headers().firstValue("Access-Control-Allow-Origin").isEmpty(),
+					"an unlisted origin must not be granted CORS");
+
+			// the JSON POST's preflight is answered (204 + methods) so the browser proceeds
+			HttpResponse<String> pre = client.send(
+					HttpRequest.newBuilder(uri(server, "/api/sessions/" + hs.id() + "/commands"))
+							.header("Origin", "https://anbennar.civstudio.com")
+							.method("OPTIONS", HttpRequest.BodyPublishers.noBody()).build(),
+					HttpResponse.BodyHandlers.ofString());
+			assertEquals(204, pre.statusCode());
+			assertTrue(pre.headers().firstValue("Access-Control-Allow-Methods")
+					.orElse("").contains("POST"));
+		} finally {
+			hs.stop();
+			server.stop();
+		}
+	}
+
 	private static URI uri(FeedServer server, String path) {
 		return URI.create("http://localhost:" + server.port() + path);
 	}

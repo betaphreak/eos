@@ -46,6 +46,7 @@
           <button data-ov="culture" aria-pressed="false" data-tip="Colour provinces by culture">Culture</button>
           <button data-ov="faith" aria-pressed="false" data-tip="Colour provinces by religion">Faith</button>
           <button data-ov="caravan" aria-pressed="false" data-tip="Replay the six-band caravan migration">Caravan</button>
+          <button data-ov="live" aria-pressed="false" data-tip="Watch the live server session (caravans + colony) in real time">Live</button>
         </div>
       </div>
 
@@ -88,6 +89,24 @@
 
       <div class="legend" id="legend" aria-label="Caravan journeys"></div>
       <div class="legend" id="polLegend" aria-label="Political legend" hidden></div>
+
+      <div class="live-hud" id="liveHud" aria-label="Live session" hidden>
+        <div class="live-head">
+          <span class="live-title">LIVE</span>
+          <span class="badge" id="liveState">—</span>
+          <span class="live-meta">tick <b id="liveTick">0</b></span>
+          <span class="live-date" id="liveDate"></span>
+        </div>
+        <div class="live-sid" id="liveSid"></div>
+        <table class="live-stats" id="liveStats"></table>
+        <div class="live-policy">
+          <div class="live-cur">tax &nbsp; bank <b id="liveBankTaxCur">—</b> &nbsp; noble <b id="liveNobleTaxCur">—</b></div>
+          <label>bank <input id="liveBankTax" type="number" min="0" max="1" step="0.01"></label>
+          <label>noble <input id="liveNobleTax" type="number" min="0" max="1" step="0.01"></label>
+          <button id="liveApplyTax">Apply</button>
+        </div>
+        <div class="live-msg" id="liveTaxMsg"></div>
+      </div>
 
       <div class="zoomctl" aria-label="Zoom">
         <button id="zoomIn" data-tip="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>

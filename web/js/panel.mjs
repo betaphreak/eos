@@ -2,6 +2,7 @@ import { BUNDLE, P, J, t0, t1, fmtDate, fmtInt, cam, VIEW, stage, pxr, pyr, px, 
 import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
 import { loadPlots, bonusIconRect } from "./plots.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
+import { startLive, stopLive, liveActive, liveState, controlLive, LIVE_RATES } from "./overlays/live.mjs";
 import { createSearchBox } from "./searchbox.mjs";
 stage.addEventListener("wheel", e => {
   e.preventDefault();
@@ -129,18 +130,45 @@ function pause(){
   playIcon.innerHTML = PLAY_ICON; playBtn.setAttribute("aria-label", "Play");
   renderSpeed();
 }
-/** Toggle playback — used by the play button and the centralized Space shortcut. */
-function togglePlay(){ playing ? pause() : play(); }
+/**
+ * Toggle playback — used by the play button and the centralized Space shortcut. In Live mode
+ * this drives the SERVER (pause/resume the hosted session over /control) instead of the local
+ * replay timeline; the play icon then reflects the session state from the feed.
+ */
+function togglePlay(){
+  if (liveActive()) { controlLive(liveState() === "RUNNING" ? "pause" : "resume"); return; }
+  playing ? pause() : play();
+}
 /** Force paused — modals always run in paused mode, so opening one calls this. */
 function pausePlayback(){ if (playing) pause(); }
 function setSpeed(s){ speed = Math.max(1, Math.min(5, s)); if (!playing) play(); else renderSpeed(); }
-playBtn.addEventListener("click", () => playing ? pause() : play());
+// a speed chevron: in Live mode it sets the server's tick rate (days/second) over /control;
+// otherwise it sets the local replay speed
+function onSpeed(level){
+  if (liveActive()) {
+    speed = Math.max(1, Math.min(5, level));
+    controlLive("rate", LIVE_RATES[speed]);
+    renderSpeed();
+    return;
+  }
+  setSpeed(level);
+}
+// reflect the live session's control state on the transport UI (play icon + chevron lit state).
+// Called on every snapshot while in Live mode; the replay rAF is not running here.
+function syncLiveTransport(state){
+  const running = state === "RUNNING";
+  playing = running;
+  playIcon.innerHTML = running ? PAUSE_ICON : PLAY_ICON;
+  playBtn.setAttribute("aria-label", running ? "Pause" : "Play");
+  renderSpeed();
+}
+playBtn.addEventListener("click", togglePlay);
 // the speed selector: five chevrons ( › .. ›››››  ), the active level lit; clicking one sets the speed
 SPEEDS.slice(1).forEach((sp, i) => {
   const b = document.createElement("button");
   b.className = "chev"; b.textContent = "›";
   b.setAttribute("data-tip", sp.name); b.setAttribute("aria-label", sp.name);
-  b.onclick = () => setSpeed(i + 1);
+  b.onclick = () => onSpeed(i + 1);
   speedBox.appendChild(b);
 });
 updateClock(); renderSpeed();
@@ -381,6 +409,7 @@ function setPlane(pl){
 }
 // the overlay (None / Nation / Culture / Faith / Caravan) — one at a time over the active plane
 function setOverlay(ov){
+  const was = S.overlay;
   S.overlay = ov;
   document.querySelectorAll("#overlayToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.ov===ov));
   const cara = ov === "caravan", pol = isPolitical();
@@ -388,6 +417,10 @@ function setOverlay(ov){
   heatBtn.style.display = cara ? "" : "none";
   S.polHi = null;
   if (!cara) { pause(); S.selected = null; }        // the timeline stays visible in the bottom bar (all overlays)
+  // Live mode: connect/disconnect the server feed. The transport controls (play/pause + speed)
+  // drive the hosted session while it's active (see togglePlay/onSpeed).
+  if (was === "live" && ov !== "live") stopLive();
+  if (ov === "live") { speed = 1; startLive(draw, syncLiveTransport); }
   S.selectedProv = null;                            // start each overlay on its own overview
   showRail(cara);                                   // caravan opens the panel on its overview; others start collapsed
   updateSearchContext();                            // the search box searches provinces / nations / cultures / faiths
