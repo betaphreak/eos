@@ -451,6 +451,22 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .zoomctl button:hover { color: var(--ink); }
 .zoomctl button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; }
 
+/* ---------- MINIMAP (world thumbnail + viewport rectangle) ---------- */
+/* docked bottom-left, the grand-strategy convention; clear of the always-on zoom controls
+   (bottom-right) and the sliding rail (right). Hidden at the world view and faded in on zoom by
+   js/minimap.mjs toggling `.on`; --mm-h is stamped from JS so the political legend clears it. */
+.minimap {
+  position: absolute; left: 16px; bottom: 16px; z-index: 5;
+  border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: var(--shadow); background: #0a0e16; cursor: crosshair;
+  opacity: 0; transform: translateY(6px); pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+.minimap.on { opacity: 1; transform: none; pointer-events: auto; }
+/* lift the political legend above the minimap when both share the bottom-left corner */
+.stage.mm-on .legend { bottom: calc(var(--mm-h, 150px) + 30px); }
+@media (max-width: 640px) { .minimap { display: none; } }
+
 /* ---------- RESPONSIVE TOP BAR ---------- */
 /* the hamburger that opens the control groups on narrow screens (hidden on wide) */
 .menubtn { display: none; align-items: center; justify-content: center; flex: none;

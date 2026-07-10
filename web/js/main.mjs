@@ -4,6 +4,7 @@ import { drawLabels } from "./labels.mjs";
 import { drawPolitical, scheduleLegendRefresh } from "./overlays/political.mjs";
 import { drawLive } from "./overlays/live.mjs";
 import { ensureTiers, drawTiers } from "./overlays/tiers.mjs";
+import { initMinimap, drawMinimap } from "./minimap.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
 // transparent so the sea layer below shows through, land is opaque.
 // loading screen: show a random Anbennar splash (1:1, stage-cropped) until the map's first paint,
@@ -121,7 +122,7 @@ function paint() {
   // provPath cache stay correct. Deep zoom → a single copy → no extra work. viewVersion is
   // derived per copy from baseVersion so the path cache is distinct per copy yet reused when idle.
   const period = worldW();
-  if (!(period > 0)) { S.viewVersion = S.baseVersion * 16; renderScene(); ctx.restore(); return; }
+  if (!(period > 0)) { S.viewVersion = S.baseVersion * 16; renderScene(); ctx.restore(); drawMinimap(); return; }
   const L = cam.x + cam.k * VIEW.dx;                 // primary world's left screen edge
   const mMin = Math.floor((0 - L) / period), mMax = Math.floor((w - L) / period);
   const baseX = cam.x;
@@ -132,6 +133,7 @@ function paint() {
   }
   cam.x = baseX;
   ctx.restore();
+  drawMinimap();   // the bottom-left world thumbnail + viewport rectangle tracks pan/zoom
 }
 function renderScene() {
   const w = VIEW.w, h = VIEW.h;
@@ -338,6 +340,7 @@ function applyHash() {
 }
 window.addEventListener("hashchange", applyHash);
 window.addEventListener("popstate", applyHash);   // browser back/forward between deep links
+initMinimap(draw);   // bottom-left minimap; drawMinimap() (called from paint) keeps it in sync
 // Canvas text does not trigger webfont loading the way laid-out DOM text does, so the first
 // paint would use the sans fallback until some later redraw. Explicitly fetch the bundled
 // map-label faces (see core.LABEL_FONT / styles.css) and redraw once they are ready. Guarded
