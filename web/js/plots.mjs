@@ -264,13 +264,15 @@ function buildPlotTexCanvas(p) {
     if (e >= 165) { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; o.fillStyle = `rgba(232,238,247,${Math.min(0.6, (e - 165) / 50).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
   }
   // 4) coast shallows: real Civ4 shore texture, drawn as one province-level pass so the ripple
-  // blends over the whole shore region at once (paintCoast); then features + rivers on top, so a
-  // river reaching the sea sits over the shallows/foam rather than under them
+  // blends over the whole shore region at once (paintCoast); then rivers, then features on top, so a
+  // river reaching the sea sits over the shallows/foam rather than under them — and so tree foliage
+  // sits over the river (two passes, not per-plot, so a tree always overlaps a neighbouring river cell)
   paintCoast(o, oc.width, oc.height, p._plots, x0, y0, tpp, pat);
   for (const q of p._plots) {
-    const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp;
-    if (q.feature) featureSprite(o, cx, cy, tpp, q.feature, q.x, q.y);
-    if (q.river) drawRiver(o, cx, cy, tpp, q, grid, riverPat);
+    if (q.river) { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; drawRiver(o, cx, cy, tpp, q, grid, riverPat); }
+  }
+  for (const q of p._plots) {
+    if (q.feature) { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; featureSprite(o, cx, cy, tpp, q.feature, q.x, q.y); }
   }
   } // end land-only ground stages
   if (water) drawSeaIce(o, p._plots, x0, y0, tpp);   // polar sea ice on the shelf water plots
