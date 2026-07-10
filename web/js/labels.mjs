@@ -1,6 +1,8 @@
 import { J, P, BUNDLE, px, py, pxr, pyr, cam, VIEW, ctx, destSet, cssVar, S } from "./core.mjs";
 
-const LABEL_FAM = "system-ui,'Segoe UI',sans-serif";
+// Paradox/EU4-style map lettering: an old-style humanist serif (the EU4 map label look),
+// not the UI sans. System fallbacks cover Windows/macOS/Linux without bundling a webfont.
+const LABEL_FAM = "'Palatino Linotype','Book Antiqua',Palatino,'URW Palladio L',Georgia,serif";
 
 // EU4-style province labels: the name is laid on the polygon's own long axis (angled) and scaled
 // to span it, instead of horizontal beside the centroid. Phase (a) uses a STRAIGHT baseline — the
@@ -243,7 +245,7 @@ function drawGeoLabels() {
     const placed = [];               // per-tier collision, so tiers can cross-fade over each other
     ctx.save();
     ctx.globalAlpha = a;
-    ctx.font = `${t.weight} ${t.size}px system-ui,'Segoe UI',sans-serif`;
+    ctx.font = `${t.weight} ${t.size}px ${LABEL_FAM}`;
     ctx.letterSpacing = t.track;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.lineJoin = "round";
