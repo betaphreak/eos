@@ -14,11 +14,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.zip.GZIPOutputStream;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Assembles {@code window.BUNDLE} — the WorldMap's map/geo backbone the web viewer
@@ -130,7 +130,7 @@ public final class WorldBundle {
 
 		// which provinces carry a plot grid (== hasPlots): the manifest plotIndex keys
 		Set<Integer> plotIds = new HashSet<>();
-		manifest.get("plotIndex").fieldNames().forEachRemaining(k -> plotIds.add(Integer.parseInt(k)));
+		manifest.get("plotIndex").propertyNames().forEach(k -> plotIds.add(Integer.parseInt(k)));
 
 		// polygon outlines by id (null for the few provinces the border exporter skips)
 		Map<Integer, JsonNode> ringsById = new HashMap<>();

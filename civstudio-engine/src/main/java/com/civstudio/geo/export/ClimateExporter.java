@@ -14,8 +14,8 @@ import java.util.regex.Pattern;
 import com.civstudio.geo.Climate;
 import com.civstudio.geo.Monsoon;
 import com.civstudio.geo.WinterSeverity;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: reads the Anbennar {@code data/anbennar/climate.txt} (a Clausewitz file) and

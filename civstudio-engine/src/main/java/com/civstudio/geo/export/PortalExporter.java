@@ -16,7 +16,7 @@ import javax.imageio.ImageIO;
 
 import com.civstudio.geo.ProvincePortals;
 import com.civstudio.geo.ProvincePortals.Portal;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: precomputes the province graph's <b>border portals</b> — for each ordered

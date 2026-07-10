@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
 import com.civstudio.geo.Bonus;
 import com.civstudio.geo.BonusClass;
 import com.civstudio.geo.TerrainRegistry;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Verifies the manufactured-goods data layer (step 1 of

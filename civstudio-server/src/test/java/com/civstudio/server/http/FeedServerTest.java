@@ -22,7 +22,7 @@ import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.SessionSpec;
 import com.civstudio.server.render.SessionSnapshot;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Exercises the SSE transport end to end: found a session on the host, start the {@link

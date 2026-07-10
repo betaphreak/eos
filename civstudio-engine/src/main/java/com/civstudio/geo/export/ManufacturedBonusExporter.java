@@ -11,7 +11,7 @@ import org.w3c.dom.Element;
 
 import com.civstudio.geo.Bonus;
 import com.civstudio.geo.BonusClass;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: parses {@code data/civ4/Manufactured_CIV4BonusInfos.xml} — the C2C

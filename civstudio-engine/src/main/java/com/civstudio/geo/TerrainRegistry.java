@@ -7,9 +7,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The curated Civ4 terrain/feature/improvement/bonus definitions, loaded once from
@@ -32,8 +33,9 @@ public final class TerrainRegistry {
 	private static final String IMPROVEMENTS_RESOURCE = "/improvements.json";
 	private static final String BONUSES_RESOURCE = "/bonuses.json";
 
-	private static final ObjectMapper MAPPER = new ObjectMapper()
-			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	private static final ObjectMapper MAPPER = JsonMapper.builder()
+			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+			.build();
 
 	// each keyed by Civ4 type, in load (XML) order for deterministic iteration
 	private final Map<String, Terrain> terrains;

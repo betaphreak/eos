@@ -13,9 +13,10 @@ import java.util.Map;
 import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The colony's liturgical calendar: a pure {@code date -> }{@link DayType}
@@ -45,8 +46,9 @@ public final class LiturgicalCalendar {
 
 	private static final String RESOURCE = "/feasts.json";
 
-	private static final ObjectMapper MAPPER = new ObjectMapper()
-			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	private static final ObjectMapper MAPPER = JsonMapper.builder()
+			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+			.build();
 
 	// the curated feast list, in calendar order (kept for display/logging)
 	private final List<Feast> feasts;

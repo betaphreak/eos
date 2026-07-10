@@ -39,7 +39,9 @@
         <sim.main>com.civstudio.simulation.HomogeneousEconomy</sim.main>
         <!-- 1.18.42 (Sep 2025) is the first Lombok with JDK 25 support -->
         <lombok.version>1.18.42</lombok.version>
-        <jackson.version>2.18.2</jackson.version>
+        <!-- Jackson 3 (tools.jackson.* namespace). Spring Boot 4 will manage this in the
+             server module later; keep the property in sync then. -->
+        <jackson.version>3.0.4</jackson.version>
         <junit.version>5.11.3</junit.version>
     </properties>
 
@@ -58,7 +60,7 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
+                <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
             </dependency>

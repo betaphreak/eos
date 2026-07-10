@@ -13,9 +13,9 @@ import java.util.zip.GZIPInputStream;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Parity guard for the migration of {@code window.BUNDLE} from the Node-built {@code web/data.js}
@@ -152,9 +152,7 @@ class WorldBundleGoldenTest {
 		if (g.isObject() && a.isObject()) {
 			if (g.size() != a.size())
 				return false;
-			var it = g.fieldNames();
-			while (it.hasNext()) {
-				String f = it.next();
+			for (String f : g.propertyNames()) {
 				if (!numAwareEquals(g.get(f), a.get(f)))
 					return false;
 			}

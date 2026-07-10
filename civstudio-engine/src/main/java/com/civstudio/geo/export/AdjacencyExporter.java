@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.civstudio.geo.Adjacency;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: parses the Anbennar EU4 {@code data/anbennar/adjacencies.csv} (canonical

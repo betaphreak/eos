@@ -1,6 +1,13 @@
 # Design & plan: Spring Boot 4 server + Jackson 3
 
-**Status:** Proposed (no code yet). **Date:** design 2026-07-10.
+**Status (by step, see "Suggested sequencing" below):**
+- **Step 1 — reactor module split (`civstudio-engine` + `civstudio-server`).** ✅ Implemented
+  (2026-07-10), commit `b8bfddc`. Behaviour-identical; 264 tests green.
+- **Step 2 — Jackson 2 → 3 (`tools.jackson.*`) across both modules.** ✅ Implemented
+  (2026-07-10). `WorldBundle` byte-parity holds (golden test + runtime `/api/bundle`).
+- **Steps 3–5 — Boot-ify the server, config/CORS, multiplayer features.** Proposed.
+
+**Date:** design 2026-07-10.
 
 **Decision inputs (2026-07-10):**
 - Target is a **real multiplayer backend** long-term (player accounts, auth, persisted
@@ -215,11 +222,15 @@ Boot repackage jar drops into that pipeline unchanged.
 
 ## Suggested sequencing (each step independently verifiable)
 
-1. **Module split, no Spring, no Jackson change.** Carve engine vs server, keep the JDK
+1. ✅ **Module split, no Spring, no Jackson change.** Carve engine vs server, keep the JDK
    `HttpServer`. Prove `mvn test` (both modules) + the live demo are byte-identical to
    today. De-risks everything else.
-2. **Jackson 2 → 3 across the engine + server (still no Spring).** Do `WorldBundle` + its
-   golden test first and settle any byte-drift, then the rest. Full suite green.
+2. ✅ **Jackson 2 → 3 across the engine + server (still no Spring).** Do `WorldBundle` + its
+   golden test first and settle any byte-drift, then the rest. Full suite green. *(As built:
+   annotations stayed on `com.fasterxml.jackson.annotation`; the six `.configure()` mapper
+   sites moved to `JsonMapper.builder()`; `JsonNode.fieldNames()` → `propertyNames()`;
+   `FeedServer`'s `JsonProcessingException` catch folded into `RuntimeException` since
+   Jackson 3 exceptions are unchecked. No byte-drift.)*
 3. **Boot-ify the server module.** Spring Boot 4, MVC + virtual threads, port endpoints to
    controllers, port the SSE feed into `SseEmitter` **keeping the drop-oldest queue**,
    `SessionHost` as a bean, Actuator on. Behaviour-parity with today; `repackage` replaces

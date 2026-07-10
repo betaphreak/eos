@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.civstudio.geo.Region;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: flattens the Anbennar {@code data/anbennar/region.txt} (a Clausewitz file)

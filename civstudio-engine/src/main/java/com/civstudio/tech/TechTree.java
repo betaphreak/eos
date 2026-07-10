@@ -16,9 +16,10 @@ import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.settlement.GameSession;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import com.civstudio.era.Era;
 
@@ -52,11 +53,12 @@ public final class TechTree {
 	// which Era values exist, since Era is now the full ladder (see eos.era.Era).
 	private static final Era MAX_TECH_ERA = Era.RENAISSANCE;
 
-	private static final ObjectMapper MAPPER = new ObjectMapper()
+	private static final ObjectMapper MAPPER = JsonMapper.builder()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 			// PrereqTech is a single string for most techs but an array for some;
 			// accept the scalar form as a one-element array so both parse uniformly
-			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
+			.build();
 
 	// the kept techs, in source order
 	private final List<Tech> techs;

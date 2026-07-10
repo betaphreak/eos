@@ -14,8 +14,8 @@ import java.util.zip.GZIPOutputStream;
 import com.civstudio.geo.PlotGeo;
 import com.civstudio.geo.PlotType;
 import com.civstudio.geo.TerrainRegistry;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Persists a province's generated plot field to {@code map/provinces/<id>.json} and loads

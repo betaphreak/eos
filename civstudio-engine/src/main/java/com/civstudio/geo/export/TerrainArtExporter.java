@@ -13,7 +13,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.civstudio.geo.TerrainArtInfo;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: parses {@code data/civ4/CIV4ArtDefines_Terrain.xml} (the

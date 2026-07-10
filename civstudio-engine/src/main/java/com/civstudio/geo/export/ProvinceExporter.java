@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 
 import com.civstudio.geo.ProvinceType;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: exports the base {@code map/provinces.json} resource the core {@link

@@ -7,7 +7,7 @@ import java.util.List;
 import com.civstudio.geo.Province;
 import com.civstudio.geo.ProvinceEdges;
 import com.civstudio.geo.WorldMap;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: precomputes the province graph's <b>edge weights</b> — the travel km of

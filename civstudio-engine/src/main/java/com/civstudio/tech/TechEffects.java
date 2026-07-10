@@ -6,9 +6,10 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Loader for the tech-effect overlay: a JSON object keyed by tech id, each value a
@@ -23,9 +24,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 final class TechEffects {
 
-	private static final ObjectMapper MAPPER = new ObjectMapper()
+	private static final ObjectMapper MAPPER = JsonMapper.builder()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
+			.build();
 
 	private TechEffects() {
 	}

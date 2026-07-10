@@ -10,7 +10,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.civstudio.geo.Improvement;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: parses {@code data/civ4/CIV4ImprovementInfos.xml} and emits the curated

@@ -10,7 +10,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.civstudio.geo.Terrain;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: parses {@code data/civ4/CIV4TerrainInfos.xml} and emits the curated

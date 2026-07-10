@@ -19,8 +19,8 @@ import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: exports {@code map/tierborders.json} — dissolved polygon outlines for each

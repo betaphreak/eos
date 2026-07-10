@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.civstudio.geo.Culture;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: reads the Anbennar {@code data/anbennar/anb_cultures.txt} and writes

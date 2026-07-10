@@ -17,9 +17,10 @@ import java.util.Set;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The world map: the {@link Province} graph imported from the Strapi world
@@ -60,8 +61,9 @@ public final class WorldMap {
 	/** Mean Earth radius in km — the great-circle scale for {@link #distanceKm}. */
 	private static final double EARTH_RADIUS_KM = 6371.0;
 
-	private static final ObjectMapper MAPPER = new ObjectMapper()
-			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	private static final ObjectMapper MAPPER = JsonMapper.builder()
+			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+			.build();
 
 	// provinces keyed by id, in load order (deterministic iteration)
 	private final Map<Integer, Province> byId;

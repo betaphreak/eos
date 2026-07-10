@@ -13,8 +13,8 @@ import org.w3c.dom.Element;
 
 import com.civstudio.geo.Bonus;
 import com.civstudio.geo.BonusClass;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: parses {@code data/civ4/CIV4BonusInfos.xml} and emits the bonus resources

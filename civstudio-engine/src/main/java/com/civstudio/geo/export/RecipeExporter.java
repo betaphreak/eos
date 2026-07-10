@@ -13,7 +13,7 @@ import org.w3c.dom.Element;
 
 import com.civstudio.good.Recipe;
 import com.civstudio.good.TierOneSource;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: builds the <b>manufactured producer/recipe graph</b> of

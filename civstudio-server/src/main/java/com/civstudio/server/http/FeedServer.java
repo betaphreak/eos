@@ -21,7 +21,7 @@ import com.civstudio.server.SessionSpec;
 import com.civstudio.server.command.SetTaxRateCommand;
 import com.civstudio.server.render.SessionSnapshot;
 import com.civstudio.server.web.WorldBundle;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
@@ -363,7 +363,9 @@ public final class FeedServer {
 	private String toJson(SessionSnapshot snap) {
 		try {
 			return json.writeValueAsString(snap);
-		} catch (RuntimeException | com.fasterxml.jackson.core.JsonProcessingException e) {
+		} catch (RuntimeException e) {
+			// Jackson 3 serialization failures are unchecked (JacksonException extends
+			// RuntimeException), so this arm covers them
 			return null;
 		}
 	}

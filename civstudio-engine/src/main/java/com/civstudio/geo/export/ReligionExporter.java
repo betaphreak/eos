@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.civstudio.geo.Religion;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Dev tool: reads the Anbennar {@code data/anbennar/common/religions/*.txt} and
