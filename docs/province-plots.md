@@ -115,8 +115,18 @@ raster-reading approach, `docs/geography.md`):
      (`TerrainGenerator.next`) is kept as the **fallback** for water/coastline/
      unmapped pixels and for a province-less colony. This replaces the interim
      climate-pool ground: a province now reads as the map actually paints it (e.g.
-     Dhenijansar as plains/grassland with a desert fringe, not a tropical
-     lush/marsh draw). *(done — real map)*
+     Dhenijansar as plains/grassland, not a tropical lush/marsh draw). *(done — real map)*
+   - **de-speckle** — because terrain is 1 raster pixel = 1 plot (a single-pixel sample,
+     no footprint aggregation) and the latitude-cooling / special-pool passes draw each
+     cell independently, the raw ground is **salt-and-pepper** — an isolated 1-plot speck
+     of a different terrain in most cells (measured ~0.5 in cold provinces), which reads as
+     a hard grid at the deep city-builder zoom no matter how the web blends plot edges.
+     `ProvincePlotField.despeckle` runs a few passes of **majority (mode) smoothing** over
+     the ground grid (each land cell adopts the terrain most common among its 8 neighbours
+     when that plurality outnumbers its own) — coalescing the speckle into coherent regions
+     while keeping each terrain's overall share. It reads a per-pass snapshot (order-
+     independent) and consumes **no rng**, so the deterministic terrain draws are untouched.
+     *(done — coherent regions)*
    - **relief** — `ReliefGenerator` ports the C2C `addPeaks`/`addHills`: seed by
      probability, then **grow into clusters/ranges** (so a province reads as a
      landscape, not scattered noise), an `IMPASSABLE` province mountainous. The

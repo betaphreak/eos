@@ -186,11 +186,15 @@ class ProvincePlotFieldTest {
 	}
 
 	/**
-	 * The plots are grounded on the <b>real</b> {@code terrain.bmp}, not the
-	 * province's climate-weighted pool. Dhenijansar reads from the map as plains +
-	 * grassland with a little desert; its tropical {@link Climate} pool would instead
-	 * draw lush/muddy/marsh and could never produce desert — so the real composition
-	 * is the discriminator that the map (not the climate RNG) is driving terrain.
+	 * The plots are grounded on the <b>real</b> {@code terrain.bmp}, not the province's
+	 * climate-weighted pool. Dhenijansar reads from the map as a dry plains + grassland
+	 * province; its tropical {@link Climate} pool would instead draw lush/muddy/marsh and could
+	 * never produce a dry plains/grassland composition — so an overwhelmingly plains/grassland mix
+	 * with <b>none</b> of the tropical pool's signature wet terrains is the discriminator that the
+	 * map (not the climate RNG) is driving terrain. (The map's sparse desert fringe was once an
+	 * extra tell, but the ground de-speckle pass — {@code ProvincePlotField.despeckle} — now
+	 * smooths those isolated pixels into the surrounding plains, so the composition carries the
+	 * proof.)
 	 */
 	@Test
 	void terrainComesFromTheRealMapNotTheClimatePool() throws Exception {
@@ -205,16 +209,13 @@ class ProvincePlotFieldTest {
 		int total = field.size();
 		int plainsAndGrass = counts.getOrDefault("TERRAIN_PLAINS", 0)
 				+ counts.getOrDefault("TERRAIN_GRASSLAND", 0);
-		// the map paints this province overwhelmingly plains/grassland
+		// the map paints this province overwhelmingly plains/grassland — the tropical pool never would
 		assertTrue(plainsAndGrass >= total * 0.8,
 				"expected mostly plains/grassland from the map, got " + counts);
-		// it carries the map's desert fringe — impossible from the tropical pool
-		assertTrue(counts.getOrDefault("TERRAIN_DESERT", 0) > 0,
-				"expected the map's desert pixels, got " + counts);
-		// and none of the tropical climate pool's signature wet terrains
+		// and none of the tropical climate pool's signature wet terrains: the map grounds every plot
 		assertEquals(0, counts.getOrDefault("TERRAIN_LUSH", 0)
-				+ counts.getOrDefault("TERRAIN_MUDDY", 0),
-				"climate-pool terrains should not appear when the map grounds every plot");
+				+ counts.getOrDefault("TERRAIN_MUDDY", 0) + counts.getOrDefault("TERRAIN_MARSH", 0),
+				"climate-pool terrains (lush/muddy/marsh) should not appear when the map grounds every plot");
 	}
 
 	@Test

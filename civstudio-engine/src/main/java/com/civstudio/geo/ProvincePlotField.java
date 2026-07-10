@@ -2,6 +2,7 @@ package com.civstudio.geo;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -228,6 +229,15 @@ public final class ProvincePlotField {
 				}
 		}
 
+		// De-speckle the ground into coherent regions. Terrain is sampled 1 raster pixel = 1 plot, and
+		// the latitude-cooling and special-pool passes above draw each cell independently — so the raw
+		// ground is salt-and-pepper (an isolated plot of a different terrain in nearly every cell), which
+		// reads as a hard grid at the deepest city-builder zoom no matter how the web blends plot edges.
+		// A few passes of majority (mode) smoothing coalesce the speckle into natural patches while
+		// keeping each terrain's overall share. Reads a per-pass snapshot (order-independent) and consumes
+		// NO rng, so the deterministic, row-major terrain draws above are untouched (see the seed contract).
+		despeckle(ground, w, h);
+
 		// the C2C-ported feature seed-and-spread: the per-cell vegetation intent
 		// (jungle/forest/swamp or bare), which this loop validity-gates below
 		double treeCover = treeCover(mask);
@@ -405,6 +415,55 @@ public final class ProvincePlotField {
 	// the generator's own clustered ranges.
 	private static PlotType rougher(PlotType a, PlotType b) {
 		return b.ordinal() > a.ordinal() ? b : a;
+	}
+
+	// number of majority-smoothing passes over the ground grid (see the call site). More passes
+	// grow patches larger; 4 dissolves the salt-and-pepper without erasing genuine terrain regions.
+	private static final int DESPECKLE_PASSES = 3;
+
+	// Majority (mode) smoothing of the per-cell ground terrain: each land cell adopts the terrain most
+	// common among its 8 land neighbours when that plurality outnumbers the cell's own terrain there —
+	// i.e. an isolated speck surrenders to the region around it, while a cell inside a genuine region
+	// keeps its terrain (it is the local plurality). Iterated a few times so specks coalesce into
+	// patches. Tallied by Terrain.type() (records hold an int[] yields, so keying by the type string is
+	// safe regardless of instance interning). Reads a snapshot per pass so the result is independent of
+	// scan order, and never touches the rng — the deterministic terrain draws already happened above.
+	private static void despeckle(Terrain[] ground, int w, int h) {
+		for (int pass = 0; pass < DESPECKLE_PASSES; pass++) {
+			Terrain[] src = ground.clone();
+			for (int ly = 0; ly < h; ly++)
+				for (int lx = 0; lx < w; lx++) {
+					int idx = ly * w + lx;
+					Terrain self = src[idx];
+					if (self == null)
+						continue; // water / off-mask cell
+					Map<String, Integer> counts = new HashMap<>();
+					Map<String, Terrain> byType = new HashMap<>();
+					for (int dy = -1; dy <= 1; dy++)
+						for (int dx = -1; dx <= 1; dx++) {
+							if (dx == 0 && dy == 0)
+								continue;
+							int nx = lx + dx, ny = ly + dy;
+							if (nx < 0 || nx >= w || ny < 0 || ny >= h)
+								continue;
+							Terrain t = src[ny * w + nx];
+							if (t == null)
+								continue;
+							counts.merge(t.type(), 1, Integer::sum);
+							byType.putIfAbsent(t.type(), t);
+						}
+					int selfCount = counts.getOrDefault(self.type(), 0);
+					String bestType = self.type();
+					int best = selfCount;
+					for (Map.Entry<String, Integer> e : counts.entrySet())
+						if (e.getValue() > best) { // strict: ties keep the current terrain (stable)
+							best = e.getValue();
+							bestType = e.getKey();
+						}
+					if (!bestType.equals(self.type()))
+						ground[idx] = byType.get(bestType);
+				}
+		}
 	}
 
 	// the plot's wild feature, in priority order, every candidate validity-gated
