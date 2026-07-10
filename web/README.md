@@ -224,12 +224,14 @@ http→https redirect). `plots.pack` is ~15 MB, so the whole site fits the Free 
   `ProvinceExporter` used — so the province dots and routes pin to the terrain
   rather than floating over a schematic.
 - **Map-label font.** All canvas map labels (province names, geographic tiers, caravan/water
-  labels, the Live overlay) use **TeX Gyre Pagella** — a free Palatino clone giving the
-  Paradox/EU4 map look — bundled as `assets/fonts/*.woff2` (regular + bold) and `@font-face`d
-  in `styles.css`, so it is pixel-identical across OSes rather than depending on a system
-  serif. The single source of the family is `core.LABEL_FONT`. GUST Font License
-  (`assets/fonts/GUST-FONT-LICENSE.txt`). `main.mjs` force-loads the faces and redraws, since
-  canvas text does not trigger webfont loading on its own.
+  labels, the Live overlay) use **Jost\*** — a free geometric sans in the Futura/Century-Gothic
+  family, giving the **Stellaris UI** look (Century Gothic itself is proprietary Monotype, so
+  this is the closest OFL-licensed look-alike) — bundled as `assets/fonts/jost-*.woff2` (regular
+  + bold, each split into latin / latin-ext subsets by `unicode-range`) and `@font-face`d in
+  `styles.css`, so it is pixel-identical across OSes rather than depending on a system font. The
+  single source of the family is `core.LABEL_FONT`. SIL Open Font License
+  (`assets/fonts/OFL-Jost.txt`). `main.mjs` force-loads the faces and redraws, since canvas text
+  does not trigger webfont loading on its own.
 - This is one directory in the engine's monorepo, not a separate frontend project;
   it has no build tooling beyond Node.
 - Interaction & chrome (URL deep links, focus framing, pan clamp, collapsible sidebar,

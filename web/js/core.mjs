@@ -39,10 +39,11 @@ const TCOL = BUNDLE.terrainColors || {};
 const K_PLOT = 5;                 // camera scale at which plots begin to fade in
 const K_TEX = 16;                 // camera scale at which flat tiles give way to real textures
 const K_MAX = 256;                // deepest zoom (4× past the old 64× cap — magnifies the plot layer)
-// the shared map-label typeface: the bundled TeX Gyre Pagella (a free Palatino clone — the
-// Paradox/EU4 map look, @font-face in styles.css), with system serifs as fallback. Every map
-// label (province names, geographic tiers, caravan/water labels, the live overlay) uses this.
-const LABEL_FONT = "'TeX Gyre Pagella','Palatino Linotype','Book Antiqua',Palatino,Georgia,serif";
+// the shared map-label typeface: the bundled Jost* (a free geometric sans in the Futura/
+// Century-Gothic family — the Stellaris UI look, @font-face in styles.css), falling back to
+// Century Gothic where installed, then system geometric sans. Every map label (province names,
+// geographic tiers, caravan/water labels, the live overlay) uses this.
+const LABEL_FONT = "'Jost','Century Gothic','Futura','Trebuchet MS',sans-serif";
 const TT = BUNDLE.terrainTiles;   // ground-texture atlas {src, tile, cols:{TERRAIN_*: column}} or null
 const RIVER = BUNDLE.river;        // water tile {src, tile} for the river ribbon, or null (flat-fill fallback)
 const SEA = BUNDLE.sea;            // greyscale ripple tile {src, tile} for the ocean layer, or null (gradient only)

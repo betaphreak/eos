@@ -1,6 +1,6 @@
 import { P, BUNDLE, px, py, pxr, pyr, cam, VIEW, ctx, cssVar, S, LABEL_FONT } from "./core.mjs";
 
-// Paradox/EU4-style map lettering: the shared bundled serif (see core.LABEL_FONT).
+// Stellaris-style map lettering: the shared bundled geometric sans (see core.LABEL_FONT).
 const LABEL_FAM = LABEL_FONT;
 
 // EU4-style province labels: the name is laid on the polygon's own long axis (angled) and scaled
