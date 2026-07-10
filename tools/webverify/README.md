@@ -23,6 +23,20 @@ node verify.mjs <url> <outPng> [waitMs] [w] [h]
 Loads a URL, waits for network idle, screenshots it, and prints any console/page
 errors. Works against any served page (deep-link with `#p=<id>&z=<zoom>`).
 
+### `mapshot.mjs` — screenshot the map viewport at a province/zoom (no throwaway scripts)
+```bash
+node mapshot.mjs <provId> [zoom=64] [out=shot.png] [WxH]
+# e.g. node mapshot.mjs 412 256 p412.png 380x280
+#      node mapshot.mjs 4411 256 --live=https://live.civstudio.com
+```
+Serves `web/` over HTTP (with Range), points the page's bundle fetch at a live server via `?live=`
+(default `http://localhost:8080`, override with `--live=` or `$LIVE`), deep-links to the province at
+the given zoom, waits for the terrain to bake, and screenshots the viewport — optionally a centred
+`WxH` crop. Prints console errors plus a province diagnostic (plot count, offscreen `w`/`h`, computed
+`tpp`, whether the textured blend is active, snowy-plot count, and per-terrain counts + `LayerOrder`).
+Use this to eyeball deep-zoom terrain/blend/feature changes instead of hand-rolling a Playwright
+script each time. Needs a bundle server up (local `spring-boot:run`, or the deployed one via `--live=`).
+
 ### `verify-pack.mjs` — end-to-end `plots.pack` range-fetch check
 ```bash
 node verify-pack.mjs <webDir> <provId> <outPng>
