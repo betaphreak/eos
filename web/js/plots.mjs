@@ -65,6 +65,11 @@ async function loadPlots(p) {
     if (arr) { p._plots = arr; draw(); if (S.selectedProv === p) renderRail(); }   // fill the detail panel too
   } catch (e) {
     p._loading = false; p.hasPlots = false;
+    // the per-plot terrain feed (assets/plots.pack) failed to fetch or decode — a broken data
+    // connection (e.g. a server/site version mismatch). Surface it by dropping the user to server
+    // selection rather than silently blanking the terrain. .lost() opens the picker at most once.
+    if (window.__picker && window.__picker.lost)
+      window.__picker.lost("Map data unavailable — the terrain feed (plots.pack) failed to load");
   }
 }
 // rasterise a province's plots to a 1px/plot offscreen canvas: terrain colour, relief

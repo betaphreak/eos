@@ -15,7 +15,13 @@ COPY civstudio-server/pom.xml ./civstudio-server/
 RUN mvn -q -e -B dependency:go-offline -DexcludeArtifactIds=civstudio-engine
 COPY civstudio-engine/src ./civstudio-engine/src
 COPY civstudio-server/src ./civstudio-server/src
-RUN mvn -q -B -DskipTests package
+# build identity for /actuator/info. The image context has no .git (it's .dockerignored — 204 MB),
+# so the git-commit-id plugin can't derive these here; the deploy supplies them as build-args (the
+# host's `git rev-list --count HEAD` + short SHA) and we pass them as -D, overriding the plugin's
+# (absent) values so build-info bakes the real number/commit. See tools/deploy-server.ps1.
+ARG BUILD_NUMBER=0
+ARG BUILD_COMMIT=docker
+RUN mvn -q -B -DskipTests -Dgit.total.commit.count=${BUILD_NUMBER} -Dgit.commit.id.abbrev=${BUILD_COMMIT} package
 
 # ---- runtime: the jar + the on-disk resources the engine loads at runtime ----
 FROM eclipse-temurin:25-jre

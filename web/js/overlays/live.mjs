@@ -52,7 +52,14 @@ export async function startLive(onRedraw, onSessionState) {
     es.onmessage = e => {
       try { onSnapshot(JSON.parse(e.data)); } catch (err) { /* ignore a bad frame */ }
     };
-    es.onerror = () => setHudStatus("reconnecting…");
+    // EventSource retries transient drops on its own (readyState CONNECTING) — just reflect that in
+    // the HUD. Only a permanently CLOSED feed (readyState 2: fatal, gave up) is a real loss → drop
+    // the user to server selection so they can reconnect (via window.__picker, from index.html).
+    es.onerror = () => {
+      setHudStatus("reconnecting…");
+      if (es && es.readyState === 2 && window.__picker && window.__picker.lost)
+        window.__picker.lost("Lost connection to the live server");
+    };
   } catch (err) {
     setHudStatus("offline — " + LIVE_BASE);
   }

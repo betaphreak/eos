@@ -250,11 +250,11 @@
         host.textContent = s.base.replace(/^https?:\/\//, "");
         var meta = document.createElement("span"); meta.className = "srv-meta";
         var ver  = document.createElement("span"); ver.className = "srv-ver";
-        ver.textContent = isCurrent ? ((s.version || "unknown") + " · connected")
-          : s.status === "up" ? (s.version || "unknown")
+        ver.textContent = s.status === "up" ? (verLabel(s) + (isCurrent ? " · connected" : ""))
           : s.status === "down" ? "offline" : "checking…";
         var dot  = document.createElement("span"); dot.className = "srv-dot srv-" + (s.status || "wait");
         meta.appendChild(ver); meta.appendChild(dot);
+        if (s.build && s.build.commit) row.title = "commit " + s.build.commit + (s.build.time ? " · built " + s.build.time : "");
 
         row.appendChild(name); row.appendChild(host); row.appendChild(meta);
         row.addEventListener("click", function () {
@@ -288,9 +288,16 @@
     function probe(s) {
       return fetch(s.base + "/actuator/info", { credentials: "omit", cache: "no-store" })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-        .then(function (j) { s.status = "up"; s.version = j && j.build && j.build.version; })
-        .catch(function () { s.status = "down"; s.version = null; })
+        .then(function (j) { var b = (j && j.build) || {}; s.status = "up"; s.version = b.version; s.build = b; })
+        .catch(function () { s.status = "down"; s.version = null; s.build = null; })
         .then(function () { if (!connecting) render(); });
+    }
+    // "0.9.0-SNAPSHOT · #345" — the version plus the auto-incrementing build number (git commit
+    // count) when the server reports one (omitted for the "0" Docker fallback / a build without it).
+    function verLabel(s) {
+      var v = s.version || "unknown";
+      if (s.build && s.build.number && s.build.number !== "0") v += " · #" + s.build.number;
+      return v;
     }
     function probeAll() { if (!connecting) servers.forEach(probe); }
 
@@ -327,22 +334,29 @@
       loading.classList.add("gone");
     }
 
-    // the running app (js/panel.mjs, on the title click) re-opens the picker as a dismissable
-    // "switch server" overlay over the live map. Exposed on window because this boot IIFE owns the
-    // server list + probes and the module app can't reach into its closure otherwise.
-    window.__picker = {
-      open: function () {
-        mode = "switch"; connecting = false;
-        if (sub) sub.textContent = "Switch server";
-        if (bar) bar.hidden = true;
-        loading.classList.remove("gone");
-        loading.classList.add("switch");        // transparent modal over the map (styles.css)
-        loading.hidden = false;
-        startPicker();
-      },
-      close: closePicker,
-      isOpen: function () { return mode === "switch" && !picker.hidden; }
-    };
+    // the running app re-opens the picker over the live map: js/panel.mjs on the title click (a
+    // voluntary "switch server"), or on a lost connection (plots.mjs / live.mjs call .lost()). Both
+    // route through window because this boot IIFE owns the server list + probes and the module app
+    // can't reach into its closure otherwise.
+    function isOpenSwitch() { return mode === "switch" && !picker.hidden; }
+    function openPicker(opts) {
+      mode = "switch"; connecting = false;
+      var reason = opts && opts.reason;
+      if (sub) sub.textContent = reason ? "Connection lost — reconnect" : "Switch server";
+      if (reason && window.__status) window.__status(reason, "error");
+      if (bar) bar.hidden = true;
+      loading.classList.remove("gone");
+      loading.classList.add("switch");          // transparent modal over the map (styles.css)
+      loading.hidden = false;
+      startPicker();
+    }
+    // drop to the picker because the live connection/data was lost. Opens once; if already open it
+    // just refreshes the reason, so a storm of failures (every province's plots.pack) doesn't thrash.
+    function lostPicker(reason) {
+      if (isOpenSwitch()) { if (reason && window.__status) window.__status(reason, "error"); return; }
+      openPicker({ reason: reason || "Connection to the server was lost" });
+    }
+    window.__picker = { open: openPicker, lost: lostPicker, close: closePicker, isOpen: isOpenSwitch };
     // Esc, or a click on the dimmed backdrop (outside the panel), dismisses the switch overlay.
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && mode === "switch" && !picker.hidden) { e.preventDefault(); closePicker(); }

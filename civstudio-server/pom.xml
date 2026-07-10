@@ -110,19 +110,61 @@
                          reads data/anbennar and writes output/ relative to CWD, so pin it to the
                          reactor root (as surefire/exec do). No effect on the repackage goal. -->
                     <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
+                    <!-- bake the build identity into build-info.properties then /actuator/info: an
+                         auto-incrementing build number (git.total.commit.count, i.e. the repo's
+                         "git rev-list count HEAD") plus the short commit. Filled by the git-commit-id
+                         plugin below for local builds; the Docker build has no .git, so deploy passes
+                         the same two values as -D overrides (see Dockerfile, tools/deploy-server.ps1). -->
+                    <additionalProperties>
+                        <number>${git.total.commit.count}</number>
+                        <commit>${git.commit.id.abbrev}</commit>
+                    </additionalProperties>
                 </configuration>
                 <executions>
                     <execution>
                         <goals>
-                            <!-- build-info writes META-INF/build-info.properties (project version +
-                                 build time); Actuator's BuildInfoContributor surfaces it at
-                                 /actuator/info as build.version — the version the web viewer's
-                                 server picker fetches online (info is exposed + CORS-allowed above). -->
+                            <!-- build-info writes META-INF/build-info.properties (project version,
+                                 build time, + the number/commit additionalProperties above);
+                                 Actuator's BuildInfoContributor surfaces it at /actuator/info as
+                                 build.version / build.number / build.commit — the identity the web
+                                 viewer's server picker fetches online (info is exposed + CORS-allowed
+                                 above). -->
                             <goal>build-info</goal>
                             <goal>repackage</goal>
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!--
+              Git build metadata: exposes git.total.commit.count (the repo's monotonic commit count,
+              i.e. "git rev-list count HEAD") and git.commit.id.abbrev as Maven properties, which the
+              build-info additionalProperties above bake into /actuator/info. Reads the repo .git;
+              offline plus failOnNoGitDirectory=false so a build without .git (the Docker image stage,
+              where deploy supplies both as -D instead) does not break; it just falls back to those.
+            -->
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>9.0.1</version>
+                <executions>
+                    <execution>
+                        <id>git-info</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <offline>true</offline>
+                    <failOnNoGitDirectory>false</failOnNoGitDirectory>
+                    <generateGitPropertiesFile>false</generateGitPropertiesFile>
+                    <includeOnlyProperties>
+                        <property>git.total.commit.count</property>
+                        <property>git.commit.id.abbrev</property>
+                    </includeOnlyProperties>
+                </configuration>
             </plugin>
         </plugins>
     </build>
