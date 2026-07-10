@@ -4,7 +4,8 @@
 //   labels — map text: province names and the zoom-banded geographic tiers
 //   main   — the draw() orchestrator, camera raster, zoom, deep-link
 //   panel  — all DOM interaction: sidebar, search, tooltips, timeline, events
-// data.js (a classic script) sets window.BUNDLE before this deferred module runs.
+// index.html's bootstrap fetches window.BUNDLE from the server (GET /api/bundle) and only then
+// dynamically imports this module, so window.BUNDLE is populated before core.mjs reads it.
 import "./js/core.mjs";
 import "./js/plots.mjs";
 import "./js/labels.mjs";

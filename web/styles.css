@@ -132,6 +132,15 @@ body {
 }
 @keyframes ld-slide { to { left: 100%; } }
 @media (prefers-reduced-motion: reduce) { #loading .ld-bar::after { animation: none; left: 0; width: 100%; opacity: .5; } }
+/* shown in place of the map when the bundle server is unreachable (index.html bootstrap catch):
+   the loading splash stays up with this notice centred over it. */
+#loading .ld-maint {
+  position: relative; z-index: 2;
+  font: 700 clamp(20px, 4.2vw, 44px) Georgia, 'Times New Roman', serif; letter-spacing: .05em;
+  color: #eef2f8; text-shadow: 0 2px 22px rgba(0,0,0,.85);
+  padding: 16px 30px; border: 1px solid rgba(230,176,74,.5); border-radius: 14px;
+  background: rgba(10,14,22,.5); backdrop-filter: blur(4px);
+}
 
 /* a small reusable spinner pill for secondary async loads (e.g. the lazy political.js fetch) */
 #spinner {

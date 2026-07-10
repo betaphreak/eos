@@ -184,7 +184,39 @@
   })();
   </script>
 
-  <script src="data.js"></script>
-  <script type="module" src="app.js"></script>
+  <!-- window.BUNDLE (the map/geo backbone) now comes from the spectator server — the single
+       source of truth, assembled by com.civstudio.server.web.WorldBundle — instead of a committed
+       data.js. Resolve the server base exactly as js/overlays/live.mjs does (?live=<url> overrides
+       for local testing, else the deployed server), fetch the bundle, and only then import the
+       module app: core.mjs reads window.BUNDLE synchronously at module-eval time, so it must be
+       populated first. A failed fetch surfaces on the status line (the accepted hard dependency). -->
+  <script>
+  (function () {
+    var base = (new URLSearchParams(location.search).get("live") || "https://live.civstudio.com")
+      .replace(/\/+$/, "");
+    fetch(base + "/api/bundle", { credentials: "omit" })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (b) { b.live = { base: base }; window.BUNDLE = b; return import("./app.js"); })
+      .catch(function (e) {
+        // Server unavailable: don't boot the app — leave the loading screen up and turn it into a
+        // maintenance notice (the accepted hard dependency on the map server).
+        var el = document.getElementById("loading");
+        if (el) {
+          var art = el.querySelector(".ld-art");
+          if (art && !art.getAttribute("src")) art.src = "assets/loading-1.jpg"; // a committed splash
+          var bar = el.querySelector(".ld-bar");
+          if (bar) bar.remove();                    // not loading — drop the progress bar
+          if (!el.querySelector(".ld-maint")) {
+            var note = document.createElement("div");
+            note.className = "ld-maint";
+            note.textContent = "Maintenance Mode";
+            el.appendChild(note);
+          }
+        }
+        if (window.__status)
+          window.__status("Maintenance Mode — the map server (" + base + ") is unavailable.", "error");
+      });
+  })();
+  </script>
 </body>
 </html>

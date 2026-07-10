@@ -179,6 +179,45 @@ class FeedServerTest {
 		}
 	}
 
+	@Test
+	@Timeout(90)
+	void serveBundleReturnsTheMapBundleJsonAndGzips() throws Exception {
+		SessionHost host = new SessionHost(); // no session needed — the bundle is world-level
+		FeedServer server = new FeedServer(host, 0);
+		server.start();
+		HttpClient client = HttpClient.newHttpClient();
+		try {
+			// plain GET: JSON with the province backbone + engine-derived + merged asset fields,
+			// and the site origin is echoed for CORS
+			HttpResponse<String> res = client.send(
+					HttpRequest.newBuilder(uri(server, "/api/bundle"))
+							.header("Origin", "https://anbennar.civstudio.com").GET().build(),
+					HttpResponse.BodyHandlers.ofString());
+			assertEquals(200, res.statusCode());
+			assertTrue(res.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
+			assertEquals("https://anbennar.civstudio.com",
+					res.headers().firstValue("Access-Control-Allow-Origin").orElse(null));
+			var bundle = json.readTree(res.body());
+			int provinceCount = bundle.get("provinces").size();
+			assertTrue(provinceCount > 4000, "expected the whole world, got " + provinceCount + " provinces");
+			for (String key : new String[] { "geo", "geoNames", "adjacencies", "terrainColors", "plotIndex" })
+				assertTrue(bundle.has(key), "bundle missing key: " + key);
+
+			// with Accept-Encoding: gzip the server ships the gzipped copy (this feed is not behind
+			// the CDN that used to gzip data.js); it gunzips to the same bundle
+			HttpResponse<byte[]> gz = client.send(
+					HttpRequest.newBuilder(uri(server, "/api/bundle"))
+							.header("Accept-Encoding", "gzip").GET().build(),
+					HttpResponse.BodyHandlers.ofByteArray());
+			assertEquals("gzip", gz.headers().firstValue("Content-Encoding").orElse(null));
+			try (var in = new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(gz.body()))) {
+				assertEquals(provinceCount, json.readTree(in).get("provinces").size());
+			}
+		} finally {
+			server.stop();
+		}
+	}
+
 	private static URI uri(FeedServer server, String path) {
 		return URI.create("http://localhost:" + server.port() + path);
 	}

@@ -356,12 +356,35 @@ map's existing `px`/`py` lon-lat projection — the feed already carries every e
 colony stats and carries the **taxation command**, and the top-bar **clock/play/speed** drive the
 *hosted session* over `/control` while the view is active (reflecting the server's state back).
 This **replaced** the old recorded-caravan replay entirely: the caravans come live from the
-server, so the site's `data.js`/`build.mjs` are now **run-independent** (no `output/<seed>` run,
+server, so the site's `build.mjs` is now **run-independent** (no `output/<seed>` run,
 no baked journeys). Cross-origin is handled by **CORS on `FeedServer`**
 (option A): responses carry `Access-Control-Allow-Origin` for the site origin and the JSON POST
 is preflighted; the allowed origins default to the production site + localhost, overridable via
 `EOS_CORS_ORIGINS`. The base feed URL defaults to `https://live.civstudio.com` (override with
 `?live=<url>` for local testing). Verified headless (`tools/webverify/live-shot.mjs`).
+
+**✅ `window.BUNDLE` served from the server — `data.js` retired (Implemented, 2026-07-10).** The
+map/geo backbone the viewer loads at boot (provinces + polygon rings + label baselines, the geo
+label tiers, `geoNames`, `adjacencies` — the ~2.2 MB bulk) is no longer a Node-built committed
+`web/data.js`; the browser fetches it from **`GET /api/bundle`**, assembled by
+`com.civstudio.server.web.WorldBundle` from the same committed map resources
+(`provinces.json`/`borders.json`/`adjacencies.json`/the hierarchy) — so the engine is the single
+source of truth for that data instead of a snapshot that could drift. The bundle mixes engine
+geometry with a handful of **asset-coupled** descriptors the server can't regenerate (the baked
+tiles/atlas geometry, `terrainColors`/`seaBands`, the `plots.pack` byte index, the ring-less
+provinces' cull boxes): `build.mjs` still bakes the binaries and now emits a small
+`src/main/resources/map/web-asset-manifest.json` (on the classpath → inside the jar) that
+`WorldBundle` merges in. The endpoint gzips (~2.4 MB → ~0.6 MB) and caches the assembled bundle;
+CORS already covers it. `index.html` gained an inline **bootstrap** — resolve the server base
+(`?live=<url>` → default `live.civstudio.com`), fetch the bundle, set `window.BUNDLE`, then
+dynamically `import('./app.js')` (needed because `core.mjs` reads the global synchronously at
+module-eval time). This makes the map a **hard dependency** on the server: if the fetch fails the
+loading splash stays up with a *Maintenance Mode* notice. A golden-parity test
+(`WorldBundleGoldenTest`) pins `WorldBundle` byte-for-byte against the last committed `data.js`
+(captured gzipped under `src/test/resources/web/`); the `labelBaseline` PCA port reproduces it
+exactly (0 pixel drift across 1085 baselines). Deploy ordering: the server (with the endpoint +
+manifest, both under `src/`) must ship before a web deploy that expects it. Verified headless
+end-to-end (world render + deep-zoom `plots.pack` + the Maintenance Mode path).
 
 Still open on the action side:
 - **More actions.** Extend the action model beyond taxation. The natural next targets align

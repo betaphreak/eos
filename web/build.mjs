@@ -343,25 +343,32 @@ const adjacencies = (readJsonOpt('src/main/resources/map/adjacencies.json') || [
     return [a.from, a.to, a.type || '', teleport];
   });
 
-const bundle = {
-  meta: {
-    seed: +SEED,
-  },
-  provinces, map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, foam, ice, bonusIcons, trees, seaBands, geo,
-  adjacencies,                        // EU4 straits/canals/tunnels: [from, to, type] connection lines
-  geoNames,                           // raw-key -> display-name dictionaries for province crumbs
+// The map/geo backbone (provinces + rings + lab, geo, geoNames, adjacencies — the ~2.2 MB bulk)
+// is now assembled and served by the Java spectator server from the same committed map resources
+// (com.civstudio.server.web.WorldBundle -> GET /api/bundle); the browser fetches window.BUNDLE at
+// boot instead of loading a committed data.js. build.mjs owns only the ASSET side: it still bakes
+// every binary asset (below) and writes this small manifest describing them — the baked-file
+// descriptors, the plots.pack byte index, and the ring-less provinces' cull boxes — which the
+// server can't regenerate (the Civ4 art + plot grids are absent from the server image). The
+// server merges this manifest into the engine-derived bundle. See docs/client-server.md and
+// web/README.md. (`provinces`/`geo`/`geoNames`/`adjacencies` are still computed above — the
+// terrain bake and the size logs read them — but are no longer written here.)
+const bboxes = {};                    // ring-less (sea/lake) provinces' plot-extent cull box (source px)
+for (const p of provinces) if (p.bbox) bboxes[p.id] = p.bbox;
+const manifest = {
+  seed: +SEED,
+  map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, foam, ice, bonusIcons, trees, seaBands,
   loading,                            // committed loading-screen art (assets/loading-*.jpg), or []
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
+  bboxes,                             // {provId: [x0,y0,x1,y1]} for ring-less provinces (server can't derive)
 };
+const manifestPath = path.join(ROOT, 'src/main/resources/map/web-asset-manifest.json');
+fs.writeFileSync(manifestPath, JSON.stringify(manifest));
 
-// the run's data as a plain script the page (index.html) loads alongside the
-// terrain image asset — the image stays a binary file, never inlined into the data.
 const terrainBytes = imgSizes[map.src.replace('assets/', '')] || 0;
-const dataJs = `window.BUNDLE = ${JSON.stringify(bundle)};\n`;
-fs.writeFileSync(path.join(WEB, 'data.js'), dataJs);
-
+const manifestKb = (JSON.stringify(manifest).length / 1024).toFixed(0);
 const politicalKb = (fs.statSync(path.join(WEB, 'political.js')).size / 1024).toFixed(0);
-console.log(`Built web/data.js (${(dataJs.length / 1024).toFixed(0)} KB) + web/political.js (${politicalKb} KB, lazy) + web/${map.src} (${(terrainBytes / 1024).toFixed(0)} KB) from seed ${SEED}`);
+console.log(`Built src/main/resources/map/web-asset-manifest.json (${manifestKb} KB, merged + served by the engine at /api/bundle) + web/political.js (${politicalKb} KB, lazy) + web/${map.src} (${(terrainBytes / 1024).toFixed(0)} KB) from seed ${SEED}`);
 console.log(`  ${provinces.length} provinces (run-independent — live caravans come from the server)`);
 console.log(`  terrain crop ${map.dw}×${map.dh}px`);
 console.log(`  geo labels: ${geo.continents.length} continents · ${geo.superRegions.length} super-regions · ${geo.regions.length} regions`);

@@ -20,6 +20,7 @@ import com.civstudio.server.SessionHost;
 import com.civstudio.server.SessionSpec;
 import com.civstudio.server.command.SetTaxRateCommand;
 import com.civstudio.server.render.SessionSnapshot;
+import com.civstudio.server.web.WorldBundle;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -35,6 +36,8 @@ import com.sun.net.httpserver.HttpServer;
  * Endpoints:
  * <ul>
  * <li>{@code GET  /}                          — the live demo page ({@code web/live.html}).</li>
+ * <li>{@code GET  /api/bundle}                — the WorldMap map/geo bundle
+ * ({@code window.BUNDLE}) the web viewer fetches at boot (see {@link WorldBundle}).</li>
  * <li>{@code GET  /api/sessions}              — list the hosted sessions.</li>
  * <li>{@code POST /api/sessions}              — found+start a session from a spec.</li>
  * <li>{@code GET  /api/sessions/{id}/stream}  — subscribe to the snapshot feed (SSE).</li>
@@ -132,6 +135,8 @@ public final class FeedServer {
 			}
 			if (path.equals("/") || path.equals("/live.html")) {
 				servePage(ex);
+			} else if (path.equals("/api/bundle") && method.equals("GET")) {
+				serveBundle(ex);
 			} else if (path.equals("/api/sessions") && method.equals("GET")) {
 				listSessions(ex);
 			} else if (path.equals("/api/sessions") && method.equals("POST")) {
@@ -201,6 +206,24 @@ public final class FeedServer {
 		}
 		byte[] body = Files.readAllBytes(page);
 		ex.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
+		ex.sendResponseHeaders(200, body.length);
+		try (OutputStream os = ex.getResponseBody()) {
+			os.write(body);
+		}
+	}
+
+	// serve window.BUNDLE (the map/geo backbone the web viewer loads at boot), assembled from the
+	// committed map resources by WorldBundle. Static per deploy, so cached + long-lived; gzipped
+	// when the client accepts it (this feed is not behind the CDN that used to gzip data.js). CORS
+	// is already stamped by applyCors, and a plain GET needs no preflight.
+	private void serveBundle(HttpExchange ex) throws IOException {
+		String ae = ex.getRequestHeaders().getFirst("Accept-Encoding");
+		boolean gzip = ae != null && ae.toLowerCase().contains("gzip");
+		byte[] body = gzip ? WorldBundle.gzip() : WorldBundle.json();
+		ex.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
+		ex.getResponseHeaders().set("Cache-Control", "public, max-age=3600");
+		if (gzip)
+			ex.getResponseHeaders().set("Content-Encoding", "gzip");
 		ex.sendResponseHeaders(200, body.length);
 		try (OutputStream os = ex.getResponseBody()) {
 			os.write(body);
