@@ -194,28 +194,50 @@
   (function () {
     var base = (new URLSearchParams(location.search).get("live") || "https://live.civstudio.com")
       .replace(/\/+$/, "");
-    fetch(base + "/api/bundle", { credentials: "omit" })
-      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then(function (b) { b.live = { base: base }; window.BUNDLE = b; return import("./app.js"); })
-      .catch(function (e) {
-        // Server unavailable: don't boot the app — leave the loading screen up and turn it into a
-        // maintenance notice (the accepted hard dependency on the map server).
-        var el = document.getElementById("loading");
-        if (el) {
-          var art = el.querySelector(".ld-art");
-          if (art && !art.getAttribute("src")) art.src = "assets/loading-1.jpg"; // a committed splash
-          var bar = el.querySelector(".ld-bar");
-          if (bar) bar.remove();                    // not loading — drop the progress bar
-          if (!el.querySelector(".ld-maint")) {
-            var note = document.createElement("div");
-            note.className = "ld-maint";
-            note.textContent = "Maintenance Mode";
-            el.appendChild(note);
-          }
+
+    // Turn the loading screen into a "waiting for the server" notice, kept up while the server is
+    // unreachable (the map is a hard dependency — window.BUNDLE is served by the server).
+    function maintenance(msg) {
+      var el = document.getElementById("loading");
+      if (el) {
+        var art = el.querySelector(".ld-art");
+        if (art && !art.getAttribute("src")) art.src = "assets/loading-1.jpg"; // a committed splash
+        var bar = el.querySelector(".ld-bar");
+        if (bar) bar.remove();                      // not loading — drop the progress bar
+        if (!el.querySelector(".ld-maint")) {
+          var note = document.createElement("div");
+          note.className = "ld-maint";
+          note.textContent = "Maintenance Mode";
+          el.appendChild(note);
         }
-        if (window.__status)
-          window.__status("Maintenance Mode — the map server (" + base + ") is unavailable.", "error");
+      }
+      if (window.__status) window.__status(msg, "error");
+    }
+
+    // Is Spring Boot up? Poll Actuator health — UP means the server is ready to serve the bundle.
+    function serverUp() {
+      return fetch(base + "/actuator/health", { credentials: "omit", cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)); })
+        .then(function (h) { if (!h || h.status !== "UP") throw new Error("status " + (h && h.status)); });
+    }
+
+    // Fetch the map/geo bundle and boot the module app (core.mjs reads window.BUNDLE at eval time).
+    function boot() {
+      return fetch(base + "/api/bundle", { credentials: "omit" })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(function (b) { b.live = { base: base }; window.BUNDLE = b; return import("./app.js"); });
+    }
+
+    // Wait for the server (health UP), then boot. While it is down, hold the Maintenance Mode
+    // splash and retry with a capped backoff — the page comes up on its own once the server does.
+    var tries = 0;
+    (function attempt() {
+      serverUp().then(boot).catch(function () {
+        maintenance("Maintenance Mode — waiting for the map server (" + base + ")…");
+        tries++;
+        setTimeout(attempt, Math.min(1000 + tries * 500, 5000));
       });
+    })();
   })();
   </script>
 </body>

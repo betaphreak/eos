@@ -36,6 +36,17 @@ console errors. Use it after `node web/build.mjs` to confirm the per-plot terrai
 zoom still resolves through the packed/range-fetched path.
 ```
 
+### `boot-check.mjs` — server-gated bootstrap / Maintenance Mode check
+```bash
+node boot-check.mjs <liveBase> [waitMs]
+# e.g. node boot-check.mjs http://localhost:8080 9000
+```
+Serves `web/` over HTTP, loads `index.html?live=<liveBase>`, and reports the boot outcome as
+JSON: whether the app booted (`hasBundle`, province count, loading screen cleared) or held the
+`Maintenance Mode` splash, plus console errors. Run it with the Spring Boot server **up** (expect
+`maintenance:false`, bundle loaded) and **down** (expect `maintenance:true`) to verify the
+health-gated bootstrap.
+
 > The site's terrain zoom range-fetches `plots.pack`, which `file://` blocks — so
 > always verify through an HTTP server (either script's server, `npx serve web`,
 > or `swa start ./web`), never by opening `index.html` off disk.

@@ -1,0 +1,43 @@
+# CivStudio spectator/interactive server (Spring Boot 4). See docs/spring-boot-migration.md.
+server:
+  # $PORT is the container-ingress convention (Azure Container Apps); default 8080 locally.
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: civstudio-server
+  # Spring MVC on virtual threads (Java 25): one blocking thread per request/SSE connection, cheap
+  # — the shape the SSE feed's drain loop expects (see SessionController).
+  threads:
+    virtual:
+      enabled: true
+
+# Actuator: the health endpoints the Azure Container App probes hit, and that the static site
+# polls (CORS-allowed in WebConfig) to wait for the server during its loading screen. Liveness /
+# readiness probe groups are exposed; health details are hidden (the site only needs status:UP).
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      # Actuator endpoints use their own handler mapping (not the MVC CorsRegistry in WebConfig),
+      # so the site's cross-origin health poll needs CORS configured here. Mirrors civstudio.cors.
+      cors:
+        allowed-origin-patterns: ${EOS_CORS_ORIGINS:https://anbennar.civstudio.com,https://civstudio.com,https://www.civstudio.com},http://localhost:*,http://127.0.0.1:*
+        allowed-methods: GET,OPTIONS
+        max-age: 600
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+civstudio:
+  cors:
+    # comma-separated; EOS_CORS_ORIGINS overrides (preserves the old FeedServer env knob).
+    origins: ${EOS_CORS_ORIGINS:https://anbennar.civstudio.com,https://civstudio.com,https://www.civstudio.com}
+  demo:
+    enabled: true
+    seed: 7654321
+    province-id: 4411
+    tick-rate-millis: 1000

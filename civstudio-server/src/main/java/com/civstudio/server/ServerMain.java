@@ -1,65 +1,29 @@
 package com.civstudio.server;
 
-import java.util.concurrent.CountDownLatch;
-
-import com.civstudio.server.http.FeedServer;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 /**
- * Launches the Phase-A spectator server: hosts the caravan-demo session and streams it live
- * to the browser (see {@code docs/client-server.md}). Run it, then open the printed URL to
- * watch the six caravans march over the world map.
+ * The Spring Boot entry point for the CivStudio spectator/interactive server (see
+ * {@code docs/client-server.md} and {@code docs/spring-boot-migration.md}). Boot stands up the
+ * embedded web server (Spring MVC on virtual threads), the {@link SessionHost} bean, the REST
+ * controllers, and Actuator health/metrics; {@link DemoSessionSeeder} founds the six-caravan
+ * demo session once the context is ready.
  *
  * <pre>
- *   mvn -q compile exec:exec -Dsim.main=com.civstudio.server.ServerMain
+ *   mvn -pl civstudio-server -am spring-boot:run     # or: java -jar civstudio-server-*.jar
  *   # then open http://localhost:8080/
  * </pre>
  *
- * Optional args: {@code [port] [seed] [provinceId]}.
+ * The port follows {@code server.port} (defaulting to {@code $PORT} then 8080 — see
+ * {@code application.yml}), the container-ingress convention.
  */
-public final class ServerMain {
+@SpringBootApplication
+@EnableConfigurationProperties(CivStudioProperties.class)
+public class ServerMain {
 
-	private static final int DEFAULT_PORT = 8080;
-	private static final long DEFAULT_SEED = 7654321L;
-	private static final int DEFAULT_PROVINCE = 4411; // Dhenijansar (the default demo home)
-
-	private ServerMain() {
-	}
-
-	public static void main(String[] args) throws Exception {
-		// port precedence: CLI arg > $PORT (the container-ingress convention) > default
-		int port = args.length > 0 ? Integer.parseInt(args[0]) : envInt("PORT", DEFAULT_PORT);
-		long seed = args.length > 1 ? Long.parseLong(args[1]) : DEFAULT_SEED;
-		int province = args.length > 2 ? Integer.parseInt(args[2]) : DEFAULT_PROVINCE;
-
-		SessionHost host = new SessionHost();
-		FeedServer server = new FeedServer(host, port);
-		server.start();
-
-		HostedSession session = host.create(SessionSpec.caravanDemo(seed, province));
-		session.setTickRateMillis(1000); // the server ticks ~one in-game day per second
-		session.start();
-
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			host.stopAll();
-			server.stop();
-		}));
-
-		System.out.println("CivStudio spectator server up:");
-		System.out.println("  open   http://localhost:" + server.port() + "/");
-		System.out.println("  session " + session.id() + " (6 caravans marching, ~1 day/sec)");
-		new CountDownLatch(1).await(); // park the main thread; the server + session run on
-		// their own threads until the JVM is stopped
-	}
-
-	// read an int environment variable, falling back to def when unset or unparseable
-	private static int envInt(String name, int def) {
-		String v = System.getenv(name);
-		if (v == null || v.isBlank())
-			return def;
-		try {
-			return Integer.parseInt(v.trim());
-		} catch (NumberFormatException e) {
-			return def;
-		}
+	public static void main(String[] args) {
+		SpringApplication.run(ServerMain.class, args);
 	}
 }

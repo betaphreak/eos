@@ -12,14 +12,15 @@ The root package is `com.civstudio` (the repository directory is named `eos`, bu
 
 ## Build & run
 
-Maven project, Java 25, JUnit 5. Toolchain on this machine: Temurin JDK 25 at `C:\Users\Eu\tools\jdk-25.0.3.9-hotspot` (user `JAVA_HOME`), Maven 3.9.9 at `C:\Users\Eu\tools\apache-maven-3.9.9` (both on the user `PATH`).
+Maven **reactor** with two modules — `civstudio-engine` (the plain-Java sim core) and `civstudio-server` (a **Spring Boot 4** app depending on the engine). Java 25; engine on JUnit 5, server on JUnit 6 (via Boot). Toolchain on this machine: Temurin JDK 25 at `C:\Users\Eu\tools\jdk-25.0.3.9-hotspot` (user `JAVA_HOME`), Maven 3.9.9 at `C:\Users\Eu\tools\apache-maven-3.9.9` (both on the user `PATH`; a `./mvnw` wrapper is also committed). Run all `mvn` commands from the repo root. Module split and the Spring Boot migration are documented in [`docs/spring-boot-migration.md`](docs/spring-boot-migration.md).
 
 ```powershell
-mvn clean compile          # compile to target/classes
-mvn exec:exec              # run the default scenario (HomogeneousEconomy) in a forked JVM with -ea
-mvn exec:exec -Dsim.main=com.civstudio.simulation.TwinSettlementEconomy   # another scenario
-mvn test                   # JUnit 5 suite (each scenario runs full as a smoke test)
-mvn package                # build the jar
+mvn clean compile                                   # compile both modules
+mvn -pl civstudio-engine exec:exec                  # run the default scenario (HomogeneousEconomy), forked JVM with -ea
+mvn -pl civstudio-engine exec:exec -Dsim.main=com.civstudio.simulation.TwinSettlementEconomy   # another scenario
+mvn test                                            # engine + server suites (each scenario runs full as a smoke test)
+mvn package                                         # build the Spring Boot server fat jar (civstudio-server)
+mvn -pl civstudio-server spring-boot:run            # run the spectator server → http://localhost:8080
 ```
 
 `exec:exec` forks a JVM with **assertions enabled** — the code uses `assert` as real invariant checks. A scenario is a `static run()` that builds a colony via `SimulationHarness` and returns it, plus a `main()` that calls it; the scenario inventory is the README table, with mechanics detailed in `docs/architecture.md` §Scenarios. Output CSVs are written under `output/<seed>/` relative to the working directory (the project root when launched via Maven).
@@ -59,7 +60,7 @@ Subsystem map — one line each; the as-built detail for all of them is in [`doc
 - **Races** — per-person ancestry varying names, mortality, calendar and tech overlay. `docs/race.md`.
 - **Political layer** — canonical Anbennar province ownership (`Province.ownerTag`/`culture`/`religion` + `Country`/`Culture`/`Religion` records + `WorldMap.provincesByOwner`/`ByCulture`/`ByReligion`), stamped from vendored EU4 history by dev-tool exporters; drives the web **Political** map mode. `docs/political-map.md`.
 - **Underworld + special terrains** — the underground Serpentspine as a second map plane (four Dwarovar `ProvinceType`s — `CAVERN`/`DWARVEN_HOLD`/`DWARVEN_HOLD_SURFACE`/`DWARVEN_ROAD` — stamped by `CavernExporter`): sun-free 14h `FixedDaylightClock`, food-scarce `TERRAIN_CAVERN`, dimmed-ghost viewer plane. The same machinery promotes seven distinctive **surface** terrains (ancient/fey/blood forests, mushroom, shadow swamp, glacier) to their own types with bespoke terrain/art/yields (`city_terrain` deferred). `docs/underworld.md`.
-- **Client/server (spectator)** — `com.civstudio.server`: a tick-authoritative `HostedSession` (pausable/rate-limited lockstep loop + tick-stamped `CommandLog` seam) that `SessionHost` runs many-per-JVM, streaming a read-only render snapshot to the browser over SSE (`http.FeedServer`, `web/live.html`); `ServerMain` hosts the six-caravan demo. Factorio-shaped spine, browser as thin render-client; the session's savegame is its `SessionSpec` + command log, replayed deterministically. **Deployed live** on Azure Container Apps at `live.civstudio.com` (the caravan demo). `docs/client-server.md` (incl. §Deployment — the guest-identity/ACR-region constraints that shape it).
+- **Client/server (spectator)** — `com.civstudio.server`: a **Spring Boot 4** app (MVC on virtual threads). A tick-authoritative `HostedSession` (pausable/rate-limited lockstep loop + tick-stamped `CommandLog` seam) that the `SessionHost` bean runs many-per-JVM, streaming a read-only render snapshot to the browser over SSE. Transport is `web.SessionController`/`BundleController`/`PageController` (`SseEmitter`, drop-oldest queue); `ServerMain` is the `@SpringBootApplication`, `DemoSessionSeeder` founds the six-caravan demo; Actuator exposes health (liveness/readiness) the site polls during its splash. Factorio-shaped spine, browser as thin render-client; the session's savegame is its `SessionSpec` + command log, replayed deterministically. **Deployed live** on Azure Container Apps at `live.civstudio.com` (the caravan demo). `docs/client-server.md` + `docs/spring-boot-migration.md` (incl. §Deployment — the guest-identity/ACR-region constraints that shape it).
 
 ## Tests
 

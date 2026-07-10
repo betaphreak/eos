@@ -1,3 +1,0 @@
-# Marks the reactor root so ${maven.multiModuleProjectDirectory} resolves here for every
-# module. The engine/server run with CWD-relative paths (data/anbennar, output/), so surefire
-# and exec pin their workingDirectory to this directory — see the parent pom.

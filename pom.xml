@@ -39,9 +39,12 @@
         <sim.main>com.civstudio.simulation.HomogeneousEconomy</sim.main>
         <!-- 1.18.42 (Sep 2025) is the first Lombok with JDK 25 support -->
         <lombok.version>1.18.42</lombok.version>
-        <!-- Jackson 3 (tools.jackson.* namespace). Spring Boot 4 will manage this in the
-             server module later; keep the property in sync then. -->
-        <jackson.version>3.0.4</jackson.version>
+        <!-- Jackson 3 (tools.jackson.* namespace), pinned to the version Spring Boot 4.1
+             manages so the engine and the Boot server run one Jackson across the fat jar. -->
+        <jackson.version>3.1.4</jackson.version>
+        <!-- The engine stays on JUnit 5 (managed here); the Boot server module uses the
+             JUnit 6 that spring-boot-starter-test brings, so junit is NOT managed in the
+             parent dependencyManagement (that would override Boot in the server module). -->
         <junit.version>5.11.3</junit.version>
     </properties>
 
@@ -52,12 +55,6 @@
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
                 <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>tools.jackson.core</groupId>
@@ -82,6 +79,10 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.13.0</version>
                     <configuration>
+                        <!-- keep parameter names in bytecode: Spring MVC needs them to bind
+                             @PathVariable/@RequestParam without explicit names (the Boot parent
+                             sets this; our custom parent must too). Harmless for the engine. -->
+                        <parameters>true</parameters>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>

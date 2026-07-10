@@ -5,7 +5,12 @@
   (2026-07-10), commit `b8bfddc`. Behaviour-identical; 264 tests green.
 - **Step 2 — Jackson 2 → 3 (`tools.jackson.*`) across both modules.** ✅ Implemented
   (2026-07-10). `WorldBundle` byte-parity holds (golden test + runtime `/api/bundle`).
-- **Steps 3–5 — Boot-ify the server, config/CORS, multiplayer features.** Proposed.
+- **Step 3 — Boot-ify the server module (Spring Boot 4.1, MVC + virtual threads).** ✅
+  Implemented (2026-07-10). `FeedServer` → `@RestController`s + `SseEmitter` (drop-oldest queue
+  kept); `SessionHost` a bean with `@PreDestroy`; Actuator health (liveness/readiness) the site
+  polls during its splash; config/CORS declarative. Also folded in: step 4's declarative CORS,
+  the site's health-gated boot (no more 3s min-splash), and a Maven wrapper.
+- **Steps 4–5 — (config/CORS done early) → multiplayer features.** Proposed.
 
 **Date:** design 2026-07-10.
 
@@ -212,7 +217,14 @@ rasters, so the current **1 vCPU / 2 GiB** is bumped.
 `az containerapp update -n civstudio-server -g civstudio --cpu 2 --memory 4Gi --image …`.
 Consumption profile caps at **4 vCPU / 8 GiB per replica** — enough headroom for several
 concurrent sessions; go to a Dedicated workload profile only if a single replica must hold
-many sessions. All the identity/ACR-region constraints from
+many sessions.
+
+**Health probes.** Actuator exposes the probe endpoints the Container App should point at:
+`GET /actuator/health/liveness` and `GET /actuator/health/readiness` (and the aggregate
+`GET /actuator/health`, which the **static site** itself polls during its loading screen to
+wait for the server — CORS-allowed via `management.endpoints.web.cors`). Set the app's liveness
+and readiness probes to those paths on port 8080; give readiness a generous initial delay (Boot
+cold start + WorldMap load + founding the demo before it reports `UP`). All the identity/ACR-region constraints from
 [`docs/client-server.md`](client-server.md) §Deployment still hold (guest identity can't
 create role assignments → admin-cred ACR pull, manual `az` deploy; ACR Tasks absent in
 belgiumcentral → throwaway-westeurope-ACR build-and-import, or Docker-on-runner + push). The
@@ -231,11 +243,19 @@ Boot repackage jar drops into that pipeline unchanged.
    sites moved to `JsonMapper.builder()`; `JsonNode.fieldNames()` → `propertyNames()`;
    `FeedServer`'s `JsonProcessingException` catch folded into `RuntimeException` since
    Jackson 3 exceptions are unchecked. No byte-drift.)*
-3. **Boot-ify the server module.** Spring Boot 4, MVC + virtual threads, port endpoints to
-   controllers, port the SSE feed into `SseEmitter` **keeping the drop-oldest queue**,
-   `SessionHost` as a bean, Actuator on. Behaviour-parity with today; `repackage` replaces
-   shade.
-4. **Config + declarative CORS**, retire the env-var parsing; size up the Container App.
+3. ✅ **Boot-ify the server module (Spring Boot 4.1).** MVC + virtual threads; `FeedServer` →
+   `@RestController`s (`SessionController`/`BundleController`/`PageController`) with the SSE feed
+   on `SseEmitter` **keeping the drop-oldest queue**; `SessionHost` a `@Component` with a
+   `@PreDestroy` graceful stop; `ServerMain` a `@SpringBootApplication`; the demo founded on
+   ready by `DemoSessionSeeder`; `repackage` replaced shade. *(As built, three gotchas:
+   (a) our custom parent needs `<parameters>true</parameters>` on the compiler or Spring can't
+   bind `@PathVariable` — 500s on `/{id}/...`; (b) Actuator endpoints ignore the MVC
+   `CorsRegistry`, so their CORS is set via `management.endpoints.web.cors`; (c) an open-ended
+   `SseEmitter` pins Tomcat at shutdown — the drainer now ends the stream when the session
+   `STOPPED`. Engine stayed on JUnit 5; the server uses Boot's JUnit 6 via `starter-test`.)*
+4. ✅ **Config + declarative CORS** (`application.yml` + `@ConfigurationProperties`,
+   `WebConfig`), env-var parsing retired; Container App **sized up to 2 vCPU / 4 GiB** — done
+   as part of step 3.
 5. **Multiplayer features land on Spring** as Phase B/C arrives: Security (accounts) then
    Data (durable command log).
 

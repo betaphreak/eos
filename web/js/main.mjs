@@ -7,10 +7,12 @@ import { ensureTiers, drawTiers } from "./overlays/tiers.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
 // transparent so the sea layer below shows through, land is opaque.
 // loading screen: show a random Anbennar splash (1:1, stage-cropped) until the map's first paint,
-// held for at least MIN_LOADING_MS so a fast load doesn't flash the splash for a fraction of a second
+// then hide immediately (no minimum hold). The splash now doubles as index.html's "waiting for
+// the server" screen (its health poll holds it while the server is down), so once the map is
+// ready it should clear right away rather than lingering.
 const loadEl = document.getElementById("loading");
 const loadStart = performance.now();
-const MIN_LOADING_MS = 3000;
+const MIN_LOADING_MS = 0;
 let loadingActive = false;
 if (loadEl) {
   if (BUNDLE.loading && BUNDLE.loading.length) {

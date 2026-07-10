@@ -206,7 +206,12 @@ Deliverable: open the site, pick a session (seed+spec), watch it advance live.
   for tick N applies at exactly tick N.
 - **`render.{SessionSnapshot,ColonyView,CaravanView,Snapshots}`** — the read-only render
   projection (colony aggregates + caravan positions/vitals), never the live graph.
-- **`http.FeedServer`** — the transport. **SSE over the JDK `HttpServer`, not WebSocket**:
+- **`http.FeedServer`** — the transport. *(Superseded 2026-07-10: migrated to **Spring Boot 4
+  MVC controllers** — `web.SessionController`/`BundleController`/`PageController` on `SseEmitter`,
+  running on virtual threads. The endpoints, the SSE drop-oldest queue, and the "never stall the
+  sim" contract below are unchanged; only the HTTP machinery moved. See
+  [`spring-boot-migration.md`](spring-boot-migration.md).)* **SSE over the JDK `HttpServer`, not
+  WebSocket**:
   a spectator feed is one-way server→client, so SSE fits and keeps the zero-runtime-
   dependency ethos (JDK + the already-present Jackson; the JDK has no WS server). Each SSE
   connection has its own bounded queue the session thread offers into (drop-oldest if the

@@ -21,6 +21,8 @@ import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.simulation.SimulationConfig;
 import com.civstudio.simulation.SimulationHarness;
+import jakarta.annotation.PreDestroy;
+import org.springframework.stereotype.Component;
 
 /**
  * Owns the live {@link HostedSession hosted sessions} of one server process, keyed by
@@ -30,6 +32,7 @@ import com.civstudio.simulation.SimulationHarness;
  * the demo, six marching caravans), registers it, and hands it back for the transport to
  * subscribe to.
  */
+@Component
 public final class SessionHost {
 
 	// the demo's six wandering bands
@@ -86,6 +89,17 @@ public final class SessionHost {
 	public void stopAll() {
 		for (String id : List.copyOf(sessions.keySet()))
 			remove(id);
+	}
+
+	/**
+	 * Graceful shutdown: stop every hosted session when the Spring context closes (a SIGTERM to
+	 * the container, or a test context teardown). Stopping a session emits its final snapshot,
+	 * which completes any open SSE stream — so the embedded server isn't left waiting on an
+	 * open-ended async request. Replaces the old {@code ServerMain} JVM shutdown hook.
+	 */
+	@PreDestroy
+	public void shutdown() {
+		stopAll();
 	}
 
 	// found the session's world from the spec. Only the caravan demo is wired for Phase A;
