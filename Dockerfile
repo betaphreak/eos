@@ -24,7 +24,10 @@ ARG BUILD_COMMIT=docker
 RUN mvn -q -B -DskipTests -Dgit.total.commit.count=${BUILD_NUMBER} -Dgit.commit.id.abbrev=${BUILD_COMMIT} package
 
 # ---- runtime: the jar + the on-disk resources the engine loads at runtime ----
-FROM eclipse-temurin:25-jre
+# Alpine (musl) JRE — ~200 MB smaller than the Ubuntu jre base. The build stage above stays on the
+# glibc Maven image; a pure-Java jar runs the same on musl. The engine decodes the province BMPs via
+# java.desktop's ImageIO (pure-Java BMP reader, no text rendering), which works headless on Alpine.
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 COPY --from=build /build/civstudio-server/target/civstudio-server-*.jar app.jar
 # the province rasters ProvinceRaster reads from the filesystem (definition.csv +
