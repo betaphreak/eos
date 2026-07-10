@@ -55,14 +55,20 @@ export function drawPolitical() {
 // import cycle is safe). ----
 const polLegend = document.getElementById("polLegend");
 
-// per-overlay province coverage counts (key -> #provinces), cached until the overlay changes;
-// shared by the legend and the entity search so neither rescans P on every keystroke
-let _cov = { overlay: null, map: null };
+// the active plane restricts which provinces the political panel counts: the Overworld ledger
+// lists only surface polities, the Underworld ledger only underground ones. (Underground provinces
+// share the surface's coordinates — a second map plane — so without this the panel on either plane
+// would include the other's nations.) Matches drawPolitical's per-plane fill.
+const planeShows = p => S.plane === "underworld" ? isUnderground(p) : !isUnderground(p);
+
+// per-overlay province coverage counts (key -> #provinces), cached until the overlay OR plane
+// changes; shared by the legend and the entity search so neither rescans P on every keystroke
+let _cov = { overlay: null, plane: null, map: null };
 export function coverage() {
-  if (_cov.overlay === S.overlay && _cov.map) return _cov.map;
+  if (_cov.overlay === S.overlay && _cov.plane === S.plane && _cov.map) return _cov.map;
   const m = new Map();
-  for (const p of P) { const k = polOf(p).key; if (k) m.set(k, (m.get(k) || 0) + 1); }
-  _cov = { overlay: S.overlay, map: m };
+  for (const p of P) { if (!planeShows(p)) continue; const k = polOf(p).key; if (k) m.set(k, (m.get(k) || 0) + 1); }
+  _cov = { overlay: S.overlay, plane: S.plane, map: m };
   return m;
 }
 const polTable = () => S.overlay === "culture" ? CULTURES : S.overlay === "faith" ? RELIGIONS : COUNTRIES;
@@ -84,7 +90,7 @@ function inViewport(p) {
 // province coverage counts restricted to the current viewport (the ledger lists only what's visible)
 function viewportCoverage() {
   const m = new Map();
-  for (const p of P) { const k = polOf(p).key; if (k && inViewport(p)) m.set(k, (m.get(k) || 0) + 1); }
+  for (const p of P) { const k = polOf(p).key; if (k && planeShows(p) && inViewport(p)) m.set(k, (m.get(k) || 0) + 1); }
   return m;
 }
 
@@ -201,5 +207,5 @@ function applyPolitical(POL) {
     const p = byId.get(r.id); if (!p) continue;
     p.owner = r.o; p.controller = r.ct || r.o; p.culture = r.c; p.religion = r.r;
   }
-  _cov = { overlay: null, map: null };   // province keys just changed — invalidate the coverage cache
+  _cov = { overlay: null, plane: null, map: null };   // province keys just changed — invalidate the coverage cache
 }

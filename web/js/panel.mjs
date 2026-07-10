@@ -308,6 +308,7 @@ function worldRail(){
 // a ghost and lights the underground CAVERN provinces in place (see main.drawUnderworld).
 function setPlane(pl){
   S.plane = pl;
+  S.baseVersion++;   // the political ledger is per-plane (surface vs underground) — force its rebuild
   document.querySelectorAll("#planeToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.plane===pl));
   draw();
 }
