@@ -234,7 +234,15 @@ function buildPlotTexCanvas(p) {
   // strongly; EQUAL-order neighbours bleed mutually at half strength (each side blends the other) so
   // same-layer terrain boundaries — grass/plains/tundra etc. — soften instead of meeting at a hard
   // seam; a LOWER neighbour is skipped here and handled when ITS cell bleeds this one back.
-  const f = tpp * 0.62;
+  const f = tpp * 0.7;
+  // When a plot is big enough to read its texture (deep/city zoom), feather the neighbour's REAL
+  // terrain tile across the edge instead of a flat colour: draw the tile into a per-plot temp,
+  // mask it to a soft edge ramp with `destination-in`, and composite it over this plot's base. That
+  // dissolves grass/plains/tundra boundaries the way Civ4's blend tiles do. At small tpp (a huge
+  // province zoomed out) the seam is sub-pixel, so keep the cheap flat-colour feather there.
+  const textured = tpp >= 12 && ttTiles;
+  let eb = null, ebx = null;
+  if (textured) { eb = document.createElement("canvas"); eb.width = tpp; eb.height = tpp; ebx = eb.getContext("2d"); }
   for (const q of p._plots) {
     const ql = LY[q.terrain] || 0, cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp;
     for (const d of NB4) {
@@ -242,8 +250,24 @@ function buildPlotTexCanvas(p) {
       if (!n || n.terrain === q.terrain) continue;
       const nl = LY[n.terrain] || 0;
       if (nl < ql) continue;                       // lower neighbour bleeds from its own side
-      const a = nl > ql ? 0.8 : 0.5;               // equal layers → softer mutual blend
-      const g = terrainRgb(n.terrain);
+      const a = nl > ql ? 0.85 : 0.5;              // equal layers → softer mutual blend
+      const tile = textured ? ttTiles[n.terrain] : null;
+      if (tile) {
+        // paint the neighbour's tile, mask it to a feather along the shared edge, blit over the plot
+        ebx.globalCompositeOperation = "source-over"; ebx.clearRect(0, 0, tpp, tpp);
+        ebx.drawImage(tile, 0, 0, tile.width, tile.height, 0, 0, tpp, tpp);
+        let gm;
+        if (d[0] === 1)       gm = ebx.createLinearGradient(tpp, 0, tpp - f, 0);
+        else if (d[0] === -1) gm = ebx.createLinearGradient(0, 0, f, 0);
+        else if (d[1] === 1)  gm = ebx.createLinearGradient(0, tpp, 0, tpp - f);
+        else                  gm = ebx.createLinearGradient(0, 0, 0, f);
+        gm.addColorStop(0, `rgba(0,0,0,${a})`); gm.addColorStop(1, "rgba(0,0,0,0)");
+        ebx.globalCompositeOperation = "destination-in";
+        ebx.fillStyle = gm; ebx.fillRect(0, 0, tpp, tpp);
+        o.drawImage(eb, cx, cy);
+        continue;
+      }
+      const g = terrainRgb(n.terrain);            // fallback: flat-colour feather (small tpp / missing tile)
       const c0 = `rgba(${g[0]},${g[1]},${g[2]},${a})`, c1 = `rgba(${g[0]},${g[1]},${g[2]},0)`;
       let gr, rx, ry, rw, rh;
       if (d[0] === 1) { gr = o.createLinearGradient(cx + tpp, 0, cx + tpp - f, 0); rx = cx + tpp - f; ry = cy; rw = f; rh = tpp; }
@@ -252,6 +276,38 @@ function buildPlotTexCanvas(p) {
       else { gr = o.createLinearGradient(0, cy, 0, cy + f); rx = cx; ry = cy; rw = tpp; rh = f; }
       gr.addColorStop(0, c0); gr.addColorStop(1, c1);
       o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
+    }
+  }
+  // 2b) corner blend: the 4-edge pass leaves the diagonal gaps — where a plot's DIAGONAL neighbour
+  // differs but both flanking orthogonal neighbours match, that corner stays a hard square notch.
+  // Feather the diagonal neighbour's tile into the corner with a radial mask. Skipped when a flanking
+  // orthogonal neighbour already shares that terrain (its edge blend covers the corner), and only when
+  // the texture is big enough to read (same tpp gate + temp canvas as the edge pass).
+  if (textured) {
+    const NB4D = [[1, -1], [-1, -1], [1, 1], [-1, 1]];   // NE, NW, SE, SW
+    const fc = tpp * 0.6;
+    for (const q of p._plots) {
+      const ql = LY[q.terrain] || 0, cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp;
+      for (const d of NB4D) {
+        const n = grid.get((q.x + d[0]) * 1e5 + (q.y + d[1]));
+        if (!n || n.terrain === q.terrain) continue;
+        const nl = LY[n.terrain] || 0;
+        if (nl < ql) continue;                           // lower neighbour bleeds from its own corner
+        const e1 = grid.get((q.x + d[0]) * 1e5 + q.y);   // the two orthogonal neighbours flanking this corner
+        const e2 = grid.get(q.x * 1e5 + (q.y + d[1]));
+        if ((e1 && e1.terrain === n.terrain) || (e2 && e2.terrain === n.terrain)) continue;   // edge blend already covers it
+        const tile = ttTiles[n.terrain];
+        if (!tile) continue;
+        const a = nl > ql ? 0.85 : 0.5;
+        ebx.globalCompositeOperation = "source-over"; ebx.clearRect(0, 0, tpp, tpp);
+        ebx.drawImage(tile, 0, 0, tile.width, tile.height, 0, 0, tpp, tpp);
+        const vx = d[0] === 1 ? tpp : 0, vy = d[1] === 1 ? tpp : 0;
+        const gm = ebx.createRadialGradient(vx, vy, 0, vx, vy, fc);
+        gm.addColorStop(0, `rgba(0,0,0,${a})`); gm.addColorStop(1, "rgba(0,0,0,0)");
+        ebx.globalCompositeOperation = "destination-in";
+        ebx.fillStyle = gm; ebx.fillRect(0, 0, tpp, tpp);
+        o.drawImage(eb, cx, cy);
+      }
     }
   }
   if (!water) {
