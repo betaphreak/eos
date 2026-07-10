@@ -355,9 +355,15 @@ drawn as procedural glyphs and land features as procedural marks.
   (forest/jungle darken, swamp desaturate, hill lighten, peak → grey, river → blue).
 - **`k ≥ 16`** — real Civ4 **detail** textures, but **recolored so each texture's mean
   equals its flat display colour** (`terrain-tiles-<seed>.png`, gitignored) — real grain,
-  synthetic hue. Plus: a **16-way edge blend that is a colour *bleed*, not the real
-  `TextureBlend` alpha tiles** (§6.1 knowingly approximated); **hillshade** from real
-  `elevation` (NW sun) + snow cap; **procedural vector feature marks** (`featureSprite`:
+  synthetic hue. Plus: a **terrain edge + corner blend** — the neighbour's real recoloured
+  tile feathered across each shared edge/corner under a soft alpha ramp modulated by a
+  procedural smooth-noise mask, blended on **both** sides of every boundary and weighted by
+  `LayerOrder` (higher bleeds strongly onto lower, lower bleeds back to soften the higher edge,
+  equal layers meet in the middle) so boundaries interleave organically rather than meeting at a
+  square seam. This **approximates** Civ4's blending with a procedural mask, *not* the real
+  `TextureBlend` alpha tiles (§6.1 — see the upgrade path in *Not built* below). A **feathered
+  snow cap** on the highest ground (built at 1px/plot, blitted upscaled with bilinear smoothing so
+  it ramps between snowy and bare plots); **procedural vector feature marks** (`featureSprite`:
   trees = circles, swamp = reeds, cactus, oasis, savanna tufts; `FLOOD_PLAINS` left bare);
   **rivers as a real water-tile ribbon** tapered by authored width (`drawRiver`, see
   `docs/river-rendering.md`); the **coast shallows** (real shore-wave texture); and, on sea/lake
@@ -385,7 +391,18 @@ drawn as procedural glyphs and land features as procedural marks.
 - **The offline `.nif`→sprite baker (§10) does not exist** — this is the gating unlock for
   Feature/Bonus/Improvement/Wonder art, which is all 3D `.nif`.
 - **The 16-way `TextureBlend` table is exported to `terrain-art.json` but never read by
-  `build.mjs`** — the on-screen blend is the colour-bleed approximation above.
+  `build.mjs`** — the on-screen blend is the procedural textured-feather + noise-mask
+  approximation above (`web/js/plots.mjs` `buildPlotTexCanvas`, `BLEND_NOISE`).
+  **Faithful upgrade path — the real Civ4 blend alpha masks.** Two families of authored DDS
+  masks exist and would make deep-zoom transitions pixel-faithful to Civ4 instead of noise-driven:
+  (1) the per-terrain **`TextureBlend01..15` transition tiles** referenced from
+  `CIV4ArtDefines_Terrain.xml` (`textures/`), selected by the 4-bit "same-terrain neighbour"
+  bitmask + rotation (§4.1/§6.1) — this is the table already exported but unread; and (2) the
+  reusable **edge/corner alpha masks** under `heightmap/` — the `coastblendmasks` and the
+  `border00a` / `border01[a-h]` / `border02[a-h]` / `border03..05[a-d]` family (6 configs × 4–8
+  rotations, a band along one edge with corner variants) catalogued in `docs/river-rendering.md §4`.
+  Baking those via `web/dds.mjs` and driving the blend from the exported bitmask/rotation table —
+  in place of `BLEND_NOISE` — is the way to replace the approximation with the real art.
 - **Bonuses are now rendered — as procedural category glyphs, not real Civ4 art** (Phase F,
   `web/js/plots.mjs` `drawBonuses`/`bonusGlyph`): each resourced plot draws a small colour+shape
   glyph keyed by category (sea food, gems/luxury, energy, metal/stone, crop, livestock) at texture
