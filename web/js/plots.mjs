@@ -197,6 +197,35 @@ function drawPlots(only) {
   ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = smooth;
   drawBonusOverlay(vis);   // resource icons: screen-space overlay over the in-view provinces only
 }
+// A smooth grayscale noise tile (deterministic, built once): black RGB with a soft-blob ALPHA
+// channel in ~[0.25,1]. Used to make the terrain edge/corner blend IRREGULAR instead of a clean
+// linear ramp — multiplied into the blend mask so boundaries interleave organically, which is what
+// kills the square-tile look at deep zoom (Civ4's alpha blend masks do the same). Low-res hash noise
+// upscaled with smoothing → cloudy blobs; each plot samples a different sub-region so neighbours differ.
+const BLEND_NOISE = (() => {
+  const LO = 32, HI = 128;
+  const lo = document.createElement("canvas"); lo.width = lo.height = LO;
+  const lx = lo.getContext("2d"), im = lx.createImageData(LO, LO), d = im.data;
+  for (let y = 0; y < LO; y++) for (let x = 0; x < LO; x++) {
+    const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453, v = s - Math.floor(s);   // deterministic hash [0,1)
+    const i = (y * LO + x) * 4;
+    // alpha kept in a HIGH band [0.55,1]: the noise only nibbles the feather edge irregular, it must
+    // not gut the neighbour's coverage (a low floor made lone tiles read MORE square, not less)
+    d[i] = d[i + 1] = d[i + 2] = 0; d[i + 3] = Math.round((0.55 + 0.45 * v) * 255);
+  }
+  lx.putImageData(im, 0, 0);
+  const hi = document.createElement("canvas"); hi.width = hi.height = HI;
+  const hx = hi.getContext("2d"); hx.imageSmoothingEnabled = true;
+  hx.drawImage(lo, 0, 0, LO, LO, 0, 0, HI, HI);   // upscale → smooth blobs
+  return hi;
+})();
+const NOISE_SUB = 40, NOISE_RANGE = 128 - NOISE_SUB;   // per-plot sample window into BLEND_NOISE
+// a per-plot/edge offset into the noise so adjacent blends don't share the same irregular edge
+const noiseOff = (qx, qy, d) => {
+  const h = ((qx * 73856093) ^ (qy * 19349663) ^ ((d[0] + 2) * 10007) ^ ((d[1] + 2) * 20011)) >>> 0;
+  return [h % NOISE_RANGE, (h >> 8) % NOISE_RANGE];
+};
+
 // rasterise a province's plots to a textured offscreen — each plot drawn as its Civ4
 // ground-texture tile (from the atlas) at TPP px, plus relief/river overlays — built
 // once and blitted scaled (so hover/pan redraws stay a single drawImage per province).
@@ -234,7 +263,7 @@ function buildPlotTexCanvas(p) {
   // strongly; EQUAL-order neighbours bleed mutually at half strength (each side blends the other) so
   // same-layer terrain boundaries — grass/plains/tundra etc. — soften instead of meeting at a hard
   // seam; a LOWER neighbour is skipped here and handled when ITS cell bleeds this one back.
-  const f = tpp * 0.7;
+  const f = tpp * 0.85;
   // When a plot is big enough to read its texture (deep/city zoom), feather the neighbour's REAL
   // terrain tile across the edge instead of a flat colour: draw the tile into a per-plot temp,
   // mask it to a soft edge ramp with `destination-in`, and composite it over this plot's base. That
@@ -249,8 +278,10 @@ function buildPlotTexCanvas(p) {
       const n = grid.get((q.x + d[0]) * 1e5 + (q.y + d[1]));
       if (!n || n.terrain === q.terrain) continue;
       const nl = LY[n.terrain] || 0;
-      if (nl < ql) continue;                       // lower neighbour bleeds from its own side
-      const a = nl > ql ? 0.85 : 0.5;              // equal layers → softer mutual blend
+      // blend BOTH sides of every boundary so neither edge stays a hard line (Civ4 mutual blend):
+      // a higher-layer neighbour bleeds strongly onto this lower plot, a lower one bleeds back strongly
+      // enough to actually soften this higher plot's edge, equal layers meet in the middle.
+      const a = nl > ql ? 0.95 : nl < ql ? 0.55 : 0.7;
       const tile = textured ? ttTiles[n.terrain] : null;
       if (tile) {
         // paint the neighbour's tile, mask it to a feather along the shared edge, blit over the plot
@@ -264,6 +295,8 @@ function buildPlotTexCanvas(p) {
         gm.addColorStop(0, `rgba(0,0,0,${a})`); gm.addColorStop(1, "rgba(0,0,0,0)");
         ebx.globalCompositeOperation = "destination-in";
         ebx.fillStyle = gm; ebx.fillRect(0, 0, tpp, tpp);
+        const [nx, ny] = noiseOff(q.x, q.y, d);      // multiply by smooth noise → irregular, non-square edge
+        ebx.drawImage(BLEND_NOISE, nx, ny, NOISE_SUB, NOISE_SUB, 0, 0, tpp, tpp);
         o.drawImage(eb, cx, cy);
         continue;
       }
@@ -292,13 +325,12 @@ function buildPlotTexCanvas(p) {
         const n = grid.get((q.x + d[0]) * 1e5 + (q.y + d[1]));
         if (!n || n.terrain === q.terrain) continue;
         const nl = LY[n.terrain] || 0;
-        if (nl < ql) continue;                           // lower neighbour bleeds from its own corner
         const e1 = grid.get((q.x + d[0]) * 1e5 + q.y);   // the two orthogonal neighbours flanking this corner
         const e2 = grid.get(q.x * 1e5 + (q.y + d[1]));
         if ((e1 && e1.terrain === n.terrain) || (e2 && e2.terrain === n.terrain)) continue;   // edge blend already covers it
         const tile = ttTiles[n.terrain];
         if (!tile) continue;
-        const a = nl > ql ? 0.85 : 0.5;
+        const a = nl > ql ? 0.95 : nl < ql ? 0.55 : 0.7;   // mutual: soften both sides of the corner
         ebx.globalCompositeOperation = "source-over"; ebx.clearRect(0, 0, tpp, tpp);
         ebx.drawImage(tile, 0, 0, tile.width, tile.height, 0, 0, tpp, tpp);
         const vx = d[0] === 1 ? tpp : 0, vy = d[1] === 1 ? tpp : 0;
@@ -306,6 +338,8 @@ function buildPlotTexCanvas(p) {
         gm.addColorStop(0, `rgba(0,0,0,${a})`); gm.addColorStop(1, "rgba(0,0,0,0)");
         ebx.globalCompositeOperation = "destination-in";
         ebx.fillStyle = gm; ebx.fillRect(0, 0, tpp, tpp);
+        const [nx, ny] = noiseOff(q.x, q.y, d);      // irregular corner, same noise mask as the edges
+        ebx.drawImage(BLEND_NOISE, nx, ny, NOISE_SUB, NOISE_SUB, 0, 0, tpp, tpp);
         o.drawImage(eb, cx, cy);
       }
     }
@@ -315,9 +349,21 @@ function buildPlotTexCanvas(p) {
   // removed: with EXAG amplifying the gentle continental heightmap, near-flat provinces — most of
   // the map — picked up a strong per-plot bright/dark checker that just read as square tiles. The
   // ground is now the flat Civ4 terrain texture; relief reads from the terrain/feature mix instead.)
-  for (const q of p._plots) {
-    const e = q.elevation | 0;
-    if (e >= 165) { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; o.fillStyle = `rgba(232,238,247,${Math.min(0.6, (e - 165) / 50).toFixed(3)})`; o.fillRect(cx, cy, tpp, tpp); }
+  // built at 1px/plot then blitted UPSCALED with smoothing, so the white feathers between snowy and
+  // bare plots (bilinear alpha ramp) instead of stamping a hard square on each high plot.
+  {
+    const sc = document.createElement("canvas"); sc.width = w; sc.height = h;
+    const sxc = sc.getContext("2d"), sim = sxc.createImageData(w, h), sd = sim.data;
+    let anySnow = false;
+    for (let i = 0; i < w * h; i++) { sd[i * 4] = 232; sd[i * 4 + 1] = 238; sd[i * 4 + 2] = 247; }   // white; alpha 0 (RGB set so upscale has no dark halo)
+    for (const q of p._plots) {
+      const e = q.elevation | 0;
+      if (e < 165) continue;
+      anySnow = true;
+      const oi = ((q.y - y0) * w + (q.x - x0)) * 4;
+      sd[oi + 3] = Math.round(Math.min(0.6, (e - 165) / 50) * 255);
+    }
+    if (anySnow) { sxc.putImageData(sim, 0, 0); o.imageSmoothingEnabled = true; o.drawImage(sc, 0, 0, w, h, 0, 0, w * tpp, h * tpp); }
   }
   // 4) coast shallows: real Civ4 shore texture, drawn as one province-level pass so the ripple
   // blends over the whole shore region at once (paintCoast); then rivers, then features on top, so a
