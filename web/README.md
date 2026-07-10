@@ -77,7 +77,7 @@ link to a province at a zoom with `index.html#p=<id>&z=<zoom>`.
 
 Serve `web/` over HTTP (`npx serve web`, `swa start ./web`, or the deployed site) and open
 it — `index.html`'s inline bootstrap fetches `window.BUNDLE` from the spectator server
-(`GET /api/bundle`; default `https://live.civstudio.com`, override with `?live=<url>` for a
+(`GET /api/bundle`; default `https://dev.civstudio.com`, override with `?live=<url>` for a
 local server) and only then boots the ES-module app. So the map now needs **both** an HTTP
 origin (the per-plot terrain zoom range-fetches `plots.pack`, which `file://` blocks) **and a
 reachable server** (the bundle) — it no longer works off disk at all. Point it at a local
@@ -131,7 +131,7 @@ of MB; `WorldPlotGenerator` builds and caches them for the build).
 **HTTP + server required.** The page range-fetches `plots.pack` (blocked on `file://`) and
 fetches `window.BUNDLE` from the server, so it needs an HTTP origin **and** a reachable server —
 it no longer opens off disk. Serve the folder over HTTP (`npx serve web`, `swa start ./web`, or
-the deployed site) and point it at a server (`?live=<url>`, default `https://live.civstudio.com`).
+the deployed site) and point it at a server (`?live=<url>`, default `https://dev.civstudio.com`).
 
 ### Files
 
@@ -192,7 +192,7 @@ change. The deploy token lives in the `AZURE_STATIC_WEB_APPS_API_TOKEN` repo sec
 from `az staticwebapp secrets list -n anbennar-worldmap -g rg-anbennar-web`).
 
 **The map now depends on the server.** The page fetches `window.BUNDLE` from the spectator
-server (`GET /api/bundle` on `live.civstudio.com`, a separate Container App — see
+server (`GET /api/bundle` on `dev.civstudio.com`, a separate Container App — see
 [`../docs/client-server.md`](../docs/client-server.md)), so a static-only deploy is no longer
 self-sufficient: **deploy the server before (or with) a web deploy that expects the new bundle**,
 and note that if the server is down the site shows *Maintenance Mode* instead of the map. The

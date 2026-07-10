@@ -114,6 +114,11 @@
                 <executions>
                     <execution>
                         <goals>
+                            <!-- build-info writes META-INF/build-info.properties (project version +
+                                 build time); Actuator's BuildInfoContributor surfaces it at
+                                 /actuator/info as build.version — the version the web viewer's
+                                 server picker fetches online (info is exposed + CORS-allowed above). -->
+                            <goal>build-info</goal>
                             <goal>repackage</goal>
                         </goals>
                     </execution>

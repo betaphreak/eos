@@ -27,7 +27,7 @@ errors. Works against any served page (deep-link with `#p=<id>&z=<zoom>`).
 ```bash
 node mapshot.mjs <provId> [zoom=64] [out=shot.png] [WxH]
 # e.g. node mapshot.mjs 412 256 p412.png 380x280
-#      node mapshot.mjs 4411 256 --live=https://live.civstudio.com
+#      node mapshot.mjs 4411 256 --live=https://dev.civstudio.com
 ```
 Serves `web/` over HTTP (with Range), points the page's bundle fetch at a live server via `?live=`
 (default `http://localhost:8080`, override with `--live=` or `$LIVE`), deep-links to the province at

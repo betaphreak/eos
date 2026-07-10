@@ -240,7 +240,7 @@ opposite shapes:
           │
           │  EventSource (SSE) + fetch (control)
           ▼
-   live.civstudio.com  ──────  Azure Container App           (new: Dockerfile → deploy-server.yml)
+   dev.civstudio.com  ──────  Azure Container App           (new: Dockerfile → deploy-server.yml)
    (the fat jar: HostedSessions + FeedServer, one always-on replica)
 ```
 
@@ -307,7 +307,7 @@ az containerapp update -n civstudio-server -g civstudio \
   --image civstudio.azurecr.io/civstudio-server:<tag>
 ```
 
-**Custom domain (`live.civstudio.com`).** `civstudio.com` DNS is **not** in Azure DNS
+**Custom domain (`dev.civstudio.com`).** `civstudio.com` DNS is **not** in Azure DNS
 (no zone in the subscription), so the two validation records are added at the external DNS
 provider by hand, then bound:
 
@@ -315,11 +315,11 @@ provider by hand, then bound:
 # after the app exists, read its verification id and default FQDN:
 az containerapp show -n civstudio-server -g civstudio \
   --query "{fqdn:properties.configuration.ingress.fqdn, verify:properties.customDomainVerificationId}" -o json
-# add at the DNS provider:  CNAME  live       -> <fqdn>
-#                           TXT    asuid.live -> <verify>
+# add at the DNS provider:  CNAME  dev       -> <fqdn>
+#                           TXT    asuid.dev -> <verify>
 # then bind + provision a managed cert:
-az containerapp hostname add  -n civstudio-server -g civstudio --hostname live.civstudio.com
-az containerapp hostname bind -n civstudio-server -g civstudio --hostname live.civstudio.com \
+az containerapp hostname add  -n civstudio-server -g civstudio --hostname dev.civstudio.com
+az containerapp hostname bind -n civstudio-server -g civstudio --hostname dev.civstudio.com \
   --environment civstudio-managed-env --validation-method CNAME
 ```
 
@@ -365,7 +365,7 @@ server, so the site's `build.mjs` is now **run-independent** (no `output/<seed>`
 no baked journeys). Cross-origin is handled by **CORS on `FeedServer`**
 (option A): responses carry `Access-Control-Allow-Origin` for the site origin and the JSON POST
 is preflighted; the allowed origins default to the production site + localhost, overridable via
-`EOS_CORS_ORIGINS`. The base feed URL defaults to `https://live.civstudio.com` (override with
+`EOS_CORS_ORIGINS`. The base feed URL defaults to `https://dev.civstudio.com` (override with
 `?live=<url>` for local testing). Verified headless (`tools/webverify/live-shot.mjs`).
 
 **✅ `window.BUNDLE` served from the server — `data.js` retired (Implemented, 2026-07-10).** The
@@ -381,7 +381,7 @@ provinces' cull boxes): `build.mjs` still bakes the binaries and now emits a sma
 `src/main/resources/map/web-asset-manifest.json` (on the classpath → inside the jar) that
 `WorldBundle` merges in. The endpoint gzips (~2.4 MB → ~0.6 MB) and caches the assembled bundle;
 CORS already covers it. `index.html` gained an inline **bootstrap** — resolve the server base
-(`?live=<url>` → default `live.civstudio.com`), fetch the bundle, set `window.BUNDLE`, then
+(`?live=<url>` → default `dev.civstudio.com`), fetch the bundle, set `window.BUNDLE`, then
 dynamically `import('./app.js')` (needed because `core.mjs` reads the global synchronously at
 module-eval time). This makes the map a **hard dependency** on the server: if the fetch fails the
 loading splash stays up with a *Maintenance Mode* notice. A golden-parity test

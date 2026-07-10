@@ -157,7 +157,7 @@ tick-authoritative, pausable host — Factorio-shaped, where authoritative state
 *f*(seed, ordered command log) and the browser is a thin render-client — and
 streams a read-only snapshot over Server-Sent Events. A public demo of six
 caravans marching over the world map in real time runs at
-**[live.civstudio.com](https://live.civstudio.com)**; design and deployment notes
+**[dev.civstudio.com](https://dev.civstudio.com)**; design and deployment notes
 are in [`docs/client-server.md`](docs/client-server.md).
 
 ## Roadmap

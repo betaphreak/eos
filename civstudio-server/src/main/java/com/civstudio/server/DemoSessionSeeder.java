@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Founds the Phase-A caravan-demo session once the Spring context is ready (the live deployment
- * at {@code live.civstudio.com} hosts this demo — one standard colony plus six marching
+ * at {@code dev.civstudio.com} hosts this demo — one standard colony plus six marching
  * caravans). Runs on startup via {@link ApplicationRunner}; the session parameters come from
  * {@link CivStudioProperties.Demo}. A founding failure is logged, not fatal — the server still
  * serves the map bundle and any other sessions.

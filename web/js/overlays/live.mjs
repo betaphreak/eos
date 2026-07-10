@@ -12,7 +12,7 @@ import { ctx, S, px, py, cssVar, cam, VIEW, baseXr, baseYr, sxSrc, sySrc, BUNDLE
 // where the feed lives: the build can inject BUNDLE.live.base; a ?live=<url> query overrides
 // it for local testing; otherwise the deployed server.
 const LIVE_BASE = new URLSearchParams(location.search).get("live")
-  || (BUNDLE.live && BUNDLE.live.base) || "https://live.civstudio.com";
+  || (BUNDLE.live && BUNDLE.live.base) || "https://dev.civstudio.com";
 
 const PALETTE = ["#e8c37a","#6bd08a","#7aa2e0","#e07a9e","#9e7ae0","#e0a97a","#7ae0d0","#c0e07a"];
 

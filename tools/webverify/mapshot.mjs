@@ -10,7 +10,7 @@
 //          --web=<dir>     static site to serve     (default ../../web next to this script)
 //          --wait=<ms>     settle time before shot  (default 7000)
 //   e.g. node mapshot.mjs 412 256 p412.png 380x280
-//        node mapshot.mjs 4411 256 --live=https://live.civstudio.com
+//        node mapshot.mjs 4411 256 --live=https://dev.civstudio.com
 import { chromium } from 'playwright-core';
 import http from 'http';
 import fs from 'fs';

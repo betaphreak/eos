@@ -113,6 +113,13 @@
       <div id="loading" role="status" aria-label="Loading the world map">
         <img class="ld-art" alt="">
         <div class="ld-bar"></div>
+        <!-- server picker: the bootstrap (below) fills #ldServers with one row per server and
+             holds here until the user clicks one to connect (each row shows its online version). -->
+        <div class="ld-picker" id="ldPicker" hidden>
+          <div class="ld-title">CivStudio</div>
+          <div class="ld-sub">Choose a server</div>
+          <div class="ld-servers" id="ldServers" role="listbox" aria-label="Servers"></div>
+        </div>
       </div>
     </div>
 
@@ -186,66 +193,116 @@
 
   <!-- window.BUNDLE (the map/geo backbone) now comes from the spectator server — the single
        source of truth, assembled by com.civstudio.server.web.WorldBundle — instead of a committed
-       data.js. Resolve the server base exactly as js/overlays/live.mjs does (?live=<url> overrides
-       for local testing, else the deployed server), fetch the bundle, and only then import the
-       module app: core.mjs reads window.BUNDLE synchronously at module-eval time, so it must be
-       populated first. A failed fetch surfaces on the status line (the accepted hard dependency). -->
+       data.js. The loading screen holds up a SERVER PICKER (dev is the default cloud server, local
+       targets a server on this machine; ?live=<url> injects a one-off custom entry). Each row shows
+       the server's version, fetched online from /actuator/info. We WAIT for the user to click a
+       server, then poll readiness (/actuator/health), fetch the bundle, and import the module app —
+       core.mjs reads window.BUNDLE synchronously at eval time, so it must be populated first. -->
   <script>
   (function () {
-    var base = (new URLSearchParams(location.search).get("live") || "https://live.civstudio.com")
-      .replace(/\/+$/, "");
+    var params = new URLSearchParams(location.search);
+    // dev = the default cloud server; local = a server run on this machine. ?live=<url> prepends a
+    // one-off custom entry (ad-hoc testing) and preselects it. Trailing slashes trimmed; the chosen
+    // base flows to the app as BUNDLE.live.base (live.mjs's LIVE_BASE fallback mirrors dev).
+    var servers = [
+      { id: "dev",   label: "dev",   base: "https://dev.civstudio.com" },
+      { id: "local", label: "local", base: "http://localhost:8080" }
+    ];
+    var custom = params.get("live");
+    if (custom) servers.unshift({ id: "custom", label: "custom", base: custom });
+    servers.forEach(function (s) { s.base = s.base.replace(/\/+$/, ""); });
+    var defaultId = custom ? "custom" : "dev";
 
-    // Turn the loading screen into a "waiting for the server" notice, kept up while the server is
-    // unreachable (the map is a hard dependency — window.BUNDLE is served by the server).
-    function maintenance(msg) {
-      var el = document.getElementById("loading");
-      if (el) {
-        var art = el.querySelector(".ld-art");
-        if (art && !art.getAttribute("src")) art.src = "assets/loading-1.jpg"; // a committed splash
-        var bar = el.querySelector(".ld-bar");
-        if (bar) bar.remove();                      // not loading — drop the progress bar
-        if (!el.querySelector(".ld-maint")) {
-          var note = document.createElement("div");
-          note.className = "ld-maint";
-          note.textContent = "Maintenance Mode";
-          el.appendChild(note);
-        }
-      }
-      if (window.__status) window.__status(msg, "error");
+    var loading = document.getElementById("loading");
+    var picker  = document.getElementById("ldPicker");
+    var listEl  = document.getElementById("ldServers");
+    var art = loading && loading.querySelector(".ld-art");
+    var bar = loading && loading.querySelector(".ld-bar");
+    if (art && !art.getAttribute("src")) art.src = "assets/loading-1.jpg";   // committed splash behind the picker
+    if (bar) bar.hidden = true;                     // no progress bar until a server is picked
+
+    var connecting = false;
+
+    // one row per server: label · host · online version · status dot. A row is clickable only once
+    // its probe says "up"; the default server's row is pre-highlighted but we WAIT for a click.
+    function render() {
+      listEl.textContent = "";
+      servers.forEach(function (s) {
+        var row = document.createElement("button");
+        row.className = "ld-srv" + (s.id === defaultId ? " is-default" : "");
+        row.type = "button"; row.setAttribute("role", "option");
+        row.setAttribute("aria-selected", s.id === defaultId ? "true" : "false");
+        row.disabled = connecting || s.status !== "up";
+
+        var name = document.createElement("span"); name.className = "srv-name"; name.textContent = s.label;
+        var host = document.createElement("span"); host.className = "srv-host";
+        host.textContent = s.base.replace(/^https?:\/\//, "");
+        var meta = document.createElement("span"); meta.className = "srv-meta";
+        var ver  = document.createElement("span"); ver.className = "srv-ver";
+        ver.textContent = s.status === "up" ? (s.version || "unknown")
+          : s.status === "down" ? "offline" : "checking…";
+        var dot  = document.createElement("span"); dot.className = "srv-dot srv-" + (s.status || "wait");
+        meta.appendChild(ver); meta.appendChild(dot);
+
+        row.appendChild(name); row.appendChild(host); row.appendChild(meta);
+        row.addEventListener("click", function () { if (!connecting && s.status === "up") connect(s); });
+        listEl.appendChild(row);
+      });
+    }
+    function showPicker() { picker.hidden = false; }
+    var probing = false;
+    function startPicker() {                      // reveal the picker + (once) begin probing on an interval
+      showPicker(); render();
+      if (!probing) { probing = true; probeAll(); setInterval(probeAll, 5000); }
     }
 
-    // Is the server reachable and ready to serve the bundle? Prefer Spring Boot's Actuator health,
-    // but tolerate a server without Actuator (e.g. an older build, or a web deploy that landed ahead
-    // of the server one): a 404 means the server is up and can still serve /api/bundle. Only a
-    // network error or a 5xx (down, or Boot still starting) keeps us on the Maintenance splash.
-    function serverReady() {
-      return fetch(base + "/actuator/health", { credentials: "omit", cache: "no-store" })
+    // probe a server's /actuator/info (CORS-allowed) for reachability + build.version. A response
+    // means up (build.version fills the row; "unknown" for an older server without build-info); a
+    // network error / non-OK means down. Re-probed on an interval so a starting server flips to up.
+    function probe(s) {
+      return fetch(s.base + "/actuator/info", { credentials: "omit", cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(function (j) { s.status = "up"; s.version = j && j.build && j.build.version; })
+        .catch(function () { s.status = "down"; s.version = null; })
+        .then(function () { if (!connecting) render(); });
+    }
+    function probeAll() { if (!connecting) servers.forEach(probe); }
+
+    // connect to the picked server: hold the picker (rows disabled), show the progress bar, confirm
+    // readiness (health), fetch the bundle, and boot the module app. On failure, surface it and
+    // re-enable the picker so another server can be tried.
+    function connect(s) {
+      connecting = true; render();
+      if (bar) bar.hidden = false;
+      if (window.__status) window.__status("Connecting to " + s.label + " (" + s.base + ")…", "info");
+      fetch(s.base + "/actuator/health", { credentials: "omit", cache: "no-store" })
         .then(function (r) {
           if (r.status === 404) return;                   // up, no Actuator — fall through to the bundle
-          if (!r.ok) throw new Error("HTTP " + r.status);  // 5xx/503: down or still starting → retry
-          return r.json().then(function (h) {
-            if (!h || h.status !== "UP") throw new Error("status " + (h && h.status));
-          });
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json().then(function (h) { if (!h || h.status !== "UP") throw new Error("status " + (h && h.status)); });
+        })
+        .then(function () { return fetch(s.base + "/api/bundle", { credentials: "omit" }); })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(function (b) { b.live = { base: s.base }; window.BUNDLE = b; return import("./app.js"); })
+        .catch(function (e) {
+          connecting = false; s.status = "down";
+          if (bar) bar.hidden = true;
+          if (window.__status) window.__status("Could not reach " + s.label + " — " + (e && e.message || e), "error");
+          startPicker();                        // auto-connect failed → reveal the picker (and start probing)
         });
     }
 
-    // Fetch the map/geo bundle and boot the module app (core.mjs reads window.BUNDLE at eval time).
-    function boot() {
-      return fetch(base + "/api/bundle", { credentials: "omit" })
-        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-        .then(function (b) { b.live = { base: base }; window.BUNDLE = b; return import("./app.js"); });
+    // ?server=<id> (dev|local|custom) bypasses the picker and connects straight to that server; on
+    // failure connect() reveals the picker. A bare ?live=<url> also auto-connects (to its custom
+    // entry) — preserving the old point-at-a-server testing shortcut. Otherwise: show the picker
+    // and wait for a click.
+    var auto = params.get("server") || (custom ? "custom" : null);
+    var target = auto && servers.filter(function (s) { return s.id === auto; })[0];
+    if (target) {
+      connect(target);
+    } else {
+      startPicker();
     }
-
-    // Wait for the server (ready), then boot. While it is down, hold the Maintenance Mode splash
-    // and retry with a capped backoff — the page comes up on its own once the server does.
-    var tries = 0;
-    (function attempt() {
-      serverReady().then(boot).catch(function () {
-        maintenance("Maintenance Mode — waiting for the map server (" + base + ")…");
-        tries++;
-        setTimeout(attempt, Math.min(1000 + tries * 500, 5000));
-      });
-    })();
   })();
   </script>
 </body>
