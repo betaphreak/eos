@@ -18,7 +18,9 @@ The page is a **WorldMap** of the whole imported world (all ~4,710 land province
 rendered from the engine's **real terrain** — the recolored `terrain.bmp` — with all
 province polygons, hover-to-read, pan/zoom (the map **wraps east-west** — it is a
 cylinder), province search, a full province-detail sidebar, and the per-plot terrain zoom
-(textures, hillshade, rivers, features) on any province. A **World | Political | Caravan | Live** toggle
+(textures, hillshade, rivers, features) on any province. Boundaries are **zoom-banded**:
+zooming out fades province borders into region → super-region → continent outlines (dissolved
+polygons precomputed by `TierBorderExporter`), each with its label tier. A **World | Political | Caravan | Live** toggle
 switches modes. **Political mode** colours each land province by its owning Anbennar nation at the
 game-start bookmark (with hover/sidebar showing nation · culture · faith), zoom-banded so the fill
 fades to the physical terrain as you dive in — see [`docs/political-map.md`](../docs/political-map.md).
@@ -84,12 +86,18 @@ province map (`src/main/resources/map/provinces.json`) and outlines
 and bakes a dark-tinted crop of the real terrain raster (`data/anbennar/terrain.bmp`)
 into a real image at `assets/terrain-<seed>.png` that the page references.
 
-`borders.json` (the per-province polygon outlines) is a committed map resource, so
-it is normally already present. Rebuild it only if the map sources change:
+`borders.json` (the per-province polygon outlines) and `tierborders.json` (the dissolved
+continent / super-region / region outlines) are committed map resources, so they are normally
+already present. Rebuild them only if the map sources change:
 
 ```bash
 mvn -q compile exec:exec -Dsim.main=com.civstudio.geo.export.ProvinceBorderExporter
+mvn -q compile exec:exec -Dsim.main=com.civstudio.geo.export.TierBorderExporter
 ```
+
+`build.mjs` copies `tierborders.json` through to the committed `assets/tiers.json` the page
+lazy-fetches; the tier outlines draw **zoom-banded** (region → super-region → continent) with
+province borders fading out under them as you zoom out (`web/js/overlays/tiers.mjs`).
 
 ```bash
 # 1. produce a run (writes output/<seed>/by-caravan/…). e.g. the six-caravan run:

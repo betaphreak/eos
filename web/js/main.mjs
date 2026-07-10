@@ -4,6 +4,7 @@ import { drawLabels } from "./labels.mjs";
 import { drawPolitical, scheduleLegendRefresh } from "./overlays/political.mjs";
 import { drawCaravanHeat, drawCaravan } from "./overlays/caravan.mjs";
 import { drawLive } from "./overlays/live.mjs";
+import { ensureTiers, drawTiers } from "./overlays/tiers.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
 // transparent so the sea layer below shows through, land is opaque.
 // loading screen: show a random Anbennar splash (1:1, stage-cropped) until the map's first paint,
@@ -151,9 +152,21 @@ function renderScene() {
 
   if (S.showHeat && S.overlay === "caravan") drawCaravanHeat();   // caravan-days choropleth
   if (isPolitical()) drawPolitical();                             // nation/culture/faith fills
-  // province outlines (surface only; underground gets its lit rim from drawUnderworld)
-  ctx.strokeStyle="rgba(190,205,230,.18)"; ctx.lineWidth=0.8;
-  for (const p of P) if (isSurface(p) && p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
+  // geographic-tier boundaries (region → super-region → continent), zoom-banded. Lazily loaded
+  // as we approach their zoom range, and drawn under the province borders.
+  if (cam.k < 10) ensureTiers(draw);
+  drawTiers();
+  // province outlines (surface only; underground gets its lit rim from drawUnderworld). They
+  // FADE OUT below the province zoom so the coarser tier boundaries take over rather than
+  // clutter over them: gone below ~7.5×, full again by ~10×.
+  const pbA = Math.max(0, Math.min(1, (cam.k - 7.5) / 2.5));
+  if (pbA > 0.01) {
+    ctx.save();
+    ctx.globalAlpha = pbA;
+    ctx.strokeStyle="rgba(190,205,230,.18)"; ctx.lineWidth=0.8;
+    for (const p of P) if (isSurface(p) && p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
+    ctx.restore();
+  }
 
   if (S.plane === "underworld") drawUnderworld();   // dim the surface, relight the caves beneath
   else drawCaveEntrances();                         // overworld: mark where caves adjoin the surface

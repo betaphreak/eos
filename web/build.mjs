@@ -152,6 +152,14 @@ const shipped = new Set([...sub, ...water]);   // every province the page ships 
 const borders = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/main/resources/map/borders.json'), 'utf8'));
 const ringsById = new Map(borders.map(b => [b.id, b.rings]));
 
+// geographic-tier boundary polygons (continent / super-region / region), precomputed by
+// TierBorderExporter into map/tierborders.json — shipped verbatim as the committed
+// assets/tiers.json the page lazy-fetches (web/js/overlays/tiers.mjs). Run-independent, so it
+// is just copied through; regenerate the source with the exporter when the map changes.
+const tierBordersSrc = path.join(ROOT, 'src/main/resources/map/tierborders.json');
+if (fs.existsSync(tierBordersSrc))
+  fs.writeFileSync(path.join(WEB, 'assets', 'tiers.json'), fs.readFileSync(tierBordersSrc));
+
 // geographic hierarchy display names, keyed for per-province lookup and the label rollup.
 // Continent names mirror Continent.java displayName() (the Anbennar landmass per EU4 raw key).
 const CONTINENT_NAME = {
