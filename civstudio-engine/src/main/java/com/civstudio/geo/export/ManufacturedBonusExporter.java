@@ -36,7 +36,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class ManufacturedBonusExporter {
 
 	private static final String INPUT = "Manufactured_CIV4BonusInfos.xml";
-	private static final String OUTPUT = "src/main/resources/manufactured-bonuses.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/manufactured-bonuses.json";
 
 	private ManufacturedBonusExporter() {
 	}

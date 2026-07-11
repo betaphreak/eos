@@ -46,7 +46,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class ProvinceHistoryExporter {
 
 	private static final String INPUT_DIR = "history/provinces";
-	private static final String PROVINCES = "src/main/resources/map/provinces.json";
+	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
 
 	/** The game-start bookmark; dated blocks after this are ignored (encoded YYYYMMDD). */
 	private static final int START_DATE = 1444_11_11;

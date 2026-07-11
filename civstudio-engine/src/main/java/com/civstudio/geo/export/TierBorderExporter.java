@@ -53,9 +53,9 @@ public final class TierBorderExporter {
 
 	private static final String DEFINITIONS = "map/definition.csv";
 	private static final String PROVINCES_BMP = "map/provinces.bmp";
-	private static final String PROVINCES_JSON = "src/main/resources/map/provinces.json";
-	private static final String SUPERREGIONS_JSON = "src/main/resources/map/superregions.json";
-	private static final String OUTPUT = "src/main/resources/map/tierborders.json";
+	private static final String PROVINCES_JSON = "civstudio-engine/src/main/resources/generated/map/provinces.json";
+	private static final String SUPERREGIONS_JSON = "civstudio-engine/src/main/resources/generated/map/superregions.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/tierborders.json";
 
 	private static final Pattern PLACEHOLDER_NAME = Pattern.compile("Anbennar\\d+");
 

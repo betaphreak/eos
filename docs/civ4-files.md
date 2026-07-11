@@ -102,7 +102,7 @@ regenerate or keep committed — the earlier "CivStudio-derived" hypothesis was 
   best-effort `gh auth token`. Cache keyed by ref (`<cacheDir>/<ref>/<c2cPath>`), atomic
   temp-then-move, per-`(ref,path)` lock — same shape as `AnbennarFiles`. `FILE_MAP` (the table above)
   + the `assets/terrain/`→`UnpackedArt/art/terrain/` prefix rule do the committed→C2C translation.
-  `Civ4Xml.fetch(rel)` and `TechInfoConverter.parse(rel)` route the exporters through it. **No Spring
+  `Civ4Xml.fetch(rel)` and `TechInfoExporter.parse(rel)` route the exporters through it. **No Spring
   bridge** (the server never reads Civ4).
 - **`web/civ4.mjs`** — the node sibling for `build.mjs`/`build-techs.mjs`/`gamefont.mjs`, same
   `FILE_MAP` and cache layout (the two share `.civ4-cache/<ref>/`). The synchronous `get` /
@@ -124,7 +124,7 @@ regenerate or keep committed — the earlier "CivStudio-derived" hypothesis was 
 ## Consumer repointing — done
 
 - All ten exporters (`Terrain`/`Feature`/`Improvement`/`Bonus`/`RouteModel`/`TerrainArt`/`Housing`/
-  `ManufacturedBonus`/`Recipe`Exporter + `TechInfoConverter`) swapped their `"data/civ4/…"` constants
+  `ManufacturedBonus`/`Recipe`Exporter + `TechInfoExporter`) swapped their `"data/civ4/…"` constants
   for the committed-relative key and fetch via `Civ4Files`. **Verified byte-identical**: every one of
   the 11 regenerated resources (`terrains`/`features`/`improvements`/`bonuses`/`housing`/
   `manufactured-bonuses`/`recipes`/`tier1-providers`/`techs`.json + `map/route-models`/`terrain-art`)

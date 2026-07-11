@@ -60,7 +60,7 @@ public final class AnbennarNameExporter {
 	// build-time input (not a runtime resource, so it is not bundled into the jar)
 	private static final String INPUT = "common/cultures/anb_cultures.txt";
 	// name tables are grouped per race: src/main/resources/names/<race>/<kind>.json
-	private static final String NAMES_DIR = "src/main/resources/names";
+	private static final String NAMES_DIR = "civstudio-engine/src/main/resources/names";
 
 	// the three name kinds and their eos file names (within a race's folder)
 	private static final String[][] KINDS = {

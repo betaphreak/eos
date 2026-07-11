@@ -28,7 +28,7 @@ as downstream consumers of the "unlock / gate" effects — the rank ladder
 ## The imported data
 
 `techs.json` is a Civ4-mod tech graph, **regenerated from the vendored Caveman2Cosmos
-source** by `com.civstudio.tech.export.TechInfoConverter` (see below). It keeps **338
+source** by `com.civstudio.tech.export.TechInfoExporter` (see below). It keeps **338
 techs** across the 5 eras eos models — Prehistoric 89, Ancient 88, Classical 52,
 Medieval 51, Renaissance 58 — the Prehistoric→Renaissance slice of C2C's 943-tech tree,
 with the religion-founding techs, Clockpunk, and disabled placeholders (`TECH_DUMMY`)
@@ -55,13 +55,13 @@ lossless transliteration of every field** — plus the resolved English `name` /
 (the pedia paragraph) / `quote` the source keeps only as `TXT_KEY_*` references — so the
 **web tech-tree view** has the full graph and readable labels to draw.
 
-### Regeneration — `TechInfoConverter`
+### Regeneration — `TechInfoExporter`
 
 `techs.json` is **generated, not hand-authored**, by the dev tool
-`com.civstudio.tech.export.TechInfoConverter`:
+`com.civstudio.tech.export.TechInfoExporter`:
 
 ```
-mvn -q compile exec:exec -Dsim.main=com.civstudio.tech.export.TechInfoConverter
+mvn -q compile exec:exec -Dsim.main=com.civstudio.tech.export.TechInfoExporter
 ```
 
 It reads the Caveman2Cosmos sources vendored under `data/civ4/assets/XML/` (mirroring

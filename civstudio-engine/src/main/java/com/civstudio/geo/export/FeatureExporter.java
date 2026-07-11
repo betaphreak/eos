@@ -29,7 +29,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class FeatureExporter {
 
 	private static final String INPUT = "CIV4FeatureInfos.xml";
-	private static final String OUTPUT = "src/main/resources/features.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/features.json";
 
 	/**
 	 * The curated feature subset, in {@code docs/plots.md} order: the land features, plus

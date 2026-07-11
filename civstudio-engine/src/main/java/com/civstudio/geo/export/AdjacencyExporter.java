@@ -36,8 +36,8 @@ import tools.jackson.databind.ObjectMapper;
 public final class AdjacencyExporter {
 
 	private static final String INPUT = "map/adjacencies.csv";
-	private static final String PROVINCES = "src/main/resources/map/provinces.json";
-	private static final String OUTPUT = "src/main/resources/map/adjacencies.json";
+	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/adjacencies.json";
 
 	// beyond this great-circle km an entry is a leftover vanilla EU4 canal (kiel/panama/suez, …)
 	// onto a mismatched Anbennar province — a map-spanning / wrap-around artifact — and is dropped

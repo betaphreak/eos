@@ -40,8 +40,8 @@ import tools.jackson.databind.ObjectMapper;
 public final class BonusExporter {
 
 	private static final String INPUT = "CIV4BonusInfos.xml";
-	private static final String OUTPUT = "src/main/resources/bonuses.json";
-	private static final String TECHS = "src/main/resources/techs.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/bonuses.json";
+	private static final String TECHS = "civstudio-engine/src/main/resources/generated/techs.json";
 
 	// C2C era key → ordinal (later = higher); the exported tree stops at industrial, so a reveal
 	// tech absent from it is a modern/future tech (Bonus.ERA_MODERN).

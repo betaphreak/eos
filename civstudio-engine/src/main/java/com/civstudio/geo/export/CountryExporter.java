@@ -37,7 +37,7 @@ public final class CountryExporter {
 
 	private static final String TAGS_DIR = "common/country_tags";
 	private static final String COUNTRIES_DIR = "common/countries";
-	private static final String OUTPUT = "src/main/resources/map/countries.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/countries.json";
 
 	// TAG = "countries/Some Name.txt"  (the path may contain spaces)
 	private static final Pattern TAG_LINE = Pattern.compile(

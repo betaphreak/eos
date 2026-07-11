@@ -35,6 +35,29 @@
     </dependencies>
 
     <build>
+        <resources>
+            <!--
+              Computed exporter/baker outputs live in a `generated/` subtree in the SOURCE tree
+              (kept apart from the hand-authored resources — feasts*, tech-effects*, names/, the
+              *.lock pins), but are FLATTENED onto the classpath root at package time so every
+              runtime load path stays /terrains.json, /map/provinces.json, … unchanged. So this
+              reorg touches no runtime loader and the engine jar's classpath is byte-identical.
+              Regenerate a computed file with its exporter (writes into src/main/resources/generated/).
+              See docs/civ4-files.md / the generated/ README.
+            -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>generated/**</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources/generated</directory>
+                <excludes>
+                    <exclude>README.md</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
             <!--
               Runs a simulation in a forked JVM with assertions enabled (-ea). The working

@@ -5,7 +5,7 @@
 // Two committed, run-INDEPENDENT assets (the tech tree is static reference data, unlike
 // build.mjs which needs an output/<seed> run):
 //
-//   civstudio-engine/src/main/resources/techs-meta.json
+//   civstudio-engine/src/main/resources/generated/techs-meta.json
 //                              the art-coupled per-tech metadata the server can't regenerate —
 //                              each tech's `icon` sprite rect (a cell in tech-icons.webp) and its
 //                              curated `beaker` colour — keyed by tech Type. The tech GRAPH itself
@@ -33,11 +33,11 @@ import sharp from 'sharp';
 const WEB = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(WEB, '..');
 
-const SRC = path.join(ROOT, 'civstudio-engine/src/main/resources/techs.json');
+const SRC = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/techs.json');
 // the art-coupled per-tech metadata (icon rects + beaker colour), merged onto techs.json by the
 // server (com.civstudio.server.web.TechBundle) at GET /api/techs. Lives in the engine resources
 // so it ships in the server jar alongside its techs.json source.
-const OUT_META = path.join(ROOT, 'civstudio-engine/src/main/resources/techs-meta.json');
+const OUT_META = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/techs-meta.json');
 const OUT_ICONS = path.join(WEB, 'assets', 'tech-icons.webp');
 
 const CELL = 64;   // Civ4 tech buttons are 64×64

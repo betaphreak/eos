@@ -30,7 +30,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class ReligionExporter {
 
 	private static final String INPUT_DIR = "common/religions";
-	private static final String OUTPUT = "src/main/resources/map/religions.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/religions.json";
 
 	private ReligionExporter() {
 	}

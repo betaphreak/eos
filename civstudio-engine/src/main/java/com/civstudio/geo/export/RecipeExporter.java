@@ -48,8 +48,8 @@ public final class RecipeExporter {
 	private static final String CATALOG_INPUT = "Manufactured_CIV4BonusInfos.xml";
 	private static final String REGULAR_INPUT = "Regular_CIV4BuildingInfos.xml";
 	private static final String PROVIDERS_INPUT = "zProviders_CIV4BuildingInfos.xml";
-	private static final String RECIPES_OUTPUT = "src/main/resources/recipes.json";
-	private static final String TIER1_OUTPUT = "src/main/resources/tier1-providers.json";
+	private static final String RECIPES_OUTPUT = "civstudio-engine/src/main/resources/generated/recipes.json";
+	private static final String TIER1_OUTPUT = "civstudio-engine/src/main/resources/generated/tier1-providers.json";
 
 	private RecipeExporter() {
 	}

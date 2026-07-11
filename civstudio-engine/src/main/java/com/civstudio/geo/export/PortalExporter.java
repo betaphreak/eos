@@ -42,7 +42,7 @@ public final class PortalExporter {
 
 	private static final String DEFINITIONS = "map/definition.csv";
 	private static final String PROVINCES_BMP = "map/provinces.bmp";
-	private static final String OUTPUT = "src/main/resources/map/portals.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/portals.json";
 
 	private PortalExporter() {
 	}

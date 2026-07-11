@@ -33,7 +33,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class TerrainExporter {
 
 	private static final String INPUT = "CIV4TerrainInfos.xml";
-	private static final String OUTPUT = "src/main/resources/terrains.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/terrains.json";
 
 	/**
 	 * The curated subset: the settleable land terrains (in {@code docs/plots.md}

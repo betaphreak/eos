@@ -48,7 +48,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class CavernExporter {
 
 	private static final String INPUT = "map/terrain.txt";
-	private static final String PROVINCES = "src/main/resources/map/provinces.json";
+	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
 
 	// each special Anbennar terrain block → the ProvinceType it stamps: the underground Dwarovar
 	// four, plus seven distinctive surface terrains that would otherwise flatten onto generic LAND.

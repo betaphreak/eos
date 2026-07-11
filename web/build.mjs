@@ -2,7 +2,7 @@
 //
 //   node web/build.mjs [seed]        (seed only names the baked terrain asset; default 24601)
 //
-// Reads the committed province map (civstudio-engine/src/main/resources/map/provinces.json) + outlines
+// Reads the committed province map (civstudio-engine/src/main/resources/generated/map/provinces.json) + outlines
 // (borders.json) + geographic hierarchy + tech tree, distils them into one
 // JSON bundle written to web/data.js (which index.html loads), and bakes a dark-tinted crop of
 // the real EU4 terrain raster (data/anbennar/terrain.bmp) into a real image asset at
@@ -77,7 +77,7 @@ async function flushImages(assets) {
 // committed map/geo/terrain/tech resources. SEED still names the baked terrain assets.
 const SEED = process.argv[2] || '24601';
 
-const allProv = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/map/provinces.json'), 'utf8'));
+const allProv = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/provinces.json'), 'utf8'));
 const byId = new Map(allProv.map(p => [p.id, p]));
 
 // land-like province types: dry surface LAND, the four underground Dwarovar types, and the
@@ -103,7 +103,7 @@ const water = new Set(allProv
 const shipped = new Set([...sub, ...water]);   // every province the page ships (land + coastal water)
 
 // canonical province outlines (source-pixel rings), attached to the displayed subset
-const borders = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/map/borders.json'), 'utf8'));
+const borders = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/borders.json'), 'utf8'));
 const ringsById = new Map(borders.map(b => [b.id, b.rings]));
 
 // The geographic-tier boundary polygons (continent / super-region / region) are no longer baked
@@ -116,9 +116,9 @@ const CONTINENT_NAME = {
   europe: 'Cannor', asia: 'Haless', africa: 'Sarhal', north_america: 'Aelantir',
   south_america: 'Aelantir', serpentspine: 'Serpentspine', oceania: 'Hinuilands',
 };
-const superRegions = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/map/superregions.json'), 'utf8'));
-const regionsMeta = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/map/regions.json'), 'utf8'));
-const areasMeta = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/map/areas.json'), 'utf8'));
+const superRegions = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/superregions.json'), 'utf8'));
+const regionsMeta = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/regions.json'), 'utf8'));
+const areasMeta = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/areas.json'), 'utf8'));
 const srNameByRegion = {};   // region key -> super-region display name
 const srKeyByRegion = {};    // region key -> super-region raw (Clausewitz) key
 for (const s of superRegions) for (const rk of s.regions) { srNameByRegion[rk] = s.name; srKeyByRegion[rk] = s.key; }
@@ -130,9 +130,9 @@ for (const a of areasMeta) areaDisplayName[a.key] = a.name;
 // political reference tables (optional resources; the political map mode colours
 // province polygons by their owner tag, and joins culture/religion for the sidebar)
 const readJsonOpt = f => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, f), 'utf8')); } catch { return []; } };
-const countryByTag = Object.fromEntries(readJsonOpt('civstudio-engine/src/main/resources/map/countries.json').map(c => [c.tag, { name: c.name, color: c.color }]));
-const cultureByKey = Object.fromEntries(readJsonOpt('civstudio-engine/src/main/resources/map/cultures.json').map(c => [c.key, { name: c.name, group: c.group, color: c.color }]));
-const religionByKey = Object.fromEntries(readJsonOpt('civstudio-engine/src/main/resources/map/religions.json').map(r => [r.key, { name: r.name, group: r.group, color: r.color }]));
+const countryByTag = Object.fromEntries(readJsonOpt('civstudio-engine/src/main/resources/generated/map/countries.json').map(c => [c.tag, { name: c.name, color: c.color }]));
+const cultureByKey = Object.fromEntries(readJsonOpt('civstudio-engine/src/main/resources/generated/map/cultures.json').map(c => [c.key, { name: c.name, group: c.group, color: c.color }]));
+const religionByKey = Object.fromEntries(readJsonOpt('civstudio-engine/src/main/resources/generated/map/religions.json').map(r => [r.key, { name: r.name, group: r.group, color: r.color }]));
 
 // ---- EU4-style label baseline (phase b): the curved spine a province name is laid along ----
 // Approximates the polygon's medial axis: scanline-rasterise the interior, take the shape's
@@ -240,7 +240,7 @@ const map = bakeTerrain(provinces);
 // textures plus the water/tree/foam art the bakes reference by literal path; a miss just falls back
 // to the sync fetch, so this list only needs to cover the bulk to be worth it.
 await (async () => {
-  const manifest = path.join(ROOT, 'civstudio-engine/src/main/resources/map/terrain-art.json');
+  const manifest = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/terrain-art.json');
   const arts = [];
   try { for (const e of JSON.parse(fs.readFileSync(manifest, 'utf8'))) arts.push(e.path, e.grid, e.detail); }
   catch { /* manifest optional */ }
@@ -351,7 +351,7 @@ const gcKm = (a, b) => {
   return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
 };
 const TELEPORT_KM = 800;   // beyond this a straight connection line would sprawl across the map
-const adjacencies = (readJsonOpt('civstudio-engine/src/main/resources/map/adjacencies.json') || [])
+const adjacencies = (readJsonOpt('civstudio-engine/src/main/resources/generated/map/adjacencies.json') || [])
   .filter(a => shipped.has(a.from) && shipped.has(a.to))
   .map(a => {
     const pa = provLL.get(a.from), pb = provLL.get(a.to);
@@ -378,13 +378,13 @@ const manifest = {
   plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
   bboxes,                             // {provId: [x0,y0,x1,y1]} for ring-less provinces (server can't derive)
 };
-const manifestPath = path.join(ROOT, 'civstudio-engine/src/main/resources/map/web-asset-manifest.json');
+const manifestPath = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/web-asset-manifest.json');
 fs.writeFileSync(manifestPath, JSON.stringify(manifest));
 
 const terrainBytes = imgSizes[map.src.replace('assets/', '')] || 0;
 const manifestKb = (JSON.stringify(manifest).length / 1024).toFixed(0);
 const politicalKb = (fs.statSync(path.join(WEB, 'political.js')).size / 1024).toFixed(0);
-console.log(`Built civstudio-engine/src/main/resources/map/web-asset-manifest.json (${manifestKb} KB, merged + served by the engine at /api/bundle) + web/political.js (${politicalKb} KB, lazy) + web/${map.src} (${(terrainBytes / 1024).toFixed(0)} KB) from seed ${SEED}`);
+console.log(`Built civstudio-engine/src/main/resources/generated/map/web-asset-manifest.json (${manifestKb} KB, merged + served by the engine at /api/bundle) + web/political.js (${politicalKb} KB, lazy) + web/${map.src} (${(terrainBytes / 1024).toFixed(0)} KB) from seed ${SEED}`);
 console.log(`  ${provinces.length} provinces (run-independent — live caravans come from the server)`);
 console.log(`  terrain crop ${map.dw}×${map.dh}px`);
 console.log(`  geo labels: ${geo.continents.length} continents · ${geo.superRegions.length} super-regions · ${geo.regions.length} regions`);
@@ -560,7 +560,7 @@ function hueAtLuminance(base, real) {
 // TERRAIN_*, or null if the manifest or textures are unavailable (LFS not pulled),
 // so the bake degrades to the hand-tuned tints without failing.
 function terrainRealColors() {
-  const manifest = path.join(ROOT, 'civstudio-engine/src/main/resources/map/terrain-art.json');
+  const manifest = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/terrain-art.json');
   if (!fs.existsSync(manifest)) { console.log('  terrain-art: manifest absent — using hand-tuned tints'); return null; }
   let arr;
   try { arr = JSON.parse(fs.readFileSync(manifest, 'utf8')); } catch { return null; }
@@ -608,7 +608,7 @@ function resolveArt(artPath) { return civ4ResolveArt(artPath); }
 // so the plot renderer feathers a higher-layer terrain over its lower neighbours at
 // shared edges (docs §6.1). Empty if the manifest is absent (renderer keeps hard edges).
 function terrainLayerOrders() {
-  const mp = path.join(ROOT, 'civstudio-engine/src/main/resources/map/terrain-art.json');
+  const mp = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/terrain-art.json');
   if (!fs.existsSync(mp)) return {};
   try {
     const a = JSON.parse(fs.readFileSync(mp, 'utf8'));
@@ -668,7 +668,7 @@ function terrainDisplayColors(real) {
 // Returns {src, tile, cols:{TERRAIN_*: column}}, or null if the manifest/textures are
 // absent (the page then keeps the flat-colour plot tiles).
 function bakeTerrainTiles(colorsHex) {
-  const manifestPath = path.join(ROOT, 'civstudio-engine/src/main/resources/map/terrain-art.json');
+  const manifestPath = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/terrain-art.json');
   if (!fs.existsSync(manifestPath)) return null;
   let manifest;
   try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch { return null; }
@@ -946,7 +946,7 @@ function bakeBonusIcons() {
   for (const m of fs.readFileSync(adef, 'utf8').matchAll(/<BonusArtInfo>[\s\S]*?<Type>(ART_DEF_BONUS_[A-Z0-9_]+)<\/Type>[\s\S]*?<\/BonusArtInfo>/g)) {
     const f = m[0].match(/<FontButtonIndex>(-?\d+)<\/FontButtonIndex>/); if (f) fbiOf[m[1]] = +f[1];
   }
-  const bonuses = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/bonuses.json'), 'utf8')).map(b => b.type);
+  const bonuses = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/generated/bonuses.json'), 'utf8')).map(b => b.type);
   const picks = [];   // [type, rgbaCell] — the shared reader returns each cell's pixels
   for (const t of bonuses) {
     const cell = resourceCellRGBA(gf, fbiOf[tagOf[t]]);   // null → no unique icon / out of grid

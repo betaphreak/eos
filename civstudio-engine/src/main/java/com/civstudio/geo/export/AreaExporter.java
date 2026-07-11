@@ -54,9 +54,9 @@ import tools.jackson.databind.ObjectMapper;
 public final class AreaExporter {
 
 	private static final String INPUT = "map/area.txt";
-	private static final String AREAS_OUTPUT = "src/main/resources/map/areas.json";
-	private static final String REGIONS = "src/main/resources/map/regions.json";
-	private static final String PROVINCES = "src/main/resources/map/provinces.json";
+	private static final String AREAS_OUTPUT = "civstudio-engine/src/main/resources/generated/map/areas.json";
+	private static final String REGIONS = "civstudio-engine/src/main/resources/generated/map/regions.json";
+	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
 
 	// area_key = { id id id ... } (ids only, no nested braces)
 	private static final Pattern AREA = Pattern.compile(

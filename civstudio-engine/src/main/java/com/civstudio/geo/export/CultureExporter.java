@@ -32,7 +32,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class CultureExporter {
 
 	private static final String INPUT = "common/cultures/anb_cultures.txt";
-	private static final String OUTPUT = "src/main/resources/map/cultures.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/cultures.json";
 
 	// group-level blocks that are shared name lists, not cultures
 	private static final Set<String> NOT_CULTURE = Set.of(

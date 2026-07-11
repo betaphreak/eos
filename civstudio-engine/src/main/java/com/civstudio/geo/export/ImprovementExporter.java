@@ -31,7 +31,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class ImprovementExporter {
 
 	private static final String INPUT = "CIV4ImprovementInfos.xml";
-	private static final String OUTPUT = "src/main/resources/improvements.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/improvements.json";
 
 	/** The curated firm-building subset, in {@code docs/plots.md} order. */
 	private static final Set<String> KEEP = new LinkedHashSet<>(List.of(

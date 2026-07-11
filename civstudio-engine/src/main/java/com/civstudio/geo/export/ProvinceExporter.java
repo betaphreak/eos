@@ -73,7 +73,7 @@ public final class ProvinceExporter {
 	private static final String DEFAULT_MAP = "map/default.map";
 	private static final String PROVINCES_BMP = "map/provinces.bmp";
 	private static final String RIVERS_BMP = "map/rivers.bmp";
-	private static final String OUTPUT = "src/main/resources/map/provinces.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/provinces.json";
 
 	/** Paradox uses pure white for a non-river pixel on {@code rivers.bmp}. */
 	private static final int RIVER_NONE = 0xFFFFFF;

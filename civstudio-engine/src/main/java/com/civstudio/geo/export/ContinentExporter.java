@@ -53,7 +53,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class ContinentExporter {
 
 	private static final String INPUT = "map/continent.txt";
-	private static final String PROVINCES = "src/main/resources/map/provinces.json";
+	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
 
 	/** Non-geographic utility blocks in {@code continent.txt} (not continents). */
 	private static final Set<String> SKIP = Set.of(

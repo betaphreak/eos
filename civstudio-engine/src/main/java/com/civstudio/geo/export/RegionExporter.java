@@ -46,7 +46,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class RegionExporter {
 
 	private static final String INPUT = "map/region.txt";
-	private static final String OUTPUT = "src/main/resources/map/regions.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/regions.json";
 
 	// region_key = { areas = { area1 area2 ... } ...rest of body ignored }
 	// (comments + monsoon blocks are stripped first, so 'areas' leads the body

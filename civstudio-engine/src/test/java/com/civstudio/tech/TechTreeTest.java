@@ -29,7 +29,7 @@ class TechTreeTest {
 	@Test
 	void keepsOnlyInScopeTechs() {
 		// the C2C source has 943 techs across many eras; the converter
-		// (TechInfoConverter) keeps only Prehistoric..Renaissance and drops the
+		// (TechInfoExporter) keeps only Prehistoric..Renaissance and drops the
 		// religion-founding techs, Clockpunk, and disabled placeholders -> 338 kept
 		assertEquals(338, TREE.size());
 		assertNull(TREE.get("TECH_INDUSTRIAL_LIFESTYLE"),

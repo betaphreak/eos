@@ -33,7 +33,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class LandRouteExporter {
 
-	private static final String OUTPUT = "src/main/resources/map/edges.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/edges.json";
 
 	private LandRouteExporter() {
 	}

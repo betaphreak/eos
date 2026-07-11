@@ -33,7 +33,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class HousingExporter {
 
 	private static final String INPUT = "SpecialBuildings_CIV4BuildingInfos.xml";
-	private static final String OUTPUT = "src/main/resources/housing.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/housing.json";
 
 	/** Every housing building's {@code <Type>} starts with this. */
 	private static final String HOUSING_PREFIX = "BUILDING_HOUSING_";

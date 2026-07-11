@@ -48,7 +48,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class SuperRegionExporter {
 
 	private static final String INPUT = "map/superregion.txt";
-	private static final String OUTPUT = "src/main/resources/map/superregions.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/superregions.json";
 
 	// superregion_key = { region_key region_key ... } (no nested braces)
 	private static final Pattern SUPERREGION = Pattern.compile(

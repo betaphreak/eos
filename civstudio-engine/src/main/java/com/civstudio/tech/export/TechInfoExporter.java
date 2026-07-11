@@ -41,17 +41,17 @@ import tools.jackson.databind.ObjectMapper;
  * Sources are vendored under {@code data/civ4/} mirroring the original C2C
  * {@code Assets/} tree. Run from the project root:
  * <pre>
- *   mvn -q compile exec:exec -Dsim.main=com.civstudio.tech.export.TechInfoConverter
+ *   mvn -q compile exec:exec -Dsim.main=com.civstudio.tech.export.TechInfoExporter
  * </pre>
  * The scalar values stay <b>strings</b> (as in the source and the prior file — e.g.
  * {@code "iCost": "3"}); {@link com.civstudio.tech.TechTree} parses the numerics it
  * needs, and {@code BonusExporter} reads {@code Type}/{@code Era} as strings.
  */
-public final class TechInfoConverter {
+public final class TechInfoExporter {
 
 	private static final String TECH_XML = "assets/XML/Technologies/CIV4TechInfos.xml";
 	private static final String TEXT_XML = "assets/XML/GameText/Tech_CIV4GameText.xml";
-	private static final String OUTPUT = "src/main/resources/techs.json";
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/techs.json";
 
 	// the eras eos models; techs of any later C2C era (Industrial, Atomic, …) are dropped
 	private static final Set<String> IN_SCOPE = Set.of(
@@ -75,7 +75,7 @@ public final class TechInfoConverter {
 			"TECH_JAINISM", "TECH_ASATRU", "TECH_RODNOVERA", "TECH_ISLAM", "TECH_VOODOO",
 			"TECH_SIKHISM", "TECH_CLOCKPUNK");
 
-	private TechInfoConverter() {
+	private TechInfoExporter() {
 	}
 
 	public static void main(String[] args) throws Exception {

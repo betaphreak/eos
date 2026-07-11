@@ -52,7 +52,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class ClimateExporter {
 
 	private static final String INPUT = "map/climate.txt";
-	private static final String PROVINCES = "src/main/resources/map/provinces.json";
+	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
 
 	// key = { id id id ... } (the equator_y scalar has no braces, so it is skipped)
 	private static final Pattern BLOCK = Pattern.compile(
