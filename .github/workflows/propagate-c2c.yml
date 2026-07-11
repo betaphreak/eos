@@ -34,6 +34,8 @@ jobs:
       # Civ4Files (engine) and web/civ4.mjs read GITHUB_TOKEN to fetch from the C2C repo (public,
       # but the unauthenticated API's 60/hour is far too few for a full regenerate).
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # silence Maven/guava's sun.misc.Unsafe deprecation warnings on Java 25 (log noise only)
+      MAVEN_OPTS: --sun-misc-unsafe-memory-access=allow
     steps:
       - uses: actions/checkout@v5
 
