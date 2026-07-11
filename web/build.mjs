@@ -21,6 +21,7 @@ import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { decodeDds } from './dds.mjs';
 import { loadGameFont, resourceCellRGBA, CELL as GF_CELL } from './gamefont.mjs';
+import { get as civ4Get, resolveArt as civ4ResolveArt, prefetch as civ4Prefetch } from './civ4.mjs';
 import { bakeNifGroup } from '../tools/nifbake/render.mjs';
 import sharp from 'sharp';
 
@@ -234,6 +235,25 @@ const map = bakeTerrain(provinces);
 // plots.pack (index inlined below), and expose the terrain display colours the
 // page tints plots with (docs §10). Slice B also bakes a real ground-texture
 // atlas the page draws per plot at deep zoom.
+// Warm the C2C art cache in parallel so the synchronous resolveArt/loadGameFont bakes below hit the
+// disk cache instead of a per-file round trip (see civ4.mjs). Collect the terrain-art manifest's
+// textures plus the water/tree/foam art the bakes reference by literal path; a miss just falls back
+// to the sync fetch, so this list only needs to cover the bulk to be worth it.
+await (async () => {
+  const manifest = path.join(ROOT, 'civstudio-engine/src/main/resources/map/terrain-art.json');
+  const arts = [];
+  try { for (const e of JSON.parse(fs.readFileSync(manifest, 'utf8'))) arts.push(e.path, e.grid, e.detail); }
+  catch { /* manifest optional */ }
+  arts.push(
+    'Art/Terrain/Routes/Rivers/allriverssmall.dds', 'Art/Terrain/waves/wave_crest.dds',
+    'Art/Terrain/textures/water/seadetail.dds', 'Art/Terrain/textures/water/shoredetail.dds',
+    'Art/Terrain/textures/water/seablend.dds', 'Art/Terrain/textures/water/seatropblend.dds',
+    'Art/Terrain/textures/water/seapolblend.dds', 'Art/Terrain/textures/water/seadeepblend.dds',
+    'Art/Terrain/features/icepack/icepack_1024.dds', 'Art/Terrain/features/treeleafy/trees_1024.dds',
+    'Art/Terrain/features/savanna/palms_1024.dds', 'Art/Terrain/features/swamp/trees1.dds');
+  await civ4Prefetch({ arts, files: ['CIV4BonusInfos.xml', 'CIV4ArtDefines_Bonus.xml', 'res/Fonts/GameFont_120.tga'] });
+})();
+
 const terrainColors = terrainDisplayColors(terrainRealColors());
 const terrainLayer = terrainLayerOrders();   // TERRAIN_* -> Civ4 LayerOrder (drives edge blending)
 const terrainTiles = bakeTerrainTiles(terrainColors);
@@ -569,26 +589,10 @@ function avgDds(artPath) {
 }
 
 // resolve an "Art/Terrain/.../X.dds" path to a real file, case-insensitively (the XML paths and
-// on-disk names differ in case); null if absent. The web-baked textures live committed & non-LFS
-// under data/civ4/assets (moved out of the LFS art tree so the build needs no `git lfs pull`);
-// Civ4 art resolves from the committed, non-LFS data/civ4/assets tree (the old UnpackedArt/art
-// LFS fallback was removed with the Git-LFS art, 2026-07).
-function resolveArt(artPath) {
-  if (!artPath) return null;
-  const rel = artPath.replace(/^Art\//i, '').split('/');
-  return resolveUnder(path.join(ROOT, 'data', 'civ4', 'assets'), rel);
-}
-function resolveUnder(base, rel) {
-  let dir = base;
-  for (const seg of rel) {
-    let ents;
-    try { ents = fs.readdirSync(dir); } catch { return null; }
-    const hit = ents.find(e => e.toLowerCase() === seg.toLowerCase());
-    if (!hit) return null;
-    dir = path.join(dir, hit);
-  }
-  return dir;
-}
+// on-disk names differ in case); null if absent. The Civ4 terrain art is no longer vendored — it is
+// fetched on demand from the C2C source (UnpackedArt/art) and cached; see civ4.mjs / docs/civ4-files.md.
+// A function decl (hoisted) so the early module-load bakes (bakeTerrain) can call it before this line.
+function resolveArt(artPath) { return civ4ResolveArt(artPath); }
 
 // ---------------------------------------------------------------------------
 // per-plot terrain zoom layer
@@ -927,10 +931,11 @@ function bakeFoamTile() {
 // any source is absent (the renderer keeps the procedural glyphs); a bonus with a negative index
 // (no unique font icon) or an out-of-grid cell is left out and also falls back to the glyph.
 function bakeBonusIcons() {
-  const binfo = path.join(ROOT, 'data/civ4/CIV4BonusInfos.xml');
-  const adef = path.join(ROOT, 'data/civ4/CIV4ArtDefines_Bonus.xml');
   const gf = loadGameFont(ROOT);   // shared GameFont reader (gamefont.mjs)
-  if (!gf || !fs.existsSync(binfo) || !fs.existsSync(adef)) return null;
+  let binfo, adef;
+  try { binfo = civ4Get('CIV4BonusInfos.xml'); adef = civ4Get('CIV4ArtDefines_Bonus.xml'); }
+  catch { return null; }
+  if (!gf) return null;
   // BONUS_* → ArtDefineTag, then ArtDefineTag → FontButtonIndex (regex on the raw XML — Civ4's
   // default namespace lives only on the root, so the child tags read literally)
   const tagOf = {};

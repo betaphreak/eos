@@ -32,7 +32,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class HousingExporter {
 
-	private static final String INPUT = "data/civ4/SpecialBuildings_CIV4BuildingInfos.xml";
+	private static final String INPUT = "SpecialBuildings_CIV4BuildingInfos.xml";
 	private static final String OUTPUT = "src/main/resources/housing.json";
 
 	/** Every housing building's {@code <Type>} starts with this. */
@@ -42,7 +42,7 @@ public final class HousingExporter {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Document doc = Civ4Xml.parse(INPUT);
+		Document doc = Civ4Xml.fetch(INPUT);
 		List<HousingBuilding> out = new ArrayList<>();
 		for (Element info : Civ4Xml.infos(doc, "BuildingInfo")) {
 			String type = Civ4Xml.text(info, "Type");

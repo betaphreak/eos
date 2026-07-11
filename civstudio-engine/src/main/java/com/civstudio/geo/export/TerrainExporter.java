@@ -32,7 +32,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class TerrainExporter {
 
-	private static final String INPUT = "data/civ4/CIV4TerrainInfos.xml";
+	private static final String INPUT = "CIV4TerrainInfos.xml";
 	private static final String OUTPUT = "src/main/resources/terrains.json";
 
 	/**
@@ -82,7 +82,7 @@ public final class TerrainExporter {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Document doc = Civ4Xml.parse(INPUT);
+		Document doc = Civ4Xml.fetch(INPUT);
 		List<Terrain> out = new ArrayList<>();
 		Set<String> seen = new LinkedHashSet<>();
 		for (Element info : Civ4Xml.infos(doc, "TerrainInfo")) {

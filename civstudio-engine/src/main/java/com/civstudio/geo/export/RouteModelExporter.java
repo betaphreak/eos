@@ -32,7 +32,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class RouteModelExporter {
 
-	private static final String INPUT = "data/civ4/CIV4RouteModelInfos.xml";
+	private static final String INPUT = "CIV4RouteModelInfos.xml";
 	private static final String OUTPUT = "src/main/resources/map/route-models.json";
 
 	/**
@@ -47,7 +47,7 @@ public final class RouteModelExporter {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Document doc = Civ4Xml.parse(INPUT);
+		Document doc = Civ4Xml.fetch(INPUT);
 		List<RouteModelInfo> out = new ArrayList<>();
 		for (Element e : Civ4Xml.infos(doc, "RouteModelInfo")) {
 			String routeType = Civ4Xml.text(e, "RouteType");

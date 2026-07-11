@@ -39,7 +39,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class BonusExporter {
 
-	private static final String INPUT = "data/civ4/CIV4BonusInfos.xml";
+	private static final String INPUT = "CIV4BonusInfos.xml";
 	private static final String OUTPUT = "src/main/resources/bonuses.json";
 	private static final String TECHS = "src/main/resources/techs.json";
 
@@ -53,7 +53,7 @@ public final class BonusExporter {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Document doc = Civ4Xml.parse(INPUT);
+		Document doc = Civ4Xml.fetch(INPUT);
 		// tech Type → era ordinal, so each bonus can carry its reveal tech's era
 		Map<String, Integer> techEras = new HashMap<>();
 		for (Map<String, Object> t : new ObjectMapper().readValue(new File(TECHS),

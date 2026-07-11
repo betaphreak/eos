@@ -27,6 +27,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodeDds } from './dds.mjs';
 import { loadGameFont, symbolRGBA, recolorHue, CELL as GF_CELL } from './gamefont.mjs';
+import { resolveArt as civ4ResolveArt, prefetch as civ4Prefetch } from './civ4.mjs';
 import sharp from 'sharp';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
@@ -42,26 +43,9 @@ const OUT_ICONS = path.join(WEB, 'assets', 'tech-icons.webp');
 const CELL = 64;   // Civ4 tech buttons are 64×64
 const COLS = 16;   // sprite-sheet grid width
 
-// --- resolve an "Art/..." path to a real file, case-insensitively (build.mjs pattern):
-// the web-baked art lives non-LFS under data/civ4/assets; the full UnpackedArt/art LFS
-// tree (where the tech buttons were copied) is the fallback.
-function resolveArt(artPath) {
-  if (!artPath) return null;
-  const rel = artPath.replace(/^Art\//i, '').split('/');
-  return resolveUnder(path.join(ROOT, 'data', 'civ4', 'assets'), rel)
-      || resolveUnder(path.join(ROOT, 'UnpackedArt', 'art'), rel);
-}
-function resolveUnder(base, rel) {
-  let dir = base;
-  for (const seg of rel) {
-    let ents;
-    try { ents = fs.readdirSync(dir); } catch { return null; }
-    const hit = ents.find(e => e.toLowerCase() === seg.toLowerCase());
-    if (!hit) return null;
-    dir = path.join(dir, hit);
-  }
-  return dir;
-}
+// resolve an "Art/..." path to a real file, case-insensitively — the tech-button .dds are fetched
+// on demand from the C2C source (UnpackedArt/art) and cached; see civ4.mjs / docs/civ4-files.md.
+const resolveArt = civ4ResolveArt;
 
 // the standalone individual-icon path from a Button field (before any atlas reference)
 function iconPath(button) {
@@ -109,6 +93,12 @@ const NAVAL = new Set([
 for (const t of techs) if (NAVAL.has(t.Type)) t.beaker = "green";
 
 // --- bake the icon sprite sheet, tagging each tech with its cell rect --------------
+// Warm the C2C art cache in parallel first (the tech-button .dds + the GameFont atlas) so the
+// synchronous resolveArt/loadGameFont below hit the disk cache instead of a per-file round trip.
+await civ4Prefetch({
+  arts: techs.map(t => iconPath(t.Button)).filter(Boolean),
+  files: ['res/Fonts/GameFont_120.tga'],
+});
 const cells = [];   // decoded CELL×CELL RGBA buffers, in placement order
 let missing = 0;
 for (const t of techs) {

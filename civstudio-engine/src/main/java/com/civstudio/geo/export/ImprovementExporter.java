@@ -30,7 +30,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class ImprovementExporter {
 
-	private static final String INPUT = "data/civ4/CIV4ImprovementInfos.xml";
+	private static final String INPUT = "CIV4ImprovementInfos.xml";
 	private static final String OUTPUT = "src/main/resources/improvements.json";
 
 	/** The curated firm-building subset, in {@code docs/plots.md} order. */
@@ -44,7 +44,7 @@ public final class ImprovementExporter {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Document doc = Civ4Xml.parse(INPUT);
+		Document doc = Civ4Xml.fetch(INPUT);
 		List<Improvement> out = new ArrayList<>();
 		Set<String> seen = new LinkedHashSet<>();
 		for (Element info : Civ4Xml.infos(doc, "ImprovementInfo")) {

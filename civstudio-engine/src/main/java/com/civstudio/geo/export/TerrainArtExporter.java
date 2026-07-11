@@ -38,8 +38,8 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class TerrainArtExporter {
 
-	private static final String ART = "data/civ4/CIV4ArtDefines_Terrain.xml";
-	private static final String INFOS = "data/civ4/CIV4TerrainInfos.xml";
+	private static final String ART = "CIV4ArtDefines_Terrain.xml";
+	private static final String INFOS = "CIV4TerrainInfos.xml";
 	private static final String OUTPUT = "src/main/resources/map/terrain-art.json";
 
 	/** The curated land subset — the same 16 terrains {@link TerrainExporter} keeps. */
@@ -99,7 +99,7 @@ public final class TerrainArtExporter {
 
 	public static void main(String[] args) throws Exception {
 		// 1. gameplay terrain -> its art define tag (TerrainInfo.ArtDefineTag)
-		Document infos = Civ4Xml.parse(INFOS);
+		Document infos = Civ4Xml.fetch(INFOS);
 		Map<String, String> artTag = new LinkedHashMap<>();
 		for (Element info : Civ4Xml.infos(infos, "TerrainInfo")) {
 			String type = Civ4Xml.text(info, "Type");
@@ -108,7 +108,7 @@ public final class TerrainArtExporter {
 		}
 
 		// 2. art tag -> its TerrainArtInfo element
-		Document art = Civ4Xml.parse(ART);
+		Document art = Civ4Xml.fetch(ART);
 		Map<String, Element> byTag = new HashMap<>();
 		for (Element ai : Civ4Xml.infos(art, "TerrainArtInfo"))
 			byTag.put(Civ4Xml.text(ai, "Type"), ai);

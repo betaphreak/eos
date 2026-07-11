@@ -9,8 +9,8 @@
 // (build.mjs bakeBonusIcons) and the research beaker + future commerce/yield symbols
 // (build-techs.mjs). Extend SYMBOL with more named cells as they are needed.
 import fs from 'node:fs';
-import path from 'node:path';
 import { decodeTga } from './tga.mjs';
+import { getOptional as civ4GetOptional } from './civ4.mjs';
 
 export const CELL = 25, COLS = 25, X0 = 0, Y0 = 72, RESOURCE_ROW = 17;
 
@@ -24,12 +24,13 @@ export const SYMBOL = {
 
 let _gf = null, _tried = false;
 
-/** Decode GameFont_120.tga once (cached); null if the font isn't vendored / can't be read. */
+/** Decode GameFont_120.tga once (cached); null if the font can't be fetched / read. Fetched from
+ *  the C2C source on demand (civ4.mjs); the `root` arg is kept for call-site compatibility. */
 export function loadGameFont(root) {
   if (_tried) return _gf;
   _tried = true;
-  const p = path.join(root, 'data/civ4/res/Fonts/GameFont_120.tga');
-  try { _gf = fs.existsSync(p) ? decodeTga(fs.readFileSync(p)) : null; } catch { _gf = null; }
+  const p = civ4GetOptional('res/Fonts/GameFont_120.tga');
+  try { _gf = p ? decodeTga(fs.readFileSync(p)) : null; } catch { _gf = null; }
   return _gf;
 }
 

@@ -35,14 +35,14 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class ManufacturedBonusExporter {
 
-	private static final String INPUT = "data/civ4/Manufactured_CIV4BonusInfos.xml";
+	private static final String INPUT = "Manufactured_CIV4BonusInfos.xml";
 	private static final String OUTPUT = "src/main/resources/manufactured-bonuses.json";
 
 	private ManufacturedBonusExporter() {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Document doc = Civ4Xml.parse(INPUT);
+		Document doc = Civ4Xml.fetch(INPUT);
 		List<Bonus> out = new ArrayList<>();
 		Set<String> seen = new LinkedHashSet<>();
 		for (Element info : Civ4Xml.infos(doc, "BonusInfo")) {

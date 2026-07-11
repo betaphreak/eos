@@ -33,3 +33,8 @@ civstudio-server/target/
 # local checkout of the old vendored tree.
 /.anbennar-cache/
 /data/anbennar/
+
+# Caveman2Cosmos (Civ4) art/XML — likewise no longer vendored. Fetched on demand from the C2C GitHub
+# repo (pinned by map/civ4-source.lock) into a local cache by com.civstudio.data.Civ4Files (+ the
+# web/civ4.mjs node sibling); dev-time only (nothing at runtime reads it). See docs/civ4-files.md.
+/.civ4-cache/

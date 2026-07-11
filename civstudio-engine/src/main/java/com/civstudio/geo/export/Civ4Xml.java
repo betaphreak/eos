@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,6 +12,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import com.civstudio.data.Civ4Files;
 
 /**
  * Small DOM helper shared by the Civ4 data exporters ({@link TerrainExporter} /
@@ -31,7 +34,20 @@ final class Civ4Xml {
 	private Civ4Xml() {
 	}
 
-	/** Parse a Civ4 info XML file under {@code data/} into a DOM document. */
+	/**
+	 * Fetch a Civ4 info XML from the C2C source (via {@link Civ4Files}, on-demand + cached) by its
+	 * committed-relative path (e.g. {@code "CIV4TerrainInfos.xml"}) and parse it. The one entry
+	 * point the exporters use — the raw XML is no longer vendored under {@code data/civ4/}.
+	 */
+	static Document fetch(String committedRelativePath) {
+		try {
+			return parse(Civ4Files.get(committedRelativePath).toString());
+		} catch (IOException e) {
+			throw new IllegalStateException("failed to fetch " + committedRelativePath, e);
+		}
+	}
+
+	/** Parse a Civ4 info XML file at a local path into a DOM document. */
 	static Document parse(String path) {
 		try {
 			DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();

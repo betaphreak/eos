@@ -17,6 +17,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.civstudio.data.Civ4Files;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -48,10 +49,8 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class TechInfoConverter {
 
-	private static final String TECH_XML =
-			"data/civ4/assets/XML/Technologies/CIV4TechInfos.xml";
-	private static final String TEXT_XML =
-			"data/civ4/assets/XML/GameText/Tech_CIV4GameText.xml";
+	private static final String TECH_XML = "assets/XML/Technologies/CIV4TechInfos.xml";
+	private static final String TEXT_XML = "assets/XML/GameText/Tech_CIV4GameText.xml";
 	private static final String OUTPUT = "src/main/resources/techs.json";
 
 	// the eras eos models; techs of any later C2C era (Industrial, Atomic, …) are dropped
@@ -229,15 +228,17 @@ public final class TechInfoConverter {
 		return c == null ? null : c.getTextContent().trim();
 	}
 
-	private static Document parse(String path) {
+	// fetch a Civ4 source XML from C2C on-demand (via Civ4Files, cached) by its committed-relative
+	// path and parse it — the raw XML is no longer vendored under data/civ4/
+	private static Document parse(String committedRelativePath) {
 		try {
 			// namespace-unaware so literal tag names match the files' default
 			// x-schema:/firaxis namespaces transparently (as Civ4Xml does)
 			DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
 			DocumentBuilder b = f.newDocumentBuilder();
-			return b.parse(new File(path));
+			return b.parse(Civ4Files.get(committedRelativePath).toFile());
 		} catch (Exception e) {
-			throw new IllegalStateException("failed to parse " + path, e);
+			throw new IllegalStateException("failed to parse " + committedRelativePath, e);
 		}
 	}
 }

@@ -45,9 +45,9 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class RecipeExporter {
 
-	private static final String CATALOG_INPUT = "data/civ4/Manufactured_CIV4BonusInfos.xml";
-	private static final String REGULAR_INPUT = "data/civ4/Regular_CIV4BuildingInfos.xml";
-	private static final String PROVIDERS_INPUT = "data/civ4/zProviders_CIV4BuildingInfos.xml";
+	private static final String CATALOG_INPUT = "Manufactured_CIV4BonusInfos.xml";
+	private static final String REGULAR_INPUT = "Regular_CIV4BuildingInfos.xml";
+	private static final String PROVIDERS_INPUT = "zProviders_CIV4BuildingInfos.xml";
 	private static final String RECIPES_OUTPUT = "src/main/resources/recipes.json";
 	private static final String TIER1_OUTPUT = "src/main/resources/tier1-providers.json";
 
@@ -74,7 +74,7 @@ public final class RecipeExporter {
 	/** The manufactured-catalog bonus keys — the output filter for the recipe tier. */
 	private static Set<String> manufacturedTypes() {
 		Set<String> types = new LinkedHashSet<>();
-		for (Element info : Civ4Xml.infos(Civ4Xml.parse(CATALOG_INPUT), "BonusInfo")) {
+		for (Element info : Civ4Xml.infos(Civ4Xml.fetch(CATALOG_INPUT), "BonusInfo")) {
 			String type = Civ4Xml.text(info, "Type");
 			if (type != null && !type.isEmpty())
 				types.add(type);
@@ -87,7 +87,7 @@ public final class RecipeExporter {
 	/** All Regular buildings keyed by type, in file order (gatherer lookups + scan). */
 	private static Map<String, Element> buildingIndex() {
 		Map<String, Element> byType = new LinkedHashMap<>();
-		for (Element info : Civ4Xml.infos(Civ4Xml.parse(REGULAR_INPUT), "BuildingInfo")) {
+		for (Element info : Civ4Xml.infos(Civ4Xml.fetch(REGULAR_INPUT), "BuildingInfo")) {
 			String type = Civ4Xml.text(info, "Type");
 			if (type == null || type.isEmpty())
 				continue;
@@ -137,7 +137,7 @@ public final class RecipeExporter {
 	private static List<TierOneSource> exportTierOne(Map<String, Element> buildings) {
 		List<TierOneSource> out = new ArrayList<>();
 		List<String> missing = new ArrayList<>();
-		for (Element info : Civ4Xml.infos(Civ4Xml.parse(PROVIDERS_INPUT), "BuildingInfo")) {
+		for (Element info : Civ4Xml.infos(Civ4Xml.fetch(PROVIDERS_INPUT), "BuildingInfo")) {
 			String type = Civ4Xml.text(info, "Type");
 			if (type == null || type.isEmpty())
 				continue;
