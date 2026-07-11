@@ -110,7 +110,7 @@ class SettlementProvinceTest {
 		// a synthetic province with fewer plots than size 3 needs (total 28)
 		Province tiny = new Province(99999, "Tiny", 0.0, 0.0, 10, 0,
 				ProvinceType.LAND, null, null, null, null, null, null, List.of(),
-				null, null, null, null);
+				null, null, null, null, null);
 		assertThrows(IllegalArgumentException.class, () -> found(s, tiny));
 	}
 

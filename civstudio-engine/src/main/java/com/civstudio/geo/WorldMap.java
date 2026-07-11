@@ -57,6 +57,7 @@ public final class WorldMap {
 	private static final String COUNTRIES_RESOURCE = "/map/countries.json";
 	private static final String CULTURES_RESOURCE = "/map/cultures.json";
 	private static final String RELIGIONS_RESOURCE = "/map/religions.json";
+	private static final String TRADEGOODS_RESOURCE = "/map/tradegoods.json";
 
 	/** Mean Earth radius in km — the great-circle scale for {@link #distanceKm}. */
 	private static final double EARTH_RADIUS_KM = 6371.0;
@@ -91,9 +92,11 @@ public final class WorldMap {
 	private final Map<String, Country> countriesByTag;
 	private final Map<String, Culture> culturesByKey;
 	private final Map<String, Religion> religionsByKey;
+	private final Map<String, TradeGood> tradeGoodsByKey;
 	private final Map<String, List<Province>> provincesByOwner;
 	private final Map<String, List<Province>> provincesByCulture;
 	private final Map<String, List<Province>> provincesByReligion;
+	private final Map<String, List<Province>> provincesByTradeGood;
 	// committed per-edge great-circle km, keyed by province id and aligned to that
 	// province's neighbors() order (from the LandRouteExporter's /map/edges.json). Empty
 	// when the resource is absent (e.g. while the exporter itself bootstraps the map),
@@ -116,6 +119,7 @@ public final class WorldMap {
 	private WorldMap(List<Province> provinces, List<Area> areas,
 			List<Region> regions, List<SuperRegion> superRegions,
 			List<Country> countries, List<Culture> cultures, List<Religion> religions,
+			List<TradeGood> tradeGoods,
 			List<ProvinceEdges> edges, List<ProvincePortals> portals,
 			List<Adjacency> adjacencies) {
 		Map<Integer, Province> byId = new LinkedHashMap<>(provinces.size() * 2);
@@ -271,12 +275,18 @@ public final class WorldMap {
 		for (Religion r : religions)
 			byReligionKey.put(r.key(), r);
 		this.religionsByKey = Collections.unmodifiableMap(byReligionKey);
+		Map<String, TradeGood> byTradeGoodKey = new LinkedHashMap<>(tradeGoods.size() * 2);
+		for (TradeGood g : tradeGoods)
+			byTradeGoodKey.put(g.key(), g);
+		this.tradeGoodsByKey = Collections.unmodifiableMap(byTradeGoodKey);
 
 		// derived political partitions, grouped from each province's own tag/key
-		// (owner/culture/religion may be null — unowned/uncolonized provinces are skipped)
+		// (owner/culture/religion/trade good may be null — unowned/uncolonized/undiscovered
+		// provinces are skipped)
 		Map<String, List<Province>> provByOwner = new LinkedHashMap<>();
 		Map<String, List<Province>> provByCulture = new LinkedHashMap<>();
 		Map<String, List<Province>> provByReligion = new LinkedHashMap<>();
+		Map<String, List<Province>> provByTradeGood = new LinkedHashMap<>();
 		for (Province p : byId.values()) {
 			if (p.ownerTag() != null)
 				provByOwner.computeIfAbsent(p.ownerTag(), k -> new ArrayList<>()).add(p);
@@ -284,13 +294,17 @@ public final class WorldMap {
 				provByCulture.computeIfAbsent(p.culture(), k -> new ArrayList<>()).add(p);
 			if (p.religion() != null)
 				provByReligion.computeIfAbsent(p.religion(), k -> new ArrayList<>()).add(p);
+			if (p.tradeGood() != null)
+				provByTradeGood.computeIfAbsent(p.tradeGood(), k -> new ArrayList<>()).add(p);
 		}
 		provByOwner.replaceAll((k, ps) -> Collections.unmodifiableList(ps));
 		provByCulture.replaceAll((k, ps) -> Collections.unmodifiableList(ps));
 		provByReligion.replaceAll((k, ps) -> Collections.unmodifiableList(ps));
+		provByTradeGood.replaceAll((k, ps) -> Collections.unmodifiableList(ps));
 		this.provincesByOwner = Collections.unmodifiableMap(provByOwner);
 		this.provincesByCulture = Collections.unmodifiableMap(provByCulture);
 		this.provincesByReligion = Collections.unmodifiableMap(provByReligion);
+		this.provincesByTradeGood = Collections.unmodifiableMap(provByTradeGood);
 
 		// committed edge weights, if the /map/edges.json resource is present: each
 		// entry's km[] aligns to the province's neighbors() order (validated), so an
@@ -376,8 +390,11 @@ public final class WorldMap {
 		List<Religion> religions = loadListOptional(RELIGIONS_RESOURCE,
 				new TypeReference<List<Religion>>() {
 				});
+		List<TradeGood> tradeGoods = loadListOptional(TRADEGOODS_RESOURCE,
+				new TypeReference<List<TradeGood>>() {
+				});
 		return new WorldMap(provinces, areas, regions, superRegions,
-				countries, cultures, religions, edges, portals, adjacencies);
+				countries, cultures, religions, tradeGoods, edges, portals, adjacencies);
 	}
 
 	/**
@@ -620,6 +637,18 @@ public final class WorldMap {
 		return Optional.ofNullable(religionsByKey.get(key));
 	}
 
+	/**
+	 * The {@link TradeGood} with this key, if the {@code tradegoods.json} resource is
+	 * loaded and carries it.
+	 *
+	 * @param key a trade-good {@code raw_key} (e.g. {@code "grain"}) — see {@link
+	 *            Province#tradeGood()}
+	 * @return the trade good, or empty
+	 */
+	public Optional<TradeGood> tradeGood(String key) {
+		return Optional.ofNullable(tradeGoodsByKey.get(key));
+	}
+
 	/** All loaded countries (unmodifiable, in tag order; empty if the resource is absent). */
 	public Collection<Country> countries() {
 		return countriesByTag.values();
@@ -635,9 +664,19 @@ public final class WorldMap {
 		return religionsByKey.values();
 	}
 
+	/** All loaded trade goods (unmodifiable, in key order; empty if the resource is absent). */
+	public Collection<TradeGood> tradeGoods() {
+		return tradeGoodsByKey.values();
+	}
+
 	/** The tags that own at least one province (the keys of the owner index). */
 	public Collection<String> owners() {
 		return provincesByOwner.keySet();
+	}
+
+	/** The trade-good keys produced by at least one province (the keys of the trade-good index). */
+	public Collection<String> tradeGoodKeys() {
+		return provincesByTradeGood.keySet();
 	}
 
 	/**
@@ -668,6 +707,16 @@ public final class WorldMap {
 	 */
 	public List<Province> provincesOfReligion(String key) {
 		return provincesByReligion.getOrDefault(key, List.of());
+	}
+
+	/**
+	 * The provinces that produce a trade good at the game-start bookmark.
+	 *
+	 * @param key a trade-good {@code raw_key} (e.g. {@code "grain"})
+	 * @return that good's provinces (unmodifiable, possibly empty)
+	 */
+	public List<Province> provincesOfTradeGood(String key) {
+		return provincesByTradeGood.getOrDefault(key, List.of());
 	}
 
 	/**

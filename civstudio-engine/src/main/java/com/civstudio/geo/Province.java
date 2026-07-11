@@ -64,6 +64,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @param religion   the {@code raw_key} of the province's {@link Religion} (e.g.
  *                   {@code "regent_court"}), or {@code null}; joined via
  *                   {@link WorldMap#religion(String)}
+ * @param tradeGood  the {@code raw_key} of the province's {@link TradeGood} (e.g.
+ *                   {@code "grain"}), or {@code null} for an undiscovered/uncolonized
+ *                   province (the EU4 {@code unknown} placeholder is normalized to
+ *                   {@code null}); joined via {@link WorldMap#tradeGood(String)}.
+ *                   Stamped from the Anbennar {@code history/provinces} files by
+ *                   {@link com.civstudio.geo.export.ProvinceHistoryExporter}
  */
 public record Province(
 		int id,
@@ -83,7 +89,8 @@ public record Province(
 		@JsonProperty("owner") String ownerTag,
 		@JsonProperty("controller") String controllerTag,
 		String culture,
-		String religion) {
+		String religion,
+		@JsonProperty("trade_goods") String tradeGood) {
 
 	/**
 	 * Defensive copy of the neighbor list, and the environmental-attribute

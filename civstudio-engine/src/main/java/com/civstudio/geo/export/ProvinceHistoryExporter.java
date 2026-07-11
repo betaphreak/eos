@@ -56,9 +56,12 @@ public final class ProvinceHistoryExporter {
 	/** A {@code YYYY.M.D} block key, encoded to a sortable {@code YYYYMMDD} int. */
 	private static final Pattern DATE = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)$");
 
+	/** The EU4 placeholder good for undiscovered provinces — normalized to a null trade good. */
+	private static final String UNKNOWN_GOOD = "unknown";
+
 	private final ObjectMapper mapper = new ObjectMapper();
 	// per-province political overlay, parsed from the history files
-	private final Map<Integer, String[]> political = new LinkedHashMap<>(); // id -> {owner, controller, culture, religion}
+	private final Map<Integer, String[]> political = new LinkedHashMap<>(); // id -> {owner, controller, culture, religion, tradeGood}
 
 	private ProvinceHistoryExporter() {
 	}
@@ -82,19 +85,19 @@ public final class ProvinceHistoryExporter {
 			String content = stripComments(
 					Files.readString(f.toPath(), StandardCharsets.ISO_8859_1));
 			String[] eff = effective(content);
-			if (eff[0] != null || eff[2] != null || eff[3] != null)
+			if (eff[0] != null || eff[2] != null || eff[3] != null || eff[4] != null)
 				political.put(id, eff);
 		}
 	}
 
 	/**
-	 * The effective {@code {owner, controller, culture, religion}} at {@link
-	 * #START_DATE}: base top-level values, then every dated block up to the start
-	 * date applied in chronological order.
+	 * The effective {@code {owner, controller, culture, religion, tradeGood}} at
+	 * {@link #START_DATE}: base top-level values, then every dated block up to the
+	 * start date applied in chronological order.
 	 */
 	private static String[] effective(String content) {
 		Scan base = scan(content);
-		String[] eff = new String[4];
+		String[] eff = new String[5];
 		merge(eff, base.keys);
 		base.dated.sort((a, b) -> Integer.compare(a.date, b.date));
 		for (DateBlock db : base.dated) {
@@ -114,6 +117,12 @@ public final class ProvinceHistoryExporter {
 			eff[2] = keys.get("culture");
 		if (keys.containsKey("religion"))
 			eff[3] = keys.get("religion");
+		if (keys.containsKey("trade_goods")) {
+			String good = keys.get("trade_goods");
+			// the 'unknown' placeholder (undiscovered province) is normalized to null,
+			// so an undiscovered province is left unstamped like an unowned one
+			eff[4] = UNKNOWN_GOOD.equals(good) ? null : good;
+		}
 	}
 
 	// --- a minimal brace-aware Clausewitz scan ---------------------------------
@@ -197,7 +206,7 @@ public final class ProvinceHistoryExporter {
 				new TypeReference<List<Map<String, Object>>>() {
 				});
 
-		int owners = 0, cultures = 0, religions = 0;
+		int owners = 0, cultures = 0, religions = 0, tradeGoods = 0;
 		List<Map<String, Object>> out = new ArrayList<>(rows.size());
 		for (Map<String, Object> row : rows) {
 			int id = ((Number) row.get("id")).intValue();
@@ -206,12 +215,15 @@ public final class ProvinceHistoryExporter {
 			String controller = pol == null ? null : pol[1];
 			String culture = pol == null ? null : pol[2];
 			String religion = pol == null ? null : pol[3];
+			String tradeGood = pol == null ? null : pol[4];
 			if (owner != null)
 				owners++;
 			if (culture != null)
 				cultures++;
 			if (religion != null)
 				religions++;
+			if (tradeGood != null)
+				tradeGoods++;
 
 			// anchor the political fields after the last environmental/geo key present
 			String anchor = row.containsKey("monsoon") ? "monsoon"
@@ -223,28 +235,29 @@ public final class ProvinceHistoryExporter {
 			Map<String, Object> rebuilt = new LinkedHashMap<>();
 			for (Map.Entry<String, Object> e : row.entrySet()) {
 				switch (e.getKey()) {
-					case "owner", "controller", "culture", "religion" -> {
+					case "owner", "controller", "culture", "religion", "trade_goods" -> {
 						// drop any stale value; re-added in the canonical slot
 					}
 					default -> rebuilt.put(e.getKey(), e.getValue());
 				}
 				if (e.getKey().equals(anchor))
-					putPolitical(rebuilt, owner, controller, culture, religion);
+					putPolitical(rebuilt, owner, controller, culture, religion, tradeGood);
 			}
 			if (anchor == null)
-				putPolitical(rebuilt, owner, controller, culture, religion);
+				putPolitical(rebuilt, owner, controller, culture, religion, tradeGood);
 			out.add(rebuilt);
 		}
 
 		mapper.writerWithDefaultPrettyPrinter().writeValue(file, out);
 		System.out.println("stamped owner onto " + owners + ", culture onto "
-				+ cultures + ", religion onto " + religions + " of " + rows.size()
+				+ cultures + ", religion onto " + religions + ", trade good onto "
+				+ tradeGoods + " of " + rows.size()
 				+ " provinces in " + file.getAbsolutePath());
 	}
 
 	// add only the present political fields, anchored after the geo keys, canonical order
 	private static void putPolitical(Map<String, Object> row, String owner,
-			String controller, String culture, String religion) {
+			String controller, String culture, String religion, String tradeGood) {
 		if (owner != null)
 			row.put("owner", owner);
 		if (controller != null)
@@ -253,5 +266,7 @@ public final class ProvinceHistoryExporter {
 			row.put("culture", culture);
 		if (religion != null)
 			row.put("religion", religion);
+		if (tradeGood != null)
+			row.put("trade_goods", tradeGood);
 	}
 }

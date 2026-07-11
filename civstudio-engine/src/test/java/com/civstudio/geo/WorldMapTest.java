@@ -92,6 +92,41 @@ class WorldMapTest {
 	}
 
 	@Test
+	void loadsTheTradeGoodLayer() {
+		WorldMap map = WorldMap.load();
+		// Wesdam (province 10) produces cloth at the start bookmark
+		Province wesdam = map.province(10);
+		assertEquals("cloth", wesdam.tradeGood());
+
+		// the good key resolves to a record with a display name, hex colour and category
+		TradeGood cloth = map.tradeGood("cloth").orElseThrow();
+		assertEquals("Cloth", cloth.name());
+		assertEquals(TradeGoodClass.MANUFACTURED, cloth.category());
+		assertTrue(cloth.color().matches("#[0-9a-f]{6}"), "trade-good colour is #rrggbb");
+		// the Anbennar magical goods land in the MAGICAL bucket
+		assertEquals(TradeGoodClass.MAGICAL, map.tradeGood("mithril").orElseThrow().category());
+
+		// the derived membership index is populated and Wesdam is in it
+		assertTrue(map.provincesOfTradeGood("cloth").contains(wesdam));
+		assertFalse(map.tradeGoodKeys().isEmpty(), "some provinces produce a trade good");
+		// not every province has a good (uncolonized/undiscovered ones are null)
+		assertTrue(map.provincesOfTradeGood("cloth").size() < map.size());
+		assertThrows(UnsupportedOperationException.class,
+				() -> map.provincesOfTradeGood("cloth").clear());
+
+		// the 'unknown' placeholder is normalized to null, never a stamped good
+		assertTrue(map.tradeGood("unknown").isEmpty(), "'unknown' is not a real good");
+		assertTrue(map.provincesOfTradeGood("unknown").isEmpty());
+		boolean sawNull = false;
+		for (Province p : map.provinces())
+			if (p.tradeGood() == null) {
+				sawNull = true;
+				break;
+			}
+		assertTrue(sawNull, "some provinces have no trade good");
+	}
+
+	@Test
 	void pathWalksTheNeighborGraph() {
 		WorldMap map = WorldMap.load();
 		Province d = map.findByName("Dhenijansar").orElseThrow();

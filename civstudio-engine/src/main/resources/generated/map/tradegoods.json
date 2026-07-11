@@ -1,0 +1,181 @@
+[ {
+  "key" : "chinaware",
+  "name" : "Chinaware",
+  "color" : "#2e91cc",
+  "category" : "MANUFACTURED"
+}, {
+  "key" : "cloth",
+  "name" : "Cloth",
+  "color" : "#db3030",
+  "category" : "MANUFACTURED"
+}, {
+  "key" : "cloves",
+  "name" : "Cloves",
+  "color" : "#ff80d9",
+  "category" : "LUXURY"
+}, {
+  "key" : "coal",
+  "name" : "Coal",
+  "color" : "#00ffff",
+  "category" : "STRATEGIC"
+}, {
+  "key" : "cocoa",
+  "name" : "Cocoa",
+  "color" : "#733617",
+  "category" : "LUXURY"
+}, {
+  "key" : "coffee",
+  "name" : "Coffee",
+  "color" : "#382617",
+  "category" : "LUXURY"
+}, {
+  "key" : "copper",
+  "name" : "Copper",
+  "color" : "#d97526",
+  "category" : "STRATEGIC"
+}, {
+  "key" : "cotton",
+  "name" : "Cotton",
+  "color" : "#85ad99",
+  "category" : "LUXURY"
+}, {
+  "key" : "damestear",
+  "name" : "Damestear",
+  "color" : "#00e6e6",
+  "category" : "MAGICAL"
+}, {
+  "key" : "dyes",
+  "name" : "Dyes",
+  "color" : "#a12b80",
+  "category" : "LUXURY"
+}, {
+  "key" : "fish",
+  "name" : "Fish",
+  "color" : "#8cd1f7",
+  "category" : "FOOD"
+}, {
+  "key" : "fungi",
+  "name" : "Fungi",
+  "color" : "#56333f",
+  "category" : "MAGICAL"
+}, {
+  "key" : "fur",
+  "name" : "Fur",
+  "color" : "#8a664f",
+  "category" : "LUXURY"
+}, {
+  "key" : "gems",
+  "name" : "Gems",
+  "color" : "#f5c7c7",
+  "category" : "LUXURY"
+}, {
+  "key" : "glass",
+  "name" : "Glass",
+  "color" : "#009973",
+  "category" : "MANUFACTURED"
+}, {
+  "key" : "gold",
+  "name" : "Gold",
+  "color" : "#ffd630",
+  "category" : "STRATEGIC"
+}, {
+  "key" : "grain",
+  "name" : "Grain",
+  "color" : "#f5ed94",
+  "category" : "FOOD"
+}, {
+  "key" : "incense",
+  "name" : "Incense",
+  "color" : "#e3c978",
+  "category" : "LUXURY"
+}, {
+  "key" : "iron",
+  "name" : "Iron",
+  "color" : "#333333",
+  "category" : "STRATEGIC"
+}, {
+  "key" : "ivory",
+  "name" : "Ivory",
+  "color" : "#bfb3a1",
+  "category" : "LUXURY"
+}, {
+  "key" : "livestock",
+  "name" : "Livestock",
+  "color" : "#b87d70",
+  "category" : "FOOD"
+}, {
+  "key" : "mithril",
+  "name" : "Mithril",
+  "color" : "#dceefb",
+  "category" : "MAGICAL"
+}, {
+  "key" : "naval_supplies",
+  "name" : "Naval Supplies",
+  "color" : "#1c2b66",
+  "category" : "STRATEGIC"
+}, {
+  "key" : "paper",
+  "name" : "Paper",
+  "color" : "#e6dbb5",
+  "category" : "MANUFACTURED"
+}, {
+  "key" : "precursor_relics",
+  "name" : "Precursor Relics",
+  "color" : "#e6e61e",
+  "category" : "MAGICAL"
+}, {
+  "key" : "salt",
+  "name" : "Salt",
+  "color" : "#ffffff",
+  "category" : "FOOD"
+}, {
+  "key" : "serpentbloom",
+  "name" : "Serpentbloom",
+  "color" : "#520f6a",
+  "category" : "MAGICAL"
+}, {
+  "key" : "silk",
+  "name" : "Silk",
+  "color" : "#b81a1a",
+  "category" : "LUXURY"
+}, {
+  "key" : "slaves",
+  "name" : "Slaves",
+  "color" : "#000000",
+  "category" : "STRATEGIC"
+}, {
+  "key" : "spices",
+  "name" : "Spices",
+  "color" : "#66a661",
+  "category" : "LUXURY"
+}, {
+  "key" : "sugar",
+  "name" : "Sugar",
+  "color" : "#bdf2ad",
+  "category" : "LUXURY"
+}, {
+  "key" : "tea",
+  "name" : "Tea",
+  "color" : "#125417",
+  "category" : "LUXURY"
+}, {
+  "key" : "tobacco",
+  "name" : "Tobacco",
+  "color" : "#548f61",
+  "category" : "LUXURY"
+}, {
+  "key" : "tropical_wood",
+  "name" : "Tropical Wood",
+  "color" : "#737817",
+  "category" : "STRATEGIC"
+}, {
+  "key" : "wine",
+  "name" : "Wine",
+  "color" : "#5c2147",
+  "category" : "LUXURY"
+}, {
+  "key" : "wool",
+  "name" : "Wool",
+  "color" : "#d4d4d4",
+  "category" : "LUXURY"
+} ]
