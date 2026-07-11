@@ -1,0 +1,107 @@
+name: Propagate C2C updates
+
+# Scheduled auto-propagation of Caveman2Cosmos (Civ4) upstream changes. data/civ4 is de-vendored
+# (docs/civ4-files.md): the exporters + tech baker fetch from the C2C GitHub repo on demand, pinned
+# by map/civ4-source.lock. This job bumps that pin to the current C2C tip, re-runs the C2C-sourced
+# Java exporters + the tech-icon baker, validates with the test suite, and commits the regenerated
+# outputs — but only if they actually changed.
+#
+# Scope + deploy notes:
+#  - Only the C2C-sourced outputs are regenerated here. The Anbennar-sourced map/*.json exporters
+#    are driven by a frozen GitLab pin and are out of scope; web/build.mjs's terrain/bonus/tree art
+#    is NOT rebaked here (it also needs the Anbennar raster + the plot-grid caches) — rerun it by
+#    hand if C2C terrain art changes.
+#  - generated/*.json + techs-meta.json ship in the engine jar → server-affecting, so a change here
+#    still needs a MANUAL server deploy (guest identity — see the spectator-server-deployment note).
+#    tech-icons.webp is a committed web asset and auto-deploys via deploy-web.yml.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'      # Mondays 06:17 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: propagate-c2c
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  propagate:
+    runs-on: ubuntu-latest
+    env:
+      # Civ4Files (engine) and web/civ4.mjs read GITHUB_TOKEN to fetch from the C2C repo (public,
+      # but the unauthenticated API's 60/hour is far too few for a full regenerate).
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Bump civ4-source.lock to C2C tip
+        run: |
+          sha=$(gh api repos/caveman2cosmos/Caveman2Cosmos/commits/master --jq .sha)
+          echo "C2C tip: $sha"
+          printf '%s\n' "$sha" > civstudio-engine/src/main/resources/map/civ4-source.lock
+
+      - name: Regenerate C2C-sourced resources
+        run: |
+          set -e
+          chmod +x mvnw
+          ./mvnw -q -pl civstudio-engine compile
+          exp() { ./mvnw -q -pl civstudio-engine exec:exec -Dsim.main="$1"; }
+          exp com.civstudio.tech.export.TechInfoExporter        # techs.json first (BonusExporter reads it)
+          exp com.civstudio.geo.export.TerrainExporter
+          exp com.civstudio.geo.export.FeatureExporter
+          exp com.civstudio.geo.export.ImprovementExporter
+          exp com.civstudio.geo.export.BonusExporter
+          exp com.civstudio.geo.export.RouteModelExporter
+          exp com.civstudio.geo.export.TerrainArtExporter
+          exp com.civstudio.geo.export.HousingExporter
+          exp com.civstudio.geo.export.ManufacturedBonusExporter
+          exp com.civstudio.geo.export.RecipeExporter
+
+      - name: Bake tech icons
+        run: |
+          npm --prefix web ci
+          node web/build-techs.mjs
+
+      - name: Validate (full test suite loads the regenerated resources)
+        run: ./mvnw -q test
+
+      - name: Commit if changed
+        run: |
+          set -e
+          LOCK=civstudio-engine/src/main/resources/map/civ4-source.lock
+          GEN=civstudio-engine/src/main/resources/generated
+          ICONS=web/assets/tech-icons.webp
+          git add "$GEN" "$ICONS"
+          if git diff --cached --quiet -- "$GEN" "$ICONS"; then
+            echo "No output changes — C2C tip produced identical resources; discarding the lock bump."
+            git checkout -- "$LOCK"
+            exit 0
+          fi
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$LOCK"
+          sha=$(cat "$LOCK")
+          git commit -m "chore(civ4-files): auto-propagate C2C @ ${sha:0:12}
+
+          Regenerated the C2C-sourced resources + tech icons from the current C2C tip and re-ran
+          the test suite. Engine-jar resources changed here still need a MANUAL server deploy
+          (guest identity — see spectator-server-deployment); tech-icons.webp auto-deploys via
+          deploy-web.yml.
+
+          🤖 auto-propagation (.github/workflows/propagate-c2c.yml)"
+          git push

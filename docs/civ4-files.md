@@ -5,9 +5,9 @@
 consumer is repointed (all ten Java exporters regenerate **byte-identical** resource JSON fetching
 from C2C; the node bakers fetch through `web/civ4.mjs`), and **`data/civ4/` is removed from the repo
 and its history** (`git rm` + `git filter-repo --path data/civ4 --invert-paths` + force-push, ~24 MB
-reclaimed). The lock pins the C2C `master` tip; the fuller web rebake was adopted (see below). The
-one remaining piece is the **scheduled auto-propagation job** (§Removal step 9) — not yet built. The
-companion to [[anbennar-files]].
+reclaimed). The lock pins the C2C `master` tip; the fuller web rebake was adopted (see below); and the
+**scheduled auto-propagation job** is now built (`.github/workflows/propagate-c2c.yml`, §Removal
+step 9). The companion to [[anbennar-files]].
 
 **What the classification found (the big simplification):** **every one of the 58 files is verbatim
 C2C** — 56 byte-identical to the current C2C tip, `CIV4ArtDefines_Terrain.xml` an older-but-strict-
@@ -155,8 +155,13 @@ part of the byte-identical claim. (`build.mjs` also can't be run end-to-end unti
 8. ~~**History rewrite**: `git filter-repo --path data/civ4 --invert-paths --force` + force-push~~ —
    done (100 blob objects → 0; the now-empty `git rm` commit was auto-pruned). filter-repo drops the
    `origin` remote by design — re-added before pushing.
-9. **Scheduled auto-propagation** job (bump the lock to C2C tip, re-run exporters + bakers, commit if
-   changed) — **still to do.**
+9. ~~**Scheduled auto-propagation** job~~ — done: `.github/workflows/propagate-c2c.yml` (weekly +
+   manual) bumps the lock to the C2C tip, re-runs the C2C-sourced Java exporters + `build-techs.mjs`,
+   validates with the test suite, and commits **iff** the outputs changed. Scope note: the
+   Anbennar-sourced `map/*.json` (frozen GitLab pin) and `build.mjs`'s terrain/bonus/tree art (needs
+   the Anbennar raster + plot caches) are **not** rebaked there. Engine-jar resources it changes are
+   server-affecting → still a **manual** deploy (guest identity); `tech-icons.webp` auto-deploys via
+   `deploy-web.yml`.
 
 ## Resolved & remaining open questions
 
