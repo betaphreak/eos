@@ -485,5 +485,30 @@
     window.__updateCheck = check;
   })();
   </script>
+  <script>
+  // Cookie disclaimer: CivStudio sets only essential cookies (the login session + the "remember me"
+  // token) — no tracking, no ads. Show a one-time notice; the dismissal is stored locally so it does
+  // not nag on return visits. Self-contained and dependency-free, like the update toast above.
+  (function () {
+    try { if (localStorage.getItem("cookieConsent")) return; } catch (e) { return; }
+    function show() {
+      if (document.querySelector(".cookie-banner")) return;
+      var b = document.createElement("div");
+      b.className = "cookie-banner";
+      b.setAttribute("role", "note");
+      b.innerHTML = '<span class="cb-msg"><b>This site uses cookies</b> — only the essentials, to ' +
+        'keep you signed in across sessions. No tracking, no ads.</span>' +
+        '<button class="cb-ok" type="button">Got it</button>';
+      document.body.appendChild(b);
+      b.querySelector(".cb-ok").addEventListener("click", function () {
+        try { localStorage.setItem("cookieConsent", "1"); } catch (e) {}
+        b.classList.remove("on");
+        setTimeout(function () { b.remove(); }, 320);
+      });
+      requestAnimationFrame(function () { b.classList.add("on"); });
+    }
+    if (document.body) show(); else document.addEventListener("DOMContentLoaded", show);
+  })();
+  </script>
 </body>
 </html>
