@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.civstudio.server.CivStudioProperties;
 import com.civstudio.server.auth.Admins;
+import com.civstudio.server.auth.UserStore;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -27,10 +28,12 @@ public class CurrentUserResolver {
 
 	private final boolean trustDevHeader;
 	private final Admins admins;
+	private final UserStore users;
 
-	public CurrentUserResolver(CivStudioProperties props, Admins admins) {
+	public CurrentUserResolver(CivStudioProperties props, Admins admins, UserStore users) {
 		this.trustDevHeader = props.getAuth().isTrustDevUserHeader();
 		this.admins = admins;
+		this.users = users;
 	}
 
 	/**
@@ -49,6 +52,22 @@ public class CurrentUserResolver {
 				return header.trim();
 		}
 		return null;
+	}
+
+	/**
+	 * The caller's display name for user-facing attribution (e.g. lobby chat) — the {@code app_user}
+	 * display name (a Steam id or a Google email/name), falling back to the surrogate id if the user
+	 * record isn't found, or {@code null} if anonymous. Server-authoritative, so it can't be spoofed.
+	 *
+	 * @param request the current request
+	 * @return the caller's display name, or {@code null} if anonymous
+	 */
+	public String displayName(HttpServletRequest request) {
+		String id = userId(request);
+		if (id == null)
+			return null;
+		return users.findById(id).map(u -> u.displayName()).filter(n -> n != null && !n.isBlank())
+				.orElse(id);
 	}
 
 	/**

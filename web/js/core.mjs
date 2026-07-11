@@ -186,10 +186,12 @@ export const S = {
   pov: "god",            // camera POV: "god" (free look) | "timeline" (coming soon)
   // the map plane (exclusive base) and the overlay (one at a time), from the URL hash for deep links
   plane: /underworld/.test(location.hash) ? "underworld" : "overworld",
-  overlay: /caravan/.test(location.hash) ? "caravan"
+  // default to the live Spectate view once loaded; a hash deep-link can still force another overlay
+  // (use #none for the plain physical map).
+  overlay: /none|physical/.test(location.hash) ? "none"
     : /nation|political/.test(location.hash) ? "nation"
     : /culture/.test(location.hash) ? "culture"
-    : /faith|religion/.test(location.hash) ? "faith" : "none",
+    : /faith|religion/.test(location.hash) ? "faith" : "live",
   polHi: null,           // a nation/culture/faith key to spotlight on the map (legend/search hover)
   camBeforeFocus: null,  // camera snapshot to unwind with Esc after a focus (search / legend jump)
   hoverProv: null,

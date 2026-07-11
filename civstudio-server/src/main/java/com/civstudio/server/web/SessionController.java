@@ -51,6 +51,9 @@ public class SessionController {
 	// dropped rather than blocking the session thread
 	private static final int SSE_QUEUE_CAPACITY = 64;
 
+	// max lobby chat message length (longer is truncated)
+	private static final int MAX_CHAT_LEN = 280;
+
 	private final SessionHost host;
 	private final ObjectMapper json;
 	private final CurrentUserResolver currentUser;
@@ -146,6 +149,28 @@ public class SessionController {
 		}
 	}
 
+	// post a lobby chat message. Unlike control/commands (which change shared state and are
+	// owner-gated), chat is open to ANY signed-in user — it's a spectator lobby. The poster's
+	// display name is resolved server-side from the principal, so it can't be spoofed; the message
+	// is broadcast immediately to every spectator over the SSE `chat` event.
+	@PostMapping("/{id}/chat")
+	public ResponseEntity<Object> chat(@PathVariable String id, @RequestBody(required = false) ChatRequest req,
+			HttpServletRequest http) {
+		HostedSession hs = host.get(id);
+		if (hs == null)
+			return notFound(id);
+		String user = currentUser.displayName(http);
+		if (user == null)
+			return ResponseEntity.status(401).body(Map.of("error", "sign in to chat"));
+		String text = req == null || req.text() == null ? "" : req.text().strip();
+		if (text.isEmpty())
+			return ResponseEntity.badRequest().body(Map.of("error", "empty message"));
+		if (text.length() > MAX_CHAT_LEN)
+			text = text.substring(0, MAX_CHAT_LEN);
+		hs.postChat(user, text);
+		return ResponseEntity.status(202).body(Map.of("accepted", true, "user", user));
+	}
+
 	// open a Server-Sent-Events stream of the session's snapshots. The session thread serializes +
 	// offers frames into this connection's bounded queue (dropping the oldest if the client lags);
 	// this connection's own virtual thread drains it to the socket until the client disconnects.
@@ -156,21 +181,20 @@ public class SessionController {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no session " + id);
 
 		SseEmitter emitter = new SseEmitter(Long.MAX_VALUE); // no timeout — an open-ended feed
-		BlockingQueue<String> frames = new ArrayBlockingQueue<>(SSE_QUEUE_CAPACITY);
-		// runs on the session thread: serialize + enqueue, dropping the oldest frame if the client
-		// has fallen behind, so a slow spectator never blocks the simulation
-		AutoCloseable sub = hs.subscribe(snap -> {
-			String frame = toJson(snap);
-			if (frame != null && !frames.offer(frame)) {
-				frames.poll();
-				frames.offer(frame);
-			}
-		});
+		BlockingQueue<Frame> frames = new ArrayBlockingQueue<>(SSE_QUEUE_CAPACITY);
+		// snapshots (session thread) and chat (an HTTP poster thread) both enqueue here, dropping the
+		// oldest frame if the client has fallen behind — so neither the sim nor a chatter ever blocks
+		// on a slow spectator. The connection's own virtual thread drains to the socket.
+		AutoCloseable sub = hs.subscribe(snap -> offerFrame(frames, new Frame(null, toJson(snap))));
+		AutoCloseable chatSub = hs.subscribeChat(msg -> offerFrame(frames, new Frame("chat", toJson(msg))));
 		Thread drainer = Thread.ofVirtual().name("sse-" + id).start(() -> {
 			try {
 				while (true) {
-					String frame = frames.take();
-					emitter.send(SseEmitter.event().data(frame, MediaType.TEXT_PLAIN));
+					Frame f = frames.take();
+					SseEmitter.SseEventBuilder ev = SseEmitter.event().data(f.data(), MediaType.TEXT_PLAIN);
+					if (f.event() != null)
+						ev.name(f.event()); // "chat" → the client's chat listener; null → default snapshot
+					emitter.send(ev);
 					// once the session has stopped and its final frame is flushed, end the stream
 					// (rather than leaving an open async request pinning the server on shutdown)
 					if (hs.state() == HostedSession.State.STOPPED && frames.isEmpty())
@@ -182,6 +206,7 @@ public class SessionController {
 				// client closed the tab / emitter completed — fall through to unsubscribe
 			} finally {
 				closeQuietly(sub);
+				closeQuietly(chatSub);
 				try {
 					emitter.complete();
 				} catch (RuntimeException ignored) {
@@ -191,6 +216,7 @@ public class SessionController {
 		});
 		Runnable cleanup = () -> {
 			closeQuietly(sub);
+			closeQuietly(chatSub);
 			drainer.interrupt();
 		};
 		emitter.onCompletion(cleanup);
@@ -199,12 +225,27 @@ public class SessionController {
 		return emitter;
 	}
 
-	private String toJson(SessionSnapshot snap) {
+	private String toJson(Object value) {
 		try {
-			return json.writeValueAsString(snap);
+			return json.writeValueAsString(value);
 		} catch (RuntimeException e) {
 			return null;
 		}
+	}
+
+	// drop-oldest enqueue: never block the producer (session thread / chat poster) on a slow client
+	private static void offerFrame(BlockingQueue<Frame> q, Frame f) {
+		if (f.data() == null)
+			return; // a serialization failure — skip this frame rather than enqueue a null
+		if (!q.offer(f)) {
+			q.poll();
+			q.offer(f);
+		}
+	}
+
+	// one SSE frame: the payload plus its event name — null is the default ("message") event, a
+	// snapshot; "chat" is a lobby message the client's chat listener handles separately
+	private record Frame(String event, String data) {
 	}
 
 	private static void closeQuietly(AutoCloseable sub) {
@@ -257,5 +298,9 @@ public class SessionController {
 
 	/** Body of {@code POST /api/sessions/{id}/commands}. */
 	public record CommandRequest(String type, String lever, Double rate, Long tick) {
+	}
+
+	/** Body of {@code POST /api/sessions/{id}/chat}. */
+	public record ChatRequest(String text) {
 	}
 }

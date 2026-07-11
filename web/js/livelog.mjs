@@ -7,12 +7,18 @@
 // policy changes, anomalies — flagged server-side) are shown.
 
 const el = id => document.getElementById(id);
-const history = [];      // {date, text, curated} accrued over this session
+// history entries are either event-log lines {date, text, curated, sev} or lobby chat
+// {kind:"chat", user, text}. Chat is always shown; log lines obey the curated / "show all" filter.
+const history = [];
 let server = "live";     // header prefix (e.g. "dev"), set on show
 let expanded = false;
 let wired = false;
+let sendChat = null;     // callback (text) => post a chat message; set by live.mjs
 
 const MAX = 600;         // cap the client-side history
+
+/** Register the callback used to post a chat message (wired by live.mjs). */
+export function setChatSender(fn) { sendChat = fn; }
 
 /** Show/hide the bar (wiring it once). serverLabel becomes the header prefix, e.g. "dev". */
 export function showLiveLog(show, serverLabel) {
@@ -26,6 +32,15 @@ export function showLiveLog(show, serverLabel) {
 export function ingestLog(lines) {
   if (!lines || !lines.length) return;
   for (const l of lines) history.push(l);
+  while (history.length > MAX) history.shift();
+  renderBar();
+  if (expanded) renderHistory();
+}
+
+/** Append a lobby chat message (from the SSE `chat` event) and refresh the view. */
+export function ingestChat(msg) {
+  if (!msg || !msg.text) return;
+  history.push({ kind: "chat", user: msg.user || "?", text: msg.text });
   while (history.length > MAX) history.shift();
   renderBar();
   if (expanded) renderHistory();
@@ -55,11 +70,20 @@ function wire() {
   });
   const all = el("liveLogAll");
   if (all) all.addEventListener("change", () => { renderBar(); if (expanded) renderHistory(); });
+  // chat input — functional only for signed-in users (the input is hidden for anon via CSS)
+  const input = el("liveLogChatInput"), send = el("liveLogChatSend");
+  const submit = () => {
+    const t = ((input && input.value) || "").trim();
+    if (t && sendChat) { sendChat(t); input.value = ""; }
+  };
+  if (input) input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); submit(); } });
+  if (send) send.addEventListener("click", submit);
   wired = true;
 }
 
 function showAll() { const a = el("liveLogAll"); return !!(a && a.checked); }
-function visible() { return showAll() ? history : history.filter(l => l.curated); }
+// chat is always shown; log lines obey the curated / show-all filter
+function visible() { return history.filter(l => l.kind === "chat" || showAll() || l.curated); }
 function header(l) { return `${server}@${l.date || "----"}`; }
 
 function sevClass(l) { return l.sev && l.sev !== "info" ? " sev-" + l.sev : ""; }
@@ -69,18 +93,26 @@ function renderBar() {
   const vis = visible();
   if (!vis.length) { line.textContent = "…"; line.className = "live-log-line"; return; }
   const l = vis[vis.length - 1];
-  line.textContent = `${header(l)}  ${l.text}`;
-  line.className = "live-log-line" + sevClass(l);
+  if (l.kind === "chat") {
+    line.textContent = `${l.user}: ${l.text}`;
+    line.className = "live-log-line chat";
+  } else {
+    line.textContent = `${header(l)}  ${l.text}`;
+    line.className = "live-log-line" + sevClass(l);
+  }
 }
 
 function renderHistory() {
   const box = el("liveLogLines"); if (!box) return;
-  const vis = visible();
-  box.innerHTML = vis.map(l =>
-    `<div class="live-log-row${l.curated ? " cur" : ""}${sevClass(l)}">` +
-    `<span class="live-log-hdr">${esc(header(l))}</span>${esc(l.text)}</div>`
-  ).join("");
+  box.innerHTML = visible().map(rowHtml).join("");
   box.scrollTop = box.scrollHeight; // pin to newest
+}
+
+function rowHtml(l) {
+  if (l.kind === "chat")
+    return `<div class="live-log-row chat"><span class="live-log-user">${esc(l.user)}:</span> ${esc(l.text)}</div>`;
+  return `<div class="live-log-row${l.curated ? " cur" : ""}${sevClass(l)}">` +
+    `<span class="live-log-hdr">${esc(header(l))}</span>${esc(l.text)}</div>`;
 }
 
 function esc(s) {

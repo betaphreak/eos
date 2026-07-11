@@ -865,6 +865,26 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .live-log-row.sev-warn { color: #e8c37a; }
 .live-log-row.sev-error { color: #e07a7a; }
 .live-log-hdr { color: var(--accent-soft); margin-right: 8px; font-weight: 600; }
+/* lobby chat lines: a distinct blue, username prefix bold */
+.live-log-row.chat { color: #cfe0ff; }
+.live-log-line.chat { color: #cfe0ff; }
+.live-log-user { color: #7aa2e0; font-weight: 700; margin-right: 4px; }
+/* chat input row — hidden (replaced by a hint) for anonymous viewers */
+.live-log-chat { display: flex; align-items: center; gap: 6px; padding: 7px 12px;
+  border-top: 1px solid var(--line-soft); }
+.live-log-chat input { flex: 1; min-width: 0; background: var(--ground); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 6px; padding: .3rem .5rem; font: inherit; font-size: 12px; }
+.live-log-chat button { background: var(--line-soft); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 6px; padding: .3rem .7rem; cursor: pointer; font-size: 12px; }
+.live-log-chat button:hover { background: var(--accent); color: #0b0f16; }
+.live-log-chat-hint { display: none; font-size: 11px; color: var(--ink-faint); }
+body.auth-anon .live-log-chat input, body.auth-anon .live-log-chat button { display: none; }
+body.auth-anon .live-log-chat-hint { display: block; }
+
+/* Spectate tab: a green "live / on air" tint while the session is RUNNING (unpaused). Id-scoped so
+   it beats the inline .segToggle base + the aria-pressed rule. */
+#overlayToggle button.live-running { background: color-mix(in srgb, #2ea043 42%, transparent); color: #eaffef; }
+#overlayToggle button.live-running[aria-pressed="true"] { background: color-mix(in srgb, #2ea043 66%, transparent); color: #fff; }
 
 /* ---- Site sign-in control (header, index.html) — a button + dropdown, filled by js/auth.mjs ---- */
 .site-auth { position: relative; display: inline-flex; align-items: center; }

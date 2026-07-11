@@ -393,14 +393,10 @@ function buildPlotTexCanvas(p) {
 // provinces are in view. Categories (colour + shape): sea food, gems/luxuries, energy, metals,
 // farm/trade crops, livestock.
 const BONUS_HIDE_AT = 16;       // no resource icons at this zoom or below (textures only just appear)
-const BONUS_PLOTS = 0.66;       // icon size in PLOTS (≈0.66 of a plot). Sized off the on-screen plot size,
-                                // not absolute px, so it scales with the terrain on any viewport — fixes
-                                // mobile pinch, where a fixed-px icon covered too many plots. Kept small so
-                                // resources don't crowd the deep (256×) city-building zoom.
 function drawBonusOverlay(vis) {
   if (cam.k <= BONUS_HIDE_AT || !vis.length) return;
   const plotPx = pxr(1) - pxr(0);                      // one plot's on-screen size (tracks zoom AND viewport)
-  const size = plotPx * BONUS_PLOTS;
+  const size = bonusIconSize();
   const inset = Math.max(0.5, plotPx * 0.06);          // nudge off the very corner (frac of a plot)
   const useIcons = BONUS_ICONS && biReady;
   ctx.save();
@@ -429,9 +425,16 @@ function drawBonusOverlay(vis) {
 // tooltip so pointing at the big bottom-left-anchored glyph hits its owning plot, not the cell under it.
 export function bonusIconRect(q) {
   if (cam.k <= BONUS_HIDE_AT || !q || !q.bonus) return null;
-  const plotPx = pxr(1) - pxr(0), size = plotPx * BONUS_PLOTS, inset = Math.max(0.5, plotPx * 0.06);
+  const plotPx = pxr(1) - pxr(0), size = bonusIconSize(), inset = Math.max(0.5, plotPx * 0.06);
   const x = pxr(q.x) + inset, y = pyr(q.y + 1) - inset - size;
   return [x, y, x + size, y + size];
+}
+
+// bonus-icon on-screen size: the atlas cell drawn at 100% (native px) at the deepest zoom (K_MAX =
+// 256×), scaling down proportionally below — so a resource icon reads at a fixed, readable size
+// instead of ballooning with the plot as you zoom in. ctx is dpr-scaled, so cell px == CSS px.
+function bonusIconSize() {
+  return (BONUS_ICONS ? BONUS_ICONS.cell : 24) * cam.k / K_MAX;
 }
 // Polar sea ice on a water province's shelf (docs/coastlines.md Phase E/G). Coverage is per-cell
 // (sparse at sub-polar latitudes, near-solid by the pole), so drawing cells as SQUARES read as a

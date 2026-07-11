@@ -192,7 +192,7 @@ public record SimulationConfig(
 
 	/** The original canonical run configuration. */
 	public static final SimulationConfig DEFAULT = new SimulationConfig(
-			"Eos",                                 // settlementName
+			"Dhenijansar",                         // settlementName
 			LocalDate.of(1444, 12, 11),            // startDate
 			25,                                    // durationYears
 			1,                                     // numEFirms (founding count; the

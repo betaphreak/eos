@@ -8,7 +8,7 @@
 // (px/py) already pins anything with a lon/lat onto the terrain, so the feed's colonies and
 // caravans place with no new geometry.
 import { ctx, S, px, py, cssVar, cam, VIEW, baseXr, baseYr, sxSrc, sySrc, BUNDLE, LABEL_FONT } from "../core.mjs";
-import { showLiveLog, ingestLog, resetLog } from "../livelog.mjs";
+import { showLiveLog, ingestLog, ingestChat, resetLog, setChatSender } from "../livelog.mjs";
 
 // where the feed lives: the build can inject BUNDLE.live.base; a ?live=<url> query overrides
 // it for local testing; otherwise the deployed server.
@@ -63,6 +63,11 @@ export async function startLive(onRedraw, onSessionState) {
     es.onmessage = e => {
       try { onSnapshot(JSON.parse(e.data)); } catch (err) { /* ignore a bad frame */ }
     };
+    // lobby chat rides its own SSE event (immediate, not tick-paced); feed it to the log bar
+    es.addEventListener("chat", e => {
+      try { ingestChat(JSON.parse(e.data)); } catch (err) { /* ignore a bad chat frame */ }
+    });
+    setChatSender(postChat);
     // EventSource retries transient drops on its own (readyState CONNECTING) — just reflect that in
     // the HUD. Only a permanently CLOSED feed (readyState 2: fatal, gave up) is a real loss → drop
     // the user to server selection so they can reconnect (via window.__picker, from index.html).
@@ -95,7 +100,15 @@ export function stopLive() {
   snap = null; sid = null;
   for (const k in trails) delete trails[k];
   resetLog();
+  liveTabRunning(false);
   hud(false);
+}
+
+// tint the Spectate tab's background while the live session is RUNNING (a "live / on air" cue);
+// cleared when paused, stopped, or on disconnect.
+function liveTabRunning(on) {
+  const btn = document.querySelector('#overlayToggle button[data-ov="live"]');
+  if (btn) btn.classList.toggle("live-running", on);
 }
 
 function onSnapshot(s) {
@@ -109,6 +122,7 @@ function onSnapshot(s) {
   renderHud();
   ingestLog(s.log);           // feed the event-log bar this frame's new lines
   onState(s.state, s.date);   // sync the transport controls (play icon, speed, date) to the server
+  liveTabRunning(s.state === "RUNNING"); // tint the Spectate tab while the session is live/unpaused
   redraw();
 }
 
@@ -134,10 +148,14 @@ export function drawLive() {
     if (tr.length > 1) {
       ctx.beginPath();
       tr.forEach((p, k) => { const x = px(p[1]), y = py(p[0]); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
-      ctx.strokeStyle = col; ctx.globalAlpha = .5; ctx.lineWidth = 1.6;
       ctx.lineJoin = "round"; ctx.lineCap = "round";
-      ctx.shadowColor = "rgba(4,7,12,.55)"; ctx.shadowBlur = 3; ctx.stroke();
-      ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+      // a dark casing under the route + a soft glow, so it reads over any terrain rather than
+      // blending in; then the bright coloured line on top
+      ctx.shadowColor = "rgba(3,6,11,.9)"; ctx.shadowBlur = 4;
+      ctx.strokeStyle = "rgba(6,9,14,.9)"; ctx.lineWidth = 5.5; ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = col; ctx.globalAlpha = .95; ctx.lineWidth = 2.6; ctx.stroke();
+      ctx.globalAlpha = 1;
     }
     const x = px(c.longitude), y = py(c.latitude), r = c.settled ? 6 : 4.6;
     ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fillStyle = col; ctx.fill();
@@ -193,6 +211,17 @@ function renderHud() {
     el("liveApplyTax").onclick = applyTax;
     hudWired = true;
   }
+}
+
+// post a lobby chat message to the session (server attaches the authoritative username). The owner
+// check doesn't apply — any signed-in user may chat — but the cookie must ride (cross-origin).
+async function postChat(text) {
+  if (!sid) return;
+  try {
+    await fetch(LIVE_BASE + "/api/sessions/" + sid + "/chat",
+      { method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+  } catch (err) { /* transient — the message just won't post */ }
 }
 
 async function postCommand(body) {

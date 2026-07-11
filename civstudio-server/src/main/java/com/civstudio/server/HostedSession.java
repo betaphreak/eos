@@ -10,6 +10,7 @@ import com.civstudio.io.SimLog;
 import com.civstudio.server.command.CommandLog;
 import com.civstudio.server.command.CommandStore;
 import com.civstudio.server.command.GameCommand;
+import com.civstudio.server.render.ChatMessage;
 import com.civstudio.server.render.SessionLogBuffer;
 import com.civstudio.server.render.SessionSnapshot;
 import com.civstudio.server.render.Snapshots;
@@ -86,6 +87,15 @@ public final class HostedSession {
 	// holds the session's event-log lines between emits; a SimLog tap fills it on the colony
 	// threads, emit() drains it into each snapshot (the browser's live log bar). See run()/emit().
 	private final SessionLogBuffer logBuffer = new SessionLogBuffer();
+
+	// lobby chat: an immediate broadcast channel, separate from the tick-paced snapshot feed (so
+	// messages don't wait up to a tick), plus a short backlog replayed to each newly-connected
+	// spectator. All accessed under chatLock, so a subscribe (backlog replay + add) and a post
+	// (append + broadcast) are serialized — no message is missed or double-delivered.
+	private static final int CHAT_BACKLOG = 40;
+	private final Object chatLock = new Object();
+	private final java.util.ArrayDeque<ChatMessage> chatBacklog = new java.util.ArrayDeque<>();
+	private final java.util.List<Consumer<ChatMessage>> chatSubscribers = new java.util.ArrayList<>();
 
 	// pause/step coordination: the session thread waits on `gate` while PAUSED with no step
 	// credit; control threads mutate stepCredits/state under `gate` and notify
@@ -236,6 +246,54 @@ public final class HostedSession {
 		if (snap != null)
 			subscriber.accept(snap);
 		return () -> subscribers.remove(subscriber);
+	}
+
+	/**
+	 * Post a lobby chat message: append it to the replay backlog and broadcast it immediately to
+	 * every chat subscriber. Called off the session thread (an HTTP request thread); the subscribers'
+	 * consumers must not block (each hands the message to its own SSE buffer).
+	 *
+	 * @param user the poster's display name (server-resolved, not client-supplied)
+	 * @param text the message body
+	 */
+	public void postChat(String user, String text) {
+		ChatMessage msg = new ChatMessage(user, text);
+		synchronized (chatLock) {
+			chatBacklog.addLast(msg);
+			while (chatBacklog.size() > CHAT_BACKLOG)
+				chatBacklog.removeFirst();
+			for (Consumer<ChatMessage> c : chatSubscribers)
+				try {
+					c.accept(msg);
+				} catch (RuntimeException e) {
+					// a slow/broken chat subscriber must never break the broadcast
+				}
+		}
+	}
+
+	/**
+	 * Subscribe to this session's chat channel. The current backlog is replayed to {@code sub} on
+	 * subscribe (so a late joiner sees recent messages), then every subsequent post. Returns an
+	 * unsubscribe handle.
+	 *
+	 * @param sub the chat-message consumer
+	 * @return an unsubscribe handle
+	 */
+	public AutoCloseable subscribeChat(Consumer<ChatMessage> sub) {
+		synchronized (chatLock) {
+			for (ChatMessage m : chatBacklog)
+				try {
+					sub.accept(m);
+				} catch (RuntimeException ignored) {
+					// best-effort backlog replay
+				}
+			chatSubscribers.add(sub);
+		}
+		return () -> {
+			synchronized (chatLock) {
+				chatSubscribers.remove(sub);
+			}
+		};
 	}
 
 	/** This session's id. */

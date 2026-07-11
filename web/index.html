@@ -43,7 +43,7 @@
           <button data-ov="nation" aria-pressed="false" data-tip="Colour provinces by owning nation at game start">Nation</button>
           <button data-ov="culture" aria-pressed="false" data-tip="Colour provinces by culture">Culture</button>
           <button data-ov="faith" aria-pressed="false" data-tip="Colour provinces by religion">Faith</button>
-          <button data-ov="live" aria-pressed="false" data-tip="Watch the live server session — the colony and its caravans — in real time">Caravans</button>
+          <button data-ov="live" aria-pressed="false" data-tip="Spectate the live server session — the colony, its caravans and the lobby — in real time">Spectate</button>
         </div>
       </div>
 
@@ -107,10 +107,15 @@
       <div class="live-log" id="liveLog" hidden>
         <div class="live-log-history" id="liveLogHistory" hidden>
           <div class="live-log-head">
-            <span>EVENT LOG</span>
+            <span>LOBBY</span>
             <label class="live-log-toggle"><input type="checkbox" id="liveLogAll"> show all</label>
           </div>
           <div class="live-log-lines" id="liveLogLines"></div>
+          <div class="live-log-chat">
+            <input id="liveLogChatInput" type="text" maxlength="280" autocomplete="off" placeholder="Say something…">
+            <button id="liveLogChatSend">Send</button>
+            <span class="live-log-chat-hint">Sign in to chat</span>
+          </div>
         </div>
         <div class="live-log-latest" id="liveLogLatest" role="button" tabindex="0"
              title="Click to expand the event log">
