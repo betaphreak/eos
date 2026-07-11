@@ -451,7 +451,13 @@
         if (bootServerVer == null && sver) bootServerVer = sver;
         var frontendNew = tag && bootTag && tag !== bootTag;
         var serverNew = sver && bootServerVer && sver !== bootServerVer;
-        if (!frontendNew && !serverNew) return;
+        // A SERVER-only redeploy (new CivStudio version, same web build) needs no reload: the live
+        // feed reconnects itself through the revision hand-off (js/overlays/live.mjs), and the map/
+        // bundle stay valid. Just refresh the baseline so we don't keep flagging it — don't yank the
+        // user back to the loading screen. Only a new WEB build (changed ETag) needs a reload to pick
+        // up the new client code.
+        if (serverNew && !frontendNew) { bootServerVer = sver; return; }
+        if (!frontendNew) return;
         notified = true;
         // still on the loading/picker screen (not connected) → reloading is seamless, just do it
         var l = document.getElementById("loading");

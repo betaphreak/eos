@@ -54,12 +54,27 @@ export async function startLive(onRedraw, onSessionState) {
   onState = onSessionState || onState;
   framed = false;
   hud(true);
-  setHudStatus("connecting…");
+  reconnectAttempts = 0;
+  connectStream();
+}
+
+// how many times to silently reconnect to the SAME server before giving up and dropping to the
+// picker. A server redeploy (new CivStudio version) tears the stream down and the new revision takes
+// a few seconds to serve — we reconnect straight through it (re-resolving the session id each time,
+// in case it was re-founded) rather than yanking the user back to the loading screen.
+const MAX_RECONNECT = 8, RECONNECT_DELAY = 1500;
+let reconnectAttempts = 0, reconnectTimer = null;
+
+async function connectStream() {
+  reconnectTimer = null;
+  setHudStatus(reconnectAttempts ? "reconnecting…" : "connecting…");
   try {
-    const list = await (await fetch(LIVE_BASE + "/api/sessions")).json();
-    if (!list.length) { setHudStatus("no live session"); return; }
+    const list = await (await fetch(LIVE_BASE + "/api/sessions", { cache: "no-store" })).json();
+    if (!list.length) { setHudStatus("no live session"); retryOrLost(); return; }
     sid = list[0].id;
+    if (es) es.close();
     es = new EventSource(LIVE_BASE + "/api/sessions/" + sid + "/stream");
+    es.onopen = () => { reconnectAttempts = 0; };   // a clean connection resets the retry budget
     es.onmessage = e => {
       try { onSnapshot(JSON.parse(e.data)); } catch (err) { /* ignore a bad frame */ }
     };
@@ -68,16 +83,27 @@ export async function startLive(onRedraw, onSessionState) {
       try { ingestChat(JSON.parse(e.data)); } catch (err) { /* ignore a bad chat frame */ }
     });
     setChatSender(postChat);
-    // EventSource retries transient drops on its own (readyState CONNECTING) — just reflect that in
-    // the HUD. Only a permanently CLOSED feed (readyState 2: fatal, gave up) is a real loss → drop
-    // the user to server selection so they can reconnect (via window.__picker, from index.html).
+    // EventSource retries transient network drops on its own (readyState CONNECTING). A permanently
+    // CLOSED feed (readyState 2) — e.g. a non-2xx during a redeploy's revision hand-off — the UA will
+    // NOT retry, so we reconnect ourselves (see retryOrLost) rather than dropping straight to the
+    // picker; only after a run of failures is it a real loss.
     es.onerror = () => {
       setHudStatus("reconnecting…");
-      if (es && es.readyState === 2 && window.__picker && window.__picker.lost)
-        window.__picker.lost("Lost connection to the live server");
+      if (es && es.readyState === 2) { es.close(); es = null; retryOrLost(); }
     };
   } catch (err) {
-    setHudStatus("offline — " + LIVE_BASE);
+    retryOrLost();   // /api/sessions unreachable (server mid-restart) — keep trying
+  }
+}
+
+// reconnect to the same server after a short delay, or — once the budget is spent — hand off to the
+// picker (window.__picker, from index.html) so the user can pick another server.
+function retryOrLost() {
+  if (reconnectTimer) return;
+  if (reconnectAttempts++ < MAX_RECONNECT) {
+    reconnectTimer = setTimeout(connectStream, RECONNECT_DELAY);
+  } else if (window.__picker && window.__picker.lost) {
+    window.__picker.lost("Lost connection to the live server");
   }
 }
 
