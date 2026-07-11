@@ -187,7 +187,7 @@ class ServerApiTest {
 		var bundle = json.readTree(res.body());
 		int provinceCount = bundle.get("provinces").size();
 		assertTrue(provinceCount > 4000, "expected the whole world, got " + provinceCount + " provinces");
-		for (String key : new String[] { "geo", "geoNames", "adjacencies", "terrainColors", "plotIndex" })
+		for (String key : new String[] { "geo", "geoNames", "adjacencies", "terrainColors" })
 			assertTrue(bundle.has(key), "bundle missing key: " + key);
 
 		// with Accept-Encoding: gzip the server ships the gzipped copy; it gunzips to the same bundle

@@ -1,11 +1,11 @@
 name: Deploy WorldMap to Azure SWA
 
-# The web/ site is a fully prebuilt static folder: data.js AND every baked asset
-# (web/assets/*.png + plots.pack, ~20 MB) are committed to git, non-LFS. So this job just
-# uploads the folder as-is — no Java engine, no web/build.mjs, no LFS. Regenerate the assets
-# locally with `node web/build.mjs` (needs the per-province plot grids, which WorldPlotGenerator
-# builds/caches) and commit the result; the deploy ships exactly what is checked in.
-# See web/README.md "Deploy".
+# The web/ site is a fully prebuilt static folder: the baked assets (web/assets/*.webp, a few MB)
+# are committed to git, non-LFS. So this job just uploads the folder as-is — no Java engine, no
+# web/build.mjs, no LFS. Per-plot terrain is NOT a static asset any more: the server generates and
+# serves it per province at GET /api/plots/{id} (docs/plot-serving.md), so there is no plots.pack.
+# Regenerate the baked assets locally with `node web/build.mjs` and commit the result; the deploy
+# ships exactly what is checked in. See web/README.md "Deploy".
 on:
   push:
     branches: [master]

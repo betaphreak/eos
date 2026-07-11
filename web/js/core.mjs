@@ -143,7 +143,6 @@ function provBoxHas(p, sx, sy, margin = 0) {
   return sx >= Math.min(ax, bx) - margin && sx <= Math.max(ax, bx) + margin
       && sy >= Math.min(ay, by) - margin && sy <= Math.max(ay, by) + margin;
 }
-const PLOT_INDEX = BUNDLE.plotIndex || {};       // {provId: [byteOffset, len]} into plots.pack
 const lerp = (a,b,t) => a + (b-a)*t;
 function provPath(p) {                           // Path2D of a province's rings, rebuilt on view change
   if (p._pv === S.viewVersion) return p._path;
@@ -200,4 +199,4 @@ export const S = {
   techOpen: false,       // the tech-tree modal is up — paint() pauses map rendering behind it
 };
 
-export { P, fmtInt, apiUrl, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, PLOT_INDEX, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };
+export { P, fmtInt, apiUrl, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };

@@ -1,4 +1,4 @@
-import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, PLOT_INDEX, K_PLOT, K_TEX, K_MAX, TT, RIVER, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, LY, NB4, cam, VIEW, ctx, pxr, pyr, lerp, S } from "./core.mjs";
+import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, apiUrl, K_PLOT, K_TEX, K_MAX, TT, RIVER, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, LY, NB4, cam, VIEW, ctx, px, py, pxr, pyr, lerp, S } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { renderRail } from "./panel.mjs";
 let ttImg = null, ttReady = false, ttTiles = null;
@@ -45,31 +45,28 @@ function extractTiles() {
     ttTiles[terr] = tc;
   }
 }
-// lazy-load a province's plot grid: Range-fetch its slice of assets/plots.pack (each
-// slice is a standalone gzip member — the province's canonical .json.gz verbatim),
-// gunzip it in the browser, then rasterise and redraw. Any failure leaves the province
-// as the blurred raster (graceful degradation; e.g. file:// blocks fetch entirely).
+// lazy-load a province's plot grid: fetch it from the server (GET /api/plots/{id}), which
+// generates the canonical field on demand and caches it (docs/plot-serving.md); the body is the
+// province's gzipped JSON, gunzipped here. Then rasterise and redraw. An empty array (the ~176
+// deep-ocean provinces with no shelf) or any failure leaves it as the blurred raster / open sea.
 async function loadPlots(p) {
   if (p._loading || p._plots) return;
-  const slice = PLOT_INDEX[p.id];
-  if (!slice) return;                            // no plots for this province
   p._loading = true;
-  const [off, len] = slice;
   try {
-    const res = await fetch("assets/plots.pack", { headers: { Range: `bytes=${off}-${off + len - 1}` } });
-    let buf = await res.arrayBuffer();
-    if (res.status === 200) buf = buf.slice(off, off + len);   // server ignored Range → slice ourselves
-    const stream = new Response(buf).body.pipeThrough(new DecompressionStream("gzip"));
+    const res = await fetch(apiUrl("/api/plots/" + p.id));
+    if (!res.ok) throw new Error("plots " + res.status);   // 404 off-map, 5xx, …
+    const stream = res.body.pipeThrough(new DecompressionStream("gzip"));
     const arr = JSON.parse(await new Response(stream).text());
     p._loading = false;
-    if (arr) { p._plots = arr; draw(); if (S.selectedProv === p) renderRail(); }   // fill the detail panel too
+    // mark as loaded even when empty (deep ocean), so the draw loop and panel stop re-requesting
+    p._plots = arr || [];
+    if (p._plots.length) draw();
+    if (S.selectedProv === p) renderRail();
   } catch (e) {
-    // the per-plot terrain feed (assets/plots.pack) failed to fetch or decode for THIS province.
-    // Degrade gracefully — leave it as the blurred raster (hasPlots=false stops the draw loop from
-    // re-requesting it) — and do NOT drop to the server picker: plots.pack is a per-province lazy
-    // load from the static site (not the server), so one failed slice is no reason to tear down the
-    // whole session. (A truly unreachable server is still surfaced by the bundle fetch / live SSE.)
-    p._loading = false; p.hasPlots = false;
+    // the per-plot terrain feed failed for THIS province — degrade gracefully (leave the blurred
+    // raster) and mark it loaded-empty so the draw loop doesn't re-request it. Do NOT tear down the
+    // session: one province's plots failing is not a dead server (the bundle/SSE surface that).
+    p._loading = false; p._plots = [];
   }
 }
 // rasterise a province's plots to a 1px/plot offscreen canvas: terrain colour, relief
@@ -154,7 +151,7 @@ function drawCostOverlay() {
   const smooth = ctx.imageSmoothingEnabled;
   ctx.globalAlpha = a; ctx.imageSmoothingEnabled = true;
   for (const p of P) {
-    if (!p.hasPlots || !p._plots) continue;                 // drawPlots requests the load
+    if (!p._plots || !p._plots.length) continue;            // unloaded (drawPlots requests it) or empty
     const bb = provSrcBox(p); if (!bb) continue;
     const sx0 = pxr(bb.x0), sy0 = pyr(bb.y0), sx1 = pxr(bb.x1), sy1 = pyr(bb.y1);
     if (sx1 < 0 || sy1 < 0 || sx0 > VIEW.w || sy0 > VIEW.h) continue;
@@ -178,14 +175,14 @@ function drawPlots(only) {
   ctx.globalAlpha = a;
   const vis = [];   // in-view provinces with plots loaded — reused by the bonus overlay (no 2nd P scan)
   for (const p of P) {
-    if (!p.hasPlots) continue;
     if (only && !only(p)) continue;
     const bb = provSrcBox(p);
     let sx0, sy0, sx1, sy1;
     if (bb) { sx0 = pxr(bb.x0); sy0 = pyr(bb.y0); sx1 = pxr(bb.x1); sy1 = pyr(bb.y1); }
     else { const x = px(p.lon), y = py(p.lat); sx0 = x - 20; sy0 = y - 20; sx1 = x + 20; sy1 = y + 20; }
     if (sx1 < 0 || sy1 < 0 || sx0 > VIEW.w || sy0 > VIEW.h) continue;   // cull to viewport
-    if (!p._plots) { loadPlots(p); continue; }
+    if (!p._plots) { loadPlots(p); continue; }   // request the server-generated grid on first sight
+    if (!p._plots.length) continue;              // loaded-empty (deep ocean): nothing to draw
     vis.push(p);
     if (textured) {
       if (!p._tcanvas) buildPlotTexCanvas(p);                 // textured offscreen, built once

@@ -128,32 +128,24 @@ public final class WorldBundle {
 		JsonNode borders = load("/map/borders.json");
 		JsonNode adjacenciesRaw = load("/map/adjacencies.json");
 
-		// which provinces carry a plot grid (== hasPlots): the manifest plotIndex keys
-		Set<Integer> plotIds = new HashSet<>();
-		manifest.get("plotIndex").propertyNames().forEach(k -> plotIds.add(Integer.parseInt(k)));
-
 		// polygon outlines by id (null for the few provinces the border exporter skips)
 		Map<Integer, JsonNode> ringsById = new HashMap<>();
 		for (JsonNode b : borders)
 			ringsById.put(b.get("id").asInt(), b.get("rings"));
 
-		// the shipped set, in build.mjs order: land-like first (provinces.json order), then the
-		// SEA/LAKE provinces that generated a grid (provinces.json order). The two are disjoint.
+		// Ship EVERY province. Plots are generated per-province on demand by the server
+		// (GET /api/plots/{id}, docs/plot-serving.md), so there is no plot-presence gating any more:
+		// the ~176 deep-ocean provinces with no shelf just yield an empty grid (open sea). `sub` is
+		// the land-like subset the geographic label rollups run over.
+		List<JsonNode> shipped = new ArrayList<>(allProv.size());
 		List<JsonNode> sub = new ArrayList<>();
-		List<JsonNode> water = new ArrayList<>();
-		for (JsonNode p : allProv) {
-			String type = p.get("type").asText();
-			if (LANDLIKE.contains(type))
-				sub.add(p);
-			else if ((type.equals("SEA") || type.equals("LAKE")) && plotIds.contains(p.get("id").asInt()))
-				water.add(p);
-		}
-		List<JsonNode> shipped = new ArrayList<>(sub.size() + water.size());
-		shipped.addAll(sub);
-		shipped.addAll(water);
 		Set<Integer> shippedIds = new HashSet<>();
-		for (JsonNode p : shipped)
+		for (JsonNode p : allProv) {
+			shipped.add(p);
 			shippedIds.add(p.get("id").asInt());
+			if (LANDLIKE.contains(p.get("type").asText()))
+				sub.add(p);
+		}
 
 		JsonNode bboxes = manifest.get("bboxes");
 		Map<Integer, double[]> latLon = new HashMap<>(); // rounded lat/lon, for the adjacency teleport test
@@ -192,7 +184,6 @@ public final class WorldBundle {
 				o.set("lab", lab);
 			else
 				o.putNull("lab");
-			o.put("hasPlots", plotIds.contains(id));
 			if (bboxes != null && bboxes.has(String.valueOf(id)))
 				o.set("bbox", bboxes.get(String.valueOf(id)));
 			provinces.add(o);
@@ -247,7 +238,7 @@ public final class WorldBundle {
 		meta.set("seed", manifest.get("seed"));
 		root.set("provinces", provinces);
 		for (String k : List.of("map", "terrainColors", "terrainLayer", "terrainTiles", "river",
-				"sea", "shore", "foam", "ice", "bonusIcons", "trees", "seaBands", "loading", "plotIndex"))
+				"sea", "shore", "foam", "ice", "bonusIcons", "trees", "seaBands", "loading"))
 			root.set(k, manifest.get(k));
 		root.set("geo", geo);
 		root.set("adjacencies", adjacencies);

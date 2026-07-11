@@ -46,6 +46,20 @@ class WorldBundleGoldenTest {
 		}
 		ObjectNode actual = WorldBundle.assemble();
 
+		// Regeneration hook: after an intentional bundle change, rewrite the fixture with
+		//   mvn -pl civstudio-server test -Dtest=WorldBundleGoldenTest -Dbundle.golden.regen=true
+		// then review the diff and commit src/test/resources/web/bundle-golden.json.gz.
+		if (Boolean.getBoolean("bundle.golden.regen")) {
+			java.nio.file.Path out = java.nio.file.Path.of(
+					"src/test/resources/web/bundle-golden.json.gz");
+			java.nio.file.Files.createDirectories(out.getParent());
+			try (var gz = new java.util.zip.GZIPOutputStream(java.nio.file.Files.newOutputStream(out))) {
+				gz.write(MAPPER.writeValueAsBytes(actual));
+			}
+			System.out.println("regenerated golden fixture: " + out.toAbsolutePath());
+			return;
+		}
+
 		Map<Integer, JsonNode> exp = byId(golden.get("provinces"));
 		Map<Integer, JsonNode> act = byId(actual.get("provinces"));
 		assertEquals(exp.keySet(), act.keySet(), "shipped province id set differs");
@@ -53,7 +67,7 @@ class WorldBundleGoldenTest {
 		List<String> hard = new ArrayList<>();     // non-lab field mismatches (must be zero)
 		int labFlips = 0, labOff = 0, labProvinces = 0;
 		String[] scalarFields = { "name", "lat", "lon", "plots", "waterPlots", "type",
-				"region", "area", "continent", "winter", "hasPlots" };
+				"region", "area", "continent", "winter" };
 		for (var e : exp.entrySet()) {
 			int id = e.getKey();
 			JsonNode g = e.getValue(), a = act.get(id);

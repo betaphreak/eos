@@ -1,4 +1,4 @@
-import { BUNDLE, P, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, PLOT_INDEX, K_TEX, worldW, provPath, provBoxHas, clampPan, provGeo, polOf, isPolitical, S } from "./core.mjs";
+import { BUNDLE, P, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, K_TEX, worldW, provPath, provBoxHas, clampPan, provGeo, polOf, isPolitical, S } from "./core.mjs";
 import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
 import { loadPlots, bonusIconRect } from "./plots.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
@@ -393,7 +393,7 @@ function prettyId(s) {
 }
 function selectProvince(p) {
   S.selectedProv = p;
-  if (p && p.hasPlots !== false && !p._plots) loadPlots(p);   // stream in terrain for the breakdown
+  if (p && !p._plots) loadPlots(p);   // stream in the server-generated terrain for the breakdown
   showRail(!!p);                     // selecting opens the info panel; deselecting collapses it
   renderRail(); draw();
 }
@@ -405,7 +405,7 @@ function provinceRail(p) {
     .join('<span class="crumb-sep">›</span>');
   const coord = `${Math.abs(p.lat).toFixed(2)}°${p.lat>=0?"N":"S"}, ${Math.abs(p.lon).toFixed(2)}°${p.lon>=0?"E":"W"}`;
   let terrainHtml;
-  if (p._plots) {
+  if (p._plots && p._plots.length) {
     const s = provinceStats(p._plots);
     const bars = s.terr.map(([k,n])=>{
       const pct = Math.round(n/s.n*100), c = terrainRgb(k);
@@ -430,7 +430,7 @@ function provinceRail(p) {
       <div class="pv-chips">${chips(s.feat)}</div>
       <p class="sectlabel" style="margin-top:12px">Resources</p>
       <div class="pv-chips">${chips(s.res)}</div>`;
-  } else if (p.hasPlots === false || !PLOT_INDEX[p.id]) {
+  } else if (p._plots) {   // loaded but empty (deep ocean with no shelf)
     terrainHtml = `<p class="footnote">No per-plot terrain for this province.</p>`;
   } else {
     terrainHtml = `<p class="footnote">Loading terrain…</p>`;

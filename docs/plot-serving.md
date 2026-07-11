@@ -1,9 +1,16 @@
 # Design: serving per-province plots from the server (on-demand, sim-paused generation)
 
-**Status:** design agreed 2026-07-11; **implementation pending.** Decisions in this note are settled
-(the source, the CDN retirement, the pause-the-sim performance model, the lobby progress surface);
-what remains is to build it. Companion to `docs/province-plots.md` (the plot generation algorithm)
-and `docs/client-server.md` (the server spine).
+**Status:** ✅ **Implemented 2026-07-11** (engine + server + browser; verified live — a deep-zoom
+map renders per-plot terrain fetched from `/api/plots/{id}` with no static pack). The **lobby
+generation-progress surface** and the **persistent-volume deploy** wiring are the remaining follow-
+ups. Companion to `docs/province-plots.md` (the plot generation algorithm) and `docs/client-server.md`.
+
+**Simplification adopted (ship-all).** Of 5264 provinces only ~176 (deep-ocean SEA) lack a shelf
+grid, so rather than track *which* provinces have plots, the bundle **ships all provinces** and the
+browser fetches `/api/plots/{id}` for whatever it zooms into — a deep-ocean province just yields an
+**empty grid** (open sea). This deleted the whole plot-presence apparatus: no committed plot index,
+no `plotIndex`/`hasPlots` in the bundle, no `build.mjs` `packPlots`. The `WorldBundleGoldenTest`
+fixture was regenerated for the +176 provinces (a regen hook is in the test).
 
 ## Today — static / CDN (what we're replacing)
 

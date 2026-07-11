@@ -265,7 +265,7 @@ const ice = bakeIceTile();                   // {src, tile} real Civ4 pack-ice t
 const bonusIcons = bakeBonusIcons();         // {src, cell, cols, index:{type:i}} real Civ4 resource icons, or null
 const trees = bakeFeatureSprites();          // {leafy,palm,swamp:{src,w,h,sprites}} real foliage cutouts, or null
 const seaBands = bakeSeaBands();             // {trop, temp, polar, shore} climate sea + shore colours
-const plotPack = packPlots(provinces);
+const plotProvinceCount = computeWaterBboxes(provinces);
 
 // encode every queued art asset to WebP (one async pass now the bakes have run); imgSizes feeds the
 // size logs below. The bundle records each asset's .webp src, so the page loads them unchanged.
@@ -375,7 +375,6 @@ const manifest = {
   seed: +SEED,
   map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, foam, ice, bonusIcons, trees, seaBands,
   loading,                            // committed loading-screen art (assets/loading-*.jpg), or []
-  plotIndex: plotPack.index,          // {provId: [byteOffset, len]} into assets/plots.pack
   bboxes,                             // {provId: [x0,y0,x1,y1]} for ring-less provinces (server can't derive)
 };
 const manifestPath = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/web-asset-manifest.json');
@@ -388,7 +387,7 @@ console.log(`Built civstudio-engine/src/main/resources/generated/map/web-asset-m
 console.log(`  ${provinces.length} provinces (run-independent — live caravans come from the server)`);
 console.log(`  terrain crop ${map.dw}×${map.dh}px`);
 console.log(`  geo labels: ${geo.continents.length} continents · ${geo.superRegions.length} super-regions · ${geo.regions.length} regions`);
-console.log(`  plots: ${plotPack.count} provinces packed into web/assets/plots.pack (${(plotPack.bytes / 1048576).toFixed(1)} MB, range-fetched per-plot terrain zoom)`);
+console.log(`  plots: ${plotProvinceCount} provinces have a canonical grid (served per-province by the server at /api/plots/{id}; ring-less bboxes computed)`);
 console.log(`  terrain tiles: ${terrainTiles ? terrainTiles.src + ' (' + Object.keys(terrainTiles.cols).length + ' textures)' : 'skipped (no terrain-art.json / LFS textures)'}`);
 console.log(`  river tile: ${river ? river.src : 'skipped (no allriverssmall.dds / LFS)'}`);
 console.log(`  sea tile: ${sea ? sea.src : 'skipped (no seadetail.dds / LFS)'} · bands trop/temp/polar ${JSON.stringify([seaBands.trop, seaBands.temp, seaBands.polar])}`);
@@ -1054,36 +1053,23 @@ function distanceToLand(sea, w, h) {
   return d;
 }
 
-// Pack every displayed province's canonical plot grid (map/provinces/<id>.json.gz,
-// each a complete standalone gzip member) into ONE web/assets/plots.pack by
-// concatenating the raw .gz bytes as-is (no gunzip/re-encode), and return a
-// byte-offset index {id: [offset, len]} the page inlines and range-fetches from.
-// One ~30 MB file replaces thousands of loose per-province .js files; the page
-// range-fetches a single province's slice and gunzips it in the browser. The
-// pack is gitignored (regenerable from the committed grids). Sets p.hasPlots.
-function packPlots(provs) {
+// Plot grids are no longer packed/shipped — the server generates + serves each province on demand
+// (GET /api/plots/{id}, docs/plot-serving.md). This pass only reads the canonical grids
+// (map/provinces/<id>.json.gz) to compute a plot-extent bbox for the ring-less (sea/lake) provinces,
+// which have no polygon for provSrcBox to measure and so need one for viewport culling. Returns the
+// count of provinces with a grid (for the build log).
+function computeWaterBboxes(provs) {
   const srcDir = path.join(ROOT, 'civstudio-engine/src/main/resources/map/provinces');
-  const outDir = path.join(WEB, 'assets');
-  // drop the old loose-file layout if a previous build left it behind
-  fs.rmSync(path.join(outDir, 'plots'), { recursive: true, force: true });
-  fs.mkdirSync(outDir, { recursive: true });
-  const chunks = [];
-  const index = {};
-  let offset = 0;
+  fs.rmSync(path.join(WEB, 'assets', 'plots'), { recursive: true, force: true });   // drop legacy layout
+  fs.rmSync(path.join(WEB, 'assets', 'plots.pack'), { force: true });                // drop the retired pack
+  let n = 0;
   for (const p of provs) {
     const gz = path.join(srcDir, `${p.id}.json.gz`);
-    if (!fs.existsSync(gz)) { p.hasPlots = false; continue; }
-    const buf = fs.readFileSync(gz);          // raw gzip bytes, used verbatim
-    chunks.push(buf);
-    index[p.id] = [offset, buf.length];
-    offset += buf.length;
-    p.hasPlots = true;
-    // ring-less provinces (sea/lake) have no polygon for provSrcBox to measure, so give them a
-    // plot-extent bbox (source px) for viewport culling — parse the grid once to bound it
-    if (!p.rings) p.bbox = plotBBox(buf);
+    if (!fs.existsSync(gz)) continue;
+    n++;
+    if (!p.rings) p.bbox = plotBBox(fs.readFileSync(gz));   // ring-less cull extent (source px)
   }
-  fs.writeFileSync(path.join(outDir, 'plots.pack'), Buffer.concat(chunks));
-  return { index, count: Object.keys(index).length, bytes: offset };
+  return n;
 }
 
 // the source-pixel bounding box [x0,y0,x1,y1] of a gzipped plot grid, or null if empty —
