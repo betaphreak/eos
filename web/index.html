@@ -2,6 +2,9 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
+  <!-- sign-in popup returns here: notify the opener and close immediately, before the app boots
+       (window.name is set by auth.mjs's window.open). Keeps the main page from navigating. -->
+  <script>if (window.name === "civstudio-login" && window.opener) { try { window.opener.postMessage("civstudio-auth", location.origin); } catch (e) {} window.close(); }</script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CivStudio · Anbennar</title>
   <link rel="icon" href="favicon.ico" sizes="any">

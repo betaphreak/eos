@@ -11,21 +11,37 @@ const LIVE_BASE = new URLSearchParams(location.search).get("live")
 // how each provider id renders in the sign-in menu; the server's /providers says which are offered
 const PROVIDER_LABEL = { steam: "🎮  Steam", google: "G  Google" };
 
-// start a provider's sign-in, returning here afterwards. Steam is our own OpenID controller;
-// OIDC providers use Spring Security's /oauth2/authorization/{id} (the redirect param is captured
-// server-side and honoured on success).
+// start a provider's sign-in in a popup, so the site stays put. Steam is our own OpenID
+// controller; OIDC providers use Spring Security's /oauth2/authorization/{id} (the redirect param
+// is captured server-side and honoured on success). The popup returns to this page's URL, where an
+// inline script in index.html (window.name === "civstudio-login") posts back to us and closes it;
+// we also poll /api/auth/me as a fallback. Either way we refresh in place — no full-page navigation.
+// If the popup is blocked, fall back to the old full-page redirect.
 function startLogin(provider) {
   const back = encodeURIComponent(location.href);
-  const path = provider === "steam"
+  const url = LIVE_BASE + (provider === "steam"
     ? `/api/auth/steam/login?redirect=${back}`
-    : `/oauth2/authorization/${provider}?redirect=${back}`;
-  location.href = LIVE_BASE + path;
+    : `/oauth2/authorization/${provider}?redirect=${back}`);
+  const w = 520, h = 700;
+  const x = (window.screenX || 0) + Math.max(0, (window.outerWidth - w) / 2);
+  const y = (window.screenY || 0) + Math.max(0, (window.outerHeight - h) / 2);
+  const popup = window.open(url, "civstudio-login", `popup,width=${w},height=${h},left=${x},top=${y}`);
+  if (!popup) { location.href = url; return; }   // popup blocked → full-page redirect
+  const started = Date.now();
+  const timer = setInterval(async () => {
+    let me = null;
+    try { me = await getJson("/api/auth/me"); } catch { /* keep polling */ }
+    if (me && me.authenticated) { clearInterval(timer); closePopup(popup); refresh(); return; }
+    if (popup.closed || Date.now() - started > 180000) { clearInterval(timer); refresh(); } // cancelled/timeout
+  }, 1200);
 }
+
+function closePopup(p) { try { p.close(); } catch { /* cross-origin/already closed */ } }
 
 async function logout() {
   try { await fetch(LIVE_BASE + "/api/auth/logout", { method: "POST", credentials: "include" }); }
-  catch (err) { /* reload anyway to reflect signed-out state */ }
-  location.reload();
+  catch (err) { /* refresh anyway to reflect signed-out state */ }
+  refresh();
 }
 
 const esc = s => String(s).replace(/[&<>"]/g, c =>
@@ -38,6 +54,17 @@ async function getJson(path) {
 }
 
 export async function initSiteAuth() {
+  if (!document.getElementById("siteAuth")) return;
+  // a sign-in popup posts "civstudio-auth" back here on completion (see index.html) → refresh in place
+  window.addEventListener("message", e => {
+    if (e.origin === location.origin && e.data === "civstudio-auth") refresh();
+  });
+  await refresh();
+}
+
+// (re)fetch the offered providers + current identity and repaint the control. Called at init, when a
+// sign-in popup completes, and after sign-out — so auth state updates without a page navigation.
+async function refresh() {
   const box = document.getElementById("siteAuth");
   if (!box) return;
   // fetch independently with fallbacks: a server without /providers (older build) still shows the
