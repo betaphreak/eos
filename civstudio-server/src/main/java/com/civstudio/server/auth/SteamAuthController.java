@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -19,7 +18,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,7 +26,6 @@ import com.civstudio.server.CivStudioProperties;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 /**
  * The "Sign in through Steam" endpoints (Steam OpenID 2.0 — see {@code docs/authentication.md},
@@ -94,29 +91,6 @@ public class SteamAuthController {
 		return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(target)).build();
 	}
 
-	/** The current authenticated user, or {@code {authenticated:false}}. */
-	@GetMapping("/me")
-	public Map<String, Object> me() {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken)
-			return Map.of("authenticated", false);
-		return users.findById(auth.getName())
-				.map(u -> Map.<String, Object>of("authenticated", true, "id", u.id(), "provider",
-						u.provider(), "displayName", u.displayName(),
-						"avatarUrl", u.avatarUrl() == null ? "" : u.avatarUrl()))
-				.orElse(Map.of("authenticated", false));
-	}
-
-	/** Sign out: invalidate the session and clear the security context. */
-	@PostMapping("/logout")
-	public ResponseEntity<Void> logout(HttpServletRequest request) {
-		HttpSession session = request.getSession(false);
-		if (session != null)
-			session.invalidate();
-		SecurityContextHolder.clearContext();
-		return ResponseEntity.noContent().build();
-	}
-
 	// build an authenticated context for the user and persist it into the session so the cookie
 	// carries it on subsequent requests (principal = the surrogate user id — the ownership key)
 	private void authenticate(AppUser user, HttpServletRequest request, HttpServletResponse response) {
@@ -147,27 +121,9 @@ public class SteamAuthController {
 		return request.getScheme() + "://" + host;
 	}
 
-	// only redirect to a relative same-site path or to a trusted origin (a configured site origin,
-	// or localhost for dev) — never an arbitrary URL (open-redirect guard). Defaults to the root.
+	// only redirect to a trusted target (open-redirect guard) — shared with the OIDC flow
 	private String safeRedirect(String target) {
-		if (target == null || target.isBlank())
-			return "/";
-		if (target.startsWith("/") && !target.startsWith("//"))
-			return target; // a same-site relative path
-		try {
-			URI uri = URI.create(target);
-			String host = uri.getHost();
-			String origin = uri.getScheme() + "://" + uri.getAuthority();
-			if (allowedOrigins().contains(origin) || "localhost".equals(host) || "127.0.0.1".equals(host))
-				return target;
-		} catch (RuntimeException malformed) {
-			// fall through to the safe default
-		}
-		return "/";
-	}
-
-	private Set<String> allowedOrigins() {
-		return new HashSet<>(props.getCors().getOrigins());
+		return AuthRedirects.safe(target, new HashSet<>(props.getCors().getOrigins()));
 	}
 
 	private static String appendError(String target) {

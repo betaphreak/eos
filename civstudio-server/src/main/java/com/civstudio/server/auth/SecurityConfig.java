@@ -2,14 +2,22 @@ package com.civstudio.server.auth;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+
+import com.civstudio.server.CivStudioProperties;
 
 /**
  * Spring Security for the spectator/interactive server (see {@code docs/authentication.md},
@@ -32,7 +40,10 @@ public class SecurityConfig {
 
 	@Bean
 	SecurityFilterChain filterChain(HttpSecurity http,
-			SecurityContextRepository securityContextRepository) throws Exception {
+			SecurityContextRepository securityContextRepository,
+			ObjectProvider<ClientRegistrationRepository> clientRegistrations,
+			OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService,
+			CivStudioProperties props) throws Exception {
 		http
 				// resolves the bean named "corsConfigurationSource" (WebConfig) by name, avoiding the
 				// by-type clash with MVC's mvcHandlerMappingIntrospector
@@ -50,6 +61,19 @@ public class SecurityConfig {
 				.formLogin(f -> f.disable())
 				.httpBasic(b -> b.disable())
 				.logout(l -> l.disable());
+
+		// OIDC (Google) sign-in — wired only when a provider is configured (GoogleOAuthConfig
+		// creates the repository conditionally), so a Steam-only server adds nothing. The user
+		// service upserts the app_user + rebinds the principal to our id; the capture filter +
+		// success handler carry the browser back to the site it started from.
+		if (clientRegistrations.getIfAvailable() != null) {
+			http
+					.addFilterBefore(new OAuth2RedirectCaptureFilter(props),
+							OAuth2AuthorizationRequestRedirectFilter.class)
+					.oauth2Login(o -> o
+							.userInfoEndpoint(u -> u.oidcUserService(oidcUserService))
+							.successHandler(new OidcAuthenticationSuccessHandler(props)));
+		}
 		return http.build();
 	}
 

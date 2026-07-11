@@ -80,6 +80,18 @@ class SteamAuthTest {
 
 	@Test
 	@Timeout(120)
+	void providersListsSteamOnlyWhenNoOidcConfigured() throws Exception {
+		HttpClient c = client();
+		JsonNode body = json.readTree(
+				c.send(get(c, "/api/auth/providers"), HttpResponse.BodyHandlers.ofString()).body());
+		var names = new java.util.ArrayList<String>();
+		body.get("providers").forEach(n -> names.add(n.asString()));
+		assertTrue(names.contains("steam"), "steam is always offered");
+		assertFalse(names.contains("google"), "google is absent unless configured");
+	}
+
+	@Test
+	@Timeout(120)
 	void loginRedirectsToSteam() throws Exception {
 		HttpClient c = client();
 		HttpResponse<String> res = c.send(get(c, "/api/auth/steam/login"),

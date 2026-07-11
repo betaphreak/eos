@@ -1,10 +1,10 @@
 # Design & plan: authentication, users & session ownership
 
-**Status:** **Phases 1–2 implemented (2026-07-11)** — ownership plumbing + Steam OpenID 2.0
-browser sign-in (the default provider); secondary OIDC providers and the native-client JWT path
-(Phases 3–4) proposed. This note scopes the work so the server picks up a real user model before
-interactive play (Phase B) opens the command channel to the public. See §Suggested phasing for
-the per-phase status.
+**Status:** **Phases 1–3 implemented (2026-07-11)** — ownership plumbing, Steam OpenID 2.0
+browser sign-in (the default provider), and secondary OIDC (Google) + a persistent site-wide
+login control; the native-client JWT path (Phase 4) is proposed. This note scopes the work so the
+server picks up a real user model before interactive play (Phase B) opens the command channel to
+the public. See §Suggested phasing for the per-phase status.
 
 **Goal (decided 2026-07-11):** **player accounts + session ownership**, with **Steam as the
 default sign-in** — both the web "Sign in through Steam" flow and the native Steam client's
@@ -261,8 +261,27 @@ Phase 2, the `game_session` registry), so the command rows stay lean.
    redirect + full sign-in → ownership → logout). **Deferred within this phase:** persona/avatar
    enrichment via `GetPlayerSummaries` (the SteamID is the display name until an API key is
    configured) and requiring login to found (still anonymous-permissive).
-3. **OIDC browser login** (`oauth2-client`, secondary providers e.g. Google) — reuses the
-   `app_user` upsert and cookie/CORS work from Phase 2; each provider is opt-in via config.
+3. **OIDC browser login** (`oauth2-client`, secondary providers e.g. Google). ✅ **Implemented
+   (2026-07-11).** `.oauth2Login(...)` is added to the chain **only when a provider is configured**
+   — `GoogleOAuthConfig` creates the `ClientRegistrationRepository` conditionally on
+   `civstudio.auth.google.client-id`, so a Steam-only server adds nothing (all existing tests boot
+   unchanged). A custom `oidcUserService` upserts the `app_user` (provider = the registration id)
+   and wraps the principal as `CivStudioOidcUser` so its name is our surrogate id — every provider
+   resolves to the same identity, and `CurrentUserResolver`/ownership need no special casing. The
+   post-login return-to-the-site is carried by `OAuth2RedirectCaptureFilter` (stashes the validated
+   `redirect` on `/oauth2/authorization/**`) + `OidcAuthenticationSuccessHandler`, the OIDC
+   analogue of what the Steam controller does inline (both now share `AuthRedirects`).
+   `server.forward-headers-strategy=framework` lets `{baseUrl}` resolve to the real
+   `https://dev.civstudio.com` behind the ingress so Google's redirect URI matches. **UI:** the
+   provider-specific live-HUD button was replaced by a **persistent header control**
+   (`web/js/auth.mjs` → `#siteAuth` in `index.html`) that reads `GET /api/auth/providers`
+   (new; `AuthController`, which also now owns `/me` + `/logout`) and renders a sign-in dropdown of
+   exactly the offered providers, targeting the picked server (`LIVE_BASE`). Covered by
+   `SteamAuthTest#providersListsSteamOnlyWhenNoOidcConfigured` and verified in a real browser
+   (`tools/webverify/site-auth-shot.mjs`). **To enable Google in a deployment:** set
+   `CIVSTUDIO_AUTH_GOOGLE_CLIENT_ID` / `CIVSTUDIO_AUTH_GOOGLE_CLIENT_SECRET` (+ register
+   `https://dev.civstudio.com/login/oauth2/code/google` as an authorized redirect URI in the Google
+   Cloud console).
 4. **Bearer/JWT + Steam session-ticket** path — only once a native client exists.
 
 Each phase is independently shippable and leaves the server spectator-usable throughout.

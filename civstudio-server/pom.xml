@@ -58,6 +58,13 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+        <!-- OIDC/OAuth2 login for the secondary providers (Google) — docs/authentication.md
+             phase 3. Opt-in: a provider is wired only when its client-id/secret is configured
+             (see GoogleOAuthConfig), so the server still starts with Steam-only auth. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
         <!-- health (liveness/readiness) + metrics for the Container App probes -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -2,6 +2,10 @@
 server:
   # $PORT is the container-ingress convention (Azure Container Apps); default 8080 locally.
   port: ${PORT:8080}
+  # behind Azure Container Apps' ingress (TLS terminated at the edge), honor X-Forwarded-* so the
+  # app reconstructs its real https://dev.civstudio.com base — needed for the Google OIDC redirect
+  # URI ({baseUrl}/login/oauth2/code/google) to match what's registered. See docs/authentication.md.
+  forward-headers-strategy: framework
   servlet:
     session:
       cookie:

@@ -89,6 +89,7 @@ public class CivStudioProperties {
 		private boolean trustDevUserHeader = false;
 
 		private final Steam steam = new Steam();
+		private final Google google = new Google();
 
 		public boolean isTrustDevUserHeader() {
 			return trustDevUserHeader;
@@ -100,6 +101,52 @@ public class CivStudioProperties {
 
 		public Steam getSteam() {
 			return steam;
+		}
+
+		public Google getGoogle() {
+			return google;
+		}
+
+		/**
+		 * Google OIDC (a secondary sign-in provider — see {@code docs/authentication.md} phase 3).
+		 * Entirely opt-in: the OAuth2 login flow is wired only when {@link #clientId} is set (see
+		 * {@code GoogleOAuthConfig}), so the server runs Steam-only by default.
+		 */
+		public static class Google {
+			/** The Google OAuth2 client id (env {@code CIVSTUDIO_AUTH_GOOGLE_CLIENT_ID}); blank = off. */
+			private String clientId = "";
+			/** The Google OAuth2 client secret (env {@code CIVSTUDIO_AUTH_GOOGLE_CLIENT_SECRET}). */
+			private String clientSecret = "";
+			/**
+			 * The redirect URI registered in the Google console. Defaults to the Spring template
+			 * {@code {baseUrl}/login/oauth2/code/google} (correct once forwarded headers are honored —
+			 * see {@code application.yml}); override to an absolute URL if needed.
+			 */
+			private String redirectUri = "{baseUrl}/login/oauth2/code/google";
+
+			public String getClientId() {
+				return clientId;
+			}
+
+			public void setClientId(String clientId) {
+				this.clientId = clientId;
+			}
+
+			public String getClientSecret() {
+				return clientSecret;
+			}
+
+			public void setClientSecret(String clientSecret) {
+				this.clientSecret = clientSecret;
+			}
+
+			public String getRedirectUri() {
+				return redirectUri;
+			}
+
+			public void setRedirectUri(String redirectUri) {
+				this.redirectUri = redirectUri;
+			}
 		}
 
 		/** Steam "Sign in through Steam" (OpenID 2.0) config — the default sign-in provider. */
