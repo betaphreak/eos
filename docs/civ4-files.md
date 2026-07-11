@@ -1,12 +1,12 @@
 # Design & plan: de-vendoring the Civ4 / C2C files (on-demand fetch)
 
-**Status:** 🚧 **Provider + repointing implemented (2026-07-11); the repo cut + history rewrite are
-not yet done.** The on-demand **providers** (`com.civstudio.data.Civ4Files` in the engine +
-`web/civ4.mjs` for the node bakers) shipped and every consumer is repointed: all ten Java exporters
-regenerate **byte-identical** resource JSON fetching from C2C, and the node bakers fetch through
-`web/civ4.mjs`. What remains is the **repo cut**: `data/civ4/` is still tracked (nothing reads it
-now), and the `git rm` + `.dockerignore` drop + **history rewrite** + the scheduled auto-propagation
-job (§Removal steps 5,8,9) are **pending explicit go-ahead** (destructive / force-push). The
+**Status:** ✅ **Implemented + cut (2026-07-11).** The on-demand **providers**
+(`com.civstudio.data.Civ4Files` in the engine + `web/civ4.mjs` for the node bakers) shipped, every
+consumer is repointed (all ten Java exporters regenerate **byte-identical** resource JSON fetching
+from C2C; the node bakers fetch through `web/civ4.mjs`), and **`data/civ4/` is removed from the repo
+and its history** (`git rm` + `git filter-repo --path data/civ4 --invert-paths` + force-push, ~24 MB
+reclaimed). The lock pins the C2C `master` tip; the fuller web rebake was adopted (see below). The
+one remaining piece is the **scheduled auto-propagation job** (§Removal step 9) — not yet built. The
 companion to [[anbennar-files]].
 
 **What the classification found (the big simplification):** **every one of the 58 files is verbatim
@@ -149,14 +149,14 @@ part of the byte-identical claim. (`build.mjs` also can't be run end-to-end unti
 2. ~~Add `Civ4Files` + the node helper~~ — done.
 3. ~~Repoint the exporters + node bakers~~ — done.
 4. ~~Decide the derived split files~~ — moot (all verbatim C2C filenames).
-5. **`git rm data/civ4`**; the cache dirs are already in `.gitignore`; drop the now-moot `data/civ4`
-   line from `.dockerignore`.
-6. ~~Verify byte-identical resource JSON~~ — done. Web assets: see the fuller-bake caveat above.
+5. ~~`git rm data/civ4`; cache in `.gitignore`; drop the `.dockerignore` line~~ — done.
+6. ~~Verify byte-identical resource JSON~~ — done. Web assets: the fuller bake was adopted (above).
 7. No Docker/CI/deploy changes needed.
-8. **History rewrite.** After the `git rm`, reclaim the ~24 MB of art blobs from history with
-   `git filter-repo --path data/civ4 --invert-paths` + force-push, as done for Anbennar. *(Destructive
-   / force-push — do only on explicit go-ahead.)*
-9. Set up the **scheduled auto-propagation** job so C2C updates flow in without a manual bump.
+8. ~~**History rewrite**: `git filter-repo --path data/civ4 --invert-paths --force` + force-push~~ —
+   done (100 blob objects → 0; the now-empty `git rm` commit was auto-pruned). filter-repo drops the
+   `origin` remote by design — re-added before pushing.
+9. **Scheduled auto-propagation** job (bump the lock to C2C tip, re-run exporters + bakers, commit if
+   changed) — **still to do.**
 
 ## Resolved & remaining open questions
 
