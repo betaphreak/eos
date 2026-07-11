@@ -2,19 +2,22 @@ package com.civstudio.geo;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
+
+import com.civstudio.data.AnbennarFiles;
 
 /**
  * Reads a single province's pixel {@link ProvinceMask silhouette} from the
@@ -29,18 +32,18 @@ import javax.imageio.ImageIO;
  * The {@code definition.csv} id→colour map is parsed up front (cheap); the two
  * BMP pixel arrays are loaded lazily on the first {@link #mask(int)} call and
  * cached, so repeated province lookups in one session pay the ~46&nbsp;MB read
- * once. Paths are relative to the working directory (the project root under
- * Maven), matching the other {@code data/}-reading tools.
+ * once. The raster files are not vendored — they are fetched on demand through
+ * {@link AnbennarFiles} (pinned + cached; see {@code docs/anbennar-files.md}).
  */
 public final class ProvinceRaster {
 
-	private static final String DEFINITIONS = "data/anbennar/definition.csv";
-	private static final String PROVINCES_BMP = "data/anbennar/provinces.bmp";
-	private static final String RIVERS_BMP = "data/anbennar/rivers.bmp";
-	private static final String TERRAIN_BMP = "data/anbennar/terrain.bmp";
-	private static final String TREES_BMP = "data/anbennar/trees.bmp";
-	private static final String HEIGHTMAP_BMP = "data/anbennar/heightmap.bmp";
-	private static final String DEFAULT_MAP = "data/anbennar/default.map";
+	private static final String DEFINITIONS = "map/definition.csv";
+	private static final String PROVINCES_BMP = "map/provinces.bmp";
+	private static final String RIVERS_BMP = "map/rivers.bmp";
+	private static final String TERRAIN_BMP = "map/terrain.bmp";
+	private static final String TREES_BMP = "map/trees.bmp";
+	private static final String HEIGHTMAP_BMP = "map/heightmap.bmp";
+	private static final String DEFAULT_MAP = "map/default.map";
 
 	private final Map<Integer, Integer> idToColor;
 	// the pixel colours of water (SEA/LAKE) provinces, from default.map's sea_starts + lakes
@@ -83,7 +86,7 @@ public final class ProvinceRaster {
 	public static ProvinceRaster load() throws IOException {
 		Map<Integer, Integer> idToColor = new HashMap<>();
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
-				Files.newInputStream(new File(DEFINITIONS).toPath()), StandardCharsets.UTF_8))) {
+				Files.newInputStream(AnbennarFiles.get(DEFINITIONS)), StandardCharsets.UTF_8))) {
 			br.readLine(); // header
 			String line;
 			while ((line = br.readLine()) != null) {
@@ -284,8 +287,8 @@ public final class ProvinceRaster {
 	private void ensureRaster() throws IOException {
 		if (pixels != null)
 			return;
-		BufferedImage img = ImageIO.read(new File(PROVINCES_BMP));
-		BufferedImage rImg = ImageIO.read(new File(RIVERS_BMP));
+		BufferedImage img = ImageIO.read(AnbennarFiles.get(PROVINCES_BMP).toFile());
+		BufferedImage rImg = ImageIO.read(AnbennarFiles.get(RIVERS_BMP).toFile());
 		this.width = img.getWidth();
 		this.height = img.getHeight();
 		if (width != rImg.getWidth() || height != rImg.getHeight())
@@ -348,10 +351,10 @@ public final class ProvinceRaster {
 	// every generation path classifies coast identically. Empty if default.map is absent.
 	private Set<Integer> loadWaterColors() throws IOException {
 		Set<Integer> colors = new HashSet<>();
-		File f = new File(DEFAULT_MAP);
-		if (!f.exists())
+		Optional<Path> f = AnbennarFiles.getOptional(DEFAULT_MAP);
+		if (f.isEmpty())
 			return colors;
-		String text = Files.readString(f.toPath(), StandardCharsets.UTF_8);
+		String text = Files.readString(f.get(), StandardCharsets.UTF_8);
 		for (String key : new String[] { "sea_starts", "lakes" }) {
 			int k = text.indexOf(key);
 			if (k < 0)
@@ -379,11 +382,11 @@ public final class ProvinceRaster {
 	// int[]. Returns null if the file is missing or its dimensions do not match the
 	// expected (w, h) — the overlay is optional, so a mismatch degrades gracefully
 	// to climate generation rather than failing the run.
-	private static int[] loadIndexed(String path, int expectW, int expectH) throws IOException {
-		File f = new File(path);
-		if (!f.exists())
+	private static int[] loadIndexed(String modPath, int expectW, int expectH) throws IOException {
+		Optional<Path> f = AnbennarFiles.getOptional(modPath);
+		if (f.isEmpty())
 			return null;
-		BufferedImage img = ImageIO.read(f);
+		BufferedImage img = ImageIO.read(f.get().toFile());
 		if (img.getWidth() != expectW || img.getHeight() != expectH)
 			return null;
 		return img.getRaster().getSamples(0, 0, expectW, expectH, 0, (int[]) null);
@@ -392,10 +395,10 @@ public final class ProvinceRaster {
 	// load trees.bmp at its own (smaller) resolution; it is sampled by scaling, so
 	// it need not match the province raster. Records its dimensions for treeIndexAt.
 	private int[] loadTreeOverlay() throws IOException {
-		File f = new File(TREES_BMP);
-		if (!f.exists())
+		Optional<Path> f = AnbennarFiles.getOptional(TREES_BMP);
+		if (f.isEmpty())
 			return null;
-		BufferedImage img = ImageIO.read(f);
+		BufferedImage img = ImageIO.read(f.get().toFile());
 		this.treeWidth = img.getWidth();
 		this.treeHeight = img.getHeight();
 		return img.getRaster().getSamples(0, 0, treeWidth, treeHeight, 0, (int[]) null);

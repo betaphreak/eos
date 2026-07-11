@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -51,7 +53,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class AreaExporter {
 
-	private static final String INPUT = "data/anbennar/area.txt";
+	private static final String INPUT = "map/area.txt";
 	private static final String AREAS_OUTPUT = "src/main/resources/map/areas.json";
 	private static final String REGIONS = "src/main/resources/map/regions.json";
 	private static final String PROVINCES = "src/main/resources/map/provinces.json";
@@ -74,7 +76,7 @@ public final class AreaExporter {
 
 	/** Parse {@code area.txt} into areas, skipping empty placeholder blocks. */
 	private List<Area> parseAreas() throws Exception {
-		String content = Files.readString(new File(INPUT).toPath());
+		String content = Files.readString(AnbennarFiles.get(INPUT));
 		content = content.replaceAll("#.*", ""); // strip line comments
 
 		Matcher m = AREA.matcher(content);

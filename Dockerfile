@@ -30,12 +30,11 @@ RUN mvn -q -B -DskipTests -Dgit.total.commit.count=${BUILD_NUMBER} -Dgit.commit.
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 COPY --from=build /build/civstudio-server/target/civstudio-server-*.jar app.jar
-# the province rasters ProvinceRaster reads from the filesystem (definition.csv +
-# provinces/rivers/terrain/trees/heightmap BMPs — ~95 MB). The classpath JSON/name tables
-# are already inside the jar; only these BMPs live on disk. See .dockerignore (data/civ4,
-# used only by the web asset baker, is excluded).
-COPY data/anbennar ./data/anbennar
-# the thin-client demo page the server serves at "/"
+# The Anbennar map rasters are NOT baked in: ProvinceRaster fetches them on demand from GitLab
+# (pinned by map/anbennar-source.lock) into the cache dir, the first time a province's plot field
+# is generated. Point ANBENNAR_CACHE_DIR at a mounted volume so the download survives restarts, and
+# set ANBENNAR_TOKEN (a secret) for the authenticated rate limit. See docs/anbennar-files.md.
+# The thin-client demo page the server serves at "/"
 COPY web/live.html ./web/live.html
 EXPOSE 8080
 # MaxRAMPercentage so the JVM honours the container's memory limit; full sim log to stdout

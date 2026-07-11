@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -33,7 +35,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class AdjacencyExporter {
 
-	private static final String INPUT = "data/anbennar/adjacencies.csv";
+	private static final String INPUT = "map/adjacencies.csv";
 	private static final String PROVINCES = "src/main/resources/map/provinces.json";
 	private static final String OUTPUT = "src/main/resources/map/adjacencies.json";
 
@@ -62,7 +64,7 @@ public final class AdjacencyExporter {
 					((Number) r.get("lon")).doubleValue() });
 		}
 
-		List<String> lines = Files.readAllLines(new File(INPUT).toPath());
+		List<String> lines = Files.readAllLines(AnbennarFiles.get(INPUT));
 		List<Adjacency> out = new ArrayList<>();
 		Set<Long> seen = new LinkedHashSet<>();   // dedup undirected pairs
 		int dropped = 0, farDropped = 0;

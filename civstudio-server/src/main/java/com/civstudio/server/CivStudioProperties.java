@@ -16,6 +16,7 @@ public class CivStudioProperties {
 	private final Demo demo = new Demo();
 	private final Cors cors = new Cors();
 	private final Auth auth = new Auth();
+	private final Anbennar anbennar = new Anbennar();
 
 	public Demo getDemo() {
 		return demo;
@@ -27,6 +28,83 @@ public class CivStudioProperties {
 
 	public Auth getAuth() {
 		return auth;
+	}
+
+	public Anbennar getAnbennar() {
+		return anbennar;
+	}
+
+	/**
+	 * The canonical upstream source of the Anbennar EU4 mod files (map rasters + Clausewitz
+	 * metadata) that the engine reads on demand — the sim's runtime plot generation
+	 * ({@code ProvinceRaster}) and the dev-time exporters. These files are <b>not</b> vendored in
+	 * the repo: they are downloaded individually, when needed, from this source (pinned to
+	 * {@link #ref}) and cached under {@link #cacheDir}. The engine owns the fetch/cache
+	 * ({@code com.civstudio.data.AnbennarFiles}); this Spring config is pushed into it at server
+	 * startup so a deployment can override the source. See {@code docs/anbennar-files.md} and the
+	 * {@code anbennar-canonical-source} note.
+	 */
+	public static class Anbennar {
+		/** The mod's canonical git host (GitLab, not GitHub). Raw files are fetched from here. */
+		private String baseUrl = "https://gitlab.com/anbennar/anbennar-eu4-dev";
+		/**
+		 * Overrides the committed source lock (the SHA the derived {@code map/*.json} resources were
+		 * built from) for ad-hoc/testing fetches. Normally left at this default and bumped via the
+		 * refresh workflow, not per-deployment — runtime fetch must match the committed resources, so
+		 * changing only this without regenerating them yields an inconsistent world. The mod tracks
+		 * {@code new-master}; this is a specific locked tip. See {@code docs/anbennar-files.md}
+		 * §Staying current with upstream.
+		 */
+		private String ref = "";
+		/**
+		 * Local on-disk cache root for downloaded files. Files are stored under
+		 * {@code <cacheDir>/<ref>/<mod-relative-path>} so bumping {@link #ref} naturally invalidates
+		 * the cache. Defaults to a gitignored working-dir folder for local dev; the deployment points
+		 * it at a <b>mounted volume</b> (env {@code ANBENNAR_CACHE_DIR}) so downloads persist across
+		 * container restarts/replicas. See {@code docs/anbennar-files.md} §Runtime.
+		 */
+		private String cacheDir = ".anbennar-cache";
+
+		/**
+		 * Optional GitLab access token (env {@code ANBENNAR_TOKEN}, a deployment secret — never
+		 * committed). Sent as the {@code PRIVATE-TOKEN} header on fetches + tree listings to use the
+		 * authenticated rate limit instead of the anonymous one. Blank by default: the mod repo is
+		 * public, so anonymous fetch works but is rate-limited (matters for the directory-walking
+		 * exporters). A read-only scope ({@code read_api} / {@code read_repository}) is enough.
+		 */
+		private String token = "";
+
+		public String getBaseUrl() {
+			return baseUrl;
+		}
+
+		public void setBaseUrl(String baseUrl) {
+			this.baseUrl = baseUrl;
+		}
+
+		public String getRef() {
+			return ref;
+		}
+
+		public void setRef(String ref) {
+			this.ref = ref;
+		}
+
+		public String getCacheDir() {
+			return cacheDir;
+		}
+
+		public void setCacheDir(String cacheDir) {
+			this.cacheDir = cacheDir;
+		}
+
+		public String getToken() {
+			return token;
+		}
+
+		public void setToken(String token) {
+			this.token = token;
+		}
 	}
 
 	/** The caravan-demo session founded on startup (see {@link DemoSessionSeeder}). */

@@ -57,3 +57,16 @@ civstudio:
     seed: 7654321
     province-id: 4411
     tick-rate-millis: 1000
+  anbennar:
+    # Canonical upstream source of the Anbennar EU4 mod files (GitLab, not GitHub). These are NOT
+    # vendored in the repo; the engine (com.civstudio.data.AnbennarFiles) downloads them individually,
+    # when needed, pinned to `ref` for reproducibility, and caches them under `cache-dir`. This config
+    # is pushed into the engine provider at startup. See docs/anbennar-files.md.
+    base-url: ${ANBENNAR_BASE_URL:https://gitlab.com/anbennar/anbennar-eu4-dev}
+    # blank → the committed map/anbennar-source.lock is the single source of truth (see docs). Set
+    # ANBENNAR_REF only for ad-hoc/testing fetches; a bump normally happens via the refresh workflow.
+    ref: ${ANBENNAR_REF:}
+    # local dev default; the deployment points this at a mounted volume so downloads survive restarts.
+    cache-dir: ${ANBENNAR_CACHE_DIR:.anbennar-cache}
+    # optional GitLab token (a secret) → authenticated rate limit. Blank = anonymous (public repo).
+    token: ${ANBENNAR_TOKEN:}

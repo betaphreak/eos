@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -49,7 +51,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class ClimateExporter {
 
-	private static final String INPUT = "data/anbennar/climate.txt";
+	private static final String INPUT = "map/climate.txt";
 	private static final String PROVINCES = "src/main/resources/map/provinces.json";
 
 	// key = { id id id ... } (the equator_y scalar has no braces, so it is skipped)
@@ -74,7 +76,7 @@ public final class ClimateExporter {
 	}
 
 	private void parse() throws Exception {
-		String content = Files.readString(new File(INPUT).toPath());
+		String content = Files.readString(AnbennarFiles.get(INPUT));
 		content = content.replaceAll("#.*", ""); // strip line comments
 
 		Matcher m = BLOCK.matcher(content);

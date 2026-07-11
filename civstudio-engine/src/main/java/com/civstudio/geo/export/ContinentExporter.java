@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -50,7 +52,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class ContinentExporter {
 
-	private static final String INPUT = "data/anbennar/continent.txt";
+	private static final String INPUT = "map/continent.txt";
 	private static final String PROVINCES = "src/main/resources/map/provinces.json";
 
 	/** Non-geographic utility blocks in {@code continent.txt} (not continents). */
@@ -74,7 +76,7 @@ public final class ContinentExporter {
 
 	/** province_id -> continent raw_key, parsed from {@code continent.txt}. */
 	private Map<Integer, String> parseProvinceContinents() throws Exception {
-		String content = Files.readString(new File(INPUT).toPath());
+		String content = Files.readString(AnbennarFiles.get(INPUT));
 		content = content.replaceAll("#.*", ""); // strip line comments
 
 		Matcher m = CONTINENT.matcher(content);

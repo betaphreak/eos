@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -33,8 +35,8 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class CountryExporter {
 
-	private static final String TAGS_DIR = "data/anbennar/common/country_tags";
-	private static final String COUNTRIES_DIR = "data/anbennar/common/countries";
+	private static final String TAGS_DIR = "common/country_tags";
+	private static final String COUNTRIES_DIR = "common/countries";
 	private static final String OUTPUT = "src/main/resources/map/countries.json";
 
 	// TAG = "countries/Some Name.txt"  (the path may contain spaces)
@@ -46,9 +48,10 @@ public final class CountryExporter {
 
 	public static void main(String[] args) throws Exception {
 		Map<String, String> tagToStem = new LinkedHashMap<>();
-		File[] tagFiles = new File(TAGS_DIR).listFiles((d, n) -> n.endsWith(".txt"));
+		File[] tagFiles = AnbennarFiles.getDir(TAGS_DIR).toFile().listFiles((d, n) -> n.endsWith(".txt"));
 		if (tagFiles == null)
 			throw new IllegalStateException("country_tags dir not found: " + TAGS_DIR);
+		File countriesDir = AnbennarFiles.getDir(COUNTRIES_DIR).toFile();
 		for (File f : tagFiles) {
 			String content = ClausewitzBlocks.stripComments(
 					Files.readString(f.toPath(), StandardCharsets.ISO_8859_1));
@@ -62,7 +65,7 @@ public final class CountryExporter {
 		for (Map.Entry<String, String> e : tagToStem.entrySet()) {
 			String tag = e.getKey();
 			String stem = e.getValue();
-			String color = readColor(new File(COUNTRIES_DIR, stem + ".txt"));
+			String color = readColor(new File(countriesDir, stem + ".txt"));
 			if (color == null) {
 				color = fallbackColor(tag);
 				fallback++;

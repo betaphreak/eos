@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -29,7 +31,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class CultureExporter {
 
-	private static final String INPUT = "data/anbennar/anb_cultures.txt";
+	private static final String INPUT = "common/cultures/anb_cultures.txt";
 	private static final String OUTPUT = "src/main/resources/map/cultures.json";
 
 	// group-level blocks that are shared name lists, not cultures
@@ -41,7 +43,7 @@ public final class CultureExporter {
 
 	public static void main(String[] args) throws Exception {
 		String content = ClausewitzBlocks.stripComments(
-				Files.readString(new File(INPUT).toPath(), StandardCharsets.ISO_8859_1));
+				Files.readString(AnbennarFiles.get(INPUT), StandardCharsets.ISO_8859_1));
 
 		List<Culture> cultures = new ArrayList<>();
 		for (ClausewitzBlocks.Block group : ClausewitzBlocks.parse(content).blocks()) {

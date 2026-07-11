@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -43,7 +45,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class RegionExporter {
 
-	private static final String INPUT = "data/anbennar/region.txt";
+	private static final String INPUT = "map/region.txt";
 	private static final String OUTPUT = "src/main/resources/map/regions.json";
 
 	// region_key = { areas = { area1 area2 ... } ...rest of body ignored }
@@ -56,7 +58,7 @@ public final class RegionExporter {
 	}
 
 	public static void main(String[] args) throws Exception {
-		String content = Files.readString(new File(INPUT).toPath());
+		String content = Files.readString(AnbennarFiles.get(INPUT));
 		content = content.replaceAll("#.*", ""); // strip line comments
 		// strip the dated monsoon sub-blocks (no nested braces) so 'areas' is
 		// the first key in every region body

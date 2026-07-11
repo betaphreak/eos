@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -38,8 +40,8 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class PortalExporter {
 
-	private static final String DEFINITIONS = "data/anbennar/definition.csv";
-	private static final String PROVINCES_BMP = "data/anbennar/provinces.bmp";
+	private static final String DEFINITIONS = "map/definition.csv";
+	private static final String PROVINCES_BMP = "map/provinces.bmp";
 	private static final String OUTPUT = "src/main/resources/map/portals.json";
 
 	private PortalExporter() {
@@ -48,7 +50,7 @@ public final class PortalExporter {
 	public static void main(String[] args) throws Exception {
 		Map<Integer, Integer> colorToId = loadColorToId();
 
-		BufferedImage img = ImageIO.read(new File(PROVINCES_BMP));
+		BufferedImage img = ImageIO.read(AnbennarFiles.get(PROVINCES_BMP).toFile());
 		int w = img.getWidth(), h = img.getHeight();
 		int[] pixels = img.getRGB(0, 0, w, h, null, 0, w);
 		img = null;
@@ -117,7 +119,7 @@ public final class PortalExporter {
 	private static Map<Integer, Integer> loadColorToId() throws Exception {
 		Map<Integer, Integer> map = new HashMap<>();
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
-				Files.newInputStream(new File(DEFINITIONS).toPath()), StandardCharsets.UTF_8))) {
+				Files.newInputStream(AnbennarFiles.get(DEFINITIONS)), StandardCharsets.UTF_8))) {
 			br.readLine(); // header
 			String line;
 			while ((line = br.readLine()) != null) {

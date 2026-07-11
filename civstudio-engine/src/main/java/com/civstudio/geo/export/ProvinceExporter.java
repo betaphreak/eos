@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -67,10 +69,10 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class ProvinceExporter {
 
-	private static final String DEFINITIONS = "data/anbennar/definition.csv";
-	private static final String DEFAULT_MAP = "data/anbennar/default.map";
-	private static final String PROVINCES_BMP = "data/anbennar/provinces.bmp";
-	private static final String RIVERS_BMP = "data/anbennar/rivers.bmp";
+	private static final String DEFINITIONS = "map/definition.csv";
+	private static final String DEFAULT_MAP = "map/default.map";
+	private static final String PROVINCES_BMP = "map/provinces.bmp";
+	private static final String RIVERS_BMP = "map/rivers.bmp";
 	private static final String OUTPUT = "src/main/resources/map/provinces.json";
 
 	/** Paradox uses pure white for a non-river pixel on {@code rivers.bmp}. */
@@ -113,7 +115,7 @@ public final class ProvinceExporter {
 	private static Map<Integer, Def> loadDefinitions() throws Exception {
 		Map<Integer, Def> defs = new HashMap<>();
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
-				Files.newInputStream(new File(DEFINITIONS).toPath()), StandardCharsets.UTF_8))) {
+				Files.newInputStream(AnbennarFiles.get(DEFINITIONS)), StandardCharsets.UTF_8))) {
 			br.readLine(); // header
 			String line;
 			while ((line = br.readLine()) != null) {
@@ -151,7 +153,7 @@ public final class ProvinceExporter {
 	 */
 	private static void loadTypes(Set<Integer> seaIds, Set<Integer> lakeIds) throws Exception {
 		Pattern id = Pattern.compile("\\d+");
-		try (InputStream in = Files.newInputStream(new File(DEFAULT_MAP).toPath());
+		try (InputStream in = Files.newInputStream(AnbennarFiles.get(DEFAULT_MAP));
 				BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
 			String line;
 			Set<Integer> current = null;
@@ -185,8 +187,8 @@ public final class ProvinceExporter {
 	 */
 	private static List<Map<String, Object>> scanRaster(
 			Map<Integer, Def> defs, Set<Integer> seaIds, Set<Integer> lakeIds) throws Exception {
-		BufferedImage img = ImageIO.read(new File(PROVINCES_BMP));
-		BufferedImage rImg = ImageIO.read(new File(RIVERS_BMP));
+		BufferedImage img = ImageIO.read(AnbennarFiles.get(PROVINCES_BMP).toFile());
+		BufferedImage rImg = ImageIO.read(AnbennarFiles.get(RIVERS_BMP).toFile());
 		int w = img.getWidth();
 		int h = img.getHeight();
 		if (w != rImg.getWidth() || h != rImg.getHeight())

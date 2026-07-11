@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -45,7 +47,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class SuperRegionExporter {
 
-	private static final String INPUT = "data/anbennar/superregion.txt";
+	private static final String INPUT = "map/superregion.txt";
 	private static final String OUTPUT = "src/main/resources/map/superregions.json";
 
 	// superregion_key = { region_key region_key ... } (no nested braces)
@@ -56,7 +58,7 @@ public final class SuperRegionExporter {
 	}
 
 	public static void main(String[] args) throws Exception {
-		String content = Files.readString(new File(INPUT).toPath());
+		String content = Files.readString(AnbennarFiles.get(INPUT));
 		content = content.replaceAll("#.*", ""); // strip line comments
 
 		Matcher m = SUPERREGION.matcher(content);

@@ -122,8 +122,9 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <!-- `spring-boot:run` forks with the module dir as CWD by default; the engine
-                         reads data/anbennar and writes output/ relative to CWD, so pin it to the
-                         reactor root (as surefire/exec do). No effect on the repackage goal. -->
+                         caches on-demand Anbennar fetches under .anbennar-cache/ and writes output/
+                         relative to CWD, so pin it to the reactor root (as surefire/exec do). No
+                         effect on the repackage goal. -->
                     <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
                     <!-- bake the build identity into build-info.properties then /actuator/info: an
                          auto-incrementing build number (git.total.commit.count, i.e. the repo's

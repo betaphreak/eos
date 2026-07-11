@@ -1,5 +1,7 @@
 package com.civstudio.name.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -56,7 +58,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class AnbennarNameExporter {
 
 	// build-time input (not a runtime resource, so it is not bundled into the jar)
-	private static final Path INPUT = Path.of("data/anbennar/anb_cultures.txt");
+	private static final String INPUT = "common/cultures/anb_cultures.txt";
 	// name tables are grouped per race: src/main/resources/names/<race>/<kind>.json
 	private static final String NAMES_DIR = "src/main/resources/names";
 
@@ -93,7 +95,7 @@ public final class AnbennarNameExporter {
 	}
 
 	public static void main(String[] args) throws IOException {
-		String content = Files.readString(INPUT, Charset.forName("windows-1252"));
+		String content = Files.readString(AnbennarFiles.get(INPUT), Charset.forName("windows-1252"));
 		ObjectMapper mapper = new ObjectMapper();
 
 		int racesWritten = 0, filesWritten = 0, racesSkippedSparse = 0, racesSkippedExisting = 0;

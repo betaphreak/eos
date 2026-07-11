@@ -23,7 +23,6 @@ on:
       - '.mvn/**'                                 # the Maven wrapper config
       - 'Dockerfile'
       - '.dockerignore'
-      - 'data/anbennar/**'                        # the runtime rasters baked into the image
       - 'web/live.html'                           # the thin-client page the server serves
       - '.github/workflows/deploy-server.yml'
   workflow_dispatch:

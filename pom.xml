@@ -96,8 +96,8 @@
                 <!--
                   Each simulation/server test runs full-length with assertions enabled (the
                   code uses `assert` as real invariant checks). All state is per-instance, so
-                  the suite shares one reused JVM. Crucially, tests read data/anbennar and
-                  write output/ RELATIVE TO THE WORKING DIRECTORY, so both modules pin the
+                  the suite shares one reused JVM. Crucially, tests fetch Anbennar files into the
+                  .anbennar-cache/ and write output/ RELATIVE TO THE WORKING DIRECTORY, so both modules pin the
                   working directory to the reactor root (the .mvn/ marker makes
                   maven.multiModuleProjectDirectory resolve here) rather than the module dir.
                 -->

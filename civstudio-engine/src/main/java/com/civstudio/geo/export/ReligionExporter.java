@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -27,14 +29,14 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class ReligionExporter {
 
-	private static final String INPUT_DIR = "data/anbennar/common/religions";
+	private static final String INPUT_DIR = "common/religions";
 	private static final String OUTPUT = "src/main/resources/map/religions.json";
 
 	private ReligionExporter() {
 	}
 
 	public static void main(String[] args) throws Exception {
-		File[] files = new File(INPUT_DIR).listFiles((d, n) -> n.endsWith(".txt"));
+		File[] files = AnbennarFiles.getDir(INPUT_DIR).toFile().listFiles((d, n) -> n.endsWith(".txt"));
 		if (files == null)
 			throw new IllegalStateException("religions dir not found: " + INPUT_DIR);
 

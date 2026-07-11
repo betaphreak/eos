@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.AnbennarFiles;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -43,7 +45,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class ProvinceHistoryExporter {
 
-	private static final String INPUT_DIR = "data/anbennar/history/provinces";
+	private static final String INPUT_DIR = "history/provinces";
 	private static final String PROVINCES = "src/main/resources/map/provinces.json";
 
 	/** The game-start bookmark; dated blocks after this are ignored (encoded YYYYMMDD). */
@@ -68,7 +70,7 @@ public final class ProvinceHistoryExporter {
 	}
 
 	private void parseAll() throws Exception {
-		File dir = new File(INPUT_DIR);
+		File dir = AnbennarFiles.getDir(INPUT_DIR).toFile();
 		File[] files = dir.listFiles((d, n) -> n.endsWith(".txt"));
 		if (files == null)
 			throw new IllegalStateException("history dir not found: " + dir.getAbsolutePath());

@@ -27,13 +27,9 @@ civstudio-server/target/
 /civstudio-engine/src/main/resources/map/provinces/*.json.gz
 # derived .nif render sprites (the explored alternative to GameFont — docs/bonus-sprite-bake.md)
 /tools/nif-bake/out/
-# vendored Anbennar EU4 political history — build-time inputs for the political-map exporters
-# (ProvinceHistoryExporter / Country|Culture|ReligionExporter). Thousands of small files; kept OUT
-# of git. The *derived* map/{countries,cultures,religions}.json + owner-stamped provinces.json ARE
-# committed. To re-run the exporters, re-checkout these from gitlab.com/anbennar/anbennar-eu4-dev
-# (new-master). See docs/political-map.md.
-/data/anbennar/history/
-/data/anbennar/common/
-# vendored Anbennar loading-screen art (.dds) — baked to web/assets/loading-*.jpg (committed) by
-# web/bake-loading.mjs. Raw art kept out of git; re-download from the mod to re-bake.
-/data/anbennar/loadingscreens/
+# Anbennar EU4 mod files are no longer vendored. They are fetched on demand from GitLab (pinned by
+# map/anbennar-source.lock) into a local cache by com.civstudio.data.AnbennarFiles — the *derived*
+# map/*.json resources stay committed. See docs/anbennar-files.md. Ignore the cache + any leftover
+# local checkout of the old vendored tree.
+/.anbennar-cache/
+/data/anbennar/
