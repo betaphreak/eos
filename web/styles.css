@@ -750,10 +750,10 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 /* research cost beaker — the GameFont beaker recoloured per currency (build-techs.mjs).
    Blue = science (the human tree's default); red = hammer-converted; yellow = race-specific. */
 .tech-bk { display: inline-block; width: 12px; height: 12px; vertical-align: -2px; flex: none;
-  background: url(assets/tech-beaker.webp) center/contain no-repeat; }
-.tech-bk[data-beaker="green"] { background-image: url(assets/tech-beaker-green.webp); }
-.tech-bk[data-beaker="red"] { background-image: url(assets/tech-beaker-red.webp); }
-.tech-bk[data-beaker="yellow"] { background-image: url(assets/tech-beaker-yellow.webp); }
+  background: url(assets/tech/tech-beaker.webp) center/contain no-repeat; }
+.tech-bk[data-beaker="green"] { background-image: url(assets/tech/tech-beaker-green.webp); }
+.tech-bk[data-beaker="red"] { background-image: url(assets/tech/tech-beaker-red.webp); }
+.tech-bk[data-beaker="yellow"] { background-image: url(assets/tech/tech-beaker-yellow.webp); }
 .tech-d-tag .tech-bk { width: 13px; height: 13px; }
 
 /* signature: hover a node → its prerequisite chain lit in gold, the rest dimmed */

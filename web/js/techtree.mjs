@@ -30,7 +30,7 @@ const ERAS = [
 const ERA_NAME = Object.fromEntries(ERAS);
 
 const COL_W = 240, ROW_H = 64, PAD = 48, CARD_W = 215, CARD_H = 56;
-const SHEET = "assets/tech-icons.webp", SHEET_W = 1024, SHEET_H = 1216, ICON = 40;
+const SHEET = "assets/tech/tech-icons.webp", SHEET_W = 1024, SHEET_H = 1216, ICON = 40;
 const KMAX = 1.8, KSTEP = 1.2;   // min zoom is dynamic — see minZoom() (fit-to-height)
 
 const $ = id => document.getElementById(id);

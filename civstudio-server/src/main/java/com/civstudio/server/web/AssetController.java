@@ -14,12 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Serves the two map/reference assets the web viewer used to ship as committed
- * {@code web/assets/*} files but which the engine jar already owns — so the server becomes their
+ * {@code web/assets/*} files but which the server now owns — so the server becomes their
  * single source (the {@code data.js} → {@code /api/bundle} rationale, applied to the last two
- * jar-derivable assets):
+ * jar-derivable assets). {@code tierborders.json} is a web-only serving artifact, committed in
+ * this module's resources; {@code techs.json} (the graph) still ships in the engine jar:
  * <ul>
- * <li>{@code GET /api/tiers} — the dissolved geographic-tier outlines, served verbatim from the
- * engine's {@code /map/tierborders.json} (byte-identical to the old {@code assets/tiers.json}).</li>
+ * <li>{@code GET /api/tiers} — the dissolved geographic-tier outlines, served verbatim from this
+ * module's {@code /map/tierborders.json} (byte-identical to the old {@code assets/tiers.json}).</li>
  * <li>{@code GET /api/techs} — the tech-tree pack assembled by {@link TechBundle} (was
  * {@code assets/techs.pack}).</li>
  * </ul>

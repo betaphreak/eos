@@ -66,8 +66,10 @@ async function flushImages(assets) {
     const buf = await sharp(im.raw, { raw: { width: im.w, height: im.h, channels: im.channels } })
       .webp({ quality: im.quality, alphaQuality: 100, effort: 5 })
       .toBuffer();
-    const file = `${im.name}.webp`;
-    fs.writeFileSync(path.join(assets, file), buf);
+    const file = `${im.name}.webp`;                    // name may carry a category subfolder (e.g. water/river)
+    const out = path.join(assets, file);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, buf);
     sizes[file] = buf.length;
   }
   return sizes;
@@ -103,7 +105,7 @@ const water = new Set(allProv
 const shipped = new Set([...sub, ...water]);   // every province the page ships (land + coastal water)
 
 // canonical province outlines (source-pixel rings), attached to the displayed subset
-const borders = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/borders.json'), 'utf8'));
+const borders = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-server/src/main/resources/map/borders.json'), 'utf8'));
 const ringsById = new Map(borders.map(b => [b.id, b.rings]));
 
 // The geographic-tier boundary polygons (continent / super-region / region) are no longer baked
@@ -333,10 +335,10 @@ fs.writeFileSync(path.join(WEB, 'political.js'), `window.POLITICAL = ${JSON.stri
 
 // committed Anbennar loading-screen art (baked locally by web/bake-loading.mjs — System.Drawing JPEG);
 // the page shows one at random 1:1 (viewport crops) while the map loads. Absent → the page skips it.
-const loadingDir = path.join(WEB, 'assets');
+const loadingDir = path.join(WEB, 'assets', 'loading');
 const loading = fs.existsSync(loadingDir)
   ? fs.readdirSync(loadingDir).filter(f => /^loading-\d+\.jpg$/.test(f))
-      .sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/))).map(f => `assets/${f}`)
+      .sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/))).map(f => `assets/loading/${f}`)
   : [];
 
 // EU4 special adjacencies (straits/canals/lake crossings/Dwarovar tunnels) between provinces that
@@ -374,16 +376,19 @@ for (const p of provinces) if (p.bbox) bboxes[p.id] = p.bbox;
 const manifest = {
   seed: +SEED,
   map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, foam, ice, bonusIcons, trees, seaBands,
-  loading,                            // committed loading-screen art (assets/loading-*.jpg), or []
+  loading,                            // committed loading-screen art (assets/loading/loading-*.jpg), or []
   bboxes,                             // {provId: [x0,y0,x1,y1]} for ring-less provinces (server can't derive)
 };
-const manifestPath = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/web-asset-manifest.json');
+// The manifest is a web-only serving artifact (not read by the engine sim), so it lives in the
+// SERVER module's resources — WorldBundle loads it from the merged classpath at /map/web-asset-manifest.json.
+const manifestPath = path.join(ROOT, 'civstudio-server/src/main/resources/map/web-asset-manifest.json');
+fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
 fs.writeFileSync(manifestPath, JSON.stringify(manifest));
 
 const terrainBytes = imgSizes[map.src.replace('assets/', '')] || 0;
 const manifestKb = (JSON.stringify(manifest).length / 1024).toFixed(0);
 const politicalKb = (fs.statSync(path.join(WEB, 'political.js')).size / 1024).toFixed(0);
-console.log(`Built civstudio-engine/src/main/resources/generated/map/web-asset-manifest.json (${manifestKb} KB, merged + served by the engine at /api/bundle) + web/political.js (${politicalKb} KB, lazy) + web/${map.src} (${(terrainBytes / 1024).toFixed(0)} KB) from seed ${SEED}`);
+console.log(`Built civstudio-server/src/main/resources/map/web-asset-manifest.json (${manifestKb} KB, merged + served at /api/bundle) + web/political.js (${politicalKb} KB, lazy) + web/${map.src} (${(terrainBytes / 1024).toFixed(0)} KB) from seed ${SEED}`);
 console.log(`  ${provinces.length} provinces (run-independent — live caravans come from the server)`);
 console.log(`  terrain crop ${map.dw}×${map.dh}px`);
 console.log(`  geo labels: ${geo.continents.length} continents · ${geo.superRegions.length} super-regions · ${geo.regions.length} regions`);
@@ -482,7 +487,7 @@ function bakeTerrain(provs) {
   // transparent. Lossy WebP with full-quality alpha: the raster is the blurred base under the crisp
   // per-plot terrain and shown small at world view, so lossy RGB is invisible while alphaQuality 100
   // keeps the coastline cut-out sharp.
-  const src = queueWebp('terrain', dw, dh, rgb, alpha, { quality: 80 });
+  const src = queueWebp('terrain/terrain', dw, dh, rgb, alpha, { quality: 80 });
 
   return {
     src,
@@ -691,7 +696,7 @@ function bakeTerrainTiles(colorsHex) {
   if (!decoded) return null;   // no textures decoded (LFS not pulled) → keep flat colours
   // the ground-texture atlas — the biggest asset. Its 256px columns align to WebP's block grid, so
   // slicing per-terrain tiles (extractTiles) stays clean; lossy quality is invisible on ground.
-  const src = queueWebp('terrain-tiles', W, H, rgb, null, { quality: 82 });
+  const src = queueWebp('terrain/terrain-tiles', W, H, rgb, null, { quality: 82 });
   return { src, tile: T, cols };
 }
 // downsample a detail .dds to a T×T RGB tile, then recolour so its mean = target
@@ -758,7 +763,7 @@ function bakeRiverTile() {
       rgb[o + 1] = Math.min(255, RIVER_RGB[1] * k) | 0;
       rgb[o + 2] = Math.min(255, RIVER_RGB[2] * k) | 0;
     }
-  return { src: queueWebp('river', T, T, rgb, null, { quality: 85 }), tile: T };
+  return { src: queueWebp('water/river', T, T, rgb, null, { quality: 85 }), tile: T };
 }
 
 // Bake a seamless GREYSCALE ripple tile from the real Civ4 sea texture (textures/water/
@@ -768,13 +773,13 @@ function bakeRiverTile() {
 // deepen/brighten it into ripples. (seadetail carries its pattern in RGB, so we read luminance,
 // unlike the river ribbon whose ripples are in the DXT5 alpha.) Returns {src, tile}, or null
 // when the art is absent (LFS not pulled / file://) — the renderer then draws the flat gradient.
-function bakeSeaTile() { return bakeRippleTile('Art/Terrain/textures/water/seadetail.dds', `sea`, 1.1); }
+function bakeSeaTile() { return bakeRippleTile('Art/Terrain/textures/water/seadetail.dds', `water/sea`, 1.1); }
 
 // The shore shallows carry the same treatment (docs/coastlines.md Phase D): a neutral-mean
 // greyscale ripple from the Civ4 shore wave texture (textures/water/shoredetail.dds), drawn
 // over the shallow band with `soft-light` so it ripples the shore hue without recolouring it.
 // A touch more contrast than the open sea so the near-shore chop reads. Null → flat shallows.
-function bakeShoreTile() { return bakeRippleTile('Art/Terrain/textures/water/shoredetail.dds', `shore`, 1.3); }
+function bakeShoreTile() { return bakeRippleTile('Art/Terrain/textures/water/shoredetail.dds', `water/shore`, 1.3); }
 
 // Bake a seamless COLOUR ice tile from the real Civ4 pack-ice texture (features/icepack/icepack_1024.dds).
 // The texture's upper ~65% is a clean cracked-ice surface (the lower strip is a fringe of edge icicles we
@@ -800,7 +805,7 @@ function bakeIceTile() {
     }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  return { src: queueWebp('ice', T, T, rgb, null, { quality: 85 }), tile: T };
+  return { src: queueWebp('water/ice', T, T, rgb, null, { quality: 85 }), tile: T };
 }
 
 // Bake real Civ4 foliage sprites so the plot layer can stamp actual trees/palms/reeds instead of the
@@ -835,7 +840,7 @@ function bakeFeatureSprites() {
   };
   // emit: route the nif atlas (interleaved RGBA) through the WebP queue as trees-<name>.webp, like
   // the billboard groups, so every foliage sprite ships WebP too
-  const emit = (n, w, h, rgba) => queueWebpRGBA(`trees-${n}`, w, h, rgba, { quality: 90 });
+  const emit = (n, w, h, rgba) => queueWebpRGBA(`trees/trees-${n}`, w, h, rgba, { quality: 90 });
   nif('kaktus/kaktus2.nif', 'kaktus/cactus01.dds', 'cactus', { size: 220, emit });
   nif('sword_grass/wheat.nif', 'sword_grass/sword_grass.dds', 'grass', { size: 200, flat: 'low', emit });
   return Object.keys(out).length ? out : null;
@@ -887,7 +892,7 @@ function bakeSpriteGroup(artPath, name) {
   }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  const src = queueWebp(`trees-${name}`, totW, maxH, rgb, alpha, { quality: 90 });
+  const src = queueWebp(`trees/trees-${name}`, totW, maxH, rgb, alpha, { quality: 90 });
   return { src, w: totW, h: maxH, sprites };
 }
 
@@ -918,7 +923,7 @@ function bakeFoamTile() {
     }
   const assets = path.join(WEB, 'assets');
   fs.mkdirSync(assets, { recursive: true });
-  return { src: queueWebp('foam', W, CH, rgb, alpha, { quality: 90 }), w: W, h: CH };
+  return { src: queueWebp('water/foam', W, CH, rgb, alpha, { quality: 90 }), w: W, h: CH };
 }
 
 // Slice the real Civ4 resource icons out of GameFont_120.tga into one atlas + a {bonusType: cellIndex}
@@ -964,7 +969,7 @@ function bakeBonusIcons() {
       cell.copy(rgba, d, so, so + GF_CELL * 4);
     }
   });
-  const src = queueWebpRGBA('bonus-icons', aw, ah, rgba, { quality: 90 });
+  const src = queueWebpRGBA('icons/bonus-icons', aw, ah, rgba, { quality: 90 });
   console.log(`  bonus icons: ${src} (${picks.length} GameFont resource symbols)`);
   return { src, cell: GF_CELL, cols, count: picks.length, index };
 }

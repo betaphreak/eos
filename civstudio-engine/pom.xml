@@ -55,6 +55,14 @@
                 <directory>src/main/resources/generated</directory>
                 <excludes>
                     <exclude>README.md</exclude>
+                    <!--
+                      Web-build-only exporter outputs: terrain-art.json is read by web/build.mjs
+                      (from the SOURCE tree, not the classpath) to bake the terrain tiles; route-models.json
+                      has no active consumer. Neither is read by the engine sim at runtime, so they are kept
+                      out of the packaged jar (see the generated/ README).
+                    -->
+                    <exclude>map/terrain-art.json</exclude>
+                    <exclude>map/route-models.json</exclude>
                 </excludes>
             </resource>
         </resources>

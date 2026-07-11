@@ -1,9 +1,9 @@
 // Local (Windows) bake for the Anbennar loading-screen art: decode each vendored
 // data/anbennar/loadingscreens/load_*.dds (DXT1) with the repo's dds.mjs, write it as a temporary
 // 24-bit BMP, then let .NET System.Drawing (the OS's built-in JPEG codec — no reinvented encoder,
-// no npm dependency) re-encode it to web/assets/loading-<n>.jpg at the given quality.
+// no npm dependency) re-encode it to web/assets/loading/loading-<n>.jpg at the given quality.
 //
-// The .jpg outputs are committed; build.mjs just lists whatever web/assets/loading-*.jpg exist into
+// The .jpg outputs are committed; build.mjs just lists whatever web/assets/loading/loading-*.jpg exist into
 // the bundle. Run occasionally, on this machine:  node web/bake-loading.mjs [quality]
 //
 // The screens are 2048x1536; they are NOT downscaled — the page shows them 1:1 and lets the viewport
@@ -17,7 +17,7 @@ import { decodeDds } from './dds.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.resolve(HERE, '../data/anbennar/loadingscreens');
-const ASSETS = path.join(HERE, 'assets');
+const ASSETS = path.join(HERE, 'assets', 'loading');
 const QUALITY = Math.max(1, Math.min(100, parseInt(process.argv[2] || '82', 10)));
 
 // write RGBA as a 24-bit bottom-up BMP (uncompressed; System.Drawing reads it, no encoder needed)
@@ -71,6 +71,6 @@ execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps], { 
 let total = 0;
 for (const b of bmps) {
   const kb = fs.statSync(b.jpg).size / 1024; total += kb;
-  console.log(`  ${b.src} (${b.w}x${b.h}) -> assets/${path.basename(b.jpg)}  ${kb.toFixed(0)} KB`);
+  console.log(`  ${b.src} (${b.w}x${b.h}) -> assets/loading/${path.basename(b.jpg)}  ${kb.toFixed(0)} KB`);
 }
 console.log(`baked ${bmps.length} loading screens at q${QUALITY}, ${(total / 1024).toFixed(1)} MB total`);

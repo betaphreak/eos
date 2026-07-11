@@ -61,7 +61,7 @@ public final class ProvinceBorderExporter {
 	private static final String PROVINCES_BMP = "map/provinces.bmp";
 	private static final String PROVINCES_JSON = "civstudio-engine/src/main/resources/generated/map/provinces.json";
 	private static final String GRID_DIR = "civstudio-engine/src/main/resources/map/provinces";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/borders.json";
+	private static final String OUTPUT = "civstudio-server/src/main/resources/map/borders.json";
 
 	private static final Pattern PLACEHOLDER_NAME = Pattern.compile("Anbennar\\d+");
 

@@ -14,7 +14,7 @@
 //                              (gzipped, gunzipped in-page via DecompressionStream — the plots.mjs
 //                              pattern). This ships in the engine jar, so the server is the single
 //                              source of the graph again (the data.js → /api/bundle rationale).
-//   web/assets/tech-icons.webp one sprite sheet of the real Civ4 tech-button icons,
+//   web/assets/tech/tech-icons.webp one sprite sheet of the real Civ4 tech-button icons,
 //                              decoded from the DDS art and packed CELL×CELL per tech.
 //
 // Each tech's `Button` field is either a single DDS path or the Civ4 atlas form
@@ -37,8 +37,8 @@ const SRC = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/techs
 // the art-coupled per-tech metadata (icon rects + beaker colour), merged onto techs.json by the
 // server (com.civstudio.server.web.TechBundle) at GET /api/techs. Lives in the engine resources
 // so it ships in the server jar alongside its techs.json source.
-const OUT_META = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/techs-meta.json');
-const OUT_ICONS = path.join(WEB, 'assets', 'tech-icons.webp');
+const OUT_META = path.join(ROOT, 'civstudio-server/src/main/resources/techs-meta.json');
+const OUT_ICONS = path.join(WEB, 'assets', 'tech', 'tech-icons.webp');
 
 const CELL = 64;   // Civ4 tech buttons are 64×64
 const COLS = 16;   // sprite-sheet grid width
@@ -124,6 +124,7 @@ cells.forEach((cell, i) => {
   }
 });
 
+fs.mkdirSync(path.dirname(OUT_ICONS), { recursive: true });   // assets/tech/ (icon sheet + beaker glyphs)
 await sharp(sheet, { raw: { width: sheetW, height: sheetH, channels: 4 } })
   .webp({ quality: 90, alphaQuality: 100, effort: 5 })
   .toFile(OUT_ICONS);
@@ -140,7 +141,7 @@ if (beaker)
                              ["tech-beaker-red", 2], ["tech-beaker-yellow", 48]])
     await sharp(recolorHue(beaker, hue), { raw: { width: GF_CELL, height: GF_CELL, channels: 4 } })
       .webp({ quality: 90, alphaQuality: 100, effort: 5 })
-      .toFile(path.join(WEB, 'assets', `${name}.webp`));
+      .toFile(path.join(WEB, 'assets', 'tech', `${name}.webp`));
 
 // --- emit the art-coupled per-tech metadata (icon rects + beaker colour) -------------
 // Only the two fields the server can't derive from techs.json; keyed by tech Type. The server
@@ -157,5 +158,5 @@ fs.writeFileSync(OUT_META, JSON.stringify(meta, null, 0) + '\n');
 
 console.log(`Built ${path.relative(ROOT, OUT_META)} — ${Object.keys(meta).length}/${techs.length} techs `
   + `with icon/beaker metadata (${(fs.statSync(OUT_META).size / 1024).toFixed(0)} KB)`);
-console.log(`Built web/assets/tech-icons.webp — ${cells.length} icons `
+console.log(`Built web/assets/tech/tech-icons.webp — ${cells.length} icons `
   + `(${sheetW}×${sheetH}, ${(iconBytes / 1024).toFixed(0)} KB), ${missing} without art (colour-chip fallback)`);
