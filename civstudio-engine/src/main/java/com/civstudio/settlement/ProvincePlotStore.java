@@ -1,5 +1,6 @@
 package com.civstudio.settlement;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -99,22 +100,39 @@ public final class ProvincePlotStore {
 	}
 
 	/**
-	 * Persist a province's generated plot field to {@code map/provinces/<id>.json}.
+	 * Serialize a plot field to its persisted form: the gzip-compressed JSON blob (the exact bytes
+	 * {@link #save} writes and the web viewer gunzips). Used by the server to generate a province's
+	 * plot grid on demand and serve / cache it without going through the fixed {@link #WRITE_DIR}
+	 * (see {@code docs/plot-serving.md}).
+	 *
+	 * @param plots the generated plots to serialize
+	 * @return the gzipped-JSON bytes
+	 */
+	public static byte[] toGzBytes(List<Plot> plots) {
+		List<StoredPlot> stored = new ArrayList<>(plots.size());
+		for (Plot p : plots)
+			stored.add(StoredPlot.of(p));
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		try (OutputStream out = new GZIPOutputStream(bos)) {
+			MAPPER.writeValue(out, stored);
+		} catch (IOException e) {
+			throw new UncheckedIOException("failed to serialize plot field", e);
+		}
+		return bos.toByteArray();
+	}
+
+	/**
+	 * Persist a province's generated plot field to {@code map/provinces/<id>.json.gz} (dev-time
+	 * generation; the server uses {@link #toGzBytes} + its own volume cache instead).
 	 *
 	 * @param provinceId the province id
 	 * @param plots      the generated plots to store
 	 */
 	public static void save(int provinceId, List<Plot> plots) {
-		List<StoredPlot> stored = new ArrayList<>(plots.size());
-		for (Plot p : plots)
-			stored.add(StoredPlot.of(p));
 		try {
 			File dir = new File(WRITE_DIR);
 			dir.mkdirs();
-			try (OutputStream out = new GZIPOutputStream(
-					Files.newOutputStream(new File(dir, fileName(provinceId)).toPath()))) {
-				MAPPER.writeValue(out, stored);
-			}
+			Files.write(new File(dir, fileName(provinceId)).toPath(), toGzBytes(plots));
 		} catch (IOException e) {
 			throw new UncheckedIOException(
 					"failed to persist plot field for province " + provinceId, e);

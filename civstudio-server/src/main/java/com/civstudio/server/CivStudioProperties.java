@@ -17,9 +17,14 @@ public class CivStudioProperties {
 	private final Cors cors = new Cors();
 	private final Auth auth = new Auth();
 	private final Anbennar anbennar = new Anbennar();
+	private final Plots plots = new Plots();
 
 	public Demo getDemo() {
 		return demo;
+	}
+
+	public Plots getPlots() {
+		return plots;
 	}
 
 	public Cors getCors() {
@@ -104,6 +109,41 @@ public class CivStudioProperties {
 
 		public void setToken(String token) {
 			this.token = token;
+		}
+	}
+
+	/**
+	 * Per-province plot serving (see {@code docs/plot-serving.md}). The server generates a
+	 * province's plot grid on demand ({@code GET /api/plots/{id}}), pausing the sim while it does
+	 * so, and caches the gzipped result under {@link #cacheDir} (+ an in-memory LRU of
+	 * {@link #lruSize} provinces). Generation is the (once-per-province) expensive step; serving
+	 * from the cache is trivial.
+	 */
+	public static class Plots {
+		/**
+		 * Local on-disk cache root for generated plot grids ({@code <cacheDir>/<id>.json.gz}).
+		 * Defaults to a gitignored working-dir folder for local dev; the deployment points it at a
+		 * <b>persistent mounted volume</b> (env {@code PLOT_CACHE_DIR}) so a province is generated
+		 * once ever, not once per container restart.
+		 */
+		private String cacheDir = ".plot-cache";
+		/** How many provinces' gz blobs to keep hot in memory (an LRU over the disk cache). */
+		private int lruSize = 512;
+
+		public String getCacheDir() {
+			return cacheDir;
+		}
+
+		public void setCacheDir(String cacheDir) {
+			this.cacheDir = cacheDir;
+		}
+
+		public int getLruSize() {
+			return lruSize;
+		}
+
+		public void setLruSize(int lruSize) {
+			this.lruSize = lruSize;
 		}
 	}
 

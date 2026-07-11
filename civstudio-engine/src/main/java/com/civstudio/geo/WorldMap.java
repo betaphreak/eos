@@ -447,6 +447,11 @@ public final class WorldMap {
 		return p;
 	}
 
+	/** Whether a province with this id exists on the map (a non-throwing {@link #province}). */
+	public boolean hasProvince(int id) {
+		return byId.containsKey(id);
+	}
+
 	/** All provinces, in load order (unmodifiable). */
 	public Collection<Province> provinces() {
 		return Collections.unmodifiableCollection(byId.values());
