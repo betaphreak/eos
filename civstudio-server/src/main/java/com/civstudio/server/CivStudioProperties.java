@@ -217,6 +217,7 @@ public class CivStudioProperties {
 
 		private final Steam steam = new Steam();
 		private final Google google = new Google();
+		private final RememberMe rememberMe = new RememberMe();
 
 		public boolean isTrustDevUserHeader() {
 			return trustDevUserHeader;
@@ -240,6 +241,41 @@ public class CivStudioProperties {
 
 		public Google getGoogle() {
 			return google;
+		}
+
+		public RememberMe getRememberMe() {
+			return rememberMe;
+		}
+
+		/**
+		 * "Remember me" persistent login (env {@code CIVSTUDIO_AUTH_REMEMBER_ME_KEY}). With {@link #key}
+		 * set to a stable secret, a signed remember-me cookie keeps a user logged in across server
+		 * restarts/redeploys — the in-memory HTTP session is lost on a redeploy, but the cookie
+		 * re-authenticates the user from the durable {@link UserStore}. Blank (the default) disables it
+		 * entirely, so local dev and tests are unaffected. The key MUST stay constant across deploys —
+		 * rotating it invalidates every outstanding cookie (everyone is logged out once).
+		 */
+		public static class RememberMe {
+			/** The HMAC signing key; blank disables remember-me. Keep secret and stable across deploys. */
+			private String key = "";
+			/** Cookie lifetime, in days. */
+			private int validityDays = 30;
+
+			public String getKey() {
+				return key;
+			}
+
+			public void setKey(String key) {
+				this.key = key;
+			}
+
+			public int getValidityDays() {
+				return validityDays;
+			}
+
+			public void setValidityDays(int validityDays) {
+				this.validityDays = validityDays;
+			}
 		}
 
 		/**

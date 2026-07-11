@@ -308,6 +308,27 @@ Each phase is independently shippable and leaves the server spectator-usable thr
   `ROLE_ADMIN`, see `Admins`). A DB-backed `is_admin` column can supersede it later if operators
   need to be managed at runtime.
 
+## Remember-me (persistent login across redeploys)
+
+The login `SecurityContext` lives in the **in-memory HTTP session** (`JSESSIONID`), so a server
+redeploy — a new container revision with no session state — logs everyone out. Remember-me fixes
+that: with `civstudio.auth.remember-me.key` (env `CIVSTUDIO_AUTH_REMEMBER_ME_KEY`) set to a stable
+secret, every login also issues a signed `civstudio-remember` cookie (30-day default), and a
+returning request with no session is re-authenticated from it.
+
+- **Wiring** — `RememberMeConfig` builds a `TokenBasedRememberMeServices` (SHA-256, `alwaysRemember`,
+  `Secure` from the session-cookie setting, host-only). `SecurityConfig` adds the filter only when a
+  key is set; `oauth2Login` issues the cookie via the shared services, and `SteamAuthController`
+  issues it inline. Blank key → a no-op `NullRememberMeServices`, so dev/tests are unchanged.
+- **Principal rebuild** — the cookie carries only the surrogate `app_user` id. On a cold server
+  `AppUserDetailsService` reloads the user from the durable `JdbcUserStore` and re-derives
+  `ROLE_ADMIN` from the stored `(provider, subject)` against the `Admins` allow-list, so `getName()`
+  (the ownership key) and admin bypass both survive. The "password" in the token signature is the
+  stable, non-secret `provider:subject` (there is no real password); the cookie's integrity is the
+  server-held **key**, which must stay constant across deploys (rotating it logs everyone out once).
+- **Requires** the durable user store — i.e. `spring.datasource.url` set (production's Postgres), so
+  a redeploy keeps the accounts the cookie reconstructs against.
+
 ---
 
 *When Phase 1 lands, add a one-line pointer to this doc from `CLAUDE.md`'s subsystem map and a

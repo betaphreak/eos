@@ -14,6 +14,7 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 
@@ -43,6 +44,7 @@ public class SecurityConfig {
 			SecurityContextRepository securityContextRepository,
 			ObjectProvider<ClientRegistrationRepository> clientRegistrations,
 			OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService,
+			RememberMeServices rememberMeServices,
 			CivStudioProperties props) throws Exception {
 		http
 				// resolves the bean named "corsConfigurationSource" (WebConfig) by name, avoiding the
@@ -74,6 +76,15 @@ public class SecurityConfig {
 							.userInfoEndpoint(u -> u.oidcUserService(oidcUserService))
 							.successHandler(new OidcAuthenticationSuccessHandler(props)));
 		}
+
+		// Remember-me: when a stable signing key is configured, add the filter that re-authenticates a
+		// returning user from the signed cookie (so a redeploy that drops the in-memory session no
+		// longer logs everyone out). The shared RememberMeServices is picked up by the oauth2Login
+		// filter to issue the cookie on OIDC login; the Steam controller issues it inline. Absent a key
+		// the bean is a no-op NullRememberMeServices and this whole block is skipped (dev/tests).
+		String rmKey = props.getAuth().getRememberMe().getKey();
+		if (rmKey != null && !rmKey.isBlank())
+			http.rememberMe(rm -> rm.rememberMeServices(rememberMeServices).key(rmKey));
 		return http.build();
 	}
 

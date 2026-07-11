@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -51,16 +52,18 @@ public class SteamAuthController {
 	private final SecurityContextRepository securityContextRepository;
 	private final CivStudioProperties props;
 	private final Admins admins;
+	private final RememberMeServices rememberMeServices;
 
 	public SteamAuthController(SteamOpenId steam, SteamPersonaLookup personas, UserStore users,
 			SecurityContextRepository securityContextRepository, CivStudioProperties props,
-			Admins admins) {
+			Admins admins, RememberMeServices rememberMeServices) {
 		this.steam = steam;
 		this.personas = personas;
 		this.users = users;
 		this.securityContextRepository = securityContextRepository;
 		this.props = props;
 		this.admins = admins;
+		this.rememberMeServices = rememberMeServices;
 	}
 
 	/** Redirect the browser to Steam's OpenID sign-in. */
@@ -112,6 +115,9 @@ public class SteamAuthController {
 		context.setAuthentication(auth);
 		SecurityContextHolder.setContext(context);
 		securityContextRepository.saveContext(context, request, response);
+		// issue the remember-me cookie so the login survives a server redeploy (no-op when the feature
+		// is disabled — NullRememberMeServices). oauth2Login issues its own via the shared services.
+		rememberMeServices.loginSuccess(request, response, auth);
 	}
 
 	// the openid.* parameters Steam returned (single-valued), for check_authentication
