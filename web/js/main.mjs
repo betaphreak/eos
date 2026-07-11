@@ -84,21 +84,25 @@ function drawSeaBase(w, h) {
 }
 function resize() {
   const r = stage.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio||1, 2);
+  if (!(r.width > 0) || !(r.height > 0)) return;   // ignore degenerate sizes (mid-layout / panel drag)
   cv.width = r.width*dpr; cv.height = r.height*dpr; VIEW.dpr = dpr;
   // Preserve the geographic point at the viewport centre AND the on-screen magnification across the
-  // resize, so opening/closing the info panel beside the map (which shrinks/grows the stage) never
-  // moves or rescales the world. fitView recomputes the base fit scale from the new size; we then
-  // rebind cam.k/x/y to hold the same centre point at the same pixel scale.
+  // resize, so opening/closing/dragging the info panel beside the map (which shrinks/grows the stage)
+  // never moves or rescales the world. fitView recomputes the base fit scale from the new size; we
+  // then rebind cam.k/x/y to hold the same centre point at the same pixel scale — but only if the
+  // result is finite (a transient zero dimension would otherwise poison cam with Infinity/NaN and
+  // blank the map).
   const prev = (VIEW.w && VIEW.dw && cam.k) ? {
     fx: ((VIEW.w/2 - cam.x)/cam.k - VIEW.dx)/VIEW.dw,   // normalised map fraction at screen centre
     fy: ((VIEW.h/2 - cam.y)/cam.k - VIEW.dy)/VIEW.dh,
     mag: cam.k * VIEW.dw,                               // on-screen world size (dw/dh scale together)
   } : null;
   fitView(r.width, r.height);
-  if (prev) {
-    cam.k = Math.max(1, Math.min(K_MAX, prev.mag / VIEW.dw));
-    cam.x = VIEW.w/2 - cam.k*(VIEW.dx + prev.fx*VIEW.dw);
-    cam.y = VIEW.h/2 - cam.k*(VIEW.dy + prev.fy*VIEW.dh);
+  if (prev && VIEW.dw > 0 && VIEW.dh > 0) {
+    const k = Math.max(1, Math.min(K_MAX, prev.mag / VIEW.dw));
+    const x = VIEW.w/2 - k*(VIEW.dx + prev.fx*VIEW.dw);
+    const y = VIEW.h/2 - k*(VIEW.dy + prev.fy*VIEW.dh);
+    if (Number.isFinite(k) && Number.isFinite(x) && Number.isFinite(y)) { cam.k = k; cam.x = x; cam.y = y; }
   }
   clampPan(); draw();
 }
