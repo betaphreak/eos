@@ -23,6 +23,12 @@ public class PlotController {
 		this.service = service;
 	}
 
+	/** World-warm-up progress for the lobby readout: {@code {cached, total, generating}}. */
+	@GetMapping("/api/plots/status")
+	public PlotService.PlotStatus status() {
+		return service.status();
+	}
+
 	@GetMapping("/api/plots/{id}")
 	public ResponseEntity<byte[]> plots(@PathVariable int id) {
 		byte[] gz = service.gz(id);

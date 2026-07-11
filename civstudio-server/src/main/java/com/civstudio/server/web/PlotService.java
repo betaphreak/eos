@@ -51,6 +51,11 @@ public final class PlotService {
 	// bounded LRU of hot gz blobs over the disk cache
 	private final Map<Integer, byte[]> lru;
 
+	// generation status, for the lobby warm-up readout (docs/plot-serving.md §Lobby progress)
+	private volatile Integer generatingId;   // province currently generating, or null
+	private volatile int cachedCount = -1;    // disk-cache file count, memoised for ~2s
+	private volatile long cachedAt;
+
 	public PlotService(SimPauseGate pauseGate, CivStudioProperties props) {
 		this.pauseGate = pauseGate;
 		this.cacheDir = Path.of(props.getPlots().getCacheDir());
@@ -96,15 +101,49 @@ public final class PlotService {
 		if (!wm.hasProvince(provinceId))
 			return null;
 		Province p = wm.province(provinceId);
-		return pauseGate.underPause(() -> {
-			try {
-				ProvincePlotPool pool = ProvincePlotPool.generate(p, registry, raster(),
-						rngSeed.forProvinceCanonical(RngSeed.Stream.TERRAIN, provinceId));
-				return ProvincePlotStore.toGzBytes(pool.plots());
-			} catch (IOException e) {
-				throw new UncheckedIOException("failed to generate plots for province " + provinceId, e);
-			}
-		});
+		generatingId = provinceId; // for the lobby readout
+		try {
+			return pauseGate.underPause(() -> {
+				try {
+					ProvincePlotPool pool = ProvincePlotPool.generate(p, registry, raster(),
+							rngSeed.forProvinceCanonical(RngSeed.Stream.TERRAIN, provinceId));
+					return ProvincePlotStore.toGzBytes(pool.plots());
+				} catch (IOException e) {
+					throw new UncheckedIOException("failed to generate plots for province " + provinceId, e);
+				}
+			});
+		} finally {
+			generatingId = null;
+		}
+	}
+
+	/**
+	 * A snapshot of world-warm-up progress for the lobby readout ({@code docs/plot-serving.md}
+	 * §Lobby progress): how many provinces' grids are cached, the total, and the province currently
+	 * generating (or {@code null}).
+	 */
+	public PlotStatus status() {
+		return new PlotStatus(countCached(), worldMap().provinces().size(), generatingId);
+	}
+
+	/** {@code cached} of {@code total} provinces' grids are on disk; {@code generating} or null. */
+	public record PlotStatus(int cached, int total, Integer generating) {
+	}
+
+	// disk-cache file count, memoised for ~2s so a burst of lobby polls doesn't re-scan the dir
+	private int countCached() {
+		long now = System.currentTimeMillis();
+		if (cachedCount >= 0 && now - cachedAt < 2000)
+			return cachedCount;
+		int n = 0;
+		try (var s = Files.list(cacheDir)) {
+			n = (int) s.filter(f -> f.getFileName().toString().endsWith(".json.gz")).count();
+		} catch (IOException e) {
+			n = 0; // cache dir not created yet
+		}
+		cachedCount = n;
+		cachedAt = now;
+		return n;
 	}
 
 	private byte[] readDisk(int provinceId) {

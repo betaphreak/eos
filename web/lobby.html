@@ -23,6 +23,10 @@
   .badge.STOPPED { background: #3a1616; color: #e07a7a; }
   .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: #4b5563; }
   .dot.up { background: #6bd08a; } .dot.down { background: #e07a7a; }
+  .plots { display: inline-flex; align-items: center; gap: .4rem; }
+  .plots .bar { width: 64px; height: 6px; background: #1c2430; border-radius: 999px; overflow: hidden; }
+  .plots .bar i { display: block; height: 100%; width: 0; background: #6bd08a; transition: width .4s; }
+  .plots.gen .bar i { background: #e8c37a; }   /* amber while a province is generating (sim paused) */
   .spacer { flex: 1; }
   .auth { display: flex; align-items: center; gap: .5rem; }
   .auth img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
@@ -51,6 +55,8 @@
     <span class="badge" id="state">—</span>
     <span class="date" id="date"></span>
     <span class="meta" id="tick"></span>
+    <span class="meta plots" id="plots" hidden title="per-plot terrain grids cached">
+      <span class="bar"><i id="plotsFill"></i></span><span id="plotsTxt"></span></span>
     <span class="spacer"></span>
     <span class="auth" id="auth"></span>
   </header>
@@ -91,6 +97,23 @@
     .then(function (j) { el("health").className = "dot " + (j && j.status === "UP" ? "up" : "down"); })
     .catch(function () { el("health").className = "dot down"; }); }
   health(); setInterval(health, 10000);
+
+  // --- world terrain warm-up: how many provinces' plot grids the server has generated/cached,
+  //     and which it is generating right now (the sim pauses while it does) ---
+  function plots() {
+    fetch("/api/plots/status", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (s) {
+        if (!s || !s.total) { el("plots").hidden = true; return; }
+        var pct = Math.round(s.cached / s.total * 100), gen = s.generating != null;
+        el("plots").hidden = false;
+        el("plots").className = "meta plots" + (gen ? " gen" : "");
+        el("plotsFill").style.width = pct + "%";
+        el("plotsTxt").textContent = "terrain " + pct + "%" + (gen ? " · gen #" + s.generating : "");
+        el("plots").title = s.cached + " / " + s.total + " provinces' plot grids cached"
+          + (gen ? "; generating province " + s.generating + " (sim paused)" : "");
+      }).catch(function () { el("plots").hidden = true; });
+  }
+  plots(); setInterval(plots, 4000);
 
   // --- the session feed (snapshots for status, chat events for the lobby) ---
   function connect() {
