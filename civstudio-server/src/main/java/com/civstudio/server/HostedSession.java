@@ -10,6 +10,7 @@ import com.civstudio.io.SimLog;
 import com.civstudio.server.command.CommandLog;
 import com.civstudio.server.command.CommandStore;
 import com.civstudio.server.command.GameCommand;
+import com.civstudio.server.chat.ChatStore;
 import com.civstudio.server.render.ChatMessage;
 import com.civstudio.server.render.SessionLogBuffer;
 import com.civstudio.server.render.SessionSnapshot;
@@ -65,6 +66,7 @@ public final class HostedSession {
 	private final List<Settlement> colonies;
 	private final CommandLog commandLog = new CommandLog();
 	private final CommandStore commandStore;
+	private final ChatStore chatStore;
 	private final List<Consumer<SessionSnapshot>> subscribers = new CopyOnWriteArrayList<>();
 
 	// the authoritative tick — in-game days elapsed; volatile so control/HTTP threads read
@@ -89,12 +91,11 @@ public final class HostedSession {
 	private final SessionLogBuffer logBuffer = new SessionLogBuffer();
 
 	// lobby chat: an immediate broadcast channel, separate from the tick-paced snapshot feed (so
-	// messages don't wait up to a tick), plus a short backlog replayed to each newly-connected
-	// spectator. All accessed under chatLock, so a subscribe (backlog replay + add) and a post
-	// (append + broadcast) are serialized — no message is missed or double-delivered.
-	private static final int CHAT_BACKLOG = 40;
+	// messages don't wait up to a tick). Persistence + the replay backlog live in the ChatStore;
+	// chatLock serializes a subscribe (replay + add) against a post (append + broadcast) so no
+	// message is missed or double-delivered.
+	private static final int CHAT_REPLAY = 40;   // messages replayed to a newly-connected spectator
 	private final Object chatLock = new Object();
-	private final java.util.ArrayDeque<ChatMessage> chatBacklog = new java.util.ArrayDeque<>();
 	private final java.util.List<Consumer<ChatMessage>> chatSubscribers = new java.util.ArrayList<>();
 
 	// pause/step coordination: the session thread waits on `gate` while PAUSED with no step
@@ -118,13 +119,14 @@ public final class HostedSession {
 	 * @param colonies the session's colonies (advanced in lockstep each tick)
 	 */
 	public HostedSession(String id, String owner, SessionSpec spec, GameSession session,
-			List<Settlement> colonies, CommandStore commandStore) {
+			List<Settlement> colonies, CommandStore commandStore, ChatStore chatStore) {
 		this.id = id;
 		this.owner = owner;
 		this.spec = spec;
 		this.session = session;
 		this.colonies = List.copyOf(colonies);
 		this.commandStore = commandStore;
+		this.chatStore = chatStore;
 	}
 
 	/** Start ticking freely (paced by the tick rate). */
@@ -259,9 +261,7 @@ public final class HostedSession {
 	public void postChat(String user, String text) {
 		ChatMessage msg = new ChatMessage(user, text);
 		synchronized (chatLock) {
-			chatBacklog.addLast(msg);
-			while (chatBacklog.size() > CHAT_BACKLOG)
-				chatBacklog.removeFirst();
+			chatStore.append(id, user, text);   // persist (durable when a datasource is configured)
 			for (Consumer<ChatMessage> c : chatSubscribers)
 				try {
 					c.accept(msg);
@@ -281,7 +281,7 @@ public final class HostedSession {
 	 */
 	public AutoCloseable subscribeChat(Consumer<ChatMessage> sub) {
 		synchronized (chatLock) {
-			for (ChatMessage m : chatBacklog)
+			for (ChatMessage m : chatStore.recent(id, CHAT_REPLAY))
 				try {
 					sub.accept(m);
 				} catch (RuntimeException ignored) {

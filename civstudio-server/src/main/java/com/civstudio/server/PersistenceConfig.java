@@ -9,6 +9,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.civstudio.server.chat.ChatStore;
+import com.civstudio.server.chat.InMemoryChatStore;
+import com.civstudio.server.chat.JdbcChatStore;
 import com.civstudio.server.command.CommandCodec;
 import com.civstudio.server.command.CommandStore;
 import com.civstudio.server.command.JdbcCommandStore;
@@ -55,6 +58,22 @@ public class PersistenceConfig {
 		if (template == null)
 			return new NoOpCommandStore();
 		JdbcCommandStore store = new JdbcCommandStore(template, new CommandCodec(json));
+		store.initSchema();
+		return store;
+	}
+
+	/**
+	 * The chat store: durable ({@link JdbcChatStore}) when a datasource is configured, else an
+	 * {@link InMemoryChatStore} (chat still works within a run, just isn't persisted). Unlike the
+	 * command store there is no no-op fallback — the lobby always needs at least an in-memory
+	 * backlog to replay to late joiners.
+	 */
+	@Bean
+	ChatStore chatStore(ObjectProvider<JdbcTemplate> jdbc) {
+		JdbcTemplate template = jdbc.getIfAvailable();
+		if (template == null)
+			return new InMemoryChatStore();
+		JdbcChatStore store = new JdbcChatStore(template);
 		store.initSchema();
 		return store;
 	}

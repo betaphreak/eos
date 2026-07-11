@@ -19,6 +19,8 @@ import com.civstudio.geo.Province;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
+import com.civstudio.server.chat.ChatStore;
+import com.civstudio.server.chat.InMemoryChatStore;
 import com.civstudio.server.command.CommandStore;
 import com.civstudio.server.command.GameCommand;
 import com.civstudio.server.command.NoOpCommandStore;
@@ -61,19 +63,22 @@ public final class SessionHost {
 	private final ConcurrentMap<String, HostedSession> sessions = new ConcurrentHashMap<>();
 
 	private final CommandStore commandStore;
+	private final ChatStore chatStore;
 
 	/** In-memory only — for constructing a host directly (e.g. in a test), no persistence. */
 	public SessionHost() {
-		this(new NoOpCommandStore());
+		this(new NoOpCommandStore(), new InMemoryChatStore());
 	}
 
 	/**
 	 * @param commandStore durable command-log storage — a {@link NoOpCommandStore} when no
 	 *                     datasource is configured (see {@code PersistenceConfig})
+	 * @param chatStore    lobby chat storage — an {@link InMemoryChatStore} when no datasource
 	 */
 	@Autowired
-	public SessionHost(CommandStore commandStore) {
+	public SessionHost(CommandStore commandStore, ChatStore chatStore) {
 		this.commandStore = commandStore;
+		this.chatStore = chatStore;
 	}
 
 	/**
@@ -167,7 +172,8 @@ public final class SessionHost {
 		GameSession session = colony.getSession();
 		if (SessionSpec.CARAVAN_DEMO.equals(spec.scenario()))
 			seedDemoCaravans(session, colony, spec.provinceId());
-		HostedSession hs = new HostedSession(id, owner, spec, session, List.of(colony), commandStore);
+		HostedSession hs = new HostedSession(id, owner, spec, session, List.of(colony), commandStore,
+				chatStore);
 		// resume: replay any previously-persisted commands (keyed by the surrogate id) into the
 		// fresh session's log so state = f(spec, command log) holds across a restart
 		for (GameCommand cmd : commandStore.load(id))
