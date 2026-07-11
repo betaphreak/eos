@@ -1,9 +1,11 @@
 package com.civstudio.server.auth;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -19,10 +21,12 @@ public final class CivStudioOidcUser implements OidcUser {
 
 	private final OidcUser delegate;
 	private final String userId;
+	private final boolean admin;
 
-	public CivStudioOidcUser(OidcUser delegate, String userId) {
+	public CivStudioOidcUser(OidcUser delegate, String userId, boolean admin) {
 		this.delegate = delegate;
 		this.userId = userId;
+		this.admin = admin;
 	}
 
 	@Override
@@ -52,6 +56,10 @@ public final class CivStudioOidcUser implements OidcUser {
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return delegate.getAuthorities();
+		if (!admin)
+			return delegate.getAuthorities();
+		Collection<GrantedAuthority> authorities = new ArrayList<>(delegate.getAuthorities());
+		authorities.add(new SimpleGrantedAuthority(Admins.ROLE_ADMIN));
+		return authorities;
 	}
 }

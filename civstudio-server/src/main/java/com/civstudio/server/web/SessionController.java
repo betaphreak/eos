@@ -95,7 +95,7 @@ public class SessionController {
 		// play/pause/step/rate/stop change state shared by every spectator, so control requires a
 		// signed-in user (any authenticated user for the unowned/public demo; the owner for an owned
 		// session). Spectating stays anonymous. See docs/authentication.md.
-		ResponseEntity<Object> denied = denyControl(hs, http);
+		ResponseEntity<Object> denied = denyWrite(hs, http);
 		if (denied != null)
 			return denied;
 		String action = req.action() == null ? "" : req.action();
@@ -121,8 +121,10 @@ public class SessionController {
 		HostedSession hs = host.get(id);
 		if (hs == null)
 			return notFound(id);
-		if (!canWrite(hs, http))
-			return forbidden(id);
+		// like control, submitting a command requires a signed-in user (owner for an owned session)
+		ResponseEntity<Object> denied = denyWrite(hs, http);
+		if (denied != null)
+			return denied;
 		String type = req.type() == null ? "" : req.type();
 		long next = hs.tick() + 1;
 		long tick = Math.max(next, req.tick() != null ? req.tick() : next);
@@ -213,24 +215,15 @@ public class SessionController {
 		}
 	}
 
-	// may the caller submit commands to this session? An unowned/public session (the demo) is open
-	// to everyone; an owned session only to its owner. Read/spectate endpoints (list, stream) stay
-	// open regardless. Admin override arrives with real roles later (docs/authentication.md).
-	private boolean canWrite(HostedSession hs, HttpServletRequest http) {
-		String owner = hs.owner();
-		if (owner == null)
-			return true;
-		return owner.equals(currentUser.userId(http));
-	}
-
-	// authorize a control (transport) request: it must be authenticated, and — for an owned
-	// session — by the owner. Returns the deny response (401/403) or null when allowed.
-	private ResponseEntity<Object> denyControl(HostedSession hs, HttpServletRequest http) {
+	// authorize a write (control or command): the caller must be signed in, and — for an owned
+	// session — be the owner or an admin. Returns the deny response (401 unauthenticated / 403
+	// not-owner) or null when allowed. Read/spectate endpoints (list, stream) are never gated.
+	private ResponseEntity<Object> denyWrite(HostedSession hs, HttpServletRequest http) {
 		String user = currentUser.userId(http);
 		if (user == null)
 			return ResponseEntity.status(401).body(Map.of("error", "sign in to control the session"));
 		String owner = hs.owner();
-		if (owner != null && !owner.equals(user))
+		if (owner != null && !owner.equals(user) && !currentUser.isAdmin(http))
 			return forbidden(hs.id());
 		return null;
 	}

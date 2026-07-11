@@ -88,6 +88,15 @@ public class CivStudioProperties {
 		 */
 		private boolean trustDevUserHeader = false;
 
+		/**
+		 * Operator allow-list (env {@code CIVSTUDIO_AUTH_ADMINS}, comma-separated). An entry may be
+		 * a user's provider subject (a SteamID64, a Google {@code sub}), a {@code provider:subject}
+		 * pair, an OIDC email, or an {@code app_user} id — a signed-in user matching any form is
+		 * granted {@code ROLE_ADMIN} and may control/command <em>any</em> session (bypassing
+		 * ownership). Matched case-insensitively. See {@code docs/authentication.md}.
+		 */
+		private List<String> admins = new ArrayList<>();
+
 		private final Steam steam = new Steam();
 		private final Google google = new Google();
 
@@ -97,6 +106,14 @@ public class CivStudioProperties {
 
 		public void setTrustDevUserHeader(boolean trustDevUserHeader) {
 			this.trustDevUserHeader = trustDevUserHeader;
+		}
+
+		public List<String> getAdmins() {
+			return admins;
+		}
+
+		public void setAdmins(List<String> admins) {
+			this.admins = admins;
 		}
 
 		public Steam getSteam() {

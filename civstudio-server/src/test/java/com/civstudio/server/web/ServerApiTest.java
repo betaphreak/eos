@@ -36,7 +36,7 @@ import tools.jackson.databind.ObjectMapper;
  * own paused session deterministically; {@link #cleanup()} clears the shared host between tests.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-		properties = "civstudio.demo.enabled=false")
+		properties = { "civstudio.demo.enabled=false", "civstudio.auth.trust-dev-user-header=true" })
 class ServerApiTest {
 
 	private static final int DHENIJANSAR = 4411;
@@ -102,10 +102,12 @@ class ServerApiTest {
 		hs.startPaused(); // paused at tick 0; the command lands on the next tick
 		assertNotNull(hs.colonies().get(0).getRuler(), "the demo colony has a ruler");
 
-		// POST a real player command; the endpoint accepts it and reports the apply tick
+		// POST a real player command (authenticated — writes now require sign-in); the endpoint
+		// accepts it and reports the apply tick
 		HttpResponse<String> ok = client.send(
 				HttpRequest.newBuilder(uri("/api/sessions/" + hs.id() + "/commands"))
 						.header("Content-Type", "application/json")
+						.header("X-CivStudio-User", "tester")
 						.POST(HttpRequest.BodyPublishers.ofString(
 								"{\"type\":\"setTaxRate\",\"lever\":\"bankProfit\",\"rate\":0.3}"))
 						.build(),
@@ -126,6 +128,7 @@ class ServerApiTest {
 		HttpResponse<String> bad = client.send(
 				HttpRequest.newBuilder(uri("/api/sessions/" + hs.id() + "/commands"))
 						.header("Content-Type", "application/json")
+						.header("X-CivStudio-User", "tester")
 						.POST(HttpRequest.BodyPublishers.ofString("{\"type\":\"bogus\"}"))
 						.build(),
 				HttpResponse.BodyHandlers.ofString());

@@ -6,6 +6,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.civstudio.server.CivStudioProperties;
+import com.civstudio.server.auth.Admins;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -25,9 +26,11 @@ public class CurrentUserResolver {
 	static final String DEV_USER_HEADER = "X-CivStudio-User";
 
 	private final boolean trustDevHeader;
+	private final Admins admins;
 
-	public CurrentUserResolver(CivStudioProperties props) {
+	public CurrentUserResolver(CivStudioProperties props, Admins admins) {
 		this.trustDevHeader = props.getAuth().isTrustDevUserHeader();
+		this.admins = admins;
 	}
 
 	/**
@@ -46,5 +49,26 @@ public class CurrentUserResolver {
 				return header.trim();
 		}
 		return null;
+	}
+
+	/**
+	 * Whether the caller is an operator (see {@link Admins}). The real source is the
+	 * {@code ROLE_ADMIN} authority granted at login; the dev-header path (when trusted) checks the
+	 * header value against the allow-list so tests can exercise admin without a login.
+	 *
+	 * @param request the current request
+	 * @return {@code true} if the caller is an admin
+	 */
+	public boolean isAdmin(HttpServletRequest request) {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
+			if (auth.getAuthorities().stream().anyMatch(a -> Admins.ROLE_ADMIN.equals(a.getAuthority())))
+				return true;
+		}
+		if (trustDevHeader) {
+			String header = request.getHeader(DEV_USER_HEADER);
+			return header != null && admins.isAdmin(header.trim());
+		}
+		return false;
 	}
 }

@@ -31,7 +31,8 @@ import tools.jackson.databind.ObjectMapper;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
 		"civstudio.demo.enabled=false",
-		"civstudio.auth.trust-dev-user-header=true" })
+		"civstudio.auth.trust-dev-user-header=true",
+		"civstudio.auth.admins=super-admin" })
 class SessionOwnershipTest {
 
 	private static final int DHENIJANSAR = 4411;
@@ -76,27 +77,39 @@ class SessionOwnershipTest {
 		// the owner may control and command it
 		assertEquals(200, control(hs.id(), "alice"));
 		assertEquals(202, command(hs.id(), "alice"));
-		// a different authenticated user may not
+		// a different authenticated user may not (control or command)
 		assertEquals(403, control(hs.id(), "bob"));
 		assertEquals(403, command(hs.id(), "bob"));
-		// an anonymous caller: control demands authentication (401); command is owner-gated (403)
+		// an anonymous caller is unauthenticated → 401 on both write endpoints
 		assertEquals(401, control(hs.id(), null));
-		assertEquals(403, command(hs.id(), null));
+		assertEquals(401, command(hs.id(), null));
 	}
 
 	@Test
 	@Timeout(120)
-	void unownedControlNeedsAuthCommandsStayOpen() throws Exception {
+	void unownedSessionWritesRequireAuthentication() throws Exception {
 		// owner == null (the server-seeded demo is founded exactly this way)
 		HostedSession hs = host.create(new SessionSpec(4244L, SCENARIO, DHENIJANSAR));
 		hs.startPaused();
 
-		// control (play/pause/speed) requires a signed-in user, even on the unowned demo…
+		// both control and commands require a signed-in user, even on the unowned demo
 		assertEquals(401, control(hs.id(), null), "anonymous cannot control the session");
+		assertEquals(401, command(hs.id(), null), "anonymous cannot command the session");
+		// any authenticated user may drive an unowned session
 		assertEquals(200, control(hs.id(), "anyone"), "any authenticated user can control the demo");
-		// …but commands remain open on an unowned session
-		assertEquals(202, command(hs.id(), null), "unowned commands stay open to anonymous callers");
-		assertEquals(202, command(hs.id(), "whoever"), "and to any authenticated caller");
+		assertEquals(202, command(hs.id(), "whoever"), "and command it");
+	}
+
+	@Test
+	@Timeout(120)
+	void adminMayWriteAnyOwnedSession() throws Exception {
+		// alice owns it; bob (a plain user) is forbidden, but super-admin (allow-listed) may write
+		HostedSession hs = host.create(new SessionSpec(4246L, SCENARIO, DHENIJANSAR), "alice");
+		hs.startPaused();
+
+		assertEquals(403, control(hs.id(), "bob"), "a non-owner is forbidden");
+		assertEquals(200, control(hs.id(), "super-admin"), "an admin bypasses ownership on control");
+		assertEquals(202, command(hs.id(), "super-admin"), "an admin bypasses ownership on commands");
 	}
 
 	@Test

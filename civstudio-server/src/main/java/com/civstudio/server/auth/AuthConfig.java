@@ -42,7 +42,7 @@ public class AuthConfig {
 	 * OIDC provider is configured; it is simply never invoked).
 	 */
 	@Bean
-	OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService(UserStore users) {
+	OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService(UserStore users, Admins admins) {
 		OidcUserService delegate = new OidcUserService();
 		return request -> {
 			OidcUser oidc = delegate.loadUser(request);
@@ -52,7 +52,8 @@ public class AuthConfig {
 					: oidc.getEmail() != null ? oidc.getEmail() : subject;
 			String avatar = asString(oidc.getAttributes().get("picture"));
 			AppUser user = users.upsertByProvider(provider, subject, displayName, avatar);
-			return new CivStudioOidcUser(oidc, user.id());
+			boolean admin = admins.isAdmin(provider, subject, oidc.getEmail(), user.id());
+			return new CivStudioOidcUser(oidc, user.id(), admin);
 		};
 	}
 

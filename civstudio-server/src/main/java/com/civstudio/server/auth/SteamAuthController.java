@@ -45,20 +45,20 @@ public class SteamAuthController {
 
 	private static final Logger log = LoggerFactory.getLogger(SteamAuthController.class);
 
-	private static final List<SimpleGrantedAuthority> USER_AUTHORITIES = List
-			.of(new SimpleGrantedAuthority("ROLE_USER"));
-
 	private final SteamOpenId steam;
 	private final UserStore users;
 	private final SecurityContextRepository securityContextRepository;
 	private final CivStudioProperties props;
+	private final Admins admins;
 
 	public SteamAuthController(SteamOpenId steam, UserStore users,
-			SecurityContextRepository securityContextRepository, CivStudioProperties props) {
+			SecurityContextRepository securityContextRepository, CivStudioProperties props,
+			Admins admins) {
 		this.steam = steam;
 		this.users = users;
 		this.securityContextRepository = securityContextRepository;
 		this.props = props;
+		this.admins = admins;
 	}
 
 	/** Redirect the browser to Steam's OpenID sign-in. */
@@ -94,8 +94,12 @@ public class SteamAuthController {
 	// build an authenticated context for the user and persist it into the session so the cookie
 	// carries it on subsequent requests (principal = the surrogate user id — the ownership key)
 	private void authenticate(AppUser user, HttpServletRequest request, HttpServletResponse response) {
+		List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+		authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+		if (admins.isAdmin(user.provider(), user.subject(), null, user.id()))
+			authorities.add(new SimpleGrantedAuthority(Admins.ROLE_ADMIN));
 		Authentication auth = UsernamePasswordAuthenticationToken.authenticated(user.id(), null,
-				USER_AUTHORITIES);
+				authorities);
 		SecurityContext context = SecurityContextHolder.createEmptyContext();
 		context.setAuthentication(auth);
 		SecurityContextHolder.setContext(context);

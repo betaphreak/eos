@@ -197,8 +197,10 @@ Two consequences for the current code:
 | `GET /actuator/health\|info` | public (Container-App probes + site splash) |
 | `GET /api/sessions`, `GET /api/sessions/{id}/stream` | public — **spectating stays open** |
 | `POST /api/sessions` (found a game) | anonymous-permissive in Phase 1 (founder → `owner`, or unowned); **authenticated** in Phase 2 |
-| `POST /api/sessions/{id}/control` | ✅ **authentication required** (play/pause/step/rate/stop): `401` if anonymous, `403` if owned-and-not-owner, else allowed — any signed-in user may drive the unowned demo |
-| `POST /api/sessions/{id}/commands` | ✅ **owner-only** when owned; open when unowned — checked *before* the command enters the log |
+| `POST /api/sessions/{id}/control` | ✅ **authentication required** (play/pause/step/rate/stop): `401` if anonymous, `403` if owned and caller is neither owner nor admin, else allowed — any signed-in user may drive the unowned demo |
+| `POST /api/sessions/{id}/commands` | ✅ **same rule as control** — authenticated + (owner or admin) for an owned session; checked *before* the command enters the log |
+
+Both write endpoints share one check (`denyWrite`): must be signed in, and — for an *owned* session — be the owner or an **admin**. An admin is a user on the `civstudio.auth.admins` allow-list (granted `ROLE_ADMIN` at login), who may control/command **any** session. The allow-list matches a user's `app_user` id, provider subject (SteamID64 / Google `sub`), `provider:subject`, or OIDC email — so an operator can be pinned by whatever they know. Set it via `CIVSTUDIO_AUTH_ADMINS` (comma-separated).
 
 The ownership check on `/commands` is the real security boundary: `SessionController.command`
 stamps the tick and validates the lever, and now (Phase 1) runs the `canWrite` guard *before*
@@ -302,8 +304,9 @@ Each phase is independently shippable and leaves the server spectator-usable thr
   server-seeded exception (it's founded by `DemoSessionSeeder`, not a user).
 - **Per-user session quota** (how many concurrent owned sessions) — a resource-abuse guard once
   founding is authenticated.
-- **Admin authority source**: config-listed subjects vs. an `is_admin` column. Start with a
-  config allow-list.
+- **Admin authority source**: ✅ started with a config allow-list (`civstudio.auth.admins` →
+  `ROLE_ADMIN`, see `Admins`). A DB-backed `is_admin` column can supersede it later if operators
+  need to be managed at runtime.
 
 ---
 
