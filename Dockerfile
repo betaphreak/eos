@@ -34,8 +34,8 @@ COPY --from=build /build/civstudio-server/target/civstudio-server-*.jar app.jar
 # (pinned by map/anbennar-source.lock) into the cache dir, the first time a province's plot field
 # is generated. Point ANBENNAR_CACHE_DIR at a mounted volume so the download survives restarts, and
 # set ANBENNAR_TOKEN (a secret) for the authenticated rate limit. See docs/anbennar-files.md.
-# The thin-client demo page the server serves at "/"
-COPY web/live.html ./web/live.html
+# The lobby page (chat + server status) the server serves at "/"
+COPY web/lobby.html ./web/lobby.html
 EXPOSE 8080
 # MaxRAMPercentage so the JVM honours the container's memory limit; full sim log to stdout
 # for the platform's log capture. The server hosts the six-caravan demo (see ServerMain).

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>CivStudio — lobby</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; height: 100vh; display: flex; flex-direction: column; background: #0e1116;
+    color: #d7dce3; font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; padding: .7rem 1rem;
+    border-bottom: 1px solid #222a35; background: #131924; }
+  header h1 { font-size: 15px; margin: 0; font-weight: 700; letter-spacing: .02em; }
+  header h1 b { color: #e8b76a; }
+  .meta { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: #8b95a3; }
+  .date { color: #e8c37a; font-family: ui-monospace, monospace; }
+  .badge { padding: .05rem .5rem; border-radius: 999px; font: 600 12px ui-monospace, monospace;
+    background: #1c2430; color: #8b95a3; }
+  .badge.RUNNING { background: #14351f; color: #6bd08a; }
+  .badge.PAUSED  { background: #3a2f10; color: #e8c37a; }
+  .badge.STOPPED { background: #3a1616; color: #e07a7a; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: #4b5563; }
+  .dot.up { background: #6bd08a; } .dot.down { background: #e07a7a; }
+  .spacer { flex: 1; }
+  .auth { display: flex; align-items: center; gap: .5rem; }
+  .auth img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+  button { background: #1c2430; color: #d7dce3; border: 1px solid #2a3444; border-radius: 7px;
+    padding: .35rem .7rem; cursor: pointer; font: 500 13px system-ui, sans-serif; }
+  button:hover { background: #26303f; }
+  main { flex: 1; overflow-y: auto; padding: .8rem 1rem; display: flex; flex-direction: column; gap: 3px; }
+  .row { white-space: pre-wrap; word-break: break-word; font-size: 13.5px; }
+  .row.chat { color: #cfe0ff; }
+  .row .user { color: #7aa2e0; font-weight: 700; margin-right: 5px; }
+  .row.log { color: #9fb0c8; font-family: ui-monospace, monospace; font-size: 12.5px; }
+  .row.log .hdr { color: #d0a54e; margin-right: 8px; }
+  .row.warn { color: #e8c37a; } .row.error { color: #e07a7a; }
+  footer { border-top: 1px solid #222a35; background: #10151d; padding: .7rem 1rem;
+    display: flex; align-items: center; gap: .5rem; }
+  footer input { flex: 1; min-width: 0; background: #0b0f16; color: #eef2f8; border: 1px solid #2a3444;
+    border-radius: 7px; padding: .5rem .7rem; font: inherit; }
+  .hint { color: #8b95a3; font-size: 13px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>CivStudio · <b id="server">lobby</b></h1>
+    <span class="meta" id="version">…</span>
+    <span class="dot" id="health" title="server health"></span>
+    <span class="badge" id="state">—</span>
+    <span class="date" id="date"></span>
+    <span class="meta" id="tick"></span>
+    <span class="spacer"></span>
+    <span class="auth" id="auth"></span>
+  </header>
+  <main id="feed"></main>
+  <footer id="composer"></footer>
+
+<script>
+(function () {
+  var server = (function () { var h = location.hostname;
+    return (h === "localhost" || h === "127.0.0.1") ? "local" : (h.split(".")[0] || "server"); })();
+  document.getElementById("server").textContent = server;
+  var el = function (id) { return document.getElementById(id); };
+  var feed = el("feed"), me = { authenticated: false }, sid = null;
+
+  function esc(s) { return String(s).replace(/[&<>]/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); }
+  function atBottom() { return feed.scrollHeight - feed.scrollTop - feed.clientHeight < 40; }
+  function append(html) { var stick = atBottom(); feed.insertAdjacentHTML("beforeend", html);
+    if (stick) feed.scrollTop = feed.scrollHeight; }
+
+  function addChat(m) {
+    if (!m || !m.text) return;
+    append('<div class="row chat"><span class="user">' + esc(m.user || "?") + ':</span>' + esc(m.text) + '</div>');
+  }
+  function addLog(l) { // only notable (curated) events, to keep the lobby readable
+    if (!l || !l.text || !l.curated) return;
+    var sev = l.sev === "warn" ? " warn" : l.sev === "error" ? " error" : "";
+    append('<div class="row log' + sev + '"><span class="hdr">' + esc(server + "@" + (l.date || "----")) +
+      '</span>' + esc(l.text) + '</div>');
+  }
+
+  // --- server status: version once, health on an interval ---
+  fetch("/actuator/info", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { var b = (j && j.build) || {}; if (b.version) el("version").textContent =
+      b.version + (b.number && b.number !== "0" ? " · #" + b.number : ""); }).catch(function () {});
+  function health() { fetch("/actuator/health", { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { el("health").className = "dot " + (j && j.status === "UP" ? "up" : "down"); })
+    .catch(function () { el("health").className = "dot down"; }); }
+  health(); setInterval(health, 10000);
+
+  // --- the session feed (snapshots for status, chat events for the lobby) ---
+  function connect() {
+    fetch("/api/sessions", { cache: "no-store" }).then(function (r) { return r.json(); })
+      .then(function (list) {
+        if (!list.length) { el("state").textContent = "no session"; return; }
+        sid = list[0].id;
+        var es = new EventSource("/api/sessions/" + sid + "/stream");
+        es.onmessage = function (e) { try { var s = JSON.parse(e.data);
+          el("state").textContent = s.state; el("state").className = "badge " + s.state;
+          el("date").textContent = s.date || ""; el("tick").textContent = "tick " + s.tick;
+          (s.log || []).forEach(addLog); } catch (err) {} };
+        es.addEventListener("chat", function (e) { try { addChat(JSON.parse(e.data)); } catch (err) {} });
+      }).catch(function () { el("state").textContent = "offline"; });
+  }
+  connect();
+
+  // --- auth + chat composer (same-origin, so the session cookie rides plain fetches) ---
+  function refreshAuth() {
+    Promise.all([
+      fetch("/api/auth/providers", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+      fetch("/api/auth/me", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+    ]).then(function (r) {
+      var providers = (r[0] && r[0].providers) || ["steam"];
+      me = r[1] || { authenticated: false };
+      renderAuth(providers); renderComposer();
+    });
+  }
+  function renderAuth(providers) {
+    var box = el("auth"); box.innerHTML = "";
+    if (me.authenticated) {
+      var who = document.createElement("span"); who.className = "meta";
+      who.innerHTML = (me.avatarUrl ? '<img src="' + esc(me.avatarUrl) + '" alt=""> ' : "") + esc(me.displayName || me.id);
+      var out = document.createElement("button"); out.textContent = "Sign out";
+      out.onclick = function () { fetch("/api/auth/logout", { method: "POST" }).then(refreshAuth); };
+      box.appendChild(who); box.appendChild(out);
+    } else {
+      providers.forEach(function (p) {
+        var b = document.createElement("button");
+        b.className = p;   // "steam" / "google" — used by tools/webverify/steam-login-smoke.mjs
+        b.textContent = "Sign in · " + (p === "steam" ? "Steam" : p === "google" ? "Google" : p);
+        b.onclick = function () { var back = encodeURIComponent(location.href);
+          location.href = (p === "steam" ? "/api/auth/steam/login?redirect=" : "/oauth2/authorization/" + p + "?redirect=") + back; };
+        box.appendChild(b);
+      });
+    }
+  }
+  function renderComposer() {
+    var c = el("composer"); c.innerHTML = "";
+    if (me.authenticated) {
+      var input = document.createElement("input"); input.type = "text"; input.maxLength = 280;
+      input.placeholder = "Say something…"; input.autocomplete = "off";
+      var send = document.createElement("button"); send.textContent = "Send";
+      var submit = function () { var t = input.value.trim(); if (!t || !sid) return;
+        fetch("/api/sessions/" + sid + "/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: t }) }); input.value = ""; };
+      input.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); submit(); } });
+      send.onclick = submit;
+      c.appendChild(input); c.appendChild(send);
+    } else {
+      var h = document.createElement("span"); h.className = "hint"; h.textContent = "Sign in to chat.";
+      c.appendChild(h);
+    }
+  }
+  refreshAuth();
+})();
+</script>
+</body>
+</html>

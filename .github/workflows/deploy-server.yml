@@ -23,7 +23,7 @@ on:
       - '.mvn/**'                                 # the Maven wrapper config
       - 'Dockerfile'
       - '.dockerignore'
-      - 'web/live.html'                           # the thin-client page the server serves
+      - 'web/lobby.html'                          # the lobby page the server serves at /
       - '.github/workflows/deploy-server.yml'
   workflow_dispatch:
 

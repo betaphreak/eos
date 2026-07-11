@@ -1,5 +1,5 @@
 // Smoke-test the Steam "Sign in through Steam" flow against the live server, in a real browser.
-// Drives the same-origin diagnostic page (dev.civstudio.com/ = live.html), which calls
+// Drives the same-origin lobby page (dev.civstudio.com/ = web/lobby.html), which calls
 // /api/auth/me on load and renders the sign-in control, then clicks it and follows the redirect
 // up to Steam's real OpenID login page. Completing the login (Steam credentials + Steam Guard) is
 // the human's to do — this verifies everything up to that point.
