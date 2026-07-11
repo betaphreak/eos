@@ -8,6 +8,7 @@
 // (px/py) already pins anything with a lon/lat onto the terrain, so the feed's colonies and
 // caravans place with no new geometry.
 import { ctx, S, px, py, cssVar, cam, VIEW, baseXr, baseYr, sxSrc, sySrc, BUNDLE, LABEL_FONT } from "../core.mjs";
+import { showLiveLog, ingestLog, resetLog } from "../livelog.mjs";
 
 // where the feed lives: the build can inject BUNDLE.live.base; a ?live=<url> query overrides
 // it for local testing; otherwise the deployed server.
@@ -26,6 +27,16 @@ let framed = false;     // camera centred on the colony once, on the first snaps
 
 // wall-clock ms per tick for each speed level (1…5): 1 day/s → uncapped
 export const LIVE_RATES = [1000, 1000, 500, 250, 100, 0];
+
+// the short label for the connected server, used as the log header prefix (dev.civstudio.com →
+// "dev", localhost → "local"); the picked/overridden server determines it.
+function serverLabel() {
+  try {
+    const h = new URL(LIVE_BASE).hostname;
+    if (h === "localhost" || h === "127.0.0.1") return "local";
+    return h.split(".")[0] || "live";
+  } catch { return "live"; }
+}
 
 /** Whether the live feed is currently connected (Live mode is active). */
 export function liveActive() { return es !== null; }
@@ -83,6 +94,7 @@ export function stopLive() {
   if (es) { es.close(); es = null; }
   snap = null; sid = null;
   for (const k in trails) delete trails[k];
+  resetLog();
   hud(false);
 }
 
@@ -95,6 +107,7 @@ function onSnapshot(s) {
   });
   if (!framed && s.colonies[0]) { frameOn(s.colonies[0].latitude, s.colonies[0].longitude, 6); framed = true; }
   renderHud();
+  ingestLog(s.log);           // feed the event-log bar this frame's new lines
   onState(s.state, s.date);   // sync the transport controls (play icon, speed, date) to the server
   redraw();
 }
@@ -150,6 +163,7 @@ let hudWired = false;
 function hud(show) {
   const box = el("liveHud");
   if (box) box.hidden = !show;
+  showLiveLog(show, serverLabel());   // the event-log bar tracks Live mode
 }
 
 function setHudStatus(text) {

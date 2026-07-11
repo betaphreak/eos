@@ -38,11 +38,12 @@ public final class Snapshots {
 	 * @param colonies  the session's colonies
 	 * @param map       the world map (for caravan province names), or {@code null}
 	 * @param caravans  the session's wandering bands
+	 * @param log       the event-log lines since the previous frame (the live log bar's feed)
 	 * @return the render snapshot
 	 */
 	public static SessionSnapshot of(String sessionId, long seed, String scenario,
 			String state, long tick, List<Settlement> colonies, WorldMap map,
-			List<Caravan> caravans) {
+			List<Caravan> caravans, List<LogLine> log) {
 		List<ColonyView> colonyViews = new ArrayList<>(colonies.size());
 		LocalDate date = null;
 		for (Settlement c : colonies) {
@@ -55,7 +56,7 @@ public final class Snapshots {
 		for (Caravan band : caravans)
 			caravanViews.add(caravanView(band, map));
 		return new SessionSnapshot(sessionId, seed, scenario, state, tick,
-				date == null ? "" : date.toString(), colonyViews, caravanViews);
+				date == null ? "" : date.toString(), colonyViews, caravanViews, log);
 	}
 
 	// project one colony's aggregates — the same tally the annual digest and CSV printers

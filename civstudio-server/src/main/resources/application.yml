@@ -56,7 +56,7 @@ civstudio:
     enabled: true
     seed: 7654321
     province-id: 4411
-    tick-rate-millis: 1000
+    tick-rate-millis: 10000
   anbennar:
     # Canonical upstream source of the Anbennar EU4 mod files (GitLab, not GitHub). These are NOT
     # vendored in the repo; the engine (com.civstudio.data.AnbennarFiles) downloads them individually,

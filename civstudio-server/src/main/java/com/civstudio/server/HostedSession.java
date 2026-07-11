@@ -10,6 +10,7 @@ import com.civstudio.io.SimLog;
 import com.civstudio.server.command.CommandLog;
 import com.civstudio.server.command.CommandStore;
 import com.civstudio.server.command.GameCommand;
+import com.civstudio.server.render.SessionLogBuffer;
 import com.civstudio.server.render.SessionSnapshot;
 import com.civstudio.server.render.Snapshots;
 import com.civstudio.settlement.GameSession;
@@ -81,6 +82,10 @@ public final class HostedSession {
 	// the last snapshot assembled on the session thread — handed to late subscribers so the
 	// projection is never built off-thread (which would race newDay's agent-set mutation)
 	private volatile SessionSnapshot lastSnapshot;
+
+	// holds the session's event-log lines between emits; a SimLog tap fills it on the colony
+	// threads, emit() drains it into each snapshot (the browser's live log bar). See run()/emit().
+	private final SessionLogBuffer logBuffer = new SessionLogBuffer();
 
 	// pause/step coordination: the session thread waits on `gate` while PAUSED with no step
 	// credit; control threads mutate stepCredits/state under `gate` and notify
@@ -287,6 +292,10 @@ public final class HostedSession {
 	private void run() {
 		// records emitted on this thread carry (and route to) this session's colony/log
 		SimLog.bind(colonies.get(0));
+		// tap this session's log into the snapshot feed before founding, so the "was founded"
+		// lines are captured; closed in the finally below when the session tears down
+		AutoCloseable logTap = SimLog.tap(colonies.get(0),
+				e -> logBuffer.add(e.date(), e.message(), e.level()));
 		for (Settlement c : colonies)
 			c.start();
 		emit(); // tick-0 snapshot, so a subscriber (even to a paused session) sees state
@@ -315,6 +324,11 @@ public final class HostedSession {
 			}
 			state = State.STOPPED;
 			emit(); // final snapshot so clients see the terminal state
+			try {
+				logTap.close();
+			} catch (Exception ignored) {
+				// unregistering the tap is best-effort
+			}
 			SimLog.closeSession(colonies.get(0));
 		}
 	}
@@ -386,7 +400,8 @@ public final class HostedSession {
 	// the loop.
 	private void emit() {
 		SessionSnapshot snap = Snapshots.of(id, spec.seed(), spec.scenario(),
-				state.name(), tick, colonies, session.getWorldMap(), session.getCaravans());
+				state.name(), tick, colonies, session.getWorldMap(), session.getCaravans(),
+				logBuffer.drain());
 		lastSnapshot = snap;
 		for (Consumer<SessionSnapshot> s : subscribers) {
 			try {

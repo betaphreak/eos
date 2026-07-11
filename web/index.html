@@ -103,6 +103,21 @@
         <div class="live-msg" id="liveTaxMsg"></div>
       </div>
 
+      <!-- live event-log bar: collapsed = latest line; click to expand a chat-style history (js/livelog.mjs) -->
+      <div class="live-log" id="liveLog" hidden>
+        <div class="live-log-history" id="liveLogHistory" hidden>
+          <div class="live-log-head">
+            <span>EVENT LOG</span>
+            <label class="live-log-toggle"><input type="checkbox" id="liveLogAll"> show all</label>
+          </div>
+          <div class="live-log-lines" id="liveLogLines"></div>
+        </div>
+        <div class="live-log-latest" id="liveLogLatest" role="button" tabindex="0"
+             title="Click to expand the event log">
+          <span class="live-log-line" id="liveLogLine">…</span>
+        </div>
+      </div>
+
       <div class="zoomctl" aria-label="Zoom">
         <button id="zoomIn" data-tip="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
         <button id="zoomOut" data-tip="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>

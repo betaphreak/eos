@@ -18,7 +18,9 @@ import java.util.List;
  * @param date      the session's current in-game date (ISO-8601), or empty if unknown
  * @param colonies  the colonies' projections
  * @param caravans  the wandering bands' projections
+ * @param log       the event-log lines emitted since the previous frame (the live log bar's feed)
  */
 public record SessionSnapshot(String sessionId, long seed, String scenario, String state,
-		long tick, String date, List<ColonyView> colonies, List<CaravanView> caravans) {
+		long tick, String date, List<ColonyView> colonies, List<CaravanView> caravans,
+		List<LogLine> log) {
 }

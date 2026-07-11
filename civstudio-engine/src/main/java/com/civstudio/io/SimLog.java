@@ -8,6 +8,7 @@ import java.io.Writer;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -90,6 +91,23 @@ public final class SimLog {
 	// open caches Sink.NO_OP so the process degrades to console-only for that session
 	// rather than retrying the open on every record.
 	private static final Map<String, Sink> SINKS = new ConcurrentHashMap<>();
+
+	// per-session in-memory taps, keyed by the same session log-file path as SINKS. A tap
+	// receives each formatted record for its session live (in addition to the file sink) — the
+	// seam the hosted server uses to stream the event log to spectators (see the live log bar /
+	// docs/client-server.md). At most one tap per session (the HostedSession); a new tap replaces
+	// any prior one for that path. Empty for a plain headless run, so it costs nothing there.
+	private static final Map<String, Consumer<Entry>> LISTENERS = new ConcurrentHashMap<>();
+
+	/**
+	 * One log record delivered to a {@linkplain #tap tap}, as structured fields so a consumer can
+	 * present its own header rather than the file format's colony prefix: the in-game {@code date}
+	 * of the emitting colony (ISO-8601, or empty if unbound), the raw {@code message}, and the JUL
+	 * {@code level} value ({@link Level#intValue()} — e.g. 800 INFO, 900 WARNING, 1000 SEVERE) so a
+	 * consumer can colour by severity.
+	 */
+	public record Entry(String date, String message, int level) {
+	}
 
 	// the prefix source: a colony supplies the in-game date, and the label is its
 	// name unless overridden (the realm label for between-colony band work).
@@ -229,6 +247,23 @@ public final class SimLog {
 	}
 
 	/**
+	 * Register a live tap on the session <tt>colony</tt> belongs to: <tt>listener</tt> is handed
+	 * every formatted record for that session, on the emitting (colony worker) thread, in addition
+	 * to the file sink — so it must be cheap and thread-safe. Replaces any prior tap for the same
+	 * session. Returns a handle that removes it (idempotent); the caller unregisters on session
+	 * teardown. A listener that throws is dropped rather than breaking logging.
+	 *
+	 * @param colony   a colony of the session to tap
+	 * @param listener receives each session record
+	 * @return a handle that unregisters the tap
+	 */
+	public static AutoCloseable tap(Settlement colony, Consumer<Entry> listener) {
+		String path = logFilePath(colony);
+		LISTENERS.put(path, listener);
+		return () -> LISTENERS.remove(path, listener);
+	}
+
+	/**
 	 * Flush and close the file sink of <tt>colony</tt>'s session, if open — the
 	 * session-teardown seam a many-sessions-per-JVM host calls when it evicts a
 	 * session, so the file handle is released rather than leaked. A plain
@@ -327,7 +362,20 @@ public final class SimLog {
 			Settlement colony = ctx == null ? null : ctx.colony();
 			// format on the emitting thread (the DateFormatter reads the same Ctx), then
 			// hand the finished line to the session's sink
-			sinkFor(logFilePath(colony)).write(getFormatter().format(record));
+			String path = logFilePath(colony);
+			String formatted = getFormatter().format(record);
+			sinkFor(path).write(formatted);
+			// mirror to the session's live tap, if any (the spectator log feed) — as structured
+			// fields (date + message), so the client can render its own "server@date" header
+			Consumer<Entry> listener = LISTENERS.get(path);
+			if (listener != null)
+				try {
+					String date = ctx == null ? "" : ctx.date();
+					listener.accept(new Entry(date, record.getMessage(),
+							record.getLevel().intValue()));
+				} catch (RuntimeException e) {
+					LISTENERS.remove(path, listener); // a tap must never break logging
+				}
 		}
 
 		@Override
