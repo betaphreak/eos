@@ -180,7 +180,15 @@ let hudWired = false;
 
 function hud(show) {
   const box = el("liveHud");
-  if (box) box.hidden = !show;
+  if (box) {
+    box.hidden = !show;
+    // clicks/scroll on the HUD (incl. the tax inputs) must not fall through to pan/zoom/pick the map
+    if (show && !box.__mapGuard) {
+      ["pointerdown", "mousedown", "click", "touchstart", "wheel"].forEach(t =>
+        box.addEventListener(t, e => e.stopPropagation(), { passive: true }));
+      box.__mapGuard = true;
+    }
+  }
   showLiveLog(show, serverLabel());   // the event-log bar tracks Live mode
 }
 

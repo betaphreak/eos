@@ -78,6 +78,11 @@ function wire() {
   };
   if (input) input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); submit(); } });
   if (send) send.addEventListener("click", submit);
+  // swallow map input: interacting with the bar (click to expand, scroll the history, type in chat)
+  // must not also pan/zoom/select the map underneath (the stage handlers, like the minimap does)
+  const box = el("liveLog");
+  if (box) ["pointerdown", "mousedown", "click", "touchstart", "wheel"].forEach(t =>
+    box.addEventListener(t, e => e.stopPropagation(), { passive: true }));
   wired = true;
 }
 
