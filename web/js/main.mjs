@@ -85,7 +85,22 @@ function drawSeaBase(w, h) {
 function resize() {
   const r = stage.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio||1, 2);
   cv.width = r.width*dpr; cv.height = r.height*dpr; VIEW.dpr = dpr;
-  fitView(r.width, r.height); clampPan(); draw();
+  // Preserve the geographic point at the viewport centre AND the on-screen magnification across the
+  // resize, so opening/closing the info panel beside the map (which shrinks/grows the stage) never
+  // moves or rescales the world. fitView recomputes the base fit scale from the new size; we then
+  // rebind cam.k/x/y to hold the same centre point at the same pixel scale.
+  const prev = (VIEW.w && VIEW.dw && cam.k) ? {
+    fx: ((VIEW.w/2 - cam.x)/cam.k - VIEW.dx)/VIEW.dw,   // normalised map fraction at screen centre
+    fy: ((VIEW.h/2 - cam.y)/cam.k - VIEW.dy)/VIEW.dh,
+    mag: cam.k * VIEW.dw,                               // on-screen world size (dw/dh scale together)
+  } : null;
+  fitView(r.width, r.height);
+  if (prev) {
+    cam.k = Math.max(1, Math.min(K_MAX, prev.mag / VIEW.dw));
+    cam.x = VIEW.w/2 - cam.k*(VIEW.dx + prev.fx*VIEW.dw);
+    cam.y = VIEW.h/2 - cam.k*(VIEW.dy + prev.fy*VIEW.dh);
+  }
+  clampPan(); draw();
 }
 const zoomLabelEl = document.getElementById("zoomLevel");   // top-left live magnification readout
 // draw() is the public redraw request — it COALESCES to one paint per animation frame, so a burst of

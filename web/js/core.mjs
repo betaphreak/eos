@@ -193,7 +193,6 @@ export const S = {
     : /culture/.test(location.hash) ? "culture"
     : /faith|religion/.test(location.hash) ? "faith" : "live",
   polHi: null,           // a nation/culture/faith key to spotlight on the map (legend/search hover)
-  camBeforeFocus: null,  // camera snapshot to unwind with Esc after a focus (search / legend jump)
   hoverProv: null,
   dragging: false,       // mid-pan (drawPlots skips textures while panning)
   selected: null,        // journey idx or null

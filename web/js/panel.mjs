@@ -7,7 +7,6 @@ import { createSearchBox } from "./searchbox.mjs";
 stage.addEventListener("wheel", e => {
   e.preventDefault();
   const r = stage.getBoundingClientRect();
-  S.camBeforeFocus = null;                               // manual zoom discards the focus-return point
   zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0016));
 }, { passive: false });
 let lastX = 0, lastY = 0, panMoved = false;
@@ -19,7 +18,7 @@ stage.addEventListener("mousedown", e => {
 window.addEventListener("mousemove", e => {
   if (!S.dragging) return;
   const dx = e.clientX - lastX, dy = e.clientY - lastY;
-  if (Math.abs(dx) + Math.abs(dy) > 2) { panMoved = true; S.camBeforeFocus = null; }   // dragging discards the focus-return point
+  if (Math.abs(dx) + Math.abs(dy) > 2) panMoved = true;
   cam.x += dx; cam.y += dy; lastX = e.clientX; lastY = e.clientY;
   clampPan(); S.baseVersion++; draw();
 });
@@ -29,7 +28,6 @@ window.addEventListener("mouseup", () => { if (S.dragging) { S.dragging = false;
 stage.style.touchAction = "none";                       // stop the browser scrolling/zooming the page
 let touchMode = 0, pinchDist = 0, pinchCX = 0, pinchCY = 0;   // 0 none · 1 pan · 2 pinch
 stage.addEventListener("touchstart", e => {
-  S.camBeforeFocus = null;
   if (e.touches.length === 1) {
     touchMode = 1; S.dragging = true; panMoved = false;
     lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
@@ -288,7 +286,6 @@ stage.addEventListener("click", e=>{
 // double-click / double-tap zooms in, centred on the point (touch double-tap fires dblclick too)
 stage.addEventListener("dblclick", e=>{
   const r=stage.getBoundingClientRect();
-  S.camBeforeFocus = null;
   zoomAt(e.clientX-r.left, e.clientY-r.top, 2.5);
 });
 
@@ -500,21 +497,14 @@ const searchInput = document.getElementById("search");
 const searchResults = document.getElementById("searchResults");
 const searchClear = document.getElementById("searchClear");
 function goToProvince(p) {
-  S.camBeforeFocus = { ...cam };    // remember where we were so Esc can return
   focusProvinceFit(p.id);         // frame the whole province (centred, filling most of the canvas)
   selectProvince(p);              // and open its detail panel
 }
-function unfocusProvince() {       // restore the pre-focus zoom/pan; returns false if nothing to undo
-  if (!S.camBeforeFocus) return false;
-  Object.assign(cam, S.camBeforeFocus); S.camBeforeFocus = null;
-  clampPan(); S.baseVersion++; draw();
-  return true;
-}
-// Esc / close button: collapse the sidebar and drop any selection, and restore a focused camera.
+// Esc / close button: collapse the sidebar and drop any selection. The camera stays put — closing
+// the panel never moves or rezooms the map (selecting/deselecting is decoupled from the camera).
 // Returns true if it actually did something (so the caller can swallow the key).
 function closePanel() {
-  const acted = railwrap.classList.contains("open") || S.selectedProv || S.selected != null || S.camBeforeFocus;
-  unfocusProvince();
+  const acted = railwrap.classList.contains("open") || S.selectedProv || S.selected != null;
   S.selectedProv = null; S.selected = null;
   showRail(false); renderRail(); draw();
   return !!acted;

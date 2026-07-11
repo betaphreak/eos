@@ -10,7 +10,6 @@ import { toggleTech, closeTech } from "./techtree.mjs";
 // pan the camera and repaint — the shared tail of the WASD / arrow handlers
 function panBy(dx, dy) {
   cam.x += dx; cam.y += dy;
-  S.camBeforeFocus = null;            // a manual pan discards the focus-return point
   clampPan(); S.baseVersion++; draw();
 }
 
@@ -25,7 +24,7 @@ const REGISTRY = [
   { keys: ["f", "F"], cap: ["F"], label: "Fullscreen",
     run: e => { e.preventDefault(); toggleFullscreen(); } },
   { keys: ["0", "Home"], cap: ["0"], label: "Reset view",
-    run: e => { e.preventDefault(); S.camBeforeFocus = null; resetView(); } },
+    run: e => { e.preventDefault(); resetView(); } },
   { keys: ["w", "W", "ArrowUp", "s", "S", "ArrowDown",
            "a", "A", "ArrowLeft", "d", "D", "ArrowRight"],
     cap: ["W", "A", "S", "D"], label: "Pan",
@@ -44,9 +43,9 @@ const REGISTRY = [
     // the tech modal wins; otherwise collapse the sidebar (only prevent-default if it did something)
     run: e => { if (S.techOpen) { e.preventDefault(); closeTech(); } else if (closePanel()) { e.preventDefault(); } } },
   { keys: ["+", "="],
-    run: e => { e.preventDefault(); S.camBeforeFocus = null; zoomAt(VIEW.w / 2, VIEW.h / 2, 1.5); } },
+    run: e => { e.preventDefault(); zoomAt(VIEW.w / 2, VIEW.h / 2, 1.5); } },
   { keys: ["-", "_"],
-    run: e => { e.preventDefault(); S.camBeforeFocus = null; zoomAt(VIEW.w / 2, VIEW.h / 2, 1 / 1.5); } },
+    run: e => { e.preventDefault(); zoomAt(VIEW.w / 2, VIEW.h / 2, 1 / 1.5); } },
 ];
 
 /** Render the hint chips into #hotbar and install the one global keydown dispatcher. */
