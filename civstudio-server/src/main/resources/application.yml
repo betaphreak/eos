@@ -12,7 +12,8 @@ server:
         # the login session cookie (JSESSIONID). SameSite=Lax + the shared parent domain make it
         # same-site to both the site and the API subdomains (so it rides cross-subdomain and Lax
         # still blocks foreign cross-site POSTs). Defaults are safe for local http; production sets
-        # the env overrides (domain=.civstudio.com, secure=true) — see docs/authentication.md.
+        # the env overrides (domain=civstudio.com — NO leading dot, which Tomcat's RFC 6265 cookie
+        # processor rejects; secure=true) — see docs/authentication.md.
         http-only: true
         same-site: ${SESSION_COOKIE_SAMESITE:lax}
         secure: ${SESSION_COOKIE_SECURE:false}

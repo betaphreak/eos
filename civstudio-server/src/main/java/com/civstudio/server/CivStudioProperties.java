@@ -113,7 +113,15 @@ public class CivStudioProperties {
 		 * {@code GoogleOAuthConfig}), so the server runs Steam-only by default.
 		 */
 		public static class Google {
-			/** The Google OAuth2 client id (env {@code CIVSTUDIO_AUTH_GOOGLE_CLIENT_ID}); blank = off. */
+			/**
+			 * Master switch for Google sign-in (env {@code CIVSTUDIO_AUTH_GOOGLE_ENABLED=true}). A
+			 * dedicated dash-free flag rather than gating on {@code client-id} directly, because
+			 * {@code @ConditionalOnProperty} does not reliably match a kebab-case property against the
+			 * underscore env-var form ({@code CIVSTUDIO_AUTH_GOOGLE_CLIENT_ID}). Set this plus the
+			 * client id/secret to turn Google on.
+			 */
+			private boolean enabled = false;
+			/** The Google OAuth2 client id (env {@code CIVSTUDIO_AUTH_GOOGLE_CLIENT_ID}). */
 			private String clientId = "";
 			/** The Google OAuth2 client secret (env {@code CIVSTUDIO_AUTH_GOOGLE_CLIENT_SECRET}). */
 			private String clientSecret = "";
@@ -123,6 +131,14 @@ public class CivStudioProperties {
 			 * see {@code application.yml}); override to an absolute URL if needed.
 			 */
 			private String redirectUri = "{baseUrl}/login/oauth2/code/google";
+
+			public boolean isEnabled() {
+				return enabled;
+			}
+
+			public void setEnabled(boolean enabled) {
+				this.enabled = enabled;
+			}
 
 			public String getClientId() {
 				return clientId;

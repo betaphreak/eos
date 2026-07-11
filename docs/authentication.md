@@ -136,10 +136,12 @@ Cookies and cross-origin don't mix casually.
 
 **Recommendation — a hybrid keyed on caller type:**
 
-- **Browser → httpOnly session cookie scoped to the parent domain `.civstudio.com`.** Both the
-  site and the API are subdomains of `civstudio.com`, so a `Domain=.civstudio.com;
+- **Browser → httpOnly session cookie scoped to the parent domain `civstudio.com`.** Both the
+  site and the API are subdomains of `civstudio.com`, so a `Domain=civstudio.com;
   SameSite=Lax; Secure; HttpOnly` cookie is *same-site* to both and rides along automatically —
-  no token in JS, so XSS can't exfiltrate it. CORS must switch to
+  no token in JS, so XSS can't exfiltrate it. (Use `civstudio.com` with **no leading dot** —
+  `SESSION_COOKIE_DOMAIN=civstudio.com`; Tomcat's RFC 6265 cookie processor rejects the obsolete
+  `.civstudio.com` form outright, which crashes any request that creates the session.) CORS must switch to
   `allowCredentials(true)` with an explicit origin allow-list (no `*` with credentials), which
   we already maintain in `WebConfig`. The OIDC/Steam-OpenID redirect flows land on the API
   origin, set the cookie, and bounce back to the site.
@@ -248,8 +250,8 @@ Phase 2, the `game_session` registry), so the command rows stay lean.
    (`InMemoryUserStore` default, `JdbcUserStore` + `app_user` table when a datasource is set).
    `CurrentUserResolver` now reads the `SecurityContext` (dev header only as fallback). CORS moved
    to a credentialed `CorsConfigurationSource` (Security + MVC share it); the session cookie is
-   `HttpOnly` + `SameSite=Lax`, with `domain`/`secure` env-driven for the `.civstudio.com`
-   cross-subdomain case. **UI:** the same-origin `live.html` diagnostic client and the main map
+   `HttpOnly` + `SameSite=Lax`, with `domain`/`secure` env-driven for the `civstudio.com`
+   cross-subdomain case (domain set with **no leading dot** — Tomcat rejects `.civstudio.com`). **UI:** the same-origin `live.html` diagnostic client and the main map
    site both sign in. On the main site the live client is `web/js/overlays/live.mjs` — it already
    spectated + controlled + sent tax commands over the picked server (`LIVE_BASE`), so its
    owner-gated `/control` and `/commands` fetches gained `credentials: "include"` (cross-origin,
@@ -279,9 +281,11 @@ Phase 2, the `game_session` registry), so the command rows stay lean.
    exactly the offered providers, targeting the picked server (`LIVE_BASE`). Covered by
    `SteamAuthTest#providersListsSteamOnlyWhenNoOidcConfigured` and verified in a real browser
    (`tools/webverify/site-auth-shot.mjs`). **To enable Google in a deployment:** set
-   `CIVSTUDIO_AUTH_GOOGLE_CLIENT_ID` / `CIVSTUDIO_AUTH_GOOGLE_CLIENT_SECRET` (+ register
+   `CIVSTUDIO_AUTH_GOOGLE_ENABLED=true` + `CIVSTUDIO_AUTH_GOOGLE_CLIENT_ID` /
+   `CIVSTUDIO_AUTH_GOOGLE_CLIENT_SECRET` (+ register
    `https://dev.civstudio.com/login/oauth2/code/google` as an authorized redirect URI in the Google
-   Cloud console).
+   Cloud console). The `enabled` gate is a dash-free flag on purpose — `@ConditionalOnProperty`
+   won't reliably match a kebab property (`client-id`) against the underscore env-var form.
 4. **Bearer/JWT + Steam session-ticket** path — only once a native client exists.
 
 Each phase is independently shippable and leaves the server spectator-usable throughout.
