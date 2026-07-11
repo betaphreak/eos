@@ -73,9 +73,9 @@ jobs:
           exp com.civstudio.geo.export.RecipeExporter
 
       - name: Bake tech icons
-        working-directory: web        # npm ci reads package-lock.json from the cwd, which lives in web/
-        run: |
-          npm ci
+        working-directory: web        # web/package-lock.json is gitignored, so `npm install` (from
+        run: |                        # the committed package.json — just sharp), not `npm ci`
+          npm install --no-audit --no-fund
           node build-techs.mjs
 
       - name: Validate (full test suite loads the regenerated resources)
