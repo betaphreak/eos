@@ -35,6 +35,16 @@ public class AuthConfig {
 	}
 
 	/**
+	 * Resolves a Steam handle + avatar from a SteamID on sign-in, via the Steam Web API. Needs a key
+	 * ({@code civstudio.auth.steam.api-key} / {@code CIVSTUDIO_AUTH_STEAM_API_KEY}); with none it
+	 * returns empty and sign-in falls back to the numeric SteamID as the display name.
+	 */
+	@Bean
+	SteamPersonaLookup steamPersonaLookup(com.civstudio.server.CivStudioProperties props) {
+		return new HttpSteamPersonaLookup(props.getAuth().getSteam().getApiKey());
+	}
+
+	/**
 	 * The OIDC user service used by {@code oauth2Login} (phase 3): load the provider's OIDC user,
 	 * upsert it into our {@link UserStore} (provider = the registration id, e.g. {@code google}),
 	 * and wrap it so the authenticated principal's name is our surrogate {@code app_user} id — the

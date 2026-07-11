@@ -46,15 +46,17 @@ public class SteamAuthController {
 	private static final Logger log = LoggerFactory.getLogger(SteamAuthController.class);
 
 	private final SteamOpenId steam;
+	private final SteamPersonaLookup personas;
 	private final UserStore users;
 	private final SecurityContextRepository securityContextRepository;
 	private final CivStudioProperties props;
 	private final Admins admins;
 
-	public SteamAuthController(SteamOpenId steam, UserStore users,
+	public SteamAuthController(SteamOpenId steam, SteamPersonaLookup personas, UserStore users,
 			SecurityContextRepository securityContextRepository, CivStudioProperties props,
 			Admins admins) {
 		this.steam = steam;
+		this.personas = personas;
 		this.users = users;
 		this.securityContextRepository = securityContextRepository;
 		this.props = props;
@@ -85,9 +87,15 @@ public class SteamAuthController {
 			return ResponseEntity.status(HttpStatus.FOUND)
 					.location(URI.create(appendError(target))).build();
 		}
-		AppUser user = users.upsertByProvider(AppUser.STEAM, steamId.get(), steamId.get(), null);
+		// resolve the human-readable handle + avatar (needs a Web API key); fall back to the SteamID
+		String id = steamId.get();
+		Optional<SteamPersona> persona = personas.lookup(id);
+		String displayName = persona.map(SteamPersona::personaName).filter(n -> !n.isBlank()).orElse(id);
+		String avatar = persona.map(SteamPersona::avatarUrl).orElse(null);
+		AppUser user = users.upsertByProvider(AppUser.STEAM, id, displayName, avatar);
 		authenticate(user, request, response);
-		log.info("steam sign-in: user {} (steamid {})", user.id(), user.subject());
+		log.info("steam sign-in: user {} (steamid {}, handle {})", user.id(), user.subject(),
+				user.displayName());
 		return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(target)).build();
 	}
 
