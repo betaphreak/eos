@@ -212,8 +212,8 @@ function drawLabels() {
 // full, holdTo, fadeOut1].
 const GEO_TIERS = [
   { arr:"continents",   k:[0.9,1.0,1.5,2.3], size:16, weight:"800", color:"#e6edf7", halo:4.2, track:"3px", upper:true },
-  { arr:"superRegions", k:[1.7,2.2,3.4,4.7], size:13, weight:"700", color:"#cdd9ea", halo:3.7, track:"1.5px", upper:true },
-  { arr:"regions",      k:[3.6,4.7,7.0,9.5], size:11, weight:"600", color:"#aebcd2", halo:3.3, track:"0px", upper:false },
+  { arr:"superRegions", k:[1.7,2.2,3.4,4.7], size:16, weight:"800", color:"#cdd9ea", halo:3.7, track:"1.5px", upper:true },
+  { arr:"regions",      k:[3.6,4.7,7.0,9.5], size:14, weight:"800", color:"#aebcd2", halo:3.3, track:"0px", upper:false },
 ];
 // trapezoidal visibility envelope: 0 outside [k0,k3], ramps up over [k0,k1], holds to k2, down to k3
 function tierAlpha(k, [k0,k1,k2,k3]) {

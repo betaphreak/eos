@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, isUnderground, latAtScreenY, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, isUnderground, latAtScreenY, cssVar, S } from "./core.mjs";
 import { drawPlots, drawCostOverlay } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 import { drawPolitical, scheduleLegendRefresh } from "./overlays/political.mjs";
@@ -118,6 +118,7 @@ function draw() {
 function paint() {
   if (S.techOpen) return;   // tech-tree modal is in front — don't spend frames drawing the hidden map
   if (zoomLabelEl) zoomLabelEl.textContent = Math.round(cam.k) + "×";   // 1× (world) … 256× (max)
+  S.markers = [];   // cave-entrance / teleporter hit-targets, repopulated this frame (hover reads them)
   const w=VIEW.w, h=VIEW.h, dpr=VIEW.dpr;
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
@@ -151,6 +152,66 @@ function paint() {
   ctx.restore();
   drawMinimap();   // the bottom-left world thumbnail + viewport rectangle tracks pan/zoom
 }
+// deterministic 0..1 per province id — a stable per-cell jitter (no Math.random, survives redraws)
+const pjit = id => ((Math.imul(id | 0, 2654435761) >>> 0) % 1000) / 1000;
+// A faint water wash over each SEA province's polygon, its lightness nudged per-province so adjacent
+// seas read as distinct cells over the climate gradient (the deep-ocean provinces now ship outlines,
+// so the whole ocean tessellates). Kept low-alpha so the gradient still shows through.
+function drawSeaCells() {
+  ctx.save();
+  for (const p of P) {
+    if (p.type !== "SEA" || !p.rings || !provOnScreen(p)) continue;
+    const j = pjit(p.id);
+    ctx.fillStyle = `rgba(${52 + (j * 26 | 0)},${84 + (j * 26 | 0)},${112 + (j * 22 | 0)},0.13)`;
+    ctx.fill(provPath(p));
+  }
+  ctx.restore();
+}
+// Diagonal hatch tile for impassable/wasteland provinces, built once against the main context.
+let hatchPat = null;
+function impassableHatch() {
+  if (hatchPat) return hatchPat;
+  const T = 7, c = document.createElement("canvas"); c.width = c.height = T;
+  const x = c.getContext("2d");
+  x.strokeStyle = "rgba(22,25,31,0.5)"; x.lineWidth = 1.1;
+  for (let o = -T; o <= T; o += T) { x.beginPath(); x.moveTo(o, T); x.lineTo(o + T, 0); x.stroke(); }
+  hatchPat = ctx.createPattern(c, "repeat");
+  return hatchPat;
+}
+// A grey wash + diagonal hatch over each impassable province (its terrain shows through the raster
+// below), so wasteland reads as a distinct "you can't settle here" cell rather than plain ground.
+function drawImpassable() {
+  const hatch = impassableHatch();
+  ctx.save();
+  for (const p of P) {
+    if (p.type !== "IMPASSABLE" || !p.rings || !provOnScreen(p)) continue;
+    const path = provPath(p);
+    ctx.fillStyle = "rgba(62,64,71,0.32)"; ctx.fill(path);
+    ctx.fillStyle = hatch; ctx.fill(path);
+  }
+  ctx.restore();
+}
+// A light diagonal hash for the interstitial space between province polygons, shown only past deep
+// zoom (cam.k > GAP_HATCH_ZOOM). Laid over the raster before the plot layer, so the opaque per-plot
+// terrain covers each province and the hash survives only in the gaps between them (where ring
+// simplification leaves the provinces not quite tiling).
+const GAP_HATCH_ZOOM = 64;
+let gapHatchPat = null;
+function gapHatch() {
+  if (gapHatchPat) return gapHatchPat;
+  const T = 6, c = document.createElement("canvas"); c.width = c.height = T;
+  const x = c.getContext("2d");
+  x.strokeStyle = "rgba(200,208,222,0.5)"; x.lineWidth = 1;
+  for (let o = -T; o <= T; o += T) { x.beginPath(); x.moveTo(o, T); x.lineTo(o + T, 0); x.stroke(); }
+  gapHatchPat = ctx.createPattern(c, "repeat");
+  return gapHatchPat;
+}
+function drawGapHatch() {
+  ctx.save();
+  ctx.fillStyle = gapHatch();
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  ctx.restore();
+}
 function renderScene() {
   const w = VIEW.w, h = VIEW.h;
   if (mapReady) {
@@ -164,12 +225,23 @@ function renderScene() {
   ctx.save(); ctx.fillStyle = "rgba(74,150,128,0.42)";
   for (const p of P) if (p.type === "LAKE" && p.rings && provOnScreen(p)) ctx.fill(provPath(p));
   ctx.restore();
+  // seas read as discrete provinces: a faint per-province water wash on each sea polygon (the
+  // deep-ocean provinces now ship outlines, so the whole ocean tessellates into cells over the flat
+  // gradient). Drawn before the plot layer — coastal seas then get their shelf plots on top, deep
+  // ocean keeps just the wash + outline. Political modes colour by owner, so skip there.
+  if (!isPolitical()) drawSeaCells();
+  // deep zoom: hash the interstitial gaps between provinces (laid down before the plot layer covers
+  // each province, so the hash survives only where the polygons don't quite meet). See drawGapHatch.
+  if (cam.k > GAP_HATCH_ZOOM && !isPolitical()) drawGapHatch();
   // surface plots only — underground provinces are never drawn here (hidden on the Overworld;
   // relit by drawUnderworld on the Underworld plane). See docs/underworld.md. Per-plot terrain is
   // a physical view: only the None (and live Caravans) overlays render it — the Nation/Culture/Faith
   // political colourings have no use for per-plot terrain, so they suppress it.
   if (!isPolitical()) drawPlots(isSurface);   // crisp per-plot Civ4 terrain over the blurred raster when zoomed in
   drawCostOverlay();   // elevation movement-cost heat over the terrain, when toggled on
+  // impassable/wasteland: a grey wash + diagonal hatch (EU4-style "closed" terrain), drawn OVER the
+  // plot layer so it stays legible at every zoom (the plots would otherwise paint over it).
+  if (!isPolitical()) drawImpassable();
 
   if (isPolitical()) drawPolitical();                             // nation/culture/faith fills
   // geographic-tier boundaries (region → super-region → continent), zoom-banded. Lazily loaded
@@ -243,6 +315,9 @@ const isSurface = p => !isUnderground(p);
 // surface province borders a hidden underground one (a descent point / gate-hold like Marrhold),
 // draw a small amber cave-mouth glyph on their shared border. Lets you see, from the surface,
 // that a neighbour lies underground. See docs/underworld.md.
+// cave entrance/exit glyph: an outer disc with a dark mouth. The teleporter marker reuses these
+// radii at TELEPORT_SCALE× so a portal reads as a much larger version of the same cave-mouth motif.
+const CAVE_MOUTH_R = 4.5, CAVE_MOUTH_IN = 1.9, TELEPORT_SCALE = 4;
 function drawCaveEntrances() {
   ctx.save();
   for (const p of P) {
@@ -252,10 +327,12 @@ function drawCaveEntrances() {
       if (!nb || !isUnderground(nb)) continue;
       // the shared border is ~midway between the two centroids; bias toward the cave side
       const mx = px(p.lon) * 0.45 + px(nb.lon) * 0.55, my = py(p.lat) * 0.45 + py(nb.lat) * 0.55;
-      ctx.beginPath(); ctx.arc(mx, my, 4.5, 0, 7);
+      ctx.beginPath(); ctx.arc(mx, my, CAVE_MOUTH_R, 0, 7);
       ctx.fillStyle = "rgba(232,183,106,0.9)"; ctx.fill();
-      ctx.beginPath(); ctx.arc(mx, my, 1.9, 0, 7);
+      ctx.beginPath(); ctx.arc(mx, my, CAVE_MOUTH_IN, 0, 7);
       ctx.fillStyle = "rgba(18,10,6,0.92)"; ctx.fill();   // the dark cave mouth
+      S.markers.push({ x: mx, y: my, r: CAVE_MOUTH_R + 4,
+        label: `<b>Cave entrance</b><br><span class="r">↧ ${nb.name}</span>` });
     }
   }
   ctx.restore();
@@ -264,9 +341,28 @@ function drawCaveEntrances() {
 // EU4-style red dotted connection lines for the special adjacencies (straits, canals, lake
 // crossings, Dwarovar tunnels) between provinces that are not visually adjacent. Surface
 // adjacencies draw on the Overworld; tunnels (an underground endpoint) draw on the Underworld,
-// where the caves they link are lit. Centroid to centroid. See docs (adjacencies).
+// where the caves they link are lit. The dotted line spans each pair's NEAREST coasts (closest
+// ring vertices), not their centroids, so a strait touches the two shores it bridges. See docs.
 const ADJ_RED = "rgba(224,66,52,0.9)";   // EU4 strait/connection red
 const ADJ_MIN_ZOOM = 10;                 // only draw connection lines once zoomed to a region
+// closest pair of ring vertices between two provinces, in SOURCE px, cached per pair (camera-
+// independent). A brute-force nearest-vertex search over the (simplified) rings; ring-less pairs
+// return null and fall back to centroids.
+const adjEndsCache = new Map();
+function nearestEdgePair(a, b) {
+  const key = a.id < b.id ? a.id + "_" + b.id : b.id + "_" + a.id;
+  if (adjEndsCache.has(key)) return adjEndsCache.get(key);
+  let best = Infinity, ax = 0, ay = 0, bx = 0, by = 0;
+  if (a.rings && b.rings)
+    for (const ra of a.rings) for (const pa of ra)
+      for (const rb of b.rings) for (const pb of rb) {
+        const dx = pa[0] - pb[0], dy = pa[1] - pb[1], d = dx * dx + dy * dy;
+        if (d < best) { best = d; ax = pa[0]; ay = pa[1]; bx = pb[0]; by = pb[1]; }
+      }
+  const e = best < Infinity ? { ax, ay, bx, by } : null;
+  adjEndsCache.set(key, e);
+  return e;
+}
 function drawAdjacencies() {
   const adj = BUNDLE.adjacencies;
   if (!adj || !adj.length || cam.k < ADJ_MIN_ZOOM) return;   // hidden at world/continent view
@@ -279,28 +375,35 @@ function drawAdjacencies() {
     if (!a || !b) continue;
     const tunnel = isUnderground(a) || isUnderground(b);
     if (under ? !tunnel : tunnel) continue;   // show tunnels only underground, straits only above
-    const x1 = px(a.lon), y1 = py(a.lat), x2 = px(b.lon), y2 = py(b.lat);
     if (teleport) {
-      // too far for a sensible line — a teleporter: mark each endpoint instead (cave-entrance style)
-      teleportMark(x1, y1);
-      teleportMark(x2, y2);
-    } else {
-      if (Math.max(x1, x2) < 0 || Math.min(x1, x2) > VIEW.w
-          || Math.max(y1, y2) < 0 || Math.min(y1, y2) > VIEW.h) continue;   // off-screen cull
-      ctx.setLineDash([5, 4]);
-      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-      ctx.setLineDash([]);
+      // too far for a sensible line — a teleporter: mark each endpoint instead (cave-entrance style),
+      // each labelled with the province it warps to
+      teleportMark(px(a.lon), py(a.lat), b.name);
+      teleportMark(px(b.lon), py(b.lat), a.name);
+      continue;
     }
+    // span the two provinces' nearest coasts; centroids only if a ring is missing
+    const e = nearestEdgePair(a, b);
+    const x1 = e ? pxr(e.ax) : px(a.lon), y1 = e ? pyr(e.ay) : py(a.lat);
+    const x2 = e ? pxr(e.bx) : px(b.lon), y2 = e ? pyr(e.by) : py(b.lat);
+    if (Math.max(x1, x2) < 0 || Math.min(x1, x2) > VIEW.w
+        || Math.max(y1, y2) < 0 || Math.min(y1, y2) > VIEW.h) continue;   // off-screen cull
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.setLineDash([]);
   }
   ctx.restore();
 }
-// a teleporter endpoint marker — a small red dot with a dark centre (cf. drawCaveEntrances)
-function teleportMark(x, y) {
-  if (x < -10 || x > VIEW.w + 10 || y < -10 || y > VIEW.h + 10) return;
-  ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 7);
+// a teleporter endpoint marker — the cave-mouth motif at TELEPORT_SCALE× (a large red disc with a
+// dark centre), so a portal reads as a much bigger version of an underworld entrance/exit.
+function teleportMark(x, y, dest) {
+  const R = CAVE_MOUTH_R * TELEPORT_SCALE, m = R + 4;
+  if (x < -m || x > VIEW.w + m || y < -m || y > VIEW.h + m) return;
+  ctx.beginPath(); ctx.arc(x, y, R, 0, 7);
   ctx.fillStyle = ADJ_RED; ctx.fill();
-  ctx.beginPath(); ctx.arc(x, y, 1.9, 0, 7);
+  ctx.beginPath(); ctx.arc(x, y, CAVE_MOUTH_IN * TELEPORT_SCALE, 0, 7);
   ctx.fillStyle = "rgba(18,6,6,0.92)"; ctx.fill();
+  if (dest) S.markers.push({ x, y, r: R, label: `<b>Portal</b><br><span class="r">⇄ ${dest}</span>` });
 }
 
 // place province name labels over the map with a halo, skipping any that would

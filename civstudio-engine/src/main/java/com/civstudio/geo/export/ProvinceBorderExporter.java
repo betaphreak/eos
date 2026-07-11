@@ -31,11 +31,11 @@ import tools.jackson.databind.ObjectMapper;
  * <p>
  * It reads the same source raster the other exporters do, {@code
  * data/anbennar/provinces.bmp} (24-bit, one colour per province), and resolves
- * colours to ids/names via {@code data/anbennar/definition.csv}. It keeps every land
- * province plus the <b>coastal</b> sea/lake provinces — those that grew a shelf grid
- * (so the web can hover/select them like land, {@code docs/coastlines.md} Phase F);
- * deep-ocean provinces with no shelf are skipped (their huge outlines are pure clutter
- * and they ship nothing).
+ * colours to ids/names via {@code data/anbennar/definition.csv}. It outlines <b>every</b>
+ * province with pixels on the raster — land, wasteland/impassable, and all sea/lake
+ * (deep ocean included) — so the whole world tessellates into hoverable/selectable,
+ * fillable polygons. (Deep-ocean seas were once skipped as clutter; they are now kept so
+ * no province is unrendered.)
  * <p>
  * For each kept province it: (1) frames the province's pixels to their bounding
  * box, (2) splits them into 8-connected components (islands/exclaves each become a
@@ -60,7 +60,6 @@ public final class ProvinceBorderExporter {
 	private static final String DEFINITIONS = "map/definition.csv";
 	private static final String PROVINCES_BMP = "map/provinces.bmp";
 	private static final String PROVINCES_JSON = "civstudio-engine/src/main/resources/generated/map/provinces.json";
-	private static final String GRID_DIR = "civstudio-engine/src/main/resources/map/provinces";
 	private static final String OUTPUT = "civstudio-server/src/main/resources/map/borders.json";
 
 	private static final Pattern PLACEHOLDER_NAME = Pattern.compile("Anbennar\\d+");
@@ -75,7 +74,7 @@ public final class ProvinceBorderExporter {
 
 	public static void main(String[] args) throws Exception {
 		Map<Integer, Integer> idToColor = invertDefinitions();   // province id -> rgb
-		List<Integer> landIds = loadLandProvinceIds();           // ids kept, in provinces.json order
+		List<Integer> landIds = loadAllProvinceIds();            // every province id, in provinces.json order
 
 		BufferedImage img = ImageIO.read(AnbennarFiles.get(PROVINCES_BMP).toFile());
 		int w = img.getWidth(), h = img.getHeight();
@@ -155,27 +154,19 @@ public final class ProvinceBorderExporter {
 	}
 
 	/**
-	 * The ids to outline, in {@code provinces.json} order: every land province, plus the
-	 * <b>coastal</b> sea/lake provinces — those that grew a shelf grid ({@code
-	 * map/provinces/<id>.json.gz}), so the web can hover/select them like land. Deep-ocean
-	 * provinces with no shelf are skipped (their huge outlines would be pure clutter, and they
-	 * ship nothing). The grids must exist first ({@link WorldPlotGenerator}).
+	 * Every province id, in {@code provinces.json} order. All types are outlined — land,
+	 * wasteland/impassable, and all sea/lake including deep ocean — so the whole world is a
+	 * tessellation of selectable/fillable polygons. Provinces with no pixels on the raster are
+	 * dropped later (their bbox comes back null in {@code main}).
 	 */
-	private static List<Integer> loadLandProvinceIds() throws Exception {
+	private static List<Integer> loadAllProvinceIds() throws Exception {
 		ObjectMapper mapper = new ObjectMapper();
 		List<Map<String, Object>> provs = mapper.readValue(new File(PROVINCES_JSON),
 				new TypeReference<List<Map<String, Object>>>() {
 				});
 		List<Integer> ids = new ArrayList<>();
-		for (Map<String, Object> p : provs) {
-			String type = String.valueOf(p.get("type"));
-			int id = ((Number) p.get("id")).intValue();
-			// a sea/lake province ships (and so is outlined) only if it grew a coastal shelf
-			if (("SEA".equals(type) || "LAKE".equals(type))
-					&& !new File(GRID_DIR, id + ".json.gz").exists())
-				continue;
-			ids.add(id);
-		}
+		for (Map<String, Object> p : provs)
+			ids.add(((Number) p.get("id")).intValue());
 		return ids;
 	}
 

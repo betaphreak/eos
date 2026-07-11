@@ -259,9 +259,21 @@ function provTip(best){
   }
   return h;
 }
+// a cave-entrance / teleporter glyph under the cursor, from the markers the last frame recorded
+// (main.paint resets S.markers, drawCaveEntrances/teleportMark push them). Its own hit-test since
+// the glyphs are drawn over the map, not province polygons.
+function markerAt(mx, my){
+  const m = S.markers; if(!m) return null;
+  for(const k of m){ const dx=mx-k.x, dy=my-k.y; if(dx*dx+dy*dy <= k.r*k.r) return k; }
+  return null;
+}
 stage.addEventListener("mousemove", e=>{
   if(S.dragging) return;                       // panning — skip hover work
   const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+  const mk = markerAt(mx, my);                  // a cave-entrance/teleporter glyph takes priority
+  if(mk){ S.hoverProv=null; tip.innerHTML=mk.label;
+    tip.style.left=Math.min(mx+14, r.width-230)+"px"; tip.style.top=(my+14)+"px"; tip.classList.add("on");
+    draw(); return; }
   const best = provinceAt(mx, my);
   const hit = plotAt(mx, my);                   // resourced plot under cursor (texture zoom)
   const res = hit ? resourceLabel(hit) : null;
