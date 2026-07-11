@@ -641,6 +641,11 @@ export function boot() {
   // listener; fullscreenchange still calls resize directly above as a belt-and-braces.)
   new ResizeObserver(() => resize()).observe(stage);
   resize();
+  // floating controls over the map (zoom buttons, cost key, political legend) must not fall through
+  // to the stage's pan/zoom/pick handlers — the same guard the minimap and live HUD/log bar use.
+  document.querySelectorAll(".zoomctl, #costKey, #polLegend").forEach(elm =>
+    ["pointerdown", "mousedown", "click", "touchstart", "wheel"].forEach(t =>
+      elm.addEventListener(t, e => e.stopPropagation(), { passive: true })));
   setPov(S.pov);              // paints the camera-POV toggle (default: God)
   setPlane(S.plane);          // paints the plane toggle
   setOverlay(S.overlay);      // paints the overlay chrome/rail (default: none → plain Overworld)
