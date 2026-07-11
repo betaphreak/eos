@@ -12,7 +12,7 @@ The root package is `com.civstudio` (the repository directory is named `eos`, bu
 
 ## Build & run
 
-Maven **reactor** with two modules — `civstudio-engine` (the plain-Java sim core) and `civstudio-server` (a **Spring Boot 4** app depending on the engine). Java 25; engine on JUnit 5, server on JUnit 6 (via Boot). Toolchain on this machine: Temurin JDK 25 at `C:\Users\Eu\tools\jdk-25.0.3.9-hotspot` (user `JAVA_HOME`), Maven 3.9.9 at `C:\Users\Eu\tools\apache-maven-3.9.9` (both on the user `PATH`; a `./mvnw` wrapper is also committed). Run all `mvn` commands from the repo root. Module split and the Spring Boot migration are documented in [`docs/spring-boot-migration.md`](docs/spring-boot-migration.md).
+Maven **reactor** with two modules — `civstudio-engine` (the plain-Java sim core) and `civstudio-server` (a **Spring Boot 4** app depending on the engine). Java 25; both modules on JUnit 6 (6.0.3 — the engine pins it via `junit.version`, matching what Spring Boot 4.1 brings the server). Toolchain on this machine: Temurin JDK 25 at `C:\Users\Eu\tools\jdk-25.0.3.9-hotspot` (user `JAVA_HOME`), Maven 3.9.9 at `C:\Users\Eu\tools\apache-maven-3.9.9` (both on the user `PATH`; a `./mvnw` wrapper is also committed). Run all `mvn` commands from the repo root. Module split and the Spring Boot migration are documented in [`docs/spring-boot-migration.md`](docs/spring-boot-migration.md).
 
 ```powershell
 mvn clean compile                                   # compile both modules

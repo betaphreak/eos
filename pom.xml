@@ -42,10 +42,11 @@
         <!-- Jackson 3 (tools.jackson.* namespace), pinned to the version Spring Boot 4.1
              manages so the engine and the Boot server run one Jackson across the fat jar. -->
         <jackson.version>3.1.4</jackson.version>
-        <!-- The engine stays on JUnit 5 (managed here); the Boot server module uses the
-             JUnit 6 that spring-boot-starter-test brings, so junit is NOT managed in the
-             parent dependencyManagement (that would override Boot in the server module). -->
-        <junit.version>5.11.3</junit.version>
+        <!-- Both modules run JUnit 6: the engine pins junit-jupiter to this version (via its own
+             <version>), matching the 6.0.3 that Spring Boot 4.1's spring-boot-starter-test brings to
+             the server. Kept as a property (not parent dependencyManagement) so it never overrides
+             Boot's own management in the server module; keep it in step with Boot's junit on a bump. -->
+        <junit.version>6.0.3</junit.version>
     </properties>
 
     <dependencyManagement>
