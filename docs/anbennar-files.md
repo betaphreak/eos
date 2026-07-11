@@ -37,8 +37,9 @@ Two disjoint groups, and it matters which is which:
   branch). The per-province caches (`civstudio-engine/src/main/resources/map/provinces/*.json.gz`,
   ~32 MB, 5185 provinces) are **git-ignored** — 0 are tracked — so the CI/Docker jar ships
   **without** them. The deployed server therefore regenerates plot fields at runtime and reads
-  the map BMPs from disk. `GameSession.provincePlotPool` eagerly calls `ProvinceRaster.load()`
-  on the first plot-pool request. This is why `Dockerfile` copies `data/anbennar` into the image.
+  the map BMPs from disk. `GameSession.provincePlotPool` calls `ProvinceRaster.load()` lazily on
+  the first plot-pool request. (This is why the `Dockerfile` *used* to copy `data/anbennar` into
+  the image — it no longer does; the provider fetches the rasters on demand into the mounted cache.)
 
   The rasters `ProvinceRaster` reads: `definition.csv`, `provinces.bmp`, `rivers.bmp`,
   `terrain.bmp`, `trees.bmp`, `heightmap.bmp`, `default.map`.
@@ -88,15 +89,19 @@ Path p = AnbennarFiles.get("map/provinces.bmp");   // downloads on cache miss, r
 ```yaml
 civstudio:
   anbennar:
-    base-url: ${ANBENNAR_BASE_URL:https://gitlab.com/anbennar/anbennar-eu4-dev}
-    ref:      ${ANBENNAR_REF:7216a7525bc971eac989ebfcddf34833814802df}
+    base-url:  ${ANBENNAR_BASE_URL:https://gitlab.com/anbennar/anbennar-eu4-dev}
+    ref:       ${ANBENNAR_REF:}          # blank → the committed map/anbennar-source.lock wins
     cache-dir: ${ANBENNAR_CACHE_DIR:.anbennar-cache}
+    token:     ${ANBENNAR_TOKEN:}        # optional; blank = anonymous (rate-limited) fetch
 ```
 
-A small server bean (e.g. an `ApplicationRunner` / `@PostConstruct`) pushes these into the engine
-provider at startup: `AnbennarFiles.configure(baseUrl, ref, cacheDir)`. The server depends on the
-engine, so this is a direct call — no system-property round-trip. Net effect: **"configured in
-Spring Boot"** for the deployment, **standalone defaults** for the engine.
+The server bean **`AnbennarSourceConfigurer`** pushes these into the engine provider in its
+constructor (which runs during context refresh, before any `ApplicationRunner` — notably
+`DemoSessionSeeder` — founds a session): `AnbennarFiles.configure(baseUrl, ref, cacheDir, token)`.
+The server depends on the engine, so this is a direct call — no system-property round-trip. Net
+effect: **"configured in Spring Boot"** for the deployment, **standalone defaults** for the engine.
+`ref` is left blank so the committed `map/anbennar-source.lock` is the single source of truth
+(§Staying current); set `ANBENNAR_REF` only for ad-hoc/testing.
 
 ### Consumer repointing
 
@@ -170,7 +175,7 @@ Rejected: fetching `new-master`'s tip live and regenerating the whole world map 
 boot — it discards seed-reproducibility and lets the live world change unpredictably underneath a
 running session.
 
-## Removal / cutover steps (when this is implemented)
+## Removal / cutover steps (done 2026-07-11)
 
 1. Add `com.civstudio.data.AnbennarFiles` (fetch + cache + `list`) with engine defaults, reading
    the locked commit from a committed `map/anbennar-source.lock` resource (§Staying current).
@@ -186,9 +191,15 @@ running session.
 6. `Dockerfile`: delete `COPY data/anbennar ./data/anbennar` (the server now fetches on demand into
    the cache). `.dockerignore` already excludes `.git`; add `.anbennar-cache` there too.
 7. CI (`.github/workflows/deploy-server.yml`): drop the `data/anbennar/**` path trigger.
-8. Deploy (manual az): create an Azure Files share, add it as a Container App environment storage +
-   a volume/`volumeMount`, and set `ANBENNAR_CACHE_DIR` to the mount path; add `ANBENNAR_TOKEN` as a
-   Container App secret and reference it as an env var.
+8. Deploy (manual az) — as provisioned: an Azure Files share mounted for the cache:
+   - `az storage share-rm create -g civstudio --storage-account civstudiostore -n anbennar-cache --quota 5`
+   - `az containerapp env storage set -g civstudio -n civstudio-managed-env --storage-name anbennar
+     --azure-file-account-name civstudiostore --azure-file-account-key <key>
+     --azure-file-share-name anbennar-cache --access-mode ReadWrite`
+   - then via `az containerapp update --yaml`: a volume `anbennar-cache` → `storageName: anbennar`
+     (`storageType: AzureFile`), a `volumeMount` at `/mnt/anbennar`, and env
+     `ANBENNAR_CACHE_DIR=/mnt/anbennar`. `ANBENNAR_TOKEN` is left unset (anonymous fetch is fine at
+     the demo's volume); add it as a secret + env var if rate limits ever bite.
 9. Engine tests that call `ProvinceRaster.load()` directly now fetch on demand — they hit GitLab
    the first run, then the cache. (No `assumeTrue` guard needed once fetch is automatic; keep the
    suite offline-friendly by relying on the cache.)
@@ -218,9 +229,6 @@ rewrote all commit SHAs from the first `data/anbennar` commit onward — any oth
 
 ## Open questions
 
-- **Volume provisioning (deploy).** The Azure Files share + Container App volume/mount and the
-  `ANBENNAR_TOKEN` secret are manual az steps (guest deploy identity — see
-  `spectator-server-deployment`); document the exact commands when the provider lands.
 - **Refresh cadence & automation.** Manual `mvn` re-export when you choose to pull updates, or a
   scheduled job that watches `new-master` and auto-commits the regenerated resources + lock bump?
   The latter is opt-in (it auto-commits, and deploy stays manual). Undecided.
