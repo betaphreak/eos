@@ -19,6 +19,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -56,6 +60,14 @@ public final class AnbennarFiles {
 			.connectTimeout(Duration.ofSeconds(20)).followRedirects(HttpClient.Redirect.NORMAL).build();
 	// one lock per (ref, path) so concurrent colony threads never download the same file twice
 	private static final ConcurrentHashMap<String, Object> LOCKS = new ConcurrentHashMap<>();
+	// concurrency for a bulk getDir() fetch — the download is round-trip-latency bound, so a small
+	// pool speeds a cold fetch of a big directory (e.g. ~5k history/provinces files). Kept modest, and
+	// paired with retry/backoff in send(), so it settles near GitLab's rate limit rather than tripping it.
+	private static final int GETDIR_THREADS = 8;
+	// retry budget and jitter source for the rate-limit backoff in send() (dev-tool infra — not the
+	// sim's reproducible RNG, so a plain Random is fine here)
+	private static final int MAX_RETRIES = 8;
+	private static final java.util.Random ATTEMPT_JITTER = new java.util.Random();
 
 	/**
 	 * Override the source configuration (called once by the server from {@code civstudio.anbennar.*}).
@@ -116,13 +128,55 @@ public final class AnbennarFiles {
 	/**
 	 * Fetch <em>every</em> file under a mod-relative directory (recursively) and return the local
 	 * cache directory holding them — so a caller that walks the directory ({@code File.listFiles})
-	 * works unchanged. Uses the GitLab tree API for the listing. Dev-time only (the exporters).
+	 * works unchanged. Uses the GitLab tree API for the listing, then downloads the blobs
+	 * concurrently ({@value #GETDIR_THREADS}-wide); {@link #get} is per-path thread-safe, so already
+	 * cached files are skipped and a re-run resumes cheaply. Dev-time only (the exporters).
 	 */
 	public static Path getDir(String modRelativeDir) throws IOException {
 		String dir = normalize(modRelativeDir);
-		for (String blob : list(dir))
-			get(blob);
+		fetchAll(list(dir));
 		return cacheDir.resolve(ref).resolve(dir);
+	}
+
+	// download many blobs concurrently over a bounded pool, surfacing the first failure. get() is
+	// per-(ref,path) locked, so parallel calls never double-download and cached files return at once.
+	private static void fetchAll(List<String> blobs) throws IOException {
+		if (blobs.size() <= 1) {
+			for (String blob : blobs)
+				get(blob);
+			return;
+		}
+		ExecutorService pool = Executors.newFixedThreadPool(
+				Math.min(GETDIR_THREADS, blobs.size()));
+		try {
+			List<Future<?>> futures = new ArrayList<>(blobs.size());
+			for (String blob : blobs)
+				futures.add(pool.submit(() -> {
+					get(blob);
+					return null;
+				}));
+			for (Future<?> f : futures)
+				await(f);
+		} finally {
+			pool.shutdownNow();
+		}
+	}
+
+	// wait for one download future, unwrapping its cause to the original IOException/runtime error
+	private static void await(Future<?> f) throws IOException {
+		try {
+			f.get();
+		} catch (ExecutionException e) {
+			switch (e.getCause()) {
+				case IOException io -> throw io;
+				case RuntimeException re -> throw re;
+				case null -> throw new IOException("fetch failed", e);
+				default -> throw new IOException("fetch failed", e.getCause());
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IOException("interrupted fetching from GitLab", e);
+		}
 	}
 
 	/** Blob paths under a mod-relative directory (recursive), via the GitLab tree API. */
@@ -177,16 +231,51 @@ public final class AnbennarFiles {
 		}
 	}
 
+	// GitLab throttles the raw/tree endpoints (HTTP 429), so a wide getDir() will trip it. Retry a
+	// throttled (or transiently unavailable) request, waiting the server's Retry-After when given, so
+	// concurrent fetches self-tune to the allowed rate instead of failing the whole export.
 	private static <T> HttpResponse<T> send(HttpRequest.Builder req, HttpResponse.BodyHandler<T> h)
 			throws IOException {
 		req.timeout(Duration.ofMinutes(2));
 		if (!token.isBlank())
 			req.header("PRIVATE-TOKEN", token);
+		HttpRequest built = req.build();
+		for (int attempt = 0;; attempt++) {
+			HttpResponse<T> res;
+			try {
+				res = HTTP.send(built, h);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new IOException("interrupted fetching from GitLab", e);
+			}
+			int sc = res.statusCode();
+			if ((sc == 429 || sc == 503) && attempt < MAX_RETRIES) {
+				// discard any streaming body before retrying so the connection is freed
+				if (res.body() instanceof InputStream in)
+					try {
+						in.close();
+					} catch (IOException ignore) {
+						// closing the discarded 429 body is best-effort
+					}
+				backoff(res, attempt);
+				continue;
+			}
+			return res;
+		}
+	}
+
+	/** Sleep before a retry: the server's {@code Retry-After} (capped), else exponential backoff. */
+	private static void backoff(HttpResponse<?> res, int attempt) throws IOException {
+		long ms = res.headers().firstValue("retry-after")
+				.map(String::trim).filter(s -> s.chars().allMatch(Character::isDigit))
+				.map(s -> Math.min(Long.parseLong(s), 30) * 1000L)
+				.orElseGet(() -> Math.min(1000L << attempt, 30_000L));
+		ms += (long) (ms * 0.25 * ATTEMPT_JITTER.nextDouble()); // jitter to de-sync threads
 		try {
-			return HTTP.send(req.build(), h);
+			Thread.sleep(ms);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			throw new IOException("interrupted fetching from GitLab", e);
+			throw new IOException("interrupted during rate-limit backoff", e);
 		}
 	}
 
