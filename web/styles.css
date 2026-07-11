@@ -849,3 +849,6 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .site-auth-menu button { text-align: left; background: transparent; color: var(--ink); border: 0;
   border-radius: 6px; padding: .42rem .55rem; cursor: pointer; font: 500 12.5px system-ui, sans-serif; }
 .site-auth-menu button:hover { background: var(--line-soft); }
+/* transport (play/pause + speed) requires sign-in — dim + block it for anonymous viewers */
+body.auth-anon #playBtn, body.auth-anon #speed { opacity: .4; pointer-events: none; filter: grayscale(1); }
+body.auth-anon #clock { cursor: not-allowed; }

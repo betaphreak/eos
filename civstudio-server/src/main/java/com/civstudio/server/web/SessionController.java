@@ -92,8 +92,12 @@ public class SessionController {
 		HostedSession hs = host.get(id);
 		if (hs == null)
 			return notFound(id);
-		if (!canWrite(hs, http))
-			return forbidden(id);
+		// play/pause/step/rate/stop change state shared by every spectator, so control requires a
+		// signed-in user (any authenticated user for the unowned/public demo; the owner for an owned
+		// session). Spectating stays anonymous. See docs/authentication.md.
+		ResponseEntity<Object> denied = denyControl(hs, http);
+		if (denied != null)
+			return denied;
 		String action = req.action() == null ? "" : req.action();
 		switch (action) {
 			case "pause" -> hs.pause();
@@ -209,15 +213,26 @@ public class SessionController {
 		}
 	}
 
-	// may the caller write (control/command) to this session? An unowned/public session (the
-	// demo) is open to everyone — unchanged from before ownership existed; an owned session only
-	// to its owner. Read/spectate endpoints (list, stream) stay open regardless. Admin override
-	// arrives with real roles in Phase 2 (docs/authentication.md).
+	// may the caller submit commands to this session? An unowned/public session (the demo) is open
+	// to everyone; an owned session only to its owner. Read/spectate endpoints (list, stream) stay
+	// open regardless. Admin override arrives with real roles later (docs/authentication.md).
 	private boolean canWrite(HostedSession hs, HttpServletRequest http) {
 		String owner = hs.owner();
 		if (owner == null)
 			return true;
 		return owner.equals(currentUser.userId(http));
+	}
+
+	// authorize a control (transport) request: it must be authenticated, and — for an owned
+	// session — by the owner. Returns the deny response (401/403) or null when allowed.
+	private ResponseEntity<Object> denyControl(HostedSession hs, HttpServletRequest http) {
+		String user = currentUser.userId(http);
+		if (user == null)
+			return ResponseEntity.status(401).body(Map.of("error", "sign in to control the session"));
+		String owner = hs.owner();
+		if (owner != null && !owner.equals(user))
+			return forbidden(hs.id());
+		return null;
 	}
 
 	private static ResponseEntity<Object> notFound(String id) {

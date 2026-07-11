@@ -120,14 +120,17 @@ function renderSpeed(){
  * toggles the session over /control; the play icon reflects the server's state from the feed.
  * The controls are inert (and the clock hidden) outside the Caravans view.
  */
+// controlling playback requires a signed-in user (docs/authentication.md); auth.mjs marks the
+// body when anonymous, gating both the click and the keyboard-shortcut paths
+function canControl(){ return !document.body.classList.contains("auth-anon"); }
 function togglePlay(){
-  if (liveActive()) controlLive(liveState() === "RUNNING" ? "pause" : "resume");
+  if (liveActive() && canControl()) controlLive(liveState() === "RUNNING" ? "pause" : "resume");
 }
 /** Force paused — modals call this on open; the live session keeps ticking, so this is a no-op. */
 function pausePlayback(){}
 // a speed chevron sets the live session's tick rate (in-game days per second) over /control
 function onSpeed(level){
-  if (!liveActive()) return;
+  if (!liveActive() || !canControl()) return;
   speed = Math.max(1, Math.min(5, level));
   controlLive("rate", LIVE_RATES[speed]);
   renderSpeed();

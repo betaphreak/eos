@@ -129,11 +129,12 @@ class SteamAuthTest {
 		assertEquals(201, created.statusCode());
 		String id = json.readTree(created.body()).get("id").asString();
 
-		// the owner (its cookie carries the session) may command it; an anonymous client may not
+		// the owner (its cookie carries the session) may control it; an anonymous client may not
+		// (control requires authentication → 401)
 		assertEquals(200, signedIn.send(post(signedIn, "/api/sessions/" + id + "/control",
 				"{\"action\":\"pause\"}"), HttpResponse.BodyHandlers.ofString()).statusCode());
 		HttpClient anon = client();
-		assertEquals(403, anon.send(post(anon, "/api/sessions/" + id + "/control",
+		assertEquals(401, anon.send(post(anon, "/api/sessions/" + id + "/control",
 				"{\"action\":\"pause\"}"), HttpResponse.BodyHandlers.ofString()).statusCode());
 
 		// logout drops the session; /me is anonymous again

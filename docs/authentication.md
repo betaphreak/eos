@@ -197,7 +197,7 @@ Two consequences for the current code:
 | `GET /actuator/health\|info` | public (Container-App probes + site splash) |
 | `GET /api/sessions`, `GET /api/sessions/{id}/stream` | public — **spectating stays open** |
 | `POST /api/sessions` (found a game) | anonymous-permissive in Phase 1 (founder → `owner`, or unowned); **authenticated** in Phase 2 |
-| `POST /api/sessions/{id}/control` | ✅ **owner-only** when owned; open when unowned (admin override Phase 2) |
+| `POST /api/sessions/{id}/control` | ✅ **authentication required** (play/pause/step/rate/stop): `401` if anonymous, `403` if owned-and-not-owner, else allowed — any signed-in user may drive the unowned demo |
 | `POST /api/sessions/{id}/commands` | ✅ **owner-only** when owned; open when unowned — checked *before* the command enters the log |
 
 The ownership check on `/commands` is the real security boundary: `SessionController.command`

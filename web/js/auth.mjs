@@ -47,11 +47,14 @@ export async function initSiteAuth() {
     .catch(() => ["steam"]);
   const me = await getJson("/api/auth/me")
     .then(m => m || { authenticated: false })
-    .catch(() => ({ authenticated: false }));
+    .catch(() => ({ authenticated: false })); // unreachable /me → treat as signed-out (controls stay gated)
   render(box, providers, me);
 }
 
 function render(box, providers, me) {
+  // the play/pause/speed transport requires a signed-in user (see docs/authentication.md); mark
+  // the body so CSS can dim those controls and panel.mjs can ignore their click/keyboard paths
+  document.body.classList.toggle("auth-anon", !me.authenticated);
   box.innerHTML = "";
   const btn = document.createElement("button");
   btn.className = "site-auth-btn";

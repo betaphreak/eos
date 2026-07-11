@@ -79,19 +79,23 @@ class SessionOwnershipTest {
 		// a different authenticated user may not
 		assertEquals(403, control(hs.id(), "bob"));
 		assertEquals(403, command(hs.id(), "bob"));
-		// nor may an anonymous caller
-		assertEquals(403, control(hs.id(), null));
+		// an anonymous caller: control demands authentication (401); command is owner-gated (403)
+		assertEquals(401, control(hs.id(), null));
 		assertEquals(403, command(hs.id(), null));
 	}
 
 	@Test
 	@Timeout(120)
-	void unownedSessionStaysOpenToEveryone() throws Exception {
+	void unownedControlNeedsAuthCommandsStayOpen() throws Exception {
 		// owner == null (the server-seeded demo is founded exactly this way)
 		HostedSession hs = host.create(new SessionSpec(4244L, SCENARIO, DHENIJANSAR));
 		hs.startPaused();
 
-		assertEquals(200, control(hs.id(), null), "an unowned session is open to anonymous callers");
+		// control (play/pause/speed) requires a signed-in user, even on the unowned demo…
+		assertEquals(401, control(hs.id(), null), "anonymous cannot control the session");
+		assertEquals(200, control(hs.id(), "anyone"), "any authenticated user can control the demo");
+		// …but commands remain open on an unowned session
+		assertEquals(202, command(hs.id(), null), "unowned commands stay open to anonymous callers");
 		assertEquals(202, command(hs.id(), "whoever"), "and to any authenticated caller");
 	}
 
