@@ -415,7 +415,7 @@
   (function () {
     var FOCUS_GAP = 180000;    // re-check on focus at most once per 3 min
     var BACKSTOP  = 900000;    // and once per 15 min for a tab left focused
-    var bootTag = null, lastCheck = 0, notified = false;
+    var bootTag = null, bootServerVer = null, lastCheck = 0, notified = false;
 
     function readTag() {
       // no-store bypasses the 30 s asset cache so we read the CURRENT deployment's ETag
@@ -423,15 +423,35 @@
         .then(function (r) { return r.ok ? (r.headers.get("etag") || r.headers.get("last-modified")) : null; })
         .catch(function () { return null; });
     }
+    // the connected server's build id (version|number|commit) from /actuator/info — so a redeploy of
+    // the SERVER the user is watching is detected too, not just a new web build. null when not yet
+    // connected (still on the picker) or unreachable; the same source the app connects through.
+    function serverBase() {
+      var q = new URLSearchParams(location.search).get("live");
+      if (q) return q.replace(/\/+$/, "");
+      var b = window.BUNDLE && window.BUNDLE.live && window.BUNDLE.live.base;
+      return b ? b.replace(/\/+$/, "") : null;
+    }
+    function readServerVer() {
+      var base = serverBase();
+      if (!base) return Promise.resolve(null);
+      return fetch(base + "/actuator/info", { credentials: "omit", cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { var b = (j && j.build) || {}; return b.version ? [b.version, b.number, b.commit].join("|") : null; })
+        .catch(function () { return null; });
+    }
     function check() {
       if (notified) return;
       var now = Date.now();
       if (now - lastCheck < FOCUS_GAP) return;
       lastCheck = now;
-      readTag().then(function (tag) {
-        if (!tag) return;
-        if (bootTag == null) { bootTag = tag; return; }   // first successful read seeds the baseline
-        if (tag === bootTag) return;
+      Promise.all([readTag(), readServerVer()]).then(function (r) {
+        var tag = r[0], sver = r[1];
+        if (bootTag == null && tag) bootTag = tag;                 // seed baselines on first read
+        if (bootServerVer == null && sver) bootServerVer = sver;
+        var frontendNew = tag && bootTag && tag !== bootTag;
+        var serverNew = sver && bootServerVer && sver !== bootServerVer;
+        if (!frontendNew && !serverNew) return;
         notified = true;
         // still on the loading/picker screen (not connected) → reloading is seamless, just do it
         var l = document.getElementById("loading");
@@ -452,7 +472,7 @@
       requestAnimationFrame(function () { t.classList.add("on"); });
     }
 
-    readTag().then(function (tag) { bootTag = tag; });     // seed the baseline at boot
+    Promise.all([readTag(), readServerVer()]).then(function (r) { if (r[0]) bootTag = r[0]; if (r[1]) bootServerVer = r[1]; }); // seed baselines at boot
     document.addEventListener("visibilitychange", function () { if (!document.hidden) check(); });
     setInterval(check, BACKSTOP);
     // expose for verification (headless test drives this without waiting on focus/timer)
