@@ -12,8 +12,11 @@ Spring/server config, no `AnbennarSourceConfigurer` analogue, no Docker/CI/deplo
 dev-time build-input concern.
 
 **Canonical source:** the **Caveman2Cosmos GitHub repo**, fetched with authenticated **`gh api`**
-(raw media type) — `raw.githubusercontent.com` rate-limits and writes HTML error pages as files. See
-the `gh-api-for-civ4-files` note. Pin a commit/tag (a committed `civ4-source.lock`, like Anbennar's).
+(raw media type) — `raw.githubusercontent.com` rate-limits and writes HTML error pages as files (see
+the `gh-api-for-civ4-files` note). The terrain art comes from C2C's **`UnpackedArt`** tree; the
+resource-icon atlas is **`GameFont_120.tga`**. C2C is **also under active development**, and the
+intent is to **propagate its changes automatically** — so, unlike Anbennar (a frozen runtime lock),
+this **tracks C2C's default branch** and a scheduled job regenerates + commits the outputs (§Propagation).
 
 ---
 
@@ -79,10 +82,14 @@ classified — this is **step 1** of any implementation:
 - **A node fetch helper** for `web/build.mjs` / `build-techs.mjs` (they can't call the Java provider):
   a small `web/civ4.mjs` that fetches the same paths at the same ref via `gh api` (or a token'd
   fetch), caching alongside. Shares the ref via the committed lock.
-- **Pinning**: a committed `civ4-source.lock` (the C2C commit the exporters/bakers were last run
-  against), read by both the Java provider and the node helper. Bumped deliberately when pulling a
-  newer C2C — the same "dependency lock, not live tail" model as Anbennar, but even lower-stakes here
-  since the outputs (resource JSON, web assets) are committed and regenerated only on demand.
+- **Propagation (auto).** These files are dev-time only and their *outputs* are committed (the
+  resource JSON + `web/assets`), so there is no runtime-reproducibility reason to freeze the input —
+  the provider **tracks C2C's default branch** rather than a hard pin. To propagate C2C's changes
+  automatically, a **scheduled job** (cron/CI) fetches the current C2C tip, re-runs the exporters +
+  web bakers, and commits the regenerated outputs iff they changed (any server-affecting resource
+  still needs a manual deploy — guest identity, see `spectator-server-deployment`). A committed
+  `civ4-source.lock` still records *which* C2C commit the current outputs came from (traceability +
+  a manual bump), but the tracked ref is the branch, not a fixed SHA.
 
 ## Consumer repointing
 
@@ -103,22 +110,23 @@ classified — this is **step 1** of any implementation:
    `.dockerignore` becomes moot (nothing to exclude) — drop it.
 6. Verify: the exporters still regenerate byte-identical resource JSON; `node web/build.mjs` +
    `build-techs.mjs` still bake identical `web/assets` (compare against the committed baseline).
-7. No Docker/CI/deploy changes, and no history rewrite is *required* — but see Deferred for the 24 MB
-   of art blobs in history.
+7. No Docker/CI/deploy changes needed. Then **purge history** (see below).
+8. **History rewrite (yes).** After the `git rm`, reclaim the ~24 MB of art blobs from history with
+   `git filter-repo --path data/civ4 --invert-paths` + force-push, as done for Anbennar.
+9. Set up the **scheduled auto-propagation** job (§Propagation) so C2C updates flow in without a
+   manual bump.
 
-## Deferred / open questions
+## Resolved (2026-07-11) & remaining open questions
 
-- **Does the C2C GitHub repo carry all the art at matching paths?** The `.dds`/`.tga` need confirming
-  against the repo layout (C2C's `Assets/` tree) — some may live at different paths or be packed.
-- **The GameFont atlases** (`res/Fonts/GameFont*.tga`) — the `build-techs.mjs`-art memory notes tech
-  art is already missing/fragile on this machine; confirm the atlas is fetchable before relying on it.
-- **The derived building/bonus splits** — provenance + whether a clean regenerate-from-C2C step
-  exists, or they stay committed (they may be the smallest-friction option).
-- **History rewrite** — like Anbennar, `git rm` won't reclaim the ~24 MB of art blobs already in
-  history; a `git filter-repo --path data/civ4` purge + force-push is the optional size win.
-- **Scope**: worth it? The win is ~32 MB out of the repo + always-fresh C2C inputs; the cost is a
-  GitHub-fetch dependency for anyone regenerating resources/assets. Lower-value than the Anbennar cut
-  (which also removed a *runtime* dependency); decide before committing effort.
+- **Art + atlas sources — resolved.** Terrain art comes from C2C's **`UnpackedArt`** tree; the
+  resource icons from **`GameFont_120.tga`**. Both fetched via `gh api` at the tracked ref.
+- **History rewrite — yes** (step 8 above).
+- **Auto-propagation — yes** (§Propagation): track C2C's default branch + a scheduled regenerate-and-
+  commit, rather than a manual pin bump.
+- **Still open — the derived building/bonus splits.** Confirm per-file whether each of
+  `Regular_`/`SpecialBuildings_`/`zProviders_CIV4BuildingInfos.xml` + `Manufactured_CIV4BonusInfos.xml`
+  is a clean split of a C2C monolith (regenerate via a split step, so it also auto-propagates) or is
+  CivStudio-authored (keep committed). This is step 1 of implementation.
 
 ---
 
