@@ -92,7 +92,7 @@ npx serve web                                                         # serve th
 ### Regenerate
 
 `build.mjs` bakes the binary art (the dark-tinted terrain crop, the ground-texture atlas, the
-water/foam/ice tiles, foliage, bonus icons, `plots.pack`) from `data/anbennar/*` + the Civ4
+water/ice tiles, foliage, bonus icons, `plots.pack`) from `data/anbennar/*` + the Civ4
 art, and writes `src/main/resources/map/web-asset-manifest.json` — the small descriptor set for
 those assets (tile geometry, the `plots.pack` byte index, `terrainColors`, the ring-less
 provinces' cull boxes). The **map/geo backbone is no longer built here**: the server
@@ -121,7 +121,7 @@ node web/build.mjs            # -> src/main/resources/map/web-asset-manifest.jso
 
 **Everything the site serves statically is committed** (non-LFS): the whole `assets/` folder —
 the terrain crop, the texture atlas, `plots.pack`, and every baked tile
-(`sea/shore/foam/ice/river/bonus-icons.webp`), ~20 MB in all — plus the manifest (committed under
+(`sea/shore/ice/river/bonus-icons.webp`), ~20 MB in all — plus the manifest (committed under
 `src/main/resources/map/`, so it ships inside the server jar). The **`window.BUNDLE` JSON, the tier
 outlines (`/api/tiers`) and the tech graph (`/api/techs`) are not committed as static assets**;
 they are assembled on demand by the server from the engine jar. `node web/build.mjs`

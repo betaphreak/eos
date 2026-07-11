@@ -624,8 +624,9 @@ function drawBeach(o, cx, cy, s, q) {
   fillPolys(o, coastExtendPolys(q, cx, cy, s));               // wet sand juts into the water
   inwardBands(o, cx, cy, s, q.coast, SAND, s * 0.62, ".95");  // dry sand feathers back onto land
 }
-// A thin foam crest right at the water's edge: the real Civ4 wave-crest art (a bright lap that
-// fades seaward), or a soft white feather when the art is absent. Drawn just outside the sand.
+// A thin foam lap right at the water's edge: a soft white feather fading seaward, drawn just
+// outside the sand. (The real Civ4 wave-crest art this once used was retired — it never read
+// cleanly at these zooms — so the procedural feather is now the only path.)
 function drawFoam(o, cx, cy, s, mask) {
   outwardBands(o, cx, cy, s, mask, "255,255,255", s * 0.3, ".5");
 }

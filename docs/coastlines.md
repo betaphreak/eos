@@ -236,11 +236,11 @@ land ended in a hard square staircase, and — the biggest offender in the far n
 drawn as **opaque pale squares** (`FEATURE_ICE` covers 70–90 % of a >66° sea's shelf), which read as a
 blocky white grid ringing every arctic coast. Three changes, all riding the existing per-province offscreen:
 
-- **Real shoreline foam.** `bakeFoamTile()` (`build.mjs`) keeps `waves/wave_crest.dds` as an RGBA strip
-  (white crest → clear); `drawFoamCrest` (`plots.mjs`) lays a per-plot slice of it along each water edge
-  (foam at the shore, fading seaward — one `setTransform`/`FOAM_XF` orients the strip for E/W/S/N). Its
-  naturally ragged crest breaks up the shoreline. Kept short/low-alpha so narrow sea channels stay open;
-  falls back to the old thin foam line when the art is absent.
+- **Shoreline foam.** *(Superseded — the baked wave-crest art was retired 2026-07-11.)* This originally
+  baked `waves/wave_crest.dds` into a foam strip and laid per-plot slices along each water edge, but the
+  crest never read cleanly at these zooms, so `drawFoam` (`plots.mjs`) now draws only the procedural white
+  feather (`outwardBands`) just seaward of the sand. The bake (`bakeFoamTile`), the `foam` manifest field,
+  the `FOAM_ART` bundle entry, and `assets/water/foam.webp` are all gone.
 - **Beach apron.** `drawBeach` feathers each coastal land plot's own terrain colour (mildly darkened — a
   wet shore reads darker) a jittered distance into the water, so the land dissolves into the shallows
   instead of ending in a hard square. Shared `outwardBands` helper with the shallows.
