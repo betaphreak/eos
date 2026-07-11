@@ -1,40 +1,46 @@
-import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, apiUrl, K_PLOT, K_TEX, K_MAX, TT, RIVER, SHORE, FOAM_ART, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, LY, NB4, cam, VIEW, ctx, px, py, pxr, pyr, lerp, S } from "./core.mjs";
+import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, apiUrl, K_PLOT, K_TEX, K_MAX, TT, RIVER, SHORE, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, LY, NB4, cam, VIEW, ctx, px, py, pxr, pyr, lerp, S } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { renderRail } from "./panel.mjs";
-let ttImg = null, ttReady = false, ttTiles = null;
-if (TT) { ttImg = new Image(); ttImg.onload = () => { extractTiles(); ttReady = true; draw(); }; ttImg.src = TT.src; }
-// the baked water tile for the river ribbon (docs/river-rendering.md §2); null when the
-// build could not decode the Civ4 river art (LFS/file://) → drawRiver keeps the flat fill
-let rvImg = null, rvReady = false;
-if (RIVER) { rvImg = new Image(); rvImg.onload = () => { rvReady = true; draw(); }; rvImg.src = RIVER.src; }
-// the baked greyscale shore-wave tile for the coast shallows (docs/coastlines.md Phase D); null
-// when the Civ4 shore art couldn't be decoded → the shallows stay flat-tinted, no ripple
-let shoreImg = null, shoreReady = false;
-if (SHORE) { shoreImg = new Image(); shoreImg.onload = () => { shoreReady = true; draw(); }; shoreImg.src = SHORE.src; }
-// the real Civ4 shoreline foam crest (docs/coastlines.md Phase G), waves/wave_crest.dds; null when
-// absent → drawFoam keeps the thin procedural foam line
-let foamImg = null, foamReady = false;
-if (FOAM_ART) { foamImg = new Image(); foamImg.onload = () => { foamReady = true; draw(); }; foamImg.src = FOAM_ART.src; }
-// the real Civ4 pack-ice tile (docs/coastlines.md Phase G), features/icepack; null when absent →
-// drawSeaIce falls back to flat pale floes
-let iceImg = null, iceReady = false, icePat = null;
-if (ICE_ART) { iceImg = new Image(); iceImg.onload = () => { iceReady = true; draw(); }; iceImg.src = ICE_ART.src; }
+// Load a baked art image once: on load run `onReady` (flip its ready flag / invalidate caches) and
+// repaint. Returns the Image, or null when the asset is absent from the bundle (LFS not pulled /
+// file:// build) so each caller keeps its procedural fallback.
+function loadArt(asset, onReady) {
+  if (!asset) return null;
+  const img = new Image();
+  img.onload = () => { onReady(); draw(); };
+  img.src = asset.src;
+  return img;
+}
+// the Civ4 ground-texture atlas (sliced per-terrain into repeating tiles by extractTiles); null →
+// drawPlots stays on the flat 1px/plot colour offscreen
+let ttReady = false, ttTiles = null;
+const ttImg = loadArt(TT, () => { extractTiles(); ttReady = true; });
+// the baked water tile for the river ribbon (docs/river-rendering.md §2); null → drawRiver keeps the flat fill
+let rvReady = false;
+const rvImg = loadArt(RIVER, () => { rvReady = true; });
+// the baked greyscale shore-wave tile for the coast shallows (docs/coastlines.md Phase D); null →
+// the shallows stay flat-tinted, no ripple
+let shoreReady = false;
+const shoreImg = loadArt(SHORE, () => { shoreReady = true; });
+// the real Civ4 pack-ice tile (docs/coastlines.md Phase G), features/icepack; null → drawSeaIce
+// falls back to flat pale floes
+let iceReady = false, icePat = null;
+const iceImg = loadArt(ICE_ART, () => { iceReady = true; });
 // the shallows tint — the Civ4 shoreblend hue baked into the bundle, or the old teal fallback
 const SHORE_COL = (SEA_BANDS && SEA_BANDS.shore) ? SEA_BANDS.shore.join(",") : "116,178,196";
 // beach sand — dry sand feathered back onto the coastal land, wet sand at the water's edge
 const SAND = "226,208,164", WET_SAND = "200,182,140";
-// the real Civ4 resource-icon atlas (docs/bonus-sprite-bake.md), sliced from GameFont.tga; null when
-// absent → drawBonusOverlay keeps the procedural category glyphs
-let biImg = null, biReady = false;
-if (BONUS_ICONS) { biImg = new Image(); biImg.onload = () => { biReady = true; draw(); }; biImg.src = BONUS_ICONS.src; }
-// the real Civ4 foliage sprite atlases (docs/features-art.md): {leafy,palm,swamp} strips of tree
-// cutouts; per-group Image + ready flag, null/absent → featureSprite keeps the procedural blobs
+// the real Civ4 resource-icon atlas (docs/bonus-sprite-bake.md), sliced from GameFont.tga; null →
+// drawBonusOverlay keeps the procedural category glyphs
+let biReady = false;
+const biImg = loadArt(BONUS_ICONS, () => { biReady = true; });
+// the real Civ4 foliage sprite atlases (docs/features-art.md): {leafy,palm,swamp,…} strips of tree
+// cutouts, one Image + ready flag per group; null → featureSprite keeps the procedural blobs. A
+// late-loading atlas invalidates the cached province texture canvases (they baked procedural blobs
+// before the art arrived) so they rebuild with the real foliage.
 const treeImg = {}, treeReady = {};
-if (TREES) for (const k of Object.keys(TREES)) {
-  // sprites are baked into each province's texture canvas, so a late-loading atlas must invalidate
-  // those cached canvases (they rebuilt with procedural blobs before the art arrived)
-  const im = new Image(); im.onload = () => { treeReady[k] = true; for (const p of P) p._tcanvas = null; draw(); }; im.src = TREES[k].src; treeImg[k] = im;
-}
+if (TREES) for (const k of Object.keys(TREES))
+  treeImg[k] = loadArt(TREES[k], () => { treeReady[k] = true; for (const p of P) p._tcanvas = null; });
 // split the atlas strip into a per-terrain tile canvas, so each can be a repeating
 // pattern (continuous ground texture across plots, no per-plot tile seam)
 function extractTiles() {
@@ -69,18 +75,37 @@ async function loadPlots(p) {
     p._loading = false; p._plots = [];
   }
 }
+// min/max plot coords of a province's grid plus the derived offscreen size (one pixel per plot).
+// Shared by every per-province offscreen builder.
+function plotBounds(plots) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const q of plots) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
+  return { x0, y0, x1, y1, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
+// rasterise a province's plots to a 1px/plot offscreen: `perPlot(q, d, o)` writes plot `q`'s RGBA at
+// byte offset `o` into the pixel buffer `d` (cells with no plot stay transparent). Returns
+// {canvas, box:{x0,y0,w,h}} — the box maps the offscreen back to source-pixel plot space for blitting.
+function buildPixelCanvas(plots, perPlot) {
+  const { x0, y0, w, h } = plotBounds(plots);
+  const oc = document.createElement("canvas"); oc.width = w; oc.height = h;
+  const octx = oc.getContext("2d"), im = octx.createImageData(w, h), d = im.data;
+  for (const q of plots) perPlot(q, d, ((q.y - y0) * w + (q.x - x0)) * 4);
+  octx.putImageData(im, 0, 0);
+  return { canvas: oc, box: { x0, y0, w, h } };
+}
+// blit a province offscreen (built in source-pixel plot space, box = {x0,y0,w,h}) to the screen at
+// the current camera — the scaled drawImage keeps hover/pan redraws to one call per province.
+function blitProvinceCanvas(canvas, box) {
+  const dX = pxr(box.x0), dY = pyr(box.y0);
+  ctx.drawImage(canvas, dX, dY, pxr(box.x0 + box.w) - dX, pyr(box.y0 + box.h) - dY);
+}
 // rasterise a province's plots to a 1px/plot offscreen canvas: terrain colour, relief
 // shading (hill lighter, peak toward rock-grey), a light feature tint, and river blend
 function buildPlotCanvas(p, plots) {
-  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  for (const q of plots) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
-  const w = x1 - x0 + 1, h = y1 - y0 + 1;
-  const oc = document.createElement("canvas"); oc.width = w; oc.height = h;
-  const octx = oc.getContext("2d"), im = octx.createImageData(w, h), d = im.data;
   // a sea/lake province's shelf plots render as flat water terrain (coast→sea depth ramp from the
   // terrain key); the land-only relief/feature/river tints below are skipped for them
   const water = p.type === "SEA" || p.type === "LAKE";
-  for (const q of plots) {
+  const { canvas, box } = buildPixelCanvas(plots, (q, d, o) => {
     const c = terrainRgb(q.terrain); let r = c[0], g = c[1], b = c[2];
     if (!water) {
       const f = q.feature;
@@ -92,11 +117,9 @@ function buildPlotCanvas(p, plots) {
       else if (q.plotType === "PEAK") { r = (r + 150) / 2 | 0; g = (g + 152) / 2 | 0; b = (b + 158) / 2 | 0; }
       if (q.river) { r = r * 0.45 + 33 | 0; g = g * 0.45 + 61 | 0; b = b * 0.45 + 91 | 0; }
     }
-    const o = ((q.y - y0) * w + (q.x - x0)) * 4;
     d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = 255;
-  }
-  octx.putImageData(im, 0, 0);
-  p._pcanvas = oc; p._pbox = { x0, y0, w, h };
+  });
+  p._pcanvas = canvas; p._pbox = box;
 }
 
 // ---- movement-cost overlay: per-plot elevation traversal difficulty ----
@@ -124,24 +147,17 @@ function costColor(f) {
 // rasterise a province's plots to a 1px/plot cost heat offscreen (built once, blitted scaled
 // and smoothed), transparent where the ground is effectively flat so the terrain reads through.
 function buildCostCanvas(p, plots) {
-  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  for (const q of plots) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
-  const w = x1 - x0 + 1, h = y1 - y0 + 1;
   const grid = new Map();
   for (const q of plots) grid.set(q.x * 1e5 + q.y, q);
-  const oc = document.createElement("canvas"); oc.width = w; oc.height = h;
-  const octx = oc.getContext("2d"), im = octx.createImageData(w, h), d = im.data;
-  for (const q of plots) {
+  const { canvas, box } = buildPixelCanvas(plots, (q, d, o) => {
     const e = q.elevation | 0; let md = 0;
     for (const nb of NB4) { const n = grid.get((q.x + nb[0]) * 1e5 + (q.y + nb[1])); if (n) { const dd = Math.abs((n.elevation | 0) - e); if (dd > md) md = dd; } }
-    const o = ((q.y - y0) * w + (q.x - x0)) * 4;
     const f = costFactor(md);
-    if (f < 1.03) { d[o + 3] = 0; continue; }               // effectively flat → clear
+    if (f < 1.03) { d[o + 3] = 0; return; }                 // effectively flat → clear
     const c = costColor(f);
     d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = (255 * (0.12 + 0.6 * c[3])) | 0;
-  }
-  octx.putImageData(im, 0, 0);
-  p._mcanvas = oc; p._mbox = { x0, y0, w, h };
+  });
+  p._mcanvas = canvas; p._mbox = box;
 }
 // blit the cost overlay for the provinces in view (same cull/scale as drawPlots), when the
 // toggle is on and we are zoomed into the plot layer. Drawn over the terrain, under outlines.
@@ -156,8 +172,7 @@ function drawCostOverlay() {
     const sx0 = pxr(bb.x0), sy0 = pyr(bb.y0), sx1 = pxr(bb.x1), sy1 = pyr(bb.y1);
     if (sx1 < 0 || sy1 < 0 || sx0 > VIEW.w || sy0 > VIEW.h) continue;
     if (!p._mcanvas) buildCostCanvas(p, p._plots);
-    const b = p._mbox, dX = pxr(b.x0), dY = pyr(b.y0);
-    ctx.drawImage(p._mcanvas, dX, dY, pxr(b.x0 + b.w) - dX, pyr(b.y0 + b.h) - dY);
+    blitProvinceCanvas(p._mcanvas, p._mbox);
   }
   ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = smooth;
 }
@@ -187,14 +202,12 @@ function drawPlots(only) {
     if (textured) {
       if (!p._tcanvas) buildPlotTexCanvas(p);                 // textured offscreen, built once
       ctx.imageSmoothingEnabled = true;
-      const b = p._tbox, dX = pxr(b.x0), dY = pyr(b.y0);
-      ctx.drawImage(p._tcanvas, dX, dY, pxr(b.x0 + b.w) - dX, pyr(b.y0 + b.h) - dY);
+      blitProvinceCanvas(p._tcanvas, p._tbox);
       continue;
     }
     if (!p._pcanvas) buildPlotCanvas(p, p._plots);            // flat-colour offscreen, built once
     ctx.imageSmoothingEnabled = false;
-    const b = p._pbox, dX = pxr(b.x0), dY = pyr(b.y0);
-    ctx.drawImage(p._pcanvas, dX, dY, pxr(b.x0 + b.w) - dX, pyr(b.y0 + b.h) - dY);
+    blitProvinceCanvas(p._pcanvas, p._pbox);
   }
   ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = smooth;
   drawBonusOverlay(vis);   // resource icons: screen-space overlay over the in-view provinces only
@@ -233,8 +246,7 @@ const noiseOff = (qx, qy, d) => {
 // once and blitted scaled (so hover/pan redraws stay a single drawImage per province).
 // TPP drops for very large provinces to bound the offscreen size.
 function buildPlotTexCanvas(p) {
-  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  for (const q of p._plots) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
+  let { x0, y0, x1, y1 } = plotBounds(p._plots);
   // pad the offscreen two cells beyond the land so the coastline can bleed OUTWARD into the
   // adjacent sea (which is not a plot of this province) — wide enough for the >1-cell shallows +
   // beach reach (Lever A). The coord/size/blit all follow x0..y1; the margin is transparent sea.
