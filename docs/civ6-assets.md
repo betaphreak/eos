@@ -206,6 +206,90 @@ Remaining before/within a build:
 4. **River ribbon** — keep the C2C-derived ribbon (Civ6 has no tile equivalent).
 5. **Legal/licensing** — Firaxis SDK art redistribution terms for a public site (assets are dev-time,
    but baked derivatives ship in `web/assets`). **Owner decision required before shipping Civ6 art.**
+6. **Multi-LoD bake for the zoom spine** (owner request, 2026-07-12) — bake **several detail levels per
+   entity** so the continuous-zoom system ([`zoom-bands.md`](zoom-bands.md)) can cross-fade LoDs
+   seamlessly instead of scaling one texture. The Civ6 depot is purpose-built for this: resources ship
+   at **`Resources32/38/50/256.dds`**, terrain/ground textures carry **`_512`/`_1k`/`_2k`** variants,
+   and features have distinct SV (far) vs 3D-model (near) representations. Design sketch: emit each
+   `web/assets` sheet at 2–3 sizes (e.g. `bonus-icons@{32,64,256}.webp`), extend the manifest descriptor
+   with a per-LoD `src`+cell size, and have the layer pick the LoD by zoom band (with a short alpha
+   cross-fade across the boundary so the swap isn't visible). Applies per category — icons (atlas sizes),
+   terrain tiles (`_2k`→`_512`), and the far-SV-tile ↔ near-3D-render split for features/resources.
+   Keep the C2C-fallback entities single-LoD (upscaled) unless a matching C2C size exists.
+
+---
+
+## 8. Appendix — baked C2C bonus → Civ6 resource map
+
+The **106 baked** `BONUS_*` (every key in `generated/bonuses.json`; all resolve to a GameFont cell →
+`icons/bonus-icons.webp`) mapped to the **Civ6 resource roster** (`Resources.artdef`: 46 base gameplay
+resources + Amber/Olives/Turtles from expansions; each has a `Resources_<Name>_Visible.dds` sprite and a
+`Resources*.dds` atlas cell). Tiers: **D** direct same-resource · **C** close/renamed stand-in · **A**
+approximate substitute (imperfect) · **—** no Civ6 equivalent (**keep C2C**, per the fallback policy).
+
+Coverage: **34 D + 5 C + 19 A = 58 get Civ6 art; 48 stay C2C.**
+
+| C2C bonus | Civ6 | Tier | | C2C bonus | Civ6 | Tier |
+| --- | --- | :-: | --- | --- | --- | :-: |
+| ALMONDS | — | — | | MANGO | — | — |
+| AMBER | Amber | D | | MANGANESE | — | — |
+| ANCIENT_RELICS | Antiquity Site | C | | MARBLE | Marble | D |
+| APPLE | — | — | | MELONS | — | — |
+| BANANA | Bananas | D | | METHANE_ICE | — | — |
+| BARLEY | — | — | | MUREX | Dyes | A |
+| BAUXITE_ORE | Aluminum | C | | MUSHROOMS | Truffles | A |
+| BEAVERS | Furs | A | | NATRON | Salt | A |
+| BISON | Cattle | A | | NATURAL_GAS | — | — |
+| CAMEL | — | — | | OBSIDIAN | — | — |
+| CLAM | Crabs | A | | OIL | Oil | D |
+| COAL | Coal | D | | OLIVES | Olives | D |
+| COCA | — | — | | OPIUM | — | — |
+| COCOA | Cocoa | D | | PAPAYA | — | — |
+| COCONUT | — | — | | PAPYRUS | — | — |
+| COFFEE | Coffee | D | | PARROTS | — | — |
+| COPPER_ORE | Copper | D | | PEARLS | Pearls | D |
+| CORN | — | — | | PEYOTE | — | — |
+| COTTON | Cotton | D | | PIG | — | — |
+| COW | Cattle | D | | PISTACHIO | — | — |
+| CRAB | Crabs | D | | PLATINUM_ORE | — | — |
+| DATES | — | — | | POMEGRANATE | — | — |
+| DEER | Deer | D | | POTATOES | — | — |
+| DIAMOND | Diamonds | D | | POULTRY | — | — |
+| DONKEY | Horses | A | | PRICKLY_PEAR | — | — |
+| ELEPHANTS | Ivory | C | | PRIME_TIMBER | — | — |
+| FIG | — | — | | PUMPKIN | — | — |
+| FINE_CLAY | — | — | | RABBIT | Furs | A |
+| FISH | Fish | D | | RESIN | Amber | A |
+| FLAX | — | — | | RICE | Rice | D |
+| FOSSIL_BEDS | — | — | | RUBBER | — | — |
+| GEODE | — | — | | RUBIES | Diamonds | A |
+| GEOTHERMAL_ENERGY | — (feature) | — | | SALT | Salt | D |
+| GOLD_ORE | Gold | D | | SAPPHIRES | Diamonds | A |
+| GRAPES | Wine | C | | SEA_LION_AND_SEAL | — | — |
+| GUAVAS | — | — | | SHEEP | Sheep | D |
+| GUINEA_PIGS | — | — | | SHRIMP | Crabs | A |
+| HEMP | — | — | | SILK | Silk | D |
+| HENNA | Dyes | A | | SILVER_ORE | Silver | D |
+| HORSE | Horses | D | | SPICES | Spices | D |
+| HYDROTHERMAL_VENT | — | — | | SQUASH | — | — |
+| INCENSE | Incense | D | | STONE | Stone | D |
+| INDIGO | Dyes | A | | SUGAR | Sugar | D |
+| IRON_ORE | Iron | D | | SULPHUR | Niter | A |
+| JADE | Jade | D | | TEA | Tea | D |
+| KANGAROO | — | — | | TIN_ORE | — | — |
+| KAVA | — | — | | TITANIUM_ORE | — | — |
+| LEAD_ORE | — | — | | TOBACCO | Tobacco | D |
+| LEMONS | Citrus | C | | TURQUOISE | Diamonds | A |
+| LLAMA | — | — | | URANIUM | Uranium | D |
+| LOBSTER | Crabs | A | | VANILLA | Spices | A |
+| MAMMOTH | — | — | | WALRUS | Ivory | A |
+| | | | | WHALE | Whales | D |
+| | | | | WHEAT | Wheat | D |
+
+**Civ6 resources with no C2C-bake counterpart** (available but currently unused): Gypsum, Mercury,
+Shipwreck, Turtles (plus Foxes = the Furs art model). Note several Civ6 luxuries are hit only by A-tier
+approximations (Dyes ← henna/indigo/murex; Diamonds ← rubies/sapphires/turquoise; Crabs ← clam/lobster/
+shrimp) — if that collapsing reads poorly, keep those specific bonuses on C2C art instead.
 
 ---
 
