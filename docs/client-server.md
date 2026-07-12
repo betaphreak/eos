@@ -307,6 +307,41 @@ az containerapp update -n civstudio-server -g civstudio \
   --image civstudio.azurecr.io/civstudio-server:<tag>
 ```
 
+**Deployment runbook — the correct order and actions.** A change can touch three surfaces
+(the static site, the server bundle baked into the image, and the plots the server *generates*).
+Do them in this order so they stay in sync — skipping a step makes the surfaces drift and the
+map silently break:
+
+1. **Rebake the web bundle** — *only if the change touched terrain / feature / bundle assets or
+   `web/build.mjs`.* Run `node web/build.mjs`. It regenerates
+   `civstudio-server/src/main/resources/map/web-asset-manifest.json` (baked **into the server
+   image**, served at `/api/bundle`) plus `web/assets/*.webp`. Do this **before** building the
+   server image, or the server serves a stale bundle. Commit the regenerated manifest + assets.
+2. **Deploy the server** — `pwsh tools/deploy-server.ps1` (Docker build → push to
+   `civstudio.azurecr.io` → `az containerapp update` → poll `/actuator/info`). Picks up new
+   engine resources, server code, and the rebaked manifest.
+3. **Clear the persistent plot cache** — *only if the change altered plot **generation***
+   (`ProvincePlotField` / `TerrainGenerator` / `CityPlacement` / bonuses / a `terrains.json`
+   yield, …). `PLOT_CACHE_DIR = /mnt/anbennar/plot-cache` is a **persistent AzureFile share**
+   (the `anbennar` storage), so the server keeps serving **stale `<id>.json.gz` fields** until
+   they are deleted — **a new image alone does NOT refresh them.** Delete the cache dir; the
+   server regenerates each province fresh on next request:
+   ```bash
+   # simplest — from inside a running replica (the volume is mounted there):
+   az containerapp exec -n civstudio-server -g civstudio \
+     --command "sh -c 'rm -f /mnt/anbennar/plot-cache/*.json.gz'"
+   # or via the storage API (needs the account key / the env storage account name):
+   az storage file delete-batch --account-name <acct> --source anbennar --pattern 'plot-cache/*.json.gz'
+   ```
+   Skip this step for a pure server-code or web-JS change (generation unchanged).
+4. **Deploy the web static site** — *only if `web/` (JS, `index.html`, committed assets)
+   changed.* The SWA deploy (`deploy-web.yml`, or
+   `npx @azure/static-web-apps-cli deploy ./web --env production` with the deployment token)
+   ships the prebuilt `web/` folder.
+
+**Rule of thumb:** engine-resource / generation change → **server deploy + cache clear**; a
+`web/` change → **SWA deploy**; a bundle/terrain change → **rebake first, then both**.
+
 **Custom domain (`dev.civstudio.com`).** `civstudio.com` DNS is **not** in Azure DNS
 (no zone in the subscription), so the two validation records are added at the external DNS
 provider by hand, then bound:
