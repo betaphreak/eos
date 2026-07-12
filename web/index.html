@@ -218,6 +218,10 @@
   })();
   </script>
 
+  <!-- per-province trade good (static, seed-independent): sets window.TRADEGOODS before the app module
+       evaluates (core.mjs reads it at eval, like window.BUNDLE). A deferred classic script runs before
+       the dynamically-imported module app, and a 404 just leaves TRADEGOODS undefined (feature off). -->
+  <script defer src="tradegoods.js"></script>
   <!-- window.BUNDLE (the map/geo backbone) now comes from the spectator server — the single
        source of truth, assembled by com.civstudio.server.web.WorldBundle — instead of a committed
        data.js. The loading screen holds up a SERVER PICKER (dev is the default cloud server, local

@@ -1,4 +1,4 @@
-import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, apiUrl, K_PLOT, K_TEX, K_MAX, TT, RIVER, SHORE, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, LY, NB4, cam, VIEW, ctx, px, py, pxr, pyr, lerp, S } from "./core.mjs";
+import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, provOnScreen, apiUrl, K_PLOT, K_TEX, K_MAX, TT, RIVER, SHORE, ICE_ART, BONUS_ICONS, TRADE_GOODS, TREES, SEA_BANDS, LY, NB4, cam, VIEW, ctx, px, py, pxr, pyr, lerp, S } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { renderRail } from "./panel.mjs";
 // Load a baked art image once: on load run `onReady` (flip its ready flag / invalidate caches) and
@@ -34,6 +34,10 @@ const SAND = "226,208,164", WET_SAND = "200,182,140";
 // drawBonusOverlay keeps the procedural category glyphs
 let biReady = false;
 const biImg = loadArt(BONUS_ICONS, () => { biReady = true; });
+// the Anbennar trade-good icon atlas (docs/trade-goods.md): ONE icon per PROVINCE (the province-level
+// resource), distinct from the per-PLOT bonus atlas above. null → no province good icons.
+let tgReady = false;
+const tgImg = loadArt(TRADE_GOODS && TRADE_GOODS.icons, () => { tgReady = true; });
 // the real Civ4 foliage sprite atlases (docs/features-art.md): {leafy,palm,swamp,…} strips of tree
 // cutouts, one Image + ready flag per group; null → featureSprite keeps the procedural blobs. A
 // late-loading atlas invalidates the cached province texture canvases (they baked procedural blobs
@@ -444,6 +448,45 @@ export function bonusIconRect(q) {
 // instead of ballooning with the plot as you zoom in. ctx is dpr-scaled, so cell px == CSS px.
 function bonusIconSize() {
   return (BONUS_ICONS ? BONUS_ICONS.cell : 24) * cam.k / K_MAX;
+}
+
+// Stamp each in-view province's TRADE-GOOD icon at its centroid — the province-level resource, drawn
+// like the per-plot bonuses are but one per province (docs/trade-goods.md). Shown only when the
+// province is large enough on screen (declutters exactly like a name label) so the overview stays
+// clean, and it fades out as you dive past the plot-texture zoom, where the finer per-plot bonus icons
+// take over the resource story. Overworld physical view only (gated by the caller in main.renderScene).
+const TG_MIN_PROV_PX = 30;    // a province must span at least this many screen px to earn an icon
+const TG_ICON_PX = 26;        // on-screen icon size, in CSS px (ctx is dpr-scaled)
+export function drawTradeGoodIcons() {
+  if (!TRADE_GOODS || !TRADE_GOODS.icons || !tgReady) return;
+  // fade out as the per-plot bonus icons appear (BONUS_HIDE_AT..+6), gone just past texture zoom
+  const fade = 1 - Math.max(0, Math.min(1, (cam.k - BONUS_HIDE_AT) / 6));
+  if (fade <= 0.01) return;
+  const { cell, cols, index } = TRADE_GOODS.icons, prov = TRADE_GOODS.prov;
+  const size = TG_ICON_PX, r = size / 2;
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.globalAlpha = fade;
+  for (const p of P) {
+    if (!p.rings) continue;
+    const key = prov[p.id];
+    if (!key) continue;
+    const idx = index[key];
+    if (idx === undefined || !provOnScreen(p)) continue;
+    const box = provSrcBox(p);
+    if (!box) continue;
+    const w = Math.abs(pxr(box.x1) - pxr(box.x0)), h = Math.abs(pyr(box.y1) - pyr(box.y0));
+    if (Math.min(w, h) < TG_MIN_PROV_PX) continue;          // too small on screen → skip (declutter)
+    const cx = px(p.lon), cy = py(p.lat);
+    // a soft dark disc so the icon reads on any terrain/colour
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.92, 0, 7);
+    ctx.fillStyle = "rgba(10,14,22,0.5)";
+    ctx.fill();
+    ctx.drawImage(tgImg, (idx % cols) * cell, Math.floor(idx / cols) * cell, cell, cell,
+      cx - r, cy - r, size, size);
+  }
+  ctx.restore();
 }
 // Polar sea ice on a water province's shelf (docs/coastlines.md Phase E/G). Coverage is per-cell
 // (sparse at sub-polar latitudes, near-solid by the pole), so drawing cells as SQUARES read as a

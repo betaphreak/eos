@@ -1,4 +1,4 @@
-import { BUNDLE, P, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, K_TEX, worldW, provPath, provBoxHas, clampPan, provGeo, polOf, isPolitical, S } from "./core.mjs";
+import { BUNDLE, P, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, K_TEX, worldW, provPath, provBoxHas, clampPan, provGeo, polOf, isPolitical, TRADE_GOODS, S } from "./core.mjs";
 import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
 import { loadPlots, bonusIconRect } from "./plots.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
@@ -256,6 +256,9 @@ function provTip(best){
        + `<br><span class="r">${reg}</span>`;
   } else {
     h += `<br><span class="r">${reg} · ${best.plots} plots</span>`;
+    // per-province trade good (physical view), with its colour dot — mirrors the political dimension line
+    const g = TRADE_GOODS && TRADE_GOODS.prov[best.id] && TRADE_GOODS.goods[TRADE_GOODS.prov[best.id]];
+    if (g) h += `<br><span class="r"><span class="dot" style="background:${g.color}"></span>${g.name}</span>`;
   }
   return h;
 }

@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { decodeDds } from './dds.mjs';
 import { loadGameFont, resourceCellRGBA, CELL as GF_CELL } from './gamefont.mjs';
 import { get as civ4Get, resolveArt as civ4ResolveArt, prefetch as civ4Prefetch } from './civ4.mjs';
+import { prefetch as anbPrefetch, get as anbGet } from './anbennar.mjs';
 import { bakeNifGroup } from '../tools/nifbake/render.mjs';
 import sharp from 'sharp';
 
@@ -255,6 +256,8 @@ await (async () => {
     'Art/Terrain/features/savanna/palms_1024.dds', 'Art/Terrain/features/swamp/trees1.dds');
   await civ4Prefetch({ arts, files: ['CIV4BonusInfos.xml', 'CIV4ArtDefines_Bonus.xml', 'res/Fonts/GameFont_120.tga'] });
 })();
+// Warm the Anbennar trade-good icon strip + its ordering source for bakeTradeGoodIcons (see anbennar.mjs).
+await anbPrefetch(['gfx/interface/resources.dds', 'common/tradegoods/00_tradegoods.txt', 'map/terrain.bmp']);
 
 const terrainColors = terrainDisplayColors(terrainRealColors());
 const terrainLayer = terrainLayerOrders();   // TERRAIN_* -> Civ4 LayerOrder (drives edge blending)
@@ -264,6 +267,7 @@ const sea = bakeSeaTile();                   // {src, tile} greyscale ripple til
 const shore = bakeShoreTile();               // {src, tile} greyscale shore-wave tile for the shallows, or null
 const ice = bakeIceTile();                   // {src, tile} real Civ4 pack-ice tile, or null (procedural pale floes)
 const bonusIcons = bakeBonusIcons();         // {src, cell, cols, index:{type:i}} real Civ4 resource icons, or null
+const tradeGoodIcons = bakeTradeGoodIcons(); // {src, cell, cols, index:{key:col}} Anbennar trade-good icons, or null
 const trees = bakeFeatureSprites();          // {leafy,palm,swamp:{src,w,h,sprites}} real foliage cutouts, or null
 const seaBands = bakeSeaBands();             // {trop, temp, polar, shore} climate sea + shore colours
 const plotProvinceCount = computeWaterBboxes(provinces);
@@ -331,6 +335,18 @@ const political = {
   })),
 };
 fs.writeFileSync(path.join(WEB, 'political.js'), `window.POLITICAL = ${JSON.stringify(political)};\n`);
+
+// The per-province trade good ships in its own small web/tradegoods.js (loaded eagerly at boot — it
+// draws in the default World view, unlike the lazy political layer): the icon-atlas descriptor, the
+// good metadata (name/colour/category from the engine's tradegoods.json), and each shipped province's
+// good key. The client stamps the icon on the province at the right zoom, like the per-plot bonuses.
+const tgMeta = readJsonOpt('civstudio-engine/src/main/resources/generated/map/tradegoods.json');
+const tradeGoods = {
+  icons: tradeGoodIcons,   // {src, cell, cols, index:{key:col}} or null (icon strip absent)
+  goods: Object.fromEntries(tgMeta.map(g => [g.key, { name: g.name, color: g.color, category: g.category }])),
+  prov: Object.fromEntries(shippedRaw.filter(p => p.trade_goods).map(p => [p.id, p.trade_goods])),
+};
+fs.writeFileSync(path.join(WEB, 'tradegoods.js'), `window.TRADEGOODS = ${JSON.stringify(tradeGoods)};\n`);
 
 // committed Anbennar loading-screen art (baked locally by web/bake-loading.mjs — System.Drawing JPEG);
 // the page shows one at random 1:1 (viewport crops) while the map loads. Absent → the page skips it.
@@ -401,7 +417,11 @@ console.log(`  ice tile: ${ice ? ice.src : 'skipped (no icepack_1024.dds / LFS)'
 // terrain baking
 // ---------------------------------------------------------------------------
 function bakeTerrain(provs) {
-  const BMP = path.join(ROOT, 'data/anbennar/terrain.bmp');
+  // the EU4 terrain raster is no longer vendored under data/anbennar — prefer a local copy if present,
+  // else the on-demand Anbennar cache (warmed by the anbPrefetch of map/terrain.bmp above)
+  const vendored = path.join(ROOT, 'data/anbennar/terrain.bmp');
+  const BMP = fs.existsSync(vendored) ? vendored : anbGet('map/terrain.bmp');
+  if (!BMP) throw new Error('terrain.bmp not found (vendored or in the Anbennar cache) — cannot bake terrain');
   const W = 5632, H = 2048;                       // the EU4 province raster size
   // lon/lat -> source pixel (the inverse of ProvinceExporter's forward maps)
   const sx = lon => (lon + 180) / 360 * (W - 1);
@@ -940,6 +960,70 @@ function bakeBonusIcons() {
   const src = queueWebpRGBA('icons/bonus-icons', aw, ah, rgba, { quality: 90 });
   console.log(`  bonus icons: ${src} (${picks.length} GameFont resource symbols)`);
   return { src, cell: GF_CELL, cols, count: picks.length, index };
+}
+
+// Slice the per-province TRADE-GOOD icons out of Anbennar's gfx/interface/resources.dds strip into one
+// atlas + a {goodKey: cellIndex} manifest — the province-level analogue of bakeBonusIcons (which is the
+// per-PLOT bonus). The strip is a horizontal row of 64px cells; a good's cell index is its 0-based
+// position in common/tradegoods/00_tradegoods.txt (the vanilla EU4 convention Anbennar extends). Both
+// sources are fetched on demand (anbennar.mjs); returns null if either is absent so the caller can skip.
+function bakeTradeGoodIcons() {
+  const TG_CELL = 64;   // resources.dds is 2368×64 → 37 cells of 64×64
+  const stripPath = anbGet('gfx/interface/resources.dds');
+  const orderPath = anbGet('common/tradegoods/00_tradegoods.txt');
+  if (!stripPath || !orderPath) return null;
+  // strip index = order of the top-level `good = { ... }` blocks (depth 0), including `unknown`
+  const order = topLevelBlockNames(fs.readFileSync(orderPath, 'latin1'));
+  const indexOfGood = Object.fromEntries(order.map((k, i) => [k, i]));
+
+  let strip;
+  try { strip = decodeDds(fs.readFileSync(stripPath)); }   // {width,height,rgba}, DX10 uncompressed BGRA
+  catch { return null; }
+  if (strip.height < TG_CELL) return null;
+
+  // bake every real good the reference layer knows (skips `unknown`, which the exporter drops too)
+  const goods = JSON.parse(fs.readFileSync(path.join(ROOT, 'civstudio-engine/src/main/resources/generated/map/tradegoods.json'), 'utf8'));
+  const picks = [];   // [key, srcCol]
+  for (const g of goods) {
+    const col = indexOfGood[g.key];
+    if (col === undefined || (col + 1) * TG_CELL > strip.width) continue;   // not in the strip
+    picks.push([g.key, col]);
+  }
+  if (!picks.length) return null;
+
+  const cols = 12, rows = Math.ceil(picks.length / cols);
+  const aw = cols * TG_CELL, ah = rows * TG_CELL;
+  const rgba = Buffer.alloc(aw * ah * 4);
+  const index = {};
+  picks.forEach(([key, srcCol], i) => {
+    index[key] = i;
+    const sx = srcCol * TG_CELL, dx = (i % cols) * TG_CELL, dy = Math.floor(i / cols) * TG_CELL;
+    for (let y = 0; y < TG_CELL; y++) {
+      const so = (y * strip.width + sx) * 4, d = ((dy + y) * aw + dx) * 4;
+      Buffer.from(strip.rgba.buffer, strip.rgba.byteOffset + so, TG_CELL * 4).copy(rgba, d);
+    }
+  });
+  const src = queueWebpRGBA('icons/tradegood-icons', aw, ah, rgba, { quality: 90 });
+  console.log(`  trade-good icons: ${src} (${picks.length} Anbennar resource symbols)`);
+  return { src, cell: TG_CELL, cols, count: picks.length, index };
+}
+
+// The names of the top-level (brace-depth 0) `name = { ... }` blocks of a Clausewitz file, in order —
+// used to recover the trade-good strip ordering from 00_tradegoods.txt.
+function topLevelBlockNames(text) {
+  const src = text.replace(/#.*$/gm, '');   // strip line comments
+  const names = [];
+  let depth = 0, i = 0;
+  const re = /([A-Za-z_][\w]*)\s*=\s*\{|\{|\}/g;
+  let m;
+  while ((m = re.exec(src))) {
+    if (m[0] === '}') { depth = Math.max(0, depth - 1); continue; }
+    if (m[0] === '{') { depth++; continue; }
+    // a `name = {` block opener
+    if (depth === 0) names.push(m[1]);
+    depth++;
+  }
+  return names;
 }
 
 // Bake a seamless GREYSCALE ripple tile from a Civ4 water detail texture — the wave pattern

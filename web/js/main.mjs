@@ -1,5 +1,5 @@
 import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, isUnderground, latAtScreenY, cssVar, S } from "./core.mjs";
-import { drawPlots, drawCostOverlay } from "./plots.mjs";
+import { drawPlots, drawCostOverlay, drawTradeGoodIcons } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 import { drawPolitical, scheduleLegendRefresh } from "./overlays/political.mjs";
 import { drawLive } from "./overlays/live.mjs";
@@ -284,6 +284,9 @@ function renderScene() {
   }
 
   if (S.overlay === "live") drawLive();         // live session: colony + marching caravans from the feed
+  // per-province trade-good icons: Overworld physical view only (the political fills own the map in
+  // those modes; underground provinces are hidden here). Under the name labels, over the terrain.
+  if (S.plane !== "underworld" && !isPolitical()) drawTradeGoodIcons();
   drawLabels();
 }
 

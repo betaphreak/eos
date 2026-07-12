@@ -60,6 +60,10 @@ const ICE_ART = BUNDLE.ice;        // real Civ4 pack-ice tile {src, tile}, or nu
 const BONUS_ICONS = BUNDLE.bonusIcons;  // real Civ4 resource icons {src, cell, cols, index:{type:i}}, or null (procedural glyphs)
 const TREES = BUNDLE.trees;        // real Civ4 foliage sprites {leafy,palm,swamp:{src,w,h,sprites}}, or null (procedural blobs)
 const SEA_BANDS = BUNDLE.seaBands; // {trop, temp, polar, shore} climate sea + shallows colours
+// per-province trade good (docs/trade-goods.md), loaded eagerly from the static web/tradegoods.js
+// (a <script defer> in index.html, so window.TRADEGOODS is set before the app module evaluates).
+// {icons:{src,cell,cols,index:{key:col}}, goods:{key:{name,color,category}}, prov:{provId:key}} or null.
+const TRADE_GOODS = window.TRADEGOODS || null;
 // political layer: filled lazily from web/political.js on first switch to Political mode
 // (see panel.ensurePolitical). Kept as stable object refs so importers see the populated tables.
 const COUNTRIES = {};   // owner tag -> {name, color}
@@ -198,4 +202,4 @@ export const S = {
   techOpen: false,       // the tech-tree modal is up — paint() pauses map rendering behind it
 };
 
-export { P, fmtInt, apiUrl, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };
+export { P, fmtInt, apiUrl, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };

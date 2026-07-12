@@ -9,15 +9,20 @@
 //   import { decodeDds } from './dds.mjs';
 //   const { width, height, rgba } = decodeDds(fs.readFileSync('x.dds'));
 //
-// Supports the three classic FourCC block formats (DXT1/DXT3/DXT5). Throws on
-// uncompressed or DX10-extended-header .dds — the caller falls back gracefully.
+// Supports the three classic FourCC block formats (DXT1/DXT3/DXT5) plus DX10
+// uncompressed B8G8R8A8 / R8G8B8A8 (the format Anbennar's gfx/interface/resources.dds
+// icon strip uses). Throws on other uncompressed layouts — the caller falls back gracefully.
 
 const MAGIC = 0x20534444;        // 'DDS ' little-endian
 const FLAG_FOURCC = 0x4;         // DDPF_FOURCC in ddspf.dwFlags
 
 // FourCC codes as little-endian uint32
 const fourCC = s => s.charCodeAt(0) | (s.charCodeAt(1) << 8) | (s.charCodeAt(2) << 16) | (s.charCodeAt(3) << 24);
-const DXT1 = fourCC('DXT1'), DXT3 = fourCC('DXT3'), DXT5 = fourCC('DXT5');
+const DXT1 = fourCC('DXT1'), DXT3 = fourCC('DXT3'), DXT5 = fourCC('DXT5'), DX10 = fourCC('DX10');
+
+// the DXGI_FORMAT values (in the 20-byte DX10 header) this decoder handles as raw 32-bit pixels
+const DXGI_B8G8R8A8_UNORM = 87, DXGI_B8G8R8A8_UNORM_SRGB = 91;   // BGRA byte order
+const DXGI_R8G8B8A8_UNORM = 28, DXGI_R8G8B8A8_UNORM_SRGB = 29;   // RGBA byte order
 
 /**
  * Decode a DDS buffer's top mip to RGBA.
@@ -32,9 +37,10 @@ export function decodeDds(buf) {
   const pfFlags = dv.getUint32(80, true);
   const cc = dv.getUint32(84, true);
   if (!(pfFlags & FLAG_FOURCC)) throw new Error('DDS is uncompressed (no FourCC) — unsupported');
+  if (cc === DX10) return decodeDx10Uncompressed(dv, buf, width, height);
   if (cc !== DXT1 && cc !== DXT3 && cc !== DXT5) {
     const tag = String.fromCharCode(cc & 255, (cc >> 8) & 255, (cc >> 16) & 255, (cc >> 24) & 255);
-    throw new Error(`unsupported DDS FourCC "${tag}" (only DXT1/3/5)`);
+    throw new Error(`unsupported DDS FourCC "${tag}" (only DXT1/3/5, DX10)`);
   }
   const data = 128;                            // classic DDS header is 4 + 124 bytes
   const rgba = new Uint8Array(width * height * 4);
@@ -44,6 +50,26 @@ export function decodeDds(buf) {
   for (let by = 0; by < bh; by++)
     for (let bx = 0; bx < bw; bx++, off += blockBytes)
       decodeBlock(dv, off, cc, rgba, width, height, bx * 4, by * 4);
+  return { width, height, rgba };
+}
+
+// Decode a DX10-extended, uncompressed 32-bit surface (header: 4 + 124 DDS + 20 DX10 = 148 bytes,
+// then raw rows at pitch = width*4). Handles the B8G8R8A8 / R8G8B8A8 dxgiFormats — the only
+// uncompressed layouts we bake from (Anbennar's resources.dds is B8G8R8A8_UNORM_SRGB).
+function decodeDx10Uncompressed(dv, buf, width, height) {
+  const dxgi = dv.getUint32(128, true);          // first field of the 20-byte DX10 header
+  const bgra = dxgi === DXGI_B8G8R8A8_UNORM || dxgi === DXGI_B8G8R8A8_UNORM_SRGB;
+  const rgbaOrder = dxgi === DXGI_R8G8B8A8_UNORM || dxgi === DXGI_R8G8B8A8_UNORM_SRGB;
+  if (!bgra && !rgbaOrder)
+    throw new Error(`unsupported DX10 dxgiFormat ${dxgi} (only B8G8R8A8 / R8G8B8A8)`);
+  const data = 148;                              // 4 magic + 124 DDS header + 20 DX10 header
+  const src = new Uint8Array(buf.buffer, buf.byteOffset + data, width * height * 4);
+  const rgba = new Uint8Array(width * height * 4);
+  for (let i = 0; i < width * height; i++) {
+    const o = i * 4;
+    if (bgra) { rgba[o] = src[o + 2]; rgba[o + 1] = src[o + 1]; rgba[o + 2] = src[o]; rgba[o + 3] = src[o + 3]; }
+    else { rgba[o] = src[o]; rgba[o + 1] = src[o + 1]; rgba[o + 2] = src[o + 2]; rgba[o + 3] = src[o + 3]; }
+  }
   return { width, height, rgba };
 }
 
