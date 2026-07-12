@@ -244,7 +244,7 @@ public final class WorldBundle {
 		meta.set("seed", manifest.get("seed"));
 		root.set("provinces", provinces);
 		for (String k : List.of("map", "terrainColors", "terrainLayer", "terrainTiles", "river",
-				"sea", "shore", "ice", "bonusIcons", "trees", "featureOverlays", "seaBands", "loading"))
+				"sea", "shore", "ice", "bonusIcons", "trees", "featureOverlays", "improvementOverlays", "seaBands", "loading"))
 			root.set(k, manifest.get(k));
 		root.set("geo", geo);
 		root.set("adjacencies", adjacencies);

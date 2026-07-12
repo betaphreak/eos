@@ -59,6 +59,7 @@ const SHORE = BUNDLE.shore;        // greyscale shore-wave tile {src, tile} for 
 const ICE_ART = BUNDLE.ice;        // real Civ4 pack-ice tile {src, tile}, or null (procedural pale floes)
 const BONUS_ICONS = BUNDLE.bonusIcons;  // real Civ4 resource icons {src, cell, cols, index:{type:i}}, or null (procedural glyphs)
 const FEATURE_OVERLAYS = BUNDLE.featureOverlays; // flat Civ6 SV feature overlays {FEATURE_*: {src,w,h}}, or null (C2C billboards)
+const IMPROVEMENT_OVERLAYS = BUNDLE.improvementOverlays; // flat Civ6 SV improvement overlays {IMPROVEMENT_*: {src,w,h}}, or null (placement deferred — nothing carries an improvement yet)
 const TREES = BUNDLE.trees;        // real Civ4 foliage sprites {leafy,palm,swamp:{src,w,h,sprites}}, or null (procedural blobs)
 const SEA_BANDS = BUNDLE.seaBands; // {trop, temp, polar, shore} climate sea + shallows colours
 // per-province trade good (docs/trade-goods.md), loaded eagerly from the static web/tradegoods.js
@@ -208,4 +209,4 @@ export const S = {
   techOpen: false,       // the tech-tree modal is up — paint() pauses map rendering behind it
 };
 
-export { P, fmtInt, apiUrl, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, FEATURE_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };
+export { P, fmtInt, apiUrl, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };

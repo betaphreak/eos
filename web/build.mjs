@@ -272,6 +272,7 @@ const bonusIcons = bakeBonusIcons();         // {src, cell, cols, index:{type:i}
 const tradeGoodIcons = bakeTradeGoodIcons(); // {src, cell, cols, index:{key:col}} Anbennar trade-good icons, or null
 const trees = bakeFeatureSprites();          // {leafy,palm,swamp:{src,w,h,sprites}} real foliage cutouts, or null
 const featureOverlays = bakeFeatureOverlays(); // {FEATURE_*: {src,w,h}} flat Civ6 SV feature overlays, or null
+const improvementOverlays = bakeImprovementOverlays(); // {IMPROVEMENT_*: {src,w,h}} flat Civ6 SV improvement overlays, or null
 const seaBands = bakeSeaBands();             // {trop, temp, polar, shore} climate sea + shore colours
 const plotProvinceCount = computeWaterBboxes(provinces);
 
@@ -393,7 +394,7 @@ const bboxes = {};                    // ring-less (sea/lake) provinces' plot-ex
 for (const p of provinces) if (p.bbox) bboxes[p.id] = p.bbox;
 const manifest = {
   seed: +SEED,
-  map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, ice, bonusIcons, trees, featureOverlays, seaBands,
+  map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, ice, bonusIcons, trees, featureOverlays, improvementOverlays, seaBands,
   loading,                            // committed loading-screen art (assets/loading/loading-*.jpg), or []
   bboxes,                             // {provId: [x0,y0,x1,y1]} for ring-less provinces (server can't derive)
 };
@@ -415,6 +416,7 @@ console.log(`  terrain tiles: ${terrainTiles ? terrainTiles.src + ' (' + Object.
 console.log(`  river tile: ${river ? river.src : 'skipped (no allriverssmall.dds / LFS)'}`);
 console.log(`  sea tile: ${sea ? sea.src : 'skipped (no seadetail.dds / LFS)'} · bands trop/temp/polar ${JSON.stringify([seaBands.trop, seaBands.temp, seaBands.polar])}`);
 console.log(`  ice tile: ${ice ? ice.src : 'skipped (no icepack_1024.dds / LFS)'}`);
+console.log(`  improvement overlays: ${improvementOverlays ? Object.keys(improvementOverlays).length + ' Civ6 SV (placement deferred)' : 'skipped (no Civ6 depot)'}`);
 
 // ---------------------------------------------------------------------------
 // terrain baking
@@ -1020,6 +1022,29 @@ function bakeFeatureOverlays() {
   const n = new Set(Object.values(out)).size;
   if (!n) return null;
   console.log(`  feature overlays: ${n} Civ6 flat SV (${Object.keys(out).join(', ')})`);
+  return out;
+}
+
+// Bake the flat Civ6 strategic-view IMPROVEMENT overlays (docs/civ6-art-replacement.md §F): the three
+// improvements Civ6 ships a flat SV for — Farm/Mine/Quarry — each a 128² centred symbol on transparent
+// (kept as an alpha cutout, blitted over an improved plot like a feature overlay). The other C2C
+// improvements have no Civ6 flat SV and are deferred (logged, not silently dropped). Civ6-only: returns
+// null when the depot is absent (no C2C improvement art is baked today). Placement is deferred — the
+// frontend layer draws these on plots carrying an `improvement`, which the engine does not emit yet.
+function bakeImprovementOverlays() {
+  const IMPS = ['IMPROVEMENT_FARM', 'IMPROVEMENT_MINE', 'IMPROVEMENT_QUARRY'];
+  const T = 128, out = {};
+  for (const imp of IMPS) {
+    const file = civ6.improvementOverlay(imp);
+    if (!file) continue;
+    const img = decodeCached(file);
+    if (!img) continue;
+    const rgba = resampleRGBA(img.rgba, img.width, img.height, T, T);
+    const name = 'improvements/imp-' + imp.replace('IMPROVEMENT_', '').toLowerCase();
+    out[imp] = { src: queueWebpRGBA(name, T, T, rgba, { quality: 88 }), w: T, h: T };
+  }
+  if (!Object.keys(out).length) return null;
+  console.log(`  improvement overlays: ${Object.keys(out).length} Civ6 flat SV (${Object.keys(out).join(', ')}); placement deferred`);
   return out;
 }
 

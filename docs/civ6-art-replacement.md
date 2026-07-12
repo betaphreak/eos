@@ -180,7 +180,18 @@ SULPHUR, VANILLA, WALRUS). Full per-bonus table: `civ6-assets.md` §8.
   drawn over the sea base and under the land, and **faded out entering the plot band** (`[K_PLOT,K_TEX]` =
   5→16×) exactly where the per-plot shelf floes fade in — so the two never double. Verified at world,
   regional and deep zoom (both hemispheres).
-- **Phase 5** — Improvements (Farm/Mine/Quarry) + new frontend layer; routes deferred.
+- **Phase 5** ✅ (art + layer; **placement deferred**) — the three improvements Civ6 ships a flat SV for —
+  **Farm/Mine/Quarry** — baked as 128² alpha overlays (`bakeImprovementOverlays` → `improvements/imp-*.webp`
+  + a `improvementOverlays` manifest key, added to `WorldBundle`'s allow-list). A new frontend layer
+  (`plots.mjs improvementSprite` + a per-plot pass, mirroring the feature-overlay path) draws the overlay on
+  any plot carrying an `improvement`. **No placement yet** (owner's call): `ProvincePlot` is
+  `(geo,terrain,plotType,feature,bonus)` — no `improvement` field — and the engine emits none, so the layer
+  is wired but dormant. Verified by injecting improvements onto a province's plots in-app: the overlays draw
+  correctly (farm on flat, mine on hills, quarry on bonuses). **Planned placement rule** (owner: *Both*) —
+  when it lands (engine plot field or a frontend-derived pass): resource-improvements wherever a bonus
+  matches (mine→ore/metal, farm→crops, quarry→stone/marble/gems) **plus** a farm scatter on good farmland
+  near the urban core. The other improvements (pasture, plantation, cottage-line, lumbermill, camp, winery)
+  and **routes** have no Civ6 flat SV and stay deferred (logged, not silently dropped).
 
 Each phase: bake → `node web/build.mjs` → refresh engine jar + `spring-boot:run` → webverify screenshots
 across bands → commit (gated on the licensing decision).

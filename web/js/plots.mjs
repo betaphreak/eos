@@ -1,4 +1,4 @@
-import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, provOnScreen, apiUrl, K_PLOT, K_MAX, TT, RIVER, SHORE, ICE_ART, BONUS_ICONS, TRADE_GOODS, TREES, FEATURE_OVERLAYS, SEA_BANDS, LY, NB4, cam, VIEW, ctx, px, py, pxr, pyr, lerp, S } from "./core.mjs";
+import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, provOnScreen, apiUrl, K_PLOT, K_MAX, TT, RIVER, SHORE, ICE_ART, BONUS_ICONS, TRADE_GOODS, TREES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, LY, NB4, cam, VIEW, ctx, px, py, pxr, pyr, lerp, S } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { bandAlpha, kBand, atLeast, BAND } from "./bands.mjs";
 import { renderRail } from "./panel.mjs";
@@ -58,6 +58,16 @@ if (FEATURE_OVERLAYS) { const imgBySrc = {};
       for (const p of P) p._tcanvas = null;
     });
     foImg[k] = imgBySrc[asset.src];
+  }
+}
+// flat Civ6 strategic-view improvement overlays (docs/civ6-art-replacement.md §F): one 128² alpha sprite
+// per Civ6-covered improvement (Farm/Mine/Quarry), blitted centred on an improved plot — like a feature
+// overlay. Placement is DEFERRED: nothing carries an `improvement` yet (the engine doesn't emit one), so
+// this layer is wired but draws nothing until per-plot placement lands. Keyed by IMPROVEMENT_*.
+const impImg = {}, impReady = {};
+if (IMPROVEMENT_OVERLAYS) {
+  for (const k of Object.keys(IMPROVEMENT_OVERLAYS)) {
+    impImg[k] = loadArt(IMPROVEMENT_OVERLAYS[k], () => { impReady[k] = true; for (const p of P) p._tcanvas = null; });
   }
 }
 // split the atlas strip into a per-terrain tile canvas, so each can be a repeating
@@ -412,6 +422,11 @@ function buildPlotTexCanvas(p) {
   }
   for (const q of p._plots) {
     if (q.feature) { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; featureSprite(o, cx, cy, tpp, q.feature, q.x, q.y); }
+  }
+  // improvements: a flat Civ6 SV overlay (farm/mine/quarry) over each improved plot, on top of the
+  // ground + feature. No-op today — nothing carries an `improvement` yet (placement deferred).
+  for (const q of p._plots) {
+    if (q.improvement) { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; improvementSprite(o, cx, cy, tpp, q.improvement, q.x, q.y); }
   }
   // the city: a Civ4 city sprite over each urban core plot, sized by province development
   for (const q of p._plots) {
@@ -770,6 +785,15 @@ function featureSprite(o, cx, cy, s, feature, sx, sy) {
   if (!g) return;
   const rng = mkRng((sx * 73856093) ^ (sy * 19349663));
   stampTrees(o, cx, cy, s, g, rng);              // real foliage sprites; nothing if not yet loaded
+}
+// A flat Civ6 SV improvement overlay (farm/mine/quarry) centred on an improved plot. A 128² alpha sprite
+// blitted to fill the plot; per-plot horizontal flip breaks the tiling like the feature overlays. Nothing
+// draws if the art isn't loaded, the improvement is uncovered by Civ6, or (today) the plot has no
+// improvement at all — placement is deferred (docs/civ6-art-replacement.md §F).
+function improvementSprite(o, cx, cy, s, improvement, sx, sy) {
+  if (!impImg[improvement] || !impReady[improvement]) return;
+  if ((sx ^ sy) & 1) { o.save(); o.translate(cx + s, cy); o.scale(-1, 1); o.drawImage(impImg[improvement], 0, 0, s, s); o.restore(); }
+  else o.drawImage(impImg[improvement], cx, cy, s, s);
 }
 // A single Civ4 city sprite centred on an urban core plot (docs/urban-plots.md). The city is
 // one connected building cluster, so it uses the largest baked sprite; its height scales with
