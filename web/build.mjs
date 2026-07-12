@@ -1065,7 +1065,7 @@ function bakeSpriteGroup(artPath, name) {
 // flora (bamboo, cactus, tall-grass, savanna) is intentionally absent → keeps its billboard bake.
 // Returns {FEATURE_*: {src,w,h}} or null (depot absent → frontend keeps all billboards).
 function bakeFeatureOverlays() {
-  const FEATS = ['FEATURE_FOREST', 'FEATURE_FOREST_ANCIENT', 'FEATURE_JUNGLE', 'FEATURE_SWAMP', 'FEATURE_OASIS'];
+  const FEATS = ['FEATURE_SWAMP', 'FEATURE_OASIS'];   // forest/jungle keep the varied C2C leafy billboards
   const T = 128, out = {}, byFile = {};
   for (const feat of FEATS) {
     const file = civ6.featureOverlay(feat);

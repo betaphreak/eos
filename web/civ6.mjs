@@ -91,13 +91,14 @@ export function terrainGround(terrainKey) {
 }
 
 // ---- Features (docs/civ6-assets.md §5, flat SV overlays) -----------------------------------------
-// Civ6-covered CivStudio features -> the flat strategic-view overlay. C2C-only flora (BAMBOO, CACTUS,
-// VERY_TALL_GRASS, SAVANNA) are intentionally absent → featureOverlay() returns null → C2C billboards.
+// Civ6-covered CivStudio features -> the flat strategic-view overlay. FOREST/JUNGLE are intentionally
+// ABSENT: Civ6's flat 2D forest is a single hex tile (one variation → a repetitive, ugly tiled look),
+// while its variety lives in 3D tree models we can't flatten. So forest/jungle keep the C2C leafy
+// BILLBOARDS (10 scattered, rotated/scaled cutout variants — real tree variation). C2C-only flora
+// (BAMBOO, CACTUS, VERY_TALL_GRASS, SAVANNA) are absent for the same fall-through-to-billboards reason.
 export const FEATURE_OVERLAY = {
-  FEATURE_FOREST: 'Features_Forest_Visible', FEATURE_FOREST_ANCIENT: 'Features_Forest_Visible',
-  FEATURE_JUNGLE: 'Features_Jungle_Visible', FEATURE_SWAMP: 'Features_Marsh_Visible',
-  FEATURE_OASIS: 'Features_Oasis_Visible', FEATURE_FLOOD_PLAINS: 'Features_Floodplains_Visible',
-  FEATURE_ICE: 'Features_Icecaps_Visible',
+  FEATURE_SWAMP: 'Features_Marsh_Visible', FEATURE_OASIS: 'Features_Oasis_Visible',
+  FEATURE_FLOOD_PLAINS: 'Features_Floodplains_Visible', FEATURE_ICE: 'Features_Icecaps_Visible',
 };
 
 /** Civ6 flat feature-overlay texture for a CivStudio feature key; null → keep the C2C billboard bake. */
