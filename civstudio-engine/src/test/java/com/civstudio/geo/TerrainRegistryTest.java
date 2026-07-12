@@ -25,9 +25,10 @@ class TerrainRegistryTest {
 		// the curated subset sizes pinned in docs/plots.md — 16 settleable land
 		// terrains plus the 8 shelf water terrains (coast/sea + polar/tropical, lake
 		// shore/lake) the coastal-shelf plots ground on (see docs/coastlines.md), plus
-		// the 8 authored source-less terrains (cavern, mushroom forest, and the special
-		// Anbennar surface terrains; see docs/underworld.md)
-		assertEquals(32, reg.terrains().size(), "curated + shelf water + authored terrains");
+		// the 9 authored source-less terrains (cavern, mushroom forest, the special
+		// Anbennar surface terrains — see docs/underworld.md — and TERRAIN_URBAN, the
+		// built-up city ground — see docs/urban-plots.md)
+		assertEquals(33, reg.terrains().size(), "curated + shelf water + authored terrains");
 		assertEquals(11, reg.features().size(), "curated land features + FEATURE_ICE");
 		assertEquals(12, reg.improvements().size(), "curated firm-building improvements");
 		// bonuses are exported in full (no curated subset), so the count is the

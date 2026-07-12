@@ -89,7 +89,7 @@ const byId = new Map(allProv.map(p => [p.id, p]));
 const LANDLIKE = new Set(["LAND",
   "CAVERN", "DWARVEN_HOLD", "DWARVEN_HOLD_SURFACE", "DWARVEN_ROAD",
   "ANCIENT_FOREST", "GLADEWAY", "FEY_GLADEWAY", "BLOODGROVES", "MUSHROOM_FOREST",
-  "SHADOW_SWAMP", "GLACIER"]);
+  "SHADOW_SWAMP", "GLACIER", "URBAN"]);
 
 // WorldMap: ship every land-like province (the whole world, surface + underground), not
 // just the caravan crop — the caravan run only supplies the optional Caravan-mode overlay.
@@ -655,6 +655,8 @@ function terrainDisplayColors(real) {
     TERRAIN_ANCIENT_FOREST: [30, 52, 22], TERRAIN_GLADEWAY: [56, 116, 52],
     TERRAIN_FEY_GLADEWAY: [42, 112, 98], TERRAIN_BLOODGROVES: [96, 36, 34],
     TERRAIN_SHADOW_SWAMP: [48, 46, 60], TERRAIN_GLACIER: [180, 198, 210],
+    // built-up city ground — a concrete/pavement grey the city sprite stands on (docs/urban-plots.md)
+    TERRAIN_URBAN: [120, 116, 110],
     // water (coastal-shelf plots only — deep ocean has no plots and stays the animated base
     // gradient). COAST is the bright shallow shelf, SEA the darker shelf edge, so the terrain
     // key alone gives a coast→sea depth ramp; polar reads greyer, tropical more turquoise.
@@ -667,7 +669,7 @@ function terrainDisplayColors(real) {
   // warm, not rocky grey. Force these to their authored colour, overriding the real average.
   const AUTHORED = ['TERRAIN_CAVERN', 'TERRAIN_MUSHROOM_FOREST', 'TERRAIN_ANCIENT_FOREST',
     'TERRAIN_GLADEWAY', 'TERRAIN_FEY_GLADEWAY', 'TERRAIN_BLOODGROVES', 'TERRAIN_SHADOW_SWAMP',
-    'TERRAIN_GLACIER',
+    'TERRAIN_GLACIER', 'TERRAIN_URBAN',
     'TERRAIN_COAST', 'TERRAIN_COAST_POLAR', 'TERRAIN_COAST_TROPICAL', 'TERRAIN_SEA',
     'TERRAIN_SEA_POLAR', 'TERRAIN_SEA_TROPICAL', 'TERRAIN_LAKE', 'TERRAIN_LAKE_SHORE'];
   const hex = c => '#' + [0, 1, 2].map(k => Math.max(0, Math.min(255, c[k] | 0)).toString(16).padStart(2, '0')).join('');

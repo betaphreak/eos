@@ -470,4 +470,13 @@
   "layerOrder" : 2,
   "alphaShader" : false,
   "blend" : { }
+}, {
+  "terrain" : "TERRAIN_URBAN",
+  "artTag" : "ART_DEF_TERRAIN_URBAN",
+  "path" : "Art/Terrain/Textures/Land/RockyBlend.dds",
+  "grid" : "Art/Terrain/Textures/Land/RockyGrid.dds",
+  "detail" : "Art/Terrain/Textures/Land/RockyDetail.dds",
+  "layerOrder" : 13,
+  "alphaShader" : false,
+  "blend" : { }
 } ]

@@ -222,4 +222,11 @@
   "buildModifier" : 0,
   "healthPercent" : 0,
   "movement" : 1
+}, {
+  "type" : "TERRAIN_URBAN",
+  "yields" : [ 1, 1, 3 ],
+  "bFound" : true,
+  "buildModifier" : 0,
+  "healthPercent" : 0,
+  "movement" : 1
 } ]

@@ -65,6 +65,11 @@ public final class TerrainExporter {
 	 * <li>{@code TERRAIN_MUSHROOM_FOREST} — the <em>surface</em> fungal woodland of the
 	 * Haless {@code mushroom_forest_region} (not underground). Food-bearing: {@code
 	 * [food 2, prod 1, commerce 0]}.</li>
+	 * <li>{@code TERRAIN_URBAN} — built-up city ground (the Anbennar {@code city_terrain}
+	 * block, and the per-province city plot). Meager-food, trade-heavy: {@code [food 1,
+	 * prod 1, commerce 3]}. Only the base a city sprite stands on; yields are authored but
+	 * economically dormant this cut (the city plot is the unfarmed centre). See {@code
+	 * docs/urban-plots.md}.</li>
 	 * </ul>
 	 */
 	private static final List<Terrain> SYNTHETIC = List.of(
@@ -76,7 +81,9 @@ public final class TerrainExporter {
 			new Terrain("TERRAIN_FEY_GLADEWAY", new int[] { 2, 0, 1 }, true, 0, 0, 1),
 			new Terrain("TERRAIN_BLOODGROVES", new int[] { 1, 1, 0 }, true, 0, 0, 1),
 			new Terrain("TERRAIN_SHADOW_SWAMP", new int[] { 1, 1, 0 }, true, 0, 0, 1),
-			new Terrain("TERRAIN_GLACIER", new int[] { 0, 0, 0 }, true, 0, 0, 1));
+			new Terrain("TERRAIN_GLACIER", new int[] { 0, 0, 0 }, true, 0, 0, 1),
+			// built-up city ground (see docs/urban-plots.md)
+			new Terrain("TERRAIN_URBAN", new int[] { 1, 1, 3 }, true, 0, 0, 1));
 
 	private TerrainExporter() {
 	}

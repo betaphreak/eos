@@ -83,7 +83,15 @@ public final class TerrainArtExporter {
 					"Art/Terrain/Textures/Land/IceBlend.dds",
 					"Art/Terrain/Textures/Land/IceGrid.dds",
 					"Art/Terrain/Textures/Land/PermafrostDetail.dds",
-					2, false, Map.of()));
+					2, false, Map.of()),
+			// urban reuses the rocky ground (grey stone reads as pavement), recoloured to a
+			// concrete grey in the web bake — only the base the city sprite stands on; C2C has
+			// no city/pavement texture. See docs/urban-plots.md.
+			new TerrainArtInfo("TERRAIN_URBAN", "ART_DEF_TERRAIN_URBAN",
+					"Art/Terrain/Textures/Land/RockyBlend.dds",
+					"Art/Terrain/Textures/Land/RockyGrid.dds",
+					"Art/Terrain/Textures/Land/RockyDetail.dds",
+					13, false, Map.of()));
 
 	/** A {@link TerrainArtInfo} reusing the lush (green forest) ground textures. */
 	private static TerrainArtInfo lushArt(String terrain, String tag) {
