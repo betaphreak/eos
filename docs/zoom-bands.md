@@ -446,8 +446,13 @@ reorg.
    first-class z:[−1] entries (veil / cavern floors / cavern plots / rims), ending the opaque-underground
    asymmetry. Verified: overworld unchanged, underworld renders through the registry. The real
    per-province `z` data model + z=0 caps + `_plotsByZ` is the engine plan in §Introducing z-levels.
-6. **City skeleton.** Add `city.mjs` as a `regime:GROUND` layer: footprints (b6) → agent dots
-   (b7) → labels/pick (b8), fed by the live feed. The first genuinely new pixels.
+6. **City skeleton.** ✅ *Footprints done.* Added `js/city.mjs` (registered z:[0], fades in over band
+   5.5→6.2) — the urban core resolves into deterministic **building-lot grids**, denser with the
+   province's `dev`, subdividing the real `TERRAIN_URBAN` plots. Verified at z=256. **Deferred**: real
+   agent/household dots, per-building labels, and the Ground input pick — the live feed streams only
+   the colony's aggregate counts (population/firms/nobles), not agent/building positions, so those
+   need a feed/engine extension (§Introducing z-levels lists the plot side; agent positions are a
+   separate feed field).
 7. **Chrome + panel.** Envelope the always-on chrome (minimap hide in Ground, highlight stroke
    thinning, adjacency fade vs hard cutoff) and make the right panel a regime-scoped drill-path
    inspector (Almanac / Dispatch / Registry).
