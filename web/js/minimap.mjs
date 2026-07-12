@@ -1,4 +1,5 @@
 import { cam, VIEW, MAP, clampPan, worldW, S, stage } from "./core.mjs";
+import { band, BAND } from "./bands.mjs";
 
 // Minimap — a small world-raster thumbnail docked bottom-left of the stage, with a rectangle
 // marking the slice of the world the main camera currently frames. Click or drag it to recentre
@@ -80,8 +81,10 @@ export function drawMinimap() {
   fy0 = Math.max(0, Math.min(1, fy0)); fy1 = Math.max(0, Math.min(1, fy1));
   const fh = fy1 - fy0;
 
-  // at the world view the rectangle ≈ the whole map → hide; show as soon as either axis zooms in
-  const visible = ready && (fw < 0.985 || fh < 0.985);
+  // at the world view the rectangle ≈ the whole map → hide; show as soon as either axis zooms in.
+  // Also hidden in the Ground regime (band ≥ PLOT): at city-micro zoom the world thumbnail is noise
+  // and the deep view is the subject (docs/zoom-bands.md §chrome).
+  const visible = ready && (fw < 0.985 || fh < 0.985) && band() < BAND.PLOT;
   canvas.classList.toggle("on", visible);
   stage.classList.toggle("mm-on", visible);
   if (!visible) return;

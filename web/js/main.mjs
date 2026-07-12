@@ -1,5 +1,5 @@
 import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, isUnderground, latAtScreenY, cssVar, S } from "./core.mjs";
-import { bandAlpha, kBand, bandName, regime, REGIME_INFO } from "./bands.mjs";
+import { bandAlpha, kBand, band, bandName, regime, REGIME_INFO } from "./bands.mjs";
 import { drawPlots } from "./plots.mjs";                       // still used directly by drawCavernPlots
 import { scheduleLegendRefresh } from "./overlays/political.mjs";
 import { ensureTiers } from "./overlays/tiers.mjs";
@@ -274,26 +274,32 @@ function drawProvinceBorders() {
   for (const p of P) if (isSurface(p) && p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
   ctx.restore();
 }
+// selection/hover stroke thins as you dive — a 2px slab reads heavy against a city block; full ≤ band 3
+const hlScale = () => 1 - Math.min(0.5, Math.max(0, (band() - 3) / 8));
 // hovered province highlight (polygon if we have one, else a centroid ring for seas)
 function drawHoverHighlight() {
-  if (S.hoverProv && S.hoverProv.rings) {
+  if (!S.hoverProv) return;
+  const s = hlScale();
+  if (S.hoverProv.rings) {
     const hp = provPath(S.hoverProv);
     ctx.fillStyle = "rgba(231,236,244,.12)"; ctx.fill(hp);
-    ctx.strokeStyle = "#eef2f8"; ctx.lineWidth = 1.6; ctx.stroke(hp);
-  } else if (S.hoverProv) {
+    ctx.strokeStyle = "#eef2f8"; ctx.lineWidth = 1.6 * s; ctx.stroke(hp);
+  } else {
     ctx.beginPath(); ctx.arc(px(S.hoverProv.lon), py(S.hoverProv.lat), 6, 0, 7);
-    ctx.strokeStyle = "#eef2f8"; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.strokeStyle = "#eef2f8"; ctx.lineWidth = 1.4 * s; ctx.stroke();
   }
 }
 // selected province: a persistent accent outline while its detail fills the sidebar
 function drawSelectedHighlight() {
-  if (S.selectedProv && S.selectedProv.rings) {
+  if (!S.selectedProv) return;
+  const s = hlScale();
+  if (S.selectedProv.rings) {
     const sp = provPath(S.selectedProv);
     ctx.fillStyle = "rgba(232,183,106,.12)"; ctx.fill(sp);
-    ctx.strokeStyle = cssVar("--accent") || "#e8b76a"; ctx.lineWidth = 2.2; ctx.stroke(sp);
-  } else if (S.selectedProv) {
+    ctx.strokeStyle = cssVar("--accent") || "#e8b76a"; ctx.lineWidth = 2.2 * s; ctx.stroke(sp);
+  } else {
     ctx.beginPath(); ctx.arc(px(S.selectedProv.lon), py(S.selectedProv.lat), 7, 0, 7);
-    ctx.strokeStyle = cssVar("--accent") || "#e8b76a"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = cssVar("--accent") || "#e8b76a"; ctx.lineWidth = 2 * s; ctx.stroke();
   }
 }
 // Render one world-copy: lazily pull the tier geometry as we approach its zoom, then paint the
@@ -393,9 +399,12 @@ function nearestEdgePair(a, b) {
 }
 function drawAdjacencies() {
   const adj = BUNDLE.adjacencies;
-  if (!adj || !adj.length || cam.k < ADJ_MIN_ZOOM) return;   // hidden at world/continent view
+  if (!adj || !adj.length) return;
+  const aA = bandAlpha(kBand([ADJ_MIN_ZOOM - 2, ADJ_MIN_ZOOM + 2]));   // fade in around ~10× (was a hard pop)
+  if (aA <= 0.01) return;
   const under = S.plane === "underworld";
   ctx.save();
+  ctx.globalAlpha = aA;
   ctx.lineWidth = 1.4;
   ctx.strokeStyle = ADJ_RED;
   for (const [fromId, toId, , teleport] of adj) {

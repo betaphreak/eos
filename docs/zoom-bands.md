@@ -453,9 +453,14 @@ reorg.
    the colony's aggregate counts (population/firms/nobles), not agent/building positions, so those
    need a feed/engine extension (§Introducing z-levels lists the plot side; agent positions are a
    separate feed field).
-7. **Chrome + panel.** Envelope the always-on chrome (minimap hide in Ground, highlight stroke
-   thinning, adjacency fade vs hard cutoff) and make the right panel a regime-scoped drill-path
-   inspector (Almanac / Dispatch / Registry).
+7. **Chrome.** ✅ *Done.* Folded the always-on chrome onto the spine: the minimap hides in Ground
+   (band ≥ PLOT), the hover/selected highlight stroke thins with depth (full ≤ band 3 → ×0.5 by
+   band 7), and adjacency lines (straits/canals/tunnels) fade in around ~10× instead of a hard pop.
+   Verified: minimap present in Overland, gone in Ground; zero errors.
+8. **Drill-path panel.** Make the right panel a regime-scoped inspector (Almanac / Dispatch /
+   Registry) on a Nation ▸ Province ▸ Plot ▸ Household breadcrumb (§The right-side panel). Deferred —
+   a large `panel.mjs` restructure whose Ground *Registry* needs the per-agent/building data still
+   missing from the feed (the Phase 6 deferral); best done once that data lands.
 
 Each phase is independently shippable and verifiable by scrubbing the zoom across all
 nine bands (the existing `tools/webverify` `?p=&z=` deep link drives an exact band).
