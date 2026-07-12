@@ -161,7 +161,11 @@ SULPHUR, VANILLA, WALRUS). Full per-bonus table: `civ6-assets.md` §8.
   plot icons draw only at deep zoom, like terrain tiles — the LoD atlases are in place for when a layer
   that spans zoom bands needs them) and **yield symbols** (FontIcons.dds — needs a hand-authored cell
   map, like the resource atlas; a new capability, not a replacement).
-- **Phase 3** — Features → flat SV overlays (hybrid) + the new overlay draw path.
+- **Phase 3** ✅ — Features → flat Civ6 SV overlays (forest/forest_ancient/jungle/swamp→marsh/oasis),
+  one 128² tile each, blitted to fill a featured plot (per-plot h-flip breaks tiling); C2C-only flora
+  (bamboo/cactus/tall-grass/savanna) keeps billboards. New `featureOverlays` manifest key +
+  `featureSprite` overlay branch. Gotcha fixed: new top-level manifest keys must be added to
+  `WorldBundle`'s manifest→bundle allow-list. Verified live.
 - **Phase 4** — Water (ice only).
 - **Phase 5** — Improvements (Farm/Mine/Quarry) + new frontend layer; routes deferred.
 
