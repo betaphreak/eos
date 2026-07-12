@@ -104,7 +104,12 @@ function resize() {
     const y = VIEW.h/2 - k*(VIEW.dy + prev.fy*VIEW.dh);
     if (Number.isFinite(k) && Number.isFinite(x) && Number.isFinite(y)) { cam.k = k; cam.x = x; cam.y = y; }
   }
-  clampPan(); draw();
+  clampPan();
+  // Repaint SYNCHRONOUSLY, not via the RAF-coalesced draw(): setting cv.width/height above cleared the
+  // canvas this frame, so deferring the paint to the next frame leaves the browser compositing a blank
+  // canvas — which shows as the map blanking out while the side panel animates its size (the
+  // ResizeObserver fires every frame). Painting now fills the freshly-sized canvas in the same frame.
+  paint();
 }
 const zoomLabelEl = document.getElementById("zoomLevel");   // top-left live magnification readout
 // draw() is the public redraw request — it COALESCES to one paint per animation frame, so a burst of
