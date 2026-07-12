@@ -10,153 +10,41 @@ import java.util.OptionalInt;
 import java.util.Set;
 
 import com.civstudio.agent.firm.NFirm;
-import com.civstudio.agent.march.Camp;
-import com.civstudio.agent.march.March;
-import com.civstudio.agent.march.MarchConfig;
-import com.civstudio.agent.march.MarchDay;
-import com.civstudio.agent.march.MarchFlavor;
-import com.civstudio.agent.march.MarchReport;
 import com.civstudio.agent.ruler.Ruler;
 import com.civstudio.bank.Bank;
-import com.civstudio.era.Era;
-import com.civstudio.geo.Bonus;
-import com.civstudio.geo.LandRouter;
 import com.civstudio.geo.Province;
-import com.civstudio.geo.Route;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.good.Good;
-import com.civstudio.good.RationSize;
-import com.civstudio.good.ResourceType;
 import com.civstudio.settlement.GameSession;
-import com.civstudio.settlement.Plot;
-import com.civstudio.settlement.PlotCorridor;
-import com.civstudio.settlement.ProvincePlotPool;
 import com.civstudio.settlement.Settlement;
-import com.civstudio.settlement.SolarClock;
-import com.civstudio.tech.ResearchSnapshot;
-import com.civstudio.tech.Tech;
-import com.civstudio.tech.TechTree;
 import com.civstudio.util.Rng;
 import lombok.Getter;
 
 /**
- * The <b>dissolution-born</b> wandering band: a {@link Caravan} that carries a
- * {@link #getFollowing() following} (its people and larder) and the {@link
- * #getResearch() research} of its abandoned settlement, <b>wanders</b> the province
- * graph to a viable site, and <b>re-founds</b> a fresh colony there (see {@code
- * docs/caravan.md}, {@code docs/caravan-trade.md}). The universal band state (leader,
- * hoard, position, movement) lives on the {@link Caravan} base; here lives only what a
- * <em>settler</em> band needs.
+ * The <b>dissolution-born settler</b> band: a {@link MarchingCaravan} whose goal is to
+ * <b>re-found a fresh colony</b> — the settler flavor (C2C {@code UNITAI_SETTLE}). It
+ * carries the {@link #getFollowing() following} and {@link #getResearch() research} of its
+ * abandoned settlement, <b>wanders</b> the province graph to a viable site (or marches to a
+ * fixed {@link #setDestination(int) destination}), and <b>settles</b> there (see {@code
+ * docs/caravan.md}, {@code docs/caravan-trade.md}). The shared journey machinery — the
+ * following/larder, the daylight-bounded march, forage/gather and the nightly camp — lives
+ * on {@link MarchingCaravan}; here lives only the <em>settle</em> goal.
  * <p>
- * A {@code MigrantCaravan} is produced by <b>dissolution</b> ({@link
- * #dissolve(Settlement)}): a failing settlement crosses the <em>hinge</em> from
- * settled to mobile — its circulating money nets into the hoard, its surviving
- * households collapse into the following, and the sovereign leads the band out as its
- * Captain.
- * <p>
- * <b>Wandering and settling.</b> Each day ({@link #tick(LocalDate, Rng)}) an on-graph band eats
- * the lean {@link #WANDERING_RATION} from its carried larder (a decaying asset — the
- * unfed starve) and steps one hop toward the <b>nearest viable site</b> — a
- * settleable {@link Province} large enough to found into, that is not the one it just
- * abandoned. On reaching such a site with a workforce still in hand it stops and marks
- * itself {@linkplain #isReadyToSettle() ready to settle}; a runner then re-founds it
- * into that province (see {@code SimulationHarness.reFoundStandardColony} /
- * {@code GameSession.newSettlement(Caravan, …)}). All movement and the site choice
- * ride a session-level RNG (passed to {@link #tick(LocalDate, Rng)}), never a colony's economic
- * stream, so bands on the map stay reproducible.
+ * A {@code MigrantCaravan} is produced by <b>dissolution</b> ({@link #dissolve(Settlement)}):
+ * a failing settlement crosses the <em>hinge</em> from settled to mobile — its circulating
+ * money nets into the hoard, its surviving households collapse into the following, and the
+ * sovereign leads the band out as its Captain.
  */
-public class MigrantCaravan extends Caravan {
-
-	/**
-	 * The daily ration a wandering band eats from its carried larder while not
-	 * settled — {@link RationSize#SNACK}, leaner even than poor relief, because a band
-	 * on the move cannot restock on a market.
-	 */
-	public static final RationSize WANDERING_RATION = RationSize.SNACK;
+public class MigrantCaravan extends MarchingCaravan {
 
 	// the band will not re-found with fewer than this many followers in hand — too few
 	// to promote a workforce into the new colony (a viable founding needs a labor pool).
 	private static final int MIN_SETTLERS = 10;
 
-	// the band's following: its unranked people and their larder, detached from any
-	// settlement (the same Retinue that is a settled colony's labour reserve)
-	@Getter
-	private final Retinue following;
-
-	// the province the band set out from (the one its colony just abandoned): it will
-	// not re-found here, only at a fresh site. OFF_GRAPH for an off-graph band.
-	private final int originProvinceId;
-
-	// the viable site the band is currently walking toward (OFF_GRAPH = none chosen yet
-	// / none reachable); recomputed when unset or reached.
-	private int targetProvinceId = OFF_GRAPH;
-
 	// set once the band reaches a viable site and decides to settle; from then it stops
 	// moving and awaits re-founding (see isReadyToSettle).
 	@Getter
 	private boolean readyToSettle = false;
-
-	// the tech tree the band carries out of its abandoned settlement (null if it never
-	// had research): what it knows and was researching, restored onto the colony it
-	// re-founds so progress is not lost (see MigrantCaravan.dissolve / ResearchState.restore)
-	@Getter
-	private ResearchSnapshot research;
-
-	/**
-	 * The tech a band departs with by default — a <b>medieval lifestyle</b>. Its era's
-	 * pre-known set is the band's {@linkplain #knownTechs() tech state} when it carries no
-	 * research of its own, so a fresh band identifies only the resources a medieval people
-	 * would know (not, say, an oil or uranium deposit locked behind far-future techs).
-	 */
-	public static final String DEFAULT_TECH = "TECH_MEDIEVAL_LIFESTYLE";
-
-	// the band's tech state: the set of tech ids it knows, which gates which resource
-	// bonuses it can identify (forage / gather / report). Lazily defaulted (see knownTechs)
-	// from the carried research, else the DEFAULT_TECH baseline; overridable via setKnownTechs.
-	private Set<String> knownTechs;
-
-	// fractional gathering progress per good (keyed by bonus type): cargo goods are
-	// discrete, so a day's part-unit work accrues here and only whole units are
-	// deposited into the carried cargo (see gather)
-	private final java.util.Map<String, Double> gatherProgress = new java.util.LinkedHashMap<>();
-
-	// the daylight-bounded march (docs/caravan-march.md): the calibration constants, the
-	// distance-accurate route the band spends its daily distance along, and where it is
-	// on that route (which boundary hop, and how far into it — carried across days so a
-	// long hop takes several days).
-	private final MarchConfig marchConfig = MarchConfig.DEFAULT;
-	private LandRouter router; // lazily built over the band's world map
-	private Route route;       // the current route toward the chosen target
-	private int legIndex;      // the hop of `route` the band is currently crossing
-	private double progressKm; // km already covered into the current leg's cost
-	// the current leg's cost = the plot-corridor distance across the province the band is
-	// in (KM_PER_PLOT × corridor cost) + the boundary hop into the next; and the river
-	// fords on that corridor (each a full day). Computed lazily per leg (docs/caravan-march.md §6).
-	private double legKmCost;
-	private int legFords;
-	private boolean legReady;
-
-	// the last day's computed march and its print-ready report (exposed for the journal
-	// and tests); null until the band has ticked at least once on the graph
-	@Getter
-	private MarchDay lastMarchDay;
-	@Getter
-	private MarchReport lastReport;
-
-	// the plot the band is camped on tonight (a transient PlotOccupant), or null. Camping
-	// generates the province's plot field, so it is opt-in (the reporting drivers enable
-	// it); a bare wander leaves it off and pays no generation cost.
-	private boolean campingEnabled;
-	private Plot campPlot;
-	// the province the band crossed into its current one from (the corridor entry side);
-	// OFF_GRAPH until it has made a hop (then the entry portal falls back to the centroid)
-	private int enteredFrom = OFF_GRAPH;
-
-	// directed travel: when set (see setDestination), the band marches the route to a
-	// fixed destination and settles only on arriving there, rather than wandering to the
-	// nearest viable site. OFF_GRAPH = the default nearest-viable wander.
-	private int destination = OFF_GRAPH;
-	private boolean directed;
 
 	/**
 	 * Create an <b>on-graph</b> migration band anchored at a province, able to wander
@@ -171,12 +59,7 @@ public class MigrantCaravan extends Caravan {
 	 */
 	public MigrantCaravan(Member leader, Retinue following, double hoard, int provinceId,
 			GameSession session) {
-		super(leader, hoard, provinceId, session);
-		this.following = following;
-		this.originProvinceId = provinceId;
-		// a band on the move eats from its larder, marketless — put the following into
-		// its wandering mode (the WANDERING_RATION) for as long as it is a caravan
-		following.detach();
+		super(leader, following, hoard, provinceId, session);
 	}
 
 	/**
@@ -192,10 +75,7 @@ public class MigrantCaravan extends Caravan {
 	 */
 	public MigrantCaravan(Member leader, Retinue following, double hoard, double latitude,
 			double longitude) {
-		super(leader, hoard, latitude, longitude);
-		this.following = following;
-		this.originProvinceId = OFF_GRAPH;
-		following.detach();
+		super(leader, following, hoard, latitude, longitude);
 	}
 
 	/**
@@ -292,455 +172,35 @@ public class MigrantCaravan extends Caravan {
 		return band;
 	}
 
+	// ---- the settle goal (the settler flavor's mission) ---------------------------------
+
+	@Override
+	protected boolean journeyComplete() {
+		return readyToSettle;
+	}
+
 	/**
-	 * Advance the band by one day: eat the {@link #WANDERING_RATION} from the carried
-	 * larder, then either <b>settle</b> (if standing on a viable site that is not the
-	 * one just abandoned, with a workforce still in hand) or <b>step one hop</b> toward
-	 * the nearest viable site. Once it decides to settle it stops moving and reports
-	 * {@link #isReadyToSettle()} {@code true}, awaiting re-founding. An off-graph band,
-	 * or one already ready to settle, does nothing.
-	 *
-	 * @param date the current in-game date (unused until the daylight-bounded march of
-	 *             {@code docs/caravan-march.md} lands; threaded now so the band-tick
-	 *             signature is stable)
-	 * @param rng  the session-level band RNG (distinct from any colony's economic
-	 *             stream), for the deterministic site choice
+	 * Settle on arrival: at the fixed destination in directed mode, else at any viable site
+	 * that isn't the one just abandoned, with a workforce still in hand. On settling the
+	 * band stops moving and reports {@link #isReadyToSettle()} {@code true}, awaiting
+	 * re-founding.
 	 */
 	@Override
-	public MarchReport tick(LocalDate date, Rng rng) {
-		if (readyToSettle || !onGraph())
-			return null;
-		// one day on the larder clock: consume the wandering ration; the unfed starve
-		following.act();
-		if (following.size() == 0) {
-			releaseCamp();
-			return null; // a spent band — no one left to settle
-		}
-		// dawn: strike last night's camp before deciding today's move
-		releaseCamp();
-
-		// settle on arrival: at the fixed destination in directed mode, else at any viable
-		// site that isn't the one just abandoned
+	protected boolean arrive(LocalDate date, Rng rng) {
 		Province here = worldMap().province(getProvinceId());
-		boolean arrived = directed ? (getProvinceId() == destination)
+		boolean arrived = isDirected() ? atDestination()
 				: (getProvinceId() != originProvinceId && isViable(here)
 						&& following.size() >= MIN_SETTLERS);
 		if (arrived) {
 			readyToSettle = true;
-			return null; // settled today — no march row (and none on any later day)
+			return true; // settled today — no march (and none on any later day)
 		}
-
-		// the daylight-bounded day: the net distance D the band can relocate camp, from
-		// the daylight at its current position and its own column length (docs/caravan-march.md)
-		SolarClock clock = new SolarClock(getLatitude(), getLongitude());
-		clock.update(date);
-		MarchDay day = March.compute(date, following.size(), MarchFlavor.SETTLER,
-				clock.getDaylightHours(), clock.getSunrise(), marchConfig);
-		lastMarchDay = day;
-
-		// ensure a distance-accurate route toward the nearest viable site
-		ensureRoute(rng);
-
-		// spend D along that route: each leg is the plot corridor across the current
-		// province (KM_PER_PLOT × its plot cost — so rough/wild ground is slower) plus the
-		// boundary hop into the next, with river fords costing a full day. Partial progress
-		// carries across days, so a big/rough province takes several days to cross and a
-		// lean band in a long day may clear several short legs (docs/caravan-march.md §6).
-		List<Integer> traversed = new ArrayList<>();
-		traversed.add(getProvinceId());
-		double startBudget = day.netMarchKm();
-		double budget = startBudget;
-		while (budget > 1e-9 && route != null && legIndex < route.hops()) {
-			if (!legReady)
-				computeLeg();
-			if (legFords > 0) {
-				// fording a river on this leg's corridor halts the day's advance
-				legFords--;
-				budget = 0;
-				break;
-			}
-			double need = legKmCost - progressKm;
-			if (budget + 1e-9 >= need) {
-				budget -= need;
-				progressKm = 0;
-				legReady = false;
-				int next = route.provinces().get(legIndex + 1);
-				enteredFrom = getProvinceId(); // remember the side we cross in from
-				moveTo(next);
-				legIndex++;
-				traversed.add(next);
-			} else {
-				progressKm += budget;
-				budget = 0;
-			}
-		}
-
-		// resolve the plot corridor across the province the day ended in (entry portal
-		// from the side we came in, exit portal toward the next province) — the Level-2
-		// land route (docs/land-routing.md); camp on one of its plots and report them
-		PlotCorridor corridor = campingEnabled ? currentCorridor() : null;
-		Plot camp = campingEnabled ? claimCampOn(corridor) : null;
-		// the day's surplus daylight (what the capped march did not use) funds the
-		// off-march work: forage food into the larder first (survival), then gather
-		// non-food goods into the cargo with the hours foraging left over
-		double surplusHours = campingEnabled ? surplusHours(day, startBudget - budget) : 0;
-		double foraged = forage(surplusHours, corridor);
-		int gathered = gather(surplusHours, foraged, corridor);
-		lastReport = buildReport(date, day, traversed, corridor, foraged, gathered, camp);
-		return lastReport;
-	}
-
-	// the daylight left after the (capped) march and the camp overhead — the window the
-	// band forages and gathers in (docs/caravan-march.md)
-	private double surplusHours(MarchDay day, double movedKm) {
-		double hCamp = marchConfig.hCampBaseHours()
-				+ marchConfig.hCampPerThousand() * following.size() / 1000.0;
-		return Math.max(0, (day.daylightHours() - hCamp)
-				- (movedKm + day.columnKm()) / day.speedKmh());
-	}
-
-	/**
-	 * The daily forage constant: how much food a wandering band gathers depends on the
-	 * <b>surplus daylight</b> (the daylight the capped march did not use) and the number of
-	 * foragers, and only happens where the day's corridor crossed a <b>food</b> resource.
-	 * The yield is added to the larder but capped below the daily ration, so foraging only
-	 * <b>slows</b> the larder's decline — the band stays a decaying asset (see {@code
-	 * docs/caravan.md}). Decisions per the design Q&amp;A.
-	 *
-	 * @param surplusHours the day's surplus daylight (0 halts foraging)
-	 * @param corridor     the day's plot corridor (its plots' bonuses are the forageable land)
-	 * @return the food foraged into the larder (0 if no surplus daylight or no food resource)
-	 */
-	private double forage(double surplusHours, PlotCorridor corridor) {
-		if (surplusHours <= 0 || !crossedFoodResource(corridor))
-			return 0;
-		double ration = following.size() * WANDERING_RATION.perDay();
-		double foraged = Math.min(
-				surplusHours * following.size() * marchConfig.forageRatePerHour(),
-				marchConfig.forageCapFraction() * ration);
-		if (foraged > 0)
-			following.stockLarder(foraged);
-		return foraged;
-	}
-
-	/**
-	 * <b>Gather</b> the day's corridor for non-food goods — the ore, gem, luxury and other
-	 * raw {@link Bonus} resources the band {@linkplain #identifies(Bonus) identifies} on the
-	 * plots it crossed — into the band's carried {@link #getCargo() cargo} (the per-good
-	 * inventory of {@code docs/manufactured-bonuses.md}; the food larder is its
-	 * {@code NECESSITY} special case, filled by {@link #forage} first). Gathering spends the
-	 * surplus daylight foraging left over, at the slower {@code gatherRatePerHour}, split
-	 * evenly across the distinct resources encountered. These are <b>discrete goods</b> (no
-	 * fractional elephants): the day's work accrues as per-good <i>progress</i> and only
-	 * <b>whole units</b> enter the cargo. The total is capped by the band's carrying
-	 * capacity ({@code cargoCapacityPerHead} × head-count) — a full band gathers nothing
-	 * more (and accrues no progress it could not carry).
-	 *
-	 * @param surplusHours the day's surplus daylight (before foraging spent its share)
-	 * @param foraged      the food foraged today (its hours are deducted from the surplus)
-	 * @param corridor     the day's plot corridor (its plots' bonuses are the gatherable land)
-	 * @return the whole units gathered into the cargo (0 if no time, no resource, or no room)
-	 */
-	private int gather(double surplusHours, double foraged, PlotCorridor corridor) {
-		List<Bonus> gatherables = gatherableBonuses(corridor);
-		if (gatherables.isEmpty())
-			return 0;
-		int room = (int) Math.floor(following.size() * marchConfig.cargoCapacityPerHead())
-				- getCargo().total();
-		if (room <= 0)
-			return 0;
-		// foraging worked part of the surplus: the hours its yield took at the forage rate
-		double hoursLeft = surplusHours
-				- foraged / (following.size() * marchConfig.forageRatePerHour());
-		if (hoursLeft <= 0)
-			return 0;
-		double each = hoursLeft * following.size() * marchConfig.gatherRatePerHour()
-				/ gatherables.size();
-		int gathered = 0;
-		for (Bonus b : gatherables) {
-			double progress = gatherProgress.merge(b.type(), each, Double::sum);
-			int whole = Math.min((int) progress, room - gathered);
-			if (whole > 0) {
-				getCargo().add(b.type(), whole);
-				gatherProgress.put(b.type(), progress - whole);
-				gathered += whole;
-			}
-		}
-		return gathered;
-	}
-
-	// whether the day's corridor crossed a food (necessity-class) resource the band can
-	// identify — the land a wandering band can forage for its larder (a resource locked
-	// behind a tech the band lacks is invisible to it, so it cannot forage it)
-	private boolean crossedFoodResource(PlotCorridor corridor) {
-		if (corridor == null)
-			return false;
-		for (Plot p : corridor.path())
-			if (identifies(p.bonus()) && p.bonus().resourceType() == ResourceType.NECESSITY)
-				return true;
 		return false;
 	}
 
-	// the distinct non-food resources on the day's corridor the band can identify (in
-	// first-seen order) — the land it can gather for its cargo; food is the larder's
-	// (see forage), and a resource locked behind an unknown tech is invisible
-	private List<Bonus> gatherableBonuses(PlotCorridor corridor) {
-		if (corridor == null)
-			return List.of();
-		java.util.LinkedHashMap<String, Bonus> seen = new java.util.LinkedHashMap<>();
-		for (Plot p : corridor.path()) {
-			Bonus b = p.bonus();
-			if (identifies(b) && b.resourceType() != ResourceType.NECESSITY)
-				seen.putIfAbsent(b.type(), b);
-		}
-		return List.copyOf(seen.values());
-	}
-
-	/**
-	 * Set the band's <b>tech state</b> — the tech ids it knows, which gate the resource
-	 * bonuses it can {@linkplain #identifies(Bonus) identify}. A band departs with a
-	 * specific tech state (a dissolution band carries its colony's research; a fresh band
-	 * defaults to {@link #DEFAULT_TECH}); this overrides it.
-	 *
-	 * @param known the tech ids the band knows (a defensive copy is taken)
-	 */
-	public void setKnownTechs(Set<String> known) {
-		this.knownTechs = known == null ? null : Set.copyOf(known);
-	}
-
-	// the band's known-tech set: its carried research if it has any, else the DEFAULT_TECH
-	// (medieval lifestyle) baseline — the pre-known set of that tech's era. Empty for an
-	// off-graph band (no session, and it does not forage/report anyway). Computed once.
-	private Set<String> knownTechs() {
-		if (knownTechs == null) {
-			if (research != null)
-				knownTechs = Set.copyOf(research.known());
-			else if (session() != null) {
-				TechTree tree = session().getTechTree();
-				Tech def = tree.get(DEFAULT_TECH);
-				Era era = def != null ? def.era() : session().getEra();
-				knownTechs = Set.copyOf(tree.preKnownThrough(era));
-			} else
-				knownTechs = Set.of();
-		}
-		return knownTechs;
-	}
-
-	// whether the band can identify a resource bonus: a bonus revealed by no tech, or by a
-	// tech the band knows. A bonus locked behind an unknown tech is invisible to the band —
-	// it can neither forage, gather nor report it (see setKnownTechs). Null-safe (no bonus
-	// -> false).
-	private boolean identifies(Bonus bonus) {
-		return bonus != null
-				&& (bonus.techReveal() == null || knownTechs().contains(bonus.techReveal()));
-	}
-
-	/**
-	 * Turn the nightly {@link Camp} on or off. Camping claims a plot from the band's
-	 * current province's plot field, which <b>generates that field</b> — so it is opt-in:
-	 * the reporting drivers (the session runner, the caravan-journey tests) enable it to
-	 * fill the camp column of the march journal, while a bare wander leaves it off and pays
-	 * no generation cost.
-	 *
-	 * @param enabled whether the band pitches a nightly camp
-	 */
 	@Override
-	public void setCampingEnabled(boolean enabled) {
-		this.campingEnabled = enabled;
-		if (!enabled)
-			releaseCamp();
-	}
-
-	// (re)compute the distance-accurate route toward a viable target when the band has
-	// none, has arrived, or has drifted off its current route (e.g. after a target reset).
-	// The target itself is the nearest viable site (the hop-BFS below); the route is the
-	// shortest-km path to it (LandRouter).
-	private void ensureRoute(Rng rng) {
-		boolean stale = route == null || legIndex >= route.hops()
-				|| route.provinces().get(legIndex) != getProvinceId();
-		if (targetProvinceId == OFF_GRAPH
-				|| (!directed && targetProvinceId == getProvinceId()) || stale) {
-			targetProvinceId = directed ? destination
-					: chooseTargetProvince(rng).orElse(OFF_GRAPH);
-			if (targetProvinceId == OFF_GRAPH) {
-				route = Route.NONE;
-				legIndex = 0;
-				progressKm = 0;
-				return;
-			}
-			if (router == null)
-				router = new LandRouter(worldMap());
-			route = router.route(getProvinceId(), targetProvinceId);
-			legIndex = 0;
-			progressKm = 0;
-			legReady = false;
-		}
-	}
-
-	// compute the current leg's cost and river fords: the plot corridor across the province
-	// the band is in (its plots' move cost × KM_PER_PLOT) plus the centroid-to-centroid
-	// boundary hop into the next province (docs/caravan-march.md §6, docs/land-routing.md)
-	private void computeLeg() {
-		int cur = getProvinceId();
-		int next = route.provinces().get(legIndex + 1);
-		PlotCorridor corr = corridorBetween(enteredFrom, cur, next);
-		double corridorKm = corr == null ? 0 : marchConfig.kmPerPlot() * corr.totalCost();
-		legKmCost = corridorKm + route.hopKm()[legIndex];
-		legFords = corr == null ? 0 : corr.riverCrossings();
-		legReady = true;
-	}
-
-	// the plot corridor across province `cur` from the border it was entered at (from) to
-	// the border toward `to`; the anchors fall back to the plot centroid when a portal is
-	// unknown. Null when the band is session-less.
-	private PlotCorridor corridorBetween(int from, int cur, int to) {
-		if (session() == null)
-			return null;
-		ProvincePlotPool pool = session().provincePlotPool(worldMap().province(cur));
-		int[] entry = anchor(from, cur, pool);
-		int[] exit = anchor(cur, to, pool);
-		return pool.corridor(entry[0], entry[1], exit[0], exit[1]);
-	}
-
-	/**
-	 * Direct the band to march to a <b>fixed destination</b> province, settling only on
-	 * arriving there — rather than the default wander to the nearest viable site. It routes
-	 * over the shortest-km land path ({@link LandRouter}) and marches it under the same
-	 * daylight-bounded model. Used to travel a band between two known places (e.g. the
-	 * Dhenijansar&rarr;Wexkeep motivating route of {@code docs/land-routing.md}).
-	 *
-	 * @param provinceId the destination province to march to
-	 */
-	public void setDestination(int provinceId) {
-		this.destination = provinceId;
-		this.directed = true;
-		this.targetProvinceId = provinceId;
-		this.route = null; // force a fresh route to the new destination
-		this.legReady = false;
-	}
-
-	// the plot corridor across the province the band ended the day in: from the border
-	// portal it crossed in at (enteredFrom) to the portal toward the next province on the
-	// route (or the province centroid when either is unknown). Null when session-less.
-	private PlotCorridor currentCorridor() {
-		int next = (route != null && legIndex < route.hops())
-				? route.provinces().get(legIndex + 1) : OFF_GRAPH;
-		return corridorBetween(enteredFrom, getProvinceId(), next);
-	}
-
-	// the raster anchor for a corridor endpoint: the committed border portal from -> to,
-	// or the province's plot centroid when the portal is unknown (no hop yet, or the band
-	// has arrived so there is no next province)
-	private int[] anchor(int from, int to, ProvincePlotPool pool) {
-		if (from != OFF_GRAPH && to != OFF_GRAPH) {
-			int[] portal = worldMap().portal(from, to);
-			if (portal != null)
-				return portal;
-		}
-		return new int[] { pool.centroidX(), pool.centroidY() };
-	}
-
-	// pitch a nightly camp on a plot of the day's corridor (preferring its exit end, where
-	// the band actually stopped), falling back to any free plot of the province; a
-	// transient occupancy, not a settlement claim. The claim is an atomic tryOccupy, so
-	// bands ticked on different threads camping in the same province cannot double-claim
-	// a plot (the loser tries the next). Null when session-less or no plot is free.
-	private Plot claimCampOn(PlotCorridor corridor) {
-		if (session() == null)
-			return null;
-		if (corridor != null && !corridor.isEmpty()) {
-			List<Plot> path = corridor.path();
-			for (int i = path.size() - 1; i >= 0; i--) {
-				Plot p = path.get(i);
-				if (p.owner() == null && p.isWorkable() && p.tryOccupy(new Camp())) {
-					campPlot = p;
-					return p;
-				}
-			}
-		}
-		ProvincePlotPool pool = session().provincePlotPool(worldMap().province(getProvinceId()));
-		for (Plot p : pool.plots())
-			if (p.owner() == null && p.isWorkable() && p.tryOccupy(new Camp())) {
-				campPlot = p;
-				return p;
-			}
-		return null;
-	}
-
-	// strike the camp at dawn: free the plot the band occupied overnight
-	private void releaseCamp() {
-		if (campPlot != null) {
-			campPlot.vacate();
-			campPlot = null;
-		}
-	}
-
-	// compose the day's print-ready report (labels resolved against the province graph)
-	private MarchReport buildReport(LocalDate date, MarchDay day, List<Integer> traversed,
-			PlotCorridor corridor, double foraged, int gathered, Plot camp) {
-		StringBuilder path = new StringBuilder();
-		for (int id : traversed) {
-			if (path.length() > 0)
-				path.append("; ");
-			path.append(provLabel(id));
-		}
-		String bonusesLabel = bonusesLabel(corridor);
-		int plotsEst = (corridor != null && !corridor.isEmpty()) ? corridor.plotCount()
-				: (int) Math.round(day.netMarchKm() / marchConfig.kmPerPlot());
-		// the camp column omits the province (it is already the row's Province) and the
-		// TERRAIN_/FEATURE_ prefixes
-		String campLabel = camp == null ? "-" : campLabel(camp);
-		// the "Province" column reads where the day began (the first traversal entry),
-		// not where it ended
-		return new MarchReport(date, journeyLabel(), provLabel(traversed.get(0)),
-				day, path.toString(), bonusesLabel, plotsEst,
-				following.getLastConsumed(), foraged, following.getLarder(),
-				gathered, getCargo().total(), getCargo().manifest(5), campLabel);
-	}
-
-	// the journey label that names the band's journal file: "<Origin>-<Destination>"
-	// (province names) for a directed band; a wandering band has no fixed destination,
-	// so its leader's name stands in — "<Origin>-<Leader>" — keeping journals unique
-	private String journeyLabel() {
-		if (!onGraph())
-			return getLeader().fullName();
-		String origin = worldMap().province(originProvinceId).name();
-		String dest = directed ? worldMap().province(destination).name()
-				: getLeader().fullName();
-		return origin + "-" + dest;
-	}
-
-	// the notable resource bonuses encountered on the corridor — the distinct bonus names
-	// (prefix-stripped) found on the crossed plots, in first-seen order; "-" when none
-	private String bonusesLabel(PlotCorridor corridor) {
-		if (corridor == null || corridor.isEmpty())
-			return "-";
-		java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
-		for (Plot p : corridor.path())
-			if (identifies(p.bonus()))
-				seen.add(shortName(p.bonus().type()));
-		return seen.isEmpty() ? "-" : String.join("; ", seen);
-	}
-
-	// "Name (id)" for a province
-	private String provLabel(int id) {
-		return worldMap().province(id).name() + " (" + id + ")";
-	}
-
-	// a concise descriptor of a camp plot: relief, then terrain, then feature if any — all
-	// lower-case with the verbose TERRAIN_/FEATURE_ prefixes dropped (e.g. "flat plains")
-	private String campLabel(Plot p) {
-		String s = p.plotType().name().toLowerCase() + " " + shortName(p.terrain().type());
-		if (p.feature() != null)
-			s += " " + shortName(p.feature().type());
-		return s;
-	}
-
-	// drop the Civ4 TERRAIN_/FEATURE_ prefix and lower-case the rest ("TERRAIN_GRASSLAND"
-	// -> "grassland"), so the journal reads compactly
-	private static String shortName(String type) {
-		int us = type.indexOf('_');
-		return (us >= 0 ? type.substring(us + 1) : type).toLowerCase();
+	protected OptionalInt chooseWanderTarget(Rng rng) {
+		return chooseTargetProvince(rng);
 	}
 
 	// whether a province can be founded into: settleable land with at least the
