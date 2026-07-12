@@ -473,8 +473,54 @@ function provinceRail(p) {
     </div>`;
   document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; showRail(false); renderRail(); draw(); };
 }
+// The city info panel — shown in the rail when a city (an Anbennar city_terrain province,
+// e.g. Dhenijansar) is selected, in place of the generic province detail. Reuses the same
+// markup vocabulary as provinceRail (.detail / .d-head / .statrow / .metagrid / politicsBlock)
+// so it matches the panel's look. See docs/urban-plots.md.
+function cityRail(p) {
+  const g = provGeo(p);
+  const crumbs = [g.continent, g.superRegion, g.region, g.area].filter(t => t && t[0])
+    .map(t => `<span>${t[0]}${t[1] ? ` <span class="pv-key">(${t[1]})</span>` : ''}</span>`)
+    .join('<span class="crumb-sep">›</span>');
+  const coord = `${Math.abs(p.lat).toFixed(2)}°${p.lat >= 0 ? "N" : "S"}, ${Math.abs(p.lon).toFixed(2)}°${p.lon >= 0 ? "E" : "W"}`;
+  const dev = p.dev || 0;
+  const rank = dev >= 30 ? "Metropolis" : dev >= 15 ? "City" : "Town";
+  const tgKey = TRADE_GOODS && TRADE_GOODS.prov[p.id];
+  const tg = tgKey && TRADE_GOODS.goods[tgKey];
+  const tgHtml = tg ? `<span class="dot" style="background:${tg.color}"></span>${tg.name}` : "—";
+  // the urban core size, once the province's plots have streamed in
+  let coreHtml = "";
+  if (p._plots && p._plots.length) {
+    const urban = p._plots.filter(q => q.terrain === "TERRAIN_URBAN").length;
+    coreHtml = `<div class="stat"><div class="k">Urban core</div><div class="v">${urban}<small style="font-size:11px;color:var(--ink-soft)"> plots</small></div></div>`;
+  }
+  rail.innerHTML = `
+    <button class="backbtn" id="backProv">← Back</button>
+    <div class="detail">
+      <div class="d-head"><h2 class="serif">${p.name}</h2></div>
+      <div class="rm-sub" style="color:var(--ink-soft);margin-top:-6px"><span class="r" style="color:var(--gold,#c9a24a)">${rank}</span> · city · province ${p.id}</div>
+      ${crumbs ? `<div class="pv-crumbs">${crumbs}</div>` : ""}
+      <div class="statrow" style="margin-top:12px">
+        <div class="stat"><div class="k">Development</div><div class="v" style="color:var(--gold,#c9a24a)">${dev}</div></div>
+        ${coreHtml}
+        <div class="stat"><div class="k">Land plots</div><div class="v">${p.plots}</div></div>
+      </div>
+      <div class="metagrid" style="margin-top:8px">
+        <div class="metacell"><div class="k">Trade good</div><div class="v" style="font-size:13px">${tgHtml}</div></div>
+        <div class="metacell"><div class="k">Coordinates</div><div class="v" style="font-size:13px">${coord}</div></div>
+      </div>
+      ${politicsBlock(p)}
+      <p class="footnote">A city of Anbennar — its EU4 development (ADM + DIP + MIL) concentrated in the province's built-up urban core. Zoom in to the plot to see the city itself.</p>
+    </div>`;
+  document.getElementById("backProv").onclick = () => { S.selectedProv = null; showRail(false); renderRail(); draw(); };
+  // owner/culture/faith load lazily with the political layer — refresh once it's ready
+  if (!politicalReady()) ensurePolitical().then(() => { if (S.selectedProv === p) renderRail(); });
+}
 function renderRail(){
-  if (S.selectedProv) { provinceRail(S.selectedProv); return; }
+  if (S.selectedProv) {
+    if (S.selectedProv.city) { cityRail(S.selectedProv); return; }
+    provinceRail(S.selectedProv); return;
+  }
   rail.innerHTML = worldRail();
 }
 // ---- theme toggle ----

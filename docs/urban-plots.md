@@ -218,9 +218,18 @@ from engine resources, `provinces.json` / `terrain-art.json` moving is a **redep
   Dhenijansar with its hinterland kept), `ProvincePlotPoolTest.aColonyAnchorsItsCentreOnThe
   CityUrbanCore`. *Note:* persisted province fields (`map/provinces/<id>.json.gz`, gitignored)
   must regenerate — the live server's field cache needs invalidating on the next deploy.
-- **Phase 4 — the city sprite.** Bake a C2C city `.nif` → `BUNDLE.cities`; stamp `citySprite`
-  over `TERRAIN_URBAN` plots in `plots.mjs`, sized by dev tier. Web-only; verify headless.
-  *Follow-up:* culture → `ArtStyleType` → per-style sprite.
+- **Phase 4 — the city sprite + city info panel.** *(Code done; browser-visual check + deploy
+  pending.)* Bake a C2C city `.nif` (`med_europe.nif`) → `BUNDLE.trees.city`; stamp
+  `citySprite` over `TERRAIN_URBAN` plots in `plots.mjs`, sized by the province `dev` tier
+  (`WorldBundle` now emits `dev`/`city` on each province node). A `cityRail(p)` in `panel.mjs`
+  reuses the right-hand rail (in place of the generic province detail) to show a selected
+  city's development / rank / trade good / politics / urban-core size — Dhenijansar first. Data
+  pipeline verified against a local server (`/api/plots/4411` → 2 urban core plots;
+  `/api/bundle` → `trees.city` + Dhenijansar `{dev:30, city:true}`). **Remaining:** a browser
+  check of the sprite at the 256× "100%" zoom (and panel), then the deploy (see
+  `docs/client-server.md` §Deployment — server roll + **clear the persistent plot cache** +
+  SWA). *Follow-up:* culture → `ArtStyleType` → per-style sprite; the city panel showing a live
+  founded settlement's sim stats (population/firms) once one is founded at Dhenijansar.
 - **Phase 5 — the web Development overlay.** Bake `development`; add the choropleth mode +
   legend + toggle. Verify headless.
 
