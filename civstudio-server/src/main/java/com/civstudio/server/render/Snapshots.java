@@ -7,8 +7,8 @@ import java.util.List;
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.Caravan;
 import com.civstudio.agent.Household;
+import com.civstudio.agent.MarchingCaravan;
 import com.civstudio.agent.Member;
-import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.agent.Retinue;
 import com.civstudio.agent.firm.Firm;
 import com.civstudio.geo.WorldMap;
@@ -120,14 +120,14 @@ public final class Snapshots {
 		int bandSize = 0;
 		double larder = 0;
 		boolean settled = false;
-		if (band instanceof SettlerCaravan m) {
+		if (band instanceof MarchingCaravan m) {
 			Retinue following = m.getFollowing();
 			bandSize = following.size();
 			larder = following.getLarder();
-			settled = m.isReadyToSettle();
+			settled = m.hasArrived();
 		}
 		return new CaravanView(leaderName, leaderName, band.getLatitude(),
 				band.getLongitude(), onGraph ? band.getProvinceId() : -1, province, onGraph,
-				settled, bandSize, larder, band.getHoard());
+				settled, bandSize, larder, band.getHoard(), band.role().name());
 	}
 }

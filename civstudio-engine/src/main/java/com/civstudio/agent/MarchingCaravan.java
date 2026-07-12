@@ -245,6 +245,17 @@ public abstract class MarchingCaravan extends Caravan {
 		return origin + "-" + dest;
 	}
 
+	/**
+	 * Whether the band has <b>reached its goal</b> and stopped (settled, built, scouted,
+	 * engaged) — the public read of {@link #journeyComplete()} for a caller that only needs
+	 * the arrived/still-marching bit (e.g. the render snapshot).
+	 *
+	 * @return {@code true} if the band's journey is over
+	 */
+	public boolean hasArrived() {
+		return journeyComplete();
+	}
+
 	/** Whether the band is marching to a fixed {@link #setDestination(int) destination}. */
 	protected boolean isDirected() {
 		return directed;

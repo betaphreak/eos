@@ -17,6 +17,11 @@ const LIVE_BASE = new URLSearchParams(location.search).get("live")
 
 const PALETTE = ["#e8c37a","#6bd08a","#7aa2e0","#e07a9e","#9e7ae0","#e0a97a","#7ae0d0","#c0e07a"];
 
+// caravan dot/trail colour by role (CaravanRole) — settler gold, worker green, explorer
+// blue, military red — so the flavors read apart on the map; falls back to the palette by
+// index for an unknown/absent role
+const ROLE_COLOR = { SETTLER: "#e8c37a", WORKER: "#6bd08a", EXPLORER: "#7aa2e0", MILITARY: "#e07a9e" };
+
 let es = null;          // the EventSource, while connected
 let sid = null;         // the live session id
 let snap = null;        // the latest snapshot
@@ -169,7 +174,7 @@ export function drawLive() {
 
   // caravan trails, then dots
   snap.caravans.forEach((c, i) => {
-    const col = PALETTE[i % PALETTE.length];
+    const col = ROLE_COLOR[c.role] || PALETTE[i % PALETTE.length];
     const tr = trails[c.leader] || [];
     if (tr.length > 1) {
       ctx.beginPath();

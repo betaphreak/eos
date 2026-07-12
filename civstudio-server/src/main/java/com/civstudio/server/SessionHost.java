@@ -10,9 +10,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import com.civstudio.agent.CaravanRole;
+import com.civstudio.agent.ExplorerCaravan;
+import com.civstudio.agent.MarchingCaravan;
 import com.civstudio.agent.Member;
-import com.civstudio.agent.SettlerCaravan;
+import com.civstudio.agent.MilitaryCaravan;
 import com.civstudio.agent.Retinue;
+import com.civstudio.agent.SettlerCaravan;
+import com.civstudio.agent.WorkerCaravan;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.BankConfig;
 import com.civstudio.geo.Province;
@@ -182,10 +187,13 @@ public final class SessionHost {
 	}
 
 	// seed the demo's six directed caravans at the founding province, each marching toward a
-	// distant, land-reachable destination so they fan out visibly across the map
+	// distant, land-reachable destination so they fan out visibly across the map — one of
+	// each caravan role (cycling settler / worker / explorer / military) so the live map
+	// shows the flavors side by side
 	private void seedDemoCaravans(GameSession session, Settlement colony, int start) {
 		WorldMap map = session.getWorldMap();
 		List<Integer> destinations = distantLandProvinces(map, start, DEMO_CARAVANS);
+		CaravanRole[] roles = CaravanRole.values();
 		for (int i = 0; i < DEMO_CARAVANS; i++) {
 			// each band banks its (throwaway) reserve at its own bank off the colony, then
 			// takes a leader out of a fresh following and marches
@@ -193,14 +201,25 @@ public final class SessionHost {
 			Retinue following = new Retinue(DEMO_BAND_SIZE, bank, colony);
 			Member leader = following.promoteHighestSkilled();
 			following.stockLarder(DEMO_BAND_LARDER);
-			SettlerCaravan band = new SettlerCaravan(leader, following, DEMO_BAND_HOARD,
+			MarchingCaravan band = bandForRole(roles[i % roles.length], leader, following,
 					start, session);
-			// a directed band marches to a fixed destination (see SettlerCaravan.tick); if
+			// a directed band marches to a fixed destination (see MarchingCaravan.tick); if
 			// the map offered fewer distant sites than bands, the extras wander instead
 			if (i < destinations.size())
 				band.setDestination(destinations.get(i));
 			session.addCaravan(band);
 		}
+	}
+
+	// build a demo band of the given role at the founding province
+	private static MarchingCaravan bandForRole(CaravanRole role, Member leader,
+			Retinue following, int start, GameSession session) {
+		return switch (role) {
+			case SETTLER -> new SettlerCaravan(leader, following, DEMO_BAND_HOARD, start, session);
+			case WORKER -> new WorkerCaravan(leader, following, DEMO_BAND_HOARD, start, session);
+			case EXPLORER -> new ExplorerCaravan(leader, following, DEMO_BAND_HOARD, start, session);
+			case MILITARY -> new MilitaryCaravan(leader, following, DEMO_BAND_HOARD, start, session);
+		};
 	}
 
 	// pick up to `n` distant, land-reachable destination provinces, spread out by direction.

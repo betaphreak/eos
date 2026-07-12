@@ -388,6 +388,37 @@ out).
   colony — so the `Caravan` base is kept **flavor-agnostic** (leader, following-as-data,
   hoard, position, movement) and each flavor specializes only `tick()` and its goal.
 
+## Caravan types (realized 2026-07-12)
+
+The flavor split forecast above has **landed** (structurally — the three new missions are
+scaffolds). Between the flavor-agnostic `Caravan` base and the concrete bands sits a new
+abstract **`MarchingCaravan`**, which owns everything a band needs to *march and forage*:
+the `Retinue` following + larder (the larder clock), the daylight-bounded march
+(`docs/caravan-march.md`), the route walking, forage + gather, tech-gated resource
+identification, and the nightly camp. The four concrete land flavors extend it and override
+only their **goal seam** — `arrive()` (the C2C-style *mission* run on reaching the goal),
+`journeyComplete()`, and `chooseWanderTarget()` — plus, via a `CaravanRole` enum, their
+order-of-march column.
+
+The roles mirror the **Caveman2Cosmos `UnitAI` families** (from the C2C unit XML — a unit's
+`<DefaultUnitAI>` is exactly this discriminator):
+
+| Type | `CaravanRole` | C2C `UnitAI` (representative units) | Mission | Status |
+| --- | --- | --- | --- | --- |
+| `SettlerCaravan` | `SETTLER` | `UNITAI_SETTLE` (`UNIT_BAND`, `UNIT_TRIBE`, `UNIT_SETTLER`) | found a colony (`MISSION_FOUND`) | **live** — the dissolution/migration band, `dissolve()` factory |
+| `WorkerCaravan` | `WORKER` | `UNITAI_WORKER` (`UNIT_WORKER`) | build routes/improvements (`MISSION_BUILD` → `CIV4BuildInfos.xml`) | scaffold |
+| `ExplorerCaravan` | `EXPLORER` | `UNITAI_EXPLORE` (`UNIT_SCOUT`, `UNIT_EXPLORER`) | scout the map / identify resources | scaffold |
+| `MilitaryCaravan` | `MILITARY` | the combat AIs (`UNITAI_ATTACK`, `UNITAI_ATTACK_CITY`, …) | move to project force; fields the full march column | scaffold |
+
+The three non-settler flavors **march and forage exactly like the settler** (that machinery
+is all on `MarchingCaravan`), but their arrival missions are deliberate **no-op stubs** —
+there is no persisted plot route/improvement state (worker), no fog-of-war/discovered-map
+(explorer), and no combat/army model (military) for them to act on yet. Each stub carries a
+`TODO` naming the subsystem it awaits. The C2C sea/air `UnitAI` variants are out of scope
+(land-only); `UNITAI_MERCHANT` is reserved for the proposed `TradeCaravan`
+(`docs/caravan-trade.md`), which carries goods rather than a following and so extends
+`Caravan` directly, beside `MarchingCaravan`.
+
 ## Implementation plan: eliminating compile-time-formed settlements
 
 The cycle above lets a colony be **born at runtime** (a band settles — Phase 4,

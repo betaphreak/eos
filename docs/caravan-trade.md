@@ -61,35 +61,48 @@ subclasses add their purpose-specific payload. This keeps movement, position, an
 deterministic tick in one place and lets the migration band and the merchant convoy
 diverge only where they genuinely differ.
 
+**Realized hierarchy (2026-07-12 — the caravan-type refactor).** The single base grew a
+middle rung, `MarchingCaravan`, which owns everything that makes a band *march and forage*
+so the flavors share it; the flavors then differ only in their **goal** (their C2C-style
+*mission*):
+
 ```
 Caravan (abstract)                     // a led band at a province that moves on the graph
   ├─ leader : Member                   // the band's captain (a Member, not a household)
   ├─ hoard : double                    // carried money, copper, outside any bank
+  ├─ cargo : Cargo                     // non-food goods gathered off the land
   ├─ provinceId : int                  // its node on the graph (lat/long derived from it)
-  ├─ worldMap : WorldMap               // the session-shared, immutable graph
   ├─ moveTo(neighbour) / step(path)    // movement, validated against WorldMap adjacency
-  └─ tick(Rng)                         // one day: advance and/or act; abstract hook
+  ├─ tick(date, Rng)                   // one day: advance and/or act; abstract hook
+  └─ role() : CaravanRole              // what the band is for (mirrors C2C <DefaultUnitAI>)
   │
-  ├─ SettlerCaravan                    // the dissolution-born band that re-founds (docs/caravan.md)
-  │    + following : Retinue           // the carried population (the asset/larder)
-  │    + research : ResearchSnapshot   // the abandoned colony's tech, restored on re-founding
-  │    + a settle decision (site choice) + re-found into a province
+  ├─ MarchingCaravan (abstract)        // a band with a following that marches + forages
+  │    ├─ following : Retinue          // the carried people + larder (the larder clock)
+  │    ├─ research : ResearchSnapshot  // carried tech (gates resource identification)
+  │    ├─ the daylight-bounded march, route walking, nightly camp, forage + gather
+  │    └─ the goal seam: arrive() / journeyComplete() / chooseWanderTarget() (its mission)
+  │    │
+  │    ├─ SettlerCaravan               // UNITAI_SETTLE — found a colony; dissolve() factory
+  │    │    + a settle decision (site choice) + re-found into a province
+  │    ├─ WorkerCaravan                // UNITAI_WORKER — build routes/improvements (scaffold)
+  │    ├─ ExplorerCaravan              // UNITAI_EXPLORE — scout / identify resources (scaffold)
+  │    └─ MilitaryCaravan              // combat AIs — project force; full march column (scaffold)
   │
-  └─ TradeCaravan (proposed)           // a settlement-sponsored merchant convoy
-       + sponsor : Ruler/owner         // who funded it; profit returns here
-       + proxy : TradeAgent            // the Agent that carries cargo + posts market offers
-       + route : origin → destination  // a WorldMap.path it runs and returns along
-       + buy at origin / sell at destination through the real markets
+  └─ TradeCaravan (proposed)           // UNITAI_MERCHANT — a settlement-sponsored convoy
+       + sponsor / proxy / route + buy at origin, sell at destination
 ```
 
-**What lives where.** The base holds only the universal band state — leader, hoard,
-current province, the map reference, movement, the daily tick. The **`Retinue` following
-and larder are migration-specific** (a trade convoy carries goods, not a population to
-resettle), so they live on `SettlerCaravan`; the **cargo/route/sponsor are
-trade-specific**, on `TradeCaravan`. Phase A was a refactor of the old concrete
-`Caravan` (which *was* the migration band): its `following`/`research`/`dissolve`/
-re-found moved down into `SettlerCaravan`, and the base kept `leader`/`hoard`/position +
-the new movement.
+**What lives where.** `Caravan` holds only the universal band state — leader, hoard, cargo,
+current province, movement, the daily tick, and `role()`. **`MarchingCaravan` holds the
+shared journey** — the `Retinue` following + larder, the march, forage/gather, tech-gated
+resource identification and the nightly camp — so all four land flavors "forage like today"
+by inheritance; each flavor overrides only its **arrival mission** (`arrive()`) and, via its
+`CaravanRole`, its order-of-march column. A **`TradeCaravan`** (proposed) carries goods, not
+a population, so it slots under `Caravan` directly (beside `MarchingCaravan`), keeping its
+cargo/route/sponsor payload. The four land roles map onto the C2C `UnitAI` families; the
+three non-settler flavors are **scaffolds** — they march and forage, but their missions
+(build, reveal, engage) are no-ops pending the subsystems they need (persisted plot
+infrastructure, fog of war, a combat model). See `docs/caravan.md` §Caravan types.
 
 ---
 

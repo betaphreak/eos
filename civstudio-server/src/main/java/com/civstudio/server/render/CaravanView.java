@@ -17,8 +17,11 @@ package com.civstudio.server.render;
  * @param bandSize  the number of people following the band
  * @param larder    the band's remaining food larder (its countdown to starvation)
  * @param hoard     the band's carried money (copper)
+ * @param role      the band's {@link com.civstudio.agent.CaravanRole role} name (SETTLER /
+ *                  WORKER / EXPLORER / MILITARY) — what it is for, so the map can tell the
+ *                  flavors apart
  */
 public record CaravanView(String label, String leader, double latitude, double longitude,
 		int provinceId, String province, boolean onGraph, boolean settled, int bandSize,
-		double larder, double hoard) {
+		double larder, double hoard, String role) {
 }
