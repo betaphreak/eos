@@ -22,6 +22,9 @@ now decodes Civ6's uncompressed DDS (§2a — implemented + unit-tested, proven 
 the UI-icon question is answered — **resource icons and yield symbols ARE in the depot**, only per-tech
 subject icons are not (§2b).
 
+**The build plan** (decisions locked, phasing, per-category bake) lives in
+[`civ6-art-replacement.md`](civ6-art-replacement.md). This doc is the *reference*; that one is the *plan*.
+
 ---
 
 ## 1. Layout
@@ -158,14 +161,14 @@ coarser one — **this is where "some won't exist" bites**):
 
 | CivStudio category (web asset) | CivStudio items | Civ6 source | Fidelity / gap |
 | --- | --- | --- | --- |
-| **Terrain** (`terrain/terrain-tiles.webp`, `terrain.webp`) | 16 land + 8 water + 9 synthetic keys | `SV_TerrainHex{Grasslands,Plains,Desert,Tundra,Snow,Coast,Ocean}_Color.dds` | Civ6 has **7 bases**; CivStudio's 16 land terrains (LUSH, SCRUB, MUDDY, ROCKY, BADLAND, JAGGED, BARREN, DUNES, SALT_FLATS, TAIGA…) must **collapse+recolor** onto the 7. Synthetic terrains (CAVERN, ANCIENT/FEY/BLOOD forests, MUSHROOM, SHADOW_SWAMP, GLACIER, URBAN) — **no Civ6 base**; keep recolor-from-neighbor approach. |
+| **Terrain** (`terrain/terrain-tiles.webp`, `terrain.webp`) | 16 land + 8 water + 9 synthetic keys | **In-world 2k ground** `Grass_B`/`Grass_Dark_B`/`FOW_Ground_*` (Grass, Plains, Desert, Tundra, Snow, Ice, Marsh, Floodplains, Salt, Cliff), recolored to display color | **Decided (Varied fold):** GRASSLAND→Grass, LUSH→Grass_Dark, PLAINS/SCRUB→Plains, MARSH/MUDDY→Marsh, ROCKY/BADLAND/JAGGED→Cliff, DESERT/DUNES/BARREN→Desert, SALT_FLATS→Salt, TAIGA/TUNDRA→Tundra, PERMAFROST→Snow. Synthetic 9 → nearest ground + recolor (existing machinery). Reuse `terrainDisplayColors()`; swap only the source texture. |
 | **Hills / relief** | (relief ladder) | `SV_Sprites_Hills<Name>_Color_*`, `SV_TerrainMountain_*` | Good coverage for the 5 land bases. |
-| **Water** (`water/{sea,shore,ice,river}.webp`, seaBands) | sea/shore ripple, ice, river ribbon | `Features_Icecaps_Visible.dds` (ice); water ripple via `Water.xlp`/`WaterMaterials`; **rivers**: Civ6 rivers are edge decals (`StrategicView_Routes`/`Water`) not a tile — river ribbon likely **kept as-is** or re-derived. | River ribbon is the weakest Civ6 match. |
-| **Features / trees** (`trees/trees-{leafy,palm,swamp,bamboo,cactus,grass,city}.webp`) | FOREST, FOREST_ANCIENT, JUNGLE, BAMBOO, SAVANNA, VERY_TALL_GRASS, CACTUS, OASIS, SWAMP + city | `Features_{Forest,Jungle,Marsh,Oasis,Floodplains}_Visible.dds`; 3D `FEATURE_*`/`RES_`/clutter geo | Forest/Jungle/Marsh/Oasis map cleanly. **No Civ6 art** for BAMBOO, CACTUS, VERY_TALL_GRASS, SAVANNA-as-palms, FOREST_ANCIENT — C2C-specific; keep C2C or substitute. City sprite ← Civ6 `DIS_`/city art (rich alternative). |
-| **Bonuses/resources** (`icons/bonus-icons.webp`) | 106 `BONUS_*` (GameFont cells) | **`Resources_<Name>_Visible.dds`** (clean per-resource) or `Resources256.dds` atlas cells; `RES_*` model albedo as 3D fallback | ✅ **Verified present.** Common resources (wheat, rice, cattle, sheep, iron, copper, horses, banana, fish, whale, stone, cotton, furs, ivory, jade, pearls, salt, coal, oil, uranium…) map directly. **Civ6-first**: use the Civ6 icon where the resource exists; **C2C-fallback** for the ~C2C-only bonuses (of 106 + 326 manufactured) with no Civ6 equivalent. |
+| **Water** (`water/{sea,shore,ice,river}.webp`, seaBands) | sea/shore ripple, ice, river ribbon | `Features_Icecaps_Visible.dds` (ice) | **Decided:** ice → Civ6; **river/sea/shore kept C2C** (Civ6 rivers are edge decals, no tile equivalent). |
+| **Features / trees** (`trees/trees-{leafy,palm,swamp,bamboo,cactus,grass,city}.webp`) | FOREST, FOREST_ANCIENT, JUNGLE, BAMBOO, SAVANNA, VERY_TALL_GRASS, CACTUS, OASIS, SWAMP + city | `Features_{Forest,Jungle,Marsh,Oasis,Floodplains,Icecaps}_Visible.dds` (flat SV overlays) | **Decided (flat SV overlays):** FOREST/FOREST_ANCIENT→Forest, JUNGLE, SWAMP→Marsh, OASIS, FLOOD_PLAINS, ICE become one flat hex overlay per plot (new draw path). C2C-only flora (BAMBOO, CACTUS, VERY_TALL_GRASS, SAVANNA) **keep C2C billboards** — hybrid. |
+| **Bonuses/resources** (`icons/bonus-icons.webp`) | 106 `BONUS_*` (GameFont cells) | **`Resources_<Name>_Visible.dds`** (clean per-resource) or `Resources256.dds` atlas cells | **Decided (Mixed):** **45 → Civ6** (34 Direct + 5 Close + gems→Diamonds + shellfish→Crabs), **61 → C2C**. Per-bonus split in §8. |
 | **Yields/symbols** (GameFont HAMMER/GOLD/BEAKER) | production, gold, beaker glyphs | **`FontIcons.dds`** (+ `FontIcons16.dds`) | ✅ Present — Civ6 inline-symbol sheet; a clean upgrade path for the GameFont-derived glyphs. |
 | **Techs** (`tech/tech-icons.webp`) | ~292 tech buttons | — (per-tech subject icons **absent** from depot) | ❌ **Keep C2C.** `UI_Tree.xlp` is chrome-only; no `ICON_TECH_*` in the depot, and Civ6's ~87 techs ≪ C2C's 292. Full C2C fallback. |
-| **Improvements / routes** (data-only today) | 12 improvements, 350 route models | `IMP_*` / `Farms.artdef` / `Routes.artdef` + `StrategicView_{Improvements,Routes}` | Not baked today; Civ6 has strong `IMP_`/route art if/when we bake it. |
+| **Improvements / routes** (data-only today) | 12 improvements, 350 route models | flat SV overlays exist only for `StrategicView_Improvements_{Farm,Mine,Quarry,Harbor}`; rest 3D-only | **Decided (in scope, greenfield):** bake Farm/Mine/Quarry SV overlays + a new frontend improvement layer; the rest (pasture, plantation, cottage-line, lumbermill, camp, winery) and **routes** are **deferred** (no flat SV; log the gap). |
 
 **Takeaway.** Terrain, hills, features, **resource icons**, and improvements all have **excellent** Civ6
 2D coverage via the `SV_*` / `Features_*` / `Resources_*` loose-DDS set (no unpacking; `dds.mjs` now reads
@@ -227,7 +230,12 @@ resources + Amber/Olives/Turtles from expansions; each has a `Resources_<Name>_V
 `Resources*.dds` atlas cell). Tiers: **D** direct same-resource · **C** close/renamed stand-in · **A**
 approximate substitute (imperfect) · **—** no Civ6 equivalent (**keep C2C**, per the fallback policy).
 
-Coverage: **34 D + 5 C + 19 A = 58 get Civ6 art; 48 stay C2C.**
+**Final source split — Mixed collapse policy (owner, 2026-07-12):** Civ6 art for all **34 D + 5 C** plus
+the **6 collapse-approved** approximates where the C2C icons are near-duplicates — gems (RUBIES,
+SAPPHIRES, TURQUOISE → Diamonds) and shellfish (CLAM, LOBSTER, SHRIMP → Crabs) = **45 Civ6**. The other
+**61 stay C2C**: the 48 no-match plus the **13 distinctive approximates kept on C2C** (BEAVERS, BISON,
+DONKEY, HENNA, INDIGO, MUREX, MUSHROOMS, NATRON, RABBIT, RESIN, SULPHUR, VANILLA, WALRUS). The Tier column
+below is the *conceptual* match; the A-tier rows split per this policy.
 
 | C2C bonus | Civ6 | Tier | | C2C bonus | Civ6 | Tier |
 | --- | --- | :-: | --- | --- | --- | :-: |
@@ -287,9 +295,10 @@ Coverage: **34 D + 5 C + 19 A = 58 get Civ6 art; 48 stay C2C.**
 | | | | | WHEAT | Wheat | D |
 
 **Civ6 resources with no C2C-bake counterpart** (available but currently unused): Gypsum, Mercury,
-Shipwreck, Turtles (plus Foxes = the Furs art model). Note several Civ6 luxuries are hit only by A-tier
-approximations (Dyes ← henna/indigo/murex; Diamonds ← rubies/sapphires/turquoise; Crabs ← clam/lobster/
-shrimp) — if that collapsing reads poorly, keep those specific bonuses on C2C art instead.
+Shipwreck, Turtles (plus Foxes = the Furs art model). Per the Mixed policy the gem/shellfish collapses
+are accepted (rubies/sapphires/turquoise→Diamonds, clam/lobster/shrimp→Crabs); the Dyes (henna/indigo/
+murex), Furs (beavers/rabbit) and Ivory (walrus) approximates were judged distinctive enough to **keep on
+C2C** rather than collapse. Build path in [`civ6-art-replacement.md`](civ6-art-replacement.md) §B.
 
 ---
 
