@@ -232,48 +232,15 @@ function drawSeaCells() {
   }
   ctx.restore();
 }
-// Diagonal hatch tile for impassable/wasteland provinces, built once against the main context.
-let hatchPat = null;
-function impassableHatch() {
-  if (hatchPat) return hatchPat;
-  const T = 7, c = document.createElement("canvas"); c.width = c.height = T;
-  const x = c.getContext("2d");
-  x.strokeStyle = "rgba(22,25,31,0.5)"; x.lineWidth = 1.1;
-  for (let o = -T; o <= T; o += T) { x.beginPath(); x.moveTo(o, T); x.lineTo(o + T, 0); x.stroke(); }
-  hatchPat = ctx.createPattern(c, "repeat");
-  return hatchPat;
-}
-// A grey wash + diagonal hatch over each impassable province (its terrain shows through the raster
-// below), so wasteland reads as a distinct "you can't settle here" cell rather than plain ground.
+// A faint grey wash over each impassable province (its terrain shows through the raster below), so
+// wasteland reads as a slightly distinct "you can't settle here" cell — without the busy diagonal
+// hatch it used to carry (removed: the hashing over these unused areas read as clutter at deep zoom).
 function drawImpassable() {
-  const hatch = impassableHatch();
   ctx.save();
   for (const p of P) {
     if (p.type !== "IMPASSABLE" || !p.rings || !provOnScreen(p)) continue;
-    const path = provPath(p);
-    ctx.fillStyle = "rgba(62,64,71,0.32)"; ctx.fill(path);
-    ctx.fillStyle = hatch; ctx.fill(path);
+    ctx.fillStyle = "rgba(62,64,71,0.22)"; ctx.fill(provPath(p));
   }
-  ctx.restore();
-}
-// A light diagonal hash for the interstitial space between province polygons, shown only past deep
-// zoom (band ≥ PLOT, 64×). Laid over the raster before the plot layer, so the opaque per-plot
-// terrain covers each province and the hash survives only in the gaps between them (where ring
-// simplification leaves the provinces not quite tiling).
-let gapHatchPat = null;
-function gapHatch() {
-  if (gapHatchPat) return gapHatchPat;
-  const T = 6, c = document.createElement("canvas"); c.width = c.height = T;
-  const x = c.getContext("2d");
-  x.strokeStyle = "rgba(200,208,222,0.5)"; x.lineWidth = 1;
-  for (let o = -T; o <= T; o += T) { x.beginPath(); x.moveTo(o, T); x.lineTo(o + T, 0); x.stroke(); }
-  gapHatchPat = ctx.createPattern(c, "repeat");
-  return gapHatchPat;
-}
-function drawGapHatch() {
-  ctx.save();
-  ctx.fillStyle = gapHatch();
-  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
   ctx.restore();
 }
 // ---- per-world-copy scene layers ----
@@ -548,7 +515,7 @@ if (typeof document !== "undefined" && document.fonts && document.fonts.load) {
 export { draw, zoomAt, resize, focusProvince, focusProvinceFit, applyHash, hasDeepLink };
 // scene-layer draw fns, consumed by the LAYERS registry in layers.mjs (they stay here because they
 // close over main's raster/camera state and the Pby/hatch helpers)
-export { drawRaster, drawLakes, drawSeaCells, drawGapHatch, drawImpassable, drawSurfacePlots,
+export { drawRaster, drawLakes, drawSeaCells, drawImpassable, drawSurfacePlots,
          drawProvinceBorders, drawUnderworldVeil, drawCavernFloors, drawCavernPlots, drawCavernRims,
          drawCaveEntrances, drawAdjacencies,
          drawHoverHighlight, drawSelectedHighlight };

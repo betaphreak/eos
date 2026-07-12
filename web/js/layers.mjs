@@ -9,8 +9,7 @@
 // The draw fns live in the modules that own their state (main.mjs closes over the raster/camera and
 // the province-polygon helpers; the overlays own their own); this module only orders and gates them.
 import { isPolitical, activeZ, S } from "./core.mjs";
-import { atLeast, BAND } from "./bands.mjs";
-import { drawRaster, drawLakes, drawSeaCells, drawGapHatch, drawImpassable, drawSurfacePlots,
+import { drawRaster, drawLakes, drawSeaCells, drawImpassable, drawSurfacePlots,
          drawProvinceBorders, drawUnderworldVeil, drawCavernFloors, drawCavernPlots, drawCavernRims,
          drawCaveEntrances, drawAdjacencies, drawHoverHighlight, drawSelectedHighlight } from "./main.mjs";
 import { drawCostOverlay, drawTradeGoodIcons } from "./plots.mjs";
@@ -31,7 +30,6 @@ export const LAYERS = [
   { id: "raster",         band: "all",                     draw: drawRaster },
   { id: "lakes",          band: "all",                     draw: drawLakes },
   { id: "seaCells",       band: "all",  gate: notPolitical, draw: drawSeaCells },
-  { id: "gapHatch",       band: "≥PLOT (64×)", gate: () => atLeast(BAND.PLOT) && notPolitical(), draw: drawGapHatch },
   { id: "plots",          band: "≥REGION→, self-fade", gate: notPolitical, draw: drawSurfacePlots },
   { id: "cost",           band: "≥REGION→, toggle",        draw: drawCostOverlay },
   { id: "impassable",     band: "all",  gate: notPolitical, draw: drawImpassable },
