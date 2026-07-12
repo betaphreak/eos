@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-import com.civstudio.agent.MigrantCaravan;
+import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.io.SimLog;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
@@ -38,7 +38,7 @@ class CaravanRefoundTest {
 				i -> cfg.nFirm().savings(), i -> 15);
 		h0.run();
 
-		MigrantCaravan band = MigrantCaravan.dissolve(origin);
+		SettlerCaravan band = SettlerCaravan.dissolve(origin);
 		session.addCaravan(band);
 		assertTrue(band.getFollowing().size() > 0, "the band carries a following");
 		assertTrue(band.getHoard() > 0, "the band carries a hoard");

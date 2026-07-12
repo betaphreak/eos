@@ -382,7 +382,7 @@ explicit coordinates are unchanged.
   for free").
 - **Multi-province sessions** were first exercised by the (since-removed)
   `HanseaticEconomy`, reseated onto two **neighboring** real provinces so their
-  adjacency was tested; that province-adjacency now lives in `MigrantCaravanTest`
+  adjacency was tested; that province-adjacency now lives in `SettlerCaravanTest`
   (Withacen↔Hopespeak), while `TwinSettlementEconomy` exercises two settlements
   **sharing one** province (`docs/province-plots.md`).
 
@@ -479,7 +479,7 @@ explicit coordinates are unchanged.
   tests). **(Superseded:** `HanseaticEconomy` was later removed in favour of the
   single-province `TwinSettlementEconomy` — two settlements sharing one province's
   plot field, see `docs/province-plots.md`. The province-adjacency it demonstrated
-  is now covered by `MigrantCaravanTest`, which still routes over Withacen↔Hopespeak.)
+  is now covered by `SettlerCaravanTest`, which still routes over Withacen↔Hopespeak.)
 - **Phase 4 — hand off to the dependent features. (Designed — see
   [`docs/caravan-trade.md`](caravan-trade.md).)** Geography itself is complete at
   Phase 3; the travel-network consumers are designed in their own note: a

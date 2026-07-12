@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import com.civstudio.agent.Member;
-import com.civstudio.agent.MigrantCaravan;
+import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.agent.Retinue;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.BankConfig;
@@ -193,9 +193,9 @@ public final class SessionHost {
 			Retinue following = new Retinue(DEMO_BAND_SIZE, bank, colony);
 			Member leader = following.promoteHighestSkilled();
 			following.stockLarder(DEMO_BAND_LARDER);
-			MigrantCaravan band = new MigrantCaravan(leader, following, DEMO_BAND_HOARD,
+			SettlerCaravan band = new SettlerCaravan(leader, following, DEMO_BAND_HOARD,
 					start, session);
-			// a directed band marches to a fixed destination (see MigrantCaravan.tick); if
+			// a directed band marches to a fixed destination (see SettlerCaravan.tick); if
 			// the map offered fewer distant sites than bands, the extras wander instead
 			if (i < destinations.size())
 				band.setDestination(destinations.get(i));

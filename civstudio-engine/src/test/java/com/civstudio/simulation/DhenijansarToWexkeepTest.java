@@ -13,7 +13,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import com.civstudio.agent.Member;
-import com.civstudio.agent.MigrantCaravan;
+import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.agent.Retinue;
 import com.civstudio.agent.march.MarchReport;
 import com.civstudio.bank.Bank;
@@ -87,7 +87,7 @@ class DhenijansarToWexkeepTest {
 		Bank bank = new Bank(BankConfig.DEFAULT, muster);
 		Retinue following = new Retinue(50, bank, muster);
 		Member leader = following.promoteHighestSkilled();
-		MigrantCaravan band = new MigrantCaravan(leader, following, 1000, DHENIJANSAR, session);
+		SettlerCaravan band = new SettlerCaravan(leader, following, 1000, DHENIJANSAR, session);
 		band.setCampingEnabled(true);
 		band.setDestination(WEXKEEP);
 		band.setKnownTechs(java.util.Set.of()); // a band that knows nothing
@@ -132,7 +132,7 @@ class DhenijansarToWexkeepTest {
 		// what the band foraged from the land along the way.
 		double provision = JOURNEY_RATION_PER_PERSON * people;
 		setLarder(following, provision);
-		MigrantCaravan band = new MigrantCaravan(leader, following, 100_000, DHENIJANSAR, session);
+		SettlerCaravan band = new SettlerCaravan(leader, following, 100_000, DHENIJANSAR, session);
 		band.setCampingEnabled(true);
 		band.setDestination(WEXKEEP);
 

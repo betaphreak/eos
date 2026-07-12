@@ -30,12 +30,12 @@ import lombok.Getter;
  * following/larder, the daylight-bounded march, forage/gather and the nightly camp — lives
  * on {@link MarchingCaravan}; here lives only the <em>settle</em> goal.
  * <p>
- * A {@code MigrantCaravan} is produced by <b>dissolution</b> ({@link #dissolve(Settlement)}):
+ * A {@code SettlerCaravan} is produced by <b>dissolution</b> ({@link #dissolve(Settlement)}):
  * a failing settlement crosses the <em>hinge</em> from settled to mobile — its circulating
  * money nets into the hoard, its surviving households collapse into the following, and the
  * sovereign leads the band out as its Captain.
  */
-public class MigrantCaravan extends MarchingCaravan {
+public class SettlerCaravan extends MarchingCaravan {
 
 	// the band will not re-found with fewer than this many followers in hand — too few
 	// to promote a workforce into the new colony (a viable founding needs a labor pool).
@@ -57,7 +57,7 @@ public class MigrantCaravan extends MarchingCaravan {
 	 * @param session    the session the band belongs to (its world map is the graph the
 	 *                   band moves on; its plot pools host the nightly camp)
 	 */
-	public MigrantCaravan(Member leader, Retinue following, double hoard, int provinceId,
+	public SettlerCaravan(Member leader, Retinue following, double hoard, int provinceId,
 			GameSession session) {
 		super(leader, following, hoard, provinceId, session);
 	}
@@ -73,7 +73,7 @@ public class MigrantCaravan extends MarchingCaravan {
 	 * @param latitude  the band's latitude in decimal degrees (north positive)
 	 * @param longitude the band's longitude in decimal degrees (east positive)
 	 */
-	public MigrantCaravan(Member leader, Retinue following, double hoard, double latitude,
+	public SettlerCaravan(Member leader, Retinue following, double hoard, double latitude,
 			double longitude) {
 		super(leader, following, hoard, latitude, longitude);
 	}
@@ -104,7 +104,7 @@ public class MigrantCaravan extends MarchingCaravan {
 	 *            the settled colony to dissolve into a band
 	 * @return the wandering migration band the colony becomes
 	 */
-	public static MigrantCaravan dissolve(Settlement colony) {
+	public static SettlerCaravan dissolve(Settlement colony) {
 		Ruler ruler = colony.getRuler();
 		if (ruler == null || !ruler.isAlive())
 			throw new IllegalStateException(
@@ -160,10 +160,10 @@ public class MigrantCaravan extends MarchingCaravan {
 		// graph and can wander it); otherwise it is an off-graph band at the colony's
 		// bare coordinates
 		Province province = colony.getProvince();
-		MigrantCaravan band = (province != null && colony.getSession() != null)
-				? new MigrantCaravan(leader, following, hoard, province.id(),
+		SettlerCaravan band = (province != null && colony.getSession() != null)
+				? new SettlerCaravan(leader, following, hoard, province.id(),
 						colony.getSession())
-				: new MigrantCaravan(leader, following, hoard, colony.getLatitude(),
+				: new SettlerCaravan(leader, following, hoard, colony.getLatitude(),
 						colony.getLongitude());
 		// the band carries its tech tree out with it, so a re-founded colony resumes
 		// research where this one left off rather than starting over

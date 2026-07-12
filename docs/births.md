@@ -303,9 +303,9 @@ colony that somehow has children but no school.
 ## Abandonment (the caravan hinge)
 
 When a ruler-bearing colony's workforce falls below `DISSOLUTION_WORKFORCE_FLOOR` it
-dissolves into a wandering `MigrantCaravan` (`docs/caravan.md`): every household
+dissolves into a wandering `SettlerCaravan` (`docs/caravan.md`): every household
 member except the ruler-leader is absorbed into the band's `Retinue`
-(`MigrantCaravan.dissolve` → `following.absorb`). **Children are absorbed too** — the
+(`SettlerCaravan.dissolve` → `following.absorb`). **Children are absorbed too** — the
 colony's next generation travels with the band and can re-found a new colony. Three
 decisions make a pooled child behave sensibly (the `Retinue` is otherwise age-blind):
 

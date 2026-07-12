@@ -19,7 +19,7 @@ import lombok.Getter;
  * <p>
  * The base carries only the universal band state — leader, hoard, cargo, position,
  * and the daily {@link #tick(LocalDate, Rng)}. Purpose-specific payload lives on the concrete
- * subclasses: {@link MigrantCaravan} (the dissolution-born band that carries a
+ * subclasses: {@link SettlerCaravan} (the dissolution-born band that carries a
  * following and re-founds a colony — see {@code docs/caravan.md}); a settlement-
  * sponsored {@code TradeCaravan} is the planned follow-on (see
  * {@code docs/caravan-trade.md}).
@@ -188,7 +188,7 @@ public abstract class Caravan {
 	/**
 	 * The last day's print-ready {@link com.civstudio.agent.march.MarchReport march
 	 * report}, or {@code null} if the band has not marched (the base band does not march;
-	 * a {@link MigrantCaravan} overrides this). Read by the session runner to fill the
+	 * a {@link SettlerCaravan} overrides this). Read by the session runner to fill the
 	 * caravan march journal.
 	 *
 	 * @return the last day's march report, or {@code null}
@@ -199,7 +199,7 @@ public abstract class Caravan {
 
 	/**
 	 * Turn the band's nightly camp on or off (a no-op for a band that does not camp; a
-	 * {@link MigrantCaravan} overrides it). Camping generates the province plot field, so
+	 * {@link SettlerCaravan} overrides it). Camping generates the province plot field, so
 	 * the reporting drivers enable it to fill the journal's camp column.
 	 *
 	 * @param enabled whether the band pitches a nightly camp

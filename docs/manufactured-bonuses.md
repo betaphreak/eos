@@ -157,12 +157,12 @@ of the goods model, alongside housing — and much of the seam is **already buil
 caravan march work:
 
 - **Tech-gated identification (implemented).** A band departs with a **tech state**
-  (`MigrantCaravan.setKnownTechs`; default `MigrantCaravan.DEFAULT_TECH` =
+  (`SettlerCaravan.setKnownTechs`; default `SettlerCaravan.DEFAULT_TECH` =
   `TECH_MEDIEVAL_LIFESTYLE` for a fresh band, or its colony's carried research for a
   dissolution band) and can only **identify** — report, forage, carry, or trade — a bonus or
   good whose **`TechReveal`** it knows. This is exactly the tech gate this catalog carries
   (M18/M5): a medieval band cannot see or handle a good locked behind a future tech (oil,
-  aluminium, natural gas). The gate lives in `MigrantCaravan.identifies(Bonus)` and already
+  aluminium, natural gas). The gate lives in `SettlerCaravan.identifies(Bonus)` and already
   filters the march journal's reported bonuses and what the band may forage.
 
 - **Foraging and gathering (implemented — the per-good inventory is real).** As it marches,

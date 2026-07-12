@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 import com.civstudio.agent.Agent;
-import com.civstudio.agent.MigrantCaravan;
+import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.agent.Household;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.Retinue;
@@ -66,7 +66,7 @@ class CaravanDissolutionTest {
 			}
 		}
 
-		MigrantCaravan band = MigrantCaravan.dissolve(colony);
+		SettlerCaravan band = SettlerCaravan.dissolve(colony);
 
 		// money conserved: the whole stock is now the band's hoard, the banks drained
 		assertEquals(moneyBefore, band.getHoard(), 1e-6,

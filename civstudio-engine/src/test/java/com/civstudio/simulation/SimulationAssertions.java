@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.civstudio.agent.MigrantCaravan;
+import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.bank.Bank;
 import com.civstudio.settlement.Settlement;
 
@@ -53,7 +53,7 @@ final class SimulationAssertions {
 		Settlement colony = h.getColony();
 		assertTrue(colony.isDead(),
 				"expected the colony's settled life to have ended (it dissolved)");
-		MigrantCaravan band = colony.getDepartedBand();
+		SettlerCaravan band = colony.getDepartedBand();
 		assertNotNull(band, "a dissolved ruler-bearing colony departs as a Caravan");
 		assertTrue(band.getFollowing().isWandering(),
 				"the departed band's following wanders");

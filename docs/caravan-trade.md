@@ -70,7 +70,7 @@ Caravan (abstract)                     // a led band at a province that moves on
   ├─ moveTo(neighbour) / step(path)    // movement, validated against WorldMap adjacency
   └─ tick(Rng)                         // one day: advance and/or act; abstract hook
   │
-  ├─ MigrantCaravan                    // the dissolution-born band that re-founds (docs/caravan.md)
+  ├─ SettlerCaravan                    // the dissolution-born band that re-founds (docs/caravan.md)
   │    + following : Retinue           // the carried population (the asset/larder)
   │    + research : ResearchSnapshot   // the abandoned colony's tech, restored on re-founding
   │    + a settle decision (site choice) + re-found into a province
@@ -85,10 +85,10 @@ Caravan (abstract)                     // a led band at a province that moves on
 **What lives where.** The base holds only the universal band state — leader, hoard,
 current province, the map reference, movement, the daily tick. The **`Retinue` following
 and larder are migration-specific** (a trade convoy carries goods, not a population to
-resettle), so they live on `MigrantCaravan`; the **cargo/route/sponsor are
+resettle), so they live on `SettlerCaravan`; the **cargo/route/sponsor are
 trade-specific**, on `TradeCaravan`. Phase A was a refactor of the old concrete
 `Caravan` (which *was* the migration band): its `following`/`research`/`dissolve`/
-re-found moved down into `MigrantCaravan`, and the base kept `leader`/`hoard`/position +
+re-found moved down into `SettlerCaravan`, and the base kept `leader`/`hoard`/position +
 the new movement.
 
 ---
@@ -111,7 +111,7 @@ the new movement.
   move is a `step` along a cached `worldMap.path`. Movement is **one neighbour per day**
   (a placeholder rate — graph distance becomes travel time), so a route of length *k*
   takes *k* days.
-- **`MigrantCaravan.dissolve(colony)` captures `colony.getProvince()`** as the band's
+- **`SettlerCaravan.dissolve(colony)` captures `colony.getProvince()`** as the band's
   starting node (the old code captured raw `getLatitude()/getLongitude()`), so a band
   born from a province-founded colony starts on the graph. A colony founded at bare
   coordinates with no province (`getProvince() == null`) falls back to raw coords +
@@ -138,7 +138,7 @@ next** — a single-threaded window in which every colony thread is parked at
   band-free run. Synchronized access, since bands on different colony threads may be
   created the same day.
 - Money is **conserved end to end**. A band's `hoard` is money held *outside* any bank —
-  the same session-level carrier `MigrantCaravan.dissolve` uses (`Bank.drainAllMoney` →
+  the same session-level carrier `SettlerCaravan.dissolve` uses (`Bank.drainAllMoney` →
   hoard). The conserving primitives are `Bank.injectExternalFunds(amt)` (adds outside
   money to a colony's equity), `payFromEquity(id, amt)` (moves equity into an account),
   `extractExternalFunds(id, amt)` (destroys money out of a colony via an account), and
@@ -209,13 +209,13 @@ next** — a single-threaded window in which every colony thread is parked at
 
 ### Work breakdown (as landed)
 
-- **A1 — Extract the `Caravan` superclass + `MigrantCaravan`.** `Caravan` became abstract
+- **A1 — Extract the `Caravan` superclass + `SettlerCaravan`.** `Caravan` became abstract
   (`leader`, `hoard`, `provinceId`, `worldMap`, derived `latitude`/`longitude`,
   `moveTo(int)`, `step(path)`, abstract `tick(Rng)`), with on-graph
   `(leader, hoard, provinceId, worldMap)` and off-graph `(leader, hoard, lat, lng)`
   constructors. `moveTo(int dest)` asserts `onGraph()` and neighbour membership, else
-  throws. `MigrantCaravan extends Caravan` took `following` (Retinue), `research`, the
-  static `dissolve(Settlement)` (now returning `MigrantCaravan`, capturing
+  throws. `SettlerCaravan extends Caravan` took `following` (Retinue), `research`, the
+  static `dissolve(Settlement)` (now returning `SettlerCaravan`, capturing
   `colony.getProvince()` and the `WorldMap`, falling back to raw coords + `-1` off-graph),
   and the wander/settle logic. Callers updated (`Settlement.dissolveIntoCaravan`'s
   `departedBand` field type, `GameSession` caravan APIs keeping the `Caravan` type, the
@@ -227,7 +227,7 @@ next** — a single-threaded window in which every colony thread is parked at
   the `Province` overload when `band.onGraph()` (using
   `worldMap.province(band.getProvinceId())`), so the re-founded colony inherits the
   province's lat/long **and plots cap**; the raw-coords path stays for off-graph bands.
-- **A4 — Wander + settle decision on `MigrantCaravan`.** `tick(Rng)` consumes the larder,
+- **A4 — Wander + settle decision on `SettlerCaravan`.** `tick(Rng)` consumes the larder,
   then moves toward a target or settles. Target choice (deterministic on the band RNG):
   the nearest **settleable** province with enough `plots` that isn't the abandoned one
   (BFS over `WorldMap.path`, ties broken on the band RNG); cache the path, `step` one
@@ -249,7 +249,7 @@ next** — a single-threaded window in which every colony thread is parked at
 
 - **Kept green:** `CaravanDissolutionTest`, `CaravanRefoundTest` (off-graph paths),
   `TwinSettlementEconomyTest`, the smoke suite.
-- **`MigrantCaravanTest`:** a band seeded at a known province steps to a listed neighbour;
+- **`SettlerCaravanTest`:** a band seeded at a known province steps to a listed neighbour;
   `moveTo` a non-neighbour throws; a *k*-hop `path` takes *k* days; the Withacen/Hopespeak
   provinces are asserted adjacent (reused by the Phase-B testbed).
 - **`CaravanRefoundIntoProvinceTest`:** a band wanders to a settleable province and
@@ -258,8 +258,8 @@ next** — a single-threaded window in which every colony thread is parked at
   determinism (same seed → identical visited-province sequence).
 
 > **Note (consolidation):** the Phase-A plan originally proposed the test names
-> `CaravanMovementTest` and `MigrantCaravanSettleTest`; what actually landed is
-> `MigrantCaravanTest` and `CaravanRefoundIntoProvinceTest`. This section uses the real
+> `CaravanMovementTest` and `SettlerCaravanSettleTest`; what actually landed is
+> `SettlerCaravanTest` and `CaravanRefoundIntoProvinceTest`. This section uses the real
 > names.
 
 ### Deferred out of Phase A
@@ -310,8 +310,8 @@ move both prices toward each other.
 - **Phase A already gives the band a position and a tick** (`provinceId` + derived
   lat/long, `moveTo(int)`/`step(path)`, abstract `tick(Rng)` driven from the barrier;
   `GameSession.getBandRng()`, `addCaravan`/`getCaravans()`, `getWorldMap()`).
-- **`MigrantCaravan` is the sibling subclass** — `TradeCaravan` slots in beside it under
-  the `Caravan` base with no change to the base or to `MigrantCaravan`.
+- **`SettlerCaravan` is the sibling subclass** — `TradeCaravan` slots in beside it under
+  the `Caravan` base with no change to the base or to `SettlerCaravan`.
 
 ### Design decisions
 
@@ -404,11 +404,11 @@ move both prices toward each other.
 - **B5 — drive trade ticks + reap finished ventures** (`SessionRunner.java`). `tickBands`
   already iterates `getCaravans()` and calls `band.tick(rng)`; `TradeCaravan.tick` rides
   it unchanged. Add the **launch pass** (B4) and a **reap pass** removing `DONE`
-  `TradeCaravan`s (needs `session.removeCaravan`/filter — `MigrantCaravan`s settling have
+  `TradeCaravan`s (needs `session.removeCaravan`/filter — `SettlerCaravan`s settling have
   the same need). Keep it all single-threaded in `onAdvance`.
 - **B6 — a two-settlement trade testbed** (new `simulation/TradeEconomy.java`, à la the
   removed `HanseaticEconomy` but kept for trade; new `TradeCaravanTest`). Two adjacent
-  colonies (the Withacen/Hopespeak pair, asserted adjacent by `MigrantCaravanTest`) with a
+  colonies (the Withacen/Hopespeak pair, asserted adjacent by `SettlerCaravanTest`) with a
   deliberate **standing price gap** in the tradable good (e.g. seed one colony's Enjoyment
   sector smaller so its price runs higher), a sponsor on the low-price side, trade policy
   enabled. Run a window and assert: a venture completes a full cycle (`DONE`); the **price
@@ -419,7 +419,7 @@ move both prices toward each other.
 
 ### Test plan
 
-- **Keep green:** the whole Phase A suite (`MigrantCaravanTest`,
+- **Keep green:** the whole Phase A suite (`SettlerCaravanTest`,
   `CaravanRefoundIntoProvinceTest`, `CaravanDissolutionTest`, `CaravanRefoundTest`,
   `TwinSettlementEconomyTest`) and the smoke suite — band-free runs draw nothing new and
   stay byte-identical (assert with a CSV-checksum diff of `HomogeneousEconomy`).
@@ -444,7 +444,7 @@ move both prices toward each other.
    the colony it transacts at (`colony.nextAgentID()`) per leg, and its transient account
    must be drained back to the hoard so no money is stranded in a foreign colony.
 4. **Reaping finished bands.** The session caravan list grows with each venture; confirm a
-   removal path exists (`MigrantCaravan` settling has the same need) so the list does not
+   removal path exists (`SettlerCaravan` settling has the same need) so the list does not
    leak `DONE` bands.
 5. **Necessity trade is stability-risky.** Default to Enjoyment; only enable Necessity
    trade behind a flag once calibrated, since exporting food can starve the source colony.
@@ -532,7 +532,7 @@ march/routing ones in `docs/caravan-march.md` §Decided.
   one province cannot double-settle.
 - **Flavors are payload-only subclasses; destination behaviour lives in the action.**
   The `Caravan` base owns the journey (march, larder clock, arrival action +
-  `stillValid`); subclasses hold payload only (`MigrantCaravan`: following +
+  `stillValid`); subclasses hold payload only (`SettlerCaravan`: following +
   research; `TradeCaravan`: cargo + sponsor; the future warband: soldiers).
   Settle/sell/attack are actions — aligning with the flavor-agnostic band-as-data
   base `docs/caravan.md` wants.

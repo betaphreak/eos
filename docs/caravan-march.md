@@ -8,9 +8,9 @@ and pitches a transient-plot **camp** each night. The full **order-of-march** en
 HH:mm schedule is computed and written, together with the day's provinces-traversed and camp,
 to a per-session **caravan march journal** (`CaravanMarch.csv` + `CaravanTimetable.csv`, via
 `io/printer/CaravanMarchPrinter`). Code: `agent/march/` (`March`, `MarchDay`, `MarchConfig`,
-`MarchElement`, `MarchFlavor`, `MarchReport`, `Camp`), the rewired `MigrantCaravan.tick`
+`MarchElement`, `MarchFlavor`, `MarchReport`, `Camp`), the rewired `SettlerCaravan.tick`
 (`tick(LocalDate, Rng)`), and the `SessionRunner` wiring; tests in
-`agent/march/MarchTest`, `simulation/MigrantCaravanTest` and the journey tests
+`agent/march/MarchTest`, `simulation/SettlerCaravanTest` and the journey tests
 (`simulation/DhenijansarToWexkeepTest`, `simulation/ParallelCaravansTest`).
 **§6 corridor-metric movement is implemented.** The band now spends its daily distance `D`
 over the **plot corridor**: each leg costs `KM_PER_PLOT × corridor.totalCost` (the plots'
@@ -34,7 +34,7 @@ tuning item, not a structural one.
 
 **Original status:** design only — not yet implemented
 **Date:** 2026-07-01
-**Depends on:** the `Caravan` / `MigrantCaravan` band (`docs/caravan.md`), the **solar
+**Depends on:** the `Caravan` / `SettlerCaravan` band (`docs/caravan.md`), the **solar
 clock** (`docs/solar.md` — daylight hours per position/date), the **plot model**
 (`docs/plots.md`), the **province graph** (`docs/geography.md`), and the shared
 **`ProvincePlotPool`** (`docs/province-plots.md`).
@@ -228,7 +228,7 @@ fits before dusk: `D` must fall (§4). That is the concrete pressure daylight pu
 march.
 
 **Flavor note.** The full seven-element order is *army*-shaped. A **settler/admin band**
-(`MigrantCaravan`) has no legions — it uses a reduced subset (conceptually
+(`SettlerCaravan`) has no legions — it uses a reduced subset (conceptually
 `VANGUARD → MAIN_BODY → BAGGAGE_TRAIN`, or a single block for a small band), while a
 **military band** (the future army — `docs/caravan.md`) uses the full order with scouts,
 surveyors, command and guards. The enum is the general structure; each flavor populates
@@ -295,7 +295,7 @@ a transient plot claim that, on the settle decision, *is* the founding `HOLDING`
   `SolarClock` at the band's moving position) updated each day. `SessionRunner.tickBands`
   already drives bands once per lockstep day with a representative date, so the date is at
   hand.
-- **Replaces `MigrantCaravan`'s one-hop wander.** Today `MigrantCaravan.tick` eats the
+- **Replaces `SettlerCaravan`'s one-hop wander.** Today `SettlerCaravan.tick` eats the
   wandering ration and takes **one hop** toward the nearest viable site. Under this model
   it instead **advances `D` km/day along the path**; the settle trigger
   (`isReadyToSettle` on reaching a viable province) is unchanged. The lean wandering
@@ -355,7 +355,7 @@ a transient plot claim that, on the settle decision, *is* the founding `HOLDING`
    still future.
    **Tech-gated identification:** a band departs with a **tech state** (its known tech ids —
    a dissolution band carries its colony's research; a fresh band defaults to
-   `MigrantCaravan.DEFAULT_TECH` = `TECH_MEDIEVAL_LIFESTYLE`, i.e. the pre-known set of that
+   `SettlerCaravan.DEFAULT_TECH` = `TECH_MEDIEVAL_LIFESTYLE`, i.e. the pre-known set of that
    era). It can only **identify** a resource whose {@code Bonus.techReveal} it knows, so it
    neither reports nor forages one locked behind a tech it lacks (a medieval band cannot see
    an oil/uranium/natural-gas deposit). Overridable via `setKnownTechs`.

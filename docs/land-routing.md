@@ -22,7 +22,7 @@ A* heuristic (the cheapest step can now cost below 1). Elevation applies to the 
 corridor only — the centroid-to-centroid boundary hop stays flat.
 The caravan consumes it: it **spends its daily distance `D` over the corridor plot costs**
 (`KM_PER_PLOT × corridor.totalCost` per province) plus the boundary hop, so rough/wild ground
-and larger provinces are slower (`MigrantCaravan.computeLeg`); **crossing a river costs a full
+and larger provinces are slower (`SettlerCaravan.computeLeg`); **crossing a river costs a full
 day** (`Plot` carries a river flag, `PlotCorridor.riverCrossings` counts the fords); and the
 journal reports the notable bonuses encountered and camps on a corridor plot. Tests:
 `settlement/PlotCorridorTest`, `simulation/DhenijansarToWexkeepTest`. **Still deferred:**

@@ -13,7 +13,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.civstudio.agent.Member;
-import com.civstudio.agent.MigrantCaravan;
+import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.agent.Retinue;
 import com.civstudio.agent.march.MarchReport;
 import com.civstudio.bank.Bank;
@@ -25,13 +25,13 @@ import com.civstudio.settlement.Settlement;
 import com.civstudio.util.Rng;
 
 /**
- * Graph movement and the wander-and-settle decision for a {@link MigrantCaravan}
+ * Graph movement and the wander-and-settle decision for a {@link SettlerCaravan}
  * (caravan-trade Phase A, A4). A band anchored to a province moves one hop per day
  * along neighbor edges, and wanders the graph to the nearest viable site — a
  * settleable {@link Province} large enough to found into, not the one it abandoned —
  * where it marks itself ready to settle.
  */
-class MigrantCaravanTest {
+class SettlerCaravanTest {
 
 	// two directly-adjacent LAND provinces (Withacen/Hopespeak) and a far-away one
 	private static final int WITHACEN = 515;
@@ -40,7 +40,7 @@ class MigrantCaravanTest {
 
 	// build an on-graph band of `followers` people anchored at `provinceId`, hosted on a
 	// throwaway (never-run) muster colony just to mint its following
-	private static MigrantCaravan bandAt(GameSession session, int provinceId,
+	private static SettlerCaravan bandAt(GameSession session, int provinceId,
 			int followers) {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		Settlement muster = session.newSettlement("muster", cfg.startDate(),
@@ -49,7 +49,7 @@ class MigrantCaravanTest {
 		Bank bank = new Bank(BankConfig.DEFAULT, muster);
 		Retinue following = new Retinue(followers, bank, muster);
 		Member leader = following.promoteHighestSkilled();
-		return new MigrantCaravan(leader, following, 1000, provinceId, session);
+		return new SettlerCaravan(leader, following, 1000, provinceId, session);
 	}
 
 	@Test
@@ -59,7 +59,7 @@ class MigrantCaravanTest {
 		assertTrue(map.neighbors(WITHACEN).contains(HOPESPEAK),
 				"fixture: Withacen and Hopespeak are adjacent");
 
-		MigrantCaravan band = bandAt(session, WITHACEN, 50);
+		SettlerCaravan band = bandAt(session, WITHACEN, 50);
 		assertTrue(band.onGraph());
 
 		band.moveTo(HOPESPEAK);
@@ -79,7 +79,7 @@ class MigrantCaravanTest {
 		Bank bank = new Bank(BankConfig.DEFAULT, muster);
 		Retinue following = new Retinue(5, bank, muster);
 		Member leader = following.promoteHighestSkilled();
-		MigrantCaravan band = new MigrantCaravan(leader, following, 0, 51.5, -0.13);
+		SettlerCaravan band = new SettlerCaravan(leader, following, 0, 51.5, -0.13);
 
 		assertFalse(band.onGraph(), "a bare-coordinate band is off the graph");
 		assertThrows(IllegalStateException.class, () -> band.moveTo(HOPESPEAK));
@@ -89,7 +89,7 @@ class MigrantCaravanTest {
 	void wandersOffTheOriginToAViableSiteAndSettles() {
 		GameSession session = new GameSession(99);
 		WorldMap map = session.getWorldMap();
-		MigrantCaravan band = bandAt(session, WITHACEN, 50);
+		SettlerCaravan band = bandAt(session, WITHACEN, 50);
 		Rng rng = session.getBandRng();
 
 		int days = 0;
@@ -114,7 +114,7 @@ class MigrantCaravanTest {
 		// (the daylight-bounded march) with an HH:mm order-of-march, the provinces it
 		// crosses, and its nightly camp — see docs/caravan-march.md
 		GameSession session = new GameSession(7);
-		MigrantCaravan band = bandAt(session, WITHACEN, 50);
+		SettlerCaravan band = bandAt(session, WITHACEN, 50);
 		band.setCampingEnabled(true);
 		Rng rng = session.getBandRng();
 		LocalDate summer = LocalDate.of(1445, 6, 21);
@@ -150,7 +150,7 @@ class MigrantCaravanTest {
 				i -> cfg.nFirm().savings(), i -> 15);
 		GameSession session = h.getColony().getSession();
 
-		MigrantCaravan band = bandAt(session, WITHACEN, 50);
+		SettlerCaravan band = bandAt(session, WITHACEN, 50);
 		session.addCaravan(band);
 
 		SessionRunner.runConcurrently(List.of(h));

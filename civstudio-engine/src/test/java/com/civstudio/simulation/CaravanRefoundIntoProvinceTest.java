@@ -6,13 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-import com.civstudio.agent.MigrantCaravan;
+import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
 
 /**
  * Province-anchored re-founding (caravan-trade Phase A, A3): a band born from a
- * colony founded <b>into a province</b> is {@linkplain MigrantCaravan#onGraph()
+ * colony founded <b>into a province</b> is {@linkplain SettlerCaravan#onGraph()
  * on-graph}, and re-founds <b>into that province</b> — so the reborn colony inherits
  * the province's coordinates <em>and</em> its {@code plots} cap on settlement size,
  * not just bare coordinates. (An off-graph band re-founding at raw coordinates is
@@ -38,7 +38,7 @@ class CaravanRefoundIntoProvinceTest {
 				"the origin colony was founded into a province");
 		h0.run();
 
-		MigrantCaravan band = MigrantCaravan.dissolve(origin);
+		SettlerCaravan band = SettlerCaravan.dissolve(origin);
 		assertTrue(band.onGraph(),
 				"a band from a province-founded colony is anchored on the graph");
 		assertEquals(origin.getProvince().id(), band.getProvinceId(),

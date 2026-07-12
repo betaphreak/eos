@@ -782,7 +782,7 @@ near its current food TFP. The plan therefore:
   `SettlementProvinceTest` (the "size 4 → 29 effective slots, 30th occupant rejected" cap →
   "capped at `province.plots`, the `(plots+1)`th rejected"); `DefaultProvinceFoundingTest`
   (`getSize() <= getMaxSize()` / "cap at size 4" → plot count ≤ `province.plots`);
-  `MigrantCaravanTest` (drops `session.getSlotTable()` + `maxSizeForPlots(...) >= MIN_SIZE`
+  `SettlerCaravanTest` (drops `session.getSlotTable()` + `maxSizeForPlots(...) >= MIN_SIZE`
   site-viability → a plot-count threshold on `chosen.plots()`).
 - **Compile churn only (logic intact):** every test that constructs a `Settlement` directly
   and passes `SlotTable.load()` — `SettlementSolarTest`, `SettlementLifecycleTest`,

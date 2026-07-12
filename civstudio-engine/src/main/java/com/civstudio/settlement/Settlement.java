@@ -16,7 +16,7 @@ import java.util.function.UnaryOperator;
 
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.Granary;
-import com.civstudio.agent.MigrantCaravan;
+import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.geo.Province;
 import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.agent.Household;
@@ -83,7 +83,7 @@ public class Settlement {
 
 	/**
 	 * The fewest plots a province must have for a colony to be founded into it — the
-	 * minimum viable settlement footprint (and the threshold a {@link MigrantCaravan}
+	 * minimum viable settlement footprint (and the threshold a {@link SettlerCaravan}
 	 * judges a site by). Matches the disc model's old founding floor: a size-3 disc's
 	 * total plot footprint (so a province too small to hold the floor is rejected
 	 * exactly as before). See {@code docs/plots.md}.
@@ -539,7 +539,7 @@ public class Settlement {
 	}
 
 	/** The wandering band a dissolved colony departed as, or null. */
-	public MigrantCaravan getDepartedBand() {
+	public SettlerCaravan getDepartedBand() {
 		return lifecycle.getDepartedBand();
 	}
 
@@ -981,7 +981,7 @@ public class Settlement {
 
 	/**
 	 * Finalize a finished run. A ruler-bearing colony that crossed the workforce
-	 * floor departs as a {@link MigrantCaravan} (the survivors take to the road) rather
+	 * floor departs as a {@link SettlerCaravan} (the survivors take to the road) rather
 	 * than simply vanishing — done here, after the last step's clearing/printing,
 	 * since the dissolution drains the banks and folds the households (it must not
 	 * run mid-step). Exposed so a concurrent runner can call it once its day loop

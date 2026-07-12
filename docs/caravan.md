@@ -439,7 +439,7 @@ founded.** Deleting the `muster` colony (Phase A) also deletes its premature cop
   carrier (`List<Member>` + larder) on the `Caravan`; a session-level muster generator
   (`GameSession.musterFollowing(n, spec)`) drawing peasants as data on the
   demographic/naming RNGs in the same `Retinue.newPeasant` order (gender → age → skills →
-  name), so reproducible and needing **no colony**; `MigrantCaravan.tick`/`dissolve`
+  name), so reproducible and needing **no colony**; `SettlerCaravan.tick`/`dissolve`
   operate on the data; the settle seam (`SimulationHarness.createRetinueFromBand`) reads
   it; and the caravan drivers muster bands with **no** throwaway colony/bank. Verify
   byte-identical with a full-run CSV checksum diff (the never-run muster colony perturbs
@@ -485,7 +485,7 @@ now resolved as below (none implemented yet). The march/routing decisions live i
 
 - **Off-road demographics — a full daily pass on a per-band salted stream.** Band
   members currently neither age nor die while wandering (verified: no mortality or
-  aging pass anywhere in `Caravan` / `MigrantCaravan.tick`), contradicting the
+  aging pass anywhere in `Caravan` / `SettlerCaravan.tick`), contradicting the
   "mortality is always on — there is no toggle" doctrine and quietly making the road
   *safer* than settlement. Decided: a session-level daily pass applies the
   Coale-Demeny draw and aging to every band `Member`, drawing on a **new salted

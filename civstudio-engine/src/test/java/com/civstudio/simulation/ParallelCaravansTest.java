@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 import com.civstudio.agent.Member;
-import com.civstudio.agent.MigrantCaravan;
+import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.agent.Retinue;
 import com.civstudio.agent.march.MarchReport;
 import com.civstudio.bank.Bank;
@@ -89,12 +89,12 @@ class ParallelCaravansTest {
 					"a land route exists Dhenijansar -> " + DEST_NAMES[i]);
 
 		// muster all six bands on the main thread (naming/skill draws are colony-level)
-		List<MigrantCaravan> bands = new ArrayList<>();
+		List<SettlerCaravan> bands = new ArrayList<>();
 		for (int i = 0; i < DEST_IDS.length; i++) {
 			Retinue following = new Retinue(50, bank, muster);
 			Member leader = following.promoteHighestSkilled();
 			setLarder(following, PROVISION_PER_PERSON * following.size());
-			MigrantCaravan band = new MigrantCaravan(leader, following, 100_000,
+			SettlerCaravan band = new SettlerCaravan(leader, following, 100_000,
 					DHENIJANSAR, session);
 			band.setCampingEnabled(true);
 			band.setDestination(DEST_IDS[i]);
@@ -110,7 +110,7 @@ class ParallelCaravansTest {
 		try {
 			List<Future<Integer>> marches = new ArrayList<>();
 			for (int i = 0; i < bands.size(); i++) {
-				MigrantCaravan band = bands.get(i);
+				SettlerCaravan band = bands.get(i);
 				Rng rng = new Rng(seed * 31 + i);
 				marches.add(pool.submit(() -> {
 					CaravanMarchPrinter journal = new CaravanMarchPrinter("output/" + seed);
@@ -129,7 +129,7 @@ class ParallelCaravansTest {
 			}
 			for (int i = 0; i < bands.size(); i++) {
 				int days = marches.get(i).get(); // rethrows any march failure
-				MigrantCaravan band = bands.get(i);
+				SettlerCaravan band = bands.get(i);
 				assertTrue(band.isReadyToSettle(), DEST_NAMES[i]
 						+ " band arrived within the horizon (stopped day " + days
 						+ " at province " + band.getProvinceId() + ")");

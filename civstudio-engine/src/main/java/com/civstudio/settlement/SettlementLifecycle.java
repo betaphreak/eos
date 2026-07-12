@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.Household;
-import com.civstudio.agent.MigrantCaravan;
+import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.agent.Retinue;
 
 import lombok.extern.java.Log;
@@ -12,7 +12,7 @@ import lombok.extern.java.Log;
 /**
  * The <b>lifecycle</b> of a {@link Settlement}: whether it has {@link #start()
  * started}, whether it has {@link #isDead() died}, and — for a ruler-bearing colony
- * that can form a band — its dissolution into a wandering {@link MigrantCaravan} once
+ * that can form a band — its dissolution into a wandering {@link SettlerCaravan} once
  * its workforce drains. Extracted from {@code Settlement} so the birth/death/departure
  * state machine is one cohesive unit; the colony delegates its lifecycle queries here
  * and calls {@link #update()} once the population settles each step.
@@ -36,7 +36,7 @@ class SettlementLifecycle {
 
 	// the wandering band a dissolved colony departed as (null until then; only a
 	// ruler-bearing colony produces one)
-	private MigrantCaravan departedBand;
+	private SettlerCaravan departedBand;
 	// flagged by update() when the workforce floor is crossed, so finishRun() performs
 	// the dissolution after the step's market clearing/printing (the dissolution drains
 	// banks and folds households, so it must not run mid-step)
@@ -75,7 +75,7 @@ class SettlementLifecycle {
 	}
 
 	/** The wandering band a dissolved colony departed as, or null. */
-	MigrantCaravan getDepartedBand() {
+	SettlerCaravan getDepartedBand() {
 		return departedBand;
 	}
 
@@ -131,7 +131,7 @@ class SettlementLifecycle {
 
 	/**
 	 * Finalize a finished run: a colony that crossed the workforce floor departs as a
-	 * {@link MigrantCaravan} (the survivors take to the road) rather than vanishing —
+	 * {@link SettlerCaravan} (the survivors take to the road) rather than vanishing —
 	 * done here, after the last step's clearing/printing, since the dissolution drains
 	 * the banks and folds the households (it must not run mid-step).
 	 */
@@ -145,7 +145,7 @@ class SettlementLifecycle {
 	// session, register the band there (colony-less bands live at the session level —
 	// see docs/caravan.md). The settlement is now gone; its people persist in the band.
 	private void dissolveIntoCaravan() {
-		departedBand = MigrantCaravan.dissolve(colony);
+		departedBand = SettlerCaravan.dissolve(colony);
 		if (colony.getSession() != null)
 			colony.getSession().addCaravan(departedBand);
 		log.info(colony.getName() + " departed as a Caravan ("
