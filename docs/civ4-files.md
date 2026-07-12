@@ -110,7 +110,7 @@ regenerate or keep committed — the earlier "CivStudio-derived" hypothesis was 
   cache; an async **`prefetch({files, arts})`** warms that cache with a **parallel `fetch()`** pass
   (token once, bounded concurrency) so a bake of ~300 tech icons runs in ~8 s instead of ~300 serial
   `gh` spawns. A cold sync call still works via a single `gh api` subprocess (the fallback).
-- **Ref = a pinned SHA, not the branch.** `map/civ4-source.lock` currently pins
+- **Ref = a pinned SHA, not the branch.** `civ4-source.lock` currently pins
   `f174979b7336ee42839077e997bea1b3c129dce5` (C2C `master` tip on 2026-07-11). This **departs from
   the original plan's "track the default branch"** on purpose: a pin makes dev-time regeneration
   reproducible and keeps the verify step meaningful. The providers use whatever ref string the lock

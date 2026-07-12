@@ -10,7 +10,7 @@ import com.civstudio.server.CivStudioProperties;
  * provider at startup, so a deployment can override the source host / cache location / token (and,
  * for testing, the ref). Configured in the constructor — which runs during context refresh, before
  * any {@code ApplicationRunner} (notably {@code DemoSessionSeeder}) founds a session and triggers an
- * on-demand raster fetch. A blank {@code ref} leaves the committed {@code map/anbennar-source.lock}
+ * on-demand raster fetch. A blank {@code ref} leaves the committed {@code anbennar-source.lock}
  * in effect (the single source of truth); see {@code docs/anbennar-files.md}.
  */
 @Component

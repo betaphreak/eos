@@ -31,7 +31,7 @@ FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 COPY --from=build /build/civstudio-server/target/civstudio-server-*.jar app.jar
 # The Anbennar map rasters are NOT baked in: ProvinceRaster fetches them on demand from GitLab
-# (pinned by map/anbennar-source.lock) into the cache dir, the first time a province's plot field
+# (pinned by anbennar-source.lock) into the cache dir, the first time a province's plot field
 # is generated. Point ANBENNAR_CACHE_DIR at a mounted volume so the download survives restarts, and
 # set ANBENNAR_TOKEN (a secret) for the authenticated rate limit. See docs/anbennar-files.md.
 # The lobby page (chat + server status) the server serves at "/"

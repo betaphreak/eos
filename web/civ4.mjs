@@ -20,7 +20,7 @@ const REPO = 'caveman2cosmos/Caveman2Cosmos';
 const API = `https://api.github.com/repos/${REPO}/contents/`;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
-const LOCK = path.join(ROOT, 'civstudio-engine/src/main/resources/map/civ4-source.lock');
+const LOCK = path.join(ROOT, 'civstudio-engine/src/main/resources/civ4-source.lock');
 
 export const REF = (() => {
   try { const s = fs.readFileSync(LOCK, 'utf8').trim(); if (s) return s; } catch { /* fall through */ }

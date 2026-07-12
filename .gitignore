@@ -28,14 +28,14 @@ civstudio-server/target/
 # derived .nif render sprites (the explored alternative to GameFont — docs/bonus-sprite-bake.md)
 /tools/nif-bake/out/
 # Anbennar EU4 mod files are no longer vendored. They are fetched on demand from GitLab (pinned by
-# map/anbennar-source.lock) into a local cache by com.civstudio.data.AnbennarFiles — the *derived*
+# anbennar-source.lock) into a local cache by com.civstudio.data.AnbennarFiles — the *derived*
 # map/*.json resources stay committed. See docs/anbennar-files.md. Ignore the cache + any leftover
 # local checkout of the old vendored tree.
 /.anbennar-cache/
 /data/anbennar/
 
 # Caveman2Cosmos (Civ4) art/XML — likewise no longer vendored. Fetched on demand from the C2C GitHub
-# repo (pinned by map/civ4-source.lock) into a local cache by com.civstudio.data.Civ4Files (+ the
+# repo (pinned by civ4-source.lock) into a local cache by com.civstudio.data.Civ4Files (+ the
 # web/civ4.mjs node sibling); dev-time only (nothing at runtime reads it). See docs/civ4-files.md.
 /.civ4-cache/
 

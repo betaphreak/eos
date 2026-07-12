@@ -44,9 +44,9 @@ public final class Civ4Files {
 	}
 
 	private static final String REPO = "caveman2cosmos/Caveman2Cosmos";
-	// fallback if the lock resource is somehow absent (kept in sync with map/civ4-source.lock)
+	// fallback if the lock resource is somehow absent (kept in sync with civ4-source.lock)
 	private static final String FALLBACK_REF = "f174979b7336ee42839077e997bea1b3c129dce5";
-	private static final String LOCK_RESOURCE = "/map/civ4-source.lock";
+	private static final String LOCK_RESOURCE = "/civ4-source.lock";
 
 	// committed-relative path (what the file was under data/civ4/) -> its path in the C2C repo.
 	// The old data/civ4/ tree flattened files from scattered C2C subtrees; this restores them.

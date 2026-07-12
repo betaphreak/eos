@@ -63,7 +63,7 @@ civstudio:
     # when needed, pinned to `ref` for reproducibility, and caches them under `cache-dir`. This config
     # is pushed into the engine provider at startup. See docs/anbennar-files.md.
     base-url: ${ANBENNAR_BASE_URL:https://gitlab.com/anbennar/anbennar-eu4-dev}
-    # blank → the committed map/anbennar-source.lock is the single source of truth (see docs). Set
+    # blank → the committed anbennar-source.lock is the single source of truth (see docs). Set
     # ANBENNAR_REF only for ad-hoc/testing fetches; a bump normally happens via the refresh workflow.
     ref: ${ANBENNAR_REF:}
     # local dev default; the deployment points this at a mounted volume so downloads survive restarts.

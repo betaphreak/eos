@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const BASE = 'https://gitlab.com/anbennar/anbennar-eu4-dev';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
-const LOCK = path.join(ROOT, 'civstudio-engine/src/main/resources/map/anbennar-source.lock');
+const LOCK = path.join(ROOT, 'civstudio-engine/src/main/resources/anbennar-source.lock');
 
 export const REF = (() => {
   try { const s = fs.readFileSync(LOCK, 'utf8').trim(); if (s) return s; } catch { /* fall through */ }

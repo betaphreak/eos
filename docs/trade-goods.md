@@ -9,7 +9,7 @@ data joined to provinces by key, exactly like the [political layer](political-ma
 ## Data pipeline
 
 Canonical goods come from the Anbennar EU4 dev mod (`gitlab.com/anbennar/anbennar-eu4-dev`, pinned by
-`map/anbennar-source.lock`), fetched on demand by `com.civstudio.data.AnbennarFiles` — never vendored.
+`anbennar-source.lock`), fetched on demand by `com.civstudio.data.AnbennarFiles` — never vendored.
 Two sources, two derived (committed) resources:
 
 - `history/provinces/<id> - <Name>.txt` — the top-level `trade_goods = grain` scalar (plus any dated

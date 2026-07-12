@@ -90,7 +90,7 @@ Path p = AnbennarFiles.get("map/provinces.bmp");   // downloads on cache miss, r
 civstudio:
   anbennar:
     base-url:  ${ANBENNAR_BASE_URL:https://gitlab.com/anbennar/anbennar-eu4-dev}
-    ref:       ${ANBENNAR_REF:}          # blank → the committed map/anbennar-source.lock wins
+    ref:       ${ANBENNAR_REF:}          # blank → the committed anbennar-source.lock wins
     cache-dir: ${ANBENNAR_CACHE_DIR:.anbennar-cache}
     token:     ${ANBENNAR_TOKEN:}        # optional; blank = anonymous (rate-limited) fetch
 ```
@@ -100,7 +100,7 @@ constructor (which runs during context refresh, before any `ApplicationRunner` �
 `DemoSessionSeeder` — founds a session): `AnbennarFiles.configure(baseUrl, ref, cacheDir, token)`.
 The server depends on the engine, so this is a direct call — no system-property round-trip. Net
 effect: **"configured in Spring Boot"** for the deployment, **standalone defaults** for the engine.
-`ref` is left blank so the committed `map/anbennar-source.lock` is the single source of truth
+`ref` is left blank so the committed `anbennar-source.lock` is the single source of truth
 (§Staying current); set `ANBENNAR_REF` only for ad-hoc/testing.
 
 ### Consumer repointing
@@ -159,7 +159,7 @@ the committed derived resources must be at the same commit.**
 The model is a **dependency lock**, not a live tail:
 
 - **The locked commit is the single source of truth for `ref`.** Record it in a committed engine
-  resource (e.g. `map/anbennar-source.lock`) that both `AnbennarFiles` (runtime fetch) and the
+  resource (e.g. `anbennar-source.lock`) that both `AnbennarFiles` (runtime fetch) and the
   exporters read, so the raster the server downloads always matches the committed `map/*.json`. The
   Spring `civstudio.anbennar.ref` property overrides it only for ad-hoc/testing.
 - **Upstream lands via a refresh workflow**, deliberately, as one atomic commit: resolve
@@ -178,7 +178,7 @@ running session.
 ## Removal / cutover steps (done 2026-07-11)
 
 1. Add `com.civstudio.data.AnbennarFiles` (fetch + cache + `list`) with engine defaults, reading
-   the locked commit from a committed `map/anbennar-source.lock` resource (§Staying current).
+   the locked commit from a committed `anbennar-source.lock` resource (§Staying current).
 2. Repoint `ProvinceRaster` and every `geo/export/*` constant to `AnbennarFiles.get(...)` per the
    table above.
 3. Add the server bridge bean that calls `AnbennarFiles.configure(...)` from `civstudio.anbennar.*`
@@ -225,7 +225,7 @@ rewrote all commit SHAs from the first `data/anbennar` commit onward — any oth
   committed generated-resources root declared in the engine POM (so the JSONs still land on the
   classpath) with the regenerable caches moving to a real cache/`target` dir. Orthogonal to this
   de-vendoring — touches all ~25 exporters + the POM — so tracked as its own follow-up. The
-  `map/anbennar-source.lock` added here rides along with that move when it happens.
+  `anbennar-source.lock` added here rides along with that move when it happens.
 
 ## Open questions
 

@@ -2,7 +2,7 @@ name: Propagate C2C updates
 
 # Scheduled auto-propagation of Caveman2Cosmos (Civ4) upstream changes. data/civ4 is de-vendored
 # (docs/civ4-files.md): the exporters + tech baker fetch from the C2C GitHub repo on demand, pinned
-# by map/civ4-source.lock. This job bumps that pin to the current C2C tip, re-runs the C2C-sourced
+# by civ4-source.lock. This job bumps that pin to the current C2C tip, re-runs the C2C-sourced
 # Java exporters + the tech-icon baker, validates with the test suite, and commits the regenerated
 # outputs — but only if they actually changed.
 #
@@ -55,7 +55,7 @@ jobs:
         run: |
           sha=$(gh api repos/caveman2cosmos/Caveman2Cosmos/commits/master --jq .sha)
           echo "C2C tip: $sha"
-          printf '%s\n' "$sha" > civstudio-engine/src/main/resources/map/civ4-source.lock
+          printf '%s\n' "$sha" > civstudio-engine/src/main/resources/civ4-source.lock
 
       - name: Regenerate C2C-sourced resources
         run: |
@@ -86,7 +86,7 @@ jobs:
       - name: Commit if changed
         run: |
           set -e
-          LOCK=civstudio-engine/src/main/resources/map/civ4-source.lock
+          LOCK=civstudio-engine/src/main/resources/civ4-source.lock
           GEN=civstudio-engine/src/main/resources/generated
           ICONS=web/assets/tech-icons.webp
           git add "$GEN" "$ICONS"

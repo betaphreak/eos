@@ -37,7 +37,7 @@ import tools.jackson.databind.ObjectMapper;
  * The engine carries standalone defaults so {@code exec:exec} and the test suite work without any
  * server; the Spring Boot server overrides them at startup via {@link #configure} (see
  * {@code CivStudioProperties.Anbennar} / {@code docs/anbennar-files.md}). The locked commit is the
- * committed {@code /map/anbennar-source.lock} resource, so the raster the server downloads always
+ * committed {@code /anbennar-source.lock} resource, so the raster the server downloads always
  * matches the committed {@code map/*.json} resources it was generated from.
  */
 public final class AnbennarFiles {
@@ -45,9 +45,9 @@ public final class AnbennarFiles {
 	private AnbennarFiles() {
 	}
 
-	// fallback if the lock resource is somehow absent (kept in sync with map/anbennar-source.lock)
+	// fallback if the lock resource is somehow absent (kept in sync with anbennar-source.lock)
 	private static final String FALLBACK_REF = "7216a7525bc971eac989ebfcddf34833814802df";
-	private static final String LOCK_RESOURCE = "/map/anbennar-source.lock";
+	private static final String LOCK_RESOURCE = "/anbennar-source.lock";
 
 	// mutable config — engine defaults, overridable by the server's configure() call
 	private static volatile String baseUrl = "https://gitlab.com/anbennar/anbennar-eu4-dev";
