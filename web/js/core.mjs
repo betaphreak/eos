@@ -46,7 +46,7 @@ const latAtScreenY = y => {
 const TCOL = BUNDLE.terrainColors || {};
 const K_PLOT = 5;                 // camera scale at which plots begin to fade in
 const K_TEX = 16;                 // camera scale at which flat tiles give way to real textures
-const K_MAX = 256;                // deepest zoom (4× past the old 64× cap — magnifies the plot layer)
+const K_MAX = 512;                // deepest zoom (8× past the old 64× cap — a magnifier past the finest baked LoD)
 // the shared map-label typeface: the bundled Jost* (a free geometric sans in the Futura/
 // Century-Gothic family — the Stellaris UI look, @font-face in styles.css), falling back to
 // Century Gothic where installed, then system geometric sans. Every map label (province names,

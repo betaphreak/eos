@@ -439,8 +439,8 @@ function buildPlotTexCanvas(p) {
 // Resource icons are a SCREEN-SPACE overlay (not baked into the province texture), shown only at the
 // deepest plot zooms (cam.k ≥ BONUS_ZOOM_MIN → the 64/128/256 steps). Each resourced plot — land or
 // coastal-shelf water — gets its real Civ4 symbol (from the GameFont atlas), or the procedural
-// category glyph fallback, anchored in the plot's BOTTOM-LEFT corner and sized to BONUS_MAX_PX at max
-// zoom (k=K_MAX), scaling down proportionally as you zoom out. Cheap: at this depth only a handful of
+// category glyph fallback, anchored in the plot's BOTTOM-LEFT corner and sized to native px at
+// BONUS_FULL_K (holding there deeper), scaling down proportionally as you zoom out. Cheap: at this depth only a handful of
 // provinces are in view. Categories (colour + shape): sea food, gems/luxuries, energy, metals,
 // farm/trade crops, livestock.
 const BONUS_HIDE_AT = 16;       // no resource icons at this zoom or below (textures only just appear)
@@ -481,11 +481,13 @@ export function bonusIconRect(q) {
   return [x, y, x + size, y + size];
 }
 
-// bonus-icon on-screen size: the atlas cell drawn at 100% (native px) at the deepest zoom (K_MAX =
-// 256×), scaling down proportionally below — so a resource icon reads at a fixed, readable size
-// instead of ballooning with the plot as you zoom in. ctx is dpr-scaled, so cell px == CSS px.
+// bonus-icon on-screen size: the atlas cell reaches 100% (native px) at BONUS_FULL_K and HOLDS there
+// deeper — so a resource icon reads at a fixed, readable size instead of ballooning with the plot as you
+// zoom in. Pinned to a fixed reference (not K_MAX) so raising the zoom cap doesn't shrink icons: past
+// BONUS_FULL_K the icon stays native size rather than continuing to grow. ctx is dpr-scaled → cell px == CSS px.
+const BONUS_FULL_K = 256;        // zoom at which a resource icon hits native size (independent of the K_MAX cap)
 function bonusIconSize() {
-  return (BONUS_ICONS ? BONUS_ICONS.cell : 24) * cam.k / K_MAX;
+  return (BONUS_ICONS ? BONUS_ICONS.cell : 24) * Math.min(cam.k, BONUS_FULL_K) / BONUS_FULL_K;
 }
 
 // Stamp each in-view province's TRADE-GOOD icon at its centroid — the province-level resource, drawn

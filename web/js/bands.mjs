@@ -1,6 +1,7 @@
 "use strict";
-// The continuous-zoom spine. cam.k (1…256) is divided into nine logical BANDS on the powers
-// of two: band b = log2(cam.k) ∈ [0, 8]. Everything that draws or takes input declares a band
+// The continuous-zoom spine. cam.k (1…512) is divided into nine logical BANDS on the powers
+// of two: band b = log2(cam.k) ∈ [0, 8]; the deepest, Structure, holds from b=8 (256×) up to the
+// 512× cap (b=9, clamped by bandName/regime). Everything that draws or takes input declares a band
 // ENVELOPE and reads its cross-fade alpha from here, instead of hand-rolling (cam.k - X)/Y
 // ramps. This is the single source for zoom-band structure — it replaces the duplicated
 // tierAlpha() trapezoid that lived in labels.mjs and overlays/tiers.mjs. See docs/zoom-bands.md.
