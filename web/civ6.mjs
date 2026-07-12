@@ -123,8 +123,9 @@ export function iceTile() {
 // fill. Each returns an absolute .dds path or null (depot absent → the water bakers fall back to their
 // Civ4 seadetail/shoredetail/seablend/allriverssmall sources).
 export function oceanTile() { return resolveTexture('SV_TerrainHexOcean_Color'); }  // deep-water ripple + palette
-export function coastTile() { return resolveTexture('SV_TerrainHexCoast_Color'); }  // coast/shallow ripple + palette
-export function riverTexture() { return resolveTexture('TER_River_Water'); }        // river water surface (ribbon fill)
+export function coastTile() { return resolveTexture('SV_TerrainHexCoast_Color'); }  // coast/shallow ripple + palette (also the river fill, recoloured)
+// note: Civ6's own river tile (TER_River_Water) is a strategic-view texture with baked-in flow ARROWS,
+// so it's unusable as a clean full-tile water fill — the river uses the recoloured coast tile instead.
 
 // ---- Bonuses / resources (docs/civ6-assets.md §8, Mixed collapse) --------------------------------
 // The 45 C2C bonuses served by Civ6 -> the Civ6 resource sprite name (used as Resources_<name>_Visible

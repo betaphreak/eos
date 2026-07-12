@@ -827,26 +827,16 @@ function makeSeamless(rgb, T) {
 function bakeRiverTile() {
   const RIVER_RGB = [74, 124, 170];   // cohesive with the map's river blue
   const T = 64;
-  // Civ6-first: TER_River_Water is an opaque river surface with strong ripple in RGB — downsample it and
-  // pull a quarter toward the map's river blue for cohesion (keeps most of the source ripple).
-  const civ6River = civ6.riverTexture();
-  if (civ6River) {
-    const img = decodeCached(civ6River);
+  // Civ6-first: the SV Coast water surface, recoloured to the map's river blue. (Civ6's own river tile,
+  // TER_River_Water, is a strategic-view texture with baked-in flow ARROWS — ugly at full-tile fill; the
+  // coast tile is clean tile-scale ripple.) recolorTile scales channels so the mean = river blue while
+  // keeping the ripple.
+  const civ6Water = civ6.coastTile();
+  if (civ6Water) {
+    const img = decodeCached(civ6Water);
     if (img) {
-      const bx = img.width / T, by = img.height / T;
-      const rgb = Buffer.alloc(T * T * 3);
-      for (let j = 0; j < T; j++)
-        for (let i = 0; i < T; i++) {
-          let r = 0, g = 0, b = 0, n = 0;
-          for (let y = Math.floor(j * by); y < Math.floor((j + 1) * by); y++)
-            for (let x = Math.floor(i * bx); x < Math.floor((i + 1) * bx); x++) { const o = (y * img.width + x) * 4; r += img.rgba[o]; g += img.rgba[o + 1]; b += img.rgba[o + 2]; n++; }
-          const o = (j * T + i) * 3;
-          rgb[o] = Math.min(255, (r / n) * 0.75 + RIVER_RGB[0] * 0.25) | 0;
-          rgb[o + 1] = Math.min(255, (g / n) * 0.75 + RIVER_RGB[1] * 0.25) | 0;
-          rgb[o + 2] = Math.min(255, (b / n) * 0.75 + RIVER_RGB[2] * 0.25) | 0;
-        }
-      console.log('  river tile: Civ6 TER_River_Water');
-      return { src: queueWebp('water/river', T, T, makeSeamless(rgb, T), null, { quality: 85 }), tile: T };
+      console.log('  river tile: Civ6 SV_TerrainHexCoast (recoloured river-blue)');
+      return { src: queueWebp('water/river', T, T, makeSeamless(recolorTile(img, RIVER_RGB, T), T), null, { quality: 85 }), tile: T };
     }
   }
   // C2C fallback: the Civ4 allriverssmall texture, whose ripple STRANDS live in the DXT5 alpha channel.
@@ -984,7 +974,8 @@ function bakeFeatureSprites() {
   // the billboard groups, so every foliage sprite ships WebP too
   const emit = (n, w, h, rgba) => queueWebpRGBA(`trees/trees-${n}`, w, h, rgba, { quality: 90 });
   nif('kaktus/kaktus2.nif', 'kaktus/cactus01.dds', 'cactus', { size: 220, emit });
-  nif('sword_grass/wheat.nif', 'sword_grass/sword_grass.dds', 'grass', { size: 200, flat: 'low', emit });
+  // (tall grass no longer bakes a billboard — it was a muddy wheat crop; the plot layer draws grass
+  //  procedurally now, plots.mjs stampGrass)
   // the city sprite: a real Civ4 city model (a medieval European city cluster) baked and
   // stamped over TERRAIN_URBAN plots, sized by province development. Nested under the trees
   // group so it ships through the existing bundle plumbing. See docs/urban-plots.md.

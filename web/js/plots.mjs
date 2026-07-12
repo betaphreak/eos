@@ -731,22 +731,23 @@ function drawRiver(o, cx, cy, s, q, grid, pat) {
     const n = grid.get((q.x + d[0]) * 1e5 + (q.y + d[1]));             // fallback for older packs (adj == 0)
     return !!(n && n.river);
   };
-  const links = NB4.filter(isR);
-  const lvl = Math.min(4, (q.river % 10) || 1);            // width digit 1..4; guard 0
-  const mx = cx + s / 2, my = cy + s / 2;
-  const w = s * (0.09 + 0.04 * lvl);                       // thin water channel (Civ6-style river line)
-  // three passes per cell: a dark wet BANK under the water, the Civ6 river-water CORE, a faint centre
-  // shimmer. Adjacent cells' passes overlap into a continuous banked channel. See docs/river-rendering.md.
-  const pass = (width, style, alpha) => {
-    o.lineWidth = width; o.lineCap = "round"; o.lineJoin = "round";
-    o.strokeStyle = style; o.fillStyle = style; o.globalAlpha = alpha;
-    if (!links.length) { o.beginPath(); o.arc(mx, my, width * 0.5, 0, 7); o.fill(); }
-    else for (const d of links) { o.beginPath(); o.moveTo(mx, my); o.lineTo(mx + d[0] * s / 2, my + d[1] * s / 2); o.stroke(); }
-  };
   o.save();
-  pass(w + s * 0.13, "rgba(34,50,46,1)", 0.42);            // dark wet bank cut into the ground
-  pass(w, pat || "rgba(74,124,170,1)", pat ? 0.95 : 0.7); // the Civ6 river-water core
-  pass(w * 0.4, "rgba(150,198,216,1)", 0.3);               // faint centreline shimmer
+  // FULL-TILE water: fill the whole river cell with the Civ6 river-water texture, so its pattern reads
+  // (a thin stroke only showed a sliver — the "texture doesn't fit" report). Adjacent river cells are
+  // contiguous, so a chain reads as one continuous waterway. See docs/river-rendering.md.
+  o.fillStyle = pat || "rgba(74,124,170,1)";
+  o.globalAlpha = pat ? 0.92 : 0.6;
+  o.fillRect(cx, cy, s, s);
+  // banks: a dark wet shoreline only on the sides that border a NON-river cell (a shared river edge
+  // stays open, so the waterway is unbroken). Edge order matches NB4 [E, W, S, N].
+  const edge = [
+    [cx + s, cy, cx + s, cy + s], [cx, cy, cx, cy + s],
+    [cx, cy + s, cx + s, cy + s], [cx, cy, cx + s, cy],
+  ];
+  o.globalAlpha = 0.5; o.strokeStyle = "rgba(28,44,40,1)"; o.lineWidth = Math.max(1, s * 0.09); o.lineCap = "round";
+  o.beginPath();
+  for (let i = 0; i < 4; i++) if (!isR(NB4[i], i)) { o.moveTo(edge[i][0], edge[i][1]); o.lineTo(edge[i][2], edge[i][3]); }
+  o.stroke();
   o.restore();
 }
 // small deterministic RNG seeded by a plot's coords, so feature sprites are stable
@@ -762,7 +763,7 @@ function treeGroupFor(feature) {
   if (/OASIS/.test(feature))                     return { key: "palm",   lo: 1, hi: 2, scale: 0.55 };
   if (/CACTUS|KAKTUS/.test(feature))             return { key: "cactus", lo: 1, hi: 2, scale: 0.55 };  // real Civ4 cactus (nif)
   if (/BAMBOO/.test(feature))                    return { key: "bamboo", lo: 2, hi: 3, scale: 0.55 };
-  if (/VERY_TALL_GRASS|SWORD_GRASS|TALL_GRASS/.test(feature)) return { key: "grass", lo: 2, hi: 3, scale: 0.5 };
+  // VERY_TALL_GRASS/SWORD_GRASS/TALL_GRASS is handled procedurally (stampGrass), before treeGroupFor.
   if (/FOREST|WOOD|TAIGA|MANGROVE/.test(feature)) return { key: "leafy",  lo: 2, hi: 4, scale: 0.55 };
   return null;
 }
@@ -790,10 +791,37 @@ function featureSprite(o, cx, cy, s, feature, sx, sy) {
     else o.drawImage(foImg[feature], cx, cy, s, s);
     return;
   }
+  const rng = mkRng((sx * 73856093) ^ (sy * 19349663));
+  // tall grass has no good billboard (the C2C sword-grass sprite was a muddy wheat crop), so draw it
+  // procedurally: a few clumps of thin curved blades. Clean, varied, no ugly texture.
+  if (/VERY_TALL_GRASS|SWORD_GRASS|TALL_GRASS/.test(feature)) { stampGrass(o, cx, cy, s, rng); return; }
   const g = treeGroupFor(feature);
   if (!g) return;
-  const rng = mkRng((sx * 73856093) ^ (sy * 19349663));
   stampTrees(o, cx, cy, s, g, rng);              // real foliage sprites; nothing if not yet loaded
+}
+// Procedural tall-grass: N clumps of a few thin, curved, tapering blades in varied greens — a clean
+// savanna tuft in place of the muddy sword-grass billboard. Deterministic via the plot rng.
+function stampGrass(o, cx, cy, s, rng) {
+  const clumps = 3 + (rng() * 3 | 0);            // 3–5 clumps per plot
+  o.save();
+  o.lineCap = "round";
+  for (let c = 0; c < clumps; c++) {
+    const bx = cx + s * (0.12 + 0.76 * rng()), by = cy + s * (0.5 + 0.45 * rng());   // clump base
+    const h = s * (0.15 + 0.13 * rng());          // clump height (shorter than before)
+    const g = 108 + (rng() * 46 | 0);             // muted green value 108–154
+    o.strokeStyle = `rgb(${(g * 0.52) | 0},${(g * 0.82) | 0},${(g * 0.34) | 0})`;   // olive / forest, not lime
+    o.lineWidth = Math.max(0.5, s * 0.02);
+    const blades = 3 + (rng() * 3 | 0);
+    for (let b = 0; b < blades; b++) {
+      const bx0 = bx + (blades > 1 ? b / (blades - 1) - 0.5 : 0) * s * 0.13;   // spread the bases
+      const lean = (rng() - 0.5) * s * 0.13;                                    // each blade leans its own way
+      o.beginPath();
+      o.moveTo(bx0, by);
+      o.quadraticCurveTo(bx0 + lean * 0.5, by - h * 0.55, bx0 + lean, by - h * (0.8 + 0.4 * rng()));
+      o.stroke();
+    }
+  }
+  o.restore();
 }
 // A flat Civ6 SV improvement overlay (farm/mine/quarry) centred on an improved plot. A 128² alpha sprite
 // blitted to fill the plot; per-plot horizontal flip breaks the tiling like the feature overlays. Nothing
