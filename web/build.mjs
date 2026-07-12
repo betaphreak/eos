@@ -23,6 +23,7 @@ import { decodeDds } from './dds.mjs';
 import { loadGameFont, resourceCellRGBA, CELL as GF_CELL } from './gamefont.mjs';
 import { get as civ4Get, resolveArt as civ4ResolveArt, prefetch as civ4Prefetch } from './civ4.mjs';
 import * as civ6 from './civ6.mjs';
+import { decodeCached, resampleRGBA, octagonBacking, compositeCentered } from './imgutil.mjs';
 import { prefetch as anbPrefetch, get as anbGet } from './anbennar.mjs';
 import { bakeNifGroup } from '../tools/nifbake/render.mjs';
 import sharp from 'sharp';
@@ -768,18 +769,6 @@ function recolorTile(img, target, T) {
   }
   return out;
 }
-// decode-once cache (a Civ6 ground like Grass_B is shared by several terrains; the 2k source is heavy).
-// `var` (hoisted, lazily filled) because bakeTerrainTiles runs at module load, before this line — a
-// `const`/`let` here would be in its temporal dead zone (cf. the terrainDisplayColors note above).
-var _ddsCache;
-function decodeCached(file) {
-  if (!_ddsCache) _ddsCache = new Map();
-  if (_ddsCache.has(file)) return _ddsCache.get(file);
-  let img = null;
-  try { img = decodeDds(fs.readFileSync(file)); } catch { /* leave null */ }
-  _ddsCache.set(file, img);
-  return img;
-}
 // recolour a C2C detail texture (resolved via resolveArt, case-insensitive) to a T×T tile; null if unreadable.
 function detailTile(artPath, target, T) {
   const file = resolveArt(artPath);
@@ -981,54 +970,6 @@ function bakeSpriteGroup(artPath, name) {
 // (CIV4ArtDefines_Bonus.xml), reached through its ArtDefineTag (CIV4BonusInfos.xml). Returns null if
 // any source is absent (the renderer keeps the procedural glyphs); a bonus with a negative index
 // (no unique font icon) or an out-of-grid cell is left out and also falls back to the glyph.
-// box-resample an RGBA source to dw×dh (up- or down-scale; clamps ≥1 sample, cf. recolorTile).
-function resampleRGBA(src, sw, sh, dw, dh) {
-  const out = Buffer.alloc(dw * dh * 4);
-  const bx = sw / dw, by = sh / dh;
-  for (let j = 0; j < dh; j++)
-    for (let i = 0; i < dw; i++) {
-      let r = 0, g = 0, b = 0, a = 0, n = 0;
-      const y0 = Math.min(sh - 1, Math.floor(j * by)), y1 = Math.max(y0 + 1, Math.floor((j + 1) * by));
-      const x0 = Math.min(sw - 1, Math.floor(i * bx)), x1 = Math.max(x0 + 1, Math.floor((i + 1) * bx));
-      for (let y = y0; y < y1 && y < sh; y++)
-        for (let x = x0; x < x1 && x < sw; x++) {
-          const o = (y * sw + x) * 4; r += src[o]; g += src[o + 1]; b += src[o + 2]; a += src[o + 3]; n++;
-        }
-      const d = (j * dw + i) * 4; out[d] = r / n | 0; out[d + 1] = g / n | 0; out[d + 2] = b / n | 0; out[d + 3] = a / n | 0;
-    }
-  return out;
-}
-// a filled rounded-octagon backing (class colour) with a darker rim + subtle top light — S×S RGBA.
-// Mirrors Civ6's class-coloured resource octagon so C2C glyphs read consistently with the Civ6 cells.
-function octagonBacking(S, col) {
-  const out = Buffer.alloc(S * S * 4);
-  const c = (S - 1) / 2, h = S * 0.46, cut = h * 1.42, rim = S * 0.06;   // square clipped by a diamond
-  for (let y = 0; y < S; y++)
-    for (let x = 0; x < S; x++) {
-      const dx = Math.abs(x - c), dy = Math.abs(y - c), d = (y * S + x) * 4;
-      if (dx > h || dy > h || dx + dy > cut) { out[d + 3] = 0; continue; }
-      const edge = Math.min(h - dx, h - dy, (cut - dx - dy) * 0.72);
-      const k = (edge < rim ? 0.6 : 1) * (1 + (c - y) / S * 0.32);       // darker border, lighter top
-      out[d] = Math.min(255, col[0] * k) | 0; out[d + 1] = Math.min(255, col[1] * k) | 0;
-      out[d + 2] = Math.min(255, col[2] * k) | 0; out[d + 3] = 255;
-    }
-  return out;
-}
-// alpha-over composite src (sw×sh) scaled to `frac` of the S×S cell, centred, onto dst (S×S RGBA).
-function compositeCentered(dst, S, src, sw, sh, frac) {
-  const scale = Math.min(S * frac / sw, S * frac / sh);
-  const dw = Math.max(1, Math.round(sw * scale)), dh = Math.max(1, Math.round(sh * scale));
-  const rs = resampleRGBA(src, sw, sh, dw, dh);
-  const ox = Math.round((S - dw) / 2), oy = Math.round((S - dh) / 2);
-  for (let y = 0; y < dh; y++)
-    for (let x = 0; x < dw; x++) {
-      const so = (y * dw + x) * 4, a = rs[so + 3] / 255;
-      if (a <= 0) continue;
-      const d = ((oy + y) * S + (ox + x)) * 4;
-      dst[d] = (rs[so] * a + dst[d] * (1 - a)) | 0; dst[d + 1] = (rs[so + 1] * a + dst[d + 1] * (1 - a)) | 0;
-      dst[d + 2] = (rs[so + 2] * a + dst[d + 2] * (1 - a)) | 0; dst[d + 3] = Math.max(dst[d + 3], rs[so + 3]);
-    }
-}
 // the three Civ6 class backing colours, sampled from Resources256 cells (bonus=0, luxury=14,
 // strategic=43); a hand-tuned Civ6-ish palette when the depot/atlas is absent.
 function civ6BackingColors() {
