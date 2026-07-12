@@ -64,6 +64,9 @@ public final class WorldMap {
 
 	private static final ObjectMapper MAPPER = JsonMapper.builder()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+			// an absent primitive record component (e.g. a province with no base_tax/city
+			// key — seas, unlisted provinces) defaults to 0/false rather than failing
+			.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false)
 			.build();
 
 	// provinces keyed by id, in load order (deterministic iteration)

@@ -70,6 +70,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *                   {@code null}); joined via {@link WorldMap#tradeGood(String)}.
  *                   Stamped from the Anbennar {@code history/provinces} files by
  *                   {@link com.civstudio.geo.export.ProvinceHistoryExporter}
+ * @param baseTax    the EU4 {@code base_tax} (ADM development) at game start, or {@code 0}
+ *                   if the province has no history entry. Stamped from {@code
+ *                   history/provinces} by {@link
+ *                   com.civstudio.geo.export.ProvinceHistoryExporter}; see {@link
+ *                   #development()} and {@code docs/urban-plots.md}
+ * @param baseProduction the EU4 {@code base_production} (DIP development), or {@code 0}
+ * @param baseManpower the EU4 {@code base_manpower} (MIL development), or {@code 0}
+ * @param city       whether Anbennar marks this province a city (its {@code city_terrain}
+ *                   terrain block): the province keeps its real land terrain but earns a
+ *                   denser urban core. Stamped from {@code terrain.txt} by {@link
+ *                   com.civstudio.geo.export.CavernExporter}; see {@code docs/urban-plots.md}
  */
 public record Province(
 		int id,
@@ -90,7 +101,11 @@ public record Province(
 		@JsonProperty("controller") String controllerTag,
 		String culture,
 		String religion,
-		@JsonProperty("trade_goods") String tradeGood) {
+		@JsonProperty("trade_goods") String tradeGood,
+		@JsonProperty("base_tax") int baseTax,
+		@JsonProperty("base_production") int baseProduction,
+		@JsonProperty("base_manpower") int baseManpower,
+		boolean city) {
 
 	/**
 	 * Defensive copy of the neighbor list, and the environmental-attribute
@@ -161,5 +176,17 @@ public record Province(
 	 */
 	public boolean isCoastal() {
 		return waterPlots > 0;
+	}
+
+	/**
+	 * The province's total EU4 development — {@link #baseTax()} (ADM) + {@link
+	 * #baseProduction()} (DIP) + {@link #baseManpower()} (MIL). Concentrated on the
+	 * province's urban core plot (see {@code docs/urban-plots.md}); {@code 0} for a province
+	 * with no history entry.
+	 *
+	 * @return the summed base development
+	 */
+	public int development() {
+		return baseTax + baseProduction + baseManpower;
 	}
 }

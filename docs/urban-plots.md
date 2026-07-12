@@ -1,6 +1,7 @@
 # Design note: urban plots & imported development
 
-**Status:** In progress. Phase 1 (the `TERRAIN_URBAN` substrate) is done; the rest is planned.
+**Status:** In progress. Phases 1 (the `TERRAIN_URBAN` substrate) and 2 (import
+development + the `city` flag) are done; the rest is planned.
 **Date:** 2026-07-12
 **Depends on:**
 - the special-terrain pipeline (`docs/underworld.md` §Special surface terrains) — the
@@ -169,9 +170,10 @@ Engine:
 |---|---|
 | `geo/export/TerrainExporter.java` | ✅ `TERRAIN_URBAN` in `SYNTHETIC` |
 | `geo/export/TerrainArtExporter.java` | ✅ `TERRAIN_URBAN` art (repurposed `Rocky*`) |
-| `geo/Province.java` | `baseTax`/`baseProduction`/`baseManpower` + `development()`; `boolean city` |
-| `geo/export/ProvinceHistoryExporter.java` | parse + stamp the three dev keys |
-| `geo/export/CityTerrainExporter.java` (or extend `CavernExporter`) | stamp `city` from the `city_terrain` block (leaving `type` as `LAND`) |
+| `geo/Province.java` | ✅ `baseTax`/`baseProduction`/`baseManpower` + `development()`; `boolean city` |
+| `geo/export/ProvinceHistoryExporter.java` | ✅ parse + stamp the three dev keys |
+| `geo/export/CavernExporter.java` | ✅ stamp `city` from the `city_terrain` block (leaving `type` as `LAND`) |
+| `geo/WorldMap.java` | ✅ `FAIL_ON_NULL_FOR_PRIMITIVES` off — absent dev/`city` defaults to 0/false (Jackson 3 is strict) |
 | `geo/CityPlacement.java` (new) | the Civ4-style `foundValue` work-radius scan (bonus-weighted); deterministic, no RNG |
 | `geo/ProvincePlotField.java` | after the bonus stage, tag the `foundValue`-sited core plot(s) `TERRAIN_URBAN` + `FLAT` + dev attach (more for a `city` province) |
 | `settlement/ProvincePlotPool.java` | `claimFoundingCenter` claims the primary city plot |
@@ -193,10 +195,14 @@ from engine resources, `provinces.json` / `terrain-art.json` moving is a **redep
   `UrbanTerrainTest`. Byte-identical — nothing generates the terrain yet. (An earlier cut of
   this phase added a `ProvinceType.URBAN` for wholly-urban `city_terrain` provinces; that was
   reverted when the design moved to urban-cored — cities stay `LAND`.)
-- **Phase 2 — import province data.** `Province` gains the three dev fields + `development()`
-  and the `city` flag; `ProvinceHistoryExporter` stamps development; the `city` flag is stamped
-  from `city_terrain`. Re-stamp `provinces.json`. Pure data, provinces stay `LAND`, no terrain
-  change — Dhenijansar unaffected. Test: a known province's dev + `city` flag match the source.
+- **Phase 2 — import province data. ✅ Done.** `Province` gained the three dev fields +
+  `development()` and the `city` flag; `ProvinceHistoryExporter` stamps development (onto 4708
+  provinces), `CavernExporter` stamps the `city` flag from `city_terrain` (onto 113, `type`
+  unchanged). Re-stamped `provinces.json`. Pure data, provinces stay `LAND`, no terrain change —
+  Dhenijansar (`city:true`, dev 12/12/6 = 30) keeps its farmland; full suite green (engine 260,
+  server 32). Needed `FAIL_ON_NULL_FOR_PRIMITIVES` off in `WorldMap`'s mapper (Jackson 3 fails
+  an absent primitive record component where Jackson 2 defaulted it). Test:
+  `WorldMapTest.loadsDevelopmentAndTheCityFlag`.
 - **Phase 3 — the per-province urban core (Civ4 `foundValue`) + anchoring.** `CityPlacement`
   `foundValue`; `ProvincePlotField` tags the core plot(s) `TERRAIN_URBAN` + `FLAT` + dev after
   the bonus stage (denser for a `city` province); `claimFoundingCenter` anchors on the primary.

@@ -127,6 +127,30 @@ class WorldMapTest {
 	}
 
 	@Test
+	void loadsDevelopmentAndTheCityFlag() {
+		WorldMap map = WorldMap.load();
+		// Dhenijansar is a city_terrain province: it keeps its LAND type but carries the
+		// city flag and its game-start development (ADM/DIP/MIL = 12/12/6 = 30). See
+		// docs/urban-plots.md.
+		Province dh = map.findByName("Dhenijansar").orElseThrow();
+		assertEquals(ProvinceType.LAND, dh.type(), "a city keeps its land terrain");
+		assertTrue(dh.city(), "Dhenijansar is flagged a city");
+		assertEquals(12, dh.baseTax());
+		assertEquals(12, dh.baseProduction());
+		assertEquals(6, dh.baseManpower());
+		assertEquals(30, dh.development(), "development sums ADM+DIP+MIL");
+
+		// an ordinary province has development but is not a city
+		Province wesdam = map.province(10);
+		assertFalse(wesdam.city(), "Wesdam is not a city_terrain province");
+		assertTrue(wesdam.development() > 0, "an owned province has base development");
+
+		// the flag is sparse (only the 113 city_terrain provinces carry it)
+		long cities = map.provinces().stream().filter(Province::city).count();
+		assertEquals(113, cities, "the city_terrain provinces");
+	}
+
+	@Test
 	void pathWalksTheNeighborGraph() {
 		WorldMap map = WorldMap.load();
 		Province d = map.findByName("Dhenijansar").orElseThrow();
