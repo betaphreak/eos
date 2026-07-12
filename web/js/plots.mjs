@@ -733,13 +733,20 @@ function drawRiver(o, cx, cy, s, q, grid, pat) {
   };
   const links = NB4.filter(isR);
   const lvl = Math.min(4, (q.river % 10) || 1);            // width digit 1..4; guard 0
-  const mx = cx + s / 2, my = cy + s / 2, w = s * (0.16 + 0.06 * lvl);
+  const mx = cx + s / 2, my = cy + s / 2;
+  const w = s * (0.09 + 0.04 * lvl);                       // thin water channel (Civ6-style river line)
+  // three passes per cell: a dark wet BANK under the water, the Civ6 river-water CORE, a faint centre
+  // shimmer. Adjacent cells' passes overlap into a continuous banked channel. See docs/river-rendering.md.
+  const pass = (width, style, alpha) => {
+    o.lineWidth = width; o.lineCap = "round"; o.lineJoin = "round";
+    o.strokeStyle = style; o.fillStyle = style; o.globalAlpha = alpha;
+    if (!links.length) { o.beginPath(); o.arc(mx, my, width * 0.5, 0, 7); o.fill(); }
+    else for (const d of links) { o.beginPath(); o.moveTo(mx, my); o.lineTo(mx + d[0] * s / 2, my + d[1] * s / 2); o.stroke(); }
+  };
   o.save();
-  o.strokeStyle = pat || "rgba(74,124,170,.85)"; o.fillStyle = pat || "rgba(74,124,170,.85)";
-  o.lineWidth = w; o.lineCap = "round"; o.lineJoin = "round";
-  o.globalAlpha = pat ? 0.9 : 0.55;
-  if (!links.length) { o.beginPath(); o.arc(mx, my, w * 0.6, 0, 7); o.fill(); }
-  else for (const d of links) { o.beginPath(); o.moveTo(mx, my); o.lineTo(mx + d[0] * s / 2, my + d[1] * s / 2); o.stroke(); }
+  pass(w + s * 0.13, "rgba(34,50,46,1)", 0.42);            // dark wet bank cut into the ground
+  pass(w, pat || "rgba(74,124,170,1)", pat ? 0.95 : 0.7); // the Civ6 river-water core
+  pass(w * 0.4, "rgba(150,198,216,1)", 0.3);               // faint centreline shimmer
   o.restore();
 }
 // small deterministic RNG seeded by a plot's coords, so feature sprites are stable

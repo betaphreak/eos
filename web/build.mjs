@@ -827,6 +827,29 @@ function makeSeamless(rgb, T) {
 function bakeRiverTile() {
   const RIVER_RGB = [74, 124, 170];   // cohesive with the map's river blue
   const T = 64;
+  // Civ6-first: TER_River_Water is an opaque river surface with strong ripple in RGB — downsample it and
+  // pull a quarter toward the map's river blue for cohesion (keeps most of the source ripple).
+  const civ6River = civ6.riverTexture();
+  if (civ6River) {
+    const img = decodeCached(civ6River);
+    if (img) {
+      const bx = img.width / T, by = img.height / T;
+      const rgb = Buffer.alloc(T * T * 3);
+      for (let j = 0; j < T; j++)
+        for (let i = 0; i < T; i++) {
+          let r = 0, g = 0, b = 0, n = 0;
+          for (let y = Math.floor(j * by); y < Math.floor((j + 1) * by); y++)
+            for (let x = Math.floor(i * bx); x < Math.floor((i + 1) * bx); x++) { const o = (y * img.width + x) * 4; r += img.rgba[o]; g += img.rgba[o + 1]; b += img.rgba[o + 2]; n++; }
+          const o = (j * T + i) * 3;
+          rgb[o] = Math.min(255, (r / n) * 0.75 + RIVER_RGB[0] * 0.25) | 0;
+          rgb[o + 1] = Math.min(255, (g / n) * 0.75 + RIVER_RGB[1] * 0.25) | 0;
+          rgb[o + 2] = Math.min(255, (b / n) * 0.75 + RIVER_RGB[2] * 0.25) | 0;
+        }
+      console.log('  river tile: Civ6 TER_River_Water');
+      return { src: queueWebp('water/river', T, T, makeSeamless(rgb, T), null, { quality: 85 }), tile: T };
+    }
+  }
+  // C2C fallback: the Civ4 allriverssmall texture, whose ripple STRANDS live in the DXT5 alpha channel.
   const artFile = resolveArt('Art/Terrain/Routes/Rivers/allriverssmall.dds');
   if (!artFile) return null;
   let img; try { img = decodeDds(fs.readFileSync(artFile)); } catch { return null; }
@@ -844,7 +867,7 @@ function bakeRiverTile() {
       rgb[o + 1] = Math.min(255, RIVER_RGB[1] * k) | 0;
       rgb[o + 2] = Math.min(255, RIVER_RGB[2] * k) | 0;
     }
-  return { src: queueWebp('water/river', T, T, rgb, null, { quality: 85 }), tile: T };
+  return { src: queueWebp('water/river', T, T, makeSeamless(rgb, T), null, { quality: 85 }), tile: T };
 }
 
 // Bake a seamless GREYSCALE ripple tile from the real Civ4 sea texture (textures/water/
@@ -854,13 +877,24 @@ function bakeRiverTile() {
 // deepen/brighten it into ripples. (seadetail carries its pattern in RGB, so we read luminance,
 // unlike the river ribbon whose ripples are in the DXT5 alpha.) Returns {src, tile}, or null
 // when the art is absent (LFS not pulled / file://) — the renderer then draws the flat gradient.
-function bakeSeaTile() { return bakeRippleTile('Art/Terrain/textures/water/seadetail.dds', `water/sea`, 1.1); }
+function bakeSeaTile() {
+  const s = waterSrcImg(civ6.oceanTile(), 'Art/Terrain/textures/water/seadetail.dds');
+  if (!s) return null;
+  console.log(`  sea ripple: ${s.civ6 ? 'Civ6 SV_TerrainHexOcean' : 'C2C seadetail'}`);
+  // the Civ6 SV ocean tile carries a gentler surface than the C2C wave detail → a touch more contrast
+  return bakeRippleTile(s.img, `water/sea`, s.civ6 ? 3.0 : 1.1);
+}
 
 // The shore shallows carry the same treatment (docs/coastlines.md Phase D): a neutral-mean
 // greyscale ripple from the Civ4 shore wave texture (textures/water/shoredetail.dds), drawn
 // over the shallow band with `soft-light` so it ripples the shore hue without recolouring it.
 // A touch more contrast than the open sea so the near-shore chop reads. Null → flat shallows.
-function bakeShoreTile() { return bakeRippleTile('Art/Terrain/textures/water/shoredetail.dds', `water/shore`, 1.3); }
+function bakeShoreTile() {
+  const s = waterSrcImg(civ6.coastTile(), 'Art/Terrain/textures/water/shoredetail.dds');
+  if (!s) return null;
+  console.log(`  shore ripple: ${s.civ6 ? 'Civ6 SV_TerrainHexCoast' : 'C2C shoredetail'}`);
+  return bakeRippleTile(s.img, `water/shore`, s.civ6 ? 3.5 : 1.3);
+}
 
 // Bake a seamless COLOUR ice tile for the polar sea-ice floes (drawSeaIce). Civ6-first
 // (docs/civ6-art-replacement.md §E): the Civ6 icecaps SV sprite, else the Civ4 pack-ice texture.
@@ -1233,11 +1267,17 @@ function topLevelBlockNames(text) {
 // only, centred on mid-grey (128) so a `soft-light` overlay leaves the base colour untouched
 // while darker/lighter texels deepen/brighten it. `contrast` scales the deviation from the
 // mean. Returns {src, tile}, or null when the art is absent (LFS not pulled / file://).
-function bakeRippleTile(artRel, name, contrast) {
-  const T = 128;   // larger tile → the repeat is far less obvious than the old 64px grid
-  const artFile = resolveArt(artRel);
+// Decode a water source: the Civ6 texture (a resolved .dds path) if the depot is mounted, else the
+// Civ4 art at c2cPath. Returns { img, civ6 } or null. Lets the water bakers stay Civ6-first/C2C-fallback.
+function waterSrcImg(civ6Path, c2cPath) {
+  if (civ6Path) { const img = decodeCached(civ6Path); if (img) return { img, civ6: true }; }
+  const artFile = resolveArt(c2cPath);
   if (!artFile) return null;
-  let img; try { img = decodeDds(fs.readFileSync(artFile)); } catch { return null; }
+  try { return { img: decodeDds(fs.readFileSync(artFile)), civ6: false }; } catch { return null; }
+}
+
+function bakeRippleTile(img, name, contrast) {
+  const T = 128;   // larger tile → the repeat is far less obvious than the old 64px grid
   const bx = img.width / T, by = img.height / T;
   const lum = new Float64Array(T * T); let mean = 0;
   for (let j = 0; j < T; j++)
@@ -1256,7 +1296,7 @@ function bakeRippleTile(artRel, name, contrast) {
     const g = Math.max(0, Math.min(255, 128 + (lum[k] - mean) * contrast)) | 0;   // soft neutral-mean ripple
     rgb[k * 3] = g; rgb[k * 3 + 1] = g; rgb[k * 3 + 2] = g;
   }
-  return { src: queueWebp(name, T, T, rgb, null, { quality: 85 }), tile: T };
+  return { src: queueWebp(name, T, T, makeSeamless(rgb, T), null, { quality: 85 }), tile: T };
 }
 
 // The ocean's climate band colours: tropical / temperate / polar sea, keyed by |latitude| in
@@ -1265,6 +1305,26 @@ function bakeRippleTile(artRel, name, contrast) {
 // brightest/tealest, polar dimmest/greyest), mirroring how the land terrains are recoloured.
 // Falls back to the dark anchors when the art is absent (LFS not pulled).
 function bakeSeaBands() {
+  // Civ6-first: the SV Ocean tile gives one water hue; derive the three climate bands by warming
+  // (tropical) / cooling (polar) it, and the shallows from the SV Coast tile. Anchors set each band's
+  // luminance; the hue rides on the sampled water colour.
+  const avgImg = p => { const img = p && decodeCached(p); if (!img) return null;
+    let r = 0, g = 0, b = 0; const n = img.width * img.height;
+    for (let i = 0; i < n; i++) { r += img.rgba[i * 4]; g += img.rgba[i * 4 + 1]; b += img.rgba[i * 4 + 2]; }
+    return [r / n, g / n, b / n]; };
+  const oc = avgImg(civ6.oceanTile()), co = avgImg(civ6.coastTile());
+  if (oc && co) {
+    console.log('  sea bands: Civ6 SV Ocean/Coast');
+    const warm = c => [c[0] * 1.08, c[1] * 1.0, c[2] * 0.88];   // tropical: warmer, greener
+    const cool = c => [c[0] * 0.9, c[1] * 0.97, c[2] * 1.06];   // polar: cooler, greyer
+    return {
+      trop:  hueAtLuminance([26, 56, 76], warm(oc)),
+      temp:  hueAtLuminance([20, 42, 68], oc),
+      polar: hueAtLuminance([32, 42, 54], cool(oc)),
+      shore: hueAtLuminance([116, 178, 196], co),
+    };
+  }
+  // C2C fallback: the Civ4 sea-blend textures (per-climate).
   const band = (art, anchor) => { const c = avgDds(art); return c ? hueAtLuminance(anchor, c) : anchor; };
   return {
     trop:  band('Art/Terrain/textures/water/seatropblend.dds', [26, 56, 76]),

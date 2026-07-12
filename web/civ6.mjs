@@ -116,6 +116,15 @@ export function iceTile() {
   return resolveTexture('Features_Icecaps_Visible');
 }
 
+// ---- Water surfaces (docs/civ6-assets.md §3). The strategic-view Ocean/Coast tiles are the sea/shore
+// ripple source AND the palette the climate-band colours are sampled from (their tile-scale RGB texture
+// survives the downsample, unlike the 2k FOW_Water_* surfaces); TER_River_Water is the river-ribbon
+// fill. Each returns an absolute .dds path or null (depot absent → the water bakers fall back to their
+// Civ4 seadetail/shoredetail/seablend/allriverssmall sources).
+export function oceanTile() { return resolveTexture('SV_TerrainHexOcean_Color'); }  // deep-water ripple + palette
+export function coastTile() { return resolveTexture('SV_TerrainHexCoast_Color'); }  // coast/shallow ripple + palette
+export function riverTexture() { return resolveTexture('TER_River_Water'); }        // river water surface (ribbon fill)
+
 // ---- Bonuses / resources (docs/civ6-assets.md §8, Mixed collapse) --------------------------------
 // The 45 C2C bonuses served by Civ6 -> the Civ6 resource sprite name (used as Resources_<name>_Visible
 // when a loose sprite exists, else as the atlas cell id in Phase 2). The other 61 bonuses are absent

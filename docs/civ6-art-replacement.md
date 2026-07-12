@@ -109,10 +109,18 @@ research beakers (`tech-beaker*.webp`) at the Civ6 science symbol; keep the reco
   `stampTrees`. `treeGroupFor()` gains a branch: Civ6-overlay vs C2C-billboard per feature.
 - **LoD**: overlays at 2 sizes (far/near); billboards unchanged.
 
-### E. Water (`water/*.webp`)
-- **Ice** → Civ6 `Features_Icecaps_Visible.dds` (Civ6-first).
-- **River ribbon, sea, shore** → **keep C2C** (Civ6 rivers are edge decals, no tile equivalent; sea/shore
-  ripple has no clean Civ6 flat source). No change beyond ice.
+### E. Water (`water/*.webp`) — now all Civ6 (Phase 6)
+- **Ice** → `Features_Icecaps_Visible.dds`.
+- **Sea + shore ripple** → the SV `TerrainHexOcean` / `TerrainHexCoast` tiles (their tile-scale RGB
+  survives the 128px downsample, unlike the 2k `FOW_Water_*` surfaces); read as a neutral-mean greyscale
+  ripple, soft-lit over the sea gradient as before.
+- **Sea climate-band colours** → sampled from the same SV Ocean/Coast tiles (Civ6's ocean is one blue hue,
+  so tropical/polar are warm/cool derivations of it; shore from the Coast tile).
+- **River** → `TER_River_Water` (an opaque river surface with strong RGB ripple) as the ribbon fill.
+  Civ6 has **no edge-decal tile**, so the river stays a **cell-path** line — restyled as a thin *banked*
+  channel (dark wet bank + Civ6 water core + centre shimmer, `drawRiver`), the pragmatic "path A" (the
+  cell↔edge topology gap is discussed in `docs/river-rendering.md`). All four keep a C2C fallback and are
+  wrap-feathered seamless (`makeSeamless`).
 
 ### F. Improvements + routes (NEW bake + NEW frontend layer)
 Greenfield — not baked or drawn today. Civ6 flat SV overlays exist only for **Farm, Mine, Quarry** (+Harbor);
