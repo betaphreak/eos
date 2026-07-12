@@ -20,6 +20,10 @@ supersedes the map-pixel terrain path those describe.
 | Relief (flat/hill/peak) | **Hybrid** — real `heightmap.bmp` peaks (the mountain backbone) + `ReliefGenerator` C2C-range variation (≈ the current `rougher()` compose) |
 | Geography kept from raster | province shape / land-water mask (`provinces.bmp`), coastlines, **rivers** (`rivers.bmp`), heightmap elevation |
 | Special surface terrains | `province.type()` overrides the climate pick (a province typed `ANCIENT_FOREST`/`GLACIER`/… gets its terrain regardless of climate) |
+| Determinism | **Seed-independent** (keep) — the canonical `Stream.TERRAIN` still excludes the game seed, so the field is identical every run and the shared plot cache/serving model is unchanged |
+| Spatial coherence | **Coherent patches** — a value-noise / seed-and-spread **region pass** groups plots, and the C2C weighting picks per region (natural terrain patches, not per-plot salt-and-pepper) |
+| Temperature | **Per-plot world latitude** — each plot's world latitude (province lat + plot-y offset) sets its temperature, giving a gradient across large north-south provinces |
+| Food balance | **Accept the shift** — richer climate-driven terrain will move per-plot food yields; recalibrate the food economy + collapse-timing tests afterward, don't constrain the terrain to preserve today's balance |
 
 ## Why this is mostly *promotion*, not new code
 
@@ -63,19 +67,24 @@ suffixes + `CAVERN`/`URBAN` = CivStudio's full 33. Nothing else needs inventing.
 
 ## Design
 
-### Per-province inputs (computed once)
-- **temperature** — from `climate` band + `winter` offset + latitude, via `ClimateProfile`/`LatitudeClimate`
-  (already implemented: e.g. `40 − 0.6·|lat|` minus a winter offset). Optional refinement: use **per-plot
-  global latitude** (province lat + plot-y → world latitude) so large provinces get a gradient, not one value.
-- **humidity** — from `climate` + `monsoon`, via `ClimateProfile.humidity()` (0.10–0.95).
+### Inputs
+- **humidity** (per province) — from `climate` + `monsoon`, via `ClimateProfile.humidity()` (0.10–0.95).
+- **temperature** (**per plot**) — each plot's **world latitude** = province lat + (plot-y → degrees offset
+  from the province bounding box), fed through `LatitudeClimate`/`ClimateProfile` (`≈ 40 − 0.6·|lat|` minus the
+  `winter` offset). So a tall province warms toward its equatorward edge instead of reading one flat value.
+
+### Region coherence pass (new — runs before Stage 1)
+Partition the province's land plots into **regions** with a deterministic value-noise / seed-and-spread field
+(same shape as `FeatureGenerator`'s spread, on the canonical stream). Stage 1 then draws **once per region**
+(not per plot), so terrain forms natural contiguous patches. Despeckle still runs to clean edges.
 
 ### Per-plot terrain (canonical `Stream.TERRAIN` rng, unchanged draw-order)
-1. **Stage 1** weighted pick from the temperature-band array (humidity-modulated) → base terrain.
-2. **Stage 2** diversify → detail variant.
+1. **Stage 1** — per region, weighted pick from the plot's temperature-band array (humidity-modulated) → base terrain.
+2. **Stage 2** diversify → detail variant (per plot, so a patch still has fine variation).
 3. **Special override** — `province.type()` ∈ {ANCIENT_FOREST, GLADEWAY, FEY_GLADEWAY, BLOODGROVES,
    MUSHROOM_FOREST, SHADOW_SWAMP, GLACIER} ⇒ that terrain (the existing `SPECIAL_POOL` pass).
 4. **Water plots** — existing `generateWater` (coast/sea + climate suffix, near-shore shelf).
-5. **Despeckle** — keep the majority-smoothing pass for coherent patches (mitigates per-plot draw noise).
+5. **Despeckle** — keep the majority-smoothing pass to clean region edges.
 
 ### Relief (hybrid) & rivers & coast — keep
 - Relief stays the `ReliefGenerator` + heightmap compose (`rougher()`), but **repoint the "map relief"
@@ -139,20 +148,23 @@ bundle + static site. This is server-affecting engine data, so it must go out vi
 6. **Tests** — `mvn test` (scenarios smoke-test terrain-dependent food balance; watch for collapse-timing shifts
    since food yield now tracks climate-driven terrain).
 
-## Open questions / risks
+## Resolved decisions & remaining risks
 
-- **Per-plot noise vs coherence** — independent per-plot weighted draws can look salt-and-pepper; despeckle
-  helps, but if it reads noisy, add a light spatial-coherence pass (seed-and-spread like `FeatureGenerator`,
-  or a value-noise field) before Stage 1. Decide after seeing output.
-- **Single-province latitude** — using one latitude per province is a simplification; per-plot world latitude
-  is a cheap refinement for large provinces.
-- **Relief repoint** — confirm relief no longer depends on the terrain palette once `terrain.bmp` is dropped;
-  derive peak/hill from `heightmap.bmp` elevation thresholds + `ReliefGenerator`.
-- **Food-balance recalibration** — climate-driven terrain changes per-plot food yields, which may shift the
-  colony-collapse timing the smoke tests assert (`colony-collapse-accepted`); expect to retune.
+- ✅ **Coherence** — coherent-patch region pass (above), not raw per-plot noise.
+- ✅ **Temperature gradient** — per-plot world latitude (above).
+- ✅ **Determinism** — seed-independent, shared cache unchanged.
+- ✅ **Food balance** — accept the shift; recalibrate afterward (don't constrain terrain to preserve it).
+- ⚠️ **Relief repoint** (implementation) — confirm relief no longer depends on the terrain palette once
+  `terrain.bmp` is dropped; derive peak/hill from `heightmap.bmp` elevation thresholds + `ReliefGenerator`.
+- ⚠️ **Food-balance fallout** — climate-driven yields will shift the colony-collapse timing the smoke tests
+  assert (`colony-collapse-accepted`); plan to retune the food economy / test expectations after it lands.
+- ⚠️ **Region-pass tuning** — patch size/count is a knob; too coarse = uniform provinces, too fine = noise.
+  Tune against real output.
 
 ---
 
-*Planned 2026-07-12. Decisions locked with owner (fully-procedural terrain, hybrid relief, geography kept).
+*Planned 2026-07-12. Decisions locked with owner: fully-procedural terrain (ignore `terrain.bmp`), hybrid
+relief (heightmap backbone + C2C variation), geography kept (shape/rivers/coast), **seed-independent**,
+**coherent-patch** distribution, **per-plot-latitude** temperature, and **accept the food-balance shift**.
 Largely promotes the existing faithful C2C ports from fallback to primary. When it lands, update
 `docs/plots.md`/`province-plots.md` and the `docs-stale-terrain-pipeline` note, and cross-link here.*
