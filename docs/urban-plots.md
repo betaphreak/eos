@@ -1,8 +1,13 @@
 # Design note: urban plots & imported development
 
-**Status:** In progress. Phases 1 (the `TERRAIN_URBAN` substrate), 2 (import development +
-the `city` flag) and 3 (the per-province urban core in plot generation) are done; the city
-sprite (4) and the web Development overlay (5) remain.
+**Status:** Phases 1–4 done and **deployed live** to `dev.civstudio.com` (2026-07-12) — the
+`TERRAIN_URBAN` substrate, imported development + `city` flag, the per-province urban core
+(Civ4 `foundValue`) + anchoring, and the city sprite + city info panel. Verified at 256×:
+Dhenijansar shows its two urban core plots (city sprites) and the `cityRail` info panel. The
+optional web Development choropleth overlay (5) remains. *Deploy caveat handled:* the
+persistent AzureFile plot cache was cleared so city provinces regenerate with urban cores (see
+`docs/client-server.md` §Deployment); a self-invalidating **generation-version** on the cache
+path would remove that manual step (follow-up).
 **Date:** 2026-07-12
 **Depends on:**
 - the special-terrain pipeline (`docs/underworld.md` §Special surface terrains) — the
