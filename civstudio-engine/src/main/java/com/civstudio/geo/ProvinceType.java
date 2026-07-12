@@ -28,9 +28,11 @@ package com.civstudio.geo;
  * terrain.txt} by {@link com.civstudio.geo.export.CavernExporter}, all settleable/passable
  * surface land: {@link #ANCIENT_FOREST}, {@link #GLADEWAY}, {@link #FEY_GLADEWAY} and
  * {@link #BLOODGROVES} (fey/old-growth/blood-magic forests), {@link #MUSHROOM_FOREST}
- * (the Haless fungal woodland), {@link #SHADOW_SWAMP}, {@link #GLACIER} and {@link #URBAN}
- * (the built-up city ground of the Anbennar {@code city_terrain} block — see {@code
- * docs/urban-plots.md}; a colony founds its centre on the city plot). The remaining types:
+ * (the Haless fungal woodland), {@link #SHADOW_SWAMP} and {@link #GLACIER}. (The Anbennar
+ * {@code city_terrain} is <em>not</em> a province type: a city keeps its real land terrain
+ * and gains one or more urban <em>plots</em> — the {@code TERRAIN_URBAN} built-up core —
+ * rather than becoming a wholly-urban province; see {@code docs/urban-plots.md}.) The
+ * remaining types:
  * <ul>
  * <li>{@link #SEA} — open ocean; unsettleable, but the water the travel/trade
  * graph routes over (passable).</li>
@@ -55,8 +57,6 @@ public enum ProvinceType {
 	MUSHROOM_FOREST(true, true, false),
 	SHADOW_SWAMP(true, true, false),
 	GLACIER(true, true, false),
-	// built-up city ground (Anbennar city_terrain block); see docs/urban-plots.md
-	URBAN(true, true, false),
 	SEA(false, true, false),
 	LAKE(false, true, false),
 	IMPASSABLE(false, false, false);
