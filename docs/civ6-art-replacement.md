@@ -25,11 +25,7 @@ source side being replaced). The current bake is described in
 
 ## ⚠️ Gates before shipping
 
-1. **Licensing (owner decision).** Baked `web/assets` are committed and served publicly on
-   `*.civstudio.com`; they would contain Firaxis-derived art. Resolve redistribution terms **before**
-   committing Civ6-derived binaries. Until then, do the work on a branch/local and keep it unpushed, or
-   gate the commit of `web/assets/*`.
-2. **The Civ6 bake is local-dev only.** The depot is a machine-specific junction (`.civ6-cache`), absent
+**The Civ6 bake is local-dev only.** The depot is a machine-specific junction (`.civ6-cache`), absent
    from CI. So `propagate-c2c.yml` and any CI **cannot** rebake Civ6 art — the committed `web/assets` are
    the ship artifact and Civ6 rebakes are **manual/local**. Bakers must degrade gracefully to C2C when the
    depot is absent (so a no-depot machine still builds, all-C2C).
@@ -146,11 +142,18 @@ SULPHUR, VANILLA, WALRUS). Full per-bonus table: `civ6-assets.md` §8.
 
 ## Phasing
 
-- **Phase 0** — `web/civ6.mjs` resolver + mapping tables + graceful fallback; `web/civ6.test.mjs`
-  (resolves a known entity, returns null when depot absent). Manifest LoD schema + `pickLod`/cross-fade
-  helper designed here.
-- **Phase 1** — Terrain (headline visual): Civ6 ground + recolor + `@512/@2k` LoD. Verify look via webverify.
-- **Phase 2** — Bonus icons (Mixed split) + yield symbols, `@32/@64/@256` LoD.
+- **Phase 0** ✅ — `web/civ6.mjs` resolver + mapping tables + graceful fallback; `web/civ6.test.mjs`.
+  Manifest LoD schema designed here; the `pickLod`/cross-fade *frontend helper* is deferred to Phase 2
+  (see Phase 1 note).
+- **Phase 1** ✅ (bake) — Terrain (headline visual): Civ6 in-world ground recoloured to each terrain's
+  display colour, all 25 land+synthetic sourced from Civ6, emitted as a **`@128/@256` LoD atlas** with
+  `terrainTiles.lods` in the manifest (WebP's 16383px cap rules out a single-row 2k atlas). `src`/`tile`
+  stay = the deep LoD, so the frontend renders it **unchanged**. **The frontend `pickLod`+cross-fade
+  helper moved to Phase 2**: terrain tiles draw only at deep zoom, where the deep LoD is always the right
+  pick, so LoD selection is near-invisible here — it's built and exercised against icons (which draw
+  across every zoom band) instead.
+- **Phase 2** — Bonus icons (Mixed split) + yield symbols, `@32/@64/@256` LoD, **+ the generic
+  `pickLod`/cross-fade frontend helper** (first place it's genuinely exercised).
 - **Phase 3** — Features → flat SV overlays (hybrid) + the new overlay draw path.
 - **Phase 4** — Water (ice only).
 - **Phase 5** — Improvements (Farm/Mine/Quarry) + new frontend layer; routes deferred.

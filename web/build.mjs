@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { decodeDds } from './dds.mjs';
 import { loadGameFont, resourceCellRGBA, CELL as GF_CELL } from './gamefont.mjs';
 import { get as civ4Get, resolveArt as civ4ResolveArt, prefetch as civ4Prefetch } from './civ4.mjs';
+import * as civ6 from './civ6.mjs';
 import { prefetch as anbPrefetch, get as anbGet } from './anbennar.mjs';
 import { bakeNifGroup } from '../tools/nifbake/render.mjs';
 import sharp from 'sharp';
@@ -696,43 +697,62 @@ function bakeTerrainTiles(colorsHex) {
   if (!fs.existsSync(manifestPath)) return null;
   let manifest;
   try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch { return null; }
-  const T = 256, W = manifest.length * T, H = T;   // high-res tiles from the 1024px detail source
-  const rgb = Buffer.alloc(W * H * 3);
-  const cols = {};
-  let idx = 0, decoded = 0;
   const hexRgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
-  for (const e of manifest) {
-    const target = hexRgb(colorsHex[e.terrain] || '#465046');
-    const tile = detailTile(e.detail, target, T);
-    if (tile) decoded++;
-    const t = tile || solidTile(target, T);
-    for (let y = 0; y < T; y++)
-      for (let x = 0; x < T; x++) {
-        const s = (y * T + x) * 3, d = (y * W + idx * T + x) * 3;
-        rgb[d] = t[s]; rgb[d + 1] = t[s + 1]; rgb[d + 2] = t[s + 2];
-      }
-    cols[e.terrain] = idx++;
+  // Multi-LoD: one horizontal-strip atlas per tile size. Width = terrains × T must stay under WebP's
+  // 16383px cap, so the tiers are small→deep [128, 256] (a bigger deep tier would need a 2D grid).
+  // Source per terrain: Civ6 in-world ground (civ6.terrainGround) when the depot is mounted and the
+  // terrain maps (docs/civ6-assets.md §5, Varied fold), else the C2C detail texture — recoloured to the
+  // terrain's display colour either way, so only the ground *pattern* changes, not the map's palette.
+  const LODS = [128, 256];
+  const cols = {};
+  const lods = [];
+  let civ6Count = 0, c2cCount = 0, anyDecoded = false;
+  for (const T of LODS) {
+    const W = manifest.length * T, H = T;
+    const rgb = Buffer.alloc(W * H * 3);
+    let idx = 0, decoded = 0;
+    for (const e of manifest) {
+      const target = hexRgb(colorsHex[e.terrain] || '#465046');
+      const civ6Ground = civ6.terrainGround(e.terrain);
+      let tile = civ6Ground ? groundTileFromFile(civ6Ground, target, T) : null;
+      if (tile) { if (T === LODS[0]) civ6Count++; }
+      else { tile = detailTile(e.detail, target, T); if (tile && T === LODS[0]) c2cCount++; }
+      if (tile) decoded++;
+      const t = tile || solidTile(target, T);
+      for (let y = 0; y < T; y++)
+        for (let x = 0; x < T; x++) {
+          const s = (y * T + x) * 3, d = (y * W + idx * T + x) * 3;
+          rgb[d] = t[s]; rgb[d + 1] = t[s + 1]; rgb[d + 2] = t[s + 2];
+        }
+      cols[e.terrain] = idx++;
+    }
+    if (decoded) anyDecoded = true;
+    // 256px columns align to WebP's block grid, so per-terrain slicing (extractTiles) stays clean.
+    const src = queueWebp(`terrain/terrain-tiles@${T}`, W, H, rgb, null, { quality: 82 });
+    lods.push({ src, tile: T });
   }
-  if (!decoded) return null;   // no textures decoded (LFS not pulled) → keep flat colours
-  // the ground-texture atlas — the biggest asset. Its 256px columns align to WebP's block grid, so
-  // slicing per-terrain tiles (extractTiles) stays clean; lossy quality is invisible on ground.
-  const src = queueWebp('terrain/terrain-tiles', W, H, rgb, null, { quality: 82 });
-  return { src, tile: T, cols };
+  if (!anyDecoded) return null;   // no textures decoded → keep flat colours
+  console.log(`  terrain tiles: ${civ6Count} Civ6 + ${c2cCount} C2C ground sources; LoDs ${LODS.join('/')}px`);
+  // src/tile default to the deep (largest) LoD so an un-migrated reader still works; `lods` is the tier list.
+  const deep = lods[lods.length - 1];
+  return { src: deep.src, tile: deep.tile, cols, lods };
 }
-// downsample a detail .dds to a T×T RGB tile, then recolour so its mean = target
-function detailTile(artPath, target, T) {
-  const file = resolveArt(artPath);
-  if (!file) return null;
-  let img;
-  try { img = decodeDds(fs.readFileSync(file)); } catch { return null; }
+// downsample a decoded image to a T×T RGB tile, then recolour so its mean = target.
+// Alpha is ignored — for both C2C detail textures and Civ6 grounds the terrain lives in RGB
+// (a Civ6 _Color/_B ground carries the tuft/ground detail in RGB; alpha is a mask). See docs/civ6-assets.md §2a.
+function recolorTile(img, target, T) {
   const bx = img.width / T, by = img.height / T;
   const tmp = new Float64Array(T * T * 3);
   let mr = 0, mg = 0, mb = 0;
   for (let j = 0; j < T; j++)
     for (let i = 0; i < T; i++) {
       let r = 0, g = 0, b = 0, n = 0;
-      for (let y = Math.floor(j * by); y < Math.floor((j + 1) * by); y++)
-        for (let x = Math.floor(i * bx); x < Math.floor((i + 1) * bx); x++) {
+      // box-average the source region; clamp so an UPSCALE (source smaller than T, e.g. Civ6's 128²
+      // Grass_Dark_B) still samples ≥1 pixel — else n=0 → NaN → a black tile (the box loop skips).
+      const y0 = Math.min(img.height - 1, Math.floor(j * by)), y1 = Math.max(y0 + 1, Math.floor((j + 1) * by));
+      const x0 = Math.min(img.width - 1, Math.floor(i * bx)), x1 = Math.max(x0 + 1, Math.floor((i + 1) * bx));
+      for (let y = y0; y < y1 && y < img.height; y++)
+        for (let x = x0; x < x1 && x < img.width; x++) {
           const o = (y * img.width + x) * 4; r += img.rgba[o]; g += img.rgba[o + 1]; b += img.rgba[o + 2]; n++;
         }
       const o = (j * T + i) * 3; tmp[o] = r / n; tmp[o + 1] = g / n; tmp[o + 2] = b / n;
@@ -747,6 +767,30 @@ function detailTile(artPath, target, T) {
     out[k * 3 + 2] = Math.min(255, tmp[k * 3 + 2] * sb) | 0;
   }
   return out;
+}
+// decode-once cache (a Civ6 ground like Grass_B is shared by several terrains; the 2k source is heavy).
+// `var` (hoisted, lazily filled) because bakeTerrainTiles runs at module load, before this line — a
+// `const`/`let` here would be in its temporal dead zone (cf. the terrainDisplayColors note above).
+var _ddsCache;
+function decodeCached(file) {
+  if (!_ddsCache) _ddsCache = new Map();
+  if (_ddsCache.has(file)) return _ddsCache.get(file);
+  let img = null;
+  try { img = decodeDds(fs.readFileSync(file)); } catch { /* leave null */ }
+  _ddsCache.set(file, img);
+  return img;
+}
+// recolour a C2C detail texture (resolved via resolveArt, case-insensitive) to a T×T tile; null if unreadable.
+function detailTile(artPath, target, T) {
+  const file = resolveArt(artPath);
+  if (!file) return null;
+  const img = decodeCached(file);
+  return img ? recolorTile(img, target, T) : null;
+}
+// recolour a Civ6 in-world ground texture (absolute path from civ6.terrainGround) to a T×T tile; null if unreadable.
+function groundTileFromFile(file, target, T) {
+  const img = decodeCached(file);
+  return img ? recolorTile(img, target, T) : null;
 }
 // a flat T×T RGB tile of one colour (fallback when a detail texture is unavailable)
 function solidTile(rgbArr, T) {
