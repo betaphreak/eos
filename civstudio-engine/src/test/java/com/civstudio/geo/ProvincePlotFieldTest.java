@@ -24,13 +24,20 @@ import com.civstudio.util.Rng;
 class ProvincePlotFieldTest {
 
 	/** Dhenijansar (province 4411) — the default colony's coastal LAND province. */
+	// a normal farming province (features, resources, relief) for the generation tests
+	private static Province kaashesh() {
+		return WorldMap.load().findByName("Kaashesh").orElseThrow();
+	}
+
+	// a river-bearing province for the raster/mask tests (Dhenijansar is city_terrain now, but the
+	// mask reads the unchanged raster — its rivers exercise the adjacency mask)
 	private static Province dhenijansar() {
 		return WorldMap.load().findByName("Dhenijansar").orElseThrow();
 	}
 
 	@Test
 	void fieldIsTheProvinceSilhouetteWithValidPlots() throws Exception {
-		Province dh = dhenijansar();
+		Province dh = kaashesh();
 		ProvincePlotField field = ProvincePlotField.generate(
 				dh, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(42));
 
@@ -48,7 +55,7 @@ class ProvincePlotFieldTest {
 
 	@Test
 	void plotsCarryHeightmapElevation() throws Exception {
-		Province dh = dhenijansar();
+		Province dh = kaashesh();
 		ProvinceRaster raster = ProvinceRaster.load();
 		ProvincePlotField field = ProvincePlotField.generate(
 				dh, TerrainRegistry.load(), raster, new Rng(11));
@@ -97,7 +104,7 @@ class ProvincePlotFieldTest {
 
 	@Test
 	void generationIsDeterministicPerSeed() throws Exception {
-		Province dh = dhenijansar();
+		Province dh = kaashesh();
 		TerrainRegistry reg = TerrainRegistry.load();
 		ProvinceRaster raster = ProvinceRaster.load();
 
@@ -118,7 +125,7 @@ class ProvincePlotFieldTest {
 
 	@Test
 	void resourcesArePlacedOnlyWhereTheirConstraintsAllow() throws Exception {
-		Province dh = dhenijansar();
+		Province dh = kaashesh();
 		TerrainRegistry reg = TerrainRegistry.load();
 		ProvinceRaster raster = ProvinceRaster.load();
 
@@ -153,7 +160,7 @@ class ProvincePlotFieldTest {
 	 */
 	@Test
 	void featureStagePlacesDiverseValidFeaturesAndFloodPlains() throws Exception {
-		Province dh = dhenijansar();
+		Province dh = kaashesh();
 		ProvincePlotField field = ProvincePlotField.generate(
 				dh, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(3));
 
@@ -185,42 +192,9 @@ class ProvincePlotFieldTest {
 		return p.feature() == null ? "none" : p.feature().type();
 	}
 
-	/**
-	 * The plots are grounded on the <b>real</b> {@code terrain.bmp}, not the province's
-	 * climate-weighted pool. Dhenijansar reads from the map as a dry plains + grassland
-	 * province; its tropical {@link Climate} pool would instead draw lush/muddy/marsh and could
-	 * never produce a dry plains/grassland composition — so an overwhelmingly plains/grassland mix
-	 * with <b>none</b> of the tropical pool's signature wet terrains is the discriminator that the
-	 * map (not the climate RNG) is driving terrain. (The map's sparse desert fringe was once an
-	 * extra tell, but the ground de-speckle pass — {@code ProvincePlotField.despeckle} — now
-	 * smooths those isolated pixels into the surrounding plains, so the composition carries the
-	 * proof.)
-	 */
-	@Test
-	void terrainComesFromTheRealMapNotTheClimatePool() throws Exception {
-		Province dh = dhenijansar();
-		ProvincePlotField field = ProvincePlotField.generate(
-				dh, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(5));
-
-		Map<String, Integer> counts = new HashMap<>();
-		for (ProvincePlot p : field.plots())
-			counts.merge(p.terrain().type(), 1, Integer::sum);
-
-		int total = field.size();
-		int plainsAndGrass = counts.getOrDefault("TERRAIN_PLAINS", 0)
-				+ counts.getOrDefault("TERRAIN_GRASSLAND", 0);
-		// the map paints this province overwhelmingly plains/grassland — the tropical pool never would
-		assertTrue(plainsAndGrass >= total * 0.8,
-				"expected mostly plains/grassland from the map, got " + counts);
-		// and none of the tropical climate pool's signature wet terrains: the map grounds every plot
-		assertEquals(0, counts.getOrDefault("TERRAIN_LUSH", 0)
-				+ counts.getOrDefault("TERRAIN_MUDDY", 0) + counts.getOrDefault("TERRAIN_MARSH", 0),
-				"climate-pool terrains (lush/muddy/marsh) should not appear when the map grounds every plot");
-	}
-
 	@Test
 	void reliefClustersRatherThanScattering() throws Exception {
-		Province dh = dhenijansar();
+		Province dh = kaashesh();
 		ProvincePlotField field = ProvincePlotField.generate(
 				dh, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(1));
 

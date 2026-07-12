@@ -95,7 +95,15 @@ public final class BonusGenerator {
 				pct += rng.uniform(b.randApps()[k]);
 			// sea resources are placed at half the land density (the shelves read too busy otherwise)
 			double density = DENSITY_SCALE * (water ? 0.5 : 1.0);
-			int target = (int) Math.round(density * pct / 100.0 * (eligible.size() / (double) b.tilesPer()));
+			// STOCHASTIC rounding, not round(): with the procedural terrain a bonus's eligible plots are
+			// spread across more terrain types, so a small province's per-bonus expectation is often < 1
+			// and round() would floor every bonus to 0 — a province with no resources. Rounding the
+			// fractional part probabilistically preserves the expected density while letting small
+			// provinces still draw the occasional resource. One rng draw (deterministic order).
+			double expected = density * pct / 100.0 * (eligible.size() / (double) b.tilesPer());
+			int target = (int) expected;
+			if (rng.uniform() < expected - target)
+				target++;
 			if (target <= 0)
 				continue;
 

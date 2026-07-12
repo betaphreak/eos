@@ -34,7 +34,7 @@ class C2CFeatureSpreadTest {
 
 	@Test
 	void vegetationSpreadsAsCoherentClusters() throws Exception {
-		Province dh = WorldMap.load().findByName("Dhenijansar").orElseThrow();
+		Province dh = WorldMap.load().findByName("Bim Lau").orElseThrow();   // jungle-rich tropical → clear clusters
 		ProvincePlotField field = ProvincePlotField.generate(
 				dh, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(3));
 
@@ -53,7 +53,7 @@ class C2CFeatureSpreadTest {
 					if ((dx != 0 || dy != 0) && veg.contains(key(x + dx, y + dy)))
 						adjacent++;
 		}
-		assertTrue(veg.size() >= 4, "Dhenijansar should grow a wooded cluster, got " + veg.size());
+		assertTrue(veg.size() >= 4, "Bim Lau should grow a wooded cluster, got " + veg.size());
 		assertTrue(adjacent > 0, "vegetation should cluster (got " + veg.size() + " tree cells, none adjacent)");
 	}
 
@@ -97,7 +97,7 @@ class C2CFeatureSpreadTest {
 		Set<String> dead = Set.of("FEATURE_FOREST_ANCIENT", "FEATURE_BAMBOO", "FEATURE_VERY_TALL_GRASS");
 
 		Set<String> found = new HashSet<>();
-		for (String name : new String[] { "Dhenijansar", "Vytakmua" }) {
+		for (String name : new String[] { "Kaashesh", "Vytakmua" }) {
 			Province p = WorldMap.load().findByName(name).orElseThrow();
 			for (int seed = 0; seed < 6; seed++)
 				for (ProvincePlot pl : ProvincePlotField.generate(p, reg, raster, new Rng(seed)).plots())

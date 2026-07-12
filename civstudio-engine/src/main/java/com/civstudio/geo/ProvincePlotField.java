@@ -83,30 +83,27 @@ public final class ProvincePlotField {
 	 * desert/savanna feature places sparsely ({@link #SPARSE_CHANCE}) so the ground
 	 * reads as a mix of bare and featured rather than a uniform blanket.
 	 */
-	// special-terrain province types → a weighted terrain pool their plots generate from,
-	// replacing the raster's per-plot palette (see docs/underworld.md §special terrains). Each pool
-	// is dominated by the type's signature terrain but mixes in a little compatible ground so the
-	// province reads as generated, not a flat monolith. The four underground types share the cavern
-	// pool (and flatten relief to a floor); the surface terrains keep their relief and trees.
-	private static final Map<ProvinceType, Map<String, Double>> SPECIAL_POOL = Map.ofEntries(
-			Map.entry(ProvinceType.CAVERN, cavernPool()),
-			Map.entry(ProvinceType.DWARVEN_HOLD, cavernPool()),
-			Map.entry(ProvinceType.DWARVEN_HOLD_SURFACE, cavernPool()),
-			Map.entry(ProvinceType.DWARVEN_ROAD, cavernPool()),
-			Map.entry(ProvinceType.ANCIENT_FOREST,
-					Map.of("TERRAIN_ANCIENT_FOREST", 7.0, "TERRAIN_GRASSLAND", 1.0, "TERRAIN_LUSH", 1.0)),
-			Map.entry(ProvinceType.GLADEWAY,
-					Map.of("TERRAIN_GLADEWAY", 7.0, "TERRAIN_GRASSLAND", 2.0)),
-			Map.entry(ProvinceType.FEY_GLADEWAY,
-					Map.of("TERRAIN_FEY_GLADEWAY", 7.0, "TERRAIN_LUSH", 2.0)),
-			Map.entry(ProvinceType.BLOODGROVES,
-					Map.of("TERRAIN_BLOODGROVES", 7.0, "TERRAIN_GRASSLAND", 1.0)),
-			Map.entry(ProvinceType.MUSHROOM_FOREST,
-					Map.of("TERRAIN_MUSHROOM_FOREST", 7.0, "TERRAIN_MARSH", 1.0, "TERRAIN_MUDDY", 1.0)),
-			Map.entry(ProvinceType.SHADOW_SWAMP,
-					Map.of("TERRAIN_SHADOW_SWAMP", 6.0, "TERRAIN_MARSH", 2.0, "TERRAIN_MUDDY", 1.0)),
-			Map.entry(ProvinceType.GLACIER,
-					Map.of("TERRAIN_GLACIER", 6.0, "TERRAIN_PERMAFROST", 2.0, "TERRAIN_TUNDRA", 1.0)));
+	// UNDERGROUND province types → the fixed cavern pool their plots generate from (no climate below
+	// ground). All four flatten relief to a walkable floor. See docs/underworld.md.
+	private static final Map<ProvinceType, Map<String, Double>> SPECIAL_POOL = Map.of(
+			ProvinceType.CAVERN, cavernPool(),
+			ProvinceType.DWARVEN_HOLD, cavernPool(),
+			ProvinceType.DWARVEN_HOLD_SURFACE, cavernPool(),
+			ProvinceType.DWARVEN_ROAD, cavernPool());
+
+	// SURFACE special-terrain province types → their SIGNATURE terrain, which dominates the province
+	// (SPECIAL_SIGNATURE_FRAC of plots); the remaining plots are climate-aware FILLER drawn from the
+	// province's climate generator (a northern ancient forest gets taiga/marsh filler, not a fixed
+	// grassland). Relief and trees are kept (unlike the underground floor). See docs/plot-generator.md.
+	private static final Map<ProvinceType, String> SPECIAL_SIGNATURE = Map.of(
+			ProvinceType.ANCIENT_FOREST, "TERRAIN_ANCIENT_FOREST",
+			ProvinceType.GLADEWAY, "TERRAIN_GLADEWAY",
+			ProvinceType.FEY_GLADEWAY, "TERRAIN_FEY_GLADEWAY",
+			ProvinceType.BLOODGROVES, "TERRAIN_BLOODGROVES",
+			ProvinceType.MUSHROOM_FOREST, "TERRAIN_MUSHROOM_FOREST",
+			ProvinceType.SHADOW_SWAMP, "TERRAIN_SHADOW_SWAMP",
+			ProvinceType.GLACIER, "TERRAIN_GLACIER");
+	private static final double SPECIAL_SIGNATURE_FRAC = 0.82; // signature share; the rest is climate filler
 
 	private static Map<String, Double> cavernPool() {
 		return Map.of("TERRAIN_CAVERN", 8.0, "TERRAIN_ROCKY", 1.0);
@@ -165,17 +162,22 @@ public final class ProvincePlotField {
 		ProvinceMask mask = raster.mask(province.id());
 		int w = mask.width(), h = mask.height();
 		PlotType[] relief = ReliefGenerator.generate(mask, ReliefGenerator.Params.forProvince(province), rng);
-		TerrainGenerator terrainGen = new TerrainGenerator(registry, province.climate(),
-				province.winter(), province.monsoon());
 		ClimateProfile climate = ClimateProfile.of(province);
 
-		// ground each land cell first, so the feature stage can read the whole terrain +
-		// relief grid (it seeds off peaks and chooses per-cell by terrain category). The
-		// ground is the real terrain.bmp where the map classifies it, with a
-		// climate-weighted draw as the fallback for unmapped pixels (always drawn, in
-		// row-major order, so the rng stream stays deterministic per seed); the composed
-		// relief is the rougher of the generator's clustered ranges and the map's
-		// hill/mountain, so real mountains survive.
+		// Ground each land cell procedurally with the C2C temperature×humidity terrain generator
+		// (docs/plot-generator.md) — the PRIMARY terrain source now, replacing the terrain.bmp biome, so
+		// all 33 terrains appear climate-appropriately from the province's authored climate rather than
+		// the sparse EU4 palette. Grounding first lets the feature stage read the whole terrain+relief
+		// grid (it seeds off peaks, chooses per-cell by terrain category). Relief stays HYBRID: the C2C
+		// ReliefGenerator ranges roughened with the map's real mountain palette (MapTerrainCodec.relief
+		// still read for peak/hill only, not biome), so real ranges survive while the ground is climate-
+		// driven. Each cell draws a fixed two terrains in row-major order, so the canonical stream stays
+		// deterministic per province (the seed contract). Temperature bands handle latitude/winter cold,
+		// so the old latitude-cooling override pass is gone.
+		double terrainTemp = ClimateTerrainGenerator.temperature(province);
+		ClimateTerrainGenerator terrainGen = province.type() == ProvinceType.IMPASSABLE
+				? ClimateTerrainGenerator.barren(registry, terrainTemp)                      // wasteland → barren ground
+				: new ClimateTerrainGenerator(registry, terrainTemp, climate.humidity());
 		Terrain[] ground = new Terrain[w * h];
 		PlotType[] composed = new PlotType[w * h];
 		for (int ly = 0; ly < h; ly++)
@@ -183,50 +185,30 @@ public final class ProvincePlotField {
 				if (!mask.isLand(lx, ly))
 					continue;
 				int idx = ly * w + lx;
-				Terrain drawn = terrainGen.next(rng);
-				Terrain mapped = MapTerrainCodec.ground(mask.terrainIndex(lx, ly), registry);
-				ground[idx] = mapped != null ? mapped : drawn;
+				ground[idx] = terrainGen.next(rng);
 				composed[idx] = rougher(relief[idx], MapTerrainCodec.relief(mask.terrainIndex(lx, ly)));
 			}
 
-		// latitude climate: the imported terrain.bmp ignores latitude (it paints the far north green
-		// grassland), so cool a normal LAND province's warm ground toward taiga/tundra/permafrost as
-		// its latitude — and its winter severity — rise. Ported from the C2C planet generator (see
-		// LatitudeClimate); ramped by coldFraction so the temperate zone is untouched. Special-terrain
-		// provinces (glacier/forests/caves) keep their biome (handled below), and mountains stay.
-		if (province.type() == ProvinceType.LAND) {
-			// a region's relative temperature modifier shifts its effective temperature — e.g. the
-			// Yarikhoi run warm, a temperate pocket in the deep north — so the cold override (and thus
-			// permafrost/taiga) recedes or advances with it. See LatitudeClimate#regionTempOffset.
-			double temp = LatitudeClimate.effectiveTemperature(province.latitude(), province.winter())
-					+ LatitudeClimate.regionTempOffset(province);
-			double coldFrac = LatitudeClimate.coldFraction(temp);
-			if (coldFrac > 0) {
-				TerrainGenerator coldGen = new TerrainGenerator(registry, LatitudeClimate.coldPool(temp));
-				for (int idx = 0; idx < ground.length; idx++)
-					if (ground[idx] != null && LatitudeClimate.isWarm(ground[idx])
-							&& rng.uniform() < coldFrac)
-						ground[idx] = coldGen.next(rng);
-			}
-		}
-
-		// special-terrain provinces generate their ground from a type-specific weighted pool
-		// (a cavern floor, an ancient forest, a glacier, …) instead of the raster's per-plot
-		// palette — the raster reads them as generic mountain/forest, so membership drives the
-		// ground. Done before the feature/bonus stages so those read the real ground (grass-based
-		// terrains still spawn trees; underground folds to PyTerrain.OTHER → bare). The underground
-		// types also flatten relief to a walkable floor; surface terrains keep their hills/peaks.
-		// See docs/underworld.md.
-		Map<String, Double> specialPool = SPECIAL_POOL.get(province.type());
-		if (specialPool != null) {
-			TerrainGenerator specialGen = new TerrainGenerator(registry, specialPool);
-			boolean flatten = province.isUnderground();
+		// Special-terrain provinces override the climate ground (membership, not the climate, drives it).
+		// Done before the feature/bonus stages so those read the real ground. UNDERGROUND types (cavern/
+		// dwarven) draw the fixed cavern pool and flatten relief to a floor. SURFACE special terrains keep
+		// their relief and trees, drawing their SIGNATURE terrain for most plots with the rest as climate-
+		// aware filler (docs/plot-generator.md + docs/underworld.md).
+		Map<String, Double> cavern = SPECIAL_POOL.get(province.type());
+		if (cavern != null) {                                          // underground
+			TerrainGenerator cavernGen = new TerrainGenerator(registry, cavern);
 			for (int idx = 0; idx < ground.length; idx++)
-				if (ground[idx] != null) { // land cells only (water/off-mask stay null)
-					ground[idx] = specialGen.next(rng);
-					if (flatten)
-						composed[idx] = PlotType.FLAT;
+				if (ground[idx] != null) {                             // land cells only
+					ground[idx] = cavernGen.next(rng);
+					composed[idx] = PlotType.FLAT;
 				}
+		}
+		String signatureKey = SPECIAL_SIGNATURE.get(province.type());
+		if (signatureKey != null) {                                    // surface special terrain
+			Terrain signature = registry.terrain(signatureKey);
+			for (int idx = 0; idx < ground.length; idx++)
+				if (ground[idx] != null)                               // signature-dominant, climate-aware filler
+					ground[idx] = rng.uniform() < SPECIAL_SIGNATURE_FRAC ? signature : terrainGen.next(rng);
 		}
 
 		// De-speckle the ground into coherent regions. Terrain is sampled 1 raster pixel = 1 plot, and
@@ -299,13 +281,25 @@ public final class ProvincePlotField {
 		// every city_terrain province is LAND, so this still gives them all a denser core.
 		Terrain urban = registry.terrain("TERRAIN_URBAN");
 		if (province.type() == ProvinceType.LAND && urban != null && !cells.isEmpty()) {
-			int coreSize = CityPlacement.coreSize(province, cells.size());
-			for (int idx : CityPlacement.coreCells(w, h, cells, ground, composed, feature,
-					bonusGrid, coreSize)) {
-				ground[idx] = urban;
-				composed[idx] = PlotType.FLAT; // a city stands on level, built ground
-				feature[idx] = null;           // built ground carries no wild feature
-				bonusGrid[idx] = null;         // the resource is built over
+			if (province.city()) {
+				// a city_terrain province is one sprawling city — pave EVERY plot (the city render layer
+				// covers it), so no farmland/resources/features show through the built-up ground.
+				for (int[] c : cells) {
+					int idx = c[1] * w + c[0];
+					ground[idx] = urban;
+					composed[idx] = PlotType.FLAT;
+					feature[idx] = null;
+					bonusGrid[idx] = null;
+				}
+			} else {
+				int coreSize = CityPlacement.coreSize(province, cells.size());
+				for (int idx : CityPlacement.coreCells(w, h, cells, ground, composed, feature,
+						bonusGrid, coreSize)) {
+					ground[idx] = urban;
+					composed[idx] = PlotType.FLAT; // a city stands on level, built ground
+					feature[idx] = null;           // built ground carries no wild feature
+					bonusGrid[idx] = null;         // the resource is built over
+				}
 			}
 		}
 

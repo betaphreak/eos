@@ -163,6 +163,40 @@ bundle + static site. This is server-affecting engine data, so it must go out vi
 
 ---
 
+## As built — increment 1 (2026-07-12)
+
+Shipped: **procedural terrain is live and primary.** `ClimateTerrainGenerator` (the C2C two-stage
+temperature×humidity port) drives `ProvincePlotField.generate`; `terrain.bmp` is no longer read for the
+biome (still read for the hybrid mountain-relief signal via `MapTerrainCodec.relief`). `GEN_VERSION` 2→3.
+All 33 terrains appear climate-appropriately (verified: arid→dunes/scrub/desert, tropical→lush/grass,
+temperate→grass/plains/marsh cooling to taiga at latitude, cold→tundra/permafrost). Covered by
+`ClimateTerrainGeneratorTest`; the scenario smoke tests still pass (the food-balance shift did not break
+the clean-collapse assertions).
+
+Province-type decisions implemented:
+- **IMPASSABLE** → a climate-appropriate **barren** pool (`ClimateTerrainGenerator.barren`): hot→desert/
+  badland, cold→rocky/permafrost, temperate→rocky/scrub, + mountainous relief.
+- **city_terrain** (`province.city()`) → **fully urban** — every plot paved `TERRAIN_URBAN`, no farmland/
+  features/resources (the render layer covers it; a dedicated paved texture is deferred, and long-term the
+  urban plots become Civ6 **district tiles**).
+- **Surface special terrains** (ancient_forest, glacier, …) → signature terrain (82%) + **climate-aware
+  filler** (a northern ancient forest fills with taiga, not grassland). **Underground** types keep the
+  fixed cavern pool + flattened floor. `DWARVEN_HOLD_SURFACE` stays cavern (owner's call).
+- **Bonus density** → **stochastic rounding** in `BonusGenerator` (the richer terrain spreads each bonus
+  across fewer matching plots; probabilistic rounding preserves expected density so small provinces still
+  draw resources).
+
+Anbennar calibration deviations from pure C2C (documented in `ClimateTerrainGenerator`): a **dry-desert
+gate** (an `arid` province reads desert across its latitude range, not only when scorching) and a
+**humidity-gated marsh** (a dry province stays steppe, not wetland).
+
+**Still pending** (planned increments): the **region-coherence pass** (currently relies on the existing
+despeckle for patch coherence), **per-plot world latitude** (currently one temperature per province), and
+making **features fully procedural** (they still read the `trees.bmp` hints). Plus the food-economy
+recalibration the yield shift invites.
+
+---
+
 *Planned 2026-07-12. Decisions locked with owner: fully-procedural terrain (ignore `terrain.bmp`), hybrid
 relief (heightmap backbone + C2C variation), geography kept (shape/rivers/coast), **seed-independent**,
 **coherent-patch** distribution, **per-plot-latitude** temperature, and **accept the food-balance shift**.

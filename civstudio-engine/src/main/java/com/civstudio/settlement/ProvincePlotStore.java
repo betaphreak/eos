@@ -46,7 +46,7 @@ public final class ProvincePlotStore {
 	 * generation change reaches every client instead of being masked by an immutably-cached grid.
 	 * The web bundle ships it as {@code plotVersion}. See {@code docs/plot-serving.md}.
 	 */
-	public static final int GEN_VERSION = 2; // 2: per-province urban core (docs/urban-plots.md)
+	public static final int GEN_VERSION = 3; // 3: procedural C2C terrain, no terrain.bmp biome (docs/plot-generator.md)
 
 	private static final String WRITE_DIR = "civstudio-engine/src/main/resources/map/provinces";
 	private static final String RESOURCE_DIR = "/map/provinces";
