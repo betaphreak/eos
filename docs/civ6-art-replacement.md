@@ -166,7 +166,15 @@ SULPHUR, VANILLA, WALRUS). Full per-bonus table: `civ6-assets.md` §8.
   (bamboo/cactus/tall-grass/savanna) keeps billboards. New `featureOverlays` manifest key +
   `featureSprite` overlay branch. Gotcha fixed: new top-level manifest keys must be added to
   `WorldBundle`'s manifest→bundle allow-list. Verified live.
-- **Phase 4** — Water (ice only).
+- **Phase 4** ✅ — Water (ice only). `bakeIceTile` is Civ6-first: it crops the opaque central 40% of
+  `Features_Icecaps_Visible.dds` (a 256² hex icecap — pale cracked-ice centre, transparent corners),
+  forces it opaque, and downsamples to a tileable **128² colour tile** (`water/ice.webp`), else falls
+  back to the Civ4 `icepack_1024.dds`. New resolver `civ6.iceTile()`; the `{src,tile}` descriptor +
+  `drawSeaIce` draw path are unchanged (river/sea/shore stay C2C — Civ6 rivers are edge decals). Verified
+  in-app: the frontend loads the new 128² tile (centre pixel (203,231,246), the Civ6 ice-blue), the source
+  `drawSeaIce` builds its floe `createPattern` from. **Note** — sea ice only renders on **coastal** polar
+  seas (SEA/LAKE adjacent to land, e.g. *The Passage* 1739, *Fjordsbay* 1436); open-ocean seas (1577/1610)
+  generate no plottable shelf, so `drawSeaIce` never fires there.
 - **Phase 5** — Improvements (Farm/Mine/Quarry) + new frontend layer; routes deferred.
 
 Each phase: bake → `node web/build.mjs` → refresh engine jar + `spring-boot:run` → webverify screenshots

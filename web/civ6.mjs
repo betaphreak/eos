@@ -105,6 +105,17 @@ export function featureOverlay(featureKey) {
   return resolveTexture(FEATURE_OVERLAY[featureKey]);
 }
 
+// ---- Water: ice (docs/civ6-art-replacement.md §E) ------------------------------------------------
+/**
+ * The Civ6 icecaps sprite (`Features_Icecaps_Visible.dds`) — the source for the polar sea-ice tile
+ * (drawSeaIce). River/sea/shore stay C2C (Civ6 rivers are edge decals, no tile equivalent). Null → the
+ * ice bake keeps its C2C pack-ice tile. Distinct from featureOverlay('FEATURE_ICE') only in intent —
+ * here the sprite is cropped to a tileable opaque ice surface, not blitted as a hex overlay.
+ */
+export function iceTile() {
+  return resolveTexture('Features_Icecaps_Visible');
+}
+
 // ---- Bonuses / resources (docs/civ6-assets.md §8, Mixed collapse) --------------------------------
 // The 45 C2C bonuses served by Civ6 -> the Civ6 resource sprite name (used as Resources_<name>_Visible
 // when a loose sprite exists, else as the atlas cell id in Phase 2). The other 61 bonuses are absent

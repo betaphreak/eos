@@ -92,6 +92,9 @@ test('resolves real depot entities to .dds files', { skip: civ6.available() ? fa
   assert.equal(civ6.terrainGround('TERRAIN_SEA'), null, 'water → no ground');
   // C2C-only feature → null
   assert.equal(civ6.featureOverlay('FEATURE_CACTUS'), null, 'cactus → C2C billboard');
+  // ice tile → the Civ6 icecaps sprite (Phase 4 water)
+  const ice = civ6.iceTile();
+  assert.ok(ice && ice.toLowerCase().endsWith('features_icecaps_visible.dds'), 'ice tile → Civ6 icecaps');
 });
 
 // ---- (3) graceful fallback with no depot (subprocess, bogus CIV6_CACHE_DIR) ----------------------
@@ -106,6 +109,7 @@ test('every resolver returns null / false when the depot is absent', () => {
       resource: civ6.resourceIcon('BONUS_WHEAT'),
       improvement: civ6.improvementOverlay('IMPROVEMENT_FARM'),
       fontIcons: civ6.fontIcons(),
+      ice: civ6.iceTile(),
     };
     process.stdout.write(JSON.stringify(r));
   `;
@@ -118,4 +122,5 @@ test('every resolver returns null / false when the depot is absent', () => {
   assert.equal(r.resource, null);
   assert.equal(r.improvement, null);
   assert.equal(r.fontIcons, null);
+  assert.equal(r.ice, null);
 });

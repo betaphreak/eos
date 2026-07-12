@@ -835,12 +835,39 @@ function bakeSeaTile() { return bakeRippleTile('Art/Terrain/textures/water/seade
 // A touch more contrast than the open sea so the near-shore chop reads. Null → flat shallows.
 function bakeShoreTile() { return bakeRippleTile('Art/Terrain/textures/water/shoredetail.dds', `water/shore`, 1.3); }
 
-// Bake a seamless COLOUR ice tile from the real Civ4 pack-ice texture (features/icepack/icepack_1024.dds).
-// The texture's upper ~65% is a clean cracked-ice surface (the lower strip is a fringe of edge icicles we
-// skip); we crop that clean region and downsample it to a square tile, keeping colour so the web can
-// texture the shelf ice floes with real art instead of flat white squares (docs/coastlines.md Phase G).
-// Returns {src, tile} or null (art absent → drawSeaIce keeps its procedural pale floes).
+// Bake a seamless COLOUR ice tile for the polar sea-ice floes (drawSeaIce). Civ6-first
+// (docs/civ6-art-replacement.md §E): the Civ6 icecaps SV sprite, else the Civ4 pack-ice texture.
+// Either way we crop a solidly-opaque cracked-ice region and downsample to a square colour tile so the
+// web can texture the shelf floes with real art instead of flat white squares (docs/coastlines.md
+// Phase G). Returns {src, tile} or null (no art → drawSeaIce keeps its procedural pale floes).
 function bakeIceTile() {
+  // Civ6-first: Features_Icecaps_Visible is a hex icecap — opaque cracked-ice centre, transparent
+  // corners. Crop the central 40% (solidly-opaque ice, no transparent hex corners bleeding in), force
+  // it opaque, and it tiles as a repeating pattern.
+  const civ6Ice = civ6.iceTile();
+  if (civ6Ice) {
+    const img = decodeCached(civ6Ice);
+    if (img) {
+      const T = 128;
+      const cw = Math.round(img.width * 0.4), ch = Math.round(img.height * 0.4);  // opaque core, clear of the hex margin
+      const ox = (img.width - cw) >> 1, oy = (img.height - ch) >> 1;
+      const crop = new Uint8Array(cw * ch * 4);
+      for (let y = 0; y < ch; y++)
+        for (let x = 0; x < cw; x++) {
+          const s = ((oy + y) * img.width + ox + x) * 4, d = (y * cw + x) * 4;
+          crop[d] = img.rgba[s]; crop[d + 1] = img.rgba[s + 1]; crop[d + 2] = img.rgba[s + 2]; crop[d + 3] = 255;
+        }
+      const rgba = resampleRGBA(crop, cw, ch, T, T);
+      const rgb = Buffer.alloc(T * T * 3);
+      for (let i = 0; i < T * T; i++) { rgb[i * 3] = rgba[i * 4]; rgb[i * 3 + 1] = rgba[i * 4 + 1]; rgb[i * 3 + 2] = rgba[i * 4 + 2]; }
+      const assets = path.join(WEB, 'assets');
+      fs.mkdirSync(assets, { recursive: true });
+      console.log('  ice tile: Civ6 Features_Icecaps_Visible (central crop)');
+      return { src: queueWebp('water/ice', T, T, rgb, null, { quality: 85 }), tile: T };
+    }
+  }
+  // C2C fallback: the Civ4 pack-ice texture. Its upper ~65% is a clean cracked-ice surface (the lower
+  // strip is a fringe of edge icicles we skip); crop that clean region and downsample to a square tile.
   const artFile = resolveArt('Art/Terrain/features/icepack/icepack_1024.dds');
   if (!artFile) return null;
   let img; try { img = decodeDds(fs.readFileSync(artFile)); } catch { return null; }
