@@ -722,7 +722,7 @@ function bakeTerrainTiles(colorsHex) {
       if (tile) { if (T === LODS[0]) civ6Count++; }
       else { tile = detailTile(e.detail, target, T); if (tile && T === LODS[0]) c2cCount++; }
       if (tile) decoded++;
-      const t = tile || solidTile(target, T);
+      const t = makeSeamless(tile || solidTile(target, T), T);   // wrap-feather so the repeat has no grid seam
       for (let y = 0; y < T; y++)
         for (let x = 0; x < T; x++) {
           const s = (y * T + x) * 3, d = (y * W + idx * T + x) * 3;
@@ -789,6 +789,31 @@ function solidTile(rgbArr, T) {
   const out = Buffer.alloc(T * T * 3);
   for (let k = 0; k < T * T; k++) { out[k * 3] = rgbArr[0]; out[k * 3 + 1] = rgbArr[1]; out[k * 3 + 2] = rgbArr[2]; }
   return out;
+}
+
+// Make a T×T RGB tile tile SEAMLESSLY. The plot layer paints terrain by repeating one tile across a
+// province (createPattern "repeat"), so any mismatch between a tile's opposite edges shows as a hard
+// grid line every tile-period (≈8 plots) — very visible at deep zoom (the "square borders" report).
+// Fix by wrap-feathering: over a thin edge margin, cross-fade each edge strip toward the copy shifted a
+// half-tile, so column 0 lands on the content that sits a half-tile in (which is continuous with what
+// the wrapped column T-1 lands on) — i.e. opposite edges meet. Two separable passes (x then y). Uniform
+// (solid) tiles are unaffected. Stochastic ground (sand/grass/rock) hides the feather completely.
+function makeSeamless(rgb, T) {
+  const m = Math.max(6, T >> 4);   // feather margin (~T/16)
+  const h = T >> 1;
+  const blend = (src, shift) => {  // shift: (dx,dy) index offset applied with wrap at the seam
+    const out = Buffer.alloc(T * T * 3);
+    for (let y = 0; y < T; y++)
+      for (let x = 0; x < T; x++) {
+        const edge = shift[0] ? Math.min(x, T - 1 - x) : Math.min(y, T - 1 - y);
+        const w = edge < m ? 1 - edge / m : 0;          // 1 at the very edge → 0 by the margin
+        const sx = (x + shift[0]) % T, sy = (y + shift[1]) % T;
+        const o = (y * T + x) * 3, os = (sy * T + sx) * 3;
+        for (let c = 0; c < 3; c++) out[o + c] = Math.round(src[o + c] * (1 - w) + src[os + c] * w);
+      }
+    return out;
+  };
+  return blend(blend(rgb, [h, 0]), [0, h]);   // horizontal wrap, then vertical
 }
 
 // Slice C — bake a small WATER tile from the Civ4 river texture (routes/rivers/
