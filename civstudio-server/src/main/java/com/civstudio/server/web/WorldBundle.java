@@ -166,6 +166,12 @@ public final class WorldBundle {
 			o.put("plots", p.get("plots").asInt());
 			o.put("waterPlots", p.hasNonNull("waterPlots") ? p.get("waterPlots").asInt() : 0);
 			o.put("type", p.get("type").asText());
+			// EU4 development (ADM+DIP+MIL) and the city flag drive the urban plot's city
+			// sprite size and the city info panel (see docs/urban-plots.md)
+			int dev = devOf(p, "base_tax") + devOf(p, "base_production") + devOf(p, "base_manpower");
+			o.put("dev", dev);
+			if (p.path("city").asBoolean(false))
+				o.put("city", true);
 			putKeyOrNull(o, "region", p, "region");
 			putKeyOrNull(o, "area", p, "area");
 			putKeyOrNull(o, "continent", p, "continent");
@@ -270,6 +276,11 @@ public final class WorldBundle {
 			o.put(out, p.get(field).asText());
 		else
 			o.putNull(out);
+	}
+
+	// one development component (base_tax/base_production/base_manpower), 0 if absent
+	private static int devOf(JsonNode p, String field) {
+		return p.hasNonNull(field) ? p.get(field).asInt() : 0;
 	}
 
 	private static Map<String, String> keyName(JsonNode list) {

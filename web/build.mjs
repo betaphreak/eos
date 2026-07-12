@@ -863,6 +863,19 @@ function bakeFeatureSprites() {
   const emit = (n, w, h, rgba) => queueWebpRGBA(`trees/trees-${n}`, w, h, rgba, { quality: 90 });
   nif('kaktus/kaktus2.nif', 'kaktus/cactus01.dds', 'cactus', { size: 220, emit });
   nif('sword_grass/wheat.nif', 'sword_grass/sword_grass.dds', 'grass', { size: 200, flat: 'low', emit });
+  // the city sprite: a real Civ4 city model (a medieval European city cluster) baked and
+  // stamped over TERRAIN_URBAN plots, sized by province development. Nested under the trees
+  // group so it ships through the existing bundle plumbing. See docs/urban-plots.md.
+  const cityNif = resolveArt('Art/Structures/Cities/med_europe.nif');
+  const cityTex = resolveArt('Art/Structures/Cities/med_west_european_buildings.dds');
+  if (cityNif && cityTex) {
+    try {
+      const g = bakeNifGroup([{ nif: cityNif, tex: cityTex }], 'city', path.join(WEB, 'assets'), 320, { size: 320, emit });
+      if (g) out.city = g;
+    } catch (e) { console.log(`  city: nif render skipped (${e.message})`); }
+  } else {
+    console.log('  city: nif/tex not resolved, skipped');
+  }
   return Object.keys(out).length ? out : null;
 }
 function bakeSpriteGroup(artPath, name) {

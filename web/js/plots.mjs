@@ -394,6 +394,10 @@ function buildPlotTexCanvas(p) {
   for (const q of p._plots) {
     if (q.feature) { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; featureSprite(o, cx, cy, tpp, q.feature, q.x, q.y); }
   }
+  // the city: a Civ4 city sprite over each urban core plot, sized by province development
+  for (const q of p._plots) {
+    if (q.terrain === "TERRAIN_URBAN") { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; citySprite(o, cx, cy, tpp, p.dev); }
+  }
   } // end land-only ground stages
   if (water) drawSeaIce(o, p._plots, x0, y0, tpp);   // polar sea ice on the shelf water plots
   p._tcanvas = oc; p._tbox = { x0, y0, w, h }; p._grid = grid;   // grid: q.x*1e5+q.y → plot, for the resource tooltip
@@ -743,5 +747,18 @@ function featureSprite(o, cx, cy, s, feature, sx, sy) {
   if (!g) return;
   const rng = mkRng((sx * 73856093) ^ (sy * 19349663));
   stampTrees(o, cx, cy, s, g, rng);              // real foliage sprites; nothing if not yet loaded
+}
+// A single Civ4 city sprite centred on an urban core plot (docs/urban-plots.md). The city is
+// one connected building cluster, so it uses the largest baked sprite; its height scales with
+// the province's development so a big capital reads larger than a town. Bottom-anchored so the
+// buildings sit ON the plot and rise above it, like the foliage.
+function citySprite(o, cx, cy, s, dev) {
+  const meta = TREES && TREES.city, img = treeImg.city;
+  if (!meta || !treeReady.city || !meta.sprites.length) return;
+  const tier = 1.1 + Math.min(0.9, (dev || 0) / 45);   // town → capital: ~1.1 to ~2.0 plot-heights
+  const sp = meta.sprites[0];
+  const th = s * tier, tw = th * sp[2] / sp[3];
+  const px = cx + s / 2, py = cy + s * 0.62;            // centred on the plot, bottom near its middle
+  o.drawImage(img, sp[0], sp[1], sp[2], sp[3], px - tw / 2, py - th, tw, th);
 }
 export { drawPlots, drawCostOverlay, loadPlots };
