@@ -172,9 +172,9 @@ Regime boundaries are `band() < 3` / `< 6`. `panel.mjs`'s hit-testing (`province
 Because the click-target changes at a boundary, the crossing is signalled — three
 coordinated pieces:
 
-1. **Mode chip** — the top-left zoom readout grows from `16×` to
-   `16× · 🐫 Overland — select: caravan`, tinted with the regime accent. The standing
-   answer to "what does my click do right now."
+1. **Mode chip** — the top-left readout *is* the current **band name**, iconed + tinted by the
+   regime (e.g. `🐫 Terrain`), with the raw `×` zoom in its tooltip. The band name answers "where am
+   I on the spine"; the icon/accent answer "what regime am I in". Crossing a boundary swaps both.
 2. **Regime cursor** — the canvas cursor swaps per regime (Atlas grab/arrow, Overland a
    route reticle, Ground a plot crosshair): the felt, wordless signal that
    click-semantics changed.
@@ -358,9 +358,12 @@ reorg.
    extracting the inline blocks (raster/lakes/borders/hover/selected) into named layer fns.
    Behavior-identical (verified headless at z=2 and z=24). The optional `resources.mjs`/`cost.mjs`
    split out of `plots.mjs` was **deferred** — those draws stay in `plots.mjs`, registered from there.
-4. **Input spine.** Make `panel.mjs` hit-testing regime-dispatched, and add the regime signal
-   (mode chip + cursor + hysteretic transition pulse). Atlas/Overland keep current selection
-   behavior; Ground newly selects plots→(skeleton) buildings.
+4. **Input spine + regime signal.** ✅ *Signal done.* The top-bar readout became the band-name mode
+   chip (regime-tinted, `×` in tooltip); the regime cursor is stamped on `#stage`; a hysteretic
+   accent pulse (`#regimePulse`) flashes on each crossing. The regime is now wired into the input
+   layer (stage `data-regime`). Per-regime *target* dispatch (Ground selecting buildings/agents) is
+   **deferred to Phase 6** — today Atlas/Overland/Ground all pick provinces (+plots past band 4), so
+   there is no Ground-specific target until the city micro exists.
 5. **Per-z-level layer set.** Key the registry by z-level (§Z-levels): one ordered `LAYERS` list per
    level, the z-level selector picking which one `renderLayers()` walks. Fold `drawUnderworld`'s
    internal stack into the z=−1 list as first-class entries; swap `isUnderground`/`isSurface` gating

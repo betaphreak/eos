@@ -42,7 +42,19 @@ export const BAND = {
   PROVINCE: 3, TERRAIN: 4, LOCALE: 5,     // 🐫 Overland — caravan / operational
   PLOT: 6, PARCEL: 7, STRUCTURE: 8,       // 🏘️ Ground   — city-builder micro
 };
+// band index → display name (index = the BAND value). bandName() is the nearest band to the current
+// continuous position — what the top-bar readout shows in place of the raw zoom number.
+export const BAND_NAMES = ["World", "Realm", "Region", "Province", "Terrain", "Locale", "Plot", "Parcel", "Structure"];
+export const bandName = () => BAND_NAMES[Math.max(0, Math.min(8, Math.round(band())))];
+
 export const REGIME = { ATLAS: "atlas", OVERLAND: "overland", GROUND: "ground" };
+// display metadata for the mode chip / signal (the accent colour + cursor live in CSS, keyed by
+// the same regime slug via [data-regime]); name + icon are the semantic bits, so they live here.
+export const REGIME_INFO = {
+  atlas:    { name: "Atlas",    icon: "🌍" },   // EU4 grand strategy
+  overland: { name: "Overland", icon: "🐫" },   // caravan / operational
+  ground:   { name: "Ground",   icon: "🏘️" },   // city-builder micro
+};
 
 // current interaction regime, HYSTERETIC: each seam (b=3, b=6) carries a ±0.15-band deadband so
 // a scroll-tick landing on a boundary can't strobe the mode chip / cursor / transition pulse.

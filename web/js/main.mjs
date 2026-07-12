@@ -1,5 +1,5 @@
 import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, isUnderground, latAtScreenY, cssVar, S } from "./core.mjs";
-import { bandAlpha, kBand } from "./bands.mjs";
+import { bandAlpha, kBand, bandName, regime, REGIME_INFO } from "./bands.mjs";
 import { drawPlots } from "./plots.mjs";                       // still used directly by drawUnderworld
 import { scheduleLegendRefresh } from "./overlays/political.mjs";
 import { ensureTiers } from "./overlays/tiers.mjs";
@@ -111,7 +111,33 @@ function resize() {
   // ResizeObserver fires every frame). Painting now fills the freshly-sized canvas in the same frame.
   paint();
 }
-const zoomLabelEl = document.getElementById("zoomLevel");   // top-left live magnification readout
+const zoomLabelEl = document.getElementById("zoomLevel");   // top-left readout: now the band name + regime chip
+const regimePulseEl = document.getElementById("regimePulse");
+let _sigRegime = null, _sigBand = null, _sigPlane = null;
+// The top-bar readout shows the current BAND NAME (nearest band) tinted + iconed by the interaction
+// REGIME, and doubles as the mode signal: it stamps the regime on #stage (→ the regime cursor) and
+// flashes an accent vignette (#regimePulse) once whenever you cross a regime boundary. regime() is
+// hysteretic (bands.mjs), so a scroll-tick on a seam can't strobe it. Runs every paint; the DOM is
+// rebuilt only when the band/regime/plane actually changes.
+function updateRegimeSignal() {
+  const r = regime(), bn = bandName();
+  stage.dataset.regime = r;                        // drives the regime cursor (styles.css) + input awareness
+  if (r === _sigRegime && bn === _sigBand && S.plane === _sigPlane) return;
+  const info = REGIME_INFO[r];
+  if (zoomLabelEl) {
+    zoomLabelEl.dataset.regime = r;
+    const plane = S.plane === "underworld" ? ` <span class="rg-plane">· Underworld</span>` : "";
+    zoomLabelEl.innerHTML = `<span class="rg-ico">${info.icon}</span><span class="rg-name">${bn}</span>${plane}`;
+    zoomLabelEl.dataset.tip = `${info.name} regime · ${bn} band · ${Math.round(cam.k)}× — click to reset to the world`;
+  }
+  if (r !== _sigRegime && _sigRegime !== null && regimePulseEl) {   // pulse only on a real crossing, not first paint
+    regimePulseEl.dataset.regime = r;
+    regimePulseEl.classList.remove("pulsing");
+    void regimePulseEl.offsetWidth;                // reflow so the animation restarts on repeat crossings
+    regimePulseEl.classList.add("pulsing");
+  }
+  _sigRegime = r; _sigBand = bn; _sigPlane = S.plane;
+}
 // draw() is the public redraw request — it COALESCES to one paint per animation frame, so a burst of
 // pan/zoom/pinch events (mobile fires many touchmoves per frame) collapses into a single scene render.
 let rafPending = false;
@@ -122,7 +148,7 @@ function draw() {
 }
 function paint() {
   if (S.techOpen) return;   // tech-tree modal is in front — don't spend frames drawing the hidden map
-  if (zoomLabelEl) zoomLabelEl.textContent = Math.round(cam.k) + "×";   // 1× (world) … 256× (max)
+  updateRegimeSignal();   // top-bar band-name chip + regime cursor + boundary pulse (replaces the raw × readout)
   S.markers = [];   // cave-entrance / teleporter hit-targets, repopulated this frame (hover reads them)
   const w=VIEW.w, h=VIEW.h, dpr=VIEW.dpr;
   ctx.setTransform(dpr,0,0,dpr,0,0);
