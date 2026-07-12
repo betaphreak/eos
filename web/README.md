@@ -155,11 +155,16 @@ the deployed site) and point it at a server (`?live=<url>`, default `https://dev
 | `assets/tech/tech-beaker.webp` | **generated** — the GameFont research-beaker (the cost unit; blue = science, the human tree's default) |
 
 **Modules** (`web/js/`). `app.js` was one ~1,100-line classic script; it is now a thin
-entry that imports five ES modules in dependency order. `core.mjs` reads `window.BUNDLE`
+entry that imports the `js/` ES modules in dependency order. `core.mjs` reads `window.BUNDLE`
 synchronously at module-evaluation time, so the `index.html` bootstrap fetches the bundle from
 the server and only then dynamically imports `app.js` — guaranteeing `window.BUNDLE` is
 populated first. The site stays dependency-free — ES modules need no bundler, but they do need
-HTTP + a reachable server. Load order: `core → plots → labels → main → panel`.
+HTTP + a reachable server.
+
+> The frontend is organized around a **continuous-zoom band spine** — the authority for the
+> zoom→band mapping, the interaction regimes, the ordered draw registry and the (planned) z-levels
+> is [`../docs/zoom-bands.md`](../docs/zoom-bands.md). The old scattered `cam.k` thresholds this file
+> describes are consolidated into `bands.mjs` (`bandAlpha` envelopes) and the `layers.mjs` registry.
 
 | module | role |
 |--------|------|
@@ -168,6 +173,10 @@ HTTP + a reachable server. Load order: `core → plots → labels → main → p
 | `labels.mjs` | map text: province names and the **zoom-banded geographic tiers** (continent → super-region → region). |
 | `main.mjs` | the **`draw()` orchestrator** (including the cylindrical **wrap** — it renders the scene once per on-screen world copy), the camera raster, zoom, and deep-link. |
 | `panel.mjs` | all **DOM interaction**: the sidebar (province detail, world summary), search, button tooltips, the live clock/play/speed (which drive the hosted session), and pointer/keyboard events. |
+| `bands.mjs` | the **continuous-zoom band spine**: `band()` (=log2 cam.k), `bandAlpha(envelope)`, the nine `BAND` constants + three `REGIME`s (with a hysteretic `regime()`), `bandName()`, `activeZ()`. The single source for zoom-band structure. |
+| `layers.mjs` | the ordered **layer registry** — array order = draw order, each layer's `gate`/band/`z`-level in one place, walked by `renderLayers()` per world copy. |
+| `city.mjs` | the Ground-regime **city-micro** skeleton: building footprints subdividing urban plots at deep zoom (band ≥ 6). |
+| `overlays/` | `tiers` (geographic-tier borders), `political` (nation/culture/faith fills), `live` (the Spectate colony + caravans). |
 
 The eight primitives read *and* written across module boundaries (`mode`, `selected`,
 `selectedProv`, `hoverProv`, `curT`, `showHeat`, `showCost`, `dragging`) plus the render

@@ -1,10 +1,21 @@
 # Zoom bands — the continuous-zoom spine
 
-> **Status: plan / not yet built.** This is the design spec for refactoring the web
-> frontend around one continuous zoom axis divided into nine logical *bands*. It
-> supersedes the scattered `cam.k` thresholds documented (as-built) in
-> `web/README.md` and the per-layer fade code. Band **names and regime boundaries
-> are provisional** — they are game-design calls the owner finalizes.
+> **Status: the frontend spine is BUILT & LIVE (Phases 1–7); z-levels + the drill-path panel are
+> PLANNED.** This is both the as-built reference for the web frontend's continuous-zoom band spine
+> and the design/implementation plan for the parts not yet built. It supersedes the scattered `cam.k`
+> thresholds that `web/README.md` describes (as-built) and the per-layer fade code — those are now
+> consolidated in `js/bands.mjs` + the `js/layers.mjs` registry.
+>
+> - **Built & live** (Phases 1–7, deployed on every `web/**` push): the band coordinate + `bandAlpha`,
+>   the ordered z-keyed layer registry, the band-name/regime mode chip + cursor + pulse, the underworld
+>   as a first-class `z:[-1]` layer set, the city-micro building-footprint skeleton, and the chrome
+>   folded onto the spine. See the **Phased implementation** table for commits.
+> - **Planned, not built** — the engine **z-levels** (§Introducing z-levels: `province.z`, z=0
+>   impassable caps, plots per `(province, z)`, `/api/plots/{id}/{z}`) and **Phase 8** the regime-scoped
+>   drill-path panel (needs a per-agent/building feed extension).
+>
+> Band **names** (World…Structure) and **regime seams** are wired but still the owner's game-design
+> call to rename/retune — they are just constants in `js/bands.mjs`.
 
 ## The idea in one paragraph
 
