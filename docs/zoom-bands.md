@@ -226,7 +226,23 @@ tomorrow a −1 / 0 / +1 control) picks which level's list `renderLayers()` walk
 hand-rolled internal stack (veil the level above → cave floors → per-plot terrain at the plot band →
 amber rims) folds into the **z=−1 list as first-class registry entries**, ending the current
 asymmetry where the whole underground is one opaque layer while the surface's equivalents are
-individual entries. Gating by `isUnderground`/`isSurface` becomes gating by `p.z === activeZ`.
+individual entries. Gating by `isUnderground`/`isSurface` becomes gating by z-level — a province is
+drawn on each level it occupies.
+
+**Plots are per (province, z-level).** A province that spans z-levels owns **one plot grid per level**
+it occupies — a dwarven-hold column carries a surface (`z=0`) grid *and* one for each underground
+level; an ordinary province carries a single grid. So the frontend's `province._plots` becomes
+`_plotsByZ[z]`, the plot cache / `plotIndex` key and the `/api/plots/{id}` route gain a z
+(`/api/plots/{id}/{z}`), the generation-versioned cache keys on z too, and the plots layer for level
+*z* draws each present province's `_plotsByZ[z]`. Engine-side, `WorldPlotGenerator` emits a grid per
+occupied (province, z).
+
+**Every underworld province gets a generated `z=0` cap.** The overworld directly above a Serpentspine
+province is generated as **impassable mountain terrain** (it is mostly mountains anyway), so columns
+are complete — a z=−1 cavern always has a z=0 impassable-mountain surface over it, with surface hold
+provinces the passable exceptions. This fills the surface map above the underground instead of leaving
+a hole, and is the concrete source of the "impassable mountains on top of underground provinces sit at
+z=0" rule.
 
 Rendering neighbours: viewing z=−1, the level above recedes to a ghost (as the veil does today);
 shafts/cave-entrances mark where columns connect **across** z-levels (a vertical adjacency), the
