@@ -46,3 +46,6 @@ civstudio-server/target/
 # Server plot-grid cache — generated on demand, cached to a (persistent, in prod) volume. See
 # docs/plot-serving.md.
 /.plot-cache/
+
+# webverify screenshot artifacts
+/tools/webverify/*.png
