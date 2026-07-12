@@ -25,6 +25,10 @@ civstudio-server/target/
 # whole-world per-province plot caches — hundreds of MB, canonical/regenerable via
 # WorldPlotGenerator (the sim also regenerates any on demand). Too heavy to commit.
 /civstudio-engine/src/main/resources/map/provinces/*.json.gz
+# non-human race name tables — generated on demand from the Anbennar cultures file (RaceNameGenerator)
+# and cached here by NameStore; only the hand-authored /human-names/ set is committed. Regenerable, so
+# out of git. See docs/names.md.
+/civstudio-engine/src/main/resources/generated/names/
 # derived .nif render sprites (the explored alternative to GameFont — docs/bonus-sprite-bake.md)
 /tools/nif-bake/out/
 # Anbennar EU4 mod files are no longer vendored. They are fetched on demand from GitLab (pinned by

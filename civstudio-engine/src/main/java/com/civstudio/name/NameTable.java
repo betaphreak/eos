@@ -3,6 +3,8 @@ package com.civstudio.name;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -17,7 +19,7 @@ import com.civstudio.util.Rng;
 
 /**
  * An immutable, weighted table of names loaded from one of the JSON resources
- * in {@code src/main/resources} (e.g. {@code /names/human/male.json}). The source
+ * in {@code src/main/resources} (e.g. {@code /human-names/male.json}). The source
  * files are tiered: each tier owns the cumulative-weight band
  * {@code (prev, percent]} and lists the names sharing it, so a name in a tier
  * carries weight {@code (percent - prev) / namesInTier}. Common names sit in
@@ -48,7 +50,7 @@ public final class NameTable {
 	 * Load and flatten a name table from a classpath resource.
 	 *
 	 * @param resource
-	 *            absolute classpath resource path, e.g. {@code /names/human/male.json}
+	 *            absolute classpath resource path, e.g. {@code /human-names/male.json}
 	 * @return the loaded table
 	 */
 	public static NameTable load(String resource) {
@@ -60,6 +62,23 @@ public final class NameTable {
 			return fromTiers(tiers);
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to load name resource: " + resource, e);
+		}
+	}
+
+	/**
+	 * Load and flatten a name table from a filesystem file — the on-demand cache path for the
+	 * non-human races generated at runtime (see {@link NameStore}), which live outside the classpath.
+	 *
+	 * @param file the tiered-JSON name file
+	 * @return the loaded table
+	 */
+	public static NameTable load(Path file) {
+		try (InputStream in = Files.newInputStream(file)) {
+			List<Tier> tiers = MAPPER.readValue(in, new TypeReference<List<Tier>>() {
+			});
+			return fromTiers(tiers);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to load name file: " + file, e);
 		}
 	}
 

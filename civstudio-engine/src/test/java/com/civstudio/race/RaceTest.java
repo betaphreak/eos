@@ -86,12 +86,12 @@ class RaceTest {
 		assertEquals(Race.HARIMARI, harimari.race());
 		assertFalse(harimari.surname().isBlank(), "harimari head needs a surname");
 
-		// the Harimari pool carries the Anbennar clan epithets ("of the White Stripe",
-		// ...), which are unique to it: over a batch of Harimari surnames at least one
-		// epithet appears, and no human surname is ever one — proving each race is
-		// named from its own surname pool
+		// the Harimari surname pool is the Anbennar clan epithets ("of the White Stripe", ...), which
+		// are unique to it: over a batch of Harimari surnames an epithet appears, and no human surname
+		// is ever one — proving each race is named from its own pool. The batch stays well under the
+		// generated Harimari pool size (drawn without replacement, so it must not exhaust it).
 		boolean sawClanEpithet = false;
-		for (int i = 0; i < 120; i++)
+		for (int i = 0; i < 60; i++)
 			if (names.nextDynastyName(Race.HARIMARI).startsWith("of the "))
 				sawClanEpithet = true;
 		assertTrue(sawClanEpithet,

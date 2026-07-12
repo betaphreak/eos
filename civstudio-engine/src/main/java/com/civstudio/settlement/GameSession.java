@@ -23,6 +23,7 @@ import com.civstudio.geo.WorldMap;
 import com.civstudio.mortality.Demography;
 import com.civstudio.name.DynastyPool;
 import com.civstudio.name.NameRegistry;
+import com.civstudio.name.NameStore;
 import com.civstudio.name.NameTable;
 import com.civstudio.race.Race;
 import com.civstudio.tech.TechTree;
@@ -184,10 +185,10 @@ public class GameSession {
 		this.era = era;
 		// human name tables / surname pool eager (built exactly as before, so a
 		// mono-cultural run is byte-identical); non-human races load lazily on demand
-		this.maleNamesByRace.put(Race.HUMAN, NameTable.load("/names/human/male.json"));
-		this.femaleNamesByRace.put(Race.HUMAN, NameTable.load("/names/human/female.json"));
+		this.maleNamesByRace.put(Race.HUMAN, NameTable.load("/human-names/male.json"));
+		this.femaleNamesByRace.put(Race.HUMAN, NameTable.load("/human-names/female.json"));
 		this.dynastyPoolByRace.put(Race.HUMAN,
-				new DynastyPool(NameTable.load("/names/human/dynasty.json"),
+				new DynastyPool(NameTable.load("/human-names/dynasty.json"),
 						rngSeed.forDynastyPool(Race.HUMAN.ordinal())));
 		this.terrainRegistry = TerrainRegistry.load();
 		this.liturgicalCalendar = LiturgicalCalendar.load();
@@ -337,31 +338,30 @@ public class GameSession {
 		});
 	}
 
-	// the given-name table for a race (lazily loaded, human fallback when the
-	// race-specific file is absent); male == true for the male table, else female
+	// the given-name table for a race (lazily loaded); non-human races are generated on demand from
+	// Anbennar and cached (NameStore), falling back to the human table when a race is absent/sparse in
+	// the source. HUMAN is pre-loaded in the constructor, so this only runs for non-human races.
 	private synchronized NameTable givenNames(Race race, boolean male) {
 		Map<Race, NameTable> by = male ? maleNamesByRace : femaleNamesByRace;
 		return by.computeIfAbsent(race, r -> {
-			String kind = male ? "male" : "female";
-			String racePath = "/names/" + r.id() + "/" + kind + ".json";
-			return NameTable.load(
-					resourceExists(racePath) ? racePath : "/names/human/" + kind + ".json");
+			NameTable t = NameStore.table(r.id(), male ? "male" : "female");
+			return t != null ? t : by.get(Race.HUMAN);
 		});
 	}
 
-	// the surname pool for a race (lazily built, human fallback when the race-specific
-	// dynasty file is absent). Each race's pool is shuffled on its own decorrelated
-	// generator; HUMAN (ordinal 0) uses no race salt, so its pool is unchanged.
+	// the surname pool for a race (lazily built). Non-human dynasty tables are generated on demand
+	// (NameStore), falling back to the human surname list when the race is absent/sparse. Each race's
+	// pool is shuffled on its own decorrelated generator; HUMAN (ordinal 0) uses no race salt.
 	private synchronized DynastyPool dynastyPool(Race race) {
 		return dynastyPoolByRace.computeIfAbsent(race, r -> {
-			String racePath = "/names/" + r.id() + "/dynasty.json";
-			String path = resourceExists(racePath) ? racePath : "/names/human/dynasty.json";
-			return new DynastyPool(NameTable.load(path),
-					rngSeed.forDynastyPool(r.ordinal()));
+			NameTable t = NameStore.table(r.id(), "dynasty");
+			if (t == null)
+				t = NameTable.load("/human-names/dynasty.json");
+			return new DynastyPool(t, rngSeed.forDynastyPool(r.ordinal()));
 		});
 	}
 
-	// whether a classpath resource exists, for the per-race resource fallback
+	// whether a classpath resource exists, for the per-race calendar fallback
 	private static boolean resourceExists(String path) {
 		return GameSession.class.getResource(path) != null;
 	}

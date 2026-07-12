@@ -111,7 +111,7 @@ public enum Race {
 	YAN("yan"),
 	YANGLAM("yanglam");
 
-	// resource-file slug, e.g. "human" -> /names/human/male.json
+	// resource-file slug, e.g. "human" -> /human-names/male.json
 	private final String id;
 
 	// the race's mortality schedule

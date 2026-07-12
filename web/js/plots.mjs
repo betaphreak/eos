@@ -451,16 +451,18 @@ function bonusIconSize() {
 }
 
 // Stamp each in-view province's TRADE-GOOD icon at its centroid — the province-level resource, drawn
-// like the per-plot bonuses are but one per province (docs/trade-goods.md). Shown only when the
-// province is large enough on screen (declutters exactly like a name label) so the overview stays
-// clean, and it fades out as you dive past the plot-texture zoom, where the finer per-plot bonus icons
-// take over the resource story. Overworld physical view only (gated by the caller in main.renderScene).
-const TG_MIN_PROV_PX = 30;    // a province must span at least this many screen px to earn an icon
+// like the per-plot bonuses are but one per province (docs/trade-goods.md). Lives in a zoom BAND: it
+// appears at the terrain-texture zoom (K_TEX, 16×) — the overview and mid zoom stay clean — and fades
+// out as you dive toward plot detail, where the finer per-plot bonus icons take over the resource
+// story. Overworld physical view only (gated by the caller in main.renderScene).
+const TG_MIN_PROV_PX = 16;    // skip only tiny slivers (at 16×+ most provinces are well above this)
 const TG_ICON_PX = 26;        // on-screen icon size, in CSS px (ctx is dpr-scaled)
+const TG_FADE_START = 48, TG_FADE_END = 64;   // fade out over this zoom range as plot bonuses take over
 export function drawTradeGoodIcons() {
   if (!TRADE_GOODS || !TRADE_GOODS.icons || !tgReady) return;
-  // fade out as the per-plot bonus icons appear (BONUS_HIDE_AT..+6), gone just past texture zoom
-  const fade = 1 - Math.max(0, Math.min(1, (cam.k - BONUS_HIDE_AT) / 6));
+  if (cam.k < K_TEX) return;                     // only from the terrain-texture zoom (16×) upward
+  // fade out as you approach plot-detail zoom, where the per-plot bonus icons carry the resources
+  const fade = 1 - Math.max(0, Math.min(1, (cam.k - TG_FADE_START) / (TG_FADE_END - TG_FADE_START)));
   if (fade <= 0.01) return;
   const { cell, cols, index } = TRADE_GOODS.icons, prov = TRADE_GOODS.prov;
   const size = TG_ICON_PX, r = size / 2;
