@@ -51,6 +51,14 @@ test('FEATURE_OVERLAY covers the 7 Civ6 features and excludes C2C-only flora', (
     assert.equal(civ6.FEATURE_OVERLAY[c2c], undefined, `${c2c} should stay a C2C billboard`);
 });
 
+test('ATLAS_CELL cells are valid (0-63) and keyed by real Civ6 resources', () => {
+  const resources = new Set(Object.values(civ6.BONUS_TO_CIV6));
+  for (const [res, cell] of Object.entries(civ6.ATLAS_CELL)) {
+    assert.ok(Number.isInteger(cell) && cell >= 0 && cell < 64, `${res} cell ${cell} out of range`);
+    assert.ok(resources.has(res), `${res} not referenced by any bonus`);
+  }
+});
+
 test('IMPROVEMENT_OVERLAY is just Farm/Mine/Quarry', () => {
   assert.deepEqual(Object.keys(civ6.IMPROVEMENT_OVERLAY).sort(),
     ['IMPROVEMENT_FARM', 'IMPROVEMENT_MINE', 'IMPROVEMENT_QUARRY']);
@@ -65,12 +73,18 @@ test('resolves real depot entities to .dds files', { skip: civ6.available() ? fa
   assert.ok(civ6.improvementOverlay('IMPROVEMENT_FARM'), 'farm overlay');
   assert.ok(civ6.fontIcons(), 'FontIcons sheet');
 
-  // resource: loose per-resource sprite exists for Wheat → { tex }
+  // resource: atlas cell preferred (Wheat = cell 9)
   const wheat = civ6.resourceIcon('BONUS_WHEAT');
-  assert.ok(wheat && wheat.tex && wheat.resource === 'Wheat', 'wheat loose sprite');
-  // an atlas-only resource still resolves via the atlas branch
+  assert.ok(wheat && wheat.atlas && wheat.cell === 9 && wheat.resource === 'Wheat', 'wheat atlas cell');
   const banana = civ6.resourceIcon('BONUS_BANANA');
-  assert.ok(banana && (banana.tex || banana.atlas), 'banana via atlas');
+  assert.ok(banana && banana.atlas && banana.cell === 0, 'banana atlas cell 0');
+  // collapse: shellfish share the Crab cell (3)
+  assert.equal(civ6.resourceIcon('BONUS_SHRIMP').cell, 3, 'shrimp → Crab cell');
+  // Silk has no atlas cell but a loose sprite → { tex }
+  const silk = civ6.resourceIcon('BONUS_SILK');
+  assert.ok(silk && silk.tex && silk.resource === 'Silk', 'silk loose sprite');
+  // Civ6-mapped but neither atlas nor loose (Gold) → null → C2C
+  assert.equal(civ6.resourceIcon('BONUS_GOLD_ORE'), null, 'gold → C2C');
   // a C2C-only bonus has no Civ6 mapping
   assert.equal(civ6.resourceIcon('BONUS_ALMONDS'), null, 'almonds → C2C');
 

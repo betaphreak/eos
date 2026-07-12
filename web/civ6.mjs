@@ -128,19 +128,36 @@ export const BONUS_TO_CIV6 = {
   BONUS_CLAM: 'Crab', BONUS_LOBSTER: 'Crab', BONUS_SHRIMP: 'Crab',
 };
 
+// Civ6 resource -> cell index in the Resources256.dds icon atlas (2048² = 8×8 × 256px cells).
+// Hand-identified from the art (the depot ships no atlas index; see docs/civ6-assets.md §2b). Only
+// visually-UNAMBIGUOUS cells are listed — ambiguous/absent resources (Gold, Amber, Coffee, Olives,
+// Silver, AntiquitySite) are omitted and fall through to the loose sprite or C2C.
+export const ATLAS_COLS = 8, ATLAS_CELL_PX = 256;
+export const ATLAS_CELL = {
+  Bananas: 0, Copper: 2, Crab: 3, Deer: 4, Fish: 5, Rice: 6, Sheep: 7, Stone: 8, Wheat: 9,
+  Citrus: 10, Cocoa: 11, Cotton: 13, Diamonds: 14, Incense: 18, Ivory: 19, Jade: 20, Marble: 21,
+  Pearls: 23, Salt: 24, Spices: 27, Sugar: 28, Tea: 29, Tobacco: 30, Whales: 32, Wine: 33,
+  Aluminum: 40, Horse: 42, Iron: 43, Coal: 44, Oil: 45, Uranium: 46,
+};
+
 /**
- * Civ6 icon source for a C2C bonus, per the Mixed policy. Returns:
- *   { tex, resource }            — a loose per-resource sprite (Resources_<X>_Visible.dds), when present;
- *   { atlas, resource }          — the Resources256.dds atlas (cell index resolved in Phase 2); else
- *   null                         — no Civ6 mapping (or depot absent) → keep the C2C GameFont cell.
+ * Civ6 icon source for a C2C bonus, per the Mixed policy. Prefers the atlas cell (uniform Civ6
+ * icon style), then a loose per-resource sprite, else null → keep the C2C GameFont cell. Returns:
+ *   { atlas, cell, cols, cellPx, resource } — a Resources256.dds atlas cell; or
+ *   { tex, resource }                       — a loose Resources_<X>_Visible.dds sprite; or
+ *   null                                    — no Civ6 mapping (or depot absent) → C2C fallback.
  */
 export function resourceIcon(bonusKey) {
   const resource = BONUS_TO_CIV6[bonusKey];
   if (!resource) return null;
+  const cell = ATLAS_CELL[resource];
+  if (cell !== undefined) {
+    const atlas = resolveTexture('Resources256');
+    if (atlas) return { atlas, cell, cols: ATLAS_COLS, cellPx: ATLAS_CELL_PX, resource };
+  }
   const tex = resolveTexture(`Resources_${resource}_Visible`);
   if (tex) return { tex, resource };
-  const atlas = resolveTexture('Resources256');
-  return atlas ? { atlas, resource } : null;
+  return null;
 }
 
 // ---- Improvements (docs/civ6-assets.md §5) -------------------------------------------------------
