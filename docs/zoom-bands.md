@@ -318,9 +318,58 @@ occupied levels and one plot grid per level (`_plotsByZ`).
 - Frontend: `province._plots` → `_plotsByZ[z]`; the plots/cavern layers draw `_plotsByZ[activeZ]`;
   `activeZ()` reads a real active level once the z-selector lands (today it maps the plane toggle).
 
-**Migration is a no-op for existing data:** today's single plane *is* `z=0`, and the binary Underworld
-view already renders as the `z=−1` layer set (Phase 5). Introducing real z only *adds* levels — nothing
-at `z=0` moves.
+**Migration** — a true no-op for **surface** provinces (their `z=0` grid *is* today's grid). For
+**underground** provinces it is not zero-work: today a cavern serves its cave terrain at the bare
+`/api/plots/{id}`; under z-levels that cave terrain moves to the `z=−1` key and the bare `{id}` becomes
+the generated **impassable-mountain cap**. A `GEN_VERSION` bump (which clears + lazily regenerates the
+whole cache) plus a frontend key-switch handles it cleanly — no stale hits.
+
+### Implementation plan (grounded in the as-built pipeline)
+
+**Plot key / naming (resolved).** `z=0` keeps the **bare** key everywhere — file `412.json.gz`, route
+`/api/plots/412` — so surface provinces are untouched. Other levels get a **`.z<±n>` suffix**: file
+`412.z-1.json.gz`, route `/api/plots/412/-1`. (The bare `<id>-1` you suggested is the right instinct,
+but it prints `412--1` for negatives and collides with `PlotService.writeDisk`'s `<id>-` temp-file
+prefix — `PlotService.java:203` — so `.z-1` is the safe encoding. Apply it identically in
+`ProvincePlotStore.fileName` and `PlotService.readDisk/writeDisk`.)
+
+Ordered steps (engine → server → frontend), each with the touch-point:
+
+1. **Native z on the province (data).** In `CavernExporter.stampProvinces()` (`CavernExporter.java:157-164`),
+   beside `row.put("type", target)`, stamp `row.put("z", nativeZ(target))` + an occupied-levels array
+   (`[nativeZ, 0]` for underground, `[0]` for surface). Add `ProvinceType.nativeZ()` (near
+   `ProvinceType.java:91`): `CAVERN`/`DWARVEN_HOLD` → −1, `DWARVEN_ROAD` → −2, `DWARVEN_HOLD_SURFACE`/
+   surface → 0. Add `int z` (+ occupied set) to the `Province` record (`Province.java:108`); the compact
+   ctor defaults `z=0` so the existing `provinces.json` stays valid. Rerun the exporter to stamp the file.
+2. **Per-(province, z) generation.** `ProvincePlotStore.fileName(id)` → `fileName(id, z)`
+   (`ProvincePlotStore.java:56-58`) with the `.z` suffix; `save/load/open` (`:96/:142/:156`) gain `z`.
+   `ProvincePlotField.generate(province, …, z)` (`ProvincePlotField.java:159`): at `z == nativeZ` → the
+   real terrain (today's output; the cavern pass at `:220-230` is the current `z=−1` content); at `z == 0`
+   for an underground province → a cheap procedural **impassable-mountain cap**; else empty. Salt the
+   RNG with z (`forProvinceCanonical(TERRAIN, id, z)`) so each level is deterministic and distinct.
+   `WorldPlotGenerator.main()` (`:54-69`) loops each province's occupied z. **Bump
+   `ProvincePlotStore.GEN_VERSION`** (`:49`, 2 → 3).
+3. **Serving.** Keep `GET /api/plots/{id}` (z=0) and add `GET /api/plots/{id}/{z}` (`PlotController.java:32`)
+   → `service.gz(id, z)`. In `PlotService`, thread `z` through `gz/generate/readDisk/writeDisk`
+   (`:80/:102/:192/:203-205`) with the `.z` filename; rekey the LRU (`:52`) and per-province `locks`
+   (`:50`) by a `(id, z)` composite; `warmAll/status/countCached` (`:169/:128/:176`) iterate/count per
+   occupied `(province, z)`. The versioned cache dir (`:64`) already isolates by `GEN_VERSION`; z lives
+   inside it as the suffix — no config change (`CivStudioProperties.Plots` untouched).
+4. **Bundle.** In `WorldBundle`'s per-province loop (`WorldBundle.java:161-195`) ship the province's
+   `z` + occupied-levels (they must be in the raw `provinces.json` it reads at `:127` — i.e. stamped in
+   step 1). Drives the floor-picker and tells the client which keys exist. `plotVersion` (`:254`)
+   auto-bumps with `GEN_VERSION`.
+5. **Frontend.** `plots.mjs` `province._plots` → `_plotsByZ[z]`; `loadPlots` requests `/api/plots/{id}`
+   for z=0, `/api/plots/{id}/{z}` otherwise; `drawPlots` draws the `activeZ` grid. The cavern layers
+   (already `z:[-1]`) request the `.z-1` grid. On `z=0`, the surface `plots` layer now also renders
+   underground provinces' impassable caps (they occupy z=0) — gate by "occupies activeZ", not
+   `isUnderground`. `activeZ()` (`core.mjs`) already exists; add the z-selector UI (§Switching z-levels)
+   reading the bundle's occupied levels.
+6. **Rollout** (`docs/client-server.md` §Deployment). Rerun `CavernExporter` (stamp z) + `WorldPlotGenerator`
+   (regen per z) locally; commit the updated `provinces.json` and rebake the bundle. The `GEN_VERSION`
+   bump repoints the server cache at a fresh `v3/` (old orphaned) → deploy server + clear plot cache +
+   SWA web deploy; every grid regenerates lazily, so underground `{id}` yields the cap and `{id}.z-1`
+   the cave terrain with no stale hits.
 
 ## The right-side panel — a regime-scoped inspector that drills
 
