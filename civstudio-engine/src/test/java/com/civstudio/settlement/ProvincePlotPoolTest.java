@@ -118,6 +118,22 @@ class ProvincePlotPoolTest {
 	}
 
 	@Test
+	void aColonyAnchorsItsCentreOnTheCityUrbanCore() {
+		// Dhenijansar is a city_terrain province, so it has an urban core; a founding colony
+		// anchors its centre (its first-claimed plot) on it — the city seat is the built-up
+		// plot (see docs/urban-plots.md).
+		GameSession s = new GameSession(7);
+		Province dh = dhenijansar(s);
+		Settlement colony = s.newSettlement("City", START, 30, 26, 5, 2, dh);
+
+		colony.claimPlot(new PlotOccupant() {
+		}); // the founding centre
+		Plot centre = colony.getPlots().get(0);
+		assertEquals("TERRAIN_URBAN", centre.terrain().type(),
+				"the colony's centre anchors on the city's urban core");
+	}
+
+	@Test
 	void twoSettlementsInOneProvinceClaimSpacedDisjointPlots() {
 		GameSession s = new GameSession(11);
 		Province dh = dhenijansar(s);

@@ -288,6 +288,27 @@ public final class ProvincePlotField {
 		Bonus[] bonusGrid = BonusGenerator.place(w, h, cells, ground, composed, feature,
 				province.latitude(), bonuses, rng, false);
 
+		// the urban core: site the province's city on its best Civ4 foundValue cell(s) — as
+		// close as possible to as many bonuses as fit in a city work radius — and stamp them
+		// built-up (TERRAIN_URBAN, flattened). Runs after the bonus stage so the score reads the
+		// final resource layout; consumes no rng. One plot for an ordinary province, a denser
+		// core for a city_terrain province. The city core is the unfarmed civic centre a
+		// settlement anchors on, so its authored yields stay inert. See docs/urban-plots.md.
+		// only plain LAND provinces get a surface city: underground holds are their own
+		// cave-cities (DWARVEN_HOLD) and the special surface terrains keep their character;
+		// every city_terrain province is LAND, so this still gives them all a denser core.
+		Terrain urban = registry.terrain("TERRAIN_URBAN");
+		if (province.type() == ProvinceType.LAND && urban != null && !cells.isEmpty()) {
+			int coreSize = CityPlacement.coreSize(province, cells.size());
+			for (int idx : CityPlacement.coreCells(w, h, cells, ground, composed, feature,
+					bonusGrid, coreSize)) {
+				ground[idx] = urban;
+				composed[idx] = PlotType.FLAT; // a city stands on level, built ground
+				feature[idx] = null;           // built ground carries no wild feature
+				bonusGrid[idx] = null;         // the resource is built over
+			}
+		}
+
 		List<ProvincePlot> out = new ArrayList<>(mask.landCount());
 		for (int ly = 0; ly < h; ly++) {
 			for (int lx = 0; lx < w; lx++) {

@@ -262,8 +262,14 @@ public final class ProvincePlotPool {
 				anyOther = true;
 				break;
 			}
-		if (!anyOther)
-			return bestYieldNearest(centroidX, centroidY);
+		if (!anyOther) {
+			// the first settlement anchors its centre on the province's city — its urban core,
+			// sited by Civ4 foundValue (see CityPlacement / docs/urban-plots.md). The free urban
+			// plot nearest the centroid is the primary core cell; fall back to the centroid-
+			// nearest plot for a province with no urban core (non-LAND, or none generated).
+			Plot city = nearestUrban(centroidX, centroidY);
+			return city != null ? city : bestYieldNearest(centroidX, centroidY);
+		}
 
 		Plot best = null;
 		long bestSpacing = -1;
@@ -285,6 +291,23 @@ public final class ProvincePlotPool {
 	private static long dist2(Plot p, int x, int y) {
 		long dx = p.x() - x, dy = p.y() - y;
 		return dx * dx + dy * dy;
+	}
+
+	// the free urban (city-core) plot nearest (cx, cy), or null if the province has none —
+	// the anchor for a founding settlement's civic centre (see foundingCenter)
+	private Plot nearestUrban(int cx, int cy) {
+		Plot best = null;
+		long bestD = Long.MAX_VALUE;
+		for (Plot p : plots) {
+			if (p.owner() != null || !"TERRAIN_URBAN".equals(p.terrain().type()))
+				continue;
+			long d = dist2(p, cx, cy);
+			if (d < bestD) {
+				bestD = d;
+				best = p;
+			}
+		}
+		return best;
 	}
 
 	// --- caravan land-routing corridors (docs/land-routing.md Level 2) --------

@@ -1,7 +1,8 @@
 # Design note: urban plots & imported development
 
-**Status:** In progress. Phases 1 (the `TERRAIN_URBAN` substrate) and 2 (import
-development + the `city` flag) are done; the rest is planned.
+**Status:** In progress. Phases 1 (the `TERRAIN_URBAN` substrate), 2 (import development +
+the `city` flag) and 3 (the per-province urban core in plot generation) are done; the city
+sprite (4) and the web Development overlay (5) remain.
 **Date:** 2026-07-12
 **Depends on:**
 - the special-terrain pipeline (`docs/underworld.md` §Special surface terrains) — the
@@ -174,10 +175,10 @@ Engine:
 | `geo/export/ProvinceHistoryExporter.java` | ✅ parse + stamp the three dev keys |
 | `geo/export/CavernExporter.java` | ✅ stamp `city` from the `city_terrain` block (leaving `type` as `LAND`) |
 | `geo/WorldMap.java` | ✅ `FAIL_ON_NULL_FOR_PRIMITIVES` off — absent dev/`city` defaults to 0/false (Jackson 3 is strict) |
-| `geo/CityPlacement.java` (new) | the Civ4-style `foundValue` work-radius scan (bonus-weighted); deterministic, no RNG |
-| `geo/ProvincePlotField.java` | after the bonus stage, tag the `foundValue`-sited core plot(s) `TERRAIN_URBAN` + `FLAT` + dev attach (more for a `city` province) |
-| `settlement/ProvincePlotPool.java` | `claimFoundingCenter` claims the primary city plot |
-| `settlement/Plot.java` (or the field record) | carry the `isCity` flag + concentrated `development` (data only) |
+| `geo/CityPlacement.java` (new) | ✅ the Civ4-style `foundValue` work-radius scan (bonus-weighted); deterministic, no RNG; `coreSize` = 1, or a dev-scaled cluster for a `city` province |
+| `geo/ProvincePlotField.java` | ✅ after the bonus stage, tag the `foundValue`-sited core cell(s) `TERRAIN_URBAN` + `FLAT`, clearing feature/bonus (LAND provinces only) |
+| `settlement/ProvincePlotPool.java` | ✅ `claimFoundingCenter` anchors on the nearest free urban plot |
+| `settlement/Plot.java` | no change — a core plot is identified by `terrain().type() == "TERRAIN_URBAN"` (dev read from the province, not stored per-plot) |
 
 Resources: regenerated `terrains.json` / `terrain-art.json` (✅) and a re-stamped
 `provinces.json` (+ the affected `map/provinces/<id>.json.gz` fields).
@@ -203,13 +204,20 @@ from engine resources, `provinces.json` / `terrain-art.json` moving is a **redep
   server 32). Needed `FAIL_ON_NULL_FOR_PRIMITIVES` off in `WorldMap`'s mapper (Jackson 3 fails
   an absent primitive record component where Jackson 2 defaulted it). Test:
   `WorldMapTest.loadsDevelopmentAndTheCityFlag`.
-- **Phase 3 — the per-province urban core (Civ4 `foundValue`) + anchoring.** `CityPlacement`
-  `foundValue`; `ProvincePlotField` tags the core plot(s) `TERRAIN_URBAN` + `FLAT` + dev after
-  the bonus stage (denser for a `city` province); `claimFoundingCenter` anchors on the primary.
-  **Behavioural but calibration-safe** — the core is the unfarmed centre, so food balance and
-  the collapse profile are unchanged (re-validate the smoke tests). Tests: every province field
-  has ≥1 urban core plot at a `foundValue` max (near its bonuses); a `city` province has more;
-  the default colony's centre is urban; `PlotYieldTest` mean food factor still ≈ 1.0.
+- **Phase 3 — the per-province urban core (Civ4 `foundValue`) + anchoring. ✅ Done.**
+  `CityPlacement` scores each land cell by reachable bonuses/yield/river within a work radius
+  and returns the core cell(s); `ProvincePlotField` tags them `TERRAIN_URBAN` + `FLAT`
+  (clearing feature/bonus) after the bonus stage, on **LAND provinces only** (underground holds
+  and special-terrain wilderness keep their character; every `city_terrain` province is LAND).
+  An ordinary province gets one core plot; a `city` province a dev-scaled cluster (Dhenijansar,
+  dev 30 → 2). `ProvincePlotPool.claimFoundingCenter` anchors the first settlement's centre on
+  the nearest free urban plot. **Behavioural but calibration-safe** — the core is the unfarmed
+  centre and low-food urban plots are deprioritised by `bestYieldNearest`, so food balance and
+  the collapse profile held (full suite green: engine 263, server 32). Tests:
+  `UrbanTerrainTest` (one core plot for an ordinary LAND province, a denser core for
+  Dhenijansar with its hinterland kept), `ProvincePlotPoolTest.aColonyAnchorsItsCentreOnThe
+  CityUrbanCore`. *Note:* persisted province fields (`map/provinces/<id>.json.gz`, gitignored)
+  must regenerate — the live server's field cache needs invalidating on the next deploy.
 - **Phase 4 — the city sprite.** Bake a C2C city `.nif` → `BUNDLE.cities`; stamp `citySprite`
   over `TERRAIN_URBAN` plots in `plots.mjs`, sized by dev tier. Web-only; verify headless.
   *Follow-up:* culture → `ArtStyleType` → per-style sprite.
