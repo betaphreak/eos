@@ -88,7 +88,7 @@ jobs:
           set -e
           LOCK=civstudio-engine/src/main/resources/civ4-source.lock
           GEN=civstudio-engine/src/main/resources/generated
-          ICONS=web/assets/tech-icons.webp
+          ICONS=web/assets/tech               # build-techs.mjs writes the icon sheet + beaker glyphs here
           git add "$GEN" "$ICONS"
           if git diff --cached --quiet -- "$GEN" "$ICONS"; then
             echo "No output changes — C2C tip produced identical resources; discarding the lock bump."
