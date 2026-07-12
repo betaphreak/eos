@@ -37,6 +37,17 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class ProvincePlotStore {
 
+	/**
+	 * The plot <b>generation version</b>: bump this whenever a change to plot generation alters the
+	 * output a province yields — {@code ProvincePlotField} / {@code CityPlacement} / {@code
+	 * TerrainGenerator} / bonus placement / a {@code terrains.json} yield, etc. It versions both the
+	 * server's on-disk plot cache (a new version → a fresh cache dir, old one orphaned) and the
+	 * client's {@code /api/plots/{id}?v=} URL (a new version → a browser-cache miss), so a
+	 * generation change reaches every client instead of being masked by an immutably-cached grid.
+	 * The web bundle ships it as {@code plotVersion}. See {@code docs/plot-serving.md}.
+	 */
+	public static final int GEN_VERSION = 2; // 2: per-province urban core (docs/urban-plots.md)
+
 	private static final String WRITE_DIR = "civstudio-engine/src/main/resources/map/provinces";
 	private static final String RESOURCE_DIR = "/map/provinces";
 	private static final ObjectMapper MAPPER = new ObjectMapper();

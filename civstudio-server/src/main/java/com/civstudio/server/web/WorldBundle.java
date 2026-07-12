@@ -249,6 +249,9 @@ public final class WorldBundle {
 		root.set("geo", geo);
 		root.set("adjacencies", adjacencies);
 		root.set("geoNames", geoNames);
+		// the plot generation version — the client appends it to /api/plots/{id}?v= so a generation
+		// change busts the (now immutable) browser cache. See ProvincePlotStore.GEN_VERSION.
+		root.put("plotVersion", com.civstudio.settlement.ProvincePlotStore.GEN_VERSION);
 		return root;
 	}
 

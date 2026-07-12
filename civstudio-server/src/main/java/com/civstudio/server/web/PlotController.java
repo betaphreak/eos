@@ -36,9 +36,10 @@ public class PlotController {
 			return ResponseEntity.notFound().build();
 		return ResponseEntity.ok()
 				.header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
-				// map data changes only on a (rare) generation-algorithm change → a day is a safe,
-				// volume-cache-backed default; a deploy-versioned URL would let this go immutable.
-				.header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+				// the client requests /api/plots/{id}?v=<plotVersion> (ProvincePlotStore.GEN_VERSION),
+				// so the URL changes whenever generation changes → the grid is safe to cache immutably;
+				// a generation bump reaches every browser as a fresh URL rather than a stale hit.
+				.header(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000, immutable")
 				.body(gz);
 	}
 }

@@ -63,7 +63,10 @@ async function loadPlots(p) {
   if (p._loading || p._plots) return;
   p._loading = true;
   try {
-    const res = await fetch(apiUrl("/api/plots/" + p.id));
+    // ?v=<plotVersion> versions the immutable cache: a generation change (server bumps
+    // ProvincePlotStore.GEN_VERSION, shipped as BUNDLE.plotVersion) changes the URL, so the browser
+    // fetches the fresh grid instead of a stale cached one. See docs/plot-serving.md.
+    const res = await fetch(apiUrl("/api/plots/" + p.id) + "?v=" + (BUNDLE.plotVersion || 0));
     if (!res.ok) throw new Error("plots " + res.status);   // 404 off-map, 5xx, …
     const stream = res.body.pipeThrough(new DecompressionStream("gzip"));
     const arr = JSON.parse(await new Response(stream).text());

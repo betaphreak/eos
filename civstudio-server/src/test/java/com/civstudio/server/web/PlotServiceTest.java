@@ -12,6 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 import com.civstudio.server.CivStudioProperties;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.SimPauseGate;
+import com.civstudio.settlement.ProvincePlotStore;
 
 /**
  * {@link PlotService} without touching the (network-backed, expensive) generation path: the disk
@@ -30,7 +31,9 @@ class PlotServiceTest {
 	void servesDiskCacheHitVerbatimWithoutGenerating(@TempDir Path cacheDir) throws Exception {
 		// a pre-seeded <id>.json.gz is returned as-is — no WorldMap/raster load, no generation
 		byte[] blob = { 0x1f, (byte) 0x8b, 1, 2, 3, 4 }; // gzip magic + filler; opaque to the service
-		Files.write(cacheDir.resolve("4411.json.gz"), blob);
+		// the service reads from the version-scoped subdir (ProvincePlotStore.GEN_VERSION)
+		Path versioned = Files.createDirectories(cacheDir.resolve("v" + ProvincePlotStore.GEN_VERSION));
+		Files.write(versioned.resolve("4411.json.gz"), blob);
 		assertArrayEquals(blob, service(cacheDir).gz(4411));
 	}
 
