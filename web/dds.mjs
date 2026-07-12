@@ -9,9 +9,11 @@
 //   import { decodeDds } from './dds.mjs';
 //   const { width, height, rgba } = decodeDds(fs.readFileSync('x.dds'));
 //
-// Supports the three classic FourCC block formats (DXT1/DXT3/DXT5) plus DX10
+// Supports the three classic FourCC block formats (DXT1/DXT3/DXT5), DX10
 // uncompressed B8G8R8A8 / R8G8B8A8 (the format Anbennar's gfx/interface/resources.dds
-// icon strip uses). Throws on other uncompressed layouts — the caller falls back gracefully.
+// icon strip uses), and classic (non-FourCC) uncompressed surfaces decoded via the
+// ddspf RGBA bit-masks — the format the Civ6 SDK depot ships (R8G8B8A8 tiles, L8 masks;
+// see docs/civ6-assets.md §2a). Throws on formats none of those cover — the caller falls back.
 
 const MAGIC = 0x20534444;        // 'DDS ' little-endian
 const FLAG_FOURCC = 0x4;         // DDPF_FOURCC in ddspf.dwFlags
@@ -36,7 +38,7 @@ export function decodeDds(buf) {
   const width = dv.getUint32(16, true);
   const pfFlags = dv.getUint32(80, true);
   const cc = dv.getUint32(84, true);
-  if (!(pfFlags & FLAG_FOURCC)) throw new Error('DDS is uncompressed (no FourCC) — unsupported');
+  if (!(pfFlags & FLAG_FOURCC)) return decodeUncompressed(dv, buf, width, height);
   if (cc === DX10) return decodeDx10Uncompressed(dv, buf, width, height);
   if (cc !== DXT1 && cc !== DXT3 && cc !== DXT5) {
     const tag = String.fromCharCode(cc & 255, (cc >> 8) & 255, (cc >> 16) & 255, (cc >> 24) & 255);
@@ -69,6 +71,43 @@ function decodeDx10Uncompressed(dv, buf, width, height) {
     const o = i * 4;
     if (bgra) { rgba[o] = src[o + 2]; rgba[o + 1] = src[o + 1]; rgba[o + 2] = src[o]; rgba[o + 3] = src[o + 3]; }
     else { rgba[o] = src[o]; rgba[o + 1] = src[o + 1]; rgba[o + 2] = src[o + 2]; rgba[o + 3] = src[o + 3]; }
+  }
+  return { width, height, rgba };
+}
+
+// Decode a classic (non-FourCC) uncompressed surface via the ddspf RGBA bit-masks.
+// Header layout: 4 magic + 124 DDS header = 128 bytes, then raw rows at pitch = width*bytesPP.
+// ddspf fields: dwFlags@80, dwRGBBitCount@88, dw{R,G,B,A}BitMask@{92,96,100,104}. Handles 8/16/24/32
+// bpp, any channel order (RGBA / BGRA / XRGB…), and single-channel luminance (only an R mask → grey).
+// This is the Civ6 SDK format: SV_* tiles are R8G8B8A8 (masks R=0xFF…A=0xFF000000), *_A masks are L8.
+function decodeUncompressed(dv, buf, width, height) {
+  const bitCount = dv.getUint32(88, true);
+  const rMask = dv.getUint32(92, true) >>> 0, gMask = dv.getUint32(96, true) >>> 0;
+  const bMask = dv.getUint32(100, true) >>> 0, aMask = dv.getUint32(104, true) >>> 0;
+  if (bitCount !== 8 && bitCount !== 16 && bitCount !== 24 && bitCount !== 32)
+    throw new Error(`unsupported uncompressed DDS bit count ${bitCount}`);
+  // trailing-zero shift + normalised max for a channel mask
+  const chan = m => { if (!m) return [0, 0]; let s = 0; while (((m >>> s) & 1) === 0) s++; return [s, m >>> s]; };
+  const [rs, rm] = chan(rMask), [gs, gm] = chan(gMask), [bs, bm] = chan(bMask), [as, am] = chan(aMask);
+  const scale = (px, sh, mx) => mx ? Math.round((((px >>> sh) & mx) * 255) / mx) : 0;
+  const luminance = gMask === 0 && bMask === 0;   // single R mask (L8) → replicate to grey
+  const bytesPP = bitCount >> 3;
+  const data = 128;
+  const src = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+  const rgba = new Uint8Array(width * height * 4);
+  let off = data;
+  for (let i = 0; i < width * height; i++, off += bytesPP) {
+    let px = 0;
+    for (let b = 0; b < bytesPP; b++) px |= src[off + b] << (b * 8);
+    px >>>= 0;
+    const o = i * 4;
+    if (luminance) {
+      const l = scale(px, rs, rm);
+      rgba[o] = rgba[o + 1] = rgba[o + 2] = l;
+    } else {
+      rgba[o] = scale(px, rs, rm); rgba[o + 1] = scale(px, gs, gm); rgba[o + 2] = scale(px, bs, bm);
+    }
+    rgba[o + 3] = aMask ? scale(px, as, am) : 255;
   }
   return { width, height, rgba };
 }

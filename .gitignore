@@ -43,6 +43,9 @@ civstudio-server/target/
 # web/civ4.mjs node sibling); dev-time only (nothing at runtime reads it). See docs/civ4-files.md.
 /.civ4-cache/
 
+# Civ VI SDK Assets — local symlink into the Steam-installed SDK (dev-time only, machine-specific).
+/.civ6-cache
+
 # Server plot-grid cache — generated on demand, cached to a (persistent, in prod) volume. See
 # docs/plot-serving.md.
 /.plot-cache/
