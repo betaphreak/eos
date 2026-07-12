@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, isUnderground, latAtScreenY, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, ICE_ART, isPolitical, isUnderground, latAtScreenY, cssVar, S } from "./core.mjs";
 import { bandAlpha, kBand, band, bandName, regime, REGIME_INFO } from "./bands.mjs";
 import { drawPlots } from "./plots.mjs";                       // still used directly by drawCavernPlots
 import { scheduleLegendRefresh } from "./overlays/political.mjs";
@@ -82,6 +82,39 @@ function drawSeaBase(w, h) {
     }
   }
 }
+// Polar sea ice on the OPEN ocean. drawSeaIce (plots.mjs) handles the coastal shelf floes per-plot,
+// but the plotless deep ocean past the shelves has no floes — so at world/regional zoom the poles read
+// as bare dark water. This is the screen-space ICE CAP for that open water: a latitude-ramped coverage
+// of the Civ6 icecaps tile (map-anchored, so it scales with the world), faded out entering the plot
+// band (like the ripple) where the per-plot shelf floes take over. Land is drawn on top, so it only
+// shows on ocean.
+const iceImg = new Image();
+let iceReady = false;
+if (ICE_ART) { iceImg.onload = () => { iceReady = true; draw(); }; iceImg.src = ICE_ART.src; }
+let _iceLayer = null;
+const ICE_TILE = 1.8;   // ice-tile magnification over the ripple scale — fewer visible seams on the ice sheet
+// ice coverage 0..1 by |latitude|: open water below ~62°, ramping to a near-solid cap by ~80°
+function iceCoverAt(lat) { const a = Math.abs(lat); return a <= 62 ? 0 : Math.min(1, (a - 62) / 18); }
+function drawPolarIce(w, h) {
+  if (!iceReady || !SEA_BANDS) return;
+  const fade = 1 - bandAlpha(kBand([K_PLOT, K_TEX]));   // world/regional → 1, fades out over the plot band
+  if (fade <= 0.02) return;
+  if (iceCoverAt(latAtScreenY(0)) <= 0 && iceCoverAt(latAtScreenY(h)) <= 0) return;   // no polar water on screen
+  // build the ice on a reused temp layer: the tile, masked by a per-row latitude-alpha gradient
+  if (!_iceLayer) _iceLayer = document.createElement("canvas");
+  if (_iceLayer.width !== (w|0) || _iceLayer.height !== (h|0)) { _iceLayer.width = Math.max(1, w|0); _iceLayer.height = Math.max(1, h|0); }
+  const t = _iceLayer.getContext("2d");
+  t.globalCompositeOperation = "source-over"; t.clearRect(0, 0, w, h);
+  const ipat = t.createPattern(iceImg, "repeat");
+  const s = cam.k * (VIEW.dw / MAP.dw) * SEA_WAVE * ICE_TILE;         // map px → screen, so the ice scales with the world
+  ipat.setTransform(new DOMMatrix([s, 0, 0, s, cam.x + cam.k * VIEW.dx, cam.y + cam.k * VIEW.dy]));
+  t.fillStyle = ipat; t.fillRect(0, 0, w, h);
+  const g = t.createLinearGradient(0, 0, 0, h);                       // latitude coverage mask
+  for (let i = 0; i <= 16; i++) g.addColorStop(i / 16, `rgba(255,255,255,${iceCoverAt(latAtScreenY((i / 16) * h))})`);
+  t.globalCompositeOperation = "destination-in"; t.fillStyle = g; t.fillRect(0, 0, w, h);
+  // ~0.78 so the polar sea colour still reads through the floes (ice OVER water, not an opaque sheet)
+  ctx.save(); ctx.globalAlpha = 0.78 * fade; ctx.drawImage(_iceLayer, 0, 0); ctx.restore();
+}
 function resize() {
   const r = stage.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio||1, 2);
   if (!(r.width > 0) || !(r.height > 0)) return;   // ignore degenerate sizes (mid-layout / panel drag)
@@ -164,6 +197,7 @@ function paint() {
   // the ocean base behind everything (the land raster's sea is transparent, so this shows
   // through it): a climate-banded latitude gradient + ripple overlay. Screen-space, drawn once.
   drawSeaBase(w, h);
+  drawPolarIce(w, h);   // polar ice cap over the open ocean (screen-space, over the base, under the land)
 
   // cylindrical wrap: render the scene once per world-copy that overlaps the viewport, by
   // shifting the camera one wrap-period at a time — so each copy's own viewport culling and

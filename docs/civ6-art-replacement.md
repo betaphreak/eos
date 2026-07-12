@@ -172,9 +172,14 @@ SULPHUR, VANILLA, WALRUS). Full per-bonus table: `civ6-assets.md` §8.
   back to the Civ4 `icepack_1024.dds`. New resolver `civ6.iceTile()`; the `{src,tile}` descriptor +
   `drawSeaIce` draw path are unchanged (river/sea/shore stay C2C — Civ6 rivers are edge decals). Verified
   in-app: the frontend loads the new 128² tile (centre pixel (203,231,246), the Civ6 ice-blue), the source
-  `drawSeaIce` builds its floe `createPattern` from. **Note** — sea ice only renders on **coastal** polar
-  seas (SEA/LAKE adjacent to land, e.g. *The Passage* 1739, *Fjordsbay* 1436); open-ocean seas (1577/1610)
-  generate no plottable shelf, so `drawSeaIce` never fires there.
+  `drawSeaIce` builds its floe `createPattern` from. **Two ice paths** now share the tile: (1) the
+  per-plot coastal-shelf floes (`plots.mjs drawSeaIce`) on SEA/LAKE provinces adjacent to land, at deep
+  zoom; and (2) a screen-space **polar ice cap** over the *open* ocean (`main.mjs drawPolarIce`), since
+  open-ocean seas generate no plottable shelf and so would otherwise read as bare dark water. The cap is a
+  latitude-ramped coverage of the same icecaps tile (coverage 0 below ~62° → solid by ~80°, map-anchored),
+  drawn over the sea base and under the land, and **faded out entering the plot band** (`[K_PLOT,K_TEX]` =
+  5→16×) exactly where the per-plot shelf floes fade in — so the two never double. Verified at world,
+  regional and deep zoom (both hemispheres).
 - **Phase 5** — Improvements (Farm/Mine/Quarry) + new frontend layer; routes deferred.
 
 Each phase: bake → `node web/build.mjs` → refresh engine jar + `spring-boot:run` → webverify screenshots
