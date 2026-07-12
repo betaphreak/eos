@@ -175,6 +175,11 @@ public class SettlerCaravan extends MarchingCaravan {
 	// ---- the settle goal (the settler flavor's mission) ---------------------------------
 
 	@Override
+	public CaravanRole role() {
+		return CaravanRole.SETTLER;
+	}
+
+	@Override
 	protected boolean journeyComplete() {
 		return readyToSettle;
 	}

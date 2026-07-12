@@ -224,4 +224,14 @@ public abstract class Caravan {
 	 *         than re-recording a stale report every remaining day
 	 */
 	public abstract com.civstudio.agent.march.MarchReport tick(LocalDate date, Rng rng);
+
+	/**
+	 * The band's {@link CaravanRole role} — what it is for (found a colony, build
+	 * infrastructure, explore, project force), mirroring a Caveman2Cosmos unit's
+	 * {@code <DefaultUnitAI>}. Lets a caller (e.g. the render snapshot) tell the flavors
+	 * apart without an {@code instanceof} chain.
+	 *
+	 * @return the band's role
+	 */
+	public abstract CaravanRole role();
 }

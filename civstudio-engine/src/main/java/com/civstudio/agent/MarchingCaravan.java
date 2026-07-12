@@ -207,13 +207,13 @@ public abstract class MarchingCaravan extends Caravan {
 
 	/**
 	 * The band's <b>order of march</b> flavor — which {@link MarchFlavor} column it fields
-	 * (see {@code docs/caravan-march.md} §5). Defaults to {@link MarchFlavor#SETTLER} (a
-	 * lean admin column); a military band overrides it to field the full order.
+	 * (see {@code docs/caravan-march.md} §5), derived from its {@link #role() role}: a lean
+	 * admin column for the civilian roles, the full order for a military band.
 	 *
 	 * @return the march flavor
 	 */
-	protected MarchFlavor marchFlavor() {
-		return MarchFlavor.SETTLER;
+	protected final MarchFlavor marchFlavor() {
+		return role().marchFlavor();
 	}
 
 	/**
