@@ -1,0 +1,158 @@
+# Plan: procedural, province-driven plot terrain (C2C-style)
+
+**Goal.** Stop assigning plot **terrain** (and features) from the imported `terrain.bmp` pixels and
+instead generate them procedurally with a faithful **C2C-planet-generator** algorithm, driven by each
+province's climate parameters — so all 33 terrains appear *properly* and climate-appropriately, instead
+of the impoverished handful the pixel palette yields. The real Anbennar **geography stays**: province
+shapes, the land/water mask, coastlines, rivers, and the mountain backbone.
+
+Companion investigation lives in this doc's design; the C2C algorithm inventory is in the conversation
+that produced it (terrain set + temperature-band + diversify logic from `C2C_Planet_Generator_0_68.py`).
+Related: `docs/plots.md`, `docs/province-plots.md`, `docs/underworld.md` (special terrains). This
+supersedes the map-pixel terrain path those describe.
+
+## Decisions (locked with owner, 2026-07-12)
+
+| Question | Decision |
+| --- | --- |
+| Terrain source | **Fully procedural** — `terrain.bmp` unused for terrain; 100% from province climate/winter/latitude + the C2C temperature×humidity algorithm |
+| Features | Procedural too (C2C `FeatureGenerator` + terrain-implied); drop the `trees.bmp` feature hints, for consistency |
+| Relief (flat/hill/peak) | **Hybrid** — real `heightmap.bmp` peaks (the mountain backbone) + `ReliefGenerator` C2C-range variation (≈ the current `rougher()` compose) |
+| Geography kept from raster | province shape / land-water mask (`provinces.bmp`), coastlines, **rivers** (`rivers.bmp`), heightmap elevation |
+| Special surface terrains | `province.type()` overrides the climate pick (a province typed `ANCIENT_FOREST`/`GLACIER`/… gets its terrain regardless of climate) |
+
+## Why this is mostly *promotion*, not new code
+
+The current live path is `MapTerrainCodec.ground(pixel)` **primary**, with the procedural
+`TerrainGenerator` + `LatitudeClimate` only as the **fallback for unmapped pixels**
+(`ProvincePlotField.java:186-188`). CivStudio already ships faithful C2C ports —
+`TerrainGenerator` (climate-weighted pool), `LatitudeClimate` (C2C latitude→temperature + cold pool),
+`ReliefGenerator` (C2C flat/hill/peak ranges), `FeatureGenerator` (C2C seed-and-spread), and
+`ClimateProfile` (province → temperature+humidity). The work is to **promote the procedural generator to
+primary**, complete the C2C two-stage terrain algorithm on top of it, and drive it from province params.
+
+---
+
+## The C2C algorithm to reproduce (from the script)
+
+Per plot, in two stages, a **weighted probability pick** (matching `PrivateMaps/C2C_Planet_Generator_0_68.py`):
+
+**Stage 1 — base terrain by temperature × humidity** (overlapping bands; humidity modulates weights):
+
+| Terrain | Temp band (°C) | Weight |
+| --- | --- | --- |
+| `TERRAIN_DESERT` | > 30 | `7·(1.5 − humidity)` |
+| `TERRAIN_PLAINS` | 15…39 & −2…25 | 7 |
+| `TERRAIN_GRASSLAND` | 4…30 | `7·(humidity + 0.5)` |
+| `TERRAIN_MARSH` | −5…18 | 10 |
+| `TERRAIN_TAIGA` (C2C `terrainTundra`) | −10…10 | 7 |
+| `TERRAIN_TUNDRA` (C2C `terrainPermafrost`) | −10…−20 | `15·(humidity/2+0.75)` |
+| `TERRAIN_ICE` (C2C `terrainSnow`) | < 0 (esp. < −30) | `7–15·(humidity/2+0.75)` |
+
+**Stage 2 — "Diversify"** (replace each base with a weighted variant):
+`Desert → {Desert:2, SaltFlats:1, Dunes:4, Scrub:3}` · `Plains → {Plains:3, Barren:1, Rocky:2}` ·
+`Grass → {Grass:2, Lush:3, Muddy:1}`.
+
+**Water:** `TERRAIN_COAST` / `TERRAIN_OCEAN`→`SEA` (existing water path adds the `_POLAR`/`_TROPICAL`
+climate suffix by latitude). Features (6): `FOREST, JUNGLE, SWAMP, OASIS, FLOOD_PLAINS, ICE`.
+
+Coverage note: these 16 C2C terrains + the **7 Anbennar specials** (`province.type`) + the water climate
+suffixes + `CAVERN`/`URBAN` = CivStudio's full 33. Nothing else needs inventing.
+
+---
+
+## Design
+
+### Per-province inputs (computed once)
+- **temperature** — from `climate` band + `winter` offset + latitude, via `ClimateProfile`/`LatitudeClimate`
+  (already implemented: e.g. `40 − 0.6·|lat|` minus a winter offset). Optional refinement: use **per-plot
+  global latitude** (province lat + plot-y → world latitude) so large provinces get a gradient, not one value.
+- **humidity** — from `climate` + `monsoon`, via `ClimateProfile.humidity()` (0.10–0.95).
+
+### Per-plot terrain (canonical `Stream.TERRAIN` rng, unchanged draw-order)
+1. **Stage 1** weighted pick from the temperature-band array (humidity-modulated) → base terrain.
+2. **Stage 2** diversify → detail variant.
+3. **Special override** — `province.type()` ∈ {ANCIENT_FOREST, GLADEWAY, FEY_GLADEWAY, BLOODGROVES,
+   MUSHROOM_FOREST, SHADOW_SWAMP, GLACIER} ⇒ that terrain (the existing `SPECIAL_POOL` pass).
+4. **Water plots** — existing `generateWater` (coast/sea + climate suffix, near-shore shelf).
+5. **Despeckle** — keep the majority-smoothing pass for coherent patches (mitigates per-plot draw noise).
+
+### Relief (hybrid) & rivers & coast — keep
+- Relief stays the `ReliefGenerator` + heightmap compose (`rougher()`), but **repoint the "map relief"
+  input from the `terrain.bmp` palette to `heightmap.bmp` elevation** — with terrain pixels gone, peaks/hills
+  must derive from elevation thresholds, not `MapTerrainCodec.relief(terrainIndex)`. (Implementation check.)
+- Rivers, the coast mask, and the land/water mask keep coming from the raster (`ProvinceMask`).
+
+### Features (procedural)
+`FeatureGenerator` seed-and-spread + terrain-implied features (forest on cold/temperate, jungle on hot-wet,
+swamp on marsh, oasis in desert, flood-plains on river). Drop the `trees.bmp` (`treeFeatureKey`) hints.
+
+---
+
+## Code changes
+
+- **`ProvincePlotField.generate`** (`geo/ProvincePlotField.java:159`) — the one authority. Replace the
+  `MapTerrainCodec.ground` primary with the C2C two-stage procedural pass; drop the `terrain.bmp`/`trees.bmp`
+  terrain+feature reads; keep the relief (repointed to heightmap), water, special-override, bonus, city, and
+  despeckle passes. Preserve the **row-major, one-draw-per-cell** order so the canonical stream stays byte-stable.
+- **`TerrainGenerator`** — complete it into the faithful C2C two-stage weighting from `(temperature, humidity)`
+  (port per the `port-c2c-generator-faithfully` note — mirror the script's constants/order). Reuse
+  `ClimateProfile`/`LatitudeClimate` for the inputs; reuse the existing `probabilityArray`-style weighted pick.
+- **`MapTerrainCodec`** — `ground` / `relief(terrainIndex)` / `treeFeatureKey` / `terrainFeatureKey` /
+  `isWoody` become dead for the primary path (keep `water(...)` for the shelf; delete or retire the rest).
+  `ProvinceRaster` can stop loading `terrain.bmp`/`trees.bmp` for generation (still needed by the dev-time
+  web terrain bake? — no, that reads Civ art, not these rasters; confirm before dropping the load).
+- **`ProvincePlotStore.GEN_VERSION`** (`:49`) — bump `2 → 3`. This invalidates every plot cache
+  (`map/provinces/*.json.gz` + the prod volume) and the client `?v=` URL, forcing regeneration.
+
+## Determinism
+
+Unchanged model: the seed-independent **canonical `Stream.TERRAIN`** (`RngSeed.forProvinceCanonical`) +
+row-major draw order = identical field every run/seed, persisted once. The new pass must consume the stream
+in the same deterministic order (fixed draws per cell whether or not a variant/feature lands).
+
+## Consumers (contract preserved)
+
+The plot's serialized fields are **unchanged** (`terrain, feature, plotType, river, elevation, coast, bonus`),
+so farm-TFP food yield (`Plot.yields`), caravan A* routing (`ProvincePlotPool.corridor`), plot claiming, and
+the web viewer (`plots.mjs`) all keep working — they just see richer, climate-driven terrain. The Civ6 art
+(Phases 1–3) keys off terrain/feature type, so it renders the new terrains automatically.
+
+## Deployment (per the runbook + `always-az-deploy-on-change`)
+
+A `GEN_VERSION` bump is a generation change: **rewarm** (`WorldPlotGenerator`) → deploy the server →
+**clear the persistent plot cache** on the prod volume (else stale `v2` blobs serve) → rebake/redeploy the
+bundle + static site. This is server-affecting engine data, so it must go out via `az`, not just SWA.
+
+## Verification
+
+1. **Terrain variety** — regenerate a sample of provinces across climates; assert all base terrains appear
+   and are climate-appropriate: arctic/severe-winter provinces read cold (taiga/tundra/ice), tropical wet read
+   grass/jungle/marsh, arid read desert/dunes/scrub. No province should be a flat single terrain.
+2. **Special terrains** — provinces typed `ANCIENT_FOREST`/`GLACIER`/`MUSHROOM_FOREST`/… still show their
+   terrain (override intact).
+3. **Determinism** — same province regenerates byte-identical across two seeds; `GEN_VERSION` bumped.
+4. **Geography intact** — coastlines, rivers, and the mountain backbone still match the real map (heightmap
+   relief, raster rivers).
+5. **In-app** — `mvn -pl civstudio-engine install` → `spring-boot:run` → `tools/webverify` screenshots across
+   several provinces/climates; confirm the Civ6 terrain art renders the new distribution.
+6. **Tests** — `mvn test` (scenarios smoke-test terrain-dependent food balance; watch for collapse-timing shifts
+   since food yield now tracks climate-driven terrain).
+
+## Open questions / risks
+
+- **Per-plot noise vs coherence** — independent per-plot weighted draws can look salt-and-pepper; despeckle
+  helps, but if it reads noisy, add a light spatial-coherence pass (seed-and-spread like `FeatureGenerator`,
+  or a value-noise field) before Stage 1. Decide after seeing output.
+- **Single-province latitude** — using one latitude per province is a simplification; per-plot world latitude
+  is a cheap refinement for large provinces.
+- **Relief repoint** — confirm relief no longer depends on the terrain palette once `terrain.bmp` is dropped;
+  derive peak/hill from `heightmap.bmp` elevation thresholds + `ReliefGenerator`.
+- **Food-balance recalibration** — climate-driven terrain changes per-plot food yields, which may shift the
+  colony-collapse timing the smoke tests assert (`colony-collapse-accepted`); expect to retune.
+
+---
+
+*Planned 2026-07-12. Decisions locked with owner (fully-procedural terrain, hybrid relief, geography kept).
+Largely promotes the existing faithful C2C ports from fallback to primary. When it lands, update
+`docs/plots.md`/`province-plots.md` and the `docs-stale-terrain-pipeline` note, and cross-link here.*
