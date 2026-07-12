@@ -1,6 +1,6 @@
 import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, isUnderground, latAtScreenY, cssVar, S } from "./core.mjs";
 import { bandAlpha, kBand, bandName, regime, REGIME_INFO } from "./bands.mjs";
-import { drawPlots } from "./plots.mjs";                       // still used directly by drawUnderworld
+import { drawPlots } from "./plots.mjs";                       // still used directly by drawCavernPlots
 import { scheduleLegendRefresh } from "./overlays/political.mjs";
 import { ensureTiers } from "./overlays/tiers.mjs";
 import { renderLayers } from "./layers.mjs";                   // the ordered scene registry (draw order + gating)
@@ -304,24 +304,35 @@ function renderScene() {
   renderLayers();
 }
 
-// The Underworld plane (docs/underworld.md): veil this world-copy's map extent so the
-// surface recedes to a faint ghost, then relight the CAVERN provinces at their true
-// Serpentspine positions — the underground shown in place beneath the dimmed world above.
-// Per world-copy: the veil is the raster's own rect, so adjacent copies abut (no additive
-// double-darkening). Runs before the hover/selected highlights so those stay crisp on top.
-function drawUnderworld() {
+// The Underworld plane (docs/underworld.md), folded into the z=−1 layer set (docs/zoom-bands.md
+// §Z-levels): each of these is a first-class registry entry gated z:[-1] in layers.mjs, so the
+// underground gets the same reorder/regate seam as the surface. Order preserved from the old
+// monolithic drawUnderworld: veil → cave floors → per-plot cave terrain → amber rims. Per
+// world-copy, the veil is the raster's own rect, so adjacent copies abut (no double-darkening).
+
+// veil this copy's map extent so the surface above recedes to a faint ghost
+function drawUnderworldVeil() {
   ctx.save();
-  // veil exactly the map raster's rect for this copy (abuts the neighbour copy seamlessly)
   ctx.fillStyle = "rgba(6,5,11,0.72)";
   ctx.fillRect(cam.x + cam.k*VIEW.dx, cam.y + cam.k*VIEW.dy, cam.k*VIEW.dw, cam.k*VIEW.dh);
-  // a warm flat cave floor on every underground polygon — the overview look, and the fallback
-  // beneath the per-plot layer for provinces whose plots haven't streamed in yet
+  ctx.restore();
+}
+// a warm flat cave floor on every underground polygon — the overview look, and the fallback beneath
+// the per-plot layer for provinces whose plots haven't streamed in yet
+function drawCavernFloors() {
+  ctx.save();
   ctx.fillStyle = "rgba(60,46,40,0.92)";
   for (const p of P) if (isUnderground(p) && p.rings && provOnScreen(p)) ctx.fill(provPath(p));
-  // zoomed in: relight the underground provinces' real per-plot cave terrain over the veil
-  // (physical view only — the political overlays suppress plots, same as the surface)
+  ctx.restore();
+}
+// zoomed in: relight the underground provinces' real per-plot cave terrain over the veil (physical
+// view only — the political overlays suppress plots, same as the surface)
+function drawCavernPlots() {
   if (cam.k >= K_PLOT && !isPolitical()) drawPlots(isUnderground);
-  // an amber rim on every underground province, at all zooms, so the caves read as lit
+}
+// an amber rim on every underground province, at all zooms, so the caves read as lit
+function drawCavernRims() {
+  ctx.save();
   ctx.strokeStyle = "rgba(230,180,120,0.6)"; ctx.lineWidth = 1.0;
   for (const p of P) if (isUnderground(p) && p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
   ctx.restore();
@@ -495,5 +506,6 @@ export { draw, zoomAt, resize, focusProvince, focusProvinceFit, applyHash, hasDe
 // scene-layer draw fns, consumed by the LAYERS registry in layers.mjs (they stay here because they
 // close over main's raster/camera state and the Pby/hatch helpers)
 export { drawRaster, drawLakes, drawSeaCells, drawGapHatch, drawImpassable, drawSurfacePlots,
-         drawProvinceBorders, drawUnderworld, drawCaveEntrances, drawAdjacencies,
+         drawProvinceBorders, drawUnderworldVeil, drawCavernFloors, drawCavernPlots, drawCavernRims,
+         drawCaveEntrances, drawAdjacencies,
          drawHoverHighlight, drawSelectedHighlight };

@@ -8,11 +8,11 @@
 //
 // The draw fns live in the modules that own their state (main.mjs closes over the raster/camera and
 // the province-polygon helpers; the overlays own their own); this module only orders and gates them.
-import { isPolitical, S } from "./core.mjs";
+import { isPolitical, activeZ, S } from "./core.mjs";
 import { atLeast, BAND } from "./bands.mjs";
 import { drawRaster, drawLakes, drawSeaCells, drawGapHatch, drawImpassable, drawSurfacePlots,
-         drawProvinceBorders, drawUnderworld, drawCaveEntrances, drawAdjacencies,
-         drawHoverHighlight, drawSelectedHighlight } from "./main.mjs";
+         drawProvinceBorders, drawUnderworldVeil, drawCavernFloors, drawCavernPlots, drawCavernRims,
+         drawCaveEntrances, drawAdjacencies, drawHoverHighlight, drawSelectedHighlight } from "./main.mjs";
 import { drawCostOverlay, drawTradeGoodIcons } from "./plots.mjs";
 import { drawTiers } from "./overlays/tiers.mjs";
 import { drawPolitical } from "./overlays/political.mjs";
@@ -20,34 +20,43 @@ import { drawLive } from "./overlays/live.mjs";
 import { drawLabels } from "./labels.mjs";
 
 const notPolitical = () => !isPolitical();
-const overworld    = () => S.plane !== "underworld";
 
 // Back-to-front. `band` documents where the layer lives on the zoom spine (self-fading layers carry
-// their own bandAlpha inside `draw`); `gate` is a cheap predicate that skips the layer entirely.
+// their own bandAlpha inside `draw`); `gate` is a cheap predicate that skips the layer; `z` limits
+// the layer to a set of z-levels (omitted = drawn on every level — the surface stack shows on z=−1
+// too, veiled to a ghost under underworldVeil). The z=−1 block is the old monolithic drawUnderworld
+// folded into first-class entries — see docs/zoom-bands.md §Z-levels.
 export const LAYERS = [
-  { id: "raster",        band: "all",                     draw: drawRaster },
-  { id: "lakes",         band: "all",                     draw: drawLakes },
-  { id: "seaCells",      band: "all",  gate: notPolitical, draw: drawSeaCells },
-  { id: "gapHatch",      band: "≥PLOT (64×)", gate: () => atLeast(BAND.PLOT) && notPolitical(), draw: drawGapHatch },
-  { id: "plots",         band: "≥REGION→, self-fade", gate: notPolitical, draw: drawSurfacePlots },
-  { id: "cost",          band: "≥REGION→, toggle",        draw: drawCostOverlay },
-  { id: "impassable",    band: "all",  gate: notPolitical, draw: drawImpassable },
-  { id: "political",     band: "self-fade", gate: isPolitical, draw: drawPolitical },
-  { id: "tiers",         band: "WORLD–PROVINCE, self-fade", draw: drawTiers },
-  { id: "provBorders",   band: "PROVINCE (7.5→10×)",      draw: drawProvinceBorders },
-  { id: "underworld",    band: "all",  gate: () => S.plane === "underworld", draw: drawUnderworld },
-  { id: "caveEntrances", band: "all",  gate: overworld,   draw: drawCaveEntrances },
-  { id: "adjacencies",   band: "≥3.3 (10×)",              draw: drawAdjacencies },
-  { id: "hover",         band: "all",                     draw: drawHoverHighlight },
-  { id: "selected",      band: "all",                     draw: drawSelectedHighlight },
-  { id: "live",          band: "all",  gate: () => S.overlay === "live", draw: drawLive },
-  { id: "tradeGoods",    band: "TERRAIN→PLOT, self-fade", gate: () => overworld() && notPolitical(), draw: drawTradeGoodIcons },
-  { id: "labels",        band: "≥PROVINCE, self-fade",    draw: drawLabels },
+  { id: "raster",         band: "all",                     draw: drawRaster },
+  { id: "lakes",          band: "all",                     draw: drawLakes },
+  { id: "seaCells",       band: "all",  gate: notPolitical, draw: drawSeaCells },
+  { id: "gapHatch",       band: "≥PLOT (64×)", gate: () => atLeast(BAND.PLOT) && notPolitical(), draw: drawGapHatch },
+  { id: "plots",          band: "≥REGION→, self-fade", gate: notPolitical, draw: drawSurfacePlots },
+  { id: "cost",           band: "≥REGION→, toggle",        draw: drawCostOverlay },
+  { id: "impassable",     band: "all",  gate: notPolitical, draw: drawImpassable },
+  { id: "political",      band: "self-fade", gate: isPolitical, draw: drawPolitical },
+  { id: "tiers",          band: "WORLD–PROVINCE, self-fade", draw: drawTiers },
+  { id: "provBorders",    band: "PROVINCE (7.5→10×)",      draw: drawProvinceBorders },
+  // z=−1 Underworld (Serpentspine): veil the surface above → cave floors → per-plot cave terrain → rims
+  { id: "underworldVeil", z: [-1], band: "all",            draw: drawUnderworldVeil },
+  { id: "cavernFloors",   z: [-1], band: "all",            draw: drawCavernFloors },
+  { id: "cavernPlots",    z: [-1], band: "≥REGION→",       draw: drawCavernPlots },
+  { id: "cavernRims",     z: [-1], band: "all",            draw: drawCavernRims },
+  { id: "caveEntrances",  z: [0],  band: "all",            draw: drawCaveEntrances },
+  { id: "adjacencies",    band: "≥3.3 (10×)",              draw: drawAdjacencies },
+  { id: "hover",          band: "all",                     draw: drawHoverHighlight },
+  { id: "selected",       band: "all",                     draw: drawSelectedHighlight },
+  { id: "live",           band: "all",  gate: () => S.overlay === "live", draw: drawLive },
+  { id: "tradeGoods",     z: [0],  band: "TERRAIN→PLOT, self-fade", gate: notPolitical, draw: drawTradeGoodIcons },
+  { id: "labels",         band: "≥PROVINCE, self-fade",    draw: drawLabels },
 ];
 
-/** Paint the registry in order for the current world copy (called per-copy by renderScene). */
+/** Paint the registry in order for the current world copy — skipping any layer off the active
+ *  z-level (activeZ, today from the plane toggle) or turned off by its gate. */
 export function renderLayers() {
+  const z = activeZ();
   for (const L of LAYERS) {
+    if (L.z && !L.z.includes(z)) continue;
     if (L.gate && !L.gate()) continue;
     L.draw();
   }

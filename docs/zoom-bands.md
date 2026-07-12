@@ -289,6 +289,39 @@ on the map's right edge, top = highest, the active level lit in the regime accen
 Interaction: the z-level is orthogonal to the regime, so the mode chip shows both (e.g.
 `🐫 Terrain · z−1 Serpentspine`); hit-testing picks provinces at the active z-level.
 
+### Introducing z-levels — data-model & migration plan
+
+The frontend registry is z-ready (Phase 5); making z *real* is an engine/data change, kept purely
+additive — **province ids never change**.
+
+**`province.z` — native level by `ProvinceType`:**
+
+| ProvinceType | z | note |
+|---|---|---|
+| (any surface) | `0` | default |
+| `DWARVEN_HOLD_SURFACE` | `0` | surface hold access (passable) |
+| `CAVERN`, `DWARVEN_HOLD` | `−1` | the Serpentspine / default holds |
+| `DWARVEN_ROAD` (Dwarovrod) | `−2` | the deep roads |
+
+**Column completion — generated z=0 caps.** Every underground province (`z<0`) *also* occupies `z=0`
+as a generated **impassable-mountain** grid (it's mostly mountains anyway), so there are no holes above
+the underground; real surface holds are the passable exceptions. A province therefore has a *set* of
+occupied levels and one plot grid per level (`_plotsByZ`).
+
+**Touch-points (all additive):**
+- `Province` model: a native `z` + occupied-levels set; the cavern/hold exporters (`CavernExporter`, …)
+  stamp `z` from type, and the current `isUnderground(type)` test seeds it.
+- `WorldPlotGenerator`: emit a grid per occupied `(province, z)`; the `z=0` cap is a cheap procedural
+  impassable-mountain fill.
+- Plot pipeline: `plotIndex`, the generation-versioned plot cache and `/api/plots/{id}` all gain a `z`
+  (`/api/plots/{id}/{z}`); `WorldBundle` ships each province's occupied levels.
+- Frontend: `province._plots` → `_plotsByZ[z]`; the plots/cavern layers draw `_plotsByZ[activeZ]`;
+  `activeZ()` reads a real active level once the z-selector lands (today it maps the plane toggle).
+
+**Migration is a no-op for existing data:** today's single plane *is* `z=0`, and the binary Underworld
+view already renders as the `z=−1` layer set (Phase 5). Introducing real z only *adds* levels — nothing
+at `z=0` moves.
+
 ## The right-side panel — a regime-scoped inspector that drills
 
 The panel follows the input spine: because a click targets a different object per
@@ -408,10 +441,11 @@ reorg.
    layer (stage `data-regime`). Per-regime *target* dispatch (Ground selecting buildings/agents) is
    **deferred to Phase 6** — today Atlas/Overland/Ground all pick provinces (+plots past band 4), so
    there is no Ground-specific target until the city micro exists.
-5. **Per-z-level layer set.** Key the registry by z-level (§Z-levels): one ordered `LAYERS` list per
-   level, the z-level selector picking which one `renderLayers()` walks. Fold `drawUnderworld`'s
-   internal stack into the z=−1 list as first-class entries; swap `isUnderground`/`isSurface` gating
-   for `p.z === activeZ`. Ends the opaque-underground asymmetry and hosts the dwarven-hold city micro.
+5. **Per-z-level layer set.** ✅ *Frontend done.* Added `activeZ()` (from the plane toggle) + a per-layer
+   `z` set; `renderLayers()` skips layers off the active level. `drawUnderworld` folded into four
+   first-class z:[−1] entries (veil / cavern floors / cavern plots / rims), ending the opaque-underground
+   asymmetry. Verified: overworld unchanged, underworld renders through the registry. The real
+   per-province `z` data model + z=0 caps + `_plotsByZ` is the engine plan in §Introducing z-levels.
 6. **City skeleton.** Add `city.mjs` as a `regime:GROUND` layer: footprints (b6) → agent dots
    (b7) → labels/pick (b8), fed by the live feed. The first genuinely new pixels.
 7. **Chrome + panel.** Envelope the always-on chrome (minimap hide in Ground, highlight stroke

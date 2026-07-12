@@ -90,6 +90,11 @@ function isPolitical() {
 // Overworld (there is nothing to see of them from the surface). See docs/underworld.md.
 const UNDERGROUND_TYPES = new Set(["CAVERN", "DWARVEN_HOLD", "DWARVEN_HOLD_SURFACE", "DWARVEN_ROAD"]);
 const isUnderground = p => UNDERGROUND_TYPES.has(p.type);
+// the active z-level being viewed — the vertical axis (docs/zoom-bands.md §Z-levels). Today derived
+// from the binary plane toggle (surface 0, Underworld/Serpentspine −1); when the z-selector + real
+// per-province z land it reads a true active level (Dwarovrod −2, holds −1, …). The layer registry
+// (layers.mjs) skips any layer whose z-set excludes this.
+const activeZ = () => S.plane === "underworld" ? -1 : 0;
 // the active political dimension for a province under the current overlay: its raw key + the
 // {name, color} table entry, or a null entry when the overlay isn't political / the province has none
 function polOf(p) {
@@ -202,4 +207,4 @@ export const S = {
   techOpen: false,       // the tech-tree modal is up — paint() pauses map rendering behind it
 };
 
-export { P, fmtInt, apiUrl, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };
+export { P, fmtInt, apiUrl, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };
