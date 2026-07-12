@@ -152,8 +152,15 @@ SULPHUR, VANILLA, WALRUS). Full per-bonus table: `civ6-assets.md` §8.
   helper moved to Phase 2**: terrain tiles draw only at deep zoom, where the deep LoD is always the right
   pick, so LoD selection is near-invisible here — it's built and exercised against icons (which draw
   across every zoom band) instead.
-- **Phase 2** — Bonus icons (Mixed split) + yield symbols, `@32/@64/@256` LoD, **+ the generic
-  `pickLod`/cross-fade frontend helper** (first place it's genuinely exercised).
+- **Phase 2** ✅ (icons) — Bonus icons rebaked Civ6-first with **class-coloured backings on all 106**:
+  39 use a Civ6 `Resources256` atlas cell (hand-identified — the depot ships no index; kept its own
+  backing), 67 keep the C2C GameFont glyph composited onto a matching procedural class octagon
+  (`civ6BackingColors` samples yellow/purple/red from the atlas; `bonusClass` → colour). Emitted as a
+  `@32/@64` LoD atlas; `src`/`cell` = deep LoD so the frontend renders unchanged. Raw-pixel helpers
+  extracted to `web/imgutil.mjs`. **Deferred**: the generic `pickLod`/cross-fade frontend helper (per-
+  plot icons draw only at deep zoom, like terrain tiles — the LoD atlases are in place for when a layer
+  that spans zoom bands needs them) and **yield symbols** (FontIcons.dds — needs a hand-authored cell
+  map, like the resource atlas; a new capability, not a replacement).
 - **Phase 3** — Features → flat SV overlays (hybrid) + the new overlay draw path.
 - **Phase 4** — Water (ice only).
 - **Phase 5** — Improvements (Farm/Mine/Quarry) + new frontend layer; routes deferred.
