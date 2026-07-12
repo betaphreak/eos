@@ -1,10 +1,9 @@
 import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, isUnderground, latAtScreenY, cssVar, S } from "./core.mjs";
-import { bandAlpha, kBand, atLeast, BAND } from "./bands.mjs";
-import { drawPlots, drawCostOverlay, drawTradeGoodIcons } from "./plots.mjs";
-import { drawLabels } from "./labels.mjs";
-import { drawPolitical, scheduleLegendRefresh } from "./overlays/political.mjs";
-import { drawLive } from "./overlays/live.mjs";
-import { ensureTiers, drawTiers } from "./overlays/tiers.mjs";
+import { bandAlpha, kBand } from "./bands.mjs";
+import { drawPlots } from "./plots.mjs";                       // still used directly by drawUnderworld
+import { scheduleLegendRefresh } from "./overlays/political.mjs";
+import { ensureTiers } from "./overlays/tiers.mjs";
+import { renderLayers } from "./layers.mjs";                   // the ordered scene registry (draw order + gating)
 import { initMinimap, drawMinimap } from "./minimap.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
 // transparent so the sea layer below shows through, land is opaque.
@@ -217,82 +216,66 @@ function drawGapHatch() {
   ctx.fillRect(0, 0, VIEW.w, VIEW.h);
   ctx.restore();
 }
-function renderScene() {
-  const w = VIEW.w, h = VIEW.h;
-  if (mapReady) {
-    ctx.imageSmoothingEnabled=true;
-    ctx.drawImage(mapImg, 0,0,MAP.dw,MAP.dh,
-      cam.x + cam.k*VIEW.dx, cam.y + cam.k*VIEW.dy, cam.k*VIEW.dw, cam.k*VIEW.dh);
-  }
-  // freshwater lakes: EU4 paints them with the ocean indices, so the raster leaves them the blue
-  // sea gradient — tint each lake province's polygon a distinct green-teal over it so lakes read as
-  // fresh water, not ocean. Uses the lake outlines now shipped in the bundle (docs/coastlines.md).
+// ---- per-world-copy scene layers ----
+// The old imperative renderScene body is now a set of named layer functions; their draw ORDER and
+// gating live in the LAYERS registry (layers.mjs), which renderScene runs. These stay defined here
+// because they close over main's raster/camera state and the province-polygon helpers.
+
+// the baked terrain raster, scaled by the camera — the base of every band
+function drawRaster() {
+  if (!mapReady) return;
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(mapImg, 0, 0, MAP.dw, MAP.dh,
+    cam.x + cam.k * VIEW.dx, cam.y + cam.k * VIEW.dy, cam.k * VIEW.dw, cam.k * VIEW.dh);
+}
+// freshwater lakes: EU4 paints them with the ocean indices, so the raster leaves them the blue sea
+// gradient — tint each lake polygon a distinct green-teal so lakes read as fresh water, not ocean.
+function drawLakes() {
   ctx.save(); ctx.fillStyle = "rgba(74,150,128,0.42)";
   for (const p of P) if (p.type === "LAKE" && p.rings && provOnScreen(p)) ctx.fill(provPath(p));
   ctx.restore();
-  // seas read as discrete provinces: a faint per-province water wash on each sea polygon (the
-  // deep-ocean provinces now ship outlines, so the whole ocean tessellates into cells over the flat
-  // gradient). Drawn before the plot layer — coastal seas then get their shelf plots on top, deep
-  // ocean keeps just the wash + outline. Political modes colour by owner, so skip there.
-  if (!isPolitical()) drawSeaCells();
-  // deep zoom: hash the interstitial gaps between provinces (laid down before the plot layer covers
-  // each province, so the hash survives only where the polygons don't quite meet). See drawGapHatch.
-  if (atLeast(BAND.PLOT) && !isPolitical()) drawGapHatch();
-  // surface plots only — underground provinces are never drawn here (hidden on the Overworld;
-  // relit by drawUnderworld on the Underworld plane). See docs/underworld.md. Per-plot terrain is
-  // a physical view: only the None (and live Caravans) overlays render it — the Nation/Culture/Faith
-  // political colourings have no use for per-plot terrain, so they suppress it.
-  if (!isPolitical()) drawPlots(isSurface);   // crisp per-plot Civ4 terrain over the blurred raster when zoomed in
-  drawCostOverlay();   // elevation movement-cost heat over the terrain, when toggled on
-  // impassable/wasteland: a grey wash + diagonal hatch (EU4-style "closed" terrain), drawn OVER the
-  // plot layer so it stays legible at every zoom (the plots would otherwise paint over it).
-  if (!isPolitical()) drawImpassable();
-
-  if (isPolitical()) drawPolitical();                             // nation/culture/faith fills
-  // geographic-tier boundaries (region → super-region → continent), zoom-banded. Lazily loaded
-  // as we approach their zoom range, and drawn under the province borders.
-  if (cam.k < 10) ensureTiers(draw);
-  drawTiers();
-  // province outlines (surface only; underground gets its lit rim from drawUnderworld). They
-  // FADE OUT below the province zoom so the coarser tier boundaries take over rather than
-  // clutter over them: gone below ~7.5×, full again by ~10×.
+}
+// surface plots only — underground provinces are relit by drawUnderworld on the Underworld plane.
+function drawSurfacePlots() { drawPlots(isSurface); }
+// province outlines (surface only; underground gets its lit rim from drawUnderworld). They FADE OUT
+// below the province zoom so the coarser tier boundaries take over: gone below ~7.5×, full by ~10×.
+function drawProvinceBorders() {
   const pbA = bandAlpha(kBand([7.5, 10]));
-  if (pbA > 0.01) {
-    ctx.save();
-    ctx.globalAlpha = pbA;
-    ctx.strokeStyle="rgba(190,205,230,.18)"; ctx.lineWidth=0.8;
-    for (const p of P) if (isSurface(p) && p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
-    ctx.restore();
-  }
-
-  if (S.plane === "underworld") drawUnderworld();   // dim the surface, relight the caves beneath
-  else drawCaveEntrances();                         // overworld: mark where caves adjoin the surface
-  drawAdjacencies();                                // EU4-style red dotted straits/canals/tunnels
-
-  // hovered province highlight (polygon if we have one, else a centroid ring for seas)
+  if (pbA <= 0.01) return;
+  ctx.save();
+  ctx.globalAlpha = pbA;
+  ctx.strokeStyle = "rgba(190,205,230,.18)"; ctx.lineWidth = 0.8;
+  for (const p of P) if (isSurface(p) && p.rings && provOnScreen(p)) ctx.stroke(provPath(p));
+  ctx.restore();
+}
+// hovered province highlight (polygon if we have one, else a centroid ring for seas)
+function drawHoverHighlight() {
   if (S.hoverProv && S.hoverProv.rings) {
     const hp = provPath(S.hoverProv);
-    ctx.fillStyle="rgba(231,236,244,.12)"; ctx.fill(hp);
-    ctx.strokeStyle="#eef2f8"; ctx.lineWidth=1.6; ctx.stroke(hp);
+    ctx.fillStyle = "rgba(231,236,244,.12)"; ctx.fill(hp);
+    ctx.strokeStyle = "#eef2f8"; ctx.lineWidth = 1.6; ctx.stroke(hp);
   } else if (S.hoverProv) {
     ctx.beginPath(); ctx.arc(px(S.hoverProv.lon), py(S.hoverProv.lat), 6, 0, 7);
-    ctx.strokeStyle="#eef2f8"; ctx.lineWidth=1.4; ctx.stroke();
+    ctx.strokeStyle = "#eef2f8"; ctx.lineWidth = 1.4; ctx.stroke();
   }
-  // selected province: a persistent accent outline while its detail fills the sidebar
+}
+// selected province: a persistent accent outline while its detail fills the sidebar
+function drawSelectedHighlight() {
   if (S.selectedProv && S.selectedProv.rings) {
     const sp = provPath(S.selectedProv);
-    ctx.fillStyle="rgba(232,183,106,.12)"; ctx.fill(sp);
-    ctx.strokeStyle=cssVar("--accent")||"#e8b76a"; ctx.lineWidth=2.2; ctx.stroke(sp);
+    ctx.fillStyle = "rgba(232,183,106,.12)"; ctx.fill(sp);
+    ctx.strokeStyle = cssVar("--accent") || "#e8b76a"; ctx.lineWidth = 2.2; ctx.stroke(sp);
   } else if (S.selectedProv) {
     ctx.beginPath(); ctx.arc(px(S.selectedProv.lon), py(S.selectedProv.lat), 7, 0, 7);
-    ctx.strokeStyle=cssVar("--accent")||"#e8b76a"; ctx.lineWidth=2; ctx.stroke();
+    ctx.strokeStyle = cssVar("--accent") || "#e8b76a"; ctx.lineWidth = 2; ctx.stroke();
   }
-
-  if (S.overlay === "live") drawLive();         // live session: colony + marching caravans from the feed
-  // per-province trade-good icons: Overworld physical view only (the political fills own the map in
-  // those modes; underground provinces are hidden here). Under the name labels, over the terrain.
-  if (S.plane !== "underworld" && !isPolitical()) drawTradeGoodIcons();
-  drawLabels();
+}
+// Render one world-copy: lazily pull the tier geometry as we approach its zoom, then paint the
+// LAYERS registry in order. The registry (layers.mjs) is the single place to change draw order,
+// gating, or band mapping — this function just runs it.
+function renderScene() {
+  if (cam.k < 10) ensureTiers(draw);   // tier geometry lazy-load (data, not a draw layer)
+  renderLayers();
 }
 
 // The Underworld plane (docs/underworld.md): veil this world-copy's map extent so the
@@ -483,3 +466,8 @@ if (typeof document !== "undefined" && document.fonts && document.fonts.load) {
 }
 
 export { draw, zoomAt, resize, focusProvince, focusProvinceFit, applyHash, hasDeepLink };
+// scene-layer draw fns, consumed by the LAYERS registry in layers.mjs (they stay here because they
+// close over main's raster/camera state and the Pby/hatch helpers)
+export { drawRaster, drawLakes, drawSeaCells, drawGapHatch, drawImpassable, drawSurfacePlots,
+         drawProvinceBorders, drawUnderworld, drawCaveEntrances, drawAdjacencies,
+         drawHoverHighlight, drawSelectedHighlight };

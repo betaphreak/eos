@@ -73,54 +73,59 @@ mechanisms collapse to one.
 
 **Which layer sits in which band, and the order layers paint in, are the two most
 frequently-tuned knobs — so they must be data in one file, never control flow spread
-through `renderScene`.** Today draw order is an imperative 18-call sequence in
-`main.renderScene()` (`main.mjs:220-296`) and band membership is scattered per module.
-Both collapse into one ordered registry, `js/layers.mjs`:
+through `renderScene`.** *(Shipped — Phase 3.)* The imperative draw sequence that lived in
+`main.renderScene()` is now the ordered registry `js/layers.mjs`; array order **is** the
+back-to-front paint order, so reordering a layer is moving its line:
 
 ```js
-// the single source of truth for BOTH stacking order and band mapping. Reorder a layer =
-// change one `order`; re-band it = change one `env`. Nothing else moves.
+// js/layers.mjs — the single source of truth for draw ORDER (array order) + GATING + band note.
 export const LAYERS = [
-  { id:"sea",        order: 10, env:null,                     draw: drawSeaBase },
-  { id:"raster",     order: 20, env:null,                     draw: drawRaster },
-  { id:"seaCells",   order: 30, env:null,  gate:notPolitical, draw: drawSeaCells },
-  { id:"plots",      order: 40, env:[BAND.REGION-0.7, BAND.REGION-0.4], gate:notPolitical, draw: drawPlots },
-  { id:"tradeGoods", order: 45, env:[4,4,5.6,6],              gate:physical, draw: drawTradeGoodIcons },
-  { id:"political",  order: 50, env:null,  gate:isPolitical,  draw: drawPolitical },
-  { id:"tierLines",  order: 60, /* per-tier env inside */     draw: drawTiers },
-  { id:"provBorders",order: 70, env:[2.9,3.3],                gate:surface,  draw: drawProvBorders },
-  { id:"live",       order: 80, gate:()=>S.overlay==="live",  draw: drawLive },
-  { id:"city",       order: 90, regime:REGIME.GROUND,         draw: drawCity },   // bands 6–8 skeleton
-  { id:"labels",     order:200, env:null,                     draw: drawLabels },
+  { id:"raster",       band:"all",                     draw: drawRaster },
+  { id:"lakes",        band:"all",                     draw: drawLakes },
+  { id:"seaCells",     band:"all",  gate:notPolitical, draw: drawSeaCells },
+  { id:"gapHatch",     band:"≥PLOT (64×)", gate:()=>atLeast(BAND.PLOT)&&notPolitical(), draw: drawGapHatch },
+  { id:"plots",        band:"≥REGION→, self-fade", gate:notPolitical, draw: drawSurfacePlots },
+  { id:"cost",         band:"≥REGION→, toggle",        draw: drawCostOverlay },
+  { id:"impassable",   band:"all",  gate:notPolitical, draw: drawImpassable },
+  { id:"political",    band:"self-fade", gate:isPolitical, draw: drawPolitical },
+  { id:"tiers",        band:"WORLD–PROVINCE, self-fade", draw: drawTiers },
+  { id:"provBorders",  band:"PROVINCE (7.5→10×)",      draw: drawProvinceBorders },
+  { id:"underworld",   band:"all",  gate:()=>S.plane==="underworld", draw: drawUnderworld },
+  { id:"caveEntrances",band:"all",  gate:overworld,    draw: drawCaveEntrances },
+  { id:"adjacencies",  band:"≥3.3 (10×)",              draw: drawAdjacencies },
+  { id:"hover",        band:"all",                     draw: drawHoverHighlight },
+  { id:"selected",     band:"all",                     draw: drawSelectedHighlight },
+  { id:"live",         band:"all",  gate:()=>S.overlay==="live", draw: drawLive },
+  { id:"tradeGoods",   band:"TERRAIN→PLOT, self-fade", gate:()=>overworld()&&notPolitical(), draw: drawTradeGoodIcons },
+  { id:"labels",       band:"≥PROVINCE, self-fade",    draw: drawLabels },
+  // { id:"city",      band:"GROUND", gate:()=>regime()===REGIME.GROUND, draw: drawCity },  // Phase 5
 ];
 ```
 
-A layer descriptor is `{ id, order, env?, gate?, regime?, plane?, draw }`:
+A layer descriptor is `{ id, band, gate?, draw }`:
 
-- **`order`** — integer z-index; the registry paints ascending. Reordering is a one-number
-  edit (leave gaps of 10 so inserts don't renumber).
-- **`env`** — the band envelope handed to `bandAlpha`; the registry passes the resulting
-  alpha into `draw(alpha)`, so a layer never reads `cam.k`. `null` = all bands (full alpha).
-- **`gate` / `regime` / `plane`** — cheap predicates (`isPolitical`, `physical`, `surface`,
-  a regime, an overworld/underworld plane) that skip the layer entirely.
+- **array position** — the z-index; the registry paints top-to-bottom. Reordering = moving a line.
+- **`band`** — a human annotation of where the layer lives on the spine. The actual fade is
+  single-sourced *inside* each `draw` via `bandAlpha` (Phase 2); most layers self-fade, so the
+  runner stays a pure gate+draw. (A follow-up could lift the envelope into the table and have the
+  runner pass `bandAlpha(env)` into `draw(alpha)` for the flat-alpha layers — deferred, not needed.)
+- **`gate`** — a cheap predicate (`notPolitical`, `isPolitical`, `overworld`, an overlay/plane/
+  regime check) that skips the layer entirely.
 
-`renderScene()` becomes a loop over the registry — the imperative sequence disappears:
+The **draw fns live in the modules that own their state** — `main.mjs` keeps the ones that close
+over the raster/camera and the province-polygon/`Pby`/hatch helpers (and exports them); the
+overlays own theirs. `layers.mjs` only imports and orders them. `renderScene()` is now:
 
 ```js
-for (const L of LAYERS) {                 // pre-sorted by order
-  if (L.gate && !L.gate()) continue;
-  if (L.regime && regime() !== L.regime) continue;
-  if (L.plane && S.plane !== L.plane) continue;
-  const a = L.env ? bandAlpha(L.env) : 1;
-  if (a <= 0.001) continue;               // fully faded out → skip
-  L.draw(a);
+function renderScene() {
+  if (cam.k < 10) ensureTiers(draw);   // tier geometry lazy-load (data, not a draw layer)
+  renderLayers();                      // paint LAYERS in order for this world copy
 }
 ```
 
-The per-world-copy wrap and scene clip stay in `renderScene` around this loop; only the
-layer *sequence* moves into data. This is built in its own phase (below) — not Phase 1 —
-because it rewrites the orchestrator; the band helpers land first so the registry has
-`bandAlpha`/`env` to hang on.
+The per-world-copy wrap and scene clip stay in `paint()` around this; only the layer *sequence*
+moved into data. `main` ↔ `layers` is a deliberate import cycle — safe because every draw is a
+hoisted function declaration, initialised before the `LAYERS` array is built.
 
 ## The nine bands
 
@@ -301,10 +306,11 @@ reorg.
    map looks unchanged.
 2. **Migrate remaining fades.** Convert every threshold in the migration-map table to
    an envelope. Still behavior-preserving; now single-sourced. Verify per band.
-3. **Layer registry.** Add `layers.mjs`; move `renderScene`'s imperative draw sequence into
-   the ordered `LAYERS` table (draw order + band mapping now editable in one place). Split
-   `resources.mjs`/`cost.mjs` out of `plots.mjs` as registered layers. Behavior-preserving —
-   same layers, same order, now declarative.
+3. **Layer registry.** ✅ *Done.* Added `layers.mjs`; moved `renderScene`'s 18-call imperative
+   sequence into the ordered `LAYERS` table (draw order + gating now editable in one place),
+   extracting the inline blocks (raster/lakes/borders/hover/selected) into named layer fns.
+   Behavior-identical (verified headless at z=2 and z=24). The optional `resources.mjs`/`cost.mjs`
+   split out of `plots.mjs` was **deferred** — those draws stay in `plots.mjs`, registered from there.
 4. **Input spine.** Make `panel.mjs` hit-testing regime-dispatched, and add the regime signal
    (mode chip + cursor + hysteretic transition pulse). Atlas/Overland keep current selection
    behavior; Ground newly selects plots→(skeleton) buildings.
