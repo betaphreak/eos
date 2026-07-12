@@ -51,7 +51,11 @@ try {
     $Tag   = if ($dirty) { "$sha-dirty" } else { $sha }
   }
   $image = "$LOGIN/$REPO`:$Tag"
-  Write-Host "==> Deploying image: $image" -ForegroundColor Cyan
+  # build identity baked into /actuator/info (the .git is not in the image context, so pass it in) —
+  # computed ALWAYS (not just when building) so the post-roll verify can assert the served commit.
+  $buildNumber = "$(git rev-list --count HEAD)".Trim()   # auto-incrementing monotonic build number
+  $buildCommit = "$(git rev-parse --short HEAD)".Trim()
+  Write-Host "==> Deploying image: $image (build #$buildNumber, commit $buildCommit)" -ForegroundColor Cyan
 
   # sanity: tools present
   docker info --format '{{.ServerVersion}}' | Out-Null
@@ -61,9 +65,6 @@ try {
     Write-Host "==> az acr login ($REGISTRY)" -ForegroundColor Cyan
     az acr login -n $REGISTRY | Out-Null
 
-    # build identity baked into /actuator/info (the .git is not in the image context, so pass it in)
-    $buildNumber = "$(git rev-list --count HEAD)".Trim()   # auto-incrementing monotonic build number
-    $buildCommit = "$(git rev-parse --short HEAD)".Trim()
     Write-Host "==> docker build (build #$buildNumber, commit $buildCommit)" -ForegroundColor Cyan
     docker build -t $image `
       --build-arg BUILD_NUMBER=$buildNumber `
@@ -76,22 +77,39 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "docker push failed" }
   }
 
+  # capture what's serving NOW, so the post-roll verify can confirm a genuinely new build takes over.
+  # build.time is stamped at package time (advances on a real rebuild); build.commit is the SHA baked
+  # from BUILD_COMMIT. Read before the roll; empty on a cold/first deploy.
+  $beforeTime = $null
+  try { $beforeTime = (Invoke-RestMethod -Uri $HEALTH -TimeoutSec 10).build.time } catch { }
+
   Write-Host "==> az containerapp update" -ForegroundColor Cyan
   $state = az containerapp update -n $APP -g $RG --image $image `
     --query "properties.provisioningState" -o tsv
   Write-Host "    provisioningState = $state"
 
-  # confirm the new revision actually serves (build.version comes from the build-info goal)
-  Write-Host "==> waiting for the new revision to serve $HEALTH" -ForegroundColor Cyan
-  $ver = $null
-  for ($i = 1; $i -le 20; $i++) {
+  # POST-ROLL VERIFY — provisioningState is NOT enough (it goes Succeeded while the OLD revision keeps
+  # serving; the version string is a static SNAPSHOT). Poll until the served build.commit matches THIS
+  # build AND build.time advanced past what was serving before — so a stale image, a roll that didn't
+  # take, or the old revision still on traffic FAILS the deploy loudly instead of looking green.
+  Write-Host "==> verifying the new build is live at $HEALTH (want commit $buildCommit)" -ForegroundColor Cyan
+  $ok = $false
+  for ($i = 1; $i -le 30; $i++) {
     try {
-      $ver = (Invoke-RestMethod -Uri $HEALTH -TimeoutSec 10).build.version
-      if ($ver) { Write-Host "    live version: $ver" -ForegroundColor Green; break }
-    } catch { }
+      $info = Invoke-RestMethod -Uri $HEALTH -TimeoutSec 10
+      if ($info.build.commit -eq $buildCommit -and $info.build.time -ne $beforeTime) {
+        Write-Host "    live: commit $($info.build.commit), build #$($info.build.number), built $($info.build.time)" -ForegroundColor Green
+        $ok = $true; break
+      }
+      Write-Host "    ...serving commit $($info.build.commit) built $($info.build.time) — want $buildCommit w/ a newer build ($i/30)"
+    } catch { Write-Host "    ...not answering yet ($i/30)" }
     Start-Sleep -Seconds 10
   }
-  if (-not $ver) { Write-Warning "server did not report a version after ~3.5 min — check the revision manually" }
+  if (-not $ok) {
+    throw ("POST-ROLL VERIFY FAILED: $HEALTH is not serving this build (commit $buildCommit) after ~5 min — " +
+      "the new revision did not take over (stale image, unhealthy revision, or traffic still on the old one). " +
+      "Inspect: az containerapp revision list -n $APP -g $RG")
+  }
   Write-Host "==> done." -ForegroundColor Cyan
 }
 finally {

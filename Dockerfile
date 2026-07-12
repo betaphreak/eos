@@ -13,14 +13,21 @@ COPY .mvn ./.mvn
 COPY civstudio-engine/pom.xml ./civstudio-engine/
 COPY civstudio-server/pom.xml ./civstudio-server/
 RUN mvn -q -e -B dependency:go-offline -DexcludeArtifactIds=civstudio-engine
-COPY civstudio-engine/src ./civstudio-engine/src
-COPY civstudio-server/src ./civstudio-server/src
 # build identity for /actuator/info. The image context has no .git (it's .dockerignored — 204 MB),
 # so the git-commit-id plugin can't derive these here; the deploy supplies them as build-args (the
 # host's `git rev-list --count HEAD` + short SHA) and we pass them as -D, overriding the plugin's
 # (absent) values so build-info bakes the real number/commit. See tools/deploy-server.ps1.
 ARG BUILD_NUMBER=0
 ARG BUILD_COMMIT=docker
+# CACHE-BUST (stale-jar guard): a new commit changes BUILD_COMMIT, so this RUN — and every layer
+# after it, the source COPYs and the package build — is forced to rebuild. Without it a Docker
+# COPY-cache quirk can serve a STALE jar under a fresh image tag: the source layer cache-hits (old
+# code) while the package RUN re-runs with the new build-arg, baking correct build-info onto old
+# code (exactly what happened once — see docs/client-server.md §Deployment). The dependency
+# go-offline layer above stays cached, so this only re-runs the source build, not the deps.
+RUN echo "build ${BUILD_COMMIT} (#${BUILD_NUMBER})"
+COPY civstudio-engine/src ./civstudio-engine/src
+COPY civstudio-server/src ./civstudio-server/src
 RUN mvn -q -B -DskipTests -Dgit.total.commit.count=${BUILD_NUMBER} -Dgit.commit.id.abbrev=${BUILD_COMMIT} package
 
 # ---- runtime: the jar + the on-disk resources the engine loads at runtime ----
