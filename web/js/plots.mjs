@@ -1,5 +1,6 @@
-import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, provOnScreen, apiUrl, K_PLOT, K_TEX, K_MAX, TT, RIVER, SHORE, ICE_ART, BONUS_ICONS, TRADE_GOODS, TREES, SEA_BANDS, LY, NB4, cam, VIEW, ctx, px, py, pxr, pyr, lerp, S } from "./core.mjs";
+import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, provOnScreen, apiUrl, K_PLOT, K_MAX, TT, RIVER, SHORE, ICE_ART, BONUS_ICONS, TRADE_GOODS, TREES, SEA_BANDS, LY, NB4, cam, VIEW, ctx, px, py, pxr, pyr, lerp, S } from "./core.mjs";
 import { draw } from "./main.mjs";
+import { bandAlpha, kBand, atLeast, BAND } from "./bands.mjs";
 import { renderRail } from "./panel.mjs";
 // Load a baked art image once: on load run `onReady` (flip its ready flag / invalidate caches) and
 // repaint. Returns the Image, or null when the asset is absent from the bundle (LFS not pulled /
@@ -169,8 +170,9 @@ function buildCostCanvas(p, plots) {
 // blit the cost overlay for the provinces in view (same cull/scale as drawPlots), when the
 // toggle is on and we are zoomed into the plot layer. Drawn over the terrain, under outlines.
 function drawCostOverlay() {
-  if (!S.showCost || cam.k < K_PLOT) return;
-  const a = Math.min(1, (cam.k - K_PLOT) / 1.5);
+  if (!S.showCost) return;
+  const a = bandAlpha(kBand([K_PLOT, 6.5]));   // fade in over the plots band (was (cam.k-K_PLOT)/1.5)
+  if (a <= 0) return;
   const smooth = ctx.imageSmoothingEnabled;
   ctx.globalAlpha = a; ctx.imageSmoothingEnabled = true;
   for (const p of P) {
@@ -191,8 +193,8 @@ function drawCostOverlay() {
 // (see main.drawUnderworld); called with no argument it draws the whole world.
 function drawPlots(only) {
   if (cam.k < K_PLOT) return;
-  const textured = cam.k >= K_TEX && ttReady && !S.dragging;   // flat tiles while panning (cheap)
-  const a = Math.min(1, (cam.k - K_PLOT) / 1.5);
+  const textured = atLeast(BAND.TERRAIN) && ttReady && !S.dragging;   // real textures from band 4 (16×); flat tiles while panning
+  const a = bandAlpha(kBand([K_PLOT, 6.5]));   // fade in over the plots band (was (cam.k-K_PLOT)/1.5)
   const smooth = ctx.imageSmoothingEnabled;
   ctx.globalAlpha = a;
   const vis = [];   // in-view provinces with plots loaded — reused by the bonus overlay (no 2nd P scan)
@@ -467,9 +469,9 @@ const TG_ICON_PX = 26;        // on-screen icon size, in CSS px (ctx is dpr-scal
 const TG_FADE_START = 48, TG_FADE_END = 64;   // fade out over this zoom range as plot bonuses take over
 export function drawTradeGoodIcons() {
   if (!TRADE_GOODS || !TRADE_GOODS.icons || !tgReady) return;
-  if (cam.k < K_TEX) return;                     // only from the terrain-texture zoom (16×) upward
+  if (!atLeast(BAND.TERRAIN)) return;            // only from the terrain-texture band (4, 16×) upward
   // fade out as you approach plot-detail zoom, where the per-plot bonus icons carry the resources
-  const fade = 1 - Math.max(0, Math.min(1, (cam.k - TG_FADE_START) / (TG_FADE_END - TG_FADE_START)));
+  const fade = 1 - bandAlpha(kBand([TG_FADE_START, TG_FADE_END]));
   if (fade <= 0.01) return;
   const { cell, cols, index } = TRADE_GOODS.icons, prov = TRADE_GOODS.prov;
   const size = TG_ICON_PX, r = size / 2;

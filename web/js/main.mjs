@@ -1,4 +1,5 @@
 import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, isPolitical, isUnderground, latAtScreenY, cssVar, S } from "./core.mjs";
+import { bandAlpha, kBand, atLeast, BAND } from "./bands.mjs";
 import { drawPlots, drawCostOverlay, drawTradeGoodIcons } from "./plots.mjs";
 import { drawLabels } from "./labels.mjs";
 import { drawPolitical, scheduleLegendRefresh } from "./overlays/political.mjs";
@@ -67,7 +68,7 @@ function drawSeaBase(w, h) {
   // map — it pans and scales with the world instead of being a fixed screen grid — and fades out
   // by deep zoom, where the upscaled tile would blur and open water is calm anyway.
   if (seaPat) {
-    const fade = 1 - Math.max(0, Math.min(1, (cam.k - K_PLOT) / (K_TEX - K_PLOT)));   // 1 ≤K_PLOT → 0 ≥K_TEX
+    const fade = 1 - bandAlpha(kBand([K_PLOT, K_TEX]));   // 1 ≤K_PLOT → 0 ≥K_TEX (fade out over the plot band)
     // confine the ripple to the mapped-latitude band (the raster's on-screen Y extent). Beyond it —
     // the empty polar seas between the map's top/bottom edge and the ±89° scene clip — the tile would
     // repeat as a visible static grid, so those bands stay flat gradient instead.
@@ -197,10 +198,9 @@ function drawImpassable() {
   ctx.restore();
 }
 // A light diagonal hash for the interstitial space between province polygons, shown only past deep
-// zoom (cam.k > GAP_HATCH_ZOOM). Laid over the raster before the plot layer, so the opaque per-plot
+// zoom (band ≥ PLOT, 64×). Laid over the raster before the plot layer, so the opaque per-plot
 // terrain covers each province and the hash survives only in the gaps between them (where ring
 // simplification leaves the provinces not quite tiling).
-const GAP_HATCH_ZOOM = 64;
 let gapHatchPat = null;
 function gapHatch() {
   if (gapHatchPat) return gapHatchPat;
@@ -237,7 +237,7 @@ function renderScene() {
   if (!isPolitical()) drawSeaCells();
   // deep zoom: hash the interstitial gaps between provinces (laid down before the plot layer covers
   // each province, so the hash survives only where the polygons don't quite meet). See drawGapHatch.
-  if (cam.k > GAP_HATCH_ZOOM && !isPolitical()) drawGapHatch();
+  if (atLeast(BAND.PLOT) && !isPolitical()) drawGapHatch();
   // surface plots only — underground provinces are never drawn here (hidden on the Overworld;
   // relit by drawUnderworld on the Underworld plane). See docs/underworld.md. Per-plot terrain is
   // a physical view: only the None (and live Caravans) overlays render it — the Nation/Culture/Faith
@@ -256,7 +256,7 @@ function renderScene() {
   // province outlines (surface only; underground gets its lit rim from drawUnderworld). They
   // FADE OUT below the province zoom so the coarser tier boundaries take over rather than
   // clutter over them: gone below ~7.5×, full again by ~10×.
-  const pbA = Math.max(0, Math.min(1, (cam.k - 7.5) / 2.5));
+  const pbA = bandAlpha(kBand([7.5, 10]));
   if (pbA > 0.01) {
     ctx.save();
     ctx.globalAlpha = pbA;

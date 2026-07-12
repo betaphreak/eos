@@ -170,7 +170,7 @@ function drawLabels() {
   // map): label the provinces actually on screen, largest first and collision-culled, so
   // names resolve wherever you zoom rather than only for the globally-biggest few
   {
-    const pa = Math.min(1, Math.max(0, (cam.k - 6.5) / 2));   // fade in over cam.k 6.5 -> 8.5
+    const pa = bandAlpha(kBand([6.5, 8.5]));   // province names fade in (bands ≈2.70→3.09)
     if (pa > 0.01) {
       const inView = [];
       for (const p of P) {
@@ -186,7 +186,7 @@ function drawLabels() {
       ctx.restore();
       // sea/lake names: secondary, deeper in (they'd clutter the world view), a cool italic and
       // drawn AFTER land so land wins any label-collision. Uses the coastal water provinces now shipped.
-      const wpa = Math.min(1, Math.max(0, (cam.k - 8.5) / 2));   // fade in over cam.k 8.5 -> 10.5
+      const wpa = bandAlpha(kBand([8.5, 10.5]));   // sea/lake names fade in (bands ≈3.09→3.39)
       if (wpa > 0.01) {
         const water = [];
         for (const p of P) {

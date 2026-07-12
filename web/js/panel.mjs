@@ -1,5 +1,6 @@
-import { BUNDLE, P, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, K_TEX, worldW, provPath, provBoxHas, clampPan, provGeo, polOf, isPolitical, TRADE_GOODS, S } from "./core.mjs";
+import { BUNDLE, P, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, worldW, provPath, provBoxHas, clampPan, provGeo, polOf, isPolitical, TRADE_GOODS, S } from "./core.mjs";
 import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
+import { atLeast, BAND } from "./bands.mjs";
 import { loadPlots, bonusIconRect } from "./plots.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
 import { startLive, stopLive, liveActive, liveState, controlLive, LIVE_RATES } from "./overlays/live.mjs";
@@ -210,7 +211,7 @@ function provinceAt(mx, my){
 // exist), across the E-W wrap copies — used for the resource tooltip. Ring-less sea provinces are
 // found too, so coastal resources tooltip like land ones. Returns the plot record, or null.
 function plotAt(mx, my){
-  if(cam.k < K_TEX) return null;
+  if(!atLeast(BAND.TERRAIN)) return null;
   const period = worldW();
   const L = cam.x + cam.k*VIEW.dx;
   const mMin = period>0 ? Math.floor((0-L)/period) : 0;

@@ -5,6 +5,7 @@
 // search, sidebar Politics block) lives in panel.mjs; this module owns only the canvas render.
 import { ctx, cam, P, provPath, provOnScreen, polOf, isPolitical, isUnderground, COUNTRIES, CULTURES, RELIGIONS, K_PLOT, K_TEX, lerp, VIEW, provSrcBox, pxr, pyr, worldW, S } from "../core.mjs";
 import { draw, focusProvinceFit } from "../main.mjs";
+import { bandAlpha, kBand } from "../bands.mjs";
 
 // "#rrggbb" + alpha -> an rgba() string, memoised (the nation/culture/faith fills)
 const _rgbaCache = {};
@@ -25,7 +26,7 @@ export function drawPolitical() {
   // Political overlays no longer fade to reveal per-plot terrain (main.renderScene suppresses plots
   // under them), so the fill stays readable at EVERY zoom — a gentle taper past K_PLOT keeps some
   // terrain context — and crisp coloured borders are added once zoomed in for province legibility.
-  const a = cam.k < K_PLOT ? 0.58 : lerp(0.52, 0.42, Math.min(1, (cam.k - K_PLOT) / (K_TEX - K_PLOT)));
+  const a = cam.k < K_PLOT ? 0.58 : lerp(0.52, 0.42, bandAlpha(kBand([K_PLOT, K_TEX])));
   for (const p of P) if (p.rings && provOnScreen(p) && shown(p)) {
     const e = polOf(p).e;
     if (e) { ctx.fillStyle = hexA(e.color, a); ctx.fill(provPath(p)); }

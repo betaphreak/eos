@@ -7,8 +7,9 @@
 // pure consumer + command client — it never touches engine internals. The map projection
 // (px/py) already pins anything with a lon/lat onto the terrain, so the feed's colonies and
 // caravans place with no new geometry.
-import { ctx, S, px, py, cssVar, cam, VIEW, baseXr, baseYr, sxSrc, sySrc, BUNDLE, LABEL_FONT, K_TEX } from "../core.mjs";
+import { ctx, S, px, py, cssVar, cam, VIEW, baseXr, baseYr, sxSrc, sySrc, BUNDLE, LABEL_FONT } from "../core.mjs";
 import { hasDeepLink } from "../main.mjs";
+import { atLeast, BAND } from "../bands.mjs";
 import { showLiveLog, ingestLog, ingestChat, resetLog, setChatSender } from "../livelog.mjs";
 
 // where the feed lives: the build can inject BUNDLE.live.base; a ?live=<url> query overrides
@@ -203,7 +204,7 @@ export function drawLive() {
   const colony = snap.colonies[0];
   if (colony && Number.isFinite(colony.latitude)) {
     const x = px(colony.longitude), y = py(colony.latitude);
-    const overview = cam.k < K_TEX;
+    const overview = !atLeast(BAND.TERRAIN);
     if (overview) {
       ctx.fillStyle = cssVar("--accent") || "#e8b76a";
       ctx.strokeStyle = "#0b0f16"; ctx.lineWidth = 2;
