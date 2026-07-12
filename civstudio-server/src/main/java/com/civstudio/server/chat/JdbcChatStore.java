@@ -43,6 +43,11 @@ public final class JdbcChatStore implements ChatStore {
 	}
 
 	@Override
+	public void clearAll() {
+		jdbc.update("DELETE FROM chat_message");
+	}
+
+	@Override
 	public List<ChatMessage> recent(String sessionId, int limit) {
 		// newest-first from SQL (so LIMIT keeps the latest), then reverse to oldest-first for replay
 		List<ChatMessage> newestFirst = jdbc.query(

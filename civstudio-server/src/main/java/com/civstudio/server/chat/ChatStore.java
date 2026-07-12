@@ -30,4 +30,11 @@ public interface ChatStore {
 	 * @return the recent messages, oldest-first (empty if none)
 	 */
 	List<ChatMessage> recent(String sessionId, int limit);
+
+	/**
+	 * Drop <b>all</b> chat history for every session (an admin op — see {@code
+	 * docs/admin-console.md}). New/reloading spectators then replay nothing; clients already
+	 * connected keep what they've received until they reload.
+	 */
+	void clearAll();
 }

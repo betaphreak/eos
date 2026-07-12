@@ -10,12 +10,15 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.web.authentication.RememberMeServices;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 /**
@@ -30,11 +33,14 @@ public class AuthController {
 
 	private final UserStore users;
 	private final ObjectProvider<ClientRegistrationRepository> clientRegistrations;
+	private final ObjectProvider<RememberMeServices> rememberMe;
 
 	public AuthController(UserStore users,
-			ObjectProvider<ClientRegistrationRepository> clientRegistrations) {
+			ObjectProvider<ClientRegistrationRepository> clientRegistrations,
+			ObjectProvider<RememberMeServices> rememberMe) {
 		this.users = users;
 		this.clientRegistrations = clientRegistrations;
+		this.rememberMe = rememberMe;
 	}
 
 	/** The current authenticated user, or {@code {authenticated:false}}. */
@@ -50,9 +56,20 @@ public class AuthController {
 				.orElse(Map.of("authenticated", false));
 	}
 
-	/** Sign out: invalidate the session and clear the security context. */
+	/**
+	 * Sign out: invalidate the session, expire the remember-me cookie, and clear the security
+	 * context. Expiring {@code civstudio-remember} is essential — with {@code alwaysRemember} the
+	 * next {@code /api/auth/me} would otherwise re-authenticate from that cookie and the UI would
+	 * flip straight back to signed-in (see {@code docs/authentication.md}). The remember-me service
+	 * is present only when a key is configured (prod); a no-op otherwise.
+	 */
 	@PostMapping("/logout")
-	public ResponseEntity<Void> logout(HttpServletRequest request) {
+	public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		// the remember-me service is also a LogoutHandler whose logout() cancels the cookie with
+		// the exact name/path/secure it was set with
+		if (rememberMe.getIfAvailable() instanceof LogoutHandler lh)
+			lh.logout(request, response, auth);
 		HttpSession session = request.getSession(false);
 		if (session != null)
 			session.invalidate();

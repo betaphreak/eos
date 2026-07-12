@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.civstudio.server.CivStudioProperties;
 import com.civstudio.server.SessionHost;
+import com.civstudio.server.chat.ChatStore;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -37,16 +38,18 @@ public class AdminController {
 	private final CurrentUserResolver currentUser;
 	private final CivStudioProperties props;
 	private final SessionHost host;
+	private final ChatStore chat;
 
 	// one background warm at a time; progress is read from PlotService.status() (cached count grows)
 	private final AtomicBoolean warming = new AtomicBoolean(false);
 
 	public AdminController(PlotService plots, CurrentUserResolver currentUser,
-			CivStudioProperties props, SessionHost host) {
+			CivStudioProperties props, SessionHost host, ChatStore chat) {
 		this.plots = plots;
 		this.currentUser = currentUser;
 		this.props = props;
 		this.host = host;
+		this.chat = chat;
 	}
 
 	/** A consolidated admin readout: plot-cache status, warm progress, server + identity. */
@@ -109,6 +112,14 @@ public class AdminController {
 	public Map<String, Object> clearAnbennarCache(HttpServletRequest http) {
 		requireAdmin(http);
 		return Map.of("deleted", deleteTree(Path.of(props.getAnbennar().getCacheDir())));
+	}
+
+	/** Drop all lobby chat history (new/reloading spectators replay nothing). */
+	@PostMapping("/chat/clear")
+	public Map<String, Object> clearChat(HttpServletRequest http) {
+		requireAdmin(http);
+		chat.clearAll();
+		return Map.of("cleared", true);
 	}
 
 	private void requireAdmin(HttpServletRequest http) {

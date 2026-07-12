@@ -7,7 +7,7 @@
 // pure consumer + command client — it never touches engine internals. The map projection
 // (px/py) already pins anything with a lon/lat onto the terrain, so the feed's colonies and
 // caravans place with no new geometry.
-import { ctx, S, px, py, cssVar, cam, VIEW, baseXr, baseYr, sxSrc, sySrc, BUNDLE, LABEL_FONT } from "../core.mjs";
+import { ctx, S, px, py, cssVar, cam, VIEW, baseXr, baseYr, sxSrc, sySrc, BUNDLE, LABEL_FONT, K_TEX } from "../core.mjs";
 import { showLiveLog, ingestLog, ingestChat, resetLog, setChatSender } from "../livelog.mjs";
 
 // where the feed lives: the build can inject BUNDLE.live.base; a ?live=<url> query overrides
@@ -193,15 +193,26 @@ export function drawLive() {
     ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.strokeStyle = "#0b0f16"; ctx.lineWidth = 1.6; ctx.stroke();
   });
 
-  // the colony: a settlement marker + name
+  // the city: at the overview (plots not textured) draw a small marker; once zoomed past the
+  // texture threshold the baked city sprite on the urban-core plot takes over, so the marker drops
+  // and only the name stays — centred beneath. Hover the city province for its details (city +
+  // development), added to panel.provTip. See docs/urban-plots.md.
   const colony = snap.colonies[0];
   if (colony && Number.isFinite(colony.latitude)) {
     const x = px(colony.longitude), y = py(colony.latitude);
-    ctx.fillStyle = cssVar("--accent") || "#e8b76a";
-    ctx.strokeStyle = "#0b0f16"; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.rect(x - 5, y - 5, 10, 10); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "#eef2f8"; ctx.font = `600 13px ${LABEL_FONT}`;
-    ctx.fillText(colony.name || "colony", x + 9, y + 4);
+    const overview = cam.k < K_TEX;
+    if (overview) {
+      ctx.fillStyle = cssVar("--accent") || "#e8b76a";
+      ctx.strokeStyle = "#0b0f16"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill(); ctx.stroke();
+    }
+    // the city name, centred beneath the site, with a dark halo so it reads over any terrain
+    const label = colony.name || "colony", ly = y + (overview ? 9 : 6);
+    ctx.font = `600 13px ${LABEL_FONT}`;
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.lineWidth = 3; ctx.strokeStyle = "rgba(6,9,14,.85)"; ctx.strokeText(label, x, ly);
+    ctx.fillStyle = "#eef2f8"; ctx.fillText(label, x, ly);
+    ctx.textAlign = "start"; ctx.textBaseline = "alphabetic";
   }
 }
 

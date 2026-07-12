@@ -45,6 +45,7 @@
 <header>
   <span class="brand">CivStudio<span class="g">:</span> Server Admin</span>
   <span class="sub" id="hdrSub">dev.civstudio.com</span>
+  <span id="who" style="margin-left:auto; display:flex; align-items:center; gap:10px;"></span>
 </header>
 
 <!-- shown when the caller is not an allow-listed admin -->
@@ -81,7 +82,11 @@
   </div>
 
   <div class="panel">
-    <h2>Sessions</h2>
+    <h2>Sessions &amp; chat</h2>
+    <div class="actions" style="margin-top:0;margin-bottom:14px">
+      <button class="danger" id="btnChat"
+        title="Delete all lobby chat history. New or reloading spectators replay nothing; clients already connected keep what they've received until they reload.">Clear lobby chat</button>
+    </div>
     <table><thead><tr><th>ID</th><th>Owner</th><th>State</th><th>Tick</th><th>Control</th></tr></thead>
       <tbody id="sessionRows"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table>
   </div>
@@ -150,7 +155,28 @@ $("#btnWarm").onclick = () => act("POST", "/api/admin/plots/warm",
   j => j.started ? "Warming the world…" : "Already warming");
 $("#btnAnbennar").onclick = () => { if (confirm("Drop the Anbennar fetch cache? It will re-fetch from GitLab on next use."))
   act("POST", "/api/admin/caches/anbennar/clear", j => `Dropped ${j.deleted} cached files`); };
+$("#btnChat").onclick = () => { if (confirm("Clear all lobby chat history?"))
+  act("POST", "/api/admin/chat/clear", () => "Lobby chat cleared"); };
 
+// header identity + sign in/out (same-origin, so cookies are first-party). /api/auth/me carries no
+// admin flag — the console's own 200/403 gate below decides admin access; this is just who you are.
+async function checkAuth() {
+  let me = { authenticated: false };
+  try { me = await (await fetch("/api/auth/me", { credentials: "include" })).json(); } catch { }
+  const who = $("#who");
+  if (me.authenticated) {
+    who.innerHTML = `<span class="muted">signed in as <b style="color:var(--ink)">${me.displayName || me.id}</b></span>
+      <button id="logout" title="Sign out and clear your session + remember-me cookie">Sign out</button>`;
+    $("#logout").onclick = async () => {
+      try { await fetch("/api/auth/logout", { method: "POST", credentials: "include" }); } catch { }
+      location.reload();
+    };
+  } else {
+    who.innerHTML = `<a class="btn" href="/api/auth/steam/login" style="padding:7px 14px">Sign in with Steam</a>`;
+  }
+}
+
+checkAuth();
 refresh();
 setInterval(refresh, 3000);
 </script>

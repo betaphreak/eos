@@ -256,6 +256,8 @@ function provTip(best){
        + `<br><span class="r">${reg}</span>`;
   } else {
     h += `<br><span class="r">${reg} · ${best.plots} plots</span>`;
+    // a city (Anbennar city_terrain) — its concentrated development, in gold (see docs/urban-plots.md)
+    if (best.city) h += `<br><span class="r" style="color:var(--gold,#c9a24a)">City · development ${best.dev || 0}</span>`;
     // per-province trade good (physical view), with its colour dot — mirrors the political dimension line
     const g = TRADE_GOODS && TRADE_GOODS.prov[best.id] && TRADE_GOODS.goods[TRADE_GOODS.prov[best.id]];
     if (g) h += `<br><span class="r"><span class="dot" style="background:${g.color}"></span>${g.name}</span>`;

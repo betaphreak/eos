@@ -31,6 +31,11 @@ public final class InMemoryChatStore implements ChatStore {
 	}
 
 	@Override
+	public void clearAll() {
+		bySession.clear();
+	}
+
+	@Override
 	public List<ChatMessage> recent(String sessionId, int limit) {
 		Deque<ChatMessage> q = bySession.get(sessionId);
 		if (q == null || limit <= 0)
