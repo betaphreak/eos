@@ -267,8 +267,11 @@ public final class ProvincePlotField {
 		placeOases(mask, ground, composed, feature, registry.feature("FEATURE_OASIS"), rng);
 		// C2C bonus placement (slice 8): a per-province pass, resources laid in placement
 		// order at target densities with group spacing (see BonusGenerator)
-		Bonus[] bonusGrid = BonusGenerator.place(w, h, cells, ground, composed, feature,
-				province.latitude(), bonuses, rng, false);
+		// Wastelands (IMPASSABLE) carry no resources — barren ground is worked by no one.
+		Bonus[] bonusGrid = province.type() == ProvinceType.IMPASSABLE
+				? new Bonus[w * h]
+				: BonusGenerator.place(w, h, cells, ground, composed, feature,
+						province.latitude(), bonuses, rng, false);
 
 		// the urban core: site the province's city on its best Civ4 foundValue cell(s) — as
 		// close as possible to as many bonuses as fit in a city work radius — and stamp them

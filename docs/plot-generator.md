@@ -184,7 +184,11 @@ Province-type decisions implemented:
   fixed cavern pool + flattened floor. `DWARVEN_HOLD_SURFACE` stays cavern (owner's call).
 - **Bonus density** → **stochastic rounding** in `BonusGenerator` (the richer terrain spreads each bonus
   across fewer matching plots; probabilistic rounding preserves expected density so small provinces still
-  draw resources).
+  draw resources). **Retuned (increment 1b, `GEN_VERSION` 3→4):** `DENSITY_SCALE` 0.275→**0.055** (≈5×
+  sparser — the procedural terrain made too many plots eligible, blanketing the map), and **wastelands
+  (`IMPASSABLE`) now carry no resources at all** — the bonus pass is skipped for them (barren ground is
+  worked by no one). Covered by `ProvincePlotFieldTest.wastelandsCarryNoResources` +
+  `BonusPlacementTest` (density band retuned, upper bound now guards the 5× regression).
 
 Anbennar calibration deviations from pure C2C (documented in `ClimateTerrainGenerator`): a **dry-desert
 gate** (an `arid` province reads desert across its latitude range, not only when scorching) and a

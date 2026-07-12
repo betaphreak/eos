@@ -2,6 +2,7 @@ package com.civstudio.geo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -148,6 +149,19 @@ class ProvincePlotFieldTest {
 
 	private static String bonusType(ProvincePlot p) {
 		return p.bonus() == null ? "none" : p.bonus().type();
+	}
+
+	@Test
+	void wastelandsCarryNoResources() throws Exception {
+		// an IMPASSABLE province is barren wasteland worked by no one — the bonus stage is skipped
+		// entirely, so no plot carries a resource (across a seed sweep, since placement is stochastic).
+		Province waste = WorldMap.load().findByName("Ruby Mountains").orElseThrow();
+		assertSame(ProvinceType.IMPASSABLE, waste.type(), "Ruby Mountains is a wasteland");
+		TerrainRegistry reg = TerrainRegistry.load();
+		ProvinceRaster raster = ProvinceRaster.load();
+		for (int seed = 0; seed < 8; seed++)
+			for (ProvincePlot p : ProvincePlotField.generate(waste, reg, raster, new Rng(seed)).plots())
+				assertNull(p.bonus(), "wasteland plot carries a resource: " + bonusType(p));
 	}
 
 	/**

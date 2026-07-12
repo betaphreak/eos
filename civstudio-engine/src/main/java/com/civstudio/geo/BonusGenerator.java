@@ -37,7 +37,7 @@ public final class BonusGenerator {
 	 * density. The engine's raw appearance figures pack the map densely; scaling the
 	 * per-province target thins that to a lived-in-but-not-blanketed look. Lower = sparser.
 	 */
-	private static final double DENSITY_SCALE = 0.275;
+	private static final double DENSITY_SCALE = 0.055;
 
 	private BonusGenerator() {
 	}

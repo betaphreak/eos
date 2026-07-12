@@ -41,11 +41,13 @@ class BonusPlacementTest {
 				byType.computeIfAbsent(pl.bonus().type(), k -> new HashSet<>()).add(key(pl.x(), pl.y()));
 			}
 
-		// diverse, and a plausible (not saturating) share of the plots carry a resource
+		// diverse, and a sparse (lived-in, not blanketed) share of the plots carry a resource — the
+		// density target is deliberately low (BonusGenerator.DENSITY_SCALE); the upper bound guards
+		// against a regression back to the old ~5x-denser placement.
 		assertTrue(byType.size() >= 15, "expected a diverse resource set, got " + byType.size() + " kinds");
 		double density = placed / (double) field.size();
-		assertTrue(density > 0.02 && density < 0.5,
-				"resource density should be plausible, got " + density);
+		assertTrue(density > 0.008 && density < 0.05,
+				"resource density should be plausible (sparse), got " + density);
 
 		// at least one resource forms a cluster: two of the same type 8-adjacent
 		boolean clustered = false;
