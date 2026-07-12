@@ -65,11 +65,13 @@ export async function startLive(onRedraw, onSessionState) {
   connectStream();
 }
 
-// how many times to silently reconnect to the SAME server before giving up and dropping to the
-// picker. A server redeploy (new CivStudio version) tears the stream down and the new revision takes
-// a few seconds to serve — we reconnect straight through it (re-resolving the session id each time,
-// in case it was re-founded) rather than yanking the user back to the loading screen.
-const MAX_RECONNECT = 8, RECONNECT_DELAY = 1500;
+// Reconnect to the SAME server indefinitely rather than ever dropping the map to the picker/loading
+// screen: a server redeploy (new CivStudio version) tears the stream down and the new revision can take
+// a minute-plus to serve, so we reconnect straight through it (re-resolving the session id each time, in
+// case it was re-founded). Fast retries at first, backing off to a steady ~10s poll — a clean reconnect
+// resets the cadence (es.onopen). The user stays on the map with a quiet "reconnecting…" HUD; switching
+// servers is a manual action, never forced by a transient/redeploy outage.
+const RECONNECT_DELAY = 1500, RECONNECT_MAX_DELAY = 10000;
 let reconnectAttempts = 0, reconnectTimer = null;
 
 async function connectStream() {
@@ -103,15 +105,12 @@ async function connectStream() {
   }
 }
 
-// reconnect to the same server after a short delay, or — once the budget is spent — hand off to the
-// picker (window.__picker, from index.html) so the user can pick another server.
+// reconnect to the same server after a delay that backs off with consecutive failures (fast at first,
+// capped at RECONNECT_MAX_DELAY) — never gives up, so the map never drops to the picker on its own.
 function retryOrLost() {
   if (reconnectTimer) return;
-  if (reconnectAttempts++ < MAX_RECONNECT) {
-    reconnectTimer = setTimeout(connectStream, RECONNECT_DELAY);
-  } else if (window.__picker && window.__picker.lost) {
-    window.__picker.lost("Lost connection to the live server");
-  }
+  const delay = Math.min(RECONNECT_MAX_DELAY, RECONNECT_DELAY * Math.pow(1.6, Math.min(reconnectAttempts++, 6)));
+  reconnectTimer = setTimeout(connectStream, delay);
 }
 
 /** Send a control action (pause/resume/step/rate) to the live session. */
