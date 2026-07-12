@@ -36,6 +36,7 @@ COPY --from=build /build/civstudio-server/target/civstudio-server-*.jar app.jar
 # set ANBENNAR_TOKEN (a secret) for the authenticated rate limit. See docs/anbennar-files.md.
 # The lobby page (chat + server status) the server serves at "/"
 COPY web/lobby.html ./web/lobby.html
+COPY web/admin.html ./web/admin.html
 EXPOSE 8080
 # MaxRAMPercentage so the JVM honours the container's memory limit; full sim log to stdout
 # for the platform's log capture. The server hosts the six-caravan demo (see ServerMain).

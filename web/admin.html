@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>CivStudio — Server Admin</title>
+<style>
+  :root { --bg:#0e1420; --panel:#161f2e; --panel2:#1c2739; --line:#26334a; --ink:#e6ecf5;
+    --ink-soft:#8fa1bd; --gold:#c9a24a; --red:#c0504a; --green:#4a9d6a; --blue:#4a7fc0; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 system-ui,Segoe UI,Roboto,sans-serif; }
+  header { display:flex; align-items:baseline; gap:12px; padding:16px 24px; border-bottom:1px solid var(--line); }
+  header .brand { font-weight:700; font-size:18px; } header .brand .g { color:var(--gold); }
+  header .sub { color:var(--ink-soft); font-size:13px; }
+  main { max-width:1000px; margin:0 auto; padding:24px; display:grid; gap:18px; }
+  .gate { max-width:440px; margin:80px auto; text-align:center; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px 20px; }
+  .panel h2 { margin:0 0 14px; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+  .stat { background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
+  .stat .k { color:var(--ink-soft); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }
+  .stat .v { font-size:20px; margin-top:2px; } .stat .v.g { color:var(--gold); }
+  .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+  button { background:var(--panel2); color:var(--ink); border:1px solid var(--line); border-radius:8px;
+    padding:9px 14px; font:inherit; cursor:pointer; transition:background .12s,border-color .12s; }
+  button:hover:not(:disabled) { background:#243248; border-color:#3a4c6b; }
+  button:disabled { opacity:.5; cursor:default; }
+  button.danger { border-color:#5a2f2c; } button.danger:hover:not(:disabled) { background:#3a2422; border-color:var(--red); }
+  a.btn { display:inline-block; background:var(--gold); color:#1a1200; text-decoration:none; border-radius:8px; padding:10px 18px; font-weight:600; }
+  .bar { height:8px; background:var(--panel2); border:1px solid var(--line); border-radius:5px; overflow:hidden; margin-top:8px; }
+  .bar > i { display:block; height:100%; background:var(--gold); width:0; transition:width .4s; }
+  table { width:100%; border-collapse:collapse; } td,th { padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; }
+  th { color:var(--ink-soft); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .badge { font-size:11px; padding:2px 8px; border-radius:20px; border:1px solid var(--line); }
+  .badge.RUNNING { color:var(--green); border-color:#2c5a3f; } .badge.PAUSED { color:var(--gold); border-color:#5a4c2c; }
+  .badge.STOPPED,.badge.CREATED { color:var(--ink-soft); }
+  .rowbtns { display:flex; gap:6px; } .rowbtns button { padding:5px 10px; font-size:12px; }
+  #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--panel2);
+    border:1px solid var(--line); border-radius:8px; padding:10px 16px; opacity:0; transition:opacity .2s; pointer-events:none; }
+  #toast.show { opacity:1; } .muted { color:var(--ink-soft); }
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">CivStudio<span class="g">:</span> Server Admin</span>
+  <span class="sub" id="hdrSub">dev.civstudio.com</span>
+</header>
+
+<!-- shown when the caller is not an allow-listed admin -->
+<div class="gate panel" id="gate" hidden>
+  <h2 style="justify-self:center">Admin access required</h2>
+  <p class="muted" id="gateMsg">Sign in with an operator account to manage the server.</p>
+  <p><a class="btn" href="/api/auth/steam/login">Sign in with Steam</a></p>
+</div>
+
+<main id="console" hidden>
+  <div class="panel">
+    <h2>Server</h2>
+    <div class="stats" id="serverStats"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Plot cache</h2>
+    <div class="stats" id="plotStats"></div>
+    <div class="bar" id="warmBar" hidden><i></i></div>
+    <div class="actions">
+      <button class="danger" id="btnDrop"
+        title="Delete every cached province plot grid (the in-memory LRU and the volume's *.json.gz). Each province regenerates fresh — under a sim pause — on its next request. Use after a change to plot generation.">Drop plot cache</button>
+      <button id="btnWarm"
+        title="Pre-generate every province's plot grid into the cache in the background, so later visitors never trigger a cold, sim-pausing generation. Progress shows below; safe to leave running.">Warm the world</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Fetch caches</h2>
+    <div class="actions">
+      <button class="danger" id="btnAnbennar"
+        title="Delete the Anbennar mod fetch cache (map rasters + history the engine pulls from GitLab), forcing a re-fetch on next use. Use when the pinned source ref changes. The Civ4 art cache is build-time only, so there is nothing server-side to drop for it.">Drop Anbennar cache</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Sessions</h2>
+    <table><thead><tr><th>ID</th><th>Owner</th><th>State</th><th>Tick</th><th>Control</th></tr></thead>
+      <tbody id="sessionRows"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600); }
+function fmtDur(ms) { const s = Math.floor(ms/1000), h = Math.floor(s/3600), m = Math.floor(s%3600/60);
+  return h ? `${h}h ${m}m` : `${m}m`; }
+function stat(k, v, gold) { return `<div class="stat"><div class="k">${k}</div><div class="v${gold?' g':''}">${v}</div></div>`; }
+
+async function api(method, path) {
+  const r = await fetch(path, { method, headers: { "Content-Type": "application/json" }, credentials: "include" });
+  if (r.status === 401 || r.status === 403) { showGate(r.status); throw new Error("forbidden"); }
+  return r.json().catch(() => ({}));
+}
+async function act(method, path, okMsg) {
+  try { const j = await api(method, path); toast(okMsg(j)); refresh(); }
+  catch (e) { if (e.message !== "forbidden") toast("Error: " + e.message); }
+}
+
+function showGate(code) { $("#gate").hidden = false; $("#console").hidden = true;
+  $("#gateMsg").textContent = code === 401
+    ? "You are not signed in. Sign in with an operator account to manage the server."
+    : "Your account is signed in but not an admin. Ask an operator to add you to CIVSTUDIO_AUTH_ADMINS."; }
+
+async function refresh() {
+  let s;
+  try { s = await api("GET", "/api/admin/status"); } catch { return; } // gate handled in api()
+  $("#gate").hidden = true; $("#console").hidden = false;
+  const sv = s.server, pl = s.plots;
+  $("#serverStats").innerHTML =
+    stat("Uptime", fmtDur(sv.uptimeMs)) + stat("Heap", `${sv.heapUsedMb}/${sv.heapMaxMb} MB`) +
+    stat("Sessions", sv.sessions) + stat("Admins", sv.admins) + stat("You", sv.you || "—");
+  $("#plotStats").innerHTML =
+    stat("Cached", `${pl.cached} / ${pl.total}`, true) +
+    stat("Generating", pl.generating != null ? "#" + pl.generating : "—") +
+    stat("Warming", pl.warming ? "yes" : "no");
+  const warmBar = $("#warmBar"); warmBar.hidden = !pl.warming;
+  if (pl.warming) warmBar.querySelector("i").style.width = Math.round(pl.cached / pl.total * 100) + "%";
+  $("#btnWarm").disabled = pl.warming;
+
+  const sess = await api("GET", "/api/sessions").catch(() => []);
+  const rows = (Array.isArray(sess) ? sess : sess.sessions || []);
+  $("#sessionRows").innerHTML = rows.length ? rows.map(x => `
+    <tr><td>${x.id}</td><td>${x.owner || '<span class="muted">—</span>'}</td>
+      <td><span class="badge ${x.state}">${x.state}</span></td><td>${x.tick ?? '—'}</td>
+      <td><div class="rowbtns">
+        <button title="Pause this session's tick loop" onclick="ctrl('${x.id}','pause')">Pause</button>
+        <button title="Resume this session's tick loop" onclick="ctrl('${x.id}','resume')">Resume</button>
+        <button class="danger" title="Stop this session (it can be re-founded)" onclick="ctrl('${x.id}','stop')">Stop</button>
+      </div></td></tr>`).join("") : '<tr><td colspan="5" class="muted">No live sessions.</td></tr>';
+}
+
+window.ctrl = (id, action) => act("POST", `/api/sessions/${id}/control`,
+  () => `Session ${id}: ${action}`);
+
+$("#btnDrop").onclick = () => { if (confirm("Drop the entire plot cache? Every province will regenerate on demand."))
+  act("POST", "/api/admin/plots/clear", j => `Dropped ${j.cleared} cached grids`); };
+$("#btnWarm").onclick = () => act("POST", "/api/admin/plots/warm",
+  j => j.started ? "Warming the world…" : "Already warming");
+$("#btnAnbennar").onclick = () => { if (confirm("Drop the Anbennar fetch cache? It will re-fetch from GitLab on next use."))
+  act("POST", "/api/admin/caches/anbennar/clear", j => `Dropped ${j.deleted} cached files`); };
+
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>

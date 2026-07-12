@@ -130,6 +130,45 @@ public final class PlotService {
 	public record PlotStatus(int cached, int total, Integer generating) {
 	}
 
+	/**
+	 * Drop the whole plot cache — the in-memory LRU and every {@code <id>.json.gz} on the volume —
+	 * so each province regenerates fresh on its next request (an admin op, e.g. after a change to
+	 * plot generation; see {@code docs/urban-plots.md} / {@code docs/admin-console.md}). Returns the
+	 * number of on-disk grids deleted.
+	 */
+	public int clear() {
+		synchronized (lru) {
+			lru.clear();
+		}
+		int deleted = 0;
+		try (var s = Files.list(cacheDir)) {
+			for (Path f : (Iterable<Path>) s.filter(f -> f.getFileName().toString().endsWith(".json.gz"))::iterator) {
+				try {
+					if (Files.deleteIfExists(f))
+						deleted++;
+				} catch (IOException ignored) {
+					// best-effort; a locked/racing file is regenerated on next request anyway
+				}
+			}
+		} catch (IOException e) {
+			// cache dir not created yet — nothing to drop
+		}
+		cachedCount = -1; // force the next status() to re-scan
+		return deleted;
+	}
+
+	/**
+	 * Generate every plottable province's grid into the cache (a one-time world warm — see {@code
+	 * docs/plot-serving.md}), so later visitors never trigger a cold, sim-pausing generation. Each
+	 * miss generates under the sim pause; a province already cached is a cheap LRU/disk hit. Runs on
+	 * the calling thread — the admin console runs it on a background virtual thread.
+	 */
+	public void warmAll() {
+		for (Province p : worldMap().provinces())
+			if (p.plots() > 0)
+				gz(p.id());
+	}
+
 	// disk-cache file count, memoised for ~2s so a burst of lobby polls doesn't re-scan the dir
 	private int countCached() {
 		long now = System.currentTimeMillis();
