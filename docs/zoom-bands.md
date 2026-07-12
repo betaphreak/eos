@@ -198,6 +198,53 @@ export function regime() {
 }
 ```
 
+## Z-levels — the vertical axis, orthogonal to bands
+
+The band spine answers *"how deep am I looking?"* (`cam.k` 1→256, the zoom). A separate axis answers
+*"which vertical level am I looking at?"* Today that axis is the binary `S.plane ∈ {overworld,
+underworld}` toggle (`docs/underworld.md`), but it is really the first instance of an integer
+**z-level**:
+
+- **z = 0** — the surface (and surface holds, and the impassable mountains that sit *on top of*
+  underground provinces).
+- **z = −1** — the Underworld (the Serpentspine).
+- future: **+1** and deeper **−2…** as provinces gain z-levels.
+
+So the render has three orthogonal axes: **band** (zoom depth, 0–8), **z-level** (vertical stacking,
+integer), **overlay** (None / Political / Live). They compose independently — each z-level has its
+**own full 0→8 band progression** (the Serpentspine has its Atlas-macro cave network and its
+Ground-micro dwarven hold, exactly as the surface does).
+
+**Z-level is per-province, and columns stack.** A single map column can carry provinces at several
+levels at once — e.g. a z=0 surface hold or impassable mountain directly *above* a z=−1 cavern. So
+membership is a province field (`p.z`), not a whole-map mode: `isUnderground(p)` (today keyed on
+`p.type`) becomes `p.z === −1`, and the surface set is `p.z === 0`.
+
+**Committed architecture: a per-z-level layer set.** The registry becomes keyed by z-level — one
+ordered `LAYERS` list per level — and the z-level selector (today's Overworld/Underworld toggle,
+tomorrow a −1 / 0 / +1 control) picks which level's list `renderLayers()` walks. `drawUnderworld`'s
+hand-rolled internal stack (veil the level above → cave floors → per-plot terrain at the plot band →
+amber rims) folds into the **z=−1 list as first-class registry entries**, ending the current
+asymmetry where the whole underground is one opaque layer while the surface's equivalents are
+individual entries. Gating by `isUnderground`/`isSurface` becomes gating by `p.z === activeZ`.
+
+Rendering neighbours: viewing z=−1, the level above recedes to a ghost (as the veil does today);
+shafts/cave-entrances mark where columns connect **across** z-levels (a vertical adjacency), the
+same role straits/tunnels play *within* a level.
+
+**In the current (pre-z-level) registry the plane is a `gate`**, beside `isPolitical`:
+
+```js
+{ id:"underworld",    gate:()=>S.plane==="underworld", draw: drawUnderworld },
+{ id:"caveEntrances", gate:overworld,                  draw: drawCaveEntrances },
+{ id:"tradeGoods",    gate:()=>overworld()&&notPolitical(), ... },   // off underground
+```
+
+That's the seam the per-z-level layer set replaces.
+
+Interaction: the z-level is orthogonal to the regime, so the mode chip shows both (e.g.
+`24× · 🐫 Overland · z−1 Underworld`); hit-testing picks provinces at the active z-level.
+
 ## The right-side panel — a regime-scoped inspector that drills
 
 The panel follows the input spine: because a click targets a different object per
@@ -314,9 +361,13 @@ reorg.
 4. **Input spine.** Make `panel.mjs` hit-testing regime-dispatched, and add the regime signal
    (mode chip + cursor + hysteretic transition pulse). Atlas/Overland keep current selection
    behavior; Ground newly selects plots→(skeleton) buildings.
-5. **City skeleton.** Add `city.mjs` as a `regime:GROUND` layer: footprints (b6) → agent dots
+5. **Per-z-level layer set.** Key the registry by z-level (§Z-levels): one ordered `LAYERS` list per
+   level, the z-level selector picking which one `renderLayers()` walks. Fold `drawUnderworld`'s
+   internal stack into the z=−1 list as first-class entries; swap `isUnderground`/`isSurface` gating
+   for `p.z === activeZ`. Ends the opaque-underground asymmetry and hosts the dwarven-hold city micro.
+6. **City skeleton.** Add `city.mjs` as a `regime:GROUND` layer: footprints (b6) → agent dots
    (b7) → labels/pick (b8), fed by the live feed. The first genuinely new pixels.
-6. **Chrome + panel.** Envelope the always-on chrome (minimap hide in Ground, highlight stroke
+7. **Chrome + panel.** Envelope the always-on chrome (minimap hide in Ground, highlight stroke
    thinning, adjacency fade vs hard cutoff) and make the right panel a regime-scoped drill-path
    inspector (Almanac / Dispatch / Registry).
 
