@@ -242,8 +242,36 @@ same role straits/tunnels play *within* a level.
 
 That's the seam the per-z-level layer set replaces.
 
+### Switching z-levels — the Google-indoor floor picker
+
+Switching levels follows the **Google Maps indoor** pattern: a **context-sensitive vertical z-stack**
+on the map's right edge, top = highest, the active level lit in the regime accent:
+
+```
+  +1   Towers / holds above
+▶  0   Surface
+ −1   Serpentspine
+ −2   Deep roads
+```
+
+- **Context-sensitive** — the picker appears only when the current view (or the selected column)
+  spans more than one z-level; the surface-only majority of the map shows no picker. Its entries are
+  the z-levels present under the viewport/column (columns stack, §above). This is today's binary
+  Overworld/Underworld toggle generalised to N levels.
+- **Scope follows the band** (decided): at **Atlas/Overland** (macro/mid) the picker switches the
+  **global** active level — pan the whole continent-sized Serpentspine at `z=−1`; at **Ground**
+  (city-micro, inside a hold) it becomes a **local floor-stack** for the focused hold, the
+  surrounding map staying surface. Reuses the regime spine — global plane where the underground is a
+  realm, Google-local floors where it's a building.
+- **Switching = the per-z-level layer set**: it sets `activeZ`, `renderLayers()` walks that level's
+  `LAYERS`, and the levels above recede to a ghost veil — the chosen level lit *in place* under a
+  dimmed ghost, exactly a floor swap.
+- **Spatial descent** (beyond the picker): clicking a **cave-entrance / shaft** glyph *enters* the
+  connected level, centred on the cavern (the vertical adjacency across z-levels) — Google's "tap the
+  building to go inside." Plus keyboard **PgUp/PgDn** (or `[`/`]`) to step levels.
+
 Interaction: the z-level is orthogonal to the regime, so the mode chip shows both (e.g.
-`24× · 🐫 Overland · z−1 Underworld`); hit-testing picks provinces at the active z-level.
+`🐫 Terrain · z−1 Serpentspine`); hit-testing picks provinces at the active z-level.
 
 ## The right-side panel — a regime-scoped inspector that drills
 
