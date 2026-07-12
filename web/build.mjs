@@ -271,6 +271,7 @@ const ice = bakeIceTile();                   // {src, tile} real Civ4 pack-ice t
 const bonusIcons = bakeBonusIcons();         // {src, cell, cols, index:{type:i}} real Civ4 resource icons, or null
 const tradeGoodIcons = bakeTradeGoodIcons(); // {src, cell, cols, index:{key:col}} Anbennar trade-good icons, or null
 const trees = bakeFeatureSprites();          // {leafy,palm,swamp:{src,w,h,sprites}} real foliage cutouts, or null
+const featureOverlays = bakeFeatureOverlays(); // {FEATURE_*: {src,w,h}} flat Civ6 SV feature overlays, or null
 const seaBands = bakeSeaBands();             // {trop, temp, polar, shore} climate sea + shore colours
 const plotProvinceCount = computeWaterBboxes(provinces);
 
@@ -392,7 +393,7 @@ const bboxes = {};                    // ring-less (sea/lake) provinces' plot-ex
 for (const p of provinces) if (p.bbox) bboxes[p.id] = p.bbox;
 const manifest = {
   seed: +SEED,
-  map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, ice, bonusIcons, trees, seaBands,
+  map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, ice, bonusIcons, trees, featureOverlays, seaBands,
   loading,                            // committed loading-screen art (assets/loading/loading-*.jpg), or []
   bboxes,                             // {provId: [x0,y0,x1,y1]} for ring-less provinces (server can't derive)
 };
@@ -970,6 +971,31 @@ function bakeSpriteGroup(artPath, name) {
 // (CIV4ArtDefines_Bonus.xml), reached through its ArtDefineTag (CIV4BonusInfos.xml). Returns null if
 // any source is absent (the renderer keeps the procedural glyphs); a bonus with a negative index
 // (no unique font icon) or an out-of-grid cell is left out and also falls back to the glyph.
+// Bake the flat Civ6 strategic-view feature overlays (docs/civ6-art-replacement.md §D): one 128²
+// RGBA tile per Civ6-covered feature (Features_<X>_Visible.dds — a top-down canopy on transparency),
+// which the frontend blits to fill a featured plot instead of scattering C2C billboards. C2C-only
+// flora (bamboo, cactus, tall-grass, savanna) is intentionally absent → keeps its billboard bake.
+// Returns {FEATURE_*: {src,w,h}} or null (depot absent → frontend keeps all billboards).
+function bakeFeatureOverlays() {
+  const FEATS = ['FEATURE_FOREST', 'FEATURE_FOREST_ANCIENT', 'FEATURE_JUNGLE', 'FEATURE_SWAMP', 'FEATURE_OASIS'];
+  const T = 128, out = {}, byFile = {};
+  for (const feat of FEATS) {
+    const file = civ6.featureOverlay(feat);
+    if (!file) continue;
+    if (byFile[file]) { out[feat] = byFile[file]; continue; }   // FOREST + FOREST_ANCIENT share Features_Forest
+    const img = decodeCached(file);
+    if (!img) continue;
+    const rgba = resampleRGBA(img.rgba, img.width, img.height, T, T);
+    const name = 'trees/feat-' + feat.replace('FEATURE_', '').toLowerCase();
+    const desc = { src: queueWebpRGBA(name, T, T, rgba, { quality: 88 }), w: T, h: T };
+    out[feat] = desc; byFile[file] = desc;
+  }
+  const n = new Set(Object.values(out)).size;
+  if (!n) return null;
+  console.log(`  feature overlays: ${n} Civ6 flat SV (${Object.keys(out).join(', ')})`);
+  return out;
+}
+
 // the three Civ6 class backing colours, sampled from Resources256 cells (bonus=0, luxury=14,
 // strategic=43); a hand-tuned Civ6-ish palette when the depot/atlas is absent.
 function civ6BackingColors() {

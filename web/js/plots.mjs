@@ -1,4 +1,4 @@
-import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, provOnScreen, apiUrl, K_PLOT, K_MAX, TT, RIVER, SHORE, ICE_ART, BONUS_ICONS, TRADE_GOODS, TREES, SEA_BANDS, LY, NB4, cam, VIEW, ctx, px, py, pxr, pyr, lerp, S } from "./core.mjs";
+import { BUNDLE, P, TCOL, terrainRgb, provSrcBox, provOnScreen, apiUrl, K_PLOT, K_MAX, TT, RIVER, SHORE, ICE_ART, BONUS_ICONS, TRADE_GOODS, TREES, FEATURE_OVERLAYS, SEA_BANDS, LY, NB4, cam, VIEW, ctx, px, py, pxr, pyr, lerp, S } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { bandAlpha, kBand, atLeast, BAND } from "./bands.mjs";
 import { renderRail } from "./panel.mjs";
@@ -46,6 +46,20 @@ const tgImg = loadArt(TRADE_GOODS && TRADE_GOODS.icons, () => { tgReady = true; 
 const treeImg = {}, treeReady = {};
 if (TREES) for (const k of Object.keys(TREES))
   treeImg[k] = loadArt(TREES[k], () => { treeReady[k] = true; for (const p of P) p._tcanvas = null; });
+// flat Civ6 strategic-view feature overlays (docs/civ6-art-replacement.md §D): one tile per Civ6-covered
+// feature, blitted to fill a featured plot instead of scattering billboards. Deduped by src (FOREST +
+// FOREST_ANCIENT share one image).
+const foImg = {}, foReady = {};   // both keyed by FEATURE_*
+if (FEATURE_OVERLAYS) { const imgBySrc = {};
+  for (const k of Object.keys(FEATURE_OVERLAYS)) {
+    const asset = FEATURE_OVERLAYS[k];
+    if (!imgBySrc[asset.src]) imgBySrc[asset.src] = loadArt(asset, () => {
+      for (const kk of Object.keys(FEATURE_OVERLAYS)) if (FEATURE_OVERLAYS[kk].src === asset.src) foReady[kk] = true;
+      for (const p of P) p._tcanvas = null;
+    });
+    foImg[k] = imgBySrc[asset.src];
+  }
+}
 // split the atlas strip into a per-terrain tile canvas, so each can be a repeating
 // pattern (continuous ground texture across plots, no per-plot tile seam)
 function extractTiles() {
@@ -744,10 +758,14 @@ function stampTrees(o, cx, cy, s, g, rng) {
   return true;
 }
 function featureSprite(o, cx, cy, s, feature, sx, sy) {
-  // every feature is now a real baked Civ4 sprite atlas (foliage or nif-rendered) or
-  // nothing — the procedural vector stand-ins were removed once cactus/bamboo/grass got
-  // real art. A feature with no atlas (e.g. FLOOD_PLAINS, a ground quality) draws no
-  // foliage; the plot's terrain shows through.
+  // Civ6-covered features (forest, jungle, marsh/swamp, oasis) draw as a flat Civ6 SV overlay filling
+  // the plot; per-plot horizontal flip breaks the tiling. C2C-only flora (bamboo/cactus/tall-grass/
+  // savanna) keeps the scattered Civ4 billboards. FLOOD_PLAINS (a ground quality) draws nothing.
+  if (foImg[feature] && foReady[feature]) {
+    if ((sx ^ sy) & 1) { o.save(); o.translate(cx + s, cy); o.scale(-1, 1); o.drawImage(foImg[feature], 0, 0, s, s); o.restore(); }
+    else o.drawImage(foImg[feature], cx, cy, s, s);
+    return;
+  }
   const g = treeGroupFor(feature);
   if (!g) return;
   const rng = mkRng((sx * 73856093) ^ (sy * 19349663));
