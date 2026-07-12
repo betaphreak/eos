@@ -1,0 +1,333 @@
+# Zoom bands — the continuous-zoom spine
+
+> **Status: plan / not yet built.** This is the design spec for refactoring the web
+> frontend around one continuous zoom axis divided into nine logical *bands*. It
+> supersedes the scattered `cam.k` thresholds documented (as-built) in
+> `web/README.md` and the per-layer fade code. Band **names and regime boundaries
+> are provisional** — they are game-design calls the owner finalizes.
+
+## The idea in one paragraph
+
+The WorldMap already runs on a single continuous magnification scalar, `cam.k ∈
+[1, 256]` (`core.mjs`). That one number is the spine that blends three UX regimes:
+**EU4-style strategy at the macro end (1×), caravan/overland play in the middle,
+and city-builder micro at the deep end (256×)**. Today "which regime am I in" is
+re-derived ad-hoc in ~20 places as `(cam.k - X)/Y` ramps and `cam.k < Z` cutoffs
+across seven files, with two independent fade mechanisms. This refactor makes the
+regime structure *explicit and central*: everything that draws or accepts input
+declares which **band(s)** it lives in, and a single helper cross-fades it as the
+continuous zoom slides through. The continuous zoom masks the logical banding — you
+never see a "level" snap; layers dissolve into one another.
+
+## The band coordinate
+
+```
+band b = log2(cam.k)          // cam.k 1→256  ⇒  b 0→8
+```
+
+Nine bands land on the powers of two:
+
+| b | cam.k | | b | cam.k | | b | cam.k |
+|---|-------|-|---|-------|-|---|-------|
+| 0 | 1× | | 3 | 8× | | 6 | 64× |
+| 1 | 2× | | 4 | 16× | | 7 | 128× |
+| 2 | 4× | | 5 | 32× | | 8 | 256× |
+
+A drawable does **not** read `cam.k` or `b` directly. It declares a **band
+envelope** — a trapezoid in band units `[in0, in1, out0, out1]` — and reads its
+alpha from one shared helper. This is a generalization of the `tierAlpha()`
+trapezoid already used (and duplicated) by `labels.mjs` and `tiers.mjs`.
+
+### `js/bands.mjs` (new — the registry + math)
+
+```js
+// canonical continuous band position; everything reads this, never cam.k
+export const band = () => Math.log2(cam.k);          // 0 … 8
+
+// trapezoid: 0 outside [in0,out1]; ramp in [in0,in1]; hold 1 to out0; ramp out to out1.
+// Use Infinity for out0/out1 to "fade in and stay" (e.g. terrain textures).
+export function bandAlpha([in0, in1, out0 = Infinity, out1 = Infinity]) {
+  const b = band();
+  if (b <= in0 || b >= out1) return 0;
+  if (b < in1)  return (b - in0) / (in1 - in0);
+  if (b <= out0) return 1;
+  return (out1 - b) / (out1 - out0);
+}
+
+// named band constants (see table) + regime helpers for the INPUT spine
+export const BAND = { WORLD:0, REALM:1, REGION:2, PROVINCE:3, TERRAIN:4,
+                      LOCALE:5, PLOT:6, PARCEL:7, STRUCTURE:8 };
+export const REGIME = { ATLAS:"atlas", OVERLAND:"overland", GROUND:"ground" };
+export function regime() {                             // current interaction regime
+  const b = band();
+  return b < 3 ? REGIME.ATLAS : b < 6 ? REGIME.OVERLAND : REGIME.GROUND;
+}
+export const atLeast = n => band() >= n;               // hard gate when a fade is wrong
+```
+
+Every existing `Math.max(0, Math.min(1, (cam.k - A)/(B - A)))` and every
+`cam.k < Z` becomes a `bandAlpha([...])` or `atLeast(BAND.X)` call. The two fade
+mechanisms collapse to one.
+
+## Layer registry — draw order + band mapping in one editable place
+
+**Which layer sits in which band, and the order layers paint in, are the two most
+frequently-tuned knobs — so they must be data in one file, never control flow spread
+through `renderScene`.** Today draw order is an imperative 18-call sequence in
+`main.renderScene()` (`main.mjs:220-296`) and band membership is scattered per module.
+Both collapse into one ordered registry, `js/layers.mjs`:
+
+```js
+// the single source of truth for BOTH stacking order and band mapping. Reorder a layer =
+// change one `order`; re-band it = change one `env`. Nothing else moves.
+export const LAYERS = [
+  { id:"sea",        order: 10, env:null,                     draw: drawSeaBase },
+  { id:"raster",     order: 20, env:null,                     draw: drawRaster },
+  { id:"seaCells",   order: 30, env:null,  gate:notPolitical, draw: drawSeaCells },
+  { id:"plots",      order: 40, env:[BAND.REGION-0.7, BAND.REGION-0.4], gate:notPolitical, draw: drawPlots },
+  { id:"tradeGoods", order: 45, env:[4,4,5.6,6],              gate:physical, draw: drawTradeGoodIcons },
+  { id:"political",  order: 50, env:null,  gate:isPolitical,  draw: drawPolitical },
+  { id:"tierLines",  order: 60, /* per-tier env inside */     draw: drawTiers },
+  { id:"provBorders",order: 70, env:[2.9,3.3],                gate:surface,  draw: drawProvBorders },
+  { id:"live",       order: 80, gate:()=>S.overlay==="live",  draw: drawLive },
+  { id:"city",       order: 90, regime:REGIME.GROUND,         draw: drawCity },   // bands 6–8 skeleton
+  { id:"labels",     order:200, env:null,                     draw: drawLabels },
+];
+```
+
+A layer descriptor is `{ id, order, env?, gate?, regime?, plane?, draw }`:
+
+- **`order`** — integer z-index; the registry paints ascending. Reordering is a one-number
+  edit (leave gaps of 10 so inserts don't renumber).
+- **`env`** — the band envelope handed to `bandAlpha`; the registry passes the resulting
+  alpha into `draw(alpha)`, so a layer never reads `cam.k`. `null` = all bands (full alpha).
+- **`gate` / `regime` / `plane`** — cheap predicates (`isPolitical`, `physical`, `surface`,
+  a regime, an overworld/underworld plane) that skip the layer entirely.
+
+`renderScene()` becomes a loop over the registry — the imperative sequence disappears:
+
+```js
+for (const L of LAYERS) {                 // pre-sorted by order
+  if (L.gate && !L.gate()) continue;
+  if (L.regime && regime() !== L.regime) continue;
+  if (L.plane && S.plane !== L.plane) continue;
+  const a = L.env ? bandAlpha(L.env) : 1;
+  if (a <= 0.001) continue;               // fully faded out → skip
+  L.draw(a);
+}
+```
+
+The per-world-copy wrap and scene clip stay in `renderScene` around this loop; only the
+layer *sequence* moves into data. This is built in its own phase (below) — not Phase 1 —
+because it rewrites the orchestrator; the band helpers land first so the registry has
+`bandAlpha`/`env` to hang on.
+
+## The nine bands
+
+Names are **function-first** and provisional. The three regimes group the bands
+into the three UX feels; interaction mode switches at regime boundaries (the input
+spine — see below).
+
+| Band | Zoom | Name | Regime | **Draws here today** | **Target / additions** |
+|---|---|---|---|---|---|
+| **0** | 1× | **World** | 🌍 Atlas | Ocean climate gradient + ripple (full), continent labels & tier borders, political fills full-opacity | — (macro is the mature end) |
+| **1** | 2× | **Realm** | 🌍 Atlas | Super-region labels & tier borders | — |
+| **2** | 4× | **Region** | 🌍 Atlas | Region labels & tier borders; plots + cost begin fade-in (k5≈b2.3); political fill starts tapering | — |
+| **3** | 8× | **Province** | 🐫 Overland | Province names, province borders, sea/lake names, straits/canals/tunnels appear (k≥10≈b3.3), tier lazy-load stops | Colony/settlement markers become first-class; caravan routes read as lines |
+| **4** | 16× | **Terrain** | 🐫 Overland | **K_TEX**: real Civ4 textures, trade-good icons appear, plot hover on, sea ripple gone, political→borders-only, live colony marker→city-sprite | Caravans get band-scaled presence; overland is the caravan "home" band |
+| **5** | 32× | **Locale** | 🐫 Overland | Deep terrain; trade-good icons hold, begin fade at k48 | Named locales / points of interest; hand-off to Ground |
+| **6** | 64× | **Plot** | 🏘️ Ground | Gap-grid hatch (k>64), trade-goods gone, per-plot resource/bonus icons prominent | **City-micro skeleton begins**: building footprints per developed plot |
+| **7** | 128× | **Parcel** | 🏘️ Ground | Bonus icons scale with `cam.k/K_MAX`; nothing else band-specific | Agent/household dots from the live feed; street/road hints |
+| **8** | 256× | **Structure** | 🏘️ Ground | **K_MAX**: deepest plot magnification | Individual buildings + agents (laborer/noble/ruler/firm) legible |
+
+Zoom-independent chrome (sea-cell wash, impassable hatch, hover/selection
+highlights, minimap, HUD/sidebar/timeline, underworld plane veil) draws across all
+bands today. Under the refactor each gains an explicit envelope where it helps
+(e.g. minimap should *hide* in Ground; highlight stroke should thin with depth).
+
+## The three regimes — the input spine
+
+Per the "visual **and** input spine" decision, the band is the game's core
+mode-switch, not just an LOD ladder. A click/hover/drag means different things per
+regime:
+
+| Regime | Bands | Feel | Primary object a click targets | Overlays that make sense |
+|---|---|---|---|---|
+| 🌍 **Atlas** | 0–2 (1–4×) | EU4 grand strategy | Nation / culture / faith / province | Political (nation/culture/faith), geography tiers |
+| 🐫 **Overland** | 3–5 (8–32×) | Caravan / operational | Caravan, trade route, colony/settlement, province terrain | Live (Spectate), trade goods, physical terrain |
+| 🏘️ **Ground** | 6–8 (64–256×) | City builder / tactical | Plot, building, agent/household | Physical terrain, per-plot resources, city detail |
+
+Regime boundaries are `band() < 3` / `< 6`. `panel.mjs`'s hit-testing (`provinceAt`,
+`plotAt`) becomes regime-dispatched: Atlas → province/polity pick; Overland → caravan
+/ colony / province pick; Ground → plot / building / agent pick. This is the largest
+*behavioral* change and is why the input spine was called out as a design decision.
+
+### Crossing a boundary gives a UI signal
+
+Because the click-target changes at a boundary, the crossing is signalled — three
+coordinated pieces:
+
+1. **Mode chip** — the top-left zoom readout grows from `16×` to
+   `16× · 🐫 Overland — select: caravan`, tinted with the regime accent. The standing
+   answer to "what does my click do right now."
+2. **Regime cursor** — the canvas cursor swaps per regime (Atlas grab/arrow, Overland a
+   route reticle, Ground a plot crosshair): the felt, wordless signal that
+   click-semantics changed.
+3. **Transition pulse** — on an actual crossing (not every frame) the chip animates its
+   icon/label swap and a subtle accent vignette flashes at the viewport edge (~400ms).
+   Fired once per crossing by a `lastRegime` latch in the paint loop.
+
+**Hysteresis is mandatory** — zoom is continuous, so a scroll-tick can land on a seam.
+Each boundary gets a deadband: enter Overland at `b ≥ 3.0`, fall back to Atlas only at
+`b < 2.85` (same ±0.15 around `b = 6`), else the chip/cursor/vignette strobe. `regime()`
+therefore has a stateful variant that reads the previous regime to apply the deadband:
+
+```js
+let _regime = REGIME.ATLAS;                    // latched, hysteretic
+export function regime() {
+  const b = band(), lo = 3, hi = 6, d = 0.15;  // deadband ±0.15 band around each seam
+  const up = _regime === REGIME.ATLAS ? lo : lo - d,      // asymmetric thresholds
+        dn = _regime === REGIME.GROUND ? hi : hi + d;
+  _regime = b < up ? REGIME.ATLAS : b < dn ? REGIME.OVERLAND : REGIME.GROUND;
+  return _regime;
+}
+```
+
+## The right-side panel — a regime-scoped inspector that drills
+
+The panel follows the input spine: because a click targets a different object per
+regime, the inspector that shows it must too. It is **one inspector on a drill-path
+breadcrumb** (`Nation ▸ Province ▸ Plot ▸ Household`), not three panels that
+hard-swap — zooming *deepens* the selection and zooming out *re-broadens* it, and
+ambient sections cross-fade with the band exactly like map layers.
+
+| Regime | Panel identity | Selected-entity card | Ambient / no-selection content |
+|---|---|---|---|
+| 🌍 **Atlas** (0–2) | **Almanac** (strategic) | Nation / culture / faith / region: holdings, demographics, political facts, geo crumbs | Political-overlay legend + coverage counts; polity/region search |
+| 🐫 **Overland** (3–5) | **Dispatch** (operational) | Caravan cargo/journey/ETA, colony population/treasury/markets, province terrain, route endpoints | Live session HUD (clock/speed/tax) + event log — the Spectate chrome *is* this regime's ambient panel |
+| 🏘️ **Ground** (6–8) | **Registry** (micro) | Plot terrain/yield/improvement, building type/`dev`, household/agent name/skills/wealth/family | The hovered settlement's roster; plot-grid key |
+
+Three rules keep it coherent with the continuous zoom:
+
+1. **Drill-path persistence.** The selected entity stays selected across regimes and
+   *accretes* detail (province in Atlas → its colony/markets in Overland → its plots
+   in Ground); ancestors remain as collapsible breadcrumb context, so the panel never
+   blanks. Zooming out pops the path.
+2. **Ambient sections are enveloped** with the same `bandAlpha` — the political legend
+   fades out leaving Atlas, the live HUD fades in across Overland, the roster fades in
+   in Ground. The **selected-entity card stays pinned** through the transition; only
+   the ambient sections swap.
+3. **No selection → regime overview**, so the panel is always useful: Atlas a
+   world/nation summary, Overland the active colony list, Ground the hovered settlement.
+
+This re-homes what's scattered today: the Spectate HUD (`live.mjs`) + event log
+(`livelog.mjs`) become Overland's ambient panel; the province-detail sidebar
+(`panel.mjs`) becomes the drill-path card; the political legend becomes Atlas's
+ambient section. `panel.mjs` gains a `regime()`-keyed section registry that mirrors
+the map's band registry — panel and canvas run off the *same* spine.
+
+## Migration map — every scattered threshold → a declared band
+
+The table below is the complete consolidation target. Left: today's inline code.
+Right: the band envelope it becomes. (Envelopes are expressed in band units; values
+are the `cam.k` thresholds converted via `log2`, then snapped toward band centers
+where it reads cleanly. Exact snapping is a tuning pass, not a code-shape question.)
+
+| Feature | Today (`cam.k`) | Module | → Envelope (band units) |
+|---|---|---|---|
+| Continent labels + tier borders | `[0.9,1,1.5,2.3]` | labels/tiers | `[-,0, 0.6,1.2]` (World) |
+| Super-region labels + borders | `[1.7,2.2,3.4,4.7]` | labels/tiers | `[0.6,1, 1.8,2.2]` (Realm) |
+| Region labels + borders | `[3.6,4.7,7,9.5]` | labels/tiers | `[1.8,2.2, 2.8,3.3]` (Region) |
+| Ocean ripple | fade `5→16` (out) | main | out `[…, 2.3,4]` |
+| Political fill taper | `0.58` <5, lerp `5→16` | political | fill alpha keyed on `band()` 2.3→4 |
+| Plots fade-in | `(k-5)/1.5` | plots | in `[2.3,2.6]` (fade in, stay) |
+| Cost overlay | `≥5`, `(k-5)/1.5` | plots | in `[2.3,2.6]` |
+| Province names | fade `6.5→8.5` | labels | in `[2.7,3.1]` (Province) |
+| Province borders | fade `7.5→10` | main | in `[2.9,3.3]` |
+| Sea/lake names | fade `8.5→10.5` | labels | in `[3.1,3.4]` |
+| Adjacency lines / teleporters | `≥10` (hard) | main | `atLeast(3.3)` |
+| Tier lazy-load trigger | `<10` | main/tiers | `band() < 3.3` |
+| Real terrain textures | `≥16` (hard) | plots | `atLeast(BAND.TERRAIN)` |
+| Trade-good icons | `≥16`, fade `48→64` | plots | `[4,4, 5.6,6]` (Terrain→Plot) |
+| Plot hover hit-test | `≥16` | panel | `atLeast(BAND.TERRAIN)` |
+| Live colony overview→sprite | `<16` marker | live | flip at `BAND.TERRAIN` |
+| Bonus/resource icons | `>16`, size `k/256` | plots | in `[4,4.3]`; size keyed on `band()` |
+| Gap-grid hatch | `>64` (hard) | main | `atLeast(BAND.PLOT)` |
+| Minimap visible | `fw/fh<0.985` | minimap | keep, + hide in Ground (`band()<6`) |
+
+## City-micro skeleton (bands 6–8) — the new render surface
+
+The chosen scope is **framework + a city-micro skeleton**: stand up a new
+`js/city.mjs` that renders *something new* in the Ground regime end-to-end, proving
+the deepest band, without building the full city sim view.
+
+Minimum skeleton (all enveloped, all fed by data that already exists):
+- **Band 6 (Plot):** building *footprints* on developed plots — a rectangle sized by
+  the plot's `dev` value (the same field the existing `TERRAIN_URBAN` city sprite
+  already reads in `plots.mjs`), so the urban core resolves into discrete lots.
+- **Band 7 (Parcel):** **agent/household dots** from the live SSE feed (the colony's
+  population is already streamed for the Spectate overlay) — laborers/nobles/ruler as
+  positioned marks, fading in over `[6.6,7]`.
+- **Band 8 (Structure):** labels/affordances on the dots (hover a household → who
+  lives there), and the input-spine hit-test that selects a building/agent.
+
+Everything past the skeleton (real building art, streets, firm interiors, animated
+agents) is explicitly deferred; the skeleton exists to lock the band framework and
+the Ground input mode against real data.
+
+## Module plan (per-layer + central registry)
+
+Keep today's clean per-layer split; add the registry and one new layer. No wholesale
+reorg.
+
+- **New `js/bands.mjs`** — `band()`, `bandAlpha()`, `BAND`/`REGIME` constants,
+  `regime()`, `atLeast()`. Imported by every draw/input module. Absorbs and deletes
+  the duplicated `tierAlpha()` in `labels.mjs` and `tiers.mjs`.
+- **New `js/layers.mjs`** — the ordered layer registry (draw order + band mapping in one
+  place); `renderScene()` becomes a loop over it. See *Layer registry* above.
+- **New `js/city.mjs`** — the Ground-regime micro layer (skeleton above). Registered in
+  `layers.mjs` with `regime:REGIME.GROUND`.
+- **Split `js/plots.mjs`** (767 lines, four concerns) → keep terrain in `plots.mjs`;
+  move `drawBonusOverlay` + `drawTradeGoodIcons` into `js/overlays/resources.mjs`;
+  `drawCostOverlay` into `js/overlays/cost.mjs`. Each declares its own envelope.
+- **Migrate in place** — `main.mjs`, `labels.mjs`, `tiers.mjs`, `political.mjs`,
+  `live.mjs`, `minimap.mjs`, `panel.mjs` swap inline ramps/cutoffs for `bandAlpha`/
+  `atLeast`. `panel.mjs` hit-tests become `regime()`-dispatched (the input spine).
+
+## Phased implementation
+
+1. **Registry.** Add `bands.mjs`; port `tierAlpha`→`bandAlpha`; wire `labels.mjs` +
+   `tiers.mjs` to it (behavior-identical — the safest first migration). Verify the
+   map looks unchanged.
+2. **Migrate remaining fades.** Convert every threshold in the migration-map table to
+   an envelope. Still behavior-preserving; now single-sourced. Verify per band.
+3. **Layer registry.** Add `layers.mjs`; move `renderScene`'s imperative draw sequence into
+   the ordered `LAYERS` table (draw order + band mapping now editable in one place). Split
+   `resources.mjs`/`cost.mjs` out of `plots.mjs` as registered layers. Behavior-preserving —
+   same layers, same order, now declarative.
+4. **Input spine.** Make `panel.mjs` hit-testing regime-dispatched, and add the regime signal
+   (mode chip + cursor + hysteretic transition pulse). Atlas/Overland keep current selection
+   behavior; Ground newly selects plots→(skeleton) buildings.
+5. **City skeleton.** Add `city.mjs` as a `regime:GROUND` layer: footprints (b6) → agent dots
+   (b7) → labels/pick (b8), fed by the live feed. The first genuinely new pixels.
+6. **Chrome + panel.** Envelope the always-on chrome (minimap hide in Ground, highlight stroke
+   thinning, adjacency fade vs hard cutoff) and make the right panel a regime-scoped drill-path
+   inspector (Almanac / Dispatch / Registry).
+
+Each phase is independently shippable and verifiable by scrubbing the zoom across all
+nine bands (the existing `tools/webverify` `?p=&z=` deep link drives an exact band).
+
+## Open questions (deferred to tuning / later design)
+
+- **Exact envelope snapping** — how tightly each layer hugs its band center vs.
+  overlapping neighbors (a feel pass, done live, not a code-shape decision).
+- **Ground data feed** — the skeleton reuses the Spectate SSE population; a dedicated
+  per-building/agent snapshot channel is a server-side follow-up if the micro view
+  grows past the skeleton.
+
+**Settled:**
+
+- **Regime transitions are signalled** (mode chip + regime cursor + transition pulse,
+  hysteretic) — see *Crossing a boundary gives a UI signal*.
+- **The tech tree is out of scope** — it keeps its own separate zoom space
+  (`techtree.mjs`, `KMAX=1.8`) and is not a map band or regime.

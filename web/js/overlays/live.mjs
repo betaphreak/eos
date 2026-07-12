@@ -8,6 +8,7 @@
 // (px/py) already pins anything with a lon/lat onto the terrain, so the feed's colonies and
 // caravans place with no new geometry.
 import { ctx, S, px, py, cssVar, cam, VIEW, baseXr, baseYr, sxSrc, sySrc, BUNDLE, LABEL_FONT, K_TEX } from "../core.mjs";
+import { hasDeepLink } from "../main.mjs";
 import { showLiveLog, ingestLog, ingestChat, resetLog, setChatSender } from "../livelog.mjs";
 
 // where the feed lives: the build can inject BUNDLE.live.base; a ?live=<url> query overrides
@@ -149,7 +150,9 @@ function onSnapshot(s) {
     t.push([c.latitude, c.longitude]);
     if (t.length > 500) t.shift();
   });
-  if (!framed && s.colonies[0]) { frameOn(s.colonies[0].latitude, s.colonies[0].longitude, 6); framed = true; }
+  // open on the colony once — UNLESS the visitor deep-linked to a province/zoom (?p=&z=),
+  // whose framing (applyHash) we must not stomp. A plain load (no deep link) still opens on the action.
+  if (!framed && s.colonies[0]) { if (!hasDeepLink()) frameOn(s.colonies[0].latitude, s.colonies[0].longitude, 6); framed = true; }
   renderHud();
   ingestLog(s.log);           // feed the event-log bar this frame's new lines
   onState(s.state, s.date);   // sync the transport controls (play icon, speed, date) to the server
