@@ -1,7 +1,11 @@
 # Plan: import C2C buildings, gate them to the tech horizon, wire them into the tech tree
 
-**Status:** **Phase 1 implemented** 2026-07-13 (`BuildingInfoExporter` → `generated/buildings.json`,
-**1,270** gated buildings); Phases 2–5 pending. Written 2026-07-13; decisions locked with owner.
+**Status:** **Phases 1–4 shipped** (2026-07-13/14): the import (`BuildingInfoExporter` →
+`generated/buildings.json`, **1,270** gated buildings), the button-art bake (`building-icons.webp`),
+the full-canvas tech-tree view (grid + rail inspector + unified search + researched-state), and the
+engine unlock model (`building-unlocks.json`, tokens granted on research). **Only Phase 5 (auto-build
+onto district plots) remains** — the one behavior-changing step, deferred with `district-generator.md`.
+Written 2026-07-13; decisions locked with owner.
 Companion to [`district-generator.md`](district-generator.md) (the districts these buildings populate)
 and the tech-tree docs ([`tech-tree.md`](tech-tree.md)); the button-art bake mirrors the existing
 tech-button bake (`web/build-techs.mjs`).
@@ -210,9 +214,26 @@ One widget (`searchbox.mjs`), no duplicate; its **corpus follows the active mode
   a parallel `BuildingBundle` at **`/api/buildings`** (Phase 3), exactly the `TechBundle`/`techs-meta`
   pattern. Shared bake helpers (`iconPath`/`iconCell`/`packSheet`) factored into `web/icon-bake.mjs` and
   reused by `build-techs.mjs` (byte-identical regen verified).
-- **Phase 3 — tech-tree view.** `techtree.mjs` renders the per-node building grid (24 wide,
-  grow-to-fit 1–3 rows, uniform frame, zoom fade-in) + the click-to-inspect panel. Web-only; verify
-  with `tools/webverify` across zoom levels.
+- **Phase 3 — tech-tree view. ✅ DONE (2026-07-14).** Delivered in three parts:
+  - **3a — the enabling refactor.** The tech tree became the Technology advisor's **full-canvas
+    map-mode** (covers the stage region, top bar + advisor sub-bar + right rail stay live), the era
+    tabs moved into the top-bar sub-strip, and node detail moved into the **shared right rail** — so
+    the rail is free for the building inspector (the §3b dependency, realized here rather than assumed
+    from privy-council). Server side: a parallel **`BuildingBundle` → `/api/buildings`** (the
+    `TechBundle` pattern).
+  - **3b — the grid, as a continuous LOD (owner's pick, deviates from the plan's always-24-wide fade).**
+    Every node with buildings shows a thin **category-spectrum footer bar** (segment colour = category,
+    width ∝ count); **focusing** a node expands its full building grid **in the rail**, grouped by
+    category over a category-tinted backing with uniform frames. Click a building → its **rail
+    inspector** (art, category, pedia, "unlocked by" the primary + AND techs). Any building is
+    inspectable, locked or not.
+  - **3c — search + researched-state.** The unified top-bar search interleaves **techs + buildings**
+    with a kind chip; picking a building jumps to its tech and inspects it. The tree is **session-aware**:
+    `ColonyView.knownTechs` (the spectated colony's known set — the demo's **Dhenijansar**, 229 techs)
+    **dims** the techs/buildings it hasn't unlocked (110 of 339), desaturated, never hidden.
+  - Verified headless throughout (`tools/webverify/tech-verify.mjs`, incl. `--spectate`); zero console
+    errors. The one deferred owner idea (advisor-noble portrait in the building inspector) is future
+    work — the seat already shows as the court chip in the sub-bar.
 - **Phase 4 — engine unlock model. ✅ DONE (2026-07-14).** `BuildingInfoExporter` also authors a
   **generated `generated/building-unlocks.json`** overlay — **1,266 `Unlock(BUILDING_*)` effects over 285
   techs** (keyed by each building's primary `prereqTech`; the 4 CAP-gated buildings are excluded, since
