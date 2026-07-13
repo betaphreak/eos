@@ -132,6 +132,19 @@ results.toast = await page.evaluate(() => ({ present: !!document.querySelector("
   text: (document.querySelector("#toastHost .toast") || {}).textContent }));
 await page.screenshot({ path: path.join(outDir, "advisor-toast.png") });
 
+// §4: clock + sign-in relocated into the Zeitgeist sub-bar; LIVE badge only while running
+await click('zeitgeist'); await page.waitForTimeout(1200);
+results.zeitgeist4 = await page.evaluate(() => {
+  const z = document.querySelector('#advisorSubbar [data-sub="zeitgeist"]');
+  const badge = document.querySelector('.live-badge');
+  return {
+    clockInSubbar: !!(z && z.querySelector('#clock')),
+    authInSubbar: !!(z && z.querySelector('#siteAuth')),
+    liveBadgeShown: !!(badge && !badge.hidden),
+  };
+});
+await page.screenshot({ path: path.join(outDir, 'advisor-zeitgeist4.png') });
+
 console.log(JSON.stringify({ url, errors, results }, null, 2));
 await browser.close();
 srv.close();

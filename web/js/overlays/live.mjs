@@ -159,6 +159,10 @@ export function stopLive() {
 function liveTabRunning(on) {
   const btn = document.querySelector('#advisorToggle button.advisor-live');
   if (btn) btn.classList.toggle("live-running", on);
+  // Twitch-style: the pulsing red LIVE badge shows only while the session is RUNNING — hidden when
+  // the clock is paused/stopped or the feed is disconnected
+  const badge = document.querySelector('.live-badge');
+  if (badge) badge.hidden = !on;
 }
 
 function onSnapshot(s) {

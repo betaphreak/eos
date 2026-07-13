@@ -405,9 +405,10 @@ export function techRowHtml(t, i, active) {
 export function pickTech(t) { select(t.Type); centerOnType(t.Type); }
 
 export function initTechTree() {
+  // the standalone tech button was retired (the Technology advisor is the entry point); wire it
+  // only if present. The rest of the init must still run so the Technology advisor works.
   const btn = $("techBtn");
-  if (!btn) return;
-  btn.addEventListener("click", open);
+  if (btn) btn.addEventListener("click", open);
   // F7 (toggle) and Escape (close) are dispatched centrally by js/shortcuts.mjs, which
   // calls toggleTech() / closeTech() below.
   // Esc / click outside / the ✕ all return to the map

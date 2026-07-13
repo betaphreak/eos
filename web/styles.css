@@ -275,6 +275,13 @@ canvas#map { position: absolute; inset: 0; width: 100%; height: 100%; display: b
 .brand-a { color: var(--accent); }                 /* CivStudio — gold */
 .brand-b { color: #eef2f8; }                        /* Anbennar — light */
 .brand-sep { color: var(--accent); opacity: .55; margin-right: .04em; }
+/* watermark variant: the wordmark over the map (moved off the top bar to save space) — unobtrusive
+   and faint, brightening a little on hover; still clickable (reset / back to server selection) */
+.brand-watermark {
+  position: absolute; top: 14px; right: 18px; z-index: 4;
+  font-size: 18px; opacity: .16; pointer-events: auto;
+}
+.brand-watermark:hover, .brand-watermark:focus-visible { opacity: .5; }
 
 .legend {
   position: absolute; left: 22px; bottom: 16px; z-index: 3;
@@ -568,57 +575,24 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .stage.mm-on .legend { bottom: calc(var(--mm-h, 150px) + 30px); }
 @media (max-width: 640px) { .minimap { display: none; } }
 
-/* ---------- RESPONSIVE TOP BAR ---------- */
-/* the hamburger that opens the control groups on narrow screens (hidden on wide) */
-.menubtn { display: none; align-items: center; justify-content: center; flex: none;
-  width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line);
-  background: var(--panel-2); color: var(--ink-soft); cursor: pointer; }
-.menubtn:hover { color: var(--ink); }
-.menubtn[aria-expanded="true"] { color: var(--ink); background: var(--panel); }
-
-/* below this width the POV/plane/overlay toggles no longer fit inline — collapse them into a
-   dropdown opened by the hamburger, so they never overlap the search/clock */
-@media (max-width: 1180px) {
-  .menubtn { display: inline-flex; }
-  /* .topbar prefix raises specificity above the inline <style> base rule (which loads after
-     styles.css), so the dropdown actually hides when the menu is closed */
-  .topbar #mapControls {
-    position: absolute; top: calc(var(--bar-h) - 2px); left: 10px; z-index: 20;
-    flex-direction: column; align-items: stretch; gap: 6px;
-    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    padding: 8px; box-shadow: var(--shadow); display: none;
-  }
-  body.menu-open .topbar #mapControls { display: flex; }
-  #mapControls .segToggle { justify-content: flex-start; }
-}
+/* ---------- RESPONSIVE (rail only) ---------- */
+/* The top bar is a single content-width bar for BOTH landscape and portrait — no mobile hamburger
+   drawer / breakpoint reshuffling (removed). Only the rail still adapts on narrow screens so it
+   stays usable in portrait. */
 @media (max-width: 900px) {
-  .railwrap { width: 100%; max-width: 420px; }         /* the overlay panel covers most of a phone screen */
+  .railwrap { width: 100%; max-width: 420px; }         /* the overlay panel covers most of a narrow screen */
   .legend { bottom: 16px; max-width: 200px; }
   .app.rail-open .stage { right: 0; }                  /* too narrow to split — overlay the map instead of shrinking it */
   .rail-resize { display: none; }                      /* and no drag-resize on small screens */
 }
-@media (max-width: 720px) {
-  .brand-sep, .brand-b { display: none; }              /* "CivStudio" only */
-  #costBtn { display: none; }                          /* niche dev overlay — hide on small screens */
-  .searchbar { flex-basis: 150px; min-width: 96px; }
-}
 @media (max-width: 560px) {
-  /* rail polish on phones: tighter padding/type, no shadow (it's a full-screen overlay) */
+  /* rail polish on narrow screens: tighter padding/type, no shadow (it's a full-width overlay) */
   .rail { padding: 16px 16px 30px; gap: 16px; }
   .railwrap { box-shadow: none; }
   .d-head h2 { font-size: 18px; }
   .metacell { padding: 9px 10px; }
   .metacell .v { font-size: 16px; }
   .pv-crumbs { font-size: 11px; }
-}
-@media (max-width: 520px) {
-  #heatBtn, #themeBtn { display: none !important; }    /* trim to the essentials on phones */
-  .zoomlvl { display: none; }                          /* drop the zoom readout */
-  /* the bar collapses to brand + hamburger; search + clock live in the drawer (full width, roomy) */
-  #mapControls .searchbar { flex: none; width: 100%; height: 40px; min-width: 0; }
-  #mapControls #clock { width: 100%; }
-  #mapControls #clock .clk-time { display: inline; }   /* the drawer has room for the full clock */
-  #mapControls #clock .clk-speed { display: flex; }
 }
 
 /* ---------- update toast: shown when a new web build is detected (index.html update detector) ---------- */

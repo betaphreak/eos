@@ -533,9 +533,9 @@ function renderRail(){
   }
   rail.innerHTML = worldRail();
 }
-// ---- theme toggle ----
+// ---- theme toggle (button retired; wire only if present — the site defaults to dark) ----
 const themeBtn=document.getElementById("themeBtn");
-themeBtn.onclick=()=>{
+if(themeBtn) themeBtn.onclick=()=>{
   const cur=document.documentElement.getAttribute("data-theme")
     || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
   document.documentElement.setAttribute("data-theme", cur==="dark"?"light":"dark");
@@ -659,34 +659,8 @@ function setPov(pov){
 if (povToggle) povToggle.querySelectorAll("button").forEach(b =>
   b.addEventListener("click", () => { if (!b.disabled) setPov(b.dataset.pov); }));
 
-// ---- responsive controls menu: the hamburger tucks the toggle groups on narrow screens ----
-const menuBtn = document.getElementById("menuBtn");
-const mapControlsEl = document.getElementById("mapControls");
-if (menuBtn) {
-  menuBtn.addEventListener("click", e => {
-    e.stopPropagation();
-    const open = document.body.classList.toggle("menu-open");
-    menuBtn.setAttribute("aria-expanded", open);
-  });
-  document.addEventListener("click", e => {          // click outside the dropdown closes it
-    if (!document.body.classList.contains("menu-open")) return;
-    if (mapControlsEl.contains(e.target) || menuBtn.contains(e.target)) return;
-    document.body.classList.remove("menu-open"); menuBtn.setAttribute("aria-expanded", "false");
-  });
-}
-
-// on phones the whole bar collapses to brand + hamburger — the search and clock move into the
-// drawer alongside the toggle groups, and back to the top-right on wider screens
-const searchBarEl = document.querySelector(".searchbar");
-const clockEl = document.getElementById("clock");
-const topRightEl = document.querySelector(".topright");
-const phoneMq = matchMedia("(max-width: 520px)");
-function applyBarLayout() {
-  if (phoneMq.matches) { mapControlsEl.append(searchBarEl, clockEl); }
-  else { topRightEl.append(searchBarEl, clockEl); }   // append restores the original trailing order
-}
-phoneMq.addEventListener("change", applyBarLayout);
-applyBarLayout();
+// (The mobile hamburger drawer + phone bar-reshuffle were removed — one content-width top bar now
+// serves both landscape and portrait; see styles.css.)
 
 // ---- plane + overlay toggles ----
 document.querySelectorAll("#planeToggle button").forEach(b =>
@@ -712,7 +686,7 @@ export function boot() {
   resize();
   // floating controls over the map (zoom buttons, cost key, political legend) must not fall through
   // to the stage's pan/zoom/pick handlers — the same guard the minimap and live HUD/log bar use.
-  document.querySelectorAll(".zoomctl, #costKey, #polLegend").forEach(elm =>
+  document.querySelectorAll(".zoomctl, #costKey, #polLegend, #brand").forEach(elm =>
     ["pointerdown", "mousedown", "click", "touchstart", "wheel"].forEach(t =>
       elm.addEventListener(t, e => e.stopPropagation(), { passive: true })));
   setPov(S.pov);              // paints the camera-POV toggle (default: God)
