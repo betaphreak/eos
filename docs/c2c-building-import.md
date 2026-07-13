@@ -213,9 +213,18 @@ One widget (`searchbox.mjs`), no duplicate; its **corpus follows the active mode
 - **Phase 3 — tech-tree view.** `techtree.mjs` renders the per-node building grid (24 wide,
   grow-to-fit 1–3 rows, uniform frame, zoom fade-in) + the click-to-inspect panel. Web-only; verify
   with `tools/webverify` across zoom levels.
-- **Phase 4 — engine unlock model.** Populate `tech-effects.json` with `Unlock(BUILDING_*)` per tech;
-  `TechTree` grants tokens on research. Assertable in tests (research tech → token present); no
-  placement yet, so runs stay clean.
+- **Phase 4 — engine unlock model. ✅ DONE (2026-07-14).** `BuildingInfoExporter` also authors a
+  **generated `generated/building-unlocks.json`** overlay — **1,266 `Unlock(BUILDING_*)` effects over 285
+  techs** (keyed by each building's primary `prereqTech`; the 4 CAP-gated buildings are excluded, since
+  the engine drops that tech). **Routing deviates from the plan:** rather than populate the hand-authored
+  `tech-effects.json` (which would risk clobbering hand-authored effects on regeneration, and collides on
+  the `/tech-effects.json` classpath path), the building unlocks are a **separate generated overlay** that
+  `TechTree` **merges** with the hand-authored one at load (`mergeEffects`). Building unlocks are
+  **universal** (race-independent), so both the default `TechTree.load()` and the race path
+  (`TechTree.loadWithRaceOverlay`, used by `GameSession.getTechTree(Race)`) merge them; the test-only
+  `load(String)` stays single-overlay for isolated assertions. `ResearchState.complete()` grants the
+  `BUILDING_*` tokens into `Settlement.getGrantedTechTokens()` on research (asserted end-to-end in
+  `TechResearchTest`). No placement (Phase 5), so runs stay clean; all 272 engine tests pass.
 - **Phase 5 — auto-build onto district plots.** The tech-gated `addBuilding` trigger + placement onto
   `getDistrictPlots()`. Couples to `district-generator.md` placement; **the behavior-changing step** —
   gate it off by default until district placement is designed.

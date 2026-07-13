@@ -1,7 +1,10 @@
 package com.civstudio.simulation;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -11,16 +14,20 @@ import com.civstudio.tech.ResearchState;
 /**
  * Phase 3 end-to-end check: a standard ruler+export colony actually researches — its
  * strategic sector's intellectual labor accrues research points, the ruler picks a
- * monthly focus, and at least one tech completes before the colony collapses. (With
- * the shipped overlay empty, completed techs carry no effects yet, so the economy is
- * unchanged; effect application on completion is covered by
- * {@code eos.tech.ResearchStateTest}.)
+ * monthly focus, and at least one tech completes before the colony collapses. As those
+ * techs complete, their building-unlock {@link com.civstudio.tech.TechEffect.Unlock}
+ * effects (the generated {@code /building-unlocks.json} overlay, merged in by
+ * {@code TechTree.load()}) are applied to the colony, granting {@code BUILDING_*} tokens
+ * — so this also checks the research&rarr;token seam end to end. (The building-unlock
+ * tokens are read by nothing yet, so the economy is still unchanged; per-effect
+ * application is covered by {@code eos.tech.ResearchStateTest}.)
  */
 class TechResearchTest {
 
 	@Test
 	void aStandardColonyCompletesATechBeforeCollapse() {
-		ResearchState research = runStandard().getColony().getResearch();
+		var colony = runStandard().getColony();
+		ResearchState research = colony.getResearch();
 		assertNotNull(research, "a standard ruler+export colony has research enabled");
 		assertTrue(research.getCompletedCount() >= 1,
 				"expected at least one tech completed before collapse, got "
@@ -28,6 +35,14 @@ class TechResearchTest {
 		// known set grew past the pre-known Classical-complete baseline (229 techs)
 		assertTrue(research.getKnownCount() > 229,
 				"known techs should grow as research completes");
+		// research→token seam: completing those techs granted their buildings' UNLOCK
+		// tokens (the Prehistoric→Renaissance frontier a Classical-complete colony
+		// researches all unlock buildings), and every granted token is a BUILDING_* id.
+		Set<String> tokens = colony.getGrantedTechTokens();
+		assertFalse(tokens.isEmpty(),
+				"completing techs should grant their buildings' unlock tokens");
+		assertTrue(tokens.stream().allMatch(t -> t.startsWith("BUILDING_")),
+				"every granted token is a BUILDING_* unlock, got " + tokens);
 	}
 
 	/** Build and run a standard HomogeneousEconomy-style colony with no printers. */

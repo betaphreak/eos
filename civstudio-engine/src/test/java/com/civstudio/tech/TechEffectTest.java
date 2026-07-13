@@ -70,10 +70,27 @@ class TechEffectTest {
 	}
 
 	@Test
-	void shippedOverlayIsEmptySoTechsHaveNoEffectsYet() {
-		// the shipped /tech-effects.json is {} for now (plumbing without coverage)
+	void handAuthoredOverlayIsStillEmpty() {
+		// the hand-authored /tech-effects.json carries no effects yet (plumbing without
+		// coverage); the building UNLOCKs live in the separate generated
+		// /building-unlocks.json and are merged in only by the public TechTree.load().
+		assertTrue(TechEffects.load("/tech-effects.json").isEmpty());
+	}
+
+	@Test
+	void buildingUnlocksMergeOntoTheirPrereqTech() {
+		// Phase 4: TechTree.load() merges the generated /building-unlocks.json onto the
+		// hand-authored overlay, so a tech carries an UNLOCK effect for each building it
+		// unlocks (keyed by the building's primary prereq tech).
 		TechTree tree = TechTree.load();
-		assertTrue(tree.effectsOf("TECH_MERCANTILISM").isEmpty());
-		assertTrue(tree.effectsOf("TECH_RENAISSANCE_LIFESTYLE").isEmpty());
+		List<TechEffect> fishing = tree.effectsOf("TECH_FISHING");
+		assertTrue(
+				fishing.stream().anyMatch(e -> e instanceof TechEffect.Unlock u
+						&& u.target().equals("BUILDING_ABALONE_DIGGERS")),
+				"TECH_FISHING should unlock BUILDING_ABALONE_DIGGERS");
+		// every unlock target is a BUILDING_* id (the verbatim C2C type)
+		assertTrue(fishing.stream()
+				.filter(e -> e instanceof TechEffect.Unlock)
+				.allMatch(e -> ((TechEffect.Unlock) e).target().startsWith("BUILDING_")));
 	}
 }

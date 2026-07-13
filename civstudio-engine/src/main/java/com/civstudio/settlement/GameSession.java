@@ -315,7 +315,8 @@ public class GameSession {
 		String overlay = "/tech-effects-" + race.id() + ".json";
 		if (!resourceExists(overlay))
 			return getTechTree(); // no per-race overlay -> shared graph + default overlay
-		return techTreeByRace.computeIfAbsent(race, r -> TechTree.load(overlay));
+		return techTreeByRace.computeIfAbsent(race,
+				r -> TechTree.loadWithRaceOverlay(overlay));
 	}
 
 	/**

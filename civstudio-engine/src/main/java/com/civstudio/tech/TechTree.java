@@ -47,6 +47,11 @@ public final class TechTree {
 
 	private static final String RESOURCE = "/techs.json";
 	private static final String EFFECTS_RESOURCE = "/tech-effects.json";
+	// the generated building-unlock overlay (BuildingInfoExporter, Phase 4): per kept tech, an
+	// UNLOCK effect for each building it unlocks. Kept separate from the hand-authored
+	// /tech-effects.json so regenerating it never clobbers hand-authored effects; the two overlays
+	// are merged (effect lists concatenated per tech) at load. Absent → no building unlocks.
+	private static final String BUILDING_UNLOCKS_RESOURCE = "/building-unlocks.json";
 
 	// the highest era the tech tree models; techs beyond it (the lone Industrial node
 	// and any later) are dropped at load. The scope is expressed here rather than by
@@ -115,19 +120,53 @@ public final class TechTree {
 	 *             prerequisite does not resolve to a kept tech
 	 */
 	public static TechTree load() {
-		return load(EFFECTS_RESOURCE);
+		// merge the hand-authored overlay with the generated building-unlock overlay
+		return loadWith(mergeEffects(TechEffects.load(EFFECTS_RESOURCE),
+				TechEffects.load(BUILDING_UNLOCKS_RESOURCE)));
 	}
 
 	/**
-	 * Load the tech tree with a specific effect overlay resource (instead of the
-	 * shipped {@code /tech-effects.json}). Package-private — used by tests to load a
-	 * tree whose techs carry effects, since the shipped overlay is empty.
+	 * Load the tech tree over a single, <b>isolated</b> effect overlay — no
+	 * building-unlock merge — so overlay-parsing tests can assert exact effect lists.
+	 * For a race's tree (which does get the universal building unlocks) use
+	 * {@link #loadWithRaceOverlay(String)}.
 	 *
 	 * @param effectsResource
 	 *            the effect-overlay classpath resource
-	 * @return the loaded tech tree with that overlay
+	 * @return the loaded tech tree with only that overlay
 	 */
 	public static TechTree load(String effectsResource) {
+		return loadWith(TechEffects.load(effectsResource));
+	}
+
+	/**
+	 * Load the tech tree under a race's effect overlay, merged with the universal
+	 * building-unlock overlay ({@code /building-unlocks.json}). Buildings are
+	 * race-independent content, so their {@link TechEffect.Unlock}s apply to every race;
+	 * only the race's own effects overlay differs. Mirrors the default {@link #load()}
+	 * (which merges building unlocks onto the hand-authored {@code /tech-effects.json}).
+	 *
+	 * @param raceOverlayResource
+	 *            the race's effect-overlay classpath resource (e.g.
+	 *            {@code "/tech-effects-harimari.json"})
+	 * @return the loaded tech tree with that race overlay plus the building unlocks
+	 */
+	public static TechTree loadWithRaceOverlay(String raceOverlayResource) {
+		return loadWith(mergeEffects(TechEffects.load(raceOverlayResource),
+				TechEffects.load(BUILDING_UNLOCKS_RESOURCE)));
+	}
+
+	// merge two effect overlays, concatenating the effect lists of any tech present in both
+	private static Map<String, List<TechEffect>> mergeEffects(
+			Map<String, List<TechEffect>> a, Map<String, List<TechEffect>> b) {
+		Map<String, List<TechEffect>> merged = new LinkedHashMap<>();
+		a.forEach((k, v) -> merged.put(k, new ArrayList<>(v)));
+		b.forEach((k, v) -> merged.computeIfAbsent(k, x -> new ArrayList<>()).addAll(v));
+		return merged;
+	}
+
+	// parse the tech graph and build the tree over an already-resolved effect overlay
+	private static TechTree loadWith(Map<String, List<TechEffect>> effects) {
 		try (InputStream in = TechTree.class.getResourceAsStream(RESOURCE)) {
 			if (in == null)
 				throw new IllegalStateException(
@@ -148,7 +187,7 @@ public final class TechTree {
 						Integer.parseInt(r.cost()), prereqList(r.orPreReqs()),
 						prereqList(r.andPreReqs())));
 			}
-			return new TechTree(kept, TechEffects.load(effectsResource));
+			return new TechTree(kept, effects);
 		} catch (IOException e) {
 			throw new UncheckedIOException(
 					"Failed to load tech tree resource: " + RESOURCE, e);

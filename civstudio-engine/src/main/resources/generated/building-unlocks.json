@@ -1,0 +1,4085 @@
+{
+  "TECH_FISHING" : [ {
+    "target" : "BUILDING_ABALONE_DIGGERS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_ANCHOVY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BOATYARD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CLAM_DIGGERS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NETS_COD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CONCH_DIVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FISHMONGER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_FLOUNDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GIANT_CLAM_DIVERS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_SARDINE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_SEA_BASS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SEA_TURTLE_EGG_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_SEAWEED",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_SHARK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_SNAPPER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SPONGE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_SQUID",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_TUNA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_STILT_HUTS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CAVE_DWELLING" : [ {
+    "target" : "BUILDING_CAVE_SHELTER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NEANDERTHAL_CAVES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_ANIMAL_BURROW",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_CAVE_DWELLING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_TREE_HOLLOW",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SIMPLE_WOOD_WORKING" : [ {
+    "target" : "BUILDING_ABATIS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DINING_HALL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PRIME_TIMBER_CAMP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LACQUERWARE_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMOKEHOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WOODWIND_INSTRUMENT_MAKER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SPICE_TRADE" : [ {
+    "target" : "BUILDING_GROVE_ACACIA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_ALLSPICES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CHILI",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CHIVES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_CINNAMOMUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CLOVES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_COCOA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_COFFEE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_COFFEE_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_GINGER_ROOT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_FRANKINCENSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_LICORICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_MAPLE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_PEPPERMINT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_NUTMEG",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_BLACK_PEPPER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PERFUME_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_RHUBARB",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ROASTING_HOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_TURNIP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_SAFFRON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_SASSAFRAS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_SESAME",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_CINNAMON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_SUGARCANE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TEA_HOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_TEA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_VANILLA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_WASABI",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_STOCK_BROKERING" : [ {
+    "target" : "BUILDING_ACCOUNTING_FIRM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STOCK_MARKET",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_INSIDER_TRADING",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ORCHARDS" : [ {
+    "target" : "BUILDING_GROVE_OAK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_ALMOND",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_APPLE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_APRICOT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_ATEMOYA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_AVOCADO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_BANANA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_BRAZIL_NUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_BREADFRUIT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_CACTUS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_CARDON_CACTUS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_CASHEW",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_CHERIMOYA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_CHERRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_CHESTNUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_COCONUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_DATE_PALM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DRIED_FRUIT_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_DURIAN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_FIGS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_FUSTIC",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_GEVUINA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_GRAPEFRUIT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_GUAVA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_HAZELNUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_JUJUBE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_KIWIFRUIT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_KUMQUAT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_LEMON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_LIME",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_LONGAN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_LOQUAT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_LYCHEE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_MACADAMIA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_MANGO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_MONGONGO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_ORANGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_PAPAYAS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_PAPAYA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_PEACH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_PEAR",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_PECAN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_PERSIMMON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_PINEAPPLE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_PINE_NUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_PISTACHIO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_PITAYA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_PLANTAIN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_PLUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_POMEGRANATE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_SAPOTE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_STARFRUIT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_TANGERINE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_WALNUT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_DRAMA" : [ {
+    "target" : "BUILDING_DRAMA_SCHOOL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_COSTUME_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_THEATRE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FOLK_MEDICINE" : [ {
+    "target" : "BUILDING_ACUPUNCTURISTS_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HEALTH_SPA",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FERMENTATION" : [ {
+    "target" : "BUILDING_PLANTATION_AGAVE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BREWERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CIDER_HOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_COOPER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORCHARD_OLIVE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_OLIVE_PRESS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TAVERN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_VINEYARD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WINERY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_DEMOCRACY" : [ {
+    "target" : "BUILDING_AGORA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FESTIVAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_POLIS_COUNCIL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FORUM",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CIVIL_SERVICE" : [ {
+    "target" : "BUILDING_ALMSHOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CIVIL_SERVANTS_SCHOOL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORPHANAGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SERVANTS_QUARTERS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_CORRUPTION",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_AESTHETICS" : [ {
+    "target" : "BUILDING_FARM_ANIMAL_ALPACA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ANGORA_GOAT_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ANGORA_RABBIT_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CARPET_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FOUNTAIN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PORCELAIN_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TAILOR_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_THRONE_ROOM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WOOLLY_PIG_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_GRAFFITI",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TRADITION_AESTHETIC_APPRECIATION",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EFFECT_TRADITION_AESTHETIC_APPRECIATION",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_DIPLOMACY" : [ {
+    "target" : "BUILDING_AMBASSADORS_HOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EMPORIUM",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MINING" : [ {
+    "target" : "BUILDING_MINE_AMETHYST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_DIAMOND",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_EMERALD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_FLUORITE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_AMBER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_GARNET",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GEMCUTTER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_GOLD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_JADE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINING_CAMP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_QUARTZ",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_RUBY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_SAPPHIRE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_SILVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TAR_REFINERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_TOPAZ",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_TURQUOISE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_POLYTHEISM" : [ {
+    "target" : "BUILDING_TEMPLE_OF_AN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TEMPLE_OF_ENKI",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TEMPLE_OF_ENLIL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TEMPLE_OF_INANNA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TEMPLE_OF_KI",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TEMPLE_OF_KI_CORN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TEMPLE_OF_KI_POTATO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TEMPLE_OF_KI_RICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TEMPLE_OF_KI_WHEAT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_SYPHILIS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_HERITAGE" : [ {
+    "target" : "BUILDING_ANCIENT_CUSTOMS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GRAMMATICUS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MUMMIFICATION" : [ {
+    "target" : "BUILDING_ANCIENT_EMBALMER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BURIAL_TRADITION_MUMMY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TEMPLE_OF_RA",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_VETERINARY_MEDICINE" : [ {
+    "target" : "BUILDING_ANCIENT_VETERINARIAN",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CAVALRY_TACTICS" : [ {
+    "target" : "BUILDING_ANIMAL_RACE_TRACK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MODERN_STABLE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RODEO",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ZOOLOGY" : [ {
+    "target" : "BUILDING_ANIMAL_SHELTER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ENTOMOLOGY_LAB",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GERBIL_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HAMSTER_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HERPETOLOGY_LAB",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MOUSE_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORNITHOLOGY_LAB",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PETTING_ZOO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PET_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RAT_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TAXIDERMIST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ZOO",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TRAPPING" : [ {
+    "target" : "BUILDING_ANIMAL_SNARE_TRAPS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TRAP_BEAVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TRAP_CHINCHILLA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TRAP_FOX",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TRAP_MINK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TRAP_SEA_OTTER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TRAP_RABBIT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TRAP_RACCOON",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TRACKING" : [ {
+    "target" : "BUILDING_CAMP_ANTELOPE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_AUROCHS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_BISON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_BOAR",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_CARIBOU",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_DEER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_DIPROTODON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_ELEPHANT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_EMU",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_GIRAFFE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_HIPPO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HUNTERS_CAMP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_GIANT_BISON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_KANGAROO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LIZARD_HUNTERS_CAMP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_MAMMOTH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_MEGALOCEROS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_MEGATHERIUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_MOOSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_MOUFLON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_MUSKOX",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_OSTRICH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_REINDEER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_RHEA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_RHINO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_WOOLLY_RHINO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_ZEBRA",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SCAVENGING" : [ {
+    "target" : "BUILDING_ANT_CATCHER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GRASSHOPPER_CATCHER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CARRION_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EARTHWORM_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SNAIL_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NEST_THIEF",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TERMITE_CATCHER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TIDEPOOL_SCAVENGER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ANATOMY" : [ {
+    "target" : "BUILDING_ANATOMY_LAB",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MORTUARY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ARCHEOLOGY" : [ {
+    "target" : "BUILDING_ANTIQUE_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ARCHAEOLOGY_LAB",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GENEALOGY_CENTER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_APICULTURE" : [ {
+    "target" : "BUILDING_APIARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BEE_BOMBS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CANDY_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_WASPS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ANCIENT_MEDICINE" : [ {
+    "target" : "BUILDING_APOTHECARY_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLAGUE_HOSPITAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ACHIEVEMENT_MEDICAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EFFECT_ACHIEVEMENT_MEDICAL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_GUILDS" : [ {
+    "target" : "BUILDING_APPRENTICE_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BASKET_MAKERS_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BEADMAKERS_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARMERS_MARKET",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GUILD_HALL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LACQUERWARE_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MATTRESS_STORE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_POTTERS_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PUB",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TOY_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TREE_NURSERY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CANAL_SYSTEMS" : [ {
+    "target" : "BUILDING_AQUEDUCT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BATH_HOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CHINAMPA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GONDOLA_CANALS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_LITERATURE" : [ {
+    "target" : "BUILDING_MADRASSA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LIBRARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ACADEMY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SAFETY_AESOPS_FABLES",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BOTANY" : [ {
+    "target" : "BUILDING_ARBORETUM",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_YEOMANRY" : [ {
+    "target" : "BUILDING_ARCHERY_RANGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BALISTRARIA",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MASONRY" : [ {
+    "target" : "BUILDING_ARENA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BRICK_MASON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CELLAR",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FORTIFIED_OUTPOST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ICEHOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_KIVA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LIGHTHOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MARBLE_QUARRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_OBSIDIAN_QUARRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_ONYX",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PALACE_WALLS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STONE_BRIDGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STONE_QUARRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ZIGGURAT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TOWN_WELL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WALLS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WAREHOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_CLIFF_DWELLING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_BURGLARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_PUEBLOS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SMITHING" : [ {
+    "target" : "BUILDING_ARMOURER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_INVENTION" : [ {
+    "target" : "BUILDING_ARTESIAN_WELL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_INVENTORS_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_VIADUCT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PLOUGH" : [ {
+    "target" : "BUILDING_FARM_CROP_ARTICHOKE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CARROT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CASSAVA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CAULIFLOWER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_GARLIC",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_KALE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_LEEK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_ONION",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_PEANUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_POTATO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_SPINACH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_SWEET_POTATO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_TARO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_APHIDS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_SLUGS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FREE_ARTISTRY" : [ {
+    "target" : "BUILDING_ARTIST_COLONY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ART_GALLERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ART_PATRONAGE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SERICULTURE" : [ {
+    "target" : "BUILDING_ASSASSIN_BUG_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BAMBOO_WORM_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BOGONG_MOTH_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BUTTERFLY_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CENTIPEDE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CICADA_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_COCHINEAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GIANT_COCKROACH_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRICKET_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DRAGONFLY_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DUNG_BEETLE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FIREFLY_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GOLIATH_BEETLE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GRASSHOPPER_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HERCULES_BEETLE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_JUMILES_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_JUNEBUG_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LADYBUG_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MEALWORM_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MEZCAL_WORM_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MOPANE_MOTH_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PALM_WEEVIL_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PILLBUG_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PRAYING_MANTIS_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RICE_BEETLE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SCARAB_BEETLE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SCORPION_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_SILK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TARANTULA_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WEAVING_SPIDER_GATHERER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_GARDENING" : [ {
+    "target" : "BUILDING_ASSASSIN_BUG_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BUTTERFLY_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CICADA_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_COMMUNITY_GARDEN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRICKET_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DRAGONFLY_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FIREFLY_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GOLIATH_BEETLE_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HERCULES_BEETLE_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_JUNEBUG_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LADYBUG_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PALACE_GARDEN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PRAYING_MANTIS_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SCARAB_BEETLE_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SCORPION_SANCTUARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WEAVING_SPIDER_SANCTUARY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CODE_OF_LAWS" : [ {
+    "target" : "BUILDING_ASSASSINS_DEN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_COURTHOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRUCIFIXION_CROSSES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RIVER_AUTHORITY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STOCKS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_BRIBERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_LOOTING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_VIGILANTISM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ACHIEVEMENT_SAFETY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EFFECT_ACHIEVEMENT_SAFETY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ASSASSINS_DEN_UNSANCTIONED",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ASTROLOGY" : [ {
+    "target" : "BUILDING_ASTROLOGY_SCHOOL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FORTUNE_TELLER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ATHLETICS" : [ {
+    "target" : "BUILDING_ATHLETIC_FIELDS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CURRENCY" : [ {
+    "target" : "BUILDING_AUCTION_HOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BROTHEL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_BLACKMAIL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_PICKPOCKETING",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_DIVINATION" : [ {
+    "target" : "BUILDING_AUGUR",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MYSTICS_HUT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_USURY" : [ {
+    "target" : "BUILDING_BAILIWICK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DEBTORS_PRISON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FOUNDATION",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GAMBLING_HALL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LOAN_SHARK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TOLL_HOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_EMBEZZLEMENT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_EXTORTION",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_TAX_EVASION",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LOAN_SHARK_UNSANCTIONED",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BREAD_MAKING" : [ {
+    "target" : "BUILDING_BAKERY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MUSICAL_NOTATION" : [ {
+    "target" : "BUILDING_BALLROOM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MONKEY_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MUSIC_SCHOOL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CARPENTRY" : [ {
+    "target" : "BUILDING_BAMBOO_ARMOURER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CARPENTER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FRONTIER_OUTPOST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FURNITURE_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_OUTHOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PALISADE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WATER_TROUGH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TREE_PLATFORMS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_LONGHOUSE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SEDENTARY_LIFESTYLE" : [ {
+    "target" : "BUILDING_BAMBOO_BRIDGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_KIDNAPPING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_CHOLERA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_DYSENTERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_LEPROSY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_MEASLES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_BUBONIC_PLAGUE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_TYPHOID_FEVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EDUCATION_FOOLISH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EDUCATION_BRILLIANT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EDUCATION_KNOWLEDGE_BASE_ANCIENT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_BED_BUGS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_COCKROACHES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_RATS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TOURISM_LEVEL_1",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_WEAVING" : [ {
+    "target" : "BUILDING_GROVE_BAMBOO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_PAPYRUS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WEAVER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_THEFT" : [ {
+    "target" : "BUILDING_THIEVES_HIDEOUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_THIEVES_HIDEOUT_UNSANCTIONED",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BANKING" : [ {
+    "target" : "BUILDING_BANK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_BANK_ROBBERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_COUNTERFEITING",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SANITATION" : [ {
+    "target" : "BUILDING_BARBER_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CISTERN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LANDFILL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GARDEROBE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PUBLIC_POOL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SEWER_SYSTEM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STREET_CLEANER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_VILLAS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_HOVELS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_DOMUS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_PALACES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_SLUMS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_INSULAE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_SEAGULLS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SLAVE_COMPOUND_CRIME_PREVENTION",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SLAVE_COMPOUND_SANITATION",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_POETRY" : [ {
+    "target" : "BUILDING_BARDIC_CIRCLE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ODEON",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_AGRICULTURE" : [ {
+    "target" : "BUILDING_FARM_CROP_BARLEY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CORN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_COTTON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STRAW_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HEMP_FARM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_MILLET",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_OAT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_QUINOA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RICE_PADDY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_RYE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SCARECROWS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_SORGHUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_SOYBEAN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_WHEAT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_GOPHERS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_LOCUST",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MILITARY_TRAINING" : [ {
+    "target" : "BUILDING_BARRACKS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DRAFT_OFFICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ANIMAL_TRAINER_ELEPHANT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PARADE_GROUNDS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MILITARY_SCHOOL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WAR_DOG_TRAINER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_MILITARY_DESERTION",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SLAVE_COMPOUND_MILITARY_SUPPORT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FLINTLOCK" : [ {
+    "target" : "BUILDING_BARRICADES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GUARD_STATION",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BARTER" : [ {
+    "target" : "BUILDING_BARTER_POST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRAFTS_HUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_AMBER_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_JADE_MERCHANT_LOCAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LIANGZHU_JADE_CARVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_OLMEC_JADE_CARVER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BASKETRY" : [ {
+    "target" : "BUILDING_BASKETMAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_RATTAN",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_RITUALISM" : [ {
+    "target" : "BUILDING_BATHING_RITUAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MONUMENT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_VISION_QUEST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WALKABOUT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TRADE" : [ {
+    "target" : "BUILDING_BAZAAR",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CARAVAN_POST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROCER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_JADE_IMPORTER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MARKET",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_OXEN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SLAVE_MARKET",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TRADING_POST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_BLACK_MARKETS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_SHOPLIFTING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_SOLICITING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_DIPHTHERIA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SLAVE_COMPOUND_COMMERCE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BEAD_MAKING" : [ {
+    "target" : "BUILDING_BEADWORKER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_IRRIGATION" : [ {
+    "target" : "BUILDING_FARM_CROP_BEAN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_BEARBERRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_BELL_PEPPER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_BLACKBERRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_BLUEBERRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_BROCCOLI",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CABBAGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CANTALOUPE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CELERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CRANBERRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CUCUMBER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_EGGPLANT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_ELDERBERRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CALABASH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_GOOSEBERRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_HONEYDEW",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_IRRIGATION_CANALS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_LETTUCE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_PUMPKIN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_RADISH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_RASPBERRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_SQUASH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_STRAWBERRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_TOMATILLO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_TOMATO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_WATERMELON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_ZUCCHINI",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FLORISTRY" : [ {
+    "target" : "BUILDING_FARM_FLOWER_BEGONIA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_BLUEBELL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_CARNATION",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_DAISY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_FLAX",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FLORIST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_FOXGLOVE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_HENNA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_HIBISCUS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_INDIGO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_IRIS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_LILY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_MADDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_ORCHID",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_PANSY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_ROSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_SNAPDRAGON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_SUNFLOWER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_TULIP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_FLOWER_VIOLET",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_POISON_CRAFTING" : [ {
+    "target" : "BUILDING_BELLADONNA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CURARE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_POISON_CRAFTER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_HARPOON_MAKING" : [ {
+    "target" : "BUILDING_CAMP_BELUGA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_ELEPHANT_SEAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_SEAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_WALRUS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WHALE_SHRINE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PRINTING_PRESS" : [ {
+    "target" : "BUILDING_BILLBOARDS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BOOK_PUBLISHER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BOOK_STORE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MONEY_PRESS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PRINTERS_WORKSHOP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BIOLOGY" : [ {
+    "target" : "BUILDING_BIOLOGY_LAB",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_POULTRY_DOMESTICATION" : [ {
+    "target" : "BUILDING_CATCHER_BIRDS_OF_PARADISE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BIRD_CALLER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CATCHER_CANARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CHICKEN_COOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_COCK_FIGHTING_RING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CATCHER_COCKATOO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CORMORANT_TRAINER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_DUCK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_GOOSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CATCHER_HUMMINGBIRD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CATCHER_JUNGLEFOWL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CATCHER_LYREBIRD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CATCHER_MACAW",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_OSTRICH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CATCHER_PARAKEET",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PARROT_AVIARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CATCHER_PARROT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CATCHER_PEACOCK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CATCHER_QUETZAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CATCHER_TOUCAN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_TURKEY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_BIRD_FLU",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FUNGICULTURE" : [ {
+    "target" : "BUILDING_BLACK_TRUFFLE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BOLETE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_WHITE_MUSHROOM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CAULIFLOWER_MUSHROOM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CHANTERELLE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CORAL_TOOTH_MUSHROOM_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_CORN_SMUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DEATH_CAP_MUSHROOM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_ENOKITAKE_MUSHROOM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FLY_AGARIC_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HEDGEHOG_MUSHROOM_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MOREL_MUSHROOM_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_OYSTER_MUSHROOM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_STRAW_MUSHROOM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PINE_MUSHROOM_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_PORTOBELLO_MUSHROOM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SHAGGY_PARASOL_MUSHROOM_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_SHIITAKE_MUSHROOM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_SHIMEJI_MUSHROOM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_CROP_SNOW_FUNGUS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WHITE_TRUFFLE_GATHERER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TATTOOS" : [ {
+    "target" : "BUILDING_BLOODHUNTRESSS_HUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TATTOOER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_GUNPOWDER" : [ {
+    "target" : "BUILDING_BOMBARD_TOWER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CANNON_FORGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CANNON_TURRET",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_CITRINE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_COBALT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FIREWORKS_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_PYRITE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_SULPHUR",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BONE_WORKING" : [ {
+    "target" : "BUILDING_BONEMARROWER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BONEWORKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_BONE_HUTS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FIRE_MAKING" : [ {
+    "target" : "BUILDING_BONFIRE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMOKE_SIGNALS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TORCHES",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SALT_PROCESSING" : [ {
+    "target" : "BUILDING_MINE_BORAX",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SALT_EVAPORATION_POND",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SALT_EVAPORATION_WORKS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SALT_FLAT_QUARRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SALT_QUARRY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_DUELING" : [ {
+    "target" : "BUILDING_BOXING_RING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FENCING_ACADEMY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_WRITING" : [ {
+    "target" : "BUILDING_BRAHMIN_LIBRARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOMING_PIGEON_COOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SCHOOL_OF_SCRIBES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SCROLL_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_FORGERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SPY_NETWORK",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_HEAT_TREATMENT" : [ {
+    "target" : "BUILDING_BRANDING_HUT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BRASS_WORKING" : [ {
+    "target" : "BUILDING_SMITH_BRASS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMITH_ELECTRUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMELTER_BRASS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMELTER_ELECTRUM",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FOLK_MUSIC" : [ {
+    "target" : "BUILDING_BRASS_INSTRUMENT_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STRING_INSTRUMENT_MAKER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MACHINERY" : [ {
+    "target" : "BUILDING_GROVE_BRAZILWOOD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CARRIAGE_BUILDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DONKEY_MILL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CITY_GATE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LUMBER_MILL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MECHANICAL_TRAPS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_OXEN_MILL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_REPAIR_DOCK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_TIMBER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TREADMILL_CRANE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CONSTRUCTION" : [ {
+    "target" : "BUILDING_BRICK_BRIDGE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CEREMONY" : [ {
+    "target" : "BUILDING_BRIDAL_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MAIZE_CEREMONY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MARRIAGE_CEREMONY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TEA_CEREMONY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BRONZE_WORKING" : [ {
+    "target" : "BUILDING_SMITH_BRONZE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MONUMENT_OF_THE_DICTATOR",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MERCENARY_CAMP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MERCENARY_STABLES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMELTER_TIN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMITH_TIN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_TIN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TRADITION_ARCHERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EFFECT_TRADITION_ARCHERY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_HUNTING" : [ {
+    "target" : "BUILDING_BUFFALO_JUMP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CEREMONIAL_BURIAL" : [ {
+    "target" : "BUILDING_BURIAL_GROUND",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BURIAL_PLATFORMS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BURIAL_TRADITION_BONE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BURIAL_TRADITION_CAVE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BURIAL_TRADITION_EARTH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BURIAL_TRADITION_FIRE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BURIAL_TRADITION_SEA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BURIAL_TRADITION_SKY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FUNERAL_PYRE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SPEARPOINT_BURIAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STELE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TUMULUS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WATER_BURIALS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_COOKING" : [ {
+    "target" : "BUILDING_BUTCHERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LICHEN_BURNER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SLAUGHTERHOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_ANTS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_FLIES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_TERMITES",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CALLIGRAPHY" : [ {
+    "target" : "BUILDING_CALLIGRAPHY_SCHOOL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CAMELID_DOMESTICATION" : [ {
+    "target" : "BUILDING_FARM_ANIMAL_CAMEL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ANIMAL_TRAINER_CAMEL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_LLAMA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ANIMAL_TRAINER_LLAMA",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CANDLE_MAKING" : [ {
+    "target" : "BUILDING_CANDLEMAKERS_SHOP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BOAT_BUILDING" : [ {
+    "target" : "BUILDING_CANOE_BUILDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RIVER_PORT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_GAMES" : [ {
+    "target" : "BUILDING_CAPTURE_THE_FLAG",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOPSCOTCH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOT_POTATO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_JUGGLING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_JUMP_ROPE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLAYING_FIELDS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CARTOGRAPHY" : [ {
+    "target" : "BUILDING_CARTOGRAPHERS_SHOP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ENGINEERING" : [ {
+    "target" : "BUILDING_CASTLE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_COVERED_BRIDGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CASTLE_DRAWBRIDGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ENGINEERING_SCHOOL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CASTLE_GATEHOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_KEEP_TOWER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MOAT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BALLISTA_TURRET",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CITADEL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CATACOMBS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PERSPECTIVE" : [ {
+    "target" : "BUILDING_CASTLE_GARDEN",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FELINE_DOMESTICATION" : [ {
+    "target" : "BUILDING_CAT_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAT_SHRINE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_METALLURGY" : [ {
+    "target" : "BUILDING_CAUSEWAY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FOUNDRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STAR_FORT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PETROGLYPHS" : [ {
+    "target" : "BUILDING_CAVE_PAINTINGS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SAND_PAINTINGS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EFFECT_LASCAUX_CAVES",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PHYSICS" : [ {
+    "target" : "BUILDING_CHAIN_BRIDGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PHYSICS_LAB",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WATER_TOWER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_NATURAL_PIGMENTS" : [ {
+    "target" : "BUILDING_CHALK_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CLAY_PIT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DYE_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HENNA_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_INDIGO_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HEMATITE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BEACH_SAND_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DESERT_SAND_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ROCKDUST_GATHERER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PARLIAMENTS" : [ {
+    "target" : "BUILDING_CHANCELLORS_OFFICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_COURT_CHAPLAINS_OFFICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_KINGS_COUNCIL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MARSHALS_OFFICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SPYMASTERS_OFFICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STEWARDS_OFFICE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_METAL_CASTING" : [ {
+    "target" : "BUILDING_CHARCOAL_BURNER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMITH_COPPER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FORGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMITH_GOLD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMITH_SILVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMELTER_GOLD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMELTER_SILVER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CHARIOTRY" : [ {
+    "target" : "BUILDING_CHARIOT_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HIPPODROME",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CUISINE" : [ {
+    "target" : "BUILDING_CHEESE_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SAUSAGE_SHOP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CHEMISTRY" : [ {
+    "target" : "BUILDING_CHEMISTRY_LAB",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_SUPPLY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MODERN_EMBALMER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_RUBBER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MODERN_WAREHOUSE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CHIEFDOM" : [ {
+    "target" : "BUILDING_CHIEFS_HUT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SHELTER_BUILDING" : [ {
+    "target" : "BUILDING_CHILDBIRTH_HUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_GRASS_HUTS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_IGLOOS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_LEAN_TOS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_COOPERATION" : [ {
+    "target" : "BUILDING_CHILDCARE_HUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WET_NURSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CHILD_LABOR_CREW",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_LEISURE" : [ {
+    "target" : "BUILDING_PAVILION",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_THEOLOGY" : [ {
+    "target" : "BUILDING_CHURCH_SCHOOL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SEMINARY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_DRUG_TRADE" : [ {
+    "target" : "BUILDING_CIGAR_ROLLERS_SHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_COCA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_COLA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GROVE_GINKGO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_CANNABIS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_MARSH_MALLOW",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_MYRRH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_PEYOTE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_POPPY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_TOBACCO",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ECONOMICS" : [ {
+    "target" : "BUILDING_CITY_BISTRO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CUSTOMS_OFFICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FAMILY_FARM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FREE_PORT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOTEL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WASTE_EXPORTATION_OFFICE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CITY_PLANNING" : [ {
+    "target" : "BUILDING_CITY_COUNCIL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HELLENIC_PANTHEON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NAVAL_SHIPPING_WAREHOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_OFFICIUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PORT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_ARSON",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CLOUD_PATTERNS" : [ {
+    "target" : "BUILDING_CLOUD_OBSERVERS_HUT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_COAL_MINING" : [ {
+    "target" : "BUILDING_MINE_COAL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TANNING" : [ {
+    "target" : "BUILDING_COBBLER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TANNERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TANNIN_MAKER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_COMBAT_SPORTS" : [ {
+    "target" : "BUILDING_COLOSSEUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GLADIATORIAL_SCHOOL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BALL_COURT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_COMPASS" : [ {
+    "target" : "BUILDING_COMMERCIAL_PORT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_LANGUAGE" : [ {
+    "target" : "BUILDING_COMMUNITY_DISCUSSIONS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_AUYANTEPUI",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_LAKE_BAIKAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_BARRINGER_CRATER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_BASALT_ORGAN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_DEAD_SEA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_DEVILS_TABLE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_GREAT_BARRIER_REEF",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_KILIMANJARO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_KRAKATOA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_MT_EVEREST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_MT_FUJI",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_MT_SINAI",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_NGORONGORO_CRATER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_NUKUORO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_PAMUKKALE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_PRAVCICKA_BRANA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_SHARK_BAY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_SOPKA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_SUGARLOAF",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_ULURU",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WONDER_OF_NATURE_VICTORIA_FALLS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CONCRETE" : [ {
+    "target" : "BUILDING_CONCRETE_MASON",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ALCHEMY" : [ {
+    "target" : "BUILDING_CONFECTIONERS_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISTILLERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HERBALIST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_KEROSENE_DISTILLERY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ALCHEMISTS_LAB",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_POLITICAL_PHILOSOPHY" : [ {
+    "target" : "BUILDING_CONSPIRATORS_HIDEOUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SPY_SAFE_HOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_DRUG_CARTELS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_DRUGS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CONSPIRATORS_HIDEOUT_UNSANCTIONED",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_COPPER_WORKING" : [ {
+    "target" : "BUILDING_MINE_COPPER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMELTER_COPPER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_ZINC",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_REPLACEABLE_PARTS" : [ {
+    "target" : "BUILDING_COTTAGE_INDUSTRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PINBALL_ARCADE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TEXTILE_MILL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WIND_WATER_PUMP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ARITHMETIC" : [ {
+    "target" : "BUILDING_TAXPERSON",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_COUNTING" : [ {
+    "target" : "BUILDING_COUNTING_STICKS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TALLY_STONE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ANIMAL_HUSBANDRY" : [ {
+    "target" : "BUILDING_FARM_ANIMAL_COW",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DAIRY_BARN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_GOAT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GUINEA_PIG_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_PIG",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RABBIT_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SHEARING_BARN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_SHEEP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_YAK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_ANTHRAX",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_SMALLPOX",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_REINCARNATION" : [ {
+    "target" : "BUILDING_COW_SHRINE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ELEPHANT_SHRINE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BELIEF_REINCARNATION",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NATIONAL_BELIEF_REINCARNATION",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TRAP_FISHING" : [ {
+    "target" : "BUILDING_NET_CRAB",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DRIED_FISH_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_EEL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FISHERMANS_HUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FISH_TRAPS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_LOBSTER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MUREX_DIVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PEARL_DIVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_PRAWN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_SALMON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NET_SHRIMP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_MOSQUITOES",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ORAL_TRADITION" : [ {
+    "target" : "BUILDING_CREATION_MYTH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_KNOWLEDGE_INHERITANCE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STORYTELLER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TEAM_SPORTS" : [ {
+    "target" : "BUILDING_CRICKET_FIELD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINOR_LEAGUE_STADIUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_POLO_FIELD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RECREATION_CENTER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RUGBY_FIELD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SOCCER_FIELD",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FOLK_DANCE" : [ {
+    "target" : "BUILDING_DANCE_HALL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PUPPET_THEATER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PREHISTORIC_DANCE" : [ {
+    "target" : "BUILDING_DANCE_HUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DANCE_HAKA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HAREMS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DANCE_BIRD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BLOOD_DANCE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FERTILITY_DANCE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FIRE_DANCE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DANCE_FOX",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MOON_DANCE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NATURE_DANCE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RAIN_DANCE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WAR_DANCE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MYSTICISM" : [ {
+    "target" : "BUILDING_DIVINE_MONUMENT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PLAGUE_MEDICINE" : [ {
+    "target" : "BUILDING_DOCTORS_OFFICE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CANINE_DOMESTICATION" : [ {
+    "target" : "BUILDING_DOG_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HERDING_DOG_TRAINER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HUNTING_DOG_TRAINER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SLED_DOG_TRAINER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_SWINE_FLU",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_FLEAS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_LICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_TICKS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_THE_WHEEL" : [ {
+    "target" : "BUILDING_DONKEY_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HORSE_BREEDER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WHEELWRIGHT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_EQUINE_DOMESTICATION" : [ {
+    "target" : "BUILDING_FARM_ANIMAL_DONKEY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_FARM_ANIMAL_HORSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ANIMAL_TRAINER_HORSE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_DRYING" : [ {
+    "target" : "BUILDING_DRIED_MEAT_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DRYING_FRAME",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MEGALITH_CONSTRUCTION" : [ {
+    "target" : "BUILDING_NATURE_ALLIANCE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NATURE_LEGACY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EARTH_WALL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SPIRITS_ALLIANCE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SPIRITS_LEGACY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TORTURE" : [ {
+    "target" : "BUILDING_DUNGEON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_INTERROGATION_CHAIR",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_INTESTINAL_RATS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_IRON_MAIDEN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_JUDAS_CRADLE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SCAVENGERS_DAUGHTER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_THE_RACK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_THUMBSCREW",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TORTURE_CHAMBER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SIEGE_WARFARE" : [ {
+    "target" : "BUILDING_CITY_GATEHOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GUARD_TOWER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HIGH_WALLS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CULTURAL_IDENTITY" : [ {
+    "target" : "BUILDING_ELDER_COUNCIL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ELEPHANT_DOMESTICATION" : [ {
+    "target" : "BUILDING_FARM_ANIMAL_ELEPHANT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CARVING" : [ {
+    "target" : "BUILDING_EXCREMENT_HOLES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_JADE_CARVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PIT_TRAPS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TREE_CARVINGS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CONDUCT" : [ {
+    "target" : "BUILDING_EXECUTIONER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PUBLIC_STONING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SENTRY_POST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_FIGHTING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_MUGGING",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_DECEPTION" : [ {
+    "target" : "BUILDING_EXILE_PRACTICES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LOOKOUT_POST",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_LYING",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FALCONRY" : [ {
+    "target" : "BUILDING_FALCONER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FEUDALISM" : [ {
+    "target" : "BUILDING_FALCONRY_SCHOOL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GRAND_ESTATE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CASTLE_KEEP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GRAND_MANOR",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SQUATTER_CAMPS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_POACHING",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BATTLEFIELD_MEDICINE" : [ {
+    "target" : "BUILDING_FIELD_HOSPITAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PHARMACY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_WARFARE" : [ {
+    "target" : "BUILDING_FIGHTING_PIT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STICK_COMBAT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WARRIORS_HUT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SLASH_AND_BURN" : [ {
+    "target" : "BUILDING_FIRE_ABATIS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FIRE_BRIGADES" : [ {
+    "target" : "BUILDING_FIRE_BRIGADE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CONTROLLED_FIRE" : [ {
+    "target" : "BUILDING_FIRE_PIT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MILITARY_TRADITION" : [ {
+    "target" : "BUILDING_FIRING_RANGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RECRUITMENT_CENTER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TATTOO_PARLOR",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_INSUBORDINATION",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_OIL_LAMPS" : [ {
+    "target" : "BUILDING_FISH_OIL_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GHEE_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_OIL_LAMPS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ARCHERY" : [ {
+    "target" : "BUILDING_FLETCHERS_HUT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FLINT_KNAPPING" : [ {
+    "target" : "BUILDING_FLINT_KNAPPER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_GATHERING" : [ {
+    "target" : "BUILDING_FLINT_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BERRY_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DRIFTWOOD_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GRAIN_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GRASS_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LAVA_ROCK_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_OBSIDIAN_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LICHEN_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LUMBER_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MUSHROOM_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_REED_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ROCK_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STICK_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TUBER_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STORAGE_PIT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PALEONTOLOGY" : [ {
+    "target" : "BUILDING_DIG_SITE_AMMONITE_FOSSILS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_ARCHAEOPTERYX_FOSSILS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_DIMETRODON_FOSSILS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_ICHTHYOSTEGA_FOSSILS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_MAMMOTH_FOSSILS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_NEANDERTHAL_FOSSILS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_PETRIFIED_WOOD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_PLESIOSAUR_FOSSILS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_PTERODACTYL_FOSSILS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_SHARK_TEETH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_SMILODON_FOSSILS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_TRICERATOPS_FOSSILS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_TRILOBITE_FOSSILS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DIG_SITE_VELOCIRAPTOR_FOSSILS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PALEONTOLOGY_LAB",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_IDEOGRAMS" : [ {
+    "target" : "BUILDING_FRESCO_MURAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TABLET_MAKER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SKINNING" : [ {
+    "target" : "BUILDING_FURRIER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SKINNER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_ANIMAL_HIDE_TENTS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_EXECUTIONS" : [ {
+    "target" : "BUILDING_GALLOWS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BOARD_GAMES" : [ {
+    "target" : "BUILDING_GAMBLING_DEN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TOY_CARVER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SEAFARING" : [ {
+    "target" : "BUILDING_GARBAGE_DOCK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HARBOR",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HARBORMASTERS_OFFICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PIER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_LEADERSHIP" : [ {
+    "target" : "BUILDING_GARRISON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GUARD_DOG_TRAINER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BARK_WORKING" : [ {
+    "target" : "BUILDING_BARK_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_BARK_HUTS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_GROUND_STONE" : [ {
+    "target" : "BUILDING_BARLEY_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CORN_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RICE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WHEAT_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_QUERN",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SOFT_HAMMER_PERCUSSION" : [ {
+    "target" : "BUILDING_JADE_GATHERER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_BINDING" : [ {
+    "target" : "BUILDING_VINE_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ROPE_BRIDGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ROPER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_GEOLOGY" : [ {
+    "target" : "BUILDING_MINE_GEODE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GEOLOGY_LAB",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_LITHIUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_MAGNESIUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_MANGANESE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_TUNGSTEN",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_GLASS_BLOWING" : [ {
+    "target" : "BUILDING_GLASSBLOWERS_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_POTASH",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ORNAMENTATION" : [ {
+    "target" : "BUILDING_GLAZE_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_OBELISK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TERRACOTTA_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WIG_SHOP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_POTTERY" : [ {
+    "target" : "BUILDING_GRANARY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_POTTERS_HUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_HOGANS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_MUD_HUTS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SCRIPTURES" : [ {
+    "target" : "BUILDING_GRAVEYARD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MAUSOLEUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SCRIPTORIUM",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_AGRICULTURAL_TOOLS" : [ {
+    "target" : "BUILDING_GREAT_CHINAMPA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HAND_WATER_PUMP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TERRACE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RICE_TERRACE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MEDITATION" : [ {
+    "target" : "BUILDING_GROVE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ROCK_GARDEN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_YOGA_SCHOOL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_WARRANTS_AND_DECREES" : [ {
+    "target" : "BUILDING_GUARDHOUSE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_JURISPRUDENCE" : [ {
+    "target" : "BUILDING_GUILLOTINE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_RIOTING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NATIONAL_PROSTITUTION_BAN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ORDINANCE_PROSTITUTION_BAN",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MATCHLOCK" : [ {
+    "target" : "BUILDING_GUNSMITH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HIGHWAYMANS_HIDEOUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SHOOTING_CLUB",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_ARMED_COMMUNITIES",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PERSONAL_ADORNMENTS" : [ {
+    "target" : "BUILDING_HATTER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_JEWELER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MASK_CARVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PIERCER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_NATUROPATHY" : [ {
+    "target" : "BUILDING_HEALERS_HUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HEALING_CLAY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLANTATION_KAVA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LEECH_CATCHER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MUD_BATH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_SCURVY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_HUMANISM" : [ {
+    "target" : "BUILDING_HOSTEL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PHILANTHROPIC_ORGANIZATION",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SACRIFICE_CULT" : [ {
+    "target" : "BUILDING_ALTAR_FOR_HUMAN_SACRIFICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SACRIFICIAL_ALTAR",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SHANG_JADE_CARVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WORLDVIEW_HUMAN_SACRIFICE_ACTIVE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WORLDVIEW_HUMAN_SACRIFICE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PERSISTENCE_HUNTING" : [ {
+    "target" : "BUILDING_HUNTING_INSTRUCTIONS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CENTRAL_HEATING" : [ {
+    "target" : "BUILDING_HYPOCAUSTS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ANCESTOR_WORSHIP" : [ {
+    "target" : "BUILDING_SHRINE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_EARTH_OVEN" : [ {
+    "target" : "BUILDING_IMU",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_INSURANCE" : [ {
+    "target" : "BUILDING_INSURANCE_OFFICE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_IRON_WORKING" : [ {
+    "target" : "BUILDING_SMITH_IRON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_IRON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_MAGNETITE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PEAT_GATHERER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMITH_PLATINUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_PLATINUM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMELTER_IRON",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMELTER_PLATINUM",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CONSTITUTION" : [ {
+    "target" : "BUILDING_JAIL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_PRISON_BREAKOUTS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SAFETY_MAXIMUM_SECURITY_PRISON",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_STIRRUP" : [ {
+    "target" : "BUILDING_KNIGHTS_STABLE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MINE_WARFARE" : [ {
+    "target" : "BUILDING_LANDMINES",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SEWING" : [ {
+    "target" : "BUILDING_LAUNDRY_HUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_QUILT_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SEAMSTRESS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CORPORATION" : [ {
+    "target" : "BUILDING_LAW_FIRM",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LEARNING_CENTER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_MONEY_LAUNDERING",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_EDUCATION" : [ {
+    "target" : "BUILDING_LAW_SCHOOL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_UNIVERSITY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_FRATERNITY_HOUSE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_LEAD_WORKING" : [ {
+    "target" : "BUILDING_SMITH_LEAD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_LEAD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MINE_CINNABAR",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMELTER_LEAD",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_LOCKS" : [ {
+    "target" : "BUILDING_LOCKSMITH",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_BURGLARS_HIDEOUT_UNSANCTIONED",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_WOODWORKING" : [ {
+    "target" : "BUILDING_LOG_BRIDGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_LUMBER_CAMP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SPIKED_PIT_TRAPS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WOODCARVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_TREEHOUSES",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FURNITURE_MAKING" : [ {
+    "target" : "BUILDING_LUXURY_FURNITURE_WORKSHOP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PHILOSOPHY" : [ {
+    "target" : "BUILDING_LYCEUM",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SOAP_MAKING" : [ {
+    "target" : "BUILDING_LYE_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SOAP_MAKER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SAILING" : [ {
+    "target" : "BUILDING_MACKEREL_NETS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MARLIN_NETS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CAMP_NARWHAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PARROTFISH_NETS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SAIL_WEAVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SHIPWRIGHT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SWORDFISH_NETS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MAGIC" : [ {
+    "target" : "BUILDING_MAGIC_SHOP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ASTROLABE" : [ {
+    "target" : "BUILDING_MARINA",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_STANDARDIZATION" : [ {
+    "target" : "BUILDING_MARKET_SCALES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_THE_NATIONAL_STANDARD_OF_MEASUREMENT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MARTIAL_ARTS" : [ {
+    "target" : "BUILDING_MASTERS_DOJO",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TRAINING_DOJO",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MATHEMATICS" : [ {
+    "target" : "BUILDING_MATHEMATICS_ACADEMY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WATCH_TOWER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_GRAND_VILLA",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MONARCHY" : [ {
+    "target" : "BUILDING_MEETING_HALL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ROYAL_MONUMENT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SPY_HIDEOUT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SOCIAL_CONTRACT" : [ {
+    "target" : "BUILDING_METROPOLITAN_ADMINISTRATION",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_POST_OFFICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TAX_OFFICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WORKHOUSE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_INSURANCE_FRAUD",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MICROBIOLOGY" : [ {
+    "target" : "BUILDING_MICROBIOLOGY_LAB",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ANIMAL_RIDING" : [ {
+    "target" : "BUILDING_GER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_RIDING_SCHOOL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SADDLER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STABLE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MOSAIC_WORKING" : [ {
+    "target" : "BUILDING_MOSAIC_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PLAZA",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MOUNTAINEERING" : [ {
+    "target" : "BUILDING_MOUNTAIN_CLIMBING_SITE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SCIENTIFIC_METHOD" : [ {
+    "target" : "BUILDING_MUSEUM",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PREHISTORIC_MUSIC" : [ {
+    "target" : "BUILDING_MUSIC_HUT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PERCUSSION_INSTRUMENT_MAKER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TRIBALISM" : [ {
+    "target" : "BUILDING_TOTEM_POLE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_VILLAGE_HALL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_MALARIA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_DISEASE_SCARLET_FEVER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_CROWS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_NAVAL_TACTICS" : [ {
+    "target" : "BUILDING_NAVAL_ACADEMY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_NEGOTIATION" : [ {
+    "target" : "BUILDING_NEGOTIATORS_HUT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_WATERWHEELS" : [ {
+    "target" : "BUILDING_NORIA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WATERCLOCK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WATERMILL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TOOL_MAKING" : [ {
+    "target" : "BUILDING_NUT_CRACKING_STONE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STONE_TOOL_MAKER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ASTRONOMY" : [ {
+    "target" : "BUILDING_OBSERVATORY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_OPTICS" : [ {
+    "target" : "BUILDING_OPTOMETRIST",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ACOUSTICS" : [ {
+    "target" : "BUILDING_ORGAN_HALL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PAPER" : [ {
+    "target" : "BUILDING_PAPER_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_STATIONERY_STORE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CROP_ROTATION" : [ {
+    "target" : "BUILDING_PASTA_MAKERS_SHOP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PATENT_RIGHTS" : [ {
+    "target" : "BUILDING_PATENT_OFFICE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PAVED_ROADS" : [ {
+    "target" : "BUILDING_PAVED_ROADS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_NAVAL_CANNON" : [ {
+    "target" : "BUILDING_PIRATES_COVE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PLUMBING" : [ {
+    "target" : "BUILDING_PLUMBERS_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WATER_PIPES",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_REPRESENTATIVE_DEMOCRACY" : [ {
+    "target" : "BUILDING_DISTRICT_OFFICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PRESIDENTIAL_MONUMENT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_OIL_PAINTING" : [ {
+    "target" : "BUILDING_PORTRAIT_PAINTER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PULLEY" : [ {
+    "target" : "BUILDING_PULLEY_WHEEL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_RAT_CATCHING" : [ {
+    "target" : "BUILDING_RAT_CATCHER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_COMMERCIAL_WHALING" : [ {
+    "target" : "BUILDING_RENDERING_PLANT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WHALE_OIL_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WHALERS_DOCK",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ADHESIVES" : [ {
+    "target" : "BUILDING_GROVE_RESIN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TAR_PIT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CRITICAL_THOUGHT" : [ {
+    "target" : "BUILDING_REVIVALIST_CHURCH",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ROAD_BUILDING" : [ {
+    "target" : "BUILDING_ROADS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_ROAD_SIGNS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PICTOGRAPHS" : [ {
+    "target" : "BUILDING_ROCK_ART",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ORATORY" : [ {
+    "target" : "BUILDING_SCHOOL_OF_RHETORIC",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_FALSE_ACCUSATIONS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SCULPTURE" : [ {
+    "target" : "BUILDING_SCULPTORS_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_VALLEY_OF_THE_KINGS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MAIL" : [ {
+    "target" : "BUILDING_SEAL_MAKER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ANIMISM" : [ {
+    "target" : "BUILDING_SAGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SWEAT_LODGE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SHIP_BUILDING" : [ {
+    "target" : "BUILDING_SHIPYARD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_THOR_ALTAR",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ANCIENT_MACHINERY" : [ {
+    "target" : "BUILDING_SIEGE_WEAPONS_WORKSHOP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CRUCIBLE_STEEL" : [ {
+    "target" : "BUILDING_SMELTER_STEEL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SMITH_STEEL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PIRACY" : [ {
+    "target" : "BUILDING_SMUGGLERS_SHANTY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ELIXIRS_AND_TONICS" : [ {
+    "target" : "BUILDING_SNAKE_OIL_SALES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SURGEONS_OFFICE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SPEARFISHING" : [ {
+    "target" : "BUILDING_SPEARFISHER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MERCANTILISM" : [ {
+    "target" : "BUILDING_SPICE_VOYAGE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MERCANTILISM_BONUS_GOLD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_MERCANTILISM_BONUS_SILVER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_STAINED_GLASS" : [ {
+    "target" : "BUILDING_STAINED_GLASS_WORKSHOP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_STARGAZING" : [ {
+    "target" : "BUILDING_STARGAZERS_HUT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_HARD_HAMMER_PERCUSSION" : [ {
+    "target" : "BUILDING_STONEWORKER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SUNDIAL" : [ {
+    "target" : "BUILDING_SUNDIAL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SURVEYING" : [ {
+    "target" : "BUILDING_SURVEYORS_OFFICE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_CRIME_TRESPASSING",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_MANORS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_SHACKS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_COTTAGES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_ESTATES",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_SHANTY_TOWN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_COMMONS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TEXTILE_LOOM" : [ {
+    "target" : "BUILDING_TAPESTRY_MAKERS_WORKSHOP",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_PESTS_MOTHS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TOURNAMENTS" : [ {
+    "target" : "BUILDING_ROYAL_TOURNAMENT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PRIESTHOOD" : [ {
+    "target" : "BUILDING_TOWER_OF_SILENCE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CLOCKWORKS" : [ {
+    "target" : "BUILDING_TOWNCLOCK",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WATCHMAKERS_SHOP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_DUALISM" : [ {
+    "target" : "BUILDING_TOWN_WATCH",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_COMMUNITY" : [ {
+    "target" : "BUILDING_TOWN_HALL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_LAW_ENFORCEMENT" : [ {
+    "target" : "BUILDING_TOWN_PATROL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_TRAILS" : [ {
+    "target" : "BUILDING_TRAILS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CONSCIOUSNESS" : [ {
+    "target" : "BUILDING_TRANCE_HUT",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_PORTABLE_SHELTERS" : [ {
+    "target" : "BUILDING_TRAVOIS_MAKER",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_TIPIS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_HOUSING_YURTS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_WATERPROOF_CONCRETE" : [ {
+    "target" : "BUILDING_WATERPROOF_CEMENT_MAKER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_EXPLOSIVES" : [ {
+    "target" : "BUILDING_AMMUNITIONS_WORKSHOP",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_WEATHER_LORE" : [ {
+    "target" : "BUILDING_WEATHER_VANES",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_HERBALISM" : [ {
+    "target" : "BUILDING_WILD_HERBS_GATHERER",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_WINDMILLS" : [ {
+    "target" : "BUILDING_WINDMILL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SEXTANT" : [ {
+    "target" : "BUILDING_YACHT_CLUB",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_KARMA" : [ {
+    "target" : "BUILDING_BELIEF_KARMA",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NATIONAL_BELIEF_KARMA",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_RESURRECTION" : [ {
+    "target" : "BUILDING_BELIEF_RESURRECTION",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_NATIONAL_BELIEF_RESURRECTION",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_ALPHABET" : [ {
+    "target" : "BUILDING_CRIME_ILLEGAL_IMMIGRATION",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_FUNDAMENTALISM" : [ {
+    "target" : "BUILDING_CRIME_PUBLIC_INTOXICATION",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CLASSICAL_LIFESTYLE" : [ {
+    "target" : "BUILDING_EDUCATION_SENSELESS",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EDUCATION_CULTIVATED",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EDUCATION_KNOWLEDGE_BASE_CLASSICAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TOURISM_LEVEL_2",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_MEDIEVAL_LIFESTYLE" : [ {
+    "target" : "BUILDING_EDUCATION_ABSURD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EDUCATION_KNOWLEDGEABLE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EDUCATION_KNOWLEDGE_BASE_MEDIEVAL",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TOURISM_LEVEL_3",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_RENAISSANCE_LIFESTYLE" : [ {
+    "target" : "BUILDING_EDUCATION_MORONIC",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EDUCATION_ACUMEN",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EDUCATION_KNOWLEDGE_BASE_RENAISSANCE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_TOURISM_LEVEL_4",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_CELEBRATION" : [ {
+    "target" : "BUILDING_EFFECT_FERTILITY_FESTIVAL",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_NATIONALISM" : [ {
+    "target" : "BUILDING_MILITARY_ACADEMY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SLAVERY" : [ {
+    "target" : "BUILDING_WORLDVIEW_SLAVERY_ACTIVE",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SLAVE_COMPOUND",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SLAVE_COMPOUND_ENTERTAINMENT",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SLAVE_COMPOUND_FOOD",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_SLAVE_COMPOUND_INDUSTRY",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_WORLDVIEW_SLAVERY",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_STONE_BUILDING" : [ {
+    "target" : "BUILDING_HOUSING_STONE_HUTS",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_SPECIALIZATION" : [ {
+    "target" : "BUILDING_TRADITION_WORK_ETHIC",
+    "kind" : "UNLOCK"
+  }, {
+    "target" : "BUILDING_EFFECT_TRADITION_WORK_ETHIC",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_LIBERALISM" : [ {
+    "target" : "BUILDING_UNIVERSAL_HEALTH_CARE",
+    "kind" : "UNLOCK"
+  } ],
+  "TECH_NOCTURNALISM" : [ {
+    "target" : "BUILDING_ROGUES_HIDEOUT_UNSANCTIONED",
+    "kind" : "UNLOCK"
+  } ]
+}

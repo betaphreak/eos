@@ -17,6 +17,7 @@ import com.civstudio.agent.Household;
 import com.civstudio.calendar.LiturgicalCalendar;
 import com.civstudio.race.Race;
 import com.civstudio.settlement.Settlement;
+import com.civstudio.tech.TechEffect;
 
 /**
  * Phase 3 of the race feature: a {@link Race#HARIMARI Harimari}-founded, mixed-race
@@ -76,15 +77,19 @@ class MixedRaceColonyTest {
 
 		// RESEARCHES: research is wired on the founding race's tech tree — it knows its
 		// pre-known set and climbs from there — and that tree carries the Harimari
-		// effect overlay the human tree does not
+		// effect overlay the human tree does not. Both trees also carry the universal
+		// building-unlock overlay, so the race distinction is the race-specific
+		// SECTOR_PRODUCTIVITY effect on TECH_HUMANISM, which the human tree lacks.
 		assertNotNull(colony.getResearch(), "an export colony researches the tech tree");
 		assertTrue(colony.getResearch().getKnownCount() > 0,
 				"the colony should know its pre-known tech set");
-		assertFalse(colony.getSession().getTechTree(Race.HARIMARI)
-				.effectsOf("TECH_HUMANISM").isEmpty(),
-				"the Harimari tech overlay should grant TECH_HUMANISM an effect");
-		assertTrue(colony.getSession().getTechTree(Race.HUMAN)
-				.effectsOf("TECH_HUMANISM").isEmpty(),
-				"the human tech overlay grants no such effect (the default is empty)");
+		assertTrue(colony.getSession().getTechTree(Race.HARIMARI)
+				.effectsOf("TECH_HUMANISM").stream()
+				.anyMatch(e -> e instanceof TechEffect.SectorProductivity),
+				"the Harimari overlay grants TECH_HUMANISM a race-specific productivity effect");
+		assertFalse(colony.getSession().getTechTree(Race.HUMAN)
+				.effectsOf("TECH_HUMANISM").stream()
+				.anyMatch(e -> e instanceof TechEffect.SectorProductivity),
+				"the human tree has no such race-specific effect (only the universal building unlocks)");
 	}
 }

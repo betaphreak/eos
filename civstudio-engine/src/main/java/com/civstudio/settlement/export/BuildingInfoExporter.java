@@ -76,6 +76,16 @@ public final class BuildingInfoExporter {
 	private static final String ART_XML = "assets/XML/Art/CIV4ArtDefines_Building.xml";
 	private static final String TECHS = "civstudio-engine/src/main/resources/generated/techs.json";
 	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/buildings.json";
+	// the generated tech-effect overlay: per kept tech, an UNLOCK effect for each building it unlocks
+	// (Phase 4). Kept separate from the hand-authored /tech-effects.json and merged by TechTree.
+	private static final String UNLOCKS_OUTPUT =
+			"civstudio-engine/src/main/resources/generated/building-unlocks.json";
+
+	// the lone past-Renaissance tech kept in techs.json only as the tree's visual end-cap; the engine
+	// (TechTree) drops it at load, so a building gated on it gets no UNLOCK effect (it can't be
+	// researched in-engine) — but still appears in buildings.json for the web view. Mirrors
+	// TechInfoExporter.CAP.
+	private static final String CAP_TECH = "TECH_INDUSTRIAL_LIFESTYLE";
 
 	private BuildingInfoExporter() {
 	}
@@ -91,11 +101,14 @@ public final class BuildingInfoExporter {
 		System.out.println("Loaded " + buttons.size() + " building art-button paths");
 
 		List<Map<String, Object>> out = new ArrayList<>();
+		// the UNLOCK overlay: primary prereq tech -> the effects that grant its buildings' tokens.
+		// Keyed in first-seen (document) order; the CAP tech is excluded (engine drops it).
+		Map<String, List<Map<String, String>>> unlocks = new LinkedHashMap<>();
 		Map<String, Integer> perFile = new LinkedHashMap<>();
 		Map<String, Integer> perCategory = new TreeMap<>();
 		Map<String, String> byId = new HashMap<>(); // id -> source file, for duplicate detection
 		int scanned = 0, noPrereq = 0, gatedOut = 0;
-		int noName = 0, noButton = 0, noCategory = 0;
+		int noName = 0, noButton = 0, noCategory = 0, cappedUnlocks = 0;
 
 		for (String file : BUILDING_FILES) {
 			Document doc = Civ4Xml.fetch(file);
@@ -161,13 +174,29 @@ public final class BuildingInfoExporter {
 
 				out.add(row);
 				keptHere++;
+
+				// Phase 4: hang an UNLOCK effect for this building off its primary prereq tech,
+				// unless that tech is the engine-dropped CAP (a CAP-gated building displays but
+				// can't be researched, so it grants no token).
+				if (CAP_TECH.equals(primary)) {
+					cappedUnlocks++;
+				} else {
+					unlocks.computeIfAbsent(primary, k -> new ArrayList<>())
+							.add(Map.of("kind", "UNLOCK", "target", id));
+				}
 			}
 			perFile.put(file, keptHere);
 		}
 
-		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(new File(OUTPUT), out);
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.writerWithDefaultPrettyPrinter().writeValue(new File(OUTPUT), out);
+		mapper.writerWithDefaultPrettyPrinter().writeValue(new File(UNLOCKS_OUTPUT), unlocks);
 
+		int unlockEffects = unlocks.values().stream().mapToInt(List::size).sum();
 		System.out.println("Wrote " + out.size() + " buildings to " + OUTPUT);
+		System.out.println("Wrote " + unlockEffects + " UNLOCK effects over " + unlocks.size()
+				+ " techs to " + UNLOCKS_OUTPUT
+				+ " (" + cappedUnlocks + " CAP-gated buildings excluded — engine drops the tech)");
 		System.out.println("  scanned " + scanned + " BuildingInfo records ("
 				+ noPrereq + " without <PrereqTech>, " + gatedOut + " gated out by tech scope)");
 		perFile.forEach((f, n) -> System.out.println("  " + f + ": " + n));
