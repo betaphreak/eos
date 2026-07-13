@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import com.civstudio.agent.Agent;
+import com.civstudio.advisor.AdvisorRoster;
 import com.civstudio.agent.Granary;
 import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.geo.Province;
@@ -297,6 +298,12 @@ public class Settlement {
 	// the colony's sovereign, if any (see Ruler). Recorded for succession and taxation.
 	@Getter
 	private Ruler ruler;
+
+	// the colony's privy council: which named noble fills each advisor role,
+	// refreshed at the end of each newDay so it tracks succession. Read-only
+	// projection for the render feed (see docs/privy-council.md §0); consumes no RNG.
+	@Getter
+	private final AdvisorRoster advisorRoster = new AdvisorRoster(this);
 
 	// the colony's ever-normal granary, if any (see Granary). Recorded so relief
 	// holders — the peasant pool, and later children — can draw their ration from the
@@ -1187,6 +1194,11 @@ public class Settlement {
 		// mid-act so the agent set was not mutated during iteration)
 		applyScheduledAgentChanges();
 
+		// the agent set is now fully settled for the day: re-seat the privy council
+		// so a role whose noble died this step is handed to a successor (a read-only
+		// projection for the render feed; consumes no RNG)
+		advisorRoster.refresh();
+
 		// a once-a-year summary of the colony at INFO (the per-event chatter it
 		// replaces is demoted to FINE/FINER), so a many-colony run stays followable
 		logAnnualDigest();
@@ -1415,6 +1427,25 @@ public class Settlement {
 	 */
 	public Collection<Household> getPersonsOfInterest() {
 		return personsOfInterest;
+	}
+
+	/**
+	 * The living household whose agent id is <tt>id</tt> — a noble, the ruler, or
+	 * any other {@link Household} agent — or {@code null} if none matches. The
+	 * agent id is unique within a colony (see {@link #nextAgentID()}); this is the
+	 * lookup the render feed's person-detail request resolves against.
+	 *
+	 * @param id
+	 *            the agent id to look up
+	 * @return the matching living household, or {@code null}
+	 */
+	public Household getHouseholdById(int id) {
+		if (ruler != null && ruler.getID() == id && ruler.isAlive())
+			return ruler;
+		for (Agent a : agents)
+			if (a.getID() == id && a.isAlive() && a instanceof Household h)
+				return h;
+		return null;
 	}
 
 	/**

@@ -1,5 +1,7 @@
 package com.civstudio.server.render;
 
+import java.util.List;
+
 /**
  * A read-only projection of one {@link com.civstudio.settlement.Settlement colony} for the
  * live feed — the same aggregates the annual digest and the CSV printers report, gathered
@@ -24,9 +26,12 @@ package com.civstudio.server.render;
  * @param longitude      the colony's longitude (decimal degrees)
  * @param bankProfitTax  the ruler's bank-profit tax rate (the player-set lever), 0 if none
  * @param nobleIncomeTax the ruler's noble-income tax rate (the player-set lever), 0 if none
+ * @param advisors       the colony's privy council — the court noble seated in each
+ *                       filled advisor role (unfilled roles are absent)
  */
 public record ColonyView(String name, boolean alive, String date, int population,
 		int children, int nobles, int firms, int poolSize, double cpi,
 		double necessityPrice, double enjoymentPrice, int plotCount, int maxPlots,
-		double latitude, double longitude, double bankProfitTax, double nobleIncomeTax) {
+		double latitude, double longitude, double bankProfitTax, double nobleIncomeTax,
+		List<AdvisorView> advisors) {
 }

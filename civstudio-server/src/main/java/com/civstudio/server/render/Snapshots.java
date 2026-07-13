@@ -3,7 +3,9 @@ package com.civstudio.server.render;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
+import com.civstudio.advisor.AdvisorRole;
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.Caravan;
 import com.civstudio.agent.Household;
@@ -93,7 +95,22 @@ public final class Snapshots {
 		return new ColonyView(c.getName(), c.isAlive(), date.toString(), population,
 				children, nobles, firms, pool, c.getInflation(), necessity, enjoyment,
 				c.getPlotCount(), c.getMaxPlots(), c.getLatitude(), c.getLongitude(),
-				bankProfitTax, nobleIncomeTax);
+				bankProfitTax, nobleIncomeTax, advisorViews(c));
+	}
+
+	// project the colony's privy council: the court member seated in each filled advisor
+	// role (see AdvisorRoster). Unfilled roles are omitted — the frontend greys them.
+	private static List<AdvisorView> advisorViews(Settlement c) {
+		List<AdvisorView> views = new ArrayList<>();
+		for (AdvisorRole role : AdvisorRole.values()) {
+			Household seat = c.getAdvisorRoster().holder(role);
+			if (seat == null)
+				continue;
+			Member head = seat.getHead();
+			views.add(new AdvisorView(role.id(), seat.getID(), head.fullName(),
+					head.race().id(), head.gender().name().toLowerCase(Locale.ROOT)));
+		}
+		return views;
 	}
 
 	// the last clearing price of a colony's consumer-good market by good name (0 if absent)
