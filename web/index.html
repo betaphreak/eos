@@ -350,6 +350,23 @@
       if (loading.classList.contains("gone")) { clearInterval(artTimer); return; }
       artIdx = (artIdx + 1) % LOADING_ARTS.length; showLoadingArt();
     }, 10000);
+
+    // "Did you know?" tips (docs-mined) — shown immediately with the loading screen (picker phase too)
+    // and cycled every 8s until it fades out
+    var triviaEl = loading.querySelector(".ld-trivia");
+    var triviaBody = loading.querySelector(".ld-trivia-body");
+    var trivia = [];
+    function showTrivia() {
+      if (!triviaBody || !trivia.length) return;
+      triviaBody.textContent = trivia[Math.floor(Math.random() * trivia.length)];
+      if (triviaEl) triviaEl.classList.add("on");
+    }
+    fetch("assets/loading/trivia.json").then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (t) { trivia = t || []; showTrivia(); }).catch(function () {});
+    var triviaTimer = setInterval(function () {
+      if (loading.classList.contains("gone")) { clearInterval(triviaTimer); return; }
+      showTrivia();
+    }, 8000);
     if (bar) bar.hidden = true;                     // no progress bar until a server is picked
 
     var connecting = false;
