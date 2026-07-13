@@ -20,7 +20,7 @@ of real C2C button icons** under its node. Buildings render (in the district vie
 | **Gate** | A building is in-scope iff its `<PrereqTech>` is one of the **339 kept techs** (the Prehistoric→Renaissance horizon, capped at `TECH_INDUSTRIAL_LIFESTYLE` — `TechInfoExporter.IN_SCOPE`/`CAP`). Later-era / dropped-religion-tech buildings are excluded (no tech node to hang them on). |
 | **Building id** | **C2C `BUILDING_*` verbatim.** `Building.id` = the C2C `<Type>` string = the `TechEffect.Unlock` target. No mapping table. |
 | **Plan depth** | **Includes the engine unlock model** — populate `TechEffect.Unlock` in `tech-effects.json` *and* wire the tech-gated auto-build onto district plots (couples to `district-generator.md` placement). |
-| **Tech-tree UI** | A **grid of building-button icons under each node**, always visible; **resize the tech card** to fit **24 icons wide × up to 3 rows** (72 max — covers the worst case, `TECH_ORCHARDS` at 55). |
+| **Tech-tree UI** | A **grid of building-button icons under each node**: **24 wide × up to 3 rows** (72 max ≥ the worst case, `TECH_ORCHARDS` 55). **Card height is grow-to-fit** (1–3 rows per its count; ragged heights accepted). The grid **fades in when zoomed in** (illegible when zoomed out, so it appears past a zoom threshold). Each icon sits in a **uniform frame/backing** so the varied C2C art reads as one set. **Clicking a building → an inspect panel** (name, C2C help/pedia text, larger art). |
 | **Icon sheet layout** | Bake the building-icon WebP at **~50 columns** (storage layout only — unrelated to the 24-wide *display* grid); missing-art → colour-chip fallback. |
 
 ## Why this is bounded & safe
@@ -43,10 +43,11 @@ economic RNG** — a new salted stream only if placement ever needs randomness).
   `settlement/export/`): reads the three `Assets/XML/Buildings/{Regular,SpecialBuildings,zProviders}_
   CIV4BuildingInfos.xml` via `com.civstudio.data.Civ4Files`, keeps those whose `<PrereqTech>` ∈ the
   kept-tech set (reuse `TechInfoExporter`'s `IN_SCOPE`/`CAP`/`DROP` to compute the kept set), and
-  emits **`generated/buildings.json`**: per building `{ id, name, prereqTech, artDefineTag, button }`
-  (+ optionally `cost`, `category` from the XML). `name` resolves `TXT_KEY_BUILDING_*` via C2C
-  GameText (see §4). `button` is the `<Button>` path pulled from `CIV4ArtDefines_Building.xml` by
-  `artDefineTag` (see §3).
+  emits **`generated/buildings.json`**: per building `{ id, name, help, pedia, prereqTech,
+  artDefineTag, button }` (+ optionally `cost`, `category` from the XML). `name`/`help`/`pedia` resolve
+  the `TXT_KEY_BUILDING_*` strings via C2C GameText (§2) — `help`/`pedia` feed the click-to-inspect
+  panel (§4). `button` is the `<Button>` path pulled from `CIV4ArtDefines_Building.xml` by
+  `artDefineTag` (§3).
 - **Tech → Unlock effects.** Populate **`tech-effects.json`** (today `{}`) with, per kept tech, an
   `Unlock` effect per gated building: `{ "type":"UNLOCK", "target":"BUILDING_ORCHARD" }`. Authored by
   the exporter (join buildings→prereqTech), not by hand. `TechTree` then grants the building token on
@@ -62,9 +63,9 @@ economic RNG** — a new salted stream only if placement ever needs randomness).
 `Civ4Files` (Java) and `web/civ4.mjs` (Node) already fetch the `CIV4BuildingInfos.xml`. **Add**:
 - **`Assets/XML/Art/CIV4ArtDefines_Building.xml`** (1.46 MB) — the `artDefineTag → <Button>` map
   (verified: `ART_DEF_BUILDING_ACCOUNTING_FIRM → art/Craft/Art/accountingfirm.dds`).
-- **Building GameText** (`Assets/XML/GameText/*Buildings*_CIV4GameText.xml`) — `TXT_KEY_BUILDING_* →`
-  English name, for `buildings.json` names + tech-tree tooltips (same pattern as `TechInfoExporter`'s
-  English-string load).
+- **Building GameText** (`Assets/XML/GameText/*Buildings*_CIV4GameText.xml`) — the `TXT_KEY_BUILDING_*`
+  **name / help / pedia** strings, for `buildings.json` (names + the click-to-inspect panel, §4), same
+  pattern as `TechInfoExporter`'s English-string load.
 
 Both go in the `Civ4Files.PATHS` map (committed-relative key → C2C path) and the `civ4.mjs`
 equivalent, cached under `.civ4-cache/<ref>/` like everything else.
@@ -90,14 +91,26 @@ The tech-tree data must carry, per tech, its unlocked building ids. Source: `bui
 in `techs.json`. Then `web/js/techtree.mjs`:
 - Under each node card (today: title + `t.icon` cell from `tech-icons.webp` + cost), draw a **grid of
   building buttons** — each building's cell from `building-icons.webp` via `buildingIcons.index`.
-  **Resize the tech card** (`CARD_W`/`CARD_H` in `techtree.mjs`) so the grid is **24 icons wide, up to
-  3 rows** (owner) — 72 slots, ≥ the worst case (`TECH_ORCHARDS`, 55). Icon size follows from
-  `CARD_W / 24` (small, ~a dozen px); the card grows taller by the number of rows a node needs (1–3).
-- Hover/click a building icon → tooltip with its `name` (from the GameText join). Optional: dim
-  buildings whose tech isn't yet researched, matching the tree's `lit`/`sel` state.
-- Layout note: 24×3 = 72 covers every kept tech (max 55), so **no scroll/overflow affordance is
-  needed**; a node uses only as many rows as it has buildings. The wider card also reflows edges/
-  columns — retune `COL_W`/`ROW_H` so resized cards don't overlap.
+  Resize the tech card (`CARD_W`/`CARD_H` in `techtree.mjs`) so the grid is **24 icons wide**; icon
+  size follows from `CARD_W / 24` (small, ~a dozen px).
+- **Grow-to-fit height (owner):** each card is exactly as tall as its building count needs — **1, 2 or
+  3 rows** (`ceil(count / 24)`, capped at 3; 72 slots ≥ the worst case of 55, so **no scroll/overflow
+  affordance**). Heights are ragged; since layout is per-column with `ROW_H`, either give each grid
+  **row** its own vertical slot or measure tallest-per-row so ragged cards don't overlap. Retune
+  `COL_W`/`ROW_H` for the wider/taller cards.
+- **Fade in when zoomed in (owner):** the building grid is illegible at 24-wide when the whole tree is
+  in view, so draw it only past a zoom threshold — a `bandAlpha`-style cross-fade on the tree's own
+  zoom (`KMAX`/`KSTEP`/`minZoom()`), the tech title+icon+cost staying visible at all zooms. When faded
+  out, the card can also shrink back to its title-only height (so the tree is compact when overviewed).
+- **Uniform frame/backing (owner):** the C2C buttons span many art styles/eras, so frame each cell in
+  a consistent backing (a subtle rounded panel + hairline, rendered at draw time — keep the baked sheet
+  raw art, cf. the resource-icon class backings which *are* baked; here a single render-time frame is
+  cheaper and uniform). This makes the grid read as one set.
+- **Clickable → inspect (owner):** clicking a building icon opens an **inspect panel** — its name,
+  C2C **help/pedia** text, and a larger view of the art (the button icon, or later the nifbake
+  sprite). Needs the building `TXT_KEY_BUILDING_*` **help/pedia** strings, so `buildings.json` carries
+  `help`/`pedia` (§4 fetch adds the building GameText that already covers names). Optional: dim
+  buildings whose tech isn't researched, matching the tree's `lit`/`sel` state.
 
 ---
 
@@ -108,8 +121,9 @@ in `techs.json`. Then `web/js/techtree.mjs`:
   `Civ4Files`/`civ4.mjs`. No behavior change (pure data).
 - **Phase 2 — button-art bake.** `web/build-buildings.mjs` → `building-icons.webp` (64², 50 cols) +
   `buildingIcons` manifest key + `WorldBundle` allow-list.
-- **Phase 3 — tech-tree view.** `techtree.mjs` renders the per-node building-button row + tooltips.
-  Web-only; verify with `tools/webverify`.
+- **Phase 3 — tech-tree view.** `techtree.mjs` renders the per-node building grid (24 wide,
+  grow-to-fit 1–3 rows, uniform frame, zoom fade-in) + the click-to-inspect panel. Web-only; verify
+  with `tools/webverify` across zoom levels.
 - **Phase 4 — engine unlock model.** Populate `tech-effects.json` with `Unlock(BUILDING_*)` per tech;
   `TechTree` grants tokens on research. Assertable in tests (research tech → token present); no
   placement yet, so runs stay clean.
