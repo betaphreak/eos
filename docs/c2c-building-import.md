@@ -101,7 +101,27 @@ New **`web/build-buildings.mjs`**, structurally the tech-button baker:
   `.nif` albedo) the district view stamps (`district-generator.md` §1 Layer 3). Two different bakes
   from the same C2C building: the flat **button** here, the 3D-model **sprite** there.
 
-### 4. Web tech tree: a building-button row per node
+### 3b. Presentation — the tech tree is the **Science** map mode, not a modal (owner)
+Refactor the tech tree from today's **full-screen modal** (`#techModal`, `role="dialog"`, which covers
+*everything incl. the right rail* and pauses the map) into a **map mode named "Science"** (owner —
+matching Civ4's *Science Advisor*): when active it **entirely replaces the map** in the canvas region,
+while the **top bar and right rail stay**.
+- The map content area shows the tech tree; **switching modes swaps the canvas** (the map is fully
+  replaced, not split) — so the tree keeps the full canvas width, like the current modal, without the
+  `dialog` chrome. Model it like the existing view toggles (the overlay modes / the surface↔underworld
+  plane) rather than a `dialog` overlay; the map render loop is suspended while the tech-mode is active
+  (the modal's perf win, kept).
+- **The right rail is now free** for the tech/building **inspector** (§4) — it reuses the exact
+  province/city rail component, no modal-local panel. This is *why* the refactor is needed: the plan's
+  rail inspector is impossible while the modal covers the rail.
+- **Colony context is retained** — because the shell (POV / selected colony) stays, the tree's
+  *researched* state binds to the current colony (Dhenijansar in the demo, §4) instead of being
+  divorced in a full-screen dialog.
+- Migration: keep the F7 / `techBtn` toggle and the existing lattice/render (`techtree.mjs`); change
+  only the *container* (map-mode swap vs. `#techModal` dialog) and let the rail host the inspector.
+  Cross-ref `docs/tech-tree.md` / `docs/ux.md` when this lands.
+
+### 4. Web tech tree: the per-node building grid + inspector
 The tech-tree data must carry, per tech, its unlocked building ids. Source: `buildings.json` +
 `prereqTech` (the web joins tech→buildings), or the exporter emits the reverse index onto each tech
 in `techs.json`. Then `web/js/techtree.mjs`:
@@ -139,19 +159,24 @@ in `techs.json`. Then `web/js/techtree.mjs`:
   *not* per-plot `Plot.buildings()` built-state. The tree reflects what Dhenijansar has unlocked, not a
   static reference.
 
-### 4a. Search bar — techs **and** buildings (owner)
-**Extend the tech tree's existing header search (owner):** `techtree.mjs` already wires a
-`createSearchBox` (`searchApi`, `initTechTree`) that matches techs by name/`Type` and centres the node
-on pick (`centerNode`/`nodeEl`). This adds **buildings** to that same box — no new widget, and it
-stays a tech-tree-local search (the top-bar province search is untouched).
-- **Corpus:** techs (`techs.json` name/`Type`) **and** buildings (`buildings.json` name/`id`), in **one
-  interleaved ranked list**; each row carries a **kind chip** (tech vs building) — no separate sections,
-  no All/Techs/Buildings filter (owner: one combined list).
-- **Match fields (owner):** **name + id**, case-insensitive (de-`TXT_KEY_`/`TECH_`/`BUILDING_`-prefixed
-  for display), techs and buildings ranked together.
-- **On pick:** a **tech** → the existing centre-node + flash path; a **building** → pan to its **primary
-  `prereqTech`** node, force the zoom past the building-grid fade-in threshold (§4), highlight that
-  cell, and open its **rail** inspector (§4). A building lives under exactly one node, so the jump is
+### 4a. Search bar — **one unified top-bar box, mode-scoped** (owner)
+The map-mode refactor (§3b) means the **top bar persists across modes**, so the search **unifies into
+the single top-bar box** — the tech modal's separate header search goes away with the modal (owner).
+One widget (`searchbox.mjs`), no duplicate; its **corpus follows the active mode** (below).
+- **Mode-scoped corpus (owner):** the box searches **only the active mode's content** — provinces in
+  map mode (as today), **techs + buildings** in Science mode. Same box, same `searchbox.mjs` behaviour;
+  the caller swaps the `search`/`renderRow`/`onPick` per mode. No always-global corpus, no cross-mode
+  switch-on-pick (you switch to Science first, then search it).
+- **Per-mode placeholder (owner):** the placeholder tracks the mode — "Find a province…" (map) /
+  "Find a tech or building…" (Science).
+- **Techs+buildings results:** **one interleaved ranked list** with a per-row **kind chip** (tech vs
+  building) — no sections, no filter tabs (owner). **Match name + id**, case-insensitive
+  (de-`TXT_KEY_`/`TECH_`/`BUILDING_`-prefixed for display).
+- **Quick-open hotkey (owner):** a key (e.g. `/` or Ctrl-K) focuses the search from any mode — wire it
+  through `shortcuts.mjs`, checking it doesn't clash with existing bindings.
+- **On pick:** a **tech** → the existing centre-node + flash (`centerNode`/`nodeEl`); a **building** →
+  pan to its **primary `prereqTech`** node, force the zoom past the grid fade-in (§4), highlight the
+  cell, and open its **rail** inspector (§4). A building lives under one node, so the jump is
   unambiguous.
 
 ---
