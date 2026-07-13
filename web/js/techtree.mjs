@@ -553,6 +553,51 @@ export function techRowHtml(t, i, active) {
 /** Select + centre a tech from a search pick (the tech object). */
 export function pickTech(t) { select(t.Type); centerOnType(t.Type); }
 
+// --- unified tech+building search (§4a): one interleaved ranked list, a kind chip per row -------
+const clean = s => s.toLowerCase();
+function scoreName(name, id, q, base) {
+  const nm = clean(name);
+  if (nm === q) return base; if (nm.startsWith(q)) return base - 30;
+  if (nm.includes(q)) return base - 60; if (clean(id).includes(q)) return base - 80;
+  return -1;
+}
+/** Match techs AND buildings by name/id (case-insensitive), interleaved and ranked, ≤14 rows. */
+export function techBuildingMatches(q) {
+  if (!q) return [];
+  q = clean(q);
+  const scored = [];
+  for (const t of techs || []) {
+    const s = scoreName(t.name || t.Type.replace("TECH_", ""), t.Type, q, 100);
+    if (s >= 0) scored.push({ kind: "tech", t, name: t.name || t.Type, score: s });
+  }
+  for (const b of buildings || []) {
+    const s = scoreName(b.name || b.id.replace("BUILDING_", ""), b.id, q, 95);
+    if (s >= 0) scored.push({ kind: "building", b, name: b.name || b.id, score: s });
+  }
+  scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  return scored.slice(0, 14);
+}
+export function searchRowHtml(m, i, active) {
+  const isTech = m.kind === "tech";
+  const nm = isTech ? (m.t.name || m.t.Type.replace("TECH_", "")) : (m.b.name || m.b.id.replace("BUILDING_", ""));
+  const meta = isTech ? (ERA_NAME[m.t.Era] || "")
+    : (m.b.category ? m.b.category[0] + m.b.category.slice(1).toLowerCase() : "");
+  return `<div class="search-row${active ? " active" : ""}" role="option" data-i="${i}">
+    <span class="sr-kind sr-kind-${m.kind}">${isTech ? "Tech" : "Bldg"}</span>
+    <span class="sr-name">${nm}</span><span class="sr-meta">${meta}</span></div>`;
+}
+/** Act on a unified search pick: a tech centres its node; a building jumps to its tech + inspects it. */
+export function pickSearchResult(m) {
+  if (m.kind === "tech") { select(m.t.Type); centerOnType(m.t.Type); return; }
+  const t = byType.get(m.b.prereqTech);
+  if (t) {
+    for (const el of nodeEl.values()) el.classList.remove("sel");
+    nodeEl.get(t.Type)?.classList.add("sel");
+    centerOnType(t.Type);
+  }
+  showBuildingRail(m.b);
+}
+
 export function initTechTree() {
   // the standalone tech button was retired (the Technology advisor is the entry point); wire it
   // only if present. The rest of the init must still run so the Technology advisor works.

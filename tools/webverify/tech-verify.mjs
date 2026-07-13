@@ -77,6 +77,21 @@ if (flags.inspector) { await page.screenshot({ path: out }); await browser.close
 await page.locator('#rail [data-bld-back]').click().catch(() => {});
 await page.waitForTimeout(400);
 
+// unified search: type a query and confirm techs + buildings both appear (kind chips)
+await page.fill('#search', flags.q || 'farm').catch(e => errors.push('search fill: ' + e.message));
+await page.waitForTimeout(500);
+const searchInfo = await page.evaluate(() => ({
+  placeholder: document.getElementById('search')?.placeholder,
+  rows: document.querySelectorAll('#searchResults .search-row').length,
+  techRows: document.querySelectorAll('#searchResults .sr-kind-tech').length,
+  buildingRows: document.querySelectorAll('#searchResults .sr-kind-building').length,
+}));
+// pick the first building result → inspector opens
+await page.locator('#searchResults .search-row:has(.sr-kind-building)').first().click().catch(() => {});
+await page.waitForTimeout(500);
+searchInfo.pickedBuilding = await page.evaluate(() =>
+  document.querySelector('#rail .building-sheet .tech-d-name')?.textContent || null);
+
 const info = await page.evaluate(() => {
   const modal = document.getElementById('techModal');
   const cr = modal?.getBoundingClientRect();
@@ -99,6 +114,6 @@ const info = await page.evaluate(() => {
   };
 });
 await page.screenshot({ path: out });
-console.log(JSON.stringify({ shot: out, live: liveBase, info, gridInfo, bldInfo, errors }, null, 2));
+console.log(JSON.stringify({ shot: out, live: liveBase, info, gridInfo, bldInfo, searchInfo, errors }, null, 2));
 await browser.close();
 server.close();

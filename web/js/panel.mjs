@@ -5,7 +5,7 @@ import { loadPlots, bonusIconRect } from "./plots.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
 import { startLive, stopLive, liveToBackground, liveActive, liveState, controlLive, LIVE_RATES } from "./overlays/live.mjs";
 import { createSearchBox } from "./searchbox.mjs";
-import { techMatches, techRowHtml, pickTech } from "./techtree.mjs";
+import { techBuildingMatches, searchRowHtml, pickSearchResult } from "./techtree.mjs";
 stage.addEventListener("wheel", e => {
   e.preventDefault();
   const r = stage.getBoundingClientRect();
@@ -595,8 +595,8 @@ document.getElementById("railClose").onclick = closePanel;
 const provinceSearch = createSearchBox({
   input: searchInput, results: searchResults, clear: searchClear,
   search(q) {
-    if (S.advisor === "technology")                     // §5: the Technology advisor searches techs
-      return techMatches(q).map(t => ({ kind: "tech", t }));
+    if (S.advisor === "technology")                     // §4a: the Technology advisor searches techs + buildings
+      return techBuildingMatches(q);
     q = q.toLowerCase();
     const ent = overlayEntity();
     if (ent) {                                          // nations / cultures / religions
@@ -622,7 +622,7 @@ const provinceSearch = createSearchBox({
     return scored.slice(0, 12).map(s => ({ kind: "province", p: s.p }));
   },
   renderRow(m, i, active) {
-    if (m.kind === "tech") return techRowHtml(m.t, i, active);
+    if (m.kind === "tech" || m.kind === "building") return searchRowHtml(m, i, active);
     const act = active ? " active" : "";
     if (m.kind === "province") {
       const reg = (provGeo(m.p).region || [])[0] || "";
@@ -635,7 +635,7 @@ const provinceSearch = createSearchBox({
       <span class="sr-meta">${m.n} prov</span></div>`;
   },
   onPick(m) {
-    if (m.kind === "tech") { pickTech(m.t); return; }  // §5: select + centre the tech node
+    if (m.kind === "tech" || m.kind === "building") { pickSearchResult(m); return; }  // §4a
     if (m.kind === "province") goToProvince(m.p);
     else focusEntity(m.key);                           // zoom to the polity's largest province + spotlight it
   },
@@ -651,7 +651,7 @@ const provinceSearch = createSearchBox({
   },
 });
 function updateSearchContext() {
-  searchInput.placeholder = S.advisor === "technology" ? "Search techs…"
+  searchInput.placeholder = S.advisor === "technology" ? "Find a tech or building…"
     : (overlayEntity() || {}).ph || "Find a province…";
   provinceSearch.refresh();
 }

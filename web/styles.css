@@ -471,6 +471,12 @@ input[type="range"].scrub::-moz-range-thumb {
 .search-row:first-child { border-top: 0; }
 .search-row:hover, .search-row.active { background: var(--line-soft); }
 .search-row .sr-name { color: var(--ink); font-size: 13px; font-weight: 500; }
+/* kind chip (unified tech+building search): a small tag telling techs from buildings */
+.search-row .sr-kind { flex: none; font: 700 9px system-ui,sans-serif; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 5px; border-radius: 4px; align-self: center;
+  color: var(--ink-soft); background: var(--panel-2); border: 1px solid var(--line-soft); }
+.search-row .sr-kind-tech { color: #cbdcf2; background: rgba(79,143,206,.16); border-color: rgba(79,143,206,.30); }
+.search-row .sr-kind-building { color: #e6cfa6; background: rgba(200,134,42,.16); border-color: rgba(200,134,42,.30); }
 .search-row .sr-id { color: var(--ink-faint); font-family: ui-monospace, monospace; font-size: 10.5px; }
 .search-row .sr-meta { color: var(--ink-faint); font-size: 11px; margin-left: auto; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; max-width: 46%; }
