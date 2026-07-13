@@ -194,10 +194,18 @@ Anbennar calibration deviations from pure C2C (documented in `ClimateTerrainGene
 gate** (an `arid` province reads desert across its latitude range, not only when scorching) and a
 **humidity-gated marsh** (a dry province stays steppe, not wetland).
 
-**Still pending** (planned increments): the **region-coherence pass** (currently relies on the existing
-despeckle for patch coherence), **per-plot world latitude** (currently one temperature per province), and
-making **features fully procedural** (they still read the `trees.bmp` hints). Plus the food-economy
-recalibration the yield shift invites.
+**Region-coherence (increment 2, `GEN_VERSION` 4→5).** Terrain is no longer an independent per-cell draw
+smoothed by despeckle — it grows in contiguous **patches**. `ProvincePlotField.coherentGround` scatters ~1
+seed per `PATCH_AREA` (22) land plots, each a climate-pool draw (`ClimateTerrainGenerator.next`); every
+land plot takes its nearest seed's terrain, its sample point first nudged by a smooth `valNoise` field so
+patch boundaries wander organically instead of forming straight Voronoi walls. Seeds are pool draws, so
+each terrain keeps its aggregate share; the despeckle stays as a light tidy for the special-terrain
+fillers. Deterministic on the TERRAIN stream. Verified: biomes read as contiguous zones, `speckFraction`
+≈ 0.01 (was salt-and-pepper). Relief is unchanged (already coherent — it rides the smooth heightmap).
+
+**Still pending** (planned increments): **per-plot world latitude** (currently one temperature per
+province), and making **features fully procedural** (they still read the `trees.bmp` hints). Plus the
+food-economy recalibration the yield shift invites.
 
 ---
 

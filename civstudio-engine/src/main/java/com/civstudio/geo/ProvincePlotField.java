@@ -180,14 +180,16 @@ public final class ProvincePlotField {
 				: new ClimateTerrainGenerator(registry, terrainTemp, climate.humidity());
 		Terrain[] ground = new Terrain[w * h];
 		PlotType[] composed = new PlotType[w * h];
+		// relief per-plot from the heightmap (already spatially coherent — the elevation field is smooth)
 		for (int ly = 0; ly < h; ly++)
 			for (int lx = 0; lx < w; lx++) {
 				if (!mask.isLand(lx, ly))
 					continue;
 				int idx = ly * w + lx;
-				ground[idx] = terrainGen.next(rng);
 				composed[idx] = rougher(relief[idx], MapTerrainCodec.relief(mask.terrainIndex(lx, ly)));
 			}
+		// terrain grown in coherent regional patches, not an independent per-cell draw (region-coherence, v5)
+		coherentGround(ground, mask, w, h, terrainGen, rng);
 
 		// Special-terrain provinces override the climate ground (membership, not the climate, drives it).
 		// Done before the feature/bonus stages so those read the real ground. UNDERGROUND types (cavern/
@@ -438,6 +440,70 @@ public final class ProvincePlotField {
 	// number of majority-smoothing passes over the ground grid (see the call site). More passes
 	// grow patches larger; 4 dissolves the salt-and-pepper without erasing genuine terrain regions.
 	private static final int DESPECKLE_PASSES = 3;
+
+	// Region-coherence (v5): grow terrain in contiguous PATCHES rather than an independent per-plot draw.
+	private static final int PATCH_AREA = 22;      // land plots per seed → mean patch size
+	private static final double NOISE_CELL = 8.0;  // displacement-noise wavelength, in plots
+	private static final double PATCH_JITTER = 5.0; // displacement amplitude, in plots (organic patch edges)
+
+	/**
+	 * Ground each land cell with terrain grown in coherent regional PATCHES: scatter ~1 seed per
+	 * {@link #PATCH_AREA} land plots — each seed a climate-pool draw ({@code gen.next}) — then assign every
+	 * land plot the terrain of its nearest seed, its sample point first nudged by a smooth low-frequency
+	 * value-noise field so patch boundaries wander organically instead of forming straight Voronoi walls.
+	 * The seeds are pool draws, so each terrain keeps its aggregate share; a later {@link #despeckle} still
+	 * tidies stray cells. Deterministic on the province's TERRAIN stream (seeds consume rng in order; the
+	 * nearest-seed + noise passes consume none). Replaces the old salt-and-pepper per-cell draw.
+	 */
+	private static void coherentGround(Terrain[] ground, ProvinceMask mask, int w, int h,
+			ClimateTerrainGenerator gen, Rng rng) {
+		java.util.List<int[]> land = new java.util.ArrayList<>();
+		for (int ly = 0; ly < h; ly++)
+			for (int lx = 0; lx < w; lx++)
+				if (mask.isLand(lx, ly))
+					land.add(new int[] { lx, ly });
+		int n = land.size();
+		if (n == 0)
+			return;
+		int seeds = Math.max(1, Math.round(n / (float) PATCH_AREA));
+		int[] sx = new int[seeds], sy = new int[seeds];
+		Terrain[] st = new Terrain[seeds];
+		for (int s = 0; s < seeds; s++) {
+			int[] p = land.get(rng.uniform(n));   // a random land plot anchors the patch
+			sx[s] = p[0];
+			sy[s] = p[1];
+			st[s] = gen.next(rng);                // the patch's terrain, from the climate pool
+		}
+		for (int[] p : land) {
+			int lx = p[0], ly = p[1];
+			double px = lx + PATCH_JITTER * (valNoise(lx, ly, 1) - 0.5);   // organic boundary displacement
+			double py = ly + PATCH_JITTER * (valNoise(lx, ly, 2) - 0.5);
+			int best = 0;
+			double bestD = Double.MAX_VALUE;
+			for (int s = 0; s < seeds; s++) {
+				double dx = px - sx[s], dy = py - sy[s], d = dx * dx + dy * dy;
+				if (d < bestD) { bestD = d; best = s; }
+			}
+			ground[ly * w + lx] = st[best];
+		}
+	}
+
+	/** Smooth value noise in [0,1] at (x,y) for a salt — a hashed coarse lattice, bilinearly smoothstepped. */
+	private static double valNoise(double x, double y, int salt) {
+		double xs = x / NOISE_CELL, ys = y / NOISE_CELL;
+		int x0 = (int) Math.floor(xs), y0 = (int) Math.floor(ys);
+		double fx = xs - x0, fy = ys - y0;
+		double sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);   // smoothstep
+		double a = hash01(x0, y0, salt), b = hash01(x0 + 1, y0, salt);
+		double c = hash01(x0, y0 + 1, salt), d = hash01(x0 + 1, y0 + 1, salt);
+		return (a * (1 - sx) + b * sx) * (1 - sy) + (c * (1 - sx) + d * sx) * sy;
+	}
+
+	private static double hash01(int x, int y, int salt) {
+		int h = x * 374761393 + y * 668265263 + salt * 2147483647;
+		h = (h ^ (h >>> 13)) * 1274126177;
+		return ((h ^ (h >>> 16)) & 0x7fffffff) / (double) 0x7fffffff;
+	}
 
 	// Majority (mode) smoothing of the per-cell ground terrain: each land cell adopts the terrain most
 	// common among its 8 land neighbours when that plurality outnumbers the cell's own terrain there —
