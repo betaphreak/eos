@@ -379,6 +379,31 @@ export function openTech() { if (!S.techOpen) open(); }
 /** Close the tree if open — the Escape shortcut while the modal is up. */
 export function closeTech() { close(); }
 
+// --- unified search hooks (§5): the top-bar search box delegates to these while the Technology
+// advisor is active, so techs and provinces share one box. Same corpus/row/pick as the (now-hidden)
+// in-tree search. techMatches returns up to 12 tech objects for a query. ---
+export function techMatches(q) {
+  if (!techs) return [];
+  q = q.toLowerCase();
+  const scored = [];
+  for (const t of techs) {
+    const nm = (t.name || t.Type.replace("TECH_", "")).toLowerCase();
+    let score = -1;
+    if (nm === q) score = 100; else if (nm.startsWith(q)) score = 70; else if (nm.includes(q)) score = 40;
+    else if (t.Type.toLowerCase().includes(q)) score = 20;
+    if (score >= 0) scored.push({ t, score });
+  }
+  scored.sort((a, b) => b.score - a.score || (+a.t.iCost) - (+b.t.iCost) || (a.t.name || "").localeCompare(b.t.name || ""));
+  return scored.slice(0, 12).map(s => s.t);
+}
+export function techRowHtml(t, i, active) {
+  const nm = t.name || t.Type.replace("TECH_", "");
+  return `<div class="search-row${active ? " active" : ""}" role="option" data-i="${i}">
+    <span class="sr-name">${nm}</span><span class="sr-meta">${ERA_NAME[t.Era] || ""}</span></div>`;
+}
+/** Select + centre a tech from a search pick (the tech object). */
+export function pickTech(t) { select(t.Type); centerOnType(t.Type); }
+
 export function initTechTree() {
   const btn = $("techBtn");
   if (!btn) return;
@@ -393,29 +418,12 @@ export function initTechTree() {
   $("techZoomOut").addEventListener("click", () => zoomBy(1 / KSTEP));
 
   // header search: match techs by name (or Type), and on pick select + centre the node. The
-  // dropdown/keyboard/clear behaviour is the shared searchbox widget (see searchbox.mjs).
+  // dropdown/keyboard/clear behaviour is the shared searchbox widget (see searchbox.mjs). The
+  // search/row/pick logic is exported (techMatches/techRowHtml/pickTech) so the unified top-bar box
+  // can delegate to it in the Technology advisor (§5).
   searchApi = createSearchBox({
     input: $("techSearch"), results: $("techSearchResults"), clear: $("techSearchClear"),
-    search(q) {
-      if (!techs) return [];
-      q = q.toLowerCase();
-      const scored = [];
-      for (const t of techs) {
-        const nm = (t.name || t.Type.replace("TECH_", "")).toLowerCase();
-        let score = -1;
-        if (nm === q) score = 100; else if (nm.startsWith(q)) score = 70; else if (nm.includes(q)) score = 40;
-        else if (t.Type.toLowerCase().includes(q)) score = 20;
-        if (score >= 0) scored.push({ t, score });
-      }
-      scored.sort((a, b) => b.score - a.score || (+a.t.iCost) - (+b.t.iCost) || (a.t.name || "").localeCompare(b.t.name || ""));
-      return scored.slice(0, 12).map(s => s.t);
-    },
-    renderRow(t, i, active) {
-      const nm = t.name || t.Type.replace("TECH_", "");
-      return `<div class="search-row${active ? " active" : ""}" role="option" data-i="${i}">
-        <span class="sr-name">${nm}</span><span class="sr-meta">${ERA_NAME[t.Era] || ""}</span></div>`;
-    },
-    onPick(t) { select(t.Type); centerOnType(t.Type); },
+    search: techMatches, renderRow: techRowHtml, onPick: pickTech,
   });
   const vp = $("techViewport");
   vp.addEventListener("scroll", syncEraTab, { passive: true });

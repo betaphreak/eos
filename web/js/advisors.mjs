@@ -6,7 +6,7 @@
 // unchanged; this only groups the controls and drives the existing panel.mjs handlers.
 // See docs/privy-council.md.
 import { S } from "./core.mjs";
-import { setOverlay, setPlane } from "./panel.mjs";
+import { setOverlay, setPlane, updateSearchContext } from "./panel.mjs";
 import { openTech, closeTech } from "./techtree.mjs";
 import { advisorSeat, openAdvisorRail } from "./advisor-detail.mjs";
 import { onLiveRoster } from "./overlays/live.mjs";
@@ -53,6 +53,7 @@ export function setAdvisor(id) {
   }
   paintSelector();
   showSub(id);
+  updateSearchContext();   // §5: swap the top-bar search corpus/placeholder (techs in Technology)
 }
 
 // build the advisor selector buttons into #advisorToggle (a .segToggle group). Portraits replace

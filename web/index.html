@@ -27,7 +27,9 @@
     /* the sub-bar floats as its own row directly below the (absolutely-positioned) top bar; the
        stage + rail are pushed down by --subbar-h so nothing is covered */
     .app{--subbar-h:32px}
-    #advisorSubbar{position:absolute;top:var(--bar-h);left:0;right:0;height:var(--subbar-h);z-index:9;
+    /* z-index 8 (below the top bar's 9) so a search-results dropdown spilling from the top bar into
+       this row's area is not intercepted by it; still above the stage/tech map-mode */
+    #advisorSubbar{position:absolute;top:var(--bar-h);left:0;right:0;height:var(--subbar-h);z-index:8;
       display:flex;align-items:center;gap:10px;padding:0 16px;
       background:#0b0f17;border-bottom:1px solid #232c3c}
     .app .stage{top:calc(var(--bar-h) + var(--subbar-h))}
@@ -40,6 +42,9 @@
     .app.rail-open .tech-modal{right:var(--rail-w)}
     .app .tech-shell{width:100%;height:100%;margin:0;border-radius:0;border:0;box-shadow:none}
     .tech-close{display:none}
+    /* §5: the unified top-bar search covers techs in the Technology advisor, so the in-tree search
+       box is retired (the top bar stays reachable now that the tree is a stage map-mode) */
+    .tech-searchbar{display:none}
     #advisorSubbar .advisor-sub{display:flex;align-items:center;gap:8px}
     #advisorSubbar .advisor-sub[hidden]{display:none}
     #advisorSubbar .sub-cap{color:#7c8aa2;letter-spacing:.04em;text-transform:uppercase;

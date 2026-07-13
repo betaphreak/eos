@@ -101,6 +101,23 @@ results.characterSheet = await page.evaluate(() => {
     members: s ? s.querySelectorAll('.adv-member').length : 0 };
 });
 
+// §5: the unified top-bar search searches techs in the Technology advisor
+await click('technology'); await page.waitForTimeout(800);
+await page.fill('#search', 'fire'); await page.waitForTimeout(600);
+results.techSearch = await page.evaluate(() => {
+  const rows = [...document.querySelectorAll('#searchResults .search-row')].map(r => (r.querySelector('.sr-name') || {}).textContent);
+  return { placeholder: document.getElementById('search').placeholder, rows };
+});
+// pick the first result → the tech detail should render
+if (results.techSearch.rows.length) {
+  await page.click('#searchResults .search-row'); await page.waitForTimeout(600);
+  results.techPick = await page.evaluate(() => {
+    const d = document.getElementById('techDetail');
+    return { detailShown: d && !d.hidden, detailHasText: !!(d && d.textContent.trim().length) };
+  });
+  await page.screenshot({ path: path.join(outDir, 'advisor-techsearch.png') });
+}
+
 console.log(JSON.stringify({ url, errors, results }, null, 2));
 await browser.close();
 srv.close();
