@@ -46,7 +46,11 @@ economic RNG** — a new salted stream only if placement ever needs randomness).
   CIV4BuildingInfos.xml` via `com.civstudio.data.Civ4Files`, keeps those whose `<PrereqTech>` ∈ the
   kept-tech set (reuse `TechInfoExporter`'s `IN_SCOPE`/`CAP`/`DROP` to compute the kept set), and
   emits **`generated/buildings.json`**: per building `{ id, name, help, pedia, prereqTech, andTechs,
-  artDefineTag, button }` (+ optionally `cost`, `category` from the XML). **`prereqTech`** is the
+  category, artDefineTag, button }` (+ optionally `cost`). **`category`** is a first-class field (the
+  grid groups by it, §4) and a **shared taxonomy reused beyond the tech tree** (owner) — derive it from
+  C2C's `<BuildingClassType>` / Civ4 `Flavors`, folded into a small eos category set (economy /
+  military / culture / faith / infrastructure / …). Author the fold once as a committed table so every
+  consumer shares it. **`prereqTech`** is the
   primary; **`andTechs`** is the flattened `<TechTypes>` list (the AND-required techs) — the building's
   analogue of a tech's `andPrereqs`, so a building's full requirement is *`prereqTech` AND all
   `andTechs`*. The exporter validates every one resolves to a **kept** tech (fail-fast, exactly like
@@ -118,17 +122,36 @@ in `techs.json`. Then `web/js/techtree.mjs`:
   a consistent backing (a subtle rounded panel + hairline, rendered at draw time — keep the baked sheet
   raw art, cf. the resource-icon class backings which *are* baked; here a single render-time frame is
   cheaper and uniform). This makes the grid read as one set.
-- **Clickable → inspect (owner):** clicking a building icon opens an **inspect panel** — its name,
-  C2C **help/pedia** text, its **prereqs** (`prereqTech` + `andTechs`), and a larger view of the art
-  (the button icon, or later the nifbake sprite). Needs the building `TXT_KEY_BUILDING_*` **help/pedia**
-  strings, so `buildings.json` carries `help`/`pedia` (§2 fetch adds the building GameText that also
-  covers names).
-- **Researched state = Dhenijansar in the demo (owner):** the view is **session-aware**. Read
-  Dhenijansar's research from the live demo session (its `ResearchState` / researched-tech set), mark
-  those techs *researched*, and **light their buildings** (dim the rest — a building lights only when
-  its **whole** prereq expression is researched, per §1). So the tree reflects what Dhenijansar has
-  actually unlocked, not a static reference. Requires the demo feed to expose the colony's researched
-  techs (a small addition to the render snapshot / bundle) — a new dependency this view needs.
+- **Order by category (owner):** within a node's grid, group buildings by **`category`** (the shared
+  taxonomy, §1) so similar buildings sit together — more scannable than alphabetical/import order, and
+  the same categories are reused elsewhere later.
+- **Clickable → inspect, in the right-side rail (owner):** clicking a building icon opens its details
+  in the **existing right-side rail** (the one the province/city panels use) — name, C2C **help/pedia**
+  text, its **prereqs** (`prereqTech` + `andTechs`), `category`, and a larger view of the art (the
+  button icon, or later the nifbake sprite). Needs the `TXT_KEY_BUILDING_*` **help/pedia** strings, so
+  `buildings.json` carries `help`/`pedia` (§2). **Any building is inspectable — even dimmed/un-unlocked
+  ones (owner)** — so the tree doubles as a browsable reference of everything ahead.
+- **Researched state = Dhenijansar in the demo, two states (owner):** the view is **session-aware**.
+  Read Dhenijansar's research from the live demo session (its `ResearchState` / researched-tech set),
+  and show **two states only — locked vs unlocked**: a building lights when its **whole** prereq
+  expression is researched (§1), otherwise it's dimmed. **No built-vs-unlocked distinction** — so the
+  feed only needs the colony's **researched techs** (a small addition to the render snapshot / bundle),
+  *not* per-plot `Plot.buildings()` built-state. The tree reflects what Dhenijansar has unlocked, not a
+  static reference.
+
+### 4a. Search bar — techs **and** buildings (owner)
+A search box that finds **both** techs and buildings and jumps to them in the tree (owner request).
+Reuse the existing search affordance (`web/js/searchbox.mjs`, today the province "Find a province…"):
+- **Index both corpora:** tech `Type`/name (from `techs.json`) **and** building `id`/`name` (from
+  `buildings.json`), tagged by kind. One ranked list, kind-labelled (a chip/icon per result).
+- **On pick:** a **tech** → pan/zoom the tree to its node and flash it (the tree already has
+  `nodeEl`/`lit`/`sel` and `minZoom()`); a **building** → pan to its **primary `prereqTech`** node,
+  reveal the building grid (force the zoom past the fade-in threshold, §4), and highlight that cell +
+  open its rail inspector (§4).
+- **Match** name and id, case-insensitive, de-`TXT_KEY_`/`BUILDING_`-prefixed; category as a secondary
+  filter is a nice-to-have. Since a building lives under one node, the jump is unambiguous.
+- Scope: the search is **within the tech-tree view**. Whether it merges with the province search or
+  stays a separate tech-tree-local box is an open UI choice (see below).
 
 ---
 
