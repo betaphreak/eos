@@ -28,8 +28,13 @@ import com.civstudio.data.Civ4Files;
  * {@code <YieldChanges>}) recur deeper in the tree (e.g. inside an improvement's
  * per-bonus {@code <BonusTypeStruct>}) and {@code getElementsByTagName} would
  * otherwise pick the wrong one.
+ * <p>
+ * Generic across the Civ4 info schema, so it is reused beyond {@code geo/export} — the
+ * building importer ({@code settlement/export/BuildingInfoExporter}) shares its
+ * {@code fetch}/{@code infos}/{@code child}/{@code text}/{@code textList} helpers; the
+ * methods those callers use are {@code public}.
  */
-final class Civ4Xml {
+public final class Civ4Xml {
 
 	private Civ4Xml() {
 	}
@@ -39,7 +44,7 @@ final class Civ4Xml {
 	 * committed-relative path (e.g. {@code "CIV4TerrainInfos.xml"}) and parse it. The one entry
 	 * point the exporters use — the raw XML is no longer vendored under {@code data/civ4/}.
 	 */
-	static Document fetch(String committedRelativePath) {
+	public static Document fetch(String committedRelativePath) {
 		try {
 			return parse(Civ4Files.get(committedRelativePath).toString());
 		} catch (IOException e) {
@@ -61,7 +66,7 @@ final class Civ4Xml {
 	}
 
 	/** Every {@code <infoTag>} element in the document (top-level info records). */
-	static List<Element> infos(Document doc, String infoTag) {
+	public static List<Element> infos(Document doc, String infoTag) {
 		NodeList nl = doc.getElementsByTagName(infoTag);
 		List<Element> out = new ArrayList<>(nl.getLength());
 		for (int i = 0; i < nl.getLength(); i++)
@@ -70,7 +75,7 @@ final class Civ4Xml {
 	}
 
 	/** The direct child elements of {@code parent} with the given tag. */
-	static List<Element> children(Element parent, String tag) {
+	public static List<Element> children(Element parent, String tag) {
 		List<Element> out = new ArrayList<>();
 		for (Node n = parent.getFirstChild(); n != null; n = n.getNextSibling())
 			if (n.getNodeType() == Node.ELEMENT_NODE && tag.equals(n.getNodeName()))
@@ -79,13 +84,13 @@ final class Civ4Xml {
 	}
 
 	/** The first direct child element with the given tag, or {@code null}. */
-	static Element child(Element parent, String tag) {
+	public static Element child(Element parent, String tag) {
 		List<Element> c = children(parent, tag);
 		return c.isEmpty() ? null : c.get(0);
 	}
 
 	/** Text of the first direct child with the given tag, or {@code null}. */
-	static String text(Element parent, String tag) {
+	public static String text(Element parent, String tag) {
 		Element e = child(parent, tag);
 		return e == null ? null : e.getTextContent().trim();
 	}
@@ -138,7 +143,7 @@ final class Civ4Xml {
 	 * {@code <PrereqBonuses>} of {@code <Bonus>}). Empty list if the container
 	 * is absent.
 	 */
-	static List<String> textList(Element parent, String container, String item) {
+	public static List<String> textList(Element parent, String container, String item) {
 		List<String> out = new ArrayList<>();
 		Element c = child(parent, container);
 		if (c == null)

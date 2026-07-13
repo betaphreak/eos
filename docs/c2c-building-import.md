@@ -1,9 +1,32 @@
 # Plan: import C2C buildings, gate them to the tech horizon, wire them into the tech tree
 
-**Status:** plan (design only — nothing implemented). Written 2026-07-13; decisions locked with owner.
+**Status:** **Phase 1 implemented** 2026-07-13 (`BuildingInfoExporter` → `generated/buildings.json`,
+**1,270** gated buildings); Phases 2–5 pending. Written 2026-07-13; decisions locked with owner.
 Companion to [`district-generator.md`](district-generator.md) (the districts these buildings populate)
 and the tech-tree docs ([`tech-tree.md`](tech-tree.md)); the button-art bake mirrors the existing
 tech-button bake (`web/build-techs.mjs`).
+
+**As-built deltas from the plan (Phase 1).** Three assumptions in the plan below were corrected against
+the real C2C data at the pinned ref:
+- **Count is 1,270, not ~1,449** (1,090 Regular + 180 Special + 0 zProviders). The plan's estimate was
+  high; with the locked gate the *full-expression* gate and a *primary-`PrereqTech`-only* gate give the
+  **same** set — every building with an in-scope primary also has in-scope `<TechTypes>` — so the AND-list
+  never tightens the count, it only validates. (2,896 `<BuildingInfo>` scanned: 319 have no `<PrereqTech>`,
+  1,307 gated out by tech scope. 8 commented-out records the DOM parser correctly ignores.)
+- **`category` derives from `<Advisor>`, not `<BuildingClassType>`** — that field **does not exist** in
+  C2C building XML. `<Advisor>` (6 canonical values) is reused via the existing `com.civstudio.tech.Advisor`
+  enum, so the building taxonomy *is* the tech tree's advisor axis (maximally "shared beyond the tech tree").
+  **145 buildings carry no `<Advisor>`** (belief/housing/safety module buildings — they also carry no
+  `<Flavors>`, so there's no signal to derive one); their `category` is **omitted** and the web groups them
+  in an "Other" bucket.
+- **Building GameText spans six files** (`Buildings`, `Buildings_Animals`, `Slavery`, `Traditions`,
+  `Human_Sacrifice`, `Cannibalism` `_CIV4GameText.xml`) — every gated building's name resolves from one of
+  them; no de-`TXT_KEY_` fallback was needed in practice.
+- **Wonders are out of scope** (owner) — Great/Group/National Wonders (and the `zAnimals`/`zCultures`/
+  `zEarthBuildings`/`zFolklore` sets) are **not** imported; CivStudio will use **Anbennar monuments** instead.
+- Exporter lives at **`com.civstudio.settlement.export.BuildingInfoExporter`**, reusing the (now `public`)
+  `geo.export.Civ4Xml` DOM helpers. The kept-tech set is read straight from the baked `techs.json` (339
+  ids), so it can't drift from the shipped tree.
 
 **Goal.** Import the Caveman2Cosmos (C2C) building set as **engine content**, **gated to the eos
 tech horizon**, so that: (1) each kept tech's `TechEffect.Unlock` names the buildings it unlocks;
@@ -171,9 +194,12 @@ One widget (`searchbox.mjs`), no duplicate; its **corpus follows the active mode
 
 ## Phasing (import + tech-view land behavior-neutral; auto-build last)
 
-- **Phase 1 — `BuildingInfoExporter` → `buildings.json`.** Filtered to kept-tech-gated, verbatim ids,
-  `{id,name,prereqTech,artDefineTag,button}`. Add `CIV4ArtDefines_Building.xml` + building GameText to
-  `Civ4Files`/`civ4.mjs`. No behavior change (pure data).
+- **Phase 1 — `BuildingInfoExporter` → `buildings.json`. ✅ DONE (2026-07-13).** 1,270 kept-tech-gated
+  buildings, verbatim ids, `{id,name,help,pedia,category,prereqTech,andTechs,artDefineTag,button,cost}`.
+  Added `CIV4ArtDefines_Building.xml` + the six building GameText files to `Civ4Files.FILE_MAP` (the web
+  `civ4.mjs` needs no XML entries — buildings.json already carries the resolved `button` .dds path, so the
+  Phase-2 bake only fetches art). Promoted `Civ4Xml` helpers to `public`. No behavior change (pure data;
+  nothing loads `buildings.json` yet).
 - **Phase 2 — button-art bake.** `web/build-buildings.mjs` → `building-icons.webp` (64², 50 cols) +
   `buildingIcons` manifest key + `WorldBundle` allow-list.
 - **Phase 3 — tech-tree view.** `techtree.mjs` renders the per-node building grid (24 wide,

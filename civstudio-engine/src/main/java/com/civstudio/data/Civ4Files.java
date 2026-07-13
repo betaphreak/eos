@@ -75,6 +75,23 @@ public final class Civ4Files {
 					"Assets/XML/Technologies/CIV4TechInfos.xml"),
 			Map.entry("assets/XML/GameText/Tech_CIV4GameText.xml",
 					"Assets/XML/GameText/Tech_CIV4GameText.xml"),
+			// building import (BuildingInfoExporter): the artDefineTag -> <Button> map, and the
+			// six GameText files that hold the TXT_KEY_BUILDING_* name/help/pedia strings for the
+			// kept-tech-gated buildings (see docs/c2c-building-import.md)
+			Map.entry("assets/XML/Art/CIV4ArtDefines_Building.xml",
+					"Assets/XML/Art/CIV4ArtDefines_Building.xml"),
+			Map.entry("assets/XML/GameText/Buildings_CIV4GameText.xml",
+					"Assets/XML/GameText/Buildings_CIV4GameText.xml"),
+			Map.entry("assets/XML/GameText/Buildings_Animals_CIV4GameText.xml",
+					"Assets/XML/GameText/Buildings_Animals_CIV4GameText.xml"),
+			Map.entry("assets/XML/GameText/Slavery_CIV4GameText.xml",
+					"Assets/XML/GameText/Slavery_CIV4GameText.xml"),
+			Map.entry("assets/XML/GameText/Traditions_CIV4GameText.xml",
+					"Assets/XML/GameText/Traditions_CIV4GameText.xml"),
+			Map.entry("assets/XML/GameText/Human_Sacrifice_CIV4GameText.xml",
+					"Assets/XML/GameText/Human_Sacrifice_CIV4GameText.xml"),
+			Map.entry("assets/XML/GameText/Cannibalism_CIV4GameText.xml",
+					"Assets/XML/GameText/Cannibalism_CIV4GameText.xml"),
 			Map.entry("res/Fonts/GameFont.tga", "Assets/res/Fonts/GameFont.tga"),
 			// C2C ships this atlas under an odd name; it was renamed on vendoring
 			Map.entry("res/Fonts/GameFont_120.tga",
