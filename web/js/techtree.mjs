@@ -1,17 +1,21 @@
-// The technology tree — a full-screen modal over the map. Self-contained: it owns its
-// DOM (the #techModal markup in index.html), loads its data lazily on first open
-// (GET /api/techs from the spectator server, gunzipped in-page via DecompressionStream —
-// the plots.mjs pattern), and while it is up the map's paint() bails (S.techOpen), so
-// nothing renders behind it. Esc or a click outside closes it and repaints the map.
+// The technology tree — the Technology advisor's full-canvas map-mode. It renders over the
+// stage region (#techModal covers only the stage; the top bar, advisor sub-bar and right rail
+// stay live — see styles.css .tech-modal), owns its DOM (the #techModal markup in index.html),
+// and loads its data lazily on first open (GET /api/techs from the spectator server, gunzipped
+// in-page via DecompressionStream — the plots.mjs pattern). While it is up the map's paint()
+// bails (S.techOpen), so nothing renders behind it; leaving the advisor (Esc → mainmap, or
+// picking another advisor) closes it and repaints the map.
 //
 // Layout is driven by the C2C grid: iGridX is the horizontal era-timeline column,
 // iGridY the vertical lane (see docs/tech-tree.md). Cards sit on that lattice, hairline
 // SVG elbows draw the prerequisites (solid = AND, dashed = OR), and hovering a tech
-// lights its whole prerequisite chain in gold while the rest dims.
+// lights its whole prerequisite chain in gold while the rest dims. Selecting a node opens
+// its detail in the shared right rail (the province/advisor rail — panel.mjs showRail).
 import { S, apiUrl } from "./core.mjs";
 import { draw } from "./main.mjs";
-import { pausePlayback } from "./panel.mjs";
-import { createSearchBox } from "./searchbox.mjs";
+import { pausePlayback, showRail, renderRail } from "./panel.mjs";
+
+const railEl = () => document.getElementById("rail");
 
 // advisor → spine colour (muted, works in both themes) and → eos firm sector
 const ADV_COLOR = {
@@ -42,7 +46,6 @@ let eraEntryX = {};        // era key → its entry (min-gridX) column, for the 
 const nodeEl = new Map();  // type → card element
 const edgeEls = [];        // {el, from, to}
 let els = null;            // cached DOM handles, filled on first open
-let searchApi = null;      // the header search box (createSearchBox), wired once in initTechTree
 
 // --- data ------------------------------------------------------------------
 
@@ -221,11 +224,14 @@ function select(type) {
   const adv = (t.Advisor || "").replace("ADVISOR_", "");
   const sector = ADV_SECTOR[adv] || "—";
   const pre = allPrereqs(t);
-  const d = els.detail;
-  d.style.setProperty("--adv", advOf(t));
-  d.hidden = false;
-  d.innerHTML = `
-    <button class="tech-d-close" data-tech-detail-close aria-label="Close detail">&times;</button>
+  // render the node's detail into the shared right rail (the tree is a map-mode, so it reuses
+  // the province/advisor rail rather than a panel of its own). Hide the live HUD first so our
+  // content isn't masked by it (styles.css hides #rail while #liveHud shows).
+  const lh = document.getElementById("liveHud");
+  if (lh) lh.hidden = true;
+  showRail(true);
+  const r = railEl();
+  r.innerHTML = `<div class="detail tech-sheet" style="--adv:${advOf(t)}">
     <div class="tech-d-era">${ERA_NAME[t.Era] || ""}</div>
     <h2 class="tech-d-name"></h2>
     <div class="tech-d-meta">
@@ -236,11 +242,11 @@ function select(type) {
     ${t.help ? `<div class="tech-d-h">Overview</div><div class="tech-d-help"></div>` : ""}
     ${t.quote ? `<div class="tech-d-quote"></div>` : ""}
     ${pre.length ? `<div class="tech-d-h">Requires</div><div class="tech-d-pre"></div>` : ""}
-  `;
-  d.querySelector(".tech-d-name").textContent = t.name || t.Type;
-  if (t.help) d.querySelector(".tech-d-help").textContent = cleanText(t.help);
-  if (t.quote) d.querySelector(".tech-d-quote").textContent = cleanText(t.quote);
-  const preBox = d.querySelector(".tech-d-pre");
+  </div>`;
+  r.querySelector(".tech-d-name").textContent = t.name || t.Type;
+  if (t.help) r.querySelector(".tech-d-help").textContent = cleanText(t.help);
+  if (t.quote) r.querySelector(".tech-d-quote").textContent = cleanText(t.quote);
+  const preBox = r.querySelector(".tech-d-pre");
   if (preBox) {
     const mk = (p, kind) => {
       const f = byType.get(p);
@@ -253,7 +259,6 @@ function select(type) {
     prereqList(t, "AndPreReqs").forEach(p => mk(p, "and"));
     prereqList(t, "OrPreReqs").forEach(p => mk(p, "or"));
   }
-  d.querySelector("[data-tech-detail-close]").addEventListener("click", () => { d.hidden = true; });
 }
 
 // strip the Civ4 pedia markup ([NEWLINE], [PARAGRAPH:n], [ICON_*], colour tags) to plain text
@@ -355,17 +360,17 @@ function close() {
   if (!S.techOpen) return;
   S.techOpen = false;
   els.modal.hidden = true;
-  els.detail.hidden = true;
-  searchApi?.reset();
+  for (const el of nodeEl.values()) el.classList.remove("sel");
   clearHighlight();
-  draw();   // repaint the map that was frozen behind the modal
+  renderRail();   // restore the province / world / live rail the tree borrowed
+  draw();         // repaint the map that was frozen behind the tree
 }
 
 function cacheEls() {
   if (els) return;
   els = {
     modal: $("techModal"), viewport: $("techViewport"), sizer: $("techSizer"),
-    canvas: $("techCanvas"), edges: $("techEdges"), detail: $("techDetail"), eras: $("techEras"),
+    canvas: $("techCanvas"), edges: $("techEdges"), eras: $("techEras"),
     _k: 1,
   };
 }
@@ -409,23 +414,15 @@ export function initTechTree() {
   // only if present. The rest of the init must still run so the Technology advisor works.
   const btn = $("techBtn");
   if (btn) btn.addEventListener("click", open);
-  // F7 (toggle) and Escape (close) are dispatched centrally by js/shortcuts.mjs, which
-  // calls toggleTech() / closeTech() below.
-  // Esc / click outside / the ✕ all return to the map
-  $("techModal").addEventListener("click", e => {
-    if (e.target.closest("[data-tech-close]")) close();
-  });
+  // F6 (enter the advisor) and Escape (→ mainmap) are dispatched centrally by js/shortcuts.mjs,
+  // which calls openTech() / closeTech(). The tree has no close button of its own now (it is a
+  // map-mode); leaving the advisor closes it.
   $("techZoomIn").addEventListener("click", () => zoomBy(KSTEP));
   $("techZoomOut").addEventListener("click", () => zoomBy(1 / KSTEP));
 
-  // header search: match techs by name (or Type), and on pick select + centre the node. The
-  // dropdown/keyboard/clear behaviour is the shared searchbox widget (see searchbox.mjs). The
-  // search/row/pick logic is exported (techMatches/techRowHtml/pickTech) so the unified top-bar box
-  // can delegate to it in the Technology advisor (§5).
-  searchApi = createSearchBox({
-    input: $("techSearch"), results: $("techSearchResults"), clear: $("techSearchClear"),
-    search: techMatches, renderRow: techRowHtml, onPick: pickTech,
-  });
+  // The tree's own header search was retired with the modal chrome; the unified top-bar search
+  // box (panel.mjs) delegates to the exported techMatches/techRowHtml/pickTech while the
+  // Technology advisor is active, so techs and provinces share one box.
   const vp = $("techViewport");
   vp.addEventListener("scroll", syncEraTab, { passive: true });
 

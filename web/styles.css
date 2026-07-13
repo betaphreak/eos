@@ -449,15 +449,13 @@ input[type="range"].scrub::-moz-range-thumb {
   border: 0; background: transparent;
 }
 .search-ico { width: 14px; height: 14px; color: #9fb0c8; flex: none; }
-#search, #techSearch {
+#search {
   flex: 1 1 auto; min-width: 0; background: transparent; border: 0; outline: none;
   color: #9fb0c8; font: 600 11px system-ui, 'Segoe UI', sans-serif; letter-spacing: .02em;
 }
 #search:focus { color: #eef2f8; }
 #search:focus ~ .search-ico, .searchbar:focus-within .search-ico { color: #eef2f8; }
-#search::placeholder, #techSearch::placeholder { color: #6b7688; }
-/* the tech-tree header search keeps a framed box (it sits on the tree, not the top bar) */
-.tech-searchbar { border: 1px solid var(--line); background: var(--panel-2); }
+#search::placeholder { color: #6b7688; }
 /* the tech-tree header search reuses .searchbar; give it a fixed slot beside the era tabs */
 .tech-searchbar { flex: 0 1 220px; }
 .search-clear { flex: none; border: 0; background: transparent; color: var(--ink-faint);
@@ -714,32 +712,21 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
    hover-ancestry highlight (a tech lights its whole prerequisite chain in --accent
    while the rest dims). Everything else stays quiet.
    ========================================================================== */
-.tech-modal { position: fixed; inset: 0; z-index: 50; display: flex; }
+/* the tech tree is a full-canvas map-mode: it covers only the stage region (the top bar + advisor
+   sub-bar + right rail stay live) and, like .stage, pulls its right edge in when the rail opens.
+   The authoritative top/right/z positioning is the inline override in index.html (it uses the
+   live-measured --bar-total so the tree clears the floating, wrapping top bar); this base rule
+   matches it and adds the overflow/transition. */
+.tech-modal {
+  position: absolute; top: var(--bar-total, var(--bar-h)); left: 0; right: 0; bottom: var(--foot-h);
+  z-index: 7; overflow: hidden; transition: right .22s ease;
+}
 .tech-modal[hidden] { display: none; }
-.tech-backdrop { position: absolute; inset: 0; background: rgba(6,9,14,.62); backdrop-filter: blur(3px); }
-.tech-shell {
-  position: relative; margin: auto; width: 95vw; height: 92vh;
-  display: flex; flex-direction: column; background: var(--panel);
-  border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
-  overflow: hidden;
-}
-.tech-head {
-  flex: none; display: flex; align-items: center; gap: 16px;
-  padding: 12px 14px 12px 20px; border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, var(--panel-2), var(--panel));
-}
-.tech-brand {
-  font: 700 12px system-ui,'Segoe UI',sans-serif; letter-spacing: .18em; text-transform: uppercase;
-  color: var(--ink-soft); white-space: nowrap;
-}
-.tech-eras { margin: 0 auto; flex-wrap: wrap; justify-content: center; }
-.tech-close {
-  flex: none; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px;
-  background: var(--panel-2); color: var(--ink-soft); font-size: 22px; line-height: 1; cursor: pointer;
-}
-.tech-close:hover { color: var(--ink); border-color: var(--ink-faint); }
+.app.rail-open .tech-modal { right: var(--rail-w); }
+.app.rail-resizing .tech-modal { transition: none; }
+/* the era-jump tabs now live in the top-bar sub-strip (data-sub="technology") */
+.tech-eras { flex-wrap: wrap; }
 
-.tech-body { position: relative; flex: 1 1 auto; min-height: 0; }
 .tech-viewport {
   position: absolute; inset: 0; overflow: auto; overflow-x: scroll; cursor: grab;
   scrollbar-width: thin; scrollbar-color: var(--line) transparent;   /* Firefox */
@@ -808,17 +795,9 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 
 .tech-zoomctl { position: absolute; right: 16px; bottom: 16px; z-index: 3; }
 
-/* detail panel: slides in from the right when a node is chosen */
-.tech-detail {
-  position: absolute; top: 0; right: 0; bottom: 0; width: 340px; z-index: 4;
-  overflow-y: auto; padding: 20px 22px 32px; background: var(--panel);
-  border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(0,0,0,.22);
-  scrollbar-width: thin; scrollbar-color: var(--line) transparent;
-}
-.tech-detail[hidden] { display: none; }
-.tech-detail::-webkit-scrollbar { width: 10px; }
-.tech-detail::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; border: 3px solid transparent; background-clip: padding-box; }
-.tech-d-close { float: right; background: none; border: 0; color: var(--ink-faint); font-size: 20px; cursor: pointer; line-height: 1; }
+/* node detail now renders in the right rail (see techtree.mjs select() → showRail); these
+   .tech-d-* content classes are reused inside the rail's .tech-sheet. */
+.tech-sheet { padding: 38px 20px 28px; overflow-y: auto; }   /* top clears the rail's close ✕ */
 .tech-d-era { font: 700 10px system-ui,sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--adv, var(--ink-faint)); }
 .tech-d-name { margin: 4px 0 10px; font: 700 20px/1.15 system-ui,'Segoe UI',sans-serif; color: var(--ink); }
 .tech-d-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
@@ -835,11 +814,6 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .tech-d-prereq:hover { border-color: var(--accent); }
 .tech-d-prereq .k { font: 600 9px system-ui,sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); margin-left: 6px; }
 
-@media (max-width: 720px) {
-  .tech-shell { width: 100vw; height: 100vh; border-radius: 0; }
-  .tech-detail { width: 84vw; }
-  .tech-brand { display: none; }
-}
 
 /* ---- Live overlay HUD: a floating panel over the map, top-left, only in Live mode ---- */
 /* the live HUD renders as rail content now (not a floating panel) — it fills the right rail like the

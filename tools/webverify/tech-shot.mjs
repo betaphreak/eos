@@ -9,7 +9,8 @@ page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
 await page.goto(base.replace(/\/$/, '') + '/', { waitUntil: 'networkidle' });
 await page.waitForTimeout(1200);
-await page.click('#techBtn');
+// the tech tree is the Technology advisor's map-mode now (the standalone #techBtn was retired)
+await page.click('#advisorToggle button[data-advisor="technology"]');
 await page.waitForTimeout(+waitMs);
 if (era) {
   // jump to the era and screenshot the scroll result — do NOT click a node (Playwright would
