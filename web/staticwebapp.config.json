@@ -8,7 +8,13 @@
     {
       "route": "/assets/*",
       "headers": {
-        "Cache-Control": "public, max-age=3600"
+        "Cache-Control": "no-cache"
+      }
+    },
+    {
+      "route": "/js/*",
+      "headers": {
+        "Cache-Control": "no-cache"
       }
     }
   ],
