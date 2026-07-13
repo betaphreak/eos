@@ -47,7 +47,7 @@ export const LAYERS = [
   { id: "selected",       band: "all",                     draw: drawSelectedHighlight },
   { id: "live",           band: "all",  gate: () => S.overlay === "live", draw: drawLive },
   { id: "tradeGoods",     z: [0],  band: "TERRAIN→PLOT, self-fade", gate: notPolitical, draw: drawTradeGoodIcons },
-  { id: "city",           z: [0],  band: "GROUND (64×+)", gate: notPolitical, draw: drawCity },
+  { id: "city",           z: [0],  band: "≥PROVINCE, self-fade", gate: notPolitical, draw: drawCity },
   { id: "labels",         band: "≥PROVINCE, self-fade",    draw: drawLabels },
 ];
 

@@ -1,5 +1,17 @@
 # Design note: urban plots & imported development
 
+**Interim visual (2026-07-13):** the urban *art* was pulled pending proper Civ6 district tiles
+(`docs/civ6-art-replacement.md`). The synthetic grey-concrete `TERRAIN_URBAN` ground tile, the
+Civ4 `med_europe` **city sprite** (`plots.mjs citySprite`), and the procedural **roof-lot**
+footprints (`city.mjs drawLots`) were all removed — they read as ugly. The frontend now
+**re-terrains each urban core plot to the province's dominant real terrain** on load
+(`plots.mjs markUrbanPlots`, flagging `q.urban`), so a city site blends into its countryside
+instead of showing a grey patch, and `city.mjs drawCity` draws a **subtle stone pip marker** per
+urban plot so cities stay locatable. Frontend-only — the engine `TERRAIN_URBAN` substrate and the
+imported development below are unchanged; the baked `terrain-tiles` URBAN cell and `assets` `city`
+sprite are simply no longer referenced. Verified in-app on Dhenijansar (prov 4411). *Next: replace
+the pip with Civ6 district art.*
+
 **Status:** Phases 1–4 done and **deployed live** to `dev.civstudio.com` (2026-07-12) — the
 `TERRAIN_URBAN` substrate, imported development + `city` flag, the per-province urban core
 (Civ4 `foundValue`) + anchoring, and the city sprite + city info panel. Verified at 256×:

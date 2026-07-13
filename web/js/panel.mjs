@@ -494,7 +494,7 @@ function cityRail(p) {
   // the urban core size, once the province's plots have streamed in
   let coreHtml = "";
   if (p._plots && p._plots.length) {
-    const urban = p._plots.filter(q => q.terrain === "TERRAIN_URBAN").length;
+    const urban = p._plots.filter(q => q.urban).length;
     coreHtml = `<div class="stat"><div class="k">Urban core</div><div class="v">${urban}<small style="font-size:11px;color:var(--ink-soft)"> plots</small></div></div>`;
   }
   rail.innerHTML = `
