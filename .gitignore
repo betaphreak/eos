@@ -52,3 +52,6 @@ civstudio-server/target/
 
 # webverify screenshot artifacts
 /tools/webverify/*.png
+# throwaway scratch files (underscore-prefixed): temp verify scripts, crops, server/deploy logs
+/tools/webverify/_*
+/web/_*
