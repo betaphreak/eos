@@ -5,7 +5,7 @@
 import { S, cam, VIEW, clampPan } from "./core.mjs";
 import { draw, zoomAt } from "./main.mjs";
 import { resetView, toggleFullscreen, togglePlay, closePanel } from "./panel.mjs";
-import { toggleTech, closeTech } from "./techtree.mjs";
+import { setAdvisor } from "./advisors.mjs";
 
 // pan the camera and repaint — the shared tail of the WASD / arrow handlers
 function panBy(dx, dy) {
@@ -17,8 +17,18 @@ function panBy(dx, dy) {
 // `cap` + `label` (when present) render a chip in the bottom bar. Entries with no `cap`
 // (keyboard zoom, Home, arrow aliases) are dispatched but not shown.
 const REGISTRY = [
-  { keys: ["F7"], cap: ["F7"], label: "Tech tree", modalSafe: true,
-    run: e => { e.preventDefault(); toggleTech(); } },
+  // Privy Council advisor modes (see advisors.mjs) — all modal-safe so they switch OUT of the
+  // Technology advisor too. Only Technology carries a hotbar chip to keep the bar uncluttered.
+  { keys: ["`"], modalSafe: true, run: e => { e.preventDefault(); setAdvisor("mainmap"); } },
+  { keys: ["F4"], modalSafe: true, run: e => { e.preventDefault(); setAdvisor("foreign"); } },
+  { keys: ["F6"], cap: ["F6"], label: "Tech tree", modalSafe: true,
+    run: e => { e.preventDefault(); setAdvisor("technology"); } },
+  { keys: ["F7"], modalSafe: true, run: e => { e.preventDefault(); setAdvisor("religion"); } },
+  { keys: ["F11"], modalSafe: true, run: e => { e.preventDefault(); setAdvisor("globe"); } },
+  { keys: ["z", "Z"], modalSafe: true, run: e => { e.preventDefault(); setAdvisor("zeitgeist"); } },
+  // quick-open the unified search box (mode-scoped corpus)
+  { keys: ["/"], modalSafe: true,
+    run: e => { e.preventDefault(); document.getElementById("search")?.focus(); } },
   { keys: [" ", "Spacebar"], cap: ["Space"], label: "Play / pause",
     run: e => { e.preventDefault(); togglePlay(); } },
   { keys: ["f", "F"], cap: ["F"], label: "Fullscreen",
@@ -40,8 +50,9 @@ const REGISTRY = [
       if (move) panBy(move[0], move[1]);
     } },
   { keys: ["Escape"], cap: ["Esc"], label: "Close", modalSafe: true,
-    // the tech modal wins; otherwise collapse the sidebar (only prevent-default if it did something)
-    run: e => { if (S.techOpen) { e.preventDefault(); closeTech(); } else if (closePanel()) { e.preventDefault(); } } },
+    // in the Technology advisor, Escape returns to Main Map (keeps the selector consistent);
+    // otherwise collapse the sidebar (only prevent-default if it did something)
+    run: e => { if (S.techOpen) { e.preventDefault(); setAdvisor("mainmap"); } else if (closePanel()) { e.preventDefault(); } } },
   { keys: ["+", "="],
     run: e => { e.preventDefault(); zoomAt(VIEW.w / 2, VIEW.h / 2, 1.5); } },
   { keys: ["-", "_"],

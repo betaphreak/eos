@@ -373,6 +373,9 @@ function cacheEls() {
 /** Open the tree if closed, close it if open — the F7 shortcut (see shortcuts.mjs). */
 export function toggleTech() { S.techOpen ? close() : open(); }
 
+/** Open the tech view idempotently — the Technology advisor's entry point (advisors.mjs). */
+export function openTech() { if (!S.techOpen) open(); }
+
 /** Close the tree if open — the Escape shortcut while the modal is up. */
 export function closeTech() { close(); }
 

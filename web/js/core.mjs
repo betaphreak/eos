@@ -207,6 +207,10 @@ export const S = {
   selected: null,        // journey idx or null
   selectedProv: null,    // province whose full detail fills the sidebar, or null
   techOpen: false,       // the tech-tree modal is up — paint() pauses map rendering behind it
+  // the active Civ4-style advisor mode (see js/advisors.mjs) — a thin grouping ABOVE the
+  // overlay/plane/techOpen render states it maps onto. Derived from those at init, then owned
+  // by setAdvisor(); the render layer still keys off overlay/plane/techOpen, never this.
+  advisor: "mainmap",
 };
 
 export { P, fmtInt, apiUrl, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };

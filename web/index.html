@@ -20,6 +20,25 @@
     .segToggle .seed-input{width:62px;margin-left:3px;font:600 11px system-ui,'Segoe UI',sans-serif;color:#eef2f8;background:rgba(190,205,230,.10);border:1px solid rgba(190,205,230,.18);border-radius:6px;padding:4px 7px}
     .segToggle .seed-input::placeholder{color:#6b7688}
     .segToggle .seed-input[hidden]{display:none}
+    /* the Privy Council advisor selector + its second-row sub-control strip */
+    #advisorToggle{flex-wrap:nowrap;overflow:hidden}
+    #advisorToggle button{padding:5px 9px}
+    #advisorToggle button.advisor-live[aria-pressed="true"]{background:rgba(255,59,59,.18);color:#ffd9d9}
+    /* the sub-bar floats as its own row directly below the (absolutely-positioned) top bar; the
+       stage + rail are pushed down by --subbar-h so nothing is covered */
+    .app{--subbar-h:32px}
+    #advisorSubbar{position:absolute;top:var(--bar-h);left:0;right:0;height:var(--subbar-h);z-index:9;
+      display:flex;align-items:center;gap:10px;padding:0 16px;
+      background:#0b0f17;border-bottom:1px solid #232c3c}
+    .app .stage{top:calc(var(--bar-h) + var(--subbar-h))}
+    .app .railwrap{top:calc(var(--bar-h) + var(--subbar-h))}
+    #advisorSubbar .advisor-sub{display:flex;align-items:center;gap:8px}
+    #advisorSubbar .advisor-sub[hidden]{display:none}
+    #advisorSubbar .sub-cap{color:#7c8aa2;letter-spacing:.04em;text-transform:uppercase;
+      font:600 10px system-ui,'Segoe UI',sans-serif}
+    .live-badge{display:inline-flex;align-items:center;gap:6px;color:#ff5a5a;font:700 11px system-ui,sans-serif;letter-spacing:.10em}
+    .live-badge .dot{width:8px;height:8px;border-radius:50%;background:#ff3b3b;box-shadow:0 0 6px #ff3b3b;animation:livepulse 1.4s ease-in-out infinite}
+    @keyframes livepulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.28;transform:scale(.82)}}
   </style>
 </head>
 <body>
@@ -33,25 +52,14 @@
       </button>
 
       <div id="mapControls">
-        <div id="povToggle" class="segToggle" role="group" aria-label="Camera POV">
-          <button data-pov="god" aria-pressed="true" data-tip="Free god-view camera over the world">God</button>
-          <button data-pov="timeline" aria-pressed="false" data-tip="Timeline camera — coming soon" disabled>Timeline</button>
-        </div>
-        <div id="planeToggle" class="segToggle" role="group" aria-label="Map plane">
-          <button data-plane="overworld" aria-pressed="true" data-tip="Surface world — the physical terrain map">Overworld</button>
-          <button data-plane="underworld" aria-pressed="false" data-tip="Subterranean world — the underground Serpentspine">Underworld</button>
-        </div>
-        <div id="overlayToggle" class="segToggle" role="group" aria-label="Map overlay">
-          <button data-ov="none" aria-pressed="true" data-tip="No overlay — plain physical map">None</button>
-          <button data-ov="nation" aria-pressed="false" data-tip="Colour provinces by owning nation at game start">Nation</button>
-          <button data-ov="culture" aria-pressed="false" data-tip="Colour provinces by culture">Culture</button>
-          <button data-ov="faith" aria-pressed="false" data-tip="Colour provinces by religion">Faith</button>
-          <button data-ov="live" aria-pressed="false" data-tip="Spectate the live server session — the colony, its caravans and the lobby — in real time">Spectate</button>
-        </div>
+        <!-- the Privy Council advisor selector — one segment per Civ4-style advisor mode; built by
+             js/advisors.mjs (portraits replace the labels once the portrait bake lands). Replaces the
+             old POV/plane/overlay toggle groups, which fold into this + the second-row sub-bar. -->
+        <div id="advisorToggle" class="segToggle" role="group" aria-label="Advisor mode"></div>
       </div>
 
       <div class="topright">
-        <button class="themebtn" id="techBtn" data-tip="Technology tree (F7)" aria-label="Open the technology tree">
+        <button class="themebtn" id="techBtn" data-tip="Technology tree (F6)" aria-label="Open the technology tree">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="2.3"/><circle cx="18" cy="5.5" r="2.3"/><circle cx="18" cy="18.5" r="2.3"/><path d="M7.2 11l8.6-4.6M7.2 13l8.6 4.6"/></svg>
         </button>
         <button class="themebtn" id="costBtn" data-tip="Terrain movement-cost overlay — zoom in to see it" aria-label="Toggle movement-cost overlay">
@@ -76,6 +84,32 @@
         <div class="site-auth" id="siteAuth"></div>
       </div>
     </header>
+
+    <!-- second row: the active advisor's sub-control strip (swaps per advisor; js/advisors.mjs
+         shows one [data-sub] slot at a time). The plane toggle lives in the Globe slot so panel.mjs
+         still wires it; the Foreign slot's Nation/Culture buttons carry data-ov (setOverlay repaints
+         them by attribute). Era tabs / richer Zeitgeist transport move here in later steps. -->
+    <div id="advisorSubbar">
+      <div class="advisor-sub" data-sub="mainmap" hidden><span class="sub-cap">Physical world · terrain &amp; plots</span></div>
+      <div class="advisor-sub" data-sub="foreign" hidden>
+        <div class="segToggle" role="group" aria-label="Foreign view">
+          <button data-ov="nation" data-tip="Colour provinces by owning nation at game start">Nation</button>
+          <button data-ov="culture" data-tip="Colour provinces by culture">Culture</button>
+        </div>
+      </div>
+      <div class="advisor-sub" data-sub="religion" hidden><span class="sub-cap">Provinces coloured by religion</span></div>
+      <div class="advisor-sub" data-sub="technology" hidden><span class="sub-cap">Technology tree</span></div>
+      <div class="advisor-sub" data-sub="globe" hidden>
+        <div id="planeToggle" class="segToggle" role="group" aria-label="Map plane">
+          <button data-plane="overworld" aria-pressed="true" data-tip="Surface world — the physical terrain map">Overworld</button>
+          <button data-plane="underworld" aria-pressed="false" data-tip="Subterranean world — the underground Serpentspine">Underworld</button>
+        </div>
+      </div>
+      <div class="advisor-sub" data-sub="zeitgeist" hidden>
+        <span class="live-badge"><span class="dot"></span>LIVE</span>
+        <span class="sub-cap">Spectating the live server session</span>
+      </div>
+    </div>
 
     <div class="stage" id="stage">
       <canvas id="map"></canvas>
@@ -167,7 +201,7 @@
     <div class="tech-backdrop" data-tech-close></div>
     <div class="tech-shell" role="document">
       <header class="tech-head">
-        <div class="tech-brand">Tech Tree (F7)</div>
+        <div class="tech-brand">Tech Tree (F6)</div>
         <div id="techEras" class="segToggle tech-eras" role="group" aria-label="Jump to era"></div>
         <div class="searchbar tech-searchbar" role="search">
           <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>

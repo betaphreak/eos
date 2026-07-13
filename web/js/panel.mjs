@@ -358,7 +358,9 @@ function worldRail(){
 function setPlane(pl){
   S.plane = pl;
   S.baseVersion++;   // the political ledger is per-plane (surface vs underground) — force its rebuild
-  document.querySelectorAll("#planeToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.plane===pl));
+  // repaint every plane button (data-plane) wherever it lives now — the Globe advisor's
+  // sub-control strip holds these buttons (see advisors.mjs), not the old #planeToggle spot
+  document.querySelectorAll("[data-plane]").forEach(b=> b.setAttribute("aria-pressed", b.dataset.plane===pl));
   draw();
 }
 // the overlay (None / Nation / Culture / Faith / Caravans) — one at a time over the active plane.
@@ -367,7 +369,9 @@ function setOverlay(ov){
   const was = S.overlay;
   const live = ov === "live";
   S.overlay = ov;
-  document.querySelectorAll("#overlayToggle button").forEach(b=> b.setAttribute("aria-pressed", b.dataset.ov===ov));
+  // repaint every overlay button (data-ov) wherever it lives — the Foreign advisor's sub-control
+  // strip carries the Nation/Culture buttons now (see advisors.mjs), not the old #overlayToggle
+  document.querySelectorAll("[data-ov]").forEach(b=> b.setAttribute("aria-pressed", b.dataset.ov===ov));
   const pol = isPolitical();
   S.polHi = null;
   // the clock/play/speed only mean something in the live Caravans view — show them there, drive
@@ -636,13 +640,15 @@ function updateSearchContext() {
   provinceSearch.refresh();
 }
 // ---- camera POV toggle (God / Timeline) ----
+// the camera POV is always God today (Timeline is a future mode); the old #povToggle group was
+// retired with the advisor-selector restructure, so this is a guarded no-op kept for boot()/parity.
 const povToggle = document.getElementById("povToggle");
 function setPov(pov){
   S.pov = pov;
-  povToggle.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.pov === pov));
+  if (povToggle) povToggle.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.pov === pov));
   draw();
 }
-povToggle.querySelectorAll("button").forEach(b =>
+if (povToggle) povToggle.querySelectorAll("button").forEach(b =>
   b.addEventListener("click", () => { if (!b.disabled) setPov(b.dataset.pov); }));
 
 // ---- responsive controls menu: the hamburger tucks the toggle groups on narrow screens ----
@@ -686,7 +692,8 @@ document.querySelectorAll(".topbar [data-tip]").forEach(el => {
   el.addEventListener("mousedown", hideBtnTip);
 });
 
-export { renderRail, resetView, toggleFullscreen, togglePlay, pausePlayback, closePanel };
+export { renderRail, resetView, toggleFullscreen, togglePlay, pausePlayback, closePanel,
+         setOverlay, setPlane, updateSearchContext, showRail, selectProvince };
 
 export function boot() {
   // Refit the canvas whenever the stage's box changes — window resize, fullscreen, AND the panel
