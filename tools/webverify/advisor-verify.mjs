@@ -65,11 +65,14 @@ for (const id of ['foreign', 'religion', 'globe', 'zeitgeist', 'mainmap']) {
   results[id] = await snap();
   await page.screenshot({ path: path.join(outDir, `advisor-${id}.png`) });
 }
-// Technology opens the (interim) full-screen modal that covers the top bar, so switch via the
-// modal-safe hotkey; Escape returns to Main Map.
-await page.keyboard.press('F6'); await page.waitForTimeout(600);
+// Technology now fills the stage region (§2), so the top bar stays live — enter it by CLICK and
+// prove another advisor is still clickable while it's up (the old modal covered the bar).
+await click('technology'); await page.waitForTimeout(700);
 results.technology = await snap();
 await page.screenshot({ path: path.join(outDir, 'advisor-technology.png') });
+await click('foreign'); await page.waitForTimeout(500);   // click-through the top bar while tech was up
+results.techToForeignByClick = await snap();
+await page.keyboard.press('F6'); await page.waitForTimeout(500);
 await page.keyboard.press('Escape'); await page.waitForTimeout(500);
 results.escToMainMap = await snap();
 // hotkey round-trip: F4 → foreign, backtick → mainmap

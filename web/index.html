@@ -32,6 +32,14 @@
       background:#0b0f17;border-bottom:1px solid #232c3c}
     .app .stage{top:calc(var(--bar-h) + var(--subbar-h))}
     .app .railwrap{top:calc(var(--bar-h) + var(--subbar-h))}
+    /* Technology Advisor (§2): the tech tree fills the stage region below the top bar + sub-bar
+       instead of a full-viewport modal, so the advisor selector stays live. Leave via the selector /
+       Esc / hotkey — the modal close × and backdrop are retired. The rail (when opened for the tech
+       inspector) shrinks it from the right. */
+    .app .tech-modal{position:absolute;inset:auto;top:calc(var(--bar-h) + var(--subbar-h));left:0;right:0;bottom:var(--foot-h);z-index:7}
+    .app.rail-open .tech-modal{right:var(--rail-w)}
+    .app .tech-shell{width:100%;height:100%;margin:0;border-radius:0;border:0;box-shadow:none}
+    .tech-close{display:none}
     #advisorSubbar .advisor-sub{display:flex;align-items:center;gap:8px}
     #advisorSubbar .advisor-sub[hidden]{display:none}
     #advisorSubbar .sub-cap{color:#7c8aa2;letter-spacing:.04em;text-transform:uppercase;
@@ -193,12 +201,10 @@
     <!-- shortcut hints; populated from js/shortcuts.mjs (the single source for the bar) -->
     <footer class="hotbar" id="hotbar" aria-label="Keyboard shortcuts"></footer>
 
-  </div>
-
-  <!-- Technology tree: a full-screen modal over the map (map rendering pauses while it is up).
-       Populated by js/overlays/techtree.mjs on first open. -->
-  <div id="techModal" class="tech-modal" hidden role="dialog" aria-modal="true" aria-label="Technology tree">
-    <div class="tech-backdrop" data-tech-close></div>
+    <!-- Technology Advisor: the tech tree as a map-mode over #stage (map rendering pauses behind it).
+         A child of .app (sibling of #stage/#railwrap) so it inherits the layout vars and covers only
+         the stage region — the top bar + advisor sub-bar stay live. Populated by js/techtree.mjs. -->
+    <div id="techModal" class="tech-modal" hidden role="region" aria-label="Technology tree">
     <div class="tech-shell" role="document">
       <header class="tech-head">
         <div class="tech-brand">Tech Tree (F6)</div>
@@ -225,6 +231,7 @@
         </div>
         <aside id="techDetail" class="tech-detail" hidden aria-live="polite"></aside>
       </div>
+    </div>
     </div>
   </div>
 
