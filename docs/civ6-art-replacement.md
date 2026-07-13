@@ -137,6 +137,33 @@ the rest are 3D-only.
 ### G. Techs — unchanged
 Stay C2C. No per-tech subject icons in the depot (`civ6-assets.md` §2b).
 
+### H. City districts (urban core) — planned (art chosen 2026-07-13)
+Replaces the interim urban pip (`web/js/city.mjs`, `docs/urban-plots.md`) that stands in after the
+ugly Civ4 city sprite + grey-concrete ground were pulled. **Analysis (verified by decoding the depot):
+the depot has NO flat top-down district *building* art.** District art comes in three families:
+- **`Hex_District*.dds` — 512², ~64% opaque, full-hex colored chip + emblem** (`CityCenter`=star,
+  `Neighborhood`=house, `Commercial`=coin, `Campus`=flask, `Encampment`=shield, `Faith`=wings,
+  `Theater`=clef). These are Civ6's strategic-view district hexes — clean, ready-to-bake, and the
+  **chosen source** (owner, 2026-07-13: "good find, we'll use them later"). Only these **7** exist as
+  `Hex_*`; other districts (Industrial/Harbor/Aqueduct/Aerodrome/Spaceport…) exist only as the badge
+  or 3D families below.
+- **`Districts_<Type>_Visible.dds` / `StrategicView_Districts_*` — 128², ~20-35% opaque** loose emblem
+  badges (the same symbols without the hex backing; also `_Revealed`/`_UnderConstruction`/`_Pillaged`
+  state variants). Fallback for district types with no `Hex_*` chip.
+- **`DIS_*` — 3D model pieces** (2708 `.geo` + per-piece albedo `.dds`, e.g. `DIS_CTY_AB_Base_B`
+  1024×512 UV atlases). The literal in-game buildings, but **not flat-usable** — needs a Civ6 `.geo`
+  renderer (nifbake only reads Civ4 `.nif`). **Rejected** for this pass; the symbolic hex chip is the
+  faithful *strategic-view* representation anyway.
+
+**Bake sketch (for the later cut):** `civ6.districtTile(type)` resolver → `Hex_District<Type>.dds`;
+`bakeDistrictTiles` takes RGB+**alpha** (the alpha is the hex cutout mask — keep it, like the feature
+overlays), trims the transparent corners, emits `districts/dis-<type>.webp` at a `@128/@256` LoD + a
+`districtTiles` manifest key (**remember to allow-list it in `WorldBundle`** — the Phase-3 gotcha). A
+`plots.mjs` draw path stamps the hex chip on urban plots in place of the `city.mjs` pip.
+**Mapping (interim, no engine districts yet):** the sim has only urban-core plots + `dev` — so stamp
+`CityCenter` on the primary core; a `city_terrain` province's extra cores can vary
+(`Neighborhood`/`Commercial`). When the engine grows a real district concept, map by function.
+
 ---
 
 ## Final baked-source split (bonus icons, Mixed policy)
