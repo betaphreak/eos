@@ -150,10 +150,13 @@ the depot has NO flat top-down district *building* art.** District art comes in 
 - **`Districts_<Type>_Visible.dds` / `StrategicView_Districts_*` — 128², ~20-35% opaque** loose emblem
   badges (the same symbols without the hex backing; also `_Revealed`/`_UnderConstruction`/`_Pillaged`
   state variants). Fallback for district types with no `Hex_*` chip.
-- **`DIS_*` — 3D model pieces** (2708 `.geo` + per-piece albedo `.dds`, e.g. `DIS_CTY_AB_Base_B`
-  1024×512 UV atlases). The literal in-game buildings, but **not flat-usable** — needs a Civ6 `.geo`
-  renderer (nifbake only reads Civ4 `.nif`). **Rejected** for this pass; the symbolic hex chip is the
-  faithful *strategic-view* representation anyway.
+- **`DIS_*` — 3D model pieces** (2708 `.geo` + `.fgx` meshes + per-piece albedo `.dds`, e.g.
+  `DIS_CTY_AB_Base_B` 1024×512 UV atlases). The literal in-game buildings, but **not flat-usable** and
+  **no headless renderer exists**: nifbake only reads Civ4 `.nif`, and there is **no open-source
+  `.fgx`/`.geo` renderer** — the only path is CivNexus6 (closed Windows GUI freeware) → `.nb2`/`.cn6` →
+  Blender (open-source scripts: deliverator23/Sukritact) → render, a manual GUI pipeline that can't be a
+  `node build.mjs` step. **Rejected** for this pass; the symbolic hex chip is the faithful
+  *strategic-view* representation anyway.
 
 **Bake sketch (for the later cut):** `civ6.districtTile(type)` resolver → `Hex_District<Type>.dds`;
 `bakeDistrictTiles` takes RGB+**alpha** (the alpha is the hex cutout mask — keep it, like the feature
