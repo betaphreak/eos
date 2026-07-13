@@ -1,17 +1,35 @@
 # The Privy Council — a Civ4-style advisor-mode framework
 
-**Status:** largely **SHIPPED** (2026-07-13). Written 2026-07-13; decisions locked with owner.
-Delivered §0 (engine `AdvisorRoster` — sticky, succession, ruler-backstop — + `AdvisorView` on the
-render snapshot + `GET /api/sessions/{sid}/person/{id}`), §1 (advisor selector + sub-control strip),
-§2 (tech modal → Technology Advisor map-mode over `#stage`), §2b (court member + rail character sheet
-+ succession toast), §5 (unified mode-scoped search), §6 (hotkeys). The advisors draw from Dhenijansar's
-live roster (top-INTELLECTUAL noble → Technology, top-SOCIAL → Foreign, others by ability, ruler
-backstop); the SSE feed is kept alive in the background so the roster shows in every advisor.
-**Not yet done:** §3 portrait bake (blocked on a coarse-`Race` → per-Anbennar-culture art-prefix
-mapping — art is flat `gfx/interface/advisors/<culture>_<role>[_female].dds`, not race folders; the
-frontend uses an initials-on-race-tinted-tile placeholder meanwhile) and §4's relocation of the
-`#siteAuth` handle + `#clock` transport into the Zeitgeist sub-bar (the clock already auto-hides off
-the live advisor). Verified via `tools/webverify/advisor-verify.mjs` + `web/roster-diff.test.mjs`.
+**Status:** **SHIPPED** (2026-07-13), live on `dev.civstudio.com` at server `v0.9.31`. Written
+2026-07-13; decisions locked with owner. Delivered §0 (engine `AdvisorRoster` — sticky, succession,
+ruler-backstop — + `AdvisorView`/`culture` on the render snapshot + `GET /api/sessions/{sid}/person/{id}`),
+§1 (advisor selector + sub-control strip), §2 (tech modal → Technology Advisor map-mode over `#stage`),
+§2b (court member + rail character sheet + succession toast), §3 (portrait bake — 34 Anbennar culture
+sheets, `web/build-advisors.mjs` → `assets/advisors/*.webp` + `portraits.json`; rendered in the rail
+sheet + court chip, `web/js/portraits.mjs`), §4 (`#clock` transport + `#siteAuth` moved into the
+Zeitgeist sub-bar; the LIVE badge shows only while RUNNING), §5 (unified mode-scoped search), §6
+(hotkeys). The advisors draw from Dhenijansar's live roster (top-INTELLECTUAL noble → Technology,
+top-SOCIAL → Foreign, others by ability, ruler backstop); the SSE feed is kept alive in the background
+so the roster shows in every advisor. Verified via `tools/webverify/advisor-verify.mjs` +
+`web/roster-diff.test.mjs`.
+
+**Portrait-art realities (§3, as-built):** the art is flat `gfx/interface/advisors/<culture>_<role>[_female].dds`
+(male = no suffix), 77×77 classic BGRA, for **29 non-human/region cultures only** — humans use vanilla
+EU4 art, absent from the Anbennar repo. The bake packs one WebP grid per culture (22 role columns ×
+[male, female] rows). The frontend resolves `race × culture × role × gender` with a
+culture → race-representative (`raceCulture` map) → **`harimari` fallback** (Royal Harimari, the
+demo being in Rahen) → initials-tile chain. **Per-person culture is NOT modeled** — see the note below;
+the server exposes the founding *province's* culture as the proxy selector.
+
+> **`RaceNameGenerator` / per-person culture (future work).** `com.civstudio.name.RaceNameGenerator`
+> keys `common/cultures/anb_cultures.txt` by `Race.id()` and **merges every culture under that race key,
+> dropping the culture/country structure** ("not modeled in eos") — so a `Person` carries only its coarse
+> `Race`, never a specific Anbennar culture. `AdvisorView.culture` / `PersonDetail.culture` therefore
+> expose the colony's **founding-province** culture (`Province.culture()`) as a per-colony proxy, not a
+> true per-person ancestry culture. To get authentic per-person culture (for portraits and other
+> features), the engine must model & assign a culture per person at creation (founder/immigrant/heir/
+> child), inheriting appropriately — a `RaceNameGenerator`/`Person` change. Until then, humans and other
+> art-less races fall back to `harimari`.
 The presentation foundation the tech-tree building work sits on — it **precedes**
 [`c2c-building-import.md`](c2c-building-import.md) (whose per-node building grid + rail inspector plug
 into the Technology Advisor this creates). Further-out in-world work: [`district-generator.md`](district-generator.md).
