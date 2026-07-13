@@ -167,6 +167,12 @@ overlays), trims the transparent corners, emits `districts/dis-<type>.webp` at a
 `CityCenter` on the primary core; a `city_terrain` province's extra cores can vary
 (`Neighborhood`/`Commercial`). When the engine grows a real district concept, map by function.
 
+**Beyond the flat chip:** the chip is a *label*; the real district *view* is a procedural building
+assembly (Civ6's "LSystem"), which needs **engine/server support** (district type, population, era,
+culture, built-buildings) and sources its function buildings from **Civ4 C2C** (nifbake — Civ6
+`.fgx` has no headless renderer). Full reverse-engineering + port plan + data contract in
+[`district-generator.md`](district-generator.md).
+
 ---
 
 ## Final baked-source split (bonus icons, Mixed policy)
