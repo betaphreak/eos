@@ -738,13 +738,26 @@ function drawRiver(o, cx, cy, s, q, grid, pat) {
   o.fillStyle = pat || "rgba(74,124,170,1)";
   o.globalAlpha = pat ? 0.92 : 0.6;
   o.fillRect(cx, cy, s, s);
-  // banks: a dark wet shoreline only on the sides that border a NON-river cell (a shared river edge
-  // stays open, so the waterway is unbroken). Edge order matches NB4 [E, W, S, N].
-  const edge = [
+  // SHORE: on each land-facing edge (not shared with another river cell), a lighter shallow band fades
+  // INWARD from the bank into the deeper centre — the river's shallows, mirroring the sea coast — plus a
+  // thin dark wet line right at the bank. A shared river edge stays open so the waterway is unbroken.
+  const f = s * 0.42;                          // shallow reach into the cell
+  o.globalAlpha = 1;
+  for (let i = 0; i < 4; i++) {
+    if (isR(NB4[i], i)) continue;              // open water toward another river cell
+    let gr, rx, ry, rw, rh;
+    if (i === 0)      { gr = o.createLinearGradient(cx + s, 0, cx + s - f, 0); rx = cx + s - f; ry = cy;         rw = f; rh = s; }  // E
+    else if (i === 1) { gr = o.createLinearGradient(cx, 0, cx + f, 0);         rx = cx;         ry = cy;         rw = f; rh = s; }  // W
+    else if (i === 2) { gr = o.createLinearGradient(0, cy + s, 0, cy + s - f); rx = cx;         ry = cy + s - f; rw = s; rh = f; }  // S
+    else              { gr = o.createLinearGradient(0, cy, 0, cy + f);         rx = cx;         ry = cy;         rw = s; rh = f; }  // N
+    gr.addColorStop(0, "rgba(150,198,224,0.8)"); gr.addColorStop(1, "rgba(150,198,224,0)");
+    o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
+  }
+  const edge = [                               // the bank line on each land-facing side (NB4 [E,W,S,N])
     [cx + s, cy, cx + s, cy + s], [cx, cy, cx, cy + s],
     [cx, cy + s, cx + s, cy + s], [cx, cy, cx + s, cy],
   ];
-  o.globalAlpha = 0.5; o.strokeStyle = "rgba(28,44,40,1)"; o.lineWidth = Math.max(1, s * 0.09); o.lineCap = "round";
+  o.globalAlpha = 0.4; o.strokeStyle = "rgba(30,50,44,1)"; o.lineWidth = Math.max(1, s * 0.06); o.lineCap = "round";
   o.beginPath();
   for (let i = 0; i < 4; i++) if (!isR(NB4[i], i)) { o.moveTo(edge[i][0], edge[i][1]); o.lineTo(edge[i][2], edge[i][3]); }
   o.stroke();
