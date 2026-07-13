@@ -1,6 +1,17 @@
 # The Privy Council — a Civ4-style advisor-mode framework
 
-**Status:** design / plan (nothing implemented). Written 2026-07-13; decisions locked with owner.
+**Status:** largely **SHIPPED** (2026-07-13). Written 2026-07-13; decisions locked with owner.
+Delivered §0 (engine `AdvisorRoster` — sticky, succession, ruler-backstop — + `AdvisorView` on the
+render snapshot + `GET /api/sessions/{sid}/person/{id}`), §1 (advisor selector + sub-control strip),
+§2 (tech modal → Technology Advisor map-mode over `#stage`), §2b (court member + rail character sheet
++ succession toast), §5 (unified mode-scoped search), §6 (hotkeys). The advisors draw from Dhenijansar's
+live roster (top-INTELLECTUAL noble → Technology, top-SOCIAL → Foreign, others by ability, ruler
+backstop); the SSE feed is kept alive in the background so the roster shows in every advisor.
+**Not yet done:** §3 portrait bake (blocked on a coarse-`Race` → per-Anbennar-culture art-prefix
+mapping — art is flat `gfx/interface/advisors/<culture>_<role>[_female].dds`, not race folders; the
+frontend uses an initials-on-race-tinted-tile placeholder meanwhile) and §4's relocation of the
+`#siteAuth` handle + `#clock` transport into the Zeitgeist sub-bar (the clock already auto-hides off
+the live advisor). Verified via `tools/webverify/advisor-verify.mjs` + `web/roster-diff.test.mjs`.
 The presentation foundation the tech-tree building work sits on — it **precedes**
 [`c2c-building-import.md`](c2c-building-import.md) (whose per-node building grid + rail inspector plug
 into the Technology Advisor this creates). Further-out in-world work: [`district-generator.md`](district-generator.md).
