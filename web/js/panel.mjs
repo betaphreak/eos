@@ -77,7 +77,8 @@ function toggleFullscreen() {
   else stage.requestFullscreen?.();
 }
 document.getElementById("zoomReset").onclick = toggleFullscreen;
-document.getElementById("zoomLevel").onclick = resetView;   // top-left readout doubles as reset-to-world
+// (#zoomLevel is the Main Map advisor segment now — advisors.mjs wires its click to setAdvisor;
+//  reset-to-world lives on the 0/Home key and the zoomctl reset button.)
 // the title acts as "home": reset to the world view and re-open the server picker (index.html's
 // boot flow exposes it on window.__picker) as a dismissable overlay over the live map — Esc or a
 // click outside returns to the map; picking a different server reloads into it. Falls back to a
@@ -165,11 +166,8 @@ const spinnerEl=document.getElementById("spinner");
 function showSpinner(text){ if(!spinnerEl) return; spinnerEl.querySelector(".sp-txt").textContent = text||"Loading…"; spinnerEl.hidden=false; }
 function hideSpinner(){ if(spinnerEl) spinnerEl.hidden=true; }
 
-// ---- movement-cost overlay toggle (terrain-zoom elevation difficulty) ----
-const costBtn=document.getElementById("costBtn"), costKey=document.getElementById("costKey");
-costBtn.setAttribute("aria-pressed","false"); costBtn.style.opacity=".5";
-costBtn.onclick=()=>{ S.showCost=!S.showCost; costBtn.setAttribute("aria-pressed",S.showCost);
-  costBtn.style.opacity=S.showCost?"":".5"; costKey.style.display=S.showCost?"":"none"; draw(); };
+// (the movement-cost dev overlay toggle + its legend were removed from the UI; S.showCost stays
+//  false, so the cost layer stays dormant.)
 
 // ---- interaction: hover province ----
 const tip=document.getElementById("tip");

@@ -16,16 +16,17 @@ import { advisorPortrait, initPortraits } from "./portraits.mjs";
 // advisors render as greyed placeholders with their reserved Civ4 F-key; `role` names the court
 // seat whose portrait/name labels the advisor (from the live roster, filled in a later step).
 export const ADVISORS = [
-  { id: "mainmap",    label: "Main Map",           short: "Map",        key: "`"  },
+  // Main Map is special: its segment IS the live zoom-band readout (filled by main.mjs), not a label.
+  { id: "mainmap",    label: "Main Map",           short: "Map",        key: "`",  zoom: true },
   { id: "domestic",   label: "Domestic Advisor",   short: "Domestic",   key: "F1", future: true },
   { id: "financial",  label: "Financial Advisor",  short: "Financial",  key: "F2", future: true },
   { id: "civics",     label: "Civics Advisor",     short: "Civics",     key: "F3", future: true },
-  { id: "foreign",    label: "Foreign Advisor",    short: "Foreign",    key: "F4", role: "foreign" },
+  { id: "foreign",    label: "Foreign Advisor",    short: "Foreign",    key: "F4", role: "foreign",    icon: "🕊" },
   { id: "military",   label: "Military Advisor",   short: "Military",   key: "F5", future: true },
-  { id: "technology", label: "Technology Advisor", short: "Technology", key: "F6", role: "technology" },
-  { id: "religion",   label: "Religion Advisor",   short: "Religion",   key: "F7", role: "religion" },
-  { id: "globe",      label: "Globe View",         short: "Globe",      key: "F11" },
-  { id: "zeitgeist",  label: "Zeitgeist",          short: "Zeitgeist",  key: "Z",  live: true },
+  { id: "technology", label: "Technology Advisor", short: "Technology", key: "F6", role: "technology", icon: "🔬" },
+  { id: "religion",   label: "Religion Advisor",   short: "Religion",   key: "F7", role: "religion",   icon: "🛐" },
+  { id: "globe",      label: "Globe View",         short: "Globe",      key: "F11", icon: "🌐" },
+  { id: "zeitgeist",  label: "Zeitgeist",          short: "Zeitgeist",  key: "Z",  live: true, icon: "📡" },
 ];
 const byId = id => ADVISORS.find(a => a.id === id);
 
@@ -64,17 +65,21 @@ export function setAdvisor(id) {
 function buildSelector() {
   selectorEl.innerHTML = "";
   for (const a of ADVISORS) {
+    if (a.future) continue;   // future advisors are collapsed (not shown until they're built)
     const b = document.createElement("button");
     b.dataset.advisor = a.id;
-    b.textContent = a.future ? a.key : a.short;
     b.setAttribute("aria-pressed", "false");
     const keyHint = a.key === "`" ? "` / Esc" : a.key;
-    b.setAttribute("data-tip", a.future
-      ? `${a.label} — coming soon (${a.key})`
-      : `${a.label} (${keyHint})`);
-    if (a.future) b.disabled = true;
+    b.setAttribute("data-tip", `${a.label} (${keyHint})`);
     if (a.live) b.classList.add("advisor-live");
-    b.addEventListener("click", () => { if (!a.future) setAdvisor(a.id); });
+    if (a.zoom) {
+      // the Main Map segment is the live zoom-band readout — main.mjs fills #zoomLevel with the
+      // band name + regime icon and updates it as you zoom
+      b.id = "zoomLevel"; b.classList.add("adv-zoom");
+    } else {
+      b.innerHTML = `<span class="adv-ico">${a.icon || ""}</span>${a.short}`;
+    }
+    b.addEventListener("click", () => setAdvisor(a.id));
     selectorEl.appendChild(b);
   }
 }
@@ -88,8 +93,6 @@ function paintSelector() {
 // to Main Map alone.
 function showSub(id) {
   subbarEl.querySelectorAll("[data-sub]").forEach(el => { el.hidden = el.dataset.sub !== id; });
-  const costBtn = document.getElementById("costBtn");
-  if (costBtn) costBtn.style.display = id === "mainmap" ? "" : "none";
   renderCourt(id);
 }
 

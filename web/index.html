@@ -26,8 +26,15 @@
     .segToggle .seed-input[hidden]{display:none}
     /* the Privy Council advisor selector + its second-row sub-control strip */
     #advisorToggle{flex-wrap:nowrap;overflow:hidden}
-    #advisorToggle button{padding:5px 9px}
+    #advisorToggle button{padding:5px 9px;display:inline-flex;align-items:center;gap:4px}
     #advisorToggle button.advisor-live[aria-pressed="true"]{background:rgba(255,59,59,.18);color:#ffd9d9}
+    #advisorToggle .adv-ico{font-size:11px;line-height:1;filter:saturate(.85)}
+    /* the Main Map segment doubles as the zoom-band readout (icon + band name, tinted by regime) */
+    #advisorToggle .adv-zoom .rg-ico{font-size:12px;line-height:1}
+    #advisorToggle .adv-zoom .rg-plane{opacity:.68;font-weight:500}
+    #advisorToggle .adv-zoom[data-regime="atlas"] .rg-name{color:#7fb0ff}
+    #advisorToggle .adv-zoom[data-regime="overland"] .rg-name{color:#e8b76a}
+    #advisorToggle .adv-zoom[data-regime="ground"] .rg-name{color:#e39a67}
     /* the sub-bar floats as its own row directly below the (absolutely-positioned) top bar; the
        stage + rail are pushed down by --subbar-h so nothing is covered */
     .app{--subbar-h:32px;--foot-h:0}   /* the bottom shortcut bar is removed; the stage reclaims its row */
@@ -104,18 +111,12 @@
   <div class="app">
     <header class="topbar">
       <div id="mapControls">
-        <!-- the zoom-level / band chip (rewritten by main.mjs) sits in the Map-controls flex; zoom persists across advisors -->
-        <button class="zoomlvl" id="zoomLevel" data-tip="Reset zoom · re-centre the world map" aria-label="Reset zoom to the world view">1×</button>
         <!-- the Privy Council advisor selector — one segment per Civ4-style advisor mode; built by
-             js/advisors.mjs. Replaces the old POV/plane/overlay toggle groups (folded into this + the
-             second-row sub-bar). -->
+             js/advisors.mjs. Its first segment (#zoomLevel) doubles as the live zoom-band readout. -->
         <div id="advisorToggle" class="segToggle" role="group" aria-label="Advisor mode"></div>
       </div>
 
       <div class="topright">
-        <button class="themebtn" id="costBtn" data-tip="Terrain movement-cost overlay — zoom in to see it" aria-label="Toggle movement-cost overlay">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 19l6-11 4 6 2.5-4L21 19z"/></svg>
-        </button>
         <div class="searchbar" role="search">
           <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input type="text" id="search" placeholder="Find a province…" autocomplete="off" spellcheck="false" aria-label="Search provinces">
@@ -168,12 +169,6 @@
            the map; still clickable (back to server selection · reset to the world view) -->
       <span class="brand brand-watermark" id="brand" role="button" tabindex="0" data-tip="Back to server selection · reset to the world view" aria-label="Back to server selection"><span class="brand-a">CivStudio</span><span class="brand-sep">:</span> <span class="brand-b">Anbennar</span></span>
       <div class="regime-pulse" id="regimePulse" aria-hidden="true"></div>
-
-      <div id="costKey" style="display:none;position:absolute;right:16px;top:56px;z-index:6;background:rgba(10,14,22,.72);border:1px solid rgba(190,205,230,.16);border-radius:8px;padding:8px 10px;backdrop-filter:blur(6px);font:600 10px system-ui,'Segoe UI',sans-serif;color:#9fb0c8;letter-spacing:.02em">
-        <div style="margin-bottom:5px">CLIMB COST · terrain</div>
-        <div style="height:8px;width:128px;border-radius:4px;background:linear-gradient(90deg,#5abe46,#e6d228,#f08c1e,#d6282a)"></div>
-        <div style="display:flex;justify-content:space-between;margin-top:3px"><span>flat</span><span>×2</span><span>×8</span></div>
-      </div>
 
       <div class="legend" id="polLegend" aria-label="Political legend" hidden></div>
 

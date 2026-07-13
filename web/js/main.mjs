@@ -141,9 +141,8 @@ function resize() {
   // ResizeObserver fires every frame). Painting now fills the freshly-sized canvas in the same frame.
   paint();
 }
-const zoomLabelEl = document.getElementById("zoomLevel");   // top-left readout: now the band name + regime chip
 const regimePulseEl = document.getElementById("regimePulse");
-let _sigRegime = null, _sigBand = null, _sigPlane = null;
+let _sigRegime = null, _sigBand = null, _sigPlane = null, _sigEl = null;
 // The top-bar readout shows the current BAND NAME (nearest band) tinted + iconed by the interaction
 // REGIME, and doubles as the mode signal: it stamps the regime on #stage (→ the regime cursor) and
 // flashes an accent vignette (#regimePulse) once whenever you cross a regime boundary. regime() is
@@ -152,13 +151,16 @@ let _sigRegime = null, _sigBand = null, _sigPlane = null;
 function updateRegimeSignal() {
   const r = regime(), bn = bandName();
   stage.dataset.regime = r;                        // drives the regime cursor (styles.css) + input awareness
-  if (r === _sigRegime && bn === _sigBand && S.plane === _sigPlane) return;
+  // the Main Map advisor segment doubles as the zoom-band readout (advisors.mjs builds it as
+  // #zoomLevel after this module loads, so resolve it lazily and re-render when it first appears)
+  const zoomLabelEl = document.getElementById("zoomLevel");
+  if (r === _sigRegime && bn === _sigBand && S.plane === _sigPlane && zoomLabelEl === _sigEl) return;
   const info = REGIME_INFO[r];
   if (zoomLabelEl) {
     zoomLabelEl.dataset.regime = r;
     const plane = S.plane === "underworld" ? ` <span class="rg-plane">· Underworld</span>` : "";
     zoomLabelEl.innerHTML = `<span class="rg-ico">${info.icon}</span><span class="rg-name">${bn}</span>${plane}`;
-    zoomLabelEl.dataset.tip = `${info.name} regime · ${bn} band · ${Math.round(cam.k)}× — click to reset to the world`;
+    zoomLabelEl.dataset.tip = `${info.name} regime · ${bn} band · ${Math.round(cam.k)}×`;
   }
   if (r !== _sigRegime && _sigRegime !== null && regimePulseEl) {   // pulse only on a real crossing, not first paint
     regimePulseEl.dataset.regime = r;
@@ -166,7 +168,7 @@ function updateRegimeSignal() {
     void regimePulseEl.offsetWidth;                // reflow so the animation restarts on repeat crossings
     regimePulseEl.classList.add("pulsing");
   }
-  _sigRegime = r; _sigBand = bn; _sigPlane = S.plane;
+  _sigRegime = r; _sigBand = bn; _sigPlane = S.plane; _sigEl = zoomLabelEl;
 }
 // draw() is the public redraw request — it COALESCES to one paint per animation frame, so a burst of
 // pan/zoom/pinch events (mobile fires many touchmoves per frame) collapses into a single scene render.
@@ -185,11 +187,12 @@ function paint() {
   ctx.clearRect(0,0,w,h);
   ctx.fillStyle = "#070a10"; ctx.fillRect(0,0,w,h);   // void beyond the rendered latitude band
 
-  // clip the whole scene to |lat| ≤ 89°: the Mercator projection diverges toward the poles and
-  // the source map has no data there, so nothing (ocean, land, labels) is drawn above 89°.
-  const yN = py(89), yS = py(-89);
+  // clip the whole scene to the imported map's own latitude band (its raster Y extent) rather than
+  // out to ±89°: beyond the mapped land there is no real data, so the polar "arctic" ocean/ice fill
+  // was useless — leave the plain dark void there instead.
+  const yTop = cam.y + cam.k * VIEW.dy, yBot = cam.y + cam.k * (VIEW.dy + VIEW.dh);
   ctx.save();
-  ctx.beginPath(); ctx.rect(0, Math.min(yN, yS), w, Math.abs(yS - yN)); ctx.clip();
+  ctx.beginPath(); ctx.rect(0, Math.min(yTop, yBot), w, Math.abs(yBot - yTop)); ctx.clip();
 
   // the ocean base behind everything (the land raster's sea is transparent, so this shows
   // through it): a climate-banded latitude gradient + ripple overlay. Screen-space, drawn once.
