@@ -10,6 +10,7 @@ import { setOverlay, setPlane, updateSearchContext } from "./panel.mjs";
 import { openTech, closeTech } from "./techtree.mjs";
 import { advisorSeat, openAdvisorRail, noteRoster, closeAdvisorRail } from "./advisor-detail.mjs";
 import { onLiveRoster } from "./overlays/live.mjs";
+import { advisorPortrait, initPortraits } from "./portraits.mjs";
 
 // The advisor table — the single extensible source (a future advisor is one more row). `future`
 // advisors render as greyed placeholders with their reserved Civ4 F-key; `role` names the court
@@ -102,9 +103,15 @@ function renderCourt(id) {
   const seat = advisorSeat(id);
   if (!seat) { chip.hidden = true; return; }
   chip.hidden = false;
-  chip.textContent = `${seat.name} ▸`;
   chip.title = `${seat.name} — ${seat.race}. Open the character sheet.`;
   chip.onclick = () => openAdvisorRail(id);
+  // name now, with a small culture portrait prepended once it resolves (art-less → no pic)
+  chip.replaceChildren();
+  const pic = document.createElement("span"); pic.className = "court-pic"; pic.hidden = true;
+  const nm = document.createElement("span"); nm.textContent = seat.name;
+  chip.append(pic, nm, document.createTextNode(" ▸"));
+  advisorPortrait({ race: seat.race, culture: seat.culture, advisorId: id, gender: seat.gender }, 18)
+    .then(port => { if (S.advisor === id && port) { pic.style.cssText = port.style; pic.hidden = false; } });
 }
 
 // wire the sub-bar's Nation/Culture buttons (Foreign). The Globe plane buttons are the relocated
@@ -134,6 +141,7 @@ export function initAdvisor() {
   if (!selectorEl || !subbarEl) return;
   buildSelector();
   wireSubbar();
+  initPortraits();   // warm the portrait manifest so court chips / character sheets paint promptly
   // the roster arrives on the live feed — re-render the active advisor's court chip on each update
   // (and on succession, when the name/race behind a role changes)
   onLiveRoster(roster => { noteRoster(roster); renderCourt(S.advisor); });

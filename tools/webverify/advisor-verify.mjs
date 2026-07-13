@@ -95,10 +95,14 @@ if (court.present) {
 results.courtChip = court;
 results.characterSheet = await page.evaluate(() => {
   const s = document.querySelector('#rail .advisor-sheet');
+  const port = s && s.querySelector('.adv-portrait');
   return { shown: !!s, name: s && (s.querySelector('.adv-name') || {}).textContent,
     role: s && (s.querySelector('.adv-role') || {}).textContent,
     skills: s ? s.querySelectorAll('.adv-skill').length : 0,
-    members: s ? s.querySelectorAll('.adv-member').length : 0 };
+    members: s ? s.querySelectorAll('.adv-member').length : 0,
+    portraitIsArt: !!(port && port.classList.contains('art')),
+    portraitBg: port ? (port.getAttribute('style') || '').includes('assets/advisors/') : false,
+    courtPic: !!document.querySelector('#advisorSubbar [data-sub="foreign"] .court-pic:not([hidden])') };
 });
 
 // §5: the unified top-bar search searches techs in the Technology advisor

@@ -7,6 +7,7 @@ import { showRail } from "./panel.mjs";
 import { liveRoster, liveSid } from "./overlays/live.mjs";
 import { diffRoster } from "./roster-diff.mjs";
 import { toast } from "./toast.mjs";
+import { advisorPortrait } from "./portraits.mjs";
 
 const railEl = () => document.getElementById("rail");
 
@@ -60,17 +61,27 @@ export async function openAdvisorRail(id) {
     if (r.ok) detail = await r.json();
   } catch { /* fall back to the roster stub below */ }
   if (S.advisor !== id) return;   // the user switched advisors while the fetch was in flight
-  railEl().innerHTML = detail ? sheetHtml(seat, detail) : stubHtml(seat);
+  const who = detail || seat;
+  const port = await advisorPortrait(
+    { race: who.race, culture: who.culture, advisorId: id, gender: who.gender }, 52);
+  if (S.advisor !== id) return;   // re-check after the (async) portrait resolve
+  railEl().innerHTML = detail ? sheetHtml(seat, detail, port) : stubHtml(seat, port);
 }
 
-function sheetHtml(seat, d) {
+// the header portrait: the real culture-art cell when available, else the race-tinted initials tile
+function portraitTag(port, name, race) {
+  if (port) return `<div class="adv-portrait art" style="${port.style}"></div>`;
+  return `<div class="adv-portrait" style="--h:${hue(race)}">${esc(initials(name))}</div>`;
+}
+
+function sheetHtml(seat, d, port) {
   const skills = (d.skills || []).slice().sort((a, b) => b.level - a.level);
   const top = ROLE_SKILL[seat.role];   // the skill that earned the seat — highlight it
   const bars = skills.map(s => skillRow(s, s.skill === top)).join("");
   const fam = (d.household || []).map(memberRow).join("");
   return `<div class="detail advisor-sheet">
     <div class="adv-head">
-      <div class="adv-portrait" style="--h:${hue(d.race)}">${esc(initials(d.name))}</div>
+      ${portraitTag(port, d.name, d.race)}
       <div class="adv-id">
         <div class="adv-name">${esc(d.name)}</div>
         <div class="adv-role">${esc(cap(seat.role))} Advisor · ${esc(d.role)}</div>
@@ -85,10 +96,10 @@ function sheetHtml(seat, d) {
 }
 
 // a minimal card when the person endpoint is unreachable (still names the court member from the roster)
-function stubHtml(seat) {
+function stubHtml(seat, port) {
   return `<div class="detail advisor-sheet">
     <div class="adv-head">
-      <div class="adv-portrait" style="--h:${hue(seat.race)}">${esc(initials(seat.name))}</div>
+      ${portraitTag(port, seat.name, seat.race)}
       <div class="adv-id">
         <div class="adv-name">${esc(seat.name)}</div>
         <div class="adv-role">${esc(cap(seat.role))} Advisor</div>

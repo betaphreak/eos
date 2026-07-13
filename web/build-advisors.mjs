@@ -40,6 +40,18 @@ const GENDERS = ['male', 'female'];
 const ADVISOR_ROLE = { technology: 'natural_scientist', foreign: 'diplomat', religion: 'theologian', globe: 'navigator' };
 const FALLBACK_CULTURE = 'harimari';   // Royal Harimari — the representative for art-less races (Rahen demo)
 
+// engine Race.id() → a representative art-culture prefix, for races whose id doesn't match a baked
+// culture directly. Used when a person's actual (province) culture has no art. Races absent here
+// (humans, centaur, halfling, most elf cultures — no Anbennar advisor art) fall through to
+// FALLBACK_CULTURE. Best-effort from the mod inventory; extend as needed.
+const RACE_CULTURE = {
+  lizardfolk: 'lizardfolk', orcish: 'black_orc', kobold: 'bluescale_kobold',
+  goblin: 'exodus_goblin', hobgoblin: 'hobgoblin', ogre: 'ogre', giantkind: 'giantkind',
+  harpy: 'harpy', gnollish: 'gnoll', gnomish: 'gnome', dwarven: 'dwarven',
+  harimari: 'harimari', elven: 'sun_elf',
+  kheionai_ruinborn_elf: 'kheionai', taychendi_ruinborn_elf: 'taychendi',
+};
+
 // --- enumerate the advisors folder: the anbennar.mjs disk cache (a junction to a local clone serves
 // this with no network), else the GitLab tree API (paginated) ---------------------------------------
 async function listAdvisorFiles() {
@@ -138,7 +150,7 @@ for (const [culture, roles] of Object.entries(byCulture)) {
 
 const manifest = {
   ref: REF, cell: CELL, roles: ROLES, genders: GENDERS,
-  advisorRole: ADVISOR_ROLE, fallbackCulture: FALLBACK_CULTURE,
+  advisorRole: ADVISOR_ROLE, fallbackCulture: FALLBACK_CULTURE, raceCulture: RACE_CULTURE,
   cultures,   // culture -> { roles: [available role slugs] }; the WebP is assets/advisors/<culture>.webp
 };
 fs.writeFileSync(OUT_MANIFEST, JSON.stringify(manifest));
