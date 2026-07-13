@@ -3,7 +3,7 @@ import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "
 import { atLeast, BAND } from "./bands.mjs";
 import { loadPlots, bonusIconRect } from "./plots.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
-import { startLive, stopLive, liveActive, liveState, controlLive, LIVE_RATES } from "./overlays/live.mjs";
+import { startLive, stopLive, liveToBackground, liveActive, liveState, controlLive, LIVE_RATES } from "./overlays/live.mjs";
 import { createSearchBox } from "./searchbox.mjs";
 stage.addEventListener("wheel", e => {
   e.preventDefault();
@@ -377,7 +377,9 @@ function setOverlay(ov){
   // the clock/play/speed only mean something in the live Caravans view — show them there, drive
   // the hosted session (togglePlay/onSpeed); connect/disconnect the SSE feed on enter/leave.
   showClock(live);
-  if (was === "live" && !live) stopLive();
+  // leaving the live overlay keeps the SSE feed alive in the background (its HUD/dots/clock go away)
+  // so the advisor roster stays live in every advisor; only a server switch / full reset stops it
+  if (was === "live" && !live) liveToBackground();
   if (live) { speed = 1; startLive(draw, syncLiveTransport); }
   S.selectedProv = null;                            // start each overlay on its own overview
   showRail(false);

@@ -8,6 +8,8 @@
 import { S } from "./core.mjs";
 import { setOverlay, setPlane } from "./panel.mjs";
 import { openTech, closeTech } from "./techtree.mjs";
+import { advisorSeat, openAdvisorRail } from "./advisor-detail.mjs";
+import { onLiveRoster } from "./overlays/live.mjs";
 
 // The advisor table — the single extensible source (a future advisor is one more row). `future`
 // advisors render as greyed placeholders with their reserved Civ4 F-key; `role` names the court
@@ -85,6 +87,22 @@ function showSub(id) {
   subbarEl.querySelectorAll("[data-sub]").forEach(el => { el.hidden = el.dataset.sub !== id; });
   const costBtn = document.getElementById("costBtn");
   if (costBtn) costBtn.style.display = id === "mainmap" ? "" : "none";
+  renderCourt(id);
+}
+
+// fill the active role-bearing advisor's court chip with its court member's name (from the live
+// roster, §0) — clicking it opens the character sheet in the rail (advisor-detail.mjs §2b). Hidden
+// when there's no seated member (no feed / role unfilled). Re-runs on roster change (succession).
+function renderCourt(id) {
+  const slot = subbarEl.querySelector(`[data-sub="${id}"]`);
+  const chip = slot && slot.querySelector(".advisor-court");
+  if (!chip) return;
+  const seat = advisorSeat(id);
+  if (!seat) { chip.hidden = true; return; }
+  chip.hidden = false;
+  chip.textContent = `${seat.name} ▸`;
+  chip.title = `${seat.name} — ${seat.race}. Open the character sheet.`;
+  chip.onclick = () => openAdvisorRail(id);
 }
 
 // wire the sub-bar's Nation/Culture buttons (Foreign). The Globe plane buttons are the relocated
@@ -114,6 +132,9 @@ export function initAdvisor() {
   if (!selectorEl || !subbarEl) return;
   buildSelector();
   wireSubbar();
+  // the roster arrives on the live feed — re-render the active advisor's court chip on each update
+  // (and on succession, when the name/race behind a role changes)
+  onLiveRoster(() => renderCourt(S.advisor));
   S.advisor = deriveAdvisor();
   paintSelector();
   showSub(S.advisor);

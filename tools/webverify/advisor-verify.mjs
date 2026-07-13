@@ -81,6 +81,26 @@ results.keyF4 = await snap();
 await page.keyboard.press('Backquote'); await page.waitForTimeout(400);
 results.keyBacktick = await snap();
 
+// §2b: the court-member chip + character sheet (needs the live roster, kept alive in the background)
+await click('foreign'); await page.waitForTimeout(1200);
+const court = await page.evaluate(() => {
+  const chip = document.querySelector('#advisorSubbar [data-sub="foreign"] .advisor-court');
+  return { present: !!chip && !chip.hidden, text: chip && chip.textContent };
+});
+if (court.present) {
+  await page.click('#advisorSubbar [data-sub="foreign"] .advisor-court');
+  await page.waitForTimeout(1000);
+  await page.screenshot({ path: path.join(outDir, 'advisor-sheet.png') });
+}
+results.courtChip = court;
+results.characterSheet = await page.evaluate(() => {
+  const s = document.querySelector('#rail .advisor-sheet');
+  return { shown: !!s, name: s && (s.querySelector('.adv-name') || {}).textContent,
+    role: s && (s.querySelector('.adv-role') || {}).textContent,
+    skills: s ? s.querySelectorAll('.adv-skill').length : 0,
+    members: s ? s.querySelectorAll('.adv-member').length : 0 };
+});
+
 console.log(JSON.stringify({ url, errors, results }, null, 2));
 await browser.close();
 srv.close();

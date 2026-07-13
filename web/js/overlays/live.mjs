@@ -51,6 +51,17 @@ export function liveActive() { return es !== null; }
 /** The live session's control state (RUNNING/PAUSED/STOPPED), or null when not connected. */
 export function liveState() { return snap ? snap.state : null; }
 
+/** The POV colony's privy-council roster from the latest snapshot (advisor role → court member),
+ *  or [] when not connected. Populated by the server (docs/privy-council.md §0). */
+export function liveRoster() { return (snap && snap.colonies && snap.colonies[0] && snap.colonies[0].advisors) || []; }
+
+/** The live session id (for the person-detail endpoint), or null when never connected. */
+export function liveSid() { return sid; }
+
+// notified with the fresh roster on each snapshot, so the advisor selector/rail track succession
+let onRoster = () => {};
+export function onLiveRoster(cb) { onRoster = cb || onRoster; }
+
 /**
  * Connect to the live feed and start driving the overlay.
  * @param onRedraw main's draw()
@@ -59,11 +70,18 @@ export function liveState() { return snap ? snap.state : null; }
 export async function startLive(onRedraw, onSessionState) {
   redraw = onRedraw || redraw;
   onState = onSessionState || onState;
-  framed = false;
   hud(true);
+  // already connected (the feed was kept alive in the background for the advisor roster when the
+  // spectator left the live overlay) — just re-show its HUD and repaint, don't reconnect
+  if (es) { renderHud(); onState(snap && snap.state, snap && snap.date); redraw(); return; }
+  framed = false;
   reconnectAttempts = 0;
   connectStream();
 }
+
+/** Leave the live overlay but keep the SSE feed connected in the background — the advisor roster
+ *  (and colony data) stay live for every advisor, only the live HUD/dots/clock go away. */
+export function liveToBackground() { hud(false); liveTabRunning(false); }
 
 // Reconnect to the SAME server indefinitely rather than ever dropping the map to the picker/loading
 // screen: a server redeploy (new CivStudio version) tears the stream down and the new revision can take
@@ -139,7 +157,7 @@ export function stopLive() {
 // tint the Spectate tab's background while the live session is RUNNING (a "live / on air" cue);
 // cleared when paused, stopped, or on disconnect.
 function liveTabRunning(on) {
-  const btn = document.querySelector('#overlayToggle button[data-ov="live"]');
+  const btn = document.querySelector('#advisorToggle button.advisor-live');
   if (btn) btn.classList.toggle("live-running", on);
 }
 
@@ -158,6 +176,7 @@ function onSnapshot(s) {
   onState(s.state, s.date);   // sync the transport controls (play icon, speed, date) to the server
   liveTabRunning(s.state === "RUNNING"); // tint the Spectate tab while the session is live/unpaused
   redraw();
+  onRoster(liveRoster());     // let the advisor selector/rail track the roster (succession)
 }
 
 // centre the camera on a lon/lat at scale k (used once, so Live mode opens on the action
