@@ -88,6 +88,12 @@ the Civ6 enum. **C2C building data is already wired**: `com.civstudio.data.Civ4F
 C2C `BUILDING_*` → ArtDefineTag → `.nif` → **`tools/nifbake`** sprite → `web/assets` → the generator
 stamps it at the block slot. Coverage is ample (2.9k C2C buildings ≫ any function taxonomy we need).
 
+> The **import of these buildings** — gating them to the tech horizon, ids verbatim, the
+> `TechEffect.Unlock` + auto-build wiring, and baking their **button** art into the tech tree — has
+> its own plan: [`c2c-building-import.md`](c2c-building-import.md). That covers the *button/icon* + tech
+> side; **this** doc's Layer 3 covers the in-world *sprite* the district view stamps. Two bakes from
+> the same building.
+
 **Composite:** `District (identity + SV chip + landmark)` → `Generator (spine/blocks/filler, scaled
 by population, palette by era × culture)` → `Buildings (C2C-baked function-building sprites in
 slots)`. The Civ6 **generator logic is the portable part**; the Civ6 building/backdrop *geometry* is
