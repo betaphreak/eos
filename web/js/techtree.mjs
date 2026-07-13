@@ -14,8 +14,18 @@
 import { S, apiUrl } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { pausePlayback, showRail, renderRail } from "./panel.mjs";
+import { liveKnownTechs } from "./overlays/live.mjs";
 
 const railEl = () => document.getElementById("rail");
+
+// the live colony's known techs (from the SSE snapshot) — the researched-state source. When
+// non-empty the tree dims what the colony has NOT unlocked yet (techs and their buildings); empty
+// (no live session) leaves everything at full strength. See applyResearchState / civstudio:snapshot.
+let knownSet = new Set();
+const techKnown = type => knownSet.has(type);
+// a building is unlocked once its WHOLE prereq expression (primary + every AND tech) is known
+const buildingUnlocked = b =>
+  knownSet.size === 0 || (knownSet.has(b.prereqTech) && (b.andTechs || []).every(p => knownSet.has(p)));
 
 // advisor → spine colour (muted, works in both themes) and → eos firm sector
 const ADV_COLOR = {
@@ -339,6 +349,7 @@ function buildingCell(b) {
     cell.classList.add("chip");
     cell.textContent = (b.name || b.id.replace("BUILDING_", ""))[0];
   }
+  cell.classList.toggle("locked", !buildingUnlocked(b));
   cell.addEventListener("click", ev => { ev.stopPropagation(); showBuildingRail(b); });
   return cell;
 }
@@ -428,6 +439,14 @@ function applyZoom(anchor) {
   vp.scrollTop = cy * k - ay;
   els._k = k;
 }
+// refresh the researched-state styling from the live snapshot: dim techs the colony has not yet
+// unlocked (and their building grids follow at render time). A no-op with no live known set.
+function applyResearchState() {
+  knownSet = new Set(liveKnownTechs());
+  const dim = knownSet.size > 0;
+  for (const [ty, el] of nodeEl) el.classList.toggle("locked", dim && !techKnown(ty));
+}
+
 // the smallest zoom that still fills the viewport height: you can zoom out until the
 // whole tree fits vertically, but no further (no dead space below the tree)
 function minZoom() {
@@ -491,6 +510,7 @@ async function open() {
     await ensureLoaded();
     build();
     buildEraTabs();
+    applyResearchState();         // dim what the live colony has not unlocked (if spectating)
     k = Math.max(k, minZoom());   // never open zoomed out past the fit-to-height floor
     applyZoom();
     syncEraTab();
@@ -614,6 +634,8 @@ export function initTechTree() {
   // Technology advisor is active, so techs and provinces share one box.
   const vp = $("techViewport");
   vp.addEventListener("scroll", syncEraTab, { passive: true });
+  // a fresh live snapshot may change the colony's known techs — re-dim while the tree is open
+  window.addEventListener("civstudio:snapshot", () => { if (S.techOpen && built) applyResearchState(); });
 
   // drag anywhere on the canvas to pan (grab cursor); a drag that moved swallows the
   // click so it doesn't also select the node under the pointer

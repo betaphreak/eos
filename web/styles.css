@@ -788,6 +788,12 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .tech-spec > span { display: block; min-width: 2px; }
 /* give the card room below the two-line name for the spectrum footer */
 .tech-node { padding-bottom: 11px; }
+/* researched-state (when spectating a live colony): dim what it has NOT unlocked yet — desaturated,
+   never hidden, so the tree doubles as a forward reference of everything ahead */
+.tech-node.locked { opacity: .44; filter: saturate(.5); }
+.tech-node.locked:hover { opacity: .72; }
+.tech-bcell.locked { opacity: .4; filter: saturate(.35); }
+.tech-bcell.locked:hover { opacity: .8; }
 
 /* --- the focus LOD: the selected tech's building grid, in the rail (see techtree.mjs) --------- */
 .tech-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }

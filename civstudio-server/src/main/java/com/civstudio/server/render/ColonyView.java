@@ -28,10 +28,13 @@ import java.util.List;
  * @param nobleIncomeTax the ruler's noble-income tax rate (the player-set lever), 0 if none
  * @param advisors       the colony's privy council — the court noble seated in each
  *                       filled advisor role (unfilled roles are absent)
+ * @param knownTechs     the tech ids this colony knows (its pre-known baseline plus what it has
+ *                       researched) — drives the web tech tree's researched (unlocked) styling;
+ *                       empty when the colony has no research state
  */
 public record ColonyView(String name, boolean alive, String date, int population,
 		int children, int nobles, int firms, int poolSize, double cpi,
 		double necessityPrice, double enjoymentPrice, int plotCount, int maxPlots,
 		double latitude, double longitude, double bankProfitTax, double nobleIncomeTax,
-		List<AdvisorView> advisors) {
+		List<AdvisorView> advisors, List<String> knownTechs) {
 }

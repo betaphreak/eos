@@ -54,6 +54,8 @@ export function liveState() { return snap ? snap.state : null; }
 /** The POV colony's privy-council roster from the latest snapshot (advisor role → court member),
  *  or [] when not connected. Populated by the server (docs/privy-council.md §0). */
 export function liveRoster() { return (snap && snap.colonies && snap.colonies[0] && snap.colonies[0].advisors) || []; }
+// the primary colony's known techs (pre-known + researched) — the tech tree's researched-state source
+export function liveKnownTechs() { return (snap && snap.colonies && snap.colonies[0] && snap.colonies[0].knownTechs) || []; }
 
 /** The live session id (for the person-detail endpoint), or null when never connected. */
 export function liveSid() { return sid; }
@@ -181,6 +183,9 @@ function onSnapshot(s) {
   liveTabRunning(s.state === "RUNNING"); // tint the Spectate tab while the session is live/unpaused
   redraw();
   onRoster(liveRoster());     // let the advisor selector/rail track the roster (succession)
+  // let the tech tree (if open) refresh its researched-state styling from the new known set —
+  // decoupled via a DOM event so live.mjs need not import techtree.mjs
+  window.dispatchEvent(new CustomEvent("civstudio:snapshot"));
 }
 
 // centre the camera on a lon/lat at scale k (used once, so Live mode opens on the action

@@ -46,13 +46,23 @@ const errors = [];
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
 
-await page.goto(`${base}/index.html?live=${encodeURIComponent(liveBase)}#none`, { waitUntil: 'domcontentloaded' });
+// spectate mode drops #none so the page auto-connects to the live session (its knownTechs drive
+// the researched-state dimming); default mode uses #none (plain map, everything unlocked).
+const hash = flags.spectate ? '' : '#none';
+await page.goto(`${base}/index.html?live=${encodeURIComponent(liveBase)}${hash}`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => !!window.BUNDLE, { timeout: 20000 }).catch(() => {});
-await page.waitForTimeout(1200);
+await page.waitForTimeout(flags.spectate ? 4000 : 1200);
 
 // enter the Technology advisor
 await page.click('#advisorToggle button[data-advisor="technology"]').catch(e => errors.push('advisor click: ' + e.message));
 await page.waitForTimeout(waitMs);
+if (flags.era) {   // jump to an era and screenshot the dimming there, then exit
+  await page.click(`#techEras button[data-era="C2C_ERA_${flags.era}"]`).catch(() => {});
+  await page.waitForTimeout(1400);
+  await page.screenshot({ path: out });
+  console.log(JSON.stringify({ era: flags.era, lockedNodes: await page.evaluate(() => document.querySelectorAll('.tech-node.locked').length), errors }));
+  await browser.close(); server.close(); process.exit(0);
+}
 
 // click a node that unlocks buildings (has a spectrum bar) to exercise the rail grid
 const node = page.locator('.tech-node:has(.tech-spec)').first();
@@ -103,6 +113,8 @@ const info = await page.evaluate(() => {
     modalTop: cr ? Math.round(cr.top) : null,
     coversBelowTopbar: cr && topbar ? cr.top >= Math.round(topbar.bottom) - 2 : null,
     nodeCount: document.querySelectorAll('.tech-node').length,
+    lockedNodes: document.querySelectorAll('.tech-node.locked').length,
+    lockedCells: document.querySelectorAll('#rail .tech-bcell.locked').length,
     spectrumBars: document.querySelectorAll('.tech-spec').length,
     gridPop: !!document.querySelector('.tech-grid'),
     eraTabCount: document.querySelectorAll('#advisorSubbar #techEras button').length,

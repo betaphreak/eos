@@ -92,10 +92,15 @@ public final class Snapshots {
 		com.civstudio.agent.ruler.Ruler ruler = c.getRuler();
 		double bankProfitTax = ruler == null ? 0 : ruler.getBankProfitTaxRate();
 		double nobleIncomeTax = ruler == null ? 0 : ruler.getNobleIncomeTaxRate();
+		// the colony's known techs (pre-known baseline + researched) — drives the web tech tree's
+		// unlocked styling; sorted for a stable projection, empty when research is disabled
+		var research = c.getResearch();
+		List<String> knownTechs = research == null ? List.of()
+				: research.getKnown().stream().sorted().toList();
 		return new ColonyView(c.getName(), c.isAlive(), date.toString(), population,
 				children, nobles, firms, pool, c.getInflation(), necessity, enjoyment,
 				c.getPlotCount(), c.getMaxPlots(), c.getLatitude(), c.getLongitude(),
-				bankProfitTax, nobleIncomeTax, advisorViews(c));
+				bankProfitTax, nobleIncomeTax, advisorViews(c), knownTechs);
 	}
 
 	// project the colony's privy council: the court member seated in each filled advisor
