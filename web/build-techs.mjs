@@ -25,9 +25,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { decodeDds } from './dds.mjs';
 import { loadGameFont, symbolRGBA, recolorHue, CELL as GF_CELL } from './gamefont.mjs';
 import { resolveArt as civ4ResolveArt, prefetch as civ4Prefetch } from './civ4.mjs';
+import { iconPath, iconCell, packSheet } from './icon-bake.mjs';
 import sharp from 'sharp';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
@@ -45,39 +45,8 @@ const COLS = 16;   // sprite-sheet grid width
 
 // resolve an "Art/..." path to a real file, case-insensitively — the tech-button .dds are fetched
 // on demand from the C2C source (UnpackedArt/art) and cached; see civ4.mjs / docs/civ4-files.md.
+// iconPath/iconCell/packSheet are shared with build-buildings.mjs (icon-bake.mjs).
 const resolveArt = civ4ResolveArt;
-
-// the standalone individual-icon path from a Button field (before any atlas reference)
-function iconPath(button) {
-  if (!button) return null;
-  const parts = button.split(',');
-  return (parts.length >= 5 ? parts[1] : button).trim();
-}
-
-// decode a DDS icon to a CELL×CELL RGBA cell (box-average when the source is larger,
-// nearest-ish when smaller); null if it can't be read
-function iconCell(file) {
-  let img;
-  try { img = decodeDds(fs.readFileSync(file)); } catch { return null; }
-  const { width: w, height: h, rgba } = img;
-  if (w === CELL && h === CELL) return rgba;
-  const out = new Uint8Array(CELL * CELL * 4);
-  const bx = w / CELL, by = h / CELL;
-  for (let j = 0; j < CELL; j++)
-    for (let i = 0; i < CELL; i++) {
-      let r = 0, g = 0, b = 0, a = 0, n = 0;
-      const y0 = Math.floor(j * by), y1 = Math.max(y0 + 1, Math.floor((j + 1) * by));
-      const x0 = Math.floor(i * bx), x1 = Math.max(x0 + 1, Math.floor((i + 1) * bx));
-      for (let y = y0; y < y1 && y < h; y++)
-        for (let x = x0; x < x1 && x < w; x++) {
-          const o = (y * w + x) * 4;
-          r += rgba[o]; g += rgba[o + 1]; b += rgba[o + 2]; a += rgba[o + 3]; n++;
-        }
-      const d = (j * CELL + i) * 4;
-      out[d] = r / n; out[d + 1] = g / n; out[d + 2] = b / n; out[d + 3] = a / n;
-    }
-  return out;
-}
 
 const techs = JSON.parse(fs.readFileSync(SRC, 'utf8'));
 
@@ -103,7 +72,7 @@ const cells = [];   // decoded CELL×CELL RGBA buffers, in placement order
 let missing = 0;
 for (const t of techs) {
   const file = resolveArt(iconPath(t.Button));
-  const cell = file ? iconCell(file) : null;
+  const cell = file ? iconCell(file, CELL) : null;
   if (!cell) { missing++; continue; }
   const i = cells.length;
   const x = (i % COLS) * CELL, y = Math.floor(i / COLS) * CELL;
@@ -111,18 +80,7 @@ for (const t of techs) {
   cells.push(cell);
 }
 
-const rows = Math.max(1, Math.ceil(cells.length / COLS));
-const sheetW = COLS * CELL, sheetH = rows * CELL;
-const sheet = Buffer.alloc(sheetW * sheetH * 4);
-cells.forEach((cell, i) => {
-  const ox = (i % COLS) * CELL, oy = Math.floor(i / COLS) * CELL;
-  for (let j = 0; j < CELL; j++) {
-    const srcRow = j * CELL * 4;
-    const dstRow = ((oy + j) * sheetW + ox) * 4;
-    cell.copy ? cell.copy(sheet, dstRow, srcRow, srcRow + CELL * 4)
-              : sheet.set(cell.subarray(srcRow, srcRow + CELL * 4), dstRow);
-  }
-});
+const { buffer: sheet, width: sheetW, height: sheetH } = packSheet(cells, CELL, COLS);
 
 fs.mkdirSync(path.dirname(OUT_ICONS), { recursive: true });   // assets/tech/ (icon sheet + beaker glyphs)
 await sharp(sheet, { raw: { width: sheetW, height: sheetH, channels: 4 } })

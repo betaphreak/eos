@@ -200,8 +200,16 @@ One widget (`searchbox.mjs`), no duplicate; its **corpus follows the active mode
   `civ4.mjs` needs no XML entries — buildings.json already carries the resolved `button` .dds path, so the
   Phase-2 bake only fetches art). Promoted `Civ4Xml` helpers to `public`. No behavior change (pure data;
   nothing loads `buildings.json` yet).
-- **Phase 2 — button-art bake.** `web/build-buildings.mjs` → `building-icons.webp` (64², 50 cols) +
-  `buildingIcons` manifest key + `WorldBundle` allow-list.
+- **Phase 2 — button-art bake. ✅ DONE (2026-07-13).** `web/build-buildings.mjs` →
+  `web/assets/buildings/building-icons.webp` (64², 50 cols; 3200×1344, **1,046/1,270** icons, 224
+  colour-chip fallbacks) + `civstudio-server/src/main/resources/buildings-meta.json` (per-building
+  `icon` rect, keyed by id). **Routing deviates from the plan:** building icons do **not** go through
+  `web-asset-manifest.json` / `WorldBundle` (that's the world-*map* bundle). The building grid lives in
+  the **tech-tree view**, which is served by `TechBundle` `/api/techs`; so buildings follow the *tech*
+  infra — `buildings.json` (engine jar, `/buildings.json`) + `buildings-meta.json` (icon rects) merged by
+  a parallel `BuildingBundle` at **`/api/buildings`** (Phase 3), exactly the `TechBundle`/`techs-meta`
+  pattern. Shared bake helpers (`iconPath`/`iconCell`/`packSheet`) factored into `web/icon-bake.mjs` and
+  reused by `build-techs.mjs` (byte-identical regen verified).
 - **Phase 3 — tech-tree view.** `techtree.mjs` renders the per-node building grid (24 wide,
   grow-to-fit 1–3 rows, uniform frame, zoom fade-in) + the click-to-inspect panel. Web-only; verify
   with `tools/webverify` across zoom levels.
