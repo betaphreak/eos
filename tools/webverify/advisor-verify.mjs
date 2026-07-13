@@ -118,6 +118,16 @@ if (results.techSearch.rows.length) {
   await page.screenshot({ path: path.join(outDir, 'advisor-techsearch.png') });
 }
 
+// toast primitive smoke (a real advisor succession is rare in the demo window; verify the notice
+// renders — the succession detection itself is unit-tested in web/roster-diff.test.mjs)
+await page.addScriptTag({ type: "module", content: 'import { toast } from "/js/toast.mjs"; window.__toast = toast;' });
+await page.waitForTimeout(200);
+await page.evaluate(() => window.__toast('<span class="toast-ic">⚑</span><span><b>Foreign Advisor</b><br>A has died — succeeded by B (Human).</span>'));
+await page.waitForTimeout(400);
+results.toast = await page.evaluate(() => ({ present: !!document.querySelector("#toastHost .toast"),
+  text: (document.querySelector("#toastHost .toast") || {}).textContent }));
+await page.screenshot({ path: path.join(outDir, "advisor-toast.png") });
+
 console.log(JSON.stringify({ url, errors, results }, null, 2));
 await browser.close();
 srv.close();

@@ -5,11 +5,37 @@
 import { S, apiUrl } from "./core.mjs";
 import { showRail } from "./panel.mjs";
 import { liveRoster, liveSid } from "./overlays/live.mjs";
+import { diffRoster } from "./roster-diff.mjs";
+import { toast } from "./toast.mjs";
 
 const railEl = () => document.getElementById("rail");
 
 // advisor id → the roster role slug it draws its court member from (map-only advisors have none)
 const ROLE_OF = { foreign: "foreign", technology: "technology", religion: "religion" };
+
+// the last roster seen, for succession detection across snapshots
+let lastRoster = [];
+
+/**
+ * Note a fresh roster: toast any advisor succession (a seated role changing holder — the noble died
+ * and the selection rule auto-picked a successor, §0). First fills are silent. The server already
+ * logs the death to the event feed; this is the transient client cue.
+ */
+export function noteRoster(roster) {
+  const changes = diffRoster(lastRoster, roster);
+  lastRoster = roster || [];
+  for (const c of changes)
+    toast(`<span class="toast-ic">⚑</span><span><b>${esc(cap(c.role))} Advisor</b><br>` +
+      `${esc(c.from.name)} has died — succeeded by ${esc(c.to.name)}` +
+      `${c.to.race ? ` (${esc(cap(c.to.race))})` : ""}.</span>`);
+}
+
+/** Collapse the rail if it currently shows an advisor character sheet and no province is selected —
+ *  called on advisor switch so a stale court member's sheet doesn't linger under a new advisor. */
+export function closeAdvisorRail() {
+  const r = railEl();
+  if (r && r.querySelector(".advisor-sheet") && !S.selectedProv) showRail(false);
+}
 
 /** The roster entry (court member) backing advisor `id`, or null when the roster lacks it / no feed. */
 export function advisorSeat(id) {

@@ -8,7 +8,7 @@
 import { S } from "./core.mjs";
 import { setOverlay, setPlane, updateSearchContext } from "./panel.mjs";
 import { openTech, closeTech } from "./techtree.mjs";
-import { advisorSeat, openAdvisorRail } from "./advisor-detail.mjs";
+import { advisorSeat, openAdvisorRail, noteRoster, closeAdvisorRail } from "./advisor-detail.mjs";
 import { onLiveRoster } from "./overlays/live.mjs";
 
 // The advisor table — the single extensible source (a future advisor is one more row). `future`
@@ -40,6 +40,7 @@ let selectorEl, subbarEl;
 export function setAdvisor(id) {
   const a = byId(id);
   if (!a || a.future) return;
+  closeAdvisorRail();     // a prior advisor's character sheet shouldn't linger under the new one
   S.advisor = id;
   // leaving Technology returns the map (paint() resumes); entering it suspends the map behind the tree
   if (id !== "technology" && S.techOpen) closeTech();
@@ -135,7 +136,7 @@ export function initAdvisor() {
   wireSubbar();
   // the roster arrives on the live feed — re-render the active advisor's court chip on each update
   // (and on succession, when the name/race behind a role changes)
-  onLiveRoster(() => renderCourt(S.advisor));
+  onLiveRoster(roster => { noteRoster(roster); renderCourt(S.advisor); });
   S.advisor = deriveAdvisor();
   paintSelector();
   showSub(S.advisor);
