@@ -16,7 +16,9 @@ package com.civstudio.server.render;
  * @param race     the seated head's race slug (e.g. {@code "human"}) — selects
  *                 the portrait art
  * @param gender   the seated head's gender ({@code "male"} / {@code "female"})
+ * @param culture  the colony's Anbennar culture slug (from its founding province), or
+ *                 {@code null} — the finer portrait-art selector when it has matching art
  */
 public record AdvisorView(String role, int personId, String name, String race,
-		String gender) {
+		String gender, String culture) {
 }

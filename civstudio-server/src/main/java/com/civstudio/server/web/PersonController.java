@@ -44,6 +44,7 @@ public class PersonController {
 		Household h = pov.getHouseholdById(id);
 		if (h == null)
 			return ResponseEntity.notFound().build();
-		return ResponseEntity.ok(PersonProjections.of(h, pov.getDate()));
+		String culture = pov.getProvince() == null ? null : pov.getProvince().culture();
+		return ResponseEntity.ok(PersonProjections.of(h, pov.getDate(), culture));
 	}
 }

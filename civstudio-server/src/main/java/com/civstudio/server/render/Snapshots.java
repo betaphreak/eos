@@ -101,6 +101,9 @@ public final class Snapshots {
 	// project the colony's privy council: the court member seated in each filled advisor
 	// role (see AdvisorRoster). Unfilled roles are omitted — the frontend greys them.
 	private static List<AdvisorView> advisorViews(Settlement c) {
+		// the colony's Anbennar culture (from its founding province) — the finer portrait selector;
+		// null for a colony founded at bare coordinates (the analytical sims have no province)
+		String culture = c.getProvince() == null ? null : c.getProvince().culture();
 		List<AdvisorView> views = new ArrayList<>();
 		for (AdvisorRole role : AdvisorRole.values()) {
 			Household seat = c.getAdvisorRoster().holder(role);
@@ -108,7 +111,7 @@ public final class Snapshots {
 				continue;
 			Member head = seat.getHead();
 			views.add(new AdvisorView(role.id(), seat.getID(), head.fullName(),
-					head.race().id(), head.gender().name().toLowerCase(Locale.ROOT)));
+					head.race().id(), head.gender().name().toLowerCase(Locale.ROOT), culture));
 		}
 		return views;
 	}

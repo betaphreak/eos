@@ -27,14 +27,15 @@ public final class PersonProjections {
 	/**
 	 * Project a household into its character sheet as of <tt>today</tt>.
 	 *
-	 * @param h     the household (a noble or the ruler)
-	 * @param today the colony's current date, for computing ages
+	 * @param h       the household (a noble or the ruler)
+	 * @param today   the colony's current date, for computing ages
+	 * @param culture the colony's Anbennar culture slug (founding province), or {@code null}
 	 * @return the character sheet
 	 */
-	public static PersonDetail of(Household h, LocalDate today) {
+	public static PersonDetail of(Household h, LocalDate today, String culture) {
 		Member head = h.getHead();
 		return new PersonDetail(h.getID(), head.fullName(), head.race().id(),
-				gender(head), h.role(), head.getAgeYears(today), skills(head),
+				gender(head), culture, h.role(), head.getAgeYears(today), skills(head),
 				household(h, today));
 	}
 

@@ -13,6 +13,9 @@
   header { display:flex; align-items:baseline; gap:12px; padding:16px 24px; border-bottom:1px solid var(--line); }
   header .brand { font-weight:700; font-size:18px; } header .brand .g { color:var(--gold); }
   header .sub { color:var(--ink-soft); font-size:13px; }
+  header .ver { color:var(--gold); font:600 12px ui-monospace,"Cascadia Code",monospace; align-self:center;
+    border:1px solid var(--line); border-radius:6px; padding:2px 8px; }
+  header .ver:empty { display:none; }
   main { max-width:1000px; margin:0 auto; padding:24px; display:grid; gap:18px; }
   .gate { max-width:440px; margin:80px auto; text-align:center; }
   .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px 20px; }
@@ -44,6 +47,7 @@
 <body>
 <header>
   <span class="brand">CivStudio<span class="g">:</span> Server Admin</span>
+  <span class="ver" id="hdrVer" title="server version"></span>
   <span class="sub" id="hdrSub">dev.civstudio.com</span>
   <span id="who" style="margin-left:auto; display:flex; align-items:center; gap:10px;"></span>
 </header>
@@ -177,6 +181,15 @@ async function checkAuth() {
 }
 
 checkAuth();
+
+// show the served build version in the header (from Actuator's /actuator/info build-info)
+(async () => {
+  try {
+    const info = await (await fetch("/actuator/info")).json();
+    const v = info && info.build && info.build.version;
+    if (v) $("#hdrVer").textContent = "v" + v;
+  } catch { /* leave the badge empty (hidden) if info is unavailable */ }
+})();
 refresh();
 setInterval(refresh, 3000);
 </script>
