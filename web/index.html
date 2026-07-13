@@ -223,18 +223,20 @@
 
       <div class="tip" id="tip"></div>
       <div class="btntip" id="btntip" role="tooltip"></div>
+    </div>
 
-      <div id="loading" role="status" aria-label="Loading the world map">
-        <img class="ld-art" alt="">
-        <div class="ld-bar"></div>
-        <!-- server picker: the bootstrap (below) fills #ldServers with one row per server and
-             holds here until the user clicks one to connect (each row shows its online version). -->
-        <div class="ld-picker" id="ldPicker" hidden>
-          <div class="ld-title">CivStudio</div>
-          <div class="ld-sub">Choose a server</div>
-          <div class="ld-servers" id="ldServers" role="listbox" aria-label="Servers"></div>
-          <div class="ld-hint">Press <kbd>Esc</kbd> or click outside to dismiss</div>
-        </div>
+    <!-- loading / server-picker / maintenance splash — a direct child of .app (NOT .stage) so it
+         covers the FULL viewport including the top bar, and centres vertically in it -->
+    <div id="loading" role="status" aria-label="Loading the world map">
+      <img class="ld-art" alt="">
+      <div class="ld-bar"></div>
+      <!-- server picker: the bootstrap (below) fills #ldServers with one row per server and
+           holds here until the user clicks one to connect (each row shows its online version). -->
+      <div class="ld-picker" id="ldPicker" hidden>
+        <div class="ld-title">CivStudio</div>
+        <div class="ld-sub">Choose a server</div>
+        <div class="ld-servers" id="ldServers" role="listbox" aria-label="Servers"></div>
+        <div class="ld-hint">Press <kbd>Esc</kbd> or click outside to dismiss</div>
       </div>
     </div>
 

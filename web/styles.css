@@ -125,12 +125,11 @@ body {
 #clock .clk-speed .chev.on { color: #e6b04a; }
 #clock .clk-speed .chev:hover { color: #eef2f8; }
 /* ---------- LOADING SCREEN ---------- */
-/* an Anbennar splash shown until the map's first paint. It lives inside .stage so it covers only the
-   MAP AREA — the top bar, timeline and rail (all above .stage's z-index:0 context) stay uncovered.
-   The art is displayed 1:1 and the stage crops it; it only scales up when the stage is larger than
-   the image (object-fit:cover on a box that is >= the image keeps 100% and never distorts). */
+/* an Anbennar splash shown until the map's first paint. A direct child of .app (NOT .stage), so it
+   covers the FULL viewport — the top bar too — and centres the art vertically in it. The art fills
+   the box via object-fit:cover (never distorts). */
 #loading {
-  position: absolute; inset: 0; z-index: 7; overflow: hidden;
+  position: absolute; inset: 0; z-index: 50; overflow: hidden;
   background: #0a0e16; display: grid; place-items: center;
   transition: opacity .6s ease;
 }
