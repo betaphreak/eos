@@ -140,18 +140,19 @@ in `techs.json`. Then `web/js/techtree.mjs`:
   static reference.
 
 ### 4a. Search bar — techs **and** buildings (owner)
-A search box that finds **both** techs and buildings and jumps to them in the tree (owner request).
-Reuse the existing search affordance (`web/js/searchbox.mjs`, today the province "Find a province…"):
-- **Index both corpora:** tech `Type`/name (from `techs.json`) **and** building `id`/`name` (from
-  `buildings.json`), tagged by kind. One ranked list, kind-labelled (a chip/icon per result).
-- **On pick:** a **tech** → pan/zoom the tree to its node and flash it (the tree already has
-  `nodeEl`/`lit`/`sel` and `minZoom()`); a **building** → pan to its **primary `prereqTech`** node,
-  reveal the building grid (force the zoom past the fade-in threshold, §4), and highlight that cell +
-  open its rail inspector (§4).
-- **Match** name and id, case-insensitive, de-`TXT_KEY_`/`BUILDING_`-prefixed; category as a secondary
-  filter is a nice-to-have. Since a building lives under one node, the jump is unambiguous.
-- Scope: the search is **within the tech-tree view**. Whether it merges with the province search or
-  stays a separate tech-tree-local box is an open UI choice (see below).
+**Extend the tech tree's existing header search (owner):** `techtree.mjs` already wires a
+`createSearchBox` (`searchApi`, `initTechTree`) that matches techs by name/`Type` and centres the node
+on pick (`centerNode`/`nodeEl`). This adds **buildings** to that same box — no new widget, and it
+stays a tech-tree-local search (the top-bar province search is untouched).
+- **Corpus:** techs (`techs.json` name/`Type`) **and** buildings (`buildings.json` name/`id`), in **one
+  interleaved ranked list**; each row carries a **kind chip** (tech vs building) — no separate sections,
+  no All/Techs/Buildings filter (owner: one combined list).
+- **Match fields (owner):** **name + id**, case-insensitive (de-`TXT_KEY_`/`TECH_`/`BUILDING_`-prefixed
+  for display), techs and buildings ranked together.
+- **On pick:** a **tech** → the existing centre-node + flash path; a **building** → pan to its **primary
+  `prereqTech`** node, force the zoom past the building-grid fade-in threshold (§4), highlight that
+  cell, and open its **rail** inspector (§4). A building lives under exactly one node, so the jump is
+  unambiguous.
 
 ---
 
