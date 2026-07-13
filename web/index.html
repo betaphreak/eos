@@ -172,24 +172,6 @@
 
       <div class="legend" id="polLegend" aria-label="Political legend" hidden></div>
 
-      <div class="live-hud" id="liveHud" aria-label="Live session" hidden>
-        <div class="live-head">
-          <span class="live-title">LIVE</span>
-          <span class="badge" id="liveState">—</span>
-          <span class="live-meta">tick <b id="liveTick">0</b></span>
-          <span class="live-date" id="liveDate"></span>
-        </div>
-        <div class="live-sid" id="liveSid"></div>
-        <table class="live-stats" id="liveStats"></table>
-        <div class="live-policy">
-          <div class="live-cur">tax &nbsp; bank <b id="liveBankTaxCur">—</b> &nbsp; noble <b id="liveNobleTaxCur">—</b></div>
-          <label>bank <input id="liveBankTax" type="number" min="0" max="1" step="0.01"></label>
-          <label>noble <input id="liveNobleTax" type="number" min="0" max="1" step="0.01"></label>
-          <button id="liveApplyTax">Apply</button>
-        </div>
-        <div class="live-msg" id="liveTaxMsg"></div>
-      </div>
-
       <!-- live event-log bar: collapsed = latest line; click to expand a chat-style history (js/livelog.mjs) -->
       <div class="live-log" id="liveLog" hidden>
         <div class="live-log-history" id="liveLogHistory" hidden>
@@ -241,6 +223,25 @@
       <div class="rail-resize" id="railResize" role="separator" aria-orientation="vertical" aria-label="Resize panel" title="Drag to resize"></div>
       <button id="railClose" class="railclose" data-tip="Close panel (Esc)" aria-label="Close panel">&times;</button>
       <div class="rail" id="rail"></div>
+      <!-- the live-session HUD renders in the rail (like the other map modes) when the Zeitgeist advisor
+           is active with no province selected; populated by js/overlays/live.mjs -->
+      <div class="live-hud" id="liveHud" aria-label="Live session" hidden>
+        <div class="live-head">
+          <span class="live-title">LIVE</span>
+          <span class="badge" id="liveState">—</span>
+          <span class="live-meta">tick <b id="liveTick">0</b></span>
+          <span class="live-date" id="liveDate"></span>
+        </div>
+        <div class="live-sid" id="liveSid"></div>
+        <table class="live-stats" id="liveStats"></table>
+        <div class="live-policy">
+          <div class="live-cur">tax &nbsp; bank <b id="liveBankTaxCur">—</b> &nbsp; noble <b id="liveNobleTaxCur">—</b></div>
+          <label>bank <input id="liveBankTax" type="number" min="0" max="1" step="0.01"></label>
+          <label>noble <input id="liveNobleTax" type="number" min="0" max="1" step="0.01"></label>
+          <button id="liveApplyTax">Apply</button>
+        </div>
+        <div class="live-msg" id="liveTaxMsg"></div>
+      </div>
     </aside>
 
     <!-- shortcut hints; populated from js/shortcuts.mjs (the single source for the bar) -->

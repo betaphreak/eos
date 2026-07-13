@@ -525,11 +525,21 @@ function cityRail(p) {
   if (!politicalReady()) ensurePolitical().then(() => { if (S.selectedProv === p) renderRail(); });
 }
 function renderRail(){
+  syncLiveRail();                                   // keep the in-rail live HUD in sync (Zeitgeist)
   if (S.selectedProv) {
     if (S.selectedProv.city) { cityRail(S.selectedProv); return; }
     provinceRail(S.selectedProv); return;
   }
   rail.innerHTML = worldRail();
+}
+// the live-session HUD lives in the rail (like province detail): show it when the Zeitgeist/live
+// overlay is active and no province is selected, and open the rail for it. A province selection takes
+// the rail over (styles.css :has() hides #rail while the HUD shows, so this only toggles the HUD).
+function syncLiveRail(){
+  const lh = document.getElementById("liveHud");
+  const showHud = S.overlay === "live" && !S.selectedProv;
+  if (lh) lh.hidden = !showHud;
+  showRail(showHud || !!S.selectedProv);
 }
 // ---- theme toggle (button retired; wire only if present — the site defaults to dark) ----
 const themeBtn=document.getElementById("themeBtn");
