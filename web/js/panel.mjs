@@ -691,6 +691,13 @@ export function boot() {
   // every case, including live tracking during the width transition. (Replaces the window resize
   // listener; fullscreenchange still calls resize directly above as a belt-and-braces.)
   new ResizeObserver(() => resize()).observe(stage);
+  // track the floating top bar's height in --bar-total so the Technology tree starts just below it
+  // (the bar wraps its sub-control strip to a second line when it doesn't fit — §4)
+  const topbar = document.querySelector(".topbar");
+  if (topbar) {
+    const setBarH = () => appEl.style.setProperty("--bar-total", topbar.offsetHeight + "px");
+    new ResizeObserver(setBarH).observe(topbar); setBarH();
+  }
   resize();
   // floating controls over the map (zoom buttons, cost key, political legend) must not fall through
   // to the stage's pan/zoom/pick handlers — the same guard the minimap and live HUD/log bar use.

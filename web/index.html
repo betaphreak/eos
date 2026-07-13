@@ -15,8 +15,9 @@
     #mapControls{display:flex;gap:6px;align-items:center;flex:0 1 auto;min-width:0}
     /* content-width floating top bar: size to its contents instead of spanning 100% */
     .topbar{right:auto;width:max-content;max-width:calc(100% - 8px);
-      border-right:1px solid #232c3c;border-bottom-right-radius:12px}
-    .topbar .topright{margin-left:8px}   /* pack tight after the advisor selector (no edge-to-edge stretch) */
+      flex-wrap:wrap;height:auto;min-height:var(--bar-h);align-items:center;row-gap:3px;
+      border-right:1px solid #232c3c;border-bottom-right-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+    .topbar .topright{order:1;margin-left:8px}   /* search sits after the advisor sub-controls; pack tight */
     .segToggle{display:flex;gap:2px;background:rgba(10,14,22,.55);border:1px solid rgba(190,205,230,.16);border-radius:9px;padding:3px;flex:none}
     .segToggle button{font:600 11px system-ui,'Segoe UI',sans-serif;letter-spacing:.02em;color:#9fb0c8;background:transparent;border:0;border-radius:6px;padding:5px 10px;cursor:pointer;white-space:nowrap}
     .segToggle button[aria-pressed="true"]{background:rgba(190,205,230,.16);color:#eef2f8}
@@ -35,21 +36,20 @@
     #advisorToggle .adv-zoom[data-regime="atlas"] .rg-name{color:#7fb0ff}
     #advisorToggle .adv-zoom[data-regime="overland"] .rg-name{color:#e8b76a}
     #advisorToggle .adv-zoom[data-regime="ground"] .rg-name{color:#e39a67}
-    /* the sub-bar floats as its own row directly below the (absolutely-positioned) top bar; the
-       stage + rail are pushed down by --subbar-h so nothing is covered */
-    .app{--subbar-h:32px;--foot-h:0}   /* the bottom shortcut bar is removed; the stage reclaims its row */
-    /* z-index 8 (below the top bar's 9) so a search-results dropdown spilling from the top bar into
-       this row's area is not intercepted by it; still above the stage/tech map-mode */
-    #advisorSubbar{position:absolute;top:var(--bar-h);left:0;right:0;height:var(--subbar-h);z-index:8;
-      display:flex;align-items:center;gap:10px;padding:0 16px;
-      background:#0b0f17;border-bottom:1px solid #232c3c}
-    .app .stage{top:calc(var(--bar-h) + var(--subbar-h))}
-    .app .railwrap{top:calc(var(--bar-h) + var(--subbar-h))}
+    .app{--foot-h:0}   /* the bottom shortcut bar is removed */
+    /* the advisor sub-control strip is a wrapping continuation of the bar — transparent so it blends
+       in; it sits inline when there's room and wraps to a second line otherwise (§4) */
+    #advisorSubbar{display:flex;align-items:center;gap:10px;padding:0 4px;background:transparent}
+    #advisorSubbar[hidden]{display:none}
+    /* the map fills the WHOLE viewport; the bar floats over its top-left corner (no reserved strip),
+       so the map uses the space the content-width bar would otherwise leave empty */
+    .app .stage{top:0}
+    .app .railwrap{top:0}
     /* Technology Advisor (§2): the tech tree fills the stage region below the top bar + sub-bar
        instead of a full-viewport modal, so the advisor selector stays live. Leave via the selector /
        Esc / hotkey — the modal close × and backdrop are retired. The rail (when opened for the tech
        inspector) shrinks it from the right. */
-    .app .tech-modal{position:absolute;inset:auto;top:calc(var(--bar-h) + var(--subbar-h));left:0;right:0;bottom:var(--foot-h);z-index:7}
+    .app .tech-modal{position:absolute;inset:auto;top:var(--bar-total,var(--bar-h));left:0;right:0;bottom:var(--foot-h);z-index:7}
     .app.rail-open .tech-modal{right:var(--rail-w)}
     .app .tech-shell{width:100%;height:100%;margin:0;border-radius:0;border:0;box-shadow:none}
     .tech-close{display:none}
@@ -124,12 +124,11 @@
           <div class="search-results" id="searchResults" role="listbox" hidden></div>
         </div>
       </div>
-    </header>
 
-    <!-- second row: the active advisor's sub-control strip (swaps per advisor; js/advisors.mjs
-         shows one [data-sub] slot at a time). The plane toggle lives in the Globe slot so panel.mjs
-         still wires it; the Foreign slot's Nation/Culture buttons carry data-ov (setOverlay repaints
-         them by attribute). Era tabs / richer Zeitgeist transport move here in later steps. -->
+    <!-- the advisor sub-control strip is a wrapping continuation of the top bar: same line when there
+         is room to the right, wrapping to a second line otherwise (§4). The plane toggle lives in the
+         Globe slot so panel.mjs still wires it; the Foreign slot's Nation/Culture buttons carry
+         data-ov (setOverlay repaints them by attribute). -->
     <div id="advisorSubbar">
       <div class="advisor-sub" data-sub="mainmap" hidden><span class="sub-cap">Physical world · terrain &amp; plots</span></div>
       <div class="advisor-sub" data-sub="foreign" hidden>
@@ -162,6 +161,7 @@
         <div class="site-auth" id="siteAuth" style="margin-left:auto"></div>
       </div>
     </div>
+    </header>
 
     <div class="stage" id="stage">
       <canvas id="map"></canvas>
@@ -617,11 +617,15 @@
         'keep you signed in across sessions. No tracking, no ads.</span>' +
         '<button class="cb-ok" type="button">Got it</button>';
       document.body.appendChild(b);
-      b.querySelector(".cb-ok").addEventListener("click", function () {
+      function dismiss() {
         try { localStorage.setItem("cookieConsent", "1"); } catch (e) {}
         b.classList.remove("on");
         setTimeout(function () { b.remove(); }, 320);
-      });
+        document.removeEventListener("pointerdown", onInteract, true);
+      }
+      function onInteract(e) { if (!b.contains(e.target)) dismiss(); }   // any first interaction with the app dismisses it
+      b.querySelector(".cb-ok").addEventListener("click", dismiss);
+      document.addEventListener("pointerdown", onInteract, true);
       requestAnimationFrame(function () { b.classList.add("on"); });
     }
     if (document.body) show(); else document.addEventListener("DOMContentLoaded", show);
