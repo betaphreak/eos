@@ -17,7 +17,9 @@ of real C2C button icons** under its node. Buildings render (in the district vie
 | Question | Decision |
 | --- | --- |
 | **Import scope** | **All** buildings gated by a **kept tech** — no curation. ~**1,449** (1,245 Regular + 204 Special; zProviders carry no `PrereqTech`). |
-| **Gate** | A building is in-scope iff its `<PrereqTech>` is one of the **339 kept techs** (the Prehistoric→Renaissance horizon, capped at `TECH_INDUSTRIAL_LIFESTYLE` — `TechInfoExporter.IN_SCOPE`/`CAP`). Later-era / dropped-religion-tech buildings are excluded (no tech node to hang them on). |
+| **Gate** | A building is in-scope iff **its whole tech prereq expression resolves within the 339 kept techs** — its primary `<PrereqTech>` **and every `<TechTypes>` entry** (see *Prereq handling*). Kept set = the Prehistoric→Renaissance horizon capped at `TECH_INDUSTRIAL_LIFESTYLE` (`TechInfoExporter.IN_SCOPE`/`CAP`/`DROP`). A building needing any later-era / dropped-religion tech is excluded (unreachable — no node satisfies it). |
+| **Prereq handling** | Mirror the tech tree (owner). Buildings carry a primary `<PrereqTech>` **plus `<TechTypes>`** — a **list of additional AND-required techs** (93 Regular / 9 Special). *(These are the building field names; the tech `<PrereqAndTechs>`/`<PrereqOrTechs>` don't appear in the building data — `TechTypes` is the AND form. No OR form is present, but the code path mirrors `TechTree`'s and/or so an OR would be handled if it appears.)* Model prereqs, validate them against the kept set, and satisfy them, the same way `TechTree` does (`andPrereqs`/`orPrereqs`, `prereqsSatisfied`). |
+| **Researched state** | The tech tree shows **Dhenijansar's research level in the live demo** (owner): techs Dhenijansar has researched read as *researched*, and their buildings light; the rest are dimmed. Makes the view **session-aware**, not a static reference. |
 | **Building id** | **C2C `BUILDING_*` verbatim.** `Building.id` = the C2C `<Type>` string = the `TechEffect.Unlock` target. No mapping table. |
 | **Plan depth** | **Includes the engine unlock model** — populate `TechEffect.Unlock` in `tech-effects.json` *and* wire the tech-gated auto-build onto district plots (couples to `district-generator.md` placement). |
 | **Tech-tree UI** | A **grid of building-button icons under each node**: **24 wide × up to 3 rows** (72 max ≥ the worst case, `TECH_ORCHARDS` 55). **Card height is grow-to-fit** (1–3 rows per its count; ragged heights accepted). The grid **fades in when zoomed in** (illegible when zoomed out, so it appears past a zoom threshold). Each icon sits in a **uniform frame/backing** so the varied C2C art reads as one set. **Clicking a building → an inspect panel** (name, C2C help/pedia text, larger art). |
@@ -43,21 +45,31 @@ economic RNG** — a new salted stream only if placement ever needs randomness).
   `settlement/export/`): reads the three `Assets/XML/Buildings/{Regular,SpecialBuildings,zProviders}_
   CIV4BuildingInfos.xml` via `com.civstudio.data.Civ4Files`, keeps those whose `<PrereqTech>` ∈ the
   kept-tech set (reuse `TechInfoExporter`'s `IN_SCOPE`/`CAP`/`DROP` to compute the kept set), and
-  emits **`generated/buildings.json`**: per building `{ id, name, help, pedia, prereqTech,
-  artDefineTag, button }` (+ optionally `cost`, `category` from the XML). `name`/`help`/`pedia` resolve
-  the `TXT_KEY_BUILDING_*` strings via C2C GameText (§2) — `help`/`pedia` feed the click-to-inspect
-  panel (§4). `button` is the `<Button>` path pulled from `CIV4ArtDefines_Building.xml` by
-  `artDefineTag` (§3).
+  emits **`generated/buildings.json`**: per building `{ id, name, help, pedia, prereqTech, andTechs,
+  artDefineTag, button }` (+ optionally `cost`, `category` from the XML). **`prereqTech`** is the
+  primary; **`andTechs`** is the flattened `<TechTypes>` list (the AND-required techs) — the building's
+  analogue of a tech's `andPrereqs`, so a building's full requirement is *`prereqTech` AND all
+  `andTechs`*. The exporter validates every one resolves to a **kept** tech (fail-fast, exactly like
+  `TechTree.validatePrereqs`) and **drops the building** if any doesn't (the gate). `name`/`help`/`pedia`
+  resolve the `TXT_KEY_BUILDING_*` strings via C2C GameText (§2). `button` is the `<Button>` path from
+  `CIV4ArtDefines_Building.xml` by `artDefineTag` (§3).
 - **Tech → Unlock effects.** Populate **`tech-effects.json`** (today `{}`) with, per kept tech, an
   `Unlock` effect per gated building: `{ "type":"UNLOCK", "target":"BUILDING_ORCHARD" }`. Authored by
-  the exporter (join buildings→prereqTech), not by hand. `TechTree` then grants the building token on
-  research (the existing `Unlock` path — `TechEffect.Unlock`, "granted tokens on the colony").
+  the exporter (not by hand). Hang the `Unlock` off the building's **primary `prereqTech`**; `TechTree`
+  grants the building token on research (the existing `TechEffect.Unlock` path — "granted tokens on
+  the colony").
+- **Respect the full AND expression.** A building isn't actually *available* until its `prereqTech`
+  **and every `andTechs`** are researched — the single-tech grant isn't enough. So the availability
+  check reuses `TechTree`'s **`prereqsSatisfied` (AND-all / OR-any)** over the building's prereqs,
+  exactly as a tech's own prereqs are checked; the `Unlock` token marks the primary, the AND-list gates
+  when the building becomes buildable.
 - **Auto-build onto district plots.** Wire the **deferred tech-gated auto-build trigger** named in
-  `Plot`/`Building`: when a tech unlock grants `BUILDING_*`, the settlement calls `addBuilding` on a
-  district plot from `getDistrictPlots()` (center buildings at plot 0 — the village center — per
-  `Building.java`; on-plot/functional buildings later). Placement rules and the district-type seam
-  are `district-generator.md` §2/§2a. **This is the one behavior-changing phase** — stage it last and
-  keep it off until placement is designed, so the import + tech-view land byte-neutral first.
+  `Plot`/`Building`: once a building's full prereq expression is satisfied, the settlement calls
+  `addBuilding` on a district plot from `getDistrictPlots()` (center buildings at plot 0 — the village
+  center — per `Building.java`; on-plot/functional buildings later). Placement rules and the
+  district-type seam are `district-generator.md` §2/§2a. **This is the one behavior-changing phase** —
+  stage it last and keep it off until placement is designed, so the import + tech-view land
+  byte-neutral first.
 
 ### 2. Fetch: add the two missing C2C sources
 `Civ4Files` (Java) and `web/civ4.mjs` (Node) already fetch the `CIV4BuildingInfos.xml`. **Add**:
@@ -107,10 +119,16 @@ in `techs.json`. Then `web/js/techtree.mjs`:
   raw art, cf. the resource-icon class backings which *are* baked; here a single render-time frame is
   cheaper and uniform). This makes the grid read as one set.
 - **Clickable → inspect (owner):** clicking a building icon opens an **inspect panel** — its name,
-  C2C **help/pedia** text, and a larger view of the art (the button icon, or later the nifbake
-  sprite). Needs the building `TXT_KEY_BUILDING_*` **help/pedia** strings, so `buildings.json` carries
-  `help`/`pedia` (§4 fetch adds the building GameText that already covers names). Optional: dim
-  buildings whose tech isn't researched, matching the tree's `lit`/`sel` state.
+  C2C **help/pedia** text, its **prereqs** (`prereqTech` + `andTechs`), and a larger view of the art
+  (the button icon, or later the nifbake sprite). Needs the building `TXT_KEY_BUILDING_*` **help/pedia**
+  strings, so `buildings.json` carries `help`/`pedia` (§2 fetch adds the building GameText that also
+  covers names).
+- **Researched state = Dhenijansar in the demo (owner):** the view is **session-aware**. Read
+  Dhenijansar's research from the live demo session (its `ResearchState` / researched-tech set), mark
+  those techs *researched*, and **light their buildings** (dim the rest — a building lights only when
+  its **whole** prereq expression is researched, per §1). So the tree reflects what Dhenijansar has
+  actually unlocked, not a static reference. Requires the demo feed to expose the colony's researched
+  techs (a small addition to the render snapshot / bundle) — a new dependency this view needs.
 
 ---
 
@@ -138,9 +156,12 @@ Each phase: build → (web) `node web/build*.mjs` + refresh engine jar + `spring
 
 - **Special vs. Regular buildings.** Both imported (1,245 + 204). Confirm zProviders (no `PrereqTech`,
   0 gated) are correctly excluded, or need a different gate.
-- **Multi-prereq buildings.** C2C also has `PrereqAndTechs`/`PrereqOrTechs`. This plan keys a building
-  to its single `<PrereqTech>` (the primary). If a building's *real* unlock needs several techs, it
-  will show under only the primary node — acceptable for a first cut; note it.
+- **Multi-prereq buildings — handled (owner).** Buildings carry a primary `<PrereqTech>` + a
+  `<TechTypes>` AND-list (`andTechs`), modelled/validated/satisfied like a tech's own and/or prereqs
+  (§1, *Prereq handling*). The building **displays** under its primary `prereqTech` node, but only
+  becomes **buildable/lit** when the full `prereqTech` + `andTechs` expression is satisfied. The tech
+  `<PrereqAndTechs>`/`<PrereqOrTechs>` field names don't occur in the building data (no OR observed),
+  but reusing `TechTree`'s and/or path means an OR would be handled if a mod adds one.
 - **Building GameText spread.** C2C building names live across several GameText files; the exporter
   must load all matching `*Buildings*_CIV4GameText.xml`, and fall back to a de-`TXT_KEY_`-ed id when a
   name is missing (as the tech exporter counts `unresolvedName`).
