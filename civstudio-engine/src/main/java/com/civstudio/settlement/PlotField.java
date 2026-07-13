@@ -130,8 +130,12 @@ class PlotField {
 		return plots.size();
 	}
 
-	/** The colony's build plots, in claim order, as an unmodifiable view. */
-	List<Plot> getPlots() {
+	/**
+	 * The colony's district plots — its build plots in claim order (the 1D,
+	 * time-ordered plot map), as an unmodifiable view. Each plot is one district
+	 * slot; its occupant is the district's building. See {@code docs/district-generator.md}.
+	 */
+	List<Plot> getDistrictPlots() {
 		return Collections.unmodifiableList(plots);
 	}
 

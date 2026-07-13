@@ -34,7 +34,7 @@ class PlotGenerationTest {
 		for (int i = 0; i < n; i++) {
 			c.claimPlot(new PlotOccupant() {
 			});
-			out.add(c.getPlots().get(i).terrain().type());
+			out.add(c.getDistrictPlots().get(i).terrain().type());
 		}
 		return out;
 	}
@@ -52,7 +52,7 @@ class PlotGenerationTest {
 			// the province pool ran out (peaks consume the cap without seating) — done
 		}
 		List<String> out = new ArrayList<>();
-		for (Plot p : c.getPlots())
+		for (Plot p : c.getDistrictPlots())
 			out.add(p.terrain().type());
 		return out;
 	}
@@ -85,7 +85,7 @@ class PlotGenerationTest {
 			assertEquals(TerrainGenerator.BASELINE_TERRAIN, t,
 					"a province-less colony's plots are all baseline terrain");
 		// a province-less colony's plots are all flat (no relief generation)
-		for (Plot p : bare.getPlots())
+		for (Plot p : bare.getDistrictPlots())
 			assertEquals(PlotType.FLAT, p.plotType(),
 					"a province-less colony's plots are all flat");
 	}
@@ -107,12 +107,12 @@ class PlotGenerationTest {
 			seated.add(o);
 		}
 		Set<PlotType> relief = new LinkedHashSet<>();
-		for (Plot p : c.getPlots())
+		for (Plot p : c.getDistrictPlots())
 			relief.add(p.plotType());
 		assertTrue(relief.size() >= 2,
 				"the province ladder should carry varied relief, got " + relief);
 		// a peak is unworkable and never seated
-		for (Plot p : c.getPlots())
+		for (Plot p : c.getDistrictPlots())
 			if (!p.isWorkable())
 				assertTrue(p.isVacant(), "a peak is never seated");
 	}

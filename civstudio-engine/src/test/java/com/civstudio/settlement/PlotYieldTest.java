@@ -62,7 +62,7 @@ class PlotYieldTest {
 		// a seated necessity firm raises a FARM on cleared land — develop each workable
 		// plot the way founding does (peaks are never seated), so the factor measured
 		// is the developed-farm food TFP
-		for (Plot p : c.getPlots())
+		for (Plot p : c.getDistrictPlots())
 			if (p.isWorkable())
 				p.raiseImprovement(FARM, true);
 		for (PlotOccupant o : occ)

@@ -637,13 +637,15 @@ public class Settlement {
 	}
 
 	/**
-	 * The colony's build plots — occupied and vacant — in claim order, as an
-	 * unmodifiable view.
+	 * The colony's <b>district plots</b> — its build plots, occupied and vacant, in
+	 * claim order (the 1D, time-ordered plot map). Each plot is one district slot;
+	 * its {@link PlotOccupant} is the district's building. See {@code
+	 * docs/district-generator.md}.
 	 *
-	 * @return the colony's plots
+	 * @return the colony's district plots, in claim order
 	 */
-	public List<Plot> getPlots() {
-		return plotField.getPlots();
+	public List<Plot> getDistrictPlots() {
+		return plotField.getDistrictPlots();
 	}
 
 	/**

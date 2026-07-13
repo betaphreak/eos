@@ -101,8 +101,8 @@ class ProvincePlotPoolTest {
 			colony.claimPlot(new PlotOccupant() {
 			});
 
-		assertFalse(colony.getPlots().isEmpty(), "colony laid plots");
-		for (Plot p : colony.getPlots()) {
+		assertFalse(colony.getDistrictPlots().isEmpty(), "colony laid plots");
+		for (Plot p : colony.getDistrictPlots()) {
 			assertTrue(p.x() >= 0 && p.y() >= 0, "a claimed plot carries a raster position (pool-sourced)");
 			assertSame(colony, p.owner(), "a claimed plot is owned by the colony");
 		}
@@ -114,7 +114,7 @@ class ProvincePlotPoolTest {
 		Settlement bare = s.newSettlement("Bare", START, 30, 26, 5, 2, 51.5074, -0.1278);
 		bare.claimPlot(new PlotOccupant() {
 		});
-		assertEquals(-1, bare.getPlots().get(0).x(), "a province-less plot has no raster position");
+		assertEquals(-1, bare.getDistrictPlots().get(0).x(), "a province-less plot has no raster position");
 	}
 
 	@Test
@@ -128,7 +128,7 @@ class ProvincePlotPoolTest {
 
 		colony.claimPlot(new PlotOccupant() {
 		}); // the founding centre
-		Plot centre = colony.getPlots().get(0);
+		Plot centre = colony.getDistrictPlots().get(0);
 		assertEquals("TERRAIN_URBAN", centre.terrain().type(),
 				"the colony's centre anchors on the city's urban core");
 	}
@@ -150,10 +150,10 @@ class ProvincePlotPoolTest {
 			});
 
 		// disjoint: every plot is owned by exactly one of them, none shared
-		Set<Plot> upperPlots = new HashSet<>(upper.getPlots());
-		for (Plot p : upper.getPlots())
+		Set<Plot> upperPlots = new HashSet<>(upper.getDistrictPlots());
+		for (Plot p : upper.getDistrictPlots())
 			assertSame(upper, p.owner());
-		for (Plot p : lower.getPlots()) {
+		for (Plot p : lower.getDistrictPlots()) {
 			assertSame(lower, p.owner());
 			assertFalse(upperPlots.contains(p), "the two settlements never share a plot");
 		}
@@ -164,11 +164,11 @@ class ProvincePlotPoolTest {
 
 		// min-distance spacing: Lower's center (its first plot) founds OUTSIDE Upper's
 		// footprint — farther from Upper's center than any of Upper's own plots are
-		Plot uCenter = upper.getPlots().get(0);
-		Plot lCenter = lower.getPlots().get(0);
+		Plot uCenter = upper.getDistrictPlots().get(0);
+		Plot lCenter = lower.getDistrictPlots().get(0);
 		long lowerSeparation = sqDist(lCenter, uCenter);
 		long upperRadius = 0;
-		for (Plot p : upper.getPlots())
+		for (Plot p : upper.getDistrictPlots())
 			upperRadius = Math.max(upperRadius, sqDist(p, uCenter));
 		assertTrue(lowerSeparation > upperRadius,
 				"Lower founds spaced outside Upper's footprint (sep=" + lowerSeparation

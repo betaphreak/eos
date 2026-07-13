@@ -9,9 +9,12 @@ the engine/server, not just the web bake — to drive a faithful version**. Comp
 in today).
 
 **One-line takeaway:** the flat `Hex_District*` chip (§H) is a *label*; a real district *view* is a
-**procedural building assembly** whose inputs — district type, population, era, culture, per-hex
-placement — **do not exist in the engine today**. A district generator is therefore a
-**server-support feature first, a render feature second.**
+**procedural building assembly**. Its engine object **already exists** — the 1D, time-ordered plot
+map (`Settlement.getDistrictPlots()`), each plot a district slot carrying an occupant + a
+`Building` list (§2). So this is a **server-support feature first** (enrich those plots with a
+district *type* + pop/era/style, serve them, and bake the buildings) **and a render feature second**
+(port the Civ6 generator *logic* over C2C-baked building sprites). Buildings come from **Civ4 C2C**,
+not Civ6 (no `.fgx` renderer).
 
 ---
 
@@ -76,9 +79,14 @@ from Civ4 Caveman2Cosmos** (owner decision, 2026-07-13), for a decisive reason:
 > `web/civ4.mjs` (`docs/civ4-files.md`, `docs/features-art.md`). C2C also has a **huge** building
 > inventory spanning eras, so coverage of the 82-function taxonomy (and beyond) is ample.
 
-So Layer 3 is **Civ6 taxonomy/slotting logic + C2C-baked building sprites**. Map each Civ6
-`BUILDING_*` (or, better, each CivStudio building/firm type) to a C2C building `.nif`; nifbake →
-`web/assets` sprite; the generator stamps it at the block slot.
+So Layer 3 is **Civ6 taxonomy/slotting logic + C2C-baked building sprites**. The source of truth is
+the eos-native building id — `Plot.buildings()`' `Building.id()` / the CivStudio firm type (§2), not
+the Civ6 enum. **C2C building data is already wired**: `com.civstudio.data.Civ4Files` maps
+`Assets/XML/Buildings/{Regular,SpecialBuildings,zProviders}_CIV4BuildingInfos.xml` (fetched to
+`.civ4-cache/<ref>/`; ~**2,900 buildings** — 2403 regular + 453 special + 48 provider — **each with an
+`<ArtDefineTag>`** → `CIV4ArtDefines_Building.xml` → a `.nif` + button). Pipeline: eos building id →
+C2C `BUILDING_*` → ArtDefineTag → `.nif` → **`tools/nifbake`** sprite → `web/assets` → the generator
+stamps it at the block slot. Coverage is ample (2.9k C2C buildings ≫ any function taxonomy we need).
 
 **Composite:** `District (identity + SV chip + landmark)` → `Generator (spine/blocks/filler, scaled
 by population, palette by era × culture)` → `Buildings (C2C-baked function-building sprites in
@@ -88,23 +96,47 @@ residential backdrop by our own 2D block fill (or likewise C2C-baked filler hous
 
 ---
 
-## 2. Why this needs server (engine) support
+## 2. Server (engine) support — the district object already exists
 
-CivStudio today models a city as **`TERRAIN_URBAN` plots + a scalar `dev`** (`urban-plots.md`). None
-of the four inputs the generator consumes exist as engine state:
+**The district object is already in the engine** (owner, 2026-07-13): it is the **1D, time-ordered
+plot map** — `Settlement.getDistrictPlots()` (renamed 2026-07-13 from `getPlots()`; delegates to
+`PlotField`), the colony's build plots in **claim order**. Each `Plot` is one **district slot**, and
+already carries what a district needs:
+- a **`PlotOccupant`** (`Plot.getOccupant()`) — the firm working the plot;
+- a **`List<Building> buildings()`** with `addBuilding`/`hasBuilding`, where **`Building` is a record
+  keyed by an eos-native id** (e.g. `FIRM_BANKING_HOUSE`) that **already matches the tech tree's
+  `TechEffect.Unlock` target** — the exact seam for "research unlocks a building that then appears".
 
-| Generator input | Civ6 source | CivStudio today | Needed |
+So, correcting the first draft: districts are **not** missing (they are the district-plot map) and
+buildings are **not** missing (they are `Plot.buildings()`). What's missing is (a) a **district
+*type*** per plot, (b) the **pop / era / style** render inputs, (c) **serving** them on the plot
+feed, and (d) the **C2C building-art bake**. Still engine-first — but *enrichment*, not invention.
+
+| Generator input | Civ6 source | CivStudio engine today | Gap to close |
 | --- | --- | --- | --- |
-| **District type** | `DISTRICT_*` per hex | — (no districts at all) | an engine district concept, per urban plot |
-| **Population / growth stage** | city population → `GrowthStage` | colony aggregate counts only; not per-plot | a per-district population/size the render can key growth off |
-| **Era** | game era → `EraDistribution` | tech tree exists, but no "art era" projection | map tech/date → an art-era enum |
-| **Culture / region** | civ culture → building set | `Province.culture` **exists** (Anbennar) | culture → art-style-set mapping (the one input we mostly have) |
-| **Per-hex placement** | district plots in the city | urban core plots exist; no district identity/adjacency | assign district types to urban plots (+ optional adjacency) |
+| **District identity** | `DISTRICT_*` per hex | the district-plot map (`getDistrictPlots()`), each plot a slot | add a **district type** to `Plot` (or a `District`; see §2a) |
+| **Buildings in it** | placed `BUILDING_*` | `Plot.buildings()` — `Building` id ↔ tech unlock | wire the tech-gated auto-build (a documented later phase) + map ids → C2C art |
+| **Population / growth** | city pop → `GrowthStage` | colony aggregate counts; not per-plot | a per-plot size/pop the render keys filler off |
+| **Era** | game era → `EraDistribution` | tech tree / date exist; no "art era" projection | map tech/date → an art-era enum |
+| **Culture / style** | civ culture → building set | `Province.culture` exists (Anbennar) | culture → C2C-art-style table (**for planning**, owner) |
 
-So the render layer **cannot invent districts** — the authoritative assignment (which plot is which
-district, at what population/era) must come from the **engine and flow through the server feed**
-(the plot stream `/api/plots/<id>` and/or the bundle). This is the "server support" gate: a district
-generator is blocked on an engine district model, not on art or canvas code.
+The authoritative assignment still flows **engine → server feed** (`/api/plots/<id>` and/or the
+bundle) → render; the render layer never invents it.
+
+### 2a. Could `District extends Plot`? — checked: not as-is
+`Plot` is declared **`public final class Plot`**, so **`District extends Plot` will not compile**
+without dropping `final`. Options, with a recommendation:
+- **Un-finalize + subclass** (`class District extends Plot`): possible, but `Plot` is a value-like
+  class — three public constructors + a private chain, mutable fields, no identity semantics — so
+  subclassing it is fragile; and *every* build plot is already a district slot, so a subtype implies
+  some plots aren't, contradicting the "plot map = districts" framing.
+- **Enrich `Plot` (recommended):** add an optional **`districtType`** (and per-plot pop/era if
+  wanted) field on `Plot` itself — the district-plot map already *is* the district list, and
+  `buildings`/`occupant` are already there. No subclass, no un-finalizing.
+- **Compose:** a lightweight `District` **record wrapping a `Plot` + type**, if district behaviour
+  ever outgrows a field.
+- **Verdict (for planning):** prefer **enrichment or composition over inheritance**; do **not**
+  un-finalize `Plot` merely to subclass it.
 
 ### Minimum engine/server contract (proposed)
 A per-urban-plot record the plot feed would carry (extends the `ProvincePlot`
@@ -123,16 +155,17 @@ A per-urban-plot record the plot feed would carry (extends the `ProvincePlot`
 
 `buildings` is the important addition over the terrain/improvement contract: because the specialty
 buildings are **real C2C-baked sprites** (Layer 3), the view must know *which* the city has
-constructed — this is genuine sim state (firms/tech/wealth), authoritative only in the engine. The
-natural source is the settlement's existing firm/building set, mapped to the Civ6 `BUILDING_*`
-taxonomy and thence to a C2C `.nif`. `pop`/`era`/`style` can degrade to colony-level defaults before
-per-plot data exists; `buildings` degrades to empty (backdrop only). The seam is the same optional
-plot-record field the improvement layer already reserves, allow-listed through `WorldBundle`/the plot
-serializer.
+constructed — this is genuine sim state (firms/tech/wealth), authoritative only in the engine. It is
+**already in the model**: `Plot.buildings()` — the plot's `Building` ids (which equal the tech
+tree's `Unlock` targets). The mapping is **eos building id → C2C `BUILDING_*` → `.nif`** (§1 Layer 3),
+no Civ6 enum in the loop. `pop`/`era`/`style` can degrade to colony-level defaults before per-plot
+data exists; `buildings` degrades to empty (backdrop only). The seam is the same optional plot-record
+field the improvement layer already reserves, allow-listed through `WorldBundle`/the plot serializer.
 
-Where district identity comes from in the engine is an open design question — candidates: (a) derive
-purely in the web layer from `dev` + `Province.culture` (no engine change, but not authoritative /
-not sim-driven); (b) a real engine **District** placed by the settlement as it grows (authoritative,
+Where the district **type** comes from is the open design question (identity/pop already exist as the
+plot + its occupancy) — candidates: (a) derive purely in the web layer from `dev` + `Province.culture`
+(no engine change, but not authoritative / not sim-driven); (b) a real engine **District** placed by
+the settlement as it grows (authoritative,
 sim-driven, the proper version, and the one that unlocks the [`city-and-league.md`](city-and-league.md)
 CITY rung's "denser urban content"); (c) hybrid — engine assigns a City Center on the founding plot,
 web derives the rest. **Recommend (b) long-term, (a) as a throwaway prototype** to tune the 2D
