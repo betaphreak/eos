@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
  * module's {@code /map/tierborders.json} (byte-identical to the old {@code assets/tiers.json}).</li>
  * <li>{@code GET /api/techs} — the tech-tree pack assembled by {@link TechBundle} (was
  * {@code assets/techs.pack}).</li>
+ * <li>{@code GET /api/buildings} — the building pack assembled by {@link BuildingBundle} (the
+ * kept-tech-gated C2C buildings + their icon rects, for the tech-tree building grid).</li>
  * </ul>
  * Both are world-level and immutable per deploy, so they are cached and gzipped like the bundle
  * ({@link BundleController}). The tech pack is served as {@code application/octet-stream} gzip
@@ -57,6 +59,14 @@ public class AssetController {
 				.header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
 				.header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
 				.body(TechBundle.gzip());
+	}
+
+	@GetMapping("/api/buildings")
+	public ResponseEntity<byte[]> buildings() {
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
+				.header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
+				.body(BuildingBundle.gzip());
 	}
 
 	private static synchronized void ensureTiers() throws IOException {
