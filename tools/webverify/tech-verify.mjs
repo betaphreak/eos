@@ -54,12 +54,28 @@ await page.waitForTimeout(1200);
 await page.click('#advisorToggle button[data-advisor="technology"]').catch(e => errors.push('advisor click: ' + e.message));
 await page.waitForTimeout(waitMs);
 
-// click a mid-tree node to exercise the rail detail
-const node = page.locator('.tech-node').nth(40);
+// click a node that unlocks buildings (has a spectrum bar) to exercise the rail grid
+const node = page.locator('.tech-node:has(.tech-spec)').first();
 await node.hover().catch(() => {});
 await page.waitForTimeout(300);
 await node.click().catch(() => {});
 await page.waitForTimeout(700);
+const gridInfo = await page.evaluate(() => ({
+  gridCells: document.querySelectorAll('#rail .tech-grid .tech-bcell').length,
+  groups: document.querySelectorAll('#rail .tech-grid .tech-bgroup').length,
+}));
+// click the first building cell → the inspector
+await page.locator('#rail .tech-bcell').first().click().catch(e => errors.push('bcell click: ' + e.message));
+await page.waitForTimeout(500);
+const bldInfo = await page.evaluate(() => ({
+  buildingSheet: !!document.querySelector('#rail .building-sheet'),
+  buildingName: document.querySelector('#rail .building-sheet .tech-d-name')?.textContent || null,
+  hasArt: !!document.querySelector('#rail .bld-art'),
+}));
+if (flags.inspector) { await page.screenshot({ path: out }); await browser.close(); server.close(); process.exit(0); }
+// back to the tech
+await page.locator('#rail [data-bld-back]').click().catch(() => {});
+await page.waitForTimeout(400);
 
 const info = await page.evaluate(() => {
   const modal = document.getElementById('techModal');
@@ -72,6 +88,8 @@ const info = await page.evaluate(() => {
     modalTop: cr ? Math.round(cr.top) : null,
     coversBelowTopbar: cr && topbar ? cr.top >= Math.round(topbar.bottom) - 2 : null,
     nodeCount: document.querySelectorAll('.tech-node').length,
+    spectrumBars: document.querySelectorAll('.tech-spec').length,
+    gridPop: !!document.querySelector('.tech-grid'),
     eraTabCount: document.querySelectorAll('#advisorSubbar #techEras button').length,
     eraSubbarVisible: subbarTech ? !subbarTech.hidden : null,
     topbarVisible: topbar ? topbar.height > 0 : null,
@@ -81,6 +99,6 @@ const info = await page.evaluate(() => {
   };
 });
 await page.screenshot({ path: out });
-console.log(JSON.stringify({ shot: out, live: liveBase, info, errors }, null, 2));
+console.log(JSON.stringify({ shot: out, live: liveBase, info, gridInfo, bldInfo, errors }, null, 2));
 await browser.close();
 server.close();

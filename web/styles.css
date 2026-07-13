@@ -775,6 +775,38 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .tech-ct { margin-top: 2px; display: flex; align-items: center; gap: 3px;
   font: 600 10px system-ui,sans-serif; color: var(--ink-faint); letter-spacing: .02em; }
+/* category-spectrum bar: a thin footer on each node summarising the buildings it unlocks
+   (segment colour = advisor category, width ∝ count) — the overview LOD of the building grid */
+.tech-spec { position: absolute; left: 9px; right: 9px; bottom: 3px; height: 3px; display: flex;
+  gap: 1px; border-radius: 2px; overflow: hidden; opacity: .85; pointer-events: none; }
+.tech-spec > span { display: block; min-width: 2px; }
+/* give the card room below the two-line name for the spectrum footer */
+.tech-node { padding-bottom: 11px; }
+
+/* --- the focus LOD: the selected tech's building grid, in the rail (see techtree.mjs) --------- */
+.tech-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+/* a category group: its buildings wrap in a row over a faint category-tinted backing + left rule,
+   so similar buildings sit together and the category reads before the icons do */
+.tech-bgroup { display: flex; flex-wrap: wrap; gap: 4px; padding: 5px 6px; border-radius: 7px;
+  background: color-mix(in srgb, var(--cat) 8%, transparent); border-left: 2px solid var(--cat); }
+/* a building icon cell: the real C2C button art in a uniform, category-tinted frame */
+.tech-bcell { width: 26px; height: 26px; flex: none; border-radius: 5px; cursor: pointer; padding: 0;
+  background-repeat: no-repeat; background-color: var(--panel-2);
+  border: 1px solid color-mix(in srgb, var(--cat) 55%, var(--line)); }
+.tech-bcell:hover { border-color: var(--cat); box-shadow: 0 0 0 1px var(--cat); }
+.tech-bcell.chip { display: grid; place-items: center; font: 800 11px system-ui,sans-serif; color: #fff;
+  background: var(--cat); }
+
+/* --- the building inspector (rail) ------------------------------------------------------------ */
+.bld-back { background: none; border: 0; color: var(--ink-faint); font: 600 11px system-ui,sans-serif;
+  cursor: pointer; padding: 0 0 10px; letter-spacing: .02em; }
+.bld-back:hover { color: var(--ink); }
+.bld-head { display: flex; gap: 12px; align-items: center; margin-bottom: 6px; }
+.bld-art { width: 72px; height: 72px; flex: none; border-radius: 10px; background-repeat: no-repeat;
+  background-color: var(--panel-2); border: 1px solid color-mix(in srgb, var(--adv) 55%, var(--line)); }
+.bld-art.chip { display: grid; place-items: center; font: 800 26px system-ui,sans-serif; color: #fff;
+  background: var(--adv); }
+.bld-id { min-width: 0; }
 /* research cost beaker — the GameFont beaker recoloured per currency (build-techs.mjs).
    Blue = science (the human tree's default); red = hammer-converted; yellow = race-specific. */
 .tech-bk { display: inline-block; width: 12px; height: 12px; vertical-align: -2px; flex: none;

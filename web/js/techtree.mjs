@@ -37,9 +37,16 @@ const COL_W = 240, ROW_H = 64, PAD = 48, CARD_W = 215, CARD_H = 56;
 const SHEET = "assets/tech/tech-icons.webp", SHEET_W = 1024, SHEET_H = 1216, ICON = 40;
 const KMAX = 1.8, KSTEP = 1.2;   // min zoom is dynamic — see minZoom() (fit-to-height)
 
+// building-icon sheet (build-buildings.mjs): 64² cells, 50 cols; each building carries an
+// icon:[x,y,w,h] rect. Its natural size is read from the loaded image (rows depend on the count).
+const BSHEET = "assets/buildings/building-icons.webp";
+const bsheetImg = new Image();
+bsheetImg.src = BSHEET;
+
 const $ = id => document.getElementById(id);
 
 let techs = null, byType = new Map(), parents = new Map();
+let buildings = null, byTech = new Map();   // building set + prereqTech → its buildings
 let loaded = false, built = false;
 let contentW = 0, contentH = 0, k = 1;
 let eraEntryX = {};        // era key → its entry (min-gridX) column, for the era tabs
@@ -58,23 +65,39 @@ function prereqList(t, group) {
 }
 function allPrereqs(t) { return [...prereqList(t, "OrPreReqs"), ...prereqList(t, "AndPreReqs")]; }
 
-async function ensureLoaded() {
-  if (loaded) return true;
-  const res = await fetch(apiUrl("/api/techs"));
-  if (!res.ok) throw new Error(`HTTP ${res.status} for /api/techs`);
+// fetch a gzipped octet-stream pack and gunzip it in-page (the plots.pack/techs.pack contract),
+// tolerating a host/CDN that already decompressed it via Content-Encoding (plain JSON then)
+async function fetchGz(url) {
+  const res = await fetch(apiUrl(url));
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   const buf = await res.arrayBuffer();
-  // the bytes are gzip; gunzip them in-page — but tolerate a host/CDN that already
-  // decompressed via Content-Encoding (then the buffer is plain JSON text)
-  let text;
   try {
     const stream = new Response(buf).body.pipeThrough(new DecompressionStream("gzip"));
-    text = await new Response(stream).text();
+    return JSON.parse(await new Response(stream).text());
   } catch {
-    text = new TextDecoder().decode(buf);
+    return JSON.parse(new TextDecoder().decode(buf));
   }
-  techs = JSON.parse(text);
+}
+
+async function ensureLoaded() {
+  if (loaded) return true;
+  techs = await fetchGz("/api/techs");
   byType = new Map(techs.map(t => [t.Type, t]));
   for (const t of techs) parents.set(t.Type, allPrereqs(t).filter(p => byType.has(p)));
+  // the buildings each tech unlocks (kept-tech-gated C2C set) — index by primary prereq tech, so
+  // each node can draw its category-spectrum bar and, on focus, its building grid. A failed fetch
+  // is non-fatal: the tree still works without buildings.
+  try {
+    buildings = await fetchGz("/api/buildings");
+    byTech = new Map();
+    for (const b of buildings) {
+      if (!byTech.has(b.prereqTech)) byTech.set(b.prereqTech, []);
+      byTech.get(b.prereqTech).push(b);
+    }
+  } catch (e) {
+    console.error("tech tree: /api/buildings unavailable —", e.message);
+    buildings = []; byTech = new Map();
+  }
   loaded = true;
   return true;
 }
@@ -104,6 +127,27 @@ const gx = t => +t.iGridX, gy = t => +t.iGridY;
 const nodeX = t => PAD + gx(t) * COL_W;
 const nodeY = t => PAD + (gy(t) - 1) * ROW_H;
 const advOf = t => ADV_COLOR[(t.Advisor || "").replace("ADVISOR_", "")] || "var(--ink-faint)";
+const catColor = c => ADV_COLOR[c] || "var(--ink-faint)";   // building category (Advisor enum) → colour
+
+// a thin category-spectrum bar summarising the buildings a tech unlocks — segments coloured by
+// advisor category, width ∝ count. This is the overview LOD: every node with buildings shows it,
+// and the focused node additionally expands to the real building grid (see buildingGrid).
+function spectrumBar(type) {
+  const bl = byTech.get(type);
+  if (!bl || !bl.length) return null;
+  const byCat = new Map();
+  for (const b of bl) { const c = b.category || "OTHER"; byCat.set(c, (byCat.get(c) || 0) + 1); }
+  const spec = document.createElement("div");
+  spec.className = "tech-spec";
+  spec.title = `${bl.length} building${bl.length > 1 ? "s" : ""}`;
+  for (const [c, n] of [...byCat].sort((a, b) => b[1] - a[1])) {
+    const seg = document.createElement("span");
+    seg.style.flexGrow = String(n);
+    seg.style.background = catColor(c);
+    spec.appendChild(seg);
+  }
+  return spec;
+}
 
 // --- build (once) ----------------------------------------------------------
 
@@ -185,6 +229,8 @@ function build() {
     tx.querySelector(".tech-nm").textContent = t.name || t.Type.replace("TECH_", "");
 
     el.append(ico, tx);
+    const spec = spectrumBar(t.Type);
+    if (spec) el.appendChild(spec);
     el.addEventListener("mouseenter", () => highlight(t.Type));
     el.addEventListener("mouseleave", clearHighlight);
     el.addEventListener("click", () => select(t.Type));
@@ -220,17 +266,27 @@ function select(type) {
   if (!t) return;
   for (const el of nodeEl.values()) el.classList.remove("sel");
   nodeEl.get(type)?.classList.add("sel");
+  renderTechRail(t);
+}
 
-  const adv = (t.Advisor || "").replace("ADVISOR_", "");
-  const sector = ADV_SECTOR[adv] || "—";
-  const pre = allPrereqs(t);
-  // render the node's detail into the shared right rail (the tree is a map-mode, so it reuses
-  // the province/advisor rail rather than a panel of its own). Hide the live HUD first so our
-  // content isn't masked by it (styles.css hides #rail while #liveHud shows).
+// open the shared right rail with #rail content (the tree is a map-mode, so it reuses the
+// province/advisor rail). Hide the live HUD first so our content isn't masked (styles.css
+// hides #rail while #liveHud shows).
+function openRail() {
   const lh = document.getElementById("liveHud");
   if (lh) lh.hidden = true;
   showRail(true);
-  const r = railEl();
+  return railEl();
+}
+
+// the selected tech's detail + the building grid (the focus LOD: spectrum bar on the node,
+// full grid here). Clicking a building opens its inspector (showBuildingRail).
+function renderTechRail(t) {
+  const adv = (t.Advisor || "").replace("ADVISOR_", "");
+  const sector = ADV_SECTOR[adv] || "—";
+  const pre = allPrereqs(t);
+  const bl = byTech.get(t.Type) || [];
+  const r = openRail();
   r.innerHTML = `<div class="detail tech-sheet" style="--adv:${advOf(t)}">
     <div class="tech-d-era">${ERA_NAME[t.Era] || ""}</div>
     <h2 class="tech-d-name"></h2>
@@ -239,9 +295,10 @@ function select(type) {
       <span class="tech-d-tag">${adv ? adv[0] + adv.slice(1).toLowerCase() : "—"}</span>
       <span class="tech-d-tag">Sector: <b>${sector}</b></span>
     </div>
+    ${bl.length ? `<div class="tech-d-h">Unlocks ${bl.length} building${bl.length > 1 ? "s" : ""}</div><div class="tech-grid"></div>` : ""}
+    ${pre.length ? `<div class="tech-d-h">Requires</div><div class="tech-d-pre"></div>` : ""}
     ${t.help ? `<div class="tech-d-h">Overview</div><div class="tech-d-help"></div>` : ""}
     ${t.quote ? `<div class="tech-d-quote"></div>` : ""}
-    ${pre.length ? `<div class="tech-d-h">Requires</div><div class="tech-d-pre"></div>` : ""}
   </div>`;
   r.querySelector(".tech-d-name").textContent = t.name || t.Type;
   if (t.help) r.querySelector(".tech-d-help").textContent = cleanText(t.help);
@@ -259,6 +316,93 @@ function select(type) {
     prereqList(t, "AndPreReqs").forEach(p => mk(p, "and"));
     prereqList(t, "OrPreReqs").forEach(p => mk(p, "or"));
   }
+  const grid = r.querySelector(".tech-grid");
+  if (grid) fillGrid(grid, bl, t);
+}
+
+// the building sheet's natural size (rows depend on the count; falls back until the image loads)
+const sheetDims = () => [bsheetImg.naturalWidth || 3200, bsheetImg.naturalHeight || 1344];
+
+// a single building icon cell: the real C2C button from the sheet (or a category-colour chip when
+// the art is missing), framed in a category-tinted backing so the varied art reads as one set.
+function buildingCell(b) {
+  const cell = document.createElement("button");
+  cell.className = "tech-bcell";
+  cell.style.setProperty("--cat", catColor(b.category || "OTHER"));
+  cell.title = b.name || b.id.replace("BUILDING_", "");
+  if (b.icon) {
+    const [x, y] = b.icon, [bw, bh] = sheetDims(), s = 26 / 64;   // cells render ~26px
+    cell.style.backgroundImage = `url(${BSHEET})`;
+    cell.style.backgroundSize = `${bw * s}px ${bh * s}px`;
+    cell.style.backgroundPosition = `${-x * s}px ${-y * s}px`;
+  } else {
+    cell.classList.add("chip");
+    cell.textContent = (b.name || b.id.replace("BUILDING_", ""))[0];
+  }
+  cell.addEventListener("click", ev => { ev.stopPropagation(); showBuildingRail(b); });
+  return cell;
+}
+
+// fill a rail grid with a tech's buildings, grouped by category (so similar buildings sit together)
+function fillGrid(grid, bl, tech) {
+  grid.dataset.tech = tech.Type;
+  const byCat = new Map();
+  for (const b of bl) { const c = b.category || "OTHER"; (byCat.get(c) || byCat.set(c, []).get(c)).push(b); }
+  const order = [...byCat.keys()].sort((a, b) => byCat.get(b).length - byCat.get(a).length);
+  for (const c of order) {
+    const group = document.createElement("div");
+    group.className = "tech-bgroup";
+    group.style.setProperty("--cat", catColor(c));
+    for (const b of byCat.get(c)) group.appendChild(buildingCell(b));
+    grid.appendChild(group);
+  }
+}
+
+// the building inspector: the C2C button art (large), name, category, prereqs and the pedia text —
+// rendered in the rail. A back arrow returns to the unlocking tech's detail. Any building is
+// inspectable, even locked ones, so the tree doubles as a reference of everything ahead.
+function showBuildingRail(b) {
+  const cat = b.category || "OTHER";
+  const tech = byType.get(b.prereqTech);
+  const ands = (b.andTechs || []).map(p => byType.get(p) ? (byType.get(p).name || p) : p);
+  const r = openRail();
+  r.innerHTML = `<div class="detail tech-sheet building-sheet" style="--adv:${catColor(cat)}">
+    <button class="bld-back" data-bld-back>&larr; ${tech ? (tech.name || b.prereqTech) : "Tech"}</button>
+    <div class="bld-head">
+      <div class="bld-art"></div>
+      <div class="bld-id">
+        <h2 class="tech-d-name"></h2>
+        <span class="tech-d-tag">${cat[0] + cat.slice(1).toLowerCase()}</span>
+      </div>
+    </div>
+    ${b.pedia ? `<div class="tech-d-h">About</div><div class="tech-d-help"></div>` : ""}
+    <div class="tech-d-h">Unlocked by</div><div class="tech-d-pre"></div>
+  </div>`;
+  r.querySelector(".tech-d-name").textContent = b.name || b.id.replace("BUILDING_", "");
+  if (b.pedia) r.querySelector(".tech-d-help").textContent = cleanText(b.pedia);
+  // large art (the button icon at ~72px, or a category chip)
+  const art = r.querySelector(".bld-art");
+  if (b.icon) {
+    const [x, y] = b.icon, [bw, bh] = sheetDims(), s = 72 / 64;
+    art.style.backgroundImage = `url(${BSHEET})`;
+    art.style.backgroundSize = `${bw * s}px ${bh * s}px`;
+    art.style.backgroundPosition = `${-x * s}px ${-y * s}px`;
+  } else {
+    art.classList.add("chip");
+    art.textContent = (b.name || b.id.replace("BUILDING_", ""))[0];
+  }
+  // prereqs: the primary unlocking tech (click → jump to it) then any AND-required techs
+  const preBox = r.querySelector(".tech-d-pre");
+  const mk = (label, type, kind) => {
+    const btn = document.createElement("button");
+    btn.className = "tech-d-prereq";
+    btn.innerHTML = `${label}<span class="k">${kind}</span>`;
+    if (type && byType.get(type)) btn.addEventListener("click", () => { select(type); scrollToType(type); });
+    preBox.appendChild(btn);
+  };
+  mk(tech ? (tech.name || b.prereqTech) : b.prereqTech, b.prereqTech, "tech");
+  (b.andTechs || []).forEach((p, i) => mk(ands[i], p, "and"));
+  r.querySelector("[data-bld-back]")?.addEventListener("click", () => { if (tech) select(tech.Type); });
 }
 
 // strip the Civ4 pedia markup ([NEWLINE], [PARAGRAPH:n], [ICON_*], colour tags) to plain text
