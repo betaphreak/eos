@@ -13,21 +13,36 @@ import { initMinimap, drawMinimap } from "./minimap.mjs";
 // ready it should clear right away rather than lingering.
 const loadEl = document.getElementById("loading");
 const loadStart = performance.now();
-const MIN_LOADING_MS = 0;
+const MIN_LOADING_MS = 3000;   // hold the splash ≥3s after connecting before switching to the stage
 let loadingActive = false;
+// a "Did you know?" tip from the project docs, shown during the post-connect hold (the splash art
+// itself is cycled by the index.html bootstrap). Loaded async; empty until it arrives.
+let triviaList = [];
+const triviaBox = loadEl && loadEl.querySelector(".ld-trivia");
+const triviaBody = loadEl && loadEl.querySelector(".ld-trivia-body");
 if (loadEl) {
-  if (BUNDLE.loading && BUNDLE.loading.length) {
-    loadEl.querySelector(".ld-art").src = BUNDLE.loading[Math.floor(Math.random() * BUNDLE.loading.length)];
-  }
   loadingActive = true;                        // always manage it so first paint hides it (below)
+  fetch("assets/loading/trivia.json").then(r => (r.ok ? r.json() : [])).then(t => { triviaList = t || []; }).catch(() => {});
+}
+function showTrivia() {
+  if (!triviaBody || !triviaList.length) return;
+  triviaBody.textContent = triviaList[Math.floor(Math.random() * triviaList.length)];
+  if (triviaBox) triviaBox.classList.add("on");
 }
 // hide on first paint but KEEP the element in the DOM — the title (js/panel.mjs) re-opens its
-// server picker as a dismissable overlay, so the markup must survive. Just fade it out.
+// server picker as a dismissable overlay, so the markup must survive. Just fade it out. After the
+// hold, reveal a tip ("start after 3 seconds"), change it once more, then transition to the stage.
 function hideLoading() {
   if (!loadingActive) return;
   loadingActive = false;
   const wait = Math.max(0, MIN_LOADING_MS - (performance.now() - loadStart));
-  setTimeout(() => { loadEl.classList.add("gone"); }, wait);
+  setTimeout(() => {
+    showTrivia();                                    // a first tip, once the 3s hold has passed
+    setTimeout(() => {
+      showTrivia();                                  // change it once more before leaving the loading screen
+      setTimeout(() => { loadEl.classList.add("gone"); }, 1600);
+    }, 2400);
+  }, wait);
 }
 
 const mapImg = new Image();

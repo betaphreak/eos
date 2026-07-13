@@ -238,6 +238,8 @@
         <div class="ld-servers" id="ldServers" role="listbox" aria-label="Servers"></div>
         <div class="ld-hint">Press <kbd>Esc</kbd> or click outside to dismiss</div>
       </div>
+      <!-- a "Did you know?" tip from the docs, revealed during the post-connect hold (js/main.mjs) -->
+      <div class="ld-trivia" aria-live="polite"><span class="ld-trivia-label">Did you know?</span><span class="ld-trivia-body"></span></div>
     </div>
 
     <aside class="railwrap" id="railwrap">
@@ -337,7 +339,17 @@
     var listEl  = document.getElementById("ldServers");
     var art = loading && loading.querySelector(".ld-art");
     var bar = loading && loading.querySelector(".ld-bar");
-    if (art && !art.getAttribute("src")) art.src = "assets/loading/loading-1.jpg";   // committed splash behind the picker
+    // cycle the loading splash through the committed set every 10s while the screen is up (picker +
+    // connecting + the post-connect hold), stopping once the app fades it out (.gone)
+    var LOADING_ARTS = ["loading-0", "loading-1", "loading-2", "loading-3", "loading-4"]
+      .map(function (n) { return "assets/loading/" + n + ".jpg"; });
+    var artIdx = Math.floor(Math.random() * LOADING_ARTS.length);
+    function showLoadingArt() { if (art) art.src = LOADING_ARTS[artIdx % LOADING_ARTS.length]; }
+    showLoadingArt();
+    var artTimer = setInterval(function () {
+      if (loading.classList.contains("gone")) { clearInterval(artTimer); return; }
+      artIdx = (artIdx + 1) % LOADING_ARTS.length; showLoadingArt();
+    }, 10000);
     if (bar) bar.hidden = true;                     // no progress bar until a server is picked
 
     var connecting = false;
