@@ -363,6 +363,12 @@ header; Esc / click-outside / ✕ closes it, and the map's `paint()` pauses whil
 It is a read-only consumer of the generated data, never the engine. See
 [`web/README.md`](../web/README.md); the pieces:
 
+> **Planned change (not yet built):** this modal becomes the **Technology Advisor** map-mode —
+> the tree renders over `#stage` (top bar + right rail stay; the rail hosts a tech/building
+> inspector), inside a Civ4-style advisor-mode framework. Design: [`privy-council.md`](privy-council.md)
+> (which **precedes** the tech-tree building work in [`c2c-building-import.md`](c2c-building-import.md)).
+> `S.techOpen` stays the `paint()` suspend hook; the layout below is otherwise unchanged.
+
 - **Data**: `web/build-techs.mjs` gzips `techs.json` (with the English `name`/`help`/`quote`
   and a per-tech `icon` rect) to `web/assets/techs.pack`, fetched and gunzipped in-page.
 - **Layout**: cards on the C2C `iGridX` (era-timeline column) / `iGridY` (lane) grid, with

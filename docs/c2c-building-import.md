@@ -101,25 +101,13 @@ New **`web/build-buildings.mjs`**, structurally the tech-button baker:
   `.nif` albedo) the district view stamps (`district-generator.md` §1 Layer 3). Two different bakes
   from the same C2C building: the flat **button** here, the 3D-model **sprite** there.
 
-### 3b. Presentation — the tech tree is the **Science** map mode, not a modal (owner)
-Refactor the tech tree from today's **full-screen modal** (`#techModal`, `role="dialog"`, which covers
-*everything incl. the right rail* and pauses the map) into a **map mode named "Science"** (owner —
-matching Civ4's *Science Advisor*): when active it **entirely replaces the map** in the canvas region,
-while the **top bar and right rail stay**.
-- The map content area shows the tech tree; **switching modes swaps the canvas** (the map is fully
-  replaced, not split) — so the tree keeps the full canvas width, like the current modal, without the
-  `dialog` chrome. Model it like the existing view toggles (the overlay modes / the surface↔underworld
-  plane) rather than a `dialog` overlay; the map render loop is suspended while the tech-mode is active
-  (the modal's perf win, kept).
-- **The right rail is now free** for the tech/building **inspector** (§4) — it reuses the exact
-  province/city rail component, no modal-local panel. This is *why* the refactor is needed: the plan's
-  rail inspector is impossible while the modal covers the rail.
-- **Colony context is retained** — because the shell (POV / selected colony) stays, the tree's
-  *researched* state binds to the current colony (Dhenijansar in the demo, §4) instead of being
-  divorced in a full-screen dialog.
-- Migration: keep the F7 / `techBtn` toggle and the existing lattice/render (`techtree.mjs`); change
-  only the *container* (map-mode swap vs. `#techModal` dialog) and let the rail host the inspector.
-  Cross-ref `docs/tech-tree.md` / `docs/ux.md` when this lands.
+### 3b. Presentation — depends on the **Technology Advisor** map-mode ([`privy-council.md`](privy-council.md))
+This building work assumes the tech tree is no longer a modal but the **Technology Advisor** map-mode:
+it renders over `#stage` (top bar + right rail stay), which frees the right rail to host the building
+**inspector** (§4) — impossible while the modal covers the rail. That refactor — the advisor-mode
+framework, the modal→map-mode conversion, and the researched-state colony binding — is designed in
+[`privy-council.md`](privy-council.md), which **precedes this plan**. Everything below (the building
+grid, inspector, search) plugs into that Technology Advisor + rail.
 
 ### 4. Web tech tree: the per-node building grid + inspector
 The tech-tree data must carry, per tech, its unlocked building ids. Source: `buildings.json` +
@@ -164,11 +152,11 @@ The map-mode refactor (§3b) means the **top bar persists across modes**, so the
 the single top-bar box** — the tech modal's separate header search goes away with the modal (owner).
 One widget (`searchbox.mjs`), no duplicate; its **corpus follows the active mode** (below).
 - **Mode-scoped corpus (owner):** the box searches **only the active mode's content** — provinces in
-  map mode (as today), **techs + buildings** in Science mode. Same box, same `searchbox.mjs` behaviour;
-  the caller swaps the `search`/`renderRow`/`onPick` per mode. No always-global corpus, no cross-mode
-  switch-on-pick (you switch to Science first, then search it).
+  map-based advisors (as today), **techs + buildings** in the Technology Advisor. Same box, same
+  `searchbox.mjs` behaviour; the caller swaps the `search`/`renderRow`/`onPick` per mode. No
+  always-global corpus, no cross-mode switch-on-pick (you switch to the Technology Advisor first).
 - **Per-mode placeholder (owner):** the placeholder tracks the mode — "Find a province…" (map) /
-  "Find a tech or building…" (Science).
+  "Find a tech or building…" (Technology Advisor).
 - **Techs+buildings results:** **one interleaved ranked list** with a per-row **kind chip** (tech vs
   building) — no sections, no filter tabs (owner). **Match name + id**, case-insensitive
   (de-`TXT_KEY_`/`TECH_`/`BUILDING_`-prefixed for display).

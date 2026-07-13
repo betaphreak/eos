@@ -49,6 +49,11 @@ sit between them (`top: var(--bar-h); bottom: var(--foot-h)`), so **nothing over
 title/buttons/search live in the top bar and the **timeline/playback lives in the bottom bar (all modes,
 not just caravan)**. Both bars are pinned to the dark palette regardless of UI theme (like the map hero).
 The small `.zoomctl` (+/−/fullscreen) and the caravan `.legend` still float in the map's bottom corners.
+
+> **Planned change (not yet built):** the top bar's ad-hoc toggle groups (POV / plane / overlay)
+> become a single **advisor-mode selector** (race-portrait buttons) with a **second sub-control row**
+> below it; the tech modal becomes the **Technology Advisor** map-mode, and the `#clock` transport +
+> sign-in move into the **Zeitgeist** advisor. Design: [`privy-council.md`](privy-council.md).
 Tooltips are automatic for any `[data-tip]` element (`showBtnTip`, `panel.mjs`).
 
 Bar layout (left → right): **brand wordmark**, **zoom readout**, centered **mode toggle**, then a right
