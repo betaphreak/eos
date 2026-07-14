@@ -32,6 +32,7 @@ public final class TerrainRegistry {
 	private static final String FEATURES_RESOURCE = "/features.json";
 	private static final String IMPROVEMENTS_RESOURCE = "/improvements.json";
 	private static final String BONUSES_RESOURCE = "/bonuses.json";
+	private static final String ROUTES_RESOURCE = "/routes.json";
 
 	private static final ObjectMapper MAPPER = JsonMapper.builder()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -42,13 +43,15 @@ public final class TerrainRegistry {
 	private final Map<String, Feature> features;
 	private final Map<String, Improvement> improvements;
 	private final Map<String, Bonus> bonuses;
+	private final Map<String, RouteType> routes;
 
 	private TerrainRegistry(List<Terrain> terrains, List<Feature> features,
-			List<Improvement> improvements, List<Bonus> bonuses) {
+			List<Improvement> improvements, List<Bonus> bonuses, List<RouteType> routes) {
 		this.terrains = index(terrains, Terrain::type);
 		this.features = index(features, Feature::type);
 		this.improvements = index(improvements, Improvement::type);
 		this.bonuses = index(bonuses, Bonus::type);
+		this.routes = index(routes, RouteType::type);
 	}
 
 	/** Load the registry from the committed JSON resources. */
@@ -61,6 +64,8 @@ public final class TerrainRegistry {
 				loadList(IMPROVEMENTS_RESOURCE, new TypeReference<List<Improvement>>() {
 				}),
 				loadList(BONUSES_RESOURCE, new TypeReference<List<Bonus>>() {
+				}),
+				loadList(ROUTES_RESOURCE, new TypeReference<List<RouteType>>() {
 				}));
 	}
 
@@ -104,6 +109,11 @@ public final class TerrainRegistry {
 		return bonuses.get(type);
 	}
 
+	/** The route tier with this Civ4 type, or {@code null} if not in the set. */
+	public RouteType route(String type) {
+		return routes.get(type);
+	}
+
 	/** All curated terrains, in load (XML) order. */
 	public List<Terrain> terrains() {
 		return List.copyOf(terrains.values());
@@ -122,5 +132,10 @@ public final class TerrainRegistry {
 	/** All bonuses, in load (XML) order. */
 	public List<Bonus> bonuses() {
 		return List.copyOf(bonuses.values());
+	}
+
+	/** All route tiers, in load (XML) order ({@code TRAIL → PATH → ROAD → …}). */
+	public List<RouteType> routes() {
+		return List.copyOf(routes.values());
 	}
 }

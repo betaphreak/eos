@@ -1,0 +1,121 @@
+[ {
+  "type" : "ROUTE_TRAIL",
+  "value" : 1,
+  "movement" : 100,
+  "flatMovement" : 100,
+  "advancedStartCost" : 5,
+  "bonusType" : null,
+  "seaTunnel" : false,
+  "yields" : [ 0, 0, 0 ],
+  "trail" : true
+}, {
+  "type" : "ROUTE_PATH",
+  "value" : 2,
+  "movement" : 80,
+  "flatMovement" : 80,
+  "advancedStartCost" : 6,
+  "bonusType" : null,
+  "seaTunnel" : false,
+  "yields" : [ 0, 0, 0 ],
+  "trail" : false
+}, {
+  "type" : "ROUTE_ROAD",
+  "value" : 3,
+  "movement" : 60,
+  "flatMovement" : 60,
+  "advancedStartCost" : 12,
+  "bonusType" : null,
+  "seaTunnel" : false,
+  "yields" : [ 0, 0, 0 ],
+  "trail" : false
+}, {
+  "type" : "ROUTE_PAVED_ROAD",
+  "value" : 4,
+  "movement" : 40,
+  "flatMovement" : 40,
+  "advancedStartCost" : 8,
+  "bonusType" : "BONUS_STONE",
+  "seaTunnel" : false,
+  "yields" : [ 0, 0, 0 ],
+  "trail" : false
+}, {
+  "type" : "ROUTE_RAILROAD",
+  "value" : 5,
+  "movement" : 40,
+  "flatMovement" : 16,
+  "advancedStartCost" : 18,
+  "bonusType" : "BONUS_STEEL_WARES",
+  "seaTunnel" : false,
+  "yields" : [ 0, 0, 0 ],
+  "trail" : false
+}, {
+  "type" : "ROUTE_ELECTRIC_RAILROAD",
+  "value" : 7,
+  "movement" : 36,
+  "flatMovement" : 12,
+  "advancedStartCost" : 18,
+  "bonusType" : "BONUS_STEEL_WARES",
+  "seaTunnel" : false,
+  "yields" : [ 0, 0, 0 ],
+  "trail" : false
+}, {
+  "type" : "ROUTE_HIGHWAY",
+  "value" : 6,
+  "movement" : 22,
+  "flatMovement" : 22,
+  "advancedStartCost" : 12,
+  "bonusType" : "BONUS_PETROLEUM_PRODUCTS",
+  "seaTunnel" : false,
+  "yields" : [ 0, 0, 0 ],
+  "trail" : false
+}, {
+  "type" : "ROUTE_MAGLEV",
+  "value" : 8,
+  "movement" : 22,
+  "flatMovement" : 11,
+  "advancedStartCost" : 24,
+  "bonusType" : "BONUS_COPPER_WARES",
+  "seaTunnel" : false,
+  "yields" : [ 0, 0, 1 ],
+  "trail" : false
+}, {
+  "type" : "ROUTE_VACTRAIN",
+  "value" : 9,
+  "movement" : 20,
+  "flatMovement" : 8,
+  "advancedStartCost" : 24,
+  "bonusType" : "BONUS_TITANIUM_WARES",
+  "seaTunnel" : false,
+  "yields" : [ 0, 1, 1 ],
+  "trail" : false
+}, {
+  "type" : "ROUTE_GRAVITY_TRAIN",
+  "value" : 10,
+  "movement" : 15,
+  "flatMovement" : 5,
+  "advancedStartCost" : 24,
+  "bonusType" : "BONUS_LIQUID_METAL",
+  "seaTunnel" : false,
+  "yields" : [ 0, 1, 1 ],
+  "trail" : false
+}, {
+  "type" : "ROUTE_JUMPLANE",
+  "value" : 11,
+  "movement" : 15,
+  "flatMovement" : 3,
+  "advancedStartCost" : 30,
+  "bonusType" : null,
+  "seaTunnel" : false,
+  "yields" : [ 1, 1, 1 ],
+  "trail" : false
+}, {
+  "type" : "ROUTE_TUNNEL",
+  "value" : 1,
+  "movement" : 55,
+  "flatMovement" : 22,
+  "advancedStartCost" : 20,
+  "bonusType" : "BONUS_STEEL_WARES",
+  "seaTunnel" : true,
+  "yields" : [ 0, 0, 1 ],
+  "trail" : false
+} ]

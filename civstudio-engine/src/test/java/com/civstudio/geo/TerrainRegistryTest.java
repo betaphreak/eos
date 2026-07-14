@@ -34,6 +34,34 @@ class TerrainRegistryTest {
 		// bonuses are exported in full (no curated subset), so the count is the
 		// whole CIV4BonusInfos.xml set
 		assertEquals(106, reg.bonuses().size(), "all bonus resources");
+		// all C2C route tiers (TRAIL..JUMPLANE + the sea TUNNEL), no curation
+		assertEquals(12, reg.routes().size(), "all C2C route tiers");
+	}
+
+	@Test
+	void routeMovementsAndTiersMatchXml() {
+		TerrainRegistry reg = TerrainRegistry.load();
+
+		// the trail — the explored/passable baseline: rank 1, costs one flat plot
+		RouteType trail = reg.route("ROUTE_TRAIL");
+		assertNotNull(trail);
+		assertTrue(trail.isTrail());
+		assertEquals(1, trail.value());
+		assertEquals(100, trail.movement());
+		assertEquals(1.0, trail.costFactor(), 1e-9,
+				"a trail costs one flat plot — explored, no speed gain");
+
+		// better routes rank higher and cost less to enter (lower movement = faster)
+		RouteType road = reg.route("ROUTE_ROAD");
+		assertEquals(3, road.value());
+		assertEquals(0.6, road.costFactor(), 1e-9);
+		assertTrue(road.value() > trail.value(), "road outranks trail");
+		assertTrue(road.costFactor() < trail.costFactor(), "road is faster than a trail");
+
+		// a paved road is built on stone; the tunnel crosses water
+		assertEquals("BONUS_STONE", reg.route("ROUTE_PAVED_ROAD").bonusType());
+		assertNull(trail.bonusType(), "a trail needs no resource to lay");
+		assertTrue(reg.route("ROUTE_TUNNEL").seaTunnel());
 	}
 
 	@Test
@@ -152,5 +180,6 @@ class TerrainRegistryTest {
 		assertNull(reg.feature("FEATURE_NONEXISTENT"));
 		assertNull(reg.improvement("IMPROVEMENT_NONEXISTENT"));
 		assertNull(reg.bonus("BONUS_NONEXISTENT"));
+		assertNull(reg.route("ROUTE_NONEXISTENT"));
 	}
 }

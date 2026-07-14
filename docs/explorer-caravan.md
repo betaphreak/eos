@@ -353,10 +353,74 @@ Each phase is independently compilable/testable; earlier phases are inert until 
     larder rather than freezing (`netMarchKm` still zeroes for reporting).
   Verified: `MarchTest` (+3 cases — budget scales with daylight, shrinks with band size, never
   falls to zero) + the existing caravan integration suite green. **Future factors (dormant hooks):**
-  **roads** (`CIV4RouteInfos` / `roadSpeedFactor`) will discount road plots so corridors hug roads;
   literal per-plot min-one-move stepping (entering a single arbitrarily-expensive plot in one day)
   waits for the Phase-5 per-plot corridor position — Phase 3 spends at province-leg granularity
   with fractional carry.
+
+- **Trails & routes — the pioneering / explored-map mechanic (owner design, 2026-07-14).** The
+  **Explorer** is the only caravan that may enter **route-less (unimproved) plots**; as it moves it
+  leaves a **`ROUTE_TRAIL`** on each plot it crosses. **Every other caravan requires a plot to carry
+  at least a trail** — the map must be pioneered first, and "has a trail" == "explored" ties directly
+  into the Phase-6 fog of war. The C2C route ladder is now **imported** (`CIV4RouteInfos.xml` →
+  `geo.RouteType` via `geo/export/RouteExporter` → `/routes.json`, loaded by `TerrainRegistry`):
+  `TRAIL(v1,mv100) < PATH(80) < ROAD(60) < PAVED_ROAD(40, needs stone) < RAILROAD(40/16) < …` up to
+  `JUMPLANE`, plus the sea `TUNNEL` (later tiers dormant beyond the Renaissance tech cap). In Civ4 a
+  route **overrides** the terrain move cost, so a plot's cost becomes `route.costFactor()` =
+  `iMovement/100` (trail 1.0 = one flat plot, road 0.6, paved 0.4 …) and corridors hug the better
+  roads. **Not built yet:** the per-plot `RouteType` field, trail-stamping on Explorer movement,
+  trail-gated routing for non-explorers, and the route cost override — a phase of its own.
+  - **Trails are per-session state, not canonical map data (owner constraint, 2026-07-14).** A plot's
+    `RouteType` is **mutable per-session sim state** — the demo session (seed `7654321`) carries its
+    own trails — exactly like the plots' `buildings()`/districts and camp `occupant`, and **unlike**
+    the seed-independent terrain/feature/bonus field. So it must **not** leak into the canonical,
+    session-independent plot cache (`.plot-cache` / `PlotService`'s gzip blob — "a property of the
+    map, not of a run"); it rides the **session render snapshot** (the `render/` package) instead,
+    overlaid on the canonical terrain grid in the browser — the same feed districts use (see
+    `docs/district-buildout.md` D3, fact 5). **Rendering trails therefore needs session support on
+    the server**: a per-plot route field on the session snapshot (a `RouteType` overlay), served per
+    session, then drawn with the Civ4 route art. Engine-side, `Plot.routeType` sits with the other
+    per-session mutable plot state and is excluded from the canonical serialization.
+  - **Routing splits into seed-independent (Explorer) and per-session (everyone else) (owner
+    constraint, 2026-07-14).** Today's corridor A* (`ProvincePlotPool.corridor` + its
+    `corridorCache`) is **seed-independent** — a property of the map, safe to cache globally and
+    share the disk blob. That path stays exactly as-is for the **Explorer**, which routes freely over
+    any ground (trails don't constrain it). But **trail-gated routing for the other caravans is
+    per-session**: it may only traverse plots the *session* has already trailed, so it **cannot use
+    the shared seed-independent corridor cache** — it needs a **separate per-session A*** (keyed to,
+    and invalidated by, that session's laid trails), distinct from the map-level one. Net: two
+    routing modes — the existing seed-independent one (Explorer / current behaviour) and a new
+    per-session trail-gated one (non-explorers).
+  - **Persistence — a `.session-cache/<seed>/` (owner proposal, 2026-07-14).** The natural sibling to
+    the canonical `.plot-cache/v<GEN_VERSION>/`: a **per-session, seed-keyed** cache holding a
+    session's mutable plot overlays (trails now; could unify built buildings/districts and camps).
+    Aligns with the Phase-C "durable sessions" direction (`docs/client-server.md`) where the
+    **command log** is the replayable source of truth — `.session-cache/` either stores that log or
+    **materializes** the derived per-plot overlays for fast serving without a replay. Caveats: the
+    truly-unique key is the **session** (a `SessionSpec` + log), not the seed — `<seed>` suffices for
+    the one-session-per-seed demo but may become `<sessionId>`; and on the server it needs a
+    **persistent volume** (like the plot-cache AzureFile share).
+  - **Spectator UI — a "Timelines" browser (owner design, 2026-07-14).** Sessions are called
+    **"Timelines"** in the UI. By default (no URL-parameter bypass) the player is presented the
+    **existing Timelines to spectate** — the `lobby.html` served at `/` lists the running
+    `SessionHost` sessions; a URL parameter deep-links straight into one (bypassing the browser).
+    Fits the many-sessions-per-JVM model.
+  - **Session ownership — first player claims admin (owner design, 2026-07-14).** A Timeline has an
+    owner/admin. If it has **no owner, the first player to join becomes its admin** (claim-on-first-
+    join) — a **per-Timeline** admin, distinct from the global server-admin allow-list
+    (`ROLE_ADMIN` / `civstudio.auth.admins`, the `web/admin.html` console). The per-session admin
+    governs that Timeline (pause/rate/commands via its `CommandLog`).
+  - **Route art (owner decision, 2026-07-14): use the Civ4 route art — not procedural ribbons.**
+    C2C ships the in-world roads as **3D `.nif` segment meshes** under
+    `UnpackedArt/art/terrain/routes/<style>/` (path / roman roads / railroads / modern roads /
+    modrailroads / warpandjumplanes / bridge / dock, ~536 nifs) — and, crucially, **with co-located
+    `.dds` textures** (51 of them in the tree), the very thing the deferred D4b building sprites
+    *lacked*, so the nifbake path is far more viable here. The pieces are **tile-adjacency variants**
+    (`RoadA00`, `RoadB01`, … — 70 per style), but a 2D map only needs a small connection set
+    (straight / curve / T / cross / end), not all 70. **Plan:** bake the Civ4 route nifs to WebP via
+    the `tools/nifbake` path (as the terrain art already is), pick a style per tier
+    (path→TRAIL/PATH, roman roads→ROAD, modern roads→PAVED_ROAD/HIGHWAY, railroads→RAILROAD, …), and
+    stamp the connection pieces along the plot corridor. The build-button `.dds` icons stay the UI
+    chips (`path.dds`, `BuildRoad.dds`, …).
 - **Phase 4 — the `ExplorerProvisioner` trigger. — DONE + MEASURED.** A colony step-action
   (`ExplorerProvisioner`, off by default via `SimulationHarness.setExplorerProvisioning`) musters
   one levy at a time under food pressure — drafting the pool's least-skilled adults
