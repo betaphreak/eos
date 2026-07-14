@@ -7,7 +7,7 @@
 //
 // Two sources: the map's urban plots (BUNDLE, geographic — every city) and the live session
 // snapshot (the POV colony's placed buildings, from the D3 district feed). Both fade in deep.
-import { P, ctx, pxr, pyr, px, py, provOnScreen, isPolitical, BUNDLE, apiUrl } from "./core.mjs";
+import { P, ctx, cam, pxr, pyr, px, py, provOnScreen, isPolitical, BUNDLE, apiUrl } from "./core.mjs";
 import { bandAlpha } from "./bands.mjs";
 import { liveColony } from "./overlays/live.mjs";
 
@@ -15,6 +15,10 @@ import { liveColony } from "./overlays/live.mjs";
 const TILES = (BUNDLE && BUNDLE.districtTiles) || null;
 const tileImg = {};
 if (TILES) for (const [type, a] of Object.entries(TILES)) { const im = new Image(); im.src = a.src; tileImg[type] = im; }
+
+// the district hex reaches 100% (its native baked size) at D_FULL_K and holds there deeper —
+// the "native at 256×" convention (cf. plots.mjs BONUS_FULL_K). D_TILE is the baked tile px.
+const D_TILE = 256, D_FULL_K = 256;
 
 // district types assigned to a city's non-primary urban plots (the primary is CITY_CENTER)
 const OTHER_TYPES = ["NEIGHBORHOOD", "COMMERCIAL_HUB", "CAMPUS", "HOLY_SITE", "ENCAMPMENT", "THEATER"];
@@ -92,8 +96,12 @@ export function drawDistricts() {
   ctx.save();
   ctx.globalAlpha = a;
 
-  // (1) geographic: the Civ6 district-hex tile on every city's urban core plots
-  const d = plotPx;                  // one district hex fills exactly one plot (100% — at 256× a plot is the tile)
+  // (1) geographic: the Civ6 district-hex tile on every city's urban core plots.
+  // The hex is a plot FEATURE, drawn at its native 256px (100%) once you reach 256× zoom and
+  // held there deeper — the same "hits native at 256×" convention the bonus icons use
+  // (plots.mjs BONUS_FULL_K), so it reads at a fixed crisp size rather than ballooning past the
+  // cap. (docs/explorer-caravan.md — the district/urban icon is becoming a plot feature.)
+  const d = D_TILE * Math.min(cam.k, D_FULL_K) / D_FULL_K;
   for (const p of P) {
     if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
     assignTypes(p);
@@ -110,7 +118,7 @@ export function drawDistricts() {
     const ids = [];
     for (const dist of colony.districts) for (const id of (dist.buildings || [])) ids.push(id);
     if (ids.length) {
-      drawTile("CITY_CENTER", cx, cy, plotPx);               // the ground the icons sit on (one plot)
+      drawTile("CITY_CENTER", cx, cy, d);                    // the district hex (native at 256×)
       const s = Math.max(8, Math.min(plotPx * 0.4, 20));     // icon size (a fraction of a plot)
       // ring (then spiral) the icons out from the center
       for (let i = 0; i < ids.length; i++) {
