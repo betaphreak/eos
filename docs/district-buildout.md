@@ -274,8 +274,13 @@ gated `bandAlpha([4.5,5.5])`):
   spine/block layout) — a good first cut for a button-icon (not 3D-sprite) payload; the LSystem layout
   is a future refinement.
 
-**Deploy pending:** D3 + D4a + D5 are server-visible (snapshot fields, bundle key, auto-build) — needs
-a version bump + `az` deploy to go live on `dev.civstudio.com`.
+**Deployed (2026-07-14):** D3 + D4a + D5 are live. The static site (`js/districts.mjs` + the seven
+`assets/districts/dis-*.webp` hex tiles) auto-shipped via the SWA `deploy-web` Action; the server was
+rolled to build #523 / commit `1d2f5c6` (`tools/deploy-server.ps1`), so `/api/bundle` now carries the
+`districtTiles` key and the snapshot the `DistrictView` fields. No plot-cache clear was needed (districts
+are render/session state, not plot generation). Verified end-to-end: a headless `cityshot` of Dhenijansar
+(prov 4411, 74 urban plots) renders every urban-core plot as its typed Civ6 district hex, zero console
+errors.
 
 <details><summary>Original D5 plan</summary>
 
