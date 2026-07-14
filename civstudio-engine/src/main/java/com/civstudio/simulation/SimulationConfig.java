@@ -103,6 +103,16 @@ import lombok.Builder;
  *                     the colony's (province-capped) plots can seat; {@code 0} keeps
  *                     the fixed {@code numNFirms}. The granular-founding sim
  *                     (SmallOpen) bypasses it
+ * @param expeditionTaxRate the fraction of a returning explorer expedition's haul
+ *                     proceeds the crown keeps as tax (the rest seeds the returnees'
+ *                     new households); part of the renewal loop's reward-on-return
+ *                     (see {@code docs/explorer-caravan.md} commit 2). A calibration
+ *                     placeholder
+ * @param expeditionNobleShare the fraction of a returning expedition's <b>taxed-net</b>
+ *                     proceeds awarded to its ablest returnee, who is ennobled into a
+ *                     silver-banking noble; the remainder is split among the other
+ *                     returnees, each founding a copper-banking laborer household. A
+ *                     calibration placeholder
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -134,7 +144,9 @@ public record SimulationConfig(
 		double researchInitialFraction,
 		double researchCostScale,
 		FertilityConfig fertility,
-		int foundingLaborersPerNFirm) {
+		int foundingLaborersPerNFirm,
+		double expeditionTaxRate,
+		double expeditionNobleShare) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -222,6 +234,10 @@ public record SimulationConfig(
 			0.9,                                   // researchInitialFraction (90%)
 			1.0,                                   // researchCostScale
 			FertilityConfig.DEFAULT,               // fertility (births on by default)
-			30);                                   // foundingLaborersPerNFirm (size the
+			30,                                    // foundingLaborersPerNFirm (size the
 			                                       //   founding food sector to demand)
+			0.2,                                   // expeditionTaxRate (crown keeps 20% of
+			                                       //   a returning haul; calibration)
+			0.3);                                  // expeditionNobleShare (the ablest
+			                                       //   returnee's ennoblement share)
 }

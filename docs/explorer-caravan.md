@@ -367,7 +367,30 @@ Each phase is independently compilable/testable; earlier phases are inert until 
     price → money from buyers, conserving) → seed the households + the **ruler tax** + **ennoble the
     ablest** returnee. The interim cargo→money is deferred to there; commit 1's households open on
     the standard founding stock (no cash).
-  - **Commit 2 -- implementation plan (mapped 2026-07-15, NOT built).** Add the cash reward to
+  - **Commit 2 — SHIPPED (2026-07-15).** The cash reward, built on the commit-1 seam
+    (`SocialMobility.rewardReturn`), the conserving path (not the interim mint). On a live return:
+    (1) **`dumpHaul`** — the ruler holds the `cargoUnits` of gathered non-food cargo
+    (`ruler.getGood("Enjoyment").increase(...)`) and posts a **real Enjoyment sell offer**
+    (`eMkt.addSellOffer(ruler, cargoUnits)`) that clears next step, tanking the price and recouping
+    the crown; the haul is **valued at the day's enjoyment price** (pre-first-clear → the market's
+    founding price) as the proceeds. (2) **`distributeReturn`** (deferred to end of step): release
+    every survivor from the pool, keep the crown's **`expeditionTaxRate`** cut, ennoble the **ablest
+    by SOCIAL** returnee into a silver-banking `Noble` seeded with **`expeditionNobleShare`** of the
+    taxed-net proceeds, and found copper-banking `Laborer` households for the rest, each seeded with
+    an equal split of the remainder. (3) Each cash seed is **drawn out of the crown treasury**
+    (`drawFromTreasury` → `ruler.getBank().withdraw`, so the ruler bears the gold→recipient FX +
+    txn fee) and opened as a fresh endowment on the new household — **money conserved** (the crown
+    recoups via the dumped haul; the seeds sum exactly to the taxed-net proceeds). Two new
+    `SimulationConfig` calibration fields (`expeditionTaxRate` 0.2, `expeditionNobleShare` 0.3);
+    `buildFissionHousehold` gained an `initCheckingBal` param (fission still passes 0).
+    `ExplorerRenewalTest` gains a second case (haul → cash-seeded noble + laborers, seeds sum to
+    proceeds); full 299-test suite green (no re-baseline — the reward fires only on an expedition
+    return, which the default smoke-test colonies never muster). **Deferred:** the tri-currency FX
+    is handled implicitly (withdraw charges the ruler's gold FX fee; the fresh-endowment open
+    materializes the recipient's currency) rather than via an explicit money-changer exchange, and
+    the cargo is still valued/dumped as Enjoyment — the **real raw-goods market** replaces the
+    Enjoyment interim later.
+  - **Commit 2 -- implementation plan (mapped 2026-07-15, BUILT — see the SHIPPED note above).** Add the cash reward to
     `SocialMobility.rewardReturn` (the commit-1 seam), the whole chain deferred to end of step
     alongside the founding:
     1. **Sell the cargo as a real Enjoyment supply dump.** `ConsumerGoodMarket.addSellOffer(Agent

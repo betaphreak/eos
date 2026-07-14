@@ -1,6 +1,7 @@
 package com.civstudio.simulation;
 
 import java.time.DayOfWeek;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -17,7 +18,9 @@ import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.agent.laborer.LaborerConfig;
 import com.civstudio.agent.noble.Noble;
 import com.civstudio.agent.noble.NobleConfig;
+import com.civstudio.agent.ruler.Ruler;
 import com.civstudio.bank.Bank;
+import com.civstudio.market.ConsumerGoodMarket;
 import com.civstudio.name.Person;
 import com.civstudio.race.Race;
 import com.civstudio.settlement.Settlement;
@@ -268,53 +271,160 @@ class SocialMobility implements ExpeditionReturn {
 			return;
 		double dowry = granary.drawStock(FISSION_NECESSITY_DOWRY);
 		colony.scheduleAddAgent(
-				buildFissionHousehold(child, parent.getBank(), dowry));
+				buildFissionHousehold(child, parent.getBank(), dowry, 0));
 		fissionCount++;
 	}
 
-	// build a new laborer household headed by an emancipated child: rename it under a
-	// fresh dynasty surname (its parent's is still in use), keeping its given name,
-	// gender, skills, race, age and parentage; it opens with only the food dowry it
-	// carried (no cash — it earns its keep on the labor market like any laborer)
-	private Laborer buildFissionHousehold(Member child, Bank bank, double initNQty) {
+	// build a new laborer household headed by an emancipated child (or a returned explorer
+	// peasant): rename it under a fresh dynasty surname (its parent's is still in use), keeping its
+	// given name, gender, skills, race, age and parentage; it opens with the food dowry it carried
+	// and initCheckingBal of cash (0 for a fission child — it earns its keep on the labor market;
+	// the FX-converted haul share for a returned explorer, see foundReturnedHousehold)
+	private Laborer buildFissionHousehold(Member child, Bank bank, double initNQty,
+			double initCheckingBal) {
 		Race race = child.race();
 		String surname = colony.getNames().nextDynastyName(race);
 		Member head = new Member(
 				new Person(child.person().givenName(), surname, child.gender(),
 						child.skills(), race),
 				child.getBirthDate(), child.getMother(), child.getFather());
-		return new Laborer(head, cfg.laborer().e(), initNQty, 0, 0,
+		return new Laborer(head, cfg.laborer().e(), initNQty, initCheckingBal, 0,
 				cfg.laborer().savingsRate(), LaborerConfig.DEFAULT, bank, colony);
 	}
 
 	/**
-	 * The explorer-expedition {@linkplain ExpeditionReturn reward} (commit 1 of the renewal loop,
-	 * {@code docs/explorer-caravan.md}): each surviving returned peasant <b>leaves the pool and
-	 * founds its own copper-banking {@link Laborer} household</b> — it "becomes banked", re-enters
-	 * the wedding market and can bear children (the renewal the finite pool cannot provide).
-	 * Deferred to end of step, like fission/ennoblement (the day's market has already cleared).
-	 * <p>
-	 * <i>The cash seed — selling the gathered cargo as a supply dump on the Enjoyment market, the
-	 * ruler's tax, and ennobling the ablest returnee — is commit 2; here the new households open on
-	 * the standard founding stock (no cash), so {@code cargoUnits} is unused until then.</i>
+	 * The explorer-expedition {@linkplain ExpeditionReturn reward} — the renewal loop of {@code
+	 * docs/explorer-caravan.md} (commit 2, the cash reward on top of commit 1's structural core):
+	 * <ol>
+	 * <li>the band's gathered non-food {@code cargoUnits} are <b>sold as a real Enjoyment supply
+	 * dump</b> — the ruler holds the haul and posts it to the enjoyment market, tanking the price
+	 * (so laborers afford more enjoyment for a while) and recouping the crown when the offer clears
+	 * next step;</li>
+	 * <li>the haul's value at today's enjoyment price seeds the returnees; the crown keeps a {@link
+	 * SimulationConfig#expeditionTaxRate() tax} cut and the rest is shared out;</li>
+	 * <li>the <b>ablest</b> returnee is <b>ennobled</b> into a silver-banking {@link Noble} with its
+	 * {@link SimulationConfig#expeditionNobleShare() share} of the taxed-net proceeds;</li>
+	 * <li>the <b>other</b> returnees each <b>leave the pool and found a copper-banking {@link
+	 * Laborer} household</b> seeded with an equal split of the remainder — each "becomes banked",
+	 * re-enters the wedding market and can bear children (the renewal the finite pool cannot
+	 * provide).</li>
+	 * </ol>
+	 * The distribution is deferred to end of step, like fission/ennoblement (the day's market has
+	 * already cleared). Money is conserved: each cash seed is drawn out of the crown treasury (which
+	 * recoups it via the dumped haul), the ruler bearing the currency-exchange fee on the payout.
 	 */
 	@Override
 	public void rewardReturn(Settlement home, List<Member> returnees, int cargoUnits) {
-		for (Member returnee : returnees)
-			colony.scheduleEndOfStepAction(() -> foundReturnedHousehold(returnee));
+		double proceeds = dumpHaul(cargoUnits);
+		colony.scheduleEndOfStepAction(() -> distributeReturn(returnees, proceeds));
 	}
 
-	// end-of-step: a returned peasant leaves the pool and founds its own single-head laborer
-	// household (it "becomes banked"), then undrafts. A no-op if the pool is gone or the peasant is
-	// no longer in it (died on the march / already released). Reuses the fission founding (a fresh
-	// dynasty surname, the standard opening stock); the cash seed from the cargo sale is commit 2.
-	private void foundReturnedHousehold(Member returnee) {
-		returnee.setDrafted(false);
+	// Sell `cargoUnits` of gathered non-food cargo as a ruler-supplied Enjoyment supply dump and
+	// return the haul's value at today's enjoyment price (the proceeds the returnees are seeded
+	// from). The ruler holds the haul and posts a matching sell offer that clears next step (the
+	// offer persists across the day the reward fires — clear() only empties sellOffers at its own
+	// end). Returns 0 (no cash seed — the returnees fall back to the standard founding stock) when
+	// the colony has no ruler / no enjoyment market, or the band gathered nothing.
+	private double dumpHaul(int cargoUnits) {
+		Ruler ruler = colony.getRuler();
+		ConsumerGoodMarket eMkt = (ConsumerGoodMarket) colony.getMarket("Enjoyment");
+		if (ruler == null || eMkt == null || cargoUnits <= 0)
+			return 0;
+		double price = eMkt.getLastMktPrice();
+		if (!Double.isFinite(price) || price <= 0)
+			price = eMkt.getInitialPrice(); // pre-first-clear fallback
+		ruler.getGood("Enjoyment").increase(cargoUnits);
+		eMkt.addSellOffer(ruler, cargoUnits);
+		return cargoUnits * price;
+	}
+
+	// end-of-step: release every surviving returnee from the pool, ennoble the ablest into a
+	// silver-banking noble, and found copper-banking laborer households from the rest — each seeded
+	// with its share of the taxed-net proceeds. A returnee no longer in the pool (died on the march
+	// / already released) is skipped; a no-op if none survive to release.
+	private void distributeReturn(List<Member> returnees, double proceeds) {
 		Retinue r = pool.get();
-		if (r == null || !r.release(returnee))
-			return; // not in the pool (died / already released) — nothing to found
-		colony.scheduleAddAgent(buildFissionHousehold(returnee, copperBank.get(),
-				SimulationHarness.REPLACEMENT_NECESSITY_STOCK));
+		List<Member> released = new ArrayList<>();
+		for (Member returnee : returnees) {
+			returnee.setDrafted(false);
+			if (r != null && r.release(returnee))
+				released.add(returnee);
+		}
+		if (released.isEmpty())
+			return; // no survivor left the pool — nothing to found
+
+		// the crown taxes a cut of the haul (it keeps it — the ruler is the seller); the rest is
+		// shared out, the ablest returnee ennobled and the others founding households
+		double distributable = proceeds * (1 - cfg.expeditionTaxRate());
+		Member ablest = ablestBySocial(released);
+		double nobleCash = distributable * cfg.expeditionNobleShare();
+		colony.scheduleAddAgent(ennobleReturnee(ablest, nobleCash));
+
+		// split the remainder equally among the other returnees (if the ablest was the only
+		// survivor, its share is all there is and the remainder simply stays with the crown)
+		List<Member> founders = new ArrayList<>(released);
+		founders.remove(ablest);
+		double each = founders.isEmpty() ? 0 : (distributable - nobleCash) / founders.size();
+		for (Member founder : founders)
+			colony.scheduleAddAgent(foundReturnedHousehold(founder, each));
+	}
+
+	// found one returned peasant's copper-banking laborer household, seeded with `cash` drawn from
+	// the crown treasury (gold -> copper; the ruler bears the FX + transaction fee) plus the
+	// standard food stock — it "becomes banked". Reuses the fission founding (a fresh dynasty
+	// surname). The caller has already released it from the pool.
+	private Laborer foundReturnedHousehold(Member returnee, double cash) {
+		double seed = drawFromTreasury(cash);
+		return buildFissionHousehold(returnee, copperBank.get(),
+				SimulationHarness.REPLACEMENT_NECESSITY_STOCK, seed);
+	}
+
+	// ennoble one returned peasant into a silver-banking noble seeded with `cash` drawn from the
+	// crown treasury (gold -> silver; the ruler bears the FX + transaction fee), keeping its
+	// identity under a fresh dynasty surname (like buildFissionHousehold). The caller has already
+	// released it from the pool.
+	private Noble ennobleReturnee(Member returnee, double cash) {
+		double seed = drawFromTreasury(cash);
+		Race race = returnee.race();
+		String surname = colony.getNames().nextDynastyName(race);
+		Member head = new Member(
+				new Person(returnee.person().givenName(), surname, returnee.gender(),
+						returnee.skills(), race),
+				returnee.getBirthDate(), returnee.getMother(), returnee.getFather());
+		return new Noble(head, seed, 0, nobleConfig, silverBank.get(), colony);
+	}
+
+	// pay `cash` out of the crown treasury (the ruler's gold bank) so a returnee household can open
+	// with it as a fresh endowment — the ruler bears the currency-exchange + transaction fee on the
+	// payout (gold -> the recipient's currency), and money is conserved (the ruler recoups the cash
+	// via the haul dumped onto the enjoyment market). Returns the amount seeded, 0 when there is no
+	// ruler to draw on or nothing to pay.
+	private double drawFromTreasury(double cash) {
+		Ruler ruler = colony.getRuler();
+		if (ruler == null || cash <= 0)
+			return 0;
+		ruler.getBank().withdraw(ruler.getID(), cash);
+		return cash;
+	}
+
+	// the ablest of a set of returned peasants by head SOCIAL skill (the ennoblement criterion, as
+	// for a laborer — see moreEnnoblable), the younger breaking a tie
+	private static Member ablestBySocial(List<Member> members) {
+		Member best = null;
+		for (Member m : members)
+			if (best == null || moreSocial(m, best))
+				best = m;
+		return best;
+	}
+
+	// the more ennoblable of two peasants: higher SOCIAL, the younger (later birth date)
+	// breaking a tie
+	private static boolean moreSocial(Member candidate, Member incumbent) {
+		int ci = candidate.skills().level(Skill.SOCIAL);
+		int ii = incumbent.skills().level(Skill.SOCIAL);
+		if (ci != ii)
+			return ci > ii;
+		return candidate.getBirthDate().isAfter(incumbent.getBirthDate());
 	}
 
 	/**
