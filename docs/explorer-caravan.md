@@ -371,12 +371,31 @@ Each phase is independently compilable/testable; earlier phases are inert until 
   from the canonical `.plot-cache` — `StoredPlot` serializes only generation-time terrain/feature/
   bonus, so a post-construction field never leaks in) + `Plot.layRoute`; a `MarchingCaravan.laysTrail()`
   hook (default false, `ExplorerCaravan` → true) stamps `ROUTE_TRAIL` on the bare plots of the day's
-  corridor as the Explorer marches (never downgrading a better route). Inert so far — the trail is
-  recorded but does not yet change movement cost or routing, so the whole suite stays green
-  (`ExplorerTrailTest`; 295/295). **Still not built:** the route **cost override**
-  (`ProvincePlotPool.flatCost` → `min(terrainCost, route.costFactor())`) and the **per-session
-  trail-gated routing** for non-explorers (the coupled behavioural change, with the per-session
-  corridor-cache invalidation) — the next cut.
+  corridor as the Explorer marches (never downgrading a better route). Recorded but (pre-cost-override)
+  inert (`ExplorerTrailTest`).
+  - **Route cost override — DONE (2026-07-14).** `ProvincePlotPool.moveCost` now caps the entered
+    plot's flat cost at any route on it: `flat = route == null ? flatCost : min(flatCost,
+    route.costFactor())`, then `× slopeFactor`. So a route overrides the **flat terrain + hill**
+    cost (Civ4-style — a road negates the terrain type; `min` so a route never slows an
+    already-cheap plot), while the **height-difference (Tobler slope) cost still applies** — a road
+    up a steep grade is cheaper than unroaded rough ground but dearer than the same road on the flat
+    (owner decision). Because `moveCost` is now route-aware and corridors are cached per-session,
+    `ProvincePlotPool.invalidateCorridorCache()` is called when a trail is laid (from
+    `MarchingCaravan.layTrail`) so stale corridors re-search. The A* heuristic stays admissible with
+    trails (costFactor 1.0 ≥ the flat min); a future sub-1.0 road tier will need the heuristic lower
+    bound dropped. Universal (helps every band); with no routes at start nothing changes, so the
+    suite stays green (296/296, `PlotCorridorTest`). **Still not built:** the **trail-gated routing**
+    for non-explorers (below).
+  - **Trail-gated routing for non-explorers (owner rule, confirmed 2026-07-14): they require a
+    trail to move — "otherwise they can't leave the settlement."** A hard passability gate: a
+    non-Explorer caravan may only route through plots that carry ≥ a trail. **Consequence:** at game
+    start no trails exist, so every non-explorer caravan is **stranded in its settlement until an
+    Explorer pioneers a trail out** — which is exactly the intended emergent flow, but it
+    **supersedes** today's freely-routing caravans (the six-caravan demo, `SettlerCaravan`/`Worker`/
+    `Military`, and the caravan test scenarios all move without pre-existing trails). So activating
+    the gate universally re-baselines those. Sequencing (see below): build the gated A* + a
+    `requiresTrail()` band property, and turn it on as part of the **Phase-6** explorer-pioneered
+    world that replaces the demo — not before, or the current scenarios strand. **Not built yet.**
   - **Trails are per-session state, not canonical map data (owner constraint, 2026-07-14).** A plot's
     `RouteType` is **mutable per-session sim state** — the demo session (seed `7654321`) carries its
     own trails — exactly like the plots' `buildings()`/districts and camp `occupant`, and **unlike**

@@ -514,9 +514,15 @@ public abstract class MarchingCaravan extends Caravan {
 		RouteType trail = session().getTerrainRegistry().route(RouteType.TRAIL);
 		if (trail == null)
 			return;
+		boolean laid = false;
 		for (Plot p : corridor.path())
-			if (p.routeType() == null)
+			if (p.routeType() == null) {
 				p.layRoute(trail);
+				laid = true;
+			}
+		// a new route changes route-aware move costs, so drop the province's cached corridors
+		if (laid)
+			session().provincePlotPool(worldMap().province(getProvinceId())).invalidateCorridorCache();
 	}
 
 	// strike the camp at dawn: free the plot the band occupied overnight

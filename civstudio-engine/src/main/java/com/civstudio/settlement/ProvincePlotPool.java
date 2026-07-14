@@ -11,6 +11,7 @@ import java.util.PriorityQueue;
 
 import com.civstudio.geo.PlotType;
 import com.civstudio.geo.Province;
+import com.civstudio.geo.RouteType;
 import com.civstudio.geo.ProvincePlotField;
 import com.civstudio.geo.ProvincePlotField.ProvincePlot;
 import com.civstudio.geo.ProvinceRaster;
@@ -350,6 +351,17 @@ public final class ProvincePlotPool {
 		return result;
 	}
 
+	/**
+	 * Drop the cached plot corridors. Call when a plot's {@link Plot#routeType() route} (mutable
+	 * per-session state) changes — the Explorer laying a {@code ROUTE_TRAIL}, a road-builder later
+	 * — since {@link #moveCost move cost} is route-aware and cached corridors would otherwise keep
+	 * their stale, pre-route cost and path. Cheap: routes change rarely (a band pioneering a
+	 * province once), so the province re-searches on the next {@link #corridor} request.
+	 */
+	public synchronized void invalidateCorridorCache() {
+		corridorCache.clear();
+	}
+
 	// A* over the workable plots' 4-neighbour raster adjacency, from start to goal
 	private PlotCorridor search(Plot start, Plot goal) {
 		Map<Long, Plot> index = posIndex();
@@ -459,11 +471,18 @@ public final class ProvincePlotPool {
 		return c;
 	}
 
-	// the directional cost to step from `from` onto `to`: the flat cost of the entered plot
-	// scaled by Tobler's slope factor for the elevation gained/lost across the step. Uphill
-	// costs more, a gentle downhill less, a steep descent more again.
+	// the directional cost to step from `from` onto `to`: the entered plot's flat cost — CAPPED
+	// by any route on it — scaled by Tobler's slope factor for the elevation gained/lost. A route
+	// overrides the flat TERRAIN + hill cost only (a road/trail negates the terrain type and the
+	// hill penalty, Civ4-style; `min` so a route never slows an already-cheap plot); the
+	// height-difference (slope) cost STILL applies on top, so a road up a steep grade is cheaper
+	// than unroaded rough ground but dearer than the same road on the flat. Route state is
+	// per-session (Plot.routeType) — cached corridors are dropped when a trail is laid (see
+	// invalidateCorridorCache / docs/explorer-caravan.md §Phase 3).
 	private static double moveCost(Plot from, Plot to) {
-		return flatCost(to) * slopeFactor(to.elevation() - from.elevation());
+		RouteType route = to.routeType();
+		double flat = route == null ? flatCost(to) : Math.min(flatCost(to), route.costFactor());
+		return flat * slopeFactor(to.elevation() - from.elevation());
 	}
 
 	// Tobler's slope factor for a heightmap elevation delta (plot entered minus plot left)
@@ -476,7 +495,10 @@ public final class ProvincePlotPool {
 
 	// straight-line (Euclidean) distance to the goal scaled by the cheapest possible step
 	// cost (a flat-min plot on the fastest gentle downhill) — an admissible lower bound now
-	// that a downhill step can cost below 1 (Tobler), so A* still returns least-cost corridors
+	// that a downhill step can cost below 1 (Tobler), so A* still returns least-cost corridors.
+	// This stays admissible with TRAILS (costFactor 1.0 ≥ the flat min, so a trailed step never
+	// falls below SLOPE_FACTOR_MIN); a future sub-1.0 road tier on a plot could cost below this
+	// bound, so when road-building lands the lower bound must drop to the min route costFactor.
 	private static double heuristic(Plot a, Plot goal) {
 		double dx = a.x() - goal.x(), dy = a.y() - goal.y();
 		return SLOPE_FACTOR_MIN * Math.sqrt(dx * dx + dy * dy);

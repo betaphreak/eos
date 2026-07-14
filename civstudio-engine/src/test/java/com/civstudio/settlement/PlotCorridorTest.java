@@ -12,6 +12,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.civstudio.geo.Province;
+import com.civstudio.geo.RouteType;
 import com.civstudio.geo.WorldMap;
 
 /**
@@ -89,5 +90,52 @@ class PlotCorridorTest {
 		// the search is cached per (entry-plot, exit-plot)
 		assertSame(c, pool.corridor(entry[0], entry[1], exit[0], exit[1]),
 				"a repeated corridor request returns the cached result");
+	}
+
+	@Test
+	void aRouteOnTheCorridorLowersItsMoveCostAfterInvalidation() {
+		GameSession session = new GameSession(3);
+		WorldMap map = session.getWorldMap();
+		Province dhen = map.province(DHENIJANSAR);
+		ProvincePlotPool pool = session.provincePlotPool(dhen);
+
+		// two border anchors as far apart as the province's portals allow (as above)
+		List<int[]> portals = new ArrayList<>();
+		for (int nb : dhen.neighbors()) {
+			int[] pt = map.portal(DHENIJANSAR, nb);
+			if (pt != null)
+				portals.add(pt);
+		}
+		int[] entry = portals.get(0);
+		int[] exit = entry;
+		long best = -1;
+		for (int[] pt : portals) {
+			long d = (long) (pt[0] - entry[0]) * (pt[0] - entry[0])
+					+ (long) (pt[1] - entry[1]) * (pt[1] - entry[1]);
+			if (d > best) {
+				best = d;
+				exit = pt;
+			}
+		}
+
+		PlotCorridor before = pool.corridor(entry[0], entry[1], exit[0], exit[1]);
+		assertTrue(before.plotCount() > 1, "a multi-plot corridor to road");
+		double costBefore = before.totalCost();
+
+		// lay a ROAD (overrides terrain/hill, costFactor 0.6) on every plot of the corridor
+		RouteType road = session.getTerrainRegistry().route("ROUTE_ROAD");
+		assertNotNull(road);
+		for (Plot p : before.path())
+			p.layRoute(road);
+
+		// the cache still returns the pre-route cost until it is invalidated
+		assertEquals(costBefore, pool.corridor(entry[0], entry[1], exit[0], exit[1]).totalCost(), 1e-9,
+				"a cached corridor keeps its stale pre-route cost until invalidated");
+
+		pool.invalidateCorridorCache();
+		PlotCorridor after = pool.corridor(entry[0], entry[1], exit[0], exit[1]);
+		assertTrue(after.totalCost() < costBefore,
+				"a roaded corridor is cheaper to cross than the unroaded terrain "
+						+ "(the route caps the flat cost; the slope term still applies)");
 	}
 }
