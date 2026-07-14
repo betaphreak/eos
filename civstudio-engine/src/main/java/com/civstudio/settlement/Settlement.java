@@ -57,12 +57,20 @@ import lombok.extern.java.Log;
  * colonies may coexist in one JVM. Agents, banks and markets hold a reference
  * to the colony they belong to; printers receive it in {@link
  * Printer#print(Settlement)}.
+ * <p>
+ * <b>Abstract base of the two settlement tiers</b> — a colony is founded as a concrete
+ * {@link Village} (a single-urban-plot province: only a city center) or {@link City} (a
+ * multi-urban-plot {@code city_terrain} province: a city center plus districts), routed by
+ * {@link GameSession#newSettlement}. All the shared machinery — the step loop, markets, agents,
+ * banks, lifecycle — lives here; the tiers differ only in their {@linkplain UrbanCenter urban
+ * surface} (a {@link City} is a {@link DistrictHost}) and their {@link #isPermanent() permanence}.
+ * See {@code docs/settlement-tiers.md}.
  *
  * @author zhihongx
  *
  */
 @Log
-public class Settlement {
+public abstract class Settlement implements UrbanCenter {
 
 	/****************** constants *****************************/
 
@@ -392,7 +400,7 @@ public class Settlement {
 	 * @param longitude
 	 *            the colony's geographic longitude in decimal degrees (east positive)
 	 */
-	public Settlement(String name, LocalDate startDate, Rng rng,
+	protected Settlement(String name, LocalDate startDate, Rng rng,
 			NameRegistry names, Demography demography, TerrainRegistry terrainRegistry,
 			Rng terrainRng, LiturgicalCalendar liturgicalCalendar,
 			double meanInitAgeYears, double targetNStock, double meanSkillMale,
@@ -444,7 +452,7 @@ public class Settlement {
 	 * @param raceMix
 	 *            race &rarr; weight every generated person is rolled against
 	 */
-	public Settlement(String name, LocalDate startDate, Rng rng,
+	protected Settlement(String name, LocalDate startDate, Rng rng,
 			NameRegistry names, Demography demography, TerrainRegistry terrainRegistry,
 			Rng terrainRng, LiturgicalCalendar liturgicalCalendar,
 			double meanInitAgeYears, double targetNStock, double meanSkillMale,
@@ -659,6 +667,44 @@ public class Settlement {
 	 */
 	public List<Plot> getDistrictPlots() {
 		return plotField.getDistrictPlots();
+	}
+
+	/**
+	 * The colony's <b>city center</b> — the village-center plot (index 0 of the district
+	 * map, where the center-grouped firms/banks and center buildings sit), or {@code null}
+	 * if no plot has been laid yet. See {@link UrbanCenter}.
+	 *
+	 * @return the city-center plot, or {@code null} if none is laid
+	 */
+	@Override
+	public Plot getCityCenter() {
+		List<Plot> plots = getDistrictPlots();
+		return plots.isEmpty() ? null : plots.get(0);
+	}
+
+	/**
+	 * Whether this settlement has districts beyond its city center — {@code true} for a
+	 * {@link City} (a {@link DistrictHost}), {@code false} for a {@link Village}. See
+	 * {@link UrbanCenter#hasDistricts()}.
+	 *
+	 * @return {@code true} if this is a {@link City}
+	 */
+	@Override
+	public boolean hasDistricts() {
+		return this instanceof DistrictHost;
+	}
+
+	/**
+	 * Whether this settlement is <b>permanent</b> — a {@link City} survives depopulation,
+	 * a {@link Village} collapses when its workforce drains. <b>Metadata only for now:</b>
+	 * the collapse machinery does not yet read this (both tiers still collapse as today);
+	 * wiring permanence to the lifecycle is future work (see {@code docs/settlement-tiers.md}
+	 * and {@code docs/city-and-league.md}). {@code false} in the base; {@link City} overrides.
+	 *
+	 * @return {@code true} if the settlement is permanent (a City)
+	 */
+	public boolean isPermanent() {
+		return false;
 	}
 
 	/**
