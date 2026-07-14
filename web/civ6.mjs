@@ -195,6 +195,25 @@ export function improvementOverlay(impKey) {
   return resolveTexture(IMPROVEMENT_OVERLAY[impKey]);
 }
 
+// ---- District tiles (docs/settlement-tiers.md, docs/district-buildout.md D4a) ------------------
+// The 7 Civ6 strategic-view district hex chips (512², full-hex coloured chip + emblem — the only
+// districts with a Hex_* tile; docs/civ6-art-replacement.md §H). Keyed by the eos DistrictType
+// (com.civstudio.settlement.DistrictType) so the district view can stamp the right ground per plot.
+export const DISTRICT_TILE = {
+  CITY_CENTER: 'Hex_DistrictCityCenter',   // star
+  CAMPUS: 'Hex_DistrictCampus',            // flask
+  HOLY_SITE: 'Hex_DistrictFaith',          // wings
+  ENCAMPMENT: 'Hex_DistrictEncampment',    // shield
+  COMMERCIAL_HUB: 'Hex_DistrictCommercial', // coin
+  THEATER: 'Hex_DistrictTheater',          // clef
+  NEIGHBORHOOD: 'Hex_DistrictNeighborhood', // house
+};
+
+/** Civ6 flat district-hex tile for an eos DistrictType; null → depot absent / no such tile. */
+export function districtTile(type) {
+  return resolveTexture(DISTRICT_TILE[type]);
+}
+
 // ---- Yield symbols (docs/civ6-art-replacement.md §C) --------------------------------------------
 /** The Civ6 inline-symbol sheet (FontIcons.dds); per-symbol cell layout is resolved in Phase C. */
 export function fontIcons() {

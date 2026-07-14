@@ -229,12 +229,14 @@ flat art, and the in-world **building sprites** from C2C `.nif` (`district-gener
 The building sprite is distinct from the Phase-2 **button** bake — two bakes from the same building
 (flat button, shipped; 3D-model sprite, here).
 
-**D4a — Civ6 district-hex ground tiles.**
-- Resolve each `DistrictType` → its Civ6 2D art (`Hex_District<Type>.dds` / `Districts_<Type>_Visible.dds`)
-  via `civ6.mjs` (`resolveTexture` / a new `districtTile(type)` resolver, `civ6-art-replacement.md` §H
-  bake sketch), decode with `web/dds.mjs`, bake to `web/assets/districts/*.webp` + a per-type manifest.
-- These are the **ground/tile** the generator lays the hex on (and the far-zoom chip, LOD). Fully
-  bakeable today (2D `.dds`); no 3D mesh path involved.
+**D4a — Civ6 district-hex ground tiles. ✅ DONE (2026-07-14).** `civ6.mjs districtTile(type)` resolves
+each of the 7 `DistrictType`s to its Civ6 `Hex_District*` chip (`CITY_CENTER→CityCenter`,
+`HOLY_SITE→Faith`, `COMMERCIAL_HUB→Commercial`, …); `build.mjs bakeDistrictTiles()` decodes (via
+`dds.mjs`), resamples to 256², keeps the hex-cutout alpha, and emits `web/assets/districts/dis-*.webp`
++ a `districtTiles` manifest key `{TYPE:{src,w,h}}` (allow-listed in `WorldBundle`, served via
+`/api/bundle`). All 7 baked and verified (the CityCenter chip is the star hex). These are the
+**ground/tile** the generator lays the hex on (and the far-zoom chip, LOD) — fully bakeable 2D `.dds`,
+no 3D mesh path. **No deploy yet** (additive bundle key, ignored until D5).
 
 **D4b — C2C building sprites (nifbake), all 1,270.**
 - **New `web/build-building-sprites.mjs`** — for each imported building id → C2C `<ArtDefineTag>` →

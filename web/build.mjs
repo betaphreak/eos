@@ -273,6 +273,7 @@ const tradeGoodIcons = bakeTradeGoodIcons(); // {src, cell, cols, index:{key:col
 const trees = bakeFeatureSprites();          // {leafy,palm,swamp:{src,w,h,sprites}} real foliage cutouts, or null
 const featureOverlays = bakeFeatureOverlays(); // {FEATURE_*: {src,w,h}} flat Civ6 SV feature overlays, or null
 const improvementOverlays = bakeImprovementOverlays(); // {IMPROVEMENT_*: {src,w,h}} flat Civ6 SV improvement overlays, or null
+const districtTiles = bakeDistrictTiles();   // {DISTRICT_TYPE: {src,w,h}} flat Civ6 SV district hex chips, or null
 const seaBands = bakeSeaBands();             // {trop, temp, polar, shore} climate sea + shore colours
 const plotProvinceCount = computeWaterBboxes(provinces);
 
@@ -394,7 +395,7 @@ const bboxes = {};                    // ring-less (sea/lake) provinces' plot-ex
 for (const p of provinces) if (p.bbox) bboxes[p.id] = p.bbox;
 const manifest = {
   seed: +SEED,
-  map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, ice, bonusIcons, trees, featureOverlays, improvementOverlays, seaBands,
+  map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, ice, bonusIcons, trees, featureOverlays, improvementOverlays, districtTiles, seaBands,
   loading,                            // committed loading-screen art (assets/loading/loading-*.jpg), or []
   bboxes,                             // {provId: [x0,y0,x1,y1]} for ring-less provinces (server can't derive)
 };
@@ -1095,6 +1096,28 @@ function bakeImprovementOverlays() {
   }
   if (!Object.keys(out).length) return null;
   console.log(`  improvement overlays: ${Object.keys(out).length} Civ6 flat SV (${Object.keys(out).join(', ')}); placement deferred`);
+  return out;
+}
+
+// Bake the 7 Civ6 strategic-view DISTRICT hex chips (docs/district-buildout.md D4a): the full-hex
+// coloured tile + emblem Civ6 ships for CityCenter/Campus/HolySite/Encampment/Commercial/Theater/
+// Neighborhood (docs/civ6-art-replacement.md §H). Each is kept as an RGBA cutout (the alpha is the
+// hex mask, like the feature overlays) so the district view (city.mjs, D5) stamps it as the ground a
+// district's C2C building sprites sit on. Keyed by the eos DistrictType. Civ6-only: null when the
+// depot is absent (the view falls back to the flat pip).
+function bakeDistrictTiles() {
+  const T = 256, out = {};
+  for (const type of Object.keys(civ6.DISTRICT_TILE)) {
+    const file = civ6.districtTile(type);
+    if (!file) continue;
+    const img = decodeCached(file);
+    if (!img) continue;
+    const rgba = resampleRGBA(img.rgba, img.width, img.height, T, T);
+    const name = 'districts/dis-' + type.toLowerCase();
+    out[type] = { src: queueWebpRGBA(name, T, T, rgba, { quality: 90 }), w: T, h: T };
+  }
+  if (!Object.keys(out).length) return null;
+  console.log(`  district tiles: ${Object.keys(out).length} Civ6 hex chips (${Object.keys(out).join(', ')})`);
   return out;
 }
 
