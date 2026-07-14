@@ -238,30 +238,29 @@ each of the 7 `DistrictType`s to its Civ6 `Hex_District*` chip (`CITY_CENTER→C
 **ground/tile** the generator lays the hex on (and the far-zoom chip, LOD) — fully bakeable 2D `.dds`,
 no 3D mesh path. **No deploy yet** (additive bundle key, ignored until D5).
 
-**D4b — C2C building sprites (nifbake), all 1,270.**
-- **New `web/build-building-sprites.mjs`** — for each imported building id → C2C `<ArtDefineTag>` →
-  `.nif` (via `web/civ4.mjs resolveArt` / `Civ4Files`) → **`tools/nifbake`** sprite (the pipeline
-  behind the old city sprite, cactus, tall-grass foliage). Pack into a sprite sheet under
-  `web/assets/buildings/` (WebP — project baked art is WebP) + a manifest of per-id sprite rects.
-- **Scope: all 1,270 imported buildings (owner)** — full coverage up front, not just the function
-  taxonomy. Watch the sheet size against the WebP 16383-px cap (tile across multiple sheets if needed,
-  as the button bake does across ~30 rows). Missing/uneven `.nif` art → **skip** (that building shows
-  no sprite, backdrop only), not a colour chip — sprites aren't chips. **Log every dropped id** (no
-  silent truncation).
-- **Serve** the sprite manifest alongside `/api/buildings` (or a sibling), same pattern as the button
-  sheet.
+**D4b — C2C building 3D sprites (nifbake). ⏸ DEFERRED (2026-07-14) — investigated, not viable enough.**
+The nifbake path the `district-generator.md` doc assumed turned out far weaker than believed
+(investigated with a probe, not just trusted):
+- **Only 80 of the 1,270 gated buildings have a real 3D model** — the other **1,190 use
+  `Art/Empty.nif`** (C2C is largely a 2D-interface mod; those are button-only, already baked in Phase 2).
+- Of the 80, **only ~33 nifs even resolve** — the `CIV4ArtDefines_Building.xml` NIF paths (e.g.
+  `Barracks/Barracks.nif`) don't match the `UnpackedArt` disk layout (variant subfolders, `Pedia_`
+  prefixes); and **0 of the resolved ones have a co-located texture** (textures aren't next to the nifs —
+  they'd need extracting from each nif's internal `NiSourceTexture` refs and re-resolving).
+- `tools/nifbake renderNif` itself **works** (a manual Barracks render produced a recognizable sprite),
+  but reliable coverage would be a real rabbit hole for maybe ~20–30 usable results.
 
-**Verify:** both bakes run offline against `.civ6-cache` / `.civ4-cache` (fact: Git Bash can't traverse
-the junctions — use Node `fs`/PowerShell); spot-check rendered district tiles and a handful of building
-sprites; confirm every sheet's dims are within the WebP 16383 cap; the drop-log lists any missing-art
-buildings.
+**Decision (owner, 2026-07-14):** defer the 3D sprite bake; **D5 uses the flat button icon on a small
+plinth** as each building's representation (already baked in Phase 2, full 1,270 coverage). 3D nifbake
+sprites are a future enhancement (needs nif-path fixing + texture extraction from nif internals).
 
 ### Phase D5 — Web: the district generator view (`city.mjs`)
 
-Port the Civ6 LSystem *logic* over the composite — Civ6 flat district-hex **ground** (D4a) with C2C
-**building sprites** (D4b) arranged on it — `district-generator.md` §3 path 2, the "removed `drawLots`
-done right." Consumes the engine-authoritative district record from D3 (bare building ids → join
-`/api/buildings` for category/art).
+Port the Civ6 LSystem *logic* over the composite — Civ6 flat district-hex **ground** (D4a) with each
+building drawn as its **flat button icon on a plinth** (D4b deferred the 3D sprites; button icons give
+full 1,270 coverage) arranged on it — `district-generator.md` §3 path 2, the "removed `drawLots` done
+right." Consumes the engine-authoritative district record from D3 (bare building ids → join
+`/api/buildings` for category/art + the `icon` sprite rect).
 
 - **Ground** — lay the Civ6 `districtTile(type)` hex art (D4a) as the tile the assembly sits on, keyed
   by `district.type`.
