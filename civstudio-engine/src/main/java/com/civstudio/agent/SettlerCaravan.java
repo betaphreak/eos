@@ -79,6 +79,20 @@ public class SettlerCaravan extends MarchingCaravan {
 	}
 
 	/**
+	 * The band's following as its full {@link Retinue} — a settler/dissolution band always
+	 * carries a real labour reserve (its people transferred out of a vanished colony), so it
+	 * narrows the base {@link MarchFollowing} back to the {@link Retinue} its re-founding and
+	 * dissolution paths need (promotion, {@code getMembers()}, {@code isWandering()}). Safe:
+	 * a {@code SettlerCaravan} is only ever constructed with a {@code Retinue}.
+	 *
+	 * @return the band's following as a {@link Retinue}
+	 */
+	@Override
+	public Retinue getFollowing() {
+		return (Retinue) super.getFollowing();
+	}
+
+	/**
 	 * <b>Dissolve</b> a failing settlement into a wandering migration band — the {@code
 	 * HOLDING → CARAVAN} hinge (see {@code docs/caravan.md}). The colony's circulating
 	 * money is <b>conserved</b> into the band's hoard (every account and bank equity

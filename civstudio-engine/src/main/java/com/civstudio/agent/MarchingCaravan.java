@@ -74,10 +74,13 @@ public abstract class MarchingCaravan extends Caravan {
 	 */
 	public static final String DEFAULT_TECH = "TECH_MEDIEVAL_LIFESTYLE";
 
-	// the band's following: its unranked people and their larder, detached from any
-	// settlement (the same Retinue that is a settled colony's labour reserve)
+	// the band's following: its people and their carried larder — a full Retinue for a
+	// settler/dissolution band (its transferred labour reserve) or a lean DraftBand for an
+	// explorer's referenced levy (docs/explorer-caravan.md). The march reads only the
+	// MarchFollowing slice; a band that carries a Retinue exposes it via a covariant
+	// getFollowing() override (see SettlerCaravan).
 	@Getter
-	protected final Retinue following;
+	protected final MarchFollowing following;
 
 	// the tech tree the band carries out of its abandoned settlement (null if it never
 	// had research): what it knows and was researching, restored onto the colony it
@@ -151,7 +154,7 @@ public abstract class MarchingCaravan extends Caravan {
 	 * @param session    the session the band belongs to (its world map is the graph the
 	 *                   band moves on; its plot pools host the nightly camp)
 	 */
-	protected MarchingCaravan(Member leader, Retinue following, double hoard, int provinceId,
+	protected MarchingCaravan(Member leader, MarchFollowing following, double hoard, int provinceId,
 			com.civstudio.settlement.GameSession session) {
 		super(leader, hoard, provinceId, session);
 		this.following = following;
@@ -172,7 +175,7 @@ public abstract class MarchingCaravan extends Caravan {
 	 * @param latitude  the band's latitude in decimal degrees (north positive)
 	 * @param longitude the band's longitude in decimal degrees (east positive)
 	 */
-	protected MarchingCaravan(Member leader, Retinue following, double hoard, double latitude,
+	protected MarchingCaravan(Member leader, MarchFollowing following, double hoard, double latitude,
 			double longitude) {
 		super(leader, hoard, latitude, longitude);
 		this.following = following;

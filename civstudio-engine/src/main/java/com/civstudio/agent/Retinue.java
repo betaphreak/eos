@@ -50,7 +50,7 @@ import lombok.extern.java.Log;
  * surname is drawn only when a peasant is promoted into a household.
  */
 @Log
-public class Retinue extends Agent {
+public class Retinue extends Agent implements MarchFollowing {
 
 	// the pool's tunable parameters: larder depth, relief budget, and relief ration
 	// (see RetinueConfig). These together decide whether the reserve can feed itself

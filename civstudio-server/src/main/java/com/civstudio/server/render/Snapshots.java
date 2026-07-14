@@ -170,7 +170,9 @@ public final class Snapshots {
 		double larder = 0;
 		boolean settled = false;
 		if (band instanceof MarchingCaravan m) {
-			Retinue following = m.getFollowing();
+			// the march reads only the MarchFollowing slice (size + larder); a Retinue and a
+			// DraftBand both satisfy it (docs/explorer-caravan.md)
+			var following = m.getFollowing();
 			bandSize = following.size();
 			larder = following.getLarder();
 			settled = m.hasArrived();

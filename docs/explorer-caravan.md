@@ -357,15 +357,17 @@ Each phase is independently compilable/testable; earlier phases are inert until 
   share); the *ratio* between them and the absolute per-head provision are calibration.
 - **Fog granularity** — province-only first vs. per-plot within explored provinces (the
   render-only vs gameplay question is decided — decision 12).
-- **Rally-and-re-form on dissolution** (decision 15) — a collapse is game over, and outstanding
-  explorers **rally on the abandoned city province and try to re-found the colony** there. Open
-  mechanics: the departing main band (the `SettlerCaravan` dissolution produces) vs. the rallying
-  explorers — do the explorers **merge with** the migrant band at the old site, or re-form
-  independently while it migrates elsewhere? How several in-flight explorers **converge and
-  merge** into one re-founding band (leader precedence, hoard/larder pooling), and the **readiness
-  test** to re-found vs. keep waiting for stragglers. Reuses `SettlerCaravan` +
-  `GameSession.newSettlement(band,…)`; the new piece is the *rally* (redirect explorers to the
-  abandoned site) and the *merge*.
+- **Rally-and-re-form on dissolution** (decision 15) — **RESOLVED**. On collapse the dissolution
+  still produces the crown's migrant `SettlerCaravan` (the old ruler leads), but it **rallies at
+  the abandoned site** rather than wandering off; the outstanding explorers **converge on that
+  site and merge into it** — one band, **leader by precedence** (the old ruler's heir if any,
+  else the ablest explorer leader), with hoards, larders, cargo and followings **pooled**. It
+  **re-founds in place once a minimum viable band has gathered** (a `MIN_SETTLERS`-style floor,
+  which `SettlerCaravan` already uses); explorers still out when it settles **rejoin the
+  re-founded colony** on arrival. Reuses `SettlerCaravan` + `GameSession.newSettlement(band,…)`;
+  the new pieces are the **rally** (hold the crown band at the site + redirect explorers there),
+  the **merge** (pool bands into one), and the **min-viable readiness** gate. The old dynasty
+  rules again. (A late phase — after the round trip and trigger land.)
 - **Non-food cargo** — a later cut sells the gathered `Cargo` once a raw-goods market or the
   trade caravan (`docs/caravan-trade.md`) exists.
 - **Buildable-unit surfacing** (decision 16) — wiring the muster into a Civ4/C2C build queue is a
