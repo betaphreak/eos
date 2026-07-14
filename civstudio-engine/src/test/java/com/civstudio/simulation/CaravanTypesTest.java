@@ -9,7 +9,6 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 
 import com.civstudio.agent.CaravanRole;
-import com.civstudio.agent.ExplorerCaravan;
 import com.civstudio.agent.MarchingCaravan;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.MilitaryCaravan;
