@@ -97,10 +97,34 @@ public final class Snapshots {
 		var research = c.getResearch();
 		List<String> knownTechs = research == null ? List.of()
 				: research.getKnown().stream().sorted().toList();
+		// the district state the web view stamps: the starting district count (province
+		// development), the culture (→ art-style set), and the plots carrying buildings
+		// (sparse — auto-build puts everything at the center in the first cut). See
+		// docs/district-buildout.md Phase D3.
+		String culture = c.getProvince() == null ? null : c.getProvince().culture();
+		List<DistrictView> districts = districtViews(c);
 		return new ColonyView(c.getName(), c.isAlive(), date.toString(), population,
 				children, nobles, firms, pool, c.getInflation(), necessity, enjoyment,
 				c.getPlotCount(), c.getMaxPlots(), c.getLatitude(), c.getLongitude(),
-				bankProfitTax, nobleIncomeTax, advisorViews(c), knownTechs);
+				bankProfitTax, nobleIncomeTax, advisorViews(c), knownTechs,
+				c.getStartingDistrictCount(), culture, districts);
+	}
+
+	// project the colony's district plots that carry buildings — the placed-building state
+	// the web district view stamps (bare ids; the client joins /api/buildings). Only
+	// non-empty plots are sent (sparse); the plot's index is its position in the district
+	// map (0 = village center). See docs/district-buildout.md Phase D3.
+	private static List<DistrictView> districtViews(Settlement c) {
+		List<com.civstudio.settlement.Plot> plots = c.getDistrictPlots();
+		List<DistrictView> views = new ArrayList<>();
+		for (int i = 0; i < plots.size(); i++) {
+			List<com.civstudio.settlement.Building> buildings = plots.get(i).buildings();
+			if (buildings.isEmpty())
+				continue;
+			views.add(new DistrictView(i,
+					buildings.stream().map(com.civstudio.settlement.Building::id).toList()));
+		}
+		return views;
 	}
 
 	// project the colony's privy council: the court member seated in each filled advisor

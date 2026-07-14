@@ -31,10 +31,18 @@ import java.util.List;
  * @param knownTechs     the tech ids this colony knows (its pre-known baseline plus what it has
  *                       researched) — drives the web tech tree's researched (unlocked) styling;
  *                       empty when the colony has no research state
+ * @param startingDistricts the number of districts the city begins with — its founding province's
+ *                       EU4 1444 development (ADM+DIP+MIL), capped at the province plots; 0 for a
+ *                       province-less colony (see {@code docs/district-buildout.md} Phase D1)
+ * @param culture        the colony's Anbennar culture (from its founding province) — the web folds
+ *                       it to a district art-style set (D5); {@code null} for a province-less colony
+ * @param districts      the district plots carrying buildings (the placed-building state the district
+ *                       view stamps); empty until auto-build places anything. See {@link DistrictView}
  */
 public record ColonyView(String name, boolean alive, String date, int population,
 		int children, int nobles, int firms, int poolSize, double cpi,
 		double necessityPrice, double enjoymentPrice, int plotCount, int maxPlots,
 		double latitude, double longitude, double bankProfitTax, double nobleIncomeTax,
-		List<AdvisorView> advisors, List<String> knownTechs) {
+		List<AdvisorView> advisors, List<String> knownTechs, int startingDistricts,
+		String culture, List<DistrictView> districts) {
 }

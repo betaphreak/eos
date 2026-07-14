@@ -164,10 +164,36 @@ lands at plot 0; idempotent on re-research; a non-`BUILDING_` token places nothi
 off (default) research places nothing while the token is still granted. Collapse smoke tests stay on
 the flag-off default and stay green.
 
-### Phase D3 — Server: serve the district record on the session snapshot
+### Phase D3 — Server: serve the district record on the session snapshot ✅ DONE (2026-07-14)
 
-Expose the per-plot district state to the browser through the **session render snapshot**, not the
-canonical `PlotService` blob (fact 5).
+Expose the district state to the browser through the **session render snapshot**, not the canonical
+`PlotService` blob (fact 5). **Shipped leaner than the original contract:** the server sends the
+**authoritative raw state** (bare building ids per district plot + the starting district count + the
+culture); the web derives type/era/style (D5) from data it already holds — matching the "bare ids,
+client joins `/api/buildings`" decision and keeping the snapshot hot path free of building-category
+coupling.
+
+**Shipped** (`render/`):
+- **`DistrictView(int index, List<String> buildings)`** — one per district plot carrying buildings
+  (sparse: auto-build puts everything at the center in the first cut, so typically just index 0). Bare
+  eos ids; the web joins `/api/buildings` for category/sprite and derives the `DistrictType` from those
+  categories (index 0 = `CITY_CENTER`).
+- **`ColonyView`** gains `startingDistricts` (`Settlement.getStartingDistrictCount()`), `culture` (the
+  province culture → the web's art-style fold), and `districts` (`List<DistrictView>`). No allow-list
+  gate needed — `ColonyView` is a record serialized wholesale (as `knownTechs` was in Phase 3c).
+- **`Snapshots.districtViews(...)`** projects the non-empty district plots; degrades to an empty list
+  before anything is built, and `culture` to `null` for a province-less colony.
+- **era/style are client-derived** (not server fields): the web already has `knownTechs` + the total
+  tech count (→ `ArtEra.fromProgress`) and `culture` (→ art-style table), so it computes them in D5.
+  The Java `DistrictType`/`ArtEra` enums stay the authoritative spec, mirrored in JS.
+
+**Verified:** server suite **33/33** + a new `DistrictSnapshotTest` (2 cases) driving the projection
+through `Snapshots.of` — a province colony reports `startingDistricts > 0` and its culture with an empty
+`districts` list; after auto-build an `Orchard` shows at district index 0. **No deploy yet** — the
+fields are additive and ignored by the current client (no drift); version bump + `az` deploy batch with
+D5 when there's something to render.
+
+<details><summary>Original contract (superseded by the leaner shipped shape)</summary>
 
 - **Render view.** Extend the colony render snapshot (`render/`, alongside `ColonyView`) with a
   per-district-plot record — the `district-generator.md` §2 contract:
@@ -193,6 +219,8 @@ canonical `PlotService` blob (fact 5).
 `district` record is present for a colony's plots (Dhenijansar shows `CITY_CENTER` at plot 0 and its
 built ids), and that a non-spectated / dataless plot degrades cleanly. Headless check via
 `tools/webverify`.
+
+</details>
 
 ### Phase D4 — Web: bake the district-hex ground (Civ6 2D) + the C2C building **sprite** set
 
