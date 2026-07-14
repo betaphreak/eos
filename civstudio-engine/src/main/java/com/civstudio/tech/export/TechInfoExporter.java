@@ -60,8 +60,9 @@ public final class TechInfoExporter {
 
 	// the one exception kept from beyond the ceiling: the Industrial entry tech, retained
 	// as the tree's visual end-cap (where the Renaissance leads). The engine still drops it
-	// at load (its era is past MAX_TECH_ERA), so only the web tech-tree view shows it.
-	private static final String CAP = "TECH_INDUSTRIAL_LIFESTYLE";
+	// at load (its era is past MAX_TECH_ERA), so only the web tech-tree view shows it. The id is
+	// the single global tech-cap constant (TechTree.CAP_TECH), shared with the data importers.
+	private static final String CAP = com.civstudio.tech.TechTree.CAP_TECH;
 
 	// the religion-founding techs (and Clockpunk) are dropped: eos has no religion-as-tech
 	// model, and C2C keeps their display names outside the tech localization file anyway.

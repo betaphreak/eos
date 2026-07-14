@@ -164,6 +164,24 @@ a separate future operation** (town-merge), not a rung between Town and City. Tw
   ladder* — but note the capability actually begins at `Town`, so the eventual shape is likely
   `DistrictHost` from `Town` up, with `City` = `Town` + the population gate + uncapped districts.
 
+### Decided (2026-07-14, round 2)
+
+- **One merged ladder (S1).** `SettlementTier` and the caravan `Rank` ladder (`docs/caravan.md`) are
+  **unified** into a single settle⇄unsettle axis: `caravan (mobile) ⇄ Camp → Cottage → Hamlet →
+  Village → Town → City`. The wandering caravan is the rung *below* Camp; the tier is the single
+  source of truth for how settled/developed a band is. (Supersedes this doc's earlier "different
+  axes" framing — the two are reconciled.)
+- **Found low and grow (S3).** Every settlement founds at the **bottom** (`Camp`/`Cottage`) and
+  climbs — matching the caravan→camp→settle path. A colony starts tiny; the economy must survive
+  the climb (a real rebalance, tracked as a risk).
+- **Collapse descends the ladder (S2).** A shrinking settlement **drops rungs** (City → Town →
+  Village → … → Camp) and departs as a caravan at the bottom — collapse becomes a graceful,
+  legible fall, unifying with `docs/caravan.md`'s collapse-as-decline (the food-balance cliff
+  becomes a slope).
+- **Growth = development + a City population gate.** Development (worked plots / economic output /
+  buildings) advances most rungs against the XML `iUpgradeTime` costs; the **`City` rung
+  additionally requires ≥ 1000 people**. So a Town does not become a City on development alone.
+
 ### How the explorer gate changes
 
 The gate becomes `settlement.tier().atLeast(TOWN)` — a **Town or City** (a real district-bearing

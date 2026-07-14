@@ -58,6 +58,17 @@ public final class TechTree {
 	// which Era values exist, since Era is now the full ladder (see eos.era.Era).
 	private static final Era MAX_TECH_ERA = Era.RENAISSANCE;
 
+	/**
+	 * The eos <b>tech cap</b>: the single tech the tree ends on. It sits one step past the
+	 * modeled ceiling ({@link #MAX_TECH_ERA}) and is <b>always kept</b> in {@code techs.json} as
+	 * the tree's visual end-cap — so the whole modeled tree converges on one ending node — while
+	 * the engine still drops it at load (its era is past {@code MAX_TECH_ERA}). The single global
+	 * home for the horizon tech: the tech exporter caps the tree here, and the building/improvement
+	 * importers gate their data to the kept set this defines (see {@code
+	 * com.civstudio.tech.export.TechInfoExporter}, {@code geo.export.ImprovementExporter}).
+	 */
+	public static final String CAP_TECH = "TECH_INDUSTRIAL_LIFESTYLE";
+
 	private static final ObjectMapper MAPPER = JsonMapper.builder()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 			// PrereqTech is a single string for most techs but an array for some;
