@@ -299,7 +299,7 @@ public final class ProvincePlotField {
 			} else {
 				int coreSize = CityPlacement.coreSize(province, cells.size());
 				for (int idx : CityPlacement.coreCells(w, h, cells, ground, composed, feature,
-						bonusGrid, coreSize)) {
+						bonusGrid, mask, coreSize)) {
 					ground[idx] = urban;
 					composed[idx] = PlotType.FLAT; // a city stands on level, built ground
 					feature[idx] = null;           // built ground carries no wild feature

@@ -263,11 +263,12 @@ public final class ProvincePlotPool {
 				break;
 			}
 		if (!anyOther) {
-			// the first settlement anchors its centre on the province's city — its urban core,
-			// sited by Civ4 foundValue (see CityPlacement / docs/urban-plots.md). The free urban
-			// plot nearest the centroid is the primary core cell; fall back to the centroid-
-			// nearest plot for a province with no urban core (non-LAND, or none generated).
-			Plot city = nearestUrban(centroidX, centroidY);
+			// the first settlement anchors its centre on the province's city — its urban core.
+			// Both tiers use the same water-first logic (docs/settlement-tiers.md): for a Village
+			// the single urban plot is already the water-dominant foundValue cell; for a City
+			// (every plot urban) the most-watered urban plot is the centre. Fall back to the
+			// centroid-nearest plot for a province with no urban core (non-LAND, or none generated).
+			Plot city = bestUrbanCenter(centroidX, centroidY);
 			return city != null ? city : bestYieldNearest(centroidX, centroidY);
 		}
 
@@ -293,16 +294,24 @@ public final class ProvincePlotPool {
 		return dx * dx + dy * dy;
 	}
 
-	// the free urban (city-core) plot nearest (cx, cy), or null if the province has none —
-	// the anchor for a founding settlement's civic centre (see foundingCenter)
-	private Plot nearestUrban(int cx, int cy) {
+	// the free urban (city-core) plot best sited for a civic centre — the same water-first
+	// criterion as a Village's foundValue centre (most adjacent water: the plot's sea edges,
+	// whether it sits on a river, and its river-adjacent neighbours), tie-broken by proximity
+	// to (cx, cy). So a City anchors its centre by the same logic as a Village; a province with
+	// no water differs only by the tie-break (nearest the centroid), unchanged from before. Null
+	// if the province has no free urban plot. See docs/settlement-tiers.md.
+	private Plot bestUrbanCenter(int cx, int cy) {
 		Plot best = null;
+		int bestWater = -1;
 		long bestD = Long.MAX_VALUE;
 		for (Plot p : plots) {
 			if (p.owner() != null || !"TERRAIN_URBAN".equals(p.terrain().type()))
 				continue;
+			int water = Integer.bitCount(p.coast()) + (p.river() ? 2 : 0)
+					+ Integer.bitCount(p.riverAdj());
 			long d = dist2(p, cx, cy);
-			if (d < bestD) {
+			if (water > bestWater || (water == bestWater && d < bestD)) {
+				bestWater = water;
 				bestD = d;
 				best = p;
 			}

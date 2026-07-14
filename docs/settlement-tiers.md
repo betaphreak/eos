@@ -61,13 +61,26 @@ work stays independent.
 by the collapse machinery, so a `City` (e.g. the demo colony Dhenijansar, a `city_terrain` province)
 still collapses exactly as before. Full engine suite (281) + server suite (35) stay green.
 
-## Founding-center placement (in progress)
+## Founding-center placement ✅ DONE (2026-07-14)
 
-The city-center / village-center plot is sited by `CityPlacement.foundValue` (`urban-plots.md`). The
-site-selection priority is being reworked to **water-dominant** (owner, 2026-07-14): (1) maximize
-adjacent **river/water** plots, then (2) proximity to as many **bonuses** as possible — a water-dominant
-weighted score (bonuses stay a strong secondary term). Deterministic (no RNG), but it moves the
-persisted per-province urban core, so it needs a plot-cache generation bump + regen on deploy.
+**Water-dominant, and the same logic for both tiers.** The city-center / village-center plot is sited
+by a water-first score:
+
+- **`CityPlacement.foundValue`** (the generation-time urban-core siting for ordinary/Village provinces)
+  now leads with a **dominant fresh-water term** — the candidate's `ProvinceMask.coast` sea-adjacency
+  edges plus nearby `riverCode` cells (`WATER_WEIGHT`/`RIVER_WEIGHT` = 25) — then bonuses as the strong
+  secondary (`BONUS_WEIGHT` = 20), then yields, then a hill nudge. `RIVER_WEIGHT` was previously dead
+  (declared, never scored); it is now live. The mask is threaded into `coreCells`.
+- **`ProvincePlotPool.bestUrbanCenter`** (the claim-time anchor) picks the urban plot by the **same
+  water-first criterion** (the plot's `coast` edges + `river` + `riverAdj` neighbours), tie-broken by
+  centroid proximity — so a **City** (every plot urban) anchors its centre by the same water-first
+  logic as a **Village** (its single urban plot), not the old centroid-nearest. A province with no
+  water differs only by the unchanged tie-break, so no-water sites are byte-identical.
+
+Deterministic (no RNG). It moves the persisted per-province urban core, so the plot-generation version
+was bumped (`ProvincePlotStore.GEN_VERSION` 5 → 6) — the cache dir is versioned by it, so caches
+regenerate lazily and no manual clear is needed. Engine suite **284** green (incl. new
+`CityPlacementTest`); the demo City (Dhenijansar) collapse tests unchanged.
 
 ## Future work
 

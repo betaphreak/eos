@@ -46,7 +46,7 @@ public final class ProvincePlotStore {
 	 * generation change reaches every client instead of being masked by an immutably-cached grid.
 	 * The web bundle ships it as {@code plotVersion}. See {@code docs/plot-serving.md}.
 	 */
-	public static final int GEN_VERSION = 5; // 5: region-coherence pass — terrain grows in contiguous patches (docs/plot-generator.md)
+	public static final int GEN_VERSION = 6; // 6: water-dominant urban-core siting (village/city centre on water first, then bonuses — docs/settlement-tiers.md)
 
 	private static final String WRITE_DIR = "civstudio-engine/src/main/resources/map/provinces";
 	private static final String RESOURCE_DIR = "/map/provinces";
