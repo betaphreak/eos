@@ -367,6 +367,41 @@ Each phase is independently compilable/testable; earlier phases are inert until 
     price → money from buyers, conserving) → seed the households + the **ruler tax** + **ennoble the
     ablest** returnee. The interim cargo→money is deferred to there; commit 1's households open on
     the standard founding stock (no cash).
+  - **Commit 2 -- implementation plan (mapped 2026-07-15, NOT built).** Add the cash reward to
+    `SocialMobility.rewardReturn` (the commit-1 seam), the whole chain deferred to end of step
+    alongside the founding:
+    1. **Sell the cargo as a real Enjoyment supply dump.** `ConsumerGoodMarket.addSellOffer(Agent
+       seller, double qty)` pays the seller on clear via `seller.getBank().credit(...)` AND
+       decrements `seller.getGood(good)` -- so the seller must actually HOLD `cargoUnits` of the
+       Enjoyment good. The **ruler** is the seller: `ruler.getGood("Enjoyment").increase(cargoUnits)`
+       then `((ConsumerGoodMarket) colony.getMarket("Enjoyment")).addSellOffer(ruler, cargoUnits)`.
+       This is the dump -- it tanks the price so laborers afford more enjoyment for a while (the
+       owner's intended effect). TIMING: the reward runs at `tickExcursions` (day N, after that day's
+       `market.clear`), so the offer clears at day N+1's `market.clear` (offers persist -- `clear()`
+       only empties `sellOffers` at its own end); the ruler is credited the proceeds there. The
+       founding (also day N+1, in `applyScheduledAgentChanges`, which runs after `market.clear`) then
+       distributes.
+    2. **Ruler taxes a cut** of the proceeds (stays in the treasury -- it is the seller); the
+       founders/noble get the rest.
+    3. **Multi-currency FX (the crux).** Ruler banks GOLD, laborers COPPER, nobles SILVER; the
+       Enjoyment market clears in copper. Paying copper founders + a silver noble from the gold ruler
+       crosses currencies -- use the money-changer FX seam (docs/architecture.md Bank), NOT a plain
+       `Bank.credit`. This is why commit 2 is deep.
+    4. **Ennoble the ablest returnee** to a `Noble` seeded with its share. The `RankLadder` HOLDING
+       factory promotes a *laborer* (an existing Household), not a pool peasant, so construct the
+       Noble directly like that factory (`new Noble(head, checking, savings, nobleConfig,
+       silverBank.get(), colony)`, SocialMobility ~line 180) after `Retinue.release`.
+    5. **Found the other households with their cash share** -- extend commit-1's
+       `foundReturnedHousehold` to seed `checking` from the FX-converted share instead of zero.
+    New config: an expedition **tax rate** + the **noble share** (calibration). Simplest proceeds
+    model: value the haul at day-N `getLastMktPrice`, pay from the ruler treasury at founding time
+    (the dump recoups the ruler via the market). Expect a **collapse re-baseline** (cash + a fresh
+    noble shift the dynamics). **Interim the owner accepted** ("use the enjoyment market for the
+    moment"): MINT the seed valued at the Enjoyment price into each recipient's own-currency account
+    AND still dump the cargo as real supply -- avoids the tri-currency FX now (not conserving; the
+    real raw-goods market fixes it later), but it double-uses the cargo (mint + dump), so prefer the
+    conserving path if the FX seam is clean. Reuses commit-1 seams: `ExpeditionReturn`,
+    `SocialMobility.rewardReturn`, `Retinue.release`, `buildFissionHousehold`.
 - **Phase 3 — Civ4/C2C movement. — DONE (2026-07-14).** The km-corridor spend is replaced by a
   **daylight-scaled move-point budget spent at Civ4 per-plot costs**. `MarchConfig` gains
   `baseMovePoints` / `referenceDaylightHours` / `columnOverheadPerThousand` / `minDailyMovePoints`;
