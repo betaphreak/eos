@@ -227,6 +227,12 @@ public class Settlement {
 	// effect is applied.
 	private final TechState techState = new TechState();
 
+	// whether researching a building-unlocking tech auto-builds that building onto a
+	// district plot (docs/district-buildout.md Phase D2). OFF by default so runs are
+	// byte-identical (buildings carry no yield, so even ON this changes only render
+	// state, never the economy); enabled per-colony via setAutoBuildDistricts.
+	private boolean autoBuildDistricts = false;
+
 	// mean of this colony's skill distribution, fixed at colony start: the center
 	// of the spread from which a person draws its skill, hence the colony's labor
 	// productivity (see Demography). Split by gender — males average meanSkillMale,
@@ -1317,6 +1323,31 @@ public class Settlement {
 	 */
 	public void applyTechEffect(TechEffect effect) {
 		techState.apply(effect);
+		// Phase 5 auto-build (docs/district-buildout.md Phase D2): a building-unlocking
+		// tech that just granted its BUILDING_* token places the building onto the
+		// colony's district plots — off by default, so runs are byte-identical.
+		if (autoBuildDistricts && effect instanceof TechEffect.Unlock unlock)
+			autoBuildBuilding(unlock.target());
+	}
+
+	// the prefix a district-building unlock token carries (the eos-native building id is
+	// the verbatim C2C BUILDING_* string — see Building / c2c-building-import.md)
+	private static final String BUILDING_TOKEN_PREFIX = "BUILDING_";
+
+	// Place a just-unlocked building onto the colony's district plots (first cut: the
+	// village center, plot 0 — where the center-grouped firms and, until per-district
+	// spreading lands, all buildings sit; see Building / docs/district-buildout.md). A
+	// no-op for a non-building token, before any plot exists, or if already present
+	// (idempotent). Buildings carry no yield, so this changes only render state.
+	private void autoBuildBuilding(String token) {
+		if (token == null || !token.startsWith(BUILDING_TOKEN_PREFIX))
+			return;
+		List<Plot> plots = getDistrictPlots();
+		if (plots.isEmpty())
+			return; // no city center laid yet — nothing to build onto
+		Plot center = plots.get(0);
+		if (!center.hasBuilding(token))
+			center.addBuilding(new Building(token));
 	}
 
 	/**
@@ -1329,6 +1360,28 @@ public class Settlement {
 	 */
 	public Set<String> getGrantedTechTokens() {
 		return techState.grantedTokens();
+	}
+
+	/**
+	 * Enable (or disable) <b>auto-build</b>: when on, researching a building-unlocking
+	 * tech places that building onto the colony's district plots (the village center,
+	 * plot 0, in the first cut). <b>Off by default</b> so runs are byte-identical —
+	 * buildings carry no yield, so even enabled this changes only render state, never the
+	 * economy. See {@code docs/district-buildout.md} Phase D2.
+	 *
+	 * @param enabled whether researching a tech auto-builds its unlocked buildings
+	 */
+	public void setAutoBuildDistricts(boolean enabled) {
+		this.autoBuildDistricts = enabled;
+	}
+
+	/**
+	 * Whether {@linkplain #setAutoBuildDistricts auto-build} is enabled for this colony.
+	 *
+	 * @return {@code true} if researching a tech auto-builds its unlocked buildings
+	 */
+	public boolean isAutoBuildDistricts() {
+		return autoBuildDistricts;
 	}
 
 	/**

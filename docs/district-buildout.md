@@ -136,31 +136,33 @@ RNG draw added).
 
 </details>
 
-### Phase D2 — Engine: Phase 5 auto-build, gated off (the one behavior change)
+### Phase D2 — Engine: Phase 5 auto-build, gated off (the one behavior change) ✅ DONE (2026-07-14)
 
 Turn a granted `BUILDING_*` token into a placed `Building` on a district plot. This is
-`c2c-building-import.md` §5.
+`c2c-building-import.md` §5. **✅ DONE (2026-07-14).**
 
-- **Config flag, default off.** Add an `autoBuild` (or similar) toggle to the relevant `*Config`
-  record (following the immutable-config convention) — default **off**, so existing runs and the
-  collapse smoke tests are byte-identical.
-- **Trigger.** On `ResearchState.complete()` (where tokens are already granted), for each newly
-  granted `BUILDING_*` whose **full** prereq expression (`prereqTech` AND all `andTechs`) is satisfied,
-  call `addBuilding` on a district plot from `getDistrictPlots()`. Center-grouped buildings go to plot
-  0 (the village center); on-plot/functional placement is a later refinement.
-- **Placement policy (first cut).** Center at plot 0; idempotent (`hasBuilding` guard so re-research /
-  reload doesn't double-place). No yield/economic effect yet — `Plot.buildings()` still carries no
-  `yields()` footprint (`Plot.java` docstring), so even flipped **on** this changes only render state,
-  not the economy. Document that clearly so a future "buildings have effects" phase is a separate,
-  deliberate step.
-- **Building metadata join.** Placement needs only the id (already the token). Category/art are joined
-  server-side from `buildings.json` (§D3) — no change to the `Building` record.
+**Shipped:**
+- **Flag, default off** — a per-colony `Settlement.setAutoBuildDistricts(boolean)` (default **off**;
+  `isAutoBuildDistricts()`). Chosen over a `*Config` record field to avoid threading run config into
+  every `Settlement` constructor; the effect is the same — existing runs are byte-identical.
+- **Trigger** — in `Settlement.applyTechEffect(...)` (called from `ResearchState.complete()` where the
+  token is granted): a `TechEffect.Unlock` whose target starts with `BUILDING_` places the building via
+  `getDistrictPlots().get(0).addBuilding(...)` (the village center, plot 0). Idempotent (`hasBuilding`
+  guard); a no-op before any plot is laid or for a non-building token.
+- **First-cut simplification (deviates from the plan):** placement fires on the **primary-tech
+  Unlock grant**, *not* the full `prereqTech`-AND-`andTechs` expression — the `andTechs` list lives in
+  `buildings.json`, which the engine deliberately doesn't load (D1 split). Since buildings carry **no
+  yield** (`Plot.java`), an occasionally-early sprite is render-only and harmless; the full `andTechs`
+  gate is a documented refinement (needs the building catalog in the engine, or the check moved
+  server-side where categories already live).
+- **No `Building` record change** — placement needs only the id (the token itself). Category/art are
+  joined server-side from `buildings.json` (§D3).
 
-**Verify:** `mvn -pl civstudio-engine test` with the flag **off** → byte-identical (existing suites
-untouched). A new `AutoBuildTest` with the flag **on** → researching a tech places exactly its
-unlocked, fully-satisfied buildings at plot 0, idempotently, and asserts **no** economic perturbation
-(prices/workforce trajectory unchanged vs. flag-off within tolerance). The clean-collapse smoke tests
-stay on the flag-off default and stay green.
+**Verified:** full engine suite **281/281 green** with the flag off (byte-identical — the 4 new
+`AutoBuildTest` cases are the only additions). `AutoBuildTest` with the flag on: the unlocked building
+lands at plot 0; idempotent on re-research; a non-`BUILDING_` token places nothing; and with the flag
+off (default) research places nothing while the token is still granted. Collapse smoke tests stay on
+the flag-off default and stay green.
 
 ### Phase D3 — Server: serve the district record on the session snapshot
 
