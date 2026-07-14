@@ -178,9 +178,37 @@ a separate future operation** (town-merge), not a rung between Town and City. Tw
   Village → … → Camp) and departs as a caravan at the bottom — collapse becomes a graceful,
   legible fall, unifying with `docs/caravan.md`'s collapse-as-decline (the food-balance cliff
   becomes a slope).
-- **Growth = development + a City population gate.** Development (worked plots / economic output /
-  buildings) advances most rungs against the XML `iUpgradeTime` costs; the **`City` rung
-  additionally requires ≥ 1000 people**. So a Town does not become a City on development alone.
+- **Growth = population-time, against `iUpgradeTime` in days, + a City population gate.** A
+  settlement accrues development as **population × days** (a bigger place grows faster — Civ4's
+  "a worked tile grows"); a rung advances when that reaches the next rung's **`iUpgradeTime`,
+  read as a number of days** (Cottage→Hamlet 10, Hamlet→Village 20, Village→Town 30, Town→… 40 —
+  the imported values, now interpreted directly as days). The **`City` rung additionally requires
+  ≥ 1000 people**, so a Town does not become a City on development alone.
+
+### Data function — how the imported improvement fields are used (decided 2026-07-14)
+
+The improvement data imported from `CIV4ImprovementInfos.xml` (commit — `geo.Improvement`) maps to
+CivStudio as:
+
+- **`iUpgradeTime` → days** — the days-of-development a rung takes to grow (above); not a "turn"
+  count needing conversion.
+- **yields `[food, production, commerce]` → all three get a home.** **Food** is what a camped band
+  **forages into its larder**; **commerce** maps to **money**; **production** becomes **build /
+  development work** (it speeds raising the improvement and growing the settlement). So an
+  improvement contributes food, work, and money together.
+- **Foraging = build then work.** A camped band **builds** the chosen improvement over its
+  **`buildCost`** (`<iAdvancedStartCost>`) in days, then **works it each day it stays** to extract
+  the yield — foraging is a real time investment (a hungry band camps on a food improvement and
+  harvests it). The choice of *which* improvement is **yield-based** — a hungry band (winter / low
+  larder) picks the **highest-food** valid improvement. This is the concrete realization of the
+  explorer expedition's forage (`docs/explorer-caravan.md`).
+- **`iCulture` → dormant.** Imported (Cottage 2 … Town 20) but **not in use yet** — a stored
+  culture yield for a later borders/culture system.
+- **`prereqTech` / valid-terrain fields → gate the choice.** A band may only build an improvement
+  whose `prereqTech` it knows (tech-gated, like the existing forage identification) and whose
+  terrain/feature validity fits the camp's plot.
+- **`techYieldChanges` → tech-scaled yield growth** (dormant until worked-improvement yields are
+  live): a Town keeps gaining commerce as Printing Press / Economics come in.
 
 ### How the explorer gate changes
 
@@ -190,13 +218,6 @@ Replaces the current `instanceof City`; the exact threshold is a tuning knob.
 
 ### Open questions / calibration
 
-- **Founding tier.** Do all settlements start at `CAMP`/`COTTAGE` and grow (the fuller vision,
-  matching the caravan→camp→settle path, but colonies then start tiny), or found mid-rung to fit
-  their site/pop and grow from there? Safe incremental step: keep the current founding (city sites
-  found near `Town`/`City`, ordinary sites as a `Village`) and add growth on top.
-- **The development metric** — what accumulates (population, worked plots, economic output) and its
-  scale against the XML's 10/20/30/40 costs; and the **City population gate** (≥ 1000) as the one
-  non-development threshold.
 - **The `Town` district cap** — how many districts a Town gets before City uncaps it.
 - **`Suburbs` merge** — the province-level rule that consolidates several Towns into one City
   (deferred; needs the multi-settlement-per-province model).
