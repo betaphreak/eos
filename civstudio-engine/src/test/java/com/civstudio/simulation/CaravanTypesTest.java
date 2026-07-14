@@ -51,16 +51,18 @@ class CaravanTypesTest {
 		return switch (role) {
 			case SETTLER -> new SettlerCaravan(leader, following, 1000, provinceId, session);
 			case WORKER -> new WorkerCaravan(leader, following, 1000, provinceId, session);
-			case EXPLORER -> new ExplorerCaravan(leader, following, 1000, provinceId, session);
 			case MILITARY -> new MilitaryCaravan(leader, following, 1000, provinceId, session);
+			// the explorer is no longer a generic marcher — it is a food-import levy mustered
+			// from a home colony (ExplorerCaravan.muster; see ExplorerForagingTest)
+			case EXPLORER -> throw new UnsupportedOperationException(
+					"explorer bands are mustered, not built here");
 		};
 	}
 
 	@Test
 	void everyNonSettlerFlavorMarchesAndConsumesItsLarderLikeASettler() {
 		LocalDate summer = LocalDate.of(1445, 6, 21);
-		for (CaravanRole role : new CaravanRole[] { CaravanRole.WORKER, CaravanRole.EXPLORER,
-				CaravanRole.MILITARY }) {
+		for (CaravanRole role : new CaravanRole[] { CaravanRole.WORKER, CaravanRole.MILITARY }) {
 			GameSession session = new GameSession(role.ordinal() + 1);
 			MarchingCaravan band = bandOf(role, session, DHENIJANSAR, 50);
 			band.setDestination(WEXKEEP);

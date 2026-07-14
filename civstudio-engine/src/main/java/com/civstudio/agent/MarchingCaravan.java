@@ -519,13 +519,26 @@ public abstract class MarchingCaravan extends Caravan {
 	 * @param corridor     the day's plot corridor (its plots' bonuses are the forageable land)
 	 * @return the food foraged into the larder (0 if no surplus daylight or no food resource)
 	 */
+	/**
+	 * The day's forage ceiling as a fraction of the band's daily ration. The default (from
+	 * {@link MarchConfig}) is <b>below 1</b>, so a wandering band's foraging only <em>slows</em>
+	 * its larder's decline — it stays a decaying asset (see {@code docs/caravan.md}). An
+	 * {@link ExplorerCaravan}, whose whole purpose is to bring food home, raises this above 1 so
+	 * its larder can <b>net-grow</b> on food-rich ground (see {@code docs/explorer-caravan.md}).
+	 *
+	 * @return the forage cap as a multiple of the daily ration
+	 */
+	protected double forageCapFraction() {
+		return marchConfig.forageCapFraction();
+	}
+
 	private double forage(double surplusHours, PlotCorridor corridor) {
 		if (surplusHours <= 0 || !crossedFoodResource(corridor))
 			return 0;
 		double ration = following.size() * WANDERING_RATION.perDay();
 		double foraged = Math.min(
 				surplusHours * following.size() * marchConfig.forageRatePerHour(),
-				marchConfig.forageCapFraction() * ration);
+				forageCapFraction() * ration);
 		if (foraged > 0)
 			following.stockLarder(foraged);
 		return foraged;

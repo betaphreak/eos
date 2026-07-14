@@ -197,7 +197,10 @@ public final class SessionHost {
 	private void seedDemoCaravans(GameSession session, Settlement colony, int start) {
 		WorldMap map = session.getWorldMap();
 		List<Integer> destinations = distantLandProvinces(map, start, DEMO_CARAVANS);
-		CaravanRole[] roles = CaravanRole.values();
+		// the explorer is no longer a directed marcher but a food-import levy a colony musters
+		// under food pressure (docs/explorer-caravan.md) — it is wired into the live colony in a
+		// later phase, so the directed-march demo cycles only the other three flavors for now
+		CaravanRole[] roles = { CaravanRole.SETTLER, CaravanRole.WORKER, CaravanRole.MILITARY };
 		for (int i = 0; i < DEMO_CARAVANS; i++) {
 			// each band banks its (throwaway) reserve at its own bank off the colony, then
 			// takes a leader out of a fresh following and marches
@@ -221,8 +224,10 @@ public final class SessionHost {
 		return switch (role) {
 			case SETTLER -> new SettlerCaravan(leader, following, DEMO_BAND_HOARD, start, session);
 			case WORKER -> new WorkerCaravan(leader, following, DEMO_BAND_HOARD, start, session);
-			case EXPLORER -> new ExplorerCaravan(leader, following, DEMO_BAND_HOARD, start, session);
 			case MILITARY -> new MilitaryCaravan(leader, following, DEMO_BAND_HOARD, start, session);
+			// explorers are mustered from the live colony, not seeded here (docs/explorer-caravan.md)
+			case EXPLORER -> throw new UnsupportedOperationException(
+					"explorer bands are mustered from a colony, not seeded in the demo");
 		};
 	}
 

@@ -88,6 +88,10 @@ public class Granary extends Agent {
 	@Getter
 	private double totalReliefDrawn;
 
+	// cumulative necessity imported into the reserve by ExplorerCaravan expeditions —
+	// foraged off the map and brought home (see importStock / docs/explorer-caravan.md)
+	private double totalImported;
+
 	// cumulative net cost to the ruler of the granary (deficits covered minus surpluses
 	// remitted) — negative once the granary's buy-low/sell-high has netted the crown a
 	// profit over its outlays
@@ -242,6 +246,31 @@ public class Granary extends Agent {
 		// tally the draw so act() does not misclassify this stock drop as a market sale
 		reliefDrawnSinceLastAct += drawn;
 		return drawn;
+	}
+
+	/**
+	 * Add {@code amount} of <b>imported</b> necessity to the granary's reserve — food an
+	 * {@link ExplorerCaravan} foraged off the map and brought home (see {@code
+	 * docs/explorer-caravan.md}). Unlike a market buy it costs the granary nothing (a gift to
+	 * the crown's strategic store), so {@code stockAtLastAct} is advanced by the same amount:
+	 * that keeps {@link #act()}'s market-trade classification ({@code netMarket = stock −
+	 * stockAtLastAct + reliefDrawn}) from misreading the import as a purchase. From the reserve
+	 * the imported grain feeds the starving pool (relief draws) and is released into the
+	 * necessity market when scarcity lifts the price to the granary's ceiling.
+	 *
+	 * @param amount necessity units brought home by an expedition (ignored if not positive)
+	 */
+	public void importStock(double amount) {
+		if (amount <= 1e-9)
+			return;
+		stock.increase(amount);
+		stockAtLastAct += amount;
+		totalImported += amount;
+	}
+
+	/** @return the total necessity imported into the reserve by expeditions over the run */
+	public double getTotalImported() {
+		return totalImported;
 	}
 
 	/** @return the necessity the granary currently holds in reserve */

@@ -318,12 +318,19 @@ Each phase is independently compilable/testable; earlier phases are inert until 
   **feeding** all skip a drafted member; population/digest still count it. No caravan yet —
   drive it with a unit test that drafts a member and asserts it stops laboring/eating and is
   restored on undraft. Byte-identical when nothing drafts.
-- **Phase 2 — the `ExplorerCaravan` round trip.** Muster from draftees (references + a carried
-  larder + a leader), the OUT→HOME→SELL→UNDRAFT lifecycle over the **existing** march
-  (km-corridor movement for now), the caravan **feeds** its draftees from its larder + forage,
-  sells the surplus into the necessity market, undrafts on return. Home-colony ticking + the
-  per-colony excursion RNG. Unit test: a colony musters a band, it forages a surplus, returns,
-  the necessity market receives the food, the draftees are restored.
+- **Phase 2 — the `ExplorerCaravan` round trip. — DONE (2a + 2b).** *2a:* the `MarchFollowing`
+  interface (a band marches over a `Retinue` *or* a lean `DraftBand`). *2b:* `ExplorerCaravan.muster`
+  drafts the levy (flags them) + picks the ablest as leader over a `DraftBand` (references + a
+  carried larder), the OUTBOUND→RETURNING→DONE lifecycle over the existing march, the caravan
+  **feeds** its levy from its larder (net-positive forage cap, `forageCapFraction() > 1`), and on
+  return **deposits its surplus food into the colony's granary** (`Granary.importStock` — which
+  feeds the starving pool via relief draws *and* releases into the necessity market in scarcity)
+  and **undrafts** its people. `ExplorerForagingTest` drives the whole trip. **Deferred to a
+  follow-up:** the **paid cash-out** of the food/cargo to the draftees' *households* (decision 14)
+  and the **re-entry into the wedding market** funding a marriage (decision 19) — Phase 2 lands
+  the *food* loop (granary import), not yet the *money*/marriage loop; and **home-colony ticking +
+  the per-colony excursion RNG** lands with the trigger (Phase 4), the test driving `tick()`
+  directly for now.
 - **Phase 3 — Civ4/C2C movement.** Swap the km-corridor spend for **daylight-scaled movement
   points at Civ4 per-plot costs** (terrain/feature/hills/route/river from `Civ4Files`), the
   min-one-move rule. Test the per-plot cost ladder and that a road/flat route beats a
