@@ -57,9 +57,6 @@ import lombok.Builder;
  * @param columnOverheadPerThousand the move-points a 1000-strong column forfeits to its own
  *                          coil/uncoil each day — the size coupling in move-points (a big
  *                          band moves fewer plots than a lean one on the same daylight)
- * @param boundaryHopCost   the move-points to cross one province edge (the centroid-to-
- *                          centroid boundary hop, a per-hop unit) — added to the province's
- *                          plot-corridor cost to price a leg
  * @param minDailyMovePoints the daily move-point <b>floor</b> — the Civ4 min-one-move rule:
  *                          a marching band always advances at least this (one flat plot's
  *                          worth) per day and <b>never has a zero-progress day</b>, even in
@@ -88,7 +85,6 @@ public record MarchConfig(
 		double baseMovePoints,
 		double referenceDaylightHours,
 		double columnOverheadPerThousand,
-		double boundaryHopCost,
 		double minDailyMovePoints) {
 
 	/** The canonical placeholder constants (see {@code docs/caravan-march.md}). */
@@ -113,7 +109,6 @@ public record MarchConfig(
 			6.0,    // baseMovePoints (Civ4 move-points/day at reference daylight, pre-overhead)
 			12.0,   // referenceDaylightHours (usable daylight buying the full base points)
 			1.0,    // columnOverheadPerThousand (move-points a 1000-strong column loses/day)
-			2.0,    // boundaryHopCost (move-points to cross one province edge)
 			1.0);   // minDailyMovePoints (min-one-move floor: one flat plot/day, never zero)
 
 	/**

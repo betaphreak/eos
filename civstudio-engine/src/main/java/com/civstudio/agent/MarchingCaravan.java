@@ -328,15 +328,16 @@ public abstract class MarchingCaravan extends Caravan {
 		// ensure a distance-accurate route toward the current target
 		ensureRoute(rng);
 
-		// spend the day's move-point budget M along that route: each leg costs the plot
-		// corridor's summed Civ4 move cost across the current province (the per-plot terrain/
-		// feature/hills/slope ladder — so rough/wild ground is dearer) plus the boundary hop
-		// into the next, with river fords costing a full day (Civ4's ford-ends-movement rule).
-		// Partial progress carries across days, so a big/rough province takes several days to
-		// cross and a lean band in a long day may clear several short legs. The daily budget is
-		// floored to minDailyMovePoints (the Civ4 min-one-move rule, applied in March.compute),
-		// so a marching band always advances at least one plot/day and never freezes — even in
-		// polar winter; per-plot min-one-move stepping arrives with the Phase-5 corridor.
+		// spend the day's move-point budget M traversing the current province's plot corridor
+		// (the per-plot terrain/feature/hills/slope ladder — so rough/wild ground is dearer),
+		// with river fords costing a full day (Civ4's ford-ends-movement rule, kept harsh until
+		// bridges mitigate it). Reaching the exit border and CROSSING into the next province
+		// ENDS the day's movement (Civ4's move-to-a-new-region rule), so a band advances at
+		// most one province boundary per day; leftover budget still funds the day's forage.
+		// Partial corridor progress carries across days, so a big/rough province takes several
+		// days to cross. The daily budget is floored to minDailyMovePoints (the min-one-move
+		// rule, applied in March.compute), so a marching band always advances at least one
+		// plot/day and never freezes — even in polar winter.
 		List<Integer> traversed = new ArrayList<>();
 		traversed.add(getProvinceId());
 		double startBudget = day.movePoints();
@@ -360,6 +361,7 @@ public abstract class MarchingCaravan extends Caravan {
 				moveTo(next);
 				legIndex++;
 				traversed.add(next);
+				break; // crossing into a new province ends the day's movement (Civ4 turn rule)
 			} else {
 				progressPoints += budget;
 				budget = 0;
@@ -411,14 +413,15 @@ public abstract class MarchingCaravan extends Caravan {
 
 	// compute the current leg's cost (Civ4 move-points) and river fords: the plot corridor's
 	// summed Civ4 move cost across the province the band is in (its plots' terrain/feature/
-	// hills/slope ladder — spent directly, not scaled by KM_PER_PLOT) plus the boundary-hop
-	// unit into the next province (docs/explorer-caravan.md §5, docs/land-routing.md)
+	// hills/slope ladder — spent directly, not scaled by KM_PER_PLOT). This is the cost to
+	// reach the exit border; the crossing into the next province itself ends the day's
+	// movement (see the tick loop — Civ4's move-to-a-new-region rule), so there is no separate
+	// boundary-hop cost (docs/explorer-caravan.md §Phase 3, docs/land-routing.md)
 	private void computeLeg() {
 		int cur = getProvinceId();
 		int next = route.provinces().get(legIndex + 1);
 		PlotCorridor corr = corridorBetween(enteredFrom, cur, next);
-		double corridorCost = corr == null ? 0 : corr.totalCost();
-		legMoveCost = corridorCost + marchConfig.boundaryHopCost();
+		legMoveCost = corr == null ? 0 : corr.totalCost();
 		legFords = corr == null ? 0 : corr.riverCrossings();
 		legReady = true;
 	}
