@@ -120,45 +120,69 @@ class name actually means "any sub-city settlement," which collides with this ru
 **districts + permanence** (`City`/`DistrictHost`). Everything cottage→suburbs is one growable
 settlement carrying a tier field.
 
+### The tiers, concretely (decided semantics, 2026-07-14)
+
+| Tier | Gate | Districts | Buildings | Notes |
+|---|---|---|---|---|
+| **Camp** | — | none | **none** | where a **caravan sleeps at night** — the transient plot claim of `docs/caravan-march.md`; the seed a band settles from. |
+| **Cottage** | | none | **exactly one** | a camp that has put down its first building. |
+| **Hamlet** | | none | a **very limited** selection | |
+| **Village** | | **zero** | founding plot only (a full center's buildings) | today's `Village` — a single urban plot. |
+| **Town** | | **districts, capped** | | *"a City with a district cap"* — the **first `DistrictHost` rung**. |
+| **City** | **≥ 1000 people** | districts, **uncapped** | | the **population gate** is what makes a Town a City. |
+| **Suburbs** | | | | **future** — a province-level **merge**: several Towns in one province consolidate into a City (not a plain growth rung). |
+
+So the linear growth ladder is **Camp → Cottage → Hamlet → Village → Town → City**, with **Suburbs
+a separate future operation** (town-merge), not a rung between Town and City. Two things fall out:
+
+- **`Camp` unifies the caravan camp with the settlement ladder.** A band's nightly camp
+  (`docs/caravan-march.md` — *"the camp is a holding"*) *is* the bottom rung; a band settling and
+  developing is exactly the ascent `Camp → Cottage → …`, which ties the caravan founding path
+  (`docs/village-founding.md`) to this ladder.
+- **`DistrictHost` begins at `Town`, not `City`.** Town hosts districts under a **cap**; City
+  **removes the cap** and additionally requires **≥ 1000 people**. So `hasDistricts()` =
+  `tier.atLeast(TOWN)`; the `City` distinction is `tier == CITY` (a capped-district Town that has
+  crossed the population gate).
+
 ### The model
 
-- **`SettlementTier`** — an ordered enum/record `COTTAGE < HAMLET < VILLAGE < TOWN < SUBURBS <
-  CITY`, mirrored from the XML chain (upgrade target, upgrade time, and the per-tier data: yield /
-  size cap / buildable set). An `atLeast(tier)` comparison replaces `instanceof` checks.
+- **`SettlementTier`** — an ordered enum `CAMP < COTTAGE < HAMLET < VILLAGE < TOWN < CITY` (Suburbs
+  held apart as the merge op), each carrying its data: the buildable set (none / one / limited /
+  full), the district cap (none / capped / uncapped), and the growth cost (the XML `iUpgradeTime`
+  chain — Cottage 10, Hamlet 20, Village 30, Town 40 — plus the City population gate). An
+  `atLeast(tier)` comparison replaces `instanceof` checks.
 - **A mutable `tier` field on `Settlement`**, advanced by a **growth rule**: the settlement
-  accumulates development (population × worked time, the CivStudio analogue of "the tile is
-  worked") and advances a rung when it crosses the next `iUpgradeTime` threshold — Cottage→Town is
-  10+20+30 = 60 development, Suburbs +40 = 100. (Growth, not a new object.)
-- **The two axes reconciled.** There are two distinct things: **site capacity** (the site's
-  urban-plot count — fixed at founding; a `city_terrain` multi-plot province can host districts, an
-  ordinary one-plot province cannot) and **development** (the cottage→city ladder — grows over
-  time). Unify them as **one ladder plus a per-site cap**: a settlement grows up the ladder toward
-  a `maxTier` set by its site — a single-urban-plot Village site caps below `CITY` (no district
-  plots to become a city), a multi-urban-plot site can reach `CITY`. **Districts + permanence
-  unlock at the `CITY` rung**, so `hasDistricts()`/`isPermanent()` derive from `tier == CITY`
-  (reachable only on a city-capable site) rather than from a founding-time subclass.
-- **`City` stays the one behavioural subclass** (the `DistrictHost` capability), now the *top rung*
-  of the ladder rather than a parallel type; or it dissolves into `tier == CITY` if the district
-  surface is expressed through the tier. Either way, no class per sub-city rung.
+  accumulates development and advances a rung at each threshold — and the **City rung additionally
+  gates on population ≥ 1000**, so a Town does not become a City until it is big enough. Growth is a
+  field change, not a new object.
+- **The two axes reconciled.** **Site capacity** (urban-plot count, fixed at founding) sets the
+  ceiling: a **single-urban-plot** site (ordinary province) tops out at **`Village`** (zero
+  districts — nowhere to put them); a **multi-urban-plot** `city_terrain` site can grow into
+  **`Town` → `City`** (its extra urban plots *are* the districts). **Development** (the ladder) is
+  where it currently sits under that ceiling. One ladder + a per-site cap.
+- **`City` stays the one behavioural subclass** (the `DistrictHost` capability), now the *top of the
+  ladder* — but note the capability actually begins at `Town`, so the eventual shape is likely
+  `DistrictHost` from `Town` up, with `City` = `Town` + the population gate + uncapped districts.
 
 ### How the explorer gate changes
 
-The gate becomes `settlement.tier().atLeast(TIER_THRESHOLD)` — e.g. **a Town or larger** musters
-winter foraging expeditions (a settlement big enough to spare foragers), replacing the current
-`instanceof City`. More expressive, and the exact threshold is a tuning knob.
+The gate becomes `settlement.tier().atLeast(TOWN)` — a **Town or City** (a real district-bearing
+settlement, big enough to spare foragers) musters winter expeditions; a Village or smaller does not.
+Replaces the current `instanceof City`; the exact threshold is a tuning knob.
 
 ### Open questions / calibration
 
-- **Founding tier.** Do all settlements start at `COTTAGE` and grow (the fuller vision, but colonies
-  then start tiny), or do they found at a tier fitting their site/pop and grow from there? A safe
-  incremental step: keep the current founding (city sites found near `CITY`, ordinary sites found as
-  a mid-rung Village) and add the *growth* mechanic on top.
-- **The development metric** — what accumulates (population, worked plots, economic output) and the
-  threshold scale relative to the XML's 10/20/30/40 turn costs.
-- **Per-site cap** — where a single-urban-plot site caps (Town? Suburbs?), and whether a site can be
-  *upgraded* to city-capacity (rank-ladder alignment, below).
-- **The resource line** (`RESOURCE_SETTLEMENT → …`) — a parallel specialisation, out of scope for
-  the first cut.
+- **Founding tier.** Do all settlements start at `CAMP`/`COTTAGE` and grow (the fuller vision,
+  matching the caravan→camp→settle path, but colonies then start tiny), or found mid-rung to fit
+  their site/pop and grow from there? Safe incremental step: keep the current founding (city sites
+  found near `Town`/`City`, ordinary sites as a `Village`) and add growth on top.
+- **The development metric** — what accumulates (population, worked plots, economic output) and its
+  scale against the XML's 10/20/30/40 costs; and the **City population gate** (≥ 1000) as the one
+  non-development threshold.
+- **The `Town` district cap** — how many districts a Town gets before City uncaps it.
+- **`Suburbs` merge** — the province-level rule that consolidates several Towns into one City
+  (deferred; needs the multi-settlement-per-province model).
+- **The resource line** (`RESOURCE_SETTLEMENT → …`) — a parallel specialisation, out of scope.
 
 ## Future work
 
