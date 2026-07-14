@@ -50,6 +50,11 @@ public final class ExplorerProvisioner implements Runnable {
 	// how many levies this provisioner has mustered over the run (diagnostics)
 	private int mustered;
 
+	// the reward handler wired onto each mustered band's return (docs/explorer-caravan.md — the
+	// renewal loop: sell the haul, ennoble the ablest, found households); null leaves a band to
+	// simply undraft its people on return.
+	private ExpeditionReturn reward;
+
 	/** Provision an explorer levy for {@code colony} from {@code pool}, with the default cadence. */
 	public ExplorerProvisioner(Settlement colony, Retinue pool) {
 		this(colony, pool, DEFAULT_DRAFT_BATCH, DEFAULT_COOLDOWN_DAYS, DEFAULT_MAX_CONCURRENT,
@@ -108,6 +113,7 @@ public final class ExplorerProvisioner implements Runnable {
 		ExplorerCaravan band = ExplorerCaravan.muster(colony, draftees, larder);
 		band.setReturnBy(returnStart(today, colony.getLatitude())); // home by mid-autumn
 		band.setCampingEnabled(true); // forage as it marches — the food it brings home
+		band.setExpeditionReturn(reward); // the renewal loop on return (null → just undraft)
 		colony.addExcursion(band);
 		mustered++;
 		cooldown = cooldownDays;
@@ -126,6 +132,18 @@ public final class ExplorerProvisioner implements Runnable {
 		int month = latitude >= 0 ? NORTHERN_RETURN_MONTH : SOUTHERN_RETURN_MONTH;
 		LocalDate d = from.withMonth(month).withDayOfMonth(1);
 		return d.isAfter(from) ? d : d.plusYears(1);
+	}
+
+	/**
+	 * Set the {@link ExpeditionReturn reward handler} applied to each mustered band — the
+	 * colony-side renewal on a live return (sell the haul, ennoble the ablest, found households).
+	 * Wired by {@code SimulationHarness} from the colony's social mobility; unset leaves bands to
+	 * simply undraft their people on return.
+	 *
+	 * @param reward the reward handler
+	 */
+	public void setReward(ExpeditionReturn reward) {
+		this.reward = reward;
 	}
 
 	/** @return how many explorer levies this provisioner has mustered over the run */

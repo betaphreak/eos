@@ -525,6 +525,25 @@ public class Retinue extends Agent implements MarchFollowing {
 	}
 
 	/**
+	 * Remove a <b>specific</b> peasant from the pool — the seam a returned {@link
+	 * ExplorerCaravan explorer} draftee uses to leave the pool and found its own household. Unlike
+	 * {@link #promoteHighestSkilled()} (which picks the ablest), this releases a <em>named</em>
+	 * returnee, freeing its skill row so its skills travel into the household/noble it heads. A
+	 * no-op if the member is not in the pool. See {@code docs/explorer-caravan.md} (the renewal loop).
+	 *
+	 * @param member the peasant to release
+	 * @return {@code true} if it was in the pool and is now removed
+	 */
+	public boolean release(Member member) {
+		if (!peasants.contains(member))
+			return false;
+		skillStore.remove(viewOf(member));
+		peasants.remove(member);
+		promotedCount++;
+		return true;
+	}
+
+	/**
 	 * Remove and return the {@code k} highest-overall-skill <b>working-age</b>
 	 * peasants, in descending skill order — the merit-based cohort a {@link Ruler}
 	 * promotes into laborer households when the colony is founded. Children are

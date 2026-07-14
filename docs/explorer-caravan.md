@@ -356,6 +356,17 @@ Each phase is independently compilable/testable; earlier phases are inert until 
     to promote a pool peasant (not only a laborer) to Noble; household founding reuses the
     buildFissionHousehold pattern; pool removal via Retinue. Build order: pay-and-found-household
     first, then the noble/tax/sale.
+  - **Commit 1 — SHIPPED (2026-07-15).** The structural core: an `ExpeditionReturn` callback (agent
+    pkg) the caravan invokes on a live return, implemented by `SocialMobility` (simulation pkg) and
+    wired at muster by `ExplorerProvisioner` (`SimulationHarness` sets it for every City). On return
+    each surviving returnee **leaves the pool** (`Retinue.release`, a new seam) and **founds its own
+    copper-banking `Laborer` household** (reusing `buildFissionHousehold`), deferred to end of step —
+    it "becomes banked". `ExplorerRenewalTest` verifies it; full suite green (no re-baseline —
+    founding fires only when an expedition returns, and the collapse assertions still hold).
+    **Commit 2 (next):** the **Enjoyment supply-dump sale** of the cargo (real supply → tanks the
+    price → money from buyers, conserving) → seed the households + the **ruler tax** + **ennoble the
+    ablest** returnee. The interim cargo→money is deferred to there; commit 1's households open on
+    the standard founding stock (no cash).
 - **Phase 3 — Civ4/C2C movement. — DONE (2026-07-14).** The km-corridor spend is replaced by a
   **daylight-scaled move-point budget spent at Civ4 per-plot costs**. `MarchConfig` gains
   `baseMovePoints` / `referenceDaylightHours` / `columnOverheadPerThousand` / `minDailyMovePoints`;

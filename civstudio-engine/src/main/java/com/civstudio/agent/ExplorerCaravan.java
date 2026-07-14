@@ -83,6 +83,12 @@ public final class ExplorerCaravan extends MarchingCaravan {
 	private Phase phase = Phase.OUTBOUND;
 	private int daysOut;
 
+	// the reward handler invoked on a live return — sells the haul, ennobles the ablest returnee,
+	// and founds households from the proceeds so each peasant becomes banked (the renewal loop,
+	// docs/explorer-caravan.md). Wired at muster by ExplorerProvisioner; null for a directly-driven
+	// band (e.g. a test), which then simply undrafts its people on return.
+	private ExpeditionReturn onReturn;
+
 	private ExplorerCaravan(Member leader, DraftBand band, Settlement home, GameSession session) {
 		super(leader, band, 0, home.getProvince().id(), session);
 		this.home = home;
@@ -213,6 +219,19 @@ public final class ExplorerCaravan extends MarchingCaravan {
 		this.minLarderDays = minLarderDays;
 	}
 
+	/**
+	 * Set the {@link ExpeditionReturn reward handler} invoked when this band arrives home alive —
+	 * the colony-side social mobility that sells the haul, ennobles the ablest returnee, and founds
+	 * households from the proceeds (each landless peasant becomes banked). Wired by {@link
+	 * ExplorerProvisioner} at muster; left unset for a directly-driven band, which then simply
+	 * undrafts its people on return.
+	 *
+	 * @param onReturn the reward handler
+	 */
+	public void setExpeditionReturn(ExpeditionReturn onReturn) {
+		this.onReturn = onReturn;
+	}
+
 	// home at last: deposit the foraged surplus into the colony's granary (which feeds the
 	// starving pool and releases into the necessity market in scarcity) and undraft the levy,
 	// so its people return to work, market and marriage
@@ -220,8 +239,15 @@ public final class ExplorerCaravan extends MarchingCaravan {
 		double surplus = draftBand.drainLarder();
 		if (home.getGranary() != null)
 			home.getGranary().importStock(surplus);
-		for (Member m : draftBand.draftees())
-			m.setDrafted(false);
+		// the reward: sell the haul, ennoble the ablest, and found households from the proceeds so
+		// each returned peasant becomes banked (docs/explorer-caravan.md — the renewal loop), handed
+		// to the colony-side handler, which undrafts the people as it founds/promotes them. Without a
+		// handler (a directly-driven band, e.g. a test) they are simply undrafted.
+		if (onReturn != null)
+			onReturn.rewardReturn(home, List.copyOf(draftBand.draftees()), getCargo().total());
+		else
+			for (Member m : draftBand.draftees())
+				m.setDrafted(false);
 		releaseCamp();
 	}
 

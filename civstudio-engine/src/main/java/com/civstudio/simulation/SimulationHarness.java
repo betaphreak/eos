@@ -786,7 +786,7 @@ public class SimulationHarness {
 	private SocialMobility mobility() {
 		if (mobility == null)
 			mobility = new SocialMobility(colony, cfg, nobleConfig,
-					this::getSilverBank, this::getCopperBank);
+					this::getSilverBank, this::getCopperBank, this::getRetinue);
 		return mobility;
 	}
 
@@ -1238,8 +1238,22 @@ public class SimulationHarness {
 	// The DEFAULT behaviour for a City settlement (with a pool to draft from) — a City musters
 	// winter foraging expeditions; a Village (a single urban plot) does not.
 	private void installExplorerProvisioning() {
-		if (colony instanceof City && retinue != null)
-			colony.addStepAction(new ExplorerProvisioner(colony, retinue));
+		if (colony instanceof City && retinue != null) {
+			ExplorerProvisioner provisioner = new ExplorerProvisioner(colony, retinue);
+			provisioner.setReward(mobility()); // the renewal loop on a live return
+			colony.addStepAction(provisioner);
+		}
+	}
+
+	/**
+	 * The colony's expedition-return reward handler — the renewal loop (a returned explorer peasant
+	 * founds its own household; see {@link SocialMobility} / {@code docs/explorer-caravan.md}).
+	 * Package-visible so a test can wire a directly-driven band to it.
+	 *
+	 * @return the reward handler
+	 */
+	com.civstudio.agent.ExpeditionReturn expeditionRewardHandler() {
+		return mobility();
 	}
 
 	/**

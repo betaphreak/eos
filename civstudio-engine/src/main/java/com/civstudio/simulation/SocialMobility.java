@@ -5,11 +5,13 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import com.civstudio.agent.Agent;
+import com.civstudio.agent.ExpeditionReturn;
 import com.civstudio.agent.Granary;
 import com.civstudio.agent.Household;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.Rank;
 import com.civstudio.agent.RankLadder;
+import com.civstudio.agent.Retinue;
 import com.civstudio.agent.firm.StrategicFirm;
 import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.agent.laborer.LaborerConfig;
@@ -36,7 +38,7 @@ import com.civstudio.skill.Skill;
  * offers must clear before its account can move), exactly as before the
  * extraction; the logic is verbatim.
  */
-class SocialMobility {
+class SocialMobility implements ExpeditionReturn {
 
 	// a noble insolvent (a net debtor) for this many consecutive days is "ruined"
 	// and demoted back to a laborer (see demoteRuinedNobles). A one-year grace (as
@@ -55,6 +57,9 @@ class SocialMobility {
 	private final NobleConfig nobleConfig;
 	private final Supplier<Bank> silverBank;
 	private final Supplier<Bank> copperBank;
+	// the colony's peasant pool (a supplier, since it is founded after this runtime is built) —
+	// the source a returned explorer draftee is released from when it founds its own household
+	private final Supplier<Retinue> pool;
 
 	// the social-mobility engine for this colony (promotion/demotion across ranks),
 	// built lazily on first use with the realized ranks' factories registered (see
@@ -65,12 +70,13 @@ class SocialMobility {
 	private long fissionCount;
 
 	SocialMobility(Settlement colony, SimulationConfig cfg, NobleConfig nobleConfig,
-			Supplier<Bank> silverBank, Supplier<Bank> copperBank) {
+			Supplier<Bank> silverBank, Supplier<Bank> copperBank, Supplier<Retinue> pool) {
 		this.colony = colony;
 		this.cfg = cfg;
 		this.nobleConfig = nobleConfig;
 		this.silverBank = silverBank;
 		this.copperBank = copperBank;
+		this.pool = pool;
 	}
 
 	/**
@@ -279,6 +285,36 @@ class SocialMobility {
 				child.getBirthDate(), child.getMother(), child.getFather());
 		return new Laborer(head, cfg.laborer().e(), initNQty, 0, 0,
 				cfg.laborer().savingsRate(), LaborerConfig.DEFAULT, bank, colony);
+	}
+
+	/**
+	 * The explorer-expedition {@linkplain ExpeditionReturn reward} (commit 1 of the renewal loop,
+	 * {@code docs/explorer-caravan.md}): each surviving returned peasant <b>leaves the pool and
+	 * founds its own copper-banking {@link Laborer} household</b> — it "becomes banked", re-enters
+	 * the wedding market and can bear children (the renewal the finite pool cannot provide).
+	 * Deferred to end of step, like fission/ennoblement (the day's market has already cleared).
+	 * <p>
+	 * <i>The cash seed — selling the gathered cargo as a supply dump on the Enjoyment market, the
+	 * ruler's tax, and ennobling the ablest returnee — is commit 2; here the new households open on
+	 * the standard founding stock (no cash), so {@code cargoUnits} is unused until then.</i>
+	 */
+	@Override
+	public void rewardReturn(Settlement home, List<Member> returnees, int cargoUnits) {
+		for (Member returnee : returnees)
+			colony.scheduleEndOfStepAction(() -> foundReturnedHousehold(returnee));
+	}
+
+	// end-of-step: a returned peasant leaves the pool and founds its own single-head laborer
+	// household (it "becomes banked"), then undrafts. A no-op if the pool is gone or the peasant is
+	// no longer in it (died on the march / already released). Reuses the fission founding (a fresh
+	// dynasty surname, the standard opening stock); the cash seed from the cargo sale is commit 2.
+	private void foundReturnedHousehold(Member returnee) {
+		returnee.setDrafted(false);
+		Retinue r = pool.get();
+		if (r == null || !r.release(returnee))
+			return; // not in the pool (died / already released) — nothing to found
+		colony.scheduleAddAgent(buildFissionHousehold(returnee, copperBank.get(),
+				SimulationHarness.REPLACEMENT_NECESSITY_STOCK));
 	}
 
 	/**
