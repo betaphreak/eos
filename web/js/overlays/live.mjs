@@ -57,6 +57,9 @@ export function liveRoster() { return (snap && snap.colonies && snap.colonies[0]
 // the primary colony's known techs (pre-known + researched) — the tech tree's researched-state source
 export function liveKnownTechs() { return (snap && snap.colonies && snap.colonies[0] && snap.colonies[0].knownTechs) || []; }
 
+/** The POV colony from the latest snapshot (its districts / culture / lat-lon drive the district view), or null. */
+export function liveColony() { return (snap && snap.colonies && snap.colonies[0]) || null; }
+
 /** The live session id (for the person-detail endpoint), or null when never connected. */
 export function liveSid() { return sid; }
 

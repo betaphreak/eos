@@ -254,7 +254,30 @@ The nifbake path the `district-generator.md` doc assumed turned out far weaker t
 plinth** as each building's representation (already baked in Phase 2, full 1,270 coverage). 3D nifbake
 sprites are a future enhancement (needs nif-path fixing + texture extraction from nif internals).
 
-### Phase D5 — Web: the district generator view (`city.mjs`)
+### Phase D5 — Web: the district view (`districts.mjs`) ✅ FIRST CUT (2026-07-14)
+
+**Shipped** a working first cut (`web/js/districts.mjs`, a new `z:[0]` layer in `layers.mjs`, deep-zoom
+gated `bandAlpha([4.5,5.5])`):
+- **Geographic tiles (verified):** every city's urban core plots draw their Civ6 district-hex tile
+  (D4a), typed per plot — the primary is `CITY_CENTER`, others cycle
+  `NEIGHBORHOOD/COMMERCIAL_HUB/CAMPUS/HOLY_SITE/ENCAMPMENT/THEATER` (cached on the plot). Verified via
+  `tools/webverify/cityshot.mjs` on Dhenijansar (74 urban plots) — the whole city renders as typed
+  district hexes, zero console errors.
+- **Live plinths (wired):** the POV colony (`liveColony()` from the snapshot) draws a `CITY_CENTER`
+  tile at its lat/lon with its **built buildings ringed** around it as flat button icons on plinths
+  (`/api/buildings` icon rects + `building-icons.webp`, the Phase-2 sheet). Not yet visible in the demo
+  because the colony hasn't researched anything at tick ~29 (auto-build fires on research); the feed
+  (D3) is unit-tested and the draw primitives are the proven tech-tree ones.
+- **Demo auto-build enabled:** `SessionHost.build` calls `setAutoBuildDistricts(true)` on the hosted
+  colony (still off by default everywhere else) so districts populate as it researches.
+- **Full LSystem port deferred:** the icons currently ring/spiral the center (not the Civ6
+  spine/block layout) — a good first cut for a button-icon (not 3D-sprite) payload; the LSystem layout
+  is a future refinement.
+
+**Deploy pending:** D3 + D4a + D5 are server-visible (snapshot fields, bundle key, auto-build) — needs
+a version bump + `az` deploy to go live on `dev.civstudio.com`.
+
+<details><summary>Original D5 plan</summary>
 
 Port the Civ6 LSystem *logic* over the composite — Civ6 flat district-hex **ground** (D4a) with each
 building drawn as its **flat button icon on a plinth** (D4b deferred the 3D sprites; button icons give
@@ -283,6 +306,8 @@ right." Consumes the engine-authoritative district record from D3 (bare building
 assembly renders with real building sprites and no console errors; visual spot-check across a couple of
 eras/cultures. Add a `web/` node:test unit for the generator's deterministic layout (the user wants
 web unit tests going forward; `web/` is dependency-free → built-in `node:test`).
+
+</details>
 
 ---
 

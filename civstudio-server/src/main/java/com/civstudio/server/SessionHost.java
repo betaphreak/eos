@@ -174,6 +174,10 @@ public final class SessionHost {
 		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(),
 				i -> 15);
 		Settlement colony = h.getColony();
+		// spectator sessions show the district view (docs/district-buildout.md D5): let the hosted
+		// colony auto-build its unlocked buildings onto its district plots as it researches. Off by
+		// default in the engine (byte-identical headless runs); render-only, so no economic change.
+		colony.setAutoBuildDistricts(true);
 		GameSession session = colony.getSession();
 		if (SessionSpec.CARAVAN_DEMO.equals(spec.scenario()))
 			seedDemoCaravans(session, colony, spec.provinceId());

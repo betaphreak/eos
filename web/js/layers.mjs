@@ -18,6 +18,7 @@ import { drawPolitical } from "./overlays/political.mjs";
 import { drawLive } from "./overlays/live.mjs";
 import { drawLabels } from "./labels.mjs";
 import { drawCity } from "./city.mjs";
+import { drawDistricts } from "./districts.mjs";
 
 const notPolitical = () => !isPolitical();
 
@@ -48,6 +49,7 @@ export const LAYERS = [
   { id: "live",           band: "all",  gate: () => S.overlay === "live", draw: drawLive },
   { id: "tradeGoods",     z: [0],  band: "TERRAIN→PLOT, self-fade", gate: notPolitical, draw: drawTradeGoodIcons },
   { id: "city",           z: [0],  band: "≥PROVINCE, self-fade", gate: notPolitical, draw: drawCity },
+  { id: "districts",      z: [0],  band: "deep (≥~23×), self-fade", gate: notPolitical, draw: drawDistricts },
   { id: "labels",         band: "≥PROVINCE, self-fade",    draw: drawLabels },
 ];
 
