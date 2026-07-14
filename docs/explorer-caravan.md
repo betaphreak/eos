@@ -331,10 +331,32 @@ Each phase is independently compilable/testable; earlier phases are inert until 
   the *food* loop (granary import), not yet the *money*/marriage loop; and **home-colony ticking +
   the per-colony excursion RNG** lands with the trigger (Phase 4), the test driving `tick()`
   directly for now.
-- **Phase 3 — Civ4/C2C movement.** Swap the km-corridor spend for **daylight-scaled movement
-  points at Civ4 per-plot costs** (terrain/feature/hills/route/river from `Civ4Files`), the
-  min-one-move rule. Test the per-plot cost ladder and that a road/flat route beats a
-  forest/hill one.
+- **Phase 3 — Civ4/C2C movement. — DONE (2026-07-14).** The km-corridor spend is replaced by a
+  **daylight-scaled move-point budget spent at Civ4 per-plot costs**. `MarchConfig` gains
+  `baseMovePoints` / `referenceDaylightHours` / `columnOverheadPerThousand` / `boundaryHopCost` /
+  `minDailyMovePoints`; `March.compute` emits `MarchDay.movePoints = max(minDailyMovePoints,
+  base·usableFraction − columnOverhead)`, keeping `netMarchKm` for **reporting only**
+  (`kmPerPlot` no longer touches the movement decision). `MarchingCaravan.tick` spends
+  `day.movePoints()` and `computeLeg` charges `corridor.totalCost()` (the existing per-plot
+  terrain/feature/hills/Tobler-slope ladder in `ProvincePlotPool.moveCost`, undiluted) **+
+  `boundaryHopCost`** per province edge; the river ford stays a full-day halt (Civ4's
+  ford-ends-movement rule). **Min-one-move (owner amendment):** the daily budget is **floored to
+  one plot/day** (`minDailyMovePoints`) so a marching band **never has a zero-progress day** —
+  polar winter or a huge column creeps on its larder rather than freezing (`netMarchKm` still
+  zeroes for reporting). Verified: `MarchTest` (+3 cases — budget scales with daylight, shrinks
+  with band size, never falls to zero) + the existing caravan integration suite green (22 tests).
+  **Not done here:** the *route discount* (roads) stays a dormant hook (no roads on plots yet),
+  and literal per-plot min-one-move stepping (entering a single arbitrarily-expensive plot in one
+  day) waits for the Phase-5 per-plot corridor position — Phase 3 spends at province-leg
+  granularity with fractional carry.
+  - **Wilderness plots (owner decision, 2026-07-14).** Plots that a band can **traverse between
+    provinces but that belong to no province** are **Wilderness**: they can be walked (and camped
+    on) but **never settled**, and a **Camp on a wilderness plot cannot be upgraded** up the
+    `SettlementTier` ladder (Camp→Cottage→… requires a province-owned plot). Not modeled yet —
+    today every plot belongs to a province and the boundary hop is a portal-to-portal jump with no
+    intervening plots; wilderness becomes concrete when the **Phase-5 per-plot corridor** is drawn
+    *across* provinces (the gaps between province footprints) and is enforced by the tier ladder's
+    camp-upgrade gate (`docs/settlement-tier-ladder-plan.md`).
 - **Phase 4 — the `ExplorerProvisioner` trigger. — DONE + MEASURED.** A colony step-action
   (`ExplorerProvisioner`, off by default via `SimulationHarness.setExplorerProvisioning`) musters
   one levy at a time under food pressure — drafting the pool's least-skilled adults

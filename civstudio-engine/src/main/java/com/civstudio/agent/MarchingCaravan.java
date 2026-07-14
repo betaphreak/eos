@@ -118,12 +118,13 @@ public abstract class MarchingCaravan extends Caravan {
 	private final MarchConfig marchConfig = MarchConfig.DEFAULT;
 	private LandRouter router; // lazily built over the band's world map
 	private Route route;       // the current route toward the chosen target
-	private int legIndex;      // the hop of `route` the band is currently crossing
-	private double progressKm; // km already covered into the current leg's cost
-	// the current leg's cost = the plot-corridor distance across the province the band is
-	// in (KM_PER_PLOT × corridor cost) + the boundary hop into the next; and the river
-	// fords on that corridor (each a full day). Computed lazily per leg (docs/caravan-march.md §6).
-	private double legKmCost;
+	private int legIndex;          // the hop of `route` the band is currently crossing
+	private double progressPoints; // Civ4 move-points already spent into the current leg's cost
+	// the current leg's cost, in Civ4 move-points = the plot corridor's summed Civ4 move cost
+	// across the province the band is in (docs/explorer-caravan.md §5 — the per-plot terrain/
+	// feature/hills/slope ladder, no KM_PER_PLOT dilution) + the boundary hop into the next;
+	// and the river fords on that corridor (each a full day). Lazily computed per leg.
+	private double legMoveCost;
 	private int legFords;
 	private boolean legReady;
 
@@ -327,14 +328,18 @@ public abstract class MarchingCaravan extends Caravan {
 		// ensure a distance-accurate route toward the current target
 		ensureRoute(rng);
 
-		// spend D along that route: each leg is the plot corridor across the current
-		// province (KM_PER_PLOT × its plot cost — so rough/wild ground is slower) plus the
-		// boundary hop into the next, with river fords costing a full day. Partial progress
-		// carries across days, so a big/rough province takes several days to cross and a
-		// lean band in a long day may clear several short legs (docs/caravan-march.md §6).
+		// spend the day's move-point budget M along that route: each leg costs the plot
+		// corridor's summed Civ4 move cost across the current province (the per-plot terrain/
+		// feature/hills/slope ladder — so rough/wild ground is dearer) plus the boundary hop
+		// into the next, with river fords costing a full day (Civ4's ford-ends-movement rule).
+		// Partial progress carries across days, so a big/rough province takes several days to
+		// cross and a lean band in a long day may clear several short legs. The daily budget is
+		// floored to minDailyMovePoints (the Civ4 min-one-move rule, applied in March.compute),
+		// so a marching band always advances at least one plot/day and never freezes — even in
+		// polar winter; per-plot min-one-move stepping arrives with the Phase-5 corridor.
 		List<Integer> traversed = new ArrayList<>();
 		traversed.add(getProvinceId());
-		double startBudget = day.netMarchKm();
+		double startBudget = day.movePoints();
 		double budget = startBudget;
 		while (budget > 1e-9 && route != null && legIndex < route.hops()) {
 			if (!legReady)
@@ -345,10 +350,10 @@ public abstract class MarchingCaravan extends Caravan {
 				budget = 0;
 				break;
 			}
-			double need = legKmCost - progressKm;
+			double need = legMoveCost - progressPoints;
 			if (budget + 1e-9 >= need) {
 				budget -= need;
-				progressKm = 0;
+				progressPoints = 0;
 				legReady = false;
 				int next = route.provinces().get(legIndex + 1);
 				enteredFrom = getProvinceId(); // remember the side we cross in from
@@ -356,7 +361,7 @@ public abstract class MarchingCaravan extends Caravan {
 				legIndex++;
 				traversed.add(next);
 			} else {
-				progressKm += budget;
+				progressPoints += budget;
 				budget = 0;
 			}
 		}
@@ -368,8 +373,11 @@ public abstract class MarchingCaravan extends Caravan {
 		Plot camp = campingEnabled ? claimCampOn(corridor) : null;
 		// the day's surplus daylight (what the capped march did not use) funds the
 		// off-march work: forage food into the larder first (survival), then gather
-		// non-food goods into the cargo with the hours foraging left over
-		double surplusHours = campingEnabled ? surplusHours(day, startBudget - budget) : 0;
+		// non-food goods into the cargo with the hours foraging left over. The march spend
+		// is now in move-points, so scale the day's km distance (still computed, for
+		// reporting) by the fraction of the budget actually spent to recover the km marched.
+		double spentFraction = startBudget > 1e-9 ? (startBudget - budget) / startBudget : 0;
+		double surplusHours = campingEnabled ? surplusHours(day, spentFraction * day.netMarchKm()) : 0;
 		double foraged = forage(surplusHours, corridor);
 		int gathered = gather(surplusHours, foraged, corridor);
 		lastReport = buildReport(date, day, traversed, corridor, foraged, gathered, camp);
@@ -389,27 +397,28 @@ public abstract class MarchingCaravan extends Caravan {
 			if (targetProvinceId == OFF_GRAPH) {
 				route = Route.NONE;
 				legIndex = 0;
-				progressKm = 0;
+				progressPoints = 0;
 				return;
 			}
 			if (router == null)
 				router = new LandRouter(worldMap());
 			route = router.route(getProvinceId(), targetProvinceId);
 			legIndex = 0;
-			progressKm = 0;
+			progressPoints = 0;
 			legReady = false;
 		}
 	}
 
-	// compute the current leg's cost and river fords: the plot corridor across the province
-	// the band is in (its plots' move cost × KM_PER_PLOT) plus the centroid-to-centroid
-	// boundary hop into the next province (docs/caravan-march.md §6, docs/land-routing.md)
+	// compute the current leg's cost (Civ4 move-points) and river fords: the plot corridor's
+	// summed Civ4 move cost across the province the band is in (its plots' terrain/feature/
+	// hills/slope ladder — spent directly, not scaled by KM_PER_PLOT) plus the boundary-hop
+	// unit into the next province (docs/explorer-caravan.md §5, docs/land-routing.md)
 	private void computeLeg() {
 		int cur = getProvinceId();
 		int next = route.provinces().get(legIndex + 1);
 		PlotCorridor corr = corridorBetween(enteredFrom, cur, next);
-		double corridorKm = corr == null ? 0 : marchConfig.kmPerPlot() * corr.totalCost();
-		legKmCost = corridorKm + route.hopKm()[legIndex];
+		double corridorCost = corr == null ? 0 : corr.totalCost();
+		legMoveCost = corridorCost + marchConfig.boundaryHopCost();
 		legFords = corr == null ? 0 : corr.riverCrossings();
 		legReady = true;
 	}

@@ -59,6 +59,41 @@ class MarchTest {
 	}
 
 	@Test
+	void moveBudgetScalesWithDaylight() {
+		// the Phase-3 movement driver: the day's Civ4 move-point budget scales with daylight,
+		// exactly as the km distance does (docs/explorer-caravan.md §5)
+		MarchDay winter = March.compute(DAY, 500, MarchFlavor.SETTLER, 8.0, SUNRISE, CFG);
+		MarchDay summer = March.compute(DAY, 500, MarchFlavor.SETTLER, 15.0, SUNRISE, CFG);
+		assertTrue(summer.movePoints() > winter.movePoints(),
+				"a longer day buys more Civ4 move-points");
+	}
+
+	@Test
+	void aLeanBandGetsMoreMovePointsThanAHugeOne() {
+		// the size coupling in move-points: the huge column forfeits more to its coil overhead
+		MarchDay lean = March.compute(DAY, 200, MarchFlavor.SETTLER, 15.0, SUNRISE, CFG);
+		MarchDay huge = March.compute(DAY, 20_000, MarchFlavor.SETTLER, 15.0, SUNRISE, CFG);
+		assertTrue(lean.movePoints() > huge.movePoints(),
+				"the leaner band earns more move-points (less column overhead)");
+	}
+
+	@Test
+	void moveBudgetNeverFallsToZero_theMinOneMoveRule() {
+		// the Civ4 min-one-move rule (the amendment to §5): a marching band always advances
+		// at least one plot/day, so the move-point budget is FLOORED and never zero — even
+		// where the km distance (reporting) halts the band entirely.
+		MarchDay polar = March.compute(DAY, 500, MarchFlavor.SETTLER, Double.NaN, null, CFG);
+		assertEquals(0.0, polar.netMarchKm(), 0.0, "km distance still halts on a polar day");
+		assertEquals(CFG.minDailyMovePoints(), polar.movePoints(), 1e-9,
+				"but the band still gets its one-plot floor, never zero");
+
+		MarchDay huge = March.compute(DAY, 50_000, MarchFlavor.SETTLER, 15.0, SUNRISE, CFG);
+		assertEquals(0.0, huge.netMarchKm(), 1e-9, "the 50k column makes no km progress");
+		assertEquals(CFG.minDailyMovePoints(), huge.movePoints(), 1e-9,
+				"yet it still creeps at least one plot/day — never frozen by its own column");
+	}
+
+	@Test
 	void settlerFlavorFieldsOnlyItsBlocksAndSchedulesThemInOrder() {
 		MarchDay day = March.compute(DAY, 900, MarchFlavor.SETTLER, 15.0, SUNRISE, CFG);
 		assertTrue(day.marches());

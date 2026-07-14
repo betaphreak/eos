@@ -144,6 +144,12 @@ real "camp-and-work-the-land" foraging model.
 - **Growth calibration** — mapping `iUpgradeTime` days + the population×days rate + the ≥1000 City gate
   to a colony that actually climbs at a sane pace is tuning work (like the food-balance levers).
 - **Forage/camp persistence** rework touches the march loop; keep the directed-march caravans working.
+- **Wilderness plots gate camp upgrades (owner decision, 2026-07-14).** A **Camp on a "Wilderness"
+  plot — a plot traversable between provinces but belonging to no province — cannot be upgraded** up
+  the ladder (Camp→Cottage→… requires a **province-owned** plot); wilderness camps can forage/work
+  but never grow into a settlement. Not modeled yet (today every plot belongs to a province); it lands
+  with the Phase-5 per-plot corridor that first draws unowned inter-province ground. See
+  `docs/explorer-caravan.md` §Phase 3.
 
 ## Verification (end-to-end)
 - Per-phase unit tests above; after each phase run `mvn -o test` (full reactor: engine + server).

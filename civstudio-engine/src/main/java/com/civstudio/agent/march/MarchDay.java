@@ -19,7 +19,16 @@ import java.util.List;
  *                      band is daylight-starved and halts)
  * @param speedKmh      the marching speed {@code v}
  * @param columnKm      the column length {@code L} — the coil/uncoil tax
- * @param netMarchKm    the net daily distance {@code D = max(0, v·(H − H_camp) − L)}
+ * @param netMarchKm    the net daily distance {@code D = max(0, v·(H − H_camp) − L)} — kept
+ *                      for <b>reporting</b> (the plots-crossed estimate and the surplus-
+ *                      daylight scaling); since Phase 3 the movement <i>decision</i> spends
+ *                      {@link #movePoints} instead ({@code docs/explorer-caravan.md} §5)
+ * @param movePoints    the day's <b>Civ4 move-point budget</b> {@code M = max(
+ *                      minDailyMovePoints, baseMovePoints · usableFraction − columnOverhead)}
+ *                      — the points the band lays onto plot corridors priced in Civ4 move-cost
+ *                      units. <b>Floored to one plot/day</b> (the Civ4 min-one-move rule), so
+ *                      it is never zero: a marching band always advances, even on a polar or
+ *                      huge-column day when {@link #netMarchKm} (reporting) is 0
  * @param firstDepart   the first element's departure (sunrise + prep), or {@code null}
  *                      when the band does not march
  * @param campMade      when the far camp is fully built (the last element's tail is in),
@@ -33,6 +42,7 @@ public record MarchDay(
 		double speedKmh,
 		double columnKm,
 		double netMarchKm,
+		double movePoints,
 		LocalTime firstDepart,
 		LocalTime campMade,
 		List<Stage> stages) {

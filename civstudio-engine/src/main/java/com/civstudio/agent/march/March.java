@@ -64,6 +64,20 @@ public final class March {
 		double usable = Double.isNaN(daylightHours) ? 0 : daylightHours - hCamp;
 		double d = Math.min(cfg.maxDailyKm(), Math.max(0, v * Math.max(0, usable) - columnKm));
 
+		// the day's Civ4 move-point budget M (the Phase-3 movement driver — the band spends
+		// this onto plot corridors priced in Civ4 move-cost units, docs/explorer-caravan.md
+		// §5): base points scaled by the usable-daylight fraction, less the column overhead a
+		// big band forfeits to its coil, then FLOORED to minDailyMovePoints — the Civ4
+		// min-one-move rule, so a marching band always advances at least one plot/day and
+		// never has a zero-progress day (polar winter or a huge column creeps on its larder
+		// rather than freezing). Unlike netMarchKm (which still zeroes on a daylight halt, for
+		// reporting), the move-point budget never falls to zero.
+		double usableFraction = cfg.referenceDaylightHours() <= 0 ? 0
+				: Math.max(0, usable) / cfg.referenceDaylightHours();
+		double columnOverhead = cfg.columnOverheadPerThousand() * size / 1000.0;
+		double movePoints = Math.max(cfg.minDailyMovePoints(),
+				cfg.baseMovePoints() * usableFraction - columnOverhead);
+
 		// the timed per-element schedule (only when the band marches and sunrise is
 		// defined): each element leaves once the previous has cleared camp plus a buffer
 		List<MarchDay.Stage> stages = new ArrayList<>();
@@ -94,7 +108,7 @@ public final class March {
 		}
 
 		return new MarchDay(date, size, Double.isNaN(daylightHours) ? 0 : daylightHours,
-				v, columnKm, d, firstDepart, campMade, stages);
+				v, columnKm, d, movePoints, firstDepart, campMade, stages);
 	}
 
 	// LocalTime -> decimal hours since midnight
