@@ -105,13 +105,15 @@ searchInfo.pickedBuilding = await page.evaluate(() =>
 const info = await page.evaluate(() => {
   const modal = document.getElementById('techModal');
   const cr = modal?.getBoundingClientRect();
+  const vp = document.getElementById('techViewport')?.getBoundingClientRect();
   const topbar = document.querySelector('.topbar')?.getBoundingClientRect();
   const rail = document.getElementById('railwrap');
   const subbarTech = document.querySelector('#advisorSubbar .advisor-sub[data-sub="technology"]');
   return {
     modalHidden: modal?.hidden,
-    modalTop: cr ? Math.round(cr.top) : null,
-    coversBelowTopbar: cr && topbar ? cr.top >= Math.round(topbar.bottom) - 2 : null,
+    modalTop: cr ? Math.round(cr.top) : null,             // 0 now — the tree covers the whole stage area
+    viewportTop: vp ? Math.round(vp.top) : null,          // inset below the floating bar (clears it)
+    viewportClearsBar: vp && topbar ? vp.top >= Math.round(topbar.bottom) - 2 : null,
     nodeCount: document.querySelectorAll('.tech-node').length,
     lockedNodes: document.querySelectorAll('.tech-node.locked').length,
     lockedCells: document.querySelectorAll('#rail .tech-bcell.locked').length,

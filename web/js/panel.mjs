@@ -7,13 +7,14 @@ import { startLive, stopLive, liveToBackground, liveActive, liveState, controlLi
 import { createSearchBox } from "./searchbox.mjs";
 import { techBuildingMatches, searchRowHtml, pickSearchResult } from "./techtree.mjs";
 stage.addEventListener("wheel", e => {
+  if (S.techOpen) return;   // the tech tree owns the viewport while it's up — don't zoom the map behind it
   e.preventDefault();
   const r = stage.getBoundingClientRect();
   zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0016));
 }, { passive: false });
 let lastX = 0, lastY = 0, panMoved = false;
 stage.addEventListener("mousedown", e => {
-  if (e.button !== 0) return;
+  if (e.button !== 0 || S.techOpen) return;   // map panning disabled while the tech tree is up
   S.dragging = true; panMoved = false; lastX = e.clientX; lastY = e.clientY;
   stage.classList.add("grabbing");
 });
@@ -30,6 +31,7 @@ window.addEventListener("mouseup", () => { if (S.dragging) { S.dragging = false;
 stage.style.touchAction = "none";                       // stop the browser scrolling/zooming the page
 let touchMode = 0, pinchDist = 0, pinchCX = 0, pinchCY = 0;   // 0 none · 1 pan · 2 pinch
 stage.addEventListener("touchstart", e => {
+  if (S.techOpen) return;   // map gestures disabled while the tech tree is up
   if (e.touches.length === 1) {
     touchMode = 1; S.dragging = true; panMoved = false;
     lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;

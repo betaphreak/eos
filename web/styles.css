@@ -724,8 +724,13 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
    live-measured --bar-total so the tree clears the floating, wrapping top bar); this base rule
    matches it and adds the overflow/transition. */
 .tech-modal {
-  position: absolute; top: var(--bar-total, var(--bar-h)); left: 0; right: 0; bottom: var(--foot-h);
+  position: absolute; top: 0; left: 0; right: 0; bottom: var(--foot-h);
   z-index: 7; overflow: hidden; transition: right .22s ease;
+  /* the tree fills the SAME area as the map (top:0) so it fully covers/disables it — the background
+     lives here (continuous under the floating bar); the scrollable viewport is inset below the bar. */
+  background:
+    radial-gradient(1200px 500px at 20% -10%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 60%),
+    var(--ground);
 }
 .tech-modal[hidden] { display: none; }
 .app.rail-open .tech-modal { right: var(--rail-w); }
@@ -734,11 +739,9 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .tech-eras { flex-wrap: wrap; }
 
 .tech-viewport {
-  position: absolute; inset: 0; overflow: auto; overflow-x: scroll; cursor: grab;
+  position: absolute; top: var(--bar-total, var(--bar-h)); left: 0; right: 0; bottom: 0;
+  overflow: auto; overflow-x: scroll; cursor: grab;
   scrollbar-width: thin; scrollbar-color: var(--line) transparent;   /* Firefox */
-  background:
-    radial-gradient(1200px 500px at 20% -10%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 60%),
-    var(--ground);
 }
 .tech-viewport.grabbing { cursor: grabbing; }
 .tech-viewport::-webkit-scrollbar { width: 12px; height: 12px; }
@@ -764,14 +767,14 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 
 /* nodes: compact cards with an advisor-coloured spine + the real Civ4 icon */
 .tech-node {
-  position: absolute; display: flex; align-items: center; gap: 9px; width: 215px; box-sizing: border-box;
-  padding: 7px 9px 7px 10px; background: var(--panel-2); color: var(--ink);
+  position: absolute; display: flex; align-items: center; gap: 8px; width: 215px; box-sizing: border-box;
+  padding: 3px 9px 7px 10px; background: var(--panel-2); color: var(--ink);
   border: 1px solid var(--line); border-left: 3px solid var(--adv, var(--line)); border-radius: 9px;
   cursor: pointer; transition: opacity .12s, border-color .12s, box-shadow .12s;
 }
 .tech-node:hover { border-color: var(--adv, var(--ink-faint)); box-shadow: 0 2px 10px rgba(0,0,0,.18); }
 .tech-node.sel { box-shadow: 0 0 0 2px var(--accent); }
-.tech-ico { flex: none; width: 40px; height: 40px; border-radius: 6px; background-repeat: no-repeat; }
+.tech-ico { flex: none; width: 34px; height: 34px; border-radius: 6px; background-repeat: no-repeat; }
 .tech-ico.chip {
   display: grid; place-items: center; font: 800 15px system-ui,sans-serif; color: #fff;
   background: var(--adv, var(--ink-faint));
@@ -786,8 +789,6 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .tech-spec { position: absolute; left: 9px; right: 9px; bottom: 3px; height: 3px; display: flex;
   gap: 1px; border-radius: 2px; overflow: hidden; opacity: .85; pointer-events: none; }
 .tech-spec > span { display: block; min-width: 2px; }
-/* give the card room below the two-line name for the spectrum footer */
-.tech-node { padding-bottom: 11px; }
 /* researched-state (when spectating a live colony): dim what it has NOT unlocked yet — desaturated,
    never hidden, so the tree doubles as a forward reference of everything ahead */
 .tech-node.locked { opacity: .44; filter: saturate(.5); }

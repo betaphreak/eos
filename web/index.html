@@ -45,12 +45,13 @@
        so the map uses the space the content-width bar would otherwise leave empty */
     .app .stage{top:0}
     .app .railwrap{top:0}
-    /* Technology Advisor (§2): the tech tree is a full-canvas map-mode — #techModal covers only the
-       stage region below the floating bar (its height tracked in --bar-total, panel.mjs), so the
-       advisor selector + sub-bar stay live. It has no chrome of its own (era tabs live in the sub-bar,
-       search in the top bar, detail in the rail); leave via the selector / Esc / hotkey. The rail
-       (opened for the node/building inspector) shrinks it from the right. */
-    .app .tech-modal{position:absolute;inset:auto;top:var(--bar-total,var(--bar-h));left:0;right:0;bottom:var(--foot-h);z-index:7}
+    /* Technology Advisor (§2): the tech tree is a full-canvas map-mode — #techModal covers the WHOLE
+       stage region (top:0, same area as the map, so it fully covers/disables the map behind it); its
+       scrollable viewport is inset below the floating bar (--bar-total, panel.mjs) so tech nodes clear
+       the still-live advisor selector + sub-bar. No chrome of its own (era tabs in the sub-bar, search
+       in the top bar, detail in the rail); leave via the selector / Esc / hotkey. The rail (opened for
+       the node/building inspector) shrinks it from the right. */
+    .app .tech-modal{position:absolute;inset:auto;top:0;left:0;right:0;bottom:var(--foot-h);z-index:7}
     .app.rail-open .tech-modal{right:var(--rail-w)}
     #advisorSubbar .advisor-sub{display:flex;align-items:center;gap:8px}
     #advisorSubbar .advisor-sub[hidden]{display:none}

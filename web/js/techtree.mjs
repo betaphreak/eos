@@ -43,8 +43,10 @@ const ERAS = [
 ];
 const ERA_NAME = Object.fromEntries(ERAS);
 
-const COL_W = 240, ROW_H = 64, PAD = 48, CARD_W = 215, CARD_H = 56;
-const SHEET = "assets/tech/tech-icons.webp", SHEET_W = 1024, SHEET_H = 1216, ICON = 40;
+// COL_W = column pitch (doubled for wide, legible prereq elbows), ROW_H = row pitch (−25% for
+// denser rows), CARD_H matched to the compacted card height (see .tech-node in styles.css).
+const COL_W = 480, ROW_H = 48, PAD = 48, CARD_W = 215, CARD_H = 44;
+const SHEET = "assets/tech/tech-icons.webp", SHEET_W = 1024, SHEET_H = 1216, ICON = 34;
 const KMAX = 1.8, KSTEP = 1.2;   // min zoom is dynamic — see minZoom() (fit-to-height)
 
 // building-icon sheet (build-buildings.mjs): 64² cells, 50 cols; each building carries an
