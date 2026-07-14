@@ -390,6 +390,26 @@ Each phase is independently compilable/testable; earlier phases are inert until 
     materializes the recipient's currency) rather than via an explicit money-changer exchange, and
     the cargo is still valued/dumped as Enjoyment — the **real raw-goods market** replaces the
     Enjoyment interim later.
+  - **Commit 2 follow-up — noble-leader + Expeditions printer (2026-07-15).** The first cut ennobled
+    the ablest returnee on *every* return, which measurement (seed 7654321) showed ballooned the
+    aristocracy to **27 nobles vs 11 laborers** by collapse — the ablest returnees (the best would-be
+    laborers) were being drained into rentier nobles. Fixed per owner steer ("if a better-skilled
+    noble exists, [reward] it instead of ennobling a peasant"): `distributeReturn` now finds the
+    **ablest existing noble abler than the ablest returnee** (`ablerNoble`) and, if one exists, treats
+    it as the **expedition's leader** and pays it the noble's cut (`payLeaderShare`, credited as
+    income) — **no new noble is minted**, every returnee founds a laborer household. Only when *no*
+    abler noble exists is the ablest returnee ennobled (bootstrapping the aristocracy early). Result:
+    over the whole run only **1** expedition ennoblement vs **22** noble-led returns, nobles steady at
+    **5–6** (the `topUpAristocracy` target). **But the collapse barely moved** (~1454-01 → ~1453-08,
+    both ~+1y over the no-expedition ~1452-12 baseline): the renewal loop is mechanically sound (90
+    households founded over the run) yet does **not** fix the collapse — confirming (again) that
+    collapse is upstream in **food-balance calibration**, not aristocracy accounting. NOTE: this is a
+    *return-side* credit — no noble is literally drafted away; the fuller owner design ("a noble
+    *leads* the expedition") would draft one at muster and raises a leader-rotation question (the
+    ablest noble would always be picked). New **`ExpeditionsPrinter`** (`Expeditions.csv`, in
+    `addCommonPrinters` so every scenario emits it) reports monthly Out/Mustered/Returned/Founded/
+    Ennobled/NobleLed off a public `ExpeditionStats` snapshot from `SimulationHarness.expeditionStats()`
+    — the debug view the run previously lacked.
   - **Commit 2 -- implementation plan (mapped 2026-07-15, BUILT — see the SHIPPED note above).** Add the cash reward to
     `SocialMobility.rewardReturn` (the commit-1 seam), the whole chain deferred to end of step
     alongside the founding:

@@ -72,6 +72,14 @@ class SocialMobility implements ExpeditionReturn {
 	// a tally of household fissions over the run
 	private long fissionCount;
 
+	// renewal-loop tallies over the run (the expedition reward, for the Expeditions printer):
+	// bands returned and rewarded; households founded from returnees; returnees ennobled to lead
+	// (no abler noble existed); returns an existing abler noble led (no new noble minted)
+	private long expeditionReturns;
+	private long expeditionFounded;
+	private long expeditionEnnobled;
+	private long expeditionNobleLed;
+
 	SocialMobility(Settlement colony, SimulationConfig cfg, NobleConfig nobleConfig,
 			Supplier<Bank> silverBank, Supplier<Bank> copperBank, Supplier<Retinue> pool) {
 		this.colony = colony;
@@ -112,6 +120,26 @@ class SocialMobility implements ExpeditionReturn {
 	/** Number of household fissions over the run so far. */
 	long getFissionCount() {
 		return fissionCount;
+	}
+
+	/** Bands returned and rewarded over the run (the renewal loop). */
+	long getExpeditionReturns() {
+		return expeditionReturns;
+	}
+
+	/** Households founded from returned explorer peasants over the run. */
+	long getExpeditionFounded() {
+		return expeditionFounded;
+	}
+
+	/** Returnees ennobled to lead (no abler noble existed) over the run. */
+	long getExpeditionEnnobled() {
+		return expeditionEnnobled;
+	}
+
+	/** Returns an existing abler noble led (no new noble minted) over the run. */
+	long getExpeditionNobleLed() {
+		return expeditionNobleLed;
 	}
 
 	/**
@@ -338,10 +366,17 @@ class SocialMobility implements ExpeditionReturn {
 		return cargoUnits * price;
 	}
 
-	// end-of-step: release every surviving returnee from the pool, ennoble the ablest into a
-	// silver-banking noble, and found copper-banking laborer households from the rest — each seeded
-	// with its share of the taxed-net proceeds. A returnee no longer in the pool (died on the march
-	// / already released) is skipped; a no-op if none survive to release.
+	// end-of-step: release every surviving returnee from the pool, award the leader's cut of the
+	// haul, and found copper-banking laborer households from the returnees — each seeded with its
+	// share of the taxed-net proceeds. A returnee no longer in the pool (died on the march / already
+	// released) is skipped; a no-op if none survive to release.
+	//
+	// The <b>leader</b> takes the noble's share: if the colony already has a living noble abler
+	// (higher head SOCIAL) than the ablest returnee, that noble is deemed to have led the expedition
+	// and is paid the cut — <b>no new noble is minted</b>, so the aristocracy does not balloon (the
+	// bug the unconditional-ennoblement first cut caused — 27 nobles vs 11 laborers for seed
+	// 7654321). Only when no abler noble exists is the ablest returnee ennobled to lead, bootstrapping
+	// the aristocracy early; the rest always found laborer households.
 	private void distributeReturn(List<Member> returnees, double proceeds) {
 		Retinue r = pool.get();
 		List<Member> released = new ArrayList<>();
@@ -354,19 +389,58 @@ class SocialMobility implements ExpeditionReturn {
 			return; // no survivor left the pool — nothing to found
 
 		// the crown taxes a cut of the haul (it keeps it — the ruler is the seller); the rest is
-		// shared out, the ablest returnee ennobled and the others founding households
+		// shared out, the leader taking the noble's share and the returnees founding households
 		double distributable = proceeds * (1 - cfg.expeditionTaxRate());
+		double leaderCash = distributable * cfg.expeditionNobleShare();
 		Member ablest = ablestBySocial(released);
-		double nobleCash = distributable * cfg.expeditionNobleShare();
-		colony.scheduleAddAgent(ennobleReturnee(ablest, nobleCash));
+		Noble leader = ablerNoble(ablest);
 
-		// split the remainder equally among the other returnees (if the ablest was the only
-		// survivor, its share is all there is and the remainder simply stays with the crown)
 		List<Member> founders = new ArrayList<>(released);
-		founders.remove(ablest);
-		double each = founders.isEmpty() ? 0 : (distributable - nobleCash) / founders.size();
+		if (leader != null) {
+			// an abler noble led the expedition — it takes the leader's cut; every returnee founds a
+			// laborer household (no new noble is minted)
+			payLeaderShare(leader, leaderCash);
+			expeditionNobleLed++;
+		} else {
+			// no abler noble to lead — ennoble the ablest returnee into the leading noble, seeded
+			// with the leader's cut; the rest found households
+			colony.scheduleAddAgent(ennobleReturnee(ablest, leaderCash));
+			founders.remove(ablest);
+			expeditionEnnobled++;
+		}
+
+		// split the remainder equally among the founding returnees (if the ablest was ennobled and
+		// was the only survivor, the remainder simply stays with the crown)
+		double each = founders.isEmpty() ? 0 : (distributable - leaderCash) / founders.size();
 		for (Member founder : founders)
 			colony.scheduleAddAgent(foundReturnedHousehold(founder, each));
+		expeditionReturns++;
+		expeditionFounded += founders.size();
+	}
+
+	// the living colony noble abler (strictly higher head SOCIAL) than `candidate`, the ablest among
+	// them, or null if no noble out-skills the candidate — the leader of a returning expedition when
+	// one exists (so an expedition rewards an existing noble rather than always minting a fresh one)
+	private Noble ablerNoble(Member candidate) {
+		int bar = candidate.skills().level(Skill.SOCIAL);
+		Noble best = null;
+		for (Agent a : colony.getAgents())
+			if (a instanceof Noble n && n.isAlive()) {
+				int s = n.getHead().skills().level(Skill.SOCIAL);
+				if (s > bar && (best == null
+						|| s > best.getHead().skills().level(Skill.SOCIAL)))
+					best = n;
+			}
+		return best;
+	}
+
+	// pay the expedition's noble leader its cut of the haul out of the crown treasury (gold ->
+	// silver; the ruler bears the FX + txn fee on the payout, the noble the silver FX fee on receipt),
+	// recorded as the noble's income. Money is conserved (the crown recoups via the dumped haul).
+	private void payLeaderShare(Noble leader, double cash) {
+		double paid = drawFromTreasury(cash);
+		if (paid > 0)
+			leader.getBank().credit(leader.getID(), paid, Bank.PRIIC);
 	}
 
 	// found one returned peasant's copper-banking laborer household, seeded with `cash` drawn from

@@ -34,6 +34,7 @@ import com.civstudio.agent.firm.ScienceFirm;
 import com.civstudio.agent.firm.StrategicFirm;
 import com.civstudio.agent.firm.StrategicFirmConfig;
 import com.civstudio.agent.Member;
+import com.civstudio.agent.ExpeditionStats;
 import com.civstudio.agent.ExplorerProvisioner;
 import com.civstudio.agent.Retinue;
 import com.civstudio.agent.RetinueConfig;
@@ -189,6 +190,10 @@ public class SimulationHarness {
 	// fission and the rank ladder), built lazily on first use (see mobility()); the
 	// dynamic firm provisioning also uses it to find/raise a firm's owner
 	private SocialMobility mobility;
+
+	// the colony's seasonal explorer-levy provisioner (City settlements only; null for a Village or
+	// a bare sim), retained so the Expeditions printer can read its muster tally (see expeditionStats)
+	private ExplorerProvisioner explorerProvisioner;
 
 
 	// necessity (food) firms run a higher technology coefficient than the other
@@ -1239,10 +1244,27 @@ public class SimulationHarness {
 	// winter foraging expeditions; a Village (a single urban plot) does not.
 	private void installExplorerProvisioning() {
 		if (colony instanceof City && retinue != null) {
-			ExplorerProvisioner provisioner = new ExplorerProvisioner(colony, retinue);
-			provisioner.setReward(mobility()); // the renewal loop on a live return
-			colony.addStepAction(provisioner);
+			explorerProvisioner = new ExplorerProvisioner(colony, retinue);
+			explorerProvisioner.setReward(mobility()); // the renewal loop on a live return
+			colony.addStepAction(explorerProvisioner);
 		}
+	}
+
+	/**
+	 * A monthly snapshot of the colony's explorer-expedition activity (the renewal loop) for the
+	 * {@link com.civstudio.io.printer.ExpeditionsPrinter}: bands out now / mustered / returned, plus
+	 * the reward split (households founded, returnees ennobled to lead, returns an abler noble led).
+	 * {@link ExpeditionStats#NONE} for a colony that musters none (a Village, or a bare sim).
+	 *
+	 * @return the current expedition tallies
+	 */
+	public ExpeditionStats expeditionStats() {
+		if (explorerProvisioner == null)
+			return ExpeditionStats.NONE;
+		return new ExpeditionStats(colony.getExcursions().size(),
+				explorerProvisioner.getMustered(), mobility().getExpeditionReturns(),
+				mobility().getExpeditionFounded(), mobility().getExpeditionEnnobled(),
+				mobility().getExpeditionNobleLed());
 	}
 
 	/**
@@ -1327,6 +1349,10 @@ public class SimulationHarness {
 		colony.addPrinter(new VolumesPrinter(prefix + "Volumes"));
 		colony.addPrinter(new FirmsPrinter(prefix + "Firms"));
 		colony.addPrinter(new WeddingPrinter(prefix + "Weddings", weddingMkt));
+		// the explorer-expedition renewal loop (docs/explorer-caravan.md): bands out/mustered/
+		// returned + the return-reward split (households founded, returnees ennobled, returns an
+		// abler noble led). All-zero for a colony that musters none (a Village / a bare sim).
+		colony.addPrinter(new ExpeditionsPrinter(prefix + "Expeditions", this::expeditionStats));
 	}
 
 	/**
