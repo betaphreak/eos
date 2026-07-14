@@ -325,12 +325,22 @@ Each phase is independently compilable/testable; earlier phases are inert until 
   **feeds** its levy from its larder (net-positive forage cap, `forageCapFraction() > 1`), and on
   return **deposits its surplus food into the colony's granary** (`Granary.importStock` — which
   feeds the starving pool via relief draws *and* releases into the necessity market in scarcity)
-  and **undrafts** its people. `ExplorerForagingTest` drives the whole trip. **Deferred to a
-  follow-up:** the **paid cash-out** of the food/cargo to the draftees' *households* (decision 14)
-  and the **re-entry into the wedding market** funding a marriage (decision 19) — Phase 2 lands
-  the *food* loop (granary import), not yet the *money*/marriage loop; and **home-colony ticking +
+  and **undrafts** its people. `ExplorerForagingTest` drives the whole trip. **home-colony ticking +
   the per-colony excursion RNG** lands with the trigger (Phase 4), the test driving `tick()`
   directly for now.
+  - **Renewal-loop tail (decisions 14/19) — reassessed 2026-07-15, mostly already-functional or
+    model-incompatible.** A seam audit found: (19) **"return to marry" already works** — undrafting
+    a returned pool peasant re-enables it as a marriage candidate (`Retinue.bestSpouseCandidate`
+    skips `isDrafted()`), so the loop already sends young adults out and brings them home *weddable*;
+    combined with the food it brings home (granary → the food gate on births,
+    `AbstractHousehold.bearChildIfFertile`), the explorer **already feeds renewal**. (14) **"pay the
+    draftees' households" does NOT fit the current model** — every current draftee is a **pool
+    peasant with no individual account** (the `Retinue` has one aggregate account, zeroed each step
+    by `billRuler`), and marriage money flows the *other* way (the **seeker household** pays the
+    ruler a bride-price; the candidate pays nothing), so paying a returned peasant wouldn't fund its
+    marriage. And the **cargo cash-out is blocked** (no raw-goods market). So the money half needs a
+    prerequisite — **individual peasant accounts** (or drafting single household *heads*, who do have
+    accounts) — a feature of its own, not a tail. Parked until then.
 - **Phase 3 — Civ4/C2C movement. — DONE (2026-07-14).** The km-corridor spend is replaced by a
   **daylight-scaled move-point budget spent at Civ4 per-plot costs**. `MarchConfig` gains
   `baseMovePoints` / `referenceDaylightHours` / `columnOverheadPerThousand` / `minDailyMovePoints`;
