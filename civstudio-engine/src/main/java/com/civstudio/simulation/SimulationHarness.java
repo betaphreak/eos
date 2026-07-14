@@ -47,6 +47,7 @@ import com.civstudio.bank.Bank;
 import com.civstudio.bank.BankConfig;
 import com.civstudio.bank.CurrencyType;
 import com.civstudio.name.Person;
+import com.civstudio.settlement.City;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.io.SimLog;
@@ -189,11 +190,6 @@ public class SimulationHarness {
 	// dynamic firm provisioning also uses it to find/raise a firm's owner
 	private SocialMobility mobility;
 
-	// whether the colony musters ExplorerCaravan levies under food pressure
-	// (docs/explorer-caravan.md). Off by default so a headless run is unchanged; a probe or
-	// the server enables it. Must be set before foundStandardColony.
-	@Setter
-	private boolean explorerProvisioning = false;
 
 	// necessity (food) firms run a higher technology coefficient than the other
 	// consumer firms: because production stops on the weekly day of rest and on
@@ -1238,11 +1234,11 @@ public class SimulationHarness {
 		return gold;
 	}
 
-	// install the food-pressure explorer levy (docs/explorer-caravan.md) as a colony step
-	// action, when enabled (setExplorerProvisioning) and the colony has a pool to draft from.
-	// Off by default, so a standard headless run is unchanged.
+	// install the seasonal explorer levy (docs/explorer-caravan.md) as a colony step action.
+	// The DEFAULT behaviour for a City settlement (with a pool to draft from) — a City musters
+	// winter foraging expeditions; a Village (a single urban plot) does not.
 	private void installExplorerProvisioning() {
-		if (explorerProvisioning && retinue != null)
+		if (colony instanceof City && retinue != null)
 			colony.addStepAction(new ExplorerProvisioner(colony, retinue));
 	}
 

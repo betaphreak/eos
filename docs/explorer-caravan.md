@@ -40,7 +40,7 @@ Two things fall out for free once bands leave under their own economic logic:
 
 | # | Decision | Choice |
 |---|---|---|
-| 1 | **Scope** | Engine lifecycle — *every* ruler colony can muster explorers; deterministic, on a per-colony salted RNG. The server demo just visualizes it. |
+| 1 | **Scope** | Engine lifecycle — the **default for every `City` settlement** (headless + hosted); a `Village` (single urban plot) musters none. Deterministic, on a per-colony salted RNG. No opt-in flag — the tier decides (Phase 7). |
 | 2 | **Character** | A **food-import + scouting + renewal** expedition: it imports wild food, reveals the map, and sends young unmarried adults out to earn a nest egg and **come home to marry** — feeding the births/renewal loop `food-balance.md` says the colony needs. Not primarily a headcount cut. |
 | 3 | **Trigger** | **Seasonal — winter** (revised 2026-07-14). A colony musters foraging levies in **winter** (the lean season, by hemisphere), each aiming home by **mid-autumn** (a *soft* aim — worst case back by winter, and **not guaranteed**: a slow or lost band arrives late or not at all); on return the levy rejoins the settlement and works until the next winter. (The originally-chosen pool-larder signal was empirically **silent** — the pool drains by promotion/aging, it doesn't starve — so it was replaced by the seasonal rule.) |
 | 4 | **Cadence** | Start at **zero**; muster **one caravan at a time**; hysteresis cooldown between musters. |
@@ -359,6 +359,16 @@ Each phase is independently compilable/testable; earlier phases are inert until 
   **replace** `SessionHost.seedDemoCaravans` (the six hard-seeded bands) with the emergent
   explorers the colony now musters under pressure. Bump the reactor patch version + add a trivia
   line (`web/assets/loading/trivia.json`).
+
+- **Phase 7 (capstone) — default for City settlements. — DONE.** The mechanic is no longer
+  opt-in: `SimulationHarness.installExplorerProvisioning` installs the provisioner for **every
+  `City` colony** (with a pool), headless and hosted alike — the opt-in flag
+  (`setExplorerProvisioning`) is **removed**, the settlement **tier** decides. A **`Village`** (a
+  single urban plot) musters none. The default colony **Dhenijansar (4411) is a City**, so the
+  standard scenarios now muster winter levies; the collapse shifts ~+1.7 y but still fits every
+  smoke test's horizon, so **no test re-baselining was needed** — the only obsolete test (the
+  off-by-default assertion) was replaced by a City-defaults / Village-founds-none pair
+  (`ExplorerProvisioningTest`). Full reactor green (290 engine + 35 server).
 
 ## 10. Open questions / calibration
 

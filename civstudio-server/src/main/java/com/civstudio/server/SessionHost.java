@@ -171,12 +171,10 @@ public final class SessionHost {
 		// SimulationHarness.create builds the GameSession, founds the colony into the
 		// province, and installs the (now per-session) log — see docs/client-server.md
 		SimulationHarness h = SimulationHarness.create(cfg, spec.seed(), spec.provinceId());
-		// a spectator session shows the emergent food-import expeditions: let the hosted colony
-		// muster ExplorerCaravan levies under food pressure (docs/explorer-caravan.md), which it
-		// then drives and the render feed draws on the map. Off in headless engine runs.
-		h.setExplorerProvisioning(true);
 		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(),
 				i -> 15);
+		// a City colony musters winter foraging expeditions by default (docs/explorer-caravan.md),
+		// which it drives and the render feed draws on the map; a Village founds none.
 		Settlement colony = h.getColony();
 		// spectator sessions show the district view (docs/district-buildout.md D5): let the hosted
 		// colony auto-build its unlocked buildings onto its district plots as it researches. Off by

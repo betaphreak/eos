@@ -8,41 +8,41 @@ import org.junit.jupiter.api.Test;
 import com.civstudio.settlement.Settlement;
 
 /**
- * Phase 4 of the Explorer caravan (docs/explorer-caravan.md): a colony musters food-import
- * levies under food pressure (the {@code ExplorerProvisioner} step action), drives them itself,
- * and the food they forage home lands in its granary. Off by default, so a headless run is
- * unchanged; this drives the enabled path end to end on the default colony.
+ * Phase 4/7 of the Explorer caravan (docs/explorer-caravan.md): mustering winter foraging levies
+ * is the <b>default behaviour for a City settlement</b> — the colony musters them itself, drives
+ * them, and the food they forage home lands in its granary. A <b>Village</b> (a single urban plot)
+ * does none of this. No opt-in flag: the tier decides.
  */
 class ExplorerProvisioningTest {
 
-	private static final int DHENIJANSAR = 4411;
+	private static final int DHENIJANSAR = 4411; // a City
+	private static final int EARGATE = 2;        // a settleable Village
 
-	private static SimulationHarness colony(boolean explorers) {
+	private static SimulationHarness colony(int province) {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder().durationYears(10).build();
-		SimulationHarness h = SimulationHarness.create(cfg, 7654321, DHENIJANSAR);
-		h.setExplorerProvisioning(explorers);
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321, province);
 		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
 		return h;
 	}
 
 	@Test
-	void aColonyUnderFoodPressureMustersExplorersThatImportFood() {
-		SimulationHarness h = colony(true);
+	void aCityMustersExplorersThatImportFoodByDefault() {
+		SimulationHarness h = colony(DHENIJANSAR);
 		Settlement colony = h.getColony();
 		h.run(); // runs to the colony's collapse
 
 		assertTrue(colony.getGranary().getTotalImported() > 0,
-				"explorer levies foraged food home into the granary over the run");
+				"a City musters winter foraging levies by default and their food lands in the granary");
 	}
 
 	@Test
-	void explorerProvisioningIsOffByDefault() {
-		SimulationHarness h = colony(false);
+	void aVillageMustersNoExplorers() {
+		SimulationHarness h = colony(EARGATE);
 		Settlement colony = h.getColony();
 		h.run();
 
 		assertEquals(0.0, colony.getGranary().getTotalImported(), 1e-9,
-				"with provisioning off, no levy musters and no food is imported");
-		assertTrue(colony.getExcursions().isEmpty(), "no excursions are ever mustered");
+				"a Village musters no levy, so no food is imported");
+		assertTrue(colony.getExcursions().isEmpty(), "a Village founds no excursions");
 	}
 }
