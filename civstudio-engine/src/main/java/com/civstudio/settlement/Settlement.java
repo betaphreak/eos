@@ -656,6 +656,24 @@ public class Settlement {
 	}
 
 	/**
+	 * The colony's <b>starting district count</b> — the number of districts the city
+	 * begins with, taken from its founding province's EU4 1444 development ({@link
+	 * com.civstudio.geo.Province#development() ADM + DIP + MIL}), clamped to the province
+	 * plot {@link #getMaxPlots() cap} (the total plots in the province, the ceiling
+	 * districts can grow to). {@code 0} for a province-less colony (no EU4 development).
+	 * This is <b>render/placement metadata</b> — it does not change the firm-driven
+	 * plot economy (firms without built buildings sit in the city center); see {@code
+	 * docs/district-buildout.md} Phase D1.
+	 *
+	 * @return the number of districts the city starts with
+	 */
+	public int getStartingDistrictCount() {
+		if (province == null)
+			return 0;
+		return Math.min(province.development(), getMaxPlots());
+	}
+
+	/**
 	 * Place <tt>occupant</tt> on a vacant plot (delegates to the {@link PlotField}).
 	 * At founding (before {@link #start()}) it appends a fresh developed plot and
 	 * seats the occupant, returning it; while live it queues the plot's clearance for

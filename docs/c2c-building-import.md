@@ -248,7 +248,9 @@ One widget (`searchbox.mjs`), no duplicate; its **corpus follows the active mode
   `TechResearchTest`). No placement (Phase 5), so runs stay clean; all 272 engine tests pass.
 - **Phase 5 — auto-build onto district plots.** The tech-gated `addBuilding` trigger + placement onto
   `getDistrictPlots()`. Couples to `district-generator.md` placement; **the behavior-changing step** —
-  gate it off by default until district placement is designed.
+  gate it off by default until district placement is designed. **Sequenced in
+  [`district-buildout.md`](district-buildout.md) Phase D2** (the execution plan that carries Phase 5 +
+  the district generator to completion).
 
 Each phase: build → (web) `node web/build*.mjs` + refresh engine jar + `spring-boot:run` + webverify;
 (engine) `mvn -pl civstudio-engine test`. Commit per phase.

@@ -8,6 +8,10 @@ the engine/server, not just the web bake — to drive a faithful version**. Comp
 [`urban-plots.md`](urban-plots.md) (the current urban-core substrate + the interim pip that stands
 in today).
 
+**Execution plan:** the sequenced, decisions-locked buildout of §2/§3 (engine district contract →
+Phase 5 auto-build → server feed → sprite bake → generator view) is [`district-buildout.md`](district-buildout.md).
+This doc stays the reference (why + depot detail); that one is the how-and-order.
+
 **One-line takeaway:** the flat `Hex_District*` chip (§H) is a *label*; a real district *view* is a
 **procedural building assembly**. Its engine object **already exists** — the 1D, time-ordered plot
 map (`Settlement.getDistrictPlots()`), each plot a district slot carrying an occupant + a
