@@ -171,7 +171,10 @@ public class LaborMarket extends Market {
 		// labour and earn no wage, so they are skipped (see docs/births.md). At
 		// founding a household has only its head.
 		for (Member member : laborer.getMembers())
-			if (member.isAdult(colony.getDate()))
+			// a drafted member is away on an expedition (not at the center plot where the
+			// labor market lives), so it supplies no labor until it returns
+			// (docs/explorer-caravan.md)
+			if (member.isAdult(colony.getDate()) && !member.isDrafted())
 				addEmployee(laborer.getID(), laborer.getBank(), daylightFactor,
 						member.skills());
 	}

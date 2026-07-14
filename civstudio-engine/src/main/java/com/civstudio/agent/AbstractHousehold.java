@@ -250,6 +250,22 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	}
 
 	/**
+	 * Remove a specific non-head {@code member} from this household by reference (the head
+	 * is never removed this way). Used by feeding when a member starves off but the
+	 * lowest-priority members may be interleaved with <b>drafted</b> members that are away
+	 * on an expedition and must be kept (see {@code docs/explorer-caravan.md}) — so the
+	 * starved members are removed by reference rather than from the end.
+	 *
+	 * @param member the member to remove
+	 * @return true if it was a non-head member of this household and was removed
+	 */
+	protected final boolean removeMember(Member member) {
+		if (member == getHead())
+			return false;
+		return members.remove(member);
+	}
+
+	/**
 	 * Remove and return the first <b>grown child</b> — a non-head member that has
 	 * reached working age and was <b>born into this colony</b> (it has known
 	 * parentage, unlike the head, a wed-in spouse, or an immigrant, all of which are
@@ -338,15 +354,19 @@ public abstract class AbstractHousehold extends Agent implements Household {
 			double childRationPerDay, LocalDate today) {
 		double sum = 0;
 		for (Member m : members)
-			sum += m.isAdult(today) ? adultRationPerDay : childRationPerDay;
+			// a drafted member is away with the expedition (fed by the caravan), so it
+			// does not size the household's food need (docs/explorer-caravan.md)
+			if (!m.isDrafted())
+				sum += m.isAdult(today) ? adultRationPerDay : childRationPerDay;
 		return sum;
 	}
 
 	// the household's fertile female member — an adult female of childbearing age, the
-	// prospective mother — or null if there is none
+	// prospective mother — or null if there is none (a drafted member is away and cannot
+	// be a breeding partner)
 	private Member fertileFemaleMember(LocalDate today, FertilityConfig fertility) {
 		for (Member m : members) {
-			if (!m.isAdult(today) || m.gender() != Gender.FEMALE)
+			if (!m.isAdult(today) || m.gender() != Gender.FEMALE || m.isDrafted())
 				continue;
 			int age = m.getAgeYears(today);
 			if (age >= fertility.childbearingMinAge()
@@ -361,7 +381,9 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	// parent, an as-yet-unwed single head, or an all-child remnant has no couple.
 	private Member adultMaleMember(LocalDate today) {
 		for (Member m : members)
-			if (m.isAdult(today) && m.gender() == Gender.MALE)
+			// a drafted member is away with the expedition, so it cannot be the couple's
+			// father (docs/explorer-caravan.md)
+			if (m.isAdult(today) && m.gender() == Gender.MALE && !m.isDrafted())
 				return m;
 		return null;
 	}

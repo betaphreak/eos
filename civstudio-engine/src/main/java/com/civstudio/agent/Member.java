@@ -40,6 +40,15 @@ public final class Member {
 	private final Member father;
 	private boolean alive = true;
 
+	// whether this member is currently DRAFTED — away from the colony on an expedition
+	// (an ExplorerCaravan levy; see docs/explorer-caravan.md). A drafted member stays
+	// accounted in its household/pool for continuity but is not physically at the city
+	// center plot where the markets live, so it participates in NO market (labor,
+	// wedding, consumer) and is not fed by the colony — the caravan feeds it — until it
+	// returns and is undrafted. The interim implementation of "absent from the center
+	// plot" (docs/explorer-caravan.md decision 20); the flag is cleared on return.
+	private boolean drafted = false;
+
 	/**
 	 * Create a living, <b>parentless</b> member from a named, skilled person and its
 	 * birth date — an initially-generated individual (a founding head, a pooled
@@ -127,6 +136,31 @@ public final class Member {
 	/** @return whether this member is still alive */
 	public boolean isAlive() {
 		return alive;
+	}
+
+	/**
+	 * Whether this member is currently <b>drafted</b> — away from the colony on an
+	 * expedition (an {@code ExplorerCaravan} levy). While drafted it stays accounted in
+	 * its household/pool but is not physically at the city center plot where the markets
+	 * live, so it participates in no market and is not fed by the colony (the caravan
+	 * feeds it). See {@code docs/explorer-caravan.md}.
+	 *
+	 * @return true if the member is away on a levy
+	 */
+	public boolean isDrafted() {
+		return drafted;
+	}
+
+	/**
+	 * Set whether this member is <b>drafted</b> — called when it leaves on an expedition
+	 * (true) and when it returns (false). A living member only; drafting never changes
+	 * aliveness.
+	 *
+	 * @param drafted
+	 *            true to mark the member away on a levy, false to bring it home
+	 */
+	public void setDrafted(boolean drafted) {
+		this.drafted = drafted;
 	}
 
 	/**

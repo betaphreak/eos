@@ -308,32 +308,45 @@ public class Laborer extends AbstractHousehold {
 			return;
 		}
 		double remaining = available - headRation;
-		int fed = 1;
 		Granary granary = getColony().getGranary();
+		// members that starve off this step (the first member the larder cannot feed and
+		// every lower-priority member after it). Removed by reference at the end, so any
+		// DRAFTED member interleaved among them — away with an expedition, fed by its
+		// caravan, not starving here (docs/explorer-caravan.md) — is preserved.
+		java.util.List<Member> starvedOff = null;
 		for (int i = 1; i < members.size(); i++) {
 			Member m = members.get(i);
+			// a drafted member is away on the expedition and fed by its caravan, so the
+			// household neither feeds it nor starves it off (docs/explorer-caravan.md)
+			if (m.isDrafted())
+				continue;
 			double r = rationFor(m, today);
 			if (remaining >= r) {
 				remaining -= r;
-				fed++;
 				continue;
 			}
 			// the larder cannot feed this member. A non-head ADULT starves off (and every
-			// lower-priority member after it). A CHILD instead draws its ration from the
-			// granary (subsidized child relief, billed to the crown), so the next
+			// lower-priority present member after it). A CHILD instead draws its ration from
+			// the granary (subsidized child relief, billed to the crown), so the next
 			// generation survives lean spells to reach working age — only starving if the
 			// granary too is empty. Children are appended last, so once the loop reaches
 			// them every adult is already fed. See docs/granary.md §5.2.
 			if (!m.isAdult(today) && granary != null && granary.getStock() >= r) {
 				granary.drawStock(r);
-				fed++;
 				continue;
+			}
+			starvedOff = new java.util.ArrayList<>();
+			for (int j = i; j < members.size(); j++) {
+				Member later = members.get(j);
+				if (!later.isDrafted())
+					starvedOff.add(later);
 			}
 			break;
 		}
 		necessity.decrease(available - remaining);
-		while (getMemberCount() > fed)
-			removeNonHeadMember();
+		if (starvedOff != null)
+			for (Member m : starvedOff)
+				removeMember(m);
 
 		// bear a child: a married household (an adult couple) with a fertile female
 		// and a food cushion bears a child — a new SNACK-eating member — per the
@@ -446,7 +459,10 @@ public class Laborer extends AbstractHousehold {
 	private double dailyRation(LocalDate today) {
 		double sum = 0;
 		for (Member m : getMembers())
-			sum += rationFor(m, today);
+			// a drafted member is away with the expedition (fed by its caravan), so it
+			// does not size the household's necessity buy (docs/explorer-caravan.md)
+			if (!m.isDrafted())
+				sum += rationFor(m, today);
 		return sum;
 	}
 

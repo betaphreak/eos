@@ -113,13 +113,16 @@ public class Retinue extends Agent {
 	// the reduced relief ration, but only up to a price-sensitive money budget, so
 	// the pool defers to the working population when food is scarce (see RetinueConfig)
 	private final Demand demandForN = price -> {
+		// size the buy off the peasants actually present (drafted peasants are away on an
+		// expedition and fed by their caravan, not the pool — docs/explorer-caravan.md)
+		int present = presentSize();
 		// refill toward a full bufferDays-per-peasant larder, so the pool buys daily
 		// to replace what is eaten...
 		double larderRoom = Math.max(0,
-				peasants.size() * config.bufferDays() - necessity.getQuantity());
+				present * config.bufferDays() - necessity.getQuantity());
 		// ...but only up to a price-sensitive money budget, so it defers to the
 		// working population when food is scarce
-		double reliefBudget = peasants.size() * config.reliefBudgetPerPeasant();
+		double reliefBudget = present * config.reliefBudgetPerPeasant();
 		return Math.min(reliefBudget / price, larderRoom);
 	};
 
@@ -380,7 +383,10 @@ public class Retinue extends Agent {
 				getColony().getFertilityConfig().childRation().perDay());
 		double wanted = 0;
 		for (Member m : peasants)
-			wanted += rationFor(m, adultRation, childRation, today);
+			// a drafted peasant is away on the expedition and fed by the caravan, not
+			// the pool, so its ration is not bought here (docs/explorer-caravan.md)
+			if (!m.isDrafted())
+				wanted += rationFor(m, adultRation, childRation, today);
 		lastConsumed = necessity.decrease(wanted);
 		double shortfall = wanted - lastConsumed;
 
@@ -406,15 +412,25 @@ public class Retinue extends Agent {
 		// food is covered (the generalization of "floor(shortfall / ration)")
 		long starved = 0;
 		if (shortfall > 1e-9) {
-			// the least skilled starve first; the abler are kept for promotion
+			// the least skilled starve first; the abler are kept for promotion. A drafted
+			// peasant is away with (and fed by) the expedition, so it is skipped — it can
+			// neither be counted toward the shortfall nor starved off here
+			// (docs/explorer-caravan.md); with no drafted peasant this is the prior loop.
 			peasants.sort(Comparator.comparingInt(m -> m.skills().overallLevel()));
 			double freed = 0;
-			while (!peasants.isEmpty()) {
-				double r = rationFor(peasants.get(0), adultRation, childRation, today);
+			int i = 0;
+			while (i < peasants.size()) {
+				Member m = peasants.get(i);
+				if (m.isDrafted()) {
+					i++;
+					continue;
+				}
+				double r = rationFor(m, adultRation, childRation, today);
 				if (freed + r > shortfall) // remaining shortfall is sub-ration: absorbed
 					break;
 				freed += r;
-				skillStore.remove(viewOf(peasants.remove(0)));
+				skillStore.remove(viewOf(m));
+				peasants.remove(i); // removal shifts the next candidate into i
 				starved++;
 			}
 			if (starved > 0)
@@ -488,9 +504,11 @@ public class Retinue extends Agent {
 		LocalDate today = getColony().getDate();
 		Member best = null;
 		// only working-age peasants are promotable; children stay in the pool until
-		// they mature (food-balance.md item 4)
+		// they mature (food-balance.md item 4), and a drafted peasant is away on an
+		// expedition (not at the center plot), so it cannot be promoted until it returns
+		// (docs/explorer-caravan.md)
 		for (Member m : peasants) {
-			if (!m.isAdult(today))
+			if (!m.isAdult(today) || m.isDrafted())
 				continue;
 			if (best == null
 					|| m.skills().overallLevel() > best.skills().overallLevel())
@@ -531,7 +549,9 @@ public class Retinue extends Agent {
 		List<Integer> adults = new ArrayList<>(size);
 		for (int i = 0; i < size; i++) {
 			level[i] = peasants.get(i).skills().overallLevel();
-			if (peasants.get(i).isAdult(today))
+			// drafted peasants are away on an expedition and cannot be promoted
+			// (docs/explorer-caravan.md)
+			if (peasants.get(i).isAdult(today) && !peasants.get(i).isDrafted())
 				adults.add(i);
 		}
 		int n = Math.min(Math.max(0, k), adults.size());
@@ -574,8 +594,10 @@ public class Retinue extends Agent {
 		Member best = null;
 		for (Member m : peasants) {
 			// only working-age peasants of the sought gender are weddable; children
-			// stay in the pool until they mature (food-balance.md item 4)
-			if (m.gender() != gender || !m.isAdult(today))
+			// stay in the pool until they mature (food-balance.md item 4), and a drafted
+			// peasant is away on an expedition (not at the center plot's wedding market)
+			// so it cannot wed until it returns (docs/explorer-caravan.md)
+			if (m.gender() != gender || !m.isAdult(today) || m.isDrafted())
 				continue;
 			if (best == null) {
 				best = m;
@@ -611,6 +633,18 @@ public class Retinue extends Agent {
 	/** @return the number of peasants currently in the pool */
 	public int size() {
 		return peasants.size();
+	}
+
+	// the number of peasants actually PRESENT in the pool — not drafted away on an
+	// expedition. Drafted peasants stay accounted in the pool but are fed by their
+	// caravan and lend no labour, so the pool sizes its relief buy off the present count
+	// (docs/explorer-caravan.md). Equal to size() when none is drafted.
+	private int presentSize() {
+		int n = 0;
+		for (Member m : peasants)
+			if (!m.isDrafted())
+				n++;
+		return n;
 	}
 
 	/**
@@ -720,8 +754,12 @@ public class Retinue extends Agent {
 			// routed to the ruler (their patron); none when there is no builder/ruler
 			if (r.builderLaborMkt != null && rulerLive)
 				for (Member m : r.peasants)
-					r.builderLaborMkt.addEmployee(ruler.getID(), ruler.getBank(), 1.0,
-							m.skills());
+					// a drafted peasant is away on an expedition (not at the center
+					// plot), so it lends no corvée labour until it returns
+					// (docs/explorer-caravan.md)
+					if (!m.isDrafted())
+						r.builderLaborMkt.addEmployee(ruler.getID(), ruler.getBank(), 1.0,
+								m.skills());
 			// buy enough to feed next step (funded by the overdraft billRuler reconciles)
 			if (!r.peasants.isEmpty())
 				r.nMkt.addBuyOffer(r, r.demandForN);
