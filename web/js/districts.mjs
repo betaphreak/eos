@@ -93,7 +93,7 @@ export function drawDistricts() {
   ctx.globalAlpha = a;
 
   // (1) geographic: the Civ6 district-hex tile on every city's urban core plots
-  const d = plotPx * 1.6;            // a district hex covers a little more than one plot
+  const d = plotPx;                  // one district hex fills exactly one plot (100% — at 256× a plot is the tile)
   for (const p of P) {
     if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
     assignTypes(p);
@@ -110,12 +110,12 @@ export function drawDistricts() {
     const ids = [];
     for (const dist of colony.districts) for (const id of (dist.buildings || [])) ids.push(id);
     if (ids.length) {
-      drawTile("CITY_CENTER", cx, cy, plotPx * 2.4);         // the ground the icons sit on
-      const s = Math.max(10, Math.min(plotPx * 0.7, 26));    // icon size
+      drawTile("CITY_CENTER", cx, cy, plotPx);               // the ground the icons sit on (one plot)
+      const s = Math.max(8, Math.min(plotPx * 0.4, 20));     // icon size (a fraction of a plot)
       // ring (then spiral) the icons out from the center
       for (let i = 0; i < ids.length; i++) {
         const ring = Math.floor(i / 8), slot = i % 8;
-        const rad = plotPx * (0.55 + ring * 0.5);
+        const rad = plotPx * (0.45 + ring * 0.42);
         const ang = (slot / 8) * Math.PI * 2 + ring * 0.4;
         drawBuildingIcon(ids[i], cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, s);
       }
