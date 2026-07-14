@@ -367,8 +367,16 @@ Each phase is independently compilable/testable; earlier phases are inert until 
   `JUMPLANE`, plus the sea `TUNNEL` (later tiers dormant beyond the Renaissance tech cap). In Civ4 a
   route **overrides** the terrain move cost, so a plot's cost becomes `route.costFactor()` =
   `iMovement/100` (trail 1.0 = one flat plot, road 0.6, paved 0.4 …) and corridors hug the better
-  roads. **Not built yet:** the per-plot `RouteType` field, trail-stamping on Explorer movement,
-  trail-gated routing for non-explorers, and the route cost override — a phase of its own.
+  roads. **Built dormant (2026-07-14):** `Plot.routeType` (a per-session mutable field, excluded
+  from the canonical `.plot-cache` — `StoredPlot` serializes only generation-time terrain/feature/
+  bonus, so a post-construction field never leaks in) + `Plot.layRoute`; a `MarchingCaravan.laysTrail()`
+  hook (default false, `ExplorerCaravan` → true) stamps `ROUTE_TRAIL` on the bare plots of the day's
+  corridor as the Explorer marches (never downgrading a better route). Inert so far — the trail is
+  recorded but does not yet change movement cost or routing, so the whole suite stays green
+  (`ExplorerTrailTest`; 295/295). **Still not built:** the route **cost override**
+  (`ProvincePlotPool.flatCost` → `min(terrainCost, route.costFactor())`) and the **per-session
+  trail-gated routing** for non-explorers (the coupled behavioural change, with the per-session
+  corridor-cache invalidation) — the next cut.
   - **Trails are per-session state, not canonical map data (owner constraint, 2026-07-14).** A plot's
     `RouteType` is **mutable per-session sim state** — the demo session (seed `7654321`) carries its
     own trails — exactly like the plots' `buildings()`/districts and camp `occupant`, and **unlike**

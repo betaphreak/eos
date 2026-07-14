@@ -9,6 +9,7 @@ import com.civstudio.geo.Feature;
 import com.civstudio.geo.Improvement;
 import com.civstudio.geo.PlotGeo;
 import com.civstudio.geo.PlotType;
+import com.civstudio.geo.RouteType;
 import com.civstudio.geo.Terrain;
 import com.civstudio.good.ResourceType;
 import com.civstudio.tech.Sector;
@@ -109,6 +110,14 @@ public final class Plot {
 
 	// the occupant standing on this plot, or null if the plot is vacant
 	private PlotOccupant occupant;
+
+	// the route (trail/path/road/…) laid on this plot, or null if unimproved. Like the
+	// occupant and buildings this is MUTABLE per-session state, NOT part of the plot's
+	// generation-time field data — so it is excluded from the canonical .plot-cache
+	// (ProvincePlotStore.StoredPlot serializes only terrain/relief/feature/bonus): trails
+	// belong to a run, not the map (docs/explorer-caravan.md §Phase 3). The Explorer stamps
+	// ROUTE_TRAIL as it pioneers; every other caravan will require ≥ a trail to route through.
+	private RouteType routeType;
 
 	// the center buildings standing on this plot — Civ4-style city buildings, distinct
 	// from the single tile `improvement` leg above and from the `occupant` firm. Phase 1
@@ -433,6 +442,35 @@ public final class Plot {
 	/** The occupant on this plot, or {@code null} if it is vacant. */
 	public PlotOccupant getOccupant() {
 		return occupant;
+	}
+
+	/**
+	 * The {@link RouteType route} laid on this plot (trail/path/road/…), or {@code null} if
+	 * the plot is unimproved. <b>Per-session mutable state</b> — like the {@link
+	 * #getOccupant() occupant} and {@link #buildings()}, and unlike the terrain/feature/bonus
+	 * field it is <b>not</b> baked into the canonical {@code .plot-cache} (trails belong to a
+	 * run, not the map). The Explorer stamps {@code ROUTE_TRAIL} as it pioneers; other bands
+	 * will require at least a trail to route through. See {@code docs/explorer-caravan.md}.
+	 *
+	 * @return the plot's route, or {@code null} if unimproved
+	 */
+	public RouteType routeType() {
+		return routeType;
+	}
+
+	/**
+	 * Lay (or upgrade to) a {@link RouteType route} on this plot — the Explorer stamps {@code
+	 * ROUTE_TRAIL} as it pioneers, and a road-builder lays better tiers later. A durable
+	 * per-session land mark: once trailed, a plot is "explored" and other caravans may route
+	 * through it. Callers that only pioneer bare ground guard on {@link #routeType()} being
+	 * {@code null} so a better existing route is never downgraded.
+	 *
+	 * @param routeType the route to lay (non-null)
+	 */
+	public void layRoute(RouteType routeType) {
+		if (routeType == null)
+			throw new IllegalArgumentException("routeType must be non-null");
+		this.routeType = routeType;
 	}
 
 	/**

@@ -132,6 +132,14 @@ public final class ExplorerCaravan extends MarchingCaravan {
 		return EXPLORER_FORAGE_CAP;
 	}
 
+	// the explorer is the pioneer: it may cross unimproved ground and stamps a ROUTE_TRAIL on
+	// every plot it walks, so the ground it explores becomes routable for the caravans that
+	// follow (docs/explorer-caravan.md §Phase 3 — the explored map)
+	@Override
+	protected boolean laysTrail() {
+		return true;
+	}
+
 	@Override
 	protected boolean journeyComplete() {
 		return phase == Phase.DONE;

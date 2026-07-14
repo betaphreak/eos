@@ -19,6 +19,7 @@ import com.civstudio.era.Era;
 import com.civstudio.geo.Bonus;
 import com.civstudio.geo.LandRouter;
 import com.civstudio.geo.Route;
+import com.civstudio.geo.RouteType;
 import com.civstudio.good.RationSize;
 import com.civstudio.good.ResourceType;
 import com.civstudio.settlement.Plot;
@@ -370,9 +371,13 @@ public abstract class MarchingCaravan extends Caravan {
 
 		// resolve the plot corridor across the province the day ended in (entry portal
 		// from the side we came in, exit portal toward the next province) — the Level-2
-		// land route (docs/land-routing.md); camp on one of its plots and report them
-		PlotCorridor corridor = campingEnabled ? currentCorridor() : null;
+		// land route (docs/land-routing.md); camp on one of its plots and report them. Also
+		// needed when the band lays a trail (the Explorer pioneers the plots it crosses).
+		boolean needCorridor = campingEnabled || laysTrail();
+		PlotCorridor corridor = needCorridor ? currentCorridor() : null;
 		Plot camp = campingEnabled ? claimCampOn(corridor) : null;
+		if (laysTrail())
+			layTrail(corridor);
 		// the day's surplus daylight (what the capped march did not use) funds the
 		// off-march work: forage food into the larder first (survival), then gather
 		// non-food goods into the cargo with the hours foraging left over. The march spend
@@ -484,6 +489,34 @@ public abstract class MarchingCaravan extends Caravan {
 				return p;
 			}
 		return null;
+	}
+
+	/**
+	 * Whether this band <b>lays a trail</b> as it marches — stamping {@code ROUTE_TRAIL} on
+	 * the plots of its path so the ground it crosses becomes "explored" and routable by other
+	 * caravans (the pioneering half of the explored map). The base band lays none; an {@link
+	 * ExplorerCaravan} — the pioneer — overrides this to {@code true}. See {@code
+	 * docs/explorer-caravan.md} §Phase 3.
+	 *
+	 * @return {@code true} if the band pioneers a trail as it moves
+	 */
+	protected boolean laysTrail() {
+		return false;
+	}
+
+	// stamp ROUTE_TRAIL on each BARE plot of the day's corridor — the pioneering: the ground
+	// the band crossed becomes explored/passable. Only bare plots are stamped (a better
+	// existing route is never downgraded); a null/empty corridor or a session-less band is a
+	// no-op. Trails are per-session mutable plot state, excluded from the canonical plot cache.
+	private void layTrail(PlotCorridor corridor) {
+		if (corridor == null || corridor.isEmpty() || session() == null)
+			return;
+		RouteType trail = session().getTerrainRegistry().route(RouteType.TRAIL);
+		if (trail == null)
+			return;
+		for (Plot p : corridor.path())
+			if (p.routeType() == null)
+				p.layRoute(trail);
 	}
 
 	// strike the camp at dawn: free the plot the band occupied overnight
