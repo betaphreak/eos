@@ -347,6 +347,15 @@ Each phase is independently compilable/testable; earlier phases are inert until 
     and the **found-a-household-from-a-paid-peasant** step. Cargo cash-out stays blocked (no
     raw-goods market). Expect a **collapse-timing re-baseline** (founding households changes the
     population dynamics the smoke tests assert; the project accepts non-byte-identical).
+  - **Reward-on-return, final shape (owner, 2026-07-15).** On a live return: (1) the gathered
+    non-food cargo is sold — INTERIM on the Enjoyment market (valued at its price; a real raw-goods
+    market replaces this later) — for proceeds; (2) the ruler taxes a cut to its treasury; (3) the
+    ablest returning peasant is ennobled (made a Noble, keeping a % of the cut); (4) the other
+    returned peasants found Laborer households from the remainder (each "becomes banked"). Food still
+    goes to the granary (only cargo is sold). Ennoblement extends the SocialMobility/RankLadder seam
+    to promote a pool peasant (not only a laborer) to Noble; household founding reuses the
+    buildFissionHousehold pattern; pool removal via Retinue. Build order: pay-and-found-household
+    first, then the noble/tax/sale.
 - **Phase 3 — Civ4/C2C movement. — DONE (2026-07-14).** The km-corridor spend is replaced by a
   **daylight-scaled move-point budget spent at Civ4 per-plot costs**. `MarchConfig` gains
   `baseMovePoints` / `referenceDaylightHours` / `columnOverheadPerThousand` / `minDailyMovePoints`;
