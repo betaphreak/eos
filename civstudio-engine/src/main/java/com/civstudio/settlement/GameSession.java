@@ -559,6 +559,10 @@ public class GameSession {
 		// the colony knows its session, so on dissolution it can register the band it
 		// departs as (colony-less bands live at the session level — see docs/caravan.md)
 		colony.setSession(this);
+		// its own decorrelated stream for the explorer levies it musters and ticks
+		// (docs/explorer-caravan.md), salted apart from every economic/naming/mortality
+		// stream so a colony with no excursions draws nothing and stays byte-identical
+		colony.setExcursionRng(rngSeed.forColony(RngSeed.Stream.EXCURSION, idx));
 		return colony;
 	}
 

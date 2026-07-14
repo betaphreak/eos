@@ -16,6 +16,7 @@ import java.util.function.UnaryOperator;
 
 import com.civstudio.agent.Agent;
 import com.civstudio.advisor.AdvisorRoster;
+import com.civstudio.agent.ExplorerCaravan;
 import com.civstudio.agent.Granary;
 import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.geo.Province;
@@ -325,6 +326,17 @@ public abstract class Settlement implements UrbanCenter {
 	// docs/granary.md §4). At most one per colony; null leaves relief on the market.
 	@Getter
 	private Granary granary;
+
+	// the colony's outstanding explorer levies — ExplorerCaravan bands it mustered under
+	// food pressure and drives one day per newDay, pruning each when it returns home
+	// (docs/explorer-caravan.md). Unlike a session-level migration band, an excursion belongs
+	// to its home colony (its people are still accounted here) and is ticked by it.
+	private final List<ExplorerCaravan> excursions = new ArrayList<ExplorerCaravan>();
+
+	// the colony's own decorrelated stream for its excursions' muster/march decisions, set by
+	// GameSession at founding (salted apart from the economic streams); a colony that never
+	// musters an excursion never draws from it, so the run stays byte-identical.
+	private Rng excursionRng;
 
 	// tracks the colony's CPI and inflation, recomputed once per newDay. Reads
 	// the live consumerGoodMarkets set, so markets added later are included.
@@ -803,6 +815,52 @@ public abstract class Settlement implements UrbanCenter {
 	}
 
 	/**
+	 * Set the colony's own {@link Rng} stream for the explorer levies it musters and marches
+	 * (see {@code docs/explorer-caravan.md}) — decorrelated from every economic stream, so a
+	 * colony with no excursions draws nothing and its run stays byte-identical. Set once by the
+	 * session at founding.
+	 *
+	 * @param rng the colony's excursion stream
+	 */
+	public void setExcursionRng(Rng rng) {
+		this.excursionRng = rng;
+	}
+
+	/**
+	 * Register an {@link ExplorerCaravan explorer levy} the colony has mustered — it now belongs
+	 * to the colony, which {@linkplain #newDay() drives it one day per step} and prunes it when
+	 * it returns home (see {@code docs/explorer-caravan.md}).
+	 *
+	 * @param excursion the mustered explorer band
+	 */
+	public void addExcursion(ExplorerCaravan excursion) {
+		excursions.add(excursion);
+	}
+
+	/**
+	 * The colony's outstanding explorer levies (those still out) — an unmodifiable snapshot, so
+	 * the mustering provisioner can read the concurrent count.
+	 *
+	 * @return the colony's in-flight excursions
+	 */
+	public List<ExplorerCaravan> getExcursions() {
+		return java.util.Collections.unmodifiableList(excursions);
+	}
+
+	// march every outstanding excursion one day on the colony's own excursion stream, then
+	// prune those that have returned home (their people already undrafted). Run at the end of
+	// newDay, after the day's market has cleared (mirroring how the session ticks its bands
+	// after the colonies). Draws nothing when the colony has no excursions.
+	private void tickExcursions() {
+		if (excursions.isEmpty())
+			return;
+		LocalDate date = getDate();
+		for (ExplorerCaravan e : excursions)
+			e.tick(date, excursionRng);
+		excursions.removeIf(ExplorerCaravan::hasArrived);
+	}
+
+	/**
 	 * The colony's current sovereign (the founding ruler or the heir who has since
 	 * succeeded it), or {@code null} if the colony has no ruler.
 	 *
@@ -1272,6 +1330,10 @@ public abstract class Settlement implements UrbanCenter {
 		// a once-a-year summary of the colony at INFO (the per-event chatter it
 		// replaces is demoted to FINE/FINER), so a many-colony run stays followable
 		logAnnualDigest();
+
+		// march the colony's outstanding explorer levies one day (after the market has
+		// cleared), and prune any that returned home this day (docs/explorer-caravan.md)
+		tickExcursions();
 
 		timeStep++;
 	}

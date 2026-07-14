@@ -293,6 +293,24 @@ child survival and home-grown household renewal — is proposed concretely in
      like the glut-aware close rule was before colonies could contract) so the valve is
      ready once food is fixed.
 
+   - **Explorer-caravan food-import levy — BUILT, modest (2026-07-14).** A new lever
+     (`docs/explorer-caravan.md`): under food pressure the colony musters an `ExplorerCaravan`
+     levy — it drafts the pool's least-skilled adults (who then leave the colony's table and
+     markets, `Member.drafted`), marches them out to forage, and on return **deposits the foraged
+     food into the granary** and undrafts them. So it both **removes mouths** while they are out
+     and **imports food** on their return — a food source neither grown on the colony's plots nor
+     bought on its own market. Off by default (`setExplorerProvisioning`); the 288-test suite is
+     unchanged. **Measured** on the default colony (seed 7654321, 25 y): the intended **pool-larder
+     trigger is silent** — the pool *drains* by promotion/aging, its larder never runs low (the
+     same dormancy the granary relief backstop hits, item 2 of §granary) — so the provisioner also
+     fires on **pool shrinkage**. That lifts the horizon **~1452-12 → ~1454-08 (+1.7 y)** at 95
+     musters, with only ~92 units imported: the gain is mostly the **timed mouth-removal**, not the
+     (small) import — consistent with the finding that the food *deficit* is the binding
+     constraint, so importing a trickle helps only at the margin. A positive lever in the ~1–2 y
+     range these levers move, to be **stacked** with the others (and its renewal half — drafted
+     youths returning to marry, `docs/explorer-caravan.md` decision 19 — is the piece that could
+     matter more, still unbuilt).
+
 Fixes 1–4 together are the path from "collapses at ~7 years" to "survives long enough
 for births to sustain it." None is a single knob; this is the food-economy calibration
 program that the long-accepted colony collapse has been deferring.

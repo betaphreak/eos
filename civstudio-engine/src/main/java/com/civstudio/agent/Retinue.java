@@ -630,6 +630,30 @@ public class Retinue extends Agent implements MarchFollowing {
 		return removed;
 	}
 
+	/**
+	 * Up to {@code k} of the pool's <b>least-skilled undrafted adults</b> — the cohort a colony
+	 * drafts into an {@link com.civstudio.agent.ExplorerCaravan} levy, keeping the ablest home
+	 * for promotion and labour (see {@code docs/explorer-caravan.md}). The returned members
+	 * <b>stay in the pool</b>: the muster only references and flags them {@link Member#setDrafted
+	 * drafted} (Phase 1's exclusions then keep them off the markets and the pool's table); they
+	 * are not removed. Children and already-drafted peasants are skipped.
+	 *
+	 * @param k the most draftees wanted
+	 * @return up to {@code k} least-skilled adult peasants, still pooled (empty if none free)
+	 */
+	public List<Member> draftableAdults(int k) {
+		if (k <= 0)
+			return List.of();
+		LocalDate today = getColony().getDate();
+		List<Member> adults = new ArrayList<>();
+		for (Member m : peasants)
+			if (m.isAdult(today) && !m.isDrafted())
+				adults.add(m);
+		// least skilled first — draft the ablest last, so promotion/labour keep the best
+		adults.sort(Comparator.comparingInt(m -> m.skills().overallLevel()));
+		return new ArrayList<>(adults.subList(0, Math.min(k, adults.size())));
+	}
+
 	/** @return the number of peasants currently in the pool */
 	public int size() {
 		return peasants.size();

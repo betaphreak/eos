@@ -335,10 +335,19 @@ Each phase is independently compilable/testable; earlier phases are inert until 
   points at Civ4 per-plot costs** (terrain/feature/hills/route/river from `Civ4Files`), the
   min-one-move rule. Test the per-plot cost ladder and that a road/flat route beats a
   forest/hill one.
-- **Phase 4 — the `ExplorerProvisioner` trigger.** Pool-starvation signal, zero-start,
-  one-at-a-time, hysteresis, concurrent cap; wired into `foundStandardColony`. **Measure** on
-  the default Dhenijansar colony (seed 7654321) against the food-balance baseline — does the
-  imported food move the collapse horizon? Record in `docs/food-balance.md`.
+- **Phase 4 — the `ExplorerProvisioner` trigger. — DONE + MEASURED.** A colony step-action
+  (`ExplorerProvisioner`, off by default via `SimulationHarness.setExplorerProvisioning`) musters
+  one levy at a time under food pressure — drafting the pool's least-skilled adults
+  (`Retinue.draftableAdults`), provisioning half from the granary + half the draftees' pool share
+  (decision 13), with a cooldown + concurrent cap. The colony owns and drives its excursions
+  (`Settlement.addExcursion` / `tickExcursions` at the end of `newDay`) on a **per-colony
+  `EXCURSION` RNG** (`RngSeed.Stream.EXCURSION`), so it works in a single-colony `run()`. Off by
+  default → the 288-test engine suite is unchanged. **Measured** (default Dhenijansar, seed
+  7654321, 25 y horizon): see `docs/food-balance.md` — the **pool-larder signal is empirically
+  silent** (the pool *drains*, it doesn't *starve*), so the trigger also fires on **pool
+  shrinkage**, which lifts the collapse horizon **~1452-12 → ~1454-08 (+1.7 y)** at 95 musters —
+  the mouth-removal timing mattering more than the ~92 units imported. A modest, positive lever,
+  in the range `food-balance.md` finds for this class.
 - **Phase 5 — route visualization (§9).** Expose the engine's per-plot corridor window
   (traversed + planned, plot raster→lat/long) in the render snapshot; draw it Overland-and-deeper
   with per-day segments + camps, resource highlights, move-cost tint. Replaces the centroid trail

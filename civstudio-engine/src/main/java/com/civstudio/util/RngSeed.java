@@ -55,7 +55,9 @@ public final class RngSeed {
 		/** Terrain: procedural plot-terrain generation. */
 		TERRAIN(0x6A09E667F3BCC909L),
 		/** The session-level wandering-band stream (caravan movement / settle decisions). */
-		BAND(0x94D049BB133111EBL);
+		BAND(0x94D049BB133111EBL),
+		/** Per-colony explorer-levy stream (ExplorerCaravan muster/march — docs/explorer-caravan.md). */
+		EXCURSION(0xC2B2AE3D27D4EB4FL);
 
 		private final long salt;
 

@@ -34,6 +34,7 @@ import com.civstudio.agent.firm.ScienceFirm;
 import com.civstudio.agent.firm.StrategicFirm;
 import com.civstudio.agent.firm.StrategicFirmConfig;
 import com.civstudio.agent.Member;
+import com.civstudio.agent.ExplorerProvisioner;
 import com.civstudio.agent.Retinue;
 import com.civstudio.agent.RetinueConfig;
 import com.civstudio.agent.laborer.Laborer;
@@ -187,6 +188,12 @@ public class SimulationHarness {
 	// fission and the rank ladder), built lazily on first use (see mobility()); the
 	// dynamic firm provisioning also uses it to find/raise a firm's owner
 	private SocialMobility mobility;
+
+	// whether the colony musters ExplorerCaravan levies under food pressure
+	// (docs/explorer-caravan.md). Off by default so a headless run is unchanged; a probe or
+	// the server enables it. Must be set before foundStandardColony.
+	@Setter
+	private boolean explorerProvisioning = false;
 
 	// necessity (food) firms run a higher technology coefficient than the other
 	// consumer firms: because production stops on the weekly day of rest and on
@@ -1227,7 +1234,16 @@ public class SimulationHarness {
 		foundLaborersFromRetinue(i -> copper, laborerNStock);
 		createDefaultChildrenFirm();
 		enableExternalInflow(copper);
+		installExplorerProvisioning();
 		return gold;
+	}
+
+	// install the food-pressure explorer levy (docs/explorer-caravan.md) as a colony step
+	// action, when enabled (setExplorerProvisioning) and the colony has a pool to draft from.
+	// Off by default, so a standard headless run is unchanged.
+	private void installExplorerProvisioning() {
+		if (explorerProvisioning && retinue != null)
+			colony.addStepAction(new ExplorerProvisioner(colony, retinue));
 	}
 
 	/**
@@ -1274,6 +1290,7 @@ public class SimulationHarness {
 		foundLaborersFromRetinue(i -> copper, laborerNStock);
 		createDefaultChildrenFirm();
 		enableExternalInflow(copper);
+		installExplorerProvisioning();
 		return gold;
 	}
 
