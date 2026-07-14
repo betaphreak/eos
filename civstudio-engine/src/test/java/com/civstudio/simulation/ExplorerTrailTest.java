@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -56,25 +58,32 @@ class ExplorerTrailTest {
 		ExplorerCaravan band = ExplorerCaravan.muster(colony, draftees, larder);
 		band.setTripLimits(1e9, 20, 1);
 
-		// before it moves, no plot of the home province carries a route
-		ProvincePlotPool homePool = session.provincePlotPool(session.getWorldMap().province(homeProvince));
-		assertEquals(0, homePool.plots().stream().filter(p -> p.routeType() != null).count(),
-				"unpioneered ground carries no route");
-
-		// drive the band out (summer — longest days) — crossing a province takes several days,
-		// so it trails the home province's corridor before it leaves
+		// the home province (Dhenijansar) is an all-urban city, so its core plots come pre-paved
+		// (ROUTE_PAVED_ROAD) — the explorer trails the RURAL ground it reaches beyond the city.
+		// Drive it out (summer — longest days), tracking every province it enters.
+		Set<Integer> visited = new HashSet<>();
 		Rng rng = session.getBandRng();
 		LocalDate day = LocalDate.of(1445, 6, 21);
-		for (int t = 0; t < 40 && !band.hasArrived(); t++) {
+		for (int t = 0; t < 80 && !band.hasArrived(); t++) {
 			band.tick(day, rng);
+			visited.add(band.getProvinceId());
 			day = day.plusDays(1);
 		}
+		assertTrue(visited.size() > 1, "the explorer marched beyond its home province");
 
-		// the home province's plots now carry ROUTE_TRAIL where the explorer walked
-		List<Plot> trailed = homePool.plots().stream().filter(p -> p.routeType() != null).toList();
-		assertTrue(trailed.size() > 0, "the explorer pioneered trails on the ground it crossed");
-		for (Plot p : trailed)
-			assertEquals(RouteType.TRAIL, p.routeType().type(),
-					"the pioneer lays ROUTE_TRAIL specifically");
+		// somewhere on the rural ground it crossed, it pioneered a ROUTE_TRAIL (distinct from the
+		// city's pre-paved roads — so we look for the trail tier specifically)
+		boolean trailed = false;
+		for (int pid : visited) {
+			ProvincePlotPool pp = session.provincePlotPool(session.getWorldMap().province(pid));
+			for (Plot p : pp.plots())
+				if (p.routeType() != null && RouteType.TRAIL.equals(p.routeType().type())) {
+					trailed = true;
+					break;
+				}
+			if (trailed)
+				break;
+		}
+		assertTrue(trailed, "the explorer pioneered ROUTE_TRAIL on the rural ground it crossed");
 	}
 }

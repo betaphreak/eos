@@ -85,6 +85,7 @@ public final class ProvincePlotPool {
 		List<Plot> plots = new ArrayList<>(field.size());
 		for (ProvincePlot pp : field.plots())
 			plots.add(new Plot(pp.geo(), pp.terrain(), pp.plotType(), pp.feature(), pp.bonus()));
+		paveUrbanPlots(plots, registry);
 		return new ProvincePlotPool(province, plots);
 	}
 
@@ -112,7 +113,23 @@ public final class ProvincePlotPool {
 				plots.add(new Plot(pp.geo(), pp.terrain(), pp.plotType(), pp.feature(), pp.bonus()));
 			ProvincePlotStore.save(province.id(), plots);
 		}
+		paveUrbanPlots(plots, registry);
 		return new ProvincePlotPool(province, plots);
+	}
+
+	// urban (city-core) plots come PRE-PAVED — every TERRAIN_URBAN plot starts with a paved
+	// road (the best pre-tech route tier), so a settlement's own ground is fully routable from
+	// founding (and, once trail-gating lands in Phase 6, its caravans can leave). A per-session
+	// default applied at pool construction — routes are per-session state and never bake into the
+	// canonical .plot-cache (ProvincePlotStore serializes only terrain/feature/bonus). Set before
+	// any corridor is cached, so no invalidation is needed. See docs/explorer-caravan.md §Phase 3.
+	private static void paveUrbanPlots(List<Plot> plots, TerrainRegistry registry) {
+		RouteType paved = registry.route(RouteType.PAVED_ROAD);
+		if (paved == null)
+			return;
+		for (Plot p : plots)
+			if ("TERRAIN_URBAN".equals(p.terrain().type()))
+				p.layRoute(paved);
 	}
 
 	/** The province this pool belongs to. */

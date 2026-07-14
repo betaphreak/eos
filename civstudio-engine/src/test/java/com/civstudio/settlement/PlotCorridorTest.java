@@ -93,7 +93,23 @@ class PlotCorridorTest {
 	}
 
 	@Test
-	void aRouteOnTheCorridorLowersItsMoveCostAfterInvalidation() {
+	void urbanPlotsComePrePaved() {
+		GameSession session = new GameSession(3);
+		// Dhenijansar is an all-urban city province — every plot is city-core ground
+		ProvincePlotPool pool = session.provincePlotPool(session.getWorldMap().province(DHENIJANSAR));
+		long urban = pool.plots().stream()
+				.filter(p -> "TERRAIN_URBAN".equals(p.terrain().type())).count();
+		assertTrue(urban > 0, "the city province has urban core plots");
+		for (Plot p : pool.plots())
+			if ("TERRAIN_URBAN".equals(p.terrain().type())) {
+				assertNotNull(p.routeType(), "an urban plot comes with a route by default");
+				assertEquals(RouteType.PAVED_ROAD, p.routeType().type(),
+						"urban plots start paved (fully routable from founding)");
+			}
+	}
+
+	@Test
+	void aBetterRouteOnTheCorridorLowersItsMoveCostAfterInvalidation() {
 		GameSession session = new GameSession(3);
 		WorldMap map = session.getWorldMap();
 		Province dhen = map.province(DHENIJANSAR);
@@ -119,23 +135,24 @@ class PlotCorridorTest {
 		}
 
 		PlotCorridor before = pool.corridor(entry[0], entry[1], exit[0], exit[1]);
-		assertTrue(before.plotCount() > 1, "a multi-plot corridor to road");
+		assertTrue(before.plotCount() > 1, "a multi-plot corridor to upgrade");
 		double costBefore = before.totalCost();
 
-		// lay a ROAD (overrides terrain/hill, costFactor 0.6) on every plot of the corridor
-		RouteType road = session.getTerrainRegistry().route("ROUTE_ROAD");
-		assertNotNull(road);
+		// Dhenijansar is an all-urban city, so its corridor is already PAVED (costFactor 0.4);
+		// lay a strictly-better HIGHWAY (0.22) on every plot to exercise the route override
+		RouteType highway = session.getTerrainRegistry().route("ROUTE_HIGHWAY");
+		assertNotNull(highway);
 		for (Plot p : before.path())
-			p.layRoute(road);
+			p.layRoute(highway);
 
-		// the cache still returns the pre-route cost until it is invalidated
+		// the cache still returns the pre-upgrade cost until it is invalidated
 		assertEquals(costBefore, pool.corridor(entry[0], entry[1], exit[0], exit[1]).totalCost(), 1e-9,
-				"a cached corridor keeps its stale pre-route cost until invalidated");
+				"a cached corridor keeps its stale cost until invalidated");
 
 		pool.invalidateCorridorCache();
 		PlotCorridor after = pool.corridor(entry[0], entry[1], exit[0], exit[1]);
 		assertTrue(after.totalCost() < costBefore,
-				"a roaded corridor is cheaper to cross than the unroaded terrain "
+				"a better-roaded corridor is cheaper to cross "
 						+ "(the route caps the flat cost; the slope term still applies)");
 	}
 }
