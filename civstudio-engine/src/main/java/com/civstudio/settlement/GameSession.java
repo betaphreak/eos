@@ -256,9 +256,10 @@ public class GameSession {
 			try {
 				if (provinceRaster == null)
 					provinceRaster = ProvinceRaster.load();
-				// seed-independent terrain stream: the field is a property of the map, so
-				// it is generated once, persisted (map/provinces/<id>.json), and reused by
-				// every run regardless of seed (see ProvincePlotStore / docs/province-plots.md)
+				// seed-independent terrain stream: the field is a property of the map, so it is
+				// generated once, cached (.plot-cache/v<GEN_VERSION>/<id>.json.gz — shared with the
+				// server's PlotService), and reused every run regardless of seed (see
+				// ProvincePlotStore / docs/province-plots.md)
 				Rng terrainRng = rngSeed.forProvinceCanonical(RngSeed.Stream.TERRAIN, id);
 				return ProvincePlotPool.loadOrGenerate(province, terrainRegistry,
 						provinceRaster, terrainRng);

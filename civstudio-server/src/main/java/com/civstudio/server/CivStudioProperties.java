@@ -18,9 +18,14 @@ public class CivStudioProperties {
 	private final Auth auth = new Auth();
 	private final Anbennar anbennar = new Anbennar();
 	private final Plots plots = new Plots();
+	private final Dev dev = new Dev();
 
 	public Demo getDemo() {
 		return demo;
+	}
+
+	public Dev getDev() {
+		return dev;
 	}
 
 	public Plots getPlots() {
@@ -144,6 +149,85 @@ public class CivStudioProperties {
 
 		public void setLruSize(int lruSize) {
 			this.lruSize = lruSize;
+		}
+	}
+
+	/**
+	 * Local-development conveniences, active only under the {@code dev} Spring profile (which
+	 * {@code mvn spring-boot:run} activates via the {@code spring-boot-maven-plugin} config). Off in
+	 * the packaged production jar. Drives {@link com.civstudio.server.dev.DevFrontendLauncher}, which
+	 * — once the server is fully started — serves the {@code web/} site with a small zero-dependency
+	 * node server ({@code web/dev-server.mjs}) and opens it in the default browser, pointed at this
+	 * server for {@code window.BUNDLE} (?live=…). Everything here works with no internet connection
+	 * (the mod sources resolve from the local caches).
+	 */
+	public static class Dev {
+		private final Frontend frontend = new Frontend();
+
+		public Frontend getFrontend() {
+			return frontend;
+		}
+
+		/** The auto-launched node frontend server + browser (see {@link Dev}). */
+		public static class Frontend {
+			/** Master switch — launch the node frontend + open the browser when the server is ready. */
+			private boolean enabled = true;
+			/** Port the node static server listens on (the page origin). */
+			private int webPort = 3000;
+			/** Whether to open the default browser at the site once the frontend is up. */
+			private boolean openBrowser = true;
+			/** The node executable (on PATH, or an absolute path). */
+			private String node = "node";
+			/**
+			 * The path + query opened in the browser, appended to the frontend origin
+			 * ({@code http://localhost:<webPort>}). Placeholders are substituted: {@code {live}} →
+			 * {@code http://localhost:<serverPort>} (this server, for {@code ?live=}), {@code {server}}
+			 * → the server port, {@code {webPort}} → the frontend port. Defaults to the plain live
+			 * view. For test use, set a webverify-style deep link to land on a province/zoom/overlay,
+			 * e.g. {@code --civstudio.dev.frontend.open-path=/?p=4411&z=150&live={live}#none} (the same
+			 * URL shape {@code tools/webverify/*.mjs} build).
+			 */
+			private String openPath = "/?live={live}";
+
+			public boolean isEnabled() {
+				return enabled;
+			}
+
+			public void setEnabled(boolean enabled) {
+				this.enabled = enabled;
+			}
+
+			public int getWebPort() {
+				return webPort;
+			}
+
+			public void setWebPort(int webPort) {
+				this.webPort = webPort;
+			}
+
+			public boolean isOpenBrowser() {
+				return openBrowser;
+			}
+
+			public void setOpenBrowser(boolean openBrowser) {
+				this.openBrowser = openBrowser;
+			}
+
+			public String getNode() {
+				return node;
+			}
+
+			public void setNode(String node) {
+				this.node = node;
+			}
+
+			public String getOpenPath() {
+				return openPath;
+			}
+
+			public void setOpenPath(String openPath) {
+				this.openPath = openPath;
+			}
 		}
 	}
 

@@ -27,8 +27,14 @@ not a `.CivBeyondSwordWBSave`.
 
 > **Update (persisted, seed-independent field).** A province's plot field is now
 > generated **seed-independently** (off `RngSeed.forProvinceCanonical` — province id
-> only, not the run seed) and **persisted** to `src/main/resources/map/provinces/<id>.json.gz`
-> (gzipped JSON, ~25× smaller than raw) by `settlement/ProvincePlotStore`. The first run to
+> only, not the run seed) and **cached** to `.plot-cache/v<GEN_VERSION>/<id>.json.gz`
+> (gzipped JSON, ~25× smaller than raw) by `settlement/ProvincePlotStore`. This is the **same
+> shared cache** the server's `PlotService` serves `/api/plots/{id}` from (byte-identical format,
+> configurable via `civstudio.plots.cache-dir` — the server pushes it into the store at startup), so
+> the sim and the web map share one cache instead of the sim writing a second copy into the source
+> tree. The directory is **versioned by `GEN_VERSION`**, so a generation-changing bump orphans the
+> old fields and everything regenerates fresh — otherwise the sim would keep loading a stale field
+> while the map served the new one. The first run to
 > need a province generates and writes it; every later run (any seed) **loads the committed
 > canonical field** instead of regenerating — a province's geography is a property of the
 > map, not of a run. This eliminates the repeated generation cost (notably for the caravan

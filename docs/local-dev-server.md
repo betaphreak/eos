@@ -1,0 +1,73 @@
+# Local dev server — one command, fully offline
+
+**Status:** built (2026-07-14).
+
+Run the whole stack locally — the Spring Boot server **and** the real `web/` map site, opened in
+your browser — with a single command, and **with no internet connection**. This exists for local
+debugging (including automated agent testing): iterate on the map against a live local server
+without a manual `npx serve` step or any network round-trip.
+
+## Run it
+
+```powershell
+pwsh tools/dev-local.ps1
+```
+
+That's it. It installs a fresh engine jar, starts the server offline, and — once the server is
+**fully started** — serves `web/` and opens `http://localhost:3000/?live=http://localhost:8080` in
+the default browser.
+
+Equivalently, the plain Maven command does the frontend+browser part on its own (the engine-jar
+refresh and the offline flag are what the script adds):
+
+```powershell
+mvn -o -pl civstudio-server spring-boot:run     # -o = offline
+```
+
+Useful flags:
+
+```powershell
+pwsh tools/dev-local.ps1 -WebPort 4000          # serve the site on :4000
+pwsh tools/dev-local.ps1 -NoBrowser             # start the frontend but don't open a browser
+pwsh tools/dev-local.ps1 -SkipEngineBuild       # engine unchanged since last install (faster)
+pwsh tools/dev-local.ps1 -Online                # let Maven reach the network
+```
+
+Stop everything with `Ctrl-C` in the terminal — the node frontend is a child of the server JVM and
+is torn down on shutdown.
+
+## How it works
+
+- **`web/dev-server.mjs`** — a zero-dependency Node static server for `web/` (no `npx serve`, so no
+  network). Correct MIME types, `no-cache` for edit-reload, and HTTP **byte-range** support. Prints
+  `DEV-SERVER-READY …` on its listen callback.
+- **`DevFrontendLauncher`** (`server.dev`, `@Profile("dev")`) — on `ApplicationReadyEvent` (i.e.
+  after the context is up **and** `DemoSessionSeeder` has founded the demo) it spawns
+  `node web/dev-server.mjs`, waits for the ready line, then opens the browser at
+  `…/?live=http://localhost:<server port>`. The node process is destroyed on shutdown.
+- **The `dev` profile** is activated for `spring-boot:run` only, via the `spring-boot-maven-plugin`
+  `<profiles>` config in `civstudio-server/pom.xml` — so it never ships in the packaged production
+  jar. Per-run overrides: `-Dcivstudio.dev.frontend.enabled=false`,
+  `-Dcivstudio.dev.frontend.web-port=…`, `-Dcivstudio.dev.frontend.open-browser=false`.
+
+## Why offline works
+
+- **Maven** runs with `-o`, so every dependency comes from `~/.m2` (nothing is fetched).
+- **The engine** resolves its Anbennar/Civ4 mod sources from the local caches — the
+  `.anbennar-cache` / `.civ4-cache` junctions to local clones (see `CLAUDE.md` §Local source
+  caches). Founding the demo colony and generating its plot field therefore need no network.
+- **The frontend** is a plain static folder served by the dependency-free node server; the browser
+  fetches `window.BUNDLE` and `/api/*` from the local server, all same-machine.
+
+The one prerequisite: the caches must be warm (the junctions present). A cold `~/.m2` or missing
+junction needs a single online run first.
+
+## Related
+
+- [`client-server.md`](client-server.md) — the server this launches (SSE feed, `/api/bundle`, plot
+  serving).
+- [`web/README.md`](../web/README.md) — the site being served.
+- [`plot-serving.md`](plot-serving.md) — per-province plot grids (`/api/plots/{id}`, the
+  `.plot-cache/v<GEN_VERSION>` cache). Note the sim's own persisted fields are versioned the same
+  way now — `map/provinces/v<GEN_VERSION>/` — so a generation bump keeps both in sync (see
+  [`province-plots.md`](province-plots.md)).

@@ -59,19 +59,22 @@ class PlotGenerationTest {
 
 	@Test
 	void provinceColonyGeneratesDeterministicVariedTerrain() {
-		Province dh = new GameSession(7).getWorldMap().findByName("Dhenijansar")
+		// A rural (Village-tier) province, whose natural terrain varies across its real map. NOT a
+		// City province (province.city()): those are all TERRAIN_URBAN by design (docs/settlement-
+		// tiers.md), so the demo capital Dhenijansar — a city — would give a single urban terrain.
+		// Wexkeep reads as a cold tundra/taiga/permafrost/marsh mix around a small urban core.
+		Province wx = new GameSession(7).getWorldMap().findByName("Wexkeep")
 				.orElseThrow();
 
 		// same seed -> identical terrain sequence (the terrain stream is reproducible)
 		List<String> a = claimWholeProvince(
-				new GameSession(7).newSettlement("A", START, 30, 26, 5, 2, dh), dh.plots());
+				new GameSession(7).newSettlement("A", START, 30, 26, 5, 2, wx), wx.plots());
 		List<String> b = claimWholeProvince(
-				new GameSession(7).newSettlement("B", START, 30, 26, 5, 2, dh), dh.plots());
+				new GameSession(7).newSettlement("B", START, 30, 26, 5, 2, wx), wx.plots());
 		assertEquals(a, b, "plot generation is deterministic per seed");
 
-		// the real province map grounds the colony in more than one terrain (Dhenijansar
-		// reads as plains/grassland with a desert fringe), not the uniform baseline a
-		// province-less colony gets
+		// the real province map grounds the colony in more than one terrain, not the uniform
+		// baseline a province-less colony gets
 		Set<String> distinct = new LinkedHashSet<>(a);
 		assertTrue(distinct.size() >= 2,
 				"a province colony's terrain varies across its real map, got " + distinct);
@@ -92,9 +95,11 @@ class PlotGenerationTest {
 
 	@Test
 	void provinceColonyGeneratesVariedReliefAndNeverSeatsAPeak() {
-		Province dh = new GameSession(7).getWorldMap().findByName("Dhenijansar")
+		// a rural province with real relief (flat/hill/peak) — not a flat all-urban City (see the
+		// terrain test above)
+		Province wx = new GameSession(7).getWorldMap().findByName("Wexkeep")
 				.orElseThrow();
-		Settlement c = new GameSession(7).newSettlement("A", START, 30, 26, 5, 2, dh);
+		Settlement c = new GameSession(7).newSettlement("A", START, 30, 26, 5, 2, wx);
 
 		// seat a good run of occupants; with peaks counting toward the cap, this lays
 		// more plots than firms — every seated occupant must be on a workable plot,

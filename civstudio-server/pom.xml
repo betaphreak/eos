@@ -126,6 +126,16 @@
                          relative to CWD, so pin it to the reactor root (as surefire/exec do). No
                          effect on the repackage goal. -->
                     <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
+                    <!-- Local-run convenience: activate the `dev` Spring profile for `spring-boot:run`
+                         only (not for the repackaged production jar), so DevFrontendLauncher serves the
+                         web/ site with node and opens the browser once the server is ready. See
+                         docs/local-dev-server.md. Turn the profile off per-run with
+                         -Dspring-boot.run.profiles= ; override the frontend settings via the app's argv
+                         (they bind to the forked app JVM, a plain -D does not) using
+                         -Dspring-boot.run.arguments with app flags such as civstudio.dev.frontend.open-browser=false. -->
+                    <profiles>
+                        <profile>dev</profile>
+                    </profiles>
                     <!-- bake the build identity into build-info.properties then /actuator/info: an
                          auto-incrementing build number (git.total.commit.count, i.e. the repo's
                          "git rev-list count HEAD") plus the short commit. Filled by the git-commit-id

@@ -1,0 +1,84 @@
+#requires -Version 7
+<#
+.SYNOPSIS
+    Launch the full CivStudio stack locally, offline — the Spring Boot server plus the web/ site
+    (served by a zero-dependency node server) opened in the default browser.
+
+.DESCRIPTION
+    Runs entirely with no internet connection:
+      * Maven runs offline (-o), so all dependencies come from ~/.m2.
+      * The engine resolves its Anbennar/Civ4 mod sources from the local caches
+        (the .anbennar-cache / .civ4-cache junctions), so founding the demo needs no network.
+
+    `mvn spring-boot:run` activates the `dev` Spring profile (wired in civstudio-server/pom.xml),
+    so DevFrontendLauncher starts web/dev-server.mjs and opens http://localhost:<WebPort>/?live=...
+    once the server is fully started. This script just adds the two things the plugin can't:
+    the offline flag, and a fresh engine jar (spring-boot:run reads the engine from ~/.m2, which is
+    stale until the engine module is re-installed — see the server-run-am-fresh-engine note).
+
+.EXAMPLE
+    pwsh tools/dev-local.ps1
+    pwsh tools/dev-local.ps1 -WebPort 4000 -NoBrowser
+    pwsh tools/dev-local.ps1 -SkipEngineBuild        # engine unchanged since last install
+    pwsh tools/dev-local.ps1 -Online                 # allow Maven to reach the network
+    # open a webverify-style deep link (province 4411 @ zoom 150), same URL shape tools/webverify builds:
+    pwsh tools/dev-local.ps1 -OpenPath '/?p=4411&z=150&live={live}#none'
+#>
+[CmdletBinding()]
+param(
+    [int]    $WebPort         = 3000,
+    [int]    $ServerPort      = 8080,
+    # Path + query opened in the browser, appended to http://localhost:<WebPort>. Placeholders:
+    # {live} -> http://localhost:<ServerPort>, {server} -> port, {webPort} -> port. Blank = default.
+    [string] $OpenPath        = '',
+    [switch] $NoBrowser,
+    [switch] $SkipEngineBuild,
+    [switch] $Online
+)
+
+$ErrorActionPreference = 'Stop'
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
+Set-Location $repoRoot
+
+$offline = $Online ? @() : @('-o')
+
+# Local dev expects the two node toolchains present (installed, offline-cached): sharp powers the
+# web asset bake (web/build.mjs) and playwright-core drives the headless-browser checks
+# (tools/webverify/*.mjs). Warn (don't fail) if either is missing so `node web/build.mjs` /
+# `node tools/webverify/*.mjs` are ready to run against this stack.
+foreach ($dep in @(
+        @{ Name = 'sharp';          Path = 'web/node_modules/sharp';                       Install = 'npm --prefix web install' },
+        @{ Name = 'playwright-core'; Path = 'tools/webverify/node_modules/playwright-core'; Install = 'npm --prefix tools/webverify install' })) {
+    if (-not (Test-Path (Join-Path $repoRoot $dep.Path))) {
+        Write-Warning "$($dep.Name) not installed ($($dep.Path)). Web build / webverify need it — run: $($dep.Install)"
+    }
+}
+
+if (-not $SkipEngineBuild) {
+    # `spring-boot:run -pl civstudio-server` resolves BOTH the parent pom and the engine jar from
+    # ~/.m2, so install both. -N installs just the parent (aggregator) pom; then the engine jar so
+    # spring-boot:run picks up fresh engine classes (see the server-run-am-fresh-engine note).
+    Write-Host '==> Installing the parent pom + engine jar into ~/.m2 (spring-boot:run resolves them from there)...' -ForegroundColor Cyan
+    & mvn @offline -N install -q
+    if ($LASTEXITCODE -ne 0) { throw "parent pom install failed ($LASTEXITCODE)" }
+    & mvn @offline -pl civstudio-engine install -DskipTests -q
+    if ($LASTEXITCODE -ne 0) { throw "engine install failed ($LASTEXITCODE)" }
+}
+
+Write-Host "==> Starting the server (offline=$(-not $Online)); the browser opens at http://localhost:$WebPort once ready..." -ForegroundColor Cyan
+# App config must reach the FORKED app JVM, not the Maven JVM — a plain `-Dkey=value` on the mvn
+# command line binds only to Maven. spring-boot:run forwards `spring-boot.run.arguments` to the app
+# as `--key=value` argv, which Spring binds into the Environment at the highest precedence.
+$appArgs = @(
+    "--server.port=$ServerPort",
+    "--civstudio.dev.frontend.web-port=$WebPort"
+)
+if ($NoBrowser) { $appArgs += '--civstudio.dev.frontend.open-browser=false' }
+if ($OpenPath)  { $appArgs += "--civstudio.dev.frontend.open-path=$OpenPath" }
+$runArgs = @(
+    '-pl', 'civstudio-server', 'spring-boot:run',
+    "-Dspring-boot.run.arguments=$($appArgs -join ' ')"
+)
+
+& mvn @offline @runArgs
+exit $LASTEXITCODE

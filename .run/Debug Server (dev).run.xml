@@ -1,0 +1,24 @@
+<component name="ProjectRunConfigurationManager">
+  <!--
+    Debug the spectator/interactive server from IntelliJ: an Application config that runs the Boot
+    main class DIRECTLY (so the IDE debugger attaches and breakpoints hit — a Maven spring-boot:run
+    config forks a separate JVM and does not). It activates the `dev` Spring profile, so
+    DevFrontendLauncher serves web/ with node and opens the browser once the server is ready — the
+    same one-command local stack as `mvn spring-boot:run`, but debuggable. Working dir is the repo
+    root so web/ and the .anbennar-cache/.plot-cache resolve. -ea matches exec:exec (assertions on).
+    Override the frontend per run via program args, e.g.:
+      --civstudio.dev.frontend.web-port=4000
+      --civstudio.dev.frontend.open-browser=false
+      --civstudio.dev.frontend.open-path=/?p=4411&z=150&live={live}#none
+  -->
+  <configuration default="false" name="Debug Server (dev)" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.civstudio.server.ServerMain" />
+    <module name="civstudio-server" />
+    <option name="VM_PARAMETERS" value="-Dspring.profiles.active=dev -ea" />
+    <option name="PROGRAM_PARAMETERS" value="" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
