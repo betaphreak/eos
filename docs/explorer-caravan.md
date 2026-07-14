@@ -328,19 +328,25 @@ Each phase is independently compilable/testable; earlier phases are inert until 
   and **undrafts** its people. `ExplorerForagingTest` drives the whole trip. **home-colony ticking +
   the per-colony excursion RNG** lands with the trigger (Phase 4), the test driving `tick()`
   directly for now.
-  - **Renewal-loop tail (decisions 14/19) — reassessed 2026-07-15, mostly already-functional or
-    model-incompatible.** A seam audit found: (19) **"return to marry" already works** — undrafting
-    a returned pool peasant re-enables it as a marriage candidate (`Retinue.bestSpouseCandidate`
-    skips `isDrafted()`), so the loop already sends young adults out and brings them home *weddable*;
-    combined with the food it brings home (granary → the food gate on births,
-    `AbstractHousehold.bearChildIfFertile`), the explorer **already feeds renewal**. (14) **"pay the
-    draftees' households" does NOT fit the current model** — every current draftee is a **pool
-    peasant with no individual account** (the `Retinue` has one aggregate account, zeroed each step
-    by `billRuler`), and marriage money flows the *other* way (the **seeker household** pays the
-    ruler a bride-price; the candidate pays nothing), so paying a returned peasant wouldn't fund its
-    marriage. And the **cargo cash-out is blocked** (no raw-goods market). So the money half needs a
-    prerequisite — **individual peasant accounts** (or drafting single household *heads*, who do have
-    accounts) — a feature of its own, not a tail. Parked until then.
+  - **Renewal loop + the ruler's expedition mechanic (decisions 14/19 corrected + extended,
+    2026-07-15).** A seam audit first suggested the money half "didn't fit" (pool peasants have no
+    individual account — the `Retinue` has one aggregate account zeroed each step by `billRuler`);
+    the **owner corrected the mechanism**: paying a returned peasant is exactly what lets it **found
+    its own household and become banked** — it **leaves the pool** (the removal seam is
+    `Retinue.promoteHighestSkilled`, which already skips drafted peasants until they return) and
+    becomes a **single-head `Laborer` seeded with the earnings** (the `SimulationHarness.
+    buildFissionHousehold` pattern — `new Laborer(head, …, seedChecking, …)`), then re-enters the
+    wedding market and has children (food-gated births). **A single-person household whose member is
+    drafted is a valid state** (it participates in nothing while away). The broader framing (owner):
+    the Explorer is the **ruler's tool to shed relief mouths** — drafting pool peasants moves them
+    off the colony's table (the caravan feeds them, decision 8), cutting the crown's relief bill
+    while they forage; and **a noble leads the expedition** (the ruler assigns a noble, not the
+    ablest peasant `muster` picks today). What already works: (19) undraft → marriage candidacy, and
+    the food it brings home feeds the birth gate. What's TO BUILD: the **noble leader** assignment,
+    the **return pay** (a crown wage or sold-haul proceeds — the source is the one open calibration),
+    and the **found-a-household-from-a-paid-peasant** step. Cargo cash-out stays blocked (no
+    raw-goods market). Expect a **collapse-timing re-baseline** (founding households changes the
+    population dynamics the smoke tests assert; the project accepts non-byte-identical).
 - **Phase 3 — Civ4/C2C movement. — DONE (2026-07-14).** The km-corridor spend is replaced by a
   **daylight-scaled move-point budget spent at Civ4 per-plot costs**. `MarchConfig` gains
   `baseMovePoints` / `referenceDaylightHours` / `columnOverheadPerThousand` / `minDailyMovePoints`;
