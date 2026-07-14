@@ -42,7 +42,7 @@ Two things fall out for free once bands leave under their own economic logic:
 |---|---|---|
 | 1 | **Scope** | Engine lifecycle — *every* ruler colony can muster explorers; deterministic, on a per-colony salted RNG. The server demo just visualizes it. |
 | 2 | **Character** | A **food-import + scouting + renewal** expedition: it imports wild food, reveals the map, and sends young unmarried adults out to earn a nest egg and **come home to marry** — feeding the births/renewal loop `food-balance.md` says the colony needs. Not primarily a headcount cut. |
-| 3 | **Trigger** | The **pool/Retinue larder starving** (the reserve that starves first, food-balance.md mode A). |
+| 3 | **Trigger** | **Seasonal — winter** (revised 2026-07-14). A colony musters foraging levies in **winter** (the lean season, by hemisphere), each aiming home by **mid-autumn** (a *soft* aim — worst case back by winter, and **not guaranteed**: a slow or lost band arrives late or not at all); on return the levy rejoins the settlement and works until the next winter. (The originally-chosen pool-larder signal was empirically **silent** — the pool drains by promotion/aging, it doesn't starve — so it was replaced by the seasonal rule.) |
 | 4 | **Cadence** | Start at **zero**; muster **one caravan at a time**; hysteresis cooldown between musters. |
 | 5 | **Cash out** | On return the band sells **both** its foraged **food** (necessity market) **and cashes out its accumulated `Cargo`** (gathered resources/bonuses) for money — proceeds to the draftees' households (decision 14). A market act, so it happens **at the center plot** (decision 20). |
 | 6 | **Draftees** | Unmarried adults from **the pool _and_ unmarried non-head adult household members** (the grown, unwed children a fission would emancipate). |
@@ -342,12 +342,13 @@ Each phase is independently compilable/testable; earlier phases are inert until 
   (decision 13), with a cooldown + concurrent cap. The colony owns and drives its excursions
   (`Settlement.addExcursion` / `tickExcursions` at the end of `newDay`) on a **per-colony
   `EXCURSION` RNG** (`RngSeed.Stream.EXCURSION`), so it works in a single-colony `run()`. Off by
-  default → the 288-test engine suite is unchanged. **Measured** (default Dhenijansar, seed
-  7654321, 25 y horizon): see `docs/food-balance.md` — the **pool-larder signal is empirically
-  silent** (the pool *drains*, it doesn't *starve*), so the trigger also fires on **pool
-  shrinkage**, which lifts the collapse horizon **~1452-12 → ~1454-08 (+1.7 y)** at 95 musters —
-  the mouth-removal timing mattering more than the ~92 units imported. A modest, positive lever,
-  in the range `food-balance.md` finds for this class.
+  default → the engine suite is unchanged. **Measured** (default Dhenijansar, seed 7654321, 25 y):
+  see `docs/food-balance.md`. The **pool-larder signal is empirically silent** (the pool *drains*,
+  it doesn't *starve*), so the trigger became **seasonal — muster every winter** (decision 3): the
+  levies leave over the lean season and return by autumn. That lifts the collapse horizon **~1452-12
+  → ~1454-08 (+1.7 y)** — the gain mostly the seasonal **mouth-removal**, not the ~43 units imported.
+  A modest, positive lever, in the range `food-balance.md` finds for this class; its renewal half
+  (decision 19) is the piece that could matter more, still unbuilt.
 - **Phase 5 — route visualization (§9).** Expose the engine's per-plot corridor window
   (traversed + planned, plot raster→lat/long) in the render snapshot; draw it Overland-and-deeper
   with per-day segments + camps, resource highlights, move-cost tint. Replaces the centroid trail

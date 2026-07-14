@@ -55,8 +55,14 @@ public final class Snapshots {
 			colonyViews.add(colonyView(c));
 		}
 		List<CaravanView> caravanViews = new ArrayList<>(caravans.size());
+		// the session's wandering bands (migration/dissolution), then each colony's own
+		// outstanding explorer levies — colony-owned excursions, ticked by their home colony
+		// (docs/explorer-caravan.md), so they are not in the session's caravan list
 		for (Caravan band : caravans)
 			caravanViews.add(caravanView(band, map));
+		for (Settlement c : colonies)
+			for (Caravan excursion : c.getExcursions())
+				caravanViews.add(caravanView(excursion, map));
 		return new SessionSnapshot(sessionId, seed, scenario, state, tick,
 				date == null ? "" : date.toString(), colonyViews, caravanViews, log);
 	}

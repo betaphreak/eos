@@ -73,6 +73,13 @@ public final class ExplorerCaravan extends MarchingCaravan {
 	private int maxDaysOut = MAX_DAYS_OUT;
 	private int minLarderDays = MIN_LARDER_DAYS;
 
+	// the date the levy should start heading home, so it arrives by mid-autumn — set at muster
+	// from the home colony's season (docs/explorer-caravan.md): a band mustered in winter forages
+	// through spring and summer and turns home in late summer to be back before the cold, when it
+	// rejoins the settlement and works until it can go out again the next winter. Null = no
+	// seasonal deadline (the caravan then turns home on haul / days-out / low-larder only).
+	private LocalDate returnStartDate;
+
 	private Phase phase = Phase.OUTBOUND;
 	private int daysOut;
 
@@ -135,7 +142,7 @@ public final class ExplorerCaravan extends MarchingCaravan {
 		switch (phase) {
 			case OUTBOUND -> {
 				daysOut++;
-				if (shouldTurnHome()) {
+				if (shouldTurnHome(date)) {
 					setDestination(homeProvinceId); // march the shortest route back
 					phase = Phase.RETURNING;
 				}
@@ -155,16 +162,31 @@ public final class ExplorerCaravan extends MarchingCaravan {
 		}
 	}
 
-	// turn home once the haul is worth carrying: a full larder, the time cap, or a larder low
-	// enough that the band must head back before it starves
-	private boolean shouldTurnHome() {
+	// turn home when: the season says so (arrive by mid-autumn — the primary, seasonal rule), the
+	// haul is a full load, the time cap is hit, or the larder is low enough that the band must
+	// head back before it starves
+	private boolean shouldTurnHome(LocalDate date) {
 		int n = draftBand.size();
 		if (n == 0)
+			return true;
+		// seasonal deadline: start heading home so the band is back by mid-autumn
+		if (returnStartDate != null && !date.isBefore(returnStartDate))
 			return true;
 		double larder = draftBand.getLarder();
 		double haulTarget = n * haulTargetPerHead;
 		double lowLarder = n * WANDERING_RATION.perDay() * minLarderDays;
 		return larder >= haulTarget || daysOut >= maxDaysOut || larder <= lowLarder;
+	}
+
+	/**
+	 * Set the date the levy should start heading home (so it arrives by mid-autumn) — the
+	 * seasonal return deadline, set at muster from the home colony's season (see {@code
+	 * docs/explorer-caravan.md}). Overrides the time/haul caps as the primary turn-home rule.
+	 *
+	 * @param returnStartDate the date to begin the march home
+	 */
+	public void setReturnBy(LocalDate returnStartDate) {
+		this.returnStartDate = returnStartDate;
 	}
 
 	/**

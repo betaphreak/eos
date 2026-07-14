@@ -302,10 +302,11 @@ child survival and home-grown household renewal — is proposed concretely in
      bought on its own market. Off by default (`setExplorerProvisioning`); the 288-test suite is
      unchanged. **Measured** on the default colony (seed 7654321, 25 y): the intended **pool-larder
      trigger is silent** — the pool *drains* by promotion/aging, its larder never runs low (the
-     same dormancy the granary relief backstop hits, item 2 of §granary) — so the provisioner also
-     fires on **pool shrinkage**. That lifts the horizon **~1452-12 → ~1454-08 (+1.7 y)** at 95
-     musters, with only ~92 units imported: the gain is mostly the **timed mouth-removal**, not the
-     (small) import — consistent with the finding that the food *deficit* is the binding
+     same dormancy the granary relief backstop hits, item 2 of §granary). So the trigger is
+     **seasonal — muster every winter** (foragers leave over the lean season and return by
+     mid-autumn, then rejoin the workforce). That lifts the horizon **~1452-12 → ~1454-08
+     (+1.7 y)**, with only ~43 units imported: the gain is mostly the **seasonal mouth-removal**,
+     not the (small) import — consistent with the finding that the food *deficit* is the binding
      constraint, so importing a trickle helps only at the margin. A positive lever in the ~1–2 y
      range these levers move, to be **stacked** with the others (and its renewal half — drafted
      youths returning to marry, `docs/explorer-caravan.md` decision 19 — is the piece that could
