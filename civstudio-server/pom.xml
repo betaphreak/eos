@@ -104,11 +104,15 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- H2 gives the persistence tests a real datasource without Docker -->
+        <!-- H2 gives the persistence tests a real datasource without Docker, and backs the local
+             calibration run store (the dev-gated MCP run_scenario tool writes output/calibration via
+             an H2 file db). runtime scope so it is on the spring-boot:run classpath (loaded by JDBC
+             URL — no compile-time H2 import); the prod deploy simply never enables the calibration
+             tools. -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- used directly by WorldBundle / the controllers (also via starter-web); Jackson 3 -->

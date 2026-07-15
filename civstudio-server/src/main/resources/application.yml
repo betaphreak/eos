@@ -90,3 +90,23 @@ civstudio:
     # generated once ever, not once per restart. See docs/plot-serving.md.
     cache-dir: ${PLOT_CACHE_DIR:.plot-cache}
     lru-size: ${PLOT_LRU_SIZE:512}
+  mcp:
+    calibration:
+      # The Phase-1 calibration MCP tools (run_scenario/query the SQL run store) are OFF by default:
+      # they found and run whole scenarios inside the JVM and write an H2 db, which belongs to the
+      # local calibration loop, not the deployed demo. The `dev` profile below turns them on for
+      # spring-boot:run. See docs/mcp-server.md §Phase 1.
+      enabled: ${CIVSTUDIO_MCP_CALIBRATION_ENABLED:false}
+      db: ${CIVSTUDIO_MCP_CALIBRATION_DB:output/calibration}
+
+# dev profile (activated by spring-boot:run — see the maven plugin config): enable the local
+# calibration tools so an agent pointed at http://localhost:8080/mcp can run/query scenarios.
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+civstudio:
+  mcp:
+    calibration:
+      enabled: true

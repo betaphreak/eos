@@ -1,10 +1,22 @@
 # Design & plan: `civstudio-mcp` — the simulation as an MCP tool surface
 
 **Status (by phase):**
-- **Phase 1 — analysis/calibration harness (stdio, engine-only).** Proposed. A
-  standalone `civstudio-mcp` module that runs scenarios and reads their
-  deterministic outputs (a queryable SQL run store, `SimLog`) as MCP tools/resources, for a
-  local LLM consumer (Claude Code, an editor agent). No Spring, no live server.
+- **Phase 1 — analysis/calibration harness.** **Partly BUILT** (2026-07-15, v0.9.34).
+  *Shape changed from the original sketch:* rather than a standalone stdio
+  `civstudio-mcp` module, the calibration tools **co-host on the existing `/mcp` HTTP
+  server**, **dev/admin-gated** (`civstudio.mcp.calibration.enabled`, on under the
+  `dev` profile) so they're absent on the deployed demo — Claude connects to
+  `http://localhost:8080/mcp` and gets both live-session and calibration tools (no
+  stdio/stdout conflict, no third module; see §How an LLM / skill consumes this).
+  **Shipped:** the JDBC/H2 **SQL run store** (via the `io/sink` seam — `JdbcRowSink`,
+  §Data backend) and the tools `list_scenarios` + `run_scenario` (`ScenarioMcpTools`),
+  which founds a **standard ruler colony** at a seed with whitelisted
+  `SimulationConfig`/pool overrides (`CalibrationRun`) and writes its typed time series
+  to the store, keyed by `runId`. **Still to build:** the query tools (`query_timeseries`
+  / `list_outputs` / `get_event_log` / `compare_runs` / `sweep`) that read the store,
+  and resources/prompts. *Divergence:* `run_scenario` runs a generic standard-colony
+  setup + overrides, not a reflectively-invoked scenario `main` (scenarios hardcode
+  their seed/printers) — see Phase 1 below.
 - **Phase 2 — live-session tools (Streamable HTTP, co-hosted in `civstudio-server`).**
   **Read half BUILT** (2026-07-15, v0.9.34): a Spring AI 2.0 MCP server
   (`spring-ai-starter-mcp-server-webmvc`, Streamable HTTP at `/mcp`) exposing the
@@ -163,7 +175,28 @@ question is only about the *historical time series* the calibration tools read.
 
 ---
 
-## Phase 1 — analysis/calibration harness (the one to build first)
+## Phase 1 — analysis/calibration harness
+
+> **Shape as built (v0.9.34).** The original sketch below proposed a *standalone stdio
+> `civstudio-mcp` module*. That was superseded: the calibration tools **co-host on the
+> Phase-2 `/mcp` HTTP server**, gated by `civstudio.mcp.calibration.enabled` (on under
+> the `dev` profile, off on the deployed demo). Rationale in §How an LLM / skill
+> consumes this — stdio would hijack the server's stdout and the MCP auto-config is
+> single-protocol, and the server already depends on the engine, so a local
+> `http://localhost:8080/mcp` gives an agent both live-session and calibration tools
+> with no third module. The rest of this section (the tool table, resources, prompts)
+> stands as the target; the *transport/home* is HTTP-co-hosted, not stdio.
+>
+> **Built:** `ScenarioMcpTools` (`@ConditionalOnProperty`) — `list_scenarios` and
+> `run_scenario`, the latter founding a **standard ruler colony** via
+> `simulation.CalibrationRun` (create → found → install sink → `addCommonPrinters` →
+> run → `cleanUpPrinters`) at a seed with a **curated override whitelist**
+> (`SimulationConfig` fields + the peasant-pool `RetinueConfig` food levers; unknown
+> keys rejected). Output goes through a `CompositeRowSinkFactory` — CSV under
+> `output/<seed>/` **and** the H2 run store (`CalibrationStore`, one shared
+> `output/calibration` db, rows keyed by `runId`). Verified by `ScenarioMcpToolsTest`
+> and a live `tools/list` + `run_scenario` handshake. **Not yet built:** the query
+> tools that read the store, and the resources/prompts.
 
 A standalone Maven module `civstudio-mcp`, depending on `civstudio-engine` (plus an
 embedded H2 driver for the reporting store — see *Data backend*; still no Spring),
