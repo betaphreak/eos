@@ -27,6 +27,20 @@ spring:
   threads:
     virtual:
       enabled: true
+  # MCP (Model Context Protocol) server — read-only tools/resources over the live SessionHost
+  # (docs/mcp-server.md Phase 2). SYNC = servlet handlers on the request thread (matches WebMVC on
+  # virtual threads); STREAMABLE = the Streamable HTTP transport at /mcp. Annotation scanner picks up
+  # the @McpTool/@McpResource beans in com.civstudio.server.mcp. No AI model dependency.
+  ai:
+    mcp:
+      server:
+        enabled: true
+        type: SYNC
+        protocol: STREAMABLE
+        name: civstudio
+        instructions: >-
+          Read-only tools and resources over CivStudio's live simulation sessions: list sessions,
+          read a session's render snapshot, a court member's character sheet, and its command log.
 
 # Actuator: the health endpoints the Azure Container App probes hit, and that the static site
 # polls (CORS-allowed in WebConfig) to wait for the server during its loading screen. Liveness /

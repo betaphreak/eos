@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.civstudio</groupId>
         <artifactId>civstudio-parent</artifactId>
-        <version>0.9.33-SNAPSHOT</version>
+        <version>0.9.34-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -18,6 +18,9 @@
 
     <properties>
         <spring-boot.version>4.1.0</spring-boot.version>
+        <!-- Spring AI 2.0.0 (GA 2026-06) is the line that targets Spring Boot 4.1 + Framework 7;
+             it brings the MCP server starter (annotation API + Streamable HTTP). See docs/mcp-server.md. -->
+        <spring-ai.version>2.0.0</spring-ai.version>
     </properties>
 
     <!--
@@ -32,6 +35,15 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring AI BOM (MCP server starter + the MCP Java SDK it rides). Imported after Boot's
+                 BOM; MCP-only usage, no chat-model or vector-store deps are pulled. -->
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -69,6 +81,15 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- MCP (Model Context Protocol) server over Streamable HTTP, servlet/WebMVC transport — the
+             read-only tool surface over the live SessionHost (docs/mcp-server.md Phase 2). It is a
+             peer of SessionController (same beans, MCP framing), auto-configured on Spring MVC; no AI
+             model or API key is needed (this is the server half of MCP, not a chat client). -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
         </dependency>
 
         <!-- durable command log (opt-in): JdbcTemplate + HikariCP, active only when a

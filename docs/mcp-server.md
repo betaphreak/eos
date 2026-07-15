@@ -6,9 +6,15 @@
   deterministic outputs (a queryable SQL run store, `SimLog`) as MCP tools/resources, for a
   local LLM consumer (Claude Code, an editor agent). No Spring, no live server.
 - **Phase 2 — live-session tools (Streamable HTTP, co-hosted in `civstudio-server`).**
-  Proposed / later. An MCP endpoint over the running `SessionHost` beans:
-  list/create/control/query live sessions, submit player commands through the
-  existing tick-stamped `CommandLog` seam. Reuses the server's auth.
+  **Read half BUILT** (2026-07-15, v0.9.34): a Spring AI 2.0 MCP server
+  (`spring-ai-starter-mcp-server-webmvc`, Streamable HTTP at `/mcp`) exposing the
+  read-only tools `list_sessions` / `get_snapshot` / `get_person` /
+  `get_command_log` and the `civstudio://session/{id}/snapshot|events` resources
+  over the running `SessionHost` beans (`com.civstudio.server.mcp`). The **write
+  half** — create/control/submit player commands through the tick-stamped
+  `CommandLog` seam — is deferred; when added it will be **admin-gated**
+  (`ROLE_ADMIN` / `civstudio.auth.admins`) rather than owner-gated, since MCP calls
+  carry no per-session request identity as cleanly as REST does.
 - **Phase 3 — in-game LLM advisors.** Speculative. The privy-council
   `AdvisorRoster` seats driven by an LLM that reads a colony's render snapshot as
   MCP resources and acts *only* through `CommandLog`. Deferred until the command
@@ -223,6 +229,16 @@ endpoint (Spring AI MCP server starter, **Streamable HTTP** transport), not in t
 Phase-1 module. It is a peer of `SessionController` — same beans, same auth, MCP
 framing instead of REST.
 
+> **Built (read half, v0.9.34).** The `org.springframework.ai:spring-ai-bom` (2.0.0,
+> the line that targets Boot 4.1 — closing *Open question 1*) is imported in the
+> server pom and pulls `spring-ai-starter-mcp-server-webmvc`; `application.yml`
+> enables a `SYNC`/`STREAMABLE` server at `/mcp` named `civstudio`. The annotation
+> scanner discovers `SessionMcpTools` (`@McpTool`) and `SessionMcpResources`
+> (`@McpResource`) in `com.civstudio.server.mcp` — thin projections over
+> `SessionHost` / `HostedSession` / the `render.*` records, verified against a live
+> session (`McpEndpointTest`, `SessionMcpToolsTest`). The **read** rows below shipped;
+> the **write** rows (marked `write (auth)`) are the deferred, admin-gated follow-up.
+
 ### Tools (thin wrappers over `HostedSession` / `SessionHost`)
 
 | Tool | Maps to | Write? |
@@ -311,6 +327,7 @@ seam (advisor reads projection, advisor acts via `CommandLog`) is on record.
 
 ---
 
-*Pointer for `CLAUDE.md` / `docs/architecture.md` once this ships: one line under the
-subsystem map — "MCP tool surface — the sim as typed tools for an LLM (run/query
-scenarios; control live sessions), `docs/mcp-server.md`."*
+*Pointer added to `CLAUDE.md` subsystem map (Phase-2 read half shipped): "MCP tool
+surface — the sim as typed tools for an LLM (run/query scenarios; query live
+sessions), `docs/mcp-server.md`." Phase 1 (the engine-only calibration harness) and
+the Phase-2 write tools remain to build.*
