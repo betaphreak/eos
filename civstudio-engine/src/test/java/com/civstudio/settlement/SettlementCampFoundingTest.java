@@ -85,6 +85,33 @@ class SettlementCampFoundingTest {
 		assertNotNull(c.getMarket("Necessity"), "the necessity market exists after the boot");
 	}
 
+	private static final int DHENIJANSAR = 4411; // a real Anbennar site (has a forage plot to work)
+
+	@Test
+	void aCampBuildsAForageImprovementAndClimbsOnItsYield() {
+		// a small band founds a camp at a real site and climbs on its FORAGED food alone (no food-box
+		// priming) — proving Phase G's site-scaled forage + the HUNTING_CAMP it builds actually feed
+		// the climb. Before the improvement the forage sits near parity; building it lifts the site
+		// food and the surplus carries the camp up the ladder.
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				.foundAtCamp(true).retinueSize(60).build();
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321L, DHENIJANSAR);
+		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		Settlement c = h.getColony();
+		c.start();
+		assertEquals(SettlementTier.CAMP, c.getTier());
+		double bareSiteFood = c.campPlotFood(); // wild terrain (+ feature), no improvement yet
+
+		// drive it on real forage; the well-sited band builds its HUNTING_CAMP and climbs
+		for (int i = 0; i < 400 && c.getTier() == SettlementTier.CAMP; i++)
+			c.newDay();
+
+		assertTrue(c.campPlotFood() > bareSiteFood,
+				"building the HUNTING_CAMP lifts the forage plot's food yield");
+		assertTrue(c.getTier().atLeast(SettlementTier.COTTAGE),
+				"the camp climbed past CAMP on its foraged surplus (site-scaled forage feeds growth)");
+	}
+
 	@Test
 	void aStarvingCampStrikesAndDepartsAsACaravan() {
 		// a small band on POOR forage (below CAMP_RATION) cannot feed itself: once its opening

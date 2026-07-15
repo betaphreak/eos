@@ -313,7 +313,32 @@ Original plan (superseded above for what shipped; the un-boot remainder stands):
 - **Do not touch** the `Rank` ladder (`docs/caravan.md`) — additive; align/retire overlap later.
 - **Verify:** `CaravanRefoundTest` — a re-founded colony starts at the bottom rung and grows.
 
-### Phase G — foraging-as-improvement (the concrete forage model)
+### Phase G — foraging-as-improvement (the concrete forage model) — SHIPPED (settled-camp cut)
+
+> **SHIPPED 2026-07-15 (the found-at-Camp settled-camp realization).** The camp's forage is now
+> **site-scaled** and driven by a real, built, persisted Civ4 improvement — so bad ground fails and
+> good ground climbs, and Phase E's camp-departure is reachable *naturally* (no test hook). Pieces:
+> `Settlement.setUpCampForage` claims one **bare forage plot** from the site (`PlotField.claimBarePlot`
+> → `appendPlot`, which sets the founding `center` so the eventual boot inherits it); `campForageYield =
+> foragers × campForagePerForager × campPlotFood()` where `campPlotFood()` is the plot's real food yield
+> (`Plot.yields()[0]` — terrain + feature + improvement); `advanceCampForageBuild()` (in `grow()`) puts
+> `foragers × CAMP_BUILD_PER_FORAGER` of work per day toward the improvement's `buildCost` and, once met,
+> `raiseImprovement(HUNTING_CAMP, /*clearFeature=*/false)` on the plot (no-clear, so terrain/feature
+> yields still stack — the contract `PlotDevelopmentTest.aForageCampLeavesThePlotWild` pins). Recalibrated
+> `campForagePerForager` to `0.10` (per-forager-per-unit-plot-food; ~0.14/forager on typical ~1.4 ground,
+> matching the old flat rate) + a `DEFAULT_CAMP_SITE_FOOD` fallback for a province-less camp.
+> **Measured** (`CampFoundingEconomy`, Dhenijansar band 60): raises a `HUNTING_CAMP` on day 20 (site food
+> 1.0→2.0), which lifts the forage over parity and carries it `CAMP→SMALLHOLDING`, boots, departs on the
+> accepted upstream collapse. `SettlementCampFoundingTest.aCampBuildsAForageImprovementAndClimbsOnItsYield`
+> asserts the improvement raises the plot food and the camp climbs on real (unprimed) forage. Full
+> reactor green.
+>
+> **Deferred (the wandering-band cut):** the *marching* caravan still uses its bonus-based
+> `forage`/`gather` (resource corridors) — this cut realized the improvement model for the **settled**
+> found-at-Camp economy (where the flat forage lived), not the mobile band. Choosing among improvements
+> by yield/tech and multi-day march-camp persistence remain for a wandering-band cut.
+
+Original plan (the wandering-band framing; the settled-camp realization above supersedes it for what shipped):
 - A camped explorer/caravan **builds** the chosen Civ4 improvement on its camp plot via the existing
   `Plot.raiseImprovement(improvement, /*clearFeature=*/false)` (`:348`, already pinned by
   `PlotDevelopmentTest.aForageCampLeavesThePlotWild`), spending the improvement's `buildCost` in days

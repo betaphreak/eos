@@ -257,6 +257,15 @@ class PlotField {
 		return plots.size() + inFlight < maxPlots;
 	}
 
+	// claim one BARE plot for a camp's forage (Phase G): generate + append the next plot (from the
+	// shared province pool, which sets the founding `center` on the first claim; a baseline plot for
+	// a province-less colony) but raise NO improvement and seat no occupant — the camp forages it and
+	// builds its own HUNTING_CAMP over time. Null if the shared pool is exhausted / no plot could be
+	// generated. Package-visible for Settlement.setUpCampForage.
+	Plot claimBarePlot() {
+		return appendPlot();
+	}
+
 	// append a freshly-generated vacant plot at the next ladder index (the founding
 	// genesis path; live growth generates its plot up front in requestGrowth).
 	private Plot appendPlot() {

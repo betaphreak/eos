@@ -1345,6 +1345,12 @@ public class SimulationHarness {
 			IntToDoubleFunction nFirmSavings, IntToDoubleFunction laborerNStock) {
 		colony.setTier(SettlementTier.CAMP);
 		Bank copper = getCopperBank();
+		// Phase G (forage-as-improvement): give the camp a forage plot to work — its food yield
+		// scales the forage, so rich ground climbs and poor ground starves the band into departing —
+		// and the HUNTING_CAMP it builds on it over time. A province-less colony claims none and
+		// forages the flat fallback.
+		colony.setUpCampForage(colony.getSession() == null ? null
+				: colony.getSession().getTerrainRegistry().improvement("IMPROVEMENT_HUNTING_CAMP"));
 		// the pool — the camp's foragers (its workforce), in camp (settled-foraging) mode. No
 		// builder is created (that is a ruler-economy concern, wired at the boot).
 		retinue = new Retinue(cfg.retinueSize(), copper, colony, retinueConfig);

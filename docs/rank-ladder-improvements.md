@@ -222,6 +222,11 @@ R1 (reformTo)  ──►  R2 (tier→rank + Mayor)  ──►  R4 (descent demot
                      └──────────────────────────────┘  (R5 also cleans R1's asset moves)
 ```
 
+> **Status 2026-07-15:** **R1, R2, R4-core SHIPPED** (the high-value core). **R5 and R3 DEFERRED** by
+> the user in favour of the concrete Phase G forage work — R5 is largely cosmetic without R3, and R3 is
+> high-risk (SessionRunner/concurrency, factory bank resolution) for a mostly-architectural payoff. Both
+> remain valid future work behind the R1/R2/R4 foundation; R4's un-boot half is also still deferred.
+
 - **R1 first** — the enabler; pays down real Phase D/E debt (the hand-rolled boot reform) on its own.
 - **R2** next — realizes Mayor, closes the head ladder; small and high-value.
 - **R5** — the holdings refactor; unblocks R3 and cleans R1's asset transfers.

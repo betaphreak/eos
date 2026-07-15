@@ -893,22 +893,35 @@ public class Settlement {
 
 	// --- Camp economy (sub-SMALLHOLDING tiers: CAMP/COTTAGE/HAMLET) -------------------------
 	// A camp has no ruler economy (no firms/markets/banks-beyond-copper): its pooled peasants ARE
-	// its workforce and forage the site for food (docs/settlement-tier-ladder-plan.md Phase D).
-	// The camp's daily food is (foragers × campForagePerForager) − (residents × CAMP_RATION); the
-	// surplus banks into the food box and climbs the tier ladder. Both levers are deliberately
-	// UNCALIBRATED (Phase D5): the per-forager forage (a settable field, below) defaults a little
-	// above CAMP_RATION so a healthy, well-peopled camp net-grows and climbs to SMALLHOLDING at a
-	// sane pace, while a thin or ill-sited band stalls or starves back down. CAMP_RATION is the
-	// lean band ration (also what the pool eats in camp mode, so the larder tracks the food box).
+	// its workforce and forage the site for food (docs/settlement-tier-ladder-plan.md Phase D/G).
+	// The camp's daily food is (foragers × campForagePerForager × campPlotFood) − (residents ×
+	// CAMP_RATION); the surplus banks into the food box and climbs the tier ladder. CAMP_RATION is
+	// the lean band ration (also what the pool eats in camp mode, so the larder tracks the food box).
 	public static final com.civstudio.good.RationSize CAMP_RATION = com.civstudio.good.RationSize.SNACK;
 
-	// the per-forager daily food yield of a camp (necessity units); the default DEFAULT_CAMP_FORAGE
-	// sits above CAMP_RATION so a healthy, well-sited camp net-grows and climbs. A per-colony FIELD
-	// (not a constant) so a poor site — or a test — can lower it below the ration to make a camp
-	// STARVE and, unable to sustain its band, strike camp and depart as a wandering caravan (Phase
-	// E). Scaling it by real plot food yield is future work (Phase G, forage-as-improvement).
-	static final double DEFAULT_CAMP_FORAGE_PER_FORAGER = 0.14;
+	// Phase G — forage-as-improvement. The forage scales with the SITE's real food yield: the band
+	// works a forage plot (campPlot), and campForageYield = foragers × campForagePerForager ×
+	// campPlotFood (the plot's food yield, terrain + feature + any built improvement). So RICH ground
+	// climbs and POOR ground starves the band into departing (Phase E), naturally — no test hook
+	// needed. The band also BUILDS a HUNTING_CAMP improvement on its plot over the improvement's
+	// buildCost (accumulating campBuildProgress at CAMP_BUILD_PER_FORAGER per forager per day); once
+	// raised (no-clear, so terrain/feature yields still stack) it lifts campPlotFood and the forage.
+	// campForagePerForager is per-forager-per-unit-of-plot-food (a settable field so a test can force
+	// starvation); its default is tuned so typical ground (~1.4 food) yields ~0.14/forager, matching
+	// the pre-Phase-G flat rate. DEFAULT_CAMP_SITE_FOOD is the fallback plot-food for a province-less
+	// camp (no real plot to read). All UNCALIBRATED tuning levers.
+	static final double DEFAULT_CAMP_FORAGE_PER_FORAGER = 0.10;
+	private static final double DEFAULT_CAMP_SITE_FOOD = 1.4;
+	private static final double CAMP_BUILD_PER_FORAGER = 0.02;
 	private double campForagePerForager = DEFAULT_CAMP_FORAGE_PER_FORAGER;
+
+	// the plot the camp forages (and builds its forage improvement on), or null for a province-less
+	// camp / one that could claim none — then campPlotFood falls back to DEFAULT_CAMP_SITE_FOOD. The
+	// improvement it is building (a HUNTING_CAMP) and the work accrued toward its buildCost. See
+	// setUpCampForage / advanceCampForageBuild (Phase G).
+	private Plot campPlot;
+	private com.civstudio.geo.Improvement campForageImprovement;
+	private double campBuildProgress;
 
 	// the colony's net food surplus this day (C2C food balance): necessity PRODUCED by its
 	// agriculture (every living necessity firm's output) minus necessity EATEN (a FINE ration per
@@ -933,19 +946,64 @@ public class Settlement {
 	}
 
 	/**
-	 * The daily <b>forage yield</b> of a {@link SettlementTier#CAMP camp}'s workforce — the food
-	 * its {@code foragers} pooled peasants bring in by working the site (see the Camp economy in
-	 * {@code docs/settlement-tier-ladder-plan.md} Phase D). A flat per-forager rate for now
-	 * (uncalibrated; a later phase can scale it by the site's plot food yield). Read by both the
-	 * settlement's food box ({@link #dailyFoodSurplus()}) and the pool's camp provisioning (which
-	 * stocks this into its larder), so the larder and the food box move together.
+	 * The daily <b>forage yield</b> of a {@link SettlementTier#CAMP camp}'s workforce — the food its
+	 * {@code foragers} pooled peasants bring in by working the site (the Camp economy,
+	 * {@code docs/settlement-tier-ladder-plan.md} Phase D/G). <b>Site-scaled</b> (Phase G): {@code
+	 * foragers × campForagePerForager × }{@link #campPlotFood()} — the band's labour times the land's
+	 * food productivity (terrain + feature + any {@linkplain #advanceCampForageBuild() built} forage
+	 * improvement). So rich ground climbs and poor ground starves the band into departing. Read by both
+	 * the settlement's food box ({@link #dailyFoodSurplus()}) and the pool's camp provisioning (which
+	 * stocks it into its larder), so the larder and the food box move together.
 	 *
 	 * @param foragers
 	 *            the number of foraging peasants (the camp's workforce)
 	 * @return the day's foraged food (necessity units)
 	 */
 	public double campForageYield(int foragers) {
-		return foragers * campForagePerForager;
+		return foragers * campForagePerForager * campPlotFood();
+	}
+
+	// the food yield of the camp's forage plot (terrain + feature + any built improvement, index 0 of
+	// Plot.yields()); the DEFAULT_CAMP_SITE_FOOD fallback when the camp has no real plot (a
+	// province-less colony, or one that could claim none). Floored at 0. Package-visible so a test can
+	// watch it rise when the forage improvement is built.
+	double campPlotFood() {
+		if (campPlot == null)
+			return DEFAULT_CAMP_SITE_FOOD;
+		return Math.max(0, campPlot.yields()[0]);
+	}
+
+	/**
+	 * Wire up a {@linkplain SettlementTier#CAMP camp}'s <b>forage plot</b> (Phase G): claim one bare
+	 * plot from the site for the band to forage and, over time, build {@code forageImprovement} (a
+	 * {@code HUNTING_CAMP}) on. The plot's food yield scales the {@link #campForageYield(int) forage};
+	 * a province-less colony (or one that can claim no plot) leaves it null and forages the flat
+	 * {@link #DEFAULT_CAMP_SITE_FOOD} fallback. Called by the harness when it founds a camp.
+	 *
+	 * @param forageImprovement
+	 *            the forage improvement the camp builds on its plot (a {@code HUNTING_CAMP}), or
+	 *            {@code null} to forage the bare land only
+	 */
+	public void setUpCampForage(com.civstudio.geo.Improvement forageImprovement) {
+		this.campForageImprovement = forageImprovement;
+		this.campPlot = plotField.claimBarePlot();
+	}
+
+	// advance the camp's forage-improvement build (Phase G): each day the foragers put work toward the
+	// HUNTING_CAMP's buildCost; once met, raise it on the plot WITHOUT clearing (isWild stays true, so
+	// terrain + feature yields keep stacking) — durable, so a later colony inherits the developed
+	// ground. A no-op past CAMP tier, with no plot/improvement, or once already built.
+	private void advanceCampForageBuild() {
+		if (tier.atLeast(SettlementTier.SMALLHOLDING) || campPlot == null
+				|| campForageImprovement == null || campPlot.improvement() != null)
+			return;
+		campBuildProgress += campForagers() * CAMP_BUILD_PER_FORAGER;
+		if (campBuildProgress >= campForageImprovement.buildCost()) {
+			campPlot.raiseImprovement(campForageImprovement, false);
+			log.info(name + " raised a " + campForageImprovement.type()
+					+ " on its forage plot on " + getDate() + " (site food now "
+					+ String.format("%.1f", campPlotFood()) + ")");
+		}
 	}
 
 	/**
@@ -993,6 +1051,9 @@ public class Settlement {
 	// by the lower rung's cost each step (falling into the previous size's box, C2C-style — NOT
 	// reset). Growth-up is dormant in production (colonies found at maxTier); the shrink is live.
 	private void grow() {
+		// a camp puts its foragers' work toward building its forage improvement first, so the day's
+		// forage reflects any improvement raised today (Phase G)
+		advanceCampForageBuild();
 		foodBox += dailyFoodSurplus();
 		while (tier.ordinal() < maxTier.ordinal()) {
 			SettlementTier next = tier.next().orElseThrow(); // present: tier < maxTier
