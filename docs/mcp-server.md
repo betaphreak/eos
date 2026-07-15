@@ -451,6 +451,41 @@ attachable `civstudio://session/{id}/snapshot|events` references.
 - Phase 1 needs no Spring context; Phase 2 tests piggyback on the existing server
   slice tests and the auth `denyWrite` coverage.
 
+### Interactive MCP verification (used in practice)
+
+Beyond the JUnit guards, the MCP surface is exercised **live from a Claude Code
+session** — the standing way we smoke-test the running server and inspect its
+sessions without hand-writing a client. The `civstudio` server is registered once
+(`claude mcp add --transport http civstudio http://localhost:8080/mcp`, or the
+`https://dev.civstudio.com/mcp` demo), after which the tools surface as
+`mcp__civstudio__*` and can be driven directly in a turn:
+
+- **Liveness / handshake smoke test.** `mcp__civstudio__list_sessions` returning the
+  expected rows (e.g. the `caravan-demo-7654321` demo, `state:RUNNING`, its current
+  `tick`) confirms the endpoint, the Security filter chain, and `SessionHost` wiring
+  are all up — the read-only equivalent of hitting `/actuator/health`, but through
+  the MCP transport the agents actually use.
+- **Read-path verification.** `get_snapshot` / `get_person` / `get_command_log` /
+  `get_events` against a running id confirm the `render.*` projections and the
+  retained `SessionEventLog` tail serialize correctly over MCP — the live counterpart
+  of `McpEndpointTest` / `SessionMcpToolsTest`, run against the *real* deployed or
+  local session rather than a slice.
+- **Write-path / auth verification.** `create_session` / `control_session` /
+  `submit_command` exercise the admin gate (`McpAuthz.requireAdmin()`) end-to-end:
+  a call with the dev-user/admin identity succeeds and mutates through `CommandLog`;
+  without it, the same call is refused — proving the `/mcp` servlet inherits the
+  server's `ROLE_ADMIN` allow-list.
+- **Calibration-loop verification (dev profile).** With
+  `civstudio.mcp.calibration.enabled` on, a `run_scenario` → `list_outputs` →
+  `query_timeseries` → `compare_runs` → `get_event_log` handshake from a session is
+  how the SQL run store and the sink seam get validated against real output, not just
+  the H2 `JdbcRowSinkTest`.
+
+This interactive use is why the tools stay strictly (read a projection) or (submit a
+command): the same reproducibility invariant that makes them safe as tools makes them
+safe as an on-demand verification surface — reads never advance a tick, writes only
+go through the command seam.
+
 ---
 
 ## Open questions
