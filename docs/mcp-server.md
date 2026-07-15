@@ -239,7 +239,9 @@ framing instead of REST.
 > session (`McpEndpointTest`, `SessionMcpToolsTest`). The **read** rows below shipped;
 > the **write** rows (marked `write (auth)`) are the deferred, admin-gated follow-up.
 > The `events` resource shipped as a thin latest-frame projection — a real event tail
-> needs the *retained per-session log buffer* follow-up (see below).
+> needs the *retained per-session log buffer* follow-up (see below). A first
+> `@McpPrompt` playbook also shipped — `diagnose-live-colony` (`SessionMcpPrompts`),
+> realizing consumption pattern 3.
 
 ### Tools (thin wrappers over `HostedSession` / `SessionHost`)
 
@@ -323,6 +325,55 @@ through `CommandLog` like any other client. Gated behind Phase 2 and, more
 importantly, behind a command vocabulary richer than a single tax lever; until then
 an advisor can advise but has almost nothing to *do*. Called out here only so the
 seam (advisor reads projection, advisor acts via `CommandLog`) is on record.
+
+---
+
+## How an LLM / skill consumes this
+
+The tools and resources are the *verbs*; a **skill** (a client-side `SKILL.md`
+playbook, or the MCP-native `@McpPrompt` below) is the *procedure* that sequences
+them. Both consumers reach the server the same way — the Phase-2 endpoint is
+Streamable HTTP, registered once with the agent:
+
+```
+claude mcp add --transport http civstudio https://dev.civstudio.com/mcp   # or http://localhost:8080/mcp
+```
+
+After that the tools surface as `mcp__civstudio__list_sessions` /
+`…get_snapshot` / `…get_person` / `…get_command_log` and the resources as
+attachable `civstudio://session/{id}/snapshot|events` references.
+
+### Consumer patterns
+
+1. **Live-session observer skill (enabled by the Phase-2 read half, today).** A
+   `diagnose-live-colony` skill encodes: `list_sessions` → pick the id →
+   `get_snapshot` → if a colony is `alive:false` or its `poolSize` is draining, pull
+   `get_command_log` for the levers pulled and `get_person` on the ruler/advisors to
+   inspect the aristocracy. Turns "why is Dhenijansar dying?" into a fixed read-only
+   sequence over real projection data. Safe against the deployed demo (reads only).
+2. **Calibration skill (wants the Phase-1 harness).** The tuning loop — "sweep the
+   food knobs, find the stability frontier" — needs `run_scenario` / `sweep` /
+   `query_timeseries` over the SQL run store, not the live-session reads. A
+   `tune-food-balance` skill fans `sweep` across a parameter, reads each run's
+   population/treasury series, and reports where collapse stops. This is *why the plan
+   builds Phase 1 first*: Phase-2 reads **observe** a running session; Phase-1 tools
+   **drive experiments**. A good skill uses one filter vocabulary against both (the
+   reason `get_events` is aligned with `get_event_log`).
+3. **MCP prompts = server-shipped skills. (First one BUILT.)** MCP has its own
+   `prompts` primitive, and the Phase-2 server advertises the `prompts` capability.
+   `SessionMcpPrompts` ships **`diagnose-live-colony`** (`@McpPrompt`, optional
+   `sessionId` arg) — a canned playbook that sequences the read tools into the plan's
+   collapse-diagnosis procedure and returns it as a prompt message, so the **server
+   itself** ships the skill and the client surfaces it slash-command-style, no local
+   `SKILL.md` required. Verified over a live `prompts/list` + `prompts/get` handshake.
+   So a "skill" can live client-side (a `SKILL.md` calling the tools) *or* server-side
+   (an `@McpPrompt`). Remaining: the Phase-1 `tune-food-balance` sweep playbook (needs
+   the harness) and a `diagnose-collapse` variant that *runs* a scenario rather than
+   reading a live one.
+4. **Phase 3 advisor is a skill that can also write.** An in-game advisor reads the
+   same resources and *acts* through the (future, admin-gated) write tools via
+   `CommandLog` — i.e. a skill whose tool list happens to include `submit_command`.
+   Same seam as patterns 1–3, one row wider.
 
 ---
 
