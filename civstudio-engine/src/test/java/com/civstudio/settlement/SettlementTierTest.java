@@ -44,6 +44,24 @@ class SettlementTierTest {
 	}
 
 	@Test
+	void nextWalksUpAndEmptyAtTheTop() {
+		assertEquals(SettlementTier.COTTAGE, SettlementTier.CAMP.next().orElseThrow());
+		assertEquals(SettlementTier.METROPOLIS, SettlementTier.TOWN.next().orElseThrow());
+		assertTrue(SettlementTier.METROPOLIS.next().isEmpty(), "METROPOLIS is the top rung");
+	}
+
+	@Test
+	void upgradeDaysFollowTheC2cChainAndMetropolisIsTerminal() {
+		assertEquals(10, SettlementTier.CAMP.upgradeDays());
+		assertEquals(10, SettlementTier.COTTAGE.upgradeDays());
+		assertEquals(20, SettlementTier.HAMLET.upgradeDays());
+		assertEquals(30, SettlementTier.SMALLHOLDING.upgradeDays());
+		assertEquals(40, SettlementTier.TOWN.upgradeDays());
+		org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+				SettlementTier.METROPOLIS::upgradeDays, "the terminal rung has no upgrade cost");
+	}
+
+	@Test
 	void districtsAndPermanenceBeginAtTown() {
 		// the thresholds the flattened Settlement derives its capabilities from
 		assertTrue(SettlementTier.TOWN.atLeast(SettlementTier.TOWN), "a Town has districts");

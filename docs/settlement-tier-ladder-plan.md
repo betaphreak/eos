@@ -117,17 +117,28 @@ the founding map reproduces today's outcomes exactly.
   economy, found-at-Camp, the `Captain` rung, growth. Phase A leaves founding at `METROPOLIS`/
   `SMALLHOLDING` exactly as today — only the *shape* changes.
 
-### Phase B — population×days growth accumulator + tier advance
-- **`Settlement`**: a new `double development` accumulator, ticked once per `newDay()` by
-  `+= totalResidents` (people-days). **`totalResidents`** = a new helper summing living laborer
-  household members + peasant-pool size (`Retinue.size()`) + nobles + ruler + children (not just
-  the `livingLaborerCount` the collapse metric uses). No existing accumulator exists — greenfield
-  (today only the static `Province.development()` feeds `getStartingDistrictCount()`).
-- Advance `tier` when `development` crosses the next rung's `upgradeTime` (days) threshold; the
-  **CITY rung additionally requires population ≥ 1000** (`SettlementTier.CITY_POP_GATE`). Advancing
-  is a field change (log it), never a new object.
-- **Verify:** `SettlementGrowthTest` — drive a colony and assert it climbs rungs on schedule; the
-  City gate holds a sub-1000 Town back.
+### Phase B — population×days growth accumulator + tier advance ✅ SHIPPED
+- **`SettlementTier`**: per-rung `upgradeDays()` (the C2C `iUpgradeTime` chain read as days —
+  `CAMP 10, COTTAGE 10, HAMLET 20, SMALLHOLDING 30, TOWN 40`; `METROPOLIS` terminal), `next()` (the
+  rung above, empty at the top), and `METROPOLIS_POP_GATE = 1000`. Values hardcoded on the enum (five
+  stable constants — no need to route through `improvements.json`).
+- **`Settlement`**: a new `double development` accumulator, ticked once per `newDay()` (after the
+  population settles, post-`updateLifecycle`) by `+= totalResidents()`. **`totalResidents()`** = a
+  new helper summing every living person from `getAgents()` — each `Household`'s members (laborers,
+  nobles, ruler; adults + children) plus each `Retinue`'s `size()` (the pool). Also a **`maxTier`**
+  field (the site ceiling): `city_terrain` ⇒ `METROPOLIS`, else `SMALLHOLDING`.
+- Advance `tier` up the ladder while `development` clears the current rung's `upgradeDays()` **and**
+  the next rung is `≤ maxTier` **and** (if the next rung is `METROPOLIS`) `totalResidents() ≥ 1000`.
+  Advancing spends the cost (carries the remainder), is a field change (logged), never a new object.
+- **Dormant in production (behaviour-preserving).** Phase A founds every colony **at its `maxTier`**
+  (`tier == maxTier`), so the advance loop never fires and the accumulator is inert (no RNG, no
+  economics) — byte-identical until **Phase D** lowers the founding tier to `CAMP`. The growth
+  *rate* (thresholds vs. a whole-settlement population) is deliberately uncalibrated here — with
+  today's residents a colony founded low would climb almost instantly; slowing it to a sane pace is
+  the Phase D+ calibration lever.
+- **Verify:** `SettlementGrowthTest` — a colony seeded at `CAMP` climbs and **stops at its `maxTier`**
+  (an ordinary site caps at `SMALLHOLDING`, never reaching `TOWN`); the `METROPOLIS` gate holds a
+  sub-1000 `TOWN` back on a `city_terrain` site.
 
 ### Phase C — per-tier building & district caps
 - **Building cap**: gate `Settlement.autoBuildBuilding` (`:1450`, the single `Building`-placement

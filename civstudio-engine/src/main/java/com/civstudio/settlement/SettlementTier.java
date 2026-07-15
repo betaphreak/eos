@@ -25,25 +25,46 @@ package com.civstudio.settlement;
 public enum SettlementTier {
 
 	/** The transient plot a caravan sleeps in — no buildings; the ladder's foot. */
-	CAMP,
+	CAMP(10),
 
 	/** A camp that has put down its first building. */
-	COTTAGE,
+	COTTAGE(10),
 
 	/** A very limited settlement — a handful of buildings, still no districts. */
-	HAMLET,
+	HAMLET(20),
 
 	/** A single-urban-plot centre with no districts (the old {@code Village}). */
-	SMALLHOLDING,
+	SMALLHOLDING(30),
 
 	/** The first district-bearing rung — districts under a size cap. */
-	TOWN,
+	TOWN(40),
 
 	/**
-	 * The top rung — uncapped districts and permanent; additionally gated on &ge;&thinsp;1000
-	 * people once growth is wired (Phase B). The old {@code City}.
+	 * The top rung — uncapped districts and permanent; additionally gated on
+	 * &ge;&thinsp;{@value #METROPOLIS_POP_GATE} people (see the growth advance). The old
+	 * {@code City}. Terminal: it has no {@linkplain #upgradeDays() upgrade cost} (the {@code -1}
+	 * is the {@link #TERMINAL} sentinel, inlined here — an enum constant cannot forward-reference
+	 * a static field).
 	 */
-	METROPOLIS;
+	METROPOLIS(-1);
+
+	/** {@link #upgradeDays()} sentinel for the terminal rung — it never advances. */
+	private static final int TERMINAL = -1;
+
+	/**
+	 * The people-count a {@link #TOWN} must reach before it can advance to {@link #METROPOLIS}
+	 * (the population gate that makes a town a metropolis, beyond mere development).
+	 */
+	public static final int METROPOLIS_POP_GATE = 1000;
+
+	// the days of development this rung takes to advance to the next — the Caveman2Cosmos
+	// iUpgradeTime chain (Cottage 10, Hamlet 20, Village[=Smallholding] 30, Town 40), read as
+	// days; CAMP (no C2C analogue) mirrors COTTAGE; METROPOLIS is TERMINAL (never advances).
+	private final int upgradeDays;
+
+	SettlementTier(int upgradeDays) {
+		this.upgradeDays = upgradeDays;
+	}
 
 	/**
 	 * Whether this tier is at least {@code other} on the ladder — i.e. this rung is {@code other}
@@ -56,5 +77,31 @@ public enum SettlementTier {
 	 */
 	public boolean atLeast(SettlementTier other) {
 		return ordinal() >= other.ordinal();
+	}
+
+	/**
+	 * The days of accumulated development (people-days) this rung takes to grow into the next —
+	 * the C2C {@code iUpgradeTime} read as days. The terminal {@link #METROPOLIS} has no next rung
+	 * and throws.
+	 *
+	 * @return this rung's upgrade cost in development-days
+	 * @throws IllegalStateException
+	 *             if called on the terminal {@link #METROPOLIS}
+	 */
+	public int upgradeDays() {
+		if (upgradeDays == TERMINAL)
+			throw new IllegalStateException(this + " is terminal — it has no upgrade cost");
+		return upgradeDays;
+	}
+
+	/**
+	 * The rung one step up the ladder, or empty at the terminal {@link #METROPOLIS}.
+	 *
+	 * @return the next-higher tier, or empty at the top
+	 */
+	public java.util.Optional<SettlementTier> next() {
+		SettlementTier[] all = values();
+		return ordinal() + 1 < all.length ? java.util.Optional.of(all[ordinal() + 1])
+				: java.util.Optional.empty();
 	}
 }

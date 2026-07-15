@@ -272,10 +272,19 @@ public class Settlement {
 	private final Province province;
 
 	// the rung this colony sits on the SettlementTier ladder (docs/settlement-tiers.md): set at
-	// founding from the site (city_terrain => METROPOLIS, else SMALLHOLDING) and advanced by growth
-	// (Phase B). Mutable — a settlement climbs and, on decline, descends the ladder. Its
-	// capabilities (districts, permanence) derive from this; see hasDistricts/isPermanent/getTier.
+	// founding and advanced by growth (Phase B). Mutable — a settlement climbs and, on decline,
+	// descends the ladder. Its capabilities (districts, permanence) derive from this; see
+	// hasDistricts/isPermanent/getTier.
 	private SettlementTier tier;
+
+	// the site's ceiling on the ladder (city_terrain => METROPOLIS, else SMALLHOLDING): growth
+	// climbs tier toward this and never past it. Fixed at founding (docs decision "site ceiling").
+	private final SettlementTier maxTier;
+
+	// accumulated development in people-days (+= totalResidents() each day); when it clears the
+	// current rung's upgradeDays the settlement advances a tier (Phase B). Dormant in production
+	// today: colonies found at maxTier, so the advance never fires until Phase D founds them low.
+	private double development;
 
 	// the colony's solar clock for its (fixed) location: computes the day's
 	// dawn/sunrise/sunset/dusk and daylight length, refreshed for the current
@@ -493,12 +502,14 @@ public class Settlement {
 		this.latitude = latitude;
 		this.longitude = longitude;
 		this.province = province;
-		// the founding rung of the tier ladder: a multi-urban-plot city_terrain province is a
-		// METROPOLIS (districts + permanent), an ordinary or bare site a single-centre SMALLHOLDING
-		// — reproducing the old City/Village split (docs/settlement-tier-ladder-plan.md Phase A).
-		// Growth (Phase B) mutates this via setTier; found-at-Camp (Phase D) lowers the start.
-		this.tier = (province != null && province.city())
+		// the site's ceiling on the tier ladder: a multi-urban-plot city_terrain province can
+		// reach METROPOLIS (districts + permanence), an ordinary or bare site caps at a
+		// single-centre SMALLHOLDING (docs/settlement-tier-ladder-plan.md, decision "site ceiling").
+		this.maxTier = (province != null && province.city())
 				? SettlementTier.METROPOLIS : SettlementTier.SMALLHOLDING;
+		// Phase A founds at the ceiling (reproducing the old City/Village split); Phase B growth
+		// climbs toward maxTier, and Phase D (found-at-Camp) will lower this starting rung.
+		this.tier = this.maxTier;
 		// the spatial subsystem: the plots, the shared province pool, terrain generation
 		// and the builder's queue (it caps growth at the province's plots, and rejects a
 		// province too small to hold the founding floor). See PlotField.
@@ -716,6 +727,75 @@ public class Settlement {
 	 */
 	public void setTier(SettlementTier tier) {
 		this.tier = tier;
+	}
+
+	/**
+	 * The site's <b>ceiling</b> on the tier ladder — the highest rung this colony can grow to,
+	 * fixed at founding by its urban-plot geography ({@code city_terrain} &rArr; {@link
+	 * SettlementTier#METROPOLIS}, else {@link SettlementTier#SMALLHOLDING}). Growth climbs {@link
+	 * #getTier() tier} toward this and never past it.
+	 *
+	 * @return the highest tier this site permits
+	 */
+	public SettlementTier getMaxTier() {
+		return maxTier;
+	}
+
+	/**
+	 * The colony's accumulated <b>development</b> in people-days — it grows by {@link
+	 * #totalResidents()} each day and is spent down as the settlement advances rungs (see the
+	 * growth in {@link #newDay()}).
+	 *
+	 * @return the current development accumulator
+	 */
+	public double getDevelopment() {
+		return development;
+	}
+
+	/**
+	 * The colony's <b>total residents</b> — every living person the colony holds: each {@link
+	 * Household}'s members (laborers, nobles and the ruler; adults and children alike) plus each
+	 * {@link com.civstudio.agent.Retinue peasant pool}'s size. This is the population the tier
+	 * ladder grows on (people-days), broader than the workforce-only collapse metric.
+	 *
+	 * @return the number of living residents
+	 */
+	public int totalResidents() {
+		int n = 0;
+		for (Agent a : agents) {
+			if (!a.isAlive())
+				continue;
+			if (a instanceof com.civstudio.agent.Retinue r)
+				n += r.size();
+			else if (a instanceof Household h)
+				n += h.getMembers().size();
+		}
+		return n;
+	}
+
+	// accrue a day's development (people-days) and climb the tier ladder while the accumulator
+	// clears the current rung's cost, the next rung is within the site's maxTier, and (for the
+	// top rung) the population gate is met. Advancing spends the cost and carries the remainder.
+	// Dormant in production today — colonies found at maxTier, so the loop never runs (byte-
+	// identical); it comes alive once Phase D founds them at CAMP. See docs/settlement-tier-ladder-plan.md.
+	private void grow() {
+		development += totalResidents();
+		while (tier.ordinal() < maxTier.ordinal()) {
+			SettlementTier next = tier.next().orElse(null);
+			if (next == null || next.ordinal() > maxTier.ordinal())
+				break;
+			double cost = tier.upgradeDays();
+			if (development < cost)
+				break;
+			if (next == SettlementTier.METROPOLIS
+					&& totalResidents() < SettlementTier.METROPOLIS_POP_GATE)
+				break;
+			development -= cost;
+			SettlementTier from = tier;
+			setTier(next);
+			log.info(name + " grew from " + from + " to " + next + " on " + getDate()
+					+ " (" + totalResidents() + " residents)");
+		}
 	}
 
 	/**
@@ -1344,6 +1424,11 @@ public class Settlement {
 		// the population for this step is now settled: a started colony that has
 		// lost its last laborer dies here
 		updateLifecycle();
+
+		// accrue this day's development (people-days) and climb the tier ladder if it clears the
+		// next rung's cost (docs/settlement-tier-ladder-plan.md Phase B). Inert in production —
+		// colonies found at their maxTier, so nothing advances until Phase D founds them low.
+		grow();
 
 		for (Market market : markets.values()) {
 			market.clear();

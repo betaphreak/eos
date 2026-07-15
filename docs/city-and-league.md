@@ -121,6 +121,29 @@ re-homed one rung up and re-titled (a **Legate** over member **cities**, not a M
 over village-quarters). The **four decisions taken earlier carry over verbatim**, now
 applied at LEAGUE:
 
+### When a LEAGUE forms — the precondition (decided 2026-07-15)
+
+**Promotion to `LEAGUE` requires more than one `CITY` in the same province.** A `LEAGUE`
+is a *bloc of cities*, so the trigger is structural: a single province must hold **≥ 2
+`CITY`-scoped settlements** (Mayor-led, `METROPOLIS`-tier — see the renamed
+[`settlement-tier`](settlement-tier-ladder-plan.md) rungs) before the senior Mayor can
+reform into a `Legate` over them. One city in a province can never be a league (nothing to
+federate); the second city crossing the `METROPOLIS`/Mayor threshold in the *same* province
+is what makes federation possible.
+
+This is the multi-settlement-per-province model `rank-ladder.md` anticipated ("a
+shared-province multi-settlement is a `LEAGUE`"), now with a concrete count: **> 1 city in
+one province**, not merely > 1 settlement. It also distinguishes the two province-level
+operations cleanly:
+
+- **`SUBURBS` merge** (several *Towns* → one City): consolidation *within* a settlement's growth.
+- **`LEAGUE` federation** (several *Cities* → one bloc): a political reform once the province
+  holds more than one city.
+
+So the province gains a second `METROPOLIS`, *then* the two cities can federate into a
+`LEAGUE`. Unrealized today (no multi-settlement-per-province founding yet) — this is the
+gate the eventual `HOLDING/CITY → LEAGUE` promotion checks.
+
 ### What a LEAGUE commands
 
 Several `CITY`-scoped settlements (the **members**), each a permanent city with its
