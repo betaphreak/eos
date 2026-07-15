@@ -83,7 +83,7 @@ implemented and planned — live in [`docs/`](docs/).
 The engine favors emergent failure over scripted success, and the current
 labor model is **replacement-only**: a standard closed colony runs for years,
 then collapses once its founding peasant reserve drains — by design, confirmed
-by a parameter sweep (`CalibrationSweep`) and accepted while the food economy
+by a parameter sweep and accepted while the food economy
 is calibrated (births are implemented but children mature slower than the
 colony declines). The smoke-test suite asserts colonies reach that collapse
 *cleanly* — no invariant trips on the way down. The bare open scenario
@@ -116,8 +116,9 @@ mvn exec:exec -Dsim.main=com.civstudio.simulation.TwinSettlementEconomy
 | `HarimariEconomy` | A **mixed-race** colony founded by the harimari — race-varying names, calendar, mortality and tech. |
 | `ElvenEconomy` | A mono-racial elven colony — founding with one of the imported Anbennar races. |
 
-(`CalibrationSweep` and `SurvivalExperiment` are developer tools — headless
-parameter grids and survival probes, not scenarios.)
+(`SurvivalExperiment` is a developer tool — a headless survival probe, not a
+scenario. Parameter grids now run through the MCP `sweep` tool — see
+`docs/mcp-server.md` §Phase 1 — which retired the old `CalibrationSweep`.)
 
 Each scenario is a `static run()` returning its `SimulationHarness`, plus a
 `main()`. Run-level parameters live in `SimulationConfig` (an immutable record

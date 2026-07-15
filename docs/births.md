@@ -22,7 +22,7 @@ The colony's labour force is a **replacement-only ratchet**: a dead laborer is
 replaced one-for-one by promotion from the `Retinue`, and the pool only ever
 *drains* (founding consumes most of it; nothing refills the standing reserve). Pool
 immigration, lenient mortality and a deep larder push collapse out to ~15–30 years,
-but a `CalibrationSweep` confirms **no parameter combination yields a stable ruler
+but a parameter sweep confirms **no parameter combination yields a stable ruler
 colony** — the workforce cannot renew itself, so every ruler-bearing colony
 eventually collapses (this is accepted in `CLAUDE.md` as the status quo).
 
@@ -374,7 +374,7 @@ maturation window by a separate food-economy/survival fix.
   higher birth rates collapse *sooner* (more consuming mouths), and at collapse the
   colony holds 30–170 children who never reached working age. The cause is a
   **timescale mismatch**: the colony dies of its structural ~6–10-year food/larder
-  shock (the replacement-ratchet collapse the `CalibrationSweep` already proved has no
+  shock (the replacement-ratchet collapse a parameter sweep already proved has no
   parameter fix) **5–9 years before** a home-grown child matures at **15**. Crucially
   the collapse is **not demographic** — colonies founded with 18-year-olds (who cannot
   die of old age for decades) collapse on the same ~9-year schedule — so it is a

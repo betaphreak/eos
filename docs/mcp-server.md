@@ -9,14 +9,16 @@
   `http://localhost:8080/mcp` and gets both live-session and calibration tools (no
   stdio/stdout conflict, no third module; see §How an LLM / skill consumes this).
   **Shipped:** the JDBC/H2 **SQL run store** (via the `io/sink` seam — `JdbcRowSink`,
-  §Data backend) and the tools `list_scenarios` + `run_scenario` (`ScenarioMcpTools`),
-  which founds a **standard ruler colony** at a seed with whitelisted
-  `SimulationConfig`/pool overrides (`CalibrationRun`) and writes its typed time series
-  to the store, keyed by `runId`. **Still to build:** the query tools (`query_timeseries`
-  / `list_outputs` / `get_event_log` / `compare_runs` / `sweep`) that read the store,
-  and resources/prompts. *Divergence:* `run_scenario` runs a generic standard-colony
-  setup + overrides, not a reflectively-invoked scenario `main` (scenarios hardcode
-  their seed/printers) — see Phase 1 below.
+  §Data backend); the run tools `list_scenarios` + `run_scenario` + **`sweep`**
+  (`ScenarioMcpTools`), which found a **standard ruler colony** at a seed with
+  whitelisted `SimulationConfig`/pool overrides (`CalibrationRun`) and write the typed
+  time series to the store, keyed by `runId`; and the **read tools** `list_outputs` /
+  `query_timeseries` / `compare_runs` (`CalibrationQueryTools`) over the store, with
+  LLM-supplied identifiers validated against the live schema. `sweep` **retired the
+  `CalibrationSweep` dev tool**. **Still to build:** `get_event_log` for a finished run
+  (needs the run's `SimLog` persisted to the store), and resources/prompts. *Divergence:*
+  `run_scenario` runs a generic standard-colony setup + overrides, not a
+  reflectively-invoked scenario `main` (scenarios hardcode their seed/printers).
 - **Phase 2 — live-session tools (Streamable HTTP, co-hosted in `civstudio-server`).**
   **Read half BUILT** (2026-07-15, v0.9.34): a Spring AI 2.0 MCP server
   (`spring-ai-starter-mcp-server-webmvc`, Streamable HTTP at `/mcp`) exposing the
@@ -194,9 +196,15 @@ question is only about the *historical time series* the calibration tools read.
 > (`SimulationConfig` fields + the peasant-pool `RetinueConfig` food levers; unknown
 > keys rejected). Output goes through a `CompositeRowSinkFactory` — CSV under
 > `output/<seed>/` **and** the H2 run store (`CalibrationStore`, one shared
-> `output/calibration` db, rows keyed by `runId`). Verified by `ScenarioMcpToolsTest`
-> and a live `tools/list` + `run_scenario` handshake. **Not yet built:** the query
-> tools that read the store, and the resources/prompts.
+> `output/calibration` db, rows keyed by `runId`). **`sweep`** fans `run_scenario` over
+> one parameter (`seed` or an override key) and reports each run's collapse outcome —
+> the structured replacement for the retired `CalibrationSweep`. The **read tools**
+> (`CalibrationQueryTools`): `list_outputs` (schema via JDBC metadata), `query_timeseries`
+> (a run's typed series, identifiers validated against the live schema and quoted, values
+> bound), `compare_runs` (per-column finals/ranges/delta — "did the knob help?"). Verified
+> by `ScenarioMcpToolsTest` / `CalibrationQueryToolsTest` and a live
+> `sweep`→`list_outputs`→`query_timeseries`→`compare_runs` handshake. **Not yet built:**
+> `get_event_log` for a finished run, and resources/prompts.
 
 A standalone Maven module `civstudio-mcp`, depending on `civstudio-engine` (plus an
 embedded H2 driver for the reporting store — see *Data backend*; still no Spring),

@@ -11,11 +11,11 @@ import com.civstudio.settlement.Settlement;
 /**
  * Runs one standard (ruler-bearing) colony headless to a horizon and reports its outcome — the
  * reusable core of the MCP {@code run_scenario} calibration tool (see {@code docs/mcp-server.md}
- * Phase 1). It is the {@link CalibrationSweep} founding pattern made parameterizable: found a standard
- * colony at a given {@code (seed, province)} with a {@link SimulationConfig} (and optional {@link
- * RetinueConfig} food levers), install a {@link RowSinkFactory} so the printers' typed time series
- * lands wherever the caller wants (the SQL run store, CSV, or both), run, and read back the collapse
- * outcome.
+ * Phase 1). It is the developer parameter-sweep founding pattern (the retired {@code CalibrationSweep},
+ * now the MCP {@code sweep} tool) made parameterizable: found a standard colony at a given {@code
+ * (seed, province)} with a {@link SimulationConfig} (and optional {@link RetinueConfig} food levers),
+ * install a {@link RowSinkFactory} so the printers' typed time series lands wherever the caller wants
+ * (the SQL run store, CSV, or both), run, and read back the collapse outcome.
  *
  * <p>Deterministic in {@code seed} — the store it writes is a reporting mirror, so it never perturbs
  * an RNG stream. The default sink stays CSV; a caller opts into SQL by passing a JDBC-backed factory.

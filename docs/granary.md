@@ -316,7 +316,7 @@ over a long horizon (40+ in-game years):
 - **necessity price** stays within the granary band (no crash, no spiral);
 - **laborer wealth** stays positive on average (no deflationary debt spiral).
 
-A `CalibrationSweep`-style harness over the granary/TFP/relief/marriage parameters then finds
+A parameter-sweep harness (the MCP `sweep` tool) over the granary/TFP/relief/marriage parameters then finds
 the stable region (the earlier sweep proved none exists under the replacement-only model —
 the point of this redesign is to make one exist).
 

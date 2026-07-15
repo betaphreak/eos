@@ -644,7 +644,7 @@ near its current food TFP. The plan therefore:
   the dropped `ROAD`/`WALL` billing;
 - tunes `REFERENCE` so the plot yield factor is ≈ 1.0 at the baseline plot+farm, leaving the
   retained climate multiplier as the dominant food-TFP term ≈ its pre-rework value, then
-  re-validates the suite and a `CalibrationSweep`-style check, documenting the residual delta;
+  re-validates the suite and a parameter-sweep check (the MCP `sweep` tool), documenting the residual delta;
 - treats the calibrated zero-profit-bank stability story as a constraint to re-confirm,
   the same way other couplings (calendar, daylight) were swept.
 

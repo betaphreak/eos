@@ -426,8 +426,9 @@ implemented). But most colonies are still **formed at compile time**: a fixed bo
 at scenario setup, not a band settling. Two concrete instances remain:
 
 1. **Every standard scenario** — `HomogeneousEconomy`, `TwinSettlementEconomy`,
-   `ElvenEconomy`, `HarimariEconomy`, `OpenColonyEconomy`, `CalibrationSweep`,
-   `SurvivalExperiment` — forms its colony via `SimulationHarness.foundStandardColony(…)`,
+   `ElvenEconomy`, `HarimariEconomy`, `OpenColonyEconomy`, `SurvivalExperiment` (and
+   the MCP `run_scenario`/`sweep` tools via `CalibrationRun`) — form their colony via
+   `SimulationHarness.foundStandardColony(…)`,
    no band.
 2. **The caravan-journey tests' throwaway `muster` colony** (e.g. `ParallelCaravansTest`,
    `DhenijansarToWexkeepTest`) — a real `Settlement` conjured only to host the bands'

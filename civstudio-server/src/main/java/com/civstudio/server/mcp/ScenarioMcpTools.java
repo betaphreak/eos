@@ -1,5 +1,7 @@
 package com.civstudio.server.mcp;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -90,6 +92,41 @@ public class ScenarioMcpTools {
 				r.laborers(), r.firms(), store.url());
 	}
 
+	@McpTool(name = "sweep",
+			description = "Run a scenario across a range of one parameter and report each run's "
+					+ "collapse outcome — the calibration workhorse (replaces the CalibrationSweep dev "
+					+ "tool). Every run also lands in the store (see the returned runIds) for deeper "
+					+ "query_timeseries / compare_runs. Deterministic in seed.")
+	public List<SweepPoint> sweep(
+			@McpToolParam(description = "Scenario setup name (currently 'standard')", required = true)
+			String scenario,
+			@McpToolParam(description = "Parameter to vary: 'seed', or a whitelisted override key "
+					+ "(e.g. 'retinueSize', 'reliefBudgetPerPeasant')", required = true) String param,
+			@McpToolParam(description = "Values to sweep the parameter over", required = true)
+			List<Double> values,
+			@McpToolParam(description = "Base seed — used for every run unless param is 'seed'",
+					required = true) long seed,
+			@McpToolParam(description = "Days to run each; omit for the full duration", required = false)
+			Integer steps,
+			@McpToolParam(description = "Overrides held fixed across the sweep, e.g. "
+					+ "{\"externalInflowPerStep\":1000,\"numNFirms\":8}", required = false)
+			Map<String, Double> baseOverrides) {
+		List<SweepPoint> out = new ArrayList<>();
+		for (Double value : values) {
+			long runSeed = seed;
+			Map<String, Double> ov = baseOverrides == null ? new HashMap<>() : new HashMap<>(baseOverrides);
+			if ("seed".equals(param))
+				runSeed = value.longValue();
+			else
+				ov.put(param, value);
+			RunResult r = runScenario(scenario, runSeed, steps, null, ov);
+			out.add(new SweepPoint(value, r.runId(), r.seed(), r.died(),
+					r.deathDate() == null ? -1 : Integer.parseInt(r.deathDate().substring(0, 4)),
+					r.laborers(), r.firms()));
+		}
+		return out;
+	}
+
 	// apply the whitelisted SimulationConfig overrides; the peasant-pool keys are handled by
 	// applyRetinue and skipped here, and any other key is rejected (not silently dropped)
 	private static SimulationConfig applyConfig(SimulationConfig base, Map<String, Double> ov) {
@@ -138,6 +175,22 @@ public class ScenarioMcpTools {
 
 	/** One row of {@link #listScenarios()}. */
 	public record ScenarioInfo(String name, String blurb, boolean isRulerColony) {}
+
+	/**
+	 * One point of a {@link #sweep}: the swept value, its run's id (for follow-up queries), and the
+	 * collapse outcome — the same "held or collapsed, and when" the retired {@code CalibrationSweep}
+	 * printed, but structured.
+	 *
+	 * @param value     the swept parameter value
+	 * @param runId     the run's id in the store
+	 * @param seed      the seed this run used
+	 * @param died      whether the colony collapsed before the horizon
+	 * @param deathYear the collapse year, or -1 if it survived
+	 * @param laborers  living laborer households at the end
+	 * @param firms     living firms at the end
+	 */
+	public record SweepPoint(double value, String runId, long seed, boolean died, int deathYear,
+			int laborers, int firms) {}
 
 	/**
 	 * The outcome of a {@link #runScenario} call.
