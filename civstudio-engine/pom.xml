@@ -32,6 +32,15 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- Test-only: a real embedded SQL datasource for the JdbcRowSink tests (the engine stays
+             driver-free at runtime — a launcher supplies H2/Postgres). Pinned to the version Spring
+             Boot 4.1 manages for the server, so both modules run one H2. -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.4.240</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

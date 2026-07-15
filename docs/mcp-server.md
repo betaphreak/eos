@@ -115,22 +115,28 @@ database- or composite-backed factory carrying the run/colony identity."
 **So the MCP-friendly format is Postgres, reached by building the sink the seam was
 designed for — not a new file format and not a printer rewrite.**
 
-### Plan
+### Plan — sink layer BUILT (v0.9.34)
 
-- **Add `JdbcRowSink` + `JdbcRowSinkFactory`** (the anticipated implementations). The
-  factory carries **run identity** — `run_id`, `seed`, `scenario` become real
-  columns — and `ColumnType` gives each printer a typed table for free. Printers are
-  untouched; only the factory a colony is handed changes.
-- **Store: Postgres.** The server already depends on `spring-boot-starter-jdbc` +
-  `postgresql` (it backs `JdbcUserStore` today), so the in-server surface writes to
-  the same database it already runs. The engine-only Phase-1 harness, which can't
-  assume a running Postgres, writes to an **embedded H2 file** (`output/<seed>/run.db`,
-  H2 in PostgreSQL-compatibility mode — already a project dependency) so the *same*
-  `JdbcRowSink` and the *same* SQL work with no server to stand up. JDBC keeps the
-  engine driver-free (the `java.sql` API is in the JDK); whichever module launches
-  provides the driver (H2 for the harness, Postgres for the server).
-- **Keep CSVs if wanted** via a *composite* factory (the Javadoc's "both") — the
-  human-readable files stay for eyeballing while MCP reads the database.
+- **`JdbcRowSink` + `JdbcRowSinkFactory` shipped** (`io/sink/`). The factory carries
+  **run identity** — `run_id`, `seed`, `scenario` are real columns on every table — and
+  each printer's `ColumnType` maps to a SQL type (`DATE`/`VARCHAR`/`INTEGER`/`DOUBLE
+  PRECISION`) that binds via `PreparedStatement`. Printers are untouched; only the
+  factory a colony is handed changes (`Settlement.setSinkFactory`). Rows batch and
+  commit on flush/close; the one-off `CREATE TABLE` is serialized in the factory so no
+  writer races an absent table. **Every identifier is quoted** (exact case, spaces —
+  CSV headers have both), because H2 and Postgres fold *unquoted* names oppositely; the
+  query layer therefore introspects real names from `information_schema` and quotes
+  them. Verified against embedded H2 by `JdbcRowSinkTest`.
+- **Store: Postgres (server) / embedded H2 (harness).** JDBC keeps the engine
+  driver-free (`java.sql` is in the JDK); whichever module launches provides the driver.
+  The **in-server** Phase-1 tools (the chosen shape — see Phase 1 below) write H2
+  `run.db` locally for a dev-run calibration loop, or the server's existing Postgres.
+- **Keep CSVs if wanted** via **`CompositeRowSinkFactory` (shipped)** — the
+  human-readable `output/<seed>/*.csv` stay for eyeballing while the SQL store is what
+  the MCP query tools read.
+
+*Still to build on this foundation: the launcher that installs a `JdbcRowSinkFactory`
+per `run_scenario`, and the query tools that read the store — the next Phase-1 steps.*
 
 ### What the read tools become
 
