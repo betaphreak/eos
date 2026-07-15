@@ -149,7 +149,11 @@ class PlotField {
 			seat(plot, occupant);
 			return plot;
 		}
-		if (colony.isStarted())
+		// a started colony grows through its builder — EXCEPT during a mid-run founding boot (a
+		// camp reaching SMALLHOLDING founds its settled economy, docs/settlement-tier-ladder-plan.md
+		// Phase D3), which lays its founding farms genesis-style (free, developed) exactly as a
+		// fresh founding does, before the builder exists.
+		if (colony.isStarted() && !colony.isGenesisFounding())
 			return requestBuild(occupant);
 		return foundPlot(occupant);
 	}

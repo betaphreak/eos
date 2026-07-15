@@ -363,9 +363,28 @@ public class Retinue extends Agent implements MarchFollowing {
 		this.provisioning = new Relief();
 	}
 
+	/**
+	 * Switch this retinue to the <b>camp</b> mode — the foraging band of a sub-ruler
+	 * {@link com.civstudio.settlement.SettlementTier tier} ({@code CAMP}/{@code COTTAGE}/{@code
+	 * HAMLET}, led by a {@link Captain}): the pooled peasants are the camp's workers, foraging
+	 * the site for food. Each step they eat a lean camp ration from the larder and forage a
+	 * yield back into it (see {@link com.civstudio.settlement.Settlement#campForageYield(int)});
+	 * there is no market to restock on, no patron to bill, no builder to lend to. When the camp
+	 * grows to {@code SMALLHOLDING} the harness reforms it into the settled {@link #settle()
+	 * relief} reserve. See {@code docs/settlement-tier-ladder-plan.md} Phase D.
+	 */
+	public void camp() {
+		this.provisioning = new Camp();
+	}
+
 	/** Whether this retinue is in the detached wandering mode. */
 	public boolean isWandering() {
 		return provisioning instanceof Foraging;
+	}
+
+	/** Whether this retinue is in the camp (settled-foraging) mode. */
+	public boolean isCamped() {
+		return provisioning instanceof Camp;
 	}
 
 	/** The daily ration each member currently eats (settled relief vs. wandering). */
@@ -827,6 +846,34 @@ public class Retinue extends Agent implements MarchFollowing {
 
 		public void afterFeeding(Retinue r) {
 			// marketless and idle — consume the carried larder, restock nothing
+		}
+	}
+
+	/**
+	 * Camp mode (a {@link Captain}-led foraging band on a sub-ruler tier): the pooled peasants
+	 * <b>are</b> the camp's workforce — they eat a lean camp ration and forage a food yield back
+	 * into the larder each step (the site's {@linkplain com.civstudio.settlement.Settlement#campForageYield(int)
+	 * forage yield}). Marketless like {@link Foraging}, but — unlike a decaying wandering band —
+	 * it <b>restocks</b> from the land it sits on, so a camp on good ground net-grows its larder
+	 * and the settlement's food box, climbing the tier ladder (see {@code
+	 * docs/settlement-tier-ladder-plan.md} Phase D).
+	 */
+	private static final class Camp implements Provisioning {
+
+		public RationSize ration(Retinue r) {
+			return Settlement.CAMP_RATION;
+		}
+
+		public void beforeFeeding(Retinue r) {
+			// no patron while camped — nothing to bill
+		}
+
+		public void afterFeeding(Retinue r) {
+			// forage the site: the peasants' labour returns a food yield to the larder, so a
+			// camp on good ground sustains and grows (marketless — no offer posted)
+			double foraged = r.getColony().campForageYield(r.size());
+			if (foraged > 0)
+				r.necessity.increase(foraged);
 		}
 	}
 }

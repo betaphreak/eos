@@ -168,19 +168,83 @@ The growth mechanics are a **faithful port of C2C's** `CvCity::changeFood` / `Cv
 - **Verify:** `SettlementTierTest.buildingCapRampsUpToUnrestrictedAtSmallholding`;
   `DistrictTypeTest.startingDistrictCountIsCappedByTier` (`METROPOLIS` full, `CAMP` 0, sub-`TOWN`
   centre, `TOWN` within `[1, base]`); the existing City/bare district tests unchanged. Full reactor green.
-- **Verify:** extend `DistrictTypeTest`; a Town's district count grows with its population, a City's
-  equals the site's urban-plot capacity.
+### Phase D — found low (at Camp) and grow — **the first non-byte-identical phase** (D1–D3 + D4 mechanism SHIPPED)
+Rewritten 2026-07-15 to the **reconciled found-at-Camp** decision (superseding the old
+"found-at-fitting-tier"). This is the big one: it's where growth-up stops being dormant, and it
+**cannot be split** into "found low" without also wiring the Camp economy and the economy-boot —
+a Camp running the full 3-tier ruler economy would be incoherent. Sequence it as D1→D5.
 
-### Phase D — found at a fitting tier, then grow
-- **`GameSession.buildSettlement`** (`:547`): stop founding directly at `City`/`Village` by
-  `province.city()` alone. Instead set the initial `tier` from the **founding population** (a
-  standard pool-promoted cohort → ~`VILLAGE`; a lone re-founding caravan band, below `MIN_SETTLERS`,
-  → `CAMP`/`COTTAGE`), and a **`maxTier`** from the site (single-urban-plot province caps at
-  `VILLAGE`; a `city_terrain` province can reach `CITY`). Growth (Phase B) climbs toward `maxTier`.
-- **RISK (moderate, not brutal):** because a full founding cohort still lands at ~Village (not a
-  1-plot Camp), the standard scenarios are **not** started tiny — the rebalance is gentler. It still
-  re-baselines any smoke test asserting the founding tier / early size, and couples growth into the
-  economy. Sequence **after** A–C; treat as a calibration change (project accepts non-byte-identical).
+> **SHIPPED 2026-07-15 (D1–D3 + the D4 mechanism):** the full found-at-Camp→boot machinery is
+> wired and validated end-to-end (`SettlementCampFoundingTest`: a camp founds at `CAMP` under a
+> `Captain`, forages, climbs `CAMP→SMALLHOLDING`, and boots the whole ruler economy; a starving
+> camp dies). It is gated behind a new `SimulationConfig.foundAtCamp` flag (**default false**), so
+> the entire existing scenario/test suite stays **byte-identical** — that flag *is* the analytical
+> opt-out (they simply leave it false). Pieces: `agent/Captain.java` (the realized `Rank.CARAVAN`
+> head holding the pool as its asset — no `RankLadder` `CARAVAN` factory, avoiding the ennoblement
+> trap); `Retinue.camp()` + a `Camp` provisioning mode (the pooled peasants forage the site);
+> `Settlement` — a camp food branch in `dailyFoodSurplus()` (`campForageYield − residents×CAMP_RATION`),
+> a growth gate that counts the pool below `SMALLHOLDING` (`growthPopulation()`), and an
+> `onTierAdvance` callback fired from `grow()`; `SettlementLifecycle` — a camp is alive while its
+> foraging band has members (0 laborers by design; it dies terminally when the band is spent — the
+> graceful depart-as-caravan is Phase E); `SimulationHarness.foundCamp`/`bootRulerEconomy`
+> (mirroring `reFoundStandardColony`, treating the camp as a settling band: `Captain`→`Ruler`, camp
+> pool→settled reserve via `createRetinueFromPool`) + a `Settlement.genesisFounding` window so the
+> mid-run boot lays its founding farms genesis-style. **Remaining (D5):** calibrate
+> `CAMP_FORAGE_PER_FORAGER` (currently `0.14`, uncalibrated) and flip a headline geographic scenario
+> (the default Dhenijansar) to `foundAtCamp(true)` — deferring its economy-coupled printers to the
+> boot — so the climb is live in `exec:exec`, then rebaseline that scenario's smoke assertion.
+
+> **Prereqs, all shipped:** A (tier field + flattening), B (food-box growth-up + starvation shrink),
+> C (per-tier caps). The `grow()` advance loop already climbs `CAMP→…→maxTier`; today no colony is
+> founded low enough to use it.
+
+- **D1 — Realize the Captain rung (`Rank.CARAVAN`), pool-as-asset.** Register a `RankFactory` for
+  `Rank.CARAVAN` in `RankLadder`: a **`Captain`** household leads the band and **holds the peasant
+  pool (`Retinue`) as its asset** (like `Noble.firms`), per `docs/rank-ladder.md` Phase 5. The
+  Captain **is the same entity** as the marching/settler-caravan band (a camped band = a `CARAVAN`
+  household). **⚠ The trap:** realizing `CARAVAN` means a single-step `RankLadder.promote()` from a
+  `Laborer` (`HOUSEHOLD`) would now land on **Captain**, not **Noble** — silently breaking
+  ennoblement (which relies on `CARAVAN` being unrealized to skip it, `rank-ladder.md` Phase 2). So
+  **keep `RankLadder` for the laborer↔noble ennoblement axis only**; drive the settlement-head
+  Captain→Ruler→Mayor changes from **tier crossings** (a pure `tier → Rank` reform), never a
+  `promote()` walk. Seams: `RankLadder.register`, `RankFactory`, `Retinue`, `SettlerCaravan`.
+- **D2 — Camp economy = the foraging-band larder (no ruler economy).** At `CAMP`/`COTTAGE`/`HAMLET`
+  the colony runs **only** the forage-larder economy — no banks, markets, firms, granary or dynamic
+  provisioning. Food is foraged into the band's larder (interim: the existing `MarchingCaravan`
+  forage/gather; Phase G realizes it as build-then-work improvements). Establishes "what runs below
+  Smallholding."
+- **D3 — Move the ruler-economy boot to `SMALLHOLDING` (the promotion trigger).** The riskiest
+  refactor. `SimulationHarness.foundStandardColony` today attaches the whole ruler economy (gold/
+  silver/copper banks, strategic export sector, `Granary`, monthly `DynamicFirmProvisioner`,
+  ennoblement, immigration, `installExplorerProvisioning`) **at founding**. Split it: found only a
+  Captain-led camp, and **boot the ruler economy when the tier crosses to `SMALLHOLDING`** (Captain
+  reforms → `Ruler`). Wire a **tier-advance callback** on `Settlement` (fired from `grow()` on an
+  advance) that the harness observes. `foundStandardColony` becomes "found camp" + "on-promotion
+  boot."
+- **D4 — Flip founding to `CAMP`; analytical scenarios opt out.** `GameSession.newSettlement` (and
+  the re-found path `SettlerCaravan.arrive`→`reFoundStandardColony`) founds geographic/caravan
+  colonies at `tier = CAMP`. **Analytical/dev scenarios opt out** — `SmallOpenEconomy`, the sweeps,
+  and the closed-economy probes (`HomogeneousEconomy`, `TwinSettlementEconomy`) found directly at
+  `SMALLHOLDING`+ with the ruler economy (today's behaviour) via a founding-tier flag, so they stay
+  steady-state economic probes. (This is what keeps the economic smoke tests meaningful.)
+- **D5 — Growth-rate calibration + smoke-test rebaseline.** The food economy runs near **parity**
+  (`docs/food-balance.md`), so a Camp-founded colony may never accumulate the surplus to climb —
+  calibrate the `foodToChange` scale (C2C's speed/era multiplier lever) **and** the Camp forage
+  yield so a healthy colony climbs `CAMP→SMALLHOLDING` at a sane pace and then boots its economy.
+  Re-baseline every smoke test that asserts founding tier / early size / collapse timing.
+
+**Risks:** D3 (economy-boot) touches `SimulationHarness` deeply; found-at-Camp couples growth into
+the economy so the D5 calibration is real work; D1 must avoid the ennoblement-collision trap. The
+project accepts non-byte-identical here.
+
+**Folds in / overlaps the later phases:**
+- **Old Phase F (Camp⇄caravan merge) is now D1** — the Captain *is* the band; no separate merge.
+- **Phase E (collapse descends) is partly shipped** — Phase B's food-box **starvation shrink**
+  already descends tiers. E's remainder: wire `isPermanent()` into `SettlementLifecycle` (a City
+  resists depopulation) and the **`CAMP`→depart-as-caravan** hand-off (`dissolveIntoCaravan` fires
+  only at the foot).
+- **Phase G (forage-as-improvement)** realizes D2's Camp food source (interim forage → build-then-
+  work Civ4 improvements).
 
 ### Phase E — collapse descends the ladder
 - **`SettlementLifecycle.update()`** (`:88`): replace the single `DISSOLUTION_WORKFORCE_FLOOR` with

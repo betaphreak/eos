@@ -13,6 +13,7 @@ import com.civstudio.geo.Province;
 import com.civstudio.race.Race;
 
 import com.civstudio.agent.Agent;
+import com.civstudio.agent.Captain;
 import com.civstudio.agent.Caravan;
 import com.civstudio.agent.Granary;
 import com.civstudio.agent.GranaryConfig;
@@ -49,6 +50,7 @@ import com.civstudio.bank.BankConfig;
 import com.civstudio.bank.CurrencyType;
 import com.civstudio.name.Person;
 import com.civstudio.settlement.Settlement;
+import com.civstudio.settlement.SettlementTier;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.io.SimLog;
 import com.civstudio.io.printer.*;
@@ -877,6 +879,29 @@ public class SimulationHarness {
 	}
 
 	/**
+	 * Reform a <b>camp's foraging pool</b> into the settled relief reserve when the camp boots its
+	 * ruler economy (see {@link #bootRulerEconomy}): a fresh {@link Retinue} (in the default
+	 * settled/relief mode, with the builder it staffs) adopts the camp pool's people and larder —
+	 * exactly like {@link #createRetinueFromBand} adopts a band's following. A <em>fresh</em> pool
+	 * is built (rather than switching the camp pool's mode) so its market/builder references
+	 * resolve now that those exist; the camp pool is then retired by the caller.
+	 *
+	 * @param campPool
+	 *            the camp's foraging pool, whose people and larder seed the settled reserve
+	 * @param bank
+	 *            the (copper) bank the settled pool transacts through
+	 * @return the created settled pool
+	 */
+	public Retinue createRetinueFromPool(Retinue campPool, Bank bank) {
+		if (colony.getBuilder() == null)
+			createBuilder(bank, BuilderConfig.DEFAULT);
+		retinue = new Retinue(campPool.getMembers(), campPool.getLarder(), bank,
+				colony, retinueConfig);
+		colony.addAgent(retinue);
+		return retinue;
+	}
+
+	/**
 	 * Register a {@link RetinuePrinter} for the colony's peasant pool. The pool must
 	 * already exist (see {@link #createDefaultRetinue()}).
 	 *
@@ -1223,6 +1248,12 @@ public class SimulationHarness {
 	 */
 	public Bank foundStandardColony(IntToDoubleFunction eFirmSavings,
 			IntToDoubleFunction nFirmSavings, IntToDoubleFunction laborerNStock) {
+		// a geographic colony that opts in (cfg.foundAtCamp) is founded LOW — a Captain-led
+		// foraging camp that climbs the tier ladder and boots this whole ruler economy when it
+		// reaches SMALLHOLDING (docs/settlement-tier-ladder-plan.md Phase D). The analytical/dev
+		// probes leave foundAtCamp false and found mature (below), byte-identical to before.
+		if (cfg.foundAtCamp())
+			return foundCamp(eFirmSavings, nFirmSavings, laborerNStock);
 		createMarkets();
 		Bank copper = getCopperBank();
 		createFirms(copper, i -> copper, eFirmSavings, nFirmSavings,
@@ -1236,6 +1267,93 @@ public class SimulationHarness {
 		enableExternalInflow(copper);
 		installExplorerProvisioning();
 		return gold;
+	}
+
+	/**
+	 * Found the colony as a <b>Captain-led camp</b> at {@link SettlementTier#CAMP} — a foraging
+	 * band, not yet a ruler economy (docs/settlement-tier-ladder-plan.md Phase D). It seeds the
+	 * peasant pool (the camp's foragers — its workforce) in {@linkplain Retinue#camp() camp mode}
+	 * and a {@link Captain} to lead it, and registers a tier-advance callback that <b>boots the
+	 * full ruler economy</b> ({@link #bootRulerEconomy}) once the camp grows to
+	 * {@link SettlementTier#SMALLHOLDING}. Below Smallholding there are no markets, firms, granary,
+	 * banks beyond copper, or ruler — the band lives off the pool's foraged larder.
+	 *
+	 * @return the copper bank (the only bank a camp has; the gold treasury is minted at the boot)
+	 */
+	private Bank foundCamp(IntToDoubleFunction eFirmSavings,
+			IntToDoubleFunction nFirmSavings, IntToDoubleFunction laborerNStock) {
+		colony.setTier(SettlementTier.CAMP);
+		Bank copper = getCopperBank();
+		// the pool — the camp's foragers (its workforce), in camp (settled-foraging) mode. No
+		// builder is created (that is a ruler-economy concern, wired at the boot).
+		retinue = new Retinue(cfg.retinueSize(), copper, colony, retinueConfig);
+		retinue.camp();
+		colony.addAgent(retinue);
+		// the captain — a freshly-drawn band leader. It holds no treasury at camp (the founding
+		// gold is minted into the ruler at the boot, exactly as a mature founding mints it at t0),
+		// so the camp economy is moneyless.
+		Captain captain = new Captain(0, copper, colony);
+		captain.setFollowing(retinue);
+		colony.addAgent(captain);
+		// boot the ruler economy when the camp climbs to SMALLHOLDING — deferred to end of step,
+		// where the heavy agent swap (Captain -> Ruler, camp pool -> settled reserve, firms/banks
+		// chartered) is safe (mirrors the RankLadder reform timing).
+		colony.setOnTierAdvance(newTier -> {
+			if (newTier == SettlementTier.SMALLHOLDING)
+				colony.scheduleEndOfStepAction(
+						() -> bootRulerEconomy(eFirmSavings, nFirmSavings, laborerNStock));
+		});
+		return copper;
+	}
+
+	/**
+	 * Boot the <b>full ruler economy</b> onto a camp that has grown to {@link
+	 * SettlementTier#SMALLHOLDING} (the promotion trigger, docs/settlement-tier-ladder-plan.md
+	 * Phase D3). This is the deferred remainder of {@link #foundStandardColony}: it mirrors {@link
+	 * #reFoundStandardColony} treating the camp as a settling band — the {@link Captain} is the
+	 * band's leader (reformed into the {@link com.civstudio.agent.ruler.Ruler}) and the camp pool
+	 * is its following (reformed into the settled relief reserve). Runs at end of step.
+	 */
+	private void bootRulerEconomy(IntToDoubleFunction eFirmSavings,
+			IntToDoubleFunction nFirmSavings, IntToDoubleFunction laborerNStock) {
+		createMarkets();
+		Bank copper = getCopperBank();
+		// found the settled economy's firms genesis-style (developed plots granted for free, as at a
+		// fresh founding) even though the colony has started — the builder does not exist yet.
+		colony.setGenesisFounding(true);
+		createFirms(copper, i -> copper, eFirmSavings, nFirmSavings,
+				cfg.numEFirms(), foundingNFirmCount());
+		colony.setGenesisFounding(false);
+		createDefaultStrategicSector(copper);
+		// reform the captain into the ruler: its head leads the settlement, the founding treasury
+		// is minted (as a mature founding does — the camp captain held none), and the captain is
+		// retired (its account closed and person-of-interest cleared by scheduleRemoveAgent).
+		Captain captain = findCaptain();
+		Member leader = captain.getHead();
+		colony.scheduleRemoveAgent(captain);
+		createRulerFromLeader(leader, CurrencyType.GOLD.toCopper(DEFAULT_RULER_GOLD));
+		createDefaultGranary(copper);
+		// reform the camp pool into the settled reserve: a fresh Retinue (with the builder it
+		// staffs) adopts the camp foragers and their larder, exactly like a band re-founding.
+		Retinue campPool = retinue;
+		createRetinueFromPool(campPool, copper);
+		colony.scheduleRemoveAgent(campPool);
+		foundLaborersFromRetinue(i -> copper, laborerNStock);
+		createDefaultChildrenFirm();
+		enableExternalInflow(copper);
+		installExplorerProvisioning();
+		// the economy is booted; further growth (to TOWN/METROPOLIS) needs no further boot
+		colony.setOnTierAdvance(null);
+		log.info(colony.getName() + " booted its ruler economy on " + colony.getDate()
+				+ " (grew from camp to Smallholding)");
+	}
+
+	// the colony's captain (the camp's head household); exactly one exists at the boot.
+	private Captain findCaptain() {
+		for (com.civstudio.agent.Agent a : colony.getAgents())
+			if (a instanceof Captain c && c.isAlive())
+				return c;
+		throw new IllegalStateException("no Captain to reform at the ruler-economy boot");
 	}
 
 	// install the seasonal explorer levy (docs/explorer-caravan.md) as a colony step action.

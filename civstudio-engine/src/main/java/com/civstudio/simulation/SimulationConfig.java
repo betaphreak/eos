@@ -146,7 +146,8 @@ public record SimulationConfig(
 		FertilityConfig fertility,
 		int foundingLaborersPerNFirm,
 		double expeditionTaxRate,
-		double expeditionNobleShare) {
+		double expeditionNobleShare,
+		boolean foundAtCamp) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -238,6 +239,10 @@ public record SimulationConfig(
 			                                       //   founding food sector to demand)
 			0.2,                                   // expeditionTaxRate (crown keeps 20% of
 			                                       //   a returning haul; calibration)
-			0.3);                                  // expeditionNobleShare (the ablest
+			0.3,                                   // expeditionNobleShare (the ablest
 			                                       //   returnee's ennoblement share)
+			false);                                // foundAtCamp (found at maxTier with the
+			                                       //   ruler economy; geographic colonies
+			                                       //   opt in to found low and climb —
+			                                       //   docs/settlement-tier-ladder-plan.md D4)
 }

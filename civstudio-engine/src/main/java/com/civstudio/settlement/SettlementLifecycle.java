@@ -88,6 +88,21 @@ class SettlementLifecycle {
 	void update() {
 		if (!started || died)
 			return;
+		// a sub-SMALLHOLDING camp (docs/settlement-tier-ladder-plan.md Phase D) has no laborer
+		// households by design — its pooled peasants ARE its workforce, foraging the site. It is
+		// alive while the band has foragers and dies terminally when the band is spent (the
+		// graceful CAMP -> depart-as-caravan hand-off is Phase E). Once it grows to SMALLHOLDING
+		// the ruler economy boots and the normal workforce rule below governs it.
+		if (!colony.getTier().atLeast(SettlementTier.SMALLHOLDING)) {
+			if (campForagers() == 0) {
+				died = true;
+				deathDate = colony.getDate();
+				log.info(colony.getName() + " died on " + deathDate
+						+ " (its foraging band is spent)");
+				colony.releasePlotsToPool();
+			}
+			return;
+		}
 		long workforce = livingLaborerCount();
 		if (canDissolve()) {
 			if (workforce < Settlement.DISSOLUTION_WORKFORCE_FLOOR) {
@@ -106,6 +121,14 @@ class SettlementLifecycle {
 		}
 		if (died)
 			colony.releasePlotsToPool();
+	}
+
+	// the camp's foragers — its pooled peasants (the sub-SMALLHOLDING workforce). 0 if no pool.
+	private int campForagers() {
+		for (Agent a : colony.getAgents())
+			if (a instanceof Retinue r)
+				return r.size();
+		return 0;
 	}
 
 	// number of living workforce households in this colony (the laborers whose

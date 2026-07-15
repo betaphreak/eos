@@ -288,6 +288,16 @@ public class Settlement {
 	// (starvation descent) is live. docs/settlement-tier-ladder-plan.md.
 	private double foodBox;
 
+	// true while a camp is booting its settled economy at the SMALLHOLDING crossing (Phase D3):
+	// founding firms then claim genesis-developed plots (as at a fresh founding) rather than being
+	// queued for the builder, even though the colony has already started. Set by the harness boot.
+	private boolean genesisFounding;
+
+	// fired by grow() each time the colony ADVANCES a tier (with the new, higher tier), so the
+	// harness can boot the ruler economy when a camp crosses to SMALLHOLDING (Phase D3). Null for
+	// a colony founded mature (no camp to grow out of), so opt-out colonies are byte-identical.
+	private java.util.function.Consumer<SettlementTier> onTierAdvance;
+
 	// the colony's solar clock for its (fixed) location: computes the day's
 	// dawn/sunrise/sunset/dusk and daylight length, refreshed for the current
 	// in-game date at the top of every newDay (and seeded in the constructor).
@@ -732,6 +742,43 @@ public class Settlement {
 	}
 
 	/**
+	 * Register a callback fired by {@link #newDay() growth} each time this colony <b>advances</b> a
+	 * tier (passed the new, higher tier). The harness uses it to boot the ruler economy when a
+	 * {@link SettlementTier#CAMP camp} climbs to {@link SettlementTier#SMALLHOLDING} (Phase D3);
+	 * the callback typically defers its heavy agent changes to {@link #scheduleEndOfStepAction}.
+	 * A colony founded mature registers none, so its growth stays byte-identical.
+	 *
+	 * @param callback
+	 *            invoked with the new tier on each upward advance
+	 */
+	public void setOnTierAdvance(java.util.function.Consumer<SettlementTier> callback) {
+		this.onTierAdvance = callback;
+	}
+
+	/**
+	 * Whether the colony is in a <b>founding-genesis</b> window — a mid-run camp booting its
+	 * settled economy at the SMALLHOLDING crossing (Phase D3). While true, founding firms claim
+	 * genesis-developed plots (as at a fresh founding) instead of queuing for the builder. Read by
+	 * {@link PlotField#claimPlot}.
+	 *
+	 * @return true during the ruler-economy boot's plot founding
+	 */
+	public boolean isGenesisFounding() {
+		return genesisFounding;
+	}
+
+	/**
+	 * Enter or leave the {@linkplain #isGenesisFounding() founding-genesis} window. The harness
+	 * wraps the boot's firm founding in {@code setGenesisFounding(true)} … {@code (false)}.
+	 *
+	 * @param genesisFounding
+	 *            whether founding firms should claim genesis plots despite the colony having started
+	 */
+	public void setGenesisFounding(boolean genesisFounding) {
+		this.genesisFounding = genesisFounding;
+	}
+
+	/**
 	 * The site's <b>ceiling</b> on the tier ladder — the highest rung this colony can grow to,
 	 * fixed at founding by its urban-plot geography ({@code city_terrain} &rArr; {@link
 	 * SettlementTier#METROPOLIS}, else {@link SettlementTier#SMALLHOLDING}). Growth climbs {@link
@@ -797,6 +844,17 @@ public class Settlement {
 		return n;
 	}
 
+	// the "families" count the tier-growth household gate reads. For a settled colony
+	// (SMALLHOLDING and up) that is the real households (byte-identical to Phase B). For a
+	// sub-SMALLHOLDING camp — which has no laborer households, only a Captain and the pooled
+	// foragers — the band's pooled peasants ARE the proto-families, so they count toward the
+	// gate (a bigger band settles sooner). This branch only bites during the found-at-Camp climb.
+	private int growthPopulation() {
+		if (tier.atLeast(SettlementTier.SMALLHOLDING))
+			return householdCount();
+		return householdCount() + campForagers();
+	}
+
 	// food-box calibration knobs, ported from C2C (memory c2c-city-growth-mechanics):
 	// - FOOD_KEPT_FRACTION: the granary retention — growing a rung keeps at least this fraction of
 	//   the rung's cost in the box (C2C's getFoodKept); provisional base until Phase C wires the
@@ -812,12 +870,31 @@ public class Settlement {
 	// provisional/uncalibrated.
 	private static final int RESIDENTS_PER_DISTRICT = 100;
 
+	// --- Camp economy (sub-SMALLHOLDING tiers: CAMP/COTTAGE/HAMLET) -------------------------
+	// A camp has no ruler economy (no firms/markets/banks-beyond-copper): its pooled peasants ARE
+	// its workforce and forage the site for food (docs/settlement-tier-ladder-plan.md Phase D).
+	// The camp's daily food is (foragers × CAMP_FORAGE_PER_FORAGER) − (residents × CAMP_RATION);
+	// the surplus banks into the food box and climbs the tier ladder. Both constants are
+	// deliberately UNCALIBRATED tuning levers (Phase D5): CAMP_FORAGE_PER_FORAGER sits a little
+	// above CAMP_RATION so a healthy, well-peopled camp net-grows and climbs to SMALLHOLDING at a
+	// sane pace, while a thin or ill-sited band stalls or starves back down. CAMP_RATION is the
+	// lean band ration (also what the pool eats in camp mode, so the larder tracks the food box).
+	public static final com.civstudio.good.RationSize CAMP_RATION = com.civstudio.good.RationSize.SNACK;
+	private static final double CAMP_FORAGE_PER_FORAGER = 0.14;
+
 	// the colony's net food surplus this day (C2C food balance): necessity PRODUCED by its
 	// agriculture (every living necessity firm's output) minus necessity EATEN (a FINE ration per
 	// resident), with a large surplus subject to food WASTAGE (diminishing returns). getOutput()
 	// can read stale for a firm that got no labour this step (docs/food-balance.md) — an accepted
 	// approximation at this uncalibrated stage.
 	private double dailyFoodSurplus() {
+		// a sub-SMALLHOLDING camp has no agriculture (no firms): its pooled peasants forage the
+		// site, so its food balance is forage − consumption (a lean camp ration), not firm output.
+		if (!tier.atLeast(SettlementTier.SMALLHOLDING)) {
+			double foraged = campForageYield(campForagers());
+			double eaten = totalResidents() * CAMP_RATION.perDay();
+			return applyFoodWastage(foraged - eaten, eaten);
+		}
 		double produced = 0;
 		for (Agent a : agents)
 			if (a.isAlive() && a instanceof com.civstudio.agent.firm.ConsumerGoodFirm f
@@ -825,6 +902,30 @@ public class Settlement {
 				produced += f.getOutput();
 		double eaten = totalResidents() * com.civstudio.good.RationSize.FINE.perDay();
 		return applyFoodWastage(produced - eaten, eaten);
+	}
+
+	/**
+	 * The daily <b>forage yield</b> of a {@link SettlementTier#CAMP camp}'s workforce — the food
+	 * its {@code foragers} pooled peasants bring in by working the site (see the Camp economy in
+	 * {@code docs/settlement-tier-ladder-plan.md} Phase D). A flat per-forager rate for now
+	 * (uncalibrated; a later phase can scale it by the site's plot food yield). Read by both the
+	 * settlement's food box ({@link #dailyFoodSurplus()}) and the pool's camp provisioning (which
+	 * stocks this into its larder), so the larder and the food box move together.
+	 *
+	 * @param foragers
+	 *            the number of foraging peasants (the camp's workforce)
+	 * @return the day's foraged food (necessity units)
+	 */
+	public double campForageYield(int foragers) {
+		return foragers * CAMP_FORAGE_PER_FORAGER;
+	}
+
+	// the camp's foragers — its pooled peasants (the sub-SMALLHOLDING workforce). 0 if no pool.
+	private int campForagers() {
+		for (Agent a : agents)
+			if (a.isAlive() && a instanceof com.civstudio.agent.Retinue r)
+				return r.size();
+		return 0;
 	}
 
 	// diminishing returns on a large daily surplus (a simplified port of C2C's CvCity::foodWastage):
@@ -857,7 +958,7 @@ public class Settlement {
 			int cost = tier.foodToChange();
 			if (foodBox < cost)
 				break;
-			if (householdCount() < next.minHouseholds())
+			if (growthPopulation() < next.minHouseholds())
 				break;
 			if (next == SettlementTier.METROPOLIS
 					&& totalResidents() < SettlementTier.METROPOLIS_POP_GATE)
@@ -867,6 +968,12 @@ public class Settlement {
 			setTier(next);
 			log.info(name + " grew from " + from + " to " + next + " on " + getDate()
 					+ " (" + householdCount() + " households, " + totalResidents() + " residents)");
+			if (onTierAdvance != null)
+				onTierAdvance.accept(next);
+			// crossing to SMALLHOLDING boots the ruler economy (deferred to end of step by the
+			// callback); do not climb past it this step — the economy must exist before TOWN+.
+			if (next == SettlementTier.SMALLHOLDING)
+				break;
 		}
 		while (tier != SettlementTier.CAMP && foodBox < 0) {
 			SettlementTier from = tier;
