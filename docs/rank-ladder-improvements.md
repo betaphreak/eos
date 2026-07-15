@@ -96,11 +96,24 @@ cleared after the SMALLHOLDING boot); `agent/ruler/Ruler`; `docs/city-and-league
 4. `Household.rank()` can then default to `colony.getTier().headRank()` for the head (or stay per-type —
    the two agree by construction once R2 reforms on every crossing).
 
-**Risk / tests.** Medium — realizing Mayor + keeping the callback live past SMALLHOLDING. `CampFoundingEconomy`
-at a `city_terrain` site (maxTier METROPOLIS) exercises Ruler→Mayor if it climbs that far; add a focused
-test that drives a booted colony `TOWN→METROPOLIS` (prime the food box + households) and asserts the head
-is a `Mayor` at `CITY`. Guard the analytical opt-out colonies (they found mature at their maxTier — a
-METROPOLIS-founded probe should be a Mayor from t0, so mature founding must also pick the head type by tier).
+**Risk / tests.** Medium — realizing Mayor + keeping the callback live past SMALLHOLDING.
+
+> **SHIPPED (R2) 2026-07-15.** `SettlementTier.headRank()` (CAMP/COTTAGE/HAMLET→CARAVAN,
+> SMALLHOLDING/TOWN→VILLAGE, METROPOLIS→CITY); `agent/ruler/Mayor extends Ruler` (rank CITY, role
+> "Mayor", same gold economy, same-dynasty Mayor successor); the harness registers the **CITY factory**
+> in `installRuler` (so every ruler-bearing colony can urbanize) and gains `reformRulerToMayor` (the
+> gold→gold reform, treasury carried 1:1 — money conserved); the found-at-Camp `onTierAdvance` callback
+> now also fires it at the `METROPOLIS` crossing and **stays live past the SMALLHOLDING boot**.
+> `MayorReformTest` drives the reform end-of-step and asserts Mayor/CITY + conserved treasury + the
+> economy keeps running. Full reactor green.
+>
+> **Deferred (mature-founding consistency):** a colony **founded mature** at METROPOLIS (e.g.
+> `HomogeneousEconomy`/Dhenijansar) still creates a `Ruler`, not a `Mayor` — so `headRank(METROPOLIS)`
+> and the actual head briefly disagree there. Only the found-at-Camp *climb* reforms to Mayor today.
+> Making `createDefaultRuler` pick `Mayor` vs `Ruler` by founding tier is a small change but ripples the
+> default scenario's head *label* (Ruler→Mayor in logs/roster/CSVs), so it's deferred to avoid
+> destabilizing the smoke baseline. Nothing reads `headRank()` yet except the crossing logic, so the
+> inconsistency is latent.
 
 ---
 

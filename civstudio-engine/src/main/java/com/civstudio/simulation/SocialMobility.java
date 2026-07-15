@@ -9,6 +9,7 @@ import com.civstudio.agent.Agent;
 import com.civstudio.agent.ExpeditionReturn;
 import com.civstudio.agent.Granary;
 import com.civstudio.agent.Household;
+import com.civstudio.agent.RankFactory;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.Rank;
 import com.civstudio.agent.RankLadder;
@@ -194,6 +195,34 @@ class SocialMobility implements ExpeditionReturn {
 		// wired today. Targeted (not the adjacency walk) so it stays correct when the
 		// intermediate CARAVAN rung is realized (R1, docs/rank-ladder-improvements.md).
 		return rankLadder().reformTo(household, Rank.HOUSEHOLD);
+	}
+
+	/**
+	 * Register a {@link RankFactory} for one realized {@link Rank} on this colony's ladder — the
+	 * seam the harness uses to add the <b>head</b> factories it owns the parameters for (the gold
+	 * treasury, tax rates), e.g. {@link Rank#CITY} building a {@code Mayor} (R2,
+	 * {@code docs/rank-ladder-improvements.md}). The laborer&harr;noble factories are registered
+	 * internally (see {@link #rankLadder()}).
+	 *
+	 * @param rank    the rank the factory realizes
+	 * @param factory how to reform a household into that rank
+	 */
+	public void registerRankFactory(Rank rank, RankFactory factory) {
+		rankLadder().register(rank, factory);
+	}
+
+	/**
+	 * Reform <tt>household</tt> into an explicit target {@link Rank} on this colony's ladder — the
+	 * head-rank reforms the tier crossings drive (Captain&rarr;Ruler&rarr;Mayor). Delegates to
+	 * {@link RankLadder#reformTo}; {@code null} if the target is unrealized. Must run from an
+	 * end-of-step context (the household's offers must have cleared).
+	 *
+	 * @param household the household to reform
+	 * @param target    the rank it becomes
+	 * @return the reformed household, or {@code null} if the target has no factory
+	 */
+	public Household reformTo(Household household, Rank target) {
+		return rankLadder().reformTo(household, target);
 	}
 
 	/**

@@ -132,6 +132,28 @@ public enum SettlementTier {
 	}
 
 	/**
+	 * The {@link com.civstudio.agent.Rank Rank} the settlement's <b>head household</b> commands at
+	 * this rung — the single source of truth from which the head's rank is derived (the reconciled
+	 * decision, {@code docs/settlement-tier-ladder-plan.md} / {@code docs/rank-ladder-improvements.md}
+	 * R2): the foraging camp tiers ({@link #CAMP}/{@link #COTTAGE}/{@link #HAMLET}) are led by a
+	 * <b>Captain</b> ({@link com.civstudio.agent.Rank#CARAVAN CARAVAN}); a settled
+	 * {@link #SMALLHOLDING}/{@link #TOWN} by a <b>Ruler</b>
+	 * ({@link com.civstudio.agent.Rank#VILLAGE VILLAGE}); a {@link #METROPOLIS} by a <b>Mayor</b>
+	 * ({@link com.civstudio.agent.Rank#CITY CITY}). Crossing a boundary between these bands reforms
+	 * the head into the type realizing the new rank (up: Captain&rarr;Ruler&rarr;Mayor; the
+	 * symmetric demotion on descent is R4).
+	 *
+	 * @return the head household's rank at this tier
+	 */
+	public com.civstudio.agent.Rank headRank() {
+		return switch (this) {
+			case CAMP, COTTAGE, HAMLET -> com.civstudio.agent.Rank.CARAVAN;
+			case SMALLHOLDING, TOWN -> com.civstudio.agent.Rank.VILLAGE;
+			case METROPOLIS -> com.civstudio.agent.Rank.CITY;
+		};
+	}
+
+	/**
 	 * The rung one step up the ladder, or empty at the terminal {@link #METROPOLIS}.
 	 *
 	 * @return the next-higher tier, or empty at the top

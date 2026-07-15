@@ -43,6 +43,8 @@ import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.agent.laborer.LaborerConfig;
 import com.civstudio.agent.noble.Noble;
 import com.civstudio.agent.noble.NobleConfig;
+import com.civstudio.agent.Rank;
+import com.civstudio.agent.ruler.Mayor;
 import com.civstudio.agent.ruler.Ruler;
 import com.civstudio.tech.ResearchState;
 import com.civstudio.bank.Bank;
@@ -763,7 +765,33 @@ public class SimulationHarness {
 		// (where an export sector exists to staff), the ruin demotion, and household
 		// fission (see SocialMobility)
 		mobility().install();
+		// register the CITY factory so the ruler can be reformed into a Mayor when the settlement
+		// climbs TOWN -> METROPOLIS (R2, docs/rank-ladder-improvements.md); the harness owns the
+		// treasury params. Idempotent — re-registering the same rank just replaces the factory.
+		mobility().registerRankFactory(Rank.CITY, (estate, c) -> new Mayor(estate,
+				DEFAULT_RULER_CONSUMPTION_RATE, cfg.bankProfitTaxRate(), cfg.nobleIncomeTaxRate(),
+				getGoldBank(), c));
 		return ruler.getBank();
+	}
+
+	/**
+	 * Reform the colony's {@link Ruler} into a {@link Mayor} — the {@code TOWN → METROPOLIS} head
+	 * crossing (R2, {@code docs/rank-ladder-improvements.md}): its settlement has urbanized into a
+	 * metropolis, so its head now commands a {@link Rank#CITY}. A same-bank (gold&rarr;gold) reform
+	 * that carries the treasury 1:1, run at end of step (the ruler's offers have cleared). A no-op if
+	 * the colony has no living ruler or its head is already a {@code Mayor}. Package-visible so a test
+	 * can drive the crossing without accumulating a metropolis's worth of population.
+	 */
+	void reformRulerToMayor() {
+		Ruler ruler = colony.getRuler();
+		if (ruler == null || !ruler.isAlive() || ruler instanceof Mayor)
+			return;
+		Mayor mayor = (Mayor) mobility().reformTo(ruler, Rank.CITY);
+		if (mayor != null) {
+			colony.setRuler(mayor);
+			log.info(colony.getName() + " urbanized into a metropolis: its ruler is now a Mayor on "
+					+ colony.getDate());
+		}
 	}
 
 	/**
@@ -1309,9 +1337,15 @@ public class SimulationHarness {
 		// where the heavy agent swap (Captain -> Ruler, camp pool -> settled reserve, firms/banks
 		// chartered) is safe (mirrors the RankLadder reform timing).
 		colony.setOnTierAdvance(newTier -> {
+			// CAMP..HAMLET -> SMALLHOLDING crosses CARAVAN -> VILLAGE: boot the ruler economy
+			// (Captain -> Ruler). TOWN -> METROPOLIS crosses VILLAGE -> CITY: reform Ruler -> Mayor
+			// (R2). Both deferred to end of step (the heavy agent swaps are unsafe mid-step). The
+			// callback stays live past the boot so the later METROPOLIS crossing still fires.
 			if (newTier == SettlementTier.SMALLHOLDING)
 				colony.scheduleEndOfStepAction(
 						() -> bootRulerEconomy(eFirmSavings, nFirmSavings, laborerNStock));
+			else if (newTier == SettlementTier.METROPOLIS)
+				colony.scheduleEndOfStepAction(this::reformRulerToMayor);
 		});
 		return copper;
 	}
@@ -1352,8 +1386,8 @@ public class SimulationHarness {
 		createDefaultChildrenFirm();
 		enableExternalInflow(copper);
 		installExplorerProvisioning();
-		// the economy is booted; further growth (to TOWN/METROPOLIS) needs no further boot
-		colony.setOnTierAdvance(null);
+		// the economy is booted; the tier-advance callback stays live — a further climb to
+		// METROPOLIS reforms the Ruler into a Mayor (R2), so it must keep firing.
 		log.info(colony.getName() + " booted its ruler economy on " + colony.getDate()
 				+ " (grew from camp to Smallholding)");
 		// let a camp-founding scenario wire its economy-coupled printers now that the ruler,
