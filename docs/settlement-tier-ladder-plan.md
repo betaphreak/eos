@@ -201,18 +201,23 @@ a Camp running the full 3-tier ruler economy would be incoherent. Sequence it as
 > (3 banks), then — its small pool having drained during the climb — departs as a wandering band,
 > completing the settle⇄unsettle cycle cleanly under `-ea`.
 >
-> **Honest finding (the booted small colony is short-lived).** The camp climbs and boots correctly,
-> but the booted colony collapses within ~1 month: its drained pool leaves too few buyers for the
-> single genesis farm's fixed output, so the necessity market oversupplies and the price crashes to
-> 0. This is **not** a found-at-Camp defect — a *mature* small colony on the same-size site (EARGATE,
-> `retinueSize 60`) also collapses in ~7.5 months (small provinces cap viability), and the price-0
-> pathology is the known upstream food-balance/market-robustness gap the project already accepts
-> ([[colony-collapse-accepted]]). Deliberately **not** flipped: the analytical/closed probes
-> (`HomogeneousEconomy` et al.) stay `foundAtCamp` false — a 900-person "camp" is not a band (it
-> rockets up the ladder in ~11 days and boots an unstable ~400-household colony), so found-at-Camp is
-> for genuine *bands*, not a colony's worth of people seeded at once. **Remaining:** durable
-> post-boot viability is upstream food-economy calibration (dynamic-provisioning ramp, market
-> robustness at small scale, or a bigger/slower band), tracked with the general collapse problem.
+> **The booted small colony — was short-lived, now RESOLVED 2026-07-16 (subsistence-floor fix).** The
+> camp climbs and boots correctly. It *used* to collapse within ~1 month: at the boot every buyer opens
+> well-stocked, so market demand is ~0 → the sole genesis farm's necessity price crashes to 0 → its
+> revenue, wage budget and output collapse (the labor-share rule + the marginal-profit output rule both
+> zero out) → the colony is left with **no food supply**, and once the laborers eat down their founding
+> stock (~30 days) they mass-starve and the colony dissolves. **Diagnosed with a day-by-day probe (now
+> `CampBootViabilityTest`)** — the failure was on the *supply* side (the farm stopped producing), not
+> the price/demand side. **Fix (`ConsumerGoodFirm`/`NFirm`, `ConsumerGoodMarket`):** a **subsistence
+> floor** on the colony's *sole* food farm — its wage budget and output never collapse to 0 (people
+> farm to eat, not only for profit) — plus a market **price floor** (never clears below 5% of the
+> founding reference, so the crash cannot zero revenue and the `÷price` output rule cannot blow up). The
+> floors bind **only** for the sole food farm (a multi-farm colony lets the market scale each down, so
+> nothing is forced to overproduce). Result: the sole farm keeps producing, the laborers restock the
+> now-cheap food, and **`CampFoundingEconomy` (band 60 @ Dhenijansar) now survives the full 25-year run**
+> — feeding itself and regenerating through births (61 household fissions; ~40 households + ~60 children
+> sustained). `CampFoundingSmokeTest` rebaselined to assert survival, not departure. Deliberately **not**
+> flipped: the analytical/closed probes stay `foundAtCamp` false — a 900-person "camp" is not a band.
 
 > **Prereqs, all shipped:** A (tier field + flattening), B (food-box growth-up + starvation shrink),
 > C (per-tier caps). The `grow()` advance loop already climbs `CAMP→…→maxTier`; today no colony is

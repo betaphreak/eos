@@ -73,6 +73,16 @@ public class NFirm extends ConsumerGoodFirm {
 	}
 
 	/**
+	 * A necessity firm is <b>subsistence</b> agriculture the colony depends on to eat, so it keeps a
+	 * wage-budget floor and does not shut down under a demand-deficient transient (see
+	 * {@link ConsumerGoodFirm#isSubsistence()}).
+	 */
+	@Override
+	protected boolean isSubsistence() {
+		return true;
+	}
+
+	/**
 	 * A necessity firm is subsistence agriculture — a farm on cleared land — so it
 	 * <b>sits on a plot</b> (the only firm type that does, this cut): it reads its
 	 * plot's terrain food yield into its TFP and its workers commute to it.

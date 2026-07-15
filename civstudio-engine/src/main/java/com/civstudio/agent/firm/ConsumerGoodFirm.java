@@ -72,6 +72,30 @@ public abstract class ConsumerGoodFirm extends Firm {
 	private static final int REVENUE_SMOOTH_WIN = 30;
 
 	/**
+	 * The fraction of its founding wage budget below which a {@linkplain #isSubsistence()
+	 * subsistence} (food) firm's wage budget is never allowed to fall — a subsistence floor so the
+	 * food sector keeps hiring labour and producing food through a demand-deficient transient (every
+	 * buyer well-stocked → no sales → no revenue) instead of collapsing to zero output and starving
+	 * the colony. Only binds when revenue has crashed (a healthy sector's labor-share budget is far
+	 * above it), so it never perturbs a functioning economy; non-subsistence firms have no floor.
+	 */
+	private static final double SUBSISTENCE_WAGE_FRACTION = 0.5;
+
+	/**
+	 * The fraction of its founding output below which a {@linkplain #isSubsistence() subsistence}
+	 * firm's target output is never allowed to fall. The wage floor alone does not keep the food
+	 * flowing: the marginal-profit output rule drives output to zero once the (crashed) price sits
+	 * below marginal cost — the firm decides producing is unprofitable. A subsistence farm keeps
+	 * producing food at a loss, so its output is floored too. Only binds when the price has crashed.
+	 */
+	private static final double SUBSISTENCE_OUTPUT_FRACTION = 0.5;
+
+	// the absolute wage-budget and output floors for this firm (SUBSISTENCE_*_FRACTION × its founding
+	// values for a subsistence firm, else 0). Set once at construction.
+	private final double wageFloor;
+	private final double outputFloor;
+
+	/**
 	 * smoothed revenue used to size the labor-share wage budget (see
 	 * {@code REVENUE_SMOOTH_WIN})
 	 */
@@ -133,6 +157,13 @@ public abstract class ConsumerGoodFirm extends Firm {
 		lMkt = (LaborMarket) colony.getMarket("Labor");
 		output = initOutput;
 		wageBudget = initWageBudget;
+		// a SUBSISTENCE firm (the food sector) never lets its wage budget — and so its labour and
+		// production — collapse below this floor, so it keeps producing food through a demand-deficient
+		// transient (every buyer well-stocked → no sales → no revenue) rather than shutting down and
+		// starving the colony with no supply (the deflationary death spiral). Non-subsistence firms
+		// (enjoyment) have no floor and may shut down. See isSubsistence / the wage-budget rule below.
+		wageFloor = isSubsistence() ? SUBSISTENCE_WAGE_FRACTION * initWageBudget : 0;
+		outputFloor = isSubsistence() ? SUBSISTENCE_OUTPUT_FRACTION * initOutput : 0;
 		loan = 0;
 		capitalCost = 0;
 		revAvger = new Averager(REVENUE_SMOOTH_WIN);
@@ -144,11 +175,41 @@ public abstract class ConsumerGoodFirm extends Firm {
 	}
 
 	/**
+	 * Whether this firm is a <b>subsistence</b> (food) producer the colony depends on to eat, so it
+	 * must not shut down under a demand-deficient transient — it keeps a {@linkplain
+	 * #SUBSISTENCE_WAGE_FRACTION wage-budget floor}. The base consumer-good firm is not (the
+	 * enjoyment sector may shut down); {@link NFirm} overrides this to {@code true}.
+	 *
+	 * @return {@code true} if this is a subsistence food producer
+	 */
+	protected boolean isSubsistence() {
+		return false;
+	}
+
+	// whether this is the colony's ONLY living subsistence (food) firm — the one whose collapse would
+	// leave the colony with no food supply. Then the subsistence floors apply; with several food firms
+	// the market may scale each down or shut some (the sector still feeds the colony), so they do not
+	// bind (they would only force gluts). A cheap per-step scan of the colony's agents.
+	private boolean soleFoodProducer() {
+		if (!isSubsistence())
+			return false;
+		int n = 0;
+		for (com.civstudio.agent.Agent a : getColony().getAgents())
+			if (a.isAlive() && a instanceof ConsumerGoodFirm f && f.isSubsistence() && ++n > 1)
+				return false;
+		return n == 1;
+	}
+
+	/**
 	 * Called by Settlement.newDay() in each step.
 	 */
 	public void act() {
 		double newOutput, newWageBudget, pPrice;
 		Bank bank = getBank();
+		// the subsistence floors apply only to the colony's SOLE food farm — the one that, if it shut
+		// down, would leave no supply. A colony with several food firms lets the market scale each down
+		// (the sector still feeds it), so the floors do not bind there (they would only force gluts).
+		boolean subsistenceFloor = soleFoodProducer();
 
 		// get firm finance information
 		Account acct = bank.getAcct(getID());
@@ -194,7 +255,9 @@ public abstract class ConsumerGoodFirm extends Firm {
 					double moneyFlowGap = acct.getChecking() - totalCost;
 					newWageBudget = wageBudget + config.lambda() * moneyFlowGap;
 				}
-				newWageBudget = Math.max(0, newWageBudget);
+				// never below the subsistence floor (only the sole food farm): it keeps producing
+				// through a demand-deficient transient rather than starving the colony
+				newWageBudget = Math.max(subsistenceFloor ? wageFloor : 0, newWageBudget);
 
 				// pay interest on loans (if any)
 				if (acct.interest < 0)
@@ -213,6 +276,11 @@ public abstract class ConsumerGoodFirm extends Firm {
 				newOutput = output * (1 + config.phi() * marginalProfit / pPrice);
 			}
 
+			// the sole food farm keeps producing at least its output floor even when the marginal-
+			// profit rule (a crashed price below marginal cost) would drive output to zero — people
+			// farm to eat, not only for profit — so the colony is never left with no food supply
+			if (subsistenceFloor)
+				newOutput = Math.max(newOutput, outputFloor);
 			// constrain output by capacity
 			newOutput = Math.min(capacity, newOutput);
 			if (newOutput > 0)

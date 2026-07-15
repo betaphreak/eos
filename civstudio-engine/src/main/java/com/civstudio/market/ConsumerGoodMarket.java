@@ -23,6 +23,17 @@ public class ConsumerGoodMarket extends Market {
 	// price is flagged once it exceeds this multiple of its initial level
 	private static final int PRICE_SKYROCKET_FACTOR = 10;
 
+	// subsistence price floor, as a fraction of the founding reference price: the discovered price
+	// is never allowed to collapse below this. A market that crashes to (near) 0 under a demand-
+	// deficient transient — every buyer starts well-stocked, so demand is ~0 — zeroes the seller's
+	// revenue, hence its labor-share wage budget, hence its labor, hence its production, so the
+	// colony starves with NO supply despite the cheap price (a deflationary death spiral; see the
+	// small booted-colony collapse). Flooring the price keeps the sector some revenue/output; kept
+	// well below the glut threshold (GLUT_PRICE_FACTOR = 0.3 in Ruler.reviewSector) so overbuilt-
+	// sector detection is unaffected. It also spares the output rule its price-in-the-denominator
+	// (marginalProfit / pPrice) blowup at price 0.
+	private static final double PRICE_FLOOR_FRACTION = 0.05;
+
 	// window (days) over which the unmet-demand fraction is smoothed for the
 	// short-run pressure reading. Long enough to span the rest-day calendar so a
 	// single closed day's zero-supply spike does not read as a chronic shortage.
@@ -204,6 +215,13 @@ public class ConsumerGoodMarket extends Market {
 				break;
 			}
 		}
+
+		// subsistence price floor: never clear below a small fraction of the founding reference, so a
+		// demand-deficient crash cannot zero the sector's revenue/wages/production (the deflationary
+		// death spiral) — the price stays low (cheap food to stockpile) but the farm keeps producing.
+		double priceFloor = PRICE_FLOOR_FRACTION * (initLow + initHigh) / 2;
+		if (price < priceFloor)
+			price = priceFloor;
 
 		double vol = Math.min(supply, demand);
 
