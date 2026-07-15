@@ -913,6 +913,13 @@ public class Settlement {
 	static final double DEFAULT_CAMP_FORAGE_PER_FORAGER = 0.10;
 	private static final double DEFAULT_CAMP_SITE_FOOD = 1.4;
 	private static final double CAMP_BUILD_PER_FORAGER = 0.02;
+
+	// the fewest residents a camp needs before it may climb to SMALLHOLDING and boot its ruler
+	// economy (docs/settlement-tier-ladder-plan.md #2 — the minimum-viable-founding gate). Too small
+	// a band founds a colony that cannot sustain itself (below this, measured, a booted colony still
+	// collapses within a few years even with the subsistence-floor fix), so it stays a foraging camp
+	// — and, unable to grow its slowly-draining pool, eventually departs. Uncalibrated tuning lever.
+	private static final int MIN_VIABLE_BOOT_POPULATION = 40;
 	private double campForagePerForager = DEFAULT_CAMP_FORAGE_PER_FORAGER;
 
 	// the plot the camp forages (and builds its forage improvement on), or null for a province-less
@@ -1064,6 +1071,12 @@ public class Settlement {
 				break;
 			if (next == SettlementTier.METROPOLIS
 					&& totalResidents() < SettlementTier.METROPOLIS_POP_GATE)
+				break;
+			// #2 (minimum-viable-founding gate): a camp must have a viable founding population before
+			// it climbs to SMALLHOLDING and boots its ruler economy — too small a band founds a colony
+			// that cannot sustain itself, so it stays a foraging camp instead of booting a doomed one.
+			if (next == SettlementTier.SMALLHOLDING
+					&& totalResidents() < MIN_VIABLE_BOOT_POPULATION)
 				break;
 			SettlementTier from = tier;
 			foodBox = Math.max(foodBox - cost, cost * FOOD_KEPT_FRACTION);

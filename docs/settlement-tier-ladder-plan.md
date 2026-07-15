@@ -218,6 +218,19 @@ a Camp running the full 3-tier ruler economy would be incoherent. Sequence it as
 > — feeding itself and regenerating through births (61 household fissions; ~40 households + ~60 children
 > sustained). `CampFoundingSmokeTest` rebaselined to assert survival, not departure. Deliberately **not**
 > flipped: the analytical/closed probes stay `foundAtCamp` false — a 900-person "camp" is not a band.
+>
+> **Minimum-viable-founding gate (#2), SHIPPED 2026-07-16.** Even with the subsistence floor, a band
+> measured **below ~40 residents** boots a colony that still collapses within a few years (bands 16–30
+> die in ~3y; 40+ survive). So `Settlement.grow()` gates the `CAMP→SMALLHOLDING` boot crossing on
+> `totalResidents() ≥ MIN_VIABLE_BOOT_POPULATION` (40): a too-small band **stays a foraging camp** rather
+> than booting a doomed economy — and, unable to grow its slowly-draining pool, eventually departs.
+> `SettlementCampFoundingTest.aSubViableBandStaysACampAndDoesNotBoot` pins it. **Design note:** the 40
+> line is the natural **settle-vs-return divider** — an explorer levy (`ExplorerProvisioner.DEFAULT_DRAFT_BATCH
+> = 20`, the *least-skilled* adults mustered in winter scarcity) forages and *returns* to its origin,
+> while a band ≥ 40 is viable enough to *settle*. A future dispatched **settler caravan** (a thriving
+> colony sending out a ≥40 band to found a daughter colony — today only collapse-born `SettlerCaravan`s
+> wander and re-found) is the natural complement, and would let a sub-viable founding fall back to
+> returning home; align `SettlerCaravan.MIN_SETTLERS` (10) up to the viability line when it lands.
 
 > **Prereqs, all shipped:** A (tier field + flattening), B (food-box growth-up + starvation shrink),
 > C (per-tier caps). The `grow()` advance loop already climbs `CAMP→…→maxTier`; today no colony is

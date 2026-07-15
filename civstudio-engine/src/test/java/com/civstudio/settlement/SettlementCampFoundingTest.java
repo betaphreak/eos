@@ -113,6 +113,28 @@ class SettlementCampFoundingTest {
 	}
 
 	@Test
+	void aSubViableBandStaysACampAndDoesNotBoot() {
+		// a band too small to found a self-sustaining colony (#2, the minimum-viable-founding gate)
+		// must NOT climb to SMALLHOLDING and boot a doomed ruler economy — it stays a foraging camp.
+		// A 25-forager band is below MIN_VIABLE_BOOT_POPULATION (40).
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				.foundAtCamp(true).retinueSize(25).build();
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321L, DHENIJANSAR);
+		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		Settlement c = h.getColony();
+		c.start();
+
+		// drive it for a few years on real forage; it can climb the low camp rungs but the viability
+		// gate holds it below SMALLHOLDING, so it never boots a ruler economy
+		for (int i = 0; i < 1100 && c.isAlive(); i++)
+			c.newDay();
+
+		assertNull(c.getRuler(), "a sub-viable band never boots a ruler economy");
+		assertFalse(c.getTier().atLeast(SettlementTier.SMALLHOLDING),
+				"the viability gate holds a too-small band below SMALLHOLDING (it stays a camp)");
+	}
+
+	@Test
 	void aStarvingCampStrikesAndDepartsAsACaravan() {
 		// a small band on POOR forage (below CAMP_RATION) cannot feed itself: once its opening
 		// larder is spent it starves and, unable to sustain the band on this ground, strikes camp
