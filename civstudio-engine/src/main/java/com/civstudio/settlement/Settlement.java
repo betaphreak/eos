@@ -294,9 +294,16 @@ public class Settlement {
 	private boolean genesisFounding;
 
 	// fired by grow() each time the colony ADVANCES a tier (with the new, higher tier), so the
-	// harness can boot the ruler economy when a camp crosses to SMALLHOLDING (Phase D3). Null for
-	// a colony founded mature (no camp to grow out of), so opt-out colonies are byte-identical.
+	// harness can boot the ruler economy when a camp crosses to SMALLHOLDING (Phase D3) and reform
+	// the head up on rank-band crossings (Ruler->Mayor at METROPOLIS, R2). Null for a colony founded
+	// mature (no camp to grow out of), so opt-out colonies are byte-identical.
 	private java.util.function.Consumer<SettlementTier> onTierAdvance;
+
+	// fired by grow() each time the colony DESCENDS a tier (with the new, lower tier), so the harness
+	// can reform the head DOWN on a rank-band crossing (Mayor->Ruler at METROPOLIS->TOWN, R4). Null
+	// for a colony that never booted a camp economy. The symmetric un-boot below SMALLHOLDING is
+	// deferred (booted colonies floor their descent at SMALLHOLDING — see grow()).
+	private java.util.function.Consumer<SettlementTier> onTierDescent;
 
 	// the colony's solar clock for its (fixed) location: computes the day's
 	// dawn/sunrise/sunset/dusk and daylight length, refreshed for the current
@@ -756,6 +763,20 @@ public class Settlement {
 	}
 
 	/**
+	 * Register a callback fired by {@link #newDay() growth} each time this colony <b>descends</b> a
+	 * tier (passed the new, lower tier). The harness uses it to reform the head <b>down</b> on a
+	 * rank-band crossing (Mayor&rarr;Ruler at {@code METROPOLIS&rarr;TOWN}, R4 —
+	 * {@code docs/rank-ladder-improvements.md}); like {@link #setOnTierAdvance} it typically defers
+	 * heavy agent changes to {@link #scheduleEndOfStepAction}.
+	 *
+	 * @param callback
+	 *            invoked with the new tier on each downward descent
+	 */
+	public void setOnTierDescent(java.util.function.Consumer<SettlementTier> callback) {
+		this.onTierDescent = callback;
+	}
+
+	/**
 	 * Whether the colony is in a <b>founding-genesis</b> window — a mid-run camp booting its
 	 * settled economy at the SMALLHOLDING crossing (Phase D3). While true, founding firms claim
 	 * genesis-developed plots (as at a fresh founding) instead of queuing for the builder. Read by
@@ -1010,6 +1031,8 @@ public class Settlement {
 			foodBox += down.foodToChange();
 			log.info(name + " starved down from " + from + " to " + down + " on " + getDate()
 					+ " (" + totalResidents() + " residents)");
+			if (onTierDescent != null)
+				onTierDescent.accept(down);
 		}
 		if (tier == descentFloor && foodBox < 0)
 			foodBox = 0;

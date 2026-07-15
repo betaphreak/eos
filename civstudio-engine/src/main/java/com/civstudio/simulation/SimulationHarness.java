@@ -765,12 +765,16 @@ public class SimulationHarness {
 		// (where an export sector exists to staff), the ruin demotion, and household
 		// fission (see SocialMobility)
 		mobility().install();
-		// register the CITY factory so the ruler can be reformed into a Mayor when the settlement
-		// climbs TOWN -> METROPOLIS (R2, docs/rank-ladder-improvements.md); the harness owns the
-		// treasury params. Idempotent — re-registering the same rank just replaces the factory.
+		// register the head factories the tier crossings drive (R2/R4, docs/rank-ladder-improvements.md);
+		// the harness owns the treasury params. Idempotent — re-registering a rank replaces its
+		// factory. CITY builds a Mayor (climb TOWN -> METROPOLIS); VILLAGE builds a Ruler (the
+		// symmetric descent METROPOLIS -> TOWN reforms a Mayor back down to a Ruler).
 		mobility().registerRankFactory(Rank.CITY, (estate, c) -> new Mayor(estate,
 				DEFAULT_RULER_CONSUMPTION_RATE, cfg.bankProfitTaxRate(), cfg.nobleIncomeTaxRate(),
 				getGoldBank(), c));
+		mobility().registerRankFactory(Rank.VILLAGE, (estate, c) -> new Ruler(estate.head(),
+				estate.checking() + estate.savings(), DEFAULT_RULER_CONSUMPTION_RATE,
+				cfg.bankProfitTaxRate(), cfg.nobleIncomeTaxRate(), getGoldBank(), c));
 		return ruler.getBank();
 	}
 
@@ -790,6 +794,25 @@ public class SimulationHarness {
 		if (mayor != null) {
 			colony.setRuler(mayor);
 			log.info(colony.getName() + " urbanized into a metropolis: its ruler is now a Mayor on "
+					+ colony.getDate());
+		}
+	}
+
+	/**
+	 * Reform the colony's {@link Mayor} back into a plain {@link Ruler} — the {@code METROPOLIS →
+	 * TOWN} head descent (R4, {@code docs/rank-ladder-improvements.md}): its metropolis has shrunk
+	 * back to a town, so its head reverts from a {@link Rank#CITY} to a {@link Rank#VILLAGE}. The
+	 * symmetric inverse of {@link #reformRulerToMayor}, carrying the treasury 1:1 (money conserved),
+	 * run at end of step. A no-op if the head is not a {@code Mayor} (a plain ruler, or none).
+	 */
+	void reformMayorToRuler() {
+		Ruler head = colony.getRuler();
+		if (!(head instanceof Mayor) || !head.isAlive())
+			return;
+		Ruler ruler = (Ruler) mobility().reformTo(head, Rank.VILLAGE);
+		if (ruler != null) {
+			colony.setRuler(ruler);
+			log.info(colony.getName() + " shrank back to a town: its mayor is now a Ruler on "
 					+ colony.getDate());
 		}
 	}
@@ -1346,6 +1369,13 @@ public class SimulationHarness {
 						() -> bootRulerEconomy(eFirmSavings, nFirmSavings, laborerNStock));
 			else if (newTier == SettlementTier.METROPOLIS)
 				colony.scheduleEndOfStepAction(this::reformRulerToMayor);
+		});
+		// the symmetric head descent (R4): METROPOLIS -> TOWN crosses CITY -> VILLAGE, so a shrinking
+		// metropolis reforms its Mayor back into a Ruler. (The un-boot below SMALLHOLDING is deferred —
+		// booted colonies floor their starvation-descent at SMALLHOLDING, see Settlement.grow().)
+		colony.setOnTierDescent(newTier -> {
+			if (newTier == SettlementTier.TOWN)
+				colony.scheduleEndOfStepAction(this::reformMayorToRuler);
 		});
 		return copper;
 	}

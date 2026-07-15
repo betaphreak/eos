@@ -199,6 +199,18 @@ descent floor (`grow()` floors booted colonies at SMALLHOLDING — R4 lifts that
 mid-run). Rebaseline the collapse smoke tests (a colony now steps Mayor→Ruler→Captain→depart). Add a
 `SettlementDescentTest` driving a Mayor down to a departing caravan.
 
+> **SHIPPED (R4 — the clean half) 2026-07-15.** The symmetric head descent among the **booted** tiers:
+> `Settlement.onTierDescent` (fired from `grow()`'s shrink loop) + `reformMayorToRuler`
+> (`reformTo(mayor, VILLAGE)`, gold→gold, treasury conserved) wired to the `METROPOLIS→TOWN` crossing —
+> the exact inverse of R2. Registered the `VILLAGE` factory alongside `CITY` in `installRuler`.
+> `MayorReformTest` covers both directions. Full reactor green.
+>
+> **STILL DEFERRED (the hard half — the un-boot):** steps 3–4 above — tearing a booted colony back down
+> into a foraging camp below `SMALLHOLDING` (Ruler→Captain, dissolve firms + silver/gold banks,
+> pool→`camp()`). Booted colonies still **floor their starvation-descent at `SMALLHOLDING`** (the Phase E
+> guard) and dissolve into a caravan there rather than reverting to a camp — a large, low-frequency
+> teardown best done after R5 (Property/holdings) makes the asset shedding clean.
+
 ---
 
 ## Recommended sequence & dependencies
