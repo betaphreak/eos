@@ -11,6 +11,7 @@ import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.command.GameCommand;
 import com.civstudio.server.command.SetTaxRateCommand;
+import com.civstudio.server.render.LogLine;
 import com.civstudio.server.render.PersonDetail;
 import com.civstudio.server.render.PersonProjections;
 import com.civstudio.server.render.SessionSnapshot;
@@ -72,6 +73,24 @@ public class SessionMcpTools {
 			throw new IllegalArgumentException("no person " + personId + " in session " + sessionId);
 		String culture = pov.getProvince() == null ? null : pov.getProvince().culture();
 		return PersonProjections.of(h, pov.getDate(), culture);
+	}
+
+	@McpTool(name = "get_events",
+			description = "Recent event-log lines for a session, from the retained per-session tail "
+					+ "(foundings, deaths, starvation, policy changes, …) — filterable by minimum "
+					+ "severity, in-game date range and a substring. Read-only.")
+	public List<LogLine> getEvents(
+			@McpToolParam(description = "Session id", required = true) String sessionId,
+			@McpToolParam(description = "Minimum severity: info | warn | error (default info = all)",
+					required = false) String level,
+			@McpToolParam(description = "Inclusive start in-game date, ISO-8601 e.g. 1444-11-11",
+					required = false) String from,
+			@McpToolParam(description = "Inclusive end in-game date, ISO-8601", required = false) String to,
+			@McpToolParam(description = "Case-insensitive substring the line must contain",
+					required = false) String grep,
+			@McpToolParam(description = "Max lines, most recent first-dropped (default 200)",
+					required = false) Integer limit) {
+		return require(sessionId).eventTail(level, from, to, grep, limit == null ? 0 : limit);
 	}
 
 	@McpTool(name = "get_command_log",

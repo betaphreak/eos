@@ -12,6 +12,8 @@ import com.civstudio.server.command.CommandStore;
 import com.civstudio.server.command.GameCommand;
 import com.civstudio.server.chat.ChatStore;
 import com.civstudio.server.render.ChatMessage;
+import com.civstudio.server.render.LogLine;
+import com.civstudio.server.render.SessionEventLog;
 import com.civstudio.server.render.SessionLogBuffer;
 import com.civstudio.server.render.SessionSnapshot;
 import com.civstudio.server.render.Snapshots;
@@ -89,6 +91,10 @@ public final class HostedSession {
 	// holds the session's event-log lines between emits; a SimLog tap fills it on the colony
 	// threads, emit() drains it into each snapshot (the browser's live log bar). See run()/emit().
 	private final SessionLogBuffer logBuffer = new SessionLogBuffer();
+
+	// a retained rolling tail of the same lines (fed by the same tap, but never drained), so the
+	// get_events tool / events MCP resource can serve real history rather than the per-frame delta.
+	private final SessionEventLog eventLog = new SessionEventLog();
 
 	// lobby chat: an immediate broadcast channel, separate from the tick-paced snapshot feed (so
 	// messages don't wait up to a tick). Persistence + the replay backlog live in the ChatStore;
@@ -345,6 +351,18 @@ public final class HostedSession {
 		return lastSnapshot;
 	}
 
+	/**
+	 * The retained tail of this session's event log (foundings, deaths, policy changes, …), filtered
+	 * by minimum severity, in-game date range and substring. Unlike {@link #currentSnapshot()}'s
+	 * per-frame log delta this is a rolling window of history — the read seam for the {@code
+	 * get_events} MCP tool / {@code events} resource. Read-only; safe on any thread.
+	 *
+	 * @see com.civstudio.server.render.SessionEventLog#query
+	 */
+	public List<LogLine> eventTail(String level, String from, String to, String grep, int limit) {
+		return eventLog.query(level, from, to, grep, limit);
+	}
+
 	// the session thread's body: start the colonies, then tick until they are all done or
 	// the session is stopped, applying commands and emitting snapshots along the way
 	private void run() {
@@ -352,8 +370,10 @@ public final class HostedSession {
 		SimLog.bind(colonies.get(0));
 		// tap this session's log into the snapshot feed before founding, so the "was founded"
 		// lines are captured; closed in the finally below when the session tears down
-		AutoCloseable logTap = SimLog.tap(colonies.get(0),
-				e -> logBuffer.add(e.date(), e.message(), e.level()));
+		AutoCloseable logTap = SimLog.tap(colonies.get(0), e -> {
+			logBuffer.add(e.date(), e.message(), e.level());
+			eventLog.add(e.date(), e.message(), e.level());
+		});
 		for (Settlement c : colonies)
 			c.start();
 		emit(); // tick-0 snapshot, so a subscriber (even to a paused session) sees state

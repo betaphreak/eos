@@ -238,10 +238,10 @@ framing instead of REST.
 > `SessionHost` / `HostedSession` / the `render.*` records, verified against a live
 > session (`McpEndpointTest`, `SessionMcpToolsTest`). The **read** rows below shipped;
 > the **write** rows (marked `write (auth)`) are the deferred, admin-gated follow-up.
-> The `events` resource shipped as a thin latest-frame projection — a real event tail
-> needs the *retained per-session log buffer* follow-up (see below). A first
-> `@McpPrompt` playbook also shipped — `diagnose-live-colony` (`SessionMcpPrompts`),
-> realizing consumption pattern 3.
+> The `events` resource serves a **retained per-session tail** (`SessionEventLog`),
+> alongside a filterable **`get_events`** tool — see the retained-buffer section below.
+> A first `@McpPrompt` playbook also shipped — `diagnose-live-colony`
+> (`SessionMcpPrompts`), realizing consumption pattern 3.
 
 ### Tools (thin wrappers over `HostedSession` / `SessionHost`)
 
@@ -254,6 +254,7 @@ framing instead of REST.
 | `get_snapshot` | `hs.currentSnapshot()` → `SessionSnapshot`/`ColonyView` | read |
 | `get_person` | the `PersonController` projection (`PersonDetail`) | read |
 | `get_command_log` | `hs.commandLog()` | read |
+| `get_events` | `hs.eventTail(level, from, to, grep, limit)` → retained `LogLine`s | read |
 
 `submit_command`'s vocabulary is exactly the server's command registry — one entry
 (`setTaxRate`) today; it grows as the interactive phase adds `GameCommand` types.
@@ -275,43 +276,40 @@ does. No new identity system.
 - `civstudio://session/{id}/snapshot` — the tick-paced render snapshot, so an
   analyst LLM answers "what's happening now / why did colony X collapse?" against
   real projection data rather than prose.
-- `civstudio://session/{id}/events` — the session's recent event-log lines.
-  *Shipped as a thin projection of the latest frame's log delta* (see the caveat
-  below); a real event tail is the retained-buffer follow-up.
+- `civstudio://session/{id}/events` — the session's recent event-log lines, served
+  from the **retained tail** (`SessionEventLog`); the `get_events` tool is the
+  filterable form. See the retained-buffer section below.
 
-### Follow-up: a retained per-session log buffer
+### Retained per-session log buffer — BUILT (v0.9.34)
 
-The shipped `events` resource is thin by construction. `SessionLogBuffer`
+The original `events` resource was thin by construction. `SessionLogBuffer`
 (`server.render`) is a **drain-once** queue: a `SimLog` tap fills it on the colony
 threads, and the session thread **drains** it into each `SessionSnapshot.log()` every
 frame — so once a frame is emitted those lines are gone from the buffer. The resource
-therefore returns only whatever has accumulated since the last emission (usually
-`[]`), not the session's history. Fine for "is anything mapped", useless as an event
-tail.
+returned only whatever had accumulated since the last emission (usually `[]`), not the
+session's history.
 
-The fix is a **retained, bounded ring buffer per session** that keeps the last *N*
-lines (a rolling window, separate from the drain-to-snapshot path so the live SSE feed
-is unaffected). Sketch:
+The fix shipped: **`SessionEventLog`** (`server.render`) — a bounded (`CAP` 4096),
+synchronized rolling window of `LogLine`s. The **same** `SimLog` tap in
+`HostedSession.run()` that feeds `SessionLogBuffer.add(...)` now also appends to it, so
+the live SSE drain path is untouched; `HostedSession.eventTail(level, from, to, grep,
+limit)` is the read seam. On it:
 
-- Add a second sink alongside the drain queue — the same `SimLog` tap that feeds
-  `SessionLogBuffer.add(...)` also appends to a `CopyOnWrite...`/ring of, say, the last
-  2–4k `LogLine`s, evicting oldest. Cheap: one extra append per line, bounded memory.
-  Hang it off `HostedSession` (it already owns the log wiring) so `hs.eventTail(...)`
-  is the read seam; keep the existing per-frame drain exactly as is.
-- Give the `events` resource — and a future `get_events` **tool** — the Phase-1
-  `get_event_log` filter vocabulary: `level?`, `dateRange?`, `grep?`, `limit?`, served
-  from the ring rather than the drained delta. That aligns the live-session event read
-  with the harness's, so an analyst LLM asks the same question of a running colony and a
-  finished run.
-- **Reproducibility & cost unchanged:** the ring is a *reporting mirror*, populated
-  after the day settles (like the snapshot log and the SQL sink in *Data backend*), so
-  it never touches an RNG stream; it is bounded, so a session that runs for months
-  can't grow it without limit. A client that wants the full history still replays the
-  `CommandLog` — the ring is a convenience tail, not the archive.
+- the **`get_events` tool** (`SessionMcpTools`) exposes the `get_event_log` filter
+  vocabulary — `level?` (min severity `info|warn|error`), `from?`/`to?` (inclusive
+  ISO-8601 in-game dates; ISO sorts lexically so a string compare is a date compare),
+  `grep?` (case-insensitive substring), `limit?` (most-recent *N*, default 200);
+- the **`events` resource** now serves that retained tail (most-recent lines) instead
+  of the drained delta.
+- **Reproducibility & cost unchanged:** the ring is a *reporting mirror*, populated as
+  lines are logged (like the snapshot log and the SQL sink in *Data backend*), never
+  touching an RNG stream, and bounded so a months-long session can't grow it without
+  limit. Full history is still the `CommandLog` replay; this is a convenience tail.
 
-Until this lands, an LLM that needs more than the current frame's events should read
-`get_snapshot(...).log` each frame (the same lines, per-frame) or, once the SQL store
-exists, query the persisted `SimLog` table.
+Verified by `SessionEventLogTest` (filters/ordering/eviction) and a live `get_events`
++ `events`-resource handshake (`McpEndpointTest`). Aligning the arg names with the
+Phase-1 `get_event_log` keeps one event-query vocabulary across a running colony and a
+finished run.
 
 ---
 

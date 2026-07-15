@@ -83,6 +83,12 @@ class McpEndpointTest {
 		// get_command_log is empty for pure spectator play (no commands applied yet)
 		assertTrue(tools.getCommandLog(hs.id()).isEmpty());
 
+		// get_events serves the retained tail — the founding lines captured before tick 0 are there
+		var events = tools.getEvents(hs.id(), null, null, null, null, null);
+		assertFalse(events.isEmpty(), "the founding lines should be retained in the event tail");
+		// a nonsense substring filters them all out (proves the grep filter is applied)
+		assertTrue(tools.getEvents(hs.id(), null, null, null, "zzz-no-such-line", null).isEmpty());
+
 		// the snapshot resource serializes the same session to a non-empty JSON body
 		String resource = resources.snapshot(hs.id());
 		assertTrue(resource.contains(hs.id()), "the snapshot resource carries the session id");

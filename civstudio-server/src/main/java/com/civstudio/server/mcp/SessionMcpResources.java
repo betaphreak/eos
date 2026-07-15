@@ -42,12 +42,13 @@ public class SessionMcpResources {
 	}
 
 	@McpResource(uri = "civstudio://session/{id}/events", name = "session-events",
-			description = "Recent event-log lines from the session's latest frame (foundings, deaths, "
-					+ "policy changes, …), as a JSON array.")
+			description = "The retained tail of the session's event log (foundings, deaths, policy "
+					+ "changes, …), most recent lines, as a JSON array. For filtered access use the "
+					+ "get_events tool.")
 	public String events(String id) {
-		SessionSnapshot snap = currentSnapshot(id);
-		List<LogLine> log = snap == null ? List.of() : snap.log();
-		return json.writeValueAsString(log);
+		HostedSession hs = host.get(id);
+		List<LogLine> tail = hs == null ? List.of() : hs.eventTail(null, null, null, null, 0);
+		return json.writeValueAsString(tail);
 	}
 
 	private SessionSnapshot currentSnapshot(String id) {
