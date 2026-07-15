@@ -3,7 +3,7 @@
 **Status (by phase):**
 - **Phase 1 — analysis/calibration harness (stdio, engine-only).** Proposed. A
   standalone `civstudio-mcp` module that runs scenarios and reads their
-  deterministic outputs (CSV time series, `SimLog`) as MCP tools/resources, for a
+  deterministic outputs (a queryable SQL run store, `SimLog`) as MCP tools/resources, for a
   local LLM consumer (Claude Code, an editor agent). No Spring, no live server.
 - **Phase 2 — live-session tools (Streamable HTTP, co-hosted in `civstudio-server`).**
   Proposed / later. An MCP endpoint over the running `SessionHost` beans:
@@ -54,7 +54,7 @@ reproducible runs — the kind of loop an LLM can drive well *if* the run/read s
 a tool call instead of a Maven invocation plus CSV parsing.
 
 MCP is the fit because it's the standard way to hand an LLM typed **tools** (run,
-query, control), read-only **resources** (docs, CSV schemas, live snapshots), and
+query, control), read-only **resources** (docs, table schemas, live snapshots), and
 canned **prompts** (a diagnosis playbook). The server side is cheap: the seams
 already exist — an MCP server is a thin JSON-RPC adapter over them, not new
 subsystems.
@@ -72,8 +72,8 @@ Everything in this module is shaped by one rule the engine is built around: **th
 seed is the run.** A `SessionSpec` (`seed`, `scenario`, `provinceId`) plus its
 ordered `CommandLog` replays byte-identically. So:
 
-- **Read tools are unconstrained.** Running a scenario, reading its CSVs, reading a
-  live snapshot or the event log — none of it perturbs the RNG streams.
+- **Read tools are unconstrained.** Running a scenario, querying its run tables,
+  reading a live snapshot or the event log — none of it perturbs the RNG streams.
 - **Write tools have exactly one legal path: `HostedSession.submit(GameCommand)`.**
   A command is tick-stamped and applied at the deterministic top of its tick (never
   retro-mutating the in-flight day). An MCP tool that "sets the tax rate" constructs
@@ -88,12 +88,77 @@ doesn't belong here.
 
 ---
 
+## Data backend — a SQL store behind the existing sink seam, not CSV
+
+The read tools query the historical time series, and **CSV is the wrong shape to
+hand an LLM**: it's untyped text the model must re-parse and type-guess; there's no
+filter/aggregate, so `query_timeseries` would slurp whole files and `sweep` /
+`compare_runs` couldn't aggregate at all; and there's no run identity *in* the data
+— runs are told apart by directory (`output/<seed>/`) and printers by file, so
+nothing can `JOIN` across printers or `GROUP BY` run, which is exactly what a
+calibration LLM wants.
+
+The engine already has the seam to fix this. Printers write through a **`RowSink`**
+(`io/sink/`), whose own contract is "a CSV file, a database table, or both without
+knowing which," and every printer already declares a **typed** schema —
+`ColumnSpec` + `ColumnType` (`DATE`/`TEXT`/`INT`/`REAL`), with `ColumnType` mapping
+straight to Postgres types. Today only `CsvRowSink` / `CsvRowSinkFactory` are built;
+`RowSinkFactory`'s Javadoc already anticipates "the Spring Boot launcher installs a
+database- or composite-backed factory carrying the run/colony identity."
+
+**So the MCP-friendly format is Postgres, reached by building the sink the seam was
+designed for — not a new file format and not a printer rewrite.**
+
+### Plan
+
+- **Add `JdbcRowSink` + `JdbcRowSinkFactory`** (the anticipated implementations). The
+  factory carries **run identity** — `run_id`, `seed`, `scenario` become real
+  columns — and `ColumnType` gives each printer a typed table for free. Printers are
+  untouched; only the factory a colony is handed changes.
+- **Store: Postgres.** The server already depends on `spring-boot-starter-jdbc` +
+  `postgresql` (it backs `JdbcUserStore` today), so the in-server surface writes to
+  the same database it already runs. The engine-only Phase-1 harness, which can't
+  assume a running Postgres, writes to an **embedded H2 file** (`output/<seed>/run.db`,
+  H2 in PostgreSQL-compatibility mode — already a project dependency) so the *same*
+  `JdbcRowSink` and the *same* SQL work with no server to stand up. JDBC keeps the
+  engine driver-free (the `java.sql` API is in the JDK); whichever module launches
+  provides the driver (H2 for the harness, Postgres for the server).
+- **Keep CSVs if wanted** via a *composite* factory (the Javadoc's "both") — the
+  human-readable files stay for eyeballing while MCP reads the database.
+
+### What the read tools become
+
+| Tool | With a SQL store |
+|---|---|
+| `query_timeseries` | `SELECT … WHERE date BETWEEN ? AND ? AND colony = ?` |
+| `compare_runs` / `sweep` | one `… GROUP BY run_id` query, aggregated in the DB |
+| `list_outputs` / csv-schema resource | `information_schema` — the typed schema already exists |
+
+If a general `run_sql` tool is exposed alongside the parameterized ones, it uses a
+**read-only** connection so a hallucinated `DROP`/`DELETE` can't land.
+
+### Reproducibility
+
+The store is a **reporting mirror, not sim state** — printers emit to it *after* the
+day settles, exactly as they emit to CSV, so it never touches an RNG stream. The
+seed-is-the-run invariant is unaffected; the DB is another sink, nothing more.
+
+### Live sessions don't need it
+
+The Phase-2 render projections (`ColonyView`, `PersonDetail`, `SessionSnapshot`) are
+already typed records — those MCP tools return them as JSON directly. This backend
+question is only about the *historical time series* the calibration tools read.
+
+---
+
 ## Phase 1 — analysis/calibration harness (the one to build first)
 
-A standalone Maven module `civstudio-mcp`, depending **only on `civstudio-engine`**
-(no Spring), speaking MCP over **stdio** to a local consumer. Because the engine is
-plain Java 25 and reproducible, these tools are deterministic and side-effect-free
-except for the `output/<seed>/` files a run already writes.
+A standalone Maven module `civstudio-mcp`, depending on `civstudio-engine` (plus an
+embedded H2 driver for the reporting store — see *Data backend*; still no Spring),
+speaking MCP over **stdio** to a local consumer. Because the engine is plain Java 25
+and reproducible, these tools are deterministic and side-effect-free except for the
+`output/<seed>/` run artifacts (the H2 `run.db`, and CSVs if the composite sink is on)
+a run already writes.
 
 ### Home & transport
 
@@ -113,11 +178,11 @@ except for the `output/<seed>/` files a run already writes.
 |---|---|---|---|
 | `list_scenarios` | — | `[{mainClass, blurb, isRulerColony}]` | The README/§Scenarios inventory, so the LLM picks a valid target. |
 | `run_scenario` | `mainClass`, `seed`, `steps?`, `configOverrides?` | `{runId, seed, finalDate, died, outputDir}` | Runs a scenario headless to completion or `steps`. `runId` keys later reads. Deterministic in `seed`. |
-| `query_timeseries` | `runId` (or `seed`), `csv`, `columns`, `dateRange?`, `colony?` | rows (JSON or compact CSV) | Reads a consolidated monthly CSV under `output/<seed>/`; the discriminator column selects the colony/series. |
-| `list_outputs` | `runId` | `[{csv, columns, rowCount, dateRange}]` | Schema discovery so the LLM doesn't guess column names. |
+| `query_timeseries` | `runId` (or `seed`), `table`, `columns`, `dateRange?`, `colony?` | rows (JSON) | `SELECT` against the run's table (see *Data backend*); the colony column selects the series. |
+| `list_outputs` | `runId` | `[{table, columns, rowCount, dateRange}]` | Schema discovery via `information_schema` so the LLM doesn't guess column names. |
 | `get_event_log` | `runId`, `level?`, `colony?`, `dateRange?`, `grep?` | filtered `SimLog` lines | Level-by-frequency filtering + the per-colony prefixes; the annual digest is a level. |
-| `compare_runs` | `runIdA`, `runIdB`, `csv`, `columns` | aligned diff + summary stats | The A/B primitive for "did this knob help?". |
-| `sweep` | `mainClass`, `param`, `values[]`, `csv`, `metric` | `[{value, metric}]` (+ per-run `runId`) | Fans a single parameter over a range, reports the metric per run. The calibration workhorse. |
+| `compare_runs` | `runIdA`, `runIdB`, `table`, `columns` | aligned diff + summary stats | The A/B primitive for "did this knob help?" — a single `GROUP BY run_id`. |
+| `sweep` | `mainClass`, `param`, `values[]`, `table`, `metric` | `[{value, metric}]` (+ per-run `runId`) | Fans a single parameter over a range, reports the metric per run. The calibration workhorse. |
 
 `configOverrides` maps onto the immutable `*Config` records (`FirmConfig`,
 `RetinueConfig`, …) and `SimulationConfig` via their `toBuilder()` variants — the
@@ -130,8 +195,8 @@ whitelisted, tunable fields are exposed; structural constants are not overridabl
 - `civstudio://docs/*` — the design notes (`architecture.md`, `food-balance.md`,
   `births.md`, `calendar.md`, …) as read-only context the LLM can pull on demand.
 - `civstudio://scenarios` — the machine-readable scenario inventory.
-- `civstudio://csv-schema/*` — column dictionaries for each printer's CSV, so
-  `query_timeseries`/`compare_runs` calls are well-formed.
+- `civstudio://schema/*` — column dictionaries for each printer's table (from
+  `information_schema`), so `query_timeseries`/`compare_runs` calls are well-formed.
 
 ### Prompts
 
@@ -211,7 +276,7 @@ seam (advisor reads projection, advisor acts via `CommandLog`) is on record.
 ## Testing
 
 - **Determinism guard.** A test that runs the same `run_scenario` args twice and
-  asserts identical CSV/event output — the module's core promise, and a cheap
+  asserts identical run-table/event output — the module's core promise, and a cheap
   regression against anything that accidentally consumes shared RNG.
 - **No-side-channel guard.** Assert the write surface is *only* `submit(...)`: reads
   never advance a tick, and there is no path from a tool to engine internals past
@@ -231,10 +296,12 @@ seam (advisor reads projection, advisor acts via `CommandLog`) is on record.
    `docs/spring-boot-migration.md`). If it lags, Phase 2 uses the transport-agnostic
    MCP Java SDK directly behind a plain `@RestController`-style endpoint instead of
    the starter. Phase 1 sidesteps this entirely by being Spring-free.
-2. **Run lifecycle / disk.** `run_scenario` writes `output/<seed>/`; the module needs
-   a retention/cleanup story (and, in the remote container, awareness of the
-   fixed disk allowance) so sweeps don't fill the disk. Likely a `runId → dir`
-   registry with an LRU cap and an explicit `drop_run` tool.
+2. **Run lifecycle / disk.** `run_scenario` writes an H2 `run.db` (and optional CSVs)
+   under `output/<seed>/`; the module needs a retention story (and, in the remote
+   container, awareness of the fixed disk allowance) so sweeps don't fill the disk.
+   With the SQL store this is cheaper than files — an explicit `drop_run` tool is a
+   `DELETE … WHERE run_id = ?` (server/Postgres) or dropping the `run.db` file
+   (harness/H2), plus an LRU cap on retained runs.
 3. **Long runs vs. call timeouts.** A full-length scenario can be slow; `run_scenario`
    may need to be async (return a `runId` immediately, poll a `run_status` tool)
    rather than blocking the MCP call.
