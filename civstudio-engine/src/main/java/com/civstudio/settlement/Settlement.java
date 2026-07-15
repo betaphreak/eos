@@ -808,6 +808,10 @@ public class Settlement {
 	private static final double WASTAGE_START_CONSUMPTION_FRACTION = 1.0;
 	private static final double WASTAGE_GROWTH_FACTOR = 0.05;
 
+	// residents per district when a TOWN's district count is capped by its population (Phase C) —
+	// provisional/uncalibrated.
+	private static final int RESIDENTS_PER_DISTRICT = 100;
+
 	// the colony's net food surplus this day (C2C food balance): necessity PRODUCED by its
 	// agriculture (every living necessity firm's output) minus necessity EATEN (a FINE ration per
 	// resident), with a large surplus subject to food WASTAGE (diminishing returns). getOutput()
@@ -913,12 +917,13 @@ public class Settlement {
 	}
 
 	/**
-	 * The colony's <b>starting district count</b> — the number of districts the settlement
-	 * begins with, taken from its founding province's EU4 1444 development ({@link
-	 * com.civstudio.geo.Province#development() ADM + DIP + MIL}), clamped to the province
-	 * plot {@link #getMaxPlots() cap} (the total plots in the province, the ceiling districts
-	 * can grow to). A settlement with no districts ({@code SMALLHOLDING} or lower) reports just
-	 * its single city center; a province-less colony reports {@code 0}. This is <b>render/
+	 * The colony's <b>starting district count</b>, <b>capped by tier</b> (Phase C). The site's
+	 * urban capacity is its EU4 1444 development ({@link com.civstudio.geo.Province#development()
+	 * ADM + DIP + MIL}) clamped to the province plot {@link #getMaxPlots() cap}. On top of that:
+	 * a {@link SettlementTier#CAMP} has none; a sub-{@code TOWN} settlement shows just its single
+	 * city centre; a {@link SettlementTier#TOWN} is capped by its own <b>population</b> (a growing
+	 * town has not filled the province's urban plots); only a {@link SettlementTier#METROPOLIS}
+	 * fills the whole urban capacity. A province-less colony reports {@code 0}. This is <b>render/
 	 * placement metadata</b> — it does not change the firm-driven plot economy (firms without
 	 * built buildings sit in the city center); see {@code docs/district-buildout.md} Phase D1.
 	 *
@@ -927,8 +932,17 @@ public class Settlement {
 	public int getStartingDistrictCount() {
 		if (province == null)
 			return 0;
-		int base = Math.min(province.development(), getMaxPlots());
-		return hasDistricts() ? base : Math.min(1, base);
+		int base = Math.min(province.development(), getMaxPlots()); // the site's urban capacity
+		if (tier == SettlementTier.CAMP)
+			return 0; // a camp has no built centre
+		if (!hasDistricts())
+			return Math.min(1, base); // COTTAGE/HAMLET/SMALLHOLDING: the single city centre
+		if (tier == SettlementTier.METROPOLIS)
+			return base; // the full urban capacity — the province's urban plots
+		// TOWN: capped by the town's own size (population) — a growing town has not yet filled the
+		// province's urban plots. RESIDENTS_PER_DISTRICT is provisional/uncalibrated.
+		int popDistricts = Math.max(1, totalResidents() / RESIDENTS_PER_DISTRICT);
+		return Math.min(popDistricts, base);
 	}
 
 	/**
@@ -1653,8 +1667,11 @@ public class Settlement {
 		if (plots.isEmpty())
 			return; // no city center laid yet — nothing to build onto
 		Plot center = plots.get(0);
-		if (!center.hasBuilding(token))
-			center.addBuilding(new Building(token));
+		if (center.hasBuilding(token))
+			return; // already present (idempotent)
+		if (center.buildings().size() >= tier.maxBuildings())
+			return; // this rung's building cap is reached (Camp 0, Cottage 1, Hamlet 3, …)
+		center.addBuilding(new Building(token));
 	}
 
 	/**

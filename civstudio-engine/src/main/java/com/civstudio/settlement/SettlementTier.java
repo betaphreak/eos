@@ -116,6 +116,22 @@ public enum SettlementTier {
 	}
 
 	/**
+	 * The most <b>buildings</b> a settlement at this rung may raise at its city centre — a camp
+	 * has none, a cottage its one building, a hamlet a small handful, and a {@link #SMALLHOLDING}
+	 * or larger an unrestricted centre. Gates the auto-build placement chokepoint.
+	 *
+	 * @return the building cap for this rung ({@link Integer#MAX_VALUE} = unrestricted)
+	 */
+	public int maxBuildings() {
+		return switch (this) {
+			case CAMP -> 0;
+			case COTTAGE -> 1;
+			case HAMLET -> 3;
+			default -> Integer.MAX_VALUE; // SMALLHOLDING and up: unrestricted centre
+		};
+	}
+
+	/**
 	 * The rung one step up the ladder, or empty at the terminal {@link #METROPOLIS}.
 	 *
 	 * @return the next-higher tier, or empty at the top

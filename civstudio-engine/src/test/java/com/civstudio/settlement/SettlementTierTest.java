@@ -76,6 +76,16 @@ class SettlementTierTest {
 	}
 
 	@Test
+	void buildingCapRampsUpToUnrestrictedAtSmallholding() {
+		assertEquals(0, SettlementTier.CAMP.maxBuildings());
+		assertEquals(1, SettlementTier.COTTAGE.maxBuildings());
+		assertEquals(3, SettlementTier.HAMLET.maxBuildings());
+		assertEquals(Integer.MAX_VALUE, SettlementTier.SMALLHOLDING.maxBuildings());
+		assertEquals(Integer.MAX_VALUE, SettlementTier.TOWN.maxBuildings());
+		assertEquals(Integer.MAX_VALUE, SettlementTier.METROPOLIS.maxBuildings());
+	}
+
+	@Test
 	void districtsAndPermanenceBeginAtTown() {
 		// the thresholds the flattened Settlement derives its capabilities from
 		assertTrue(SettlementTier.TOWN.atLeast(SettlementTier.TOWN), "a Town has districts");

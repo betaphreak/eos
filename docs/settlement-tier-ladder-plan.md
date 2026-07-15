@@ -153,12 +153,21 @@ The growth mechanics are a **faithful port of C2C's** `CvCity::changeFood` / `Cv
   floors at 0); `applyFoodWastage` banks small surpluses fully but saturates huge ones. `SettlementTierTest`
   covers `size`/`minHouseholds`/`foodToChange`(C2C curve)/`next`/`previous`.
 
-### Phase C — per-tier building & district caps
-- **Building cap**: gate `Settlement.autoBuildBuilding` (`:1450`, the single `Building`-placement
-  chokepoint) by `tier` — Camp 0, Cottage 1, Hamlet a small N, Village+ unrestricted center.
-- **District cap**: tier-condition `getStartingDistrictCount()` (`:734`, today
-  `min(province.development(), maxPlots)`): **Town** ⇒ capped by town size (population-scaled),
-  **City** ⇒ the province's total urban-terrain plots (`getMaxPlots()`/urban plots), sub-Village ⇒ 0.
+### Phase C — per-tier building & district caps ✅ SHIPPED
+- **Building cap**: `SettlementTier.maxBuildings()` (`CAMP` 0, `COTTAGE` 1, `HAMLET` 3,
+  `SMALLHOLDING`+ unrestricted) gates `Settlement.autoBuildBuilding` — it skips once the centre
+  already holds `maxBuildings()` (after the idempotent already-present check). Render-only
+  (auto-build is off by default in the engine), so byte-identical headless runs.
+- **District cap**: `getStartingDistrictCount()` is now tier-conditioned on the site's urban
+  capacity (`min(province.development(), maxPlots)`): `CAMP` ⇒ 0; sub-`TOWN` ⇒ the single centre
+  (`min(1, base)`); `TOWN` ⇒ **population-capped** `min(max(1, residents / RESIDENTS_PER_DISTRICT),
+  base)` (a growing town has not filled the province — `RESIDENTS_PER_DISTRICT = 100`, provisional);
+  `METROPOLIS` ⇒ the full `base`. **Behaviour-preserving at founding**: production colonies found at
+  `METROPOLIS` (⇒ `base`, today's City) or `SMALLHOLDING` (⇒ `min(1, base)`, today's Village), both
+  unchanged; the `TOWN`/`CAMP` branches only bite mid-run (growth/shrink).
+- **Verify:** `SettlementTierTest.buildingCapRampsUpToUnrestrictedAtSmallholding`;
+  `DistrictTypeTest.startingDistrictCountIsCappedByTier` (`METROPOLIS` full, `CAMP` 0, sub-`TOWN`
+  centre, `TOWN` within `[1, base]`); the existing City/bare district tests unchanged. Full reactor green.
 - **Verify:** extend `DistrictTypeTest`; a Town's district count grows with its population, a City's
   equals the site's urban-plot capacity.
 

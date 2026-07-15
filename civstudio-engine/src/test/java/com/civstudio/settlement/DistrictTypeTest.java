@@ -70,4 +70,28 @@ class DistrictTypeTest {
 		Settlement bare = s.newSettlement("Bare", START, 30, 26, 5, 2, 51.5074, -0.1278);
 		assertEquals(0, bare.getStartingDistrictCount());
 	}
+
+	@Test
+	void startingDistrictCountIsCappedByTier() {
+		GameSession s = new GameSession(42);
+		Province dh = s.getWorldMap().findByName("Dhenijansar").orElseThrow();
+		Settlement c = s.newSettlement("Test", START, 30, 26, 5, 2, dh);
+		int full = Math.min(dh.development(), c.getMaxPlots());
+
+		c.setTier(SettlementTier.METROPOLIS);
+		assertEquals(full, c.getStartingDistrictCount(),
+				"a METROPOLIS fills the province's urban capacity");
+
+		c.setTier(SettlementTier.CAMP);
+		assertEquals(0, c.getStartingDistrictCount(), "a CAMP has no built centre");
+
+		c.setTier(SettlementTier.SMALLHOLDING);
+		assertEquals(Math.min(1, full), c.getStartingDistrictCount(),
+				"a sub-TOWN settlement shows only its single city centre");
+
+		c.setTier(SettlementTier.TOWN);
+		int town = c.getStartingDistrictCount();
+		assertTrue(town >= 1 && town <= full,
+				"a TOWN's districts are population-capped, within the site's capacity");
+	}
 }
