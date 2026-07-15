@@ -125,6 +125,20 @@
             <artifactId>lombok</artifactId>
         </dependency>
 
+        <!-- Local-dev auto-restart: DevTools watches the *restart* classloader (this module's
+             compiled classes) and hot-restarts the app context whenever they change — so a plain
+             `mvn -pl civstudio-server compile` (or IDE auto-build) bounces the running
+             `spring-boot:run` server in place, /mcp (and the SSE feed) coming right back on 8080.
+             optional=true keeps it off downstream classpaths and Boot excludes it from the
+             repackaged fat jar, so production is unaffected. NOTE: only server-module classes are
+             watched — the engine is a base-classloader jar, so engine edits still need a rebuild +
+             full restart (see docs/local-dev-server.md). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- @SpringBootTest (full context, RANDOM_PORT) — brings JUnit 6, AssertJ, Mockito -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

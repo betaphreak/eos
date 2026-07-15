@@ -50,6 +50,23 @@ is torn down on shutdown.
   jar. Per-run overrides: `-Dcivstudio.dev.frontend.enabled=false`,
   `-Dcivstudio.dev.frontend.web-port=…`, `-Dcivstudio.dev.frontend.open-browser=false`.
 
+## Auto-restart on code change (DevTools)
+
+`spring-boot-devtools` is a dev-scoped (`optional`) dependency of `civstudio-server`. While a
+`spring-boot:run` server is running, DevTools watches this module's **compiled classes** and
+hot-restarts the app context in place whenever they change — so recompiling the server module (an
+IDE auto-build, or a plain `mvn -pl civstudio-server compile` from another terminal) bounces the
+running server automatically, and `/mcp` + the SSE feed come right back on `:8080` with no manual
+stop/start. You'll see the restart happen on the `restartedMain` thread in the log.
+
+**Scope — server module only.** DevTools reloads only classes on its *restart* classloader (this
+module's `target/classes`). The **engine** is a base-classloader jar, so **engine edits are not
+picked up by a hot restart** — those still need `mvn -pl civstudio-engine install` plus a full
+server restart (kill the `:8080` JVM first — `spring-boot:run` leaves a lingering listener).
+
+`optional=true` keeps DevTools off downstream classpaths, and Boot excludes it from the repackaged
+fat jar, so the production deploy is unaffected.
+
 ## Why offline works
 
 - **Maven** runs with `-o`, so every dependency comes from `~/.m2` (nothing is fetched).
