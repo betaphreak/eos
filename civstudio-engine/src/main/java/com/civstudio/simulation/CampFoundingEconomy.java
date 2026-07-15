@@ -34,8 +34,11 @@ public class CampFoundingEconomy {
 	public static SimulationHarness run() {
 		// a small band founding at CAMP: the pooled foragers ARE the workforce until the camp
 		// climbs to SMALLHOLDING and boots the ruler economy (foundStandardColony -> foundCamp).
+		// homePlots: once settled, each laborer household farms its own home plot for subsistence
+		// food (the plot-working economy — docs/plot-working-plan.md P1), so survival is decoupled
+		// from the market and the small booted colony is viable on its own land.
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.retinueSize(BAND_SIZE).foundAtCamp(true).build();
+				.retinueSize(BAND_SIZE).foundAtCamp(true).homePlots(true).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, DHENIJANSAR);
 		h.foundStandardColony(
 				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);

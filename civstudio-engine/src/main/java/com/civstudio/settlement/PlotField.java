@@ -266,6 +266,32 @@ class PlotField {
 		return appendPlot();
 	}
 
+	// Claim a HOME PLOT for a landed household (docs/plot-working-plan.md P1): seat it on a free
+	// workable plot — an already-claimed vacant one (e.g. one just freed by a dead household), else a
+	// fresh plot appended from the shared province pool (skipping unworkable peaks, which stay on the
+	// ladder). Returns null when the colony can seat no more — its province pool is drained, the
+	// per-colony cap is reached, or it is province-less with no plot to give — so the household is
+	// LANDLESS (the market-dependent overflow). Unlike claimPlot this never routes through the builder
+	// and raises NO improvement: a home plot is worked as raw/feature land, exactly as the camp forages
+	// its bare plot. Package-visible for Settlement.claimHomePlot.
+	Plot claimHomePlot(PlotOccupant occupant) {
+		Plot plot = firstVacantPlot();
+		if (plot != null) {
+			seat(plot, occupant);
+			return plot;
+		}
+		while (canAcquirePlot(0)) {
+			Plot p = appendPlot();
+			if (p == null)
+				return null; // the shared pool is exhausted — landless
+			if (!p.isWorkable())
+				continue; // a peak: keep it on the ladder and try the next
+			seat(p, occupant);
+			return p;
+		}
+		return null; // no room to grow — landless
+	}
+
 	// append a freshly-generated vacant plot at the next ladder index (the founding
 	// genesis path; live growth generates its plot up front in requestGrowth).
 	private Plot appendPlot() {

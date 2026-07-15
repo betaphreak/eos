@@ -113,6 +113,14 @@ import lombok.Builder;
  *                     silver-banking noble; the remainder is split among the other
  *                     returnees, each founding a copper-banking laborer household. A
  *                     calibration placeholder
+ * @param foundAtCamp whether the colony founds low (as a foraging {@code CAMP}) and
+ *                     climbs the tier ladder rather than founding at its site ceiling
+ *                     with the full ruler economy (docs/settlement-tier-ladder-plan.md D4)
+ * @param homePlots whether landed laborer households each work a <b>home plot</b> for
+ *                     subsistence food (dropped straight into their larder, non-market —
+ *                     the plot-working economy of {@code docs/plot-working-plan.md} P1).
+ *                     Default {@code false} (the existing pure-market economy); a
+ *                     province-founded scenario opts in
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -147,7 +155,8 @@ public record SimulationConfig(
 		int foundingLaborersPerNFirm,
 		double expeditionTaxRate,
 		double expeditionNobleShare,
-		boolean foundAtCamp) {
+		boolean foundAtCamp,
+		boolean homePlots) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -241,8 +250,11 @@ public record SimulationConfig(
 			                                       //   a returning haul; calibration)
 			0.3,                                   // expeditionNobleShare (the ablest
 			                                       //   returnee's ennoblement share)
-			false);                                // foundAtCamp (found at maxTier with the
+			false,                                 // foundAtCamp (found at maxTier with the
 			                                       //   ruler economy; geographic colonies
 			                                       //   opt in to found low and climb —
 			                                       //   docs/settlement-tier-ladder-plan.md D4)
+			false);                                // homePlots (pure-market economy by default;
+			                                       //   a province-founded scenario opts into
+			                                       //   subsistence home plots — plot-working-plan.md P1)
 }

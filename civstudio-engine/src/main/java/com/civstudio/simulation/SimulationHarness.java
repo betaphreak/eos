@@ -1190,6 +1190,11 @@ public class SimulationHarness {
 		double savings = peasant.skills().totalLevel();
 		Laborer laborer = new Laborer(head, cfg.laborer().e(), initNQty, 0, savings,
 				cfg.laborer().savingsRate(), LaborerConfig.DEFAULT, bank, colony);
+		// a home-plots colony seats the new household on a plot it farms for subsistence food
+		// (landless — null — if the site is full); the founding cohort and every promoted
+		// replacement flow through here. See docs/plot-working-plan.md P1.
+		if (cfg.homePlots())
+			laborer.setHomePlot(colony.claimHomePlot(laborer));
 		// the ruler capitalizes the new household out of its treasury (borrowing if
 		// short); skip only during an interregnum (a dead ruler has no account)
 		Ruler ruler = colony.getRuler();

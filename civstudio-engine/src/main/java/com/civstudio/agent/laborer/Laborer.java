@@ -8,6 +8,7 @@ import com.civstudio.agent.Member;
 import com.civstudio.race.Race;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.Account;
+import com.civstudio.settlement.Plot;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.good.Enjoyment;
 import com.civstudio.good.Good;
@@ -91,6 +92,13 @@ public class Laborer extends AbstractHousehold {
 	// wage from employment
 	@Getter
 	private double wage;
+
+	// the home plot this landed household farms for its own subsistence food (its yield
+	// drops straight into the necessity larder each step, outside the market — see act()),
+	// or null for a landless household (the pool overflow, or a colony without home plots).
+	// Assigned at founding/promotion by the harness; freed on death. See docs/plot-working-plan.md P1.
+	@Getter
+	private Plot homePlot;
 
 	/**
 	 * Create a new laborer
@@ -290,6 +298,16 @@ public class Laborer extends AbstractHousehold {
 		// need further testing!!!
 		double RR = bank.getDepositIR();
 
+		// work my home plot: a landed household farms its own plot for subsistence food,
+		// dropped straight into its larder before it eats — a non-market food source (plot
+		// food never touches the consumer-good market). A landless household (homePlot ==
+		// null — the pool overflow, or a colony with no home plots) relies on the market
+		// as before, so this is byte-identical when no plot is assigned. This is the
+		// settled analogue of the camp's forage (a generalization of campForageYield); see
+		// docs/plot-working-plan.md P1.
+		if (homePlot != null)
+			necessity.increase(getColony().homePlotFoodYield(homePlot));
+
 		// the household eats per member, in priority order (head, then other adults,
 		// then children): an adult eats the FINE worker ration, a child the SNACK
 		// ration. The head eats first — if even it cannot be fed the household dies
@@ -445,6 +463,19 @@ public class Laborer extends AbstractHousehold {
 	 */
 	public Member emancipateChild(LocalDate today) {
 		return releaseGrownChild(today);
+	}
+
+	/**
+	 * Assign (or clear, with {@code null}) this household's {@linkplain #getHomePlot() home
+	 * plot} — the plot it farms for subsistence food. Set by the harness when a landed
+	 * household is founded/promoted (see {@code SimulationHarness}); cleared when the plot
+	 * is vacated. A no-op economically until the household next acts. See
+	 * {@code docs/plot-working-plan.md} P1.
+	 *
+	 * @param homePlot the plot this household farms, or {@code null} to make it landless
+	 */
+	public void setHomePlot(Plot homePlot) {
+		this.homePlot = homePlot;
 	}
 
 	// the daily necessity ration a member eats: an adult the FINE worker ration

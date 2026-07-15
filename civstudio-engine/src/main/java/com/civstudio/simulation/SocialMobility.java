@@ -348,8 +348,15 @@ class SocialMobility implements ExpeditionReturn {
 				new Person(child.person().givenName(), surname, child.gender(),
 						child.skills(), race),
 				child.getBirthDate(), child.getMother(), child.getFather());
-		return new Laborer(head, cfg.laborer().e(), initNQty, initCheckingBal, 0,
-				cfg.laborer().savingsRate(), LaborerConfig.DEFAULT, bank, colony);
+		Laborer household = new Laborer(head, cfg.laborer().e(), initNQty,
+				initCheckingBal, 0, cfg.laborer().savingsRate(), LaborerConfig.DEFAULT,
+				bank, colony);
+		// a home-plots colony seats the new (fission-born or returned-explorer) household on a
+		// plot it farms for subsistence food, landless (null) if the site is full. See
+		// docs/plot-working-plan.md P1.
+		if (cfg.homePlots())
+			household.setHomePlot(colony.claimHomePlot(household));
+		return household;
 	}
 
 	/**
