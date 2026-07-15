@@ -109,21 +109,33 @@ public class SettlerCaravan extends MarchingCaravan {
 	 * <p>
 	 * This <b>mutates</b> {@code colony} — it drains its banks and empties its
 	 * households' larders — so the colony is expected to be discarded (it vanishes)
-	 * afterward; this operation does not itself tear down the settlement or fire any
-	 * trigger (that is the collapse-as-decline wiring, a later phase). The colony must
-	 * have a living {@link Ruler} (the band's leader) and a {@link Retinue} (its
-	 * following).
+	 * afterward. The band is led by the settlement's <b>head</b>: its {@link Ruler} if it
+	 * has booted a ruler economy ({@code SMALLHOLDING} and up), else its {@link Captain}
+	 * (a sub-{@code SMALLHOLDING} foraging camp that never booted — the {@code CAMP →
+	 * caravan} hand-off, {@code docs/settlement-tier-ladder-plan.md} Phase E). The colony
+	 * must have a living head (ruler or captain) and a {@link Retinue} (its following).
 	 *
 	 * @param colony
 	 *            the settled colony to dissolve into a band
 	 * @return the wandering migration band the colony becomes
 	 */
 	public static SettlerCaravan dissolve(Settlement colony) {
-		Ruler ruler = colony.getRuler();
-		if (ruler == null || !ruler.isAlive())
+		// the band is led by the settlement's head: its ruler if it booted a ruler economy,
+		// else its captain (a camp that never booted). Both are Households whose head Member
+		// leads the band out.
+		Household head = colony.getRuler();
+		if (head == null || !((Agent) head).isAlive()) {
+			head = null;
+			for (Agent a : colony.getAgents())
+				if (a instanceof Captain c && c.isAlive()) {
+					head = c;
+					break;
+				}
+		}
+		if (head == null)
 			throw new IllegalStateException(
-					"a colony dissolves into a band led by its ruler, but it has none");
-		Member leader = ruler.getHead();
+					"a colony dissolves into a band led by its head, but has neither ruler nor captain");
+		Member leader = head.getHead();
 
 		// the band's following is the colony's existing labour reserve
 		Retinue following = null;
@@ -157,8 +169,8 @@ public class SettlerCaravan extends MarchingCaravan {
 					following.stockLarder(food.decrease(food.getQuantity()));
 				// a disbanded household's dynasty surname returns to the session-wide
 				// pool (it is a household no longer — its people are now unranked
-				// following). Only the leader's dynasty survives, leading the band.
-				if (a != ruler)
+				// following). Only the head's dynasty survives, leading the band.
+				if (a != head)
 					colony.getNames().releaseDynastyName(h.getHead().surname());
 			} else if (a instanceof NFirm) {
 				// an abandoned necessity firm's unsold food stores travel with the band

@@ -86,15 +86,26 @@ class SettlementCampFoundingTest {
 	}
 
 	@Test
-	void aCampWhoseBandIsSpentDies() {
-		Settlement c = campHarness(EARGATE).getColony();
+	void aStarvingCampStrikesAndDepartsAsACaravan() {
+		// a small band on POOR forage (below CAMP_RATION) cannot feed itself: once its opening
+		// larder is spent it starves and, unable to sustain the band on this ground, strikes camp
+		// and departs as a wandering caravan led by its captain (the CAMP -> caravan hand-off, E).
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				.foundAtCamp(true).retinueSize(40).build();
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321L, EARGATE);
+		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		Settlement c = h.getColony();
+		c.setCampForagePerForager(0.02); // well below CAMP_RATION (0.1) — the band cannot feed itself
 		c.start();
-		assertTrue(c.isAlive(), "a fresh camp is alive");
-		// a deep, sustained deficit starves the whole foraging band away; once the pool is spent
-		// the camp dies terminally (its foragers are its workforce). Drive several days.
-		c.setFoodBox(-10_000_000);
-		for (int i = 0; i < 400 && c.isAlive(); i++)
-			c.newDay();
-		assertFalse(c.isAlive(), "a camp whose foraging band starves out dies");
+		assertEquals(SettlementTier.CAMP, c.getTier());
+		assertNull(c.getRuler(), "a starving camp never boots a ruler economy");
+
+		c.run(3650); // up to 10 years; it ends far sooner, when the band starves out
+
+		assertFalse(c.isAlive(), "a camp that cannot feed its band ends its settled life");
+		assertNotNull(c.getDepartedBand(),
+				"it strikes camp and departs as a wandering caravan (led by its captain)");
+		assertTrue(c.getDepartedBand().getFollowing().size() > 0,
+				"the survivors take to the road as the band's following");
 	}
 }

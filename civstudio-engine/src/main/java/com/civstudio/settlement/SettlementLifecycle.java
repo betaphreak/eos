@@ -88,17 +88,27 @@ class SettlementLifecycle {
 	void update() {
 		if (!started || died)
 			return;
-		// a sub-SMALLHOLDING camp (docs/settlement-tier-ladder-plan.md Phase D) has no laborer
-		// households by design — its pooled peasants ARE its workforce, foraging the site. It is
-		// alive while the band has foragers and dies terminally when the band is spent (the
-		// graceful CAMP -> depart-as-caravan hand-off is Phase E). Once it grows to SMALLHOLDING
-		// the ruler economy boots and the normal workforce rule below governs it.
+		// a sub-SMALLHOLDING camp (docs/settlement-tier-ladder-plan.md Phase D/E) has no laborer
+		// households by design — its pooled peasants ARE its workforce, foraging the site. Once it
+		// grows to SMALLHOLDING the ruler economy boots and the normal workforce rule below governs
+		// it. Below that:
+		//   - a band starved to NOTHING (no foragers left) dies terminally — no one to take on the road;
+		//   - a camp that CANNOT FEED its band on this ground (a forager starved this step, once its
+		//     larder is spent) strikes camp and DEPARTS as a wandering caravan led by its captain,
+		//     taking its survivors to seek better ground (the CAMP -> caravan hand-off, Phase E).
 		if (!colony.getTier().atLeast(SettlementTier.SMALLHOLDING)) {
 			if (campForagers() == 0) {
 				died = true;
 				deathDate = colony.getDate();
 				log.info(colony.getName() + " died on " + deathDate
 						+ " (its foraging band is spent)");
+				colony.releasePlotsToPool();
+			} else if (campStarving()) {
+				died = true;
+				dissolving = true; // the captain leads the band out (SettlerCaravan.dissolve)
+				deathDate = colony.getDate();
+				log.info(colony.getName() + " is striking camp to depart as a Caravan on "
+						+ deathDate + " (cannot sustain its foraging band here)");
 				colony.releasePlotsToPool();
 			}
 			return;
@@ -121,6 +131,16 @@ class SettlementLifecycle {
 		}
 		if (died)
 			colony.releasePlotsToPool();
+	}
+
+	// whether the camp's foraging band starved a member this step — the site cannot feed it (its
+	// forage yield fell below what its people eat, and the larder that buffered the deficit is now
+	// spent). The signal a camp uses to give up on this ground and depart (docs Phase E).
+	private boolean campStarving() {
+		for (Agent a : colony.getAgents())
+			if (a instanceof Retinue r)
+				return r.getLastStarved() > 0;
+		return false;
 	}
 
 	// the camp's foragers — its pooled peasants (the sub-SMALLHOLDING workforce). 0 if no pool.

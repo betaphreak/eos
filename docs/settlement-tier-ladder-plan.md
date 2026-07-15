@@ -266,7 +266,36 @@ project accepts non-byte-identical here.
 - **Phase G (forage-as-improvement)** realizes D2's Camp food source (interim forage → build-then-
   work Civ4 improvements).
 
-### Phase E — collapse descends the ladder
+### Phase E — collapse descends the ladder (CAMP→depart hand-off + descent floor SHIPPED; un-boot deferred)
+
+> **SHIPPED 2026-07-15.** Both collapse regimes now end in a **departing caravan**, without the risky
+> economy-teardown:
+> - **Head-agnostic `SettlerCaravan.dissolve`** — the band is led by the settlement's *head*: its
+>   `Ruler` if it booted a ruler economy, else its `Captain` (a camp that never booted). This is what
+>   lets a camp dissolve into a Captain-led band.
+> - **`CAMP`→depart-as-caravan hand-off** — camp forage is now a settable field
+>   (`Settlement.setCampForagePerForager`, default `0.14`) so a poor site (or a test) can drop it
+>   below `CAMP_RATION`; a camp that can't feed its band (a forager starves once its larder is spent)
+>   **strikes camp and departs** as a wandering caravan with its survivors (`SettlementLifecycle`
+>   sets `dissolving`), instead of dying terminally. A band starved to *nothing* still dies terminally.
+> - **Booted colonies floor their starvation-descent at `SMALLHOLDING`** — the sub-`SMALLHOLDING`
+>   tiers are only for un-booted foraging camps, so a booted colony never starves down into an
+>   incoherent "ruler at a camp tier" state (`grow()` shrink floor keys off `getRuler()`). If it can't
+>   sustain a Smallholding, its workforce drains and it dissolves into a caravan. Rebaselined
+>   `SettlementGrowthTest` (a starving booted colony descends to `SMALLHOLDING`, not `CAMP`); added
+>   the starving-camp-departs case to `SettlementCampFoundingTest`.
+>
+> **Deferred (the plan's original "demote one tier instead of dissolving" for a booted colony):** the
+> **symmetric un-boot** of a booted colony back into a foraging camp (`SMALLHOLDING`→`HAMLET` tears
+> down the ruler economy: `Ruler`→`Captain`, dissolve firms/silver+gold banks, pool→camp mode) is a
+> large, risky teardown with low ROI given colonies collapse fast (D5) — a booted colony **dissolves**
+> at `SMALLHOLDING` instead. Also deferred: **per-rung dissolution floors** + wiring `isPermanent()`
+> (kept the flat `DISSOLUTION_WORKFORCE_FLOOR = 10` to avoid collapse-timing churn). The camp
+> starvation path is only reachable once forage can dip below the ration (a bad site / a test); the
+> flat `0.14` default means a real camp still always sustains and climbs — **Phase G** (site-scaled
+> forage) makes bad sites, hence natural camp failure, real.
+
+Original plan (superseded above for what shipped; the un-boot remainder stands):
 - **`SettlementLifecycle.update()`** (`:88`): replace the single `DISSOLUTION_WORKFORCE_FLOOR` with
   **per-rung floors** — when living workforce/population falls below the current rung's floor,
   **demote one tier** (City→Town→…→Camp) instead of dissolving; only at the **Camp** rung does the

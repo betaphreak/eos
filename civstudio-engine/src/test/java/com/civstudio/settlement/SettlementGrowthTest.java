@@ -77,16 +77,20 @@ class SettlementGrowthTest {
 	}
 
 	@Test
-	void aStarvingSettlementDescendsTheLadderToCamp() {
-		Settlement c = standardColony(DHENIJANSAR); // founds at METROPOLIS (its maxTier)
+	void aStarvingBootedSettlementDescendsToItsEconomyFloorSmallholding() {
+		Settlement c = standardColony(DHENIJANSAR); // founds MATURE at METROPOLIS (a ruler economy)
 		assertTrue(c.getTier().atLeast(SettlementTier.TOWN), "the demo city founds district-bearing");
 
 		c.setFoodBox(-10_000_000); // a deep, sustained food deficit — outruns any day's surplus
 		c.newDay();
 
-		assertEquals(SettlementTier.CAMP, c.getTier(),
-				"a deeply starving settlement descends the whole ladder to CAMP");
-		assertEquals(0.0, c.getFoodBox(), 1e-9, "the food box floors at 0 once it bottoms out at CAMP");
+		// a colony that has BOOTED its ruler economy floors its starvation-descent at SMALLHOLDING —
+		// the sub-SMALLHOLDING tiers are only for un-booted foraging camps (Phase E), so it never
+		// starves down into an incoherent "ruler at a camp tier" state. If it cannot even sustain a
+		// Smallholding, its workforce drains and it dissolves into a caravan (SettlementLifecycle).
+		assertEquals(SettlementTier.SMALLHOLDING, c.getTier(),
+				"a starving booted colony descends to its economy floor (SMALLHOLDING), not a camp tier");
+		assertEquals(0.0, c.getFoodBox(), 1e-9, "the food box floors at 0 at the economy floor");
 	}
 
 	@Test

@@ -873,14 +873,21 @@ public class Settlement {
 	// --- Camp economy (sub-SMALLHOLDING tiers: CAMP/COTTAGE/HAMLET) -------------------------
 	// A camp has no ruler economy (no firms/markets/banks-beyond-copper): its pooled peasants ARE
 	// its workforce and forage the site for food (docs/settlement-tier-ladder-plan.md Phase D).
-	// The camp's daily food is (foragers × CAMP_FORAGE_PER_FORAGER) − (residents × CAMP_RATION);
-	// the surplus banks into the food box and climbs the tier ladder. Both constants are
-	// deliberately UNCALIBRATED tuning levers (Phase D5): CAMP_FORAGE_PER_FORAGER sits a little
+	// The camp's daily food is (foragers × campForagePerForager) − (residents × CAMP_RATION); the
+	// surplus banks into the food box and climbs the tier ladder. Both levers are deliberately
+	// UNCALIBRATED (Phase D5): the per-forager forage (a settable field, below) defaults a little
 	// above CAMP_RATION so a healthy, well-peopled camp net-grows and climbs to SMALLHOLDING at a
 	// sane pace, while a thin or ill-sited band stalls or starves back down. CAMP_RATION is the
 	// lean band ration (also what the pool eats in camp mode, so the larder tracks the food box).
 	public static final com.civstudio.good.RationSize CAMP_RATION = com.civstudio.good.RationSize.SNACK;
-	private static final double CAMP_FORAGE_PER_FORAGER = 0.14;
+
+	// the per-forager daily food yield of a camp (necessity units); the default DEFAULT_CAMP_FORAGE
+	// sits above CAMP_RATION so a healthy, well-sited camp net-grows and climbs. A per-colony FIELD
+	// (not a constant) so a poor site — or a test — can lower it below the ration to make a camp
+	// STARVE and, unable to sustain its band, strike camp and depart as a wandering caravan (Phase
+	// E). Scaling it by real plot food yield is future work (Phase G, forage-as-improvement).
+	static final double DEFAULT_CAMP_FORAGE_PER_FORAGER = 0.14;
+	private double campForagePerForager = DEFAULT_CAMP_FORAGE_PER_FORAGER;
 
 	// the colony's net food surplus this day (C2C food balance): necessity PRODUCED by its
 	// agriculture (every living necessity firm's output) minus necessity EATEN (a FINE ration per
@@ -917,7 +924,20 @@ public class Settlement {
 	 * @return the day's foraged food (necessity units)
 	 */
 	public double campForageYield(int foragers) {
-		return foragers * CAMP_FORAGE_PER_FORAGER;
+		return foragers * campForagePerForager;
+	}
+
+	/**
+	 * Set this camp's per-forager daily forage yield (necessity units) — the {@linkplain
+	 * #campForageYield(int) Camp economy}'s tuning lever. Below {@link #CAMP_RATION} the camp
+	 * starves its band and, unable to sustain it, departs as a wandering caravan (Phase E); above
+	 * it the camp net-grows and climbs. Defaults to {@value #DEFAULT_CAMP_FORAGE_PER_FORAGER}.
+	 *
+	 * @param perForager
+	 *            the daily forage yield per foraging peasant
+	 */
+	public void setCampForagePerForager(double perForager) {
+		this.campForagePerForager = perForager;
 	}
 
 	// the camp's foragers — its pooled peasants (the sub-SMALLHOLDING workforce). 0 if no pool.
@@ -975,7 +995,15 @@ public class Settlement {
 			if (next == SettlementTier.SMALLHOLDING)
 				break;
 		}
-		while (tier != SettlementTier.CAMP && foodBox < 0) {
+		// the starvation-descent floor: a colony that has BOOTED its ruler economy (has a Ruler)
+		// floors at SMALLHOLDING — the sub-SMALLHOLDING tiers are only for un-booted foraging camps,
+		// so a booted colony does not starve down into an incoherent "ruler at a camp tier" state; if
+		// it cannot even sustain a Smallholding, its workforce drains and it dissolves into a caravan
+		// (SettlementLifecycle). An un-booted camp (a Captain, no Ruler) floors at CAMP as before.
+		// (Phase E; the symmetric un-boot back to a foraging camp is deferred.)
+		SettlementTier descentFloor = getRuler() != null
+				? SettlementTier.SMALLHOLDING : SettlementTier.CAMP;
+		while (tier.ordinal() > descentFloor.ordinal() && foodBox < 0) {
 			SettlementTier from = tier;
 			SettlementTier down = tier.previous().orElseThrow();
 			setTier(down);
@@ -983,7 +1011,7 @@ public class Settlement {
 			log.info(name + " starved down from " + from + " to " + down + " on " + getDate()
 					+ " (" + totalResidents() + " residents)");
 		}
-		if (tier == SettlementTier.CAMP && foodBox < 0)
+		if (tier == descentFloor && foodBox < 0)
 			foodBox = 0;
 	}
 
