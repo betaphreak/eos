@@ -44,21 +44,33 @@ class SettlementTierTest {
 	}
 
 	@Test
-	void nextWalksUpAndEmptyAtTheTop() {
+	void nextAndPreviousWalkTheLadderAndAreEmptyAtTheEnds() {
 		assertEquals(SettlementTier.COTTAGE, SettlementTier.CAMP.next().orElseThrow());
 		assertEquals(SettlementTier.METROPOLIS, SettlementTier.TOWN.next().orElseThrow());
 		assertTrue(SettlementTier.METROPOLIS.next().isEmpty(), "METROPOLIS is the top rung");
+		assertEquals(SettlementTier.TOWN, SettlementTier.METROPOLIS.previous().orElseThrow());
+		assertTrue(SettlementTier.CAMP.previous().isEmpty(), "CAMP is the foot");
 	}
 
 	@Test
-	void upgradeDaysFollowTheC2cChainAndMetropolisIsTerminal() {
-		assertEquals(10, SettlementTier.CAMP.upgradeDays());
-		assertEquals(10, SettlementTier.COTTAGE.upgradeDays());
-		assertEquals(20, SettlementTier.HAMLET.upgradeDays());
-		assertEquals(30, SettlementTier.SMALLHOLDING.upgradeDays());
-		assertEquals(40, SettlementTier.TOWN.upgradeDays());
-		org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
-				SettlementTier.METROPOLIS::upgradeDays, "the terminal rung has no upgrade cost");
+	void sizeIsOneBasedAndHouseholdFloorIsSizeSquared() {
+		assertEquals(1, SettlementTier.CAMP.size());
+		assertEquals(6, SettlementTier.METROPOLIS.size());
+		assertEquals(1, SettlementTier.CAMP.minHouseholds());
+		assertEquals(4, SettlementTier.COTTAGE.minHouseholds());
+		assertEquals(9, SettlementTier.HAMLET.minHouseholds());
+		assertEquals(16, SettlementTier.SMALLHOLDING.minHouseholds());
+		assertEquals(25, SettlementTier.TOWN.minHouseholds());
+		assertEquals(36, SettlementTier.METROPOLIS.minHouseholds());
+	}
+
+	@Test
+	void foodToChangeIsSizeScaled() {
+		assertTrue(SettlementTier.TOWN.foodToChange() > SettlementTier.CAMP.foodToChange(),
+				"a bigger settlement costs more food to grow/shrink");
+		assertEquals(SettlementTier.CAMP.size() * SettlementTier.METROPOLIS.foodToChange()
+				/ SettlementTier.METROPOLIS.size(), SettlementTier.CAMP.foodToChange(),
+				"foodToChange scales linearly with size");
 	}
 
 	@Test

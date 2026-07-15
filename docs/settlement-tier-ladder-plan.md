@@ -117,28 +117,35 @@ the founding map reproduces today's outcomes exactly.
   economy, found-at-Camp, the `Captain` rung, growth. Phase A leaves founding at `METROPOLIS`/
   `SMALLHOLDING` exactly as today — only the *shape* changes.
 
-### Phase B — population×days growth accumulator + tier advance ✅ SHIPPED
-- **`SettlementTier`**: per-rung `upgradeDays()` (the C2C `iUpgradeTime` chain read as days —
-  `CAMP 10, COTTAGE 10, HAMLET 20, SMALLHOLDING 30, TOWN 40`; `METROPOLIS` terminal), `next()` (the
-  rung above, empty at the top), and `METROPOLIS_POP_GATE = 1000`. Values hardcoded on the enum (five
-  stable constants — no need to route through `improvements.json`).
-- **`Settlement`**: a new `double development` accumulator, ticked once per `newDay()` (after the
-  population settles, post-`updateLifecycle`) by `+= totalResidents()`. **`totalResidents()`** = a
-  new helper summing every living person from `getAgents()` — each `Household`'s members (laborers,
-  nobles, ruler; adults + children) plus each `Retinue`'s `size()` (the pool). Also a **`maxTier`**
-  field (the site ceiling): `city_terrain` ⇒ `METROPOLIS`, else `SMALLHOLDING`.
-- Advance `tier` up the ladder while `development` clears the current rung's `upgradeDays()` **and**
-  the next rung is `≤ maxTier` **and** (if the next rung is `METROPOLIS`) `totalResidents() ≥ 1000`.
-  Advancing spends the cost (carries the remainder), is a field change (logged), never a new object.
-- **Dormant in production (behaviour-preserving).** Phase A founds every colony **at its `maxTier`**
-  (`tier == maxTier`), so the advance loop never fires and the accumulator is inert (no RNG, no
-  economics) — byte-identical until **Phase D** lowers the founding tier to `CAMP`. The growth
-  *rate* (thresholds vs. a whole-settlement population) is deliberately uncalibrated here — with
-  today's residents a colony founded low would climb almost instantly; slowing it to a sane pace is
-  the Phase D+ calibration lever.
-- **Verify:** `SettlementGrowthTest` — a colony seeded at `CAMP` climbs and **stops at its `maxTier`**
-  (an ordinary site caps at `SMALLHOLDING`, never reaching `TOWN`); the `METROPOLIS` gate holds a
-  sub-1000 `TOWN` back on a `city_terrain` site.
+### Phase B — Civ4 food-box growth + starvation descent ✅ SHIPPED
+Revised 2026-07-15 (was a "people-days accumulator"). User direction: **growth must mimic how
+Civ4 cities accumulate food to grow**, **a tier of size N needs ≥ N² households**, and **a food
+deficit starves the settlement down a rung** (unifying growth and collapse into one food axis).
+
+- **`SettlementTier`**: `size()` (1-based, `CAMP` 1 … `METROPOLIS` 6), `minHouseholds()` = `size²`
+  (the household floor — `COTTAGE` 4, `HAMLET` 9, `SMALLHOLDING` 16, `TOWN` 25, `METROPOLIS` 36),
+  `foodToChange()` = `size × 1000` (size-scaled food cost to grow past / starve out of a rung —
+  **uncalibrated**), `next()`/`previous()`, and `METROPOLIS_POP_GATE = 1000`.
+- **`Settlement`**: a Civ4 **food box** (`double foodBox`) banked each `newDay()` (post-
+  `updateLifecycle`) by `+= dailyFoodSurplus()`. **`dailyFoodSurplus()`** = necessity **produced**
+  (Σ living `NFirm`/`ConsumerGoodFirm` with product `"Necessity"` `.getOutput()`) − **eaten**
+  (`totalResidents() × RationSize.FINE.perDay()`). Helpers: `householdCount()` (living `Household`s,
+  not the pool), `totalResidents()`, `getFoodBox()` (+ a package-private `setFoodBox` test seam),
+  and the `maxTier` site ceiling.
+- **Grow** while `foodBox ≥ tier.foodToChange()` **and** the next rung `≤ maxTier` **and**
+  `householdCount() ≥ next.minHouseholds()` **and** (for `METROPOLIS`) `totalResidents() ≥ 1000` —
+  spending the cost, carrying the remainder. **Shrink**: a sustained deficit that drains the box
+  below `-tier.foodToChange()` **descends one rung** and resets the box (at `CAMP` it floors, the
+  existing workforce dissolution taking over). Both logged.
+- **Growth-up dormant in production; shrink is live.** Colonies found at `maxTier`, so nothing
+  grows up until **Phase D** founds them at `CAMP` — but a starving colony now descends the ladder
+  (the growth/collapse unification, previously the separate Phase E). No fallout: real colonies run
+  near food parity in the smoke windows, so the box rarely drains a full rung's worth. Costs are
+  **uncalibrated** (a tuning lever). getOutput() staleness (docs/food-balance.md) is an accepted
+  approximation at this stage.
+- **Verify:** `SettlementGrowthTest` — a well-fed `CAMP` colony climbs to its household/site ceiling
+  (`SMALLHOLDING`); the `METROPOLIS` gate holds a sub-1000 well-fed `TOWN` back; a starving colony
+  descends one rung. `SettlementTierTest` covers `size`/`minHouseholds`/`foodToChange`/`next`/`previous`.
 
 ### Phase C — per-tier building & district caps
 - **Building cap**: gate `Settlement.autoBuildBuilding` (`:1450`, the single `Building`-placement

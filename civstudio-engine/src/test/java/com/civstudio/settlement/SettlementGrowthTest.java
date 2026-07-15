@@ -9,9 +9,9 @@ import com.civstudio.simulation.SimulationConfig;
 import com.civstudio.simulation.SimulationHarness;
 
 /**
- * Drives the {@link SettlementTier} growth accumulator (Phase B): a colony seeded low climbs the
- * ladder as development accrues, but stops at its site's {@link Settlement#getMaxTier() ceiling},
- * and the {@link SettlementTier#METROPOLIS} population gate holds back a too-small town.
+ * Drives the {@link SettlementTier} food-box growth (Phase B): a well-fed colony climbs the
+ * ladder but is capped by its site ceiling, its size&sup2; household floor and the {@link
+ * SettlementTier#METROPOLIS} population gate; a starving colony descends a rung.
  */
 class SettlementGrowthTest {
 
@@ -27,38 +27,65 @@ class SettlementGrowthTest {
 		return c;
 	}
 
-	@Test
-	void climbsFromCampAndStopsAtTheSiteCeiling() {
-		Settlement c = standardColony(EARGATE);
-		assertEquals(SettlementTier.SMALLHOLDING, c.getMaxTier(),
-				"an ordinary single-urban-plot site caps at SMALLHOLDING");
-		assertTrue(c.totalResidents() > 0, "the founded colony has residents");
-
-		c.setTier(SettlementTier.CAMP); // pretend it founded low (the Phase D behaviour)
-		for (int i = 0; i < 8; i++)
-			c.newDay();
-
-		assertEquals(SettlementTier.SMALLHOLDING, c.getTier(),
-				"it climbs CAMP -> ... -> SMALLHOLDING and stops at its ceiling (never TOWN)");
+	// the highest rung a colony with `hh` households can climb to, bounded by the site ceiling
+	// (food and — below METROPOLIS — the population gate not being the limiter).
+	private static SettlementTier reachableTop(int hh, SettlementTier maxTier) {
+		SettlementTier top = SettlementTier.CAMP;
+		for (SettlementTier t : SettlementTier.values()) {
+			if (t.ordinal() > maxTier.ordinal() || hh < t.minHouseholds())
+				break;
+			top = t;
+		}
+		return top;
 	}
 
 	@Test
-	void metropolisGateHoldsBackASubThousandTown() {
+	void wellFedColonyClimbsToItsHouseholdAndSiteCeiling() {
+		Settlement c = standardColony(EARGATE);
+		assertEquals(SettlementTier.SMALLHOLDING, c.getMaxTier(),
+				"an ordinary single-urban-plot site caps at SMALLHOLDING");
+		int hh = c.householdCount();
+		assertTrue(hh >= SettlementTier.SMALLHOLDING.minHouseholds(),
+				"a standard colony has enough households to reach its SMALLHOLDING ceiling");
+
+		c.setTier(SettlementTier.CAMP);   // pretend it founded low (the Phase D behaviour)
+		c.setFoodBox(10_000_000);         // ample food, so only households / the site ceiling limit it
+		c.newDay();
+
+		assertEquals(reachableTop(hh, c.getMaxTier()), c.getTier(),
+				"it climbs from CAMP to its household/site ceiling (SMALLHOLDING)");
+		assertTrue(c.getTier().atLeast(SettlementTier.COTTAGE), "food-fuelled growth climbs past CAMP");
+	}
+
+	@Test
+	void metropolisPopulationGateHoldsBackAWellFedTown() {
 		Settlement c = standardColony(DHENIJANSAR);
 		assertEquals(SettlementTier.METROPOLIS, c.getMaxTier(),
 				"a city_terrain site can reach METROPOLIS");
 
 		c.setTier(SettlementTier.TOWN);
+		c.setFoodBox(10_000_000); // food is not the limiter
 		int residents = c.totalResidents();
-		assertTrue(residents > 0 && residents < SettlementTier.METROPOLIS_POP_GATE,
-				"the demo colony is well under the 1000-person metropolis gate");
+		c.newDay();
 
-		for (int i = 0; i < 8; i++)
-			c.newDay();
+		if (residents < SettlementTier.METROPOLIS_POP_GATE)
+			assertEquals(SettlementTier.TOWN, c.getTier(),
+					"the sub-1000 population gate blocks METROPOLIS despite ample food");
+		else
+			assertEquals(SettlementTier.METROPOLIS, c.getTier(),
+					"a >=1000-person town with ample food becomes a METROPOLIS");
+	}
 
-		assertEquals(SettlementTier.TOWN, c.getTier(),
-				"development accrues but the sub-1000 population gate blocks METROPOLIS");
-		assertTrue(c.getDevelopment() >= SettlementTier.TOWN.upgradeDays(),
-				"development cleared TOWN's cost — only the population gate held it back");
+	@Test
+	void aStarvingSettlementDescendsTheLadder() {
+		Settlement c = standardColony(DHENIJANSAR); // founds at METROPOLIS (its maxTier)
+		SettlementTier before = c.getTier();
+		assertTrue(before.atLeast(SettlementTier.TOWN), "the demo city founds district-bearing");
+
+		c.setFoodBox(-10_000_000); // a deep, sustained food deficit
+		c.newDay();
+
+		assertEquals(before.previous().orElseThrow(), c.getTier(),
+				"a starving settlement starves down exactly one rung");
 	}
 }

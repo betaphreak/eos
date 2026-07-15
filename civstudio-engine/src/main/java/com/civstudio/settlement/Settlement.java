@@ -281,10 +281,12 @@ public class Settlement {
 	// climbs tier toward this and never past it. Fixed at founding (docs decision "site ceiling").
 	private final SettlementTier maxTier;
 
-	// accumulated development in people-days (+= totalResidents() each day); when it clears the
-	// current rung's upgradeDays the settlement advances a tier (Phase B). Dormant in production
-	// today: colonies found at maxTier, so the advance never fires until Phase D founds them low.
-	private double development;
+	// the colony's Civ4-style FOOD BOX: it banks the day's net food surplus (necessity produced −
+	// eaten) each newDay. When it clears the current rung's foodToChange() the settlement grows a
+	// tier; a sustained deficit that drops it below -foodToChange() starves it down a tier. See
+	// grow(). Growth-up is dormant in production today (colonies found at maxTier); the shrink
+	// (starvation descent) is live. docs/settlement-tier-ladder-plan.md.
+	private double foodBox;
 
 	// the colony's solar clock for its (fixed) location: computes the day's
 	// dawn/sunrise/sunset/dusk and daylight length, refreshed for the current
@@ -742,21 +744,28 @@ public class Settlement {
 	}
 
 	/**
-	 * The colony's accumulated <b>development</b> in people-days — it grows by {@link
-	 * #totalResidents()} each day and is spent down as the settlement advances rungs (see the
-	 * growth in {@link #newDay()}).
+	 * The colony's <b>food box</b> (Civ4-style) — the banked net food surplus that drives tier
+	 * growth: it clears the current rung's {@link SettlementTier#foodToChange()} to grow, or drops
+	 * below its negative to starve down (see the growth in {@link #newDay()}).
 	 *
-	 * @return the current development accumulator
+	 * @return the current food-box balance (net-surplus units; may be negative)
 	 */
-	public double getDevelopment() {
-		return development;
+	public double getFoodBox() {
+		return foodBox;
+	}
+
+	// test seam: prime the food box so a unit test can exercise grow/shrink without driving a
+	// whole food economy to a surplus/deficit. Package-private — production growth feeds it only
+	// through grow()'s daily surplus.
+	void setFoodBox(double foodBox) {
+		this.foodBox = foodBox;
 	}
 
 	/**
 	 * The colony's <b>total residents</b> — every living person the colony holds: each {@link
 	 * Household}'s members (laborers, nobles and the ruler; adults and children alike) plus each
-	 * {@link com.civstudio.agent.Retinue peasant pool}'s size. This is the population the tier
-	 * ladder grows on (people-days), broader than the workforce-only collapse metric.
+	 * {@link com.civstudio.agent.Retinue peasant pool}'s size. Broader than the workforce-only
+	 * collapse metric; it is the population the {@link SettlementTier#METROPOLIS} gate reads.
 	 *
 	 * @return the number of living residents
 	 */
@@ -773,28 +782,73 @@ public class Settlement {
 		return n;
 	}
 
-	// accrue a day's development (people-days) and climb the tier ladder while the accumulator
-	// clears the current rung's cost, the next rung is within the site's maxTier, and (for the
-	// top rung) the population gate is met. Advancing spends the cost and carries the remainder.
-	// Dormant in production today — colonies found at maxTier, so the loop never runs (byte-
-	// identical); it comes alive once Phase D founds them at CAMP. See docs/settlement-tier-ladder-plan.md.
+	/**
+	 * The colony's living <b>household</b> count — the laborer/noble/ruler families (not the
+	 * faceless peasant pool). This is what the tier ladder's {@link SettlementTier#minHouseholds()
+	 * size&sup2; household gate} reads.
+	 *
+	 * @return the number of living households
+	 */
+	public int householdCount() {
+		int n = 0;
+		for (Agent a : agents)
+			if (a.isAlive() && a instanceof Household)
+				n++;
+		return n;
+	}
+
+	// the colony's net food surplus this day (Civ4 food balance): necessity PRODUCED by its
+	// agriculture (every living necessity firm's output) minus necessity EATEN (a FINE ration per
+	// resident). Positive fills the food box (growth), negative drains it (starvation). getOutput()
+	// can read stale for a firm that got no labour this step (docs/food-balance.md) — an accepted
+	// approximation at this uncalibrated stage.
+	private double dailyFoodSurplus() {
+		double produced = 0;
+		for (Agent a : agents)
+			if (a.isAlive() && a instanceof com.civstudio.agent.firm.ConsumerGoodFirm f
+					&& "Necessity".equals(f.getProductName()))
+				produced += f.getOutput();
+		double eaten = totalResidents() * com.civstudio.good.RationSize.FINE.perDay();
+		return produced - eaten;
+	}
+
+	// bank the day's net food surplus and settle any tier change it triggers (docs/settlement-
+	// tier-ladder-plan.md Phase B). GROWTH climbs while the food box clears the current rung's
+	// cost, the next rung is within the site's maxTier, the target rung's household floor is met,
+	// and (for METROPOLIS) the population gate is met — spending the cost, carrying the remainder.
+	// SHRINK (starvation) descends one rung when a sustained deficit drains the box below the
+	// current rung's negative cost, resetting the box. Growth-up is dormant in production (colonies
+	// found at maxTier); the shrink is live, so a starving colony descends the ladder.
 	private void grow() {
-		development += totalResidents();
+		foodBox += dailyFoodSurplus();
+		// grow up the ladder while food, site ceiling, households and the metropolis gate allow
 		while (tier.ordinal() < maxTier.ordinal()) {
-			SettlementTier next = tier.next().orElse(null);
-			if (next == null || next.ordinal() > maxTier.ordinal())
+			SettlementTier next = tier.next().orElseThrow(); // present: tier < maxTier
+			if (foodBox < tier.foodToChange())
 				break;
-			double cost = tier.upgradeDays();
-			if (development < cost)
+			if (householdCount() < next.minHouseholds())
 				break;
 			if (next == SettlementTier.METROPOLIS
 					&& totalResidents() < SettlementTier.METROPOLIS_POP_GATE)
 				break;
-			development -= cost;
+			foodBox -= tier.foodToChange();
 			SettlementTier from = tier;
 			setTier(next);
 			log.info(name + " grew from " + from + " to " + next + " on " + getDate()
+					+ " (" + householdCount() + " households, " + totalResidents() + " residents)");
+		}
+		// starvation: a sustained deficit descends one rung (and resets the box) — the growth and
+		// collapse axes unified (docs/settlement-tier-ladder-plan.md). At CAMP the existing
+		// workforce-floor dissolution takes over, so the box just floors there.
+		if (tier != SettlementTier.CAMP && foodBox <= -tier.foodToChange()) {
+			SettlementTier from = tier;
+			SettlementTier down = tier.previous().orElseThrow();
+			setTier(down);
+			foodBox = 0;
+			log.info(name + " starved down from " + from + " to " + down + " on " + getDate()
 					+ " (" + totalResidents() + " residents)");
+		} else if (tier == SettlementTier.CAMP && foodBox < 0) {
+			foodBox = 0;
 		}
 	}
 
@@ -1425,9 +1479,9 @@ public class Settlement {
 		// lost its last laborer dies here
 		updateLifecycle();
 
-		// accrue this day's development (people-days) and climb the tier ladder if it clears the
-		// next rung's cost (docs/settlement-tier-ladder-plan.md Phase B). Inert in production —
-		// colonies found at their maxTier, so nothing advances until Phase D founds them low.
+		// bank this day's net food surplus into the food box and settle any tier change
+		// (docs/settlement-tier-ladder-plan.md Phase B): growth-up is dormant in production
+		// (colonies found at maxTier), but a starving colony now descends the ladder.
 		grow();
 
 		for (Market market : markets.values()) {
