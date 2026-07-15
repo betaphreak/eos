@@ -25,10 +25,13 @@
   read-only tools `list_sessions` / `get_snapshot` / `get_person` /
   `get_command_log` and the `civstudio://session/{id}/snapshot|events` resources
   over the running `SessionHost` beans (`com.civstudio.server.mcp`). The **write
-  half** — create/control/submit player commands through the tick-stamped
-  `CommandLog` seam — is deferred; when added it will be **admin-gated**
-  (`ROLE_ADMIN` / `civstudio.auth.admins`) rather than owner-gated, since MCP calls
-  carry no per-session request identity as cleanly as REST does.
+  half BUILT too** (v0.9.34): `create_session` / `control_session` / `submit_command`
+  (`SessionWriteMcpTools`) — thin peers of `SessionController`'s create/control/commands
+  through the tick-stamped `CommandLog` seam — **admin-gated** (`McpAuthz` →
+  `ROLE_ADMIN` / `civstudio.auth.admins`) rather than owner-gated, since MCP calls
+  carry no per-session request identity as cleanly as REST does. (The `/mcp` servlet
+  runs behind the same Security filter chain, so the caller's identity — including the
+  dev-user header — is on the request thread; verified live.)
 - **Phase 3 — in-game LLM advisors.** Speculative. The privy-council
   `AdvisorRoster` seats driven by an LLM that reads a colony's render snapshot as
   MCP resources and acts *only* through `CommandLog`. Deferred until the command
@@ -283,8 +286,10 @@ framing instead of REST.
 > scanner discovers `SessionMcpTools` (`@McpTool`) and `SessionMcpResources`
 > (`@McpResource`) in `com.civstudio.server.mcp` — thin projections over
 > `SessionHost` / `HostedSession` / the `render.*` records, verified against a live
-> session (`McpEndpointTest`, `SessionMcpToolsTest`). The **read** rows below shipped;
-> the **write** rows (marked `write (auth)`) are the deferred, admin-gated follow-up.
+> session (`McpEndpointTest`, `SessionMcpToolsTest`). The **write** rows (marked
+> `write (auth)`) also shipped — `SessionWriteMcpTools`, **admin-gated** via `McpAuthz`
+> (`RequestMcpAuthz` resolves the caller on the `/mcp` request thread; `SessionWriteMcpToolsTest`
+> + a live handshake).
 > The `events` resource serves a **retained per-session tail** (`SessionEventLog`),
 > alongside a filterable **`get_events`** tool — see the retained-buffer section below.
 > A first `@McpPrompt` playbook also shipped — `diagnose-live-colony`
@@ -311,12 +316,17 @@ in-flight day.
 
 ### Auth
 
-Reuse the server's model wholesale: spectating (reads) can stay anonymous like the
-SSE stream; control/create/submit are **owner-gated writes** — the MCP endpoint runs
-the same `denyWrite` check (any authenticated user for the unowned public demo, the
-owner for an owned session), and privileged/global actions sit behind the existing
-`ROLE_ADMIN` / `civstudio.auth.admins` allow-list, exactly as the admin console
-does. No new identity system.
+Reuse the server's model: spectating (reads) stays anonymous like the SSE stream. For
+the writes, the sketch above imagined per-session *owner-gating* (`denyWrite`); the
+built surface instead **admin-gates** them (the choice recorded when the write half was
+built) — MCP calls don't carry a per-session owner as cleanly as an authenticated REST
+request, so `control/create/submit` require `ROLE_ADMIN` / the `civstudio.auth.admins`
+allow-list, exactly as the admin console does. The seam is `McpAuthz.requireAdmin()`;
+`RequestMcpAuthz` resolves the caller from the `/mcp` request thread — the endpoint is a
+servlet behind the same Security filter chain, so `SecurityContextHolder` and (via
+`RequestContextHolder`) the request/dev-header are available, exactly as in
+`SessionController`. No new identity system. (Owner-gating can be reintroduced later if
+MCP writes need to target another user's owned session.)
 
 ### Live resources
 
