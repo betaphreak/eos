@@ -1,6 +1,6 @@
 # Plan: households work plots for food (Civ4-style plot-working economy)
 
-**Status:** **P1 + P2 + P3 SHIPPED** (2026-07-16); P4–P5 still PLAN. The fix for the **large / mature-colony collapse**: give every household a
+**Status:** **P1 + P2 + P3 + P4 SHIPPED** (2026-07-16); P5 still PLAN. The fix for the **large / mature-colony collapse**: give every household a
 **home plot** it farms for its own subsistence food, so baseline survival is decoupled from the market.
 The firms stay as a market/surplus layer *on top*. Companion to
 [`docs/settlement-tier-ladder-plan.md`](settlement-tier-ladder-plan.md) (the tier ladder + the
@@ -168,10 +168,36 @@ reactor green (331 engine + 55 server).
 `claimHomePlot` (the P2 shared model tracks per-plot load, not per-occupant), and de-qualified the two
 `Laborer` references in `Settlement`.
 
-## P4 — Unify the camp forage with settled plot-working
+## P4 — Unify the camp forage with settled plot-working (+ food-subsystem extraction) — **SHIPPED 2026-07-16**
 
-**Goal.** Collapse the Phase-G camp forage and P1 into **one** plot-working mechanism, so the camp's
-plot-working simply **continues** after the boot (no separate camp code path).
+**Goal.** Collapse the Phase-G camp forage and the settled home-plot working into **one** plot-working
+mechanism, in **one cohesive subsystem** — so the camp's plot-working simply **continues** after the boot
+(no separate camp code path), and the food logic lives together rather than scattered across `Settlement`.
+
+**What shipped.**
+- **`FoodEconomy` helper extracted** from `Settlement` (parallel to `PlotField`): it owns the **food box**,
+  the **camp forage** (`campPlot`/`campForageImprovement`/`campBuildProgress`/`campForagePerForager`,
+  `campForageYield`/`campPlotFood`/`setUpCampForage`/`advanceCampForageBuild`), the **home-plot yield**
+  (`homePlotFoodYield`), the **food balance** (`dailyFoodSurplus`) and `applyFoodWastage`, plus the
+  grow-box drivers (`advanceDay`/`getFoodBox`/`spendForGrowth`). `Settlement` keeps thin **delegators**
+  (the public API is unchanged — `campForageYield`, `setUpCampForage`, `homePlotFoodYield`, `getFoodBox`,
+  … all still resolve on the colony) and the two externally-referenced tuning levers as facade statics
+  (`CAMP_RATION`, `HOUSEHOLD_PLOT_RATE`). `Settlement.grow()` (the tier state machine) stays put and drives
+  the box through the `FoodEconomy` API.
+- **`dailyFoodSurplus()` unified.** One expression at both tiers: `Σ plot food + firm output − eaten`,
+  where "plot food" is a single `plotFood(settled)` step — a camp's band forages its plot (labour-scaled)
+  or a settled colony's households farm shared home plots (land-scaled), both reading `Plot.yields()[FOOD]`.
+  Firms and the worker ration apply only at settled tiers; a camp uses the lean `CAMP_RATION`.
+- **Byte-identical for every flag-off colony** (a laborer with no home plot contributes exactly `0.0`, and
+  the firm-output summation order is unchanged) — the whole existing suite is untouched. Full reactor green
+  (331 engine + 55 server).
+
+**Note on the two modes.** The camp forage stays **labour-scaled** (`foragers × rate × plotFood`) and the
+settled home plots **land-scaled** (`plotFood × rate ÷ load`) — they are genuinely different economic modes
+(a band gathering over a site vs smallholders on shared fields), now co-located and sharing the food box,
+wastage and `Plot.yields()[FOOD]` reading rather than merged into one formula.
+
+<details><summary>Original P4 sketch</summary>
 
 **Steps.**
 1. A camp's pooled foragers are landless households-in-waiting working plots collectively; a settled
@@ -186,6 +212,8 @@ plot-working simply **continues** after the boot (no separate camp code path).
 **Risk / tests.** Low-medium (a consolidation). The found-at-Camp tests (`CampFoundingEconomy`,
 `CampBootViabilityTest`) still pass; the boot transient the subsistence floor patched is now moot
 (households self-feed from day 1).
+
+</details>
 
 ## P5 — Production & commerce plot yields (fuller Civ4 model)
 

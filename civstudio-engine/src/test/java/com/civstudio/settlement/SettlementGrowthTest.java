@@ -96,11 +96,11 @@ class SettlementGrowthTest {
 	@Test
 	void foodWastageBanksSmallSurplusesFullyButSaturatesLargeOnes() {
 		// a deficit is never wasted
-		assertEquals(-5.0, Settlement.applyFoodWastage(-5, 10), 1e-9);
+		assertEquals(-5.0, FoodEconomy.applyFoodWastage(-5, 10), 1e-9);
 		// surplus up to consumption banks in full
-		assertEquals(8.0, Settlement.applyFoodWastage(8, 10), 1e-9);
+		assertEquals(8.0, FoodEconomy.applyFoodWastage(8, 10), 1e-9);
 		// a huge surplus saturates toward the asymptote (start + 1/growthFactor = 10 + 20 = 30)
-		double huge = Settlement.applyFoodWastage(1_000_000, 10);
+		double huge = FoodEconomy.applyFoodWastage(1_000_000, 10);
 		assertTrue(huge > 29 && huge < 31, "a huge daily surplus saturates near the asymptote, not banks in full");
 	}
 }

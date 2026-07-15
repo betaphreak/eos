@@ -207,6 +207,12 @@ public class Settlement {
 	// the constructor (it needs the terrain/province inputs).
 	private final PlotField plotField;
 
+	// the food / subsistence subsystem: the food box (the banked net-food surplus that drives tier
+	// growth) and the two modes of the plot-working economy that fill it — the camp forage and the
+	// settled home plots (see FoodEconomy / docs/plot-working-plan.md P4). Extracted from this class;
+	// the food API below delegates to it. Assigned in the constructor (after plotField).
+	private final FoodEconomy foodEconomy;
+
 	// the liturgical calendar (shared with the owning game session): classifies
 	// the current in-game date as a workday/weekend/holiday. A pure date lookup,
 	// independent of seed and location. See getDayType.
@@ -281,13 +287,6 @@ public class Settlement {
 	// the site's ceiling on the ladder (city_terrain => METROPOLIS, else SMALLHOLDING): growth
 	// climbs tier toward this and never past it. Fixed at founding (docs decision "site ceiling").
 	private final SettlementTier maxTier;
-
-	// the colony's Civ4-style FOOD BOX: it banks the day's net food surplus (necessity produced −
-	// eaten) each newDay. When it clears the current rung's foodToChange() the settlement grows a
-	// tier; a sustained deficit that drops it below -foodToChange() starves it down a tier. See
-	// grow(). Growth-up is dormant in production today (colonies found at maxTier); the shrink
-	// (starvation descent) is live. docs/settlement-tier-ladder-plan.md.
-	private double foodBox;
 
 	// true while a camp is booting its settled economy at the SMALLHOLDING crossing (Phase D3):
 	// founding firms then claim genesis-developed plots (as at a fresh founding) rather than being
@@ -534,6 +533,7 @@ public class Settlement {
 		// and the builder's queue (it caps growth at the province's plots, and rejects a
 		// province too small to hold the founding floor). See PlotField.
 		this.plotField = new PlotField(this, terrainRegistry, terrainRng, province);
+		this.foodEconomy = new FoodEconomy(this, plotField);
 		// underground (cavern) colonies have no sun: they run a fixed lamplit work
 		// schedule instead of solar daylight (see FixedDaylightClock, docs/underworld.md)
 		this.solarClock = (province != null && province.isUnderground())
@@ -738,6 +738,12 @@ public class Settlement {
 		return tier;
 	}
 
+	// the colony's display name — package-visible so the extracted subsystems (e.g. FoodEconomy's
+	// forage-improvement log) can name the colony in their messages.
+	String name() {
+		return name;
+	}
+
 	/**
 	 * Set this colony's {@link SettlementTier} — used when it grows up the ladder or, on
 	 * decline, descends it (never {@code null}).
@@ -820,14 +826,14 @@ public class Settlement {
 	 * @return the current food-box balance (net-surplus units; may be negative)
 	 */
 	public double getFoodBox() {
-		return foodBox;
+		return foodEconomy.getFoodBox();
 	}
 
 	// test seam: prime the food box so a unit test can exercise grow/shrink without driving a
 	// whole food economy to a surplus/deficit. Package-private — production growth feeds it only
 	// through grow()'s daily surplus.
 	void setFoodBox(double foodBox) {
-		this.foodBox = foodBox;
+		foodEconomy.setFoodBox(foodBox);
 	}
 
 	/**
@@ -877,43 +883,20 @@ public class Settlement {
 		return householdCount() + campForagers();
 	}
 
-	// food-box calibration knobs, ported from C2C (memory c2c-city-growth-mechanics):
-	// - FOOD_KEPT_FRACTION: the granary retention — growing a rung keeps at least this fraction of
-	//   the rung's cost in the box (C2C's getFoodKept); provisional base until Phase C wires the
-	//   Granary building to raise it.
-	// - WASTAGE_*: a simplified port of C2C's CvCity::foodWastage — surplus above
-	//   (fraction × consumption) suffers diminishing returns, so a huge daily surplus cannot all be
-	//   banked. GROWTH_FACTOR 0.05 matches C2C's default.
-	private static final double FOOD_KEPT_FRACTION = 0.25;
-	private static final double WASTAGE_START_CONSUMPTION_FRACTION = 1.0;
-	private static final double WASTAGE_GROWTH_FACTOR = 0.05;
-
 	// residents per district when a TOWN's district count is capped by its population (Phase C) —
 	// provisional/uncalibrated.
 	private static final int RESIDENTS_PER_DISTRICT = 100;
 
-	// --- Camp economy (sub-SMALLHOLDING tiers: CAMP/COTTAGE/HAMLET) -------------------------
-	// A camp has no ruler economy (no firms/markets/banks-beyond-copper): its pooled peasants ARE
-	// its workforce and forage the site for food (docs/settlement-tier-ladder-plan.md Phase D/G).
-	// The camp's daily food is (foragers × campForagePerForager × campPlotFood) − (residents ×
-	// CAMP_RATION); the surplus banks into the food box and climbs the tier ladder. CAMP_RATION is
-	// the lean band ration (also what the pool eats in camp mode, so the larder tracks the food box).
+	// the lean band ration a camp's residents eat (and the pool eats in camp mode, so the larder tracks
+	// the food box). The one camp-economy tuning lever other packages reference (Retinue), so it stays
+	// on the facade; the rest of the camp forage lives in FoodEconomy. See docs/plot-working-plan.md P4.
 	public static final com.civstudio.good.RationSize CAMP_RATION = com.civstudio.good.RationSize.SNACK;
 
-	// Phase G — forage-as-improvement. The forage scales with the SITE's real food yield: the band
-	// works a forage plot (campPlot), and campForageYield = foragers × campForagePerForager ×
-	// campPlotFood (the plot's food yield, terrain + feature + any built improvement). So RICH ground
-	// climbs and POOR ground starves the band into departing (Phase E), naturally — no test hook
-	// needed. The band also BUILDS a HUNTING_CAMP improvement on its plot over the improvement's
-	// buildCost (accumulating campBuildProgress at CAMP_BUILD_PER_FORAGER per forager per day); once
-	// raised (no-clear, so terrain/feature yields still stack) it lifts campPlotFood and the forage.
-	// campForagePerForager is per-forager-per-unit-of-plot-food (a settable field so a test can force
-	// starvation); its default is tuned so typical ground (~1.4 food) yields ~0.14/forager, matching
-	// the pre-Phase-G flat rate. DEFAULT_CAMP_SITE_FOOD is the fallback plot-food for a province-less
-	// camp (no real plot to read). All UNCALIBRATED tuning levers.
-	static final double DEFAULT_CAMP_FORAGE_PER_FORAGER = 0.10;
-	private static final double DEFAULT_CAMP_SITE_FOOD = 1.4;
-	private static final double CAMP_BUILD_PER_FORAGER = 0.02;
+	// the home-plot self-sufficiency rate: a landed household's home plot yields it (plot food × this),
+	// split among the households sharing the plot (P2 Malthus). Tuned so a household on average ground
+	// (~1.4 food) is roughly self-sufficient. Referenced by tests, so it stays on the facade; the yield
+	// computation lives in FoodEconomy.homePlotFoodYield. UNCALIBRATED. See docs/plot-working-plan.md.
+	static final double HOUSEHOLD_PLOT_RATE = 1.0;
 
 	// the fewest residents a camp needs before it may climb to SMALLHOLDING and boot its ruler
 	// economy (docs/settlement-tier-ladder-plan.md #2 — the minimum-viable-founding gate). Too small
@@ -921,99 +904,32 @@ public class Settlement {
 	// collapses within a few years even with the subsistence-floor fix), so it stays a foraging camp
 	// — and, unable to grow its slowly-draining pool, eventually departs. Uncalibrated tuning lever.
 	private static final int MIN_VIABLE_BOOT_POPULATION = 40;
-	private double campForagePerForager = DEFAULT_CAMP_FORAGE_PER_FORAGER;
-
-	// the plot the camp forages (and builds its forage improvement on), or null for a province-less
-	// camp / one that could claim none — then campPlotFood falls back to DEFAULT_CAMP_SITE_FOOD. The
-	// improvement it is building (a HUNTING_CAMP) and the work accrued toward its buildCost. See
-	// setUpCampForage / advanceCampForageBuild (Phase G).
-	private Plot campPlot;
-	private com.civstudio.geo.Improvement campForageImprovement;
-	private double campBuildProgress;
-
-	// the colony's net food surplus this day (C2C food balance): necessity PRODUCED by its
-	// agriculture (every living necessity firm's output) minus necessity EATEN (a FINE ration per
-	// resident), with a large surplus subject to food WASTAGE (diminishing returns). getOutput()
-	// can read stale for a firm that got no labour this step (docs/food-balance.md) — an accepted
-	// approximation at this uncalibrated stage.
-	private double dailyFoodSurplus() {
-		// a sub-SMALLHOLDING camp has no agriculture (no firms): its pooled peasants forage the
-		// site, so its food balance is forage − consumption (a lean camp ration), not firm output.
-		if (!tier.atLeast(SettlementTier.SMALLHOLDING)) {
-			double foraged = campForageYield(campForagers());
-			double eaten = totalResidents() * CAMP_RATION.perDay();
-			return applyFoodWastage(foraged - eaten, eaten);
-		}
-		double produced = 0;
-		for (Agent a : agents) {
-			if (!a.isAlive())
-				continue;
-			if (a instanceof com.civstudio.agent.firm.ConsumerGoodFirm f
-					&& "Necessity".equals(f.getProductName()))
-				produced += f.getOutput();
-			// a landed household self-feeds from its home plot (non-market subsistence food),
-			// so its plot food counts toward the colony's food production alongside the farms'.
-			// Without this the box would charge every resident's ration against firm output only —
-			// while self-feeding households buy little, driving the farms down — and read a false
-			// deficit that shrinks the tier. Landless households (null plot) add 0, so a colony
-			// without home plots is byte-identical. See docs/plot-working-plan.md P1.
-			else if (a instanceof Laborer l)
-				produced += homePlotFoodYield(l.getHomePlot());
-		}
-		double eaten = totalResidents() * com.civstudio.good.RationSize.FINE.perDay();
-		return applyFoodWastage(produced - eaten, eaten);
-	}
 
 	/**
 	 * The daily <b>forage yield</b> of a {@link SettlementTier#CAMP camp}'s workforce — the food its
-	 * {@code foragers} pooled peasants bring in by working the site (the Camp economy,
-	 * {@code docs/settlement-tier-ladder-plan.md} Phase D/G). <b>Site-scaled</b> (Phase G): {@code
-	 * foragers × campForagePerForager × }{@link #campPlotFood()} — the band's labour times the land's
-	 * food productivity (terrain + feature + any {@linkplain #advanceCampForageBuild() built} forage
-	 * improvement). So rich ground climbs and poor ground starves the band into departing. Read by both
-	 * the settlement's food box ({@link #dailyFoodSurplus()}) and the pool's camp provisioning (which
-	 * stocks it into its larder), so the larder and the food box move together.
+	 * {@code foragers} pooled peasants bring in by working the site (site-scaled). Delegates to the food
+	 * subsystem; read by the pool's camp provisioning (which stocks it into its larder) so the larder
+	 * and the food box move together. See {@link FoodEconomy#campForageYield(int)}.
 	 *
-	 * @param foragers
-	 *            the number of foraging peasants (the camp's workforce)
+	 * @param foragers the number of foraging peasants (the camp's workforce)
 	 * @return the day's foraged food (necessity units)
 	 */
 	public double campForageYield(int foragers) {
-		return foragers * campForagePerForager * campPlotFood();
+		return foodEconomy.campForageYield(foragers);
 	}
-
-	// the per-plot self-sufficiency rate a landed household's home plot yields it each day: its food
-	// yield (Plot.yields()[0]) times this rate. Tuned so a household on average ground (Dhenijansar
-	// terrain ≈ 1.4 food) is roughly self-sufficient in food (feeding an adult couple and a child),
-	// so the market is genuinely surplus/trade rather than the survival lifeline. The settled analogue
-	// of campForagePerForager (per household rather than per pooled forager, since a family works its
-	// own dedicated plot). UNCALIBRATED — the subsistence self-sufficiency lever. See
-	// docs/plot-working-plan.md P1.
-	static final double HOUSEHOLD_PLOT_RATE = 1.0;
 
 	/**
 	 * The daily <b>subsistence food</b> a landed household draws from its {@linkplain
-	 * com.civstudio.agent.laborer.Laborer#getHomePlot() home plot} — the plot's food yield
-	 * ({@link Plot#yields()} index 0, terrain + feature + any improvement) times {@link
-	 * #HOUSEHOLD_PLOT_RATE}, <b>split equally</b> among the households sharing the plot ({@code ÷} its
-	 * {@linkplain #homePlotLoad(Plot) load} — the Malthusian dilution of {@code docs/plot-working-plan.md}
-	 * P2: crowding a plot thins each household's share). Dropped straight into the household's larder
-	 * each step, <b>outside the market</b> (like the camp's {@link #campForageYield(int) forage}, of
-	 * which this is the settled generalization). Read by the household's step and by the settlement's
-	 * food box ({@link #dailyFoodSurplus()}) — note that summing the per-household shares over a plot's
-	 * households recovers the plot's whole food, so the box counts each plot once regardless of how many
-	 * households share it. {@code 0} for a landless household (a {@code null} or non-home plot).
+	 * com.civstudio.agent.laborer.Laborer#getHomePlot() home plot} — its yield split among the
+	 * households sharing it (the P2 Malthusian dilution). Delegates to the food subsystem; dropped
+	 * straight into the household's larder each step, outside the market. See {@link
+	 * FoodEconomy#homePlotFoodYield(Plot)}.
 	 *
 	 * @param homePlot the household's home plot, or {@code null} if it is landless
 	 * @return the day's per-household home-plot food (necessity units), or 0 if landless
 	 */
 	public double homePlotFoodYield(Plot homePlot) {
-		if (homePlot == null)
-			return 0;
-		int load = plotField.homePlotLoad(homePlot);
-		if (load <= 0)
-			return 0;
-		return Math.max(0, homePlot.yields()[0]) * HOUSEHOLD_PLOT_RATE / load;
+		return foodEconomy.homePlotFoodYield(homePlot);
 	}
 
 	/**
@@ -1073,83 +989,45 @@ public class Settlement {
 		return plotField.claimHomePlot();
 	}
 
-	// the food yield of the camp's forage plot (terrain + feature + any built improvement, index 0 of
-	// Plot.yields()); the DEFAULT_CAMP_SITE_FOOD fallback when the camp has no real plot (a
-	// province-less colony, or one that could claim none). Floored at 0. Package-visible so a test can
-	// watch it rise when the forage improvement is built.
+	/**
+	 * The food yield of the camp's forage plot (index 0 of {@link Plot#yields()}), or the fallback when
+	 * the camp has no real plot. Delegates to the food subsystem. Package-visible so a test can watch it
+	 * rise when the forage improvement is built. See {@link FoodEconomy#campPlotFood()}.
+	 */
 	double campPlotFood() {
-		if (campPlot == null)
-			return DEFAULT_CAMP_SITE_FOOD;
-		return Math.max(0, campPlot.yields()[0]);
+		return foodEconomy.campPlotFood();
 	}
 
 	/**
-	 * Wire up a {@linkplain SettlementTier#CAMP camp}'s <b>forage plot</b> (Phase G): claim one bare
-	 * plot from the site for the band to forage and, over time, build {@code forageImprovement} (a
-	 * {@code HUNTING_CAMP}) on. The plot's food yield scales the {@link #campForageYield(int) forage};
-	 * a province-less colony (or one that can claim no plot) leaves it null and forages the flat
-	 * {@link #DEFAULT_CAMP_SITE_FOOD} fallback. Called by the harness when it founds a camp.
+	 * Wire up a {@linkplain SettlementTier#CAMP camp}'s <b>forage plot</b> (Phase G): claim one bare plot
+	 * for the band to forage and build {@code forageImprovement} (a {@code HUNTING_CAMP}) on over time.
+	 * Delegates to the food subsystem; called by the harness when it founds a camp. See {@link
+	 * FoodEconomy#setUpCampForage(Improvement)}.
 	 *
-	 * @param forageImprovement
-	 *            the forage improvement the camp builds on its plot (a {@code HUNTING_CAMP}), or
-	 *            {@code null} to forage the bare land only
+	 * @param forageImprovement the forage improvement the camp builds, or {@code null} for bare land
 	 */
 	public void setUpCampForage(com.civstudio.geo.Improvement forageImprovement) {
-		this.campForageImprovement = forageImprovement;
-		this.campPlot = plotField.claimBarePlot();
-	}
-
-	// advance the camp's forage-improvement build (Phase G): each day the foragers put work toward the
-	// HUNTING_CAMP's buildCost; once met, raise it on the plot WITHOUT clearing (isWild stays true, so
-	// terrain + feature yields keep stacking) — durable, so a later colony inherits the developed
-	// ground. A no-op past CAMP tier, with no plot/improvement, or once already built.
-	private void advanceCampForageBuild() {
-		if (tier.atLeast(SettlementTier.SMALLHOLDING) || campPlot == null
-				|| campForageImprovement == null || campPlot.improvement() != null)
-			return;
-		campBuildProgress += campForagers() * CAMP_BUILD_PER_FORAGER;
-		if (campBuildProgress >= campForageImprovement.buildCost()) {
-			campPlot.raiseImprovement(campForageImprovement, false);
-			log.info(name + " raised a " + campForageImprovement.type()
-					+ " on its forage plot on " + getDate() + " (site food now "
-					+ String.format("%.1f", campPlotFood()) + ")");
-		}
+		foodEconomy.setUpCampForage(forageImprovement);
 	}
 
 	/**
-	 * Set this camp's per-forager daily forage yield (necessity units) — the {@linkplain
-	 * #campForageYield(int) Camp economy}'s tuning lever. Below {@link #CAMP_RATION} the camp
-	 * starves its band and, unable to sustain it, departs as a wandering caravan (Phase E); above
-	 * it the camp net-grows and climbs. Defaults to {@value #DEFAULT_CAMP_FORAGE_PER_FORAGER}.
+	 * Set this camp's per-forager daily forage yield — the camp economy's tuning lever. Below {@link
+	 * #CAMP_RATION} the camp starves its band and departs as a wandering caravan; above it it climbs.
+	 * Delegates to the food subsystem. See {@link FoodEconomy#setCampForagePerForager(double)}.
 	 *
-	 * @param perForager
-	 *            the daily forage yield per foraging peasant
+	 * @param perForager the daily forage yield per foraging peasant (per unit of plot food)
 	 */
 	public void setCampForagePerForager(double perForager) {
-		this.campForagePerForager = perForager;
+		foodEconomy.setCampForagePerForager(perForager);
 	}
 
-	// the camp's foragers — its pooled peasants (the sub-SMALLHOLDING workforce). 0 if no pool.
-	private int campForagers() {
+	// the camp's foragers — its pooled peasants (the sub-SMALLHOLDING workforce). 0 if no pool. Read by
+	// the tier-growth gate (growthPopulation) and by the food subsystem's camp forage.
+	int campForagers() {
 		for (Agent a : agents)
 			if (a.isAlive() && a instanceof com.civstudio.agent.Retinue r)
 				return r.size();
 		return 0;
-	}
-
-	// diminishing returns on a large daily surplus (a simplified port of C2C's CvCity::foodWastage):
-	// surplus up to (start = WASTAGE_START_CONSUMPTION_FRACTION × consumption) banks in full; beyond
-	// that the excess saturates toward an asymptote (1/WASTAGE_GROWTH_FACTOR), so a very large daily
-	// surplus adds little to the box. A deficit (≤ 0) is returned unchanged (never "wasted").
-	// Package-private for direct unit testing.
-	static double applyFoodWastage(double surplus, double consumption) {
-		if (surplus <= 0)
-			return surplus;
-		double start = WASTAGE_START_CONSUMPTION_FRACTION * consumption;
-		if (surplus <= start)
-			return surplus;
-		double excess = surplus - start;
-		return start + excess / (1.0 + WASTAGE_GROWTH_FACTOR * excess);
 	}
 
 	// bank the day's net food surplus and settle any tier change it triggers (docs/settlement-
@@ -1161,14 +1039,13 @@ public class Settlement {
 	// by the lower rung's cost each step (falling into the previous size's box, C2C-style — NOT
 	// reset). Growth-up is dormant in production (colonies found at maxTier); the shrink is live.
 	private void grow() {
-		// a camp puts its foragers' work toward building its forage improvement first, so the day's
-		// forage reflects any improvement raised today (Phase G)
-		advanceCampForageBuild();
-		foodBox += dailyFoodSurplus();
+		// the food subsystem advances the camp's forage-improvement build (so the day's forage reflects
+		// any improvement raised today) and banks the day's net food surplus into the food box
+		foodEconomy.advanceDay();
 		while (tier.ordinal() < maxTier.ordinal()) {
 			SettlementTier next = tier.next().orElseThrow(); // present: tier < maxTier
 			int cost = tier.foodToChange();
-			if (foodBox < cost)
+			if (foodEconomy.getFoodBox() < cost)
 				break;
 			if (growthPopulation() < next.minHouseholds())
 				break;
@@ -1182,7 +1059,7 @@ public class Settlement {
 					&& totalResidents() < MIN_VIABLE_BOOT_POPULATION)
 				break;
 			SettlementTier from = tier;
-			foodBox = Math.max(foodBox - cost, cost * FOOD_KEPT_FRACTION);
+			foodEconomy.spendForGrowth(cost);
 			setTier(next);
 			log.info(name + " grew from " + from + " to " + next + " on " + getDate()
 					+ " (" + householdCount() + " households, " + totalResidents() + " residents)");
@@ -1201,18 +1078,18 @@ public class Settlement {
 		// (Phase E; the symmetric un-boot back to a foraging camp is deferred.)
 		SettlementTier descentFloor = getRuler() != null
 				? SettlementTier.SMALLHOLDING : SettlementTier.CAMP;
-		while (tier.ordinal() > descentFloor.ordinal() && foodBox < 0) {
+		while (tier.ordinal() > descentFloor.ordinal() && foodEconomy.getFoodBox() < 0) {
 			SettlementTier from = tier;
 			SettlementTier down = tier.previous().orElseThrow();
 			setTier(down);
-			foodBox += down.foodToChange();
+			foodEconomy.setFoodBox(foodEconomy.getFoodBox() + down.foodToChange());
 			log.info(name + " starved down from " + from + " to " + down + " on " + getDate()
 					+ " (" + totalResidents() + " residents)");
 			if (onTierDescent != null)
 				onTierDescent.accept(down);
 		}
-		if (tier == descentFloor && foodBox < 0)
-			foodBox = 0;
+		if (tier == descentFloor && foodEconomy.getFoodBox() < 0)
+			foodEconomy.setFoodBox(0);
 	}
 
 	/**
