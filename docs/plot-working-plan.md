@@ -1,6 +1,6 @@
 # Plan: households work plots for food (Civ4-style plot-working economy)
 
-**Status:** **P1 SHIPPED** (2026-07-16); P2–P5 still PLAN. The fix for the **large / mature-colony collapse**: give every household a
+**Status:** **P1 + P2 SHIPPED** (2026-07-16); P3–P5 still PLAN. The fix for the **large / mature-colony collapse**: give every household a
 **home plot** it farms for its own subsistence food, so baseline survival is decoupled from the market.
 The firms stay as a market/surplus layer *on top*. Companion to
 [`docs/settlement-tier-ladder-plan.md`](settlement-tier-ladder-plan.md) (the tier ladder + the
@@ -31,7 +31,7 @@ boot instead of being replaced by a pure-market economy.
 
 | # | Decision |
 |---|---|
-| **Pop cap** | **Hard Civ4 cap** — the colony's **landed** population is capped by the province's **workable plots** (each landed household works one home plot). Colonies become Civ4-scale (dozens, not the 900-pool probes). A colony full on plots cannot grow its landed core further. |
+| **Pop cap** | **Soft Malthusian cap (revised 2026-07-16, P2)** — plots are **shared**: multiple households may farm the same plot and its food **splits equally** among them (strict equal-split, `plotFood/N`). The colony spreads households one-per-plot until it has claimed all its province's workable land (density 1, each self-sufficient), then piles further households on (density rises → per-household food falls → the colony **self-limits by food**). So the province's plot count is the *carrying capacity at density 1* — a crowding **knee**, not a hard wall. No landless class; the pool is the renewal reserve only. (Supersedes the originally-planned hard one-per-plot cap + landless pool, which produced a growing idle underclass and made the 900-pool probes incoherent — sharing avoids both.) |
 | **Labor** | **Peasant smallholder** — every household **both** farms its home plot (subsistence food into its own larder) **and** sells labor to firms (wages, market goods). One agent, two income streams; not a farmer-vs-specialist split. |
 | **Firms** | The necessity firm (`NFirm`) **re-roles as a commercial / surplus farm** — marketed food for the *landless* (pool) and for trade, staffed by wage labor. Household subsistence comes from their own plots; firms are the "on top" market layer. |
 | **Yields** | **Food first** — P1 works plots for FOOD only (the survival fix). Production and commerce plot yields are a later phase (P5). |
@@ -101,32 +101,38 @@ its larder** (non-market), before it turns to the market. Delivers the survival 
 Test`: a household on a food-yielding plot restocks its larder from the plot and survives a market with no
 supply. **Not byte-identical.** The `HOUSEHOLD_PLOT_RATE` calibration sets subsistence self-sufficiency.
 
-## P2 — Population cap by workable plots (Civ4 city-size)
+## P2 — Shared plots + Malthusian self-limit — **SHIPPED 2026-07-16**
 
-**Goal.** The **landed** household count ≤ the province's workable plots; the pool is the **landless**
-overflow. Growth acquires a plot if one is free, else waits in the pool; a landed household's death frees
-its plot for a pool peasant to claim. This is the Civ4 city-size cap — colonies become dozens, not
-hundreds.
+**Revised model (user, 2026-07-16).** The originally-planned *hard* Civ4 cap (one household per plot,
+overflow → landless pool) was replaced with a **soft, Malthusian** cap: plots are **shared** and a plot's
+food **splits equally** among the households on it (strict `plotFood/N`). This is a refinement of P1's
+mechanism rather than a founding/pool rewrite — no founding cohort cap, no landless routing, no
+rebaselining the analytical probes. Instead the colony **self-limits by food**: it stays at density 1
+(each household self-sufficient) until it has claimed all its province's workable land, then piles further
+households on, thinning each one's share until the food cushion runs out (births slow / lean spells trim).
+The province's plot count is the *carrying capacity at density 1* — the crowding knee, not a wall.
 
-**Steps.**
-1. Cap the founding cohort (`foundLaborersFromRetinue`) at the workable-plot count (not
-   `promotionRatio × poolSize`).
-2. Replacement / promotion / births-fission / immigration acquire a **free plot** to become a landed
-   household; with no free plot they stay/land in the **pool** (landless). A landed household's death
-   **frees its plot** → the replacement policy promotes a pool peasant onto it.
-3. The pool (landless) is fed by the **market** (the commercial farm, P3) / relief — so it is the
-   market-dependent buffer that shrinks in famine while the landed core survives (P1).
-4. Tie into the tier ladder: a colony's tier already scales with its plots/districts; the plot cap and the
-   tier's `maxTier`/`getMaxPlots` converge (bigger tier = more workable plots = larger cap).
+**What shipped.** `PlotField` gained a `homePlotLoads` map (plot → household count). `claimHomePlot` now
+**shares**: it reuses a fully-freed home plot first, else claims fresh workable land while the province has
+it (density 1), else crowds the least-loaded plot (density rises). `Settlement.homePlotFoodYield(plot)`
+divides the plot's food by its `homePlotLoad` — the Malthusian split (summing the per-household shares over
+a plot's households recovers the whole plot's food, so `dailyFoodSurplus` still counts each plot once).
+Home-farm plots are kept **distinct from firm-occupied plots** (`firstVacantPlot` skips the load-map keys,
+so a firm never claims farmland) and are **retained as claimed land at load 0** so turnover reuses them.
+A dead household `releaseHomePlot`s its share in `Settlement.newDay` (before its successor, so the
+replacement reuses the land). **No change** was needed to founding / fission / replacement gating — they
+all keep calling `claimHomePlot`, which now always succeeds by sharing. Still flag-gated on
+`SimulationConfig.homePlots` (default false → the whole existing suite byte-identical). Tests:
+`HomePlotTest` (sharing under crowding, density-1 spread, the equal-split formula, freed-plot reuse),
+`HomePlotEconomyTest.plotsAreSharedUnderCrowdingWithNoHardCap` (a large-pool founding seats more landed
+households than distinct plots — no hard cap). `CampFoundingEconomy` survives the full 25-year run
+unchanged (it stays under density 1 at its small size). Full reactor green (330 engine + 55 server).
 
-**Seams.** `SimulationHarness.foundLaborersFromRetinue` + the replacement/immigration/fission policies,
-`Retinue`, `PlotField.getMaxPlots`, the tier growth gate.
-
-**Risk / tests.** **High — the big rebalance.** Colony sizes drop from ~450 laborers to ~plot-count
-(dozens). Every founding-size / collapse-timing smoke test rebaselines; the 900-pool analytical probes
-(`HomogeneousEconomy`, `TwinSettlementEconomy`) become incoherent at Civ4 scale and must be rethought or
-opt out. `PlotCapTest`: a colony fills to its workable plots and no further; a freed plot is reclaimed
-from the pool.
+**Known tension (deferred to P3):** shared home farming claims workable plots up to the province cap, so a
+heavily-crowded home-plots colony can leave little land for the **dynamic firm provisioning** to charter
+onto. It does not bite the shipping scenario (`CampFoundingEconomy` stays small), but the home-vs-firm land
+split wants a real policy when the commercial-farm re-role (P3) lands. **Also still deferred:** retiring the
+subsistence floor (#1), unchanged from P1.
 
 ## P3 — Re-role the farm firm as a commercial/surplus producer
 

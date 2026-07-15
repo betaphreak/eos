@@ -86,6 +86,17 @@ class PlotField {
 	private final Map<PlotOccupant, Plot> plotByOccupant =
 			new IdentityHashMap<PlotOccupant, Plot>();
 
+	// the SHARED home-farm plots and how many households work each (docs/plot-working-plan.md P2 — the
+	// Malthusian plot-working model). A settled household farms a workable plot, but plots are shared:
+	// a plot's food splits equally among the households on it (Settlement.homePlotFoodYield divides by
+	// the load). The colony spreads households one-per-plot until it has claimed all the workable land
+	// its province allows (density 1, each self-sufficient), then piles further households onto the
+	// least-crowded plot (density rises → per-household food falls → the colony self-limits by food). A
+	// home-farm plot is kept DISTINCT from a firm-occupied plot (firstVacantPlot skips these keys) and
+	// is retained as claimed farmland even when its load falls to 0, so the next household reuses it
+	// before fresh land is claimed. Keyed by identity, like plotByOccupant.
+	private final Map<Plot, Integer> homePlotLoads = new IdentityHashMap<Plot, Integer>();
+
 	// outstanding plot-clearance tasks the builder is working through, in the order
 	// plots were demanded (lowest index first). Empty unless a live colony has
 	// outgrown its plots; see claimPlot / requestGrowth / completeFinishedPlots.
@@ -266,30 +277,73 @@ class PlotField {
 		return appendPlot();
 	}
 
-	// Claim a HOME PLOT for a landed household (docs/plot-working-plan.md P1): seat it on a free
-	// workable plot — an already-claimed vacant one (e.g. one just freed by a dead household), else a
-	// fresh plot appended from the shared province pool (skipping unworkable peaks, which stay on the
-	// ladder). Returns null when the colony can seat no more — its province pool is drained, the
-	// per-colony cap is reached, or it is province-less with no plot to give — so the household is
-	// LANDLESS (the market-dependent overflow). Unlike claimPlot this never routes through the builder
-	// and raises NO improvement: a home plot is worked as raw/feature land, exactly as the camp forages
-	// its bare plot. Package-visible for Settlement.claimHomePlot.
+	// Assign a SHARED home plot to a landed household (docs/plot-working-plan.md P2 — the Malthusian
+	// plot-working model). Every settled household farms a workable plot, but plots are shared, so a
+	// plot's food splits equally among the households on it (Settlement.homePlotFoodYield divides by the
+	// load). Placement keeps density as low and even as possible: reuse a fully-freed home plot (a dead
+	// household's land) first, else claim fresh workable land from the province while it lasts (density
+	// 1, each household self-sufficient), else crowd the least-loaded plot (density rises → per-household
+	// food falls → the colony self-limits by food). Unlike claimPlot this never routes through the
+	// builder and raises NO improvement — a home plot is worked as raw/feature land, exactly as the camp
+	// forages its bare plot. Returns null only for a province-less colony with no workable plot to give
+	// (a landless household). Package-visible for Settlement.claimHomePlot.
 	Plot claimHomePlot(PlotOccupant occupant) {
-		Plot plot = firstVacantPlot();
-		if (plot != null) {
-			seat(plot, occupant);
-			return plot;
+		// the least-loaded existing home-farm plot
+		Plot minPlot = null;
+		int minLoad = Integer.MAX_VALUE;
+		for (Map.Entry<Plot, Integer> e : homePlotLoads.entrySet())
+			if (e.getValue() < minLoad) {
+				minLoad = e.getValue();
+				minPlot = e.getKey();
+			}
+		// 1. reuse a fully-freed home plot (a dead household's land) at density 1
+		if (minPlot != null && minLoad == 0) {
+			homePlotLoads.put(minPlot, 1);
+			return minPlot;
 		}
+		// 2. else claim fresh workable land from the province while it lasts (density 1)
+		Plot fresh = claimFreshWorkablePlot();
+		if (fresh != null) {
+			homePlotLoads.put(fresh, 1);
+			return fresh;
+		}
+		// 3. else crowd the least-loaded home plot (the Malthusian density rise)
+		if (minPlot != null) {
+			homePlotLoads.put(minPlot, minLoad + 1);
+			return minPlot;
+		}
+		return null; // no workable home plot available (a province-less colony) — landless
+	}
+
+	// append the next fresh WORKABLE plot from the shared province pool (skipping peaks, which stay on
+	// the ladder), or null when the colony can claim no more — its province cap / shared pool is reached
+	// (then home farming shares its existing land) or it is province-less.
+	private Plot claimFreshWorkablePlot() {
 		while (canAcquirePlot(0)) {
 			Plot p = appendPlot();
 			if (p == null)
-				return null; // the shared pool is exhausted — landless
+				return null; // the shared pool is exhausted
 			if (!p.isWorkable())
 				continue; // a peak: keep it on the ladder and try the next
-			seat(p, occupant);
 			return p;
 		}
-		return null; // no room to grow — landless
+		return null; // no room to grow — home farming shares its existing plots instead
+	}
+
+	// the number of households currently sharing the given home plot (0 if it is not a home-farm plot).
+	// Read by Settlement.homePlotFoodYield to split the plot's food equally among its households.
+	int homePlotLoad(Plot plot) {
+		Integer l = homePlotLoads.get(plot);
+		return l == null ? 0 : l;
+	}
+
+	// one household leaves the given home plot (it died): decrement the plot's load. The plot is kept as
+	// claimed farmland (its load may fall to 0), so the next household reuses it before fresh land is
+	// claimed — see claimHomePlot step 1.
+	void releaseHomePlot(Plot plot) {
+		Integer l = homePlotLoads.get(plot);
+		if (l != null)
+			homePlotLoads.put(plot, Math.max(0, l - 1));
 	}
 
 	// append a freshly-generated vacant plot at the next ladder index (the founding
@@ -340,11 +394,13 @@ class PlotField {
 				|| (colony.getBuilder() != null && canAcquirePlot(buildQueue.size()));
 	}
 
-	// the first vacant, workable plot, or null if none is free. Peaks are unworkable,
-	// so they are never seated (they sit on the ladder as rough ground).
+	// the first vacant, workable plot available to a FIRM occupant, or null if none is free. Peaks are
+	// unworkable, so they are never seated (they sit on the ladder as rough ground); a shared home-farm
+	// plot (docs/plot-working-plan.md P2) is reserved for households — it has no single occupant but is
+	// not free land for a firm — so it is skipped here too.
 	private Plot firstVacantPlot() {
 		for (Plot plot : plots)
-			if (plot.isVacant() && plot.isWorkable())
+			if (plot.isVacant() && plot.isWorkable() && !homePlotLoads.containsKey(plot))
 				return plot;
 		return null;
 	}

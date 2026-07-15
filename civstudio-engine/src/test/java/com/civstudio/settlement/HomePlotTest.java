@@ -2,10 +2,14 @@ package com.civstudio.settlement;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -47,39 +51,62 @@ class HomePlotTest {
 	}
 
 	@Test
-	void claimHomePlotOverflowsToLandlessWhenTheSiteIsFull() {
+	void claimHomePlotSharesPlotsUnderCrowdingRatherThanGoingLandless() {
 		Settlement c = dhenijansar();
-		int cap = c.getMaxPlots();
-		int seated = 0;
-		boolean sawLandless = false;
-		for (int i = 0; i < cap + 5; i++) {
+		// seat more households than the province has plots: the P2 model shares plots (Malthus) rather
+		// than turning the overflow landless, so every household still gets a (possibly shared) plot
+		int n = c.getMaxPlots() + 20;
+		List<Plot> assigned = new ArrayList<>();
+		for (int i = 0; i < n; i++) {
 			Plot p = c.claimHomePlot(new PlotOccupant() {
 			});
-			if (p == null) {
-				sawLandless = true;
-				break;
-			}
-			seated++;
+			assertNotNull(p, "a household always gets a (possibly shared) home plot — no landless overflow");
+			assigned.add(p);
 		}
-		assertTrue(seated > 0, "some households were seated on home plots");
-		assertTrue(sawLandless,
-				"beyond the site's workable plots, claiming returns null (the landless overflow)");
-		assertTrue(seated <= cap, "no more than the province's plots were seated, was " + seated);
+
+		// more households than distinct plots → at least one plot is shared (load >= 2)
+		int maxLoad = 0;
+		for (Plot p : new HashSet<>(assigned))
+			maxLoad = Math.max(maxLoad, c.homePlotLoad(p));
+		assertTrue(maxLoad >= 2, "crowding shares a plot among multiple households (max load " + maxLoad + ")");
+
+		// a shared plot's food splits equally: each household on a load-N plot gets 1/N of its yield×rate
+		Plot shared = assigned.stream().filter(p -> c.homePlotLoad(p) >= 2).findFirst().orElseThrow();
+		int load = c.homePlotLoad(shared);
+		double expected = Math.max(0, shared.yields()[0]) * Settlement.HOUSEHOLD_PLOT_RATE / load;
+		assertEquals(expected, c.homePlotFoodYield(shared), 1e-9,
+				"a shared plot's food splits equally among the " + load + " households on it");
 	}
 
 	@Test
-	void aFreedHomePlotIsReclaimedByTheNextHousehold() {
+	void spreadsToDensityOneBeforeCrowding() {
 		Settlement c = dhenijansar();
-		PlotOccupant a = new PlotOccupant() {
-		};
-		Plot pa = c.claimHomePlot(a);
-		assertNotNull(pa, "the first household is seated on a home plot");
+		// the first handful of households each get their own plot (density 1) — the colony spreads
+		// across fresh land before it ever doubles up
+		Plot p1 = c.claimHomePlot(new PlotOccupant() {
+		});
+		Plot p2 = c.claimHomePlot(new PlotOccupant() {
+		});
+		assertNotSame(p1, p2, "a sparse colony spreads households onto distinct plots (density 1)");
+		assertEquals(1, c.homePlotLoad(p1));
+		assertEquals(1, c.homePlotLoad(p2));
+	}
 
-		// a's death frees its plot; the next household reclaims it (the turnover that keeps the
-		// landed core on the land — see Settlement.newDay / docs/plot-working-plan.md P1)
-		c.vacatePlot(a);
+	@Test
+	void aFreedHomePlotIsReusedByTheNextHousehold() {
+		Settlement c = dhenijansar();
+		Plot pa = c.claimHomePlot(new PlotOccupant() {
+		});
+		assertNotNull(pa, "the first household is seated on a home plot");
+		assertEquals(1, c.homePlotLoad(pa));
+
+		// the household dies and releases its share; the freed land (load 0) is reused before any fresh
+		// plot is claimed — the turnover that keeps the core on the land (Settlement.newDay / P2)
+		c.releaseHomePlot(pa);
+		assertEquals(0, c.homePlotLoad(pa));
 		Plot pb = c.claimHomePlot(new PlotOccupant() {
 		});
-		assertSame(pa, pb, "a freed home plot is reclaimed by the next household");
+		assertSame(pa, pb, "a freed home plot is reused by the next household");
+		assertEquals(1, c.homePlotLoad(pb));
 	}
 }

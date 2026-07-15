@@ -994,19 +994,50 @@ public class Settlement {
 	 * The daily <b>subsistence food</b> a landed household draws from its {@linkplain
 	 * com.civstudio.agent.laborer.Laborer#getHomePlot() home plot} — the plot's food yield
 	 * ({@link Plot#yields()} index 0, terrain + feature + any improvement) times {@link
-	 * #HOUSEHOLD_PLOT_RATE}. Dropped straight into the household's larder each step, <b>outside the
-	 * market</b> (like the camp's {@link #campForageYield(int) forage}, of which this is the settled
-	 * generalization — see {@code docs/plot-working-plan.md} P1). Read by the household's step and by
-	 * the settlement's food box ({@link #dailyFoodSurplus()}), so the larder and the box move
-	 * together. {@code 0} for a landless household (a {@code null} plot).
+	 * #HOUSEHOLD_PLOT_RATE}, <b>split equally</b> among the households sharing the plot ({@code ÷} its
+	 * {@linkplain #homePlotLoad(Plot) load} — the Malthusian dilution of {@code docs/plot-working-plan.md}
+	 * P2: crowding a plot thins each household's share). Dropped straight into the household's larder
+	 * each step, <b>outside the market</b> (like the camp's {@link #campForageYield(int) forage}, of
+	 * which this is the settled generalization). Read by the household's step and by the settlement's
+	 * food box ({@link #dailyFoodSurplus()}) — note that summing the per-household shares over a plot's
+	 * households recovers the plot's whole food, so the box counts each plot once regardless of how many
+	 * households share it. {@code 0} for a landless household (a {@code null} or non-home plot).
 	 *
 	 * @param homePlot the household's home plot, or {@code null} if it is landless
-	 * @return the day's home-plot food (necessity units), or 0 if landless
+	 * @return the day's per-household home-plot food (necessity units), or 0 if landless
 	 */
 	public double homePlotFoodYield(Plot homePlot) {
 		if (homePlot == null)
 			return 0;
-		return Math.max(0, homePlot.yields()[0]) * HOUSEHOLD_PLOT_RATE;
+		int load = plotField.homePlotLoad(homePlot);
+		if (load <= 0)
+			return 0;
+		return Math.max(0, homePlot.yields()[0]) * HOUSEHOLD_PLOT_RATE / load;
+	}
+
+	/**
+	 * The number of households currently sharing the given home plot (its {@code load}), or {@code 0}
+	 * if it is not a home-farm plot. The divisor in {@link #homePlotFoodYield(Plot)} — see {@code
+	 * docs/plot-working-plan.md} P2.
+	 *
+	 * @param homePlot a home plot, or {@code null}
+	 * @return the number of households sharing it, or 0
+	 */
+	public int homePlotLoad(Plot homePlot) {
+		return homePlot == null ? 0 : plotField.homePlotLoad(homePlot);
+	}
+
+	/**
+	 * Release one household's share of a home plot when it dies (decrement the plot's {@linkplain
+	 * #homePlotLoad(Plot) load}). The plot stays claimed farmland (its load may fall to 0) so the next
+	 * household reuses it before fresh land is claimed. Called from {@link #newDay} as the dead are
+	 * reaped. See {@code docs/plot-working-plan.md} P2.
+	 *
+	 * @param homePlot the dead household's home plot, or {@code null}
+	 */
+	public void releaseHomePlot(Plot homePlot) {
+		if (homePlot != null)
+			plotField.releaseHomePlot(homePlot);
 	}
 
 	/**
@@ -1766,12 +1797,12 @@ public class Settlement {
 		ArrayList<Agent> replacements = new ArrayList<Agent>();
 		for (Agent agent : deadAgents) {
 			agents.remove(agent);
-			// free a dead landed household's home plot before its successor is spawned, so the
-			// replacement policy's new household can reclaim it (turnover keeps the landed core on
-			// the land). A no-op for a landless household or one without a home plot. See
-			// docs/plot-working-plan.md P1.
-			if (agent instanceof Household)
-				vacatePlot(agent);
+			// release a dead landed household's share of its home plot before its successor is spawned,
+			// so the replacement's new household reuses that land (turnover keeps the core on the land;
+			// see claimHomePlot step 1). A no-op for a landless household or one without a home plot.
+			// See docs/plot-working-plan.md P2.
+			if (agent instanceof com.civstudio.agent.laborer.Laborer l && l.getHomePlot() != null)
+				releaseHomePlot(l.getHomePlot());
 			// a dead person of interest leaves the roster (a successor, if any,
 			// registers itself afresh in its constructor); log its passing once — at
 			// FINE (per-death demographic detail, off by default), and count it for the
