@@ -61,6 +61,8 @@ const BONUS_ICONS = BUNDLE.bonusIcons;  // real Civ4 resource icons {src, cell, 
 const FEATURE_OVERLAYS = BUNDLE.featureOverlays; // flat Civ6 SV feature overlays {FEATURE_*: {src,w,h}}, or null (C2C billboards)
 const IMPROVEMENT_OVERLAYS = BUNDLE.improvementOverlays; // flat Civ6 SV improvement overlays {IMPROVEMENT_*: {src,w,h}}, or null (placement deferred — nothing carries an improvement yet)
 const TREES = BUNDLE.trees;        // real Civ4 foliage sprites {leafy,palm,swamp:{src,w,h,sprites}}, or null (procedural blobs)
+const ROUTES = BUNDLE.routes;      // real Civ4 route sprites {trail,road,rail:{src,w,h,cell,conn}, byType} for plot roads, or null (nothing drawn) — docs/route-rendering.md
+
 const SEA_BANDS = BUNDLE.seaBands; // {trop, temp, polar, shore} climate sea + shallows colours
 // per-province trade good (docs/trade-goods.md), loaded eagerly from the static web/tradegoods.js
 // (a <script defer> in index.html, so window.TRADEGOODS is set before the app module evaluates).
@@ -213,4 +215,4 @@ export const S = {
   advisor: "mainmap",
 };
 
-export { P, fmtInt, apiUrl, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };
+export { P, fmtInt, apiUrl, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, ROUTES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };

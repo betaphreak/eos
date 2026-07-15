@@ -25,7 +25,7 @@ import { get as civ4Get, resolveArt as civ4ResolveArt, prefetch as civ4Prefetch 
 import * as civ6 from './civ6.mjs';
 import { decodeCached, resampleRGBA, octagonBacking, compositeCentered } from './imgutil.mjs';
 import { prefetch as anbPrefetch, get as anbGet } from './anbennar.mjs';
-import { bakeNifGroup } from '../tools/nifbake/render.mjs';
+import { bakeNifGroup, renderRouteNif } from '../tools/nifbake/render.mjs';
 import sharp from 'sharp';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
@@ -240,6 +240,33 @@ const map = bakeTerrain(provinces);
 // plots.pack (index inlined below), and expose the terrain display colours the
 // page tints plots with (docs §10). Slice B also bakes a real ground-texture
 // atlas the page draws per plot at deep zoom.
+// ---- routes (roads / trails / rails) config — used by the prefetch below and bakeRoutes() later.
+// docs/route-rendering.md. The three route TIERS the map draws, each a C2C route style: a dirt TRAIL,
+// a stone ROAD, a RAILROAD. Declared here (above the prefetch) so routeArtPaths() can warm them.
+// `byType` maps the engine's Plot.routeType (RouteType.type) onto a tier.
+const ROUTE_TIERS = [
+  { key: 'trail', nifDir: 'path',         prefix: 'road',     tex: 'Art/Terrain/Routes/path/roadprimitive.dds' },
+  { key: 'road',  nifDir: 'roman roads',  prefix: 'road',     tex: 'Art/Terrain/Routes/roman roads/roadroman.dds' },
+  { key: 'rail',  nifDir: 'modrailroads', prefix: 'railroad', tex: 'Art/Terrain/Routes/railroads/railroad.dds' },
+];
+// semantic piece → Civ4 route-model connection (route-models.json) → candidate filename stems, in
+// order (split-LoD styles carry a `-000`, unsplit ones don't). The canonical orientation is baked;
+// the draw layer rotates by 90° multiples to cover the other masks (Civ4 `Rotations "0 90 180 270"`).
+const ROUTE_PIECES = [
+  { name: 'iso',      conn: '-',       stems: ['a00'] },              // isolated nub
+  { name: 'end',      conn: 'N',       stems: ['a01'] },              // terminus (points N)
+  { name: 'straight', conn: 'N S',     stems: ['b03-000', 'b03'] },   // through (│, N–S)
+  { name: 'corner',   conn: 'N E',     stems: ['b05-000', 'b05'] },   // L-turn (└)
+  { name: 'tee',      conn: 'N NE S',  stems: ['c07', 'c07-000'] },   // Y/T junction
+  { name: 'cross',    conn: 'N E S W', stems: ['d01-000', 'd01'] },   // + crossroads
+];
+const ROUTE_BY_TYPE = {
+  ROUTE_TRAIL: 'trail', ROUTE_PATH: 'trail',
+  ROUTE_ROAD: 'road', ROUTE_PAVED_ROAD: 'road',
+  ROUTE_RAILROAD: 'rail',
+};
+const SIZE_ROUTE = 96;   // px longest-side each piece renders at, before atlas packing
+
 // Warm the C2C art cache in parallel so the synchronous resolveArt/loadGameFont bakes below hit the
 // disk cache instead of a per-file round trip (see civ4.mjs). Collect the terrain-art manifest's
 // textures plus the water/tree/foam art the bakes reference by literal path; a miss just falls back
@@ -256,6 +283,7 @@ await (async () => {
     'Art/Terrain/textures/water/seapolblend.dds', 'Art/Terrain/textures/water/seadeepblend.dds',
     'Art/Terrain/features/icepack/icepack_1024.dds', 'Art/Terrain/features/treeleafy/trees_1024.dds',
     'Art/Terrain/features/savanna/palms_1024.dds', 'Art/Terrain/features/swamp/trees1.dds');
+  arts.push(...routeArtPaths());   // the road/rail segment nifs + their textures (bakeRoutes)
   await civ4Prefetch({ arts, files: ['CIV4BonusInfos.xml', 'CIV4ArtDefines_Bonus.xml', 'res/Fonts/GameFont_120.tga'] });
 })();
 // Warm the Anbennar trade-good icon strip + its ordering source for bakeTradeGoodIcons (see anbennar.mjs).
@@ -271,6 +299,7 @@ const ice = bakeIceTile();                   // {src, tile} real Civ4 pack-ice t
 const bonusIcons = bakeBonusIcons();         // {src, cell, cols, index:{type:i}} real Civ4 resource icons, or null
 const tradeGoodIcons = bakeTradeGoodIcons(); // {src, cell, cols, index:{key:col}} Anbennar trade-good icons, or null
 const trees = bakeFeatureSprites();          // {leafy,palm,swamp:{src,w,h,sprites}} real foliage cutouts, or null
+const routes = bakeRoutes();                 // {trail,road,rail:{src,w,h,cell:{piece:[x,y,w,h]}}} baked route sprites, or null
 const featureOverlays = bakeFeatureOverlays(); // {FEATURE_*: {src,w,h}} flat Civ6 SV feature overlays, or null
 const improvementOverlays = bakeImprovementOverlays(); // {IMPROVEMENT_*: {src,w,h}} flat Civ6 SV improvement overlays, or null
 const districtTiles = bakeDistrictTiles();   // {DISTRICT_TYPE: {src,w,h}} flat Civ6 SV district hex chips, or null
@@ -395,7 +424,7 @@ const bboxes = {};                    // ring-less (sea/lake) provinces' plot-ex
 for (const p of provinces) if (p.bbox) bboxes[p.id] = p.bbox;
 const manifest = {
   seed: +SEED,
-  map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, ice, bonusIcons, trees, featureOverlays, improvementOverlays, districtTiles, seaBands,
+  map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, ice, bonusIcons, trees, routes, featureOverlays, improvementOverlays, districtTiles, seaBands,
   loading,                            // committed loading-screen art (assets/loading/loading-*.jpg), or []
   bboxes,                             // {provId: [x0,y0,x1,y1]} for ring-less provinces (server can't derive)
 };
@@ -991,6 +1020,59 @@ function bakeFeatureSprites() {
     console.log('  city: nif/tex not resolved, skipped');
   }
   return Object.keys(out).length ? out : null;
+}
+
+// Every "Art/..." route path bakeRoutes touches — warmed by the top-of-file prefetch. (The
+// ROUTE_TIERS / ROUTE_PIECES config it reads is declared up top, before the prefetch, to avoid a TDZ.)
+function routeArtPaths() {
+  const out = [];
+  for (const t of ROUTE_TIERS) {
+    out.push(t.tex);
+    for (const p of ROUTE_PIECES) for (const s of p.stems)
+      out.push(`Art/Terrain/Routes/${t.nifDir}/${t.prefix}${s}.nif`);
+  }
+  return out;
+}
+
+// Bake each tier's connection pieces to a horizontal-strip atlas + sprite rects, so the plot layer
+// can stamp real Civ4 road/trail/rail art along a corridor. Returns {trail,road,rail:{src,w,h,
+// cell:{piece:[x,y,w,h]}, conn:{piece:connString}}, byType:{ROUTE_*:tier}} or null when no art resolves.
+function bakeRoutes() {
+  const tiers = {};
+  for (const t of ROUTE_TIERS) {
+    const texFile = resolveArt(t.tex);
+    if (!texFile) { console.log(`  routes/${t.key}: texture ${t.tex} not resolved, skipped`); continue; }
+    const rendered = [];
+    for (const p of ROUTE_PIECES) {
+      let img = null;
+      for (const s of p.stems) {
+        const nif = resolveArt(`Art/Terrain/Routes/${t.nifDir}/${t.prefix}${s}.nif`);
+        if (!nif) continue;
+        try { img = renderRouteNif(nif, texFile, SIZE_ROUTE); } catch { img = null; }
+        if (img) break;
+      }
+      if (img) rendered.push({ name: p.name, conn: p.conn, img });
+    }
+    if (!rendered.length) { console.log(`  routes/${t.key}: no pieces rendered, skipped`); continue; }
+    // pack the pieces into one RGBA strip (y=0, atlas height = tallest piece)
+    const GAP = 1, H = Math.max(...rendered.map(r => r.img.H));
+    let W = 0; for (const r of rendered) W += r.img.W + GAP;
+    const rgba = Buffer.alloc(W * H * 4), cell = {}, conn = {};
+    let ox = 0;
+    for (const r of rendered) {
+      const { W: rw, H: rh, rgba: src } = r.img;
+      for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) {
+        const so = (y * rw + x) * 4, d = (y * W + ox + x) * 4;
+        rgba[d] = src[so]; rgba[d + 1] = src[so + 1]; rgba[d + 2] = src[so + 2]; rgba[d + 3] = src[so + 3];
+      }
+      cell[r.name] = [ox, 0, rw, rh]; conn[r.name] = r.conn; ox += rw + GAP;
+    }
+    const src = queueWebpRGBA(`routes/routes-${t.key}`, W, H, rgba, { quality: 90 });
+    tiers[t.key] = { src, w: W, h: H, cell, conn };
+    console.log(`  routes/${t.key}: ${rendered.length} pieces (${rendered.map(r => r.name).join(',')}) → ${W}×${H}`);
+  }
+  if (!Object.keys(tiers).length) return null;
+  return { ...tiers, byType: ROUTE_BY_TYPE };
 }
 function bakeSpriteGroup(artPath, name) {
   const file = resolveArt(artPath);

@@ -169,9 +169,117 @@ export function bakeNifGroup(variants, name, webAssets, size = 220, opts = {}) {
   return { src: `assets/${file}`, w: totW, h: maxH, sprites };
 }
 
+// ================================ road / route mode =================================
+// Roads differ from the tree/cactus billboards in two ways the front-view renderNif can't
+// handle, so they get their own path (see docs/route-rendering.md):
+//   1. They lie FLAT on the ground (the mesh spans X-Y at Z≈0), so we project TOP-DOWN —
+//      image X = world X, image Y = world Y, higher Z wins — not the X-Z front view.
+//   2. The stock parseNif resync rejects them: a road's NiTriShape and its NiTriShapeData
+//      are separated by a 7-block run (texturing/material/alpha + an animated-alpha
+//      NiAlphaController→NiFloatInterpolator→NiFloatData chain with no parser), and the
+//      resync's sane() UV bound (0..3, tuned for 0..1 billboards) rejects the road's
+//      TILING UVs (V repeats down a segment). So we locate the geometry directly, by
+//      scanning for the NiTriShapeData whose parse consumes EXACTLY to EOF — a strong,
+//      self-contained lock that needs no resync heuristic.
+
+// Read a length-prefixed vec/scalar stream as a NiTriShapeData starting at byte `off`; return
+// the geometry (verts/uvs/tris) iff it parses and consumes to EOF, else null. Mirrors
+// niGeometryData/niTriShapeData in nif.mjs for the 20.0.0.4, no-normals road layout.
+function routeGeomAt(buf, off) {
+  let o = off;
+  const u16 = () => { const v = buf.readUInt16LE(o); o += 2; return v; };
+  const u32 = () => { const v = buf.readUInt32LE(o); o += 4; return v; };
+  const i32 = () => { const v = buf.readInt32LE(o); o += 4; return v; };
+  const u8 = () => buf[o++];
+  const f32 = () => { const v = buf.readFloatLE(o); o += 4; return v; };
+  const bool = () => u8() !== 0;
+  const vec3 = () => [f32(), f32(), f32()];
+  try {
+    i32();                                             // Group ID
+    const nv = u16(); if (nv < 3 || nv > 5000) return null;
+    u8(); u8();                                        // Keep / Compress flags
+    if (!bool()) return null;                          // Has Vertices
+    const verts = []; for (let i = 0; i < nv; i++) verts.push(vec3());
+    const vflags = u16(); const hasN = bool();
+    if (hasN) for (let i = 0; i < nv; i++) vec3();
+    if (hasN && (vflags & 4096)) for (let i = 0; i < nv * 2; i++) vec3();
+    vec3(); f32();                                     // Center, Radius
+    if (bool()) for (let i = 0; i < nv; i++) { f32(); f32(); f32(); f32(); }  // Colors
+    const numUV = vflags & 63; const uvs = [];
+    for (let s = 0; s < numUV; s++) { const set = []; for (let i = 0; i < nv; i++) set.push([f32(), f32()]); if (s === 0) uvs.push(...set); }
+    u16(); i32();                                      // Consistency, Additional Data ref
+    const ntri = u16(); u32(); const hasT = bool();
+    const tris = []; if (hasT) for (let i = 0; i < ntri; i++) tris.push([u16(), u16(), u16()]);
+    if (!tris.length || !tris.every(t => t[0] < nv && t[1] < nv && t[2] < nv)) return null;
+    if (uvs.length !== nv) return null;
+    const numMatch = u16(); for (let i = 0; i < numMatch; i++) { const n = u16(); for (let j = 0; j < n; j++) u16(); }
+    const numRoots = u32(); if (numRoots > 1000) return null; for (let i = 0; i < numRoots; i++) i32();
+    if (o !== buf.length) return null;                 // consumed exactly to EOF → the real block
+    return { nv, verts, uvs, tris };
+  } catch { return null; }
+}
+function findRouteGeom(buf) {
+  for (let o = 100; o < buf.length - 20; o++) { const g = routeGeomAt(buf, o); if (g) return g; }
+  return null;
+}
+
+// top-down raster of a flat route quad; the texture WRAPS (roads tile their surface down
+// the segment), and the result is trimmed to its alpha bbox so pieces pack tight.
+function renderRoute(g, tex, size) {
+  const { verts, uvs, tris } = g;
+  let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
+  for (const p of verts) { mnx = Math.min(mnx, p[0]); mxx = Math.max(mxx, p[0]); mny = Math.min(mny, p[1]); mxy = Math.max(mxy, p[1]); }
+  const wspan = mxx - mnx, hspan = mxy - mny, span = Math.max(wspan, hspan) || 1;
+  const pad = 1, sc = (size - 2 * pad) / span;
+  const W = Math.max(4, Math.round(wspan * sc + 2 * pad)), H = Math.max(4, Math.round(hspan * sc + 2 * pad));
+  const px = x => pad + (x - mnx) * sc, py = y => H - pad - (y - mny) * sc;   // world +Y (North) → image up
+  const rgba = Buffer.alloc(W * H * 4), depth = new Float32Array(W * H).fill(-1e9);
+  const TW = tex.width, TH = tex.height, td = tex.rgba;
+  const sample = (u, v) => {
+    let sx = Math.floor((u - Math.floor(u)) * TW), sy = Math.floor((v - Math.floor(v)) * TH);
+    if (sx < 0) sx += TW; if (sy < 0) sy += TH; const q = (sy * TW + sx) * 4;
+    return [td[q], td[q + 1], td[q + 2], td[q + 3]];
+  };
+  for (const t of tris) {
+    const A = [px(verts[t[0]][0]), py(verts[t[0]][1])], B = [px(verts[t[1]][0]), py(verts[t[1]][1])], C = [px(verts[t[2]][0]), py(verts[t[2]][1])];
+    const meanZ = (verts[t[0]][2] + verts[t[1]][2] + verts[t[2]][2]) / 3;
+    const x0 = Math.max(0, Math.floor(Math.min(A[0], B[0], C[0]))), x1 = Math.min(W - 1, Math.ceil(Math.max(A[0], B[0], C[0])));
+    const y0 = Math.max(0, Math.floor(Math.min(A[1], B[1], C[1]))), y1 = Math.min(H - 1, Math.ceil(Math.max(A[1], B[1], C[1])));
+    const d = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(d) < 1e-6) continue;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const l0 = ((B[1] - C[1]) * (x - C[0]) + (C[0] - B[0]) * (y - C[1])) / d;
+      const l1 = ((C[1] - A[1]) * (x - C[0]) + (A[0] - C[0]) * (y - C[1])) / d;
+      const l2 = 1 - l0 - l1;
+      if (l0 < -0.001 || l1 < -0.001 || l2 < -0.001) continue;
+      const u = l0 * uvs[t[0]][0] + l1 * uvs[t[1]][0] + l2 * uvs[t[2]][0];
+      const v = l0 * uvs[t[0]][1] + l1 * uvs[t[1]][1] + l2 * uvs[t[2]][1];
+      const [r, gg, bl, a] = sample(u, v); if (a < 8) continue;
+      const idx = y * W + x; if (meanZ <= depth[idx]) continue; depth[idx] = meanZ;
+      const q = idx * 4; rgba[q] = r; rgba[q + 1] = gg; rgba[q + 2] = bl; rgba[q + 3] = a;
+    }
+  }
+  return trim({ W, H, rgba });
+}
+
+/**
+ * Render one flat Civ4 route segment .nif to a top-down 2D sprite. Returns {W,H,rgba}
+ * (alpha-trimmed), or null if the geometry can't be located / the texture is unreadable.
+ * See docs/route-rendering.md; the build.mjs `bakeRoutes` slice packs these into per-tier atlases.
+ */
+export function renderRouteNif(nifPath, texPath, size = 96) {
+  const g = findRouteGeom(fs.readFileSync(nifPath));
+  if (!g) return null;
+  const tex = decodeDds(fs.readFileSync(texPath));
+  return renderRoute(g, tex, size);
+}
+
+// Debug CLI:  node render.mjs <nif> <tex> <out.png> [size]           (front-view feature)
+//             node render.mjs --route <nif> <tex> <out.png> [size]   (top-down route)
 if (process.argv[1] && /render\.mjs$/.test(process.argv[1])) {
-  const [nifPath, texPath, out, size] = process.argv.slice(2);
-  const img = renderNif(nifPath, texPath, +size || 128);
+  const args = process.argv.slice(2);
+  const route = args[0] === '--route';
+  const [nifPath, texPath, out, size] = route ? args.slice(1) : args;
+  const img = route ? renderRouteNif(nifPath, texPath, +size || 96) : renderNif(nifPath, texPath, +size || 128);
   fs.writeFileSync(out, encodePng(img.W, img.H, img.rgba));
-  console.error(`rendered ${path.basename(nifPath)} -> ${out} (${img.W}x${img.H})`);
+  console.error(`rendered ${route ? 'route ' : ''}${path.basename(nifPath)} -> ${out} (${img.W}x${img.H})`);
 }
