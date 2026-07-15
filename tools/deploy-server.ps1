@@ -13,7 +13,8 @@
   drift apart otherwise and the plot layer silently breaks. See docs/client-server.md §Deployment.
 
   Steps: verify docker + az → az acr login → docker build (multi-stage, bakes the engine jar +
-  build-info) → docker push → az containerapp update → poll /actuator until the new version serves.
+  build-info) → docker push → az containerapp update → poll /actuator until the new version serves →
+  prune old local images (only on a verified-live deploy; the registry keeps them for rollback).
 
 .PARAMETER Tag
   Image tag. Defaults to the current git commit SHA (the deploy convention). A dirty tree gets
@@ -110,6 +111,26 @@ try {
       "the new revision did not take over (stale image, unhealthy revision, or traffic still on the old one). " +
       "Inspect: az containerapp revision list -n $APP -g $RG")
   }
+
+  # HOUSEKEEPING — only now that the new build is verified live: drop old LOCAL images. The registry
+  # keeps every tag, so rollback (`-SkipBuild -Tag <old>`) still pulls old images from ACR; locally we
+  # only need the one just deployed. Removes the other civstudio-server tags + any dangling images (not
+  # the build cache — that stays, to keep the next rebuild fast). Best-effort: the deploy already
+  # succeeded, so a cleanup hiccup must never fail it.
+  Write-Host "==> cleaning up old local images (keeping $Tag)" -ForegroundColor Cyan
+  $prevEAP = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = 'Continue'   # a single rmi failure must not abort the loop
+    $old = @(docker images "$LOGIN/$REPO" --format '{{.Tag}}' | Where-Object { $_ -and $_ -ne $Tag })
+    foreach ($t in $old) { docker rmi "$LOGIN/$REPO`:$t" 2>$null | Out-Null }
+    docker image prune -f 2>$null | Out-Null   # dangling (untagged) images
+    Write-Host "    removed $($old.Count) old local tag(s) + dangling images; kept $Tag" -ForegroundColor Green
+  } catch {
+    Write-Warning "image cleanup skipped (deploy already succeeded): $_"
+  } finally {
+    $ErrorActionPreference = $prevEAP
+  }
+
   Write-Host "==> done." -ForegroundColor Cyan
 }
 finally {
