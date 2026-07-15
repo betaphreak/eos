@@ -1194,7 +1194,7 @@ public class SimulationHarness {
 		// (landless — null — if the site is full); the founding cohort and every promoted
 		// replacement flow through here. See docs/plot-working-plan.md P1.
 		if (cfg.homePlots())
-			laborer.setHomePlot(colony.claimHomePlot(laborer));
+			laborer.setHomePlot(colony.claimHomePlot());
 		// the ruler capitalizes the new household out of its treasury (borrowing if
 		// short); skip only during an interregnum (a dead ruler has no account)
 		Ruler ruler = colony.getRuler();

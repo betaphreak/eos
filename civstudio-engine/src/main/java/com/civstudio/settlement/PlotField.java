@@ -286,8 +286,10 @@ class PlotField {
 	// food falls → the colony self-limits by food). Unlike claimPlot this never routes through the
 	// builder and raises NO improvement — a home plot is worked as raw/feature land, exactly as the camp
 	// forages its bare plot. Returns null only for a province-less colony with no workable plot to give
-	// (a landless household). Package-visible for Settlement.claimHomePlot.
-	Plot claimHomePlot(PlotOccupant occupant) {
+	// (a landless household). The household holds the returned plot itself (Laborer.homePlot) and is
+	// released by plot on death — the shared model tracks only per-plot load, not which household is on
+	// which plot — so no occupant is passed. Package-visible for Settlement.claimHomePlot.
+	Plot claimHomePlot() {
 		// the least-loaded existing home-farm plot
 		Plot minPlot = null;
 		int minLoad = Integer.MAX_VALUE;
@@ -328,6 +330,14 @@ class PlotField {
 			return p;
 		}
 		return null; // no room to grow — home farming shares its existing plots instead
+	}
+
+	// whether this colony works any home-farm plots — i.e. it runs the home-plot subsistence economy
+	// (docs/plot-working-plan.md). Stays true once founded (a freed home plot is retained at load 0),
+	// so the subsistence floor #1 stays retired for a home-plots colony even mid-contraction. False for
+	// a colony that never opted in (its households eat purely from the market).
+	boolean hasHomePlots() {
+		return !homePlotLoads.isEmpty();
 	}
 
 	// the number of households currently sharing the given home plot (0 if it is not a home-farm plot).

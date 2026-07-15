@@ -1,6 +1,6 @@
 # Plan: households work plots for food (Civ4-style plot-working economy)
 
-**Status:** **P1 + P2 SHIPPED** (2026-07-16); P3–P5 still PLAN. The fix for the **large / mature-colony collapse**: give every household a
+**Status:** **P1 + P2 + P3 SHIPPED** (2026-07-16); P4–P5 still PLAN. The fix for the **large / mature-colony collapse**: give every household a
 **home plot** it farms for its own subsistence food, so baseline survival is decoupled from the market.
 The firms stay as a market/surplus layer *on top*. Companion to
 [`docs/settlement-tier-ladder-plan.md`](settlement-tier-ladder-plan.md) (the tier ladder + the
@@ -134,27 +134,39 @@ onto. It does not bite the shipping scenario (`CampFoundingEconomy` stays small)
 split wants a real policy when the commercial-farm re-role (P3) lands. **Also still deferred:** retiring the
 subsistence floor (#1), unchanged from P1.
 
-## P3 — Re-role the farm firm as a commercial/surplus producer
+## P3 — Re-role the farm firm as a commercial/surplus producer — **SHIPPED 2026-07-16**
 
-**Goal.** With landed households self-feeding, `NFirm` becomes a **market** food producer for the
-*landless* pool + trade + the wage-labor it hires — not the survival lifeline. The market food layer sits
+**Goal.** With landed households self-feeding, `NFirm` becomes a **market** food producer for the crowded-
+colony market gap + trade + the wage-labor it hires — not the survival lifeline. The market food layer sits
 "on top," sized to the residual (non-subsistence) demand.
 
-**Steps.**
-1. Necessity market demand now comes from the **landless** (pool relief) + households topping up when a
-   plot falls short + trade — a fraction of today's. The dynamic firm provisioning sizes the farm sector to
-   that residual (fewer farms; possibly zero when subsistence covers everyone).
-2. Remove the subsistence floor (#1) fully (P1 already unwinds it) — the market may now let the commercial
-   farm scale down or shut, because survival no longer depends on it.
-3. `Settlement.dailyFoodSurplus()` (the food box) reads **plot food + firm output** across all tiers
-   (unifying the camp branch, P4) so tier growth reflects the true food balance.
+**What shipped.** The re-role is largely **emergent** from home plots, plus one deliberate change:
+- **Subsistence floor #1 retired for home-plots colonies.** `Settlement.hasHomePlots()` (true once the
+  colony works any home-farm plot) gates the `ConsumerGoodFirm` wage/output floors off:
+  `subsistenceFloor = soleFoodProducer() && !getColony().hasHomePlots()`. A **flag-off** colony keeps the
+  floor (survival still market-based — `CampBootViabilityTest` depends on it and stays byte-identical). The
+  `ConsumerGoodMarket` **price** floor is kept — it is a numerical guard (spares the output rule its
+  price-in-the-denominator blowup), not a survival prop.
+- **The farm rightsizes on its own.** With the floor gone and households self-feeding, the sole farm's
+  thin revenue collapses its wage budget → it hires ~no labour → it scales to a dormant surplus role. No
+  provisioning change was needed (it is already demand-driven). Measured contrast (`CommercialFarmTest`,
+  same band, same seed): floor-on the sole farm peaks at **~27 labour**; floor-off (home plots) **0**;
+  **both colonies survive** — the flag-off one via the floor, the home-plots one via its plots.
+- **Home-vs-firm land — resolved by policy (no code).** Subsistence (home farming) takes land priority;
+  genesis farms are seated *before* home farming, so they keep their plots; a farm the provisioning charters
+  onto a full colony simply runs plotless at neutral TFP (still producing). Overcrowding the market can't
+  feed is trimmed by the Malthusian squeeze (P2) — the market genuinely can't sustain a colony past its
+  land's carrying capacity, which is the intended contraction toward the plot-count core.
+- `dailyFoodSurplus()` already reads **plot food + firm output** (done in P1); the camp branch unification
+  is P4.
 
-**Seams.** `NFirm`/`ConsumerGoodFirm`, `Ruler.reviewSector` (dynamic provisioning), `Settlement.dailyFood
-Surplus`, `ConsumerGoodMarket`.
+**Tests.** `CommercialFarmTest` (the floor-on-vs-off labour contrast above, both colonies surviving).
+`CampBootViabilityTest` (flag-off) unchanged — the floor still protects a colony without home plots. Full
+reactor green (331 engine + 55 server).
 
-**Risk / tests.** Medium. The market economy shrinks to a surplus/trade role. `CommercialFarmTest`: with
-landed households self-feeding, the farm sector sizes to the landless demand and the colony survives a
-market shock (landed core unaffected).
+**Also shipped (cleanup, prompted mid-P3):** dropped the now-dead `PlotOccupant` argument from
+`claimHomePlot` (the P2 shared model tracks per-plot load, not per-occupant), and de-qualified the two
+`Laborer` references in `Settlement`.
 
 ## P4 — Unify the camp forage with settled plot-working
 

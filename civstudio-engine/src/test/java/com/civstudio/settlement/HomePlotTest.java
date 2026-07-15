@@ -38,9 +38,7 @@ class HomePlotTest {
 		assertEquals(0.0, c.homePlotFoodYield(null), 1e-9,
 				"a landless household (null plot) draws no plot food");
 
-		PlotOccupant occupant = new PlotOccupant() {
-		};
-		Plot p = c.claimHomePlot(occupant);
+		Plot p = c.claimHomePlot();
 		assertNotNull(p, "a fresh colony can seat a home plot");
 		assertTrue(p.isWorkable(), "a home plot is workable ground (peaks are skipped)");
 
@@ -58,8 +56,7 @@ class HomePlotTest {
 		int n = c.getMaxPlots() + 20;
 		List<Plot> assigned = new ArrayList<>();
 		for (int i = 0; i < n; i++) {
-			Plot p = c.claimHomePlot(new PlotOccupant() {
-			});
+			Plot p = c.claimHomePlot();
 			assertNotNull(p, "a household always gets a (possibly shared) home plot — no landless overflow");
 			assigned.add(p);
 		}
@@ -83,10 +80,8 @@ class HomePlotTest {
 		Settlement c = dhenijansar();
 		// the first handful of households each get their own plot (density 1) — the colony spreads
 		// across fresh land before it ever doubles up
-		Plot p1 = c.claimHomePlot(new PlotOccupant() {
-		});
-		Plot p2 = c.claimHomePlot(new PlotOccupant() {
-		});
+		Plot p1 = c.claimHomePlot();
+		Plot p2 = c.claimHomePlot();
 		assertNotSame(p1, p2, "a sparse colony spreads households onto distinct plots (density 1)");
 		assertEquals(1, c.homePlotLoad(p1));
 		assertEquals(1, c.homePlotLoad(p2));
@@ -95,8 +90,7 @@ class HomePlotTest {
 	@Test
 	void aFreedHomePlotIsReusedByTheNextHousehold() {
 		Settlement c = dhenijansar();
-		Plot pa = c.claimHomePlot(new PlotOccupant() {
-		});
+		Plot pa = c.claimHomePlot();
 		assertNotNull(pa, "the first household is seated on a home plot");
 		assertEquals(1, c.homePlotLoad(pa));
 
@@ -104,8 +98,7 @@ class HomePlotTest {
 		// plot is claimed — the turnover that keeps the core on the land (Settlement.newDay / P2)
 		c.releaseHomePlot(pa);
 		assertEquals(0, c.homePlotLoad(pa));
-		Plot pb = c.claimHomePlot(new PlotOccupant() {
-		});
+		Plot pb = c.claimHomePlot();
 		assertSame(pa, pb, "a freed home plot is reused by the next household");
 		assertEquals(1, c.homePlotLoad(pb));
 	}

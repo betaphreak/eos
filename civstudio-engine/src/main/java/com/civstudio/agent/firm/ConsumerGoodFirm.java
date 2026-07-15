@@ -209,7 +209,11 @@ public abstract class ConsumerGoodFirm extends Firm {
 		// the subsistence floors apply only to the colony's SOLE food farm — the one that, if it shut
 		// down, would leave no supply. A colony with several food firms lets the market scale each down
 		// (the sector still feeds it), so the floors do not bind there (they would only force gluts).
-		boolean subsistenceFloor = soleFoodProducer();
+		// They are also retired entirely once the colony runs the home-plot subsistence economy
+		// (docs/plot-working-plan.md P3): landed households self-feed from their plots, so the farm is a
+		// commercial/surplus producer free to scale to the residual market demand rather than the
+		// survival lifeline that must be propped up.
+		boolean subsistenceFloor = soleFoodProducer() && !getColony().hasHomePlots();
 
 		// get firm finance information
 		Account acct = bank.getAcct(getID());

@@ -355,7 +355,7 @@ class SocialMobility implements ExpeditionReturn {
 		// plot it farms for subsistence food, landless (null) if the site is full. See
 		// docs/plot-working-plan.md P1.
 		if (cfg.homePlots())
-			household.setHomePlot(colony.claimHomePlot(household));
+			household.setHomePlot(colony.claimHomePlot());
 		return household;
 	}
 

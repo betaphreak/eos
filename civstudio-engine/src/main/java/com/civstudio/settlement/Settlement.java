@@ -47,6 +47,7 @@ import com.civstudio.tech.Sector;
 import com.civstudio.tech.TechEffect;
 import com.civstudio.util.Rng;
 import com.civstudio.agent.laborer.FertilityConfig;
+import com.civstudio.agent.laborer.Laborer;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.java.Log;
@@ -956,7 +957,7 @@ public class Settlement {
 			// while self-feeding households buy little, driving the farms down — and read a false
 			// deficit that shrinks the tier. Landless households (null plot) add 0, so a colony
 			// without home plots is byte-identical. See docs/plot-working-plan.md P1.
-			else if (a instanceof com.civstudio.agent.laborer.Laborer l)
+			else if (a instanceof Laborer l)
 				produced += homePlotFoodYield(l.getHomePlot());
 		}
 		double eaten = totalResidents() * com.civstudio.good.RationSize.FINE.perDay();
@@ -1028,6 +1029,19 @@ public class Settlement {
 	}
 
 	/**
+	 * Whether this colony runs the <b>home-plot subsistence economy</b> — its landed households farm
+	 * home plots for food ({@code docs/plot-working-plan.md}). When true, survival no longer depends on
+	 * the food market, so the necessity sector's <b>subsistence floor</b> (#1) is retired — the sole
+	 * farm may scale down to the residual (surplus/trade) demand instead of being propped up (P3). A
+	 * colony that never opted into home plots keeps the floor (its households eat from the market).
+	 *
+	 * @return true if the colony works any home-farm plots
+	 */
+	public boolean hasHomePlots() {
+		return plotField.hasHomePlots();
+	}
+
+	/**
 	 * Release one household's share of a home plot when it dies (decrement the plot's {@linkplain
 	 * #homePlotLoad(Plot) load}). The plot stays claimed farmland (its load may fall to 0) so the next
 	 * household reuses it before fresh land is claimed. Called from {@link #newDay} as the dead are
@@ -1042,19 +1056,21 @@ public class Settlement {
 
 	/**
 	 * Claim a <b>home plot</b> for a landed household to farm (the plot-working economy of {@code
-	 * docs/plot-working-plan.md} P1): seat {@code household} on a free workable plot — an already-claimed
-	 * vacant one if the colony has it, else a fresh plot claimed from the province pool (skipping
-	 * unworkable peaks). Returns {@code null} when the colony can seat no more (its province is full /
-	 * the shared pool is drained, or it is province-less) — the household is then <b>landless</b> (the
-	 * market-dependent overflow). Unlike {@link #claimPlot} this never routes through the builder and
-	 * raises no improvement: a home plot is worked as raw/feature land, exactly as the camp forages its
-	 * plot. The household is a {@link PlotOccupant}, freed on its death (see {@code newDay}).
+	 * docs/plot-working-plan.md} P2): a <b>shared</b> workable plot — the colony spreads households
+	 * one-per-plot across its province's workable land (density 1, each self-sufficient), then piles
+	 * further households onto the least-crowded plot, whose food then splits among them ({@link
+	 * #homePlotFoodYield(Plot)} divides by the load — the Malthusian dilution). Prefers reusing a freed
+	 * plot, then fresh land, then crowding. Unlike {@link #claimPlot} this never routes through the
+	 * builder and raises no improvement: a home plot is worked as raw/feature land, like the camp's
+	 * forage. Returns {@code null} only for a province-less colony with no workable plot to give (a
+	 * landless household). The caller assigns the returned plot to the household (via {@code
+	 * Laborer.setHomePlot}), which releases it on death (see {@link #newDay}); the shared model tracks
+	 * only per-plot load, so no household need be passed here.
 	 *
-	 * @param household the household to seat (a {@link PlotOccupant})
-	 * @return the plot it was seated on, or {@code null} if none was available (landless)
+	 * @return the (possibly shared) plot to farm, or {@code null} if none was available (landless)
 	 */
-	public Plot claimHomePlot(PlotOccupant household) {
-		return plotField.claimHomePlot(household);
+	public Plot claimHomePlot() {
+		return plotField.claimHomePlot();
 	}
 
 	// the food yield of the camp's forage plot (terrain + feature + any built improvement, index 0 of
@@ -1801,7 +1817,7 @@ public class Settlement {
 			// so the replacement's new household reuses that land (turnover keeps the core on the land;
 			// see claimHomePlot step 1). A no-op for a landless household or one without a home plot.
 			// See docs/plot-working-plan.md P2.
-			if (agent instanceof com.civstudio.agent.laborer.Laborer l && l.getHomePlot() != null)
+			if (agent instanceof Laborer l && l.getHomePlot() != null)
 				releaseHomePlot(l.getHomePlot());
 			// a dead person of interest leaves the roster (a successor, if any,
 			// registers itself afresh in its constructor); log its passing once — at
