@@ -164,14 +164,14 @@ class SocialMobility implements ExpeditionReturn {
 				best = lab;
 		if (best == null)
 			return null;
-		// reform the chosen laborer up the rank ladder: HOUSEHOLD -> HOLDING (the
-		// reserved CARAVAN rung in between has no factory, so it is skipped). The
-		// HOLDING factory re-banks it in silver, carries its balances and members
-		// over, and the ladder closes the old account and swaps the agent — money
-		// conserved, the laborer's surname staying in use with the noble that adopted
-		// its head. Safe here: this runs only as a deferred end-of-step action (the
-		// laborer's offers have cleared), exactly as before.
-		return (Noble) rankLadder().promote(best);
+		// reform the chosen laborer up the rank ladder to HOLDING explicitly (R1 —
+		// docs/rank-ladder-improvements.md): the HOLDING factory re-banks it in silver,
+		// carries its balances and members over, and the ladder closes the old account and
+		// swaps the agent — money conserved, the laborer's surname staying in use with the
+		// noble that adopted its head. A targeted reform (not the adjacency walk) so it is
+		// unaffected when the intermediate CARAVAN rung is realized. Safe here: this runs
+		// only as a deferred end-of-step action (the laborer's offers have cleared).
+		return (Noble) rankLadder().reformTo(best, Rank.HOLDING);
 	}
 
 	/**
@@ -190,7 +190,10 @@ class SocialMobility implements ExpeditionReturn {
 	 *         realized rank below it
 	 */
 	Household demote(Household household) {
-		return rankLadder().demote(household);
+		// a ruined noble (HOLDING) reforms down to a laborer (HOUSEHOLD) — the only demotion
+		// wired today. Targeted (not the adjacency walk) so it stays correct when the
+		// intermediate CARAVAN rung is realized (R1, docs/rank-ladder-improvements.md).
+		return rankLadder().reformTo(household, Rank.HOUSEHOLD);
 	}
 
 	/**

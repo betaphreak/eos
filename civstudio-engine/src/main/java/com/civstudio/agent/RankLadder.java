@@ -60,10 +60,40 @@ public class RankLadder {
 	}
 
 	/**
+	 * Reform <tt>household</tt> into the type that realizes an <b>explicit</b> target
+	 * {@link Rank}, conserving its identity and money. Unlike {@link #promote}/{@link
+	 * #demote} (which walk to the <em>nearest</em> realized rung and so cannot be used
+	 * once an intermediate rung is realized — the ennoblement-collision trap, see {@code
+	 * docs/rank-ladder.md}/{@code docs/rank-ladder-improvements.md} R1), this names the
+	 * destination, so a caller says exactly which rank a household becomes: ennoblement
+	 * {@code reformTo(laborer, HOLDING)}, a tier boot {@code reformTo(captain, VILLAGE)},
+	 * a metropolis crossing {@code reformTo(ruler, CITY)}. Returns {@code null} (a no-op)
+	 * if <tt>target</tt> has no registered factory. The reform carries the household's
+	 * <em>held</em> balances; any founding capital <b>injection</b> is a separate step
+	 * (never folded into a factory).
+	 *
+	 * @param household
+	 *            the household to reform (must be safe to move — see class note)
+	 * @param target
+	 *            the rank it becomes
+	 * @return the reformed household, or {@code null} if the target is unrealized
+	 */
+	public Household reformTo(Household household, Rank target) {
+		if (!factories.containsKey(target))
+			return null;
+		return reform(household, Optional.of(target));
+	}
+
+	/**
 	 * Promote <tt>household</tt> one realized rank up the ladder: reform it into the
 	 * type of the next higher rank that has a registered factory (skipping unrealized
 	 * rungs). Returns the reformed household, or {@code null} if there is no realized
 	 * rank above it.
+	 * <p>
+	 * <b>Prefer {@link #reformTo}.</b> The adjacency walk is ambiguous once an
+	 * intermediate rung is realized (e.g. registering {@code CARAVAN} would make this
+	 * land a laborer on Captain, not Noble); it is kept only while no such rung is
+	 * registered.
 	 *
 	 * @param household
 	 *            the household to promote (must be safe to move — see class note)
