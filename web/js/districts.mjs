@@ -16,9 +16,11 @@ const TILES = (BUNDLE && BUNDLE.districtTiles) || null;
 const tileImg = {};
 if (TILES) for (const [type, a] of Object.entries(TILES)) { const im = new Image(); im.src = a.src; tileImg[type] = im; }
 
-// the district hex reaches 100% (its native baked size) at D_FULL_K and holds there deeper —
-// the "native at 256×" convention (cf. plots.mjs BONUS_FULL_K). D_TILE is the baked tile px.
-const D_TILE = 256, D_FULL_K = 256;
+// each hex is sized to the PLOT it sits on (× this factor) so a city's urban cores TILE instead of
+// piling up as giant overlapping hexes. ~1.15 so the hex's flats cover the square plot cell's corners
+// with only slight overlap between neighbours (a honeycomb, not a stack). Replaces the old
+// native-at-256× sizing, which drew a fixed 256px hex on much smaller plots → the deep-zoom pile.
+const D_HEX_SCALE = 1.15;
 
 // district types assigned to a city's non-primary urban plots (the primary is CITY_CENTER)
 const OTHER_TYPES = ["NEIGHBORHOOD", "COMMERCIAL_HUB", "CAMPUS", "HOLY_SITE", "ENCAMPMENT", "THEATER"];
@@ -104,7 +106,7 @@ export function drawDistricts() {
   // held there deeper — the same "hits native at 256×" convention the bonus icons use
   // (plots.mjs BONUS_FULL_K), so it reads at a fixed crisp size rather than ballooning past the
   // cap. (docs/explorer-caravan.md — the district/urban icon is becoming a plot feature.)
-  const d = D_TILE * Math.min(cam.k, D_FULL_K) / D_FULL_K;
+  const d = plotPx * D_HEX_SCALE;
   for (const p of P) {
     if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
     assignTypes(p);
