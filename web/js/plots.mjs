@@ -165,7 +165,7 @@ function buildPlotCanvas(p, plots) {
       }
       if (q.plotType === "HILL") { r = Math.min(255, r * 1.14 + 8) | 0; g = Math.min(255, g * 1.14 + 8) | 0; b = Math.min(255, b * 1.14 + 8) | 0; }
       else if (q.plotType === "PEAK") { r = (r + 150) / 2 | 0; g = (g + 152) / 2 | 0; b = (b + 158) / 2 | 0; }
-      if (q.river) { r = r * 0.45 + 33 | 0; g = g * 0.45 + 61 | 0; b = b * 0.45 + 91 | 0; }
+      if (q.river) { r = r * 0.55 + 42 | 0; g = g * 0.55 + 60 | 0; b = b * 0.55 + 76 | 0; }   // muted blue-grey, not vivid cyan
     }
     d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = 255;
   });
@@ -435,9 +435,13 @@ function buildPlotTexCanvas(p) {
   // river reaching the sea sits over the shallows/foam rather than under them — and so tree foliage
   // sits over the river (two passes, not per-plot, so a tree always overlaps a neighbouring river cell)
   paintCoast(o, oc.width, oc.height, p._plots, x0, y0, tpp, pat);
+  // desaturate the river ribbon so water recedes into the landscape instead of gridding vivid cyan
+  // over it — baked once into the cached province canvas, so it costs nothing per frame
+  o.filter = "saturate(0.7) brightness(0.94)";
   for (const q of p._plots) {
     if (q.river) { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; drawRiver(o, cx, cy, tpp, q, grid, riverPat); }
   }
+  o.filter = "none";
   for (const q of p._plots) {
     if (q.feature) { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; featureSprite(o, cx, cy, tpp, q.feature, q.x, q.y); }
   }
@@ -467,6 +471,10 @@ function drawBonusOverlay(vis) {
   const inset = Math.max(0.5, plotPx * 0.06);          // nudge off the very corner (frac of a plot)
   const useIcons = BONUS_ICONS && biReady;
   ctx.save();
+  // de-emphasise the dark resource badges: faint as terrain first appears, full only deep in — so
+  // the mid zoom reads as land + borders, not a field of icons (the province trade-good icon carries
+  // the resource story at mid zoom; these per-plot bonuses are the close-in detail)
+  ctx.globalAlpha = 0.5 + 0.5 * bandAlpha([4.3, 5.5]);
   ctx.lineWidth = Math.max(1, size * 0.06);
   ctx.strokeStyle = "rgba(8,12,20,.85)";               // dark keyline so glyphs read on any ground
   for (const p of vis) {                               // already culled to the viewport by drawPlots
@@ -503,7 +511,8 @@ export function bonusIconRect(q) {
 // BONUS_FULL_K the icon stays native size rather than continuing to grow. ctx is dpr-scaled → cell px == CSS px.
 const BONUS_FULL_K = 256;        // zoom at which a resource icon hits native size (independent of the K_MAX cap)
 function bonusIconSize() {
-  return (BONUS_ICONS ? BONUS_ICONS.cell : 24) * Math.min(cam.k, BONUS_FULL_K) / BONUS_FULL_K;
+  // 0.72: a touch smaller than native so the badges sit quietly on the plot instead of dominating it
+  return (BONUS_ICONS ? BONUS_ICONS.cell : 24) * Math.min(cam.k, BONUS_FULL_K) / BONUS_FULL_K * 0.72;
 }
 
 // Stamp each in-view province's TRADE-GOOD icon at its centroid — the province-level resource, drawn

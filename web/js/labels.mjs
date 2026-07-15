@@ -99,7 +99,7 @@ function drawTextOnPath(name, pts, size, track, weight, color) {
   for (let i = 0; i < chars.length; i++) {
     const pt = sample(s + adv[i] / 2);
     ctx.save(); ctx.translate(pt.x, pt.y); ctx.rotate(pt.ang);
-    ctx.lineWidth = Math.max(2, size * 0.28); ctx.strokeStyle = "rgba(8,12,19,.92)";
+    ctx.lineWidth = Math.max(1.5, size * 0.2); ctx.strokeStyle = "rgba(8,12,19,.68)";
     ctx.strokeText(chars[i], 0, 0);
     ctx.fillStyle = color; ctx.fillText(chars[i], 0, 0);
     ctx.restore();
@@ -127,7 +127,7 @@ function drawLabels() {
         ctx.lineWidth=1.2; ctx.strokeStyle="rgba(9,13,20,.9)"; ctx.stroke();
       }
       ctx.textAlign="left"; ctx.textBaseline="middle";
-      ctx.lineJoin="round"; ctx.lineWidth=3.4; ctx.strokeStyle="rgba(8,12,19,.92)";
+      ctx.lineJoin="round"; ctx.lineWidth=2.6; ctx.strokeStyle="rgba(8,12,19,.68)";
       ctx.strokeText(name, bx, ay);
       ctx.fillStyle=o.color; ctx.fillText(name, bx, ay);
       return;
@@ -239,7 +239,7 @@ function drawGeoLabels() {
       if (box.x < 3 || box.y < 3 || box.x+box.w > VIEW.w-3 || box.y+box.h > VIEW.h-3) continue;
       if (placed.some(q => box.x < q.x+q.w && box.x+box.w > q.x && box.y < q.y+q.h && box.y+box.h > q.y)) continue;
       placed.push(box);
-      ctx.lineWidth = t.halo; ctx.strokeStyle = "rgba(8,12,19,.9)"; ctx.strokeText(name, cx, cy);
+      ctx.lineWidth = t.halo * 0.7; ctx.strokeStyle = "rgba(8,12,19,.68)"; ctx.strokeText(name, cx, cy);
       ctx.fillStyle = t.color; ctx.fillText(name, cx, cy);
     }
     ctx.restore();

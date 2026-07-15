@@ -2,8 +2,10 @@ package com.civstudio.server.render;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import com.civstudio.advisor.AdvisorRole;
 import com.civstudio.agent.Agent;
@@ -55,16 +57,39 @@ public final class Snapshots {
 			colonyViews.add(colonyView(c));
 		}
 		List<CaravanView> caravanViews = new ArrayList<>(caravans.size());
+		// routed plots the bands have pioneered (deduped by position) — the live per-plot route data
+		// the web draw layer stamps (gap B, docs/route-rendering.md)
+		Map<Long, RoutePlotView> routed = new LinkedHashMap<>();
 		// the session's wandering bands (migration/dissolution), then each colony's own
 		// outstanding explorer levies — colony-owned excursions, ticked by their home colony
 		// (docs/explorer-caravan.md), so they are not in the session's caravan list
-		for (Caravan band : caravans)
+		for (Caravan band : caravans) {
 			caravanViews.add(caravanView(band, map));
+			collectRoutePlots(band, routed);
+		}
 		for (Settlement c : colonies)
-			for (Caravan excursion : c.getExcursions())
+			for (Caravan excursion : c.getExcursions()) {
 				caravanViews.add(caravanView(excursion, map));
+				collectRoutePlots(excursion, routed);
+			}
 		return new SessionSnapshot(sessionId, seed, scenario, state, tick,
-				date == null ? "" : date.toString(), colonyViews, caravanViews, log);
+				date == null ? "" : date.toString(), colonyViews, caravanViews, log,
+				new ArrayList<>(routed.values()));
+	}
+
+	// collect a band's trailed plots into `out`, keyed by packed (x,y) so a plot crossed by more than
+	// one band (or twice) is sent once. Only marching bands pioneer trails; a plot whose route was
+	// cleared or that has no raster position is skipped.
+	private static void collectRoutePlots(Caravan band, Map<Long, RoutePlotView> out) {
+		if (!(band instanceof MarchingCaravan m))
+			return;
+		for (com.civstudio.settlement.Plot p : m.trailedPlots()) {
+			com.civstudio.geo.RouteType rt = p.routeType();
+			if (rt == null || p.x() < 0 || p.y() < 0)
+				continue;
+			out.put((((long) p.x()) << 32) | (p.y() & 0xffffffffL),
+					new RoutePlotView(p.x(), p.y(), rt.type()));
+		}
 	}
 
 	// project one colony's aggregates — the same tally the annual digest and CSV printers

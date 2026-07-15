@@ -51,15 +51,19 @@ public class SessionWriteMcpTools {
 		return new CreateResult(hs.id(), hs.state().name());
 	}
 
+	/** The floor on the tick interval a `rate` action may set (ms) — a guard so a hosted session
+	 *  can't be driven faster than one tick per {@value} ms, keeping the server responsive. */
+	static final long MIN_TICK_RATE_MILLIS = 2000;
+
 	@McpTool(name = "control_session",
 			description = "Control a session's run loop (admin only): action = pause | resume | step | "
 					+ "rate | stop. 'step' advances `value` ticks (default 1); 'rate' sets the tick "
-					+ "interval in ms (`value`).")
+					+ "interval in ms (`value`), floored at 2000 ms (2 s) — faster is rejected up to the floor.")
 	public ControlResult controlSession(
 			@McpToolParam(description = "Session id", required = true) String sessionId,
 			@McpToolParam(description = "pause | resume | step | rate | stop", required = true)
 			String action,
-			@McpToolParam(description = "step count (for 'step') or ms interval (for 'rate')",
+			@McpToolParam(description = "step count (for 'step') or ms interval (for 'rate', min 2000)",
 					required = false) Long value) {
 		authz.requireAdmin();
 		HostedSession hs = require(sessionId);
@@ -67,7 +71,8 @@ public class SessionWriteMcpTools {
 			case "pause" -> hs.pause();
 			case "resume" -> hs.resume();
 			case "step" -> hs.step(value != null ? value.intValue() : 1);
-			case "rate" -> hs.setTickRateMillis(value != null ? value : 1000);
+			// clamp UP to the floor: never let MCP drive a session faster than one tick / 2 s
+			case "rate" -> hs.setTickRateMillis(Math.max(MIN_TICK_RATE_MILLIS, value != null ? value : 3000));
 			case "stop" -> hs.stop();
 			default -> throw new IllegalArgumentException("unknown action: " + action
 					+ " (pause|resume|step|rate|stop)");

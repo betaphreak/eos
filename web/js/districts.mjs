@@ -95,6 +95,9 @@ export function drawDistricts() {
   if (plotPx < 2) return;            // too small to read
   ctx.save();
   ctx.globalAlpha = a;
+  // calm the Civ6 hex art: at full saturation the overlapping tiles read as a chaotic rainbow, so
+  // pull the saturation/brightness down — the district COLOURS still distinguish types, quietly.
+  ctx.filter = "saturate(0.6) brightness(0.96)";
 
   // (1) geographic: the Civ6 district-hex tile on every city's urban core plots.
   // The hex is a plot FEATURE, drawn at its native 256px (100%) once you reach 256× zoom and

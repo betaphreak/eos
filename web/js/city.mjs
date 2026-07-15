@@ -27,7 +27,24 @@ function drawMarker(cx, cy, plotPx) {
   ctx.fill();
 }
 
-/** Subtle city markers over urban core plots — fades in once you're reading a region's terrain. */
+// the city-CENTRE plot of a province: the urban plot nearest the urban centroid — the one exact
+// plot a city sits on. Cached on the province (urban plots are generation-fixed). Null if no urban
+// core. This replaces the old one-pip-per-urban-plot field, which read as noise, not a place.
+function cityCenter(p) {
+  if (p._cityCenter !== undefined) return p._cityCenter;
+  let sx = 0, sy = 0, n = 0;
+  for (const q of p._plots) if (q.urban) { sx += q.x; sy += q.y; n++; }
+  if (!n) return (p._cityCenter = null);
+  const mx = sx / n, my = sy / n;
+  let best = Infinity, cx = 0, cy = 0;
+  for (const q of p._plots) if (q.urban) {
+    const d = (q.x - mx) * (q.x - mx) + (q.y - my) * (q.y - my);
+    if (d < best) { best = d; cx = q.x; cy = q.y; }
+  }
+  return (p._cityCenter = [cx, cy]);
+}
+
+/** One subtle marker per city, on its centre plot — fades in once you're reading a region's terrain. */
 export function drawCity() {
   const a = bandAlpha([3.5, 4.5]);   // fade in through Province→Terrain, then hold (locatable in-region)
   if (a <= 0.01 || isPolitical()) return;
@@ -36,10 +53,8 @@ export function drawCity() {
   ctx.globalAlpha = a;
   for (const p of P) {
     if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
-    for (const q of p._plots) {
-      if (!q.urban) continue;
-      drawMarker(pxr(q.x) + plotPx / 2, pyr(q.y) + plotPx / 2, plotPx);
-    }
+    const c = cityCenter(p);
+    if (c) drawMarker(pxr(c[0]) + plotPx / 2, pyr(c[1]) + plotPx / 2, plotPx);
   }
   ctx.restore();
 }

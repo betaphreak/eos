@@ -10,6 +10,7 @@
 import { ctx, S, px, py, cssVar, cam, VIEW, baseXr, baseYr, sxSrc, sySrc, BUNDLE, LABEL_FONT } from "../core.mjs";
 import { hasDeepLink } from "../main.mjs";
 import { atLeast, BAND } from "../bands.mjs";
+import { mergeRoutePlots } from "../routes.mjs";
 import { showLiveLog, ingestLog, ingestChat, resetLog, setChatSender } from "../livelog.mjs";
 
 // where the feed lives: the build can inject BUNDLE.live.base; a ?live=<url> query overrides
@@ -172,6 +173,7 @@ function liveTabRunning(on) {
 
 function onSnapshot(s) {
   snap = s;
+  mergeRoutePlots(s.routePlots);   // accumulate the bands' pioneered trails (gap B → the route layer)
   s.caravans.forEach(c => {
     const t = (trails[c.leader] = trails[c.leader] || []);
     t.push([c.latitude, c.longitude]);

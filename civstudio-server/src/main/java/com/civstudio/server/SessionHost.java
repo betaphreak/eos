@@ -1,27 +1,11 @@
 package com.civstudio.server;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.civstudio.agent.CaravanRole;
-import com.civstudio.agent.ExplorerCaravan;
-import com.civstudio.agent.MarchingCaravan;
-import com.civstudio.agent.Member;
-import com.civstudio.agent.MilitaryCaravan;
-import com.civstudio.agent.Retinue;
-import com.civstudio.agent.SettlerCaravan;
-import com.civstudio.agent.WorkerCaravan;
-import com.civstudio.bank.Bank;
-import com.civstudio.bank.BankConfig;
-import com.civstudio.geo.Province;
-import com.civstudio.geo.WorldMap;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.server.chat.ChatStore;
@@ -39,31 +23,12 @@ import org.springframework.stereotype.Component;
  * Owns the live {@link HostedSession hosted sessions} of one server process, keyed by
  * {@link SessionSpec#id() session id} — the "many sessions per JVM" registry Phase 0 made
  * safe (each session's log/output is now per-session; see {@code docs/client-server.md}). A
- * client asks for a spec; the host founds the session's world (a standard colony plus, for
- * the demo, six marching caravans), registers it, and hands it back for the transport to
+ * client asks for a spec; the host founds the session's world (a standard colony, which musters
+ * its own emergent explorer levies), registers it, and hands it back for the transport to
  * subscribe to.
  */
 @Component
 public final class SessionHost {
-
-	// the demo's six wandering bands
-	private static final int DEMO_CARAVANS = 6;
-
-	// settlers per demo band (one becomes the leader; the rest follow and march)
-	private static final int DEMO_BAND_SIZE = 10;
-
-	// a generous larder stocked on each demo band so it marches a long way before its food
-	// runs out (the demo is about the march; foraging is off, so the larder only depletes)
-	private static final double DEMO_BAND_LARDER = 6000;
-
-	// each demo band's carried money (copper)
-	private static final double DEMO_BAND_HOARD = 1000;
-
-	// graph distance (in land hops from the founding province) a demo destination must be
-	// at least, so the directed bands march visibly across the map rather than settling next
-	// door; and the search horizon that bounds the BFS
-	private static final int DEMO_MIN_HOPS = 8;
-	private static final int DEMO_MAX_HOPS = 40;
 
 	private final ConcurrentMap<String, HostedSession> sessions = new ConcurrentHashMap<>();
 
@@ -181,8 +146,10 @@ public final class SessionHost {
 		// default in the engine (byte-identical headless runs); render-only, so no economic change.
 		colony.setAutoBuildDistricts(true);
 		GameSession session = colony.getSession();
-		if (SessionSpec.CARAVAN_DEMO.equals(spec.scenario()))
-			seedDemoCaravans(session, colony, spec.provinceId());
+		// No bands are hand-seeded any more: a City colony musters its OWN winter foraging explorers
+		// (installExplorerProvisioning — the ruler drafts the pool's least-skilled adults each lean
+		// season, docs/explorer-caravan.md). Those emergent levies pioneer trails the route layer draws
+		// (gap B, docs/route-rendering.md), so the demo needs no directed caravans of its own.
 		HostedSession hs = new HostedSession(id, owner, spec, session, List.of(colony), commandStore,
 				chatStore);
 		// resume: replay any previously-persisted commands (keyed by the surrogate id) into the
@@ -192,89 +159,4 @@ public final class SessionHost {
 		return hs;
 	}
 
-	// seed the demo's six directed caravans at the founding province, each marching toward a
-	// distant, land-reachable destination so they fan out visibly across the map — one of
-	// each caravan role (cycling settler / worker / explorer / military) so the live map
-	// shows the flavors side by side
-	private void seedDemoCaravans(GameSession session, Settlement colony, int start) {
-		WorldMap map = session.getWorldMap();
-		List<Integer> destinations = distantLandProvinces(map, start, DEMO_CARAVANS);
-		// the explorer is no longer a directed marcher but a food-import levy a colony musters
-		// under food pressure (docs/explorer-caravan.md) — it is wired into the live colony in a
-		// later phase, so the directed-march demo cycles only the other three flavors for now
-		CaravanRole[] roles = { CaravanRole.SETTLER, CaravanRole.WORKER, CaravanRole.MILITARY };
-		for (int i = 0; i < DEMO_CARAVANS; i++) {
-			// each band banks its (throwaway) reserve at its own bank off the colony, then
-			// takes a leader out of a fresh following and marches
-			Bank bank = new Bank(BankConfig.DEFAULT, colony);
-			Retinue following = new Retinue(DEMO_BAND_SIZE, bank, colony);
-			Member leader = following.promoteHighestSkilled();
-			following.stockLarder(DEMO_BAND_LARDER);
-			MarchingCaravan band = bandForRole(roles[i % roles.length], leader, following,
-					start, session);
-			// a directed band marches to a fixed destination (see MarchingCaravan.tick); if
-			// the map offered fewer distant sites than bands, the extras wander instead
-			if (i < destinations.size())
-				band.setDestination(destinations.get(i));
-			session.addCaravan(band);
-		}
-	}
-
-	// build a demo band of the given role at the founding province
-	private static MarchingCaravan bandForRole(CaravanRole role, Member leader,
-			Retinue following, int start, GameSession session) {
-		return switch (role) {
-			case SETTLER -> new SettlerCaravan(leader, following, DEMO_BAND_HOARD, start, session);
-			case WORKER -> new WorkerCaravan(leader, following, DEMO_BAND_HOARD, start, session);
-			case MILITARY -> new MilitaryCaravan(leader, following, DEMO_BAND_HOARD, start, session);
-			// explorers are mustered from the live colony, not seeded here (docs/explorer-caravan.md)
-			case EXPLORER -> throw new UnsupportedOperationException(
-					"explorer bands are mustered from a colony, not seeded in the demo");
-		};
-	}
-
-	// pick up to `n` distant, land-reachable destination provinces, spread out by direction.
-	// A breadth-first walk over land neighbours from `start` collects reachable land
-	// provinces in increasing-distance order; the far ones (>= DEMO_MIN_HOPS) are sampled
-	// evenly so the chosen destinations point the bands different ways.
-	private static List<Integer> distantLandProvinces(WorldMap map, int start, int n) {
-		Set<Integer> visited = new HashSet<>();
-		visited.add(start);
-		Deque<Integer> current = new ArrayDeque<>();
-		current.add(start);
-		List<Integer> reachable = new ArrayList<>(); // land provinces, nearest-first
-		List<Integer> distant = new ArrayList<>();    // those at least DEMO_MIN_HOPS away
-		for (int depth = 1; depth <= DEMO_MAX_HOPS && !current.isEmpty(); depth++) {
-			Deque<Integer> next = new ArrayDeque<>();
-			for (int p : current)
-				for (int nb : map.neighbors(p)) {
-					if (!visited.add(nb))
-						continue;
-					Province pv = map.province(nb);
-					if (!pv.isLand())
-						continue; // land routing stays on land — don't cross water
-					next.add(nb);
-					reachable.add(nb);
-					if (depth >= DEMO_MIN_HOPS)
-						distant.add(nb);
-				}
-			current = next;
-		}
-		// prefer the far sites; fall back to whatever land is reachable on a small map
-		List<Integer> pool = distant.size() >= n ? distant : reachable;
-		return sampleEvenly(pool, n);
-	}
-
-	// take up to n items evenly spaced across the list (directional spread, since BFS order
-	// sweeps outward ring by ring)
-	private static List<Integer> sampleEvenly(List<Integer> items, int n) {
-		if (items.isEmpty() || n <= 0)
-			return List.of();
-		if (items.size() <= n)
-			return List.copyOf(items);
-		List<Integer> picked = new ArrayList<>(n);
-		for (int i = 0; i < n; i++)
-			picked.add(items.get((int) ((long) i * items.size() / n)));
-		return picked;
-	}
 }

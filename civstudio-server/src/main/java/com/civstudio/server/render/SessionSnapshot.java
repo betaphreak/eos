@@ -19,8 +19,10 @@ import java.util.List;
  * @param colonies  the colonies' projections
  * @param caravans  the wandering bands' projections
  * @param log       the event-log lines emitted since the previous frame (the live log bar's feed)
+ * @param routePlots the plots that carry a route (trails the bands pioneered) — the live per-plot
+ *                   route data the draw layer stamps (gap B, {@code docs/route-rendering.md})
  */
 public record SessionSnapshot(String sessionId, long seed, String scenario, String state,
 		long tick, String date, List<ColonyView> colonies, List<CaravanView> caravans,
-		List<LogLine> log) {
+		List<LogLine> log, List<RoutePlotView> routePlots) {
 }

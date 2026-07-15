@@ -1,12 +1,12 @@
 # Route rendering — baking Civ4 roads/trails/rails to map sprites
 
-**Status (2026-07-15):** the **art bake (gap A) and the per-plot draw layer (gap C) are BUILT**.
-Route segment art is baked from the Civ4/C2C `.nif` meshes to per-tier WebP sprite atlases,
-shipped in the map bundle (`BUNDLE.routes`), and the `routes` layer (`web/js/routes.mjs`)
-auto-tiles them per plot. **Not yet built:** the engine→client channel that carries per-plot
-`routeType` to the browser (gap B) — until it lands, the only live route data is city-core
-plots drawn as paved road (an interim stand-in), so the visible payoff (countryside trails
-between settlements) awaits gap B.
+**Status (2026-07-15):** **all three gaps BUILT** — the art bake (gap A), the engine→client
+per-plot channel (gap B), and the per-plot draw layer (gap C). Route segment art is baked from
+the Civ4/C2C `.nif` meshes to per-tier WebP sprite atlases, shipped in the map bundle
+(`BUNDLE.routes`); trail-laying bands' routed plots ride the render snapshot (`routePlots`); and
+the `routes` layer (`web/js/routes.mjs`) auto-tiles them per plot. In the caravan demo the colony's
+own **winter explorer levies** (no hand-seeded bands) pioneer the trails, which draw as roads
+radiating from the settlement.
 
 This is the follow-through on the owner's Phase-3 decision (see `docs/explorer-caravan.md`
 §Phase 3 "Route art"): **use the real Civ4 route art via `tools/nifbake`, not procedural
