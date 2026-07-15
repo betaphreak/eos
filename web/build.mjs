@@ -25,7 +25,7 @@ import { get as civ4Get, resolveArt as civ4ResolveArt, prefetch as civ4Prefetch 
 import * as civ6 from './civ6.mjs';
 import { decodeCached, resampleRGBA, octagonBacking, compositeCentered } from './imgutil.mjs';
 import { prefetch as anbPrefetch, get as anbGet } from './anbennar.mjs';
-import { bakeNifGroup, renderRouteNif } from '../tools/nifbake/render.mjs';
+import { bakeNifGroup, renderRouteNif, routeHalfExtent } from '../tools/nifbake/render.mjs';
 import sharp from 'sharp';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
@@ -1035,41 +1035,47 @@ function routeArtPaths() {
 }
 
 // Bake each tier's connection pieces to a horizontal-strip atlas + sprite rects, so the plot layer
-// can stamp real Civ4 road/trail/rail art along a corridor. Returns {trail,road,rail:{src,w,h,
-// cell:{piece:[x,y,w,h]}, conn:{piece:connString}}, byType:{ROUTE_*:tier}} or null when no art resolves.
+// can auto-tile real Civ4 road/trail/rail art per plot. Every piece of a tier renders into the SAME
+// registered `SIZE_ROUTE`×`SIZE_ROUTE` cell (world half-extent from the tier's straight piece), so
+// the grid renderer stamps one cell per plot and rotates it 90°·n with no re-registration. Returns
+// {trail,road,rail:{src,w,h,cellSize,cell:{piece:[x,y,w,h]},conn:{piece:connString}},
+// byType:{ROUTE_*:tier}} or null when no art resolves.
 function bakeRoutes() {
+  const resolvePiece = (t, stems) => {   // first candidate stem that resolves → local nif path
+    for (const s of stems) { const nif = resolveArt(`Art/Terrain/Routes/${t.nifDir}/${t.prefix}${s}.nif`); if (nif) return nif; }
+    return null;
+  };
   const tiers = {};
   for (const t of ROUTE_TIERS) {
     const texFile = resolveArt(t.tex);
     if (!texFile) { console.log(`  routes/${t.key}: texture ${t.tex} not resolved, skipped`); continue; }
+    // the plot cell size: how far the tier's straight road reaches toward the plot edge
+    const straightNif = resolvePiece(t, ROUTE_PIECES.find(p => p.name === 'straight').stems);
+    const square = straightNif ? routeHalfExtent(straightNif) : null;
+    if (!square) { console.log(`  routes/${t.key}: straight piece not resolvable, skipped`); continue; }
     const rendered = [];
     for (const p of ROUTE_PIECES) {
+      const nif = resolvePiece(t, p.stems);
+      if (!nif) continue;
       let img = null;
-      for (const s of p.stems) {
-        const nif = resolveArt(`Art/Terrain/Routes/${t.nifDir}/${t.prefix}${s}.nif`);
-        if (!nif) continue;
-        try { img = renderRouteNif(nif, texFile, SIZE_ROUTE); } catch { img = null; }
-        if (img) break;
-      }
+      try { img = renderRouteNif(nif, texFile, SIZE_ROUTE, { square }); } catch { img = null; }
       if (img) rendered.push({ name: p.name, conn: p.conn, img });
     }
     if (!rendered.length) { console.log(`  routes/${t.key}: no pieces rendered, skipped`); continue; }
-    // pack the pieces into one RGBA strip (y=0, atlas height = tallest piece)
-    const GAP = 1, H = Math.max(...rendered.map(r => r.img.H));
-    let W = 0; for (const r of rendered) W += r.img.W + GAP;
+    // pack the equal-size square cells into one RGBA strip
+    const N = rendered.length, W = N * SIZE_ROUTE, H = SIZE_ROUTE;
     const rgba = Buffer.alloc(W * H * 4), cell = {}, conn = {};
-    let ox = 0;
-    for (const r of rendered) {
-      const { W: rw, H: rh, rgba: src } = r.img;
-      for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) {
-        const so = (y * rw + x) * 4, d = (y * W + ox + x) * 4;
+    rendered.forEach((r, i) => {
+      const ox = i * SIZE_ROUTE, src = r.img.rgba;
+      for (let y = 0; y < SIZE_ROUTE; y++) for (let x = 0; x < SIZE_ROUTE; x++) {
+        const so = (y * SIZE_ROUTE + x) * 4, d = (y * W + ox + x) * 4;
         rgba[d] = src[so]; rgba[d + 1] = src[so + 1]; rgba[d + 2] = src[so + 2]; rgba[d + 3] = src[so + 3];
       }
-      cell[r.name] = [ox, 0, rw, rh]; conn[r.name] = r.conn; ox += rw + GAP;
-    }
+      cell[r.name] = [ox, 0, SIZE_ROUTE, SIZE_ROUTE]; conn[r.name] = r.conn;
+    });
     const src = queueWebpRGBA(`routes/routes-${t.key}`, W, H, rgba, { quality: 90 });
-    tiers[t.key] = { src, w: W, h: H, cell, conn };
-    console.log(`  routes/${t.key}: ${rendered.length} pieces (${rendered.map(r => r.name).join(',')}) → ${W}×${H}`);
+    tiers[t.key] = { src, w: W, h: H, cellSize: SIZE_ROUTE, cell, conn };
+    console.log(`  routes/${t.key}: ${N} pieces (${rendered.map(r => r.name).join(',')}) reach=${square.toFixed(0)} → ${W}×${H}`);
   }
   if (!Object.keys(tiers).length) return null;
   return { ...tiers, byType: ROUTE_BY_TYPE };

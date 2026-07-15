@@ -1,10 +1,12 @@
 # Route rendering — baking Civ4 roads/trails/rails to map sprites
 
-**Status (2026-07-15):** the **art bake is BUILT** (gap A). Route segment art is baked from
-the Civ4/C2C `.nif` meshes to per-tier WebP sprite atlases and shipped in the map bundle
-(`BUNDLE.routes`). **Not yet built:** the engine→client data channel that carries per-plot
-`routeType` to the browser (gap B) and the draw layer that stamps the sprites along a plot
-corridor (gap C). So the sprites ship but nothing draws them yet.
+**Status (2026-07-15):** the **art bake (gap A) and the per-plot draw layer (gap C) are BUILT**.
+Route segment art is baked from the Civ4/C2C `.nif` meshes to per-tier WebP sprite atlases,
+shipped in the map bundle (`BUNDLE.routes`), and the `routes` layer (`web/js/routes.mjs`)
+auto-tiles them per plot. **Not yet built:** the engine→client channel that carries per-plot
+`routeType` to the browser (gap B) — until it lands, the only live route data is city-core
+plots drawn as paved road (an interim stand-in), so the visible payoff (countryside trails
+between settlements) awaits gap B.
 
 This is the follow-through on the owner's Phase-3 decision (see `docs/explorer-caravan.md`
 §Phase 3 "Route art"): **use the real Civ4 route art via `tools/nifbake`, not procedural
@@ -59,9 +61,13 @@ route-model connection (`route-models.json`):
 | `tee` | `N NE S` | `c07` | Y/T junction |
 | `cross` | `N E S W` | `d01` | ✕/+ crossroads |
 
-Each piece renders top-down, then the tier's pieces pack into one horizontal-strip RGBA atlas
-emitted as WebP (`web/assets/routes/routes-<tier>.webp`, ~8–12 KB each). The manifest records,
-per tier, `{ src, w, h, cell:{ piece:[x,y,w,h] }, conn:{ piece:connString } }`. Art is resolved
+Each piece renders top-down into a **registered square cell** — every piece of a tier maps the
+same world half-extent (`routeHalfExtent` of the tier's straight piece) into a `SIZE_ROUTE`×
+`SIZE_ROUTE` cell, so a piece's connections always reach the same plot edges and a 90° rotation
+stays aligned (this is what lets the draw layer stamp one cell per plot and rotate it). The
+tier's cells pack into one horizontal-strip WebP (`web/assets/routes/routes-<tier>.webp`,
+~8–12 KB each); the manifest records, per tier, `{ src, w, h, cellSize, cell:{ piece:[x,y,w,h] },
+conn:{ piece:connString } }`, plus a top-level `byType:{ ROUTE_*: tier }`. Art is resolved
 through `civ4.mjs resolveArt` (on-demand C2C fetch + `.civ4-cache`), warmed by `routeArtPaths()`
 in the top-of-file prefetch. If a style/texture doesn't resolve, that tier is skipped (the map
 just draws no road for it) — same degrade-to-fallback contract as the other bakes.
@@ -75,26 +81,45 @@ Roads are **per-plot ground detail**, exactly like tree/feature sprites and trad
 Those draw from **band 4 (`BAND.TERRAIN`, `cam.k = K_TEX = 16×`)** upward — the point where a
 plot is large enough on screen to carry ground-detail art; below it the map is in the
 atlas/overland-strategy regime where a single plot is ≈1 px and per-plot road art would be
-sub-pixel noise. **So the route draw layer (gap C) should gate on `atLeast(BAND.TERRAIN)`** and
-not draw roads below 16×, matching `drawSurfacePlots`'s `textured` gate and `drawTradeGoodIcons`.
+sub-pixel noise. **So `drawRoutes` fades in over `bandAlpha([3.5, 4.5])`** (Province→Terrain,
+the same envelope as the `city.mjs` markers) — effectively off below ~11× and full by 22×, in the
+per-plot ground-detail band alongside `drawSurfacePlots`'s textures and `drawTradeGoodIcons`.
 (A separate coarse *overland* schematic — a thin connecting line between settlements, drawn
 earlier like the caravan trails in `overlays/live.mjs` — is a different, optional layer; it is
 not these baked plot sprites.)
 
+## The draw layer (gap C) — as built
+
+`web/js/route-tiling.mjs` is the pure auto-tiler: `routePiece(mask)` maps a plot's 4-bit
+orthogonal-neighbour mask (N/E/S/W) to `{piece, rot}` — one of the six baked pieces at a
+90°-multiple rotation, covering all 16 masks (unit-tested in `route-tiling.test.mjs`; run
+`node --test web/js/`).
+
+`web/js/routes.mjs` (`drawRoutes`, in the `layers.mjs` registry after `tradeGoods`, before
+`city`) walks each on-screen province's plots, indexes the routed ones by tier, and for each
+stamps the tier atlas cell `routePiece(neighbourMask(...))` rotated about the plot centre —
+gated `bandAlpha([3.5,4.5])`, fading in through Province→Terrain like the other per-plot ground
+detail. It connects only same-tier neighbours (a trail doesn't fuse into a paved road). Verified
+live against a local server: **805 route cells auto-tiled** across a region of city cores, correct
+pieces/rotations (the grid + city harnesses render the exact output).
+
+**Data source.** `plotTier(q)` prefers the engine's per-plot `RouteType` (`q.route` → tier via
+`ROUTES.byType`) — that's gap B. Until it lands, city-core plots (`q.urban`, which the engine
+founds pre-paved) stand in as paved road. **Caveat:** the urban core is already covered by the
+`city.mjs` markers (mid-zoom) and the district hexes (deep-zoom), so the interim roads are
+largely occluded; the visible payoff is gap B's countryside routes, where nothing else draws.
+
 ## Known follow-ups
 
-- **Gap B — data channel.** `Plot.routeType` is per-session mutable and excluded from the static
-  `plots.pack`, so it needs a **live** channel: expose the traversed/planned corridor window
-  (plot raster → lat/long + routeType) in the render `SessionSnapshot`. This is
-  `docs/explorer-caravan.md` §Phase 5.
-- **Gap C — draw layer.** A route layer (in `plots.mjs` / the layer registry) that, per corridor
-  plot, picks the connection piece from the neighbour mask and rotates it (Civ4
-  `Rotations "0 90 180 270"`), gated at `BAND.TERRAIN`. Replaces the centroid polyline in
-  `overlays/live.mjs`.
-- **Rail canonical orientation.** The `modrailroads` segments bake in a **90°-rotated** canonical
-  orientation vs `path`/`roman roads` (rail `straight` is E–W, not N–S). The draw layer must
-  normalise per tier (rotate rail +90°) or the bake should pre-rotate rail pieces. Recorded so
-  the mismatch isn't a surprise when gap C lands.
+- **Gap B — data channel (the real payoff).** `Plot.routeType` is per-session mutable and excluded
+  from the static `plots.pack`, so it needs a **live** channel: expose the traversed/planned
+  corridor window (plot raster → lat/long + routeType) in the render `SessionSnapshot`, surfaced as
+  `q.route` on the client plots — which `drawRoutes` already consumes. `docs/explorer-caravan.md`
+  §Phase 5.
+- **Rail canonical orientation.** The `modrailroads` segments bake **90°-rotated** vs
+  `path`/`roman roads` (rail `straight` is E–W, not N–S), so `routePiece`'s N/E/S/W convention
+  places rail a quarter-turn off. Normalise per tier (rotate rail +90° in `stampCell`, or
+  pre-rotate the rail pieces in `bakeRoutes`) once a rail tier carries live data.
 - **`PAVED_ROAD` / higher tiers** currently reuse the `road` (roman) art; `modern roads` has only
   2 nifs (no connection set), so a distinct paved look would bake from a different style or a
   hand-authored texture.

@@ -13,6 +13,7 @@ import { drawRaster, drawLakes, drawSeaCells, drawImpassable, drawSurfacePlots,
          drawProvinceBorders, drawUnderworldVeil, drawCavernFloors, drawCavernPlots, drawCavernRims,
          drawCaveEntrances, drawAdjacencies, drawHoverHighlight, drawSelectedHighlight } from "./main.mjs";
 import { drawCostOverlay, drawTradeGoodIcons } from "./plots.mjs";
+import { drawRoutes } from "./routes.mjs";
 import { drawTiers } from "./overlays/tiers.mjs";
 import { drawPolitical } from "./overlays/political.mjs";
 import { drawLive } from "./overlays/live.mjs";
@@ -48,6 +49,7 @@ export const LAYERS = [
   { id: "selected",       band: "all",                     draw: drawSelectedHighlight },
   { id: "live",           band: "all",  gate: () => S.overlay === "live", draw: drawLive },
   { id: "tradeGoods",     z: [0],  band: "TERRAIN→PLOT, self-fade", gate: notPolitical, draw: drawTradeGoodIcons },
+  { id: "routes",         z: [0],  band: "≥TERRAIN, self-fade", gate: notPolitical, draw: drawRoutes },
   { id: "city",           z: [0],  band: "≥PROVINCE, self-fade", gate: notPolitical, draw: drawCity },
   { id: "districts",      z: [0],  band: "deep (≥~23×), self-fade", gate: notPolitical, draw: drawDistricts },
   { id: "labels",         band: "≥PROVINCE, self-fade",    draw: drawLabels },

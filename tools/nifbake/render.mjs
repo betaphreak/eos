@@ -224,15 +224,27 @@ function findRouteGeom(buf) {
 }
 
 // top-down raster of a flat route quad; the texture WRAPS (roads tile their surface down
-// the segment), and the result is trimmed to its alpha bbox so pieces pack tight.
-function renderRoute(g, tex, size) {
+// the segment). Two placements:
+//  • `square` given (a world half-extent): render into a fixed `size`×`size` cell mapping world
+//    [-square,square]² → the cell, CENTERED and UNTRIMMED. This registers every piece of a tier
+//    to one plot cell so connections reach the same edges and a 90°-rotation stays aligned — the
+//    form the per-plot grid renderer needs (docs/route-rendering.md).
+//  • otherwise: fit the piece's own bbox and trim to alpha (compact, for standalone/debug).
+function renderRoute(g, tex, size, square) {
   const { verts, uvs, tris } = g;
-  let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
-  for (const p of verts) { mnx = Math.min(mnx, p[0]); mxx = Math.max(mxx, p[0]); mny = Math.min(mny, p[1]); mxy = Math.max(mxy, p[1]); }
-  const wspan = mxx - mnx, hspan = mxy - mny, span = Math.max(wspan, hspan) || 1;
-  const pad = 1, sc = (size - 2 * pad) / span;
-  const W = Math.max(4, Math.round(wspan * sc + 2 * pad)), H = Math.max(4, Math.round(hspan * sc + 2 * pad));
-  const px = x => pad + (x - mnx) * sc, py = y => H - pad - (y - mny) * sc;   // world +Y (North) → image up
+  let W, H, px, py;
+  if (square) {
+    W = H = size;
+    const sc = (size - 2) / (2 * square), cx = size / 2, cy = size / 2;
+    px = x => cx + x * sc; py = y => cy - y * sc;                 // world origin → cell centre; +Y up
+  } else {
+    let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
+    for (const p of verts) { mnx = Math.min(mnx, p[0]); mxx = Math.max(mxx, p[0]); mny = Math.min(mny, p[1]); mxy = Math.max(mxy, p[1]); }
+    const wspan = mxx - mnx, hspan = mxy - mny, span = Math.max(wspan, hspan) || 1;
+    const pad = 1, sc = (size - 2 * pad) / span;
+    W = Math.max(4, Math.round(wspan * sc + 2 * pad)); H = Math.max(4, Math.round(hspan * sc + 2 * pad));
+    px = x => pad + (x - mnx) * sc; py = y => H - pad - (y - mny) * sc;   // world +Y (North) → image up
+  }
   const rgba = Buffer.alloc(W * H * 4), depth = new Float32Array(W * H).fill(-1e9);
   const TW = tex.width, TH = tex.height, td = tex.rgba;
   const sample = (u, v) => {
@@ -258,19 +270,34 @@ function renderRoute(g, tex, size) {
       const q = idx * 4; rgba[q] = r; rgba[q + 1] = gg; rgba[q + 2] = bl; rgba[q + 3] = a;
     }
   }
-  return trim({ W, H, rgba });
+  return square ? { W, H, rgba } : trim({ W, H, rgba });   // fixed cells keep their registration
 }
 
 /**
- * Render one flat Civ4 route segment .nif to a top-down 2D sprite. Returns {W,H,rgba}
- * (alpha-trimmed), or null if the geometry can't be located / the texture is unreadable.
- * See docs/route-rendering.md; the build.mjs `bakeRoutes` slice packs these into per-tier atlases.
+ * Render one flat Civ4 route segment .nif to a top-down 2D sprite. Returns {W,H,rgba}, or null if
+ * the geometry can't be located / the texture is unreadable. With `opts.square` (a world
+ * half-extent, e.g. from {@link routeHalfExtent}) it renders a registered, untrimmed `size`×`size`
+ * plot cell (for the grid renderer); otherwise a compact alpha-trimmed sprite. See
+ * docs/route-rendering.md; build.mjs `bakeRoutes` packs these into per-tier atlases.
  */
-export function renderRouteNif(nifPath, texPath, size = 96) {
+export function renderRouteNif(nifPath, texPath, size = 96, opts = {}) {
   const g = findRouteGeom(fs.readFileSync(nifPath));
   if (!g) return null;
   const tex = decodeDds(fs.readFileSync(texPath));
-  return renderRoute(g, tex, size);
+  return renderRoute(g, tex, size, opts.square);
+}
+
+/**
+ * The plot half-extent of a route segment mesh — max(|x|,|y|) over its vertices, i.e. how far the
+ * road reaches toward the plot edge. Measured on a tier's straight piece, it's the common `square`
+ * every piece of that tier is rendered at so they share one registered cell. Null if no geometry.
+ */
+export function routeHalfExtent(nifPath) {
+  const g = findRouteGeom(fs.readFileSync(nifPath));
+  if (!g) return null;
+  let e = 0;
+  for (const [x, y] of g.verts) e = Math.max(e, Math.abs(x), Math.abs(y));
+  return e;
 }
 
 // Debug CLI:  node render.mjs <nif> <tex> <out.png> [size]           (front-view feature)
