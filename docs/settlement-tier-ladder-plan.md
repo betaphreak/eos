@@ -1,10 +1,40 @@
 # Implementation plan: the SettlementTier growth ladder (Camp → City) + foraging-as-improvement
 
-**Status:** PLAN — design/implementation plan, no code yet (2026-07-14). The *design* lives in
-[`docs/settlement-tiers.md`](settlement-tiers.md) §"Sub-City tiers"; this is the phased
-implementation plan for it. Companion to [`docs/caravan.md`](caravan.md) (the settle⇄unsettle
-cycle / Rank ladder this is additive to) and [`docs/explorer-caravan.md`](explorer-caravan.md)
-(the foraging expeditions Phase G's forage-by-improvement realizes).
+**Status:** PLAN — reconciled to the **unified-axis** decision (2026-07-15); still no code. See
+**"Reconciled decisions (2026-07-15)"** below — it **supersedes** the original "additive, don't
+touch Rank" framing (the `## Decisions` table further down and the byte-identical/additive notes in
+Phases A–G). The *design* lives in [`docs/settlement-tiers.md`](settlement-tiers.md) §"Sub-City
+tiers"; this is the phased implementation plan for it. Companion to [`docs/caravan.md`](caravan.md)
+(the settle⇄unsettle cycle / Rank ladder this now **unifies with**) and
+[`docs/explorer-caravan.md`](explorer-caravan.md) (the foraging expeditions that become the
+**Camp-rung economy**).
+
+## Reconciled decisions (2026-07-15 — supersede the `## Decisions` table below)
+
+Thirteen calls that lock the **unified-axis** reading of `settlement-tiers.md` §S1 over this plan's
+original "additive, don't touch Rank" stance. **One settle⇄unsettle axis; the tier is the single
+source of truth; the head's `Rank` is derived from it.**
+
+| # | Decision |
+|---|---|
+| **Axis** | **One unified settle⇄unsettle ladder**, `SettlementTier` the single source of truth: `caravan (mobile) ⇄ CAMP → COTTAGE → HAMLET → SMALLHOLDING → TOWN → METROPOLIS`. `Rank` keeps only the political super-structure **`LEAGUE`→`HEGEMONY`**; its low rungs (`CARAVAN`/`VILLAGE`/`CITY`) are **derived from the tier**, not independently advanced. |
+| **Rungs (renamed)** | Rungs renamed to remove the `Rank` name collision: the old `VILLAGE` rung → **`SMALLHOLDING`**, the old `CITY` rung → **`METROPOLIS`**. Full ladder: `CAMP < COTTAGE < HAMLET < SMALLHOLDING < TOWN < METROPOLIS` (`SUBURBS` still the dormant future province-merge op). |
+| **Head-rank map** | The tier drives the head household's `Rank`: mobile / `CAMP` / `COTTAGE` / `HAMLET` → **Captain** (`Rank.CARAVAN`); `SMALLHOLDING` / `TOWN` → **Ruler** (`Rank.VILLAGE`); `METROPOLIS` → **Mayor** (`Rank.CITY`). Crossing `TOWN → METROPOLIS` **promotes** Ruler→Mayor (realizes `Rank.CITY`); collapse-descent **demotes** symmetrically down to a departing mobile caravan. |
+| **Realize Captain** | `Rank.CARAVAN` is finally **realized** — a concrete `Captain` household leads the band, with the **peasant pool as its asset** (as `docs/rank-ladder.md` Phase 5 always intended). It is the **same entity** as the existing marching/settler caravan band: one household across mobile ↔ settled. |
+| **Found low** | Geographic/caravan colonies **found at `CAMP`** (a Captain-led band) and climb. **Analytical/dev scenarios opt out** — `SmallOpenEconomy`, the sweeps and homogeneous probes found directly at `SMALLHOLDING`+ (the ruler economy) so they stay steady-state-from-t0 economic probes. |
+| **Camp economy** | The Captain rungs (`CAMP`/`COTTAGE`/`HAMLET`) run **only the foraging-band larder economy** (forage-as-improvement — no banks/markets/firms). The **full ruler economy boots at `SMALLHOLDING`** when the head promotes to Ruler — the `SimulationHarness` ruler defaults (three-tier banks, export sector, dynamic firm provisioning) move from *attach-at-founding* to *attach-on-promotion-to-Ruler*. |
+| **Class shape** | **Collapse the `Village`/`City` subclasses** into a concrete `Settlement` + `tier` field: `hasDistricts()` = `tier.atLeast(TOWN)`, `isPermanent()` = `tier.atLeast(TOWN)`, the old `instanceof City` ⇒ `tier == METROPOLIS`. `DistrictHost`/`UrbanCenter` become tier-derived capabilities. |
+| **Site ceiling** | The site's urban-plot geography **caps the climb**: a 1-urban-plot province tops out at `SMALLHOLDING` (no room for districts); only a multi-plot `city_terrain` site can reach `TOWN`/`METROPOLIS`. Development sets where it sits under that per-site ceiling. |
+| **Growth** | **population × days** against each rung's **`iUpgradeTime` read as days**; `METROPOLIS` additionally gates on **≥ 1000 people**. "Population" = total residents (laborer households + pool + nobles + ruler + children), not just the workforce. |
+| **Forage** | **Build then work**: camp → build a Civ4 improvement over `buildCost` days → work its yield daily (food→larder, commerce→money, production→build/development work); the improvement persists on the plot; `iCulture` dormant. This **is** the Camp-rung economy above — the explorer forage model is promoted to the bottom-rung economy, not a sideline. |
+| **Settle = urbanize plot** | *(forward note, 2026-07-15)* a future **`SettlerCaravan`** founds by **changing the camp plot's feature to urban** — the physical map act of settling. Ties into the urban-terrain→feature idea (drop the synthetic `TERRAIN_URBAN`, make "urban" a feature overlay). |
+
+**Consequence — the phase order below is re-sequenced and is *not* byte-identical.** The A–G
+bodies still describe the right mechanisms, but their "byte-identical Phase A" and "additive to
+Rank" assumptions no longer hold: realizing the Captain rung, moving the ruler-economy boot to
+`SMALLHOLDING`, and the rename land together as a **calibration effort** (the project accepts
+non-byte-identical). Analytical scenarios opting out is what keeps the economic smoke tests
+meaningful; only the geographic/caravan colonies re-baseline to the climb.
 
 ## Context
 
@@ -30,7 +60,12 @@ The improvement data is already imported (commit 59a14e5: `upgradeType` / `upgra
 not a cliff; the caravan camp, founding, and foraging are one mechanic; the food economy gains a
 real "camp-and-work-the-land" foraging model.
 
-## Decisions (locked — see `docs/settlement-tiers.md`)
+## Decisions (SUPERSEDED — see "Reconciled decisions (2026-07-15)" above)
+
+> These were the 2026-07-14 decisions. The rows **Found** (found-at-fitting-tier) and **Rank**
+> (additive), and the "keep `City` as the one behavioural subclass" note, are **overridden** by the
+> reconciled set above (found-at-Camp; unified axis with the head-rank derived; subclasses collapsed
+> into the tier field). Kept for provenance.
 
 | # | Decision |
 |---|---|
@@ -45,18 +80,42 @@ real "camp-and-work-the-land" foraging model.
 
 ## Implementation — phased (A–C are the additive core; D–G rewire the lifecycle and are calibration-heavy)
 
-### Phase A — `SettlementTier` enum + field (foundation, behaviour-neutral)
-- **New** `settlement/SettlementTier.java`: ordered enum `CAMP, COTTAGE, HAMLET, VILLAGE, TOWN,
-  SUBURBS, CITY` with `atLeast(tier)`, and per-rung data loaded/mirrored from the cottage line
-  (`upgradeTime` days, building cap, district-cap kind) — reuse `TerrainRegistry`'s
-  `improvements.json` (Cottage/Hamlet/Village/Town already carry `upgradeType`/`upgradeTime`).
-- **`Settlement`**: add a mutable `tier` field + `getTier()`/`setTier()`. Map current founding so it
-  is **byte-identical**: a `City` colony ⇒ `tier = CITY`, a `Village` ⇒ `tier = VILLAGE`. Derive
-  `hasDistricts()` from `tier.atLeast(TOWN)` and `isPermanent()` from `tier == CITY` **without
-  changing today's outcomes** (current City=CITY, Village=VILLAGE preserve both).
-- Keep `City`/`Village` classes untouched (additive). No growth yet.
-- **Verify:** new `SettlementTierTest` (ordering, `atLeast`, per-rung data); full suite green,
-  byte-identical.
+### Phase A — `SettlementTier` enum + field, **flatten the `Village`/`City` hierarchy** (foundation, behaviour-preserving)
+Revised 2026-07-15 (was "add a field, keep the subclasses"). Reading the code showed the two
+subclasses are **almost pure ceremony** — the whole `Village`/`City`/`UrbanCenter`/`DistrictHost`
+apparatus expresses just three booleans (district count, permanence, has-districts), all of which
+become one-line `tier` predicates. And the unified-axis decision (the caravan band **is** the same
+`Settlement` at `CAMP` tier, not a separate type) **removes the speculative-second-implementor
+rationale** that justified the `UrbanCenter`/`DistrictHost` interfaces. So Phase A both adds the
+enum **and deletes the hierarchy** — net *negative* lines, and still behaviour-preserving because
+the founding map reproduces today's outcomes exactly.
+
+- **New** `settlement/SettlementTier.java`: ordered enum `CAMP < COTTAGE < HAMLET < SMALLHOLDING <
+  TOWN < METROPOLIS` (rungs **renamed** off the `Rank` collision; `SUBURBS` deliberately absent — a
+  future province-merge op, not a linear rung) with `atLeast(tier)`. Per-rung **growth data**
+  (`iUpgradeTime` as days) and the `METROPOLIS` ≥1000 gate are deferred to **Phase B** (where they're
+  sourced/calibrated) — Phase A is just the ordering + `atLeast`.
+- **`Settlement` becomes concrete**: drop `abstract` and `implements UrbanCenter`, make the two
+  constructors `public`, add a mutable `SettlementTier tier` field + `getTier()`/`setTier()`. Derive
+  the founding tier **in the province constructor**: `province != null && province.city()` ⇒
+  `METROPOLIS`, else `SMALLHOLDING` (the bare/analytical constructor ⇒ `SMALLHOLDING`). Rewrite the
+  three methods as tier predicates — `hasDistricts()` = `isPermanent()` = `tier.atLeast(TOWN)`;
+  `getStartingDistrictCount()` folds in the old `Village` `min(1, …)` via `hasDistricts()`. This
+  reproduces today's values exactly (old City ⇒ METROPOLIS ⇒ districts+permanent; old Village ⇒
+  SMALLHOLDING ⇒ single centre, impermanent), so it is **behaviour-preserving** (no RNG/economics
+  touched). Drop the `@Override`s on `getCityCenter`/`hasDistricts` (no interface to override now).
+- **Delete** `Village.java`, `City.java`, `DistrictHost.java` (empty marker), `UrbanCenter.java`
+  (single implementor). **`GameSession.newSettlement`**: collapse the `isCity ? new City(…) : new
+  Village(…)` fork (duplicated 18-arg call) into one `new Settlement(…)`. **`SimulationHarness`**:
+  `colony instanceof City` (the explorer gate, `:1246`) ⇒ `colony.hasDistricts()` (= `atLeast(TOWN)`,
+  the reconciled gate); drop the `City` import.
+- **Tests:** the four `new Village(…)` call sites (`BankInheritanceTest`, `CavernDaylightTest`,
+  `SettlementSolarTest`, `SettlementLifecycleTest`) ⇒ `new Settlement(…)` (drop the one `Village`
+  import). New `SettlementTierTest` (ordering, `atLeast`). Full suite green; district counts /
+  permanence / explorer-gating unchanged.
+- **Not in Phase A** (deferred, they're the non-byte-identical calibration work): the `Camp`
+  economy, found-at-Camp, the `Captain` rung, growth. Phase A leaves founding at `METROPOLIS`/
+  `SMALLHOLDING` exactly as today — only the *shape* changes.
 
 ### Phase B — population×days growth accumulator + tier advance
 - **`Settlement`**: a new `double development` accumulator, ticked once per `newDay()` by

@@ -542,21 +542,15 @@ public class GameSession {
 		// the terrain stream is salted apart from the economic/naming/mortality/skill
 		// streams, so plot generation is deterministic per seed yet perturbs none of them
 		Rng terrainRng = rngSeed.forColony(RngSeed.Stream.TERRAIN, idx);
-		// choose the settlement tier by the site's urban plots (docs/settlement-tiers.md): an
-		// Anbennar city_terrain province carries several urban plots → a City (with districts);
-		// an ordinary or bare-coordinate site carries one → a Village (city center only).
-		boolean isCity = province != null && province.city();
-		Settlement colony = isCity
-				? new City(name, startDate, colonyRng, colonyNames,
-						colonyDemography, terrainRegistry, terrainRng,
-						getLiturgicalCalendar(foundingRace), meanInitAgeYears, targetNStock,
-						meanSkillMale, meanSkillFemale, latitude, longitude, foundingRace,
-						raceMix, province)
-				: new Village(name, startDate, colonyRng, colonyNames,
-						colonyDemography, terrainRegistry, terrainRng,
-						getLiturgicalCalendar(foundingRace), meanInitAgeYears, targetNStock,
-						meanSkillMale, meanSkillFemale, latitude, longitude, foundingRace,
-						raceMix, province);
+		// one Settlement per site: it derives its founding tier from the province
+		// (docs/settlement-tiers.md) — an Anbennar city_terrain province (several urban plots)
+		// founds at METROPOLIS (districts + permanence); an ordinary or bare site at a
+		// single-centre SMALLHOLDING. Growth (Phase B) climbs the ladder from there.
+		Settlement colony = new Settlement(name, startDate, colonyRng, colonyNames,
+				colonyDemography, terrainRegistry, terrainRng,
+				getLiturgicalCalendar(foundingRace), meanInitAgeYears, targetNStock,
+				meanSkillMale, meanSkillFemale, latitude, longitude, foundingRace,
+				raceMix, province);
 		// the colony knows its session, so on dissolution it can register the band it
 		// departs as (colony-less bands live at the session level — see docs/caravan.md)
 		colony.setSession(this);

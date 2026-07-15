@@ -49,24 +49,31 @@ class HostedSessionTest {
 
 	@Test
 	@Timeout(90)
-	void demoSessionProjectsColonyAndSixMarchingCaravans() {
+	void demoSessionProjectsColonyAndMarchingCaravans() {
 		SessionHost host = new SessionHost();
 		HostedSession hs = host.create(SessionSpec.caravanDemo(7654321L, DHENIJANSAR));
 		try {
 			hs.startPaused();
 			SessionSnapshot start = awaitSnapshot(hs, 0, 30_000);
 			assertEquals(1, start.colonies().size(), "the demo has one colony");
-			assertEquals(6, start.caravans().size(), "the demo seeds six caravans");
 			assertTrue(start.colonies().get(0).population() > 0, "the colony has a workforce");
 			assertEquals("PAUSED", start.state());
+			// no bands are hand-seeded any more (SessionHost): the colony musters its OWN foraging
+			// explorers emergently over the winter, so there are none at tick 0.
 
-			// remember where each band started
+			// step into the lean season and confirm the colony has mustered foraging bands
+			hs.step(20);
+			SessionSnapshot mid = awaitSnapshot(hs, 20, 60_000);
+			assertFalse(mid.caravans().isEmpty(),
+					"the colony musters foraging explorers over winter");
+
+			// remember where each band sits mid-run
 			Map<String, double[]> from = new HashMap<>();
-			for (CaravanView c : start.caravans())
+			for (CaravanView c : mid.caravans())
 				from.put(c.leader(), new double[] { c.latitude(), c.longitude() });
 
-			// advance 40 in-game days deterministically and confirm the bands marched
-			hs.step(40);
+			// advance more days deterministically and confirm at least one band marched
+			hs.step(20);
 			SessionSnapshot later = awaitSnapshot(hs, 40, 60_000);
 			assertEquals(40, later.tick());
 
@@ -77,7 +84,7 @@ class HostedSessionTest {
 						|| Math.abs(p[1] - c.longitude()) > 1e-9))
 					anyMoved = true;
 			}
-			assertTrue(anyMoved, "at least one caravan should have marched in 40 days");
+			assertTrue(anyMoved, "at least one caravan should have marched");
 		} finally {
 			hs.stop();
 		}

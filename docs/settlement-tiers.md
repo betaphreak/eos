@@ -7,7 +7,16 @@ sub-City tiers the explorer-caravan gating (`docs/explorer-caravan.md`) motivate
 **Related:** [`district-buildout.md`](district-buildout.md) (the districts a City hosts),
 [`urban-plots.md`](urban-plots.md) (the urban plots that decide the tier),
 [`city-and-league.md`](city-and-league.md) / [`rank-ladder.md`](rank-ladder.md) (the *household-rank*
-VILLAGE/CITY rungs — a **different axis**, see below).
+VILLAGE/CITY rungs).
+
+> **Reconciled (2026-07-15):** the "different axes vs. one unified axis" question this doc raises
+> (the "Not the rank ladder" note below, S1's "one merged ladder") is **resolved to a single
+> unified axis**. `SettlementTier` is the source of truth; the tier rungs are **renamed** to remove
+> the `Rank` collision (old *Village* rung → **`SMALLHOLDING`**, old *City* rung → **`METROPOLIS`**);
+> the head's `Rank` (Captain→Ruler→Mayor) is **derived from the tier**; geographic colonies **found
+> at Camp** and climb (analytical scenarios opt out). The locked 13-decision set lives in
+> [`settlement-tier-ladder-plan.md`](settlement-tier-ladder-plan.md) §"Reconciled decisions
+> (2026-07-15)". The "separate axis" / "additive" language in the sections below is **superseded**.
 
 ## What this is
 

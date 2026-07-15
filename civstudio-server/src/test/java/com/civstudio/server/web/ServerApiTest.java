@@ -82,8 +82,9 @@ class ServerApiTest {
 			// first frame is the cached tick-0 snapshot pushed on subscribe
 			SessionSnapshot first = json.readValue(nextData(r), SessionSnapshot.class);
 			assertEquals(hs.id(), first.sessionId());
-			assertEquals(6, first.caravans().size(), "the demo streams six caravans");
 			assertEquals(1, first.colonies().size());
+			// no bands at tick 0 — the colony musters its foraging explorers emergently over
+			// winter (the emergent-muster behaviour is asserted in HostedSessionTest)
 
 			// stepping produces a fresh frame at a later tick
 			hs.step(2);

@@ -48,7 +48,6 @@ import com.civstudio.bank.Bank;
 import com.civstudio.bank.BankConfig;
 import com.civstudio.bank.CurrencyType;
 import com.civstudio.name.Person;
-import com.civstudio.settlement.City;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.io.SimLog;
@@ -1240,10 +1239,10 @@ public class SimulationHarness {
 	}
 
 	// install the seasonal explorer levy (docs/explorer-caravan.md) as a colony step action.
-	// The DEFAULT behaviour for a City settlement (with a pool to draft from) — a City musters
-	// winter foraging expeditions; a Village (a single urban plot) does not.
+	// The DEFAULT behaviour for a district-bearing settlement (TOWN and up, with a pool to draft
+	// from) — it musters winter foraging expeditions; a single-centre SMALLHOLDING does not.
 	private void installExplorerProvisioning() {
-		if (colony instanceof City && retinue != null) {
+		if (colony.hasDistricts() && retinue != null) {
 			explorerProvisioner = new ExplorerProvisioner(colony, retinue);
 			explorerProvisioner.setReward(mobility()); // the renewal loop on a live return
 			colony.addStepAction(explorerProvisioner);

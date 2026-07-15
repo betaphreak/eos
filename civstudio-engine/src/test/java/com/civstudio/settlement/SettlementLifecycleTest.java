@@ -24,7 +24,7 @@ class SettlementLifecycleTest {
 
 	private Settlement bareColony() {
 		// no name/demography services needed for the lifecycle state machine
-		return new Village("Test Colony", START, new Rng(1L), null, null,
+		return new Settlement("Test Colony", START, new Rng(1L), null, null,
 				TerrainRegistry.load(), new Rng(2L), LiturgicalCalendar.load(), 35, 26,
 				5, 2, 51.5074, -0.1278);
 	}

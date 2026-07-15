@@ -59,19 +59,21 @@ import lombok.extern.java.Log;
  * to the colony they belong to; printers receive it in {@link
  * Printer#print(Settlement)}.
  * <p>
- * <b>Abstract base of the two settlement tiers</b> — a colony is founded as a concrete
- * {@link Village} (a single-urban-plot province: only a city center) or {@link City} (a
- * multi-urban-plot {@code city_terrain} province: a city center plus districts), routed by
- * {@link GameSession#newSettlement}. All the shared machinery — the step loop, markets, agents,
- * banks, lifecycle — lives here; the tiers differ only in their {@linkplain UrbanCenter urban
- * surface} (a {@link City} is a {@link DistrictHost}) and their {@link #isPermanent() permanence}.
- * See {@code docs/settlement-tiers.md}.
+ * <b>A colony sits on one rung of the {@link SettlementTier} ladder</b> — the single settle&rlarr;
+ * unsettle axis from a caravan's {@code CAMP} up to a {@code METROPOLIS}. The tier is a mutable
+ * field set at founding ({@code city_terrain} province &rArr; {@link SettlementTier#METROPOLIS},
+ * else {@link SettlementTier#SMALLHOLDING}) and advanced by growth; the settlement's capabilities
+ * read off it — it {@linkplain #hasDistricts() has districts} and is {@linkplain #isPermanent()
+ * permanent} from {@link SettlementTier#TOWN} up. All machinery — the step loop, markets, agents,
+ * banks, lifecycle — lives here; there is no per-tier subclass (a Java object can't reclass, and
+ * growth is the point). See {@code docs/settlement-tiers.md} and {@code
+ * docs/settlement-tier-ladder-plan.md}.
  *
  * @author zhihongx
  *
  */
 @Log
-public abstract class Settlement implements UrbanCenter {
+public class Settlement {
 
 	/****************** constants *****************************/
 
@@ -269,6 +271,12 @@ public abstract class Settlement implements UrbanCenter {
 	@Getter
 	private final Province province;
 
+	// the rung this colony sits on the SettlementTier ladder (docs/settlement-tiers.md): set at
+	// founding from the site (city_terrain => METROPOLIS, else SMALLHOLDING) and advanced by growth
+	// (Phase B). Mutable — a settlement climbs and, on decline, descends the ladder. Its
+	// capabilities (districts, permanence) derive from this; see hasDistricts/isPermanent/getTier.
+	private SettlementTier tier;
+
 	// the colony's solar clock for its (fixed) location: computes the day's
 	// dawn/sunrise/sunset/dusk and daylight length, refreshed for the current
 	// in-game date at the top of every newDay (and seeded in the constructor).
@@ -412,7 +420,7 @@ public abstract class Settlement implements UrbanCenter {
 	 * @param longitude
 	 *            the colony's geographic longitude in decimal degrees (east positive)
 	 */
-	protected Settlement(String name, LocalDate startDate, Rng rng,
+	public Settlement(String name, LocalDate startDate, Rng rng,
 			NameRegistry names, Demography demography, TerrainRegistry terrainRegistry,
 			Rng terrainRng, LiturgicalCalendar liturgicalCalendar,
 			double meanInitAgeYears, double targetNStock, double meanSkillMale,
@@ -464,7 +472,7 @@ public abstract class Settlement implements UrbanCenter {
 	 * @param raceMix
 	 *            race &rarr; weight every generated person is rolled against
 	 */
-	protected Settlement(String name, LocalDate startDate, Rng rng,
+	public Settlement(String name, LocalDate startDate, Rng rng,
 			NameRegistry names, Demography demography, TerrainRegistry terrainRegistry,
 			Rng terrainRng, LiturgicalCalendar liturgicalCalendar,
 			double meanInitAgeYears, double targetNStock, double meanSkillMale,
@@ -485,6 +493,12 @@ public abstract class Settlement implements UrbanCenter {
 		this.latitude = latitude;
 		this.longitude = longitude;
 		this.province = province;
+		// the founding rung of the tier ladder: a multi-urban-plot city_terrain province is a
+		// METROPOLIS (districts + permanent), an ordinary or bare site a single-centre SMALLHOLDING
+		// — reproducing the old City/Village split (docs/settlement-tier-ladder-plan.md Phase A).
+		// Growth (Phase B) mutates this via setTier; found-at-Camp (Phase D) lowers the start.
+		this.tier = (province != null && province.city())
+				? SettlementTier.METROPOLIS : SettlementTier.SMALLHOLDING;
 		// the spatial subsystem: the plots, the shared province pool, terrain generation
 		// and the builder's queue (it caps growth at the province's plots, and rejects a
 		// province too small to hold the founding floor). See PlotField.
@@ -682,59 +696,81 @@ public abstract class Settlement implements UrbanCenter {
 	}
 
 	/**
+	 * This colony's rung on the {@link SettlementTier} ladder — set at founding from the site
+	 * ({@code city_terrain} &rArr; {@link SettlementTier#METROPOLIS}, else {@link
+	 * SettlementTier#SMALLHOLDING}) and advanced by growth. The capability tests below derive
+	 * from it.
+	 *
+	 * @return the settlement's current tier
+	 */
+	public SettlementTier getTier() {
+		return tier;
+	}
+
+	/**
+	 * Set this colony's {@link SettlementTier} — used when it grows up the ladder or, on
+	 * decline, descends it (never {@code null}).
+	 *
+	 * @param tier
+	 *            the new tier
+	 */
+	public void setTier(SettlementTier tier) {
+		this.tier = tier;
+	}
+
+	/**
 	 * The colony's <b>city center</b> — the village-center plot (index 0 of the district
 	 * map, where the center-grouped firms/banks and center buildings sit), or {@code null}
-	 * if no plot has been laid yet. See {@link UrbanCenter}.
+	 * if no plot has been laid yet.
 	 *
 	 * @return the city-center plot, or {@code null} if none is laid
 	 */
-	@Override
 	public Plot getCityCenter() {
 		List<Plot> plots = getDistrictPlots();
 		return plots.isEmpty() ? null : plots.get(0);
 	}
 
 	/**
-	 * Whether this settlement has districts beyond its city center — {@code true} for a
-	 * {@link City} (a {@link DistrictHost}), {@code false} for a {@link Village}. See
-	 * {@link UrbanCenter#hasDistricts()}.
+	 * Whether this settlement has districts beyond its city center — {@code true} from {@link
+	 * SettlementTier#TOWN} up (an old {@code City}, now a {@code TOWN}/{@code METROPOLIS} tier),
+	 * {@code false} for a single-centre {@code SMALLHOLDING} or lower.
 	 *
-	 * @return {@code true} if this is a {@link City}
+	 * @return {@code true} if the settlement can spread buildings across districts
 	 */
-	@Override
 	public boolean hasDistricts() {
-		return this instanceof DistrictHost;
+		return tier.atLeast(SettlementTier.TOWN);
 	}
 
 	/**
-	 * Whether this settlement is <b>permanent</b> — a {@link City} survives depopulation,
-	 * a {@link Village} collapses when its workforce drains. <b>Metadata only for now:</b>
-	 * the collapse machinery does not yet read this (both tiers still collapse as today);
-	 * wiring permanence to the lifecycle is future work (see {@code docs/settlement-tiers.md}
-	 * and {@code docs/city-and-league.md}). {@code false} in the base; {@link City} overrides.
+	 * Whether this settlement is <b>permanent</b> — a district-bearing settlement ({@link
+	 * SettlementTier#TOWN} and up) survives depopulation, a single-centre one collapses when its
+	 * workforce drains. <b>Metadata only for now:</b> the collapse machinery does not yet read
+	 * this (every tier still collapses as today); wiring permanence into the lifecycle is Phase E
+	 * (see {@code docs/settlement-tier-ladder-plan.md} and {@code docs/city-and-league.md}).
 	 *
-	 * @return {@code true} if the settlement is permanent (a City)
+	 * @return {@code true} if the settlement is permanent (a Town or larger)
 	 */
 	public boolean isPermanent() {
-		return false;
+		return tier.atLeast(SettlementTier.TOWN);
 	}
 
 	/**
-	 * The colony's <b>starting district count</b> — the number of districts the city
+	 * The colony's <b>starting district count</b> — the number of districts the settlement
 	 * begins with, taken from its founding province's EU4 1444 development ({@link
 	 * com.civstudio.geo.Province#development() ADM + DIP + MIL}), clamped to the province
-	 * plot {@link #getMaxPlots() cap} (the total plots in the province, the ceiling
-	 * districts can grow to). {@code 0} for a province-less colony (no EU4 development).
-	 * This is <b>render/placement metadata</b> — it does not change the firm-driven
-	 * plot economy (firms without built buildings sit in the city center); see {@code
-	 * docs/district-buildout.md} Phase D1.
+	 * plot {@link #getMaxPlots() cap} (the total plots in the province, the ceiling districts
+	 * can grow to). A settlement with no districts ({@code SMALLHOLDING} or lower) reports just
+	 * its single city center; a province-less colony reports {@code 0}. This is <b>render/
+	 * placement metadata</b> — it does not change the firm-driven plot economy (firms without
+	 * built buildings sit in the city center); see {@code docs/district-buildout.md} Phase D1.
 	 *
-	 * @return the number of districts the city starts with
+	 * @return the number of districts the settlement starts with
 	 */
 	public int getStartingDistrictCount() {
 		if (province == null)
 			return 0;
-		return Math.min(province.development(), getMaxPlots());
+		int base = Math.min(province.development(), getMaxPlots());
+		return hasDistricts() ? base : Math.min(1, base);
 	}
 
 	/**

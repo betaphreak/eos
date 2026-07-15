@@ -55,7 +55,7 @@ class CavernDaylightTest {
 	}
 
 	private static Settlement colonyInto(Province p, LocalDate date) {
-		return new Village("Cave", date, new Rng(1L), null, null,
+		return new Settlement("Cave", date, new Rng(1L), null, null,
 				TerrainRegistry.load(), new Rng(2L), LiturgicalCalendar.load(),
 				35, 26, 5, 2, p.latitude(), p.longitude(),
 				Race.HUMAN, Map.of(Race.HUMAN, 1.0), p);
