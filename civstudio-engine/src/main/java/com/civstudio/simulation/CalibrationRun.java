@@ -5,6 +5,9 @@ import java.time.LocalDate;
 import com.civstudio.agent.RetinueConfig;
 import com.civstudio.agent.firm.Firm;
 import com.civstudio.agent.laborer.Laborer;
+import com.civstudio.io.SimLog;
+import com.civstudio.io.sink.ColumnSpec;
+import com.civstudio.io.sink.RowSink;
 import com.civstudio.io.sink.RowSinkFactory;
 import com.civstudio.settlement.Settlement;
 
@@ -22,7 +25,28 @@ import com.civstudio.settlement.Settlement;
  */
 public final class CalibrationRun {
 
+	// the schema of the mirrored event log (the factory prefixes run_id/seed/scenario)
+	private static final ColumnSpec[] LOG_COLUMNS = {
+			ColumnSpec.text("Date"), ColumnSpec.integer("Level"),
+			ColumnSpec.text("Severity"), ColumnSpec.text("Message")
+	};
+
 	private CalibrationRun() {
+	}
+
+	// JUL level → severity label (WARNING = 900, SEVERE = 1000), matching SessionEventLog
+	private static String severity(int level) {
+		return level >= 1000 ? "error" : level >= 900 ? "warn" : "info";
+	}
+
+	private static void closeQuietly(AutoCloseable c) {
+		if (c == null)
+			return;
+		try {
+			c.close();
+		} catch (Exception ignored) {
+			// unsubscribe/close is best-effort
+		}
 	}
 
 	/**
@@ -56,16 +80,29 @@ public final class CalibrationRun {
 		if (retinue != null)
 			h.setRetinueConfig(retinue);
 		Settlement colony = h.getColony();
-		// found first, then install the sink and printers, so the printers bind to this sink
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		// install the sink before founding, so the printers (bound in addCommonPrinters) use it and
+		// the sim_log tap below can be opened up front to catch the founding lines too
 		if (sink != null)
 			colony.setSinkFactory(sink);
+
+		// mirror the run's event log into the store as a "sim_log" table (Date/Level/Severity/Message
+		// + the factory's run identity), so get_event_log can read a finished run — the same SimLog
+		// tap HostedSession uses for the live feed. Written through the same sink (CSV + DB).
+		RowSink logSink = sink == null ? null : sink.create("sim_log", "sim_log.csv", LOG_COLUMNS);
+		AutoCloseable logTap = logSink == null ? null : SimLog.tap(colony,
+				e -> logSink.writeRow(e.date(), e.level(), severity(e.level()), e.message()));
+		SimLog.bind(colony); // route this thread's log records (founding + run) to this colony
+
+		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
 		h.addCommonPrinters();
 
 		colony.run(steps > 0 ? steps : cfg.numStep());
 		// flush and close every printer's sink — commits the JDBC batch (CSV autoflushes per row, but
 		// the SQL sink only commits on close). colony.run() does not do this; SessionRunner would.
 		colony.cleanUpPrinters();
+		closeQuietly(logTap);
+		if (logSink != null)
+			logSink.close();
 
 		int laborers = 0, firms = 0;
 		for (var a : colony.getAgents()) {

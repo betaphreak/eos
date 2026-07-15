@@ -13,10 +13,12 @@
   (`ScenarioMcpTools`), which found a **standard ruler colony** at a seed with
   whitelisted `SimulationConfig`/pool overrides (`CalibrationRun`) and write the typed
   time series to the store, keyed by `runId`; and the **read tools** `list_outputs` /
-  `query_timeseries` / `compare_runs` (`CalibrationQueryTools`) over the store, with
-  LLM-supplied identifiers validated against the live schema. `sweep` **retired the
-  `CalibrationSweep` dev tool**. **Still to build:** `get_event_log` for a finished run
-  (needs the run's `SimLog` persisted to the store), and resources/prompts. *Divergence:*
+  `query_timeseries` / `compare_runs` / **`get_event_log`** (`CalibrationQueryTools`)
+  over the store, with LLM-supplied identifiers validated against the live schema.
+  `run_scenario`/`sweep` also mirror the run's `SimLog` into a `sim_log` table, so
+  `get_event_log` reads a finished run (the counterpart of the live `get_events`).
+  `sweep` **retired the `CalibrationSweep` dev tool**. **Still to build:** only optional
+  resources/prompts. *Divergence:*
   `run_scenario` runs a generic standard-colony setup + overrides, not a
   reflectively-invoked scenario `main` (scenarios hardcode their seed/printers).
 - **Phase 2 — live-session tools (Streamable HTTP, co-hosted in `civstudio-server`).**
@@ -204,10 +206,13 @@ question is only about the *historical time series* the calibration tools read.
 > the structured replacement for the retired `CalibrationSweep`. The **read tools**
 > (`CalibrationQueryTools`): `list_outputs` (schema via JDBC metadata), `query_timeseries`
 > (a run's typed series, identifiers validated against the live schema and quoted, values
-> bound), `compare_runs` (per-column finals/ranges/delta — "did the knob help?"). Verified
-> by `ScenarioMcpToolsTest` / `CalibrationQueryToolsTest` and a live
-> `sweep`→`list_outputs`→`query_timeseries`→`compare_runs` handshake. **Not yet built:**
-> `get_event_log` for a finished run, and resources/prompts.
+> bound), `compare_runs` (per-column finals/ranges/delta — "did the knob help?"), and
+> `get_event_log` (a finished run's `SimLog` — `run_scenario`/`sweep` mirror it into a
+> `sim_log` table via the same sink, tapping before founding so the founding lines are
+> caught; filter by min severity / Date range / message substring). Verified by
+> `ScenarioMcpToolsTest` / `CalibrationQueryToolsTest` and a live
+> `sweep`→`list_outputs`→`query_timeseries`→`compare_runs`→`get_event_log` handshake.
+> **Not yet built:** only optional resources/prompts.
 
 A standalone Maven module `civstudio-mcp`, depending on `civstudio-engine` (plus an
 embedded H2 driver for the reporting store — see *Data backend*; still no Spring),

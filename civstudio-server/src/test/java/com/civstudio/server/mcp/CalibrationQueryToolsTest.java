@@ -65,6 +65,15 @@ class CalibrationQueryToolsTest {
 		assertEquals(1, cmp.columns().size());
 		assertEquals(metric, cmp.columns().get(0).column());
 		assertTrue(cmp.rowsA() > 0 && cmp.rowsB() > 0, "both runs contributed rows to the compare");
+
+		// get_event_log: the run's persisted SimLog, filterable
+		List<Map<String, Object>> log = query.getEventLog(runA, null, null, null, null, null, null);
+		assertFalse(log.isEmpty(), "the run's event log should be persisted to the store");
+		assertTrue(log.get(0).containsKey("message") && log.get(0).containsKey("severity"));
+		assertTrue(query.getEventLog(runA, null, null, null, null, "founded", null).size() >= 1,
+				"the founding line should be captured");
+		assertTrue(query.getEventLog(runA, null, null, null, null, "zzz-no-such-line", null).isEmpty(),
+				"a nonsense grep filters everything out");
 	}
 
 	private static boolean hasDate(CalibrationQueryTools.TableInfo t) {

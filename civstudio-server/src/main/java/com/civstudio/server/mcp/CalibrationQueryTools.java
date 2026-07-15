@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -156,6 +157,90 @@ public class CalibrationQueryTools {
 					minOf(a, col), maxOf(a, col), minOf(b, col), maxOf(b, col)));
 		}
 		return new CompareResult(runIdA, runIdB, table, a.size(), b.size(), deltas);
+	}
+
+	@McpTool(name = "get_event_log",
+			description = "The event-log lines a finished run wrote to the store (foundings, deaths, "
+					+ "starvation, policy changes) — filter by minimum severity (info|warn|error), Date "
+					+ "range and a message substring. Written by run_scenario / sweep (the sim_log "
+					+ "table); this is the finished-run counterpart of the live get_events tool.")
+	public List<Map<String, Object>> getEventLog(
+			@McpToolParam(description = "Run to read (preferred); or pass seed", required = false)
+			String runId,
+			@McpToolParam(description = "Seed to read, if no runId", required = false) Long seed,
+			@McpToolParam(description = "Minimum severity: info | warn | error (default info = all)",
+					required = false) String level,
+			@McpToolParam(description = "Inclusive start Date, ISO-8601", required = false) String from,
+			@McpToolParam(description = "Inclusive end Date, ISO-8601", required = false) String to,
+			@McpToolParam(description = "Case-insensitive substring the message must contain",
+					required = false) String grep,
+			@McpToolParam(description = "Max lines (default 500)", required = false) Integer limit) {
+		if (runId == null && seed == null)
+			throw new IllegalArgumentException("pass a runId or a seed to select the run");
+		try (Connection c = store.dataSource().getConnection()) {
+			if (columnNames(c, "sim_log").isEmpty())
+				throw new IllegalArgumentException(
+						"no event log in the store — run_scenario / sweep write the sim_log table");
+
+			StringBuilder sql = new StringBuilder(
+					"SELECT \"Date\", \"Level\", \"Severity\", \"Message\" FROM \"sim_log\" WHERE ");
+			List<Object> params = new ArrayList<>();
+			if (runId != null) {
+				sql.append("\"run_id\" = ?");
+				params.add(runId);
+			} else {
+				sql.append("\"seed\" = ?");
+				params.add(seed);
+			}
+			int minLevel = minLevel(level);
+			if (minLevel > 0) {
+				sql.append(" AND \"Level\" >= ?");
+				params.add(minLevel);
+			}
+			if (from != null && !from.isBlank()) {
+				sql.append(" AND \"Date\" >= ?"); // TEXT dates in ISO form sort lexically
+				params.add(from);
+			}
+			if (to != null && !to.isBlank()) {
+				sql.append(" AND \"Date\" <= ?");
+				params.add(to);
+			}
+			if (grep != null && !grep.isBlank()) {
+				sql.append(" AND LOWER(\"Message\") LIKE ?");
+				params.add("%" + grep.toLowerCase(Locale.ROOT) + "%");
+			}
+			sql.append(" ORDER BY \"Date\" LIMIT ").append((limit == null || limit <= 0) ? 500 : limit);
+
+			try (PreparedStatement ps = c.prepareStatement(sql.toString())) {
+				for (int i = 0; i < params.size(); i++)
+					ps.setObject(i + 1, params.get(i));
+				try (ResultSet rs = ps.executeQuery()) {
+					List<Map<String, Object>> out = new ArrayList<>();
+					while (rs.next()) {
+						Map<String, Object> row = new LinkedHashMap<>();
+						row.put("date", rs.getString("Date"));
+						row.put("level", rs.getInt("Level"));
+						row.put("severity", rs.getString("Severity"));
+						row.put("message", rs.getString("Message"));
+						out.add(row);
+					}
+					return out;
+				}
+			}
+		} catch (SQLException e) {
+			throw new IllegalStateException("failed to read the event log", e);
+		}
+	}
+
+	// min-severity label → JUL level threshold; unknown/null → 0 (all)
+	private static int minLevel(String level) {
+		if (level == null)
+			return 0;
+		return switch (level.toLowerCase(Locale.ROOT)) {
+			case "error" -> 1000;
+			case "warn" -> 900;
+			default -> 0;
+		};
 	}
 
 	// --- schema helpers (validated, quoted) ---
