@@ -249,6 +249,9 @@ public class SimulationHarness {
 	private Retinue retinue;
 	private ChildrenFirm childrenFirm;
 	private Granary granary;
+	// a camp-founding scenario's post-boot printer wiring, run once at the ruler-economy boot
+	// (the SMALLHOLDING crossing), when the economy-coupled agents finally exist. See foundCamp.
+	private Runnable onEconomyBooted;
 
 	/**
 	 * Build an empty harness for {@code cfg} from a fresh {@link GameSession}
@@ -895,8 +898,15 @@ public class SimulationHarness {
 	public Retinue createRetinueFromPool(Retinue campPool, Bank bank) {
 		if (colony.getBuilder() == null)
 			createBuilder(bank, BuilderConfig.DEFAULT);
-		retinue = new Retinue(campPool.getMembers(), campPool.getLarder(), bank,
-				colony, retinueConfig);
+		// cap the adopted larder at a normal fresh-pool buffer (size × bufferDays): a camp that
+		// foraged for months banks a huge larder, and a settled reserve that opened over-stocked
+		// would buy no market food for months (suppressing necessity demand). Normalizing it makes
+		// the booted reserve open like a fresh mature pool — the band's surplus is "spent settling
+		// in". (This is correctness for equivalence with a mature founding, not a cure for the
+		// young colony's food-balance fragility, which is the accepted upstream issue.)
+		double larder = Math.min(campPool.getLarder(),
+				campPool.getMembers().size() * retinueConfig.bufferDays());
+		retinue = new Retinue(campPool.getMembers(), larder, bank, colony, retinueConfig);
 		colony.addAgent(retinue);
 		return retinue;
 	}
@@ -1346,6 +1356,24 @@ public class SimulationHarness {
 		colony.setOnTierAdvance(null);
 		log.info(colony.getName() + " booted its ruler economy on " + colony.getDate()
 				+ " (grew from camp to Smallholding)");
+		// let a camp-founding scenario wire its economy-coupled printers now that the ruler,
+		// firms, banks and markets exist (they did not at the camp founding — see foundCamp)
+		if (onEconomyBooted != null)
+			onEconomyBooted.run();
+	}
+
+	/**
+	 * Register a hook run <b>once the ruler economy has booted</b> — the end of the
+	 * {@link SettlementTier#SMALLHOLDING} crossing for a {@linkplain SimulationConfig#foundAtCamp()
+	 * camp-founded} colony (a no-op for a mature founding, which has no boot). A camp-founding
+	 * scenario uses it to wire the printers that reference the ruler/firms/granary/markets — none
+	 * of which exist at the camp founding. Fires at most once.
+	 *
+	 * @param hook
+	 *            run at the end of the ruler-economy boot
+	 */
+	public void setOnEconomyBooted(Runnable hook) {
+		this.onEconomyBooted = hook;
 	}
 
 	// the colony's captain (the camp's head household); exactly one exists at the boot.

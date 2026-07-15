@@ -115,6 +115,7 @@ mvn exec:exec -Dsim.main=com.civstudio.simulation.TwinSettlementEconomy
 | `TwinSettlementEconomy` | Two settlements founded into **one province**, run concurrently in lockstep, competing for its 74 plots. |
 | `HarimariEconomy` | A **mixed-race** colony founded by the harimari — race-varying names, calendar, mortality and tech. |
 | `ElvenEconomy` | A mono-racial elven colony — founding with one of the imported Anbennar races. |
+| `CampFoundingEconomy` | **Found-at-Camp**: a small caravan band settles Dhenijansar as a foraging `CAMP`, climbs the `SettlementTier` ladder, boots its ruler economy at `SMALLHOLDING`, then departs as a band — the settle⇄unsettle cycle (`docs/settlement-tier-ladder-plan.md`). |
 
 (`SurvivalExperiment` is a developer tool — a headless survival probe, not a
 scenario. Parameter grids now run through the MCP `sweep` tool — see
