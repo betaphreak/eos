@@ -65,12 +65,14 @@ class SettlementTierTest {
 	}
 
 	@Test
-	void foodToChangeIsSizeScaled() {
-		assertTrue(SettlementTier.TOWN.foodToChange() > SettlementTier.CAMP.foodToChange(),
-				"a bigger settlement costs more food to grow/shrink");
-		assertEquals(SettlementTier.CAMP.size() * SettlementTier.METROPOLIS.foodToChange()
-				/ SettlementTier.METROPOLIS.size(), SettlementTier.CAMP.foodToChange(),
-				"foodToChange scales linearly with size");
+	void foodToChangeFollowsTheC2cThresholdCurve() {
+		// C2C CvPlayer::getGrowthThreshold: BASE 130 + (size-1) * 25
+		assertEquals(130, SettlementTier.CAMP.foodToChange());
+		assertEquals(155, SettlementTier.COTTAGE.foodToChange());
+		assertEquals(180, SettlementTier.HAMLET.foodToChange());
+		assertEquals(205, SettlementTier.SMALLHOLDING.foodToChange());
+		assertEquals(230, SettlementTier.TOWN.foodToChange());
+		assertEquals(255, SettlementTier.METROPOLIS.foodToChange());
 	}
 
 	@Test

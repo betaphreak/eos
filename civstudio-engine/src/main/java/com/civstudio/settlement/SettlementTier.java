@@ -58,10 +58,13 @@ public enum SettlementTier {
 	 */
 	public static final int METROPOLIS_POP_GATE = 1000;
 
-	// the food (net-surplus units) that changing this rung costs, per unit of size — provisional
-	// and UNCALIBRATED (a tuning lever). Size-scaled so a bigger settlement both grows and starves
-	// more slowly, Civ4-style. foodToChange() = size() * this.
-	private static final int FOOD_PER_SIZE = 1000;
+	// the food-to-grow curve, ported from C2C's CvPlayer::getGrowthThreshold —
+	// threshold = BASE + (size-1) * MULTIPLIER, linear in size (C2C's is linear in population).
+	// These are the stock C2C GlobalDefines.xml values (BASE_CITY_GROWTH_THRESHOLD /
+	// CITY_GROWTH_MULTIPLIER); C2C then scales them by game-speed and era — that scale is our
+	// deferred calibration lever. See docs/settlement-tier-ladder-plan.md, memory c2c-city-growth-mechanics.
+	private static final int BASE_CITY_GROWTH_THRESHOLD = 130;
+	private static final int CITY_GROWTH_MULTIPLIER = 25;
 
 	/**
 	 * Whether this tier is at least {@code other} on the ladder — i.e. this rung is {@code other}
@@ -101,13 +104,15 @@ public enum SettlementTier {
 	/**
 	 * The food (net-surplus units) that <b>changing</b> this rung costs — the {@linkplain
 	 * Settlement#getFoodBox() food box} must clear {@code +foodToChange()} to grow out of this
-	 * rung, or drop below {@code -foodToChange()} to starve down from it. Size-scaled and
-	 * uncalibrated.
+	 * rung, and on starving down a rung the box climbs back by the lower rung's value. Ported
+	 * from C2C's growth threshold {@code BASE + (size-1) × MULTIPLIER} (= {@code 130 + (size-1)×25}):
+	 * {@code CAMP} 130, {@code COTTAGE} 155, &hellip;, {@code METROPOLIS} 255. Uncalibrated (C2C's
+	 * game-speed/era multiplier is the deferred scale).
 	 *
 	 * @return the food cost to grow past / starve out of this rung
 	 */
 	public int foodToChange() {
-		return size() * FOOD_PER_SIZE;
+		return BASE_CITY_GROWTH_THRESHOLD + (size() - 1) * CITY_GROWTH_MULTIPLIER;
 	}
 
 	/**

@@ -797,9 +797,20 @@ public class Settlement {
 		return n;
 	}
 
-	// the colony's net food surplus this day (Civ4 food balance): necessity PRODUCED by its
+	// food-box calibration knobs, ported from C2C (memory c2c-city-growth-mechanics):
+	// - FOOD_KEPT_FRACTION: the granary retention — growing a rung keeps at least this fraction of
+	//   the rung's cost in the box (C2C's getFoodKept); provisional base until Phase C wires the
+	//   Granary building to raise it.
+	// - WASTAGE_*: a simplified port of C2C's CvCity::foodWastage — surplus above
+	//   (fraction × consumption) suffers diminishing returns, so a huge daily surplus cannot all be
+	//   banked. GROWTH_FACTOR 0.05 matches C2C's default.
+	private static final double FOOD_KEPT_FRACTION = 0.25;
+	private static final double WASTAGE_START_CONSUMPTION_FRACTION = 1.0;
+	private static final double WASTAGE_GROWTH_FACTOR = 0.05;
+
+	// the colony's net food surplus this day (C2C food balance): necessity PRODUCED by its
 	// agriculture (every living necessity firm's output) minus necessity EATEN (a FINE ration per
-	// resident). Positive fills the food box (growth), negative drains it (starvation). getOutput()
+	// resident), with a large surplus subject to food WASTAGE (diminishing returns). getOutput()
 	// can read stale for a firm that got no labour this step (docs/food-balance.md) — an accepted
 	// approximation at this uncalibrated stage.
 	private double dailyFoodSurplus() {
@@ -809,47 +820,60 @@ public class Settlement {
 					&& "Necessity".equals(f.getProductName()))
 				produced += f.getOutput();
 		double eaten = totalResidents() * com.civstudio.good.RationSize.FINE.perDay();
-		return produced - eaten;
+		return applyFoodWastage(produced - eaten, eaten);
+	}
+
+	// diminishing returns on a large daily surplus (a simplified port of C2C's CvCity::foodWastage):
+	// surplus up to (start = WASTAGE_START_CONSUMPTION_FRACTION × consumption) banks in full; beyond
+	// that the excess saturates toward an asymptote (1/WASTAGE_GROWTH_FACTOR), so a very large daily
+	// surplus adds little to the box. A deficit (≤ 0) is returned unchanged (never "wasted").
+	// Package-private for direct unit testing.
+	static double applyFoodWastage(double surplus, double consumption) {
+		if (surplus <= 0)
+			return surplus;
+		double start = WASTAGE_START_CONSUMPTION_FRACTION * consumption;
+		if (surplus <= start)
+			return surplus;
+		double excess = surplus - start;
+		return start + excess / (1.0 + WASTAGE_GROWTH_FACTOR * excess);
 	}
 
 	// bank the day's net food surplus and settle any tier change it triggers (docs/settlement-
-	// tier-ladder-plan.md Phase B). GROWTH climbs while the food box clears the current rung's
-	// cost, the next rung is within the site's maxTier, the target rung's household floor is met,
-	// and (for METROPOLIS) the population gate is met — spending the cost, carrying the remainder.
-	// SHRINK (starvation) descends one rung when a sustained deficit drains the box below the
-	// current rung's negative cost, resetting the box. Growth-up is dormant in production (colonies
-	// found at maxTier); the shrink is live, so a starving colony descends the ladder.
+	// tier-ladder-plan.md Phase B; the state machine mirrors C2C's CvCity::changeFood). GROWTH
+	// climbs while the food box clears the current rung's cost, the next rung is within the site's
+	// maxTier, the target rung's household floor is met, and (for METROPOLIS) the population gate is
+	// met — spending the cost, carrying the remainder, but keeping at least FOOD_KEPT_FRACTION of it
+	// (the granary). SHRINK (starvation) descends rungs while the box is negative, climbing it back
+	// by the lower rung's cost each step (falling into the previous size's box, C2C-style — NOT
+	// reset). Growth-up is dormant in production (colonies found at maxTier); the shrink is live.
 	private void grow() {
 		foodBox += dailyFoodSurplus();
-		// grow up the ladder while food, site ceiling, households and the metropolis gate allow
 		while (tier.ordinal() < maxTier.ordinal()) {
 			SettlementTier next = tier.next().orElseThrow(); // present: tier < maxTier
-			if (foodBox < tier.foodToChange())
+			int cost = tier.foodToChange();
+			if (foodBox < cost)
 				break;
 			if (householdCount() < next.minHouseholds())
 				break;
 			if (next == SettlementTier.METROPOLIS
 					&& totalResidents() < SettlementTier.METROPOLIS_POP_GATE)
 				break;
-			foodBox -= tier.foodToChange();
 			SettlementTier from = tier;
+			foodBox = Math.max(foodBox - cost, cost * FOOD_KEPT_FRACTION);
 			setTier(next);
 			log.info(name + " grew from " + from + " to " + next + " on " + getDate()
 					+ " (" + householdCount() + " households, " + totalResidents() + " residents)");
 		}
-		// starvation: a sustained deficit descends one rung (and resets the box) — the growth and
-		// collapse axes unified (docs/settlement-tier-ladder-plan.md). At CAMP the existing
-		// workforce-floor dissolution takes over, so the box just floors there.
-		if (tier != SettlementTier.CAMP && foodBox <= -tier.foodToChange()) {
+		while (tier != SettlementTier.CAMP && foodBox < 0) {
 			SettlementTier from = tier;
 			SettlementTier down = tier.previous().orElseThrow();
 			setTier(down);
-			foodBox = 0;
+			foodBox += down.foodToChange();
 			log.info(name + " starved down from " + from + " to " + down + " on " + getDate()
 					+ " (" + totalResidents() + " residents)");
-		} else if (tier == SettlementTier.CAMP && foodBox < 0) {
-			foodBox = 0;
 		}
+		if (tier == SettlementTier.CAMP && foodBox < 0)
+			foodBox = 0;
 	}
 
 	/**

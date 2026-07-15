@@ -77,15 +77,26 @@ class SettlementGrowthTest {
 	}
 
 	@Test
-	void aStarvingSettlementDescendsTheLadder() {
+	void aStarvingSettlementDescendsTheLadderToCamp() {
 		Settlement c = standardColony(DHENIJANSAR); // founds at METROPOLIS (its maxTier)
-		SettlementTier before = c.getTier();
-		assertTrue(before.atLeast(SettlementTier.TOWN), "the demo city founds district-bearing");
+		assertTrue(c.getTier().atLeast(SettlementTier.TOWN), "the demo city founds district-bearing");
 
-		c.setFoodBox(-10_000_000); // a deep, sustained food deficit
+		c.setFoodBox(-10_000_000); // a deep, sustained food deficit — outruns any day's surplus
 		c.newDay();
 
-		assertEquals(before.previous().orElseThrow(), c.getTier(),
-				"a starving settlement starves down exactly one rung");
+		assertEquals(SettlementTier.CAMP, c.getTier(),
+				"a deeply starving settlement descends the whole ladder to CAMP");
+		assertEquals(0.0, c.getFoodBox(), 1e-9, "the food box floors at 0 once it bottoms out at CAMP");
+	}
+
+	@Test
+	void foodWastageBanksSmallSurplusesFullyButSaturatesLargeOnes() {
+		// a deficit is never wasted
+		assertEquals(-5.0, Settlement.applyFoodWastage(-5, 10), 1e-9);
+		// surplus up to consumption banks in full
+		assertEquals(8.0, Settlement.applyFoodWastage(8, 10), 1e-9);
+		// a huge surplus saturates toward the asymptote (start + 1/growthFactor = 10 + 20 = 30)
+		double huge = Settlement.applyFoodWastage(1_000_000, 10);
+		assertTrue(huge > 29 && huge < 31, "a huge daily surplus saturates near the asymptote, not banks in full");
 	}
 }

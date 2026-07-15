@@ -122,30 +122,36 @@ Revised 2026-07-15 (was a "people-days accumulator"). User direction: **growth m
 Civ4 cities accumulate food to grow**, **a tier of size N needs ≥ N² households**, and **a food
 deficit starves the settlement down a rung** (unifying growth and collapse into one food axis).
 
+The growth mechanics are a **faithful port of C2C's** `CvCity::changeFood` / `CvPlayer::getGrowthThreshold`
+(investigated from the vendored DLL, `docs`/memory `c2c-city-growth-mechanics`), mapped onto the tier ladder.
+
 - **`SettlementTier`**: `size()` (1-based, `CAMP` 1 … `METROPOLIS` 6), `minHouseholds()` = `size²`
   (the household floor — `COTTAGE` 4, `HAMLET` 9, `SMALLHOLDING` 16, `TOWN` 25, `METROPOLIS` 36),
-  `foodToChange()` = `size × 1000` (size-scaled food cost to grow past / starve out of a rung —
-  **uncalibrated**), `next()`/`previous()`, and `METROPOLIS_POP_GATE = 1000`.
-- **`Settlement`**: a Civ4 **food box** (`double foodBox`) banked each `newDay()` (post-
-  `updateLifecycle`) by `+= dailyFoodSurplus()`. **`dailyFoodSurplus()`** = necessity **produced**
-  (Σ living `NFirm`/`ConsumerGoodFirm` with product `"Necessity"` `.getOutput()`) − **eaten**
-  (`totalResidents() × RationSize.FINE.perDay()`). Helpers: `householdCount()` (living `Household`s,
-  not the pool), `totalResidents()`, `getFoodBox()` (+ a package-private `setFoodBox` test seam),
-  and the `maxTier` site ceiling.
+  `foodToChange()` = **C2C's threshold curve** `BASE + (size−1)·MULT` = `130 + (size−1)·25` (`CAMP` 130
+  … `METROPOLIS` 255; C2C's stock `BASE_CITY_GROWTH_THRESHOLD`/`CITY_GROWTH_MULTIPLIER` — its game-speed/
+  era multiplier is our deferred scale), `next()`/`previous()`, and `METROPOLIS_POP_GATE = 1000`.
+- **`Settlement`**: a Civ4 **food box** (`double foodBox`) banked each `newDay()` (post-`updateLifecycle`)
+  by `+= dailyFoodSurplus()`. **`dailyFoodSurplus()`** = necessity **produced** (Σ living `ConsumerGoodFirm`
+  with product `"Necessity"` `.getOutput()`) − **eaten** (`totalResidents() × RationSize.FINE.perDay()`),
+  then a **food-wastage** curve (`applyFoodWastage`, a simplified port of C2C `CvCity::foodWastage`): surplus
+  above `1.0 × consumption` suffers diminishing returns (saturates near `start + 1/0.05`). Helpers:
+  `householdCount()` (families, not the pool), `totalResidents()`, `getFoodBox()` (+ pkg-private `setFoodBox`
+  test seam), the `maxTier` site ceiling.
 - **Grow** while `foodBox ≥ tier.foodToChange()` **and** the next rung `≤ maxTier` **and**
   `householdCount() ≥ next.minHouseholds()` **and** (for `METROPOLIS`) `totalResidents() ≥ 1000` —
-  spending the cost, carrying the remainder. **Shrink**: a sustained deficit that drains the box
-  below `-tier.foodToChange()` **descends one rung** and resets the box (at `CAMP` it floors, the
-  existing workforce dissolution taking over). Both logged.
-- **Growth-up dormant in production; shrink is live.** Colonies found at `maxTier`, so nothing
-  grows up until **Phase D** founds them at `CAMP` — but a starving colony now descends the ladder
-  (the growth/collapse unification, previously the separate Phase E). No fallout: real colonies run
-  near food parity in the smoke windows, so the box rarely drains a full rung's worth. Costs are
-  **uncalibrated** (a tuning lever). getOutput() staleness (docs/food-balance.md) is an accepted
-  approximation at this stage.
-- **Verify:** `SettlementGrowthTest` — a well-fed `CAMP` colony climbs to its household/site ceiling
-  (`SMALLHOLDING`); the `METROPOLIS` gate holds a sub-1000 well-fed `TOWN` back; a starving colony
-  descends one rung. `SettlementTierTest` covers `size`/`minHouseholds`/`foodToChange`/`next`/`previous`.
+  spending the cost, carrying the remainder, but keeping ≥ `FOOD_KEPT_FRACTION` (0.25) of it (the
+  granary; provisional until Phase C wires a Granary building). **Shrink** (C2C-faithful): while the
+  box is negative, **descend a rung and climb the box back by the lower rung's cost** — falling into
+  the previous size's box (keeping the overshoot), *not* reset; at `CAMP` it floors and the existing
+  workforce dissolution takes over.
+- **Growth-up dormant in production; shrink is live.** Colonies found at `maxTier`, so nothing grows
+  up until **Phase D** founds them at `CAMP` — but a starving colony now descends the ladder (the
+  growth/collapse unification, previously the separate Phase E). No smoke-test fallout (colonies run
+  near food parity). Costs are **uncalibrated** (C2C's speed/era scale is the lever).
+- **Verify:** `SettlementGrowthTest` — a well-fed `CAMP` colony climbs to its household/site ceiling; the
+  `METROPOLIS` gate holds a sub-1000 well-fed `TOWN`; a deeply starving colony descends to `CAMP` (box
+  floors at 0); `applyFoodWastage` banks small surpluses fully but saturates huge ones. `SettlementTierTest`
+  covers `size`/`minHouseholds`/`foodToChange`(C2C curve)/`next`/`previous`.
 
 ### Phase C — per-tier building & district caps
 - **Building cap**: gate `Settlement.autoBuildBuilding` (`:1450`, the single `Building`-placement
