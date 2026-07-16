@@ -1,0 +1,174 @@
+name: Rebake plot cache
+
+# Bakes the whole-world per-plot cache (geo/export/WorldPlotGenerator) — real terrain, features,
+# bonuses AND GeoNames place names — and uploads it to the Azure Files share the live server reads
+# (docs/client-server.md §Deployment). This is the step that USED to run on the dev box
+# (tools/deploy-plot-cache.ps1): production can't bake place names (no GeoNames dump on the server),
+# so a named cache must be shipped whenever plot generation changes (a ProvincePlotStore.GEN_VERSION
+# bump), else prod regenerates nameless plots on demand.
+#
+# It does NOT roll the Container App: the project subscription is a *guest* identity that can't
+# create role assignments (no CI service principal), so the app roll stays a manual
+# `az containerapp update` from an authenticated session — same constraint as deploy-server.yml.
+# The UPLOAD here needs no login: it uses a storage ACCOUNT KEY (key auth sidesteps the role limit).
+#
+# ── Required repo config (Settings → Secrets and variables → Actions) ──────────────────────────────
+#   secret PLOT_STORAGE_ACCOUNT   the storage account behind the share (e.g. civstudiofiles)
+#   secret PLOT_STORAGE_KEY       an account access key for that storage account (upload + prune)
+#   var    PLOT_STORAGE_SHARE     (optional) the file share name; defaults to 'anbennar'
+#   secret ANBENNAR_TOKEN         (optional) a GitLab PRIVATE-TOKEN for the on-demand Anbennar fetch,
+#                                 to dodge rate limits; the map rasters are a small fixed set so it
+#                                 usually works token-less. C2C uses the built-in GITHUB_TOKEN.
+# Until PLOT_STORAGE_ACCOUNT/KEY exist the upload step fails — the bake still runs, so a
+# workflow_dispatch is a safe dry check of the bake itself.
+
+on:
+  workflow_dispatch:
+    inputs:
+      keep_previous:
+        description: 'Older cache versions to retain on the share besides v<new> (prune the rest)'
+        default: '1'
+  push:
+    branches: [master]
+    # only when plot generation could change — the guard step then confirms GEN_VERSION actually moved
+    paths:
+      - 'civstudio-engine/src/main/java/com/civstudio/settlement/ProvincePlotStore.java'
+
+concurrency:
+  group: rebake-plot-cache
+  cancel-in-progress: false   # never cancel an in-flight bake+upload
+
+jobs:
+  rebake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      # on-demand source fetch the bake performs (a small fixed set of rasters/art, cached per ref):
+      #   Anbennar → GitLab (PRIVATE-TOKEN), C2C → GitHub (GITHUB_TOKEN). See docs/anbennar-files.md.
+      ANBENNAR_TOKEN: ${{ secrets.ANBENNAR_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 2   # HEAD~1 for the GEN_VERSION-change guard
+
+      - name: Resolve GEN_VERSION (and skip an unchanged push)
+        id: guard
+        run: |
+          store=civstudio-engine/src/main/java/com/civstudio/settlement/ProvincePlotStore.java
+          extract() { sed -nE 's/.*GEN_VERSION[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' | head -1; }
+          cur=$(extract < "$store")
+          echo "current GEN_VERSION=$cur"
+          echo "version=$cur" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            prev=$(git show HEAD~1:"$store" 2>/dev/null | extract || true)
+            echo "previous GEN_VERSION=${prev:-<none>}"
+            if [ -n "$prev" ] && [ "$cur" = "$prev" ]; then
+              echo "GEN_VERSION unchanged ($cur) — nothing to rebake."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Set up JDK 25 (Temurin)
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Cache the GeoNames dump
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/cache@v4
+        with:
+          path: .geonames-cache
+          key: geonames-allcountries-v1
+
+      - name: Download the GeoNames dump (if not cached)
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          mkdir -p .geonames-cache
+          if [ ! -f .geonames-cache/allCountries.zip ] && [ ! -f .geonames-cache/allCountries.txt ]; then
+            echo "downloading GeoNames allCountries.zip (~400 MB) — the source for plot place names…"
+            curl -fSL --retry 3 -o .geonames-cache/allCountries.zip \
+              https://download.geonames.org/export/dump/allCountries.zip
+          fi
+          ls -la .geonames-cache
+
+      - name: Bake the whole-world plot cache
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          # WorldPlotGenerator warms .plot-cache/v<GEN_VERSION>/ then stamps GeoNames names over it.
+          ./mvnw -B -pl civstudio-engine compile exec:exec \
+            -Dsim.main=com.civstudio.geo.export.WorldPlotGenerator
+
+      - name: Sanity-check the bake
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          ver=${{ steps.guard.outputs.version }}
+          dir=.plot-cache/v$ver
+          count=$(find "$dir" -name '*.json.gz' 2>/dev/null | wc -l)
+          echo "baked $count province files into $dir"
+          if [ "$count" -lt 4000 ]; then
+            echo "::error::only $count province files (< 4000 expected for a full world) — bake looks incomplete"
+            exit 1
+          fi
+          # spot-check: names + urban flag actually made it into the fields
+          zcat "$(find "$dir" -name '*.json.gz' | head -1)" | head -c 400; echo
+
+      - name: Upload to the Azure Files share
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          ACCOUNT: ${{ secrets.PLOT_STORAGE_ACCOUNT }}
+          KEY: ${{ secrets.PLOT_STORAGE_KEY }}
+          SHARE: ${{ vars.PLOT_STORAGE_SHARE || 'anbennar' }}
+        run: |
+          ver=${{ steps.guard.outputs.version }}
+          if [ -z "$ACCOUNT" ] || [ -z "$KEY" ]; then
+            echo "::error::PLOT_STORAGE_ACCOUNT / PLOT_STORAGE_KEY secrets are not set — add them to upload the cache."
+            exit 1
+          fi
+          echo "uploading v$ver (~37 MB) to $ACCOUNT/$SHARE/plot-cache/v$ver …"
+          az storage file upload-batch \
+            --account-name "$ACCOUNT" --account-key "$KEY" \
+            --destination "$SHARE" --destination-path "plot-cache/v$ver" \
+            --source ".plot-cache/v$ver" --pattern '*.json.gz'
+
+      - name: Prune old cache versions on the share
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          ACCOUNT: ${{ secrets.PLOT_STORAGE_ACCOUNT }}
+          KEY: ${{ secrets.PLOT_STORAGE_KEY }}
+          SHARE: ${{ vars.PLOT_STORAGE_SHARE || 'anbennar' }}
+          KEEP: ${{ github.event.inputs.keep_previous || '1' }}
+        run: |
+          ver=${{ steps.guard.outputs.version }}
+          oldest=$(( ver - KEEP ))
+          echo "keeping v$oldest..v$ver on the share, pruning older…"
+          for d in $(az storage directory list --account-name "$ACCOUNT" --account-key "$KEY" \
+                       --share-name "$SHARE" --name plot-cache --query "[].name" -o tsv 2>/dev/null); do
+            n=$(printf '%s' "$d" | sed -nE 's/^v([0-9]+)$/\1/p')
+            if [ -n "$n" ] && [ "$n" -lt "$oldest" ]; then
+              echo "pruning plot-cache/$d"
+              az storage file delete-batch --account-name "$ACCOUNT" --account-key "$KEY" \
+                --source "$SHARE" --pattern "plot-cache/$d/*" || true
+              az storage directory delete --account-name "$ACCOUNT" --account-key "$KEY" \
+                --share-name "$SHARE" --name "plot-cache/$d" 2>/dev/null || true
+            fi
+          done
+
+      - name: Summary
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          ver=${{ steps.guard.outputs.version }}
+          {
+            echo "### Plot cache rebaked → v$ver"
+            echo ""
+            echo "Uploaded to the Azure Files share. To serve it, roll the server to the matching"
+            echo "image from an authenticated session (guest identity — manual, see docs/client-server.md):"
+            echo '```'
+            echo "az containerapp update -n civstudio-server -g civstudio \\"
+            echo "  --image <acr-login-server>/civstudio-server:latest"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
