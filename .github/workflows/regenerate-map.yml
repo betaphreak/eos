@@ -1,6 +1,7 @@
-name: Rebake plot cache
+name: Regenerate map
 
-# Bakes the whole-world per-plot cache (geo/export/WorldPlotGenerator) — real terrain, features,
+# Regenerates (bakes) the whole-world per-plot map cache (geo/export/WorldPlotGenerator) — real
+# terrain, features,
 # bonuses AND GeoNames place names — and uploads it to the Azure Files share the live server reads
 # (docs/client-server.md §Deployment). This is the step that USED to run on the dev box
 # (tools/deploy-plot-cache.ps1): production can't bake place names (no GeoNames dump on the server),
@@ -35,11 +36,11 @@ on:
       - 'civstudio-engine/src/main/java/com/civstudio/settlement/ProvincePlotStore.java'
 
 concurrency:
-  group: rebake-plot-cache
+  group: regenerate-map
   cancel-in-progress: false   # never cancel an in-flight bake+upload
 
 jobs:
-  rebake:
+  regenerate:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -78,23 +79,32 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Cache the GeoNames dump
+      # GeoNames cache as restore -> download -> save (NOT the single actions/cache step, whose
+      # post-step save is skipped when the job fails). Saving right after the download caches the
+      # ~400 MB allCountries.zip even if the bake later fails, so a re-run never re-downloads it.
+      - name: Restore the GeoNames dump cache
+        id: geocache
         if: steps.guard.outputs.skip != 'true'
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: .geonames-cache
           key: geonames-allcountries-v1
 
-      - name: Download the GeoNames dump (if not cached)
-        if: steps.guard.outputs.skip != 'true'
+      - name: Download the GeoNames dump (on cache miss)
+        if: steps.guard.outputs.skip != 'true' && steps.geocache.outputs.cache-hit != 'true'
         run: |
           mkdir -p .geonames-cache
-          if [ ! -f .geonames-cache/allCountries.zip ] && [ ! -f .geonames-cache/allCountries.txt ]; then
-            echo "downloading GeoNames allCountries.zip (~400 MB) — the source for plot place names…"
-            curl -fSL --retry 3 -o .geonames-cache/allCountries.zip \
-              https://download.geonames.org/export/dump/allCountries.zip
-          fi
+          echo "downloading GeoNames allCountries.zip (~400 MB) — the source for plot place names…"
+          curl -fSL --retry 3 -o .geonames-cache/allCountries.zip \
+            https://download.geonames.org/export/dump/allCountries.zip
           ls -la .geonames-cache
+
+      - name: Save the GeoNames dump cache
+        if: steps.guard.outputs.skip != 'true' && steps.geocache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .geonames-cache
+          key: geonames-allcountries-v1
 
       - name: Bake the whole-world plot cache
         if: steps.guard.outputs.skip != 'true'

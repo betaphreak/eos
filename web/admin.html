@@ -76,7 +76,7 @@
       <a class="linkbtn" id="storageLink" hidden target="_blank" rel="noopener"
         title="Open the plot-cache file share (anbennar-cache/plot-cache/v&lt;MAP_VERSION&gt;) in Azure Storage Explorer.">Open in Storage Explorer&nbsp;↗</a>
     </div>
-    <p class="muted" style="margin:12px 0 0; font-size:12px;">The cache is versioned by <b>MAP_VERSION</b>; bumping it (a plot-generation change, or shipping fresh place names) points the server at a new <code>plot-cache/v&lt;n&gt;</code> dir and busts the client <code>?v=</code>. The named cache is rebaked and pushed by the <code>rebake-plot-cache</code> CI workflow — production can't bake names.</p>
+    <p class="muted" style="margin:12px 0 0; font-size:12px;">The cache is versioned by <b>MAP_VERSION</b>; bumping it (a plot-generation change, or shipping fresh place names) points the server at a new <code>plot-cache/v&lt;n&gt;</code> dir and busts the client <code>?v=</code>. The named cache is regenerated and pushed by the <code>regenerate-map</code> CI workflow — production can't bake names.</p>
   </div>
 
   <div class="panel">
