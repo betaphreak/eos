@@ -27,7 +27,7 @@ not a `.CivBeyondSwordWBSave`.
 
 > **Update (persisted, seed-independent field).** A province's plot field is now
 > generated **seed-independently** (off `RngSeed.forProvinceCanonical` — province id
-> only, not the run seed) and **cached** to `.plot-cache/v<MAP_VERSION>/<id>.json.gz`
+> only, not the run seed) and **cached** to `.map/v<MAP_VERSION>/<id>.json.gz`
 > (gzipped JSON, ~25× smaller than raw) by `settlement/ProvincePlotStore`. This is the **same
 > shared cache** the server's `PlotService` serves `/api/plots/{id}` from (byte-identical format,
 > configurable via `civstudio.plots.cache-dir` — the server pushes it into the store at startup), so

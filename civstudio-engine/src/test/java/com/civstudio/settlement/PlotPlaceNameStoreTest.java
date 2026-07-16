@@ -16,7 +16,7 @@ import com.civstudio.geo.TerrainRegistry;
 
 /**
  * Verifies a plot's {@link Plot#placeName() place name} survives the round-trip
- * through the gzipped {@code .plot-cache} (the field the naming pass writes), and
+ * through the gzipped {@code .map} (the field the naming pass writes), and
  * that a plot generated without a name loads back as {@code null} — so a cache
  * written before the naming pass (or a plot the pass skipped) stays valid.
  */
@@ -39,7 +39,7 @@ class PlotPlaceNameStoreTest {
 			assertEquals("Kraków", loaded.get(0).placeName());
 			assertNull(loaded.get(1).placeName(), "an unnamed plot round-trips as null");
 		} finally {
-			ProvincePlotStore.configure(".plot-cache"); // restore default for other tests in the JVM
+			ProvincePlotStore.configure(".map"); // restore default for other tests in the JVM
 		}
 	}
 }

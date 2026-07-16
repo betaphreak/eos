@@ -482,7 +482,7 @@ Each phase is independently compilable/testable; earlier phases are inert until 
   route **overrides** the terrain move cost, so a plot's cost becomes `route.costFactor()` =
   `iMovement/100` (trail 1.0 = one flat plot, road 0.6, paved 0.4 …) and corridors hug the better
   roads. **Built dormant (2026-07-14):** `Plot.routeType` (a per-session mutable field, excluded
-  from the canonical `.plot-cache` — `StoredPlot` serializes only generation-time terrain/feature/
+  from the canonical `.map` — `StoredPlot` serializes only generation-time terrain/feature/
   bonus, so a post-construction field never leaks in) + `Plot.layRoute`; a `MarchingCaravan.laysTrail()`
   hook (default false, `ExplorerCaravan` → true) stamps `ROUTE_TRAIL` on the bare plots of the day's
   corridor as the Explorer marches (never downgrading a better route). Recorded but (pre-cost-override)
@@ -514,7 +514,7 @@ Each phase is independently compilable/testable; earlier phases are inert until 
     `RouteType` is **mutable per-session sim state** — the demo session (seed `7654321`) carries its
     own trails — exactly like the plots' `buildings()`/districts and camp `occupant`, and **unlike**
     the seed-independent terrain/feature/bonus field. So it must **not** leak into the canonical,
-    session-independent plot cache (`.plot-cache` / `PlotService`'s gzip blob — "a property of the
+    session-independent plot cache (`.map` / `PlotService`'s gzip blob — "a property of the
     map, not of a run"); it rides the **session render snapshot** (the `render/` package) instead,
     overlaid on the canonical terrain grid in the browser — the same feed districts use (see
     `docs/district-buildout.md` D3, fact 5). **Rendering trails therefore needs session support on
@@ -532,14 +532,14 @@ Each phase is independently compilable/testable; earlier phases are inert until 
     routing modes — the existing seed-independent one (Explorer / current behaviour) and a new
     per-session trail-gated one (non-explorers).
   - **Persistence — a `.session-cache/<seed>/` (owner proposal, 2026-07-14).** The natural sibling to
-    the canonical `.plot-cache/v<MAP_VERSION>/`: a **per-session, seed-keyed** cache holding a
+    the canonical `.map/v<MAP_VERSION>/`: a **per-session, seed-keyed** cache holding a
     session's mutable plot overlays (trails now; could unify built buildings/districts and camps).
     Aligns with the Phase-C "durable sessions" direction (`docs/client-server.md`) where the
     **command log** is the replayable source of truth — `.session-cache/` either stores that log or
     **materializes** the derived per-plot overlays for fast serving without a replay. Caveats: the
     truly-unique key is the **session** (a `SessionSpec` + log), not the seed — `<seed>` suffices for
     the one-session-per-seed demo but may become `<sessionId>`; and on the server it needs a
-    **persistent volume** (like the plot-cache AzureFile share).
+    **persistent volume** (like the map AzureFile share).
   - **Spectator UI — a "Timelines" browser (owner design, 2026-07-14).** Sessions are called
     **"Timelines"** in the UI. By default (no URL-parameter bypass) the player is presented the
     **existing Timelines to spectate** — the `lobby.html` served at `/` lists the running

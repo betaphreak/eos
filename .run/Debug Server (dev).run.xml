@@ -5,7 +5,7 @@
     config forks a separate JVM and does not). It activates the `dev` Spring profile, so
     DevFrontendLauncher serves web/ with node and opens the browser once the server is ready — the
     same one-command local stack as `mvn spring-boot:run`, but debuggable. Working dir is the repo
-    root so web/ and the .anbennar-cache/.plot-cache resolve. -ea matches exec:exec (assertions on).
+    root so web/ and the .anbennar-cache/.map resolve. -ea matches exec:exec (assertions on).
     Override the frontend per run via program args, e.g.:
       --civstudio.dev.frontend.web-port=4000
       --civstudio.dev.frontend.open-browser=false

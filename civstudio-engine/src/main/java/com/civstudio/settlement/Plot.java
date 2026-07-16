@@ -128,7 +128,7 @@ public final class Plot {
 
 	// the route (trail/path/road/…) laid on this plot, or null if unimproved. Like the
 	// occupant and buildings this is MUTABLE per-session state, NOT part of the plot's
-	// generation-time field data — so it is excluded from the canonical .plot-cache
+	// generation-time field data — so it is excluded from the canonical .map
 	// (ProvincePlotStore.StoredPlot serializes only terrain/relief/feature/bonus): trails
 	// belong to a run, not the map (docs/explorer-caravan.md §Phase 3). The Explorer stamps
 	// ROUTE_TRAIL as it pioneers; every other caravan will require ≥ a trail to route through.
@@ -490,7 +490,7 @@ public final class Plot {
 	 * The {@link RouteType route} laid on this plot (trail/path/road/…), or {@code null} if
 	 * the plot is unimproved. <b>Per-session mutable state</b> — like the {@link
 	 * #getOccupant() occupant} and {@link #buildings()}, and unlike the terrain/feature/bonus
-	 * field it is <b>not</b> baked into the canonical {@code .plot-cache} (trails belong to a
+	 * field it is <b>not</b> baked into the canonical {@code .map} (trails belong to a
 	 * run, not the map). The Explorer stamps {@code ROUTE_TRAIL} as it pioneers; other bands
 	 * will require at least a trail to route through. See {@code docs/explorer-caravan.md}.
 	 *

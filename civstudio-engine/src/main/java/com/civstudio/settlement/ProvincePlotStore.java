@@ -33,7 +33,7 @@ import tools.jackson.databind.ObjectMapper;
  * plain JSON while staying trivially (de)serialized.
  * <p>
  * Fields are read from and written to <b>one shared cache</b>: {@code <cacheRoot>/v<MAP_VERSION>/},
- * where {@code cacheRoot} defaults to {@code .plot-cache} and is {@linkplain #configure overridden}
+ * where {@code cacheRoot} defaults to {@code .map} and is {@linkplain #configure overridden}
  * by the server to its {@code civstudio.plots.cache-dir} (the persistent volume in prod). This is
  * the <b>same directory and byte-identical file format</b> the server's on-demand
  * {@code PlotService} uses, so the sim (colony founding, caravan crossings) and the web plot feed
@@ -61,11 +61,11 @@ public final class ProvincePlotStore {
 	 */
 	public static final int MAP_VERSION = 8; // 8: urban is an overlay flag on natural terrain (retired TERRAIN_URBAN ground — docs/urban-plots.md); 7: real-world plot place names (GeoNames); 6: water-dominant urban-core siting
 
-	// The cache root — a working-dir/volume folder, NOT the source tree. Defaults to .plot-cache
+	// The cache root — a working-dir/volume folder, NOT the source tree. Defaults to .map
 	// (matching PlotService's civstudio.plots.cache-dir default) and is overridden by the server via
 	// configure(...) so the sim and the web plot feed share exactly one cache. The MAP_VERSION
 	// subdir orphans stale fields on a generation bump.
-	private static final String DEFAULT_CACHE_ROOT = ".plot-cache";
+	private static final String DEFAULT_CACHE_ROOT = ".map";
 	private static volatile String cacheRoot = DEFAULT_CACHE_ROOT;
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 

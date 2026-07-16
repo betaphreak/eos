@@ -34,7 +34,7 @@ class AdminControllerTest {
 	@Test
 	@Timeout(120)
 	void adminEndpointsRequireTheAdminRole() throws Exception {
-		// the plot-cache drop: admin only
+		// the map cache drop: admin only
 		assertEquals(403, post("/api/admin/plots/clear", null), "anonymous is forbidden");
 		assertEquals(403, post("/api/admin/plots/clear", "bob"), "a plain authenticated user is forbidden");
 		HttpResponse<String> ok = send("POST", "/api/admin/plots/clear", "super-admin");
@@ -46,7 +46,7 @@ class AdminControllerTest {
 		HttpResponse<String> status = send("GET", "/api/admin/status", "super-admin");
 		assertEquals(200, status.statusCode());
 		assertTrue(status.body().contains("\"plots\"") && status.body().contains("\"server\""),
-				"status carries the plot-cache + server readout");
+				"status carries the map cache + server readout");
 
 		// the read-only region->country map: admin only, and carries the mapping + count
 		assertEquals(403, get("/api/admin/region-map", "bob"));

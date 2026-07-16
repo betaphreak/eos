@@ -136,7 +136,7 @@ public class CivStudioProperties {
 		 * <b>persistent mounted volume</b> (env {@code PLOT_CACHE_DIR}) so a province is generated
 		 * once ever, not once per container restart.
 		 */
-		private String cacheDir = ".plot-cache";
+		private String cacheDir = ".map";
 		/** How many provinces' gz blobs to keep hot in memory (an LRU over the disk cache). */
 		private int lruSize = 512;
 
@@ -162,7 +162,7 @@ public class CivStudioProperties {
 	 */
 	public static class Admin {
 		/**
-		 * An optional deep link to the plot-cache location, surfaced (only) in the gated
+		 * An optional deep link to the map cache location, surfaced (only) in the gated
 		 * {@code /api/admin/status} for an "Open in Storage Explorer" button. An Azure Storage
 		 * Explorer {@code storageexplorer://…} URI (or a portal storage-browser URL). Carries the
 		 * subscription / resource ids, so it is served from config (env

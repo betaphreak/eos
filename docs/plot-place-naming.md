@@ -51,7 +51,7 @@ a 78s generation pass; 100% of land plots named. Ocean/sea-region provinces are 
 ## Storage & web
 
 `Plot.placeName` (nullable) round-trips through `StoredPlot.name` in the gzipped
-`.plot-cache/v<MAP_VERSION>/<id>.json.gz`; a cache written before naming loads back as `null`. The
+`.map/v<MAP_VERSION>/<id>.json.gz`; a cache written before naming loads back as `null`. The
 web reads the field automatically (`q.name`); `web/js/plotlabel.mjs` (`prettyKey`/`plotTip`, unit-
 tested in `plotlabel.test.mjs`) + the hover handler in `web/js/panel.mjs` render
 `name · terrain · feature`.
@@ -60,7 +60,7 @@ tested in `plotlabel.test.mjs`) + the hover handler in `web/js/panel.mjs` render
 
 Production can't bake (no dump), so the locally-baked cache must be shipped to the AzureFile share.
 `pwsh tools/deploy-plot-cache.ps1` bumps `MAP_VERSION`, moves the local baked cache to the new
-version dir, uploads it to `<share>/plot-cache/v<new>`, and prunes old versions (keeps
+version dir, uploads it to `<share>/map/v<new>`, and prunes old versions (keeps
 `v<new>` + `v<new-1>`). Run `tools/deploy-server.ps1` after it so the new image serves `v<new>` and
 the client `?v=` flips (the web reads `mapVersion` from the server bundle). See
 `docs/client-server.md` §Deployment. Verify by hovering a plot at deep zoom on the

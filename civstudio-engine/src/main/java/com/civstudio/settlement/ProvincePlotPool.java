@@ -129,7 +129,7 @@ public final class ProvincePlotPool {
 	// road (the best pre-tech route tier), so a settlement's own ground is fully routable from
 	// founding (and, once trail-gating lands in Phase 6, its caravans can leave). A per-session
 	// default applied at pool construction — routes are per-session state and never bake into the
-	// canonical .plot-cache (ProvincePlotStore serializes only terrain/feature/bonus). Set before
+	// canonical .map (ProvincePlotStore serializes only terrain/feature/bonus). Set before
 	// any corridor is cached, so no invalidation is needed. See docs/explorer-caravan.md §Phase 3.
 	private static void paveUrbanPlots(List<Plot> plots, TerrainRegistry registry) {
 		RouteType paved = registry.route(RouteType.PAVED_ROAD);

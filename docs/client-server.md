@@ -322,23 +322,23 @@ map silently break:
    engine resources, server code, and the rebaked manifest.
 3. **Clear the persistent plot cache** — *only if the change altered plot **generation***
    (`ProvincePlotField` / `TerrainGenerator` / `CityPlacement` / bonuses / a `terrains.json`
-   yield, …). `PLOT_CACHE_DIR = /mnt/anbennar/plot-cache` is a **persistent AzureFile share**
+   yield, …). `PLOT_CACHE_DIR = /mnt/anbennar/map` is a **persistent AzureFile share**
    (the `anbennar` storage), so the server keeps serving **stale `<id>.json.gz` fields** until
    they are deleted — **a new image alone does NOT refresh them.** Delete the cache dir; the
    server regenerates each province fresh on next request:
    ```bash
    # simplest — from inside a running replica (the volume is mounted there):
    az containerapp exec -n civstudio-server -g civstudio \
-     --command "sh -c 'rm -f /mnt/anbennar/plot-cache/*.json.gz'"
+     --command "sh -c 'rm -f /mnt/anbennar/map/*.json.gz'"
    # or via the storage API (needs the account key / the env storage account name):
-   az storage file delete-batch --account-name <acct> --source anbennar --pattern 'plot-cache/*.json.gz'
+   az storage file delete-batch --account-name <acct> --source anbennar --pattern 'map/*.json.gz'
    ```
    Skip this step for a pure server-code or web-JS change (generation unchanged).
 
    **Shipping locally-baked plot *names*.** Plot place names (GeoNames) are baked locally —
    production has no GeoNames dump, so it can't regenerate them. For that case use
    `pwsh tools/deploy-plot-cache.ps1`: it bumps `MAP_VERSION`, moves the local baked
-   `.plot-cache/v<old>` to `v<new>`, uploads it to `<share>/plot-cache/v<new>`, and prunes old
+   `.map/v<old>` to `v<new>`, uploads it to `<share>/map/v<new>`, and prunes old
    versions (keeps `v<new>` + `v<new-1>`). Run the server deploy (step 2) after it so the new
    image serves `v<new>` and the `?v=` flips. See `docs/plot-place-naming` in memory / the P1–P4
    `feat(names)` commits.

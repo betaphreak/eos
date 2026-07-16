@@ -1,19 +1,19 @@
 <#
 .SYNOPSIS
-  Increment the plot-cache MAP_VERSION, push the locally-baked (named) plot cache to the Azure
+  Increment the map MAP_VERSION, push the locally-baked (named) plot cache to the Azure
   Files share the live server reads, and prune stale cache versions.
 
 .DESCRIPTION
   Production can't bake plot names — there is no GeoNames dump on the server — so the names
   produced by a local `WorldPlotGenerator` run must be shipped to the persistent AzureFile
-  share (`anbennar`, mounted at PLOT_CACHE_DIR=/mnt/anbennar/plot-cache). The cache is
-  versioned (`plot-cache/v<MAP_VERSION>/<id>.json.gz`), so rolling names into production is:
+  share (`anbennar`, mounted at PLOT_CACHE_DIR=/mnt/anbennar/map). The cache is
+  versioned (`map/v<MAP_VERSION>/<id>.json.gz`), so rolling names into production is:
 
     1. Read MAP_VERSION from ProvincePlotStore.java; compute the next value (or -NewVersion).
     2. Bump the constant in ProvincePlotStore.java (busts the client ?v= via the server bundle).
-    3. Move the local baked cache .plot-cache/v<old> -> .plot-cache/v<new> (generation is
+    3. Move the local baked cache .map/v<old> -> .map/v<new> (generation is
        unchanged — only names were added — so the same fields serve as the new version).
-    4. Upload .plot-cache/v<new> to  <share>/plot-cache/v<new>  on the storage account.
+    4. Upload .map/v<new> to  <share>/map/v<new>  on the storage account.
     5. Prune: keep only v<new> and v<new-1> (see -KeepPrevious); delete older version dirs both
        locally and on the share.
 
@@ -52,12 +52,12 @@ $ErrorActionPreference = 'Stop'
 
 $RG           = 'civstudio'
 $APP          = 'civstudio-server'
-$CACHE_SUBDIR = 'plot-cache'        # dir within the share; PLOT_CACHE_DIR = /mnt/anbennar/plot-cache
+$CACHE_SUBDIR = 'map'        # dir within the share; PLOT_CACHE_DIR = /mnt/anbennar/map
 $MIN_EXPECTED = 4000                # a full world is ~4.6k named land provinces; warn if far fewer
 
 $repoRoot  = Split-Path -Parent $PSScriptRoot
 $storeFile = Join-Path $repoRoot 'civstudio-engine/src/main/java/com/civstudio/settlement/ProvincePlotStore.java'
-$cacheRoot = Join-Path $repoRoot '.plot-cache'
+$cacheRoot = Join-Path $repoRoot '.map'
 
 function Write-NextSteps([int]$v) {
   Write-Host ""
@@ -166,7 +166,7 @@ if ($AccountKey) {
   }
 }
 
-# --- 8. upload the baked cache to  <share>/plot-cache/v<new>  ---------------------------------
+# --- 8. upload the baked cache to  <share>/map/v<new>  ---------------------------------
 $destPath = "$CACHE_SUBDIR/v$NewVersion"
 if ($PSCmdlet.ShouldProcess("$StorageAccount/$Share/$destPath", "Upload $count province files from v$NewVersion")) {
   Write-Host "==> uploading v$NewVersion cache to $StorageAccount/$Share/$destPath (~37 MB of gzipped fields)..." -ForegroundColor Cyan

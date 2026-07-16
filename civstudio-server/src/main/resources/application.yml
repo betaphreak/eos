@@ -88,7 +88,7 @@ civstudio:
     # Per-province plot grids are generated on demand (GET /api/plots/{id}) and cached here. Local
     # dev default; the deployment MUST point this at a PERSISTENT mounted volume so a province is
     # generated once ever, not once per restart. See docs/plot-serving.md.
-    cache-dir: ${PLOT_CACHE_DIR:.plot-cache}
+    cache-dir: ${PLOT_CACHE_DIR:.map}
     lru-size: ${PLOT_LRU_SIZE:512}
   mcp:
     calibration:

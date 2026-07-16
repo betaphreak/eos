@@ -25,7 +25,7 @@ import com.civstudio.util.RngSeed;
 
 /**
  * Dev tool: generate and persist the plot field of <b>every settleable land
- * province</b> into the shared plot cache ({@code .plot-cache/v<MAP_VERSION>/<id>.json.gz} by
+ * province</b> into the shared plot cache ({@code .map/v<MAP_VERSION>/<id>.json.gz} by
  * default — the same cache the sim and the server's {@code PlotService} share), pre-warming
  * per-plot terrain for the whole world (not just the caravan-visited crop). The fields
  * are canonical/seed-independent (the {@linkplain RngSeed#forProvinceCanonical terrain

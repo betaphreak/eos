@@ -125,7 +125,7 @@ jobs:
         if: steps.guard.outputs.skip != 'true'
         run: |
           set -o pipefail   # so a bake failure isn't masked by the tee below
-          # WorldPlotGenerator warms .plot-cache/v<MAP_VERSION>/ then stamps GeoNames names over it.
+          # WorldPlotGenerator warms .map/v<MAP_VERSION>/ then stamps GeoNames names over it.
           # ubuntu-latest ships Maven pre-installed and setup-java pins JAVA_HOME to JDK 25 + caches
           # ~/.m2, so plain `mvn` is the right tool here (no wrapper / exec-bit dance). Tee the output
           # so the Summary step can lift the region→country naming coverage out of it.
@@ -136,7 +136,7 @@ jobs:
         if: steps.guard.outputs.skip != 'true'
         run: |
           ver=${{ steps.guard.outputs.version }}
-          dir=.plot-cache/v$ver
+          dir=.map/v$ver
           count=$(find "$dir" -name '*.json.gz' 2>/dev/null | wc -l)
           echo "baked $count province files into $dir"
           if [ "$count" -lt 4000 ]; then
@@ -161,7 +161,7 @@ jobs:
           command -v azcopy >/dev/null || { echo "installing azcopy…"; \
             curl -sSL -o /tmp/azcopy.tgz https://aka.ms/downloadazcopy-v10-linux && \
             tar -xzf /tmp/azcopy.tgz -C /tmp && sudo cp /tmp/azcopy_linux_amd64_*/azcopy /usr/local/bin/azcopy; }
-          count=$(find ".plot-cache/v$ver" -name '*.json.gz' | wc -l)
+          count=$(find ".map/v$ver" -name '*.json.gz' | wc -l)
           # a short-lived share SAS (read/create/write/list) minted from the account key. azcopy then
           # transfers in PARALLEL over HTTPS (443 — no SMB/port-445 dependency) and prints periodic
           # "% done / N of M" progress, NOT a line per file. The v<ver> versioning is the publish
@@ -170,11 +170,11 @@ jobs:
           expiry=$(date -u -d '+2 hours' '+%Y-%m-%dT%H:%MZ')
           sas=$(az storage share generate-sas -n "$SHARE" --account-name "$ACCOUNT" --account-key "$KEY" \
             --permissions rcwdl --expiry "$expiry" -o tsv)
-          echo "uploading $count province files (~37 MB) to $SHARE/plot-cache/v$ver via azcopy…"
-          azcopy copy ".plot-cache/v$ver" \
-            "https://$ACCOUNT.file.core.windows.net/$SHARE/plot-cache?$sas" \
+          echo "uploading $count province files (~37 MB) to $SHARE/map/v$ver via azcopy…"
+          azcopy copy ".map/v$ver" \
+            "https://$ACCOUNT.file.core.windows.net/$SHARE/map?$sas" \
             --recursive --overwrite=true
-          echo "uploaded $count files to plot-cache/v$ver"
+          echo "uploaded $count files to map/v$ver"
 
       - name: Prune old cache versions on the share
         if: steps.guard.outputs.skip != 'true'
@@ -188,14 +188,14 @@ jobs:
           oldest=$(( ver - KEEP ))
           echo "keeping v$oldest..v$ver on the share, pruning older…"
           for d in $(az storage directory list --account-name "$ACCOUNT" --account-key "$KEY" \
-                       --share-name "$SHARE" --name plot-cache --query "[].name" -o tsv 2>/dev/null); do
+                       --share-name "$SHARE" --name map --query "[].name" -o tsv 2>/dev/null); do
             n=$(printf '%s' "$d" | sed -nE 's/^v([0-9]+)$/\1/p')
             if [ -n "$n" ] && [ "$n" -lt "$oldest" ]; then
-              echo "pruning plot-cache/$d"
+              echo "pruning map/$d"
               az storage file delete-batch --account-name "$ACCOUNT" --account-key "$KEY" \
-                --source "$SHARE" --pattern "plot-cache/$d/*" --output none || true
+                --source "$SHARE" --pattern "map/$d/*" --output none || true
               az storage directory delete --account-name "$ACCOUNT" --account-key "$KEY" \
-                --share-name "$SHARE" --name "plot-cache/$d" 2>/dev/null || true
+                --share-name "$SHARE" --name "map/$d" 2>/dev/null || true
             fi
           done
 

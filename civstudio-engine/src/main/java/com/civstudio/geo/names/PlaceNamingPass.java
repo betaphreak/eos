@@ -22,7 +22,7 @@ import com.civstudio.settlement.ProvincePlotStore;
  * region's {@link PixelBox pixel footprint}, and runs a {@link PlaceNamer} over
  * each province (position-preserving within the region box, unique within the
  * province). It is additive — it reads a province's plots from the cache, sets
- * names, and writes them back — so no plot-cache regeneration is required; a
+ * names, and writes them back — so no map cache regeneration is required; a
  * partially-warmed cache simply names what is present.
  * <p>
  * Memory is bounded to one region's plots plus the pre-loaded gazetteers, since

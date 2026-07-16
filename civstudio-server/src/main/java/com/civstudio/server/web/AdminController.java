@@ -48,7 +48,7 @@ public class AdminController {
 		this.chat = chat;
 	}
 
-	/** A consolidated admin readout: plot-cache status (+ generation version), server + identity. */
+	/** A consolidated admin readout: map cache status (+ generation version), server + identity. */
 	@GetMapping("/status")
 	public Map<String, Object> status(HttpServletRequest http) {
 		requireAdmin(http);
