@@ -14,7 +14,7 @@
 import { S, apiUrl } from "./core.mjs";
 import { draw } from "./main.mjs";
 import { pausePlayback, showRail, renderRail } from "./panel.mjs";
-import { liveKnownTechs } from "./overlays/live.mjs";
+import { liveKnownTechs, liveResearch } from "./overlays/live.mjs";
 
 const railEl = () => document.getElementById("rail");
 
@@ -441,12 +441,31 @@ function applyZoom(anchor) {
   vp.scrollTop = cy * k - ay;
   els._k = k;
 }
-// refresh the researched-state styling from the live snapshot: dim techs the colony has not yet
-// unlocked (and their building grids follow at render time). A no-op with no live known set.
+// refresh the researched-state styling from the live snapshot. Three states, matching the top bar's
+// research fill so the pill and the tree read as the same object (docs/zoom-bands.md):
+//   known      — solid, filled node
+//   locked     — outline only: an EMPTY node, i.e. an unfilled bar
+//   researching — the one node filling right now, its --research fraction driving a partial fill
+// A no-op with no live known set (browsing the tree with no session: everything reads as available).
 function applyResearchState() {
   knownSet = new Set(liveKnownTechs());
-  const dim = knownSet.size > 0;
-  for (const [ty, el] of nodeEl) el.classList.toggle("locked", dim && !techKnown(ty));
+  const live = knownSet.size > 0;
+  const r = liveResearch();
+  for (const [ty, el] of nodeEl) {
+    // `researched` arms the fill language at all; with no live colony the tree is just a reference
+    // work and every node stays a plain card (filling them all in would assert a progress that the
+    // page has no basis for).
+    el.classList.toggle("researched", live);
+    if (!live) {
+      el.classList.remove("locked", "researching");
+      el.style.removeProperty("--research");
+      continue;
+    }
+    const known = techKnown(ty), active = !!r && r.type === ty;
+    el.classList.toggle("locked", !known);
+    el.classList.toggle("researching", active);
+    el.style.setProperty("--research", known ? "1" : active ? r.progress.toFixed(3) : "0");
+  }
 }
 
 // the smallest zoom that still fills the viewport height: you can zoom out until the
@@ -502,7 +521,7 @@ function buildEraTabs() {
   }
 }
 
-async function open() {
+async function open(focusType) {
   if (S.techOpen) return;
   cacheEls();
   els.modal.hidden = false;      // reveal the shell (also makes viewport measurable)
@@ -516,6 +535,14 @@ async function open() {
     k = Math.max(k, minZoom());   // never open zoomed out past the fit-to-height floor
     applyZoom();
     syncEraTab();
+    // Land on the tech we were asked to focus (the top bar's research pill sends the one being
+    // researched). applyZoom just wrote the scroll position, so centring has to come after it, and
+    // selecting lights the node + its prereq path and fills the rail sheet — the "where am I in the
+    // tree" answer the pill click is really asking for.
+    if (focusType && byType.has(focusType)) {
+      select(focusType);
+      centerOnType(focusType);
+    }
   } catch (e) {
     els.viewport.innerHTML = `<div style="padding:40px;color:var(--ink-soft);max-width:520px">
       Couldn't load the tech data. The tree reads <code>/api/techs</code> from the spectator
@@ -544,8 +571,10 @@ function cacheEls() {
 /** Open the tree if closed, close it if open — the F7 shortcut (see shortcuts.mjs). */
 export function toggleTech() { S.techOpen ? close() : open(); }
 
-/** Open the tech view idempotently — the Technology advisor's entry point (advisors.mjs). */
-export function openTech() { if (!S.techOpen) open(); }
+/** Open the tech view idempotently — the Technology advisor's entry point (advisors.mjs).
+ *  `focusType` (optional): a tech id to select and centre once the tree is built — the research pill
+ *  passes the tech being researched, so clicking it lands on that node rather than the era-0 origin. */
+export function openTech(focusType) { if (!S.techOpen) open(focusType); }
 
 /** Close the tree if open — the Escape shortcut while the modal is up. */
 export function closeTech() { close(); }

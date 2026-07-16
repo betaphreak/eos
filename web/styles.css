@@ -557,6 +557,23 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
    bare `.adv-zoom` (0,1,0) and pins the colour to #9fb0c8. So the tint needs both the real class
    name and enough specificity to beat the inline base — same trick as `#mapControls .segToggle
    button` below. It inherits the group's geometry (padding/radius/font) and only adds the tint. */
+/* The Technology segment IS the research progress bar: --research (0..1, written by
+   advisors.paintResearchFill from the live snapshot) fills the button left-to-right. Same hard-stop
+   fill and accent as the researching node in the tech tree, so clicking through from the pill to the
+   tree lands on something that looks like what you clicked.
+
+   Selector carries #mapControls for the same reason .adv-zoom does (see the note below): index.html's
+   inline `.segToggle button` rule out-specifies a bare class here and would win the background. */
+#mapControls .segToggle button.adv-research {
+  background-image: linear-gradient(90deg,
+    color-mix(in srgb, var(--accent) 32%, transparent) 0,
+    color-mix(in srgb, var(--accent) 32%, transparent) calc(var(--research, 0) * 100%),
+    transparent calc(var(--research, 0) * 100%));
+  background-repeat: no-repeat;
+  /* the fill moves in visible steps as beakers land; ease it so it reads as filling, not jumping */
+  transition: background-image .35s linear;
+}
+
 .segToggle button.adv-zoom[data-regime="atlas"]    { --rg: #6ea8ff; }   /* 🌍 EU4 grand strategy */
 .segToggle button.adv-zoom[data-regime="overland"] { --rg: #e8b76a; }   /* 🐫 caravan / operational */
 .segToggle button.adv-zoom[data-regime="ground"]   { --rg: #d9915a; }   /* 🏘️ city-builder micro */
@@ -795,10 +812,33 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .tech-spec { position: absolute; left: 9px; right: 9px; bottom: 3px; height: 3px; display: flex;
   gap: 1px; border-radius: 2px; overflow: hidden; opacity: .85; pointer-events: none; }
 .tech-spec > span { display: block; min-width: 2px; }
-/* researched-state (when spectating a live colony): dim what it has NOT unlocked yet — desaturated,
-   never hidden, so the tree doubles as a forward reference of everything ahead */
-.tech-node.locked { opacity: .44; filter: saturate(.5); }
-.tech-node.locked:hover { opacity: .72; }
+/* Researched state, when spectating a live colony (.researched is only set then — with no session the
+   tree is a reference work and every node stays a plain card).
+
+   Every node is the SAME progress bar as the top bar's research pill, at a different value:
+     known       --research: 1     → filled
+     researching --research: 0..1  → filling, in accent
+     not yet     --research: 0     → an empty outline
+   so the tree reads as a field of full / part-full / empty bars, and the pill you clicked to get here
+   is recognisably one of them. Nothing is ever hidden — an empty node is still a forward reference.
+
+   Hard stops, not ramps: a gradient would read as decoration and blur where the boundary is.
+   background-COLOR, not the shorthand: the shorthand would wipe background-image out from under the
+   fill, whichever order these landed in. */
+.tech-node.researched {
+  --fillcol: color-mix(in srgb, var(--ink) 11%, transparent);
+  background-color: transparent;
+  background-image: linear-gradient(90deg,
+    var(--fillcol) 0,
+    var(--fillcol) calc(var(--research, 0) * 100%),
+    transparent calc(var(--research, 0) * 100%));
+  transition: background-image .35s linear, opacity .12s, border-color .12s, box-shadow .12s;
+}
+.tech-node.researched.locked { color: var(--ink-faint); }
+.tech-node.researched.locked .tech-spec { opacity: .3; }
+.tech-node.researched.locked:hover { color: var(--ink-soft); }
+/* the one tech filling right now: accent, so it is findable at a glance across the whole tree */
+.tech-node.researched.researching { --fillcol: color-mix(in srgb, var(--accent) 30%, transparent); border-color: var(--accent); color: var(--ink); }
 .tech-bcell.locked { opacity: .4; filter: saturate(.35); }
 .tech-bcell.locked:hover { opacity: .8; }
 
@@ -957,6 +997,19 @@ body.auth-anon .live-log-chat-hint { display: block; }
 #overlayToggle button.live-running[aria-pressed="true"] { background: color-mix(in srgb, #2ea043 66%, transparent); color: #fff; }
 
 /* ---- Site sign-in control (header, index.html) — a button + dropdown, filled by js/auth.mjs ---- */
+/* the live fps · latency readout beside the account handle (js/diag.mjs). Tabular figures so the
+   digits don't jitter the layout as the numbers change every half-second. */
+.diag-chip { display: inline-flex; align-items: center; gap: 5px; margin-right: .5rem;
+  font: 600 11px ui-monospace, 'Cascadia Code', Consolas, monospace; font-variant-numeric: tabular-nums;
+  color: var(--ink-dim, #8b97a8); white-space: nowrap; cursor: default; }
+.diag-chip .diag-sep { opacity: .4; }
+.diag-v[data-grade="ok"]   { color: #6ee7a8; }
+.diag-v[data-grade="warn"] { color: #f2c14b; }
+.diag-v[data-grade="bad"]  { color: #f0776a; }
+/* map idle: no paints to count, so the last rate is held — dim it rather than show a stale number
+   as if it were live */
+.diag-v.stale { opacity: .45; }
+
 .site-auth { position: relative; display: inline-flex; align-items: center; }
 .site-auth-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--panel, #131924);
   color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: .32rem .6rem;

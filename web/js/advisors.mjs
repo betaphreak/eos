@@ -11,7 +11,7 @@ import { viewportFocus } from "./bandcaption.mjs";
 import { prettyKey } from "./plotlabel.mjs";
 import { openTech, closeTech } from "./techtree.mjs";
 import { advisorSeat, openAdvisorRail, noteRoster, closeAdvisorRail } from "./advisor-detail.mjs";
-import { onLiveRoster, liveColony } from "./overlays/live.mjs";
+import { onLiveRoster, liveColony, liveResearch } from "./overlays/live.mjs";
 
 import { ensurePolitical, politicalReady } from "./overlays/political.mjs";
 import { advisorPortrait, initPortraits } from "./portraits.mjs";
@@ -60,7 +60,9 @@ export function setAdvisor(id) {
   // leaving Technology returns the map (paint() resumes); entering it suspends the map behind the tree
   if (id !== "technology" && S.techOpen) closeTech();
   switch (id) {
-    case "technology": openTech(); break;
+    // clicking the research pill means "show me THAT" — hand the tree the tech being researched so it
+    // opens centred on it, rather than at the origin of a 292-node graph
+    case "technology": openTech(liveResearch()?.type); break;
     case "foreign":    setOverlay(foreignSub); break;   // nation | culture
     case "religion":   setOverlay("faith"); break;
     case "zeitgeist":  setOverlay("live"); break;
@@ -112,10 +114,25 @@ function techName(id) {
 // the Technology segment's live text: the POV colony's current research + progress %, else the static
 // label. The research rides the live snapshot (ColonyView.researchingTech / researchProgress).
 function technologyLabel() {
-  const c = liveColony();
-  if (c && c.researchingTech)
-    return `${techName(c.researchingTech)} (${Math.round((c.researchProgress || 0) * 100)}%)`;
-  return "Technology";
+  const r = liveResearch();
+  return r ? `${techName(r.type)} (${Math.round(r.progress * 100)}%)` : "Technology";
+}
+// Fill the Technology segment like a progress bar: --research (0..1) drives a hard-stop gradient
+// across the button (see .adv-research in styles.css), so the segment IS the research bar rather than
+// a label that happens to mention a percentage. Off when nothing is being researched, so the segment
+// falls back to a plain "Technology" button.
+function paintResearchFill() {
+  const b = selectorEl && selectorEl.querySelector('button[data-advisor="technology"]');
+  if (!b) return;
+  const r = liveResearch();
+  b.classList.toggle("adv-research", !!r);
+  if (r) {
+    b.style.setProperty("--research", r.progress.toFixed(3));
+    b.setAttribute("data-tip", `Researching ${techName(r.type)} — ${Math.round(r.progress * 100)}% done. Click to show it in the tech tree.`);
+  } else {
+    b.style.removeProperty("--research");
+    b.setAttribute("data-tip", "Technology Advisor (F6)");
+  }
 }
 // The province a political segment speaks for: an explicit SELECTION wins over the viewport, because
 // clicking a province is a deliberate "tell me about this one" that panning shouldn't silently
@@ -157,6 +174,7 @@ function setSegmentText(id, text) {
 // that already shipped this way.
 export function refreshDynamicSegments() {
   setSegmentText("technology", technologyLabel());
+  paintResearchFill();   // after the text: setSegmentText rewrites the button's innerHTML
   setSegmentText("foreign", nationLabel());
   setSegmentText("religion", religionLabel());
   setSegmentText("zeitgeist", zeitgeistLabel());

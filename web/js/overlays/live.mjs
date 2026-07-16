@@ -57,6 +57,12 @@ export function liveState() { return snap ? snap.state : null; }
 export function liveRoster() { return (snap && snap.colonies && snap.colonies[0] && snap.colonies[0].advisors) || []; }
 // the primary colony's known techs (pre-known + researched) — the tech tree's researched-state source
 export function liveKnownTechs() { return (snap && snap.colonies && snap.colonies[0] && snap.colonies[0].knownTechs) || []; }
+/** What the POV colony is researching now, or null: {type, progress} with progress a 0..1 fraction.
+ *  Drives the top bar's research fill (advisors.mjs) and the tree's in-progress node (techtree.mjs). */
+export function liveResearch() {
+  const c = liveColony();
+  return c && c.researchingTech ? { type: c.researchingTech, progress: c.researchProgress || 0 } : null;
+}
 
 /** The POV colony from the latest snapshot (its districts / culture / lat-lon drive the district view), or null. */
 export function liveColony() { return (snap && snap.colonies && snap.colonies[0]) || null; }

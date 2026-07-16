@@ -69,6 +69,15 @@ public class AssetController {
 				.body(BuildingBundle.gzip());
 	}
 
+	/**
+	 * Gzip length of the tiers asset, for the bill of materials ({@link ResourceManifest}). Forces
+	 * the same one-time read/compress {@link #tiers} would, so the reported size is the served size.
+	 */
+	static int tiersGzipLength() throws IOException {
+		ensureTiers();
+		return tiersGzip.length;
+	}
+
 	private static synchronized void ensureTiers() throws IOException {
 		if (tiersJson != null)
 			return;

@@ -15,9 +15,11 @@ import { initTechTree } from "./js/techtree.mjs";
 import { initShortcuts } from "./js/shortcuts.mjs";
 import { initSiteAuth } from "./js/auth.mjs";
 import { initAdvisor } from "./js/advisors.mjs";
+import { initDiag } from "./js/diag.mjs";
 
 boot();
 initTechTree();
 initAdvisor();   // build the advisor selector + sub-bar, deriving the mode from boot()'s render state
 initShortcuts();
 initSiteAuth();
+initDiag();      // the top bar's fps · latency readout (starts the ping poll)

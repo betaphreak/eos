@@ -8,6 +8,7 @@ import { initSea } from "./sea.mjs";                           // the screen-spa
 import { initMinimap, drawMinimap } from "./minimap.mjs";
 import { currentCaption, scheduleCaptionRefresh, refreshCaptionNow } from "./bandcaption.mjs";   // the chip's viewport-context text
 import { escHtml } from "./plotlabel.mjs";
+import { noteFrame } from "./diag.mjs";                        // the top bar's fps readout times real paints
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
 // transparent so the sea layer below shows through, land is opaque.
 // loading screen: show a random Anbennar splash (1:1, stage-cropped) until the map's first paint,
@@ -124,8 +125,16 @@ function draw() {
     });
   });
 }
+// Time each real paint for the top bar's fps readout (js/diag.mjs). The app renders on demand, so
+// this — not a free-running rAF loop — is the only place that knows a frame happened and what it cost.
+// The techOpen bail-out is deliberately outside the timing: a suppressed paint is not a fast frame.
 function paint() {
   if (S.techOpen) return;   // tech-tree modal is in front — don't spend frames drawing the hidden map
+  const t0 = performance.now();
+  paintScene();
+  noteFrame(performance.now() - t0);
+}
+function paintScene() {
   updateRegimeSignal();   // top-bar band-name chip + regime cursor + boundary pulse (replaces the raw × readout)
   S.markers = [];   // cave-entrance / teleporter hit-targets, repopulated this frame (hover reads them)
   const w=VIEW.w, h=VIEW.h, dpr=VIEW.dpr;

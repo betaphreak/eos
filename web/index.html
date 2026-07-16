@@ -159,8 +159,11 @@
           <div class="clk-dt"><span id="cDate" class="clk-date"></span></div>
           <div class="clk-speed" id="speed" role="group" aria-label="Speed"></div>
         </div>
+        <!-- render rate + server round-trip, filled by js/diag.mjs; sits with the account handle since
+             both are "how is this session doing for me" rather than anything about the world -->
+        <div class="diag-chip" id="diagChip" style="margin-left:auto" aria-label="Performance and latency"></div>
         <!-- sign-in for the picked server (Steam / OIDC); filled by js/auth.mjs -->
-        <div class="site-auth" id="siteAuth" style="margin-left:auto"></div>
+        <div class="site-auth" id="siteAuth"></div>
       </div>
     </div>
     </header>
@@ -433,6 +436,70 @@
     // connect to the picked server: hold the picker (rows disabled), show the progress bar, confirm
     // readiness (health), fetch the bundle, and boot the module app. On failure, surface it and
     // re-enable the picker so another server can be tried.
+    // ---- boot-time prefetch of the server's eager resources -------------------------------------
+    // The tech tree used to fetch /api/techs the first time you opened it — ~1 MB, at exactly the
+    // moment you least want to wait. The server's bill of materials (/api/resources, see
+    // ResourceManifest.java) lists what the UI needs and how big each one is, so we pull that set
+    // here, behind the loading screen we are already showing, and report real progress.
+    //
+    // This warms the HTTP cache and nothing more: every asset carries Cache-Control public/max-age,
+    // so the app's own later fetch (techtree.fetchGz et al) hits the cache instead of the network. No
+    // module has to know this happened, and nothing breaks if it didn't.
+    //
+    // Strictly an optimisation, so it must never block boot: an older server with no manifest (404), a
+    // failed asset, anything at all — surface it and carry on to the app, which then fetches lazily
+    // exactly as it does today.
+    function fmtBytes(n) {
+      return n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.round(n / 1024) + " KB";
+    }
+    // Stream a response so progress tracks bytes actually arriving, not just whole assets landing —
+    // with only a handful of large files, per-asset steps would lurch 0→50→100. Consuming the body is
+    // also what populates the cache, which is the entire point of the exercise.
+    function pullCounting(url, onChunk) {
+      return fetch(url, { credentials: "omit" }).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status + " for " + url);
+        if (!r.body || !r.body.getReader) return r.arrayBuffer();   // no streams → still cached, just no progress
+        var reader = r.body.getReader();
+        return (function pump() {
+          return reader.read().then(function (res) {
+            if (res.done) return;
+            onChunk(res.value.length);
+            return pump();
+          });
+        })();
+      });
+    }
+    function prefetch(base) {
+      return fetch(base + "/api/resources", { credentials: "omit" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (m) {
+          if (!m || !m.resources) return;   // server predates the manifest — lazy fetching still works
+          // the bundle is in the eager set (it IS boot data) but we already have it; a size of -1 marks
+          // something with no fixed size (the per-province plot grids), never prefetched
+          var want = m.resources.filter(function (e) { return e.eager && e.bytes > 0 && e.id !== "bundle"; });
+          if (!want.length) return;
+          var total = want.reduce(function (sum, e) { return sum + e.bytes; }, 0);
+          var done = 0, lastShown = 0;
+          function report(force) {
+            var now = Date.now();
+            if (!force && now - lastShown < 120) return;   // one DOM write per chunk would thrash — throttle
+            lastShown = now;
+            var pct = total > 0 ? Math.min(100, Math.round(done / total * 100)) : 100;
+            if (window.__status) window.__status("Prefetching " + fmtBytes(total) + " (" + pct + "%)…", "info");
+          }
+          report(true);
+          return Promise.all(want.map(function (e) {
+            return pullCounting(base + e.path, function (n) { done += n; report(false); });
+          })).then(function () {
+            if (window.__status) window.__status("Prefetched " + fmtBytes(total) + " — starting…", "info");
+          });
+        })
+        .catch(function (e) {
+          // never fatal: the app fetches these lazily on demand exactly as it did before
+          if (window.__status) window.__status("Prefetch skipped — " + (e && e.message || e), "warn");
+        });
+    }
+
     function connect(s) {
       connecting = true; render();
       if (bar) bar.hidden = false;
@@ -445,7 +512,8 @@
         })
         .then(function () { return fetch(s.base + "/api/bundle", { credentials: "omit" }); })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-        .then(function (b) { b.live = { base: s.base }; window.BUNDLE = b; return import("./app.js"); })
+        .then(function (b) { b.live = { base: s.base }; window.BUNDLE = b; return prefetch(s.base); })
+        .then(function () { return import("./app.js"); })
         .catch(function (e) {
           connecting = false; s.status = "down";
           if (bar) bar.hidden = true;
