@@ -1,4 +1,4 @@
-name: Build & push spectator server image
+name: CivStudio Server
 
 # Builds the live spectator server image (docs/client-server.md) and pushes it to the shared
 # registry (civstudio.azurecr.io). It does NOT deploy the Container App: the project
