@@ -1,20 +1,34 @@
-import { P, VIEW, stage, px, terrainRgb, provGeo, polOf, isPolitical, TRADE_GOODS, S } from "./core.mjs";
+"use strict";
+// panel.mjs — what is LEFT after the split: the mode toggles (plane / overlay) that drive
+// everything else, the province search, the brand/home button, a shared spinner, the theme hook,
+// and boot(). The eight jobs it used to hold now live beside it: clock.mjs (the transport),
+// input.mjs (map gestures), maptip.mjs (hover + picking), btntip.mjs (button tooltips) and
+// rail.mjs (the sidebar). 690 -> ~240 lines.
+//
+// It still re-exports their entry points, because shortcuts.mjs, techtree.mjs, plotfetch.mjs and
+// advisor-detail.mjs already import them from here — the split cost no caller a change.
+import { P, VIEW, stage, px, provGeo, isPolitical, S } from "./core.mjs";
 import { draw } from "./repaint.mjs";
-import { zoomAt, resize, focusProvinceFit, applyHash } from "./main.mjs";
-import { loadPlots } from "./plotfetch.mjs";
-import { provinceAt, plotAt } from "./hittest.mjs";
-import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
+import { resize, focusProvinceFit, applyHash } from "./main.mjs";
+import { renderPolLegend, focusEntity, coverage, overlayEntity, ensurePolitical, politicalReady } from "./overlays/political.mjs";
 import { startLive, liveToBackground, liveColony } from "./overlays/live.mjs";
 import { createSearchBox } from "./searchbox.mjs";
 import { techBuildingMatches, searchRowHtml, pickSearchResult } from "./techtree.mjs";
-import { prettyKey, plotTip } from "./plotlabel.mjs";
 // the top bar's transport (date/play/speed) — its own module now; panel only wires it to the
 // overlay switch and re-exports the two entry points the shortcuts/tech-tree already import
-import { togglePlay, pausePlayback, syncLiveTransport, showClock, resetSpeed } from "./clock.mjs";
+import { togglePlay, syncLiveTransport, showClock, resetSpeed } from "./clock.mjs";
 // map gestures (wheel/drag/pinch, zoom buttons, reset, fullscreen) — their own module now. panel
 // re-exports resetView/toggleFullscreen for shortcuts.mjs, and asks consumePanMoved() whether a
 // click was really the end of a drag.
-import { resetView, toggleFullscreen, consumePanMoved } from "./input.mjs";
+import { resetView, toggleFullscreen } from "./input.mjs";
+// the sidebar; panel drives it from the mode toggles and re-exports its entry points
+import { showRail, renderRail, selectProvince, railOpen } from "./rail.mjs";
+// imported for their side effects: each wires its own listeners at module eval
+import "./maptip.mjs";
+import "./btntip.mjs";
+
+// the app shell — panel sets --bar-total on it from the top bar's height (the rail owns its own DOM)
+const appEl = document.querySelector(".app");
 // the title acts as "home": reset to the world view and re-open the server picker (index.html's
 // boot flow exposes it on window.__picker) as a dismissable overlay over the live map — Esc or a
 // click outside returns to the map; picking a different server reloads into it. Falls back to a
@@ -40,128 +54,6 @@ function hideSpinner(){ if(spinnerEl) spinnerEl.hidden=true; }
 // (the movement-cost dev overlay toggle + its legend were removed from the UI; S.showCost stays
 //  false, so the cost layer stays dormant.)
 
-// ---- interaction: hover province ----
-const tip=document.getElementById("tip");
-// a plot's resource label for the tooltip, or null: its bonus (or polar sea ice), Title Cased
-function resourceLabel(q){
-  return q.bonus ? prettyKey(q.bonus) : null;   // the ◆ resource line; terrain/feature (incl. ice) live in plotTip
-}
-// hover tooltip body — the info shown depends on the active overlay: physical (region · plots)
-// or political (the active dimension + region)
-function provTip(best){
-  const reg = (best.region||"—").replace(/_/g," ").replace(" region","");
-  let h = `<b>${best.name}</b> <span class="r">${best.type.toLowerCase()}</span>`;
-  if (isPolitical()){
-    const e = polOf(best).e;
-    const label = S.overlay==="culture"?"Culture" : S.overlay==="faith"?"Faith" : "Nation";
-    h += `<br><span class="r">${e ? `<span class="dot" style="background:${e.color}"></span>${label} · ${e.name}` : `${label} · —`}</span>`
-       + `<br><span class="r">${reg}</span>`;
-  } else {
-    h += `<br><span class="r">${reg} · ${best.plots} plots</span>`;
-    // a city (Anbennar city_terrain) — its concentrated development, in gold (see docs/urban-plots.md)
-    if (best.city) h += `<br><span class="r" style="color:var(--gold,#c9a24a)">City · development ${best.dev || 0}</span>`;
-    // per-province trade good (physical view), with its colour dot — mirrors the political dimension line
-    const g = TRADE_GOODS && TRADE_GOODS.prov[best.id] && TRADE_GOODS.goods[TRADE_GOODS.prov[best.id]];
-    if (g) h += `<br><span class="r"><span class="dot" style="background:${g.color}"></span>${g.name}</span>`;
-  }
-  return h;
-}
-// a cave-entrance / teleporter glyph under the cursor, from the markers the last frame recorded
-// (main.paint resets S.markers, drawCaveEntrances/teleportMark push them). Its own hit-test since
-// the glyphs are drawn over the map, not province polygons.
-function markerAt(mx, my){
-  const m = S.markers; if(!m) return null;
-  for(const k of m){ const dx=mx-k.x, dy=my-k.y; if(dx*dx+dy*dy <= k.r*k.r) return k; }
-  return null;
-}
-// The tooltip is DOM and must track every mouse pixel; the CANVAS, though, only reads hover through
-// S.hoverProv (main.drawHoverHighlight) — so a repaint is only worth it when the hovered PROVINCE
-// changes. Drifting the cursor inside one province used to cost a full scene repaint per mousemove
-// (~60/s) of a byte-identical scene, which was the single most frequent wasted paint in the app.
-const repaintIfHoverMoved = before => { if (S.hoverProv !== before) draw(); };
-stage.addEventListener("mousemove", e=>{
-  if(S.dragging) return;                       // panning — skip hover work
-  const before = S.hoverProv;
-  const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
-  const mk = markerAt(mx, my);                  // a cave-entrance/teleporter glyph takes priority
-  if(mk){ S.hoverProv=null; tip.innerHTML=mk.label;
-    tip.style.left=Math.min(mx+14, r.width-230)+"px"; tip.style.top=(my+14)+"px"; tip.classList.add("on");
-    repaintIfHoverMoved(before); return; }
-  const best = provinceAt(mx, my);
-  const hit = plotAt(mx, my);                   // plot under cursor (texture zoom): name/terrain/feature/resource
-  const plot = hit ? plotTip(hit) : "";
-  const res = hit ? resourceLabel(hit) : null;
-  if(best || plot || res){ S.hoverProv=best;
-    let html = best ? provTip(best) : "";
-    if(plot) html += `${html?"<br>":""}${plot}`;
-    if(res) html += `${html?"<br>":""}<span class="r">◆ ${res}</span>`;
-    tip.innerHTML=html;
-    tip.style.left=Math.min(mx+14, r.width-230)+"px"; tip.style.top=(my+14)+"px"; tip.classList.add("on");
-  } else { S.hoverProv=null; tip.classList.remove("on"); }
-  repaintIfHoverMoved(before);
-});
-stage.addEventListener("mouseleave", ()=>{ const before=S.hoverProv; S.hoverProv=null; tip.classList.remove("on"); repaintIfHoverMoved(before); });
-stage.addEventListener("click", e=>{
-  if (consumePanMoved()) return;               // this "click" was the end of a drag
-  if(e.detail>1) return;                      // 2nd click of a double-click: dblclick zooms — don't
-                                              // toggle the just-selected province back off (the flash)
-  const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
-  // the click selects the province under the cursor (toggles off if re-clicked)
-  const prov = provinceAt(mx, my);
-  if (prov) selectProvince(S.selectedProv===prov ? null : prov);
-});
-// double-click / double-tap zooms in, centred on the point (touch double-tap fires dblclick too)
-stage.addEventListener("dblclick", e=>{
-  const r=stage.getBoundingClientRect();
-  zoomAt(e.clientX-r.left, e.clientY-r.top, 2.5);
-});
-
-// ---- rail ----
-const rail=document.getElementById("rail");
-const railwrap=document.getElementById("railwrap");
-const appEl=document.querySelector(".app");
-// open/collapse the right sidebar. `.rail-open` on .app pushes the stage's right edge in so the map
-// RESIZES to fit beside the panel (styles.css) instead of being covered; the ResizeObserver below
-// refits the canvas as it animates.
-function showRail(open){ railwrap.classList.toggle("open", !!open); appEl.classList.toggle("rail-open", !!open); }
-
-// --- user-resizable panel width: drag the .rail-resize handle on the panel's left edge. The map
-// (the stage) shrinks/grows with it live; the chosen width persists across sessions. ---
-(function initRailResize(){
-  const handle=document.getElementById("railResize");
-  if(!handle) return;
-  const MIN=300, MAX=680;
-  const saved=parseInt(localStorage.getItem("railWidth")||"",10);
-  if(saved>=MIN && saved<=MAX) appEl.style.setProperty("--rail-w", saved+"px");
-  let startX=0, startW=0;
-  function onMove(e){
-    const w=Math.max(MIN, Math.min(MAX, startW + (startX - e.clientX)));   // drag left → wider
-    appEl.style.setProperty("--rail-w", w+"px");
-  }
-  function onUp(){
-    appEl.classList.remove("rail-resizing");
-    window.removeEventListener("pointermove", onMove);
-    window.removeEventListener("pointerup", onUp);
-    localStorage.setItem("railWidth", String(Math.round(railwrap.getBoundingClientRect().width)));
-  }
-  handle.addEventListener("pointerdown", e=>{
-    e.preventDefault();
-    startX=e.clientX; startW=railwrap.getBoundingClientRect().width;
-    appEl.classList.add("rail-resizing");
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-  });
-})();
-function worldRail(){
-  return `<div class="runmeta">
-    <div class="rm-title serif" style="font-size:16px">WorldMap</div>
-    <div class="rm-sub">Anbennar · the whole world, real Civ4 terrain</div>
-    <div class="metagrid">
-      <div class="metacell"><div class="k">Land provinces</div><div class="v">${P.length}</div></div>
-      <div class="metacell"><div class="k">Zoom</div><div class="v" style="font-size:15px">to the plot</div></div>
-    </div></div>
-    <p class="footnote">The full world, rendered from the engine's real terrain. Drag to pan, scroll to zoom — keep zooming past the continent view to resolve any province into its terrain plot by plot (textures, hillshade from the heightmap, rivers, features). Hover the map to read a province. Switch to <b>Caravans</b> to watch the live server session — the colony and its marching bands — in real time.</p>`;
-}
 // the map plane (Overworld/Underworld) — the physical base. Underworld dims the surface to
 // a ghost and lights the underground CAVERN provinces in place (see main.drawUnderworld).
 function setPlane(pl){
@@ -202,179 +94,6 @@ function setOverlay(ov){
   }
   renderRail(); draw();
 }
-// ---- province detail: the full-information sidebar for a selected province ----
-// aggregate a province's per-plot data into a terrain breakdown once its plots are loaded
-function provinceStats(plots) {
-  const terr = {}, feat = {}, res = {};
-  let flat=0, hill=0, peak=0, rivers=0, eMin=255, eMax=0, eSum=0;
-  for (const q of plots) {
-    terr[q.terrain] = (terr[q.terrain]||0) + 1;
-    if (q.plotType==="HILL") hill++; else if (q.plotType==="PEAK") peak++; else flat++;
-    if (q.river) rivers++;
-    if (q.feature) feat[q.feature] = (feat[q.feature]||0) + 1;
-    if (q.bonus) res[q.bonus] = (res[q.bonus]||0) + 1;
-    const e = q.elevation|0; if (e<eMin) eMin=e; if (e>eMax) eMax=e; eSum+=e;
-  }
-  const desc = o => Object.entries(o).sort((a,b)=> b[1]-a[1]);
-  return { n:plots.length, terr:desc(terr), feat:desc(feat), res:desc(res), flat, hill, peak,
-    rivers, eMin: plots.length?eMin:0, eMax, eMean: plots.length?Math.round(eSum/plots.length):0 };
-}
-// prettify a Civ4 TERRAIN_/FEATURE_/BONUS_ id (or a bare key like "mild"): strip prefix, Title Case
-function prettyId(s) {
-  return String(s).replace(/^(TERRAIN|FEATURE|BONUS)_/,"").toLowerCase().replace(/_/g," ")
-    .replace(/\b\w/g, c=>c.toUpperCase());
-}
-function selectProvince(p) {
-  S.selectedProv = p;
-  if (p && !p._plots) loadPlots(p);   // stream in the server-generated terrain for the breakdown
-  showRail(!!p);                     // selecting opens the info panel; deselecting collapses it
-  renderRail(); draw();
-}
-function provinceRail(p) {
-  const g = provGeo(p);
-  // each tier is [displayName, rawClausewitzKey]; show the key in parentheses after the name
-  const crumbs = [g.continent, g.superRegion, g.region, g.area].filter(t => t && t[0])
-    .map(t=>`<span>${t[0]}${t[1]?` <span class="pv-key">(${t[1]})</span>`:''}</span>`)
-    .join('<span class="crumb-sep">›</span>');
-  const coord = `${Math.abs(p.lat).toFixed(2)}°${p.lat>=0?"N":"S"}, ${Math.abs(p.lon).toFixed(2)}°${p.lon>=0?"E":"W"}`;
-  let terrainHtml;
-  if (p._plots && p._plots.length) {
-    const s = provinceStats(p._plots);
-    const bars = s.terr.map(([k,n])=>{
-      const pct = Math.round(n/s.n*100), c = terrainRgb(k);
-      return `<div class="pv-bar-row"><span class="pv-bar-lab" title="${prettyId(k)}">${prettyId(k)}</span>
-        <span class="pv-bar"><i style="width:${pct}%;background:rgb(${c[0]},${c[1]},${c[2]})"></i></span>
-        <span class="pv-bar-val">${pct}%</span></div>`;
-    }).join("");
-    const chips = o => o.length ? o.map(([k,n])=>`<span class="pv-chip">${prettyId(k)}<b>${n}</b></span>`).join("") : '<span class="pv-none">—</span>';
-    terrainHtml = `
-      <p class="sectlabel">Terrain · ${s.n} plots</p>
-      <div class="pv-bars">${bars}</div>
-      <div class="statrow" style="margin-top:10px">
-        <div class="stat"><div class="k">Flat</div><div class="v">${s.flat}</div></div>
-        <div class="stat"><div class="k">Hill</div><div class="v">${s.hill}</div></div>
-        <div class="stat"><div class="k">Peak</div><div class="v">${s.peak}</div></div>
-      </div>
-      <div class="statrow" style="margin-top:8px">
-        <div class="stat"><div class="k">Elevation</div><div class="v">${s.eMin}–${s.eMax}<small style="font-size:11px;color:var(--ink-soft)"> µ${s.eMean}</small></div></div>
-        <div class="stat"><div class="k">River plots</div><div class="v">${s.rivers}</div></div>
-      </div>
-      <p class="sectlabel" style="margin-top:14px">Features</p>
-      <div class="pv-chips">${chips(s.feat)}</div>
-      <p class="sectlabel" style="margin-top:12px">Resources</p>
-      <div class="pv-chips">${chips(s.res)}</div>`;
-  } else if (p._plots) {   // loaded but empty (deep ocean with no shelf)
-    terrainHtml = `<p class="footnote">No per-plot terrain for this province.</p>`;
-  } else {
-    terrainHtml = `<p class="footnote">Loading terrain…</p>`;
-  }
-  rail.innerHTML = `
-    <button class="backbtn" id="backProv">← Back</button>
-    <div class="detail">
-      <div class="d-head"><h2 class="serif">${p.name}</h2></div>
-      <div class="rm-sub" style="color:var(--ink-soft);margin-top:-6px"><span class="r">${p.type.toLowerCase()}</span> · province ${p.id}</div>
-      ${crumbs ? `<div class="pv-crumbs">${crumbs}</div>` : ""}
-      <div class="statrow" style="margin-top:12px">
-        ${p.type==="SEA"||p.type==="LAKE"
-          ? `<div class="stat"><div class="k">Water area</div><div class="v">${p.plots}</div></div>
-             <div class="stat"><div class="k">Shelf plots</div><div class="v">${p._plots?p._plots.length:"—"}</div></div>`
-          : `<div class="stat"><div class="k">Land plots</div><div class="v">${p.plots}</div></div>
-             <div class="stat"><div class="k">Water plots</div><div class="v">${p.waterPlots||0}</div></div>`}
-        <div class="stat"><div class="k">Neighbours</div><div class="v">${(p.nb||[]).length}</div></div>
-      </div>
-      <div class="metagrid" style="margin-top:8px">
-        <div class="metacell"><div class="k">Coordinates</div><div class="v" style="font-size:13px">${coord}</div></div>
-        <div class="metacell"><div class="k">Winter</div><div class="v" style="font-size:13px">${p.winter?prettyId(p.winter):"—"}</div></div>
-      </div>
-      ${politicsBlock(p)}
-      ${colonyBlock(p)}
-      ${terrainHtml}
-    </div>`;
-  document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; showRail(false); renderRail(); draw(); };
-}
-// The live colony's detail, inline, when the selected province is the one it sits in — replacing the
-// bespoke live HUD that used to take the whole rail over in Zeitgeist mode. Empty for every other
-// province, so a spectator sees the colony where the colony actually is rather than wherever they
-// happen to be looking. Keyed on ColonyView.provinceId: the snapshot ships lat/lon too, but turning
-// those back into a province would mean inverting the map projection client-side.
-function colonyBlock(p) {
-  const c = liveColony();
-  if (!c || !c.name || !c.provinceId || c.provinceId !== p.id) return "";
-  const tier = c.tier ? prettyKey(c.tier) : "—";
-  const cell = (k, v) => `<div class="metacell"><div class="k">${k}</div><div class="v" style="font-size:13px">${v}</div></div>`;
-  return `
-    <div class="pv-sec" style="margin-top:14px">
-      <div class="pv-sec-h"><span class="live-dot"></span>Live colony</div>
-      <div class="statrow" style="margin-top:8px">
-        <div class="stat"><div class="k">Population</div><div class="v">${c.population}</div></div>
-        <div class="stat"><div class="k">Pool</div><div class="v">${c.poolSize}</div></div>
-        <div class="stat"><div class="k">Children</div><div class="v">${c.children}</div></div>
-      </div>
-      <div class="metagrid" style="margin-top:8px">
-        ${cell("Tier", tier)}
-        ${cell("Firms · nobles", `${c.firms} · ${c.nobles}`)}
-        ${cell("Food price", (c.necessityPrice || 0).toFixed(2))}
-        ${cell("Plots worked", `${c.plotCount} / ${c.maxPlots}`)}
-        ${cell("Tax · bank", (c.bankProfitTax || 0).toFixed(3))}
-        ${cell("Tax · noble", (c.nobleIncomeTax || 0).toFixed(3))}
-      </div>
-    </div>`;
-}
-// The city info panel — shown in the rail when a city (an Anbennar city_terrain province,
-// e.g. Dhenijansar) is selected, in place of the generic province detail. Reuses the same
-// markup vocabulary as provinceRail (.detail / .d-head / .statrow / .metagrid / politicsBlock)
-// so it matches the panel's look. See docs/urban-plots.md.
-function cityRail(p) {
-  const g = provGeo(p);
-  const crumbs = [g.continent, g.superRegion, g.region, g.area].filter(t => t && t[0])
-    .map(t => `<span>${t[0]}${t[1] ? ` <span class="pv-key">(${t[1]})</span>` : ''}</span>`)
-    .join('<span class="crumb-sep">›</span>');
-  const coord = `${Math.abs(p.lat).toFixed(2)}°${p.lat >= 0 ? "N" : "S"}, ${Math.abs(p.lon).toFixed(2)}°${p.lon >= 0 ? "E" : "W"}`;
-  const dev = p.dev || 0;
-  const rank = dev >= 30 ? "Metropolis" : dev >= 15 ? "City" : "Town";
-  const tgKey = TRADE_GOODS && TRADE_GOODS.prov[p.id];
-  const tg = tgKey && TRADE_GOODS.goods[tgKey];
-  const tgHtml = tg ? `<span class="dot" style="background:${tg.color}"></span>${tg.name}` : "—";
-  // the urban core size, once the province's plots have streamed in
-  let coreHtml = "";
-  if (p._plots && p._plots.length) {
-    const urban = p._plots.filter(q => q.urban).length;
-    coreHtml = `<div class="stat"><div class="k">Urban core</div><div class="v">${urban}<small style="font-size:11px;color:var(--ink-soft)"> plots</small></div></div>`;
-  }
-  rail.innerHTML = `
-    <button class="backbtn" id="backProv">← Back</button>
-    <div class="detail">
-      <div class="d-head"><h2 class="serif">${p.name}</h2></div>
-      <div class="rm-sub" style="color:var(--ink-soft);margin-top:-6px"><span class="r" style="color:var(--gold,#c9a24a)">${rank}</span> · city · province ${p.id}</div>
-      ${crumbs ? `<div class="pv-crumbs">${crumbs}</div>` : ""}
-      <div class="statrow" style="margin-top:12px">
-        <div class="stat"><div class="k">Development</div><div class="v" style="color:var(--gold,#c9a24a)">${dev}</div></div>
-        ${coreHtml}
-        <div class="stat"><div class="k">Land plots</div><div class="v">${p.plots}</div></div>
-      </div>
-      <div class="metagrid" style="margin-top:8px">
-        <div class="metacell"><div class="k">Trade good</div><div class="v" style="font-size:13px">${tgHtml}</div></div>
-        <div class="metacell"><div class="k">Coordinates</div><div class="v" style="font-size:13px">${coord}</div></div>
-      </div>
-      ${politicsBlock(p)}
-      ${colonyBlock(p)}
-      <p class="footnote">A city of Anbennar — its EU4 development (ADM + DIP + MIL) concentrated in the province's built-up urban core. Zoom in to the plot to see the city itself.</p>
-    </div>`;
-  document.getElementById("backProv").onclick = () => { S.selectedProv = null; showRail(false); renderRail(); draw(); };
-  // owner/culture/faith load lazily with the political layer — refresh once it's ready
-  if (!politicalReady()) ensurePolitical().then(() => { if (S.selectedProv === p) renderRail(); });
-}
-function renderRail(){
-  // a province-focus change (select/deselect) — let the Religion advisor segment retrack the focused
-  // province's faith (advisors.mjs listens; refreshDynamicSegments). Cheap: it only repaints a label.
-  window.dispatchEvent(new CustomEvent("civstudio:focus"));
-  showRail(!!S.selectedProv);
-  if (S.selectedProv) {
-    if (S.selectedProv.city) { cityRail(S.selectedProv); return; }
-    provinceRail(S.selectedProv); return;
-  }
-  rail.innerHTML = worldRail();
-}
 // ---- theme toggle (button retired; wire only if present — the site defaults to dark) ----
 const themeBtn=document.getElementById("themeBtn");
 if(themeBtn) themeBtn.onclick=()=>{
@@ -384,27 +103,6 @@ if(themeBtn) themeBtn.onclick=()=>{
   draw(); if(S.selected!==null) renderRail();
 };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>{ draw(); });
-// ---- shared button tooltips (positioned to stay within the stage) ----
-const btntip = document.getElementById("btntip");
-let tipTimer = 0;
-function showBtnTip(el) {
-  const text = el.getAttribute("data-tip"); if (!text) return;
-  btntip.textContent = text;
-  const sr = stage.getBoundingClientRect(), br = el.getBoundingClientRect();
-  const bw = btntip.offsetWidth, bh = btntip.offsetHeight;
-  let x = br.left - sr.left + br.width / 2 - bw / 2;       // centre on the button, clamp to stage
-  x = Math.max(6, Math.min(x, sr.width - bw - 6));
-  let y = br.top - sr.top - bh - 8;                        // above by default…
-  if (y < 6) y = br.bottom - sr.top + 8;                   // …flip below when there is no room
-  btntip.style.left = x + "px"; btntip.style.top = y + "px";
-  btntip.classList.add("on");
-}
-function hideBtnTip() { clearTimeout(tipTimer); btntip.classList.remove("on"); }
-stage.querySelectorAll("[data-tip]").forEach(el => {
-  el.addEventListener("mouseenter", () => { clearTimeout(tipTimer); tipTimer = setTimeout(() => showBtnTip(el), 320); });
-  el.addEventListener("mouseleave", hideBtnTip);
-  el.addEventListener("mousedown", hideBtnTip);
-});
 // ---- province search (by name or id → zoom to it) ----
 const searchInput = document.getElementById("search");
 const searchResults = document.getElementById("searchResults");
@@ -417,7 +115,7 @@ function goToProvince(p) {
 // the panel never moves or rezooms the map (selecting/deselecting is decoupled from the camera).
 // Returns true if it actually did something (so the caller can swallow the key).
 function closePanel() {
-  const acted = railwrap.classList.contains("open") || S.selectedProv || S.selected != null;
+  const acted = railOpen() || S.selectedProv || S.selected != null;
   S.selectedProv = null; S.selected = null;
   showRail(false); renderRail(); draw();
   return !!acted;
@@ -509,15 +207,9 @@ document.querySelectorAll("#planeToggle button").forEach(b =>
   b.addEventListener("click", () => setPlane(b.dataset.plane)));
 document.querySelectorAll("#overlayToggle button").forEach(b =>
   b.addEventListener("click", () => setOverlay(b.dataset.ov)));
-// top-bar buttons carry data-tip too — wire them into the same tooltip mechanism as the map buttons
-document.querySelectorAll(".topbar [data-tip]").forEach(el => {
-  el.addEventListener("mouseenter", () => { clearTimeout(tipTimer); tipTimer = setTimeout(() => showBtnTip(el), 320); });
-  el.addEventListener("mouseleave", hideBtnTip);
-  el.addEventListener("mousedown", hideBtnTip);
-});
+// (the top bar's [data-tip] buttons are wired by btntip.mjs, alongside the map controls)
 
-export { renderRail, resetView, toggleFullscreen, togglePlay, pausePlayback, closePanel,
-         setOverlay, setPlane, updateSearchContext, showRail, selectProvince };
+export { resetView, toggleFullscreen, togglePlay, closePanel, setOverlay, setPlane, updateSearchContext };
 
 export function boot() {
   // Keep a selected province's inline live-colony block current: it reads the snapshot, so it has to

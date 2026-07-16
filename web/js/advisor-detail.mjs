@@ -3,7 +3,7 @@
 // advisor (from the live roster, §0) and their household, rendered into the right rail on demand.
 // Lazy-fetches the full person record from the server's read-only person endpoint by personId.
 import { S, apiUrl } from "./core.mjs";
-import { showRail } from "./panel.mjs";
+import { showRail } from "./rail.mjs";
 import { liveRoster, liveSid } from "./overlays/live.mjs";
 import { diffRoster } from "./roster-diff.mjs";
 import { toast } from "./toast.mjs";

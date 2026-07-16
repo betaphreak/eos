@@ -18,7 +18,7 @@
 //    raster (the existing fallback) for anything not yet loaded.
 import { BUNDLE, apiUrl, S } from "./core.mjs";
 import { draw } from "./repaint.mjs";
-import { renderRail } from "./panel.mjs";
+import { renderRail } from "./rail.mjs";
 
 const PLOT_FETCH_TIMEOUT = 6000;    // ms — drop a plot fetch that takes longer than this
 const PLOT_RETRY_BACKOFF = 12000;   // ms — after a timeout, wait this long before retrying a province

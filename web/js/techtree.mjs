@@ -13,7 +13,8 @@
 // its detail in the shared right rail (the province/advisor rail — panel.mjs showRail).
 import { S, apiUrl } from "./core.mjs";
 import { draw } from "./repaint.mjs";
-import { pausePlayback, showRail, renderRail } from "./panel.mjs";
+import { pausePlayback } from "./clock.mjs";
+import { showRail, renderRail } from "./rail.mjs";
 import { liveKnownTechs, liveResearch } from "./overlays/live.mjs";
 
 const railEl = () => document.getElementById("rail");
