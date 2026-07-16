@@ -106,14 +106,31 @@ jobs:
           path: .geonames-cache
           key: geonames-allcountries-v1
 
+      # cache the on-demand Anbennar (GitLab) + C2C (GitHub) source fetches so repeat runs don't
+      # re-pull the map rasters / art. Both are ref-scoped subdirs (.anbennar-cache/<ref>, …), so the
+      # key tracks the source-lock refs; a restore-keys fallback is harmless — the engine re-fetches
+      # the current ref and any stale subdir just sits unused.
+      - name: Cache the Anbennar + C2C source fetches
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            .anbennar-cache
+            .civ4-cache
+          key: source-fetch-${{ hashFiles('civstudio-engine/src/main/resources/anbennar-source.lock', 'civstudio-engine/src/main/resources/civ4-source.lock') }}
+          restore-keys: |
+            source-fetch-
+
       - name: Bake the whole-world plot cache
         if: steps.guard.outputs.skip != 'true'
         run: |
+          set -o pipefail   # so a bake failure isn't masked by the tee below
           # WorldPlotGenerator warms .plot-cache/v<MAP_VERSION>/ then stamps GeoNames names over it.
           # ubuntu-latest ships Maven pre-installed and setup-java pins JAVA_HOME to JDK 25 + caches
-          # ~/.m2, so plain `mvn` is the right tool here (no wrapper / exec-bit dance).
+          # ~/.m2, so plain `mvn` is the right tool here (no wrapper / exec-bit dance). Tee the output
+          # so the Summary step can lift the region→country naming coverage out of it.
           mvn -B -pl civstudio-engine compile exec:exec \
-            -Dsim.main=com.civstudio.geo.export.WorldPlotGenerator
+            -Dsim.main=com.civstudio.geo.export.WorldPlotGenerator 2>&1 | tee /tmp/bake.log
 
       - name: Sanity-check the bake
         if: steps.guard.outputs.skip != 'true'
@@ -129,7 +146,7 @@ jobs:
           # spot-check: names + urban flag actually made it into the fields
           zcat "$(find "$dir" -name '*.json.gz' | head -1)" | head -c 400; echo
 
-      - name: Upload to the Azure Files share
+      - name: Upload to the Azure Files share (azcopy, parallel)
         if: steps.guard.outputs.skip != 'true'
         env:
           ACCOUNT: ${{ secrets.PLOT_STORAGE_ACCOUNT }}
@@ -141,14 +158,22 @@ jobs:
             echo "::error::PLOT_STORAGE_ACCOUNT / PLOT_STORAGE_KEY secrets are not set — add them to upload the cache."
             exit 1
           fi
+          command -v azcopy >/dev/null || { echo "installing azcopy…"; \
+            curl -sSL -o /tmp/azcopy.tgz https://aka.ms/downloadazcopy-v10-linux && \
+            tar -xzf /tmp/azcopy.tgz -C /tmp && sudo cp /tmp/azcopy_linux_amd64_*/azcopy /usr/local/bin/azcopy; }
           count=$(find ".plot-cache/v$ver" -name '*.json.gz' | wc -l)
-          echo "uploading $count province files (~37 MB) to $ACCOUNT/$SHARE/plot-cache/v$ver …"
-          # --no-progress + --output none: don't spew a line per file (~4.6k) — just the count below
-          az storage file upload-batch \
-            --account-name "$ACCOUNT" --account-key "$KEY" \
-            --destination "$SHARE" --destination-path "plot-cache/v$ver" \
-            --source ".plot-cache/v$ver" --pattern '*.json.gz' \
-            --no-progress --output none
+          # a short-lived share SAS (read/create/write/list) minted from the account key. azcopy then
+          # transfers in PARALLEL over HTTPS (443 — no SMB/port-445 dependency) and prints periodic
+          # "% done / N of M" progress, NOT a line per file. The v<ver> versioning is the publish
+          # isolation: prod only points at v<ver> once its MAP_VERSION-<ver> image is rolled (manual),
+          # which the operator does only after this run is green — so a partial v<ver> is never served.
+          expiry=$(date -u -d '+2 hours' '+%Y-%m-%dT%H:%MZ')
+          sas=$(az storage share generate-sas -n "$SHARE" --account-name "$ACCOUNT" --account-key "$KEY" \
+            --permissions rcwdl --expiry "$expiry" -o tsv)
+          echo "uploading $count province files (~37 MB) to $SHARE/plot-cache/v$ver via azcopy…"
+          azcopy copy ".plot-cache/v$ver" \
+            "https://$ACCOUNT.file.core.windows.net/$SHARE/plot-cache?$sas" \
+            --recursive --overwrite=true
           echo "uploaded $count files to plot-cache/v$ver"
 
       - name: Prune old cache versions on the share
@@ -179,12 +204,24 @@ jobs:
         run: |
           ver=${{ steps.guard.outputs.version }}
           {
-            echo "### Plot cache rebaked → v$ver"
+            echo "### Map cache regenerated → v$ver"
             echo ""
-            echo "Uploaded to the Azure Files share. To serve it, roll the server to the matching"
-            echo "image from an authenticated session (guest identity — manual, see docs/client-server.md):"
+            # the global naming line (…named N provinces …: T names — U unique, R reused (P%)…), bolded
+            grep -E "named [0-9,]+ provinces across" /tmp/bake.log 2>/dev/null \
+              | sed -E 's/^ *(.*)$/**\1**/' || true
+            echo ""
+            echo "<details><summary>Region → country naming coverage</summary>"
+            echo ""
+            echo "| Region | Country | Unique | Reused | Reuse % |"
+            echo "|:--|:--|--:|--:|--:|"
+            # lift each "region <key> → <ISO> : N unique, M reused (P%), K provinces" line into a row
+            grep -E "region .+ → .+ :" /tmp/bake.log 2>/dev/null \
+              | sed -E 's/^ *region +([^ ]+) +→ +([A-Za-z]+) +: +([0-9,]+) unique, +([0-9,]+) reused \(([0-9]+)%\).*/| \1 | \2 | \3 | \4 | \5% |/' || true
+            echo ""
+            echo "</details>"
+            echo ""
+            echo "To serve it, roll the server from an authenticated session (guest identity — manual, see docs/client-server.md):"
             echo '```'
-            echo "az containerapp update -n civstudio-server -g civstudio \\"
-            echo "  --image <acr-login-server>/civstudio-server:latest"
+            echo "az containerapp update -n civstudio-server -g civstudio --image civstudio.azurecr.io/civstudio-server:latest"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
