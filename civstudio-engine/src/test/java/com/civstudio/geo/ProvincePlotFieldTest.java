@@ -78,10 +78,12 @@ class ProvincePlotFieldTest {
 
 	@Test
 	void riverAdjacencyMaskMatchesRiverNeighbours() throws Exception {
-		// the river code's thousands digit is a 4-bit mask (1=E,2=W,4=S,8=N) of which orthogonal
+		// the river code's thousands field is a 4-bit mask (1=E,2=W,4=S,8=N) of which orthogonal
 		// neighbours are also river cells — the seam fix that lets the web ribbon link across
 		// provinces. Verify it agrees with the actual neighbours the mask can see (in-bounds);
 		// edge cells may set bits pointing into an adjacent province, which one mask cannot check.
+		// NB the demask is %100, not %16: the mask reaches 15, so it spans the thousands AND
+		// ten-thousands digits, and %16 would fold the class digit above it back in as garbage.
 		ProvinceMask mask = ProvinceRaster.load().mask(dhenijansar().id());
 		int[][] dirs = { { 1, 0, 1 }, { -1, 0, 2 }, { 0, 1, 4 }, { 0, -1, 8 } };   // dx, dy, bit
 		int riverCells = 0;
@@ -90,7 +92,7 @@ class ProvincePlotFieldTest {
 				int code = mask.riverCode(lx, ly);
 				if (code == 0) continue;
 				riverCells++;
-				int adj = (code / 1000) % 16;
+				int adj = (code / 1000) % 100;
 				for (int[] d : dirs) {
 					int nx = lx + d[0], ny = ly + d[1];
 					if (nx < 0 || nx >= mask.width() || ny < 0 || ny >= mask.height()) continue;
@@ -101,6 +103,30 @@ class ProvincePlotFieldTest {
 				}
 			}
 		assertTrue(riverCells > 0, "Dhenijansar carries river cells to exercise the mask");
+	}
+
+	@Test
+	void riverCodeFieldsDoNotCollide() throws Exception {
+		// the packing is decimal digits sharing one int, and the render class was added ABOVE a
+		// two-digit adjacency mask — so every field must still demask to its own legal range. This
+		// is the guard for exactly the class of bug the %16 demask was.
+		ProvinceMask mask = ProvinceRaster.load().mask(dhenijansar().id());
+		int classed = 0;
+		for (int ly = 0; ly < mask.height(); ly++)
+			for (int lx = 0; lx < mask.width(); lx++) {
+				int code = mask.riverCode(lx, ly);
+				if (code == 0) continue;
+				int cls = (code / 100000) % 10, width = code % 10;
+				int flow = (code / 10) % 10, node = (code / 100) % 10, adj = (code / 1000) % 100;
+				assertTrue(cls >= 1 && cls <= 9, "render class 1..9 at (" + lx + "," + ly + "), got " + cls);
+				assertTrue(width >= 1 && width <= 4, "authored width 1..4, got " + width);
+				assertTrue(flow >= 0 && flow <= 8, "flow direction 0..8, got " + flow);
+				assertTrue(node >= 0 && node <= 3, "node marker 0..3, got " + node);
+				assertTrue(adj >= 0 && adj <= 15, "adjacency mask 0..15, got " + adj);
+				assertTrue(cls >= width, "the class is floored by the authored width");
+				classed++;
+			}
+		assertTrue(classed > 0, "Dhenijansar carries river cells to exercise the packing");
 	}
 
 	@Test

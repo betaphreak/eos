@@ -67,10 +67,14 @@ public final class ProvinceRaster {
 	// the real heightmap.bmp elevation (8-bit grayscale, full resolution 1:1 with the
 	// province raster; the palette index equals the height). Optional — null if absent.
 	private int[] heightIdx;
-	// the downstream flow direction of every river pixel (1..8, 0 = none/sink), computed
+	// the downstream flow direction of every river pixel (1..8, 0 = none/mouth), computed
 	// once over the whole river raster by RiverFlow (docs/river-rendering.md §3). Global on
 	// purpose: a cell's true downstream neighbour may lie in an adjacent province.
 	private byte[] riverFlow;
+	// the drainage accumulation of every river pixel — how many cells drain through it, 1 at a
+	// headwater and growing seaward. The render width signal (docs/river-rendering.md §4);
+	// global for the same reason as riverFlow (a tributary may join from the next province).
+	private int[] riverAcc;
 	// the Chebyshev distance (in pixels) from every cell to the nearest dry-land pixel: 0 on
 	// land, 1 for a water pixel touching land, growing out to sea. Computed once over the whole
 	// raster (two chamfer passes). Global on purpose: a coastal shelf cell of a sea province is
@@ -136,7 +140,9 @@ public final class ProvinceRaster {
 					continue;
 				int riverCode = classifyRiver(river[i] & 0xFFFFFF);
 				if (riverCode != 0)
-					riverCode += riverFlow[i] * 10; // fold in the tens (flow-direction) digit
+					// fold in the tens (flow-direction) digit and the 100000s (render width class);
+					// the authored width in the low digit is left as classifyRiver found it
+					riverCode += riverFlow[i] * 10 + widthClass(riverAcc[i], riverCode % 10) * 100000;
 				hits.add(new int[] { x, y, riverCode });
 				if (x < minX) minX = x;
 				if (x > maxX) maxX = x;
@@ -284,6 +290,22 @@ public final class ProvinceRaster {
 		return 4;
 	}
 
+	/**
+	 * A river cell's <b>render width class</b>, {@code 1..9} narrow→wide: one class per octave of
+	 * drainage accumulation, so a river must double its catchment to widen a step — which is what
+	 * turns the raw 1..5012 accumulation range into a taper the eye reads as a river growing.
+	 * <p>
+	 * Floored by the authored width, so a channel the mod drew wide never renders as a trickle on
+	 * the rare stretch where our derived catchment disagrees with the authors. Measured over the
+	 * whole map this spreads all nine classes (≈19% class 1, ≈13% class 9).
+	 */
+	static int widthClass(int acc, int authoredWidth) {
+		if (acc <= 0)
+			return 0;
+		int octave = 1 + (31 - Integer.numberOfLeadingZeros(acc)); // 1 + floor(log2 acc)
+		return Math.max(1, Math.min(9, Math.max(octave, authoredWidth)));
+	}
+
 	private void ensureRaster() throws IOException {
 		if (pixels != null)
 			return;
@@ -298,13 +320,20 @@ public final class ProvinceRaster {
 		this.terrainIdx = loadIndexed(TERRAIN_BMP, width, height);
 		this.treeIdx = loadTreeOverlay();
 		this.heightIdx = loadIndexed(HEIGHTMAP_BMP, width, height);
-		// derive the whole river network's downstream flow direction once (width leads,
-		// elevation only breaks ties — see RiverFlow); mask() folds it into each plot's code
-		byte[] widthGrid = new byte[width * height];
-		for (int i = 0; i < widthGrid.length; i++)
-			widthGrid[i] = (byte) (classifyRiver(river[i] & 0xFFFFFF) % 10); // 0, or width 1..4
-		this.riverFlow = RiverFlow.direction(width, height, widthGrid, heightIdx);
 		this.waterColors = loadWaterColors();
+		// derive the whole river network's drainage once — flow direction AND accumulation, rooted
+		// at the sea (see RiverFlow); mask() folds both into each plot's code. waterColors must be
+		// loaded first: the derivation needs to know which cells are open water, since that is what
+		// it roots the rivers at.
+		byte[] widthGrid = new byte[width * height];
+		boolean[] isSea = new boolean[width * height];
+		for (int i = 0; i < widthGrid.length; i++) {
+			widthGrid[i] = (byte) (classifyRiver(river[i] & 0xFFFFFF) % 10); // 0, or width 1..4
+			isSea[i] = waterColors.contains(pixels[i] & 0xFFFFFF);
+		}
+		RiverFlow.Network net = RiverFlow.derive(width, height, widthGrid, heightIdx, isSea);
+		this.riverFlow = net.dir();
+		this.riverAcc = net.acc();
 		this.landDistance = computeLandDistance();
 	}
 

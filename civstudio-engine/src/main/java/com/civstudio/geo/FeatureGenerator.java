@@ -314,7 +314,9 @@ public final class FeatureGenerator {
 		int code = mask.riverCode(ax, ay);
 		if (code == 0 || mask.riverCode(bx, by) == 0)
 			return false;
-		return (((code / 1000) % 16) & bit) != 0;
+		// %100, not %16: the adjacency mask reaches 15, so it spans two decimal digits and a %16
+		// would fold the render-class digit above it back in as garbage (see Plot.riverAdj)
+		return (((code / 1000) % 100) & bit) != 0;
 	}
 
 	// --- seed pool (dedupe-by-position; the script's bArray keyed by world offset) ---

@@ -1,274 +1,213 @@
 # River rendering on the WorldMap
 
-**Status:** planned. Today rivers draw as a **flat translucent blue fill** of each
-river plot (`web/js/plots.mjs:212`) — the crudest stand-in on the map. This doc is
-the plan to render them as real, flowing rivers, and — the part that makes it worth
-doing — to stop discarding the flow information we already have.
+**Status:** shipped (2026-07). Rivers draw as a **water-textured centre-line ribbon** that tapers
+from a headwater thread to a trunk "highway of water", with terrain visible on both banks. The
+width is real: it comes from each cell's **drainage catchment**, derived from a flow network that
+is **rooted at the sea**.
 
-Cross-refs: the terrain-art pipeline this rides on is `docs/ported-terrain-art-system.md`
-(§11 As-built status is the current state; rivers are 2D DDS, not `.nif`, so they need
-**no** offline mesh→sprite baker — decodable today via `web/dds.mjs`).
+Cross-refs: the terrain-art pipeline this rides on is `docs/ported-terrain-art-system.md`. The
+auto-tiled route renderer (`docs/route-rendering.md`) is the sibling feature — same centre-line
+plot model, and the reason `river-geom.mjs` is split from the draw code the way `route-tiling.mjs`
+is.
 
 ---
 
-## 1. The data reality — and what we throw away
+## 1. The data
 
-- **Per plot we store one boolean, `river`** — "whether a river pixel fell on this
-  plot" (`ProvincePlotField.java` `ProvincePlot`; persisted by `ProvincePlotStore`).
-  No flow direction, no width, no edge geometry.
-- **But two upstream signals exist, and both are currently collapsed to that boolean:**
-
-  1. **Authored — `data/anbennar/rivers.bmp`.** The EU4/Anbennar river map is an
-     indexed bitmap whose non-white pixels encode, by colour: **river width levels**
-     (a blue-shade ramp, narrow→wide) plus **special node markers** (river *source*,
-     *tributary flow-in / confluence*, and *split*). Direction is implied — sources are
-     upstream; width grows downstream toward the mouth. **We reduce all of it to 1/0 at
-     `ProvinceRaster.java:120`:** `riverFlag = (river[i] & 0xFFFFFF) != RIVER_NONE ? 1 : 0`
-     (`RIVER_NONE = 0xFFFFFF`, pure white). Everything the mod authors encoded about the
-     river network is lost right there.
-
-  2. **Topographic — `data/anbennar/heightmap.bmp`.** We already sample it into the
-     per-plot `elevation` (0–255), used today for hillshade and the movement-cost
-     overlay. Water flows downhill, so a D8 steepest-descent over `elevation` yields a
-     drainage direction per cell.
-
-**Decision: the authored palette is the primary flow signal; elevation is the
-tie-breaker/fallback.** Rivers sit in flat valley floors, which is exactly where the
-sampled 0–255 heightmap goes flat/noisy between adjacent river cells — so *pure* D8
-is ambiguous precisely where we need it and would need pit-filling + flat-resolution
-(Planchon–Darboux) to behave. The mod's authored width+source markers are cleaner and
-"correct" for the game world; use elevation only to orient segments the palette leaves
-ambiguous.
-
-**Pinned palette (histogrammed from `data/anbennar/rivers.bmp`, an 8-bit indexed
-5632×2048 BMP — 14 distinct colours in use):**
+**Source: `rivers.bmp`** (Anbennar/EU4) — an 8-bit indexed 5632×2048 BMP whose non-white pixels
+encode, by colour, **river width levels** (a blue ramp, narrow→wide) plus **node markers**. Because
+it is indexed the entries are exact (no anti-aliasing), so the **dominant channel** classifies
+unambiguously — see `ProvinceRaster.classifyRiver`.
 
 | Colour | RGB | Meaning |
 |--------|-----|---------|
 | white `#ffffff` | 255,255,255 | land — no river |
-| grey `#797b78` | 121,123,120 | sea (never on a land plot) |
-| blue ramp | `#00dffb` `#29c9fd` `#138afa` `#2f6afd` `#2220f0` `#3b00f5` `#2b139c` `#461f80` | **width**, cyan→deep-blue = narrow→wide |
+| grey `#797b78` | 121,123,120 | sea |
+| blue ramp | `#00dffb` … `#461f80` | **authored width**, cyan→deep-blue = narrow→wide |
 | green | `#1cf118` / `#33830d` | **source** node |
 | red | `#e51b02` | **flow-in / confluence** node |
 | yellow | `#e2e311` | **split** node |
 
-Because it is an indexed BMP the entries are exact (no anti-aliasing), so the
-**dominant channel** classifies unambiguously: greyscale (`max−min < 40`) → none;
-blue max → width (bucketed by the green channel, cyan has the most green); else
-green/red/yellow → source/flow-in/split. See `ProvinceRaster.classifyRiver`.
+**Our rivers are PIXEL-based, not edge-based**: a river is a chain of *cells* whose line runs
+**through cell centres**. This one fact drives every render decision below — and it is what killed
+the Civ4 river art (§5).
+
+### The packed code
+
+Everything about a river cell rides in one int on the plot, as decimal digits. (Kept decimal, not
+bit-packed: the grid is stored as gzipped-JSON *text*, so digits stay readable and gzip erases any
+size gap.)
+
+| Digit | Field | Range | Decoder |
+|-------|-------|-------|---------|
+| `1` | authored width | 1..4 | `Plot.riverWidth()` |
+| `10` | downstream flow direction | 1..8 (0 = mouth) | `Plot.flowDir()` |
+| `100` | node marker | 1 source, 2 confluence, 3 split | `Plot.riverNode()` |
+| `1000` | river-adjacency mask (**two digits**) | 0..15 (1=E, 2=W, 4=S, 8=N) | `Plot.riverAdj()` |
+| `100000` | **render width class** | 1..9 | `Plot.riverClass()` |
+
+e.g. `915384` = class 9, adjacency 15, a split, flowing SE, authored width 4.
+
+> **The adjacency field spans TWO digits** (it reaches 15). That is why the class sits at `100000`,
+> and why every adjacency demask is **`% 100`, not `% 16`** — a `% 16` folds the class digit back in
+> as garbage (`915384 / 1000 = 915`; `915 % 16 = 3`, not 15). Adding the class bit three call sites
+> this way (`Plot.riverAdj`, `FeatureGenerator`, and `ProvincePlotFieldTest` itself);
+> `ProvincePlotFieldTest.riverCodeFieldsDoNotCollide` now guards the packing on real map data.
+
+**Why the adjacency mask exists:** rivers are drawn per-province into separate offscreen canvases,
+so a neighbour lookup over a province's *own* grid stops at its bbox edge — a river would
+**interrupt at every province seam**. The mask is computed globally
+(`ProvinceRaster.riverAdjMask`, like the coast sea-mask and the flow network), so a border cell
+links across the seam and both sides meet at the shared edge. `riverLinks` still falls back to the
+in-province grid when the mask is `0` (older packs).
+
+The field is named `river` and is an `int`. `river()` **stays boolean** everywhere it is consumed
+(caravan routing, `featureFor` flood-plains, tests) as `code != 0`, so the JSON key never changed
+and any pack decodes truthily.
 
 ---
 
-## 2. Phase 1 — authored-width rivers
+## 2. The ribbon — `river-geom.mjs` + `plots.mjs drawRivers`
 
-The first shippable river: a water-textured ribbon that follows the network and
-**tapers by the river's authored width** (thin at sources → wide at mouths). Width
-comes straight from `rivers.bmp`, so this already reads as flowing water with **no
-directed graph** — explicit flow *direction* (a data product, no animation) is Phase 2.
-Split into a Java data half
-(1A) and a web render half (1B); they can land in either order, since 1B degrades to a
-fixed-width ribbon until 1A ships.
+Pure geometry lives in `web/js/river-geom.mjs` — **zero imports**, so it unit-tests under
+`node --test` without the browser globals `core.mjs` pulls in (`river-geom.test.mjs`; the same
+split as `route-tiling.mjs` / `routes.mjs`). Painting is `drawRivers` in `plots.mjs`, baked once
+into the cached province canvas, so it costs nothing per frame.
 
-### Phase 1A — Java: export the river network (stop flattening) — **DONE (2026-07)**
+- **A cell's ribbon runs from its centre out to the shared edge with each linked neighbour.** Two
+  properties fall out for free:
+  - adjacent cells meet **exactly** at the shared-edge midpoint — including **across a province
+    seam**, where each province's canvas draws its own half and the round cap completes the join;
+  - a bend is a **quadratic through the cell centre**, so a turning river reads as a river rather
+    than a staircase. Junctions (tee/cross) stay unsmoothed spokes — a junction is genuinely a
+    corner, and curving one branch into another would imply a flow that isn't there.
+- **Width comes from the class**, and cells are **bucketed by class into one `Path2D` each**. Width
+  is constant *within* a cell and only steps *between* cells, so a plain `stroke()` suffices — no
+  variable-width polygon offsetting — and the round cap hides the step. Width changes slowly (one
+  class per doubling of catchment), so steps are invisible except at confluences, which is exactly
+  where a real river visibly widens.
+- **Three passes**, every class's bank before any water, so a tributary's bank can never cut a dark
+  line across the trunk it joins: **bank** (dark, `w + 2·bank`) → **shallows** (light rim,
+  `w + bank`, mirroring the sea coast) → **water** (the texture, `w`). The banks follow the
+  *water*, not the plot square.
+- **`CLASS_WIDTH` lives in the web, not the engine.** The class is the *data*; the class→pixels
+  curve is the *look*, so it retunes with no map rebake.
+- Absent the baked tile (LFS not pulled / `file://`), the water pass falls back to flat blue.
+- The cheap 1px `buildPlotCanvas` (zoom 5–16) keeps its river **tint** — a ribbon is meaningless at
+  1px/plot.
 
-The old `ProvinceRaster` collapsed every non-white `rivers.bmp` pixel to `1/0`. Now
-`ProvinceRaster.classifyRiver(rgb)` classifies each pixel from the §1 palette and the
-result is carried, unflattened, all the way to the persisted grid.
+**The water tile** (`bakeRiverTile`, `build.mjs` → `BUNDLE.river` → `RIVER`): Civ6's
+`SV_TerrainHexCoast` recoloured river-blue, or C2C's `allriverssmall.dds` as fallback — whose
+ripple strands live in the DXT5 **alpha**, so the bake modulates the blue by `k = 0.6 + 1.5·strand`
+and the ripples read as bright dashes over darker water. Civ6's own `TER_River_Water` was rejected:
+it has **baked-in flow arrows**.
 
-- **One packed int, not separate fields.** All fields fit one int (compact record +
-  JSON): `0` = none; the **low digit** is the width level `1..4` (narrow→wide); the **tens
-  digit** is the downstream flow direction `1..8` (Phase 2 — `0` in 1A, filled later); the
-  **hundreds digit** is the node marker (`1` source, `2` confluence, `3` split); the
-  **thousands digit** is a 4-bit river-adjacency mask (`1`=E, `2`=W, `4`=S, `8`=N — NB4 order)
-  naming which orthogonal neighbours are also river cells (§1B seam fix). e.g. `3` = a plain
-  width-3 river, `101` = a source, `53` = a width-3 river flowing W, `5141` = a source flowing
-  W with river neighbours E+S. Nodes carry nominal width 1. `classifyRiver` returns the static
-  part (width + node); `RiverFlow` folds in the flow digit (§3); `ProvinceRaster.riverAdjMask`
-  folds in the adjacency digit. **Kept decimal-digit, not bit-packed:** the code is stored as
-  gzipped-JSON *text* (`ProvincePlotStore`), so digits stay human-readable and gzip erases any
-  size gap — byte-alignment would only pay off under a future fixed-width binary pack.
-- **Why the mask (not the render-only fallback):** rivers are drawn per-province into
-  separate offscreen canvases, so `drawRiver`'s neighbour lookup over a province's own grid
-  stops at the bbox edge — a river **interrupts at every province seam**. The mask is computed
-  globally (like the coast sea-mask and `RiverFlow`, where a neighbour in the next province
-  *is* visible), so a border cell links across the seam and both sides meet at the shared edge.
-  `drawRiver` still falls back to the in-province grid when the mask is `0` (older packs).
-- **The field kept the name `river`, widened `boolean → int`.** Threaded through
-  `ProvinceMask` (`int[] river`, new `riverCode(lx,ly)`) → `ProvincePlotField.ProvincePlot`
-  (`int riverCode`) → `settlement.Plot` (`int river`) → `ProvincePlotStore.StoredPlot`
-  (`int river`, same JSON key). `river()` **stays boolean** everywhere it is consumed
-  (caravan routing, `featureFor` flood-plains, tests) as `code != 0`; a new `riverCode()`
-  exposes the int for the web/Phase 2. Keeping the JSON key `river` means the **live site
-  is not broken** by 1A landing before 1B — `if (q.river)` is still truthy-correct (int
-  `0` is falsy).
-- **No flow graph yet** — direction derivation is Phase 2. 1A only stops discarding.
-
-Touch-points (all done): `ProvinceRaster` (`classifyRiver`/`widthLevel`), `ProvinceMask`,
-`ProvincePlotField`, `settlement/Plot`, `settlement/ProvincePlotStore`, and the three
-`new Plot(…, pp.riverCode(), …)` call sites (`WorldPlotGenerator`, `ProvincePlotPool`×2).
-Grids regenerated (`mvn -o exec:exec -Dsim.main=…geo.export.WorldPlotGenerator`, 4710
-provinces / 35 s); verified varied codes (widths 1–4 + node markers) across 2694 river
-provinces; full `mvn test` green. `packPlots` picks the grids up on the next web build.
-
-### Phase 1B — Web: bake the tile + draw the ribbon — **DONE (2026-07)**
-
-Built as sketched below: `bakeRiverTile()` (`web/build.mjs`) bakes
-`allriverssmall.dds` into `web/assets/river-<seed>.png` and ships it as `BUNDLE.river`;
-`core.mjs` exports it as `RIVER`; `drawRiver()` (`web/js/plots.mjs`) replaces the flat
-cell fill with the tapered connectivity ribbon, reading width from `q.river % 10`.
-Verified headless (`tools/webverify/verify-pack.mjs`) on a river-rich province — the
-ribbon follows the network with the water texture, zero console errors; graceful
-fallback to the flat blue when the tile is absent (LFS/`file://`) is preserved.
-
-**Refinement — real water strands (option A).** `bakeRiverTile()` originally recoloured
-the Civ4 river texture to a flat *mean* (via `detailTile`), which discarded the water
-pattern — because the wavy ripple **strands live in the DXT5 *alpha* channel** (mean ≈49),
-not the near-flat RGB. It now bakes from that alpha: `k = 0.6 + 1.5·strand` modulates the
-river-blue, so ripples read as bright dashes over darker water and the ribbon looks like
-flowing water. This was chosen over Phase 3's Civ4 edge tiles (§4) — the faithful use of
-the real Civ4 river art that fits our center-line pixel rivers.
-
-**Build (`web/build.mjs`)** — bake one water tile, mirroring `bakeTerrainTiles`/`detailTile`
-(which already decode a `.dds`, downsample, and recolour mean→target):
-
-```js
-const RIVER_RGB = [74, 124, 170];   // == today's flat-fill hue, keeps the palette cohesive
-function bakeRiverTile() {
-  const T = 64;
-  const tile = detailTile('Art/Terrain/Routes/Rivers/allriverssmall.dds', RIVER_RGB, T);
-  if (!tile) return null;            // graceful degradation, like bakeTerrainTiles (LFS/file://)
-  fs.mkdirSync(path.join(WEB, 'assets'), { recursive: true });
-  const file = `river-${SEED}.png`;
-  fs.writeFileSync(path.join(WEB, 'assets', file), encodePng(T, T, tile));
-  return { src: `assets/${file}`, tile: T };
-}
-```
-
-Add `river: bakeRiverTile()` to the `BUNDLE` object written into `data.js` (beside
-`terrainTiles`), and export it from `core.mjs` as `RIVER` (mirroring the `TT` export).
-
-**Runtime (`web/js/plots.mjs`)** — load the tile like `ttImg`/`ttReady`, then **replace
-line 212** inside `buildPlotTexCanvas` (where `grid` already maps coords→plot). Straight
-segments / bends / T-junctions fall out of 4-neighbour connectivity for free (the same
-`NB4` trick the terrain edge-blend uses). `q.river` is the packed int, so the **width is
-`q.river % 10`** (the flow direction is `Math.floor(q.river / 10) % 10`, the node marker
-`Math.floor(q.river / 100)` — neither used by the ribbon):
-
-```js
-let rvImg = null, rvReady = false;
-if (RIVER) { rvImg = new Image(); rvImg.onload = () => { rvReady = true; draw(); }; rvImg.src = RIVER.src; }
-
-// in buildPlotTexCanvas, once: const riverPat = rvReady ? o.createPattern(rvImg, "repeat") : null;
-// replacing `if (q.river) { o.fillStyle = "rgba(74,124,170,.55)"; o.fillRect(...) }`:
-if (q.river) drawRiver(o, cx, cy, tpp, q, grid, riverPat);
-
-// A river plot's segment: a water-textured ribbon from cell centre to each 4-neighbour
-// that is also river; a source blob when isolated. Width tapers by the packed river code's
-// width digit (q.river % 10). Falls back to the flat fill colour when the tile is absent.
-function drawRiver(o, cx, cy, s, q, grid, pat) {
-  const isR = d => { const n = grid.get((q.x + d[0]) * 1e5 + (q.y + d[1])); return n && n.river; };
-  const links = NB4.filter(isR);
-  const lvl = Math.min(4, (q.river % 10) || 1);           // width digit 1..4; guard 0
-  const mx = cx + s / 2, my = cy + s / 2, w = s * (0.16 + 0.06 * lvl);
-  o.save();
-  o.strokeStyle = pat || "rgba(74,124,170,.85)"; o.fillStyle = pat || "rgba(74,124,170,.85)";
-  o.lineWidth = w; o.lineCap = "round"; o.lineJoin = "round";
-  o.globalAlpha = pat ? 0.9 : 0.55;
-  if (!links.length) { o.beginPath(); o.arc(mx, my, w * 0.6, 0, 7); o.fill(); }
-  else for (const d of links) { o.beginPath(); o.moveTo(mx, my); o.lineTo(mx + d[0] * s / 2, my + d[1] * s / 2); o.stroke(); }
-  o.restore();
-}
-```
-
-The cheap 1px `buildPlotCanvas` (zoom 5–16) keeps its river *tint* (`plots.mjs:55`) —
-a ribbon is meaningless at 1px/plot.
+> **What this replaced.** The previous `drawRiver` flooded each river plot's **entire square** with
+> the water texture (`fillRect(cx, cy, s, s)`) and outlined the **cell edges** — blocky, opaque over
+> the terrain, and blind to width (it never read the width digit its own comment claimed it did). It
+> had been changed from a stroke to a full tile because a thin stroke "only showed a sliver" of
+> texture. The real answer was a *wider, tapered* stroke, not a square.
 
 ---
 
-## 3. Phase 2 — flow direction (data product, no animation) — **DONE (2026-07)**
+## 3. Flow direction — rooted at the sea
 
-**The map is unchanged — flow direction is invisible data.** Phase 1 already conveys flow
-*implicitly* through the authored width taper; Phase 2 derives the flow *direction* per
-river cell as a **data product** — the seam for caravan river-navigation and downstream/
-upstream gameplay, and the basis for Phase 3's directional edge tiles.
+`RiverFlow.derive()` (`geo/RiverFlow.java`, pure + unit-tested) returns a `Network(dir, acc)` for
+the whole river raster at once. **Every river cell touching open water is a mouth; flow is the
+shortest path through the network back to one**, found by a multi-source BFS out from all mouths at
+once. Because a river network is essentially a tree, that BFS path is the **only** path — so
+nothing about the terrain can corrupt it.
 
-`RiverFlow.direction()` (`geo/RiverFlow.java`, pure + unit-tested) computes, for every river
-cell, the downstream 8-neighbour direction `1..8` (`0` = a sink/mouth):
+- **Global, not per-province** — a cell's true downstream neighbour can sit in the next province.
+- **Endorheic systems** (no sea contact) root at the cell likeliest to be the terminus: widest,
+  then lowest, then lowest index for determinism.
+- **Elevation and authored width are tie-breaks for that fallback root only** — never flow signals.
+- Decode: `Plot.flowDir()`; web `Math.floor(q.river/10)%10`.
 
-- **Width leads, elevation only breaks ties.** A cell flows to its *widest* river neighbour
-  (a river grows toward its mouth); equal-width neighbours are settled by **lower
-  elevation** (downhill), and a deterministic **cell-index tie-break** settles the rest —
-  which also makes the directed graph **acyclic** (every edge points to a strictly greater
-  cell in the `(score, index)` order → a flow forest rooted at the width maxima). Because
-  width, not elevation, leads, the noisy near-flat valley-floor heightmap only *nudges* the
-  result — **no pit-filling / flat-resolution needed**, sidestepping the classic D8 problem.
-- **Global, not per-province.** Run once over the whole river raster in `ProvinceRaster`
-  (a cell's true downstream neighbour can sit in the next province), then folded into each
-  plot's code as the **tens digit** (§1A encoding). `river % 10` (width) is untouched, so
-  the Phase 1B ribbon renders identically.
-- **Decode:** `Plot.flowDir()` / `riverWidth()` / `riverNode()`; web `Math.floor(q.river/10)%10`.
+### Post-mortem: the two derivations that failed
 
-Verified: `RiverFlowTest` (width-leads, elevation tie-break, width-beats-uphill, diagonal,
-acyclicity); grids regenerated (4710 provinces); flow distributed across all 8 directions
-with 12.3% sinks; width/node digit counts identical to pre-Phase-2; full `mvn test` green;
-headless render unchanged.
+Both were measured on the real map, which has **465 connected river systems**:
 
-**Dropped: drainage-accumulation width.** It was the doc's optional "one visible change,"
-but this map's authored width is coarse (≈80% width-1) *and* a computed accumulation would
-lean on the flat-valley heightmap — likely adding noise rather than a cleaner taper. The
-authored width (Phase 1B) is the better taper signal, so accumulation is not pursued. Any
-future flow *cue* would be a **static** glyph (a chevron), never motion.
+| derivation | roots | maxAcc | verdict |
+|---|---|---|---|
+| width-following + elevation tie-break | 13,630 | 196 | shattered |
+| width-following, no elevation | 7,294 | 419 | shattered |
+| **sea-rooted BFS** | **5,233** | **5,012** | shipped |
 
----
+1. **Steepest-descent (D8) on the heightmap** — never shipped, and rightly: the heightmap is
+   near-flat and noisy exactly on the valley floors where rivers live, so it drowns in pits.
+2. **Follow the authored width downhill** (the original Phase 2) — assumed width grows
+   monotonically toward the mouth. It does not: the authored width plateaus and wobbles, so **every
+   local width maximum became a sink**; and the elevation tie-break inside uniform-width stretches
+   (71% of cells are width-1) re-imported the very D8 pit problem it was designed to dodge. The
+   result was a flow "forest" of ~9-cell fragments, and an accumulation over it was meaningless.
 
-## 4. Phase 3 — faithful Civ4 edge tiles — **investigated, not pursued (2026-07)**
-
-**Outcome: the Civ4 river edge tiles are the wrong art for our data.** After rendering the
-masks to look at them, the mismatch is fundamental, so Phase 3 was dropped in favour of the
-option-A water-strand ribbon (§2) — and the *edge-tile* idea is redirected to **coastlines**
-(`docs/coastlines.md`), where it actually fits.
-
-What the art is (all DXT5, decodable via `dds.mjs`): `allrivers*.dds` = the river **water
-fill**; `border00a` · `border01[a-h]` · `border02[a-h]` · `border03..05[a-d]` = **edge/
-corner alpha masks** (6 configs × 4–8 orientations = **29**, a river band along one edge
-with corner variants, rotated by the `a–h` suffix); `noriverborder`/`norivercurvedborder` =
-dry edges; `riverwisps0N` = foam. There is **no Civ4 XML** for any of it — no `data/civ4/`
-file references them and there is no `ROUTE_RIVER`; the engine picks tiles by convention.
-
-Why it does not fit: these are **edge** decals for Civ4's **edge-based** rivers (a river
-runs along the boundary *between* two plots). Our rivers come from **EU4 `rivers.bmp`, which
-is pixel-based** — a river is a chain of *cells* whose line runs **through cell centres**
-(Phase 1B renders exactly that). An edge decal can draw "river along my north edge" but not
-"river passing through my centre N→S", so using the border tiles would require converting
-our centre-line rivers to an edge model — a lossy, half-cell-shifted reinterpretation that
-would look *worse* than the ribbon. So there is no `RiverArtExporter` and no
-`bakeRiverTiles`; the ribbon is the faithful-art answer for pixel rivers.
-
-> **Where the edge machinery does belong — coastlines.** The land/sea boundary genuinely
-> *is* a plot edge, so the Civ4 coast art (`heightmap/coastblendmasks/coastscalemask00–15`,
-> `textures/water/*`) and a per-plot **sea-edge mask** (global, computed in `ProvinceRaster`
-> like the flow direction) fit cleanly. That is the next feature — see `docs/coastlines.md`.
-
-> **Not to be confused with routes.** `data/civ4/CIV4RouteModelInfos.xml` (roads / rails /
-> paths / tunnels — no rivers) *is* XML-bound and drives the separate **routes** feature
-> via a `RouteModelExporter` → `map/route-models.json` (`ported-terrain-art-system.md §6`).
+The 5,233 sea-rooted mouths still exceed 465 because a system meeting the coast at several points
+legitimately has several mouths (a delta).
 
 ---
 
-## 5. Verification
+## 4. Width class — the drainage catchment
 
-- `node web/build.mjs <seed>` → `web/assets/river-<seed>.png` written; **absent-tolerant**
-  (the river texture resolves from `data/civ4/assets`; if absent, the page flat-fills the ribbon).
-- Serve over **HTTP** (terrain zoom needs HTTP, not `file://`); eyeball a river province
-  past 16× with `tools/webverify`.
-- Phase 2/3: assert the river network is connected and (for directed edges) acyclic per
-  drainage basin; spot-check a known river runs source→mouth the right way.
+`Network.acc` is each cell's **drainage accumulation**: how many river cells drain through it,
+counting itself — 1 at a headwater, growing seaward, peaking at a mouth. It is one sweep back along
+the BFS order (a parent always precedes its children, so a single pass totals every subtree),
+O(cells).
+
+`ProvinceRaster.widthClass(acc, authoredWidth)` maps it to the render class **1..9, one class per
+octave** — a river must **double its catchment to widen a step**, which is what turns a raw
+1..5012 range into a taper the eye reads as growth. It is **floored by the authored width**, so a
+channel the mod drew wide never renders as a trickle where our catchment disagrees with the authors.
+
+Measured over the whole map (116,550 river cells), classes 1..9 =
+`[22535, 11478, 5051, 11508, 11165, 14464, 14159, 10868, 15322]` — ≈19% thread, ≈13% trunk.
+
+**Why not just use the authored width?** It is coarse and bimodal — 70.8% width-1, 15.7% width-2,
+1.9% width-3, 11.6% width-4 — so it separates "big river" from "small river" but cannot taper one
+river *along its length*, which is the thing that reads as flow. It is kept in the code (and
+`Plot.riverWidth()`) for future gameplay use, and as the class's floor.
+
+**The invariant:** every cell drains to exactly one mouth, so the mouths' accumulations **sum to
+the river-cell count** — asserted in `RiverFlowTest` and confirmed on the real map (116,550 =
+116,550). It is also the acyclicity guard: a cycle would strand cells outside the sweep and break
+the sum.
 
 ---
 
-## 6. Reuse
+## 5. Civ4 river edge tiles — investigated, not pursued
 
-The Phase 1B connectivity ribbon and the Phase 2 directed-flow model generalise to the
-other 2D-decodable route art — `routes/Roads`, rails, bridges, docks — which is the natural
-next feature after rivers. Bonuses/features remain gated on the offline `.nif`→sprite
-baker (`docs/ported-terrain-art-system.md` §11), a separate track.
+**The Civ4 river art is the wrong art for our data.** `allrivers*.dds` = the water fill;
+`border00a` · `border01[a-h]` · … = **edge/corner alpha masks** (29 of them); `riverwisps0N` = foam.
+There is **no Civ4 XML** for any of it and no `ROUTE_RIVER` — the engine picks tiles by convention.
+
+Why it does not fit: these are **edge** decals for Civ4's **edge-based** rivers (a river runs along
+the boundary *between* two plots). Ours are pixel-based, with the line through cell centres. An edge
+decal can draw "river along my north edge" but not "river passing through my centre N→S", so
+adopting them would mean a lossy, half-cell-shifted reinterpretation that looks *worse* than the
+ribbon.
+
+> **Where the edge machinery does belong — coastlines.** The land/sea boundary genuinely *is* a plot
+> edge, so the Civ4 coast art + a per-plot sea-edge mask fit cleanly there (`docs/coastlines.md`).
+
+> **Not to be confused with routes.** `CIV4RouteModelInfos.xml` (roads/rails/paths — no rivers) *is*
+> XML-bound and drives the separate **routes** feature (`docs/route-rendering.md`). Roads are
+> centre-line and connectivity-tiled — the same model as our rivers, which is why that renderer, not
+> the river art, was the right thing to learn from.
+
+---
+
+## 6. Verification
+
+- `mvn -pl civstudio-engine test` — `RiverFlowTest` (mouth-rooting beats a width maximum, confluence
+  sums, the sum-to-cell-count invariant, monotonic-downstream, endorheic fallback, acyclicity);
+  `ProvincePlotFieldTest.riverCodeFieldsDoNotCollide` + `riverAdjacencyMaskMatchesRiverNeighbours`
+  (the packing, on real data).
+- `node --test web/js/river-geom.test.mjs` — decode (incl. the `%100` regression and the
+  pre-class-pack fallback), seam meeting, bends, junctions, width monotonicity.
+- Serve over **HTTP** (terrain zoom needs HTTP, not `file://`); eyeball a river province past 16×
+  with `tools/webverify/shot.mjs` (which needs `?live=<server>` to skip the server picker — it
+  passes one by default).
+- A class change is a **generation change**: `MAP_VERSION` 9 → CI rebake (`regenerate-map.yml`) →
+  redeploy → **clear the persistent plot cache** (`docs/client-server.md` §Deployment). And
+  `MAP_VERSION` is a static-final int that **inlines** into the server classes, so a bump needs
+  `mvn -pl civstudio-server clean compile`.

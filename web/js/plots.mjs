@@ -7,6 +7,7 @@ import { P, terrainRgb, provSrcBox, K_PLOT, TT, RIVER, TREES, FEATURE_OVERLAYS, 
 import { draw } from "./main.mjs";
 import { bandAlpha, kBand, atLeast, BAND } from "./bands.mjs";
 import { loadArt, plotBounds, buildPixelCanvas, blitProvinceCanvas } from "./plotcanvas.mjs";
+import { riverClass, riverLinks, cellStrokes, ribbonWidth } from "./river-geom.mjs";
 import { paintCoast, drawSeaIce } from "./coast.mjs";
 import { drawBonusOverlay } from "./bonusicons.mjs";
 import { loadPlots } from "./plotfetch.mjs";
@@ -15,7 +16,7 @@ import { loadPlots } from "./plotfetch.mjs";
 // drawPlots stays on the flat 1px/plot colour offscreen
 let ttReady = false, ttTiles = null;
 const ttImg = loadArt(TT, () => { extractTiles(); ttReady = true; });
-// the baked water tile for the river ribbon (docs/river-rendering.md §2); null → drawRiver keeps the flat fill
+// the baked water tile for the river ribbon (docs/river-rendering.md §2); null → drawRivers falls back to flat blue
 let rvReady = false;
 const rvImg = loadArt(RIVER, () => { rvReady = true; });
 // the real Civ4 foliage sprite atlases (docs/features-art.md): {leafy,palm,swamp,…} strips of tree
@@ -323,9 +324,7 @@ function buildPlotTexCanvas(p) {
   // desaturate the river ribbon so water recedes into the landscape instead of gridding vivid cyan
   // over it — baked once into the cached province canvas, so it costs nothing per frame
   o.filter = "saturate(0.7) brightness(0.94)";
-  for (const q of p._plots) {
-    if (q.river) { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; drawRiver(o, cx, cy, tpp, q, grid, riverPat); }
-  }
+  drawRivers(o, p._plots, x0, y0, tpp, grid, riverPat);
   o.filter = "none";
   for (const q of p._plots) {
     if (q.feature) { const cx = (q.x - x0) * tpp, cy = (q.y - y0) * tpp; featureSprite(o, cx, cy, tpp, q.feature, q.x, q.y); }
@@ -341,52 +340,52 @@ function buildPlotTexCanvas(p) {
   if (water) drawSeaIce(o, p._plots, x0, y0, tpp);   // polar sea ice on the shelf water plots
   p._tcanvas = oc; p._tbox = { x0, y0, w, h }; p._grid = grid;   // grid: q.x*1e5+q.y → plot, for the resource tooltip
 }
-// A river plot's segment: a water-textured ribbon from the cell centre out to each
-// 4-neighbour that also carries a river (to the shared edge), or a source blob when it
-// stands alone. The ribbon width tapers by the plot's authored river width — the low
-// digit of the packed river code (q.river % 10; node markers read as width 1). Uses the
-// baked water tile as a repeating pattern, falling back to the flat blue fill colour the
-// map used before when that tile is unavailable (LFS not pulled / file://).
-function drawRiver(o, cx, cy, s, q, grid, pat) {
-  // links come from the packed adjacency mask (thousands digit: 1=E,2=W,4=S,8=N, in NB4 order),
-  // which is global — so a river links to a neighbour in the ADJACENT province, not just this
-  // one's grid. Fall back to the in-province grid when the mask is absent (older packs → 0).
-  const adj = Math.floor(q.river / 1000) % 16;
-  const isR = (d, i) => {
-    if (adj & (1 << i)) return true;                                    // global mask: neighbour is a river (maybe cross-province)
-    const n = grid.get((q.x + d[0]) * 1e5 + (q.y + d[1]));             // fallback for older packs (adj == 0)
-    return !!(n && n.river);
-  };
-  o.save();
-  // FULL-TILE water: fill the whole river cell with the Civ6 river-water texture, so its pattern reads
-  // (a thin stroke only showed a sliver — the "texture doesn't fit" report). Adjacent river cells are
-  // contiguous, so a chain reads as one continuous waterway. See docs/river-rendering.md.
-  o.fillStyle = pat || "rgba(74,124,170,1)";
-  o.globalAlpha = pat ? 0.92 : 0.6;
-  o.fillRect(cx, cy, s, s);
-  // SHORE: on each land-facing edge (not shared with another river cell), a lighter shallow band fades
-  // INWARD from the bank into the deeper centre — the river's shallows, mirroring the sea coast — plus a
-  // thin dark wet line right at the bank. A shared river edge stays open so the waterway is unbroken.
-  const f = s * 0.42;                          // shallow reach into the cell
-  o.globalAlpha = 1;
-  for (let i = 0; i < 4; i++) {
-    if (isR(NB4[i], i)) continue;              // open water toward another river cell
-    let gr, rx, ry, rw, rh;
-    if (i === 0)      { gr = o.createLinearGradient(cx + s, 0, cx + s - f, 0); rx = cx + s - f; ry = cy;         rw = f; rh = s; }  // E
-    else if (i === 1) { gr = o.createLinearGradient(cx, 0, cx + f, 0);         rx = cx;         ry = cy;         rw = f; rh = s; }  // W
-    else if (i === 2) { gr = o.createLinearGradient(0, cy + s, 0, cy + s - f); rx = cx;         ry = cy + s - f; rw = s; rh = f; }  // S
-    else              { gr = o.createLinearGradient(0, cy, 0, cy + f);         rx = cx;         ry = cy;         rw = s; rh = f; }  // N
-    gr.addColorStop(0, "rgba(150,198,224,0.8)"); gr.addColorStop(1, "rgba(150,198,224,0)");
-    o.fillStyle = gr; o.fillRect(rx, ry, rw, rh);
+// The river ribbon: a water-textured centre line running through each river cell, its width set by the
+// plot's render width class — one class per octave of drainage, so a headwater reads as a thread and a
+// trunk as a highway of water (docs/river-rendering.md §4). Drawn as ONE province-wide pass rather than
+// per cell, so the whole network is stroked as a handful of paths — one per width class present.
+//
+// This replaced a full-cell fillRect, which flooded every river plot's entire square with the water
+// texture: blocky, opaque over the terrain, and blind to width. The three passes below (bank, shallow,
+// water) are stroked along the ribbon, so the banks now follow the WATER rather than outlining the plot
+// grid — which is what made the old rivers read as tiles instead of rivers.
+function drawRivers(o, plots, x0, y0, tpp, grid, pat) {
+  // bucket every cell's centre-line geometry by width class: cells of one class share a stroke width,
+  // so each class needs exactly one path. Adjacent cells of DIFFERENT classes still meet exactly at
+  // their shared edge midpoint, and the round cap hides the width step — which is why the ribbon can
+  // taper at all without offsetting a variable-width polygon.
+  const byClass = new Map();
+  for (const q of plots) {
+    if (!q.river) continue;
+    const cls = riverClass(q.river);
+    const links = riverLinks(q.river, (dx, dy) => {
+      const n = grid.get((q.x + dx) * 1e5 + (q.y + dy));
+      return !!(n && n.river);
+    });
+    let path = byClass.get(cls);
+    if (!path) byClass.set(cls, path = new Path2D());
+    for (const sp of cellStrokes(links, (q.x - x0) * tpp, (q.y - y0) * tpp, tpp)) {
+      path.moveTo(sp.from[0], sp.from[1]);
+      if (sp.kind === "curve") path.quadraticCurveTo(sp.ctrl[0], sp.ctrl[1], sp.to[0], sp.to[1]);
+      else path.lineTo(sp.to[0], sp.to[1]);
+    }
   }
-  const edge = [                               // the bank line on each land-facing side (NB4 [E,W,S,N])
-    [cx + s, cy, cx + s, cy + s], [cx, cy, cx, cy + s],
-    [cx, cy + s, cx + s, cy + s], [cx, cy, cx + s, cy],
-  ];
-  o.globalAlpha = 0.4; o.strokeStyle = "rgba(30,50,44,1)"; o.lineWidth = Math.max(1, s * 0.06); o.lineCap = "round";
-  o.beginPath();
-  for (let i = 0; i < 4; i++) if (!isR(NB4[i], i)) { o.moveTo(edge[i][0], edge[i][1]); o.lineTo(edge[i][2], edge[i][3]); }
-  o.stroke();
+  if (!byClass.size) return;
+  o.save();
+  o.lineCap = "round"; o.lineJoin = "round";
+  const bank = Math.max(1, tpp * 0.07);
+  // Three passes over every class, widest ring first, so a narrow tributary's bank can never cut a
+  // dark line across the trunk it joins — every bank is under every ribbon.
+  const pass = (grow, style, alpha) => {
+    o.strokeStyle = style; o.globalAlpha = alpha;
+    for (const [cls, path] of byClass) {
+      o.lineWidth = ribbonWidth(cls, tpp) + grow;
+      o.stroke(path);
+    }
+  };
+  pass(bank * 2, "rgba(30,50,44,1)", 0.4);                 // wet bank — the dark line where water meets land
+  pass(bank, "rgba(150,198,224,1)", 0.55);                 // shallows — a light rim inside the bank, as the sea coast has
+  pass(0, pat || "rgba(74,124,170,1)", pat ? 0.95 : 0.6);  // the water itself (flat blue if the tile is absent)
   o.restore();
 }
 // small deterministic RNG seeded by a plot's coords, so feature sprites are stable

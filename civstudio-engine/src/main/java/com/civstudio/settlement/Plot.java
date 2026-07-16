@@ -283,22 +283,42 @@ public final class Plot {
 	}
 
 	/**
-	 * The packed river classification code on this plot: {@code 0} = no river; low digit =
-	 * width level {@code 1..4}, tens digit = downstream flow direction {@code 1..8}, hundreds
-	 * digit = node marker ({@code 1} source, {@code 2} confluence, {@code 3} split), thousands
-	 * digit = 4-bit river-adjacency mask ({@code 1}=E, {@code 2}=W, {@code 4}=S, {@code 8}=N).
-	 * Decode with {@link #riverWidth()}/{@link #flowDir()}/{@link #riverNode()}/{@link
-	 * #riverAdj()}. Persisted for the web map (whose ribbon tapers by width and links across
-	 * province seams via the adjacency mask) and, via {@code flowDir}, for river navigation;
-	 * see {@link com.civstudio.geo.RiverFlow} and {@code docs/river-rendering.md} §1/§3.
+	 * The packed river classification code on this plot, by decimal digit — {@code 0} = no river:
+	 * <table><caption>river code digits</caption>
+	 * <tr><td>{@code 1}</td><td>authored width level {@code 1..4} — {@link #riverWidth()}</td></tr>
+	 * <tr><td>{@code 10}</td><td>downstream flow direction {@code 1..8} — {@link #flowDir()}</td></tr>
+	 * <tr><td>{@code 100}</td><td>node marker ({@code 1} source, {@code 2} confluence, {@code 3} split) — {@link #riverNode()}</td></tr>
+	 * <tr><td>{@code 1000}</td><td>river-adjacency mask {@code 0..15}, <b>two digits</b> — {@link #riverAdj()}</td></tr>
+	 * <tr><td>{@code 100000}</td><td>render width class {@code 1..9} — {@link #riverClass()}</td></tr>
+	 * </table>
+	 * e.g. {@code 915384} = class 9, adjacency 15, a split, flowing SE, authored width 4. Note the
+	 * adjacency field spans the thousands <em>and</em> ten-thousands digits (it reaches 15), which
+	 * is why the class sits at {@code 100000} and why {@link #riverAdj()} demasks with {@code % 100}.
+	 * Persisted for the web map (whose ribbon tapers by class and links across province seams via
+	 * the adjacency mask) and, via {@code flowDir}, for river navigation; see
+	 * {@link com.civstudio.geo.RiverFlow} and {@code docs/river-rendering.md} §1/§3/§4.
 	 */
 	public int riverCode() {
 		return geo.river();
 	}
 
-	/** The river width level on this plot ({@code 0} = no river, {@code 1..4} narrow→wide). */
+	/**
+	 * The <b>authored</b> river width level on this plot ({@code 0} = no river, {@code 1..4}
+	 * narrow→wide), straight from the mod's {@code rivers.bmp} palette. Kept for future gameplay
+	 * use; the renderer tapers by {@link #riverClass()} instead, which measures the real catchment.
+	 */
 	public int riverWidth() {
 		return geo.river() % 10;
+	}
+
+	/**
+	 * The <b>render width class</b> of this plot's river, {@code 1..9} narrow→wide ({@code 0} = no
+	 * river): one class per octave of drainage accumulation, floored by the authored width. This —
+	 * not {@link #riverWidth()} — is what makes a headwater read as a thread and a trunk as a
+	 * highway, because the authored width is bimodal and coarse. See {@code docs/river-rendering.md} §4.
+	 */
+	public int riverClass() {
+		return (geo.river() / 100000) % 10;
 	}
 
 	/**
@@ -320,9 +340,12 @@ public final class Plot {
 	 * cells ({@code 1}=E, {@code 2}=W, {@code 4}=S, {@code 8}=N; {@code 0} = no river neighbour).
 	 * Computed globally so it names neighbours in adjacent provinces too — the web ribbon reads
 	 * it to draw river links across province seams. See {@code docs/river-rendering.md} §1.
+	 * <p>
+	 * Demasked with {@code % 100}, not {@code % 16}: the mask reaches 15, so it occupies two
+	 * decimal digits, and {@code % 16} would fold the class digit above it back in as garbage.
 	 */
 	public int riverAdj() {
-		return (geo.river() / 1000) % 16;
+		return (geo.river() / 1000) % 100;
 	}
 
 	/** The real heightmap elevation (0..255) at this plot; 0 for a province-less plot. */

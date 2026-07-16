@@ -22,6 +22,7 @@
   "The world is the whole imported Anbennar map: 5,264 provinces nested inside 1,375 areas, 153 regions and 29 super-regions.",
   "Same seed, same story: economy, naming, mortality, skills and terrain each ride their own salted random stream so no draw ever disturbs another.",
   "Rivers are read straight from Anbennar's river bitmap, which encodes water width by color and even marks each source, confluence and split.",
+  "Every river is traced backwards from the sea: each cell touching open water is a mouth, and the water's path is the way home to one. That is also how a river knows its width — count everything draining through it, and it doubles its catchment to widen a step.",
   "Anbennar's magical trade goods get their own class, where damestear, mithril, precursor relics and serpentbloom stand apart from mere grain and iron.",
   "Explore through nine continuous zoom bands, from a 1x EU4-style strategy atlas all the way down to a 256x city-builder view of building lots.",
   "Some forests are stranger than others: crimson blood-magic bloodgroves, teal fey gladeways and pale glaciers each get their own terrain, art and yields.",
