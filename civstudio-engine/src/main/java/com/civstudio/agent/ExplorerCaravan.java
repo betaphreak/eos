@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.function.IntPredicate;
 
 import com.civstudio.geo.WorldMap;
 import com.civstudio.settlement.GameSession;
@@ -44,8 +45,21 @@ public final class ExplorerCaravan extends MarchingCaravan {
 	// ...or after this many days out (so a band that never finds food still comes home)...
 	private static final int MAX_DAYS_OUT = 120;
 
-	// ...or once the larder falls below this many days of rations (turn home before starving)
+	// ...or once the larder falls to what the march home will eat — the FLOOR under that reserve,
+	// in days of rations (see homewardReserve: the reserve is the road home priced in days, and
+	// this is the least it may ever be, covering the last province and the day's slack)
 	private static final int MIN_LARDER_DAYS = 20;
+
+	// days a band takes to cross one province boundary — it advances at most one per day (Civ4's
+	// move-to-a-new-region rule) and measures ~24 over real terrain at MarchConfig.baseMovePoints
+	// 3.0, so this converts a hop count into the days the march home will take. A placeholder tied
+	// to the march speed: it moves with baseMovePoints (docs/explorer-caravan.md §Phase 3).
+	private static final double DAYS_PER_HOP = 24.0;
+
+	// the margin on the priced road home — the trip home is an ESTIMATE (its terrain is the band's
+	// own luck, and it may ford rivers), and running out of food one province short of home kills
+	// the band, so the error is deliberately paid for on the safe side
+	private static final double HOMEWARD_SAFETY = 1.25;
 
 	// an explorer forages to NET-GROW its larder (bring food home), so its cap is above 1 —
 	// unlike a wandering band, whose sub-1 cap only slows its larder's decline
@@ -64,6 +78,9 @@ public final class ExplorerCaravan extends MarchingCaravan {
 	// the settlement that mustered the band and it returns to
 	private final Settlement home;
 	private final int homeProvinceId;
+	// hops home, memoised against the province they were measured from (see homewardHops)
+	private int hopsFromProvince = Integer.MIN_VALUE;
+	private int cachedHomewardHops = -1;
 	// the band's following, narrowed to the draft band for undrafting / draining on return
 	private final DraftBand draftBand;
 
@@ -177,8 +194,8 @@ public final class ExplorerCaravan extends MarchingCaravan {
 	}
 
 	// turn home when: the season says so (arrive by mid-autumn — the primary, seasonal rule), the
-	// haul is a full load, the time cap is hit, or the larder is low enough that the band must
-	// head back before it starves
+	// haul is a full load, the time cap is hit, or the larder is down to what the march home will
+	// eat
 	private boolean shouldTurnHome(LocalDate date) {
 		int n = draftBand.size();
 		if (n == 0)
@@ -188,8 +205,47 @@ public final class ExplorerCaravan extends MarchingCaravan {
 			return true;
 		double larder = draftBand.getLarder();
 		double haulTarget = n * haulTargetPerHead;
-		double lowLarder = n * WANDERING_RATION.perDay() * minLarderDays;
-		return larder >= haulTarget || daysOut >= maxDaysOut || larder <= lowLarder;
+		return larder >= haulTarget || daysOut >= maxDaysOut || larder <= homewardReserve(n);
+	}
+
+	/**
+	 * The food the band must keep back to <b>reach home alive</b> — the reserve that turning home is
+	 * triggered on.
+	 * <p>
+	 * This used to be a flat {@code minLarderDays} (20) of rations, which asked "have I got much
+	 * food left?" and never "can I still get home?". That was safe only by accident: a random-walking
+	 * levy never went far, so 20 days always covered the trip. <b>Frontier-seeking breaks that</b> —
+	 * it sends bands deliberately outward, away from home, which is exactly how the
+	 * {@code Dhenijansar → Wexkeep} band starved to death mid-route when its provision was sized to
+	 * a shorter journey (docs/explorer-caravan.md §Phase 3).
+	 * <p>
+	 * So price the actual road home: a band crosses at most <b>one province boundary per day</b>
+	 * (Civ4's move-to-a-new-region rule), and at {@code MarchConfig.baseMovePoints} 3.0 a crossing
+	 * measures ~24 days over real terrain — so {@code hops × DAYS_PER_HOP} is the trip home, and the
+	 * flat {@code minLarderDays} becomes the <b>floor</b> under it rather than the whole rule. When
+	 * the route home is unknown (off-graph, no land path), fall back to that floor.
+	 *
+	 * @param n the band's head-count
+	 * @return the necessity units the band must hold back for the march home
+	 */
+	private double homewardReserve(int n) {
+		double perDay = n * WANDERING_RATION.perDay();
+		double floor = perDay * minLarderDays;
+		// the hop count only changes when the band crosses a border, so this is not re-routed daily
+		int hops = homewardHops();
+		if (hops < 0)
+			return floor;
+		return Math.max(floor, perDay * hops * DAYS_PER_HOP * HOMEWARD_SAFETY);
+	}
+
+	// hops home, cached against the province the band stands in (a LandRouter search per province
+	// crossing — ~once every few weeks — rather than once a day)
+	private int homewardHops() {
+		if (getProvinceId() != hopsFromProvince) {
+			hopsFromProvince = getProvinceId();
+			cachedHomewardHops = hopsTo(homeProvinceId);
+		}
+		return cachedHomewardHops;
 	}
 
 	/**
@@ -251,11 +307,43 @@ public final class ExplorerCaravan extends MarchingCaravan {
 		releaseCamp();
 	}
 
-	// OUTBOUND target: wander toward the nearest land province that is not where the band set
-	// out from, so it heads out into the country to forage (opportunistic — it forages what its
-	// route crosses; docs/explorer-caravan.md). Directed travel home (RETURNING) does not use this.
+	// OUTBOUND target: head for the nearest UNEXPLORED land province — the frontier. A layered BFS
+	// outward from where the band stands, taking the first layer that holds ground no band has set
+	// foot on; ties within a layer are broken by the band RNG, so two levies out of the same colony
+	// do not file down the same corridor.
+	//
+	// This replaced a random walk (a uniform pick among the nearest land neighbours), which sent a
+	// levy back over ground it had just trailed as readily as into new country — the band could not
+	// tell explored from unexplored, because nothing recorded it.
+	//
+	// The frontier signal is GameSession.hasPlotPool: a pool exists precisely where someone has
+	// reached into the ground (a band camped or trailed, a colony was founded), so its ABSENCE is
+	// proof the province is untouched — see the note there for why the seemingly obvious test (scan
+	// the plots for a route) is both wrong (urban plots are pre-paved) and expensive (asking builds
+	// the field). The band still forages OPPORTUNISTICALLY once under way: it takes what its route
+	// crosses (docs/explorer-caravan.md decision 11). Frontier-seeking chooses the DIRECTION, not
+	// the prize — a band cannot target a bonus it has not discovered yet.
+	//
+	// Falls back to the old any-land-neighbour pick when nothing unexplored is reachable (a levy
+	// deep inside settled country), so a band always has somewhere to go. Directed travel home
+	// (RETURNING) does not use this.
 	@Override
 	protected OptionalInt chooseWanderTarget(Rng rng) {
+		OptionalInt frontier = nearestMatching(rng, nb -> !isExplored(nb));
+		return frontier.isPresent() ? frontier
+				: nearestMatching(rng, nb -> nb != originProvinceId && nb != getProvinceId());
+	}
+
+	// whether a province has been reached into already (see GameSession.hasPlotPool). A session-less
+	// band (a bare unit test) knows nothing, so treats everything as unexplored.
+	private boolean isExplored(int provinceId) {
+		return session() != null && session().hasPlotPool(provinceId);
+	}
+
+	// layered BFS over the land graph from the band's province, returning a uniform pick among the
+	// NEAREST layer whose provinces satisfy `accept` (map.neighbors is precomputed, so the walk is
+	// cheap; the predicate must not be, and isExplored is an O(1) map lookup)
+	private OptionalInt nearestMatching(Rng rng, IntPredicate accept) {
 		WorldMap map = worldMap();
 		Set<Integer> visited = new HashSet<>();
 		visited.add(getProvinceId());
@@ -270,7 +358,7 @@ public final class ExplorerCaravan extends MarchingCaravan {
 					if (!visited.add(nb) || !map.province(nb).isLand())
 						continue;
 					nextLayer.add(nb);
-					if (nb != originProvinceId && nb != getProvinceId())
+					if (nb != getProvinceId() && accept.test(nb))
 						candidates.add(nb);
 				}
 			}

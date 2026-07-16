@@ -251,6 +251,32 @@ public class GameSession {
 		return plotMapProvinces.add(province.id());
 	}
 
+	/**
+	 * Whether this province's plot pool <b>already exists</b> — without building it.
+	 * <p>
+	 * This is the cheap <b>frontier test</b>. A pool is materialised exactly when someone reaches
+	 * into the province's ground: a band that camps or lays a trail there ({@code
+	 * MarchingCaravan.tick}'s {@code campingEnabled || laysTrail()} corridor), or a colony founded
+	 * on it. So a pool's <b>absence is proof no band has ever been there</b> — the one side a
+	 * frontier-seeking explorer needs certainty on ({@code ExplorerCaravan.chooseWanderTarget}).
+	 * <p>
+	 * Its presence is the weaker half: a province can own a pool without a band having walked it
+	 * (a colony founded on it, a plot-map printer). That asymmetry is <b>fine for frontier-seeking
+	 * and arguably right</b> — a settled province is not a frontier either.
+	 * <p>
+	 * Note why the obvious test — scanning the pool's plots for a {@code routeType} — is <b>not</b>
+	 * used: {@code ProvincePlotPool.paveUrbanPlots} pre-paves every urban plot at construction, so
+	 * every city province would report itself explored on day zero with nobody having set foot in
+	 * it. And reading a candidate's plots at all would force the very generation this avoids —
+	 * {@link #provincePlotPool} is {@code computeIfAbsent}, so asking is building.
+	 *
+	 * @param provinceId the province to test
+	 * @return {@code true} if the province's plot pool has already been built this session
+	 */
+	public synchronized boolean hasPlotPool(int provinceId) {
+		return plotPoolByProvince.containsKey(provinceId);
+	}
+
 	public synchronized ProvincePlotPool provincePlotPool(Province province) {
 		return plotPoolByProvince.computeIfAbsent(province.id(), id -> {
 			try {

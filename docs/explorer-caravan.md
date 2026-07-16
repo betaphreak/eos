@@ -50,7 +50,7 @@ Two things fall out for free once bands leave under their own economic logic:
 | 8 | **Draft feeding** | **The caravan feeds its draftees** from its carried larder (muster provisions + forage) — while away they leave the colony's table (the relief). They do **not** draw colony/pool food remotely. |
 | 9 | **Ticked by** | The **home colony** (end of `newDay`), on a **per-colony** band RNG — so it works in a single-colony `run()` (the food-balance path), not only under `SessionRunner`/`HostedSession`. |
 | 10 | **Movement** | **Daylight-scaled movement points**: points/day scale with daylight hours and band size; plots are spent in **pure Civ4/C2C move-cost units**. |
-| 11 | **Routing** | **Opportunistic** — cheapest Civ4-cost path out and home; forage/gather and camp on **unoccupied-resource plots that lie on the path**. |
+| 11 | **Routing** | **Frontier-seeking, opportunistic haul** (amended 2026-07-16 — was a random walk). The OUTBOUND leg heads for the **nearest province no band has set foot on**; the cheapest Civ4-cost path carries it there and home; it forages/gathers and camps on **unoccupied-resource plots that lie on the path**. Direction is chosen, the prize is not — a band **cannot target a bonus it has not discovered yet**. See §Frontier-seeking. |
 | 12 | **Fog of war** | Per-settlement **revealed map**, from the **settlement's POV**; the settlement reveals its home area, its caravans reveal ground within a **sight radius** as they march. **Render-only** first cut (no gameplay gating). |
 | 13 | **Provisioning** | Both: the **ruler buys** a provisioning larder on the necessity market **and** each draftee **takes half its household/pool ration share** out with it. |
 | 14 | **Sale proceeds** | Distributed back to the **draftees' households** (the foragers are paid for their haul). |
@@ -210,6 +210,66 @@ A colony step-action (registered by `SimulationHarness.foundStandardColony`, exa
 - **Determinism**: reveal (§12) and Civ4 movement are RNG-free deterministic functions of
   position/date; the only RNG (route tie-breaks, wander target) is the per-colony excursion
   stream. Band-free colonies draw nothing — byte-identical to before.
+
+## 7.1 Frontier-seeking — the OUTBOUND target (SHIPPED 2026-07-16)
+
+The outbound leg used to be a **random walk**: a layered BFS to the nearest land neighbours, then a
+uniform pick. It sent a levy back over ground it had just trailed as readily as into new country,
+because *nothing told it where it had been*. `ExplorerCaravan.chooseWanderTarget` now takes the
+**nearest layer holding ground no band has set foot on**, RNG breaking ties *within* that layer (so
+two levies out of one colony don't file down the same corridor). It falls back to the old
+any-land-neighbour pick when nothing unexplored is reachable, so a levy deep in settled country
+still marches instead of freezing.
+
+**The frontier signal is `GameSession.hasPlotPool(id)` — pool existence, not trail state.** This is
+worth explaining, because the obvious implementation is both wrong and expensive:
+
+- Trail state lives **only inside plot pools** (`Plot.routeType`), and `provincePlotPool` is
+  `computeIfAbsent` — *asking builds the field*. A BFS that trail-tested its candidates would
+  generate the plot field of every province it walked past, which is exactly the cost the corridor
+  code already goes out of its way to avoid (`needCorridor = campingEnabled || laysTrail()`).
+- And it would be **wrong**: `ProvincePlotPool.paveUrbanPlots` pre-paves every urban plot at
+  construction, so a `routeType() != null` test reports **every city province as explored on day
+  zero**, with nobody having set foot in it.
+
+A pool is materialised precisely where someone reached into the ground (a band camped or trailed, a
+colony was founded), so its **absence is proof the province is untouched** — the only side the
+search needs certainty on. Presence is the weaker half (a province may have been founded on rather
+than walked), which is fine and arguably right: a settled province is not a frontier either. The
+test is an O(1) `containsKey` over a map that already existed — **no new state**.
+
+**Discovery stays opportunistic** (decision 11): the band forages what its route crosses. Frontier-
+seeking chooses the *direction*, not the prize — you cannot target a bonus you have not found yet.
+Targeting *known* resources is a different objective (exploit, not explore) and wants the
+`RevealedMap` of §8.
+
+**The turn-home rule had to change with it.** `shouldTurnHome`'s low-larder trigger was a flat
+`MIN_LARDER_DAYS` (20) — it asked *"have I much food left?"*, never *"can I still get home?"*. That
+was safe only by accident: a random-walking levy never went far. Frontier-seeking sends bands
+deliberately outward, which is precisely how the `Dhenijansar → Wexkeep` band starved to death
+mid-route. So `homewardReserve` now **prices the actual road home**: a band crosses at most one
+province boundary per day and a crossing measures ~24 days at `baseMovePoints` 3.0, so the reserve
+is `hops × DAYS_PER_HOP × HOMEWARD_SAFETY` days of ration, with the old flat 20 as its **floor**.
+The hop count is memoised against the province the band stands in, so it costs one `LandRouter`
+search per *crossing* (~once every few weeks), not one per day.
+
+**Measured** (`ExplorerProvisioner`'s real 60-day provision, seed 7654321): a levy reaches
+**2 hops** from home and turns back — *identical reach to the old rule*, which turned home on day 49
+against the new rule's day 33. So the reserve costs ~16 days of frontier foraging and buys a safety
+margin; it does **not** throttle reach. A full run is unchanged in health: **24 mustered / 24
+returned / 0 lost** (the pre-change baseline was 23 / 22 / 0).
+
+**Reach is capped by provisioning against march speed, not by any of this.** At ~24 days/hop, a
+60-day larder buys ~2 provinces out and back; foraging (`EXPLORER_FORAGE_CAP` 3.0, net-positive)
+stretches it but the seasonal deadline closes the window. If explorers should range further, the
+levers are `ExplorerProvisioner.DEFAULT_PROVISION_DAYS` (60) or the march speed itself — **not** the
+turn-home rule.
+
+**Verified by `ExplorerFrontierTest`** (in `com.civstudio.agent`, so it can call the protected
+`chooseWanderTarget` directly). It asserts the *choice*, not the walk: with the home province's
+neighbours split into walked and unwalked, every draw must land on unwalked ground. That precision
+is deliberate — an earlier version drove a whole march and asserted the band rarely re-trod its own
+path, and **passed against the old random walk too**, proving nothing.
 
 ## 8. Fog of war — a per-settlement point of view (decision 12)
 

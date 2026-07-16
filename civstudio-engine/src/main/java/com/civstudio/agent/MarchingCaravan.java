@@ -420,6 +420,31 @@ public abstract class MarchingCaravan extends Caravan {
 		}
 	}
 
+	/**
+	 * The number of <b>province hops</b> along the shortest land route from where the band stands to
+	 * {@code provinceId} — the band's own measure of how far away something is, in the unit its
+	 * movement is actually quantised in (a band crosses at most one province boundary per day, so
+	 * hops are the floor on the days a journey takes).
+	 * <p>
+	 * Routes over the province graph, not the plot corridor, so it costs a {@link LandRouter} search
+	 * and no plot generation. Callers should not run it every day for its own sake — a band's hop
+	 * count only changes when it crosses a border.
+	 *
+	 * @param provinceId the province to measure to
+	 * @return the hop count, {@code 0} if the band is already there, or {@code -1} if it is
+	 *         off-graph or no land route exists
+	 */
+	protected int hopsTo(int provinceId) {
+		if (!onGraph() || provinceId == OFF_GRAPH)
+			return -1;
+		if (provinceId == getProvinceId())
+			return 0;
+		if (router == null)
+			router = new LandRouter(worldMap());
+		Route home = router.route(getProvinceId(), provinceId);
+		return home.isEmpty() ? -1 : home.hops();
+	}
+
 	// compute the current leg's cost (Civ4 move-points) and river fords: the plot corridor's
 	// summed Civ4 move cost across the province the band is in (its plots' terrain/feature/
 	// hills/slope ladder — spent directly, not scaled by KM_PER_PLOT). This is the cost to
