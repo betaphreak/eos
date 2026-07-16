@@ -1,0 +1,189 @@
+{
+  "note": "Maps each Anbennar region key -> exactly one UNIQUE Earth ISO-3166 alpha-2 country code (no country used twice), used to source real place names for plots (see PlaceNamer / GeoNamesGazetteer). Land regions only; unmapped land regions fail-fast at load, duplicate countries are rejected. Hand-editable.",
+  "specialNotes": {
+    "debug_region": "Intentionally UNMAPPED: dev-only artifact, not real terrain. The loader must exclude it (no land plots the player sees), not fail-fast on it.",
+    "shadow_swamp_region": "Land region orphaned from the super-region grouping (a distinctive surface terrain); still needs a mapping since it has land plots."
+  },
+  "regions": {
+    "bahar_region": "IR",
+    "bulwar_proper_region": "IQ",
+    "harpy_hills_region": "TR",
+    "far_bulwar_region": "AF",
+    "far_salahad_region": "UZ",
+
+    "alecand_region": "GR",
+    "devand_region": "AM",
+    "mteibas_valley_region": "AZ",
+    "andic_reach_region": "CL",
+    "chendhya_region": "GE",
+
+    "dalaire_region": "NO",
+    "forest_of_the_cursed_ones_region": "BY",
+    "broken_isles_region": "HR",
+
+    "soruin_region": "CO",
+    "leechdens_region": "BR",
+    "south_effelai_region": "PE",
+    "east_effelai_region": "VE",
+    "west_effelai_region": "EC",
+    "dry_coast_region": "UY",
+    "mushroom_forest_region": "CR",
+    "severed_coast_region": "PA",
+    "turtleback_isle_region": "CU",
+
+    "yodhanchend_region": "MM",
+    "larankarha_highlands_region": "TJ",
+    "gauraddhi_region": "PK",
+
+    "north_ruined_isles_region": "BS",
+    "trollsbay_region": "MX",
+    "bloodgroves_region": "SV",
+    "reapers_coast_region": "JM",
+    "endralliande_region": "DO",
+    "ravenous_isle_region": "TT",
+    "ruined_isles_region": "BB",
+
+    "alenic_reach_region": "FI",
+    "dalr_region": "DK",
+    "olavlund_region": "SE",
+
+    "akasik_region": "SA",
+    "kheterata_region": "EG",
+    "west_salahad_region": "SD",
+
+    "gerudian_frontier_region": "IS",
+
+    "gol_region": "YE",
+    "gazraak_region": "OM",
+
+    "amadia_region": "AE",
+    "tor_nayyi_region": "KW",
+    "haraf_region": "GT",
+
+    "epednan_expanse_region": "UA",
+    "sarda_region": "SK",
+    "dolindha_region": "BA",
+    "rzenta_region": "RS",
+    "veykoda_region": "HU",
+
+    "randrunnse_region": "IE",
+    "sarmadfar_region": "EE",
+    "domandrod_region": "LV",
+
+    "lower_yanshen_region": "CN",
+    "upper_yanshen_region": "TW",
+    "demon_hills_region": "MN",
+    "north_yanshen_region": "KP",
+
+    "tree_of_stone_region": "BT",
+    "jade_mines_region": "KG",
+
+    "inner_castanor_region": "DE",
+    "west_castanor_region": "NL",
+    "south_castanor_region": "AT",
+    "daravans_folly_region": "BE",
+    "dostanor_region": "CZ",
+
+    "yyl_moista_region": "CA",
+    "ogre_valley_region": "KZ",
+
+    "rahen_coast_region": "IN",
+    "rakhadesh_region": "BD",
+    "dhujat_region": "LK",
+
+    "shuvuushudi_region": "RU",
+    "gowon_region": "KR",
+
+    "xianjie_region": "VN",
+    "thidinkai_region": "TH",
+    "bomdan_region": "KH",
+    "ringlet_isles_region": "PH",
+    "lupulan_rainforest_region": "MY",
+
+    "lencenor_region": "FR",
+    "dragon_coast_region": "PT",
+    "small_country_region": "GB",
+    "esmaria_region": "ES",
+    "west_dameshead_region": "SI",
+    "east_dameshead_region": "LT",
+    "the_borders_region": "MT",
+    "damescrown_region": "LU",
+    "businor_region": "CY",
+    "alenic_frontier_region": "PL",
+    "forlorn_vale_region": "AL",
+
+    "west_dwarovar_region": "CH",
+    "middle_dwarovar_region": "NP",
+    "serpentreach_region": "ME",
+    "serpents_vale_region": "AU",
+    "northern_pass_region": "MK",
+
+    "west_deepwoods_region": "RO",
+    "east_deepwoods_region": "MD",
+    "deepwoods_portal_region": "IT",
+
+    "kubaci_region": "ML",
+    "janama_region": "GN",
+    "dao_nako_region": "NG",
+
+    "horashesh_region": "MZ",
+    "khetapera_region": "TZ",
+    "fahvanosy_region": "MG",
+
+    "bamaliwuni_region": "KE",
+    "ishyamtumu_region": "RW",
+    "yetefesefi_region": "ET",
+    "telekenid_region": "ER",
+    "dreksaret_region": "SO",
+    "denibari_region": "UG",
+
+    "throden_gokad_region": "CD",
+    "katala_raz_region": "CM",
+    "odu_kherass_region": "GA",
+
+    "jasiir_jadid_region": "DJ",
+    "ardimya_region": "ZM",
+
+    "cotlkae_region": "HN",
+    "insyaan_mushroom_forest_region": "FJ",
+    "yanacotlele_region": "NI",
+    "anakuele_region": "CF",
+    "anakae_region": "SB",
+    "great_plateau_region": "BO",
+
+    "horn_of_insyaa_region": "AR",
+    "tagaala_mangroves_region": "PG",
+    "west_insyaan_lowlands_region": "PY",
+    "malogadin_coast_region": "SR",
+    "gamunkuchar_region": "NC",
+    "jalaarkuchar_region": "GF",
+    "pirzakuchar_region": "SN",
+    "wayamokuchar_region": "SS",
+    "titanoflora_valley_region": "LY",
+    "titanoflora_savanna_region": "NE",
+
+    "titanoflora_riverlands_region": "US",
+    "titanoflora_lakelands_region": "GL",
+    "titanoflora_forests_region": "LA",
+
+    "southern_coast_region": "MR",
+    "kalavend_region": "BN",
+    "shamakhad_region": "TL",
+    "ourdia_region": "MA",
+
+    "glorelthir_region": "ZA",
+    "serpent_gift_region": "DZ",
+    "ekyunimoy_region": "XK",
+
+    "west_forbidden_plains_region": "SY",
+    "east_forbidden_plains_region": "AO",
+    "north_yarikhoi_region": "NA",
+    "south_yarikhoi_region": "TD",
+    "nuzurbokh_region": "ZW",
+    "khaashalg_region": "IL",
+    "moduk_region": "GH",
+    "nomsyulhan_region": "CI",
+
+    "shadow_swamp_region": "BW"
+  }
+}

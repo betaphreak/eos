@@ -47,6 +47,11 @@ civstudio-server/target/
 # Civ VI SDK Assets — local symlink into the Steam-installed SDK (dev-time only, machine-specific).
 /.civ6-cache
 
+# GeoNames gazetteer dump (allCountries) — a single ~350MB archive dropped in by hand, read only at
+# bake time to stamp real place names onto plots (com.civstudio.data.GeoNamesFiles). Never committed;
+# the names it produces are baked into the plot cache, so nothing at runtime reads it.
+/.geonames-cache/
+
 # Server plot-grid cache — generated on demand, cached to a (persistent, in prod) volume. See
 # docs/plot-serving.md.
 /.plot-cache/
