@@ -6,6 +6,7 @@ import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, e
 import { startLive, stopLive, liveToBackground, liveActive, liveState, controlLive, LIVE_RATES } from "./overlays/live.mjs";
 import { createSearchBox } from "./searchbox.mjs";
 import { techBuildingMatches, searchRowHtml, pickSearchResult } from "./techtree.mjs";
+import { prettyKey, plotTip } from "./plotlabel.mjs";
 stage.addEventListener("wheel", e => {
   if (S.techOpen) return;   // the tech tree owns the viewport while it's up — don't zoom the map behind it
   e.preventDefault();
@@ -241,11 +242,8 @@ function plotAt(mx, my){
 }
 // a plot's resource label for the tooltip, or null: its bonus (or polar sea ice), Title Cased
 function resourceLabel(q){
-  if(q.bonus) return prettyKey(q.bonus);
-  if(q.feature === "FEATURE_ICE") return "Ice";
-  return null;
+  return q.bonus ? prettyKey(q.bonus) : null;   // the ◆ resource line; terrain/feature (incl. ice) live in plotTip
 }
-const prettyKey = t => t.replace(/^(BONUS|FEATURE)_/,"").toLowerCase().replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase());
 // hover tooltip body — the info shown depends on the active overlay: physical (region · plots)
 // or political (the active dimension + region)
 function provTip(best){
@@ -282,11 +280,13 @@ stage.addEventListener("mousemove", e=>{
     tip.style.left=Math.min(mx+14, r.width-230)+"px"; tip.style.top=(my+14)+"px"; tip.classList.add("on");
     draw(); return; }
   const best = provinceAt(mx, my);
-  const hit = plotAt(mx, my);                   // resourced plot under cursor (texture zoom)
+  const hit = plotAt(mx, my);                   // plot under cursor (texture zoom): name/terrain/feature/resource
+  const plot = hit ? plotTip(hit) : "";
   const res = hit ? resourceLabel(hit) : null;
-  if(best || res){ S.hoverProv=best;
+  if(best || plot || res){ S.hoverProv=best;
     let html = best ? provTip(best) : "";
-    if(res) html += `${best?"<br>":""}<span class="r">◆ ${res}</span>`;
+    if(plot) html += `${html?"<br>":""}${plot}`;
+    if(res) html += `${html?"<br>":""}<span class="r">◆ ${res}</span>`;
     tip.innerHTML=html;
     tip.style.left=Math.min(mx+14, r.width-230)+"px"; tip.style.top=(my+14)+"px"; tip.classList.add("on");
   } else { S.hoverProv=null; tip.classList.remove("on"); }
