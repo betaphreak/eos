@@ -19,6 +19,7 @@ public class CivStudioProperties {
 	private final Anbennar anbennar = new Anbennar();
 	private final Plots plots = new Plots();
 	private final Dev dev = new Dev();
+	private final Admin admin = new Admin();
 
 	public Demo getDemo() {
 		return demo;
@@ -30,6 +31,10 @@ public class CivStudioProperties {
 
 	public Plots getPlots() {
 		return plots;
+	}
+
+	public Admin getAdmin() {
+		return admin;
 	}
 
 	public Cors getCors() {
@@ -149,6 +154,29 @@ public class CivStudioProperties {
 
 		public void setLruSize(int lruSize) {
 			this.lruSize = lruSize;
+		}
+	}
+
+	/**
+	 * Admin-console config (the {@code /api/admin/**} backend, {@code web/admin.html}).
+	 */
+	public static class Admin {
+		/**
+		 * An optional deep link to the plot-cache location, surfaced (only) in the gated
+		 * {@code /api/admin/status} for an "Open in Storage Explorer" button. An Azure Storage
+		 * Explorer {@code storageexplorer://…} URI (or a portal storage-browser URL). Carries the
+		 * subscription / resource ids, so it is served from config (env
+		 * {@code CIVSTUDIO_ADMIN_PLOTCACHESTORAGEURL}) rather than hard-coded in the public HTML.
+		 * Blank (the default) hides the button.
+		 */
+		private String plotCacheStorageUrl = "";
+
+		public String getPlotCacheStorageUrl() {
+			return plotCacheStorageUrl;
+		}
+
+		public void setPlotCacheStorageUrl(String plotCacheStorageUrl) {
+			this.plotCacheStorageUrl = plotCacheStorageUrl;
 		}
 	}
 

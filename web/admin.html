@@ -31,6 +31,8 @@
   button:disabled { opacity:.5; cursor:default; }
   button.danger { border-color:#5a2f2c; } button.danger:hover:not(:disabled) { background:#3a2422; border-color:var(--red); }
   a.btn { display:inline-block; background:var(--gold); color:#1a1200; text-decoration:none; border-radius:8px; padding:10px 18px; font-weight:600; }
+  a.linkbtn { display:inline-block; background:var(--panel2); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:9px 14px; text-decoration:none; }
+  a.linkbtn:hover { background:#243248; border-color:#3a4c6b; } a.linkbtn[hidden] { display:none; }
   .bar { height:8px; background:var(--panel2); border:1px solid var(--line); border-radius:5px; overflow:hidden; margin-top:8px; }
   .bar > i { display:block; height:100%; background:var(--gold); width:0; transition:width .4s; }
   table { width:100%; border-collapse:collapse; } td,th { padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; }
@@ -68,21 +70,13 @@
   <div class="panel">
     <h2>Plot cache</h2>
     <div class="stats" id="plotStats"></div>
-    <div class="bar" id="warmBar" hidden><i></i></div>
     <div class="actions">
       <button class="danger" id="btnDrop"
         title="Delete every cached province plot grid (the in-memory LRU and the volume's *.json.gz). Each province regenerates fresh — under a sim pause — on its next request. Use after a change to plot generation.">Drop plot cache</button>
-      <button id="btnWarm"
-        title="Pre-generate every province's plot grid into the cache in the background, so later visitors never trigger a cold, sim-pausing generation. Progress shows below; safe to leave running.">Warm the world</button>
+      <a class="linkbtn" id="storageLink" hidden target="_blank" rel="noopener"
+        title="Open the plot-cache file share (anbennar-cache/plot-cache/v&lt;GEN_VERSION&gt;) in Azure Storage Explorer.">Open in Storage Explorer&nbsp;↗</a>
     </div>
-  </div>
-
-  <div class="panel">
-    <h2>Fetch caches</h2>
-    <div class="actions">
-      <button class="danger" id="btnAnbennar"
-        title="Delete the Anbennar mod fetch cache (map rasters + history the engine pulls from GitLab), forcing a re-fetch on next use. Use when the pinned source ref changes. The Civ4 art cache is build-time only, so there is nothing server-side to drop for it.">Drop Anbennar cache</button>
-    </div>
+    <p class="muted" style="margin:12px 0 0; font-size:12px;">The cache is versioned by <b>GEN_VERSION</b>; bumping it (a plot-generation change, or shipping fresh place names) points the server at a new <code>plot-cache/v&lt;n&gt;</code> dir and busts the client <code>?v=</code>. Names are baked locally and pushed with <code>tools/deploy-plot-cache.ps1</code> — production can't bake them.</p>
   </div>
 
   <div class="panel">
@@ -132,11 +126,10 @@ async function refresh() {
     stat("Sessions", sv.sessions) + stat("Admins", sv.admins) + stat("You", sv.you || "—");
   $("#plotStats").innerHTML =
     stat("Cached", `${pl.cached} / ${pl.total}`, true) +
-    stat("Generating", pl.generating != null ? "#" + pl.generating : "—") +
-    stat("Warming", pl.warming ? "yes" : "no");
-  const warmBar = $("#warmBar"); warmBar.hidden = !pl.warming;
-  if (pl.warming) warmBar.querySelector("i").style.width = Math.round(pl.cached / pl.total * 100) + "%";
-  $("#btnWarm").disabled = pl.warming;
+    stat("Generation", "v" + pl.version, true) +
+    stat("Generating", pl.generating != null ? "#" + pl.generating : "—");
+  const link = $("#storageLink");
+  if (pl.storageUrl) { link.href = pl.storageUrl; link.hidden = false; } else { link.hidden = true; }
 
   const sess = await api("GET", "/api/sessions").catch(() => []);
   const rows = (Array.isArray(sess) ? sess : sess.sessions || []);
@@ -155,10 +148,6 @@ window.ctrl = (id, action) => act("POST", `/api/sessions/${id}/control`,
 
 $("#btnDrop").onclick = () => { if (confirm("Drop the entire plot cache? Every province will regenerate on demand."))
   act("POST", "/api/admin/plots/clear", j => `Dropped ${j.cleared} cached grids`); };
-$("#btnWarm").onclick = () => act("POST", "/api/admin/plots/warm",
-  j => j.started ? "Warming the world…" : "Already warming");
-$("#btnAnbennar").onclick = () => { if (confirm("Drop the Anbennar fetch cache? It will re-fetch from GitLab on next use."))
-  act("POST", "/api/admin/caches/anbennar/clear", j => `Dropped ${j.deleted} cached files`); };
 $("#btnChat").onclick = () => { if (confirm("Clear all lobby chat history?"))
   act("POST", "/api/admin/chat/clear", () => "Lobby chat cleared"); };
 
