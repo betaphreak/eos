@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -35,6 +36,8 @@ import tools.jackson.databind.ObjectMapper;
  * <li>{@code GET  /api/sessions}              — list the hosted sessions.</li>
  * <li>{@code POST /api/sessions}              — found + start a session from a spec.</li>
  * <li>{@code GET  /api/sessions/{id}/stream}  — subscribe to the snapshot feed (SSE).</li>
+ * <li>{@code GET  /api/sessions/{id}/events}  — the retained event tail (a snapshot's log is only
+ * the delta, so this is how a late joiner or a reloaded page recovers what it missed).</li>
  * <li>{@code POST /api/sessions/{id}/control} — {@code {action:pause|resume|step|rate|stop}}.</li>
  * <li>{@code POST /api/sessions/{id}/commands}— submit a player command, e.g.
  * {@code {type:setTaxRate, lever:bankProfit|nobleIncome, rate:0..1}}.</li>
@@ -53,6 +56,11 @@ public class SessionController {
 
 	// max lobby chat message length (longer is truncated)
 	private static final int MAX_CHAT_LEN = 280;
+
+	// ceiling on an /events page, so a caller can't ask for the whole retained tail (4096 lines) at
+	// once; 0/absent means the tail's own default (200). The notification board asks for far less —
+	// only the last 30 in-game days, which it bounds again client-side.
+	private static final int MAX_EVENT_LIMIT = 512;
 
 	private final SessionHost host;
 	private final ObjectMapper json;
@@ -182,6 +190,29 @@ public class SessionController {
 			return notFound(id);
 		SessionSnapshot snap = hs.currentSnapshot();
 		return snap == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(snap);
+	}
+
+	// The session's retained event tail. A snapshot's `log` is a DELTA — drained once into the frame
+	// it rides on — so a spectator only ever sees what the sim logged while it happened to be
+	// connected. Join a minute late, or reload the page, and those lines are gone for good: the demo
+	// logs its founding, its first digest and two starvation demotions inside its first 62 ticks, and
+	// a viewer arriving after that would watch an empty notification board forever.
+	//
+	// So the board rehydrates from here on connect (web/js/notify.mjs), asking for the window it can
+	// actually show — the last 30 in-game days. Read-only, and ungated like the other spectate
+	// endpoints. Same tail the get_events MCP tool reads; the lines are byte-identical to the ones the
+	// stream delivers (LogLine.of derives curated/sev for both).
+	@GetMapping("/{id}/events")
+	public ResponseEntity<Object> events(@PathVariable String id,
+			@RequestParam(required = false) String level,
+			@RequestParam(required = false) String from,
+			@RequestParam(required = false) String to,
+			@RequestParam(required = false) String grep,
+			@RequestParam(required = false, defaultValue = "0") int limit) {
+		HostedSession hs = host.get(id);
+		if (hs == null)
+			return notFound(id);
+		return ResponseEntity.ok(hs.eventTail(level, from, to, grep, Math.min(limit, MAX_EVENT_LIMIT)));
 	}
 
 	// open a Server-Sent-Events stream of the session's snapshots. The session thread serializes +

@@ -16,6 +16,8 @@ import { hasDeepLink } from "../main.mjs";
 import { atLeast, BAND, bandAlpha } from "../bands.mjs";
 import { mergeRoutePlots } from "../routes.mjs";
 import { showLiveLog, ingestLog, ingestChat, resetLog, setChatSender } from "../livelog.mjs";
+import { showNotify, ingestNotify, seedNotify, resetNotify } from "../notify.mjs";
+import { minusDays, LIFETIME_DAYS, MAX_CARDS } from "../notify-age.mjs";
 
 const PALETTE = ["#e8c37a","#6bd08a","#7aa2e0","#e07a9e","#9e7ae0","#e0a97a","#7ae0d0","#c0e07a"];
 
@@ -109,7 +111,12 @@ async function connectStream() {
   try {
     const list = await (await fetch(LIVE_BASE + "/api/sessions", { cache: "no-store" })).json();
     if (!list.length) { setHudStatus("no live session"); retryOrLost(); return; }
-    sid = list[0].id;
+    // Notifications are PER SESSION: a re-founded session (a new id — e.g. after a server redeploy)
+    // starts an empty board. A plain reconnect to the same session keeps it, since the cards there
+    // are still that session's.
+    const next = list[0].id;
+    if (next !== sid) { resetNotify(); await rehydrateNotify(next); }
+    sid = next;
     if (es) es.close();
     es = new EventSource(LIVE_BASE + "/api/sessions/" + sid + "/stream");
     es.onopen = () => { reconnectAttempts = 0; };   // a clean connection resets the retry budget
@@ -132,6 +139,31 @@ async function connectStream() {
   } catch (err) {
     retryOrLost();   // /api/sessions unreachable (server mid-restart) — keep trying
   }
+}
+
+// Recover the notification board from the session's retained event tail before subscribing to the
+// stream, so a spectator who joins mid-session — or who just reloaded the page — sees the last 30
+// in-game days rather than an empty board. A snapshot's `log` is a DELTA: it carries only what was
+// logged since the previous frame, so everything older is unrecoverable from the stream alone.
+//
+// Done BEFORE the EventSource opens (hence the await at the call site) so the recovered lines are on
+// the board first and the streamed ones pile up beneath them, in order. Any line that ends up in
+// both — logged before this fetch but not yet drained into a frame — is de-duplicated by notify.mjs.
+//
+// Best-effort throughout: an older server with no /events, or a session that has not emitted a frame
+// yet (204), simply means an empty board, which is exactly the old behaviour.
+async function rehydrateNotify(id) {
+  try {
+    const snapRes = await fetch(`${LIVE_BASE}/api/sessions/${id}/snapshot`, { cache: "no-store" });
+    if (!snapRes.ok) return;                       // 204 = nothing emitted yet; nothing to recover
+    const now = (await snapRes.json()).date;
+    const from = minusDays(now, LIFETIME_DAYS);    // only the window the board can actually show
+    if (!from) return;
+    const url = `${LIVE_BASE}/api/sessions/${id}/events?from=${from}&limit=${MAX_CARDS}`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return;
+    seedNotify(await res.json(), now);
+  } catch (err) { /* no tail → an empty board, as before */ }
 }
 
 // reconnect to the same server after a delay that backs off with consecutive failures (fast at first,
@@ -161,6 +193,7 @@ export function stopLive() {
   snap = null; sid = null;
   for (const k in trails) delete trails[k];
   resetLog();
+  resetNotify();
   liveTabRunning(false);
   hud(false);
 }
@@ -211,6 +244,9 @@ function onSnapshot(s) {
   // whose framing (applyHash) we must not stomp. A plain load (no deep link) still opens on the action.
   if (!framed && s.colonies[0]) { if (!hasDeepLink()) frameOn(s.colonies[0].latitude, s.colonies[0].longitude, 6); framed = true; }
   ingestLog(s.log);           // feed the event-log bar this frame's new lines
+  // …and the notification board, which also needs s.date: it must age, redden and expire its cards
+  // on every tick, including the overwhelmingly common one whose log delta is empty.
+  ingestNotify(s.log, s.date);
   // The chrome below is a pure function of `snap`, so a hidden tab can skip it and rebuild on
   // return (paintChrome, wired to visibilitychange) — no point rewriting innerHTML nobody can see.
   // NB ingestLog above is deliberately NOT skipped: s.log is a per-tick DELTA, so a skipped tick
@@ -310,6 +346,7 @@ function hud(show) {
   const v = el("liveVitals");
   if (v && !show) v.textContent = "";
   showLiveLog(show, serverLabel());   // the event-log bar tracks Live mode
+  showNotify(show);                   // …and so does the notification board
 }
 
 // Connection state ("connecting…", "reconnecting…") goes where the vitals go: it is the answer to the

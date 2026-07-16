@@ -30,11 +30,15 @@ public final class SessionEventLog {
 	// guarded by `this`; add() runs on colony threads, query() on an MCP request thread
 	private final ArrayDeque<LogLine> ring = new ArrayDeque<>();
 
-	/** Append a line (from the SimLog tap), deriving severity from the JUL level; evicts the oldest. */
+	/**
+	 * Append a line (from the SimLog tap); evicts the oldest past {@link #CAP}. Severity and the
+	 * curated flag are derived by {@link LogLine#of} — the same derivation {@link SessionLogBuffer}
+	 * uses, so a line served from this tail is identical to the one that went out over the snapshot
+	 * delta. This used to flag only warnings as curated, which meant a founding read as a notable
+	 * event live and as routine churn when replayed from here.
+	 */
 	public synchronized void add(String date, String message, int level) {
-		// JUL: WARNING = 900, SEVERE = 1000 (mirrors SessionLogBuffer)
-		String sev = level >= 1000 ? "error" : level >= 900 ? "warn" : "info";
-		ring.addLast(new LogLine(date, message, level >= 900, sev));
+		ring.addLast(LogLine.of(date, message, level));
 		if (ring.size() > CAP)
 			ring.removeFirst();
 	}

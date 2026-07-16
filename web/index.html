@@ -182,6 +182,10 @@
 
       <div class="legend" id="polLegend" aria-label="Political legend" hidden></div>
 
+      <!-- notification board: every sim log line as a card, living 30 in-game days, piling up from
+           the bottom and reddening as it ages out; right-click to dismiss (js/notify.mjs) -->
+      <div class="notify" id="notifyHost" role="log" aria-label="Notifications" hidden></div>
+
       <!-- live event-log bar: collapsed = latest line; click to expand a chat-style history (js/livelog.mjs) -->
       <div class="live-log" id="liveLog" hidden>
         <div class="live-log-history" id="liveLogHistory" hidden>

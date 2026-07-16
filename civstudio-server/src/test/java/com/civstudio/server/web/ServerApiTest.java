@@ -352,6 +352,60 @@ class ServerApiTest {
 				"the colony should name the province it sits in");
 	}
 
+	@Test
+	@Timeout(120)
+	void eventsEndpointServesTheRetainedTailAFrameCannotRecover() throws Exception {
+		HttpResponse<String> missing = client.send(
+				HttpRequest.newBuilder(uri("/api/sessions/nope/events")).GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(404, missing.statusCode());
+
+		HostedSession hs = host.create(SessionSpec.caravanDemo(223L, DHENIJANSAR));
+		hs.startPaused();
+		hs.step(1);
+		long deadline = System.nanoTime() + 60_000_000_000L;
+		while (hs.currentSnapshot() == null && System.nanoTime() < deadline)
+			Thread.sleep(5);
+
+		// THE point of this endpoint: founding the colony logs a line, and the snapshot that carried it
+		// has already been drained away. A spectator connecting now — or a page that just reloaded —
+		// can only recover it from the tail.
+		HttpResponse<String> res = client.send(
+				HttpRequest.newBuilder(uri("/api/sessions/" + hs.id() + "/events")).GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(200, res.statusCode());
+		var lines = json.readTree(res.body());
+		assertTrue(lines.size() > 0, "the tail should still hold the founding line");
+		var founding = lines.path(0);
+		assertTrue(founding.path("text").asString().contains("founded"),
+				"expected the founding line, got: " + founding.path("text").asString());
+		assertTrue(founding.path("date").asString().matches("\\d{4}-\\d{2}-\\d{2}"),
+				"every line carries an in-game date the board can age from");
+		// and it must arrive CURATED — the board renders a curated line as a full card and routine
+		// churn as a dim one-liner, so a founding recovered from the tail has to look like the same
+		// founding delivered live. This is what LogLine.of centralised; the tail used to flag only
+		// warnings, so this line came back routine.
+		assertTrue(founding.path("curated").asBoolean(),
+				"a founding is a notable event however it reaches the client");
+		assertEquals("info", founding.path("sev").asString());
+
+		// the date window the board asks for — everything after the founding day is not the founding
+		String day = founding.path("date").asString();
+		HttpResponse<String> windowed = client.send(
+				HttpRequest.newBuilder(uri("/api/sessions/" + hs.id() + "/events?from=9999-01-01")).GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(200, windowed.statusCode());
+		assertEquals(0, json.readTree(windowed.body()).size(),
+				"a window past every line returns nothing, so the board seeds empty rather than stale");
+
+		HttpResponse<String> grepped = client.send(
+				HttpRequest.newBuilder(uri("/api/sessions/" + hs.id() + "/events?from=" + day + "&grep=founded&limit=1"))
+						.GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(200, grepped.statusCode());
+		assertEquals(1, json.readTree(grepped.body()).size(), "limit + grep + from narrow the tail");
+	}
+
 	private URI uri(String path) {
 		return URI.create("http://localhost:" + port + path);
 	}

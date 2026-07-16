@@ -1,17 +1,61 @@
 package com.civstudio.server.render;
 
+import java.util.Locale;
+
 /**
- * One event-log line in a {@link SessionSnapshot}, streamed to the browser's live log bar. The bar
- * renders it as {@code <server>@<date>  <text>} (the server label is client-derived from the
- * connected server), so the header is the server + in-game date rather than the file log's colony
- * prefix.
+ * One event-log line from a hosted session: streamed to the browser in a {@link SessionSnapshot} (the
+ * live log bar renders it as {@code <server>@<date>  <text>}; the notification board renders it as a
+ * card), served as a retained tail by {@link SessionEventLog}, and returned by the {@code get_events}
+ * MCP tool.
+ *
+ * <p>Build one with {@link #of}, never the canonical constructor: {@code curated} and {@code sev} are
+ * <b>derived</b> from the JUL level and the message, and the two feeds must derive them identically.
+ * They once did not — {@link SessionEventLog} flagged only warnings as curated while
+ * {@link SessionLogBuffer} also matched the notable-event allow-list, so the very same line arrived
+ * curated over the snapshot delta and routine over the tail. That is invisible until something reads
+ * both: the notification board rehydrates from the tail and is then fed live, and a founding would
+ * have changed shape under the reader on reload. Deriving it in one place makes the two agree by
+ * construction rather than by two lists staying in step.
  *
  * @param date    the emitting colony's in-game date (ISO-8601), the message's timestamp
  * @param text    the log message
- * @param curated whether this is a notable event (foundings, deaths, policy changes, anomalies)
- *                shown by default, versus routine churn shown only under the bar's "show all"
- *                toggle. Computed server-side by {@link SessionLogBuffer}.
+ * @param curated whether this is a notable event (foundings, deaths, policy changes, anomalies) —
+ *                shown by default in the log bar, and a full card rather than a dim one-liner on the
+ *                notification board — versus routine churn
  * @param sev     severity for colouring: {@code "info"}, {@code "warn"} or {@code "error"}
  */
 public record LogLine(String date, String text, boolean curated, String sev) {
+
+	// substrings (lowercased) that mark a line as a notable, curated event — kept specific so a
+	// routine line doesn't match incidentally (e.g. the annual digest mentions "nobles"/"deaths").
+	// Tunable; this is a display heuristic, not a contract.
+	private static final String[] CURATED = {
+			"founded", "died", "death", "dissolv", "collaps", "ennobl",
+			"tax rate", "settl", "re-found", "immigr", "born", "wed", "marri", "starv"
+	};
+
+	/**
+	 * Build a line from a {@link com.civstudio.io.SimLog} tap's raw fields, deriving the severity and
+	 * the curated flag. The single place either is decided.
+	 *
+	 * @param level the JUL level value (WARNING = 900, SEVERE = 1000)
+	 */
+	public static LogLine of(String date, String message, int level) {
+		boolean warning = level >= 900;
+		String sev = level >= 1000 ? "error" : warning ? "warn" : "info";
+		return new LogLine(date, message, warning || curated(message), sev);
+	}
+
+	/** Whether a message names a notable event. Warnings are curated regardless — see {@link #of}. */
+	private static boolean curated(String text) {
+		if (text == null)
+			return false;
+		String low = text.toLowerCase(Locale.ROOT);
+		if (low.contains("digest"))
+			return false; // the periodic stats summary is routine churn, not an event
+		for (String k : CURATED)
+			if (low.contains(k))
+				return true;
+		return false;
+	}
 }
