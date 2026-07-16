@@ -689,6 +689,10 @@ document.querySelectorAll(".topbar [data-tip]").forEach(el => {
 
 export { renderRail, resetView, toggleFullscreen, togglePlay, pausePlayback, closePanel,
          setOverlay, setPlane, updateSearchContext, showRail, selectProvince };
+// the hit-tests, shared with the top bar's band caption (bandcaption.mjs), which resolves "what am I
+// looking at" by probing the viewport CENTRE with the same tests the cursor uses. Both scan P and
+// are meant for a settled camera (hover / a debounced caption), never per-frame.
+export { provinceAt, plotAt };
 
 export function boot() {
   // Refit the canvas whenever the stage's box changes — window resize, fullscreen, AND the panel

@@ -42,6 +42,11 @@ import java.util.List;
  *                       {@code null} when nothing is being researched — drives the Technology segment
  * @param researchProgress fraction (0..1) of the current focus's cost accumulated so far; 0 when
  *                       there is no focus
+ * @param tier           the rung the colony sits on the {@link com.civstudio.settlement.SettlementTier}
+ *                       ladder ({@code CAMP < COTTAGE < HAMLET < SMALLHOLDING < TOWN < METROPOLIS}),
+ *                       as the raw enum name — the web Title Cases it for the Settlement-band caption
+ *                       (see {@code docs/zoom-bands.md} §Band caption). {@code null} for a colony with
+ *                       no tier set
  */
 public record ColonyView(String name, boolean alive, String date, int population,
 		int children, int nobles, int firms, int poolSize, double cpi,
@@ -49,5 +54,5 @@ public record ColonyView(String name, boolean alive, String date, int population
 		double latitude, double longitude, double bankProfitTax, double nobleIncomeTax,
 		List<AdvisorView> advisors, List<String> knownTechs, int startingDistricts,
 		String culture, List<DistrictView> districts,
-		String researchingTech, double researchProgress) {
+		String researchingTech, double researchProgress, String tier) {
 }

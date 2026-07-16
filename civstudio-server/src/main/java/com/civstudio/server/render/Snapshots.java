@@ -147,7 +147,8 @@ public final class Snapshots {
 				children, nobles, firms, pool, c.getInflation(), necessity, enjoyment,
 				c.getPlotCount(), c.getMaxPlots(), c.getLatitude(), c.getLongitude(),
 				bankProfitTax, nobleIncomeTax, advisorViews(c), knownTechs,
-				c.getStartingDistrictCount(), culture, districts, researchingTech, researchProgress);
+				c.getStartingDistrictCount(), culture, districts, researchingTech, researchProgress,
+				c.getTier() == null ? null : c.getTier().name());
 	}
 
 	// project the colony's district plots that carry buildings — the placed-building state

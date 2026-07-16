@@ -127,6 +127,11 @@ async function loadPlots(p) {
     p._retryAt = 0;
     if (p._plots.length) draw();
     if (S.selectedProv === p) renderRail();
+    // A province's plots just landed. Readouts derived from them (the top bar's Terrain/Locale/Plot
+    // captions) computed BEFORE this and settled on a provisional "Surveying…" string — and they key
+    // off camera movement, which this isn't, so nothing else would ever invite them to look again.
+    // Announce the arrival instead of having them poll. See js/bandcaption.mjs.
+    window.dispatchEvent(new CustomEvent("civstudio:plots", { detail: { id: p.id } }));
   } catch (e) {
     if (e.name === "AbortError")
       // too slow — drop it (keeping pan/zoom smooth) but leave it retryable after a backoff so a

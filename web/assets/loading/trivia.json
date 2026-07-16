@@ -31,5 +31,6 @@
   "The Technology advisor is a full-canvas map-mode: every tech shows a coloured spectrum bar of the buildings it grants, and clicking one opens its Civilopedia entry in the rail.",
   "When an explorer expedition marches home, its foraged haul is sold on the enjoyment market, the crown takes a tax, the ablest returnee is ennobled, and the rest found their own banked households — a landless peasant can come home a lord.",
   "Landed households farm their own home plot for food that drops straight into the larder, never touching the market — so when prices spiral, the people who hold land still eat.",
-  "Zoom in and hover a plot — its name is a real place on Earth. Every region of the world is mapped to a country and each plot borrows the nearest real town or landmark from it, in the original script, so the dwarven Serpentspine reads like the Alps and Rahen like India."
+  "Zoom in and hover a plot — its name is a real place on Earth. Every region of the world is mapped to a country and each plot borrows the nearest real town or landmark from it, in the original script, so the dwarven Serpentspine reads like the Alps and Rahen like India.",
+  "The band chip in the top bar reads out where you are, not just how far in you are: it names the continent at world zoom, the region as you close in, then the majority terrain, then the very plot under your crosshair — nine bands, each with its own answer."
 ]

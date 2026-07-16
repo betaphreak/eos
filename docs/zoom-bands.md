@@ -14,7 +14,7 @@
 >   impassable caps, plots per `(province, z)`, `/api/plots/{id}/{z}`) and **Phase 8** the regime-scoped
 >   drill-path panel (needs a per-agent/building feed extension).
 >
-> Band **names** (World…Structure) and **regime seams** are wired but still the owner's game-design
+> Band **names** (World…Building) and **regime seams** are wired but still the owner's game-design
 > call to rename/retune — they are just constants in `js/bands.mjs`.
 
 ## The idea in one paragraph
@@ -67,7 +67,7 @@ export function bandAlpha([in0, in1, out0 = Infinity, out1 = Infinity]) {
 
 // named band constants (see table) + regime helpers for the INPUT spine
 export const BAND = { WORLD:0, REALM:1, REGION:2, PROVINCE:3, TERRAIN:4,
-                      LOCALE:5, PLOT:6, PARCEL:7, STRUCTURE:8 };
+                      LOCALE:5, PLOT:6, SETTLEMENT:7, BUILDING:8 };
 export const REGIME = { ATLAS:"atlas", OVERLAND:"overland", GROUND:"ground" };
 export function regime() {                             // current interaction regime
   const b = band();
@@ -138,6 +138,34 @@ The per-world-copy wrap and scene clip stay in `paint()` around this; only the l
 moved into data. `main` ↔ `layers` is a deliberate import cycle — safe because every draw is a
 hoisted function declaration, initialised before the `LAYERS` array is built.
 
+### `SCREEN_LAYERS` — the screen-space stack
+
+Everything in `LAYERS` is painted **once per on-screen world copy**, because the cylindrical wrap
+re-renders the scene per copy with a shifted camera. Two draws are not like that: the **ocean base**
+and the **polar ice cap** are screen-space — they fill the viewport from the latitude at each screen
+row and know nothing about world copies. Running them per copy would re-fill the same pixels N times
+and composite the sea's `soft-light` ripple over itself once per copy, darkening it.
+
+So they are a second ordered stack, painted once per frame ahead of the wrap loop:
+
+```js
+export const SCREEN_LAYERS = [
+  { id:"seaBase",  band:"all", draw: drawSeaBase },
+  { id:"polarIce", band:"all, self-fade over the plot band", draw: drawPolarIce },
+];
+```
+
+They live in **`js/sea.mjs`** (not `main.mjs`, where they had accumulated as ~60 lines of hardcoded
+`paint()` calls — the last draws in the scene outside any registry). `sea.mjs` never imports
+`main.mjs`; `initSea(draw)` injects the repaint its async art loads need, the same idiom as
+`initMinimap(draw)`.
+
+This stack is also the seam **fog of war** will use (`docs/explorer-caravan.md` §8): the Civ6 FOW art
+is already baked and shipped as `BUNDLE.fow` (`civ6.FOW_TILE` → `build.bakeFowTiles` → four tileable
+256² luminance masks). Nothing renders it yet — that needs the per-settlement `RevealedMap`, which is
+Phase 6 and unbuilt. Until then the ocean base stays; a fog layer cannot replace it, because with no
+`RevealedMap` everything is "revealed" and the result would be uniformly all-fog or all-clear.
+
 ## The nine bands
 
 Names are **function-first** and provisional. The three regimes group the bands
@@ -153,13 +181,59 @@ spine — see below).
 | **4** | 16× | **Terrain** | 🐫 Overland | **K_TEX**: real Civ4 textures, trade-good icons appear, plot hover on, sea ripple gone, political→borders-only, live colony marker→city-sprite | Caravans get band-scaled presence; overland is the caravan "home" band |
 | **5** | 32× | **Locale** | 🐫 Overland | Deep terrain; trade-good icons hold, begin fade at k48 | Named locales / points of interest; hand-off to Ground |
 | **6** | 64× | **Plot** | 🏘️ Ground | Gap-grid hatch (k>64), trade-goods gone, per-plot resource/bonus icons prominent | **City-micro skeleton begins**: building footprints per developed plot |
-| **7** | 128× | **Parcel** | 🏘️ Ground | Bonus icons scale with `cam.k/K_MAX`; nothing else band-specific | Agent/household dots from the live feed; street/road hints |
-| **8** | 256× | **Structure** | 🏘️ Ground | **K_MAX**: deepest plot magnification | Individual buildings + agents (laborer/noble/ruler/firm) legible |
+| **7** | 128× | **Settlement** | 🏘️ Ground | Bonus icons scale with `cam.k/K_MAX`; nothing else band-specific | Agent/household dots from the live feed; street/road hints |
+| **8** | 256× | **Building** | 🏘️ Ground | **K_MAX**: deepest plot magnification | Individual buildings + agents (laborer/noble/ruler/firm) legible |
 
 Zoom-independent chrome (sea-cell wash, impassable hatch, hover/selection
 highlights, minimap, HUD/sidebar/timeline, underworld plane veil) draws across all
 bands today. Under the refactor each gains an explicit envelope where it helps
 (e.g. minimap should *hide* in Ground; highlight stroke should thin with depth).
+
+> Bands 7–8 were named **Parcel**/**Structure** until they were renamed to **Settlement**/**Building**
+> (the note above about names being the owner's call, acted on). `BAND.SETTLEMENT` / `BAND.BUILDING`.
+
+## Band caption — the chip says *where*, not just *how deep*
+
+**Status: built & live.** The band chip (`#zoomLevel`, the Main Map advisor segment) pairs the band
+NAME with a live viewport CONTEXT clause — "🐫 Terrain · Sea Tropical", "🏘️ Settlement ·
+Dhenijansar · Smallholding". The chip names the rung; the caption names the thing. `js/bandcaption.mjs`.
+
+**The subject** is the province under the CENTRE of the viewport (`viewportFocus()` → `panel.provinceAt`
+at the crosshair), falling back to the largest visible *landmass* when the centre is open ocean. Centre —
+not "dominant polity by area" — because it is stable under zoom and matches what you are looking at.
+
+One row per band, in a table (`CAPTIONS`), mirroring the `ADVISORS` table idiom:
+
+| Band | Caption | Fallback |
+|---|---|---|
+| World / Realm / Region | the geographic tier off `core.provGeo` | "Uncharted ocean" / … |
+| Province | the province name | "Open water" |
+| Terrain | majority terrain across its plots | "Surveying terrain…" / "Open ocean" |
+| Locale | urban plot count, else its EU4 trade good | "Not famous for anything" |
+| Plot | the plot's GeoNames name · province (an address) | the province name |
+| Settlement | the live colony **if it is on screen** + its `SettlementTier` | "No settlement here" |
+| Building | — reserved for the city-builder view | "Buildings — coming soon" |
+
+Four rules this subsystem earned the hard way — each was a real bug, each is now a test
+(`js/plotstats.test.mjs`) or a comment:
+
+1. **Never claim a settlement is *here* without checking.** `liveColony()` is `snap.colonies[0]` — the
+   session's colony, unrelated to the camera. The Settlement row gates on it projecting inside the
+   viewport, or it says nothing. (The Zeitgeist *segment* needs no such gate: it is about the live
+   session, not about "here".)
+2. **`plots` counts water.** It is not a landmass measure — every SEA province has `plots > 0` and the
+   world's largest province by `plots` is an ocean (~80k vs ~5k for the biggest land province). Rank
+   land by `plots − waterPlots` (`plotstats.landPlots`).
+3. **`_plots === []` ≠ still loading.** `undefined` is pending; `[]` is a fetched, plotless deep-ocean
+   province that will never fill in. Conflating them stranded the caption on "Surveying terrain…"
+   forever — and deep ocean is exactly where a crosshair tends to land.
+4. **Claim the debounce version at schedule time, not at fire time.** `draw()` runs for reasons that
+   are not camera movement (every streaming plot slice), so a fire-time claim let each redraw
+   `clearTimeout` the pending refresh and the caption never updated. Plot arrivals are announced via
+   `civstudio:plots` rather than polled.
+
+Cost: the chip reads `currentCaption()` (a free getter) every paint; the `P`-scanning recompute runs
+once per settle behind a 140 ms debounce gated on `S.baseVersion`.
 
 ## The three regimes — the input spine
 
@@ -454,10 +528,10 @@ Minimum skeleton (all enveloped, all fed by data that already exists):
 - **Band 6 (Plot):** building *footprints* on developed plots — a rectangle sized by
   the plot's `dev` value (the same field the existing `TERRAIN_URBAN` city sprite
   already reads in `plots.mjs`), so the urban core resolves into discrete lots.
-- **Band 7 (Parcel):** **agent/household dots** from the live SSE feed (the colony's
+- **Band 7 (Settlement):** **agent/household dots** from the live SSE feed (the colony's
   population is already streamed for the Spectate overlay) — laborers/nobles/ruler as
   positioned marks, fading in over `[6.6,7]`.
-- **Band 8 (Structure):** labels/affordances on the dots (hover a household → who
+- **Band 8 (Building):** labels/affordances on the dots (hover a household → who
   lives there), and the input-spine hit-test that selects a building/agent.
 
 Everything past the skeleton (real building art, streets, firm interiors, animated

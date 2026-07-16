@@ -7,7 +7,7 @@
 // main.renderScene). Rings are absolute source pixels, so they reuse the province projection
 // (pxr/pyr) and pin to the terrain 1:1.
 import { ctx, pxr, pyr, S, apiUrl } from "../core.mjs";
-import { bandAlpha, kBand } from "../bands.mjs";
+import { bandAlpha, GEO_TIER_ENV } from "../bands.mjs";
 
 // { continents:{key:[[[x,y]…]…]}, superRegions:{…}, regions:{…} } — fetched lazily on first
 // approach to a tier zoom band, so the 90 KB (gzipped) asset never loads for a purely
@@ -15,13 +15,14 @@ import { bandAlpha, kBand } from "../bands.mjs";
 let TIERS = null;
 let loading = false;
 
-// per tier: the visibility envelope (matching the labels — same kBand() thresholds), the stroke
-// width and colour. Coarser tiers read bolder/brighter. The trapezoid + cross-fade math lives in
-// bands.bandAlpha (was a local tierAlpha here, duplicated with labels.mjs).
+// per tier: the stroke width and colour — coarser tiers read bolder/brighter. The visibility
+// envelope comes from bands.GEO_TIER_ENV, the single source shared with the tier labels and the
+// top-bar band caption (it was duplicated here verbatim from labels.mjs). The trapezoid +
+// cross-fade math lives in bands.bandAlpha (was a local tierAlpha here).
 const TIER_BANDS = [
-  { tier: "continents",   env: kBand([0.9, 1.0, 1.5, 2.3]), width: 2.4, color: "232,237,247" },
-  { tier: "superRegions", env: kBand([1.7, 2.2, 3.4, 4.7]), width: 1.9, color: "205,217,234" },
-  { tier: "regions",      env: kBand([3.6, 4.7, 7.0, 9.5]), width: 1.3, color: "174,188,210" },
+  { tier: "continents",   env: GEO_TIER_ENV.continents,   width: 2.4, color: "232,237,247" },
+  { tier: "superRegions", env: GEO_TIER_ENV.superRegions, width: 1.9, color: "205,217,234" },
+  { tier: "regions",      env: GEO_TIER_ENV.regions,      width: 1.3, color: "174,188,210" },
 ];
 
 /** True once the tier geometry is loaded (so a caller can decide to draw). */

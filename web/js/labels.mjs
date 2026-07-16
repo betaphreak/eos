@@ -1,5 +1,5 @@
 import { P, BUNDLE, px, py, pxr, pyr, cam, VIEW, ctx, cssVar, S, LABEL_FONT } from "./core.mjs";
-import { bandAlpha, kBand } from "./bands.mjs";
+import { bandAlpha, kBand, GEO_TIER_ENV } from "./bands.mjs";
 
 // Stellaris-style map lettering: the shared bundled geometric sans (see core.LABEL_FONT).
 const LABEL_FAM = LABEL_FONT;
@@ -211,13 +211,14 @@ function drawLabels() {
 // coarsens the labelling (province -> region -> super-region -> continent) and zooming in
 // refines it. Anchors + names come from BUNDLE.geo (built by build.mjs). k = [fadeIn0,
 // full, holdTo, fadeOut1].
-// Band envelopes carried over from the pre-band code via kBand() (still expressed in the
-// original cam.k thresholds for legibility); re-tuned to clean band units in the feel pass.
-// The trapezoid math + cross-fade now live in bands.bandAlpha (was a local tierAlpha here).
+// The visibility envelopes come from bands.GEO_TIER_ENV — the single source shared with the tier
+// BOUNDARIES (overlays/tiers.mjs) and the top-bar band CAPTION (bandcaption.mjs), so all three
+// coarsen together. Only the type styling is per-label. The trapezoid math + cross-fade live in
+// bands.bandAlpha (was a local tierAlpha here).
 const GEO_TIERS = [
-  { arr:"continents",   env:kBand([0.9,1.0,1.5,2.3]), size:16, weight:"800", color:"#e6edf7", halo:4.2, track:"3px", upper:true },
-  { arr:"superRegions", env:kBand([1.7,2.2,3.4,4.7]), size:16, weight:"800", color:"#cdd9ea", halo:3.7, track:"1.5px", upper:true },
-  { arr:"regions",      env:kBand([3.6,4.7,7.0,9.5]), size:14, weight:"800", color:"#aebcd2", halo:3.3, track:"0px", upper:false },
+  { arr:"continents",   env:GEO_TIER_ENV.continents,   size:16, weight:"800", color:"#e6edf7", halo:4.2, track:"3px", upper:true },
+  { arr:"superRegions", env:GEO_TIER_ENV.superRegions, size:16, weight:"800", color:"#cdd9ea", halo:3.7, track:"1.5px", upper:true },
+  { arr:"regions",      env:GEO_TIER_ENV.regions,      size:14, weight:"800", color:"#aebcd2", halo:3.3, track:"0px", upper:false },
 ];
 function drawGeoLabels() {
   const G = BUNDLE.geo; if (!G) return;

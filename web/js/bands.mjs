@@ -41,12 +41,25 @@ export const atLeast = n => band() >= n;
 export const BAND = {
   WORLD: 0, REALM: 1, REGION: 2,          // 🌍 Atlas    — EU4 grand strategy
   PROVINCE: 3, TERRAIN: 4, LOCALE: 5,     // 🐫 Overland — caravan / operational
-  PLOT: 6, PARCEL: 7, STRUCTURE: 8,       // 🏘️ Ground   — city-builder micro
+  PLOT: 6, SETTLEMENT: 7, BUILDING: 8,    // 🏘️ Ground   — city-builder micro
 };
 // band index → display name (index = the BAND value). bandName() is the nearest band to the current
 // continuous position — what the top-bar readout shows in place of the raw zoom number.
-export const BAND_NAMES = ["World", "Realm", "Region", "Province", "Terrain", "Locale", "Plot", "Parcel", "Structure"];
+export const BAND_NAMES = ["World", "Realm", "Region", "Province", "Terrain", "Locale", "Plot", "Settlement", "Building"];
 export const bandName = () => BAND_NAMES[Math.max(0, Math.min(8, Math.round(band())))];
+
+// The geographic-tier envelopes — ONE declarative source for the three coarse tiers, shared by the
+// tier LABELS (labels.drawGeoLabels), the tier BOUNDARIES (overlays/tiers.drawTiers) and the top-bar
+// band CAPTION (bandcaption.mjs). These three must agree: the caption naming a region while the
+// region label/outline has already faded out reads as a bug. They were previously duplicated
+// verbatim in labels.mjs (GEO_TIERS) and tiers.mjs (TIER_BANDS); a third copy is what prompted the
+// hoist. Still written in the legacy cam.k thresholds via kBand() for legibility — the feel pass
+// re-tunes them to clean band units here, once.
+export const GEO_TIER_ENV = {
+  continents:   kBand([0.9, 1.0, 1.5, 2.3]),
+  superRegions: kBand([1.7, 2.2, 3.4, 4.7]),
+  regions:      kBand([3.6, 4.7, 7.0, 9.5]),
+};
 
 export const REGIME = { ATLAS: "atlas", OVERLAND: "overland", GROUND: "ground" };
 // display metadata for the mode chip / signal (the accent colour + cursor live in CSS, keyed by

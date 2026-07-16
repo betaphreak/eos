@@ -1,10 +1,13 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, SEA, SEA_BANDS, ICE_ART, isPolitical, isUnderground, latAtScreenY, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_MAX, isPolitical, isUnderground, cssVar, S } from "./core.mjs";
 import { bandAlpha, kBand, band, bandName, regime, REGIME_INFO } from "./bands.mjs";
 import { drawPlots } from "./plots.mjs";                       // still used directly by drawCavernPlots
 import { scheduleLegendRefresh } from "./overlays/political.mjs";
 import { ensureTiers } from "./overlays/tiers.mjs";
-import { renderLayers } from "./layers.mjs";                   // the ordered scene registry (draw order + gating)
+import { renderLayers, renderScreenLayers } from "./layers.mjs";   // the ordered scene registries (draw order + gating)
+import { initSea } from "./sea.mjs";                           // the screen-space ocean base + polar ice
 import { initMinimap, drawMinimap } from "./minimap.mjs";
+import { currentCaption, scheduleCaptionRefresh, refreshCaptionNow } from "./bandcaption.mjs";   // the chip's viewport-context text
+import { escHtml } from "./plotlabel.mjs";
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
 // transparent so the sea layer below shows through, land is opaque.
 // loading screen: show a random Anbennar splash (1:1, stage-cropped) until the map's first paint,
@@ -31,87 +34,10 @@ const mapImg = new Image();
 let mapReady = false;
 mapImg.onload = () => { mapReady = true; draw(); hideLoading(); };
 mapImg.src = MAP.src;
-// the ocean layer, drawn behind the (transparent-sea) land raster so it shows through only the
-// sea: a climate-banded COLOUR from a vertical latitude gradient (tropical → temperate → polar),
-// modulated by a screen-space greyscale RIPPLE tile via `soft-light`. Either half degrades: no
-// SEA_BANDS → a flat sea fill; no ripple tile → gradient only; neither → the flat void.
-const seaImg = new Image();
-let seaPat = null;
-if (SEA) { seaImg.onload = () => { seaPat = ctx.createPattern(seaImg, "repeat"); draw(); }; seaImg.src = SEA.src; }
-// piecewise sea colour by |latitude|: tropical (≤23°) → temperate (~40°) → polar (≥60°), then a
-// fade toward deep-ocean dark past 72° so the empty polar seas beyond the mapped land read as
-// deep water (and the soft-light ripple stops showing its tiling on that flat grey expanse).
-function seaColorAt(lat) {
-  const B = SEA_BANDS, a = Math.abs(lat);
-  const mix = (u, v, f) => [u[0]+(v[0]-u[0])*f, u[1]+(v[1]-u[1])*f, u[2]+(v[2]-u[2])*f];
-  let c;
-  if (a <= 23) c = B.trop;
-  else if (a >= 60) c = B.polar;
-  else if (a <= 40) c = mix(B.trop, B.temp, (a - 23) / 17);
-  else c = mix(B.temp, B.polar, (a - 40) / 20);
-  if (a > 72) c = mix(c, [12, 18, 28], Math.min(1, (a - 72) / 16));
-  return `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`;
-}
-// fill the viewport with the ocean base: the latitude colour gradient, then the ripple overlay
-const SEA_WAVE = 1.0;   // ripple tile size, in map-raster px per texture px (world-view wave scale)
-function drawSeaBase(w, h) {
-  if (SEA_BANDS) {
-    const g = ctx.createLinearGradient(0, 0, 0, h);
-    for (let i = 0; i <= 16; i++) g.addColorStop(i / 16, seaColorAt(latAtScreenY((i / 16) * h)));
-    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-  } else { ctx.fillStyle = "#090d14"; ctx.fillRect(0, 0, w, h); }
-  // ripples (soft-light so grey=128 keeps the gradient colour). The pattern is ANCHORED to the
-  // map — it pans and scales with the world instead of being a fixed screen grid — and fades out
-  // by deep zoom, where the upscaled tile would blur and open water is calm anyway.
-  if (seaPat) {
-    const fade = 1 - bandAlpha(kBand([K_PLOT, K_TEX]));   // 1 ≤K_PLOT → 0 ≥K_TEX (fade out over the plot band)
-    // confine the ripple to the mapped-latitude band (the raster's on-screen Y extent). Beyond it —
-    // the empty polar seas between the map's top/bottom edge and the ±89° scene clip — the tile would
-    // repeat as a visible static grid, so those bands stay flat gradient instead.
-    const my0 = Math.max(0, cam.y + cam.k * VIEW.dy), my1 = Math.min(h, cam.y + cam.k * (VIEW.dy + VIEW.dh));
-    if (fade > 0.02 && my1 > my0) {
-      const s = cam.k * (VIEW.dw / MAP.dw) * SEA_WAVE;              // map px → screen, so it zooms with the map
-      seaPat.setTransform(new DOMMatrix([s, 0, 0, s, cam.x + cam.k * VIEW.dx, cam.y + cam.k * VIEW.dy]));
-      ctx.save();
-      ctx.globalCompositeOperation = "soft-light"; ctx.globalAlpha = fade;
-      ctx.fillStyle = seaPat; ctx.fillRect(0, my0, w, my1 - my0);
-      ctx.restore();
-    }
-  }
-}
-// Polar sea ice on the OPEN ocean. drawSeaIce (plots.mjs) handles the coastal shelf floes per-plot,
-// but the plotless deep ocean past the shelves has no floes — so at world/regional zoom the poles read
-// as bare dark water. This is the screen-space ICE CAP for that open water: a latitude-ramped coverage
-// of the Civ6 icecaps tile (map-anchored, so it scales with the world), faded out entering the plot
-// band (like the ripple) where the per-plot shelf floes take over. Land is drawn on top, so it only
-// shows on ocean.
-const iceImg = new Image();
-let iceReady = false;
-if (ICE_ART) { iceImg.onload = () => { iceReady = true; draw(); }; iceImg.src = ICE_ART.src; }
-let _iceLayer = null;
-const ICE_TILE = 1.8;   // ice-tile magnification over the ripple scale — fewer visible seams on the ice sheet
-// ice coverage 0..1 by |latitude|: open water below ~62°, ramping to a near-solid cap by ~80°
-function iceCoverAt(lat) { const a = Math.abs(lat); return a <= 62 ? 0 : Math.min(1, (a - 62) / 18); }
-function drawPolarIce(w, h) {
-  if (!iceReady || !SEA_BANDS) return;
-  const fade = 1 - bandAlpha(kBand([K_PLOT, K_TEX]));   // world/regional → 1, fades out over the plot band
-  if (fade <= 0.02) return;
-  if (iceCoverAt(latAtScreenY(0)) <= 0 && iceCoverAt(latAtScreenY(h)) <= 0) return;   // no polar water on screen
-  // build the ice on a reused temp layer: the tile, masked by a per-row latitude-alpha gradient
-  if (!_iceLayer) _iceLayer = document.createElement("canvas");
-  if (_iceLayer.width !== (w|0) || _iceLayer.height !== (h|0)) { _iceLayer.width = Math.max(1, w|0); _iceLayer.height = Math.max(1, h|0); }
-  const t = _iceLayer.getContext("2d");
-  t.globalCompositeOperation = "source-over"; t.clearRect(0, 0, w, h);
-  const ipat = t.createPattern(iceImg, "repeat");
-  const s = cam.k * (VIEW.dw / MAP.dw) * SEA_WAVE * ICE_TILE;         // map px → screen, so the ice scales with the world
-  ipat.setTransform(new DOMMatrix([s, 0, 0, s, cam.x + cam.k * VIEW.dx, cam.y + cam.k * VIEW.dy]));
-  t.fillStyle = ipat; t.fillRect(0, 0, w, h);
-  const g = t.createLinearGradient(0, 0, 0, h);                       // latitude coverage mask
-  for (let i = 0; i <= 16; i++) g.addColorStop(i / 16, `rgba(255,255,255,${iceCoverAt(latAtScreenY((i / 16) * h))})`);
-  t.globalCompositeOperation = "destination-in"; t.fillStyle = g; t.fillRect(0, 0, w, h);
-  // ~0.78 so the polar sea colour still reads through the floes (ice OVER water, not an opaque sheet)
-  ctx.save(); ctx.globalAlpha = 0.78 * fade; ctx.drawImage(_iceLayer, 0, 0); ctx.restore();
-}
+// The ocean base + polar ice cap used to live here as ~60 lines of hardcoded paint() calls — the
+// last draws in the scene that weren't in a registry. They now live in js/sea.mjs and are ordered by
+// the SCREEN_LAYERS stack (layers.mjs); initSea wires their async art loads to a repaint.
+initSea(draw);
 function resize() {
   const r = stage.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio||1, 2);
   if (!(r.width > 0) || !(r.height > 0)) return;   // ignore degenerate sizes (mid-layout / panel drag)
@@ -142,25 +68,34 @@ function resize() {
   paint();
 }
 const regimePulseEl = document.getElementById("regimePulse");
-let _sigRegime = null, _sigBand = null, _sigPlane = null, _sigEl = null;
+let _sigRegime = null, _sigBand = null, _sigPlane = null, _sigEl = null, _sigCtx = null;
 // The top-bar readout shows the current BAND NAME (nearest band) tinted + iconed by the interaction
-// REGIME, and doubles as the mode signal: it stamps the regime on #stage (→ the regime cursor) and
-// flashes an accent vignette (#regimePulse) once whenever you cross a regime boundary. regime() is
-// hysteretic (bands.mjs), so a scroll-tick on a seam can't strobe it. Runs every paint; the DOM is
-// rebuilt only when the band/regime/plane actually changes.
+// REGIME, followed by the live viewport CONTEXT for that band ("Terrain · Sea Tropical" —
+// bandcaption.mjs). It doubles as the mode signal: it stamps the regime on #stage (→ the regime
+// cursor) and flashes an accent vignette (#regimePulse) once whenever you cross a regime boundary.
+// regime() is hysteretic (bands.mjs), so a scroll-tick on a seam can't strobe it. Runs every paint;
+// the DOM is rebuilt only when the band/regime/plane/context actually changes.
+//
+// The context text is READ here, never computed here: currentCaption() is a free getter over a value
+// recomputed only once the camera settles (scheduleCaptionRefresh, called from draw()). Computing it
+// inline would hit-test P twice per frame.
 function updateRegimeSignal() {
-  const r = regime(), bn = bandName();
+  const r = regime(), bn = bandName(), ctxText = currentCaption();
   stage.dataset.regime = r;                        // drives the regime cursor (styles.css) + input awareness
   // the Main Map advisor segment doubles as the zoom-band readout (advisors.mjs builds it as
   // #zoomLevel after this module loads, so resolve it lazily and re-render when it first appears)
   const zoomLabelEl = document.getElementById("zoomLevel");
-  if (r === _sigRegime && bn === _sigBand && S.plane === _sigPlane && zoomLabelEl === _sigEl) return;
+  if (r === _sigRegime && bn === _sigBand && S.plane === _sigPlane && zoomLabelEl === _sigEl
+      && ctxText === _sigCtx) return;
   const info = REGIME_INFO[r];
   if (zoomLabelEl) {
     zoomLabelEl.dataset.regime = r;
     const plane = S.plane === "underworld" ? ` <span class="rg-plane">· Underworld</span>` : "";
-    zoomLabelEl.innerHTML = `<span class="rg-ico">${info.icon}</span><span class="rg-name">${bn}</span>${plane}`;
-    zoomLabelEl.dataset.tip = `${info.name} regime · ${bn} band · ${Math.round(cam.k)}×`;
+    // the caption is external data (province/plot/colony names) — escape it, never interpolate raw
+    const ctx = ctxText ? ` <span class="rg-ctx">· ${escHtml(ctxText)}</span>` : "";
+    zoomLabelEl.innerHTML = `<span class="rg-ico">${info.icon}</span><span class="rg-name">${bn}</span>${ctx}${plane}`;
+    zoomLabelEl.dataset.tip = `${info.name} regime · ${bn} band · ${Math.round(cam.k)}×`
+      + (ctxText ? ` — ${ctxText}` : "");
   }
   if (r !== _sigRegime && _sigRegime !== null && regimePulseEl) {   // pulse only on a real crossing, not first paint
     regimePulseEl.dataset.regime = r;
@@ -168,7 +103,7 @@ function updateRegimeSignal() {
     void regimePulseEl.offsetWidth;                // reflow so the animation restarts on repeat crossings
     regimePulseEl.classList.add("pulsing");
   }
-  _sigRegime = r; _sigBand = bn; _sigPlane = S.plane; _sigEl = zoomLabelEl;
+  _sigRegime = r; _sigBand = bn; _sigPlane = S.plane; _sigEl = zoomLabelEl; _sigCtx = ctxText;
 }
 // draw() is the public redraw request — it COALESCES to one paint per animation frame, so a burst of
 // pan/zoom/pinch events (mobile fires many touchmoves per frame) collapses into a single scene render.
@@ -176,7 +111,18 @@ let rafPending = false;
 function draw() {
   if (rafPending) return;
   rafPending = true;
-  requestAnimationFrame(() => { rafPending = false; paint(); scheduleLegendRefresh(); });
+  requestAnimationFrame(() => {
+    rafPending = false; paint();
+    scheduleLegendRefresh();
+    // The viewport-context readouts, recomputed once the camera settles: the band chip's caption
+    // (repaint only if its text actually moved) and — via civstudio:viewport — the top-bar advisor
+    // segments that name the nation/religion under the crosshair (advisors.mjs). The event is the
+    // seam that keeps this module from importing advisors.mjs.
+    scheduleCaptionRefresh(changed => {
+      if (changed) draw();
+      window.dispatchEvent(new Event("civstudio:viewport"));
+    });
+  });
 }
 function paint() {
   if (S.techOpen) return;   // tech-tree modal is in front — don't spend frames drawing the hidden map
@@ -194,10 +140,10 @@ function paint() {
   ctx.save();
   ctx.beginPath(); ctx.rect(0, Math.min(yTop, yBot), w, Math.abs(yBot - yTop)); ctx.clip();
 
-  // the ocean base behind everything (the land raster's sea is transparent, so this shows
-  // through it): a climate-banded latitude gradient + ripple overlay. Screen-space, drawn once.
-  drawSeaBase(w, h);
-  drawPolarIce(w, h);   // polar ice cap over the open ocean (screen-space, over the base, under the land)
+  // the ocean base behind everything (the land raster's sea is transparent, so this shows through
+  // it), then the polar ice cap over the open water. Screen-space, so drawn ONCE here rather than
+  // inside the per-world-copy wrap loop below — see js/sea.mjs.
+  renderScreenLayers();
 
   // cylindrical wrap: render the scene once per world-copy that overlaps the viewport, by
   // shifting the camera one wrap-period at a time — so each copy's own viewport culling and
@@ -501,6 +447,12 @@ function applyHash() {
 window.addEventListener("hashchange", applyHash);
 window.addEventListener("popstate", applyHash);   // browser back/forward between deep links
 initMinimap(draw);   // bottom-left minimap; drawMinimap() (called from paint) keeps it in sync
+// The Terrain/Locale/Plot captions need a province's plots, which stream in AFTER the camera settles
+// — so the debounced refresh has already run and parked a provisional "Surveying…" string by the
+// time the data exists. Recompute when plots land (plots.mjs announces it), and repaint only if the
+// text actually changed. refreshCaptionNow bypasses the debounce: this is already an arrival event,
+// not a movement burst.
+window.addEventListener("civstudio:plots", () => { if (refreshCaptionNow()) draw(); });
 // Canvas text does not trigger webfont loading the way laid-out DOM text does, so the first
 // paint would use the sans fallback until some later redraw. Explicitly fetch the bundled
 // map-label faces (see core.LABEL_FONT / styles.css) and redraw once they are ready. Guarded

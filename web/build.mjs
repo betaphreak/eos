@@ -303,6 +303,7 @@ const routes = bakeRoutes();                 // {trail,road,rail:{src,w,h,cell:{
 const featureOverlays = bakeFeatureOverlays(); // {FEATURE_*: {src,w,h}} flat Civ6 SV feature overlays, or null
 const improvementOverlays = bakeImprovementOverlays(); // {IMPROVEMENT_*: {src,w,h}} flat Civ6 SV improvement overlays, or null
 const districtTiles = bakeDistrictTiles();   // {DISTRICT_TYPE: {src,w,h}} flat Civ6 SV district hex chips, or null
+const fow = bakeFowTiles();                   // {HATCH_*|PARCHMENT: {src,tile}} Civ6 fog-of-war tiles, or null (art only — no RevealedMap yet)
 const seaBands = bakeSeaBands();             // {trop, temp, polar, shore} climate sea + shore colours
 const plotProvinceCount = computeWaterBboxes(provinces);
 
@@ -424,7 +425,7 @@ const bboxes = {};                    // ring-less (sea/lake) provinces' plot-ex
 for (const p of provinces) if (p.bbox) bboxes[p.id] = p.bbox;
 const manifest = {
   seed: +SEED,
-  map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, ice, bonusIcons, trees, routes, featureOverlays, improvementOverlays, districtTiles, seaBands,
+  map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, ice, bonusIcons, trees, routes, featureOverlays, improvementOverlays, districtTiles, fow, seaBands,
   loading,                            // committed loading-screen art (assets/loading/loading-*.jpg), or []
   bboxes,                             // {provId: [x0,y0,x1,y1]} for ring-less provinces (server can't derive)
 };
@@ -1214,6 +1215,28 @@ function bakeDistrictTiles() {
   }
   if (!Object.keys(out).length) return null;
   console.log(`  district tiles: ${Object.keys(out).length} Civ6 hex chips (${Object.keys(out).join(', ')})`);
+  return out;
+}
+
+// The fog-of-war tiles (docs/explorer-caravan.md §8): four cross-hatch densities for "explored but
+// not currently visible", plus the parchment ground for "never revealed". Baked as tileable squares
+// so a fog layer can pattern-fill a province polygon the way sea.mjs patterns the ocean ripple.
+//
+// NOTE: nothing renders these yet — the per-settlement RevealedMap is Phase 6 and unbuilt. They are
+// baked now so the art pipeline is settled and the fog layer is a pure frontend change when it
+// lands. If that gets cut, delete this and its FOW_TILE table rather than leaving orphan assets.
+function bakeFowTiles() {
+  const T = 256, out = {};
+  for (const key of Object.keys(civ6.FOW_TILE)) {
+    const file = civ6.fowTile(key);
+    if (!file) continue;
+    const img = decodeCached(file);
+    if (!img) continue;
+    const rgba = resampleRGBA(img.rgba, img.width, img.height, T, T);
+    out[key] = { src: queueWebpRGBA('fow/fow-' + key.toLowerCase().replace(/_/g, '-'), T, T, rgba, { quality: 88 }), tile: T };
+  }
+  if (!Object.keys(out).length) return null;
+  console.log(`  fog of war: ${Object.keys(out).length} Civ6 FOW tiles (${Object.keys(out).join(', ')})`);
   return out;
 }
 

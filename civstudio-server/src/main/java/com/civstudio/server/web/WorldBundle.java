@@ -243,9 +243,12 @@ public final class WorldBundle {
 		ObjectNode meta = root.putObject("meta");
 		meta.set("seed", manifest.get("seed"));
 		root.set("provinces", provinces);
+		// "fow" is the Civ6 fog-of-war art (docs/explorer-caravan.md §8) — baked and shipped ahead of
+		// the RevealedMap that will consume it, so it is absent from an un-rebaked manifest and simply
+		// arrives null (nothing renders it yet).
 		for (String k : List.of("map", "terrainColors", "terrainLayer", "terrainTiles", "river",
 				"sea", "shore", "ice", "bonusIcons", "trees", "routes", "featureOverlays", "improvementOverlays",
-				"districtTiles", "seaBands", "loading"))
+				"districtTiles", "fow", "seaBands", "loading"))
 			root.set(k, manifest.get(k));
 		root.set("geo", geo);
 		root.set("adjacencies", adjacencies);

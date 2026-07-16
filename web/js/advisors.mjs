@@ -5,11 +5,14 @@
 // S.techOpen states the LAYERS registry already gates on (layers.mjs) — the render pipeline is
 // unchanged; this only groups the controls and drives the existing panel.mjs handlers.
 // See docs/privy-council.md.
-import { S, BUNDLE, RELIGIONS } from "./core.mjs";
+import { S, BUNDLE, RELIGIONS, COUNTRIES } from "./core.mjs";
 import { setOverlay, setPlane, updateSearchContext } from "./panel.mjs";
+import { viewportFocus } from "./bandcaption.mjs";
+import { prettyKey } from "./plotlabel.mjs";
 import { openTech, closeTech } from "./techtree.mjs";
 import { advisorSeat, openAdvisorRail, noteRoster, closeAdvisorRail } from "./advisor-detail.mjs";
 import { onLiveRoster, liveColony } from "./overlays/live.mjs";
+
 import { ensurePolitical, politicalReady } from "./overlays/political.mjs";
 import { advisorPortrait, initPortraits } from "./portraits.mjs";
 
@@ -112,15 +115,30 @@ function technologyLabel() {
     return `${techName(c.researchingTech)} (${Math.round((c.researchProgress || 0) * 100)}%)`;
   return "Technology";
 }
-// the Religion segment's live text: the focused (selected) province's religion name, else the static
-// label. The name resolves from RELIGIONS (loaded with the political layer, which selecting a province
-// already warms); falls back to the prettified raw key until that arrives.
+// The province a political segment speaks for: an explicit SELECTION wins over the viewport, because
+// clicking a province is a deliberate "tell me about this one" that panning shouldn't silently
+// override. With nothing selected we fall back to what's under the crosshair (bandcaption.viewportFocus).
+const subjectProv = () => S.selectedProv || viewportFocus();
+// resolve a political key through its name table, falling back to the prettified raw key — the
+// tables (COUNTRIES/RELIGIONS) arrive with the lazy political layer, so until ensurePolitical()
+// lands, the raw key is the honest answer rather than a blank segment
+const polName = (table, key) => (key ? ((table[key] && table[key].name) || prettyKey(key)) : null);
+// the Foreign segment's live text: the subject province's owning nation, else the static label
+function nationLabel() {
+  const p = subjectProv();
+  return (p && polName(COUNTRIES, p.owner)) || "Foreign";
+}
+// the Religion segment's live text: the subject province's religion name, else the static label
 function religionLabel() {
-  const p = S.selectedProv;
-  if (p && p.religion)
-    return (RELIGIONS[p.religion] && RELIGIONS[p.religion].name)
-      || p.religion.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-  return "Religion";
+  const p = subjectProv();
+  return (p && polName(RELIGIONS, p.religion)) || "Religion";
+}
+// the Zeitgeist segment's live text: the live session's colony. Unlike the band caption's Settlement
+// row this needs NO locality gate — the segment is about the live SESSION, not about what's under
+// the camera, so naming its colony is correct wherever you happen to be looking.
+function zeitgeistLabel() {
+  const c = liveColony();
+  return (c && c.name) || "Zeitgeist";
 }
 // repaint one dynamic segment's text (keeping its icon); a no-op for the zoom segment / an absent button
 function setSegmentText(id, text) {
@@ -128,11 +146,27 @@ function setSegmentText(id, text) {
   if (!b || b.classList.contains("adv-zoom")) return;
   b.innerHTML = `<span class="adv-ico">${byId(id).icon || ""}</span>${text}`;
 }
-// refresh every live-labelled segment — Technology (from the snapshot) and Religion (from the focused
-// province). Called on build, on each live snapshot, and on a province-focus change (see initAdvisor).
+// refresh every live-labelled segment: Technology (from the snapshot), Foreign/Religion (from the
+// selected-or-viewport province) and Zeitgeist (from the live colony). Called on build, on each live
+// snapshot, on a province-focus change, and once the camera settles (see initAdvisor).
+//
+// Each of these REPLACES the segment's mode name with live data — the emoji icon and the
+// "Foreign Advisor (F4)" tooltip carry the mode identity instead, matching the Technology segment
+// that already shipped this way.
 export function refreshDynamicSegments() {
   setSegmentText("technology", technologyLabel());
+  setSegmentText("foreign", nationLabel());
   setSegmentText("religion", religionLabel());
+  setSegmentText("zeitgeist", zeitgeistLabel());
+}
+// The nation/religion names ride the lazily-loaded political layer (owner/religion are only stamped
+// onto the provinces by ensurePolitical). The Foreign/Religion segments now want them from the first
+// paint — not just after a click — so warm the layer once a subject province exists, then repaint the
+// segments with the resolved names. One-shot: ensurePolitical is idempotent and politicalReady()
+// short-circuits every later call.
+function warmPolitical() {
+  if (politicalReady() || !subjectProv()) return;
+  ensurePolitical().then(refreshDynamicSegments);
 }
 
 // show only the active advisor's sub-control strip; the standalone cost button (top-right) belongs
@@ -197,11 +231,16 @@ export function initAdvisor() {
   // live-labelled segments: Technology tracks each snapshot's research; Religion tracks the focused
   // province (panel.mjs dispatches civstudio:focus on select/deselect). See refreshDynamicSegments.
   window.addEventListener("civstudio:snapshot", refreshDynamicSegments);
+  // the camera settled on somewhere new — the Foreign/Religion segments name the province under the
+  // crosshair, so they track panning too (main.draw fires this off bandcaption's debounce, so it is
+  // once-per-settle, not per-frame)
+  window.addEventListener("civstudio:viewport", () => {
+    refreshDynamicSegments();
+    warmPolitical();
+  });
   window.addEventListener("civstudio:focus", () => {
     refreshDynamicSegments();
-    // the focused province's faith (owner/culture/religion + the name tables) rides the lazy political
-    // layer — warm it on first focus so the Religion segment can resolve a name, then repaint.
-    if (S.selectedProv && !politicalReady()) ensurePolitical().then(refreshDynamicSegments);
+    warmPolitical();
   });
   S.advisor = deriveAdvisor();
   paintSelector();

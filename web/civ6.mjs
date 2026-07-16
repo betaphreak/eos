@@ -214,6 +214,38 @@ export function districtTile(type) {
   return resolveTexture(DISTRICT_TILE[type]);
 }
 
+// ---- Fog of war (docs/explorer-caravan.md §8) ---------------------------------------------------
+// Civ6's terra-incognita art, baked ahead of the per-settlement RevealedMap that will consume it
+// (Phase 6 — not built yet, so nothing renders these today; see docs/underworld.md's precedent for
+// art landing before its mechanic). Anbennar ships no fog art of its own (its gfx/ has no map/
+// subdir) and base EU4's map/terrain/Fogofwar.dds sits outside every fetch pipeline, so the Civ6
+// depot — already the source for district/feature/ground art — is the one repo-idiomatic option.
+//
+// These are greyscale LUMINANCE MASKS, not colour art: R=G=B and alpha is uniformly 255, so a fog
+// layer should use the luminance as a coverage mask (composite/soft-light over the map), never
+// drawImage them as-is.
+//
+// Two complementary looks, matching the visibility tiers §8 specifies:
+//   - HATCH_*: three densities of an engraved cross-hatch, for the "explored but not currently
+//     visible" dimming (pick the density from how stale the knowledge is).
+//   - PARCHMENT: the unexplored old-map ground, for "never revealed".
+//
+// Civ6's fourth density, FOW_Hatch_1_Heavy, is deliberately NOT here: its source .dds is a solid
+// white 1024² with no pattern at all — as a mask it means "fully fogged", which a flat fill renders
+// for free. Baking it produced a 178-byte solid tile; carrying it would just invite someone to
+// drawImage a white square. Use a fill for full fog.
+export const FOW_TILE = {
+  HATCH_MED:       'FOW_Hatch_2_Med',
+  HATCH_MED_LIGHT: 'FOW_Hatch_3_MedLight',
+  HATCH_LIGHT:     'FOW_Hatch_4_Light',
+  PARCHMENT:       'FOW_Parchment_Light',
+};
+
+/** Civ6 fog-of-war tile by FOW_TILE key; null → depot absent / no such texture. */
+export function fowTile(key) {
+  return resolveTexture(FOW_TILE[key]);
+}
+
 // ---- Yield symbols (docs/civ6-art-replacement.md §C) --------------------------------------------
 /** The Civ6 inline-symbol sheet (FontIcons.dds); per-symbol cell layout is resolved in Phase C. */
 export function fontIcons() {
