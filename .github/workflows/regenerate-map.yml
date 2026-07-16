@@ -141,11 +141,15 @@ jobs:
             echo "::error::PLOT_STORAGE_ACCOUNT / PLOT_STORAGE_KEY secrets are not set — add them to upload the cache."
             exit 1
           fi
-          echo "uploading v$ver (~37 MB) to $ACCOUNT/$SHARE/plot-cache/v$ver …"
+          count=$(find ".plot-cache/v$ver" -name '*.json.gz' | wc -l)
+          echo "uploading $count province files (~37 MB) to $ACCOUNT/$SHARE/plot-cache/v$ver …"
+          # --no-progress + --output none: don't spew a line per file (~4.6k) — just the count below
           az storage file upload-batch \
             --account-name "$ACCOUNT" --account-key "$KEY" \
             --destination "$SHARE" --destination-path "plot-cache/v$ver" \
-            --source ".plot-cache/v$ver" --pattern '*.json.gz'
+            --source ".plot-cache/v$ver" --pattern '*.json.gz' \
+            --no-progress --output none
+          echo "uploaded $count files to plot-cache/v$ver"
 
       - name: Prune old cache versions on the share
         if: steps.guard.outputs.skip != 'true'
@@ -164,7 +168,7 @@ jobs:
             if [ -n "$n" ] && [ "$n" -lt "$oldest" ]; then
               echo "pruning plot-cache/$d"
               az storage file delete-batch --account-name "$ACCOUNT" --account-key "$KEY" \
-                --source "$SHARE" --pattern "plot-cache/$d/*" || true
+                --source "$SHARE" --pattern "plot-cache/$d/*" --output none || true
               az storage directory delete --account-name "$ACCOUNT" --account-key "$KEY" \
                 --share-name "$SHARE" --name "plot-cache/$d" 2>/dev/null || true
             fi
