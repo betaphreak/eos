@@ -72,7 +72,9 @@
     <div class="stats" id="plotStats"></div>
     <div class="actions">
       <button class="danger" id="btnDrop"
-        title="Delete every cached province plot grid (the in-memory LRU and the volume's *.json.gz). Each province regenerates fresh — under a sim pause — on its next request. Use after a change to plot generation.">Drop plot cache</button>
+        title="Delete every cached province plot grid for the CURRENT MAP_VERSION (the in-memory LRU and v<MAP_VERSION>/*.json.gz on the volume). Each province then regenerates fresh — under a sim pause — on its next request.
+WARNING: regenerated plots have NO PLACE NAMES. Production has no GeoNames dump, so names only exist in the cache CI baked; dropping them loses every name until the next rebake.
+You do NOT need this after a generation change — that bumps MAP_VERSION, which already points the server at a fresh, CI-baked directory. Use it only to force a re-read of this version.">Drop plot cache</button>
       <a class="linkbtn" id="storageLink" hidden target="_blank" rel="noopener"
         title="Open the plot-cache file share (anbennar-cache/plot-cache/v&lt;MAP_VERSION&gt;) in Azure Storage Explorer.">Open in Storage Explorer&nbsp;↗</a>
     </div>

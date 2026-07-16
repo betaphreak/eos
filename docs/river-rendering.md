@@ -207,7 +207,9 @@ ribbon.
 - Serve over **HTTP** (terrain zoom needs HTTP, not `file://`); eyeball a river province past 16×
   with `tools/webverify/shot.mjs` (which needs `?live=<server>` to skip the server picker — it
   passes one by default).
-- A class change is a **generation change**: `MAP_VERSION` 9 → CI rebake (`regenerate-map.yml`) →
-  redeploy → **clear the persistent plot cache** (`docs/client-server.md` §Deployment). And
-  `MAP_VERSION` is a static-final int that **inlines** into the server classes, so a bump needs
+- A class change is a **generation change**: bump `MAP_VERSION` → **CI rebake**
+  (`regenerate-map.yml`) → **then** roll the server, in that order (`docs/client-server.md`
+  §Deployment). Do **not** delete the prod cache: the bump already invalidates it (the cache is
+  `<share>/map/v<MAP_VERSION>`), and `map/v<N>` holds GeoNames names production cannot regenerate.
+  And `MAP_VERSION` is a static-final int that **inlines** into the server classes, so a bump needs
   `mvn -pl civstudio-server clean compile`.

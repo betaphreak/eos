@@ -277,8 +277,7 @@ from engine resources, `provinces.json` / `terrain-art.json` moving is a **redep
   pipeline verified against a local server (`/api/plots/4411` → 2 urban core plots;
   `/api/bundle` → `trees.city` + Dhenijansar `{dev:30, city:true}`). **Remaining:** a browser
   check of the sprite at the 256× "100%" zoom (and panel), then the deploy (see
-  `docs/client-server.md` §Deployment — server roll + **clear the persistent plot cache** +
-  SWA). *Follow-up:* culture → `ArtStyleType` → per-style sprite; the city panel showing a live
+  `docs/client-server.md` §Deployment — CI rebake **then** the server roll, no cache delete, + SWA). *Follow-up:* culture → `ArtStyleType` → per-style sprite; the city panel showing a live
   founded settlement's sim stats (population/firms) once one is founded at Dhenijansar.
 - **Phase 5 — the web Development overlay.** Bake `development`; add the choropleth mode +
   legend + toggle. Verify headless.

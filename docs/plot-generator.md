@@ -129,9 +129,12 @@ the web viewer (`plots.mjs`) all keep working — they just see richer, climate-
 
 ## Deployment (per the runbook + `always-az-deploy-on-change`)
 
-A `MAP_VERSION` bump is a generation change: **rewarm** (`WorldPlotGenerator`) → deploy the server →
-**clear the persistent plot cache** on the prod volume (else stale `v2` blobs serve) → rebake/redeploy the
-bundle + static site. This is server-affecting engine data, so it must go out via `az`, not just SWA.
+A `MAP_VERSION` bump is a generation change: **rebake** (`regenerate-map.yml` in CI, which runs
+`WorldPlotGenerator` and uploads to `<share>/map/v<new>`) → **then** deploy the server → rebake/
+redeploy the bundle + static site. Nothing is deleted: the cache is versioned per `MAP_VERSION`, so
+the bump itself points the server at a fresh dir — and `map/v<N>` holds GeoNames names prod cannot
+regenerate. The bake must precede the roll, or prod serves nameless on-demand plots. This is
+server-affecting engine data, so it goes out via `az`, not just SWA.
 
 ## Verification
 

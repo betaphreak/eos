@@ -52,7 +52,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          fetch-depth: 2   # HEAD~1 for the MAP_VERSION-change guard
+          # full history: the guard below compares against the commit the branch was at BEFORE this
+          # push, which can be any distance back (a push of N commits), not HEAD~1.
+          fetch-depth: 0
 
       - name: Resolve MAP_VERSION (and skip an unchanged push)
         id: guard
@@ -63,8 +65,23 @@ jobs:
           echo "current MAP_VERSION=$cur"
           echo "version=$cur" >> "$GITHUB_OUTPUT"
           if [ "${{ github.event_name }}" = "push" ]; then
-            prev=$(git show HEAD~1:"$store" 2>/dev/null | extract || true)
-            echo "previous MAP_VERSION=${prev:-<none>}"
+            # Compare against BEFORE THE PUSH, not HEAD~1. A push carries N commits, and the bump is
+            # rarely the last of them: MAP_VERSION 9 landed in 6809c1a and was pushed with three
+            # later commits, so HEAD~1 already read 9, the guard compared 9 vs 9 and skipped in 11s.
+            # The bake silently did not happen, leaving the v9 image pointed at a cache that was
+            # never built — the exact failure this guard exists to avoid. github.event.before is the
+            # same baseline the `paths:` filter uses to decide the run, so the two now agree.
+            before='${{ github.event.before }}'
+            case "$before" in
+              ''|0000000000000000000000000000000000000000) before='' ;;   # new branch / force-push: no baseline
+            esac
+            prev=''
+            if [ -n "$before" ] && git cat-file -e "$before^{commit}" 2>/dev/null; then
+              prev=$(git show "$before":"$store" 2>/dev/null | extract || true)
+            fi
+            echo "previous MAP_VERSION=${prev:-<none>} (baseline ${before:-<none>})"
+            # Fail OPEN: no resolvable baseline → bake. A redundant 24-minute bake is cheap next to
+            # rolling an image at a version whose cache does not exist.
             if [ -n "$prev" ] && [ "$cur" = "$prev" ]; then
               echo "MAP_VERSION unchanged ($cur) — nothing to rebake."
               echo "skip=true" >> "$GITHUB_OUTPUT"

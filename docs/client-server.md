@@ -317,38 +317,52 @@ map silently break:
    `civstudio-server/src/main/resources/map/web-asset-manifest.json` (baked **into the server
    image**, served at `/api/bundle`) plus `web/assets/*.webp`. Do this **before** building the
    server image, or the server serves a stale bundle. Commit the regenerated manifest + assets.
-2. **Deploy the server** — `pwsh tools/deploy-server.ps1` (Docker build → push to
+2. **Rebake the plot cache** — *only if the change altered plot **generation***
+   (`ProvincePlotField` / `TerrainGenerator` / `RiverFlow` / `CityPlacement` / bonuses / a
+   `terrains.json` yield, …). Such a change means a **`ProvincePlotStore.MAP_VERSION` bump**, and
+   the bump *is* the invalidation: the cache lives at `<share>/map/v<MAP_VERSION>`, so a new
+   version simply points the server at a fresh directory. **Do NOT delete anything.**
+
+   > **Never `rm` the plot cache.** An older revision of this runbook said to clear
+   > `/mnt/anbennar/map/*.json.gz`. That command is a **no-op** (it predates the versioned dirs —
+   > the files live under `map/v<N>/`), and "fixing" it to match would be **destructive**:
+   > `map/v<N>` holds the GeoNames place names, which **production cannot regenerate** (there is
+   > no GeoNames dump on the server). Deleting it leaves prod serving nameless plots until the
+   > next CI bake. The only thing a version bump needs is that `map/v<new>` **exists**.
+
+   Bake it in CI — **`regenerate-map.yml`** (~24 min: bakes the whole world with names via
+   `WorldPlotGenerator`, then azcopy-uploads to `<share>/map/v<new>` and prunes old versions).
+   It triggers on a master push touching `ProvincePlotStore.java`, and its guard compares
+   `MAP_VERSION` against **the commit the branch was at before the push** — not `HEAD~1`, which
+   silently skipped the v9 bake when the bump was pushed alongside later commits (2026-07-16).
+   **Verify the run actually baked** rather than assuming: a skip finishes in ~11 s.
+   `workflow_dispatch` always bakes, and is the fix if a push ever skips wrongly.
+
+   **Order matters: bake BEFORE rolling the image.** The server serves `v<MAP_VERSION>`; roll a
+   bumped image while `map/v<new>` is still empty and prod regenerates every province on demand —
+   **without names**.
+
+   `pwsh tools/deploy-plot-cache.ps1` is the local fallback (bakes on the dev box and uploads the
+   same way) for when CI is unavailable; CI is the normal path — the point of moving it there was
+   to get the 24-minute bake off the dev box.
+
+   Skip this step entirely for a pure server-code or web-JS change (generation unchanged).
+
+3. **Deploy the server** — `pwsh tools/deploy-server.ps1` (Docker build → push to
    `civstudio.azurecr.io` → `az containerapp update` → poll `/actuator/info`). Picks up new
-   engine resources, server code, and the rebaked manifest.
-3. **Clear the persistent plot cache** — *only if the change altered plot **generation***
-   (`ProvincePlotField` / `TerrainGenerator` / `CityPlacement` / bonuses / a `terrains.json`
-   yield, …). `PLOT_CACHE_DIR = /mnt/anbennar/map` is a **persistent AzureFile share**
-   (the `anbennar` storage), so the server keeps serving **stale `<id>.json.gz` fields** until
-   they are deleted — **a new image alone does NOT refresh them.** Delete the cache dir; the
-   server regenerates each province fresh on next request:
-   ```bash
-   # simplest — from inside a running replica (the volume is mounted there):
-   az containerapp exec -n civstudio-server -g civstudio \
-     --command "sh -c 'rm -f /mnt/anbennar/map/*.json.gz'"
-   # or via the storage API (needs the account key / the env storage account name):
-   az storage file delete-batch --account-name <acct> --source anbennar --pattern 'map/*.json.gz'
-   ```
-   Skip this step for a pure server-code or web-JS change (generation unchanged).
+   engine resources, server code, and the rebaked manifest. Do it **after** the bake (step 2),
+   never before: the image serves `v<MAP_VERSION>`, so rolling it while `map/v<new>` is still
+   empty makes prod regenerate every province on demand — nameless.
+4. **Deploy the web static site** — *only if `web/` (JS, `index.html`, committed assets) changed,
+   and normally **automatic**.* `deploy-web.yml` triggers on every master push touching `web/**`:
+   it runs the web unit tests (`npm test`) and then ships the prebuilt `web/` folder to SWA. Only
+   reach for the manual path (`npx @azure/static-web-apps-cli deploy ./web --env production` with
+   the deployment token) if that run failed or CI is unavailable.
 
-   **Shipping locally-baked plot *names*.** Plot place names (GeoNames) are baked locally —
-   production has no GeoNames dump, so it can't regenerate them. For that case use
-   `pwsh tools/deploy-plot-cache.ps1`: it bumps `MAP_VERSION`, moves the local baked
-   `.map/v<old>` to `v<new>`, uploads it to `<share>/map/v<new>`, and prunes old
-   versions (keeps `v<new>` + `v<new-1>`). Run the server deploy (step 2) after it so the new
-   image serves `v<new>` and the `?v=` flips. See `docs/plot-place-naming` in memory / the P1–P4
-   `feat(names)` commits.
-4. **Deploy the web static site** — *only if `web/` (JS, `index.html`, committed assets)
-   changed.* The SWA deploy (`deploy-web.yml`, or
-   `npx @azure/static-web-apps-cli deploy ./web --env production` with the deployment token)
-   ships the prebuilt `web/` folder.
-
-**Rule of thumb:** engine-resource / generation change → **server deploy + cache clear**; a
-`web/` change → **SWA deploy**; a bundle/terrain change → **rebake first, then both**.
+**Rule of thumb:** a **generation** change → bump `MAP_VERSION` → **CI rebake, then the server
+roll** (never a cache delete — see step 2); a plain engine-resource / server-code change → **server
+deploy** alone; a `web/` change → **SWA deploy** (automatic); a bundle/terrain change → **rebake the
+bundle first, then the server**.
 
 **Custom domain (`dev.civstudio.com`).** `civstudio.com` DNS is **not** in Azure DNS
 (no zone in the subscription), so the two validation records are added at the external DNS

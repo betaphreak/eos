@@ -53,9 +53,12 @@ Every action button carries a `title` **tooltip** explaining its effect; destruc
   not copied 404s in prod (`PageController` reads from disk).
 - Deploying the server (`tools/deploy-server.ps1`) ships the console. Set
   `CIVSTUDIO_AUTH_ADMINS` (above) so an operator can actually use it.
-- The **Drop plot cache** button is the in-console replacement for the manual
-  `az storage file delete-batch` step in the deployment runbook (`docs/client-server.md`
-  §Deployment) — an admin can drop the cache after a generation change without touching `az`.
+- The **Drop plot cache** button drops the cache for the CURRENT `MAP_VERSION` so the server
+  regenerates provinces on demand — useful when generation changed *without* a version bump (a
+  developer slip), or to force a re-read. It is **not** part of the normal deployment flow: a real
+  generation change bumps `MAP_VERSION`, which invalidates by pointing at a fresh `map/v<new>` (see
+  `docs/client-server.md` §Deployment). Note dropping a version whose plots carry **GeoNames names**
+  loses them until the next CI bake — production cannot regenerate names.
 
 ## Future
 
