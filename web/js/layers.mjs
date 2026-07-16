@@ -13,7 +13,8 @@ import { drawRaster, drawLakes, drawSeaCells, drawImpassable, drawSurfacePlots,
          drawProvinceBorders, drawUnderworldVeil, drawCavernFloors, drawCavernPlots, drawCavernRims,
          drawCaveEntrances, drawAdjacencies, drawHoverHighlight, drawSelectedHighlight } from "./main.mjs";
 import { drawSeaBase } from "./sea.mjs";
-import { drawCostOverlay, drawTradeGoodIcons } from "./plots.mjs";
+import { drawCostOverlay } from "./cost.mjs";
+import { drawTradeGoodIcons } from "./bonusicons.mjs";
 import { drawRoutes } from "./routes.mjs";
 import { drawTiers } from "./overlays/tiers.mjs";
 import { drawPolitical } from "./overlays/political.mjs";

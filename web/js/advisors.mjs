@@ -27,6 +27,9 @@ const HALANN_TIP = "Halann is the center of the Material Plane, which is the cen
 // advisors render as greyed placeholders with their reserved Civ4 F-key; `role` names the court
 // seat whose portrait/name labels the advisor (from the live roster, filled in a later step).
 export const ADVISORS = [
+  // Globe leads the bar: the world name + generation ("Halann v8") is the page's masthead, so it sits
+  // leftmost — ahead of the zoom band — rather than trailing the political advisors.
+  { id: "globe",      label: HALANN_TIP,           short: HALANN,      key: "F11", icon: "🌐" },
   // Main Map is special: its segment IS the live zoom-band readout (filled by main.mjs), not a label.
   { id: "mainmap",    label: "Main Map",           short: "Map",        key: "`",  zoom: true },
   { id: "domestic",   label: "Domestic Advisor",   short: "Domestic",   key: "F1", future: true },
@@ -36,7 +39,6 @@ export const ADVISORS = [
   { id: "military",   label: "Military Advisor",   short: "Military",   key: "F5", future: true },
   { id: "technology", label: "Technology Advisor", short: "Technology", key: "F6", role: "technology", icon: "🔬" },
   { id: "religion",   label: "Religion Advisor",   short: "Religion",   key: "F7", role: "religion",   icon: "🛐" },
-  { id: "globe",      label: HALANN_TIP,           short: HALANN,      key: "F11", icon: "🌐" },
   { id: "zeitgeist",  label: "Zeitgeist",          short: "Zeitgeist",  key: "Z",  live: true, icon: "📡" },
 ];
 const byId = id => ADVISORS.find(a => a.id === id);

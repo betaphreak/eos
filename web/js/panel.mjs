@@ -1,9 +1,9 @@
-import { BUNDLE, P, fmtInt, cam, VIEW, stage, pxr, pyr, px, py, cssVar, terrainRgb, worldW, provPath, provBoxHas, clampPan, provGeo, polOf, isPolitical, TRADE_GOODS, S } from "./core.mjs";
-import { draw, zoomAt, resize, focusProvinceFit, applyHash, hasDeepLink } from "./main.mjs";
-import { atLeast, BAND } from "./bands.mjs";
-import { loadPlots, bonusIconRect } from "./plots.mjs";
+import { P, cam, VIEW, stage, px, terrainRgb, clampPan, provGeo, polOf, isPolitical, TRADE_GOODS, S } from "./core.mjs";
+import { draw, zoomAt, resize, focusProvinceFit, applyHash } from "./main.mjs";
+import { loadPlots } from "./plotfetch.mjs";
+import { provinceAt, plotAt } from "./hittest.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
-import { startLive, stopLive, liveToBackground, liveActive, liveState, controlLive, LIVE_RATES } from "./overlays/live.mjs";
+import { startLive, liveToBackground, liveActive, liveState, controlLive, LIVE_RATES } from "./overlays/live.mjs";
 import { createSearchBox } from "./searchbox.mjs";
 import { techBuildingMatches, searchRowHtml, pickSearchResult } from "./techtree.mjs";
 import { prettyKey, plotTip } from "./plotlabel.mjs";
@@ -174,72 +174,6 @@ function hideSpinner(){ if(spinnerEl) spinnerEl.hidden=true; }
 
 // ---- interaction: hover province ----
 const tip=document.getElementById("tip");
-// point-in-polygon over a province's rings (even-odd, in screen space)
-function pointInProv(p, mx, my){
-  let inside=false;
-  for(const ring of p.rings){
-    for(let i=0, j=ring.length-1; i<ring.length; j=i++){
-      const xi=pxr(ring[i][0]), yi=pyr(ring[i][1]), xj=pxr(ring[j][0]), yj=pyr(ring[j][1]);
-      if(((yi>my)!==(yj>my)) && (mx < (xj-xi)*(my-yi)/(yj-yi)+xi)) inside=!inside;
-    }
-  }
-  return inside;
-}
-function provinceAt(mx, my){
-  // the map wraps east-west, so test the cursor against each on-screen world copy by
-  // shifting it into that copy's primary space (mx - m·period)
-  const period = worldW();
-  const L = cam.x + cam.k*VIEW.dx;
-  const mMin = period>0 ? Math.floor((0-L)/period) : 0;
-  const mMax = period>0 ? Math.floor((VIEW.w-L)/period) : 0;
-  for(let m=mMin; m<=mMax; m++){
-    const sx = mx - m*period;
-    // cheap bbox pre-filter before the full point-in-polygon: a bbox miss can't be a polygon hit,
-    // so this skips all but the few provinces actually under the cursor (same projection space, so
-    // the result is identical). provBoxHas is a strict superset of pointInProv.
-    for(const p of P){ if(p.rings && provBoxHas(p, sx, my) && pointInProv(p, sx, my)) return p; }
-  }
-  let best=null, bd=1e9;                                                    // else nearest centroid
-  for(let m=mMin; m<=mMax; m++){
-    const sx = mx - m*period;
-    // land + coastal sea/lake all carry rings now (they hover/select alike); a province with no
-    // outline (deep ocean, never shipped) has none and is skipped. Only a province whose bbox
-    // (grown by the 9.5px centroid radius, √90) reaches the cursor can win, so cull by that first.
-    for(const p of P){ if(!p.rings || !provBoxHas(p, sx, my, 10)) continue; const dx=px(p.lon)-sx, dy=py(p.lat)-my, d=dx*dx+dy*dy; if(d<bd){bd=d;best=p;} }
-  }
-  return bd<90 ? best : null;
-}
-// the plot under the cursor at texture zoom (where the per-province plot canvases + their grids
-// exist), across the E-W wrap copies — used for the resource tooltip. Ring-less sea provinces are
-// found too, so coastal resources tooltip like land ones. Returns the plot record, or null.
-function plotAt(mx, my){
-  if(!atLeast(BAND.TERRAIN)) return null;
-  const period = worldW();
-  const L = cam.x + cam.k*VIEW.dx;
-  const mMin = period>0 ? Math.floor((0-L)/period) : 0;
-  const mMax = period>0 ? Math.floor((VIEW.w-L)/period) : 0;
-  for(let m=mMin; m<=mMax; m++){
-    const sx = mx - m*period;
-    for(const p of P){
-      if(!p._grid || !p._tbox) continue;                       // only provinces whose texture canvas is built
-      const b=p._tbox, X0=pxr(b.x0), X1=pxr(b.x0+b.w), Y0=pyr(b.y0), Y1=pyr(b.y0+b.h);
-      if(sx<X0 || sx>=X1 || my<Y0 || my>=Y1) continue;
-      const spx = b.x0 + Math.floor((sx-X0)/(X1-X0)*b.w);
-      const spy = b.y0 + Math.floor((my-Y0)/(Y1-Y0)*b.h);
-      // prefer a resource ICON under the cursor: the glyph is large and anchored at its plot's
-      // bottom-left, so it often overlaps a neighbouring cell — scan a small neighbourhood (owner is
-      // at-or-left, at-or-below the cursor) and return the plot whose icon rect covers (sx,my).
-      for(let gy=spy-1; gy<=spy+2; gy++) for(let gx=spx-2; gx<=spx; gx++){
-        const c = p._grid.get(gx*1e5 + gy); if(!c || !c.bonus) continue;
-        const rc = bonusIconRect(c);
-        if(rc && sx>=rc[0] && sx<=rc[2] && my>=rc[1] && my<=rc[3]) return c;
-      }
-      const q = p._grid.get(spx*1e5 + spy);
-      if(q) return q;                                          // land plot found first; else the sea shelf plot
-    }
-  }
-  return null;
-}
 // a plot's resource label for the tooltip, or null: its bonus (or polar sea ice), Title Cased
 function resourceLabel(q){
   return q.bonus ? prettyKey(q.bonus) : null;   // the ◆ resource line; terrain/feature (incl. ice) live in plotTip
@@ -689,10 +623,6 @@ document.querySelectorAll(".topbar [data-tip]").forEach(el => {
 
 export { renderRail, resetView, toggleFullscreen, togglePlay, pausePlayback, closePanel,
          setOverlay, setPlane, updateSearchContext, showRail, selectProvince };
-// the hit-tests, shared with the top bar's band caption (bandcaption.mjs), which resolves "what am I
-// looking at" by probing the viewport CENTRE with the same tests the cursor uses. Both scan P and
-// are meant for a settled camera (hover / a debounced caption), never per-frame.
-export { provinceAt, plotAt };
 
 export function boot() {
   // Refit the canvas whenever the stage's box changes — window resize, fullscreen, AND the panel

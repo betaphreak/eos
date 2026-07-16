@@ -18,7 +18,7 @@ import { P, VIEW, TRADE_GOODS, provGeo, S, provOnScreen, isUnderground, px, py, 
 import { band, BAND, BAND_NAMES } from "./bands.mjs";
 import { prettyKey } from "./plotlabel.mjs";
 import { landPlots, plotsPending, majorityTerrain, urbanCount } from "./plotstats.mjs";
-import { provinceAt, plotAt } from "./panel.mjs";
+import { provinceAt, plotAt } from "./hittest.mjs";
 import { liveColony } from "./overlays/live.mjs";
 
 // ---- the viewport focus: the ONE province the captions speak for ----

@@ -218,6 +218,11 @@ function labelBaseline(rings) {
 const provinces = [...shipped].map(id => byId.get(id)).filter(Boolean).map(p => ({
   id: p.id, name: p.name, lat: +p.lat.toFixed(3), lon: +p.lon.toFixed(3),
   plots: p.plots, waterPlots: p.waterPlots || 0, type: p.type,
+  // EU4 development (base_tax + base_production + base_manpower) and the city_terrain flag. Kept in
+  // step with the server's projection in WorldBundle.projectProvince: the two bundle producers must
+  // agree, or the same rail reads one thing off /api/bundle and another off a static bake.
+  dev: (p.base_tax || 0) + (p.base_production || 0) + (p.base_manpower || 0),
+  ...(p.city ? { city: true } : {}),   // omitted when false — only the 113 cities carry the key
   // geography as raw Clausewitz keys only; display names are resolved client-side from the shipped
   // `geoNames` dictionaries (interning them here duplicated ~850 KB of names across all provinces)
   region: p.region || null, area: p.area || null, continent: p.continent || null,

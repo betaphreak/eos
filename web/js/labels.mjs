@@ -1,4 +1,4 @@
-import { P, BUNDLE, px, py, pxr, pyr, cam, VIEW, ctx, cssVar, S, LABEL_FONT } from "./core.mjs";
+import { P, BUNDLE, px, py, pxr, pyr, cam, VIEW, ctx, LABEL_FONT } from "./core.mjs";
 import { bandAlpha, kBand, GEO_TIER_ENV } from "./bands.mjs";
 
 // Stellaris-style map lettering: the shared bundled geometric sans (see core.LABEL_FONT).
