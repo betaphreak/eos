@@ -177,9 +177,21 @@ function liveTabRunning(on) {
   if (badge) badge.hidden = !on;
 }
 
+// What a snapshot puts on the CANVAS: where the bands and the colony are (drawLive draws dots and
+// trails from exactly these, and nothing in it is time-based). Everything else a snapshot carries —
+// population, prices, the date, the roster, the event log — is chrome, and chrome has no business
+// forcing a full scene render. A tick where only the numbers moved is the common case at speed 1.
+const sceneSig = s => JSON.stringify([
+  s.caravans.map(c => [c.leader, c.role, c.latitude, c.longitude, c.settled]),
+  (s.colonies || []).map(c => [c.latitude, c.longitude]),
+]);
+let lastSig = null;
+
 function onSnapshot(s) {
   snap = s;
-  mergeRoutePlots(s.routePlots);   // accumulate the bands' pioneered trails (gap B → the route layer)
+  // accumulate the bands' pioneered trails (gap B → the route layer). A new trail plot changes the
+  // canvas even when nothing moved, so it counts toward the repaint decision below.
+  const routesChanged = mergeRoutePlots(s.routePlots);
   s.caravans.forEach(c => {
     const t = (trails[c.leader] = trails[c.leader] || []);
     t.push([c.latitude, c.longitude]);
@@ -192,7 +204,11 @@ function onSnapshot(s) {
   ingestLog(s.log);           // feed the event-log bar this frame's new lines
   onState(s.state, s.date);   // sync the transport controls (play icon, speed, date) to the server
   liveTabRunning(s.state === "RUNNING"); // tint the Spectate tab while the session is live/unpaused
-  redraw();
+  // ...but only repaint the map when the map actually changed. This was the one repaint in the app
+  // driven by nothing but the clock — every tick forced a full scene render, up to UNCAPPED at
+  // speed 5 (LIVE_RATES ends in 0), however far the camera was parked from the action.
+  const sig = sceneSig(s);
+  if (routesChanged || sig !== lastSig) { lastSig = sig; redraw(); }
   onRoster(liveRoster());     // let the advisor selector/rail track the roster (succession)
   // let the tech tree (if open) refresh its researched-state styling from the new known set —
   // decoupled via a DOM event so live.mjs need not import techtree.mjs

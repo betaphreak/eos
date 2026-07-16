@@ -26,7 +26,10 @@ window.addEventListener("mousemove", e => {
   cam.x += dx; cam.y += dy; lastX = e.clientX; lastY = e.clientY;
   clampPan(); S.baseVersion++; draw();
 });
-window.addEventListener("mouseup", () => { if (S.dragging) { S.dragging = false; stage.classList.remove("grabbing"); draw(); } });
+// no draw() here: the drag's last mousemove already painted (or has a paint pending), and letting go
+// changes nothing on the canvas — the grab cursor is CSS. Repainting on mouseup just bought a wasted
+// full scene render on every click.
+window.addEventListener("mouseup", () => { if (S.dragging) { S.dragging = false; stage.classList.remove("grabbing"); } });
 
 // --- touch: one finger drags to pan, two fingers pinch to zoom (mobile has no wheel/mouse) ---
 stage.style.touchAction = "none";                       // stop the browser scrolling/zooming the page
@@ -206,13 +209,19 @@ function markerAt(mx, my){
   for(const k of m){ const dx=mx-k.x, dy=my-k.y; if(dx*dx+dy*dy <= k.r*k.r) return k; }
   return null;
 }
+// The tooltip is DOM and must track every mouse pixel; the CANVAS, though, only reads hover through
+// S.hoverProv (main.drawHoverHighlight) — so a repaint is only worth it when the hovered PROVINCE
+// changes. Drifting the cursor inside one province used to cost a full scene repaint per mousemove
+// (~60/s) of a byte-identical scene, which was the single most frequent wasted paint in the app.
+const repaintIfHoverMoved = before => { if (S.hoverProv !== before) draw(); };
 stage.addEventListener("mousemove", e=>{
   if(S.dragging) return;                       // panning — skip hover work
+  const before = S.hoverProv;
   const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
   const mk = markerAt(mx, my);                  // a cave-entrance/teleporter glyph takes priority
   if(mk){ S.hoverProv=null; tip.innerHTML=mk.label;
     tip.style.left=Math.min(mx+14, r.width-230)+"px"; tip.style.top=(my+14)+"px"; tip.classList.add("on");
-    draw(); return; }
+    repaintIfHoverMoved(before); return; }
   const best = provinceAt(mx, my);
   const hit = plotAt(mx, my);                   // plot under cursor (texture zoom): name/terrain/feature/resource
   const plot = hit ? plotTip(hit) : "";
@@ -224,9 +233,9 @@ stage.addEventListener("mousemove", e=>{
     tip.innerHTML=html;
     tip.style.left=Math.min(mx+14, r.width-230)+"px"; tip.style.top=(my+14)+"px"; tip.classList.add("on");
   } else { S.hoverProv=null; tip.classList.remove("on"); }
-  draw();
+  repaintIfHoverMoved(before);
 });
-stage.addEventListener("mouseleave", ()=>{ S.hoverProv=null; tip.classList.remove("on"); draw(); });
+stage.addEventListener("mouseleave", ()=>{ const before=S.hoverProv; S.hoverProv=null; tip.classList.remove("on"); repaintIfHoverMoved(before); });
 stage.addEventListener("click", e=>{
   if(panMoved){ panMoved=false; return; }    // this "click" was the end of a drag
   if(e.detail>1) return;                      // 2nd click of a double-click: dblclick zooms — don't

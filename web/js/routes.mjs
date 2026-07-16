@@ -31,12 +31,26 @@ if (ROUTES) for (const k of TIERS) if (ROUTES[k]) {
 // (a route persists once seen) so it survives the engine's bounded trail window and applies even to
 // plots whose province loads later. See docs/route-rendering.md.
 const routeField = new Map();
+// bumped whenever routeField actually changes — the invalidation key for the per-province tiling
+// cache below, so a province only re-tiles when the field it was tiled from moved.
+let fieldVersion = 0;
 
 /** Merge the live snapshot's routed plots into the field, then the next repaint stamps them.
- *  Called by the live overlay on each snapshot; a no-op off Live mode. */
+ *  Called by the live overlay on each snapshot; a no-op off Live mode.
+ *  Returns whether anything actually changed — the snapshot re-sends a bounded window of trail
+ *  plots every tick, so most merges are pure repeats, and the caller uses this to decide whether a
+ *  repaint is owed at all. */
 export function mergeRoutePlots(plots) {
-  if (!plots || !plots.length) return;
-  for (const rp of plots) routeField.set(rp.x + "," + rp.y, rp.type);
+  if (!plots || !plots.length) return false;
+  let changed = false;
+  for (const rp of plots) {
+    const k = rp.x + "," + rp.y;
+    if (routeField.get(k) === rp.type) continue;
+    routeField.set(k, rp.type);
+    changed = true;
+  }
+  if (changed) fieldVersion++;
+  return changed;
 }
 
 /** The route tier a plot draws in, or null. Prefers the live per-plot RouteType (gap B — trails the
@@ -58,6 +72,29 @@ function stampCell(img, rect, dx, dy, size, rot) {
   ctx.restore();
 }
 
+// A province's route tiles — {x, y, tier, piece, rot} per routed plot — computed once and cached on
+// the province. The tiling depends only on the plots and the route field, NEITHER of which changes
+// per frame, so recomputing it every paint (as this layer used to) was pure waste: it rebuilt a Map
+// and re-ran neighbourMask/routePiece for every routed plot, on every frame, forever. Invalidated by
+// the field version and by the plots array identity (a province's plots arrive asynchronously).
+function routeTiles(p) {
+  if (p._routeTiles && p._routeTilesV === fieldVersion && p._routeTilesP === p._plots)
+    return p._routeTiles;
+  const routed = new Map();
+  for (const q of p._plots) { const t = plotTier(q); if (t) routed.set(q.x + "," + q.y, t); }
+  const tiles = [];
+  for (const q of p._plots) {
+    const tier = routed.get(q.x + "," + q.y);
+    if (!tier) continue;
+    // connect only to same-tier neighbours (a trail doesn't fuse into a paved road)
+    const mask = neighbourMask((dx, dy) => routed.get((q.x + dx) + "," + (q.y + dy)) === tier);
+    const { piece, rot } = routePiece(mask);
+    tiles.push({ x: q.x, y: q.y, tier, piece, rot });
+  }
+  p._routeTiles = tiles; p._routeTilesV = fieldVersion; p._routeTilesP = p._plots;
+  return tiles;
+}
+
 /** Stamp auto-tiled route sprites over the routed plots of every on-screen province. */
 export function drawRoutes() {
   if (!ROUTES || isPolitical()) return;
@@ -70,22 +107,12 @@ export function drawRoutes() {
   ctx.imageSmoothingEnabled = true;
   for (const p of P) {
     if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
-    // index this province's routed plots by tier, for the neighbour connection test
-    const routed = new Map();
-    for (const q of p._plots) { const t = plotTier(q); if (t) routed.set(q.x + "," + q.y, t); }
-    if (!routed.size) continue;
-    for (const q of p._plots) {
-      const key = q.x + "," + q.y, tier = routed.get(key);
-      if (!tier || !ready[tier]) continue;
-      const meta = ROUTES[tier], img = atlas[tier];
-      // connect only to same-tier neighbours (a trail doesn't fuse into a paved road)
-      const mask = neighbourMask((dx, dy) => routed.get((q.x + dx) + "," + (q.y + dy)) === tier);
-      const { piece, rot } = routePiece(mask);
-      const rect = meta.cell[piece];
-      if (rect) {
-        ctx.globalAlpha = a * (TIER_ALPHA[tier] || 1);
-        stampCell(img, rect, pxr(q.x), pyr(q.y), plotPx, rot);
-      }
+    for (const t of routeTiles(p)) {
+      if (!ready[t.tier]) continue;
+      const rect = ROUTES[t.tier].cell[t.piece];
+      if (!rect) continue;
+      ctx.globalAlpha = a * (TIER_ALPHA[t.tier] || 1);
+      stampCell(atlas[t.tier], rect, pxr(t.x), pyr(t.y), plotPx, t.rot);
     }
   }
   ctx.restore();
