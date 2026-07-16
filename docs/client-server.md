@@ -334,6 +334,14 @@ map silently break:
    az storage file delete-batch --account-name <acct> --source anbennar --pattern 'plot-cache/*.json.gz'
    ```
    Skip this step for a pure server-code or web-JS change (generation unchanged).
+
+   **Shipping locally-baked plot *names*.** Plot place names (GeoNames) are baked locally —
+   production has no GeoNames dump, so it can't regenerate them. For that case use
+   `pwsh tools/deploy-plot-cache.ps1`: it bumps `GEN_VERSION`, moves the local baked
+   `.plot-cache/v<old>` to `v<new>`, uploads it to `<share>/plot-cache/v<new>`, and prunes old
+   versions (keeps `v<new>` + `v<new-1>`). Run the server deploy (step 2) after it so the new
+   image serves `v<new>` and the `?v=` flips. See `docs/plot-place-naming` in memory / the P1–P4
+   `feat(names)` commits.
 4. **Deploy the web static site** — *only if `web/` (JS, `index.html`, committed assets)
    changed.* The SWA deploy (`deploy-web.yml`, or
    `npx @azure/static-web-apps-cli deploy ./web --env production` with the deployment token)
