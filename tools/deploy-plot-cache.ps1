@@ -169,7 +169,7 @@ if ($AccountKey) {
 # --- 8. upload the baked cache to  <share>/plot-cache/v<new>  ---------------------------------
 $destPath = "$CACHE_SUBDIR/v$NewVersion"
 if ($PSCmdlet.ShouldProcess("$StorageAccount/$Share/$destPath", "Upload $count province files from v$NewVersion")) {
-  Write-Host "==> uploading v$NewVersion cache to $StorageAccount/$Share/$destPath (hundreds of MB — this takes a while)..." -ForegroundColor Cyan
+  Write-Host "==> uploading v$NewVersion cache to $StorageAccount/$Share/$destPath (~37 MB of gzipped fields)..." -ForegroundColor Cyan
   $uploadArgs = @('storage','file','upload-batch','--account-name',$StorageAccount) + $authArgs +
                 @('--destination',$Share,'--destination-path',$destPath,'--source',$dstDir,'--pattern','*.json.gz')
   az @uploadArgs
