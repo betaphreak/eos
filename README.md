@@ -184,7 +184,8 @@ The economic core descends from an agent-based macroeconomic model written by
 **Zhihong Xu** (~2011); CivStudio grows it into a game engine — the geography,
 society, calendar, caravan and data-import layers are new. Map and content data
 derive from the **Anbennar** EU4 mod and the **Caveman2Cosmos** Civilization IV
-mod.
+mod. Per-plot place names are drawn from **[GeoNames](https://www.geonames.org/)**
+(licensed [CC&nbsp;BY&nbsp;4.0](https://creativecommons.org/licenses/by/4.0/)).
 
 ## License
 
