@@ -133,6 +133,19 @@ public abstract class Caravan {
 	}
 
 	/**
+	 * Whether the band has <b>nobody left</b> — starved out, or drained by mortality on a long
+	 * road. A spent band is a corpse: it cannot march, settle, forage or be re-founded, and the
+	 * session's drivers prune it (see {@code GameSession.pruneSpentCaravans}). The base band
+	 * carries no following and so is never spent; {@link MarchingCaravan} decides it from its
+	 * {@link MarchFollowing}'s head-count.
+	 *
+	 * @return {@code true} if the band has no members left and should be deleted
+	 */
+	public boolean isSpent() {
+		return false;
+	}
+
+	/**
 	 * Move the band to a <b>neighbouring</b> province (one hop). The destination must
 	 * be adjacent to the band's current province on the {@link WorldMap} graph; the
 	 * band's coordinates are updated to the new province's.

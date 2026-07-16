@@ -67,22 +67,35 @@ class HostedSessionTest {
 			assertFalse(mid.caravans().isEmpty(),
 					"the colony musters foraging explorers over winter");
 
-			// remember where each band sits mid-run
-			Map<String, double[]> from = new HashMap<>();
+			// Confirm the march actually moves bands on the map. Two things make a single fixed
+			// window the wrong probe, and both bite at MarchConfig.baseMovePoints=3.0:
+			//   1. A band's lat/lon is its PROVINCE's — only moveTo() (a crossing) shifts it, while
+			//      within-province progress accrues invisibly as progressPoints. A crossing takes
+			//      ~24 days, so over a 20-day window a marching band reports the identical position.
+			//   2. The colony CYCLES its levies: a band returns home (and is pruned) and a fresh one
+			//      musters in its place, so over a long window the bands seen at the end are not the
+			//      ones seen at the start, and comparing by leader finds nothing to compare.
+			// So sample repeatedly and remember every leader's last known position: a band that
+			// changes province between ANY two samples proves the march moves the map, whether or not
+			// it is the same band throughout.
+			Map<String, double[]> seen = new HashMap<>();
 			for (CaravanView c : mid.caravans())
-				from.put(c.leader(), new double[] { c.latitude(), c.longitude() });
-
-			// advance more days deterministically and confirm at least one band marched
-			hs.step(20);
-			SessionSnapshot later = awaitSnapshot(hs, 40, 60_000);
-			assertEquals(40, later.tick());
+				seen.put(c.leader(), new double[] { c.latitude(), c.longitude() });
 
 			boolean anyMoved = false;
-			for (CaravanView c : later.caravans()) {
-				double[] p = from.get(c.leader());
-				if (p != null && (Math.abs(p[0] - c.latitude()) > 1e-9
-						|| Math.abs(p[1] - c.longitude()) > 1e-9))
-					anyMoved = true;
+			int tick = 20;
+			for (int i = 0; i < 6 && !anyMoved; i++) {
+				hs.step(10);
+				tick += 10;
+				SessionSnapshot s = awaitSnapshot(hs, tick, 60_000);
+				assertEquals(tick, s.tick());
+				for (CaravanView c : s.caravans()) {
+					double[] p = seen.get(c.leader());
+					if (p != null && (Math.abs(p[0] - c.latitude()) > 1e-9
+							|| Math.abs(p[1] - c.longitude()) > 1e-9))
+						anyMoved = true;
+					seen.put(c.leader(), new double[] { c.latitude(), c.longitude() });
+				}
 			}
 			assertTrue(anyMoved, "at least one caravan should have marched");
 		} finally {

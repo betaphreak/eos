@@ -21,6 +21,8 @@ import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.util.Rng;
 
+import lombok.extern.java.Log;
+
 /**
  * One authoritative, hosted run of a {@link GameSession} — the server-side unit a browser
  * spectator subscribes to (see {@code docs/client-server.md}, Phase A). The host owns the
@@ -43,6 +45,7 @@ import com.civstudio.util.Rng;
  * the projection never races {@code newDay}, and a slow subscriber never stalls the sim
  * (the transport is expected to hand off to its own buffer).
  */
+@Log
 public final class HostedSession {
 
 	/** The host's control state. */
@@ -436,6 +439,11 @@ public final class HostedSession {
 			Rng rng = session.getBandRng();
 			for (Caravan band : bands)
 				band.tick(d, rng);
+			// bury the day's dead before the snapshot is built, so a band that starved out
+			// stops being drawn as a live marker with a head-count of zero
+			for (Caravan dead : session.pruneSpentCaravans())
+				log.info("A band under " + dead.getLeader()
+						+ " starved out on the road and was lost, on " + d + ".");
 		});
 	}
 

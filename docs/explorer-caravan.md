@@ -465,6 +465,28 @@ Each phase is independently compilable/testable; earlier phases are inert until 
   - **Min-one-move:** the daily budget is **floored to one plot/day** (`minDailyMovePoints`) so a
     marching band **never has a zero-progress day** — polar winter or a huge column creeps on its
     larder rather than freezing (`netMarchKm` still zeroes for reporting).
+  - **A day is (about) a Civ4 turn — `baseMovePoints` 6.0 → 3.0 (owner decision, 2026-07-16).** At
+    6.0 a band walked ~6 flat plots/day and the C2C terrain ladder barely registered: a 3-cost
+    jungle plot still let it cross two a day. At 3.0 a lean band earns ~1.0–2.8 points over the
+    seasons and terrain is what decides the day. The floor stays 1.0 (Civ4's rule is that a unit
+    always enters *some* tile), which sets the real tuning tension: **the floor and the daylight
+    coupling compete for a narrow band**. Measured at 3.0 — a 500-strong band swings 1.0 (8h
+    winter) → 2.31 (15h summer), while a 2000-strong column is pinned at the floor in every season,
+    i.e. it is *terrain- and size-bound, not daylight-bound*. At 2.0 the floor swallowed nearly
+    everything (a 500-band only escaped it at midsummer), which is why 2.0 was rejected.
+  - **Consequence — the map dot is province-quantised.** A band's rendered lat/lon is its
+    *province's*; only a crossing (`moveTo`) shifts it, while within-province progress accrues
+    invisibly as `progressPoints`. At 6.0 a band crossed every ~14 days; at 3.0 it is ~24, so a
+    band now sits visibly still for 3–4 weeks and then jumps a whole province. Interpolating the
+    dot along the walked plot corridor is the fix (it belongs with the Phase 5 route viz).
+  - **Ration constants are speed-calibrated.** Anything sized in *days of food* moves with this
+    number. `DhenijansarToWexkeepTest.JOURNEY_RATION_PER_PERSON` (82.0 → 115.0) is the canary: the
+    ~800-day trip became ~1130 days, and a band provisioned for the old one **starves to death
+    around province 506** instead of arriving. Live levies are unaffected today (measured 23
+    mustered / 22 returned / 0 lost over 8 years) because they wander locally and turn home on the
+    seasonal deadline — but `ExplorerCaravan.MIN_LARDER_DAYS` (20) is a **fixed reserve that
+    ignores how far home is**, so it is only safe while excursions stay short. Directed
+    frontier-seeking must land with a distance-aware turn-home rule.
   Verified: `MarchTest` (+3 cases — budget scales with daylight, shrinks with band size, never
   falls to zero) + the existing caravan integration suite green. **Future factors (dormant hooks):**
   literal per-plot min-one-move stepping (entering a single arbitrarily-expensive plot in one day)

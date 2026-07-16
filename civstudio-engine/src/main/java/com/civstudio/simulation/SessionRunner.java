@@ -16,6 +16,8 @@ import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.util.Rng;
 
+import lombok.extern.java.Log;
+
 /**
  * Runs several colonies of one {@code GameSession} <b>concurrently</b> — one
  * thread per settlement — in <b>lockstep</b>: every colony advances exactly one
@@ -38,6 +40,7 @@ import com.civstudio.util.Rng;
  * {@linkplain Phaser#arriveAndDeregister() deregisters}, and the survivors carry
  * on among themselves.
  */
+@Log
 public final class SessionRunner {
 
 	private SessionRunner() {
@@ -162,6 +165,12 @@ public final class SessionRunner {
 					if (journal != null && report != null)
 						journal.record(report);
 				}
+				// bury the day's dead: a band that ate its last ration is a corpse, and the
+				// session's list was append-only, so it used to be re-ticked every remaining
+				// day of the run (docs/caravan.md §The band is a decaying asset)
+				for (Caravan dead : session.pruneSpentCaravans())
+					log.info("A band under " + dead.getLeader()
+							+ " starved out on the road and was lost, on " + date + ".");
 			} catch (Throwable t) {
 				failures.add(t);
 			}

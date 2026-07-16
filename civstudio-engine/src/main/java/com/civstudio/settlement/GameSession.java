@@ -634,4 +634,30 @@ public class GameSession {
 		// a snapshot copy, so a caller can iterate it while another thread adds a band
 		return Collections.unmodifiableList(new ArrayList<>(caravans));
 	}
+
+	/**
+	 * Drop every {@linkplain Caravan#isSpent() spent} band — the session's counterpart to the
+	 * colony-level prune in {@code Settlement.tickExcursions}. A band that starves out on the
+	 * road leaves a corpse behind: it can never march, settle or be re-founded again, but
+	 * nothing removed it, so it was re-ticked every day for the rest of the run and still shipped
+	 * to the client as a live marker with a head-count of zero. The drivers call this once a day,
+	 * after ticking the bands.
+	 * <p>
+	 * The band's hoard and cargo die with it, exactly as they already did — the money was
+	 * unreachable the moment the last member did, since a hoard is only ever spent by a living
+	 * band. This deletes the corpse, not the assets.
+	 *
+	 * @return the bands removed, in registration order (empty when none died) — the caller logs
+	 *         them, since the session has no colony prefix of its own to log under
+	 */
+	public synchronized List<Caravan> pruneSpentCaravans() {
+		// synchronized with addCaravan: a colony dissolving into a band on another thread must
+		// not race the prune of the same lockstep day
+		List<Caravan> dead = new ArrayList<>();
+		for (Caravan band : caravans)
+			if (band.isSpent())
+				dead.add(band);
+		caravans.removeAll(dead);
+		return dead;
+	}
 }

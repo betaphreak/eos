@@ -106,7 +106,7 @@ public record MarchConfig(
 			0.8,    // forageCapFraction (< 1: foraging only slows the larder's decline)
 			0.01,   // gatherRatePerHour (goods per gatherer per surplus hour left)
 			10.0,   // cargoCapacityPerHead (cargo units one member can carry)
-			6.0,    // baseMovePoints (Civ4 move-points/day at reference daylight, pre-overhead)
+			3.0,    // baseMovePoints (Civ4 move-points/day at reference daylight, pre-overhead)
 			12.0,   // referenceDaylightHours (usable daylight buying the full base points)
 			1.0,    // columnOverheadPerThousand (move-points a 1000-strong column loses/day)
 			1.0);   // minDailyMovePoints (min-one-move floor: one flat plot/day, never zero)

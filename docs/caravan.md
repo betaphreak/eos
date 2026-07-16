@@ -205,6 +205,27 @@ Foraging/trade-fed sustenance and real movement ride on the **caravan-trade** ge
 work (the same dependency `docs/village-founding.md` notes); until that lands, a band
 founds in place at a hardcoded location with no real wandering.
 
+#### When the clock runs out — the band is deleted (2026-07-16)
+
+The decay has an end state, and it used to leak. A band that ate its last ration is
+**spent**: `following.act()` starves the unfed, and once nobody is left it can never
+march, settle, forage or re-found. `Caravan.isSpent()` names that condition — it was
+already computed inside `MarchingCaravan.tick` and *thrown away* — and
+`GameSession.pruneSpentCaravans()` buries it. The drivers (`SessionRunner.tickBands`,
+`HostedSession.tickBands`) call it once a day, after ticking the bands.
+
+This closes a real leak: `GameSession.caravans` was **append-only** (`addCaravan` had no
+counterpart anywhere), so a dead band was re-ticked every remaining day of the run and
+still shipped to the browser as a live marker with `bandSize: 0`. The colony-level
+counterpart, `Settlement.tickExcursions`, already pruned levies that **returned home**
+(`removeIf(hasArrived)`) but had the same hole for ones that **died on the road** — a
+spent levy never reaches `Phase.DONE`, so `hasArrived()` stays false; it now prunes on
+`hasArrived() || isSpent()` and logs the loss.
+
+The band's hoard and cargo die with it, exactly as they already did — a hoard is only
+ever spent by a *living* band, so the money was unreachable the moment the last member
+was. This deletes the corpse, not the assets. Covered by `SpentCaravanPruneTest`.
+
 ## Architecture mapping
 
 - **The `Caravan` entity** = a colony-less **aggregate** holding a **leader** `Member`

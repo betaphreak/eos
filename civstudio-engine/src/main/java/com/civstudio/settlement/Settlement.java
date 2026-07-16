@@ -1268,16 +1268,27 @@ public class Settlement {
 	}
 
 	// march every outstanding excursion one day on the colony's own excursion stream, then
-	// prune those that have returned home (their people already undrafted). Run at the end of
-	// newDay, after the day's market has cleared (mirroring how the session ticks its bands
-	// after the colonies). Draws nothing when the colony has no excursions.
+	// prune those that are finished with: the ones that RETURNED HOME (their people already
+	// undrafted and rewarded) and the ones that DIED ON THE ROAD. The second case used to leak —
+	// a levy that starves out never reaches Phase.DONE, so hasArrived() stays false and the
+	// corpse marched on this list forever, re-ticked daily and still drawn by the client. Run at
+	// the end of newDay, after the day's market has cleared (mirroring how the session ticks its
+	// bands after the colonies). Draws nothing when the colony has no excursions.
 	private void tickExcursions() {
 		if (excursions.isEmpty())
 			return;
 		LocalDate date = getDate();
 		for (ExplorerCaravan e : excursions)
 			e.tick(date, excursionRng);
-		excursions.removeIf(ExplorerCaravan::hasArrived);
+		excursions.removeIf(e -> {
+			if (e.hasArrived())
+				return true;
+			if (!e.isSpent())
+				return false;
+			log.info(name + " lost an expedition on the road: the levy under "
+					+ e.getLeader() + " starved out and never came home, on " + getDate() + ".");
+			return true;
+		});
 	}
 
 	/**

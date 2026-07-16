@@ -13,7 +13,7 @@
 // bootstrap that actually picks the server.
 import { ctx, px, py, cssVar, VIEW, baseXr, baseYr, sxSrc, sySrc, LABEL_FONT, centerOn, SERVER_BASE as LIVE_BASE } from "../core.mjs";
 import { hasDeepLink } from "../main.mjs";
-import { atLeast, BAND } from "../bands.mjs";
+import { atLeast, BAND, bandAlpha } from "../bands.mjs";
 import { mergeRoutePlots } from "../routes.mjs";
 import { showLiveLog, ingestLog, ingestChat, resetLog, setChatSender } from "../livelog.mjs";
 
@@ -240,11 +240,19 @@ function frameOn(lat, lon, k) {
 export function drawLive() {
   if (!snap) return;
 
-  // caravan trails, then dots
+  // caravan trails, then dots. The trail polyline is the OVERVIEW stand-in only: it joins province
+  // centroids, so it is the right shape at atlas zoom (a province is a few pixels) and the wrong one
+  // once plots are legible. Past the Province→Terrain threshold the band's real walked corridor is
+  // already on screen as baked Civ4 route art (routes.mjs), stamped per plot from the trail the
+  // explorer pioneered — so the polyline fades OUT exactly as that art fades IN, on the complement of
+  // its [3.5, 4.5] envelope. Same hand-off the city marker makes to the baked city sprite below.
+  const trailA = bandAlpha([-Infinity, -Infinity, 3.5, 4.5]);
   snap.caravans.forEach((c, i) => {
     const col = ROLE_COLOR[c.role] || PALETTE[i % PALETTE.length];
     const tr = trails[c.leader] || [];
-    if (tr.length > 1) {
+    if (tr.length > 1 && trailA > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = trailA;
       ctx.beginPath();
       tr.forEach((p, k) => { const x = px(p[1]), y = py(p[0]); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
       ctx.lineJoin = "round"; ctx.lineCap = "round";
@@ -253,8 +261,8 @@ export function drawLive() {
       ctx.shadowColor = "rgba(3,6,11,.9)"; ctx.shadowBlur = 4;
       ctx.strokeStyle = "rgba(6,9,14,.9)"; ctx.lineWidth = 5.5; ctx.stroke();
       ctx.shadowBlur = 0;
-      ctx.strokeStyle = col; ctx.globalAlpha = .95; ctx.lineWidth = 2.6; ctx.stroke();
-      ctx.globalAlpha = 1;
+      ctx.strokeStyle = col; ctx.globalAlpha = trailA * .95; ctx.lineWidth = 2.6; ctx.stroke();
+      ctx.restore();
     }
     const x = px(c.longitude), y = py(c.latitude), r = c.settled ? 6 : 4.6;
     ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fillStyle = col; ctx.fill();

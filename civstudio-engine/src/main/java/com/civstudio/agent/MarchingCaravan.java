@@ -310,9 +310,9 @@ public abstract class MarchingCaravan extends Caravan {
 			return null;
 		// one day on the larder clock: consume the wandering ration; the unfed starve
 		following.act();
-		if (following.size() == 0) {
+		if (isSpent()) {
 			releaseCamp();
-			return null; // a spent band — no one left
+			return null; // a spent band — no one left; the session's driver prunes it
 		}
 		// dawn: strike last night's camp before deciding today's move
 		releaseCamp();
@@ -519,6 +519,19 @@ public abstract class MarchingCaravan extends Caravan {
 	 */
 	protected boolean laysTrail() {
 		return false;
+	}
+
+	/**
+	 * Whether the band has nobody left to march. A band eats its larder every day it is on the
+	 * road ({@code following.act()}); when the food runs out the unfed starve, and a long enough
+	 * journey can empty the band entirely — the death the {@code Dhenijansar → Wexkeep} journey
+	 * shows when its provision is sized below the trip.
+	 *
+	 * @return {@code true} once the following's head-count reaches zero
+	 */
+	@Override
+	public boolean isSpent() {
+		return following.size() == 0;
 	}
 
 	/** The plots this band has stamped a route on, in crossing order — the live per-plot route data

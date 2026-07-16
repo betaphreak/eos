@@ -105,3 +105,22 @@ test("regimeAt is stable — feeding its own output back never oscillates", () =
     assert.equal(r, first, `b=${b} settles instead of oscillating`);
   }
 });
+
+test("a fade-out-only envelope is the exact complement of the fade-in it hands off to", () => {
+  // The live overlay's caravan trail polyline is the OVERVIEW stand-in for the baked route art
+  // (routes.mjs fades IN on [3.5, 4.5]); it must fade OUT across exactly that window, so the two
+  // never both read at full strength and never leave a gap with neither. An open-ended leading edge
+  // (-Infinity) is what makes an envelope "already on" at world-fit rather than ramping up.
+  const OUT = [-Infinity, -Infinity, 3.5, 4.5];
+  const IN = [3.5, 4.5];
+  assert.equal(bandAlphaAt(OUT, 0), 1, "fully on at world fit");
+  assert.equal(bandAlphaAt(OUT, 3.5), 1, "still fully on where the art starts to appear");
+  assert.equal(bandAlphaAt(OUT, 4.5), 0, "fully off once the art is fully in");
+  assert.equal(bandAlphaAt(OUT, 5), 0, "and stays off past it");
+  assert.equal(bandAlphaAt(OUT, 4), 0.5, "half way across the hand-off");
+  // the two envelopes partition the cross-fade: their alphas sum to 1 everywhere in the window
+  for (const b of [3.5, 3.75, 4, 4.25, 4.5]) {
+    assert.ok(Math.abs(bandAlphaAt(OUT, b) + bandAlphaAt(IN, b) - 1) < 1e-9,
+      `b=${b}: the polyline and the route art cross-fade cleanly`);
+  }
+});
