@@ -100,6 +100,7 @@ jobs:
         if: steps.guard.outputs.skip != 'true'
         run: |
           # WorldPlotGenerator warms .plot-cache/v<MAP_VERSION>/ then stamps GeoNames names over it.
+          chmod +x ./mvnw   # defensive: the wrapper must be executable on the Linux runner
           ./mvnw -B -pl civstudio-engine compile exec:exec \
             -Dsim.main=com.civstudio.geo.export.WorldPlotGenerator
 
