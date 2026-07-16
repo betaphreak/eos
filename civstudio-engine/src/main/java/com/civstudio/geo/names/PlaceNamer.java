@@ -32,6 +32,12 @@ public final class PlaceNamer {
 	private final Set<Integer> usedIds = new HashSet<>();
 	private final Set<String> usedNames = new HashSet<>();
 
+	// region-lifetime tallies (NOT reset per province): plots that took a fresh real GeoNames place
+	// vs plots that had to recycle a name because the country's pool was exhausted. See uniqueCount /
+	// reusedCount — the bake logs them per region so the naming coverage of each country is visible.
+	private int uniqueCount;
+	private int reusedCount;
+
 	/**
 	 * @param region  the region's pixel footprint
 	 * @param country the gazetteer of the Earth country the region maps to
@@ -71,14 +77,26 @@ public final class PlaceNamer {
 		if (pick != null) {
 			usedIds.add(pick.id());
 			base = pick.name();
+			uniqueCount++;
 		} else {
 			// pool exhausted for this province — reuse the nearest real name (ignoring used)
 			GeoNamesPlace anchor = country.nearestUnused(lat, lon, id -> false);
 			base = anchor != null ? anchor.name() : country.country();
+			reusedCount++;
 		}
 		String name = uniquify(base);
 		usedNames.add(name);
 		return name;
+	}
+
+	/** Plots named with a fresh real GeoNames place (region-lifetime tally). */
+	public int uniqueCount() {
+		return uniqueCount;
+	}
+
+	/** Plots whose name was recycled because the country's place pool was exhausted (region-lifetime). */
+	public int reusedCount() {
+		return reusedCount;
 	}
 
 	// make a name unique within the province by appending " 2", " 3", … if taken

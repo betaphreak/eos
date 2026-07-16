@@ -46,8 +46,9 @@ public final class PlaceNamingPass {
 	 * @param box       the region's pixel footprint
 	 * @param country   the gazetteer of the region's mapped Earth country
 	 * @param provinces the region's provinces and their plots (mutated in place)
+	 * @return the {@link PlaceNamer} used, carrying the region's unique/reused name tallies
 	 */
-	public static void nameRegion(PixelBox box, CountryGazetteer country, List<ProvincePlots> provinces) {
+	public static PlaceNamer nameRegion(PixelBox box, CountryGazetteer country, List<ProvincePlots> provinces) {
 		PlaceNamer namer = new PlaceNamer(box, country);
 		for (ProvincePlots pp : provinces) {
 			namer.beginProvince();
@@ -55,6 +56,7 @@ public final class PlaceNamingPass {
 				if (p.x() >= 0)
 					p.setPlaceName(namer.name(p.x(), p.y()));
 		}
+		return namer;
 	}
 
 	/**
@@ -92,6 +94,7 @@ public final class PlaceNamingPass {
 		earth.validateCoverage(landRegions);
 
 		int provincesNamed = 0, regionsNamed = 0, emptyCountries = 0;
+		long totalUnique = 0, totalReused = 0;
 		for (Region region : map.regions()) {
 			String iso = earth.countryOf(region.rawKey()).orElse(null);
 			if (iso == null)
@@ -111,15 +114,26 @@ public final class PlaceNamingPass {
 			}
 			if (provinces.isEmpty())
 				continue; // region not warmed in the cache yet
-			nameRegion(boxOf(provinces), country, provinces);
+			PlaceNamer namer = nameRegion(boxOf(provinces), country, provinces);
 			for (ProvincePlots pp : provinces) {
 				ProvincePlotStore.save(pp.provinceId(), pp.plots());
 				provincesNamed++;
 			}
 			regionsNamed++;
+			totalUnique += namer.uniqueCount();
+			totalReused += namer.reusedCount();
+			// which Earth country named this region, and how well its place pool covered it: fresh
+			// real names (unique) vs names recycled once the country ran out (reused, suffixed).
+			int total = namer.uniqueCount() + namer.reusedCount();
+			int reusePct = total == 0 ? 0 : (int) Math.round(100.0 * namer.reusedCount() / total);
+			System.out.printf("  region %-26s → %-3s : %,7d unique, %,7d reused (%d%%), %d provinces%n",
+					region.rawKey(), iso, namer.uniqueCount(), namer.reusedCount(), reusePct, provinces.size());
 		}
-		System.out.printf("  named %d provinces across %d regions (%d countries had no places)%n",
-				provincesNamed, regionsNamed, emptyCountries);
+		long totalNames = totalUnique + totalReused;
+		int reusePct = totalNames == 0 ? 0 : (int) Math.round(100.0 * totalReused / totalNames);
+		System.out.printf("  named %d provinces across %d regions: %,d names — %,d unique, %,d reused (%d%%)"
+				+ " (%d countries had no places)%n",
+				provincesNamed, regionsNamed, totalNames, totalUnique, totalReused, reusePct, emptyCountries);
 		return provincesNamed;
 	}
 }
