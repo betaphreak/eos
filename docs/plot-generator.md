@@ -111,7 +111,7 @@ swamp on marsh, oasis in desert, flood-plains on river). Drop the `trees.bmp` (`
   `isWoody` become dead for the primary path (keep `water(...)` for the shelf; delete or retire the rest).
   `ProvinceRaster` can stop loading `terrain.bmp`/`trees.bmp` for generation (still needed by the dev-time
   web terrain bake? — no, that reads Civ art, not these rasters; confirm before dropping the load).
-- **`ProvincePlotStore.GEN_VERSION`** (`:49`) — bump `2 → 3`. This invalidates every plot cache
+- **`ProvincePlotStore.MAP_VERSION`** (`:49`) — bump `2 → 3`. This invalidates every plot cache
   (`map/provinces/*.json.gz` + the prod volume) and the client `?v=` URL, forcing regeneration.
 
 ## Determinism
@@ -129,7 +129,7 @@ the web viewer (`plots.mjs`) all keep working — they just see richer, climate-
 
 ## Deployment (per the runbook + `always-az-deploy-on-change`)
 
-A `GEN_VERSION` bump is a generation change: **rewarm** (`WorldPlotGenerator`) → deploy the server →
+A `MAP_VERSION` bump is a generation change: **rewarm** (`WorldPlotGenerator`) → deploy the server →
 **clear the persistent plot cache** on the prod volume (else stale `v2` blobs serve) → rebake/redeploy the
 bundle + static site. This is server-affecting engine data, so it must go out via `az`, not just SWA.
 
@@ -140,7 +140,7 @@ bundle + static site. This is server-affecting engine data, so it must go out vi
    grass/jungle/marsh, arid read desert/dunes/scrub. No province should be a flat single terrain.
 2. **Special terrains** — provinces typed `ANCIENT_FOREST`/`GLACIER`/`MUSHROOM_FOREST`/… still show their
    terrain (override intact).
-3. **Determinism** — same province regenerates byte-identical across two seeds; `GEN_VERSION` bumped.
+3. **Determinism** — same province regenerates byte-identical across two seeds; `MAP_VERSION` bumped.
 4. **Geography intact** — coastlines, rivers, and the mountain backbone still match the real map (heightmap
    relief, raster rivers).
 5. **In-app** — `mvn -pl civstudio-engine install` → `spring-boot:run` → `tools/webverify` screenshots across
@@ -167,7 +167,7 @@ bundle + static site. This is server-affecting engine data, so it must go out vi
 
 Shipped: **procedural terrain is live and primary.** `ClimateTerrainGenerator` (the C2C two-stage
 temperature×humidity port) drives `ProvincePlotField.generate`; `terrain.bmp` is no longer read for the
-biome (still read for the hybrid mountain-relief signal via `MapTerrainCodec.relief`). `GEN_VERSION` 2→3.
+biome (still read for the hybrid mountain-relief signal via `MapTerrainCodec.relief`). `MAP_VERSION` 2→3.
 All 33 terrains appear climate-appropriately (verified: arid→dunes/scrub/desert, tropical→lush/grass,
 temperate→grass/plains/marsh cooling to taiga at latitude, cold→tundra/permafrost). Covered by
 `ClimateTerrainGeneratorTest`; the scenario smoke tests still pass (the food-balance shift did not break
@@ -184,7 +184,7 @@ Province-type decisions implemented:
   fixed cavern pool + flattened floor. `DWARVEN_HOLD_SURFACE` stays cavern (owner's call).
 - **Bonus density** → **stochastic rounding** in `BonusGenerator` (the richer terrain spreads each bonus
   across fewer matching plots; probabilistic rounding preserves expected density so small provinces still
-  draw resources). **Retuned (increment 1b, `GEN_VERSION` 3→4):** `DENSITY_SCALE` 0.275→**0.055** (≈5×
+  draw resources). **Retuned (increment 1b, `MAP_VERSION` 3→4):** `DENSITY_SCALE` 0.275→**0.055** (≈5×
   sparser — the procedural terrain made too many plots eligible, blanketing the map), and **wastelands
   (`IMPASSABLE`) now carry no resources at all** — the bonus pass is skipped for them (barren ground is
   worked by no one). Covered by `ProvincePlotFieldTest.wastelandsCarryNoResources` +
@@ -194,7 +194,7 @@ Anbennar calibration deviations from pure C2C (documented in `ClimateTerrainGene
 gate** (an `arid` province reads desert across its latitude range, not only when scorching) and a
 **humidity-gated marsh** (a dry province stays steppe, not wetland).
 
-**Region-coherence (increment 2, `GEN_VERSION` 4→5).** Terrain is no longer an independent per-cell draw
+**Region-coherence (increment 2, `MAP_VERSION` 4→5).** Terrain is no longer an independent per-cell draw
 smoothed by despeckle — it grows in contiguous **patches**. `ProvincePlotField.coherentGround` scatters ~1
 seed per `PATCH_AREA` (22) land plots, each a climate-pool draw (`ClimateTerrainGenerator.next`); every
 land plot takes its nearest seed's terrain, its sample point first nudged by a smooth `valNoise` field so

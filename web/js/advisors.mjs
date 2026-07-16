@@ -5,12 +5,19 @@
 // S.techOpen states the LAYERS registry already gates on (layers.mjs) — the render pipeline is
 // unchanged; this only groups the controls and drives the existing panel.mjs handlers.
 // See docs/privy-council.md.
-import { S } from "./core.mjs";
+import { S, BUNDLE } from "./core.mjs";
 import { setOverlay, setPlane, updateSearchContext } from "./panel.mjs";
 import { openTech, closeTech } from "./techtree.mjs";
 import { advisorSeat, openAdvisorRail, noteRoster, closeAdvisorRail } from "./advisor-detail.mjs";
 import { onLiveRoster } from "./overlays/live.mjs";
 import { advisorPortrait, initPortraits } from "./portraits.mjs";
+
+// The physical-world (globe) segment is labelled with the world name + current map version
+// (ProvincePlotStore.MAP_VERSION, shipped in the bundle as mapVersion) — e.g. "Halann v8" — so the
+// generation of the imported world is visible at a glance where the old "Globe" label sat; its
+// tooltip (`label` → data-tip) carries the world lore.
+const HALANN = "Halann v" + (BUNDLE?.mapVersion ?? "?");
+const HALANN_TIP = "Halann is the center of the Material Plane, which is the center of all of the Planes of Existence.";
 
 // The advisor table — the single extensible source (a future advisor is one more row). `future`
 // advisors render as greyed placeholders with their reserved Civ4 F-key; `role` names the court
@@ -25,7 +32,7 @@ export const ADVISORS = [
   { id: "military",   label: "Military Advisor",   short: "Military",   key: "F5", future: true },
   { id: "technology", label: "Technology Advisor", short: "Technology", key: "F6", role: "technology", icon: "🔬" },
   { id: "religion",   label: "Religion Advisor",   short: "Religion",   key: "F7", role: "religion",   icon: "🛐" },
-  { id: "globe",      label: "Globe View",         short: "Globe",      key: "F11", icon: "🌐" },
+  { id: "globe",      label: HALANN_TIP,           short: HALANN,      key: "F11", icon: "🌐" },
   { id: "zeitgeist",  label: "Zeitgeist",          short: "Zeitgeist",  key: "Z",  live: true, icon: "📡" },
 ];
 const byId = id => ADVISORS.find(a => a.id === id);

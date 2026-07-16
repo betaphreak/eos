@@ -89,7 +89,7 @@ by a water-first score:
   water differs only by the unchanged tie-break, so no-water sites are byte-identical.
 
 Deterministic (no RNG). It moves the persisted per-province urban core, so the plot-generation version
-was bumped (`ProvincePlotStore.GEN_VERSION` 5 → 6) — the cache dir is versioned by it, so caches
+was bumped (`ProvincePlotStore.MAP_VERSION` 5 → 6) — the cache dir is versioned by it, so caches
 regenerate lazily and no manual clear is needed. Engine suite **284** green (incl. new
 `CityPlacementTest`); the demo City (Dhenijansar) collapse tests unchanged.
 

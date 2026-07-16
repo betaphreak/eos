@@ -1,15 +1,15 @@
 <#
 .SYNOPSIS
-  Increment the plot-cache GEN_VERSION, push the locally-baked (named) plot cache to the Azure
+  Increment the plot-cache MAP_VERSION, push the locally-baked (named) plot cache to the Azure
   Files share the live server reads, and prune stale cache versions.
 
 .DESCRIPTION
   Production can't bake plot names — there is no GeoNames dump on the server — so the names
   produced by a local `WorldPlotGenerator` run must be shipped to the persistent AzureFile
   share (`anbennar`, mounted at PLOT_CACHE_DIR=/mnt/anbennar/plot-cache). The cache is
-  versioned (`plot-cache/v<GEN_VERSION>/<id>.json.gz`), so rolling names into production is:
+  versioned (`plot-cache/v<MAP_VERSION>/<id>.json.gz`), so rolling names into production is:
 
-    1. Read GEN_VERSION from ProvincePlotStore.java; compute the next value (or -NewVersion).
+    1. Read MAP_VERSION from ProvincePlotStore.java; compute the next value (or -NewVersion).
     2. Bump the constant in ProvincePlotStore.java (busts the client ?v= via the server bundle).
     3. Move the local baked cache .plot-cache/v<old> -> .plot-cache/v<new> (generation is
        unchanged — only names were added — so the same fields serve as the new version).
@@ -18,14 +18,14 @@
        locally and on the share.
 
   It does NOT deploy the server or the web site. Afterwards (see docs/client-server.md
-  §Deployment): commit the GEN_VERSION bump, run `pwsh tools/deploy-server.ps1` (new image
+  §Deployment): commit the MAP_VERSION bump, run `pwsh tools/deploy-server.ps1` (new image
   serves v<new> + the StoredPlot `name` field), and SWA-deploy `web/` (the hover JS). The
   uploaded v<new> cache waits on the share until the v<new> server reads it.
 
   Storage account + share are discovered from the Container App's AzureFile volume when not
   passed. Auth uses -AccountKey if given, else the fetched account key, else `--auth-mode login`.
 
-.PARAMETER NewVersion       Target GEN_VERSION. Default: current + 1.
+.PARAMETER NewVersion       Target MAP_VERSION. Default: current + 1.
 .PARAMETER StorageAccount   Storage account behind the share. Discovered from the app if omitted.
 .PARAMETER Share            Azure Files share name. Discovered, then defaults to 'anbennar'.
 .PARAMETER AccountKey       Storage key for the upload/prune. Else fetched, else --auth-mode login.
@@ -61,8 +61,8 @@ $cacheRoot = Join-Path $repoRoot '.plot-cache'
 
 function Write-NextSteps([int]$v) {
   Write-Host ""
-  Write-Host "==> NEXT STEPS (this script only bumped GEN_VERSION + pushed/pruned the cache):" -ForegroundColor Cyan
-  Write-Host "    1. Update the GEN_VERSION inline comment, then commit ProvincePlotStore.java." -ForegroundColor Gray
+  Write-Host "==> NEXT STEPS (this script only bumped MAP_VERSION + pushed/pruned the cache):" -ForegroundColor Cyan
+  Write-Host "    1. Update the MAP_VERSION inline comment, then commit ProvincePlotStore.java." -ForegroundColor Gray
   Write-Host "    2. pwsh tools/deploy-server.ps1   # new image serves v$v + the StoredPlot 'name' field" -ForegroundColor Gray
   Write-Host "    3. SWA-deploy web/ (the hover JS): npx @azure/static-web-apps-cli deploy ./web --env production" -ForegroundColor Gray
   Write-Host "    4. Verify: hover a plot at deep zoom on https://anbennar.civstudio.com (the world-map site; dev.civstudio.com is the server it fetches from) — names should show." -ForegroundColor Gray
@@ -71,19 +71,19 @@ function Write-NextSteps([int]$v) {
 # oldest version to keep; anything strictly older is pruned
 function Get-OldestKept([int]$new) { return $new - [Math]::Max(0, $KeepPrevious) }
 
-# --- 1. read current GEN_VERSION --------------------------------------------------------------
+# --- 1. read current MAP_VERSION --------------------------------------------------------------
 if (-not (Test-Path $storeFile)) { throw "ProvincePlotStore.java not found at $storeFile" }
 $srcText = Get-Content -Raw $storeFile
-if ($srcText -notmatch 'GEN_VERSION\s*=\s*(\d+)\s*;') { throw "GEN_VERSION constant not found in ProvincePlotStore.java" }
+if ($srcText -notmatch 'MAP_VERSION\s*=\s*(\d+)\s*;') { throw "MAP_VERSION constant not found in ProvincePlotStore.java" }
 $current = [int]$Matches[1]
 if (-not $NewVersion) { $NewVersion = $current + 1 }
-if ($NewVersion -le $current) { throw "NewVersion ($NewVersion) must be greater than the current GEN_VERSION ($current)" }
+if ($NewVersion -le $current) { throw "NewVersion ($NewVersion) must be greater than the current MAP_VERSION ($current)" }
 
 $srcDir = Join-Path $cacheRoot "v$current"
 $dstDir = Join-Path $cacheRoot "v$NewVersion"
 $oldestKept = Get-OldestKept $NewVersion
 
-Write-Host "==> GEN_VERSION $current -> $NewVersion  (keep v$NewVersion..v$oldestKept, prune older)" -ForegroundColor Cyan
+Write-Host "==> MAP_VERSION $current -> $NewVersion  (keep v$NewVersion..v$oldestKept, prune older)" -ForegroundColor Cyan
 Write-Host "    local baked cache: $srcDir  ->  $dstDir" -ForegroundColor DarkGray
 
 # --- 2. sanity-check the local baked cache ----------------------------------------------------
@@ -98,12 +98,12 @@ if ($count -lt $MIN_EXPECTED) {
   }
 }
 
-# --- 3. bump the GEN_VERSION constant ---------------------------------------------------------
-if ($PSCmdlet.ShouldProcess($storeFile, "Bump GEN_VERSION $current -> $NewVersion")) {
-  $bumped = ([regex]'(GEN_VERSION\s*=\s*)\d+(\s*;)').Replace($srcText, "`${1}$NewVersion`${2}", 1)
+# --- 3. bump the MAP_VERSION constant ---------------------------------------------------------
+if ($PSCmdlet.ShouldProcess($storeFile, "Bump MAP_VERSION $current -> $NewVersion")) {
+  $bumped = ([regex]'(MAP_VERSION\s*=\s*)\d+(\s*;)').Replace($srcText, "`${1}$NewVersion`${2}", 1)
   [System.IO.File]::WriteAllText($storeFile, $bumped)   # UTF-8, no BOM
-  Write-Host "    bumped GEN_VERSION in ProvincePlotStore.java" -ForegroundColor Green
-  Write-Warning "The inline comment on the GEN_VERSION line still describes v$current — update it (v${NewVersion}: plot place names) before committing."
+  Write-Host "    bumped MAP_VERSION in ProvincePlotStore.java" -ForegroundColor Green
+  Write-Warning "The inline comment on the MAP_VERSION line still describes v$current — update it (v${NewVersion}: plot place names) before committing."
 }
 
 # --- 4. move the local baked cache to the new version dir -------------------------------------

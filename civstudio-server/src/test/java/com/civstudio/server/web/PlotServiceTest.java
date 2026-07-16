@@ -31,8 +31,8 @@ class PlotServiceTest {
 	void servesDiskCacheHitVerbatimWithoutGenerating(@TempDir Path cacheDir) throws Exception {
 		// a pre-seeded <id>.json.gz is returned as-is — no WorldMap/raster load, no generation
 		byte[] blob = { 0x1f, (byte) 0x8b, 1, 2, 3, 4 }; // gzip magic + filler; opaque to the service
-		// the service reads from the version-scoped subdir (ProvincePlotStore.GEN_VERSION)
-		Path versioned = Files.createDirectories(cacheDir.resolve("v" + ProvincePlotStore.GEN_VERSION));
+		// the service reads from the version-scoped subdir (ProvincePlotStore.MAP_VERSION)
+		Path versioned = Files.createDirectories(cacheDir.resolve("v" + ProvincePlotStore.MAP_VERSION));
 		Files.write(versioned.resolve("4411.json.gz"), blob);
 		assertArrayEquals(blob, service(cacheDir).gz(4411));
 	}

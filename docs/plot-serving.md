@@ -53,10 +53,10 @@ Retire the static plot path entirely; **the server becomes the sole plot source.
    province is generated a single time across all clients *and* restarts. After the world is explored
    (or a one-time warm, below), generation never recurs → the sim is never paused → **zero
    steady-state cost.**
-3. **Immutable, version-busted HTTP caching** — the client requests `/api/plots/{id}?v=<plotVersion>`
-   (`ProvincePlotStore.GEN_VERSION`, shipped in the bundle as `plotVersion`), so the grid is served
+3. **Immutable, version-busted HTTP caching** — the client requests `/api/plots/{id}?v=<mapVersion>`
+   (`ProvincePlotStore.MAP_VERSION`, shipped in the bundle as `mapVersion`), so the grid is served
    `immutable` and a browser fetches each province at most once *per generation version*. Bumping
-   `GEN_VERSION` (on any change to plot generation) changes the URL → the browser fetches the fresh
+   `MAP_VERSION` (on any change to plot generation) changes the URL → the browser fetches the fresh
    grid instead of a stale hit, and points `PlotService` at a fresh `v<N>/` cache subdir (the old
    one orphaned) so the server regenerates too. One constant invalidates both caches — no manual
    drop, no 24-hour staleness window.

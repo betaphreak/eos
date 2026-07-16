@@ -60,8 +60,8 @@ public final class PlotService {
 		this.pauseGate = pauseGate;
 		// version the cache dir by the plot generation version — a bump points here at a fresh,
 		// empty dir so every province regenerates lazily (the old version's dir is orphaned, not
-		// served), matching the ?v= the client sends. See ProvincePlotStore.GEN_VERSION.
-		this.cacheDir = Path.of(props.getPlots().getCacheDir()).resolve("v" + ProvincePlotStore.GEN_VERSION);
+		// served), matching the ?v= the client sends. See ProvincePlotStore.MAP_VERSION.
+		this.cacheDir = Path.of(props.getPlots().getCacheDir()).resolve("v" + ProvincePlotStore.MAP_VERSION);
 		int lruSize = Math.max(1, props.getPlots().getLruSize());
 		this.lru = Collections.synchronizedMap(new LinkedHashMap<>(16, 0.75f, true) {
 			@Override

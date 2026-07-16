@@ -53,7 +53,7 @@ public class AdminController {
 		Map<String, Object> plot = new LinkedHashMap<>();
 		plot.put("cached", ps.cached());
 		plot.put("total", ps.total());
-		plot.put("version", ProvincePlotStore.GEN_VERSION);
+		plot.put("mapVersion", ProvincePlotStore.MAP_VERSION);
 		plot.put("generating", ps.generating());
 		plot.put("storageUrl", props.getAdmin().getPlotCacheStorageUrl());
 

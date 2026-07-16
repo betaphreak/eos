@@ -1,6 +1,6 @@
 # Design note: urban plots & imported development
 
-**Urban is an OVERLAY, not a terrain (2026-07-16, GEN_VERSION 8).** The synthetic `TERRAIN_URBAN`
+**Urban is an OVERLAY, not a terrain (2026-07-16, MAP_VERSION 8).** The synthetic `TERRAIN_URBAN`
 ground was retired from plot *generation*: a city now sits ON the terrain the generator draws
 (grassland/plains/hill/…). `ProvincePlotField` no longer overwrites `ground[idx]` — it keeps the
 natural terrain, flattens the core to level built ground, clears the wild feature/resource (built
@@ -23,7 +23,7 @@ of a province that already holds a settlement** (`ProvincePlotPool.hasSettlement
 an **abandoned** urban core (no settlement) is fair game. A nightly `Camp` is a non-owning occupant,
 so it never trips the check.
 
-*Deploy:* GEN_VERSION 7→8 → the persistent plot cache must be rebaked (with GeoNames place names, which
+*Deploy:* MAP_VERSION 7→8 → the persistent plot cache must be rebaked (with GeoNames place names, which
 prod can't generate) and re-uploaded before the server rolls, else prod regenerates nameless v8 plots.
 This rebake is moving to CI/CD (see `docs/client-server.md` §Deployment).
 

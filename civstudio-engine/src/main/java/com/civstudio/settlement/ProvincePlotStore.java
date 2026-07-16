@@ -32,7 +32,7 @@ import tools.jackson.databind.ObjectMapper;
  * highly repetitive (repeated type keys and field names), so gzip shrinks it ~25&times; over
  * plain JSON while staying trivially (de)serialized.
  * <p>
- * Fields are read from and written to <b>one shared cache</b>: {@code <cacheRoot>/v<GEN_VERSION>/},
+ * Fields are read from and written to <b>one shared cache</b>: {@code <cacheRoot>/v<MAP_VERSION>/},
  * where {@code cacheRoot} defaults to {@code .plot-cache} and is {@linkplain #configure overridden}
  * by the server to its {@code civstudio.plots.cache-dir} (the persistent volume in prod). This is
  * the <b>same directory and byte-identical file format</b> the server's on-demand
@@ -42,8 +42,8 @@ import tools.jackson.databind.ObjectMapper;
  * source tree (it used to write {@code src/main/resources/map/provinces}, which polluted the repo
  * and duplicated the server cache). A missing field is regenerated on demand.
  * <p>
- * The directory is <b>versioned by {@link #GEN_VERSION}</b>, so a change to plot generation (a
- * {@code GEN_VERSION} bump) points the cache at a fresh, empty dir and every province regenerates
+ * The directory is <b>versioned by {@link #MAP_VERSION}</b>, so a change to plot generation (a
+ * {@code MAP_VERSION} bump) points the cache at a fresh, empty dir and every province regenerates
  * lazily — otherwise the sim would keep loading a <em>stale</em> field while the map served the
  * freshly-generated one, and the founded colony's siting would silently disagree with the terrain.
  */
@@ -56,13 +56,14 @@ public final class ProvincePlotStore {
 	 * server's on-disk plot cache (a new version → a fresh cache dir, old one orphaned) and the
 	 * client's {@code /api/plots/{id}?v=} URL (a new version → a browser-cache miss), so a
 	 * generation change reaches every client instead of being masked by an immutably-cached grid.
-	 * The web bundle ships it as {@code plotVersion}. See {@code docs/plot-serving.md}.
+	 * The web bundle ships it as {@code mapVersion} (also an MCP tool, {@code get_map_version}). See
+	 * {@code docs/plot-serving.md}.
 	 */
-	public static final int GEN_VERSION = 8; // 8: urban is an overlay flag on natural terrain (retired TERRAIN_URBAN ground — docs/urban-plots.md); 7: real-world plot place names (GeoNames); 6: water-dominant urban-core siting
+	public static final int MAP_VERSION = 8; // 8: urban is an overlay flag on natural terrain (retired TERRAIN_URBAN ground — docs/urban-plots.md); 7: real-world plot place names (GeoNames); 6: water-dominant urban-core siting
 
 	// The cache root — a working-dir/volume folder, NOT the source tree. Defaults to .plot-cache
 	// (matching PlotService's civstudio.plots.cache-dir default) and is overridden by the server via
-	// configure(...) so the sim and the web plot feed share exactly one cache. The GEN_VERSION
+	// configure(...) so the sim and the web plot feed share exactly one cache. The MAP_VERSION
 	// subdir orphans stale fields on a generation bump.
 	private static final String DEFAULT_CACHE_ROOT = ".plot-cache";
 	private static volatile String cacheRoot = DEFAULT_CACHE_ROOT;
@@ -71,7 +72,7 @@ public final class ProvincePlotStore {
 	/**
 	 * Point the plot-field cache at {@code cacheRoot} (the server pushes its
 	 * {@code civstudio.plots.cache-dir} here at startup, so the sim shares the same cache as the
-	 * on-demand {@code PlotService}). The versioned {@code <cacheRoot>/v<GEN_VERSION>} subdir is
+	 * on-demand {@code PlotService}). The versioned {@code <cacheRoot>/v<MAP_VERSION>} subdir is
 	 * derived from it. Mirrors {@code AnbennarFiles.configure}. A blank/null value is ignored.
 	 */
 	public static void configure(String cacheRoot) {
@@ -81,7 +82,7 @@ public final class ProvincePlotStore {
 
 	/** The versioned cache directory fields are read from / written to ({@code <root>/v<GEN>}). */
 	public static File writeDir() {
-		return new File(cacheRoot, "v" + GEN_VERSION);
+		return new File(cacheRoot, "v" + MAP_VERSION);
 	}
 
 	// gzipped-JSON file name for a province
@@ -174,7 +175,7 @@ public final class ProvincePlotStore {
 
 	/**
 	 * Persist a province's generated plot field to the shared cache
-	 * ({@code <cacheRoot>/v<GEN_VERSION>/<id>.json.gz}), so a later run — or the server's
+	 * ({@code <cacheRoot>/v<MAP_VERSION>/<id>.json.gz}), so a later run — or the server's
 	 * {@code PlotService} sharing the same dir — reuses it.
 	 *
 	 * @param provinceId the province id

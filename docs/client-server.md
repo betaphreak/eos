@@ -337,7 +337,7 @@ map silently break:
 
    **Shipping locally-baked plot *names*.** Plot place names (GeoNames) are baked locally —
    production has no GeoNames dump, so it can't regenerate them. For that case use
-   `pwsh tools/deploy-plot-cache.ps1`: it bumps `GEN_VERSION`, moves the local baked
+   `pwsh tools/deploy-plot-cache.ps1`: it bumps `MAP_VERSION`, moves the local baked
    `.plot-cache/v<old>` to `v<new>`, uploads it to `<share>/plot-cache/v<new>`, and prunes old
    versions (keeps `v<new>` + `v<new-1>`). Run the server deploy (step 2) after it so the new
    image serves `v<new>` and the `?v=` flips. See `docs/plot-place-naming` in memory / the P1–P4

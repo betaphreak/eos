@@ -115,10 +115,10 @@ async function loadPlots(p) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), PLOT_FETCH_TIMEOUT);
   try {
-    // ?v=<plotVersion> versions the immutable cache: a generation change (server bumps
-    // ProvincePlotStore.GEN_VERSION, shipped as BUNDLE.plotVersion) changes the URL, so the browser
+    // ?v=<mapVersion> versions the immutable cache: a generation change (server bumps
+    // ProvincePlotStore.MAP_VERSION, shipped as BUNDLE.mapVersion) changes the URL, so the browser
     // fetches the fresh grid instead of a stale cached one. See docs/plot-serving.md.
-    const res = await fetch(apiUrl("/api/plots/" + p.id) + "?v=" + (BUNDLE.plotVersion || 0), { signal: ctl.signal });
+    const res = await fetch(apiUrl("/api/plots/" + p.id) + "?v=" + (BUNDLE.mapVersion || 0), { signal: ctl.signal });
     if (!res.ok) throw new Error("plots " + res.status);   // 404 off-map, 5xx, …
     const stream = res.body.pipeThrough(new DecompressionStream("gzip"));
     const arr = JSON.parse(await new Response(stream).text());
@@ -143,7 +143,7 @@ async function loadPlots(p) {
   }
 }
 // Urban plots (docs/urban-plots.md): a city is now an OVERLAY on natural terrain, not a synthetic
-// terrain — the plot cache (GEN_VERSION 8+) carries the generated ground plus a `urban` flag, so an
+// terrain — the plot cache (MAP_VERSION 8+) carries the generated ground plus a `urban` flag, so an
 // urban plot renders as its real terrain and the `q.urban` flag (straight off the plot JSON) locates
 // the city for the district layer (districts.mjs), routes (urban→paved) and the info panel. No client
 // re-terraining is needed any more; the old TERRAIN_URBAN grey-ground substrate was retired engine-side.

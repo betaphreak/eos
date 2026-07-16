@@ -15,6 +15,7 @@ import com.civstudio.server.render.LogLine;
 import com.civstudio.server.render.PersonDetail;
 import com.civstudio.server.render.PersonProjections;
 import com.civstudio.server.render.SessionSnapshot;
+import com.civstudio.settlement.ProvincePlotStore;
 import com.civstudio.settlement.Settlement;
 
 /**
@@ -103,6 +104,16 @@ public class SessionMcpTools {
 				.toList();
 	}
 
+	@McpTool(name = "get_map_version",
+			description = "The current map version — the plot-generation version of the imported world "
+					+ "(ProvincePlotStore.MAP_VERSION). Bumped whenever plot generation changes; the "
+					+ "server's plot cache dir (v<mapVersion>) and the web client's /api/plots ?v= "
+					+ "cache-buster are keyed on it. Session-independent; also exposed in /api/bundle as "
+					+ "'mapVersion'.")
+	public MapVersion getMapVersion() {
+		return new MapVersion(ProvincePlotStore.MAP_VERSION);
+	}
+
 	private HostedSession require(String sessionId) {
 		HostedSession hs = host.get(sessionId);
 		if (hs == null)
@@ -122,4 +133,7 @@ public class SessionMcpTools {
 
 	/** One applied command in {@link #getCommandLog}; {@code lever}/{@code rate} null for other types. */
 	public record CommandInfo(long tick, String type, String lever, Double rate) {}
+
+	/** The map (plot-generation) version returned by {@link #getMapVersion()}. */
+	public record MapVersion(int mapVersion) {}
 }

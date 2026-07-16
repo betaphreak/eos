@@ -4,7 +4,7 @@ name: Rebake plot cache
 # bonuses AND GeoNames place names — and uploads it to the Azure Files share the live server reads
 # (docs/client-server.md §Deployment). This is the step that USED to run on the dev box
 # (tools/deploy-plot-cache.ps1): production can't bake place names (no GeoNames dump on the server),
-# so a named cache must be shipped whenever plot generation changes (a ProvincePlotStore.GEN_VERSION
+# so a named cache must be shipped whenever plot generation changes (a ProvincePlotStore.MAP_VERSION
 # bump), else prod regenerates nameless plots on demand.
 #
 # It does NOT roll the Container App: the project subscription is a *guest* identity that can't
@@ -30,7 +30,7 @@ on:
         default: '1'
   push:
     branches: [master]
-    # only when plot generation could change — the guard step then confirms GEN_VERSION actually moved
+    # only when plot generation could change — the guard step then confirms MAP_VERSION actually moved
     paths:
       - 'civstudio-engine/src/main/java/com/civstudio/settlement/ProvincePlotStore.java'
 
@@ -51,21 +51,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          fetch-depth: 2   # HEAD~1 for the GEN_VERSION-change guard
+          fetch-depth: 2   # HEAD~1 for the MAP_VERSION-change guard
 
-      - name: Resolve GEN_VERSION (and skip an unchanged push)
+      - name: Resolve MAP_VERSION (and skip an unchanged push)
         id: guard
         run: |
           store=civstudio-engine/src/main/java/com/civstudio/settlement/ProvincePlotStore.java
-          extract() { sed -nE 's/.*GEN_VERSION[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' | head -1; }
+          extract() { sed -nE 's/.*MAP_VERSION[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' | head -1; }
           cur=$(extract < "$store")
-          echo "current GEN_VERSION=$cur"
+          echo "current MAP_VERSION=$cur"
           echo "version=$cur" >> "$GITHUB_OUTPUT"
           if [ "${{ github.event_name }}" = "push" ]; then
             prev=$(git show HEAD~1:"$store" 2>/dev/null | extract || true)
-            echo "previous GEN_VERSION=${prev:-<none>}"
+            echo "previous MAP_VERSION=${prev:-<none>}"
             if [ -n "$prev" ] && [ "$cur" = "$prev" ]; then
-              echo "GEN_VERSION unchanged ($cur) — nothing to rebake."
+              echo "MAP_VERSION unchanged ($cur) — nothing to rebake."
               echo "skip=true" >> "$GITHUB_OUTPUT"
             fi
           fi
@@ -99,7 +99,7 @@ jobs:
       - name: Bake the whole-world plot cache
         if: steps.guard.outputs.skip != 'true'
         run: |
-          # WorldPlotGenerator warms .plot-cache/v<GEN_VERSION>/ then stamps GeoNames names over it.
+          # WorldPlotGenerator warms .plot-cache/v<MAP_VERSION>/ then stamps GeoNames names over it.
           ./mvnw -B -pl civstudio-engine compile exec:exec \
             -Dsim.main=com.civstudio.geo.export.WorldPlotGenerator
 

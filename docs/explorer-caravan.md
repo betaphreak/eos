@@ -532,7 +532,7 @@ Each phase is independently compilable/testable; earlier phases are inert until 
     routing modes — the existing seed-independent one (Explorer / current behaviour) and a new
     per-session trail-gated one (non-explorers).
   - **Persistence — a `.session-cache/<seed>/` (owner proposal, 2026-07-14).** The natural sibling to
-    the canonical `.plot-cache/v<GEN_VERSION>/`: a **per-session, seed-keyed** cache holding a
+    the canonical `.plot-cache/v<MAP_VERSION>/`: a **per-session, seed-keyed** cache holding a
     session's mutable plot overlays (trails now; could unify built buildings/districts and camps).
     Aligns with the Phase-C "durable sessions" direction (`docs/client-server.md`) where the
     **command log** is the replayable source of truth — `.session-cache/` either stores that log or

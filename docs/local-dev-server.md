@@ -85,6 +85,6 @@ junction needs a single online run first.
   serving).
 - [`web/README.md`](../web/README.md) — the site being served.
 - [`plot-serving.md`](plot-serving.md) — per-province plot grids (`/api/plots/{id}`, the
-  `.plot-cache/v<GEN_VERSION>` cache). Note the sim's own persisted fields are versioned the same
-  way now — `map/provinces/v<GEN_VERSION>/` — so a generation bump keeps both in sync (see
+  `.plot-cache/v<MAP_VERSION>` cache). Note the sim's own persisted fields are versioned the same
+  way now — `map/provinces/v<MAP_VERSION>/` — so a generation bump keeps both in sync (see
   [`province-plots.md`](province-plots.md)).

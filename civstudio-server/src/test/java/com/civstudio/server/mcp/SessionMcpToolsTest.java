@@ -34,6 +34,14 @@ class SessionMcpToolsTest {
 	}
 
 	@Test
+	void reportsTheMapVersion() {
+		SessionMcpTools tools = new SessionMcpTools(new SessionHost());
+		// session-independent: the tool surfaces the plot-generation version (also in /api/bundle)
+		assertEquals(com.civstudio.settlement.ProvincePlotStore.MAP_VERSION,
+				tools.getMapVersion().mapVersion());
+	}
+
+	@Test
 	void projectsTheKnownCommandType() {
 		SessionMcpTools.CommandInfo row =
 				SessionMcpTools.project(new SetTaxRateCommand(42L, Lever.BANK_PROFIT, 0.25));
