@@ -80,6 +80,19 @@
   </div>
 
   <div class="panel">
+    <h2>Region → country map</h2>
+    <div class="stats" id="regionMapStats"></div>
+    <input id="regionFilter" placeholder="Filter regions or country codes…" autocomplete="off"
+      style="width:100%;box-sizing:border-box;margin-top:12px;padding:8px 10px;border-radius:8px;
+             border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25);color:inherit;font-size:13px;">
+    <div style="max-height:340px;overflow:auto;margin-top:10px;border:1px solid rgba(255,255,255,.1);border-radius:8px;">
+      <table><thead><tr><th>Region</th><th>Country</th></tr></thead>
+        <tbody id="regionMapRows"><tr><td colspan="2" class="muted">Loading…</td></tr></tbody></table>
+    </div>
+    <p class="muted" style="margin:12px 0 0; font-size:12px;">Read-only: the bake-time region→Earth-country mapping that drives plot place-naming (each country used once). Editing it would require a full map re-bake (the <code>regenerate-map</code> workflow) + server roll to take effect.</p>
+  </div>
+
+  <div class="panel">
     <h2>Sessions &amp; chat</h2>
     <div class="actions" style="margin-top:0;margin-bottom:14px">
       <button class="danger" id="btnChat"
@@ -131,6 +144,13 @@ async function refresh() {
   const link = $("#storageLink");
   if (pl.storageUrl) { link.href = pl.storageUrl; link.hidden = false; } else { link.hidden = true; }
 
+  const rm = await api("GET", "/api/admin/region-map").catch(() => ({ entries: [] }));
+  _regionEntries = rm.entries || [];
+  $("#regionMapStats").innerHTML =
+    stat("Mapped regions", rm.count ?? _regionEntries.length, true) +
+    stat("Map version", "v" + (rm.mapVersion ?? "?"));
+  renderRegionMap();
+
   const sess = await api("GET", "/api/sessions").catch(() => []);
   const rows = (Array.isArray(sess) ? sess : sess.sessions || []);
   $("#sessionRows").innerHTML = rows.length ? rows.map(x => `
@@ -142,6 +162,18 @@ async function refresh() {
         <button class="danger" title="Stop this session (it can be re-founded)" onclick="ctrl('${x.id}','stop')">Stop</button>
       </div></td></tr>`).join("") : '<tr><td colspan="5" class="muted">No live sessions.</td></tr>';
 }
+
+// the region→country map (read-only), rendered from the last /region-map fetch and client-filtered
+let _regionEntries = [];
+function renderRegionMap() {
+  const q = ($("#regionFilter") && $("#regionFilter").value || "").trim().toLowerCase();
+  const rows = _regionEntries.filter(e =>
+    !q || e.region.toLowerCase().includes(q) || (e.country || "").toLowerCase().includes(q));
+  $("#regionMapRows").innerHTML = rows.length
+    ? rows.map(e => `<tr><td>${e.region}</td><td>${e.country || '<span class="muted">—</span>'}</td></tr>`).join("")
+    : '<tr><td colspan="2" class="muted">No matches.</td></tr>';
+}
+$("#regionFilter").addEventListener("input", renderRegionMap);
 
 window.ctrl = (id, action) => act("POST", `/api/sessions/${id}/control`,
   () => `Session ${id}: ${action}`);

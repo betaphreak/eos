@@ -1,7 +1,9 @@
 package com.civstudio.server.web;
 
 import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.civstudio.geo.RegionEarthMap;
 import com.civstudio.server.CivStudioProperties;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.chat.ChatStore;
@@ -77,6 +80,25 @@ public class AdminController {
 	public Map<String, Object> clearPlots(HttpServletRequest http) {
 		requireAdmin(http);
 		return Map.of("cleared", plots.clear());
+	}
+
+	/**
+	 * The bake-time region→Earth-country mapping — read-only reference data that drives plot
+	 * place-naming ({@code PlaceNamingPass}). Editing it would require a full map re-bake (the
+	 * regenerate-map pipeline) + server roll to take effect, so this only surfaces the current map.
+	 */
+	@GetMapping("/region-map")
+	public Map<String, Object> regionMap(HttpServletRequest http) {
+		requireAdmin(http);
+		RegionEarthMap map = RegionEarthMap.load();
+		List<Map<String, String>> entries = new ArrayList<>();
+		for (String region : map.mappedRegions())
+			entries.add(Map.of("region", region, "country", map.countryOf(region).orElse("")));
+		Map<String, Object> out = new LinkedHashMap<>();
+		out.put("count", map.size());
+		out.put("mapVersion", ProvincePlotStore.MAP_VERSION);
+		out.put("entries", entries);
+		return out;
 	}
 
 	/** Drop all lobby chat history (new/reloading spectators replay nothing). */

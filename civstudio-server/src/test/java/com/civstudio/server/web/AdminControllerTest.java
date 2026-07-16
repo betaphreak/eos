@@ -47,6 +47,13 @@ class AdminControllerTest {
 		assertEquals(200, status.statusCode());
 		assertTrue(status.body().contains("\"plots\"") && status.body().contains("\"server\""),
 				"status carries the plot-cache + server readout");
+
+		// the read-only region->country map: admin only, and carries the mapping + count
+		assertEquals(403, get("/api/admin/region-map", "bob"));
+		HttpResponse<String> map = send("GET", "/api/admin/region-map", "super-admin");
+		assertEquals(200, map.statusCode());
+		assertTrue(map.body().contains("\"entries\"") && map.body().contains("\"count\"")
+				&& map.body().contains("\"region\""), "region-map carries the entries + count");
 	}
 
 	private int post(String path, String user) throws Exception {
