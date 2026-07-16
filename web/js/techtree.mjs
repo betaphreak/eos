@@ -12,7 +12,7 @@
 // lights its whole prerequisite chain in gold while the rest dims. Selecting a node opens
 // its detail in the shared right rail (the province/advisor rail — panel.mjs showRail).
 import { S, apiUrl } from "./core.mjs";
-import { draw } from "./main.mjs";
+import { draw } from "./repaint.mjs";
 import { pausePlayback, showRail, renderRail } from "./panel.mjs";
 import { liveKnownTechs, liveResearch } from "./overlays/live.mjs";
 

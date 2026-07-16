@@ -31,6 +31,14 @@ jobs:
         with:
           node-version: 24
 
+      # The web unit tests (node:test, no dependencies — the site is dependency-free and so are its
+      # tests, so this needs no npm install). They gate the deploy: the pure modules under test are
+      # the ones nothing else can catch — the band spine every layer fades through (band-math), the
+      # river/route tiling geometry — and an untriggered test rots.
+      - name: Unit tests
+        working-directory: web
+        run: npm test
+
       # Deploy the prebuilt web/ folder with the Static Web Apps CLI (a plain Node tool) rather than
       # the Azure/static-web-apps-deploy Docker action: no container image to pull, and it runs on any
       # glibc Linux runner. Uploads ./web as-is (no build). The CLI reads the deployment token from

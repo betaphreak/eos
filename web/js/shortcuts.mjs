@@ -3,7 +3,8 @@
 // actual actions live in the feature modules (map camera / playback in panel.mjs, the
 // tech-tree modal in techtree.mjs); this module wires keys to them and renders the hints.
 import { S, cam, VIEW, clampPan } from "./core.mjs";
-import { draw, zoomAt } from "./main.mjs";
+import { draw } from "./repaint.mjs";
+import { zoomAt } from "./main.mjs";
 import { resetView, toggleFullscreen, togglePlay, closePanel } from "./panel.mjs";
 import { setAdvisor } from "./advisors.mjs";
 

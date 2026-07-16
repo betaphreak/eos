@@ -1,5 +1,6 @@
 import { P, cam, VIEW, stage, px, terrainRgb, clampPan, provGeo, polOf, isPolitical, TRADE_GOODS, S } from "./core.mjs";
-import { draw, zoomAt, resize, focusProvinceFit, applyHash } from "./main.mjs";
+import { draw } from "./repaint.mjs";
+import { zoomAt, resize, focusProvinceFit, applyHash } from "./main.mjs";
 import { loadPlots } from "./plotfetch.mjs";
 import { provinceAt, plotAt } from "./hittest.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";

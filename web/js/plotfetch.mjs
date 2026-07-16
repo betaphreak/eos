@@ -17,7 +17,7 @@
 //    simply never retried, and the visible ones win the freed slots. The map keeps its blurred
 //    raster (the existing fallback) for anything not yet loaded.
 import { BUNDLE, apiUrl, S } from "./core.mjs";
-import { draw } from "./main.mjs";
+import { draw } from "./repaint.mjs";
 import { renderRail } from "./panel.mjs";
 
 const PLOT_FETCH_TIMEOUT = 6000;    // ms — drop a plot fetch that takes longer than this

@@ -1,5 +1,4 @@
 "use strict";
-"use strict";
 const BUNDLE = window.BUNDLE;
 
 // the spectator-server origin the /api/* calls target, resolved exactly like live.mjs and the
@@ -214,6 +213,28 @@ function clampPan() {
   cam.y = clampAxis(cam.y, VIEW.dy, VIEW.dh, VIEW.h);   // but clamp north-south to the poles
 }
 
+/**
+ * Put the BASE-space point (bx, by) at the centre of the viewport, optionally rescaling to `k`
+ * first (clamped to the zoom range). Base space is what baseXr/baseYr and VIEW.dx/dw produce —
+ * screen pixels at cam.k = 1 — so callers pass e.g. baseXr(sxSrc(lon)) for a lon/lat, or
+ * VIEW.dx + fx*VIEW.dw for a world fraction.
+ *
+ * Commits the camera properly: centre, clampPan(), bump baseVersion. Those three go together —
+ * baseVersion is the cache key for every province Path2D and the debounce gate for the legend and
+ * band caption, so a centre that forgets to bump it silently paints a stale frame. This was
+ * hand-inlined at four sites (focusProvince, focusProvinceFit, minimap.navTo, live.frameOn), which
+ * is three chances too many to drop a step.
+ *
+ * Does NOT repaint — the callers differ on that (some draw immediately, the minimap coalesces).
+ */
+function centerOn(bx, by, k) {   // exported in the list at the foot of this module, like its neighbours
+  if (k != null) cam.k = Math.max(1, Math.min(K_MAX, k));
+  cam.x = VIEW.w / 2 - cam.k * bx;
+  cam.y = VIEW.h / 2 - cam.k * by;
+  clampPan();
+  S.baseVersion++;
+}
+
 // ---- shared mutable state (was top-level lets; folded into one object so the modules
 // can read/write it across the ES-module boundary) ----
 export const S = {
@@ -240,6 +261,12 @@ export const S = {
   // overlay/plane/techOpen render states it maps onto. Derived from those at init, then owned
   // by setAdvisor(); the render layer still keys off overlay/plane/techOpen, never this.
   advisor: "mainmap",
+  // Screen-space glyph hit-targets (cave entrances, teleporters), rebuilt by main.paint() each frame
+  // and hit-tested by the hover handler. Declared here — not conjured by the first paint — so the
+  // object's shape is honest: a reader of S should not have to grep paint() to learn a field exists.
+  markers: [],
+  // where the camera was before a legend/search click flew it somewhere, so that focus can be undone
+  camBeforeFocus: null,
 };
 
-export { P, fmtInt, apiUrl, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, ROUTES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };
+export { P, fmtInt, apiUrl, SERVER_BASE, centerOn, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, ROUTES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };

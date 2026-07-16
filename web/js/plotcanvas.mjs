@@ -3,7 +3,7 @@
 // ground (plots.mjs), the movement-cost heat (cost.mjs), and anything later that needs the same
 // 1px/plot → screen mapping. Split out of plots.mjs so those layers don't have to import each other.
 import { ctx, pxr, pyr } from "./core.mjs";
-import { draw } from "./main.mjs";
+import { draw } from "./repaint.mjs";
 
 // Load a baked art image once: on load run `onReady` (flip its ready flag / invalidate caches) and
 // repaint. Returns the Image, or null when the asset is absent from the bundle (LFS not pulled /

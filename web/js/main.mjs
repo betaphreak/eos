@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_MAX, isPolitical, isUnderground, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, centerOn, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_MAX, isPolitical, isUnderground, cssVar, S } from "./core.mjs";
 import { bandAlpha, kBand, band, bandName, regime, REGIME_INFO } from "./bands.mjs";
 import { drawPlots } from "./plots.mjs";                       // still used directly by drawCavernPlots
 import { scheduleLegendRefresh } from "./overlays/political.mjs";
@@ -8,6 +8,7 @@ import { initSea } from "./sea.mjs";                           // the screen-spa
 import { initMinimap, drawMinimap } from "./minimap.mjs";
 import { currentCaption, scheduleCaptionRefresh, refreshCaptionNow } from "./bandcaption.mjs";   // the chip's viewport-context text
 import { escHtml } from "./plotlabel.mjs";
+import { draw, setFrame } from "./repaint.mjs";   // the repaint scheduler owns draw(); we install the frame body
 import { noteFrame } from "./diag.mjs";                        // the top bar's fps readout times real paints
 // the baked terrain raster (a real image asset), drawn over the water; its ocean pixels are
 // transparent so the sea layer below shows through, land is opaque.
@@ -106,34 +107,21 @@ function updateRegimeSignal() {
   }
   _sigRegime = r; _sigBand = bn; _sigPlane = S.plane; _sigEl = zoomLabelEl; _sigCtx = ctxText;
 }
-// draw() is the public redraw request — it COALESCES to one paint per animation frame, so a burst of
-// pan/zoom/pinch events (mobile fires many touchmoves per frame) collapses into a single scene render,
-// and it CAPS the paint rate at FPS_CAP: a frame that comes due early re-queues itself until the budget
-// has elapsed. Coalescing still holds while it waits (rafPending stays set), so the deferred paint draws
-// the newest camera, never a stale one. The scene is heavy and renders on demand, so the cap costs no
-// responsiveness — it only spares the burst case (a 120Hz pan) from painting frames nobody asked for.
-const FPS_CAP = 30, MIN_FRAME_MS = 1000 / FPS_CAP;
-let rafPending = false, lastPaintAt = 0;
-function draw() {
-  if (rafPending) return;
-  rafPending = true;
-  const tick = () => {
-    const now = performance.now();
-    if (now - lastPaintAt < MIN_FRAME_MS) { requestAnimationFrame(tick); return; }   // under budget — hold
-    lastPaintAt = now;
-    rafPending = false; paint();
-    scheduleLegendRefresh();
-    // The viewport-context readouts, recomputed once the camera settles: the band chip's caption
-    // (repaint only if its text actually moved) and — via civstudio:viewport — the top-bar advisor
-    // segments that name the nation/religion under the crosshair (advisors.mjs). The event is the
-    // seam that keeps this module from importing advisors.mjs.
-    scheduleCaptionRefresh(changed => {
-      if (changed) draw();
-      window.dispatchEvent(new Event("civstudio:viewport"));
-    });
-  };
-  requestAnimationFrame(tick);
-}
+// What one frame does. The SCHEDULING of frames (coalescing + the fps cap) lives in repaint.mjs,
+// which owns draw(); this is only the body it runs. The split is what lets the six modules that want
+// nothing but draw() stop importing this one — see repaint.mjs's header.
+setFrame(() => {
+  paint();
+  scheduleLegendRefresh();
+  // The viewport-context readouts, recomputed once the camera settles: the band chip's caption
+  // (repaint only if its text actually moved) and — via civstudio:viewport — the top-bar advisor
+  // segments that name the nation/religion under the crosshair (advisors.mjs). The event is the
+  // seam that keeps this module from importing advisors.mjs.
+  scheduleCaptionRefresh(changed => {
+    if (changed) draw();
+    window.dispatchEvent(new Event("civstudio:viewport"));
+  });
+});
 // Time each real paint for the top bar's fps readout (js/diag.mjs). The app renders on demand, so
 // this — not a free-running rAF loop — is the only place that knows a frame happened and what it cost.
 // The techOpen bail-out is deliberately outside the timing: a suppressed paint is not a fast frame.
@@ -424,10 +412,8 @@ function zoomAt(mx, my, factor) {
 const Pby = new Map(P.map(p => [p.id, p]));
 function focusProvince(id, k) {
   const p = Pby.get(id); if (!p) return;
-  cam.k = Math.max(1, Math.min(K_MAX, k || 18));
-  cam.x = VIEW.w / 2 - cam.k * baseXr(sxSrc(p.lon));
-  cam.y = VIEW.h / 2 - cam.k * baseYr(sySrc(p.lat));
-  clampPan(); S.baseVersion++; draw();
+  centerOn(baseXr(sxSrc(p.lon)), baseYr(sySrc(p.lat)), k || 18);
+  draw();
 }
 // Zoom so the WHOLE province fits the viewport (double-click), centred on its bounding box:
 // pick the scale that fits the box's screen extent within a margin, clamped to the zoom range,
@@ -439,10 +425,9 @@ function focusProvinceFit(id) {
   const m = 0.9;                                                         // fill most of the canvas, a sliver of air
   const wSrc = Math.max(1, (box.x1 - box.x0) / (MAP.x1 - MAP.x0) * VIEW.dw);   // province width in base screen px
   const hSrc = Math.max(1, (box.y1 - box.y0) / (MAP.y1 - MAP.y0) * VIEW.dh);
-  cam.k = Math.max(1, Math.min(K_MAX, Math.min(VIEW.w * m / wSrc, VIEW.h * m / hSrc)));
-  cam.x = VIEW.w / 2 - cam.k * baseXr((box.x0 + box.x1) / 2);
-  cam.y = VIEW.h / 2 - cam.k * baseYr((box.y0 + box.y1) / 2);
-  clampPan(); S.baseVersion++; draw();
+  centerOn(baseXr((box.x0 + box.x1) / 2), baseYr((box.y0 + box.y1) / 2),
+    Math.min(VIEW.w * m / wSrc, VIEW.h * m / hSrc));
+  draw();
 }
 // Deep link: focus a province from the URL. Accepts a QUERY string (?p=<id>&z=<zoom> — the
 // production/shareable form; on Azure SWA the navigationFallback rewrites /worldmap → index.html
@@ -482,7 +467,7 @@ if (typeof document !== "undefined" && document.fonts && document.fonts.load) {
   ]).then(() => draw()).catch(() => {});
 }
 
-export { draw, zoomAt, resize, focusProvince, focusProvinceFit, applyHash, hasDeepLink };
+export { zoomAt, resize, focusProvince, focusProvinceFit, applyHash, hasDeepLink };
 // scene-layer draw fns, consumed by the LAYERS registry in layers.mjs (they stay here because they
 // close over main's raster/camera state and the Pby/hatch helpers)
 export { drawRaster, drawLakes, drawSeaCells, drawImpassable, drawSurfacePlots,

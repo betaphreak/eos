@@ -4,7 +4,7 @@
 // (coast.mjs), the plot fetch (plotfetch.mjs), the resource icons (bonusicons.mjs), the movement-cost
 // heat (cost.mjs), and the offscreen primitives all three share (plotcanvas.mjs).
 import { P, terrainRgb, provSrcBox, K_PLOT, TT, RIVER, TREES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, LY, NB4, cam, VIEW, ctx, px, py, pxr, pyr, S } from "./core.mjs";
-import { draw } from "./main.mjs";
+import { draw } from "./repaint.mjs";
 import { bandAlpha, kBand, atLeast, BAND } from "./bands.mjs";
 import { loadArt, plotBounds, buildPixelCanvas, blitProvinceCanvas } from "./plotcanvas.mjs";
 import { riverClass, riverLinks, cellStrokes, ribbonWidth } from "./river-geom.mjs";

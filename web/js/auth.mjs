@@ -3,10 +3,7 @@
 // every call targets LIVE_BASE — the server chosen on the loading screen — and carries the
 // session cookie (credentials: include), so it only works when the server is same-site with the
 // site (the civstudio.com cloud servers; localhost for local dev). See docs/authentication.md.
-import { BUNDLE } from "./core.mjs";
-
-const LIVE_BASE = new URLSearchParams(location.search).get("live")
-  || (BUNDLE.live && BUNDLE.live.base) || "https://dev.civstudio.com";
+import { SERVER_BASE as LIVE_BASE } from "./core.mjs";   // one resolver, in core — see its header
 
 // how each provider id renders in the sign-in menu; the server's /providers says which are offered
 const PROVIDER_LABEL = { steam: "🎮  Steam", google: "G  Google" };

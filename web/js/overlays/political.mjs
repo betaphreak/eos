@@ -4,7 +4,8 @@
 // physical terrain as you dive in, plus the legend/search spotlight. The chrome (legend, entity
 // search, sidebar Politics block) lives in panel.mjs; this module owns only the canvas render.
 import { ctx, cam, P, provPath, provOnScreen, polOf, isPolitical, isUnderground, COUNTRIES, CULTURES, RELIGIONS, K_PLOT, K_TEX, lerp, VIEW, provSrcBox, pxr, pyr, worldW, S } from "../core.mjs";
-import { draw, focusProvinceFit } from "../main.mjs";
+import { draw } from "../repaint.mjs";
+import { focusProvinceFit } from "../main.mjs";
 import { bandAlpha, kBand } from "../bands.mjs";
 
 // "#rrggbb" + alpha -> an rgba() string, memoised (the nation/culture/faith fills)

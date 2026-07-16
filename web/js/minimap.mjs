@@ -1,4 +1,4 @@
-import { cam, VIEW, MAP, clampPan, worldW, S, stage } from "./core.mjs";
+import { cam, VIEW, MAP, centerOn, worldW, S, stage } from "./core.mjs";
 import { band, BAND } from "./bands.mjs";
 
 // Minimap — a small world-raster thumbnail docked bottom-left of the stage, with a rectangle
@@ -43,9 +43,8 @@ function navTo(clientX, clientY) {
   const r = canvas.getBoundingClientRect();
   const fx = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
   const fy = Math.max(0, Math.min(1, (clientY - r.top) / r.height));
-  cam.x = VIEW.w / 2 - cam.k * (VIEW.dx + fx * VIEW.dw);
-  cam.y = VIEW.h / 2 - cam.k * (VIEW.dy + fy * VIEW.dh);
-  clampPan(); S.baseVersion++; requestDraw();
+  centerOn(VIEW.dx + fx * VIEW.dw, VIEW.dy + fy * VIEW.dh);   // same k — the minimap pans, never zooms
+  requestDraw();
 }
 function wireNav() {
   let down = false;

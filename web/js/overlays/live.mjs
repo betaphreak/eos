@@ -7,16 +7,15 @@
 // pure consumer + command client — it never touches engine internals. The map projection
 // (px/py) already pins anything with a lon/lat onto the terrain, so the feed's colonies and
 // caravans place with no new geometry.
-import { ctx, S, px, py, cssVar, cam, VIEW, baseXr, baseYr, sxSrc, sySrc, BUNDLE, LABEL_FONT } from "../core.mjs";
+// where the feed lives — resolved once, in core.mjs (?live= override, else the base the index.html
+// bootstrap recorded on the bundle, else the deployed server). It used to be re-derived here and in
+// auth.mjs: three copies of the same two lines, all of which had to stay in lockstep with the
+// bootstrap that actually picks the server.
+import { ctx, px, py, cssVar, VIEW, baseXr, baseYr, sxSrc, sySrc, LABEL_FONT, centerOn, SERVER_BASE as LIVE_BASE } from "../core.mjs";
 import { hasDeepLink } from "../main.mjs";
 import { atLeast, BAND } from "../bands.mjs";
 import { mergeRoutePlots } from "../routes.mjs";
 import { showLiveLog, ingestLog, ingestChat, resetLog, setChatSender } from "../livelog.mjs";
-
-// where the feed lives: the build can inject BUNDLE.live.base; a ?live=<url> query overrides
-// it for local testing; otherwise the deployed server.
-const LIVE_BASE = new URLSearchParams(location.search).get("live")
-  || (BUNDLE.live && BUNDLE.live.base) || "https://dev.civstudio.com";
 
 const PALETTE = ["#e8c37a","#6bd08a","#7aa2e0","#e07a9e","#9e7ae0","#e0a97a","#7ae0d0","#c0e07a"];
 
@@ -228,15 +227,13 @@ function onSnapshot(s) {
   window.dispatchEvent(new CustomEvent("civstudio:snapshot"));
 }
 
-// centre the camera on a lon/lat at scale k (used once, so Live mode opens on the action
-// rather than the whole world). Mirrors the camera math in main/panel (px = cam.x +
-// cam.k*baseXr(sxSrc(lon))), solved for cam.x/cam.y so the point lands at screen centre.
+// centre the camera on a lon/lat at scale k (used once, so Live mode opens on the action rather
+// than the whole world). NB this now CLAMPS as well: it was the only one of the four centring
+// sites that hand-rolled the camera commit WITHOUT clampPan, so opening on a colony near the map
+// edge could park the camera out of bounds. centerOn does the whole commit — see core.mjs.
 function frameOn(lat, lon, k) {
   if (!(VIEW.w > 0)) return;
-  cam.k = k;
-  cam.x = VIEW.w / 2 - cam.k * baseXr(sxSrc(lon));
-  cam.y = VIEW.h / 2 - cam.k * baseYr(sySrc(lat));
-  S.baseVersion++;
+  centerOn(baseXr(sxSrc(lon)), baseYr(sySrc(lat)), k);
 }
 
 /** Draw the live colony + caravans. Called by main.renderScene per world-copy in Live mode. */

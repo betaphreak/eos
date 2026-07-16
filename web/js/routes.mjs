@@ -10,7 +10,7 @@
 // engine founds pre-paved (ProvincePlotPool) and which markUrbanPlots already flags `urban` — stand in
 // as PAVED_ROAD, so a paved city core is visible on zoom-in with no new server data.
 import { P, ctx, ROUTES, pxr, pyr, provOnScreen, isPolitical } from "./core.mjs";
-import { draw } from "./main.mjs";
+import { draw } from "./repaint.mjs";
 import { bandAlpha } from "./bands.mjs";
 import { routePiece, neighbourMask } from "./route-tiling.mjs";
 
