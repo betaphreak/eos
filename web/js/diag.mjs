@@ -107,8 +107,13 @@ export function initDiag() {
   fpsEl = host.querySelector("#diagFps");
   netEl = host.querySelector("#diagNet");
   probe();
-  setInterval(probe, PING_EVERY);
+  // Both timers are gated on visibility: a hidden tab has no chip to read and no frames to time, so
+  // pinging the server and rewriting DOM forever is pure waste — it just drains a laptop watching a
+  // session in a background tab. Returning to the tab catches both up immediately, so the chip is
+  // never stale by more than the moment you look at it.
+  setInterval(() => { if (!document.hidden) probe(); }, PING_EVERY);
   // repaint the chip on a slow timer of its own: the fps window keeps sliding while the map is idle
   // (and must decay to "stale"), which no paint would ever tell us about.
-  setInterval(render, 500);
+  setInterval(() => { if (!document.hidden) render(); }, 500);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { probe(); render(); } });
 }

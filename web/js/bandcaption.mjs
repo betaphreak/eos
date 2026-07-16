@@ -126,26 +126,33 @@ const CAPTIONS = [
       return g ? `Famous for ${g}` : "Not famous for anything";
     } },
   // an address, coarse-to-fine: the plot's real GeoNames name, then the province containing it
-  { band: BAND.PLOT,       fallback: "Unnamed ground",
-    text: p => {
-      const q = plotAt(VIEW.w / 2, VIEW.h / 2);
-      const place = q && q.name;
-      if (place && p) return `${place} · ${p.name}`;
-      return place || (p && p.name) || null;
-    } },
+  { band: BAND.PLOT,       fallback: "Unexplored", text: p => address(p) },
   // The city view does not exist yet, so there is no "selected settlement" to name — the only
-  // settlement the frontend knows about is the live session's colony. We name it when it is on
-  // screen (colonyInView) and say nothing otherwise, rather than claiming one is here.
-  { band: BAND.SETTLEMENT, fallback: "No settlement here",
-    text: () => {
+  // settlement the frontend knows about is the live session's colony. Name it when it is on screen
+  // (colonyInView); otherwise fall through to the ADDRESS rather than announcing "No settlement
+  // here". Both say the same true thing — there is no settlement — but one of them also tells you
+  // where you are, and the chip is the only thing naming the ground at this zoom.
+  { band: BAND.SETTLEMENT, fallback: "Unexplored",
+    text: p => {
       const c = colonyInView();
-      if (!c) return null;
+      if (!c) return address(p);
       const t = tierLabel(c.tier);
       return t ? `${c.name} · ${t}` : c.name;
     } },
-  // reserved for the city-builder micro view (docs/zoom-bands.md §Band 8) — nothing to name yet
-  { band: BAND.BUILDING,   fallback: "Buildings — coming soon", text: () => null },
+  // reserved for the city-builder micro view (docs/zoom-bands.md §Band 8). Nothing to name yet, so
+  // it keeps naming the ground — a roadmap note ("coming soon") is for the changelog, not for the
+  // chrome of every deep zoom.
+  { band: BAND.BUILDING,   fallback: "Unexplored", text: p => address(p) },
 ];
+
+// where the crosshair is, coarse-to-fine: the plot's real GeoNames place name, then the province
+// containing it. Null when neither is known (the caller's fallback covers it).
+function address(p) {
+  const q = plotAt(VIEW.w / 2, VIEW.h / 2);
+  const place = q && q.name;
+  if (place && p) return `${place} · ${p.name}`;
+  return place || (p && p.name) || null;
+}
 
 /**
  * Compute the caption for the CURRENT band: the nearest band's row, resolved against the viewport

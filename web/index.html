@@ -289,11 +289,12 @@
   <script defer src="tradegoods.js"></script>
   <!-- window.BUNDLE (the map/geo backbone) now comes from the spectator server — the single
        source of truth, assembled by com.civstudio.server.web.WorldBundle — instead of a committed
-       data.js. The loading screen holds up a SERVER PICKER (dev is the default cloud server, local
-       targets a server on this machine; ?live=<url> injects a one-off custom entry). Each row shows
-       the server's version, fetched online from /actuator/info. We WAIT for the user to click a
-       server, then poll readiness (/actuator/health), fetch the bundle, and import the module app —
-       core.mjs reads window.BUNDLE synchronously at eval time, so it must be populated first. -->
+       data.js. The loading screen can hold up a SERVER PICKER (dev is the default cloud server,
+       local targets a server on this machine; ?live=<url> injects a one-off custom entry). Each row
+       shows the server's version, fetched online from /actuator/info. Once a server is settled — by
+       a click, or by the auto-connect rules at the bottom of this script — we poll readiness
+       (/actuator/health), fetch the bundle, and import the module app; core.mjs reads window.BUNDLE
+       synchronously at eval time, so it must be populated first. -->
   <script>
   (function () {
     var params = new URLSearchParams(location.search);
@@ -490,6 +491,21 @@
         });
     }
 
+    // the last server that actually connected, so a returning visitor is not re-asked. Wrapped
+    // because localStorage throws outright in some privacy modes — a remembered pick is a nicety and
+    // must never cost us the boot. Only ids we still know about count ("custom" is per-URL, so it is
+    // deliberately not remembered — its base lives in ?live=, not here).
+    var REMEMBER_KEY = "civstudio.server";
+    function remembered() {
+      try {
+        var id = localStorage.getItem(REMEMBER_KEY);
+        return id && id !== "custom" && servers.some(function (s) { return s.id === id; }) ? id : null;
+      } catch (e) { return null; }
+    }
+    function remember(s) {
+      try { if (s.id !== "custom") localStorage.setItem(REMEMBER_KEY, s.id); } catch (e) {}
+    }
+
     function connect(s) {
       connecting = true; render();
       if (bar) bar.hidden = false;
@@ -502,7 +518,7 @@
         })
         .then(function () { return fetch(s.base + "/api/bundle", { credentials: "omit" }); })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-        .then(function (b) { b.live = { base: s.base }; window.BUNDLE = b; return prefetch(s.base); })
+        .then(function (b) { b.live = { base: s.base }; window.BUNDLE = b; remember(s); return prefetch(s.base); })
         .then(function () { return import("./app.js"); })
         .catch(function (e) {
           connecting = false; s.status = "down";
@@ -553,11 +569,21 @@
       if (mode === "switch" && !picker.hidden && !picker.contains(e.target)) closePicker();
     });
 
-    // ?server=<id> (dev|local|custom) bypasses the picker and connects straight to that server; on
-    // failure connect() reveals the picker. A bare ?live=<url> also auto-connects (to its custom
-    // entry) — preserving the old point-at-a-server testing shortcut. Otherwise: show the picker
-    // and wait for a click.
-    var auto = params.get("server") || (custom ? "custom" : null);
+    // Who still has to answer "choose a server"? Only a first-time visitor arriving at the bare
+    // site. Everyone else has already told us, one way or another:
+    //   ?server=<id>   an explicit pick (this is how the switch flow reloads)
+    //   ?live=<url>    an explicit ad-hoc server (the point-at-a-server testing shortcut)
+    //   remembered     they picked one last time; asking again every visit is just noise
+    //   ?p= / ?z= / #  a DEEP LINK — someone shared a place on the map. The picker is pure friction
+    //                  here: the sharer meant "look at this", and the recipient has no idea which
+    //                  server to answer with. Send them to the default.
+    // Order matters: `remembered` outranks the deep-link default because a deep link says WHERE ON
+    // THE MAP, not WHICH SERVER — someone who works against `local` should not be bounced to `dev`
+    // by opening a shared link. Any auto-connect that fails still falls back to the picker (see
+    // connect()'s catch), so this can only ever save a click, never strand anyone.
+    var deepLink = params.has("p") || params.has("z") || (location.hash && location.hash.length > 1);
+    var auto = params.get("server") || (custom ? "custom" : null) || remembered()
+      || (deepLink ? defaultId : null);
     var target = auto && servers.filter(function (s) { return s.id === auto; })[0];
     if (target) {
       connect(target);
@@ -666,10 +692,17 @@
         b.classList.remove("on");
         setTimeout(function () { b.remove(); }, 320);
         document.removeEventListener("pointerdown", onInteract, true);
+        document.removeEventListener("wheel", onInteract, true);
+        document.removeEventListener("keydown", onInteract, true);
       }
-      function onInteract(e) { if (!b.contains(e.target)) dismiss(); }   // any first interaction with the app dismisses it
+      // any first interaction with the app dismisses it — including the two that are not a click:
+      // scroll-zooming the map (wheel) and driving it from the keyboard. Missing those left the
+      // notice parked over the map for anyone whose first move was to zoom.
+      function onInteract(e) { if (!b.contains(e.target)) dismiss(); }
       b.querySelector(".cb-ok").addEventListener("click", dismiss);
       document.addEventListener("pointerdown", onInteract, true);
+      document.addEventListener("wheel", onInteract, { capture: true, passive: true });
+      document.addEventListener("keydown", onInteract, true);
       requestAnimationFrame(function () { b.classList.add("on"); });
     }
     if (document.body) show(); else document.addEventListener("DOMContentLoaded", show);

@@ -77,6 +77,10 @@ const MAX_TEX_PLOTS = 20000;
 // the city for the district layer (districts.mjs), routes (urban→paved) and the info panel. No client
 // re-terraining is needed any more; the old TERRAIN_URBAN grey-ground substrate was retired engine-side.
 
+// the colour a river cell tints toward on the 1px/plot canvas — the hue the old flat blend
+// (r*0.55+42, g*0.55+60, b*0.55+76) resolved to, kept so only the STRENGTH now varies
+const RIVER_TINT = [93, 133, 169];
+
 // rasterise a province's plots to a 1px/plot offscreen canvas: terrain colour, relief
 // shading (hill lighter, peak toward rock-grey), a light feature tint, and river blend
 function buildPlotCanvas(p, plots) {
@@ -93,7 +97,17 @@ function buildPlotCanvas(p, plots) {
       }
       if (q.plotType === "HILL") { r = Math.min(255, r * 1.14 + 8) | 0; g = Math.min(255, g * 1.14 + 8) | 0; b = Math.min(255, b * 1.14 + 8) | 0; }
       else if (q.plotType === "PEAK") { r = (r + 150) / 2 | 0; g = (g + 152) / 2 | 0; b = (b + 158) / 2 | 0; }
-      if (q.river) { r = r * 0.55 + 42 | 0; g = g * 0.55 + 60 | 0; b = b * 0.55 + 76 | 0; }   // muted blue-grey, not vivid cyan
+      // A ribbon is meaningless at 1px/plot, so a river reads here as a TINT toward a muted
+      // blue-grey (not vivid cyan). Its strength rides the width class, so the Ostmark trunk still
+      // carries the eye at continent zoom while a headwater thread fades into the ground — the same
+      // taper the ribbon draws further in, which keeps a river's weight continuous across the zoom
+      // where the two representations swap. Class 5 lands on the old flat 0.45 blend.
+      if (q.river) {
+        const t = 0.18 + 0.06 * riverClass(q.river);
+        r = r * (1 - t) + RIVER_TINT[0] * t | 0;
+        g = g * (1 - t) + RIVER_TINT[1] * t | 0;
+        b = b * (1 - t) + RIVER_TINT[2] * t | 0;
+      }
     }
     d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = 255;
   });

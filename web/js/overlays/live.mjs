@@ -187,6 +187,17 @@ const sceneSig = s => JSON.stringify([
 ]);
 let lastSig = null;
 
+// The snapshot-driven chrome: the HUD, the transport controls, the Spectate tab tint. All derived
+// from the snapshot alone, so it can be replayed from the retained `snap` at any time.
+function paintChrome(s) {
+  renderHud();
+  onState(s.state, s.date);              // sync the transport controls (play icon, speed, date)
+  liveTabRunning(s.state === "RUNNING"); // tint the Spectate tab while the session is live/unpaused
+}
+// Coming back to the tab: rebuild the chrome from the last snapshot we kept. Without this a PAUSED
+// session would show whatever the HUD said when you left — no further snapshot is coming to fix it.
+document.addEventListener("visibilitychange", () => { if (!document.hidden && snap) paintChrome(snap); });
+
 function onSnapshot(s) {
   snap = s;
   // accumulate the bands' pioneered trails (gap B → the route layer). A new trail plot changes the
@@ -200,10 +211,12 @@ function onSnapshot(s) {
   // open on the colony once — UNLESS the visitor deep-linked to a province/zoom (?p=&z=),
   // whose framing (applyHash) we must not stomp. A plain load (no deep link) still opens on the action.
   if (!framed && s.colonies[0]) { if (!hasDeepLink()) frameOn(s.colonies[0].latitude, s.colonies[0].longitude, 6); framed = true; }
-  renderHud();
   ingestLog(s.log);           // feed the event-log bar this frame's new lines
-  onState(s.state, s.date);   // sync the transport controls (play icon, speed, date) to the server
-  liveTabRunning(s.state === "RUNNING"); // tint the Spectate tab while the session is live/unpaused
+  // The chrome below is a pure function of `snap`, so a hidden tab can skip it and rebuild on
+  // return (paintChrome, wired to visibilitychange) — no point rewriting innerHTML nobody can see.
+  // NB ingestLog above is deliberately NOT skipped: s.log is a per-tick DELTA, so a skipped tick
+  // would drop those lines from the event log for good.
+  if (!document.hidden) paintChrome(s);
   // ...but only repaint the map when the map actually changed. This was the one repaint in the app
   // driven by nothing but the clock — every tick forced a full scene render, up to UNCAPPED at
   // speed 5 (LIVE_RATES ends in 0), however far the camera was parked from the action.
