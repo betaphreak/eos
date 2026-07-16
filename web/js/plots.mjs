@@ -95,6 +95,16 @@ function extractTiles() {
 const PLOT_FETCH_TIMEOUT = 6000;    // ms — drop a plot fetch that takes longer than this
 const PLOT_RETRY_BACKOFF = 12000;   // ms — after a timeout, wait this long before retrying a province
 const MAX_INFLIGHT_PLOTS = 6;       // most concurrent /api/plots fetches
+// Per-paint wall-clock budget for the heavy offscreen rasterisation (buildPlotTexCanvas /
+// buildPlotCanvas). Those run once per province in the draw loop; when several fetches resolve in one
+// batch (common after a slow load) building them all in a single frame froze the UI. Build until the
+// budget is spent, then defer the rest to later frames (drawPlots reschedules a paint). At least one
+// province always builds per frame, so it still converges quickly.
+const PLOT_FRAME_BUDGET_MS = 6;
+// Above this plot count, skip the (multi-pass, per-plot) textured build and use the cheap flat 1px/plot
+// canvas instead — a single giant province (e.g. ~80k plots) would otherwise block for seconds on its
+// one textured build, which the per-frame budget can't interrupt mid-build.
+const MAX_TEX_PLOTS = 20000;
 let inFlightPlots = 0;
 async function loadPlots(p) {
   if (p._loading || p._plots) return;
@@ -265,6 +275,8 @@ function drawPlots(only) {
   const smooth = ctx.imageSmoothingEnabled;
   ctx.globalAlpha = a;
   const vis = [];   // in-view provinces with plots loaded — reused by the bonus overlay (no 2nd P scan)
+  const buildDeadline = performance.now() + PLOT_FRAME_BUDGET_MS;   // stop starting builds past this
+  let deferred = false;
   for (const p of P) {
     if (only && !only(p)) continue;
     const bb = provSrcBox(p);
@@ -275,18 +287,30 @@ function drawPlots(only) {
     if (!p._plots) { loadPlots(p); continue; }   // request the server-generated grid on first sight
     if (!p._plots.length) continue;              // loaded-empty (deep ocean): nothing to draw
     vis.push(p);
-    if (textured) {
-      if (!p._tcanvas) buildPlotTexCanvas(p);                 // textured offscreen, built once
+    // giant provinces skip the heavy textured build (bounded worst case) and use the flat canvas
+    if (textured && p._plots.length <= MAX_TEX_PLOTS) {
+      if (!p._tcanvas) {
+        if (performance.now() >= buildDeadline) {   // out of frame budget — flat placeholder now, texture next frame
+          deferred = true;
+          if (p._pcanvas) { ctx.imageSmoothingEnabled = false; blitProvinceCanvas(p._pcanvas, p._pbox); }
+          continue;
+        }
+        buildPlotTexCanvas(p);                       // textured offscreen, built once
+      }
       ctx.imageSmoothingEnabled = true;
       blitProvinceCanvas(p._tcanvas, p._tbox);
       continue;
     }
-    if (!p._pcanvas) buildPlotCanvas(p, p._plots);            // flat-colour offscreen, built once
+    if (!p._pcanvas) {
+      if (performance.now() >= buildDeadline) { deferred = true; continue; }   // out of budget — build next frame
+      buildPlotCanvas(p, p._plots);                  // flat-colour offscreen, built once
+    }
     ctx.imageSmoothingEnabled = false;
     blitProvinceCanvas(p._pcanvas, p._pbox);
   }
   ctx.globalAlpha = 1; ctx.imageSmoothingEnabled = smooth;
   drawBonusOverlay(vis);   // resource icons: screen-space overlay over the in-view provinces only
+  if (deferred) draw();    // keep each paint under budget — finish the remaining builds over the next frames
 }
 // A smooth grayscale noise tile (deterministic, built once): black RGB with a soft-blob ALPHA
 // channel in ~[0.25,1]. Used to make the terrain edge/corner blend IRREGULAR instead of a clean
