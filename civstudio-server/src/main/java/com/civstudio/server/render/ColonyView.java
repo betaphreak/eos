@@ -38,11 +38,16 @@ import java.util.List;
  *                       it to a district art-style set (D5); {@code null} for a province-less colony
  * @param districts      the district plots carrying buildings (the placed-building state the district
  *                       view stamps); empty until auto-build places anything. See {@link DistrictView}
+ * @param researchingTech the tech id the colony is currently researching (its research focus), or
+ *                       {@code null} when nothing is being researched — drives the Technology segment
+ * @param researchProgress fraction (0..1) of the current focus's cost accumulated so far; 0 when
+ *                       there is no focus
  */
 public record ColonyView(String name, boolean alive, String date, int population,
 		int children, int nobles, int firms, int poolSize, double cpi,
 		double necessityPrice, double enjoymentPrice, int plotCount, int maxPlots,
 		double latitude, double longitude, double bankProfitTax, double nobleIncomeTax,
 		List<AdvisorView> advisors, List<String> knownTechs, int startingDistricts,
-		String culture, List<DistrictView> districts) {
+		String culture, List<DistrictView> districts,
+		String researchingTech, double researchProgress) {
 }

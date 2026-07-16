@@ -527,6 +527,9 @@ function cityRail(p) {
   if (!politicalReady()) ensurePolitical().then(() => { if (S.selectedProv === p) renderRail(); });
 }
 function renderRail(){
+  // a province-focus change (select/deselect) — let the Religion advisor segment retrack the focused
+  // province's faith (advisors.mjs listens; refreshDynamicSegments). Cheap: it only repaints a label.
+  window.dispatchEvent(new CustomEvent("civstudio:focus"));
   syncLiveRail();                                   // keep the in-rail live HUD in sync (Zeitgeist)
   if (S.selectedProv) {
     if (S.selectedProv.city) { cityRail(S.selectedProv); return; }

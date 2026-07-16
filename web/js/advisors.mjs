@@ -5,11 +5,12 @@
 // S.techOpen states the LAYERS registry already gates on (layers.mjs) — the render pipeline is
 // unchanged; this only groups the controls and drives the existing panel.mjs handlers.
 // See docs/privy-council.md.
-import { S, BUNDLE } from "./core.mjs";
+import { S, BUNDLE, RELIGIONS } from "./core.mjs";
 import { setOverlay, setPlane, updateSearchContext } from "./panel.mjs";
 import { openTech, closeTech } from "./techtree.mjs";
 import { advisorSeat, openAdvisorRail, noteRoster, closeAdvisorRail } from "./advisor-detail.mjs";
-import { onLiveRoster } from "./overlays/live.mjs";
+import { onLiveRoster, liveColony } from "./overlays/live.mjs";
+import { ensurePolitical, politicalReady } from "./overlays/political.mjs";
 import { advisorPortrait, initPortraits } from "./portraits.mjs";
 
 // The physical-world (globe) segment is labelled with the world name + current map version
@@ -89,11 +90,49 @@ function buildSelector() {
     b.addEventListener("click", () => setAdvisor(a.id));
     selectorEl.appendChild(b);
   }
+  refreshDynamicSegments();   // paint the live-labelled segments (Technology / Religion) over their defaults
 }
 
 function paintSelector() {
   selectorEl.querySelectorAll("button").forEach(b =>
     b.setAttribute("aria-pressed", String(b.dataset.advisor === S.advisor)));
+}
+
+// ---- dynamic advisor segments: some segments show live state in place of a static label ----
+// prettify a tech id into a title-cased display name (the frontend has no tech-name map until the
+// tech tree loads /api/techs; the id prettifies cleanly, e.g. TECH_BRONZE_WORKING -> "Bronze Working")
+function techName(id) {
+  return id.replace(/^TECH_/, "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+// the Technology segment's live text: the POV colony's current research + progress %, else the static
+// label. The research rides the live snapshot (ColonyView.researchingTech / researchProgress).
+function technologyLabel() {
+  const c = liveColony();
+  if (c && c.researchingTech)
+    return `${techName(c.researchingTech)} (${Math.round((c.researchProgress || 0) * 100)}%)`;
+  return "Technology";
+}
+// the Religion segment's live text: the focused (selected) province's religion name, else the static
+// label. The name resolves from RELIGIONS (loaded with the political layer, which selecting a province
+// already warms); falls back to the prettified raw key until that arrives.
+function religionLabel() {
+  const p = S.selectedProv;
+  if (p && p.religion)
+    return (RELIGIONS[p.religion] && RELIGIONS[p.religion].name)
+      || p.religion.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  return "Religion";
+}
+// repaint one dynamic segment's text (keeping its icon); a no-op for the zoom segment / an absent button
+function setSegmentText(id, text) {
+  const b = selectorEl && selectorEl.querySelector(`button[data-advisor="${id}"]`);
+  if (!b || b.classList.contains("adv-zoom")) return;
+  b.innerHTML = `<span class="adv-ico">${byId(id).icon || ""}</span>${text}`;
+}
+// refresh every live-labelled segment — Technology (from the snapshot) and Religion (from the focused
+// province). Called on build, on each live snapshot, and on a province-focus change (see initAdvisor).
+export function refreshDynamicSegments() {
+  setSegmentText("technology", technologyLabel());
+  setSegmentText("religion", religionLabel());
 }
 
 // show only the active advisor's sub-control strip; the standalone cost button (top-right) belongs
@@ -155,6 +194,15 @@ export function initAdvisor() {
   // the roster arrives on the live feed — re-render the active advisor's court chip on each update
   // (and on succession, when the name/race behind a role changes)
   onLiveRoster(roster => { noteRoster(roster); renderCourt(S.advisor); });
+  // live-labelled segments: Technology tracks each snapshot's research; Religion tracks the focused
+  // province (panel.mjs dispatches civstudio:focus on select/deselect). See refreshDynamicSegments.
+  window.addEventListener("civstudio:snapshot", refreshDynamicSegments);
+  window.addEventListener("civstudio:focus", () => {
+    refreshDynamicSegments();
+    // the focused province's faith (owner/culture/religion + the name tables) rides the lazy political
+    // layer — warm it on first focus so the Religion segment can resolve a name, then repaint.
+    if (S.selectedProv && !politicalReady()) ensurePolitical().then(refreshDynamicSegments);
+  });
   S.advisor = deriveAdvisor();
   paintSelector();
   showSub(S.advisor);

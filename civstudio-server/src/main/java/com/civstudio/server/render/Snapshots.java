@@ -128,6 +128,15 @@ public final class Snapshots {
 		var research = c.getResearch();
 		List<String> knownTechs = research == null ? List.of()
 				: research.getKnown().stream().sorted().toList();
+		// the tech currently being researched + fractional progress (the read-side of the ruler's
+		// monthly research pick) — the web shows it live on the Technology segment
+		String researchingTech = null;
+		double researchProgress = 0;
+		if (research != null && research.getFocus() != null) {
+			researchingTech = research.getFocus().type();
+			double cost = research.effectiveCost();
+			researchProgress = cost > 0 ? Math.min(1.0, research.getProgress() / cost) : 0;
+		}
 		// the district state the web view stamps: the starting district count (province
 		// development), the culture (→ art-style set), and the plots carrying buildings
 		// (sparse — auto-build puts everything at the center in the first cut). See
@@ -138,7 +147,7 @@ public final class Snapshots {
 				children, nobles, firms, pool, c.getInflation(), necessity, enjoyment,
 				c.getPlotCount(), c.getMaxPlots(), c.getLatitude(), c.getLongitude(),
 				bankProfitTax, nobleIncomeTax, advisorViews(c), knownTechs,
-				c.getStartingDistrictCount(), culture, districts);
+				c.getStartingDistrictCount(), culture, districts, researchingTech, researchProgress);
 	}
 
 	// project the colony's district plots that carry buildings — the placed-building state
