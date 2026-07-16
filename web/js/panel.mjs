@@ -4,10 +4,13 @@ import { zoomAt, resize, focusProvinceFit, applyHash } from "./main.mjs";
 import { loadPlots } from "./plotfetch.mjs";
 import { provinceAt, plotAt } from "./hittest.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
-import { startLive, liveToBackground, liveActive, liveState, controlLive, liveColony, LIVE_RATES } from "./overlays/live.mjs";
+import { startLive, liveToBackground, liveColony } from "./overlays/live.mjs";
 import { createSearchBox } from "./searchbox.mjs";
 import { techBuildingMatches, searchRowHtml, pickSearchResult } from "./techtree.mjs";
 import { prettyKey, plotTip } from "./plotlabel.mjs";
+// the top bar's transport (date/play/speed) — its own module now; panel only wires it to the
+// overlay switch and re-exports the two entry points the shortcuts/tech-tree already import
+import { togglePlay, pausePlayback, syncLiveTransport, showClock, resetSpeed } from "./clock.mjs";
 stage.addEventListener("wheel", e => {
   if (S.techOpen) return;   // the tech tree owns the viewport while it's up — don't zoom the map behind it
   e.preventDefault();
@@ -103,71 +106,6 @@ if (brandEl) {
 document.addEventListener("fullscreenchange", resize);
 // The global keyboard shortcuts (pan / zoom / reset / fullscreen / play / Escape) are
 // dispatched centrally by js/shortcuts.mjs, which calls the actions exported below.
-// ---- clock: EU4-style date/time + play-pause + speed chevrons (top bar) ----
-const cDate=document.getElementById("cDate");
-const playBtn=document.getElementById("playBtn"), playIcon=document.getElementById("playIcon");
-const speedBox=document.getElementById("speed");
-// speeds 1..5 = the live session's tick rate (in-game days per real second); see live.LIVE_RATES.
-// Paused is the un-playing state.
-const SPEEDS = [null,
-  { name: "1 day / s" },
-  { name: "2 days / s" },
-  { name: "4 days / s" },
-  { name: "10 days / s" },
-  { name: "Max" }];
-let speed = 1, playing = false;
-const PAUSE_ICON = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>', PLAY_ICON = '<path d="M8 5v14l11-7z"/>';
-
-function renderSpeed(){
-  [...speedBox.children].forEach((c, i) => c.classList.toggle("on", (i + 1) <= speed));
-  speedBox.classList.toggle("paused", !playing);
-}
-/**
- * The clock/play/speed drive the LIVE hosted session — the only thing time means now that the
- * recorded replay is gone (its data came from the server; see docs/client-server.md). Play/pause
- * toggles the session over /control; the play icon reflects the server's state from the feed.
- * The controls are inert (and the clock hidden) outside the Caravans view.
- */
-// controlling playback requires a signed-in user (docs/authentication.md); auth.mjs marks the
-// body when anonymous, gating both the click and the keyboard-shortcut paths
-function canControl(){ return !document.body.classList.contains("auth-anon"); }
-function togglePlay(){
-  if (liveActive() && canControl()) controlLive(liveState() === "RUNNING" ? "pause" : "resume");
-}
-/** Force paused — modals call this on open; the live session keeps ticking, so this is a no-op. */
-function pausePlayback(){}
-// a speed chevron sets the live session's tick rate (in-game days per second) over /control
-function onSpeed(level){
-  if (!liveActive() || !canControl()) return;
-  speed = Math.max(1, Math.min(5, level));
-  controlLive("rate", LIVE_RATES[speed]);
-  renderSpeed();
-}
-// reflect the live session's control state (and date) on the transport UI, per snapshot
-function syncLiveTransport(state, date){
-  const running = state === "RUNNING";
-  playing = running;
-  playIcon.innerHTML = running ? PAUSE_ICON : PLAY_ICON;
-  playBtn.setAttribute("aria-label", running ? "Pause" : "Play");
-  if (date != null) cDate.textContent = date;
-  renderSpeed();
-}
-// show the clock (live controls) only in the Caravans/live view; clear it otherwise
-function showClock(on){
-  document.getElementById("clock").style.display = on ? "" : "none";
-  if (!on) cDate.textContent = "";
-}
-playBtn.addEventListener("click", togglePlay);
-// the speed selector: five chevrons ( › .. ›››››  ), the active level lit; clicking one sets the rate
-SPEEDS.slice(1).forEach((sp, i) => {
-  const b = document.createElement("button");
-  b.className = "chev"; b.textContent = "›";
-  b.setAttribute("data-tip", sp.name); b.setAttribute("aria-label", sp.name);
-  b.onclick = () => onSpeed(i + 1);
-  speedBox.appendChild(b);
-});
-renderSpeed();
-
 // ---- a small reusable spinner for secondary async loads ----
 const spinnerEl=document.getElementById("spinner");
 function showSpinner(text){ if(!spinnerEl) return; spinnerEl.querySelector(".sp-txt").textContent = text||"Loading…"; spinnerEl.hidden=false; }
@@ -325,7 +263,7 @@ function setOverlay(ov){
   // leaving the live overlay keeps the SSE feed alive in the background (its HUD/dots/clock go away)
   // so the advisor roster stays live in every advisor; only a server switch / full reset stops it
   if (was === "live" && !live) liveToBackground();
-  if (live) { speed = 1; startLive(draw, syncLiveTransport); }
+  if (live) { resetSpeed(); startLive(draw, syncLiveTransport); }
   S.selectedProv = null;                            // start each overlay on its own overview
   showRail(false);
   updateSearchContext();                            // the search box searches provinces / nations / cultures / faiths
