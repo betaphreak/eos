@@ -65,7 +65,7 @@ function Write-NextSteps([int]$v) {
   Write-Host "    1. Update the GEN_VERSION inline comment, then commit ProvincePlotStore.java." -ForegroundColor Gray
   Write-Host "    2. pwsh tools/deploy-server.ps1   # new image serves v$v + the StoredPlot 'name' field" -ForegroundColor Gray
   Write-Host "    3. SWA-deploy web/ (the hover JS): npx @azure/static-web-apps-cli deploy ./web --env production" -ForegroundColor Gray
-  Write-Host "    4. Verify: hover a plot at deep zoom on https://dev.civstudio.com — names should show." -ForegroundColor Gray
+  Write-Host "    4. Verify: hover a plot at deep zoom on https://anbennar.civstudio.com (the world-map site; dev.civstudio.com is the server it fetches from) — names should show." -ForegroundColor Gray
 }
 
 # oldest version to keep; anything strictly older is pruned

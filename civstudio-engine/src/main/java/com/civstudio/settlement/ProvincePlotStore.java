@@ -58,7 +58,7 @@ public final class ProvincePlotStore {
 	 * generation change reaches every client instead of being masked by an immutably-cached grid.
 	 * The web bundle ships it as {@code plotVersion}. See {@code docs/plot-serving.md}.
 	 */
-	public static final int GEN_VERSION = 6; // 6: water-dominant urban-core siting (village/city centre on water first, then bonuses — docs/settlement-tiers.md)
+	public static final int GEN_VERSION = 7; // 7: real-world plot place names (GeoNames — docs/plot-place-naming.md); 6: water-dominant urban-core siting
 
 	// The cache root — a working-dir/volume folder, NOT the source tree. Defaults to .plot-cache
 	// (matching PlotService's civstudio.plots.cache-dir default) and is overridden by the server via

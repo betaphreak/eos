@@ -1,7 +1,7 @@
 # CivStudio
 
 > ⚠️ **Proof of concept.** CivStudio is an early prototype and technical exploration —
-> not a finished game or product. It is headless, actively changing, and full of rough
+> not a finished game or product. It is headless-first, actively changing, and full of rough
 > edges; interfaces, data and mechanics can break between commits. Treat everything here
 > as a work in progress meant to demonstrate the approach, not to ship.
 
@@ -11,11 +11,14 @@ scripted mechanics. Nothing in it is faked with a formula where it can instead
 *emerge*: prices come from markets that clear by supply and demand, wages from a
 labor market, dynasties from people who marry, give birth, age and die on a real
 mortality schedule, and geography from imported real map data. The engine is
-currently **headless** — a run produces CSV time-series and an event log for
-analysis — and fully **deterministic**: the same seed produces the same world.
+**headless** — a run produces CSV time-series and an event log for analysis — and
+fully **deterministic**: the same seed produces the same world.
 
-Written in plain Java 25 (root package `com.civstudio`; the repository keeps its
-original codename `eos`), with only two runtime dependencies (Jackson, Lombok).
+The core is plain **Java 25** (root package `com.civstudio`; the repository keeps
+its original codename `eos`) with a tiny dependency footprint (Jackson, Lombok).
+It ships as a **two-module Maven reactor**: `civstudio-engine` — the standalone
+simulation core — and `civstudio-server` — a **Spring Boot 4** app that wraps a
+session for live spectating in the browser.
 
 ## What the engine simulates
 
@@ -44,39 +47,82 @@ actually does and fading with disuse), by the **length of the day** at the
 colony's latitude, and by its **commute** to the plot it works.
 
 **The society.** Households — laborers, nobles, the ruler — are named dynasties
-drawn from per-race name tables. A colony is founded from a **peasant pool**:
+drawn from per-race name tables. A colony can be founded from a **peasant pool**:
 the ruler promotes the ablest into laborer households and feeds the reserve on
-poor relief. The aristocracy is not created but **raised** — the ablest
-laborers are ennobled to own the firms and banks. Households wed spouses out of
-the pool on the weekly day of rest, bear **children** who train their skills at a
-civic school until working age, eat rations graded by class (gourmet → relief), and die
+poor relief; or it can be founded **at camp** — a small band that forages, climbs
+a **settlement-tier ladder** (`CAMP → COTTAGE → HAMLET → SMALLHOLDING → TOWN →
+METROPOLIS`), boots a ruler economy when it grows, and departs as a band if it
+fails. The aristocracy is not created but **raised** — the ablest laborers are
+ennobled to own the firms and banks. Households wed spouses out of the pool on
+the weekly day of rest, bear **children** who train their skills at a civic
+school until working age, eat rations graded by class (gourmet → relief), and die
 of old age or hunger; a colony-run **granary** buffers the food supply. Nearly
 sixty **races** from the Anbennar setting (humans, elves, dwarves, harimari,
-goblins…) vary mortality, names, calendars and tech.
+goblins…) vary mortality, names, calendars and tech per person.
 
 **The world.** The full Anbennar EU4 map is imported from its source rasters:
 **5,264 provinces** with adjacency, areas/regions/super-regions/continents, and
 climate. A settlement's land is a per-province **plot field** decoded pixel-by-
 pixel from the real terrain and vegetation bitmaps into the curated Civ4
 terrain/feature/improvement/bonus catalog — so a farm on wheat land outyields
-one on tundra, hills slow the march, and peaks are never settled. Two-level
-**land routing** (province graph + per-province plot corridors) carries the
-**caravans**: wandering bands that march by daylight, ford rivers, forage the
-resources they can identify at their tech level, and re-found fallen colonies
+one on tundra, hills slow the march, and peaks are never settled. Provinces also
+carry their canonical Anbennar **political layer** (owner nation, culture,
+religion) and a per-province **trade good**, both stamped from the vendored EU4
+history. An underground **Serpentspine** exists as a second map plane (the
+Dwarovar — sun-free, food-scarce dwarven holds), alongside seven distinctive
+surface terrains (ancient/fey/blood forests, mushroom, shadow swamp, glacier)
+promoted to their own terrain, art and yields. Every land plot even carries a
+**real Earth place name**, drawn from [GeoNames](https://www.geonames.org/) via a
+region→country map (`docs/plot-place-naming.md`). Two-level **land routing**
+(province graph + per-province plot corridors) carries the **caravans**:
+wandering bands that march by daylight, ford rivers, forage the resources they
+can identify at their tech level, lay trails, and re-found fallen colonies
 elsewhere on the map.
 
-**Time and belief.** A vendored solar calculator gives every location its true
-sunrise and sunset — labor output rides the seasons. A pre-Reformation
-**liturgical calendar** (per race) idles most firms on Sundays and feast days,
-and a **tech tree** (researched by a ruler-funded science sector from the
-aristocracy's intellectual labor) lifts sector productivity and gates content.
+**Time, belief and building.** A vendored solar calculator gives every location
+its true sunrise and sunset — labor output rides the seasons. A pre-Reformation
+**liturgical calendar** (per race) idles most firms on Sundays and feast days. A
+**tech tree** — researched by a ruler-funded science sector from the
+aristocracy's intellectual labor — lifts sector productivity and gates content,
+including **1,270 buildings** imported from Caveman2Cosmos and gated to the kept
+tech horizon; cities lay out **Civ6-style districts** sized from their EU4-1444
+development.
 
 **The data pipeline.** All content is data-driven, imported once by committed
 exporters and shipped as JSON resources: the Civ4/C2C terrain, feature,
 improvement and bonus catalogs, the 56-rung **housing ladder**, the **326-good
-manufactured-goods catalog with its full recipe graph**, the tech tree, feast
-calendars, and name tables for every race. Design notes for each system —
-implemented and planned — live in [`docs/`](docs/).
+manufactured-goods catalog with its full recipe graph**, the tech tree and its
+1,270 buildings, feast calendars, the political/trade-good reference tables, and
+name tables for every race. The Anbennar (EU4) and Caveman2Cosmos (Civ4) sources
+are **not vendored** — they are fetched on demand from their upstream repos at
+dev time and cached locally, pinned by committed `*-source.lock` files. Design
+notes for each system — implemented and planned — live in [`docs/`](docs/).
+
+## What you can see
+
+The engine is headless, but two surfaces render it:
+
+- **The web viewer** ([`web/`](web/)) — a dependency-free static site presenting a
+  continuous-zoom **WorldMap** of the whole imported world: recolored real
+  terrain, every province polygon, and per-plot terrain at deep zoom (textures,
+  hillshade, rivers, tree cutouts, resource icons). It has map **modes** for the
+  political layer (nation / culture / faith), per-province trade goods, and the
+  dimmed underworld plane, a full-canvas **tech-tree** map-mode over the 1,270
+  buildings, and a **district** view for cities. Organized around a nine-band
+  continuous-zoom spine (`docs/zoom-bands.md`). Hovering a plot shows its real
+  place name, terrain and feature. The public build runs at
+  **[anbennar.civstudio.com](https://anbennar.civstudio.com)**.
+- **The live spectator server** (`com.civstudio.server`) — wraps a session in a
+  tick-authoritative, pausable host (Factorio-shaped: authoritative state is
+  *f*(seed, ordered command log), the browser a thin render-client) and streams a
+  read-only snapshot over Server-Sent Events, backing a live **caravan demo** you
+  watch in the web map above. It also exposes the live session to LLM agents over
+  the **Model Context Protocol** (read-only session/snapshot/event tools at
+  `/mcp`, plus dev-gated calibration tools), and an **admin console** for
+  cache/session management. The server (bundle API, SSE, MCP, admin) runs on Azure
+  Container Apps at **[dev.civstudio.com](https://dev.civstudio.com)**. Design and
+  deployment notes: [`docs/client-server.md`](docs/client-server.md),
+  [`docs/mcp-server.md`](docs/mcp-server.md).
 
 ## Honest model status
 
@@ -87,24 +133,27 @@ by a parameter sweep and accepted while the food economy
 is calibrated (births are implemented but children mature slower than the
 colony declines). The smoke-test suite asserts colonies reach that collapse
 *cleanly* — no invariant trips on the way down. The bare open scenario
-(`SmallOpenEconomy`) is stable and growing.
+(`SmallOpenEconomy`) is stable and growing, and a small found-at-camp colony now
+survives and regenerates via births once past its maturation window.
 
 ## Build & run
 
-Requirements: **JDK 25** and **Maven**.
+Requirements: **JDK 25** and **Maven** (a `./mvnw` wrapper is committed). All
+commands run from the repo root; both modules build together.
 
 ```bash
-mvn clean compile          # compile
-mvn exec:exec              # run the default scenario (HomogeneousEconomy), assertions on
-mvn test                   # run the JUnit 5 suite (each scenario runs full as a smoke test)
-mvn package                # build the jar
+mvn clean compile                                # compile both modules
+mvn -pl civstudio-engine exec:exec               # run the default scenario (HomogeneousEconomy), -ea on
+mvn test                                         # engine + server JUnit 6 suites (each scenario runs full as a smoke test)
+mvn package                                      # build the Spring Boot server fat jar
+mvn -pl civstudio-server spring-boot:run         # run the live spectator server → http://localhost:8080
 ```
 
 `exec:exec` forks a JVM with `-ea` because the code uses `assert` as real
 invariant checks. Select a scenario with the `sim.main` property:
 
 ```bash
-mvn exec:exec -Dsim.main=com.civstudio.simulation.TwinSettlementEconomy
+mvn -pl civstudio-engine exec:exec -Dsim.main=com.civstudio.simulation.TwinSettlementEconomy
 ```
 
 | Scenario | What it demonstrates |
@@ -115,11 +164,7 @@ mvn exec:exec -Dsim.main=com.civstudio.simulation.TwinSettlementEconomy
 | `TwinSettlementEconomy` | Two settlements founded into **one province**, run concurrently in lockstep, competing for its 74 plots. |
 | `HarimariEconomy` | A **mixed-race** colony founded by the harimari — race-varying names, calendar, mortality and tech. |
 | `ElvenEconomy` | A mono-racial elven colony — founding with one of the imported Anbennar races. |
-| `CampFoundingEconomy` | **Found-at-Camp**: a small caravan band settles Dhenijansar as a foraging `CAMP`, climbs the `SettlementTier` ladder, boots its ruler economy at `SMALLHOLDING`, then departs as a band — the settle⇄unsettle cycle (`docs/settlement-tier-ladder-plan.md`). |
-
-(`SurvivalExperiment` is a developer tool — a headless survival probe, not a
-scenario. Parameter grids now run through the MCP `sweep` tool — see
-`docs/mcp-server.md` §Phase 1 — which retired the old `CalibrationSweep`.)
+| `CampFoundingEconomy` | **Found-at-Camp**: a small band settles Dhenijansar as a foraging `CAMP`, climbs the `SettlementTier` ladder, boots its ruler economy at `SMALLHOLDING`, then departs as a band — the settle⇄unsettle cycle. |
 
 Each scenario is a `static run()` returning its `SimulationHarness`, plus a
 `main()`. Run-level parameters live in `SimulationConfig` (an immutable record
@@ -131,6 +176,11 @@ Lombok builders for cheap variants:
 SimulationConfig.DEFAULT.toBuilder().durationYears(10).build();
 BankConfig.DEFAULT.toBuilder().exchangeFeeRate(0.02).build();   // a money-changer
 ```
+
+The web viewer is rebuilt from committed map/geo resources with
+`node web/build.mjs` and served either by the Spring Boot server (`/api/bundle`)
+or a zero-dependency local dev server (`pwsh tools/dev-local.ps1` runs the whole
+stack offline). See [`web/README.md`](web/README.md).
 
 ## Output & reproducibility
 
@@ -150,31 +200,21 @@ Runs are seed-reproducible — economic, naming, mortality, skill and terrain
 draws ride separate salted RNG streams, so adding one feature doesn't scramble
 the rest. (Byte-identical output *across* code versions is not a goal.)
 
-A run's output can be visualized: [`web/`](web/) holds self-contained, read-only
-HTML views built from `output/<seed>/`. `web/dashboard.html` is a map-led replay
-of a parallel directed-march caravan run — see [`web/README.md`](web/README.md).
-
-A run can also be **watched live**. `com.civstudio.server` wraps a session in a
-tick-authoritative, pausable host — Factorio-shaped, where authoritative state is
-*f*(seed, ordered command log) and the browser is a thin render-client — and
-streams a read-only snapshot over Server-Sent Events. A public demo of six
-caravans marching over the world map in real time runs at
-**[dev.civstudio.com](https://dev.civstudio.com)**; design and deployment notes
-are in [`docs/client-server.md`](docs/client-server.md).
-
 ## Roadmap
 
 Toward a playable game, headless-first:
 
-- **Household housing** — the 56-rung dwelling ladder, driving demand for
-  construction materials (`docs/household-housing.md`).
 - **Manufactured goods** — the demand-driven production chain over the imported
   326-good recipe graph; its data layer is done, the runtime is next
   (`docs/manufactured-bonuses.md`).
+- **Household housing** — the 56-rung dwelling ladder driving demand for
+  construction materials (`docs/household-housing.md`).
 - **Caravan trade** — settlement-sponsored trade caravans coupling economies
   over the road network (`docs/caravan-trade.md`).
 - **Population renewal** — calibrating food and survival so births can sustain
   a colony (`docs/births.md`, `docs/food-balance.md`).
+- **Auto-built districts & buildings** — the ruler chartering buildings into the
+  laid-out districts (`docs/district-buildout.md`).
 - **A player seat** — the presentation layer and player role, deliberately
   deferred until the world underneath is worth playing in.
 
