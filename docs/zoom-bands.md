@@ -141,24 +141,28 @@ hoisted function declaration, initialised before the `LAYERS` array is built.
 ### `SCREEN_LAYERS` — the screen-space stack
 
 Everything in `LAYERS` is painted **once per on-screen world copy**, because the cylindrical wrap
-re-renders the scene per copy with a shifted camera. Two draws are not like that: the **ocean base**
-and the **polar ice cap** are screen-space — they fill the viewport from the latitude at each screen
-row and know nothing about world copies. Running them per copy would re-fill the same pixels N times
-and composite the sea's `soft-light` ripple over itself once per copy, darkening it.
+re-renders the scene per copy with a shifted camera. The **ocean base** is not like that: it is
+screen-space — it fills the viewport from the latitude at each screen row and knows nothing about
+world copies. Running it per copy would re-fill the same pixels N times and composite its
+`soft-light` ripple over itself once per copy, darkening it.
 
-So they are a second ordered stack, painted once per frame ahead of the wrap loop:
+So it is a second ordered stack, painted once per frame ahead of the wrap loop:
 
 ```js
 export const SCREEN_LAYERS = [
-  { id:"seaBase",  band:"all", draw: drawSeaBase },
-  { id:"polarIce", band:"all, self-fade over the plot band", draw: drawPolarIce },
+  { id:"seaBase", band:"all", draw: drawSeaBase },
 ];
 ```
 
-They live in **`js/sea.mjs`** (not `main.mjs`, where they had accumulated as ~60 lines of hardcoded
+It lives in **`js/sea.mjs`** (not `main.mjs`, where it had accumulated as ~60 lines of hardcoded
 `paint()` calls — the last draws in the scene outside any registry). `sea.mjs` never imports
 `main.mjs`; `initSea(draw)` injects the repaint its async art loads need, the same idiom as
 `initMinimap(draw)`.
+
+A one-entry registry looks like overkill; the stack is the **seam**. The screen-space **polar ice
+cap** lived here until it was cut (2026-07-16) — it cost ~18.8 ms/frame at Atlas zoom, more than
+every other layer combined, and read as a grey tiling expanse; removing it took world-zoom paint from
+83.7 → 63.5 ms median. See `docs/civ6-art-replacement.md` Phase 4. Fog of war lands here next.
 
 This stack is also the seam **fog of war** will use (`docs/explorer-caravan.md` §8): the Civ6 FOW art
 is already baked and shipped as `BUNDLE.fow` (`civ6.FOW_TILE` → `build.bakeFowTiles` → four tileable
@@ -174,11 +178,11 @@ spine — see below).
 
 | Band | Zoom | Name | Regime | **Draws here today** | **Target / additions** |
 |---|---|---|---|---|---|
-| **0** | 1× | **World** | 🌍 Atlas | Ocean climate gradient + ripple (full), continent labels & tier borders, political fills full-opacity | — (macro is the mature end) |
+| **0** | 1× | **World** | 🌍 Atlas | Ocean climate gradient + ripple (full), continent labels & tier borders, political fills full-opacity; band caption names the continent | — (macro is the mature end) |
 | **1** | 2× | **Realm** | 🌍 Atlas | Super-region labels & tier borders | — |
 | **2** | 4× | **Region** | 🌍 Atlas | Region labels & tier borders; plots + cost begin fade-in (k5≈b2.3); political fill starts tapering | — |
 | **3** | 8× | **Province** | 🐫 Overland | Province names, province borders, sea/lake names, straits/canals/tunnels appear (k≥10≈b3.3), tier lazy-load stops | Colony/settlement markers become first-class; caravan routes read as lines |
-| **4** | 16× | **Terrain** | 🐫 Overland | **K_TEX**: real Civ4 textures, trade-good icons appear, plot hover on, sea ripple gone, political→borders-only, live colony marker→city-sprite | Caravans get band-scaled presence; overland is the caravan "home" band |
+| **4** | 16× | **Terrain** | 🐫 Overland | **K_TEX**: real Civ4 textures, trade-good icons appear, plot hover on, sea ripple gone, political→borders-only, live colony marker→city-sprite; band caption names the majority terrain | Caravans get band-scaled presence; overland is the caravan "home" band |
 | **5** | 32× | **Locale** | 🐫 Overland | Deep terrain; trade-good icons hold, begin fade at k48 | Named locales / points of interest; hand-off to Ground |
 | **6** | 64× | **Plot** | 🏘️ Ground | Gap-grid hatch (k>64), trade-goods gone, per-plot resource/bonus icons prominent | **City-micro skeleton begins**: building footprints per developed plot |
 | **7** | 128× | **Settlement** | 🏘️ Ground | Bonus icons scale with `cam.k/K_MAX`; nothing else band-specific | Agent/household dots from the live feed; street/road hints |

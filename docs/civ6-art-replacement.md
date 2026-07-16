@@ -216,14 +216,18 @@ SULPHUR, VANILLA, WALRUS). Full per-bonus table: `civ6-assets.md` §8.
   back to the Civ4 `icepack_1024.dds`. New resolver `civ6.iceTile()`; the `{src,tile}` descriptor +
   `drawSeaIce` draw path are unchanged (river/sea/shore stay C2C — Civ6 rivers are edge decals). Verified
   in-app: the frontend loads the new 128² tile (centre pixel (203,231,246), the Civ6 ice-blue), the source
-  `drawSeaIce` builds its floe `createPattern` from. **Two ice paths** now share the tile: (1) the
-  per-plot coastal-shelf floes (`plots.mjs drawSeaIce`) on SEA/LAKE provinces adjacent to land, at deep
-  zoom; and (2) a screen-space **polar ice cap** over the *open* ocean (`main.mjs drawPolarIce`), since
-  open-ocean seas generate no plottable shelf and so would otherwise read as bare dark water. The cap is a
-  latitude-ramped coverage of the same icecaps tile (coverage 0 below ~62° → solid by ~80°, map-anchored),
-  drawn over the sea base and under the land, and **faded out entering the plot band** (`[K_PLOT,K_TEX]` =
-  5→16×) exactly where the per-plot shelf floes fade in — so the two never double. Verified at world,
-  regional and deep zoom (both hemispheres).
+  `drawSeaIce` builds its floe `createPattern` from. The tile's remaining consumer is the **per-plot
+  coastal-shelf floes** (`plots.mjs drawSeaIce`) on SEA/LAKE provinces adjacent to land, at deep zoom.
+
+  > **The screen-space polar ice CAP was removed (2026-07-16).** It drew a latitude-ramped coverage of
+  > this tile over the *open* ocean (`sea.mjs drawPolarIce`, formerly `main.mjs`) because open-ocean seas
+  > generate no plottable shelf. It was cut on a cost/benefit call: profiling put it at **~18.8 ms/frame
+  > at Atlas zoom — more than every other layer in the scene combined**, and the reason world zoom ran
+  > ~12 fps (it is screen-space and camera-anchored, so it cannot be cached across a pan; the cost is
+  > three full-viewport passes). Visually it read as a grey tiling expanse over empty polar sea. Halving
+  > its resolution was tried (18.8 → 5.4 ms) and then dropped in favour of deleting it: world-zoom paint
+  > went 83.7 → 63.5 ms median. The per-plot shelf floes are unaffected — they are real `FEATURE_ICE`
+  > terrain data baked into the plot canvas. To revive the cap, restore it as a `SCREEN_LAYERS` entry.
 - **Phase 5** ✅ (art + layer; **placement deferred**) — the three improvements Civ6 ships a flat SV for —
   **Farm/Mine/Quarry** — baked as 128² alpha overlays (`bakeImprovementOverlays` → `improvements/imp-*.webp`
   + a `improvementOverlays` manifest key, added to `WorldBundle`'s allow-list). A new frontend layer

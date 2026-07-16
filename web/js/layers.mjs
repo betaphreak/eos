@@ -12,7 +12,7 @@ import { isPolitical, activeZ, S } from "./core.mjs";
 import { drawRaster, drawLakes, drawSeaCells, drawImpassable, drawSurfacePlots,
          drawProvinceBorders, drawUnderworldVeil, drawCavernFloors, drawCavernPlots, drawCavernRims,
          drawCaveEntrances, drawAdjacencies, drawHoverHighlight, drawSelectedHighlight } from "./main.mjs";
-import { drawSeaBase, drawPolarIce } from "./sea.mjs";
+import { drawSeaBase } from "./sea.mjs";
 import { drawCostOverlay, drawTradeGoodIcons } from "./plots.mjs";
 import { drawRoutes } from "./routes.mjs";
 import { drawTiers } from "./overlays/tiers.mjs";
@@ -25,14 +25,16 @@ import { drawDistricts } from "./districts.mjs";
 const notPolitical = () => !isPolitical();
 
 // ---- the SCREEN-SPACE stack: drawn ONCE per frame, beneath everything ----
-// These fill the viewport from the latitude at each screen row and know nothing about the
-// cylindrical wrap, so — unlike LAYERS — they must NOT run per world copy: re-filling would
-// composite the sea's soft-light ripple over itself once per copy, darkening it. main.paint() runs
-// this stack before the wrap loop. The land raster's ocean pixels are transparent, so this shows
-// through exactly where there is sea. See js/sea.mjs for why they live outside LAYERS.
+// This fills the viewport from the latitude at each screen row and knows nothing about the
+// cylindrical wrap, so — unlike LAYERS — it must NOT run per world copy: re-filling would composite
+// the sea's soft-light ripple over itself once per copy, darkening it. main.paint() runs this stack
+// before the wrap loop. The land raster's ocean pixels are transparent, so this shows through
+// exactly where there is sea. See js/sea.mjs for why it lives outside LAYERS.
+//
+// A one-entry registry looks like overkill, but the stack is the seam: the polar ice cap lived here
+// until it was cut for cost (see sea.mjs), and fog of war will land here when the RevealedMap exists.
 export const SCREEN_LAYERS = [
-  { id: "seaBase",  band: "all", draw: drawSeaBase },
-  { id: "polarIce", band: "all, self-fade over the plot band", draw: drawPolarIce },
+  { id: "seaBase", band: "all", draw: drawSeaBase },
 ];
 
 /** Paint the screen-space stack (once per frame, before any world copy is rendered). */

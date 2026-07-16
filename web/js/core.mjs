@@ -143,6 +143,12 @@ function provOnScreen(p) {
   return Math.max(ax, bx) >= 0 && Math.min(ax, bx) <= VIEW.w
       && Math.max(ay, by) >= 0 && Math.min(ay, by) <= VIEW.h;
 }
+// NOTE (perf, measured 2026-07-16): the obvious next move here is to hoist a per-frame "visible
+// provinces" list — ~10 layers each loop all 5264 provinces calling provOnScreen, once per world
+// copy. It was tried and REVERTED: it changed paint time by nothing (1×: 83.7ms → 88.0ms median,
+// i.e. slightly worse, within noise). provOnScreen is ~4 arithmetic ops over a cached bbox, so even
+// 100k of them is ~1ms — the culling loop was never the cost. Don't re-derive this; profile first.
+// The real hotspot at Atlas zoom is sea.drawPolarIce (see the note there).
 // whether screen point (sx,sy) lies within a province's projected bbox, optionally grown by `margin`
 // px. A cheap pre-filter for the hover hit-test: a bbox miss cannot be a polygon hit, so this culls
 // the expensive point-in-polygon / nearest-centroid scans to the few provinces actually under the
@@ -167,7 +173,28 @@ function provPath(p) {                           // Path2D of a province's rings
 }
 const cv = document.getElementById("map"), ctx = cv.getContext("2d");
 const stage = document.getElementById("stage");
-const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+// A CSS custom property off :root, MEMOISED. getComputedStyle forces a style resolution, and this is
+// called from inside the draw loop — drawSelectedHighlight runs it per world copy per frame while a
+// province is selected, live.mjs per caravan — so an un-cached read is a forced style recalc in the
+// middle of a paint, a classic jank source. These tokens only change when the theme does, so cache
+// per token and let the theme flip invalidate.
+//
+// An EMPTY result is never cached: a caller that runs before the stylesheet resolves would otherwise
+// pin "" forever and permanently fall back (every call site is `cssVar("--accent") || "#e8b76a"`).
+const _cssVarCache = new Map();
+const cssVar = n => {
+  let v = _cssVarCache.get(n);
+  if (v === undefined) {
+    v = getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+    if (v) _cssVarCache.set(n, v);
+  }
+  return v;
+};
+// panel.mjs flips <html data-theme> to switch themes; observing the attribute means a future theme
+// entry point can't forget to invalidate (which a manual clear() call would invite).
+if (typeof MutationObserver !== "undefined" && typeof document !== "undefined")
+  new MutationObserver(() => _cssVarCache.clear())
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 function clampAxis(camv, base, dim, viewDim) {
   const size = cam.k * dim, pos = camv + cam.k * base;
   if (size <= viewDim) return (viewDim - size) / 2 - cam.k * base;   // centre, no pan on this axis
