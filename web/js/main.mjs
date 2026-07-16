@@ -107,12 +107,20 @@ function updateRegimeSignal() {
   _sigRegime = r; _sigBand = bn; _sigPlane = S.plane; _sigEl = zoomLabelEl; _sigCtx = ctxText;
 }
 // draw() is the public redraw request — it COALESCES to one paint per animation frame, so a burst of
-// pan/zoom/pinch events (mobile fires many touchmoves per frame) collapses into a single scene render.
-let rafPending = false;
+// pan/zoom/pinch events (mobile fires many touchmoves per frame) collapses into a single scene render,
+// and it CAPS the paint rate at FPS_CAP: a frame that comes due early re-queues itself until the budget
+// has elapsed. Coalescing still holds while it waits (rafPending stays set), so the deferred paint draws
+// the newest camera, never a stale one. The scene is heavy and renders on demand, so the cap costs no
+// responsiveness — it only spares the burst case (a 120Hz pan) from painting frames nobody asked for.
+const FPS_CAP = 30, MIN_FRAME_MS = 1000 / FPS_CAP;
+let rafPending = false, lastPaintAt = 0;
 function draw() {
   if (rafPending) return;
   rafPending = true;
-  requestAnimationFrame(() => {
+  const tick = () => {
+    const now = performance.now();
+    if (now - lastPaintAt < MIN_FRAME_MS) { requestAnimationFrame(tick); return; }   // under budget — hold
+    lastPaintAt = now;
     rafPending = false; paint();
     scheduleLegendRefresh();
     // The viewport-context readouts, recomputed once the camera settles: the band chip's caption
@@ -123,7 +131,8 @@ function draw() {
       if (changed) draw();
       window.dispatchEvent(new Event("civstudio:viewport"));
     });
-  });
+  };
+  requestAnimationFrame(tick);
 }
 // Time each real paint for the top bar's fps readout (js/diag.mjs). The app renders on demand, so
 // this — not a free-running rAF loop — is the only place that knows a frame happened and what it cost.
