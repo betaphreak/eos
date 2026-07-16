@@ -128,8 +128,10 @@ real browser in two passes:
 
 - **A) integration** — asserts the board matches the server's tail exactly, that a founding recovered
   from the tail is a full card (the curation round trip), that nothing is duplicated, and that the
-  board **survives a page reload**. *Run it soon after a server restart:* past ~tick 92 the demo has
-  nothing left inside the 30-day window, and the pass reports an empty tail.
+  board **survives a page reload**. *Run it soon after a server restart:* the demo logs sparsely, so
+  once the sim outruns its last line the 30-day window is legitimately empty and there is nothing to
+  recover — the pass says so rather than failing. It reports an empty tail past ~tick 92 locally, and
+  the window can even slide empty *between* two reads mid-test (seen against prod).
 - **B) deterministic** — `stopLive()` freezes the feed, then feeds synthetic lines at known ages so
   the whole ramp (fresh → red → expiry) is exercised at once rather than waited out: 30-day card
   expires, red decreases downward (92 > 53 > 35 > 26 > 20), routine dims to 0.72, warn shows on the

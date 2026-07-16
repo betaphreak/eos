@@ -18,11 +18,19 @@ const page = await browser.newPage({ viewport: { width: 1400, height: 900 }, dev
 const errors = [];
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
-await page.goto(url, { waitUntil: 'load' });
-await page.waitForTimeout(2500);
-
 const fails = [];
 const check = (ok, what) => { console.log(`${ok ? '  ok  ' : '  FAIL'} ${what}`); if (!ok) fails.push(what); };
+
+// Wait for Live mode to actually be connected — never a fixed sleep. Against a remote site the boot
+// chain (loading splash → bundle prefetch → app.js → enter Live → /api/sessions → SSE) can take tens
+// of seconds, and live starting LATE is not a slow no-op: connectStream calls resetNotify on session
+// discovery, so a late start wipes whatever the test had put on the board and every assertion below
+// reads someone else's state.
+const waitForLive = async () => page.waitForFunction(
+  async () => (await import('/js/overlays/live.mjs')).liveActive(), null, { timeout: 120000 });
+
+await page.goto(url, { waitUntil: 'load' });
+await waitForLive().catch(() => console.log('  (timed out waiting for Live mode to connect)'));
 
 // ---- A) integration: the board is recovered from the server's tail --------------------------
 // RUN THIS SOON AFTER A SERVER RESTART. The demo (seed 7654321) logs just four lines in its whole
@@ -91,12 +99,25 @@ await page.screenshot({ path: out.replace(/\.png$/, '-live.png') });   // the re
 
 // reload: the board must come back, which is the whole reason the endpoint exists
 await page.reload({ waitUntil: 'load' });
-await page.waitForFunction(n => document.querySelectorAll('#notifyHost .notif').length >= n,
-  liveBoard.cards.length, { timeout: 30000 }).catch(() => console.log('  (timed out waiting for the reloaded board)'));
+await waitForLive().catch(() => console.log('  (timed out waiting for Live mode after the reload)'));
+await page.waitForFunction(() => document.querySelectorAll('#notifyHost .notif').length > 0,
+  null, { timeout: 30000 }).catch(() => console.log('  (timed out waiting for the reloaded board)'));
 const afterReload = await readBoard();
-console.log(`after reload: ${afterReload.cards.length} card(s)`);
-check(afterReload.cards.length >= liveBoard.cards.length && afterReload.cards.length > 0,
-  `the board survives a page reload (${liveBoard.cards.length} → ${afterReload.cards.length})`);
+// Compare against the tail as it is NOW, not the count from before the reload: this runs against a
+// live clock, so a card can legitimately expire mid-test (seen against prod — the founding aged past
+// 30 in-game days between the two reads, and the board correctly dropped it). The invariant is "the
+// reloaded board holds what the server's window holds", not "the board never shrinks".
+const truth2 = await tailWindow();
+console.log(`after reload: ${afterReload.cards.length} card(s); tail window now holds ${truth2.lines.length}`);
+// An empty window is a legitimate outcome, not a failure: the demo logs sparsely, so the 30-day
+// window can slide past its last line mid-test (seen against prod — 2 lines at the first read, 0 by
+// the reload). Demanding cards the server no longer has would be asserting a bug into existence.
+if (!truth2.lines.length)
+  console.log('  NOTE: the window emptied mid-test (the sim outran its last log line) — nothing left to recover.');
+else
+  check(afterReload.cards.length > 0, `the board survives a page reload (${afterReload.cards.length} card(s) recovered)`);
+check(truth2.lines.every(l => afterReload.cards.some(c => c.date === l.date && c.text === l.text)),
+  'every line still inside the 30-day window is back on the reloaded board');
 const reloadKeys = afterReload.cards.map(c => c.date + c.text);
 check(new Set(reloadKeys).size === reloadKeys.length, 'and the reloaded board has no duplicates');
 // the stream delivers a tick's lines in date order, so the pile is chronological in practice too
@@ -104,9 +125,14 @@ const dates = afterReload.cards.map(c => c.date);
 check(dates.every((d, i) => i === 0 || d >= dates[i - 1]), `cards pile in date order: ${dates.join(' → ')}`);
 
 // ---- B) deterministic: the ramp, the order, expiry, dismiss ----------------------------------
-// freeze the feed first — a live snapshot would re-age these synthetic cards against the real clock
+// Freeze the feed first, and CONFIRM it froze: a live snapshot would re-age these synthetic cards
+// against the real clock (expiring them all — the real date is months past these), and a session
+// discovery would resetNotify the board out from under the assertions.
 await page.evaluate(async () => { (await import('/js/overlays/live.mjs')).stopLive(); });
-await page.waitForTimeout(500);
+const frozen = await page.waitForFunction(
+  async () => !(await import('/js/overlays/live.mjs')).liveActive(), null, { timeout: 15000 })
+  .then(() => true).catch(() => false);
+check(frozen, 'the live feed stops on demand, so the deterministic pass below is isolated');
 
 const NOW = '1445-01-10';   // each line's date below lands on a known age against this
 await page.evaluate(async now => {
