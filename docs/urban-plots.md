@@ -1,5 +1,38 @@
 # Design note: urban plots & imported development
 
+**Urban is an OVERLAY, not a terrain (2026-07-16, GEN_VERSION 8).** The synthetic `TERRAIN_URBAN`
+ground was retired from plot *generation*: a city now sits ON the terrain the generator draws
+(grassland/plains/hill/…). `ProvincePlotField` no longer overwrites `ground[idx]` — it keeps the
+natural terrain, flattens the core to level built ground, clears the wild feature/resource (built
+over), and sets a new boolean `Plot.urban()` overlay flag. The flag is threaded
+`ProvincePlot → Plot → StoredPlot` (serialized in the plot cache, so it reaches the web plot JSON as
+`urban:true`), and the engine's urban checks re-key onto it (`ProvincePlotPool.paveUrbanPlots` /
+`bestUrbanCenter`; `TERRAIN_URBAN` stays defined in the registry but is no longer assigned). The web
+side dropped `markUrbanPlots` (no client re-terraining — the ground is already natural) and reads
+`q.urban` straight off the JSON.
+
+*District view (`districts.mjs`):* every urban plot draws a **small Civ6 NEIGHBORHOOD chip**
+(centred icon, not a full-hex tile) — the default district; other types emerge from the buildings a
+plot raises. A plot **not linked to a live settlement reads as ABANDONED** — a desaturated/ruined
+`dis-neighborhood-abandoned` variant baked in `build.mjs`; the province hosting the live colony
+renders **active** neighborhoods (matched client-side via plot-bounds containment). The POV colony's
+built buildings still ring its centre as button icons.
+
+*Caravan camp rule (`MarchingCaravan.claimCampOn`):* a marching band may **not camp on an urban plot
+of a province that already holds a settlement** (`ProvincePlotPool.hasSettlement()` — any owned plot);
+an **abandoned** urban core (no settlement) is fair game. A nightly `Camp` is a non-owning occupant,
+so it never trips the check.
+
+*Deploy:* GEN_VERSION 7→8 → the persistent plot cache must be rebaked (with GeoNames place names, which
+prod can't generate) and re-uploaded before the server rolls, else prod regenerates nameless v8 plots.
+This rebake is moving to CI/CD (see `docs/client-server.md` §Deployment).
+
+Verified end-to-end on Dhenijansar (prov 4411) in the local stack: natural terrain under the city,
+small neighborhood chips, abandoned (grey) vs live (active) variants. *Everything below this line
+predates the overlay model and is kept for history.*
+
+---
+
 **Interim visual (2026-07-13):** the urban *art* was pulled pending proper Civ6 district tiles
 (`docs/civ6-art-replacement.md`). The synthetic grey-concrete `TERRAIN_URBAN` ground tile, the
 Civ4 `med_europe` **city sprite** (`plots.mjs citySprite`), and the procedural **roof-lot**

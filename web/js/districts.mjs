@@ -1,29 +1,28 @@
 "use strict";
 // The district view (docs/district-buildout.md D5): at deep zoom, each city's urban core plots
-// show their Civ6 flat district-hex tile (D4a — the composite's *ground*), and the spectated
-// colony's actually-built buildings ring its center as their flat button icons on little plinths
-// (D4b's 3D sprites were deferred — button icons give full 1,270-building coverage). This layer
-// supersedes the interim pip (city.mjs) as you zoom into a city.
+// show a small Civ6 NEIGHBORHOOD chip — the default district every urban plot carries (the other
+// district types emerge from the buildings actually raised on a plot, during gameplay). A plot
+// that isn't linked to a live settlement reads as ABANDONED (a ruined-neighborhood variant); the
+// spectated colony's own province renders active neighborhoods, and its built buildings ring its
+// center as flat button icons on little plinths. The chips are small ICONS centred on each plot,
+// not full-hex tiles blanketing the cell. This layer supersedes the interim pip (city.mjs) as you
+// zoom into a city.
 //
 // Two sources: the map's urban plots (BUNDLE, geographic — every city) and the live session
 // snapshot (the POV colony's placed buildings, from the D3 district feed). Both fade in deep.
-import { P, ctx, cam, pxr, pyr, px, py, provOnScreen, isPolitical, BUNDLE, apiUrl } from "./core.mjs";
+import { P, ctx, pxr, pyr, px, py, provOnScreen, isPolitical, BUNDLE, apiUrl } from "./core.mjs";
 import { bandAlpha } from "./bands.mjs";
 import { liveColony } from "./overlays/live.mjs";
 
-// --- Civ6 district-hex ground tiles (D4a): {TYPE: {src,w,h}} → loaded Images ---
+// --- Civ6 district-hex chips (D4a): {TYPE: {src,w,h}} → loaded Images. We draw NEIGHBORHOOD
+// (+ its baked ABANDONED variant); CITY_CENTER is a last-ditch fallback. ---
 const TILES = (BUNDLE && BUNDLE.districtTiles) || null;
 const tileImg = {};
 if (TILES) for (const [type, a] of Object.entries(TILES)) { const im = new Image(); im.src = a.src; tileImg[type] = im; }
 
-// each hex is sized to the PLOT it sits on (× this factor) so a city's urban cores TILE instead of
-// piling up as giant overlapping hexes. ~1.15 so the hex's flats cover the square plot cell's corners
-// with only slight overlap between neighbours (a honeycomb, not a stack). Replaces the old
-// native-at-256× sizing, which drew a fixed 256px hex on much smaller plots → the deep-zoom pile.
-const D_HEX_SCALE = 1.15;
-
-// district types assigned to a city's non-primary urban plots (the primary is CITY_CENTER)
-const OTHER_TYPES = ["NEIGHBORHOOD", "COMMERCIAL_HUB", "CAMPUS", "HOLY_SITE", "ENCAMPMENT", "THEATER"];
+// the neighborhood chip is drawn small — a fraction of the plot, capped — so it reads as a marker
+// centred on the plot, not a tile blanketing the cell (the old full-hex D_HEX_SCALE pile-up).
+function iconSize(plotPx) { return Math.max(10, Math.min(plotPx * 0.55, 46)); }
 
 // --- building button icons (Phase 2 sheet) + the /api/buildings icon rects (D3 join) ---
 const BSHEET = "assets/buildings/building-icons.webp";
@@ -46,30 +45,38 @@ async function loadBuildingMeta() {
 }
 loadBuildingMeta();
 
-// map a building's Advisor category → its DistrictType (mirrors engine DistrictType.fromCategory)
-const CAT_TO_TYPE = {
-  SCIENCE: "CAMPUS", RELIGION: "HOLY_SITE", MILITARY: "ENCAMPMENT",
-  ECONOMY: "COMMERCIAL_HUB", CULTURE: "THEATER", GROWTH: "NEIGHBORHOOD",
-};
-
-// per-province urban-plot district-type assignment, cached on the plot (primary=CITY_CENTER)
-function assignTypes(prov) {
-  if (prov._dtypes) return;
-  prov._dtypes = true;
-  let i = 0;
-  for (const q of prov._plots) {
-    if (!q.urban) continue;
-    q._dtype = i === 0 ? "CITY_CENTER" : OTHER_TYPES[(i - 1) % OTHER_TYPES.length];
-    i++;
+// the province that hosts the live colony (so its urban plots read as ACTIVE, not abandoned): the
+// on-screen province whose plot bounds contain the colony's map point. The district view only fades
+// in at deep zoom, where one city province fills the view, so a plot-bbox containment test is exact
+// enough (and cheap — only loaded provinces are scanned). Null when the colony's province is off
+// screen (every visible urban plot is then correctly an unlinked, abandoned site).
+function colonyProvince(colony) {
+  const cx = px(colony.longitude), cy = py(colony.latitude);
+  for (const p of P) {
+    if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
+    let urban = false, x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const q of p._plots) {
+      if (q.urban) urban = true;
+      if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x;
+      if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y;
+    }
+    if (!urban) continue;
+    if (cx >= pxr(x0) && cx <= pxr(x1 + 1) && cy >= pyr(y0) && cy <= pyr(y1 + 1)) return p;
   }
+  return null;
 }
 
-// draw a district hex tile centred at (cx, cy), sized to `d` px (its alpha is the hex cutout)
-function drawTile(type, cx, cy, d) {
-  const im = tileImg[type] || tileImg.CITY_CENTER;
-  if (!im || !im.complete || !im.naturalWidth) return false;
-  ctx.drawImage(im, cx - d / 2, cy - d / 2, d, d);
-  return true;
+// draw a small neighborhood chip centred at (cx, cy), sized to `s` px. `active` picks the live
+// neighborhood art; otherwise the ABANDONED (ruined) variant — its own baked webp when present,
+// else the live tile drawn desaturated/darkened so an unlinked site still reads as forsaken.
+function drawNeighborhood(active, cx, cy, s) {
+  const live = tileImg.NEIGHBORHOOD || tileImg.CITY_CENTER;
+  let im = active ? live : (tileImg.NEIGHBORHOOD_ABANDONED || live);
+  if (!im || !im.complete || !im.naturalWidth) return;
+  const fake = !active && !tileImg.NEIGHBORHOOD_ABANDONED;  // no baked variant → fake the ruin look
+  if (fake) { ctx.save(); ctx.filter = "grayscale(0.9) brightness(0.62)"; ctx.globalAlpha *= 0.85; }
+  ctx.drawImage(im, cx - s / 2, cy - s / 2, s, s);
+  if (fake) ctx.restore();
 }
 
 // draw one building's button icon on a small plinth centred at (cx, cy), sized to `s` px
@@ -88,8 +95,9 @@ function drawBuildingIcon(id, cx, cy, s) {
   }
 }
 
-/** The district view — Civ6 hex tiles on every city's urban plots + the POV colony's built
- *  buildings ringing its center. Fades in at deep zoom (reading a city's plots). */
+/** The district view — a small neighborhood chip on every city's urban plots (abandoned unless the
+ *  plot belongs to the live colony's province) + the POV colony's built buildings ringing its
+ *  center. Fades in at deep zoom (reading a city's plots). */
 export function drawDistricts() {
   const a = bandAlpha([4.5, 5.5]);   // fade in past the pip, when zoomed into a city
   if (a <= 0.01 || isPolitical()) return;
@@ -97,40 +105,35 @@ export function drawDistricts() {
   if (plotPx < 2) return;            // too small to read
   ctx.save();
   ctx.globalAlpha = a;
-  // calm the Civ6 hex art: at full saturation the overlapping tiles read as a chaotic rainbow, so
-  // pull the saturation/brightness down — the district COLOURS still distinguish types, quietly.
-  ctx.filter = "saturate(0.6) brightness(0.96)";
 
-  // (1) geographic: the Civ6 district-hex tile on every city's urban core plots.
-  // The hex is a plot FEATURE, drawn at its native 256px (100%) once you reach 256× zoom and
-  // held there deeper — the same "hits native at 256×" convention the bonus icons use
-  // (plots.mjs BONUS_FULL_K), so it reads at a fixed crisp size rather than ballooning past the
-  // cap. (docs/explorer-caravan.md — the district/urban icon is becoming a plot feature.)
-  const d = plotPx * D_HEX_SCALE;
+  const colony = liveColony();
+  const liveProv = colony && Number.isFinite(colony.latitude) ? colonyProvince(colony) : null;
+  const s = iconSize(plotPx);
+
+  // (1) geographic: a small neighborhood chip on every city's urban core plots. Abandoned by
+  // default (an unlinked map site); active on the province that currently hosts the live colony.
   for (const p of P) {
     if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
-    assignTypes(p);
+    const active = p === liveProv;
     for (const q of p._plots) {
       if (!q.urban) continue;
-      drawTile(q._dtype || "CITY_CENTER", pxr(q.x) + plotPx / 2, pyr(q.y) + plotPx / 2, d);
+      drawNeighborhood(active, pxr(q.x) + plotPx / 2, pyr(q.y) + plotPx / 2, s);
     }
   }
 
-  // (2) live: the POV colony's built buildings, ringed on its center over a CITY_CENTER tile
-  const colony = liveColony();
+  // (2) live: the POV colony's built buildings, ringed on its center over its (active) neighborhood
   if (colony && Number.isFinite(colony.latitude) && Array.isArray(colony.districts) && colony.districts.length) {
     const cx = px(colony.longitude), cy = py(colony.latitude);
     const ids = [];
     for (const dist of colony.districts) for (const id of (dist.buildings || [])) ids.push(id);
     if (ids.length) {
-      drawTile("CITY_CENTER", cx, cy, d);                    // the district hex (native at 256×)
-      const s = Math.max(8, Math.min(plotPx * 0.4, 20));     // icon size (a fraction of a plot)
+      const bs = Math.max(8, Math.min(plotPx * 0.4, 20));  // icon size (a fraction of a plot)
       // ring (then spiral) the icons out from the center
       for (let i = 0; i < ids.length; i++) {
         const ring = Math.floor(i / 8), slot = i % 8;
         const rad = plotPx * (0.45 + ring * 0.42);
         const ang = (slot / 8) * Math.PI * 2 + ring * 0.4;
-        drawBuildingIcon(ids[i], cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, s);
+        drawBuildingIcon(ids[i], cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, bs);
       }
     }
   }

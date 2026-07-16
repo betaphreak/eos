@@ -74,8 +74,11 @@ public final class WorldPlotGenerator {
 					continue;
 				}
 				List<Plot> plots = new ArrayList<>(field.size());
-				for (ProvincePlot pp : field.plots())
-					plots.add(new Plot(pp.geo(), pp.terrain(), pp.plotType(), pp.feature(), pp.bonus()));
+				for (ProvincePlot pp : field.plots()) {
+					Plot plot = new Plot(pp.geo(), pp.terrain(), pp.plotType(), pp.feature(), pp.bonus());
+					plot.setUrban(pp.urban());   // built-up overlay on natural terrain (retired TERRAIN_URBAN)
+					plots.add(plot);
+				}
 				ProvincePlotStore.save(p.id(), plots);
 				gen++;
 				if (gen % 200 == 0)

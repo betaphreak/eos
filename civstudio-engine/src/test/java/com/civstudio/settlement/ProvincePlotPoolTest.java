@@ -129,7 +129,7 @@ class ProvincePlotPoolTest {
 		colony.claimPlot(new PlotOccupant() {
 		}); // the founding centre
 		Plot centre = colony.getDistrictPlots().get(0);
-		assertEquals("TERRAIN_URBAN", centre.terrain().type(),
+		assertTrue(centre.urban(),
 				"the colony's centre anchors on the city's urban core");
 	}
 

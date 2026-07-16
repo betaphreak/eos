@@ -1,7 +1,7 @@
 package com.civstudio.geo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,25 +10,14 @@ import org.junit.jupiter.api.Test;
 import com.civstudio.util.Rng;
 
 /**
- * The authored {@code TERRAIN_URBAN} built-up city ground and the per-province urban core
- * (see {@code docs/urban-plots.md} + {@code docs/plot-generator.md}): the terrain loads with its
- * hand-set yields, an ordinary LAND province gets exactly one urban core plot at its Civ4
- * {@code foundValue} site, and a {@code city_terrain} province (Dhenijansar) is <b>fully urban</b> —
- * every plot paved, the city render layer covering it (its future Civ6 district tiles).
+ * The per-province urban core (see {@code docs/urban-plots.md} + {@code docs/plot-generator.md}).
+ * Urban is now an <b>overlay flag</b> on the plot's natural terrain/relief — not a base terrain
+ * (the synthetic {@code TERRAIN_URBAN} ground was retired: a city sits ON real ground). An ordinary
+ * LAND province gets exactly one {@code urban()} core plot at its Civ4 {@code foundValue} site, and
+ * a {@code city_terrain} province (Dhenijansar) is <b>fully urban</b> — every plot flagged urban, the
+ * city render layer covering it with its Civ6 district tiles.
  */
 class UrbanTerrainTest {
-
-	@Test
-	void registryCarriesTheUrbanTerrain() {
-		TerrainRegistry reg = TerrainRegistry.load();
-
-		Terrain urban = reg.terrain("TERRAIN_URBAN");
-		assertNotNull(urban, "TERRAIN_URBAN present");
-		assertEquals(1, urban.yield(0), "urban food (meager)");
-		assertEquals(1, urban.yield(1), "urban production");
-		assertEquals(3, urban.yield(2), "urban commerce (trade/tax-heavy)");
-		assertTrue(urban.bFound(), "urban is settleable");
-	}
 
 	@Test
 	void ordinaryLandProvinceGetsOneUrbanCorePlot() throws Exception {
@@ -41,11 +30,14 @@ class UrbanTerrainTest {
 				p, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(7));
 
 		long urban = field.plots().stream()
-				.filter(pl -> "TERRAIN_URBAN".equals(pl.terrain().type())).count();
+				.filter(ProvincePlotField.ProvincePlot::urban).count();
 		assertEquals(1, urban, "an ordinary province gets exactly one urban core plot");
-		// the core plot is flat built ground, not the raster's relief
-		field.plots().stream().filter(pl -> "TERRAIN_URBAN".equals(pl.terrain().type()))
-				.forEach(pl -> assertEquals(PlotType.FLAT, pl.plotType(), "flat city ground"));
+		// the urban core keeps its NATURAL terrain (the built-up flag is an overlay, not a terrain)
+		field.plots().stream().filter(ProvincePlotField.ProvincePlot::urban).forEach(pl -> {
+			assertNotEquals("TERRAIN_URBAN", pl.terrain().type(), "urban is an overlay, ground stays natural");
+			assertNull(pl.feature(), "no wild feature on built-up ground");
+			assertNull(pl.bonus(), "the resource is built over");
+		});
 	}
 
 	@Test
@@ -57,13 +49,14 @@ class UrbanTerrainTest {
 		ProvincePlotField field = ProvincePlotField.generate(
 				dh, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(7));
 
-		// a city_terrain province is one sprawling city — every plot is paved URBAN ground (the render
-		// layer covers it), with no farmland/features/resources showing through.
+		// a city_terrain province is one sprawling city — every plot is flagged urban (the render
+		// layer covers it), with no farmland/features/resources showing through, but the ground
+		// keeps its natural terrain/relief beneath the overlay.
 		for (var pl : field.plots()) {
-			assertEquals("TERRAIN_URBAN", pl.terrain().type(), "every city plot is urban");
-			assertEquals(PlotType.FLAT, pl.plotType(), "flat built ground");
-			assertNull(pl.feature(), "no wild feature on built ground");
-			assertNull(pl.bonus(), "no resource on built ground");
+			assertTrue(pl.urban(), "every city plot is flagged urban");
+			assertNotEquals("TERRAIN_URBAN", pl.terrain().type(), "the ground beneath stays natural terrain");
+			assertNull(pl.feature(), "no wild feature on built-up ground");
+			assertNull(pl.bonus(), "no resource on built-up ground");
 		}
 	}
 }

@@ -476,23 +476,36 @@ public abstract class MarchingCaravan extends Caravan {
 	private Plot claimCampOn(PlotCorridor corridor) {
 		if (session() == null)
 			return null;
+		// the province the day ended in — its pool tells us whether a settlement is present, which
+		// gates camping on its urban (city-core) plots: a band may not camp on an urban plot of a
+		// settled province, but an abandoned urban core (no settlement) is fair game. The day's
+		// corridor lies in this province (a province crossing ends the turn), so one check covers
+		// both the corridor and the whole-province fallback below.
+		ProvincePlotPool pool = session().provincePlotPool(worldMap().province(getProvinceId()));
+		boolean settled = pool.hasSettlement();
 		if (corridor != null && !corridor.isEmpty()) {
 			List<Plot> path = corridor.path();
 			for (int i = path.size() - 1; i >= 0; i--) {
 				Plot p = path.get(i);
-				if (p.owner() == null && p.isWorkable() && p.tryOccupy(new Camp())) {
+				if (campableCamp(p, settled) && p.tryOccupy(new Camp())) {
 					campPlot = p;
 					return p;
 				}
 			}
 		}
-		ProvincePlotPool pool = session().provincePlotPool(worldMap().province(getProvinceId()));
 		for (Plot p : pool.plots())
-			if (p.owner() == null && p.isWorkable() && p.tryOccupy(new Camp())) {
+			if (campableCamp(p, settled) && p.tryOccupy(new Camp())) {
 				campPlot = p;
 				return p;
 			}
 		return null;
+	}
+
+	// whether a plot may host a nightly camp: free, workable, and — when the province already holds a
+	// settlement — not one of its built-up urban (city-core) plots. An abandoned urban core (settled
+	// == false) stays campable. The tryOccupy claim happens at the call site (kept atomic).
+	private static boolean campableCamp(Plot p, boolean settled) {
+		return p.owner() == null && p.isWorkable() && !(settled && p.urban());
 	}
 
 	/**

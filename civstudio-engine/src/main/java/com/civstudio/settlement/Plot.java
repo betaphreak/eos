@@ -113,6 +113,16 @@ public final class Plot {
 	// without clearing, so cleared stays false there.
 	private boolean cleared;
 
+	// whether this plot is a settlement's built-up urban core (its city footprint). An
+	// OVERLAY on the plot's natural terrain/relief, NOT a base terrain: the ground stays
+	// whatever the generator drew (grassland/hill/…) and `urban` marks it built-up on top
+	// (the old synthetic TERRAIN_URBAN ground was retired — urban is a property, not a
+	// terrain). Stamped at generation on the city-core cells (ProvincePlotField), persisted
+	// in the plot cache (ProvincePlotStore.StoredPlot), and read by the web district layer
+	// and the caravan camp rule (a caravan may not camp on an urban plot of a province that
+	// already holds a settlement; an abandoned urban plot is fair game). See docs/urban-plots.md.
+	private boolean urban;
+
 	// the occupant standing on this plot, or null if the plot is vacant
 	private PlotOccupant occupant;
 
@@ -207,6 +217,20 @@ public final class Plot {
 	/** Set the plot's real-world place name (the bake-time place-naming pass). */
 	public void setPlaceName(String placeName) {
 		this.placeName = placeName;
+	}
+
+	/**
+	 * Whether this plot is a settlement's built-up urban core — an overlay on its natural
+	 * terrain/relief, not a base terrain (the old {@code TERRAIN_URBAN} ground was retired).
+	 * Stamped at generation on the city-core cells; persisted in the plot cache.
+	 */
+	public boolean urban() {
+		return urban;
+	}
+
+	/** Mark (or clear) this plot as a built-up urban core — see {@link #urban()}. */
+	public void setUrban(boolean urban) {
+		this.urban = urban;
 	}
 
 	/** The plot's {@link PlotGeo raster-derived scalars} (position, river code, elevation, sea mask). */

@@ -98,10 +98,10 @@ class PlotCorridorTest {
 		// Dhenijansar is an all-urban city province — every plot is city-core ground
 		ProvincePlotPool pool = session.provincePlotPool(session.getWorldMap().province(DHENIJANSAR));
 		long urban = pool.plots().stream()
-				.filter(p -> "TERRAIN_URBAN".equals(p.terrain().type())).count();
+				.filter(Plot::urban).count();
 		assertTrue(urban > 0, "the city province has urban core plots");
 		for (Plot p : pool.plots())
-			if ("TERRAIN_URBAN".equals(p.terrain().type())) {
+			if (p.urban()) {
 				assertNotNull(p.routeType(), "an urban plot comes with a route by default");
 				assertEquals(RouteType.PAVED_ROAD, p.routeType().type(),
 						"urban plots start paved (fully routable from founding)");

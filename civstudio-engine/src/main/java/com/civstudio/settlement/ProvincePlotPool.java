@@ -84,9 +84,17 @@ public final class ProvincePlotPool {
 		ProvincePlotField field = ProvincePlotField.generate(province, registry, raster, rng);
 		List<Plot> plots = new ArrayList<>(field.size());
 		for (ProvincePlot pp : field.plots())
-			plots.add(new Plot(pp.geo(), pp.terrain(), pp.plotType(), pp.feature(), pp.bonus()));
+			plots.add(toPlot(pp));
 		paveUrbanPlots(plots, registry);
 		return new ProvincePlotPool(province, plots);
+	}
+
+	// a generated province plot -> a free runtime Plot, carrying the built-up `urban` overlay
+	// (an urban plot keeps its natural terrain/relief; `urban` is a property, not a terrain).
+	private static Plot toPlot(ProvincePlot pp) {
+		Plot plot = new Plot(pp.geo(), pp.terrain(), pp.plotType(), pp.feature(), pp.bonus());
+		plot.setUrban(pp.urban());
+		return plot;
 	}
 
 	/**
@@ -110,14 +118,14 @@ public final class ProvincePlotPool {
 			ProvincePlotField field = ProvincePlotField.generate(province, registry, raster, rng);
 			plots = new ArrayList<>(field.size());
 			for (ProvincePlot pp : field.plots())
-				plots.add(new Plot(pp.geo(), pp.terrain(), pp.plotType(), pp.feature(), pp.bonus()));
+				plots.add(toPlot(pp));
 			ProvincePlotStore.save(province.id(), plots);
 		}
 		paveUrbanPlots(plots, registry);
 		return new ProvincePlotPool(province, plots);
 	}
 
-	// urban (city-core) plots come PRE-PAVED — every TERRAIN_URBAN plot starts with a paved
+	// urban (city-core) plots come PRE-PAVED — every urban plot starts with a paved
 	// road (the best pre-tech route tier), so a settlement's own ground is fully routable from
 	// founding (and, once trail-gating lands in Phase 6, its caravans can leave). A per-session
 	// default applied at pool construction — routes are per-session state and never bake into the
@@ -128,7 +136,7 @@ public final class ProvincePlotPool {
 		if (paved == null)
 			return;
 		for (Plot p : plots)
-			if ("TERRAIN_URBAN".equals(p.terrain().type()))
+			if (p.urban())
 				p.layRoute(paved);
 	}
 
@@ -160,6 +168,18 @@ public final class ProvincePlotPool {
 	/** The number of unclaimed (province-owned) plots. */
 	public synchronized int freeCount() {
 		return freeCount;
+	}
+
+	/**
+	 * Whether a settlement is present in this province — i.e. any plot is <b>claimed</b> (owned).
+	 * A live colony owns its claimed plots; a dead one releases them back to the pool, so an
+	 * all-free pool means no settlement. Used by the caravan camp rule: a marching band may not
+	 * camp on an urban plot of a <em>settled</em> province, but an abandoned urban core is fair
+	 * game (a nightly {@link com.civstudio.agent.march.Camp} is a non-owning occupant, so it never
+	 * flips this). O(1) off the free-plot counter.
+	 */
+	public synchronized boolean hasSettlement() {
+		return freeCount < plots.size();
 	}
 
 	/**
@@ -323,7 +343,7 @@ public final class ProvincePlotPool {
 		int bestWater = -1;
 		long bestD = Long.MAX_VALUE;
 		for (Plot p : plots) {
-			if (p.owner() != null || !"TERRAIN_URBAN".equals(p.terrain().type()))
+			if (p.owner() != null || !p.urban())
 				continue;
 			int water = Integer.bitCount(p.coast()) + (p.river() ? 2 : 0)
 					+ Integer.bitCount(p.riverAdj());

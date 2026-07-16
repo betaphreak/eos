@@ -58,7 +58,7 @@ public final class ProvincePlotStore {
 	 * generation change reaches every client instead of being masked by an immutably-cached grid.
 	 * The web bundle ships it as {@code plotVersion}. See {@code docs/plot-serving.md}.
 	 */
-	public static final int GEN_VERSION = 7; // 7: real-world plot place names (GeoNames — docs/plot-place-naming.md); 6: water-dominant urban-core siting
+	public static final int GEN_VERSION = 8; // 8: urban is an overlay flag on natural terrain (retired TERRAIN_URBAN ground — docs/urban-plots.md); 7: real-world plot place names (GeoNames); 6: water-dominant urban-core siting
 
 	// The cache root — a working-dir/volume folder, NOT the source tree. Defaults to .plot-cache
 	// (matching PlotService's civstudio.plots.cache-dir default) and is overridden by the server via
@@ -99,7 +99,11 @@ public final class ProvincePlotStore {
 	 * through {@code save}/{@code load}, so adding a field is a one-record change.
 	 */
 	private record StoredPlot(int x, int y, int river, String terrain, String plotType,
-			String feature, String bonus, int elevation, int coast, String name) {
+			String feature, String bonus, int elevation, int coast, String name,
+			// the built-up urban-core overlay flag (natural terrain kept underneath). Always
+			// serialized (a missing primitive can't round-trip through Jackson 3's record creator);
+			// "urban":false is a constant repeated token, so gzip all but erases it in the cache.
+			boolean urban) {
 
 		/** The persisted form of a runtime plot: its raster scalars + its type keys + its place name. */
 		static StoredPlot of(Plot p) {
@@ -107,7 +111,7 @@ public final class ProvincePlotStore {
 			return new StoredPlot(g.x(), g.y(), g.river(), p.terrain().type(), p.plotType().name(),
 					p.feature() == null ? null : p.feature().type(),
 					p.bonus() == null ? null : p.bonus().type(), g.elevation(), g.coast(),
-					p.placeName());
+					p.placeName(), p.urban());
 		}
 
 		/** Resolve back to a runtime plot, looking the type keys up in {@code registry}. */
@@ -117,6 +121,7 @@ public final class ProvincePlotStore {
 					feature == null ? null : registry.feature(feature),
 					bonus == null ? null : registry.bonus(bonus));
 			p.setPlaceName(name); // null for caches written before the naming pass existed
+			p.setUrban(urban);    // false for caches written before urban became an overlay flag
 			return p;
 		}
 	}

@@ -43,8 +43,11 @@ public final class ProvincePlotField {
 	 * @param plotType the relief (flat/hill/peak; from {@link ReliefGenerator})
 	 * @param feature  the wild feature, or {@code null}
 	 * @param bonus    the resource on this plot, or {@code null}
+	 * @param urban    whether the plot is a settlement's built-up urban core (an overlay on the
+	 *                 natural terrain/relief, not a base terrain — the retired {@code TERRAIN_URBAN})
 	 */
-	public record ProvincePlot(PlotGeo geo, Terrain terrain, PlotType plotType, Feature feature, Bonus bonus) {
+	public record ProvincePlot(PlotGeo geo, Terrain terrain, PlotType plotType, Feature feature, Bonus bonus,
+			boolean urban) {
 
 		/** Absolute raster x. */
 		public int x() {
@@ -276,22 +279,25 @@ public final class ProvincePlotField {
 						province.latitude(), bonuses, rng, false);
 
 		// the urban core: site the province's city on its best Civ4 foundValue cell(s) — as
-		// close as possible to as many bonuses as fit in a city work radius — and stamp them
-		// built-up (TERRAIN_URBAN, flattened). Runs after the bonus stage so the score reads the
+		// close as possible to as many bonuses as fit in a city work radius — and flag them
+		// built-up. Urban is now an OVERLAY, not a base terrain: the plot keeps the natural
+		// TERRAIN the generator drew (the synthetic TERRAIN_URBAN ground was retired — a city
+		// sits ON real ground), and we mark `urban` so the web district layer and the caravan
+		// camp rule can read it. The core is still flattened to level, built ground (a city
+		// footprint) and its wild feature/resource cleared (built over) — only the ground terrain
+		// changed from synthetic to natural. Runs after the bonus stage so the score reads the
 		// final resource layout; consumes no rng. One plot for an ordinary province, a denser
-		// core for a city_terrain province. The city core is the unfarmed civic centre a
-		// settlement anchors on, so its authored yields stay inert. See docs/urban-plots.md.
-		// only plain LAND provinces get a surface city: underground holds are their own
-		// cave-cities (DWARVEN_HOLD) and the special surface terrains keep their character;
-		// every city_terrain province is LAND, so this still gives them all a denser core.
-		Terrain urban = registry.terrain("TERRAIN_URBAN");
-		if (province.type() == ProvinceType.LAND && urban != null && !cells.isEmpty()) {
+		// core for a city_terrain province. See docs/urban-plots.md. Only plain LAND provinces get
+		// a surface city: underground holds are their own cave-cities (DWARVEN_HOLD) and the special
+		// surface terrains keep their character; every city_terrain province is LAND, so all get a core.
+		boolean[] urban = new boolean[w * h];
+		if (province.type() == ProvinceType.LAND && !cells.isEmpty()) {
 			if (province.city()) {
-				// a city_terrain province is one sprawling city — pave EVERY plot (the city render layer
-				// covers it), so no farmland/resources/features show through the built-up ground.
+				// a city_terrain province is one sprawling city — flag EVERY plot urban (the city
+				// render layer covers it), on level built ground with wild features/resources cleared.
 				for (int[] c : cells) {
 					int idx = c[1] * w + c[0];
-					ground[idx] = urban;
+					urban[idx] = true;
 					composed[idx] = PlotType.FLAT;
 					feature[idx] = null;
 					bonusGrid[idx] = null;
@@ -300,7 +306,7 @@ public final class ProvincePlotField {
 				int coreSize = CityPlacement.coreSize(province, cells.size());
 				for (int idx : CityPlacement.coreCells(w, h, cells, ground, composed, feature,
 						bonusGrid, mask, coreSize)) {
-					ground[idx] = urban;
+					urban[idx] = true;             // built-up overlay; the natural terrain stays
 					composed[idx] = PlotType.FLAT; // a city stands on level, built ground
 					feature[idx] = null;           // built ground carries no wild feature
 					bonusGrid[idx] = null;         // the resource is built over
@@ -323,7 +329,7 @@ public final class ProvincePlotField {
 				int elevation = mask.elevation(lx, ly);
 				int coast = mask.coast(lx, ly);
 				PlotGeo geo = new PlotGeo(mask.originX() + lx, mask.originY() + ly, riverCode, elevation, coast);
-				out.add(new ProvincePlot(geo, terrain, plotType, feature[idx], bonus));
+				out.add(new ProvincePlot(geo, terrain, plotType, feature[idx], bonus, urban[idx]));
 			}
 		}
 		return new ProvincePlotField(province, out);
@@ -403,7 +409,7 @@ public final class ProvincePlotField {
 			int lx = c[0], ly = c[1], idx = ly * w + lx;
 			PlotGeo geo = new PlotGeo(mask.originX() + lx, mask.originY() + ly, 0,
 					mask.elevation(lx, ly), mask.coast(lx, ly));
-			out.add(new ProvincePlot(geo, terrainGrid[idx], PlotType.FLAT, featureGrid[idx], bonusGrid[idx]));
+			out.add(new ProvincePlot(geo, terrainGrid[idx], PlotType.FLAT, featureGrid[idx], bonusGrid[idx], false));
 		}
 		return new ProvincePlotField(province, out);
 	}

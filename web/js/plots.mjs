@@ -125,7 +125,6 @@ async function loadPlots(p) {
     // mark as loaded even when empty (deep ocean), so the draw loop and panel stop re-requesting
     p._plots = arr || [];
     p._retryAt = 0;
-    markUrbanPlots(p._plots);
     if (p._plots.length) draw();
     if (S.selectedProv === p) renderRail();
   } catch (e) {
@@ -143,23 +142,11 @@ async function loadPlots(p) {
     p._loading = false;
   }
 }
-// Interim city treatment (docs/urban-plots.md): the synthetic TERRAIN_URBAN ground — a grey
-// concrete tile — and the Civ4 med_europe city sprite were pulled pending Civ6 district tiles.
-// Re-terrain each urban core plot to the province's DOMINANT real terrain so the city site blends
-// into its countryside instead of showing a grey patch, and flag it `urban` so the marker layer
-// (city.mjs) and the info panel can still locate the city. URBAN then never reaches the terrain
-// render path (base fill, edge/corner blends, coast) at all.
-function markUrbanPlots(plots) {
-  const urban = [], counts = new Map();
-  for (const q of plots) {
-    if (q.terrain === "TERRAIN_URBAN") urban.push(q);
-    else counts.set(q.terrain, (counts.get(q.terrain) || 0) + 1);
-  }
-  if (!urban.length) return;
-  let dom = "TERRAIN_GRASSLAND", best = -1;
-  for (const [t, n] of counts) if (n > best) { best = n; dom = t; }
-  for (const q of urban) { q.urban = true; q.terrain = dom; }
-}
+// Urban plots (docs/urban-plots.md): a city is now an OVERLAY on natural terrain, not a synthetic
+// terrain — the plot cache (GEN_VERSION 8+) carries the generated ground plus a `urban` flag, so an
+// urban plot renders as its real terrain and the `q.urban` flag (straight off the plot JSON) locates
+// the city for the district layer (districts.mjs), routes (urban→paved) and the info panel. No client
+// re-terraining is needed any more; the old TERRAIN_URBAN grey-ground substrate was retired engine-side.
 // min/max plot coords of a province's grid plus the derived offscreen size (one pixel per plot).
 // Shared by every per-province offscreen builder.
 function plotBounds(plots) {

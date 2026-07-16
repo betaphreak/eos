@@ -1203,9 +1203,33 @@ function bakeDistrictTiles() {
     const rgba = resampleRGBA(img.rgba, img.width, img.height, T, T);
     const name = 'districts/dis-' + type.toLowerCase();
     out[type] = { src: queueWebpRGBA(name, T, T, rgba, { quality: 90 }), w: T, h: T };
+    // the ABANDONED neighborhood variant (docs/urban-plots.md): an urban plot not linked to a live
+    // settlement reads as a ruin. Derive it from the live NEIGHBORHOOD chip — desaturated, darkened
+    // and tinted toward mossy stone — so the district layer can draw forsaken city-sites distinctly.
+    if (type === 'NEIGHBORHOOD') {
+      out.NEIGHBORHOOD_ABANDONED = {
+        src: queueWebpRGBA(name + '-abandoned', T, T, ruinRGBA(rgba), { quality: 90 }), w: T, h: T,
+      };
+    }
   }
   if (!Object.keys(out).length) return null;
   console.log(`  district tiles: ${Object.keys(out).length} Civ6 hex chips (${Object.keys(out).join(', ')})`);
+  return out;
+}
+
+// desaturate + darken + mossy-tint an RGBA buffer in place-ish (returns a fresh buffer) so a district
+// chip reads as an abandoned ruin. Alpha (the hex cutout) is preserved untouched.
+function ruinRGBA(rgba) {
+  const out = new Uint8ClampedArray(rgba);
+  for (let i = 0; i < out.length; i += 4) {
+    const r = out[i], g = out[i + 1], b = out[i + 2];
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    // 85% toward luminance (near-grey), then 55% brightness, then a slight mossy-stone tint
+    const mix = (c) => 0.15 * c + 0.85 * lum;
+    out[i]     = Math.min(255, mix(r) * 0.58 + 12);  // faint warm/green stone cast
+    out[i + 1] = Math.min(255, mix(g) * 0.58 + 14);
+    out[i + 2] = Math.min(255, mix(b) * 0.54 + 8);
+  }
   return out;
 }
 
