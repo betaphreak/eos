@@ -2,14 +2,22 @@ package com.civstudio.geo.export;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import com.civstudio.data.GeoNamesFiles;
 import com.civstudio.geo.Province;
 import com.civstudio.geo.ProvincePlotField;
 import com.civstudio.geo.ProvincePlotField.ProvincePlot;
 import com.civstudio.geo.ProvinceRaster;
+import com.civstudio.geo.RegionEarthMap;
 import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.geo.WorldMap;
+import com.civstudio.geo.names.CountryGazetteer;
+import com.civstudio.geo.names.GeoNamesGazetteer;
+import com.civstudio.geo.names.PlaceNamingPass;
 import com.civstudio.settlement.Plot;
 import com.civstudio.settlement.ProvincePlotStore;
 import com.civstudio.util.Rng;
@@ -81,5 +89,33 @@ public final class WorldPlotGenerator {
 		}
 		System.out.printf("done: %d generated, %d already present, %d empty (no shelf), %d failed, of %d provinces in %ds%n",
 				gen, skip, empty, fail, total, (System.currentTimeMillis() - t0) / 1000);
+
+		nameWorld(map, registry);
+	}
+
+	/**
+	 * Stamp real Earth place names onto the warmed plot cache (see {@link PlaceNamingPass}). Additive
+	 * over whatever is present, so it runs after generation with no cache regeneration. Skipped — with
+	 * a note — when the GeoNames dump is absent, so a clone without it still gets a working (nameless)
+	 * plot cache.
+	 */
+	private static void nameWorld(WorldMap map, TerrainRegistry registry) throws Exception {
+		if (!GeoNamesFiles.isAvailable()) {
+			System.out.println("GeoNames dump not present in " + GeoNamesFiles.cacheDir().toAbsolutePath()
+					+ " — skipping plot naming (plots stay nameless). See com.civstudio.data.GeoNamesFiles.");
+			return;
+		}
+		long t0 = System.currentTimeMillis();
+		RegionEarthMap earth = RegionEarthMap.load();
+		Set<String> countries = new HashSet<>(earth.countries());
+		System.out.println("naming plots: loading GeoNames gazetteers for " + countries.size()
+				+ " countries (one pass over the dump)...");
+		Map<String, CountryGazetteer> gazetteers = GeoNamesGazetteer.loadFromCache(countries);
+		long places = gazetteers.values().stream().mapToLong(CountryGazetteer::size).sum();
+		System.out.printf("  loaded %,d places across %d countries in %ds; naming by region...%n",
+				places, gazetteers.size(), (System.currentTimeMillis() - t0) / 1000);
+		int named = PlaceNamingPass.nameWorld(map, registry, earth, gazetteers);
+		System.out.printf("naming done: %d provinces named in %ds%n",
+				named, (System.currentTimeMillis() - t0) / 1000);
 	}
 }

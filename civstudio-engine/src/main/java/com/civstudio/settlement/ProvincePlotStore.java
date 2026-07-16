@@ -99,22 +99,25 @@ public final class ProvincePlotStore {
 	 * through {@code save}/{@code load}, so adding a field is a one-record change.
 	 */
 	private record StoredPlot(int x, int y, int river, String terrain, String plotType,
-			String feature, String bonus, int elevation, int coast) {
+			String feature, String bonus, int elevation, int coast, String name) {
 
-		/** The persisted form of a runtime plot: its raster scalars + its type keys. */
+		/** The persisted form of a runtime plot: its raster scalars + its type keys + its place name. */
 		static StoredPlot of(Plot p) {
 			PlotGeo g = p.geo();
 			return new StoredPlot(g.x(), g.y(), g.river(), p.terrain().type(), p.plotType().name(),
 					p.feature() == null ? null : p.feature().type(),
-					p.bonus() == null ? null : p.bonus().type(), g.elevation(), g.coast());
+					p.bonus() == null ? null : p.bonus().type(), g.elevation(), g.coast(),
+					p.placeName());
 		}
 
 		/** Resolve back to a runtime plot, looking the type keys up in {@code registry}. */
 		Plot toPlot(TerrainRegistry registry) {
-			return new Plot(new PlotGeo(x, y, river, elevation, coast),
+			Plot p = new Plot(new PlotGeo(x, y, river, elevation, coast),
 					registry.terrain(terrain), PlotType.valueOf(plotType),
 					feature == null ? null : registry.feature(feature),
 					bonus == null ? null : registry.bonus(bonus));
+			p.setPlaceName(name); // null for caches written before the naming pass existed
+			return p;
 		}
 	}
 

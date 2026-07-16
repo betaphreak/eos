@@ -66,6 +66,11 @@ public final class Plot {
 	// it is the per-settlement claim rank, assigned by setIndex when claimed (-1 until).
 	private int index;
 
+	// the plot's real-world place name (a GeoNames town/feature stamped on at bake time by the
+	// plot place-naming pass; see com.civstudio.geo.names), or null for a plot generated without
+	// naming (no GeoNames dump present, or a runtime cache-miss regen). Persisted in the plot cache.
+	private String placeName;
+
 	// the plot's raster-derived scalars: its (x, y) position in the province silhouette and the
 	// fields read off the Anbennar rasters — the packed river code, the heightmap elevation, and
 	// the 8-bit sea mask. Grouped so a new raster attribute is one line in PlotGeo, not another
@@ -189,6 +194,19 @@ public final class Plot {
 	/** Set the plot's ladder index — its claim rank, assigned when a settlement claims it. */
 	public void setIndex(int index) {
 		this.index = index;
+	}
+
+	/**
+	 * The plot's real-world place name (a GeoNames town/feature), or {@code null} if the plot was
+	 * generated without the naming pass. Stamped at bake time; persisted in the plot cache.
+	 */
+	public String placeName() {
+		return placeName;
+	}
+
+	/** Set the plot's real-world place name (the bake-time place-naming pass). */
+	public void setPlaceName(String placeName) {
+		this.placeName = placeName;
 	}
 
 	/** The plot's {@link PlotGeo raster-derived scalars} (position, river code, elevation, sea mask). */
