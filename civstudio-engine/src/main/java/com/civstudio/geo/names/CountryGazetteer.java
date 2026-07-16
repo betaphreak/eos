@@ -31,19 +31,21 @@ public final class CountryGazetteer {
 
 	private final String country;
 	private final GeoNamesPlace[] places;
-	private final double latMin, lonMin;
+	private final double latMin, latMax, lonMin, lonMax;
 	private final double cell; // grid cell size, degrees
 	private final int cols, rows;
 	// CSR bucket index: places of cell k are order[cellStart[k] .. cellStart[k+1])
 	private final int[] cellStart;
 	private final int[] order;
 
-	private CountryGazetteer(String country, GeoNamesPlace[] places, double latMin, double lonMin,
-			double cell, int cols, int rows, int[] cellStart, int[] order) {
+	private CountryGazetteer(String country, GeoNamesPlace[] places, double latMin, double latMax,
+			double lonMin, double lonMax, double cell, int cols, int rows, int[] cellStart, int[] order) {
 		this.country = country;
 		this.places = places;
 		this.latMin = latMin;
+		this.latMax = latMax;
 		this.lonMin = lonMin;
+		this.lonMax = lonMax;
 		this.cell = cell;
 		this.cols = cols;
 		this.rows = rows;
@@ -62,7 +64,7 @@ public final class CountryGazetteer {
 	public static CountryGazetteer of(String country, List<GeoNamesPlace> list) {
 		GeoNamesPlace[] places = list.toArray(GeoNamesPlace[]::new);
 		if (places.length == 0)
-			return new CountryGazetteer(country, places, 0, 0, 1, 1, 1, new int[] { 0, 0 }, new int[0]);
+			return new CountryGazetteer(country, places, 0, 0, 0, 0, 1, 1, 1, new int[] { 0, 0 }, new int[0]);
 
 		double latMin = Double.POSITIVE_INFINITY, latMax = Double.NEGATIVE_INFINITY;
 		double lonMin = Double.POSITIVE_INFINITY, lonMax = Double.NEGATIVE_INFINITY;
@@ -98,7 +100,28 @@ public final class CountryGazetteer {
 		for (int i = 0; i < places.length; i++)
 			order[cursor[cellOf[i]]++] = i;
 
-		return new CountryGazetteer(country, places, latMin, lonMin, cell, cols, rows, cellStart, order);
+		return new CountryGazetteer(country, places, latMin, latMax, lonMin, lonMax, cell, cols, rows,
+				cellStart, order);
+	}
+
+	/** Southernmost place latitude (0 if empty). */
+	public double latMin() {
+		return latMin;
+	}
+
+	/** Northernmost place latitude (0 if empty). */
+	public double latMax() {
+		return latMax;
+	}
+
+	/** Westernmost place longitude (0 if empty). */
+	public double lonMin() {
+		return lonMin;
+	}
+
+	/** Easternmost place longitude (0 if empty). */
+	public double lonMax() {
+		return lonMax;
 	}
 
 	private static int colOf(double lon, double lonMin, double cell, int cols) {
