@@ -258,51 +258,52 @@ export function drawLive() {
   }
 }
 
-// ---- the live HUD (a floating panel over the map, only in Live mode) ----
+// ---- the live colony's vitals, in the top bar ----
+// This replaces the old #liveHud rail panel. That panel made Live mode the one mode with its own
+// bespoke rail, and filled it with three different kinds of thing: session debug (tick, session id),
+// colony vitals, and tax WRITE controls. They have gone three ways:
+//   - tick / session id: dropped. The date is already in the Zeitgeist clock, and the rest was
+//     debug-grade readout that no spectator was reading.
+//   - colony vitals: here, in the top bar — they describe the SESSION, so they should not depend on
+//     where the camera is (the same reasoning as the Zeitgeist segment's colony label). The
+//     per-province detail lives inline in the province rail instead (panel.provinceRail).
+//   - tax levers: moved to the admin console (web/admin.html), where the other write controls
+//     already are and where the ROLE_ADMIN gate already applies.
+// Live mode now uses the same rail as every other mode.
 const el = id => document.getElementById(id);
-let hudWired = false;
 
 function hud(show) {
-  const box = el("liveHud");
-  if (box) {
-    box.hidden = !show;
-    // clicks/scroll on the HUD (incl. the tax inputs) must not fall through to pan/zoom/pick the map
-    if (show && !box.__mapGuard) {
-      ["pointerdown", "mousedown", "click", "touchstart", "wheel"].forEach(t =>
-        box.addEventListener(t, e => e.stopPropagation(), { passive: true }));
-      box.__mapGuard = true;
-    }
-  }
+  const v = el("liveVitals");
+  if (v && !show) v.textContent = "";
   showLiveLog(show, serverLabel());   // the event-log bar tracks Live mode
 }
 
+// Connection state ("connecting…", "reconnecting…") goes where the vitals go: it is the answer to the
+// same question — how is the session doing — and the first real snapshot overwrites it with the
+// numbers. It used to have a dedicated badge in the HUD; a strip that says "reconnecting…" and then
+// starts showing figures tells the same story without the chrome.
 function setHudStatus(text) {
-  const s = el("liveState");
-  if (s) { s.textContent = text; s.className = "badge"; }
+  const v = el("liveVitals");
+  if (v) v.innerHTML = `<span class="lv lv-status">${text}</span>`;
 }
 
 function renderHud() {
-  if (!snap) return;
+  const v = el("liveVitals");
+  if (!v || !snap) return;
   const c = snap.colonies[0] || {};
-  el("liveSid").textContent = snap.sessionId || "";
-  el("liveTick").textContent = snap.tick;
-  el("liveDate").textContent = snap.date || "";
-  const st = el("liveState"); st.textContent = snap.state; st.className = "badge " + snap.state;
-  el("liveStats").innerHTML = c.name ? `
-    <tr><td>${c.name}</td><td>${c.population} 👤</td></tr>
-    <tr><td>pool / children</td><td>${c.poolSize} / ${c.children}</td></tr>
-    <tr><td>firms · nobles</td><td>${c.firms} · ${c.nobles}</td></tr>
-    <tr><td>food price</td><td>${(c.necessityPrice||0).toFixed(2)}</td></tr>
-    <tr><td>caravans</td><td>${snap.caravans.length}</td></tr>` : "";
-  // current tax levers; prefill the inputs once
-  el("liveBankTaxCur").textContent = (c.bankProfitTax||0).toFixed(3);
-  el("liveNobleTaxCur").textContent = (c.nobleIncomeTax||0).toFixed(3);
-  if (!hudWired && c.name) {
-    el("liveBankTax").value = (c.bankProfitTax||0).toFixed(2);
-    el("liveNobleTax").value = (c.nobleIncomeTax||0).toFixed(2);
-    el("liveApplyTax").onclick = applyTax;
-    hudWired = true;
-  }
+  if (!c.name) { v.textContent = ""; return; }
+  // one compact strip; the colony's NAME is already the Zeitgeist segment's label, so it is not
+  // repeated here. Each figure carries a title — the glyphs are recognisable, not self-explanatory.
+  v.innerHTML = [
+    ["👤", c.population, "Population — the colony's living households"],
+    ["⛏", c.poolSize, "Peasant pool — the labour reserve the workforce is drawn from"],
+    ["🍼", c.children, "Children born into the colony"],
+    ["🏭", c.firms, "Firms currently chartered"],
+    ["👑", c.nobles, "Nobles in the aristocracy"],
+    ["🌾", (c.necessityPrice || 0).toFixed(2), "Food price — the necessity market's last clearing price"],
+    ["🐫", (snap.caravans || []).length, "Caravans afield"],
+  ].map(([ico, val, tip]) =>
+    `<span class="lv" data-tip="${tip}"><span class="lv-i">${ico}</span>${val}</span>`).join("");
 }
 
 // post a lobby chat message to the session (server attaches the authoritative username). The owner
@@ -325,12 +326,6 @@ async function postCommand(body) {
   return r.ok ? r.json() : null;
 }
 
-async function applyTax() {
-  const msg = el("liveTaxMsg");
-  const bank = parseFloat(el("liveBankTax").value), noble = parseFloat(el("liveNobleTax").value);
-  const acks = [];
-  if (Number.isFinite(bank))  acks.push(await postCommand({ type: "setTaxRate", lever: "bankProfit",  rate: bank }));
-  if (Number.isFinite(noble)) acks.push(await postCommand({ type: "setTaxRate", lever: "nobleIncome", rate: noble }));
-  const ticks = acks.filter(a => a && a.tick != null).map(a => a.tick);
-  msg.textContent = ticks.length ? "applied at tick " + Math.max(...ticks) : "nothing to apply";
-}
+// (applyTax lived here, driving the retired HUD's tax inputs. Setting a tax rate is an owner/admin
+//  write, so it now sits in the admin console next to the other write controls — see web/admin.html.
+//  postCommand stays: it is the general command seam, and the playback transport uses it.)

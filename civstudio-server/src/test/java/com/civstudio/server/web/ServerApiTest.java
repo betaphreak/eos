@@ -275,6 +275,83 @@ class ServerApiTest {
 				res.headers().firstValue("Access-Control-Allow-Origin").orElse(null));
 	}
 
+	@Test
+	@Timeout(120)
+	void pingReturnsAServerTimestampAndIsNeverCached() throws Exception {
+		long before = System.currentTimeMillis();
+		HttpResponse<String> res = client.send(HttpRequest.newBuilder(uri("/api/ping")).GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(200, res.statusCode());
+		long t = json.readTree(res.body()).path("t").asLong();
+		assertTrue(t >= before && t <= System.currentTimeMillis() + 1000,
+				"ping should report the server's own clock, got " + t);
+		// the whole point of the readout is measuring the network — a cached ping would report ~0ms
+		// forever, so no-store is load-bearing, not decoration
+		assertTrue(res.headers().firstValue("Cache-Control").orElse("").contains("no-store"),
+				"ping must not be cacheable: " + res.headers().map());
+	}
+
+	@Test
+	@Timeout(120)
+	void resourceManifestListsTheEagerSetWithRealServedSizes() throws Exception {
+		HttpResponse<String> res = client.send(HttpRequest.newBuilder(uri("/api/resources")).GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(200, res.statusCode());
+		var body = json.readTree(res.body());
+		var resources = body.path("resources");
+		assertTrue(resources.size() >= 4, "expected the world assets in the bill: " + res.body());
+
+		// each eager entry must name an endpoint that really serves it, at the size claimed — the
+		// manifest's whole job is letting the client total the bytes before fetching, so a wrong
+		// number is worse than none. The per-province plots have no fixed size and carry -1.
+		long eagerSum = 0;
+		for (var e : resources) {
+			String path = e.path("path").asString();
+			int bytes = e.path("bytes").asInt();
+			if (!e.path("eager").asBoolean()) {
+				assertEquals(-1, bytes, path + " is lazy, so it should not claim a fixed size");
+				continue;
+			}
+			eagerSum += bytes;
+			HttpResponse<byte[]> got = client.send(
+					HttpRequest.newBuilder(uri(path)).header("Accept-Encoding", "gzip").GET().build(),
+					HttpResponse.BodyHandlers.ofByteArray());
+			assertEquals(200, got.statusCode(), path + " is in the bill but does not serve");
+			assertEquals(bytes, got.body().length, path + " served a different size than the bill claims");
+		}
+		assertEquals(eagerSum, body.path("eagerBytes").asLong(),
+				"eagerBytes should be the sum of the eager entries the client will actually pull");
+	}
+
+	@Test
+	@Timeout(120)
+	void snapshotEndpointServesOneReadingAndIsEmptyBeforeTheFirstFrame() throws Exception {
+		// a session nobody has heard of
+		HttpResponse<String> missing = client.send(
+				HttpRequest.newBuilder(uri("/api/sessions/nope/snapshot")).GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(404, missing.statusCode());
+
+		HostedSession hs = host.create(SessionSpec.caravanDemo(223L, DHENIJANSAR));
+		hs.startPaused();
+		// drive at least one frame, then read it without opening an SSE stream
+		hs.step(1);
+		long deadline = System.nanoTime() + 60_000_000_000L;
+		while (hs.currentSnapshot() == null && System.nanoTime() < deadline)
+			Thread.sleep(5);
+
+		HttpResponse<String> res = client.send(
+				HttpRequest.newBuilder(uri("/api/sessions/" + hs.id() + "/snapshot")).GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(200, res.statusCode());
+		var colony = json.readTree(res.body()).path("colonies").path(0);
+		assertEquals("Dhenijansar", colony.path("name").asString());
+		// provinceId is what lets the web rail show a province's live colony inline: lat/lon can't be
+		// turned back into a province client-side without inverting the map projection
+		assertEquals(DHENIJANSAR, colony.path("provinceId").asInt(),
+				"the colony should name the province it sits in");
+	}
+
 	private URI uri(String path) {
 		return URI.create("http://localhost:" + port + path);
 	}

@@ -493,6 +493,20 @@ This re-homes what's scattered today: the Spectate HUD (`live.mjs`) + event log
 ambient section. `panel.mjs` gains a `regime()`-keyed section registry that mirrors
 the map's band registry — panel and canvas run off the *same* spine.
 
+> **Update (2026-07-16): the Spectate HUD no longer exists.** The plan above predates
+> its retirement, so read every "live HUD" reference here as describing the *content*,
+> not the component. `#liveHud` was the one map mode with a bespoke rail — it masked
+> `#rail` with a `:has()` rule and mixed three unrelated things. Those went three ways:
+> the colony vitals became a top-bar strip (`#liveVitals`, `live.renderHud`), because
+> they describe the *session* and so shouldn't depend on where the camera is; the
+> colony detail became an inline block in the province rail, keyed on the new
+> `ColonyView.provinceId` (`panel.colonyBlock`), which is the drill-path card idea
+> above arriving early for this one case; the tax levers moved to the admin console,
+> since a write control had no business in a read-only spectator view. Tick and session
+> id were dropped outright. **Every mode now renders into `#rail`**, which is the
+> precondition this section's one-inspector design was waiting on — the section
+> registry it calls for is still unbuilt.
+
 ## Migration map — every scattered threshold → a declared band
 
 The table below is the complete consolidation target. Left: today's inline code.

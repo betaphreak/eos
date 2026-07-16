@@ -171,6 +171,19 @@ public class SessionController {
 		return ResponseEntity.status(202).body(Map.of("accepted", true, "user", user));
 	}
 
+	// the session's latest render snapshot, once. /stream is the right way to WATCH a session, but a
+	// caller that wants a single reading — the admin console prefilling the tax levers, a probe, a
+	// script — should not have to open an SSE connection and hang up after one frame. Read-only, so
+	// ungated like the other spectate endpoints. 204 while the session has not yet emitted a frame.
+	@GetMapping("/{id}/snapshot")
+	public ResponseEntity<Object> snapshot(@PathVariable String id) {
+		HostedSession hs = host.get(id);
+		if (hs == null)
+			return notFound(id);
+		SessionSnapshot snap = hs.currentSnapshot();
+		return snap == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(snap);
+	}
+
 	// open a Server-Sent-Events stream of the session's snapshots. The session thread serializes +
 	// offers frames into this connection's bounded queue (dropping the oldest if the client lags);
 	// this connection's own virtual thread drains it to the socket until the client disconnects.

@@ -38,11 +38,16 @@ export function noteFrame(ms) {
   if (frames.length > FRAME_SAMPLES) frames.shift();
 }
 
-// the frame rate the recent frames' COST implies — see the header. Averaged over the last samples so a
-// single expensive frame (a province's texture canvas building) doesn't make the readout leap about.
+// mean cost of the recent frames — averaged over the last samples so a single expensive frame (a
+// province's texture canvas building) doesn't make the readout leap about. The rate AND its colour
+// both derive from this one number: grading on the last frame while displaying the average let the
+// chip show a red-worthy "8fps" in green, because the most recent frame happened to be cheap.
+function avgFrameMs() {
+  return frames.length ? frames.reduce((a, b) => a + b, 0) / frames.length : null;
+}
+// the frame rate the recent frames' COST implies — see the header.
 function fps() {
-  if (!frames.length) return null;
-  const avg = frames.reduce((a, b) => a + b, 0) / frames.length;
+  const avg = avgFrameMs();
   return avg > 0 ? Math.min(999, Math.round(1000 / avg)) : null;
 }
 
@@ -72,17 +77,17 @@ function grade(v, warn, bad) { return v == null ? "" : v >= bad ? "bad" : v >= w
 
 function render() {
   if (!chipEl) return;
-  const f = fps(), stale = performance.now() - lastPaintAt > STALE_AFTER;
+  const f = fps(), avg = avgFrameMs(), stale = performance.now() - lastPaintAt > STALE_AFTER;
   if (f != null) {
     fpsEl.textContent = f + "fps";
-    // low fps is the bad end, so the thresholds invert: grade on the frame time instead
-    fpsEl.dataset.grade = grade(lastFrameMs, 33, 66);
+    // low fps is the bad end, so the thresholds invert: grade the frame time the rate came from
+    fpsEl.dataset.grade = grade(avg, 33, 66);
   } else if (!fpsEl.textContent) {
     fpsEl.textContent = "—";
   }
   fpsEl.classList.toggle("stale", stale);
-  fpsEl.title = lastFrameMs
-    ? `Render cost: last frame ${lastFrameMs.toFixed(1)} ms. The rate is what that cost implies, not paints per second — the map only redraws on demand.${stale ? " Idle right now." : ""}`
+  fpsEl.title = avg
+    ? `Render cost: ${avg.toFixed(1)} ms mean over the last ${frames.length} frame(s), last ${lastFrameMs.toFixed(1)} ms. The rate is what that cost implies, not paints per second — the map only redraws on demand.${stale ? " Idle right now." : ""}`
     : "";
 
   if (rttMs === -1) { netEl.textContent = "offline"; netEl.dataset.grade = "bad"; netEl.title = "The last ping to the server failed"; }

@@ -906,43 +906,23 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .tech-d-prereq .k { font: 600 9px system-ui,sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); margin-left: 6px; }
 
 
-/* ---- Live overlay HUD: a floating panel over the map, top-left, only in Live mode ---- */
-/* the live HUD renders as rail content now (not a floating panel) — it fills the right rail like the
-   province/advisor detail does */
-.live-hud {
-  flex: 1 1 auto; min-height: 0; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 10px;
-  padding: 16px 16px 26px; color: var(--ink-soft); font-size: 12.5px;
-}
-.live-hud[hidden] { display: none; }
-/* while the HUD shows (Zeitgeist, no province selected) it IS the rail — hide the province content
-   and the close/resize chrome; a province selection takes the rail over instead */
-#railwrap:has(.live-hud:not([hidden])) #rail,
-#railwrap:has(.live-hud:not([hidden])) #railClose,
-#railwrap:has(.live-hud:not([hidden])) #railResize { display: none; }
-.live-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.live-title { font: 800 10px system-ui, sans-serif; letter-spacing: .16em; color: var(--accent); }
-.live-head .live-meta { color: var(--ink-faint); font-size: 11px; }
-.live-head .live-meta b { color: var(--ink); font-variant-numeric: tabular-nums; }
-.live-head .live-date { color: var(--accent-soft); font-family: ui-monospace, monospace; font-size: 12px; margin-left: auto; }
-.live-hud .badge { padding: .05rem .5rem; border-radius: 999px; font: 600 11px ui-monospace, monospace; background: var(--line-soft); color: var(--ink-faint); }
-.live-hud .badge.RUNNING { background: #14351f; color: #6bd08a; }
-.live-hud .badge.PAUSED  { background: #3a2f10; color: #e8c37a; }
-.live-hud .badge.STOPPED { background: #3a1616; color: #e07a7a; }
-.live-sid { font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.live-stats { width: 100%; border-collapse: collapse; }
-.live-stats td { padding: 1px 0; }
-.live-stats td:last-child { text-align: right; font-family: ui-monospace, monospace; color: var(--ink); }
-.live-policy { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; border-top: 1px solid var(--line-soft); padding-top: 7px; }
-.live-policy .live-cur { width: 100%; font-size: 11px; color: var(--ink-faint); }
-.live-policy .live-cur b { color: var(--ink); font-family: ui-monospace, monospace; }
-.live-policy label { font-size: 11px; color: var(--ink-faint); }
-.live-policy input { width: 52px; background: var(--ground); color: var(--ink); border: 1px solid var(--line);
-                     border-radius: 5px; padding: .2rem .3rem; font: inherit; }
-.live-policy button { background: var(--line-soft); color: var(--ink); border: 1px solid var(--line);
-                      border-radius: 6px; padding: .25rem .6rem; cursor: pointer; font-size: 12px; }
-.live-policy button:hover { background: var(--accent); color: #0b0f16; }
-.live-msg { min-height: 1em; font-size: 11px; color: var(--ink-faint); }
+/* ---- Live session readouts ------------------------------------------------------------------
+   The old .live-hud took the whole rail over in Zeitgeist mode — the one map mode with a bespoke
+   rail, masking #rail and its own chrome with :has(). It is gone: its colony stats are the top-bar
+   strip below, its tax levers moved to the admin console, and its tick/session-id readouts were
+   dropped. Every mode now renders into #rail. -------------------------------------------------- */
+/* the live colony's vitals in the Zeitgeist sub-bar: a compact glyph+figure strip */
+.live-vitals { display: inline-flex; align-items: center; gap: 9px; flex-wrap: wrap;
+  font: 600 11.5px ui-monospace, "Cascadia Code", Consolas, monospace; font-variant-numeric: tabular-nums;
+  color: var(--ink); }
+.live-vitals .lv { display: inline-flex; align-items: center; gap: 3px; cursor: default; }
+.live-vitals .lv-i { font-family: system-ui, "Segoe UI Emoji", sans-serif; opacity: .8; font-size: 11px; }
+/* connection state ("connecting…") holds the same strip until the first snapshot replaces it */
+.live-vitals .lv-status { color: var(--ink-faint); font-style: italic; }
+/* the pulsing dot heading the province rail's inline live-colony block */
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: inline-block;
+  margin-right: 6px; animation: livepulse 2s ease-in-out infinite; }
+@keyframes livepulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
 /* ---- Live event-log bar (bottom-centre): collapsed latest line + click-to-expand history ---- */
 .live-log { position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px; z-index: 5;

@@ -3,7 +3,7 @@ import { draw, zoomAt, resize, focusProvinceFit, applyHash } from "./main.mjs";
 import { loadPlots } from "./plotfetch.mjs";
 import { provinceAt, plotAt } from "./hittest.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
-import { startLive, liveToBackground, liveActive, liveState, controlLive, LIVE_RATES } from "./overlays/live.mjs";
+import { startLive, liveToBackground, liveActive, liveState, controlLive, liveColony, LIVE_RATES } from "./overlays/live.mjs";
 import { createSearchBox } from "./searchbox.mjs";
 import { techBuildingMatches, searchRowHtml, pickSearchResult } from "./techtree.mjs";
 import { prettyKey, plotTip } from "./plotlabel.mjs";
@@ -413,9 +413,38 @@ function provinceRail(p) {
         <div class="metacell"><div class="k">Winter</div><div class="v" style="font-size:13px">${p.winter?prettyId(p.winter):"—"}</div></div>
       </div>
       ${politicsBlock(p)}
+      ${colonyBlock(p)}
       ${terrainHtml}
     </div>`;
   document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; showRail(false); renderRail(); draw(); };
+}
+// The live colony's detail, inline, when the selected province is the one it sits in — replacing the
+// bespoke live HUD that used to take the whole rail over in Zeitgeist mode. Empty for every other
+// province, so a spectator sees the colony where the colony actually is rather than wherever they
+// happen to be looking. Keyed on ColonyView.provinceId: the snapshot ships lat/lon too, but turning
+// those back into a province would mean inverting the map projection client-side.
+function colonyBlock(p) {
+  const c = liveColony();
+  if (!c || !c.name || !c.provinceId || c.provinceId !== p.id) return "";
+  const tier = c.tier ? prettyKey(c.tier) : "—";
+  const cell = (k, v) => `<div class="metacell"><div class="k">${k}</div><div class="v" style="font-size:13px">${v}</div></div>`;
+  return `
+    <div class="pv-sec" style="margin-top:14px">
+      <div class="pv-sec-h"><span class="live-dot"></span>Live colony</div>
+      <div class="statrow" style="margin-top:8px">
+        <div class="stat"><div class="k">Population</div><div class="v">${c.population}</div></div>
+        <div class="stat"><div class="k">Pool</div><div class="v">${c.poolSize}</div></div>
+        <div class="stat"><div class="k">Children</div><div class="v">${c.children}</div></div>
+      </div>
+      <div class="metagrid" style="margin-top:8px">
+        ${cell("Tier", tier)}
+        ${cell("Firms · nobles", `${c.firms} · ${c.nobles}`)}
+        ${cell("Food price", (c.necessityPrice || 0).toFixed(2))}
+        ${cell("Plots worked", `${c.plotCount} / ${c.maxPlots}`)}
+        ${cell("Tax · bank", (c.bankProfitTax || 0).toFixed(3))}
+        ${cell("Tax · noble", (c.nobleIncomeTax || 0).toFixed(3))}
+      </div>
+    </div>`;
 }
 // The city info panel — shown in the rail when a city (an Anbennar city_terrain province,
 // e.g. Dhenijansar) is selected, in place of the generic province detail. Reuses the same
@@ -454,6 +483,7 @@ function cityRail(p) {
         <div class="metacell"><div class="k">Coordinates</div><div class="v" style="font-size:13px">${coord}</div></div>
       </div>
       ${politicsBlock(p)}
+      ${colonyBlock(p)}
       <p class="footnote">A city of Anbennar — its EU4 development (ADM + DIP + MIL) concentrated in the province's built-up urban core. Zoom in to the plot to see the city itself.</p>
     </div>`;
   document.getElementById("backProv").onclick = () => { S.selectedProv = null; showRail(false); renderRail(); draw(); };
@@ -464,21 +494,12 @@ function renderRail(){
   // a province-focus change (select/deselect) — let the Religion advisor segment retrack the focused
   // province's faith (advisors.mjs listens; refreshDynamicSegments). Cheap: it only repaints a label.
   window.dispatchEvent(new CustomEvent("civstudio:focus"));
-  syncLiveRail();                                   // keep the in-rail live HUD in sync (Zeitgeist)
+  showRail(!!S.selectedProv);
   if (S.selectedProv) {
     if (S.selectedProv.city) { cityRail(S.selectedProv); return; }
     provinceRail(S.selectedProv); return;
   }
   rail.innerHTML = worldRail();
-}
-// the live-session HUD lives in the rail (like province detail): show it when the Zeitgeist/live
-// overlay is active and no province is selected, and open the rail for it. A province selection takes
-// the rail over (styles.css :has() hides #rail while the HUD shows, so this only toggles the HUD).
-function syncLiveRail(){
-  const lh = document.getElementById("liveHud");
-  const showHud = S.overlay === "live" && !S.selectedProv;
-  if (lh) lh.hidden = !showHud;
-  showRail(showHud || !!S.selectedProv);
 }
 // ---- theme toggle (button retired; wire only if present — the site defaults to dark) ----
 const themeBtn=document.getElementById("themeBtn");
@@ -625,6 +646,14 @@ export { renderRail, resetView, toggleFullscreen, togglePlay, pausePlayback, clo
          setOverlay, setPlane, updateSearchContext, showRail, selectProvince };
 
 export function boot() {
+  // Keep a selected province's inline live-colony block current: it reads the snapshot, so it has to
+  // repaint when a new one lands or it freezes at whatever was true when you clicked. Only for the
+  // colony's own province — every other selection renders no colony block, so re-rendering its rail
+  // on every tick would be pure churn.
+  window.addEventListener("civstudio:snapshot", () => {
+    const c = liveColony();
+    if (c && S.selectedProv && c.provinceId === S.selectedProv.id) renderRail();
+  });
   // Refit the canvas whenever the stage's box changes — window resize, fullscreen, AND the panel
   // opening/closing or being drag-resized (all of which shrink/grow the stage). One observer covers
   // every case, including live tracking during the width transition. (Replaces the window resize

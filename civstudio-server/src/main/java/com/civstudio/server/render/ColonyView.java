@@ -47,6 +47,10 @@ import java.util.List;
  *                       as the raw enum name — the web Title Cases it for the Settlement-band caption
  *                       (see {@code docs/zoom-bands.md} §Band caption). {@code null} for a colony with
  *                       no tier set
+ * @param provinceId     the province the colony sits in, or 0 when it has none. The view already
+ *                       ships {@code latitude}/{@code longitude}, but a client cannot turn those back
+ *                       into a province without inverting the map projection — so the web rail reads
+ *                       this to show a selected province's live colony inline
  */
 public record ColonyView(String name, boolean alive, String date, int population,
 		int children, int nobles, int firms, int poolSize, double cpi,
@@ -54,5 +58,5 @@ public record ColonyView(String name, boolean alive, String date, int population
 		double latitude, double longitude, double bankProfitTax, double nobleIncomeTax,
 		List<AdvisorView> advisors, List<String> knownTechs, int startingDistricts,
 		String culture, List<DistrictView> districts,
-		String researchingTech, double researchProgress, String tier) {
+		String researchingTech, double researchProgress, String tier, int provinceId) {
 }

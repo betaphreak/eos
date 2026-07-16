@@ -143,12 +143,16 @@ public final class Snapshots {
 		// docs/district-buildout.md Phase D3.
 		String culture = c.getProvince() == null ? null : c.getProvince().culture();
 		List<DistrictView> districts = districtViews(c);
+		// the province the colony sits in. The view already ships lat/lon, but a client cannot turn
+		// those back into a province without inverting the map projection — so a rail that wants to
+		// show "this province holds the live colony" needs the id said outright.
+		int provinceId = c.getProvince() == null ? 0 : c.getProvince().id();
 		return new ColonyView(c.getName(), c.isAlive(), date.toString(), population,
 				children, nobles, firms, pool, c.getInflation(), necessity, enjoyment,
 				c.getPlotCount(), c.getMaxPlots(), c.getLatitude(), c.getLongitude(),
 				bankProfitTax, nobleIncomeTax, advisorViews(c), knownTechs,
 				c.getStartingDistrictCount(), culture, districts, researchingTech, researchProgress,
-				c.getTier() == null ? null : c.getTier().name());
+				c.getTier() == null ? null : c.getTier().name(), provinceId);
 	}
 
 	// project the colony's district plots that carry buildings — the placed-building state

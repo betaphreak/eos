@@ -282,11 +282,9 @@ function select(type) {
 }
 
 // open the shared right rail with #rail content (the tree is a map-mode, so it reuses the
-// province/advisor rail). Hide the live HUD first so our content isn't masked (styles.css
-// hides #rail while #liveHud shows).
+// province/advisor rail). The live HUD that used to have to be hidden here is gone — every mode now
+// puts its content in #rail, so there is nothing left to mask it.
 function openRail() {
-  const lh = document.getElementById("liveHud");
-  if (lh) lh.hidden = true;
   showRail(true);
   return railEl();
 }

@@ -101,6 +101,30 @@
     <table><thead><tr><th>ID</th><th>Owner</th><th>State</th><th>Tick</th><th>Control</th></tr></thead>
       <tbody id="sessionRows"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table>
   </div>
+
+  <!-- The ruler's tax levers. These lived in the spectator page's live HUD, which put a write control
+       in a read-only view and showed it to everyone (the POST was owner/admin-gated, so for a
+       spectator it was a button that could only fail). They belong here, with the other writes,
+       behind the gate that already applies. -->
+  <div class="panel">
+    <h2>Taxation</h2>
+    <div class="stats" id="taxStats"></div>
+    <div class="actions" style="margin-top:14px">
+      <label>Session
+        <select id="taxSession"></select>
+      </label>
+      <label>Bank profit
+        <input id="taxBank" type="number" min="0" max="1" step="0.01"
+          title="Share of bank profits the ruler taxes each period (0..1)">
+      </label>
+      <label>Noble income
+        <input id="taxNoble" type="number" min="0" max="1" step="0.01"
+          title="Share of noble income the ruler taxes each period (0..1)">
+      </label>
+      <button id="btnTax" title="Submit both rates as tick-stamped commands to the session's command log">Apply rates</button>
+    </div>
+    <p class="muted" style="margin:12px 0 0; font-size:12px;">Rates are submitted as <code>setTaxRate</code> commands and land on a tick boundary — the session's command log is its savegame, so a change here is replayed on restore. The inputs prefill from the selected session's current rates.</p>
+  </div>
 </main>
 
 <div id="toast"></div>
@@ -114,8 +138,9 @@ function fmtDur(ms) { const s = Math.floor(ms/1000), h = Math.floor(s/3600), m =
   return h ? `${h}h ${m}m` : `${m}m`; }
 function stat(k, v, gold) { return `<div class="stat"><div class="k">${k}</div><div class="v${gold?' g':''}">${v}</div></div>`; }
 
-async function api(method, path) {
-  const r = await fetch(path, { method, headers: { "Content-Type": "application/json" }, credentials: "include" });
+async function api(method, path, body) {
+  const r = await fetch(path, { method, headers: { "Content-Type": "application/json" },
+    credentials: "include", body: body ? JSON.stringify(body) : undefined });
   if (r.status === 401 || r.status === 403) { showGate(r.status); throw new Error("forbidden"); }
   return r.json().catch(() => ({}));
 }
@@ -153,6 +178,7 @@ async function refresh() {
 
   const sess = await api("GET", "/api/sessions").catch(() => []);
   const rows = (Array.isArray(sess) ? sess : sess.sessions || []);
+  renderTaxPanel(rows);
   $("#sessionRows").innerHTML = rows.length ? rows.map(x => `
     <tr><td>${x.id}</td><td>${x.owner || '<span class="muted">—</span>'}</td>
       <td><span class="badge ${x.state}">${x.state}</span></td><td>${x.tick ?? '—'}</td>
@@ -177,6 +203,58 @@ $("#regionFilter").addEventListener("input", renderRegionMap);
 
 window.ctrl = (id, action) => act("POST", `/api/sessions/${id}/control`,
   () => `Session ${id}: ${action}`);
+
+// ---- taxation (moved off the spectator page's live HUD) --------------------------------------
+// Keep the session picker's selection across refreshes: refresh() runs on a timer and on every
+// action, and silently resetting the dropdown under an operator who is mid-edit would be its own bug.
+function renderTaxPanel(rows) {
+  const sel = $("#taxSession"), prev = sel.value;
+  sel.innerHTML = rows.length
+    ? rows.map(x => `<option value="${x.id}">${x.id}</option>`).join("")
+    : '<option value="">No live sessions</option>';
+  if (prev && rows.some(x => x.id === prev)) sel.value = prev;
+  loadTaxRates();
+}
+
+// Prefill from the session's actual rates rather than leaving the inputs blank — an operator should
+// see what a lever is at before moving it. The snapshot is 204 until the session emits its first
+// frame, and carries no colony while it is founding, so both cases read as "—" rather than "0.000".
+let _taxLoadedFor = null;
+async function loadTaxRates() {
+  const id = $("#taxSession").value;
+  if (!id) { $("#taxStats").innerHTML = stat("Bank profit", "—") + stat("Noble income", "—"); return; }
+  const snap = await api("GET", `/api/sessions/${id}/snapshot`).catch(() => null);
+  const c = snap && snap.colonies && snap.colonies[0];
+  if (!c) { $("#taxStats").innerHTML = stat("Bank profit", "—") + stat("Noble income", "—"); return; }
+  $("#taxStats").innerHTML =
+    stat("Colony", c.name || "—") +
+    stat("Bank profit", (c.bankProfitTax || 0).toFixed(3), true) +
+    stat("Noble income", (c.nobleIncomeTax || 0).toFixed(3), true);
+  // prefill ONCE per session: re-stamping every refresh would overwrite what an operator is typing
+  if (_taxLoadedFor !== id) {
+    $("#taxBank").value = (c.bankProfitTax || 0).toFixed(2);
+    $("#taxNoble").value = (c.nobleIncomeTax || 0).toFixed(2);
+    _taxLoadedFor = id;
+  }
+}
+$("#taxSession").addEventListener("change", () => { _taxLoadedFor = null; loadTaxRates(); });
+
+$("#btnTax").onclick = async () => {
+  const id = $("#taxSession").value;
+  if (!id) { toast("No session selected"); return; }
+  const bank = parseFloat($("#taxBank").value), noble = parseFloat($("#taxNoble").value);
+  if (!Number.isFinite(bank) && !Number.isFinite(noble)) { toast("Nothing to apply"); return; }
+  try {
+    const acks = [];
+    if (Number.isFinite(bank))
+      acks.push(await api("POST", `/api/sessions/${id}/commands`, { type: "setTaxRate", lever: "bankProfit", rate: bank }));
+    if (Number.isFinite(noble))
+      acks.push(await api("POST", `/api/sessions/${id}/commands`, { type: "setTaxRate", lever: "nobleIncome", rate: noble }));
+    const ticks = acks.filter(a => a && a.tick != null).map(a => a.tick);
+    toast(ticks.length ? `Applied at tick ${Math.max(...ticks)}` : "Submitted");
+    refresh();
+  } catch (e) { if (e.message !== "forbidden") toast("Error: " + e.message); }
+};
 
 $("#btnDrop").onclick = () => { if (confirm("Drop the entire plot cache? Every province will regenerate on demand."))
   act("POST", "/api/admin/plots/clear", j => `Dropped ${j.cleared} cached grids`); };
