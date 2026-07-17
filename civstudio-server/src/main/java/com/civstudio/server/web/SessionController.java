@@ -101,6 +101,7 @@ public class SessionController {
 			row.put("date", hs.date().toString());     // the in-game date a lobby row shows
 			row.put("watching", hs.spectators());      // 👁 on the row
 			row.put("mine", me != null && me.equals(hs.owner()));
+			row.put("realm", realmOf(hs));             // which realm's map to open (docs/realms.md §A session carries its realm)
 			// What the row is CALLED. A run is named by its colony for now — naming is deferred to
 			// countries (docs/spectator-lobby.md §Naming), and this is the one field that changes when
 			// they land. Absent for a Timeline (it is the world's, not a colony's) and for a run with
@@ -133,6 +134,15 @@ public class SessionController {
 		if (hs.isTimeline())
 			return "timeline";
 		return hs.owner() == null ? "demo" : "single-player";
+	}
+
+	// The realm a session lives in — the realm of its anchor province (the colony founds there, so it
+	// is the session's realm, even for a Timeline that is still born empty). Opening the session switches
+	// the client's map to this realm; it defaults to Halcann when the anchor has no realm.
+	private static String realmOf(HostedSession hs) {
+		com.civstudio.geo.Province p = hs.session().getWorldMap().province(hs.spec().provinceId());
+		com.civstudio.geo.Realm r = p != null ? p.realm() : com.civstudio.geo.Realm.NONE;
+		return r == com.civstudio.geo.Realm.NONE ? "halcann" : r.rawKey();
 	}
 
 	@PostMapping

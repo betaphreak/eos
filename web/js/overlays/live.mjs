@@ -33,7 +33,10 @@ let sid = null;         // the live session id
 // answer, and what this has always done. Seeded from window.__spectate because the lobby opens
 // during the LOAD, before this module exists: a choice made there is waiting for us by the time we
 // run. See docs/spectator-lobby.md Phase 5.
-let preferred = window.__spectate || null;
+// window.__spectate is set by the lobby before this module exists; a cross-realm spectate additionally
+// stashes it in sessionStorage so the intent survives the realm-switch reload (docs/realms.md §A session
+// carries its realm). Read + clear that here.
+let preferred = window.__spectate || (() => { try { const s = sessionStorage.getItem("cs.spectate"); if (s) sessionStorage.removeItem("cs.spectate"); return s; } catch { return null; } })();
 let snap = null;        // the latest snapshot
 // guards the log delta against re-ingestion: a reconnect is handed the cached frame again, and its
 // lines have already been posted (see snapshot-dedupe.mjs)

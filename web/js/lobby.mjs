@@ -182,6 +182,16 @@ function applyBtn(btn, face) {
 // the overlay toggle's own affordance (click it rather than reach into its state); the second is an
 // event live.mjs listens for, so neither module imports the other.
 function spectate(row) {
+  // a session carries its realm (docs/realms.md §A session carries its realm) — if it lives in another
+  // realm, cross to it first, resuming the watch after the reload (the sessionStorage intents survive it).
+  const active = new URLSearchParams(location.search).get("realm") || "halcann";
+  if (row.realm && row.realm !== active) {
+    try { sessionStorage.setItem("cs.spectate", row.id); sessionStorage.setItem("cs.realmSwitch", "1"); } catch { /* private mode */ }
+    const u = new URL(location.href);
+    u.searchParams.set("realm", row.realm); u.searchParams.delete("p"); u.searchParams.delete("z");
+    location.assign(u.toString());
+    return;
+  }
   closeLobby();
   // The lobby can be open BEFORE the app exists — during the load, which is the point of it — so the
   // choice must survive until live.mjs is there to hear it. Stash it on window (which live.mjs reads
