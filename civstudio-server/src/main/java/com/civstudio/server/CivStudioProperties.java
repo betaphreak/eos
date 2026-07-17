@@ -196,24 +196,22 @@ public class CivStudioProperties {
 			return frontend;
 		}
 
-		/** The auto-launched node frontend server + browser (see {@link Dev}). */
+		/** The auto-launched node frontend server (see {@link Dev}). */
 		public static class Frontend {
-			/** Master switch — launch the node frontend + open the browser when the server is ready. */
+			/** Master switch — launch the node frontend alongside the server. */
 			private boolean enabled = true;
 			/** Port the node static server listens on (the page origin). */
 			private int webPort = 3000;
-			/** Whether to open the default browser at the site once the frontend is up. */
-			private boolean openBrowser = true;
 			/** The node executable (on PATH, or an absolute path). */
 			private String node = "node";
 			/**
-			 * The path + query opened in the browser, appended to the frontend origin
+			 * The path + query the frontend URL is logged with, appended to the frontend origin
 			 * ({@code http://localhost:<webPort>}). Placeholders are substituted: {@code {live}} →
 			 * {@code http://localhost:<serverPort>} (this server, for {@code ?live=}), {@code {server}}
 			 * → the server port, {@code {webPort}} → the frontend port. Defaults to the plain live
 			 * view. For test use, set a webverify-style deep link to land on a province/zoom/overlay,
 			 * e.g. {@code --civstudio.dev.frontend.open-path=/?p=4411&z=150&live={live}#none} (the same
-			 * URL shape {@code tools/webverify/*.mjs} build).
+			 * URL shape {@code tools/webverify/*.mjs} build). Nothing opens it for you — it is printed.
 			 */
 			private String openPath = "/?live={live}";
 
@@ -231,14 +229,6 @@ public class CivStudioProperties {
 
 			public void setWebPort(int webPort) {
 				this.webPort = webPort;
-			}
-
-			public boolean isOpenBrowser() {
-				return openBrowser;
-			}
-
-			public void setOpenBrowser(boolean openBrowser) {
-				this.openBrowser = openBrowser;
 			}
 
 			public String getNode() {

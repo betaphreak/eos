@@ -6,8 +6,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -26,8 +24,8 @@ import jakarta.annotation.PreDestroy;
 /**
  * Local-development convenience: once the server is <b>fully started</b> (the context is ready and
  * {@link com.civstudio.server.DemoSessionSeeder} has founded the demo session), serve the {@code
- * web/} site with a small zero-dependency node static server ({@code web/dev-server.mjs}) and open
- * it in the default browser, pointed at this server for {@code window.BUNDLE} (?live=…). This turns
+ * web/} site with a small zero-dependency node static server ({@code web/dev-server.mjs}), pointed at
+ * this server for {@code window.BUNDLE} (?live=…), and <b>log its URL</b>. This turns
  * a plain {@code mvn spring-boot:run} into a one-command "run the whole thing locally" — the goal
  * being to debug the real map site against a live local server with no manual `npx serve` step.
  *
@@ -47,7 +45,7 @@ public class DevFrontendLauncher {
 
 	private static final Logger log = LoggerFactory.getLogger(DevFrontendLauncher.class);
 
-	/** Emitted by {@code dev-server.mjs} on its listen callback — we open the browser only after it. */
+	/** Emitted by {@code dev-server.mjs} on its listen callback — we log the URL only once it answers. */
 	private static final String READY_MARKER = "DEV-SERVER-READY";
 
 	private final CivStudioProperties.Dev.Frontend cfg;
@@ -102,21 +100,21 @@ public class DevFrontendLauncher {
 		pump.setDaemon(true);
 		pump.start();
 
-		// Open the browser once node reports it is listening (fall back after a short timeout so a
-		// missed marker never leaves the site unopened).
+		// Wait for node to report it is listening, so the URL we print is one that actually answers
+		// (fall back after a short timeout rather than hanging on a missed marker).
 		try {
 			if (!ready.await(10, TimeUnit.SECONDS))
-				log.warn("dev frontend: node did not report ready within 10s — opening anyway");
+				log.warn("dev frontend: node did not report ready within 10s");
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
 		if (!p.isAlive()) {
-			log.warn("dev frontend: node exited before it was ready — not opening the browser");
+			log.warn("dev frontend: node exited before it was ready");
 			return;
 		}
+		// Printed, not opened: starting a server should not seize the screen. Open it yourself, or
+		// leave a tab on it across restarts — which is the usual case anyway.
 		log.info("dev frontend live: {}", url);
-		if (cfg.isOpenBrowser())
-			openBrowser(url);
 	}
 
 	// The path+query to open, from civstudio.dev.frontend.open-path, with {live}/{server}/{webPort}
@@ -145,21 +143,6 @@ public class DevFrontendLauncher {
 			// stream closed on process exit
 		} finally {
 			ready.countDown();
-		}
-	}
-
-	private static void openBrowser(String url) {
-		String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
-		List<String> cmd = os.contains("win")
-				? List.of("cmd", "/c", "start", "", url)
-				: os.contains("mac")
-						? List.of("open", url)
-						: List.of("xdg-open", url);
-		try {
-			new ProcessBuilder(cmd).start();
-		} catch (IOException e) {
-			log.warn("dev frontend: could not open the browser ({}). Open it yourself: {}",
-					e.getMessage(), url);
 		}
 	}
 

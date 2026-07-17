@@ -2,7 +2,7 @@
 <#
 .SYNOPSIS
     Launch the full CivStudio stack locally, offline — the Spring Boot server plus the web/ site
-    (served by a zero-dependency node server) opened in the default browser.
+    (served by a zero-dependency node server), whose URL is logged for you to open.
 
 .DESCRIPTION
     Runs entirely with no internet connection:
@@ -18,7 +18,7 @@
 
 .EXAMPLE
     pwsh tools/dev-local.ps1
-    pwsh tools/dev-local.ps1 -WebPort 4000 -NoBrowser
+    pwsh tools/dev-local.ps1 -WebPort 4000
     pwsh tools/dev-local.ps1 -SkipEngineBuild        # engine unchanged since last install
     pwsh tools/dev-local.ps1 -Online                 # allow Maven to reach the network
     # open a webverify-style deep link (province 4411 @ zoom 150), same URL shape tools/webverify builds:
@@ -28,10 +28,9 @@
 param(
     [int]    $WebPort         = 3000,
     [int]    $ServerPort      = 8080,
-    # Path + query opened in the browser, appended to http://localhost:<WebPort>. Placeholders:
+    # Path + query appended to http://localhost:<WebPort> in the logged URL. Placeholders:
     # {live} -> http://localhost:<ServerPort>, {server} -> port, {webPort} -> port. Blank = default.
     [string] $OpenPath        = '',
-    [switch] $NoBrowser,
     [switch] $SkipEngineBuild,
     [switch] $Online
 )
@@ -73,7 +72,6 @@ $appArgs = @(
     "--server.port=$ServerPort",
     "--civstudio.dev.frontend.web-port=$WebPort"
 )
-if ($NoBrowser) { $appArgs += '--civstudio.dev.frontend.open-browser=false' }
 if ($OpenPath)  { $appArgs += "--civstudio.dev.frontend.open-path=$OpenPath" }
 $runArgs = @(
     '-pl', 'civstudio-server', 'spring-boot:run',

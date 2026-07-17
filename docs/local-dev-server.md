@@ -15,9 +15,9 @@ pwsh tools/dev-local.ps1
 
 That's it. It installs a fresh engine jar, starts the server offline, and — once the server is
 **fully started** — serves `web/` and opens `http://localhost:3000/?live=http://localhost:8080` in
-the default browser.
+the URL logged for you to open (nothing opens itself — starting a server should not seize the screen).
 
-Equivalently, the plain Maven command does the frontend+browser part on its own (the engine-jar
+Equivalently, the plain Maven command does the frontend part on its own (the engine-jar
 refresh and the offline flag are what the script adds):
 
 ```powershell
@@ -28,7 +28,6 @@ Useful flags:
 
 ```powershell
 pwsh tools/dev-local.ps1 -WebPort 4000          # serve the site on :4000
-pwsh tools/dev-local.ps1 -NoBrowser             # start the frontend but don't open a browser
 pwsh tools/dev-local.ps1 -SkipEngineBuild       # engine unchanged since last install (faster)
 pwsh tools/dev-local.ps1 -Online                # let Maven reach the network
 ```
@@ -43,12 +42,12 @@ is torn down on shutdown.
   `DEV-SERVER-READY …` on its listen callback.
 - **`DevFrontendLauncher`** (`server.dev`, `@Profile("dev")`) — on `ApplicationReadyEvent` (i.e.
   after the context is up **and** `DemoSessionSeeder` has founded the demo) it spawns
-  `node web/dev-server.mjs`, waits for the ready line, then opens the browser at
+  `node web/dev-server.mjs`, waits for the ready line, then logs the site URL at
   `…/?live=http://localhost:<server port>`. The node process is destroyed on shutdown.
 - **The `dev` profile** is activated for `spring-boot:run` only, via the `spring-boot-maven-plugin`
   `<profiles>` config in `civstudio-server/pom.xml` — so it never ships in the packaged production
   jar. Per-run overrides: `-Dcivstudio.dev.frontend.enabled=false`,
-  `-Dcivstudio.dev.frontend.web-port=…`, `-Dcivstudio.dev.frontend.open-browser=false`.
+  `-Dcivstudio.dev.frontend.web-port=…`.
 
 ## Auto-restart on code change (DevTools)
 
