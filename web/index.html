@@ -6,7 +6,10 @@
        (window.name is set by auth.mjs's window.open). Keeps the main page from navigating. -->
   <script>if (window.name === "civstudio-login" && window.opener) { try { window.opener.postMessage("civstudio-auth", location.origin); } catch (e) {} window.close(); }</script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CivStudio · Anbennar</title>
+  <title>CivStudio</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" href="favicon.svg">
+  <link rel="apple-touch-icon" href="favicon.svg">
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="stylesheet" href="styles.css">
   <style>
@@ -177,7 +180,7 @@
       <canvas id="map"></canvas>
       <!-- the wordmark, moved off the top bar (§ space-saving) into a faint, unobtrusive watermark over
            the map; still clickable (back to server selection · reset to the world view) -->
-      <span class="brand brand-watermark" id="brand" role="button" tabindex="0" data-tip="Back to the lobby · reset to the world view" aria-label="Back to the lobby"><span class="brand-a">CivStudio</span><span class="brand-sep">:</span> <span class="brand-b">Anbennar</span></span>
+      <span class="brand brand-watermark" id="brand" role="button" tabindex="0" data-tip="Back to the lobby" aria-label="Back to the lobby"><span class="brand-a">CivStudio</span></span>
       <div class="regime-pulse" id="regimePulse" aria-hidden="true"></div>
 
       <div class="legend" id="polLegend" aria-label="Political legend" hidden></div>
@@ -540,6 +543,16 @@
         })();
       });
     }
+    // Warm the OTHER realms' background webps on idle so switching realm (a page reload) paints from
+    // the HTTP cache instead of re-fetching the art (docs/realms.md §The background is baked). The
+    // active realm's own background loads normally via MAP.src; this is best-effort and never fatal.
+    function preloadRealmBackgrounds(b) {
+      if (!b || !b.realms) return;
+      var srcs = [];
+      for (var k in b.realms) { var m = b.realms[k] && b.realms[k].map; if (m && m.src) srcs.push(m.src); }
+      var run = function () { srcs.forEach(function (u) { try { var im = new Image(); im.src = u; } catch (e) {} }); };
+      if (window.requestIdleCallback) window.requestIdleCallback(run, { timeout: 4000 }); else setTimeout(run, 1500);
+    }
     function prefetch(base) {
       return fetch(base + "/api/resources", { credentials: "omit" })
         .then(function (r) { return r.ok ? r.json() : null; })
@@ -609,7 +622,7 @@
         })
         .then(function () { openLobbyDuringLoad(s.base); return fetch(s.base + "/api/bundle", { credentials: "omit" }); })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-        .then(function (b) { b.live = { base: s.base }; window.BUNDLE = b; remember(s); return prefetch(s.base); })
+        .then(function (b) { b.live = { base: s.base }; window.BUNDLE = b; preloadRealmBackgrounds(b); remember(s); return prefetch(s.base); })
         .then(function () { return import("./app.js"); })
         .catch(function (e) {
           connecting = false; s.status = "down";

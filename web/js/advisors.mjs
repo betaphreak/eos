@@ -5,7 +5,7 @@
 // S.techOpen states the LAYERS registry already gates on (layers.mjs) — the render pipeline is
 // unchanged; this only groups the controls and drives the existing panel.mjs handlers.
 // See docs/privy-council.md.
-import { S, BUNDLE, RELIGIONS, COUNTRIES } from "./core.mjs";
+import { S, BUNDLE, RELIGIONS, COUNTRIES, ACTIVE_REALM, switchRealm } from "./core.mjs";
 import { setOverlay, setPlane, updateSearchContext } from "./panel.mjs";
 import { viewportFocus } from "./bandcaption.mjs";
 import { prettyKey } from "./plotlabel.mjs";
@@ -20,8 +20,12 @@ import { advisorPortrait, initPortraits } from "./portraits.mjs";
 // (ProvincePlotStore.MAP_VERSION, shipped in the bundle as mapVersion) — e.g. "Halann v8" — so the
 // generation of the imported world is visible at a glance where the old "Globe" label sat; its
 // tooltip (`label` → data-tip) carries the world lore.
-const HALANN = "Halann v" + (BUNDLE?.mapVersion ?? "?");
-const HALANN_TIP = "Halann is the center of the Material Plane, which is the center of all of the Planes of Existence.";
+// The globe segment names the active REALM (docs/realms.md §UI) — e.g. "Halcann v9" — and is now a
+// dropdown (Lobby + the realms). When the server ships no realms block it falls back to the planet name
+// "Halann" over the whole-world map. The generation (mapVersion) rides after it as before.
+const REALM_NAME = (ACTIVE_REALM && BUNDLE?.geoNames?.realm?.[ACTIVE_REALM]) || "Halann";
+const HALANN = REALM_NAME + " v" + (BUNDLE?.mapVersion ?? "?");
+const HALANN_TIP = "Switch realm — you are looking at " + REALM_NAME + ", on the planet Halann.";
 
 // The advisor table — the single extensible source (a future advisor is one more row). `future`
 // advisors render as greyed placeholders with their reserved Civ4 F-key; `role` names the court
@@ -94,10 +98,58 @@ function buildSelector() {
     } else {
       b.innerHTML = `<span class="adv-ico">${a.icon || ""}</span>${a.short}`;
     }
-    b.addEventListener("click", () => setAdvisor(a.id));
+    if (a.id === "globe") wireGlobeDropdown(b);   // the masthead realm selector (Lobby + realms)
+    else b.addEventListener("click", () => setAdvisor(a.id));
     selectorEl.appendChild(b);
   }
   refreshDynamicSegments();   // paint the live-labelled segments (Technology / Religion) over their defaults
+}
+
+// The globe segment doubles as the realm dropdown (docs/realms.md §UI): clicking it opens a menu of
+// Lobby + the realms, and still selects the globe advisor so the plane sub-bar shows (Halcann only).
+let _realmMenu = null;
+function realmMenu() {
+  if (_realmMenu) return _realmMenu;
+  const menu = document.createElement("div");
+  menu.className = "realm-menu";
+  menu.hidden = true;
+  const lobby = document.createElement("button");
+  lobby.className = "rm-lobby";
+  lobby.textContent = "Lobby";
+  lobby.onclick = () => { menu.hidden = true; openLobby(); };
+  menu.appendChild(lobby);
+  const sep = document.createElement("div"); sep.className = "rm-sep"; menu.appendChild(sep);
+  const ver = " v" + (BUNDLE?.mapVersion ?? "?");
+  for (const key of (BUNDLE?.realms ? Object.keys(BUNDLE.realms) : [])) {
+    const item = document.createElement("button");
+    const name = (BUNDLE.geoNames?.realm?.[key]) || key;
+    item.innerHTML = `${name}<span class="rm-ver">${ver}</span>`;
+    if (key === ACTIVE_REALM) item.classList.add("rm-current");
+    item.onclick = () => { menu.hidden = true; if (key !== ACTIVE_REALM) switchRealm(key); };  // dropdown → fit the realm
+    menu.appendChild(item);
+  }
+  document.body.appendChild(menu);
+  _realmMenu = menu;
+  return menu;
+}
+function openLobby() {
+  if (window.__lobby && window.__lobby.open) window.__lobby.open();
+  else if (window.__picker && window.__picker.open) window.__picker.open();
+}
+function wireGlobeDropdown(btn) {
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    const menu = realmMenu(), open = menu.hidden;
+    menu.hidden = true;   // (re)position then reveal, so it tracks the button
+    if (open) {
+      const r = btn.getBoundingClientRect();
+      menu.style.left = Math.round(r.left) + "px";
+      menu.style.top = Math.round(r.bottom + 4) + "px";
+      menu.hidden = false;
+    }
+    setAdvisor("globe");   // still reveal the plane sub-bar (Halcann)
+  });
+  document.addEventListener("click", () => { if (_realmMenu) _realmMenu.hidden = true; });
 }
 
 function paintSelector() {

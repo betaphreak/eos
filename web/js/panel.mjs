@@ -7,7 +7,7 @@
 //
 // It still re-exports their entry points, because shortcuts.mjs, techtree.mjs, plotfetch.mjs and
 // advisor-detail.mjs already import them from here — the split cost no caller a change.
-import { P, VIEW, stage, px, provGeo, isPolitical, S } from "./core.mjs";
+import { P, VIEW, stage, px, provGeo, isPolitical, S, ACTIVE_REALM } from "./core.mjs";
 import { draw } from "./repaint.mjs";
 import { resize, focusProvinceFit, applyHash } from "./main.mjs";
 import { renderPolLegend, focusEntity, coverage, overlayEntity, ensurePolitical, politicalReady } from "./overlays/political.mjs";
@@ -243,6 +243,13 @@ export function boot() {
       elm.addEventListener(t, e => e.stopPropagation(), { passive: true })));
   setPov(S.pov);              // paints the camera-POV toggle (default: God)
   setPlane(S.plane);          // paints the plane toggle
+  // Only Halcann has an underworld (the Serpentspine); hide the plane toggle in the other realms and
+  // pin the surface (docs/realms.md §UI / §Realm is not z — Aelantir/Hinuilands have no z=-1 plane).
+  if (ACTIVE_REALM && ACTIVE_REALM !== "halcann") {
+    const pt = document.getElementById("planeToggle");
+    if (pt) pt.style.display = "none";
+    if (S.plane !== "overworld") setPlane("overworld");
+  }
   setOverlay(S.overlay);      // paints the overlay chrome/rail (default: none → plain Overworld)
   // apply the ?p=/#p= deep link AFTER first layout — focusProvince needs a sized VIEW, so calling
   // it inline at boot (before the stage has laid out) silently no-ops

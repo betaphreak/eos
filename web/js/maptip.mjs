@@ -6,7 +6,7 @@
 // Split out of panel.mjs (see clock.mjs's header). The seam is "what is under the cursor" —
 // the complement of input.mjs's "where is the camera". It reaches OUT to the rail (a click
 // selects, and the rail is what a selection renders) but nothing reaches back in.
-import { stage, polOf, isPolitical, TRADE_GOODS, S } from "./core.mjs";
+import { stage, polOf, isPolitical, TRADE_GOODS, S, switchRealm, cam } from "./core.mjs";
 import { draw } from "./repaint.mjs";
 import { zoomAt } from "./main.mjs";
 import { provinceAt, plotAt } from "./hittest.mjs";
@@ -80,7 +80,10 @@ stage.addEventListener("click", e=>{
   if(e.detail>1) return;                      // 2nd click of a double-click: dblclick zooms — don't
                                               // toggle the just-selected province back off (the flash)
   const r=stage.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
-  // the click selects the province under the cursor (toggles off if re-clicked)
+  // a realm arrow takes the click: cross to the other realm, landing on the far portal at this zoom
+  const mk = markerAt(mx, my);
+  if (mk && mk.realm) { switchRealm(mk.realm, { province: mk.prov, zoom: cam.k }); return; }
+  // else the click selects the province under the cursor (toggles off if re-clicked)
   const prov = provinceAt(mx, my);
   if (prov) selectProvince(S.selectedProv===prov ? null : prov);
 });

@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, centerOn, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_MAX, isPolitical, isUnderground, cssVar, S, ACTIVE_REALM, LABEL_FONT } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, centerOn, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_MAX, isPolitical, isUnderground, cssVar, S, ACTIVE_REALM, LABEL_FONT, switchRealm } from "./core.mjs";
 import { bandAlpha, kBand, band, bandName, regime, REGIME_INFO } from "./bands.mjs";
 import { drawPlots } from "./plots.mjs";                       // still used directly by drawCavernPlots
 import { scheduleLegendRefresh } from "./overlays/political.mjs";
@@ -413,7 +413,7 @@ function drawRealmArrows() {
     else if (pt.realm === ACTIVE_REALM && pf.realm && pf.realm !== ACTIVE_REALM) { near = pt; far = pf; }
     else continue;   // both in this realm (the 86 Deepwoods rows) — not a crossing
     let a = arrows.get(near.id);
-    if (!a) { a = { p: near, otherRealm: far.realm, fx: 0, fy: 0, n: 0 }; arrows.set(near.id, a); }
+    if (!a) { a = { p: near, otherRealm: far.realm, farId: far.id, fx: 0, fy: 0, n: 0 }; arrows.set(near.id, a); }
     a.fx += px(far.lon); a.fy += py(far.lat); a.n++;   // far endpoint projects off-crop → a direction
   }
   if (!arrows.size) return;
@@ -434,6 +434,11 @@ function drawRealmArrows() {
     const show = !placed.some(r => rect.x0 < r.x1 && rect.x1 > r.x0 && rect.y0 < r.y1 && rect.y1 > r.y0);
     if (show) placed.push(rect);
     drawRealmArrow(ox, oy, dx, dy, show ? label : null);
+    // a click target over the arrow's length — maptip.mjs turns a hit into switchRealm(otherRealm, far
+    // portal), so clicking the arrow crosses and lands on the far end (docs/realms.md §The fog... one
+    // switch-realm action). `realm`/`prov` mark it a realm arrow; `label` gives the hover affordance.
+    S.markers.push({ x: ox + dx * ARROW_LEN / 2, y: oy + dy * ARROW_LEN / 2, r: ARROW_LEN / 2 + 8,
+      label: `<b>Cross ⇄ ${realmNameOf(a.otherRealm)}</b>`, realm: a.otherRealm, prov: a.farId });
   }
   ctx.restore();
 }
@@ -506,6 +511,14 @@ function hasDeepLink() { return readDeepLink().p != null; }
 function applyHash() {
   const { p, z } = readDeepLink();
   if (p == null || Number.isNaN(p)) return;
+  // a deep link to another realm's province auto-switches the realm under it (docs/realms.md §Deep
+  // links need a realm) — otherwise focusProvince silently misses, since the province isn't in this
+  // realm's P. The reload lands here again with the realms matching, so it doesn't loop.
+  const dp = provAllById && provAllById.get(p);
+  if (dp && dp.realm && dp.realm !== ACTIVE_REALM && BUNDLE.realms && BUNDLE.realms[dp.realm]) {
+    switchRealm(dp.realm, { province: p, zoom: z });
+    return;
+  }
   if (z != null && !Number.isNaN(z)) focusProvince(p, z);   // explicit ?z= → that exact zoom
   else focusProvinceFit(p);                                 // no zoom given → frame the whole province, centred
 }

@@ -12,16 +12,17 @@ const SERVER_BASE = resolveBase();
 const apiUrl = path => SERVER_BASE + path;
 
 // ---- data prep ----
-// Realm selection (docs/realms.md): ?realm=<key> crops the view to a single realm — its baked
-// background + minimap (MAP) and its provinces (P). Absent or unknown → the whole world, the default
-// until Phase 5 turns realm selection into the masthead dropdown. Everything downstream reads MAP/P, so
-// the crop, projection window, minimap and province set all follow from this one pick.
-const ACTIVE_REALM = (typeof location !== "undefined"
+// Realm selection (docs/realms.md): the view is cropped to ONE realm — its baked background + minimap
+// (MAP) and its provinces (P). ?realm=<key> picks it; absent or unknown DEFAULTS to Halcann (the Old
+// World). If the server ships no realms block at all (pre-Phase-3), fall back to the whole-world map.
+// Everything downstream reads MAP/P, so the crop, projection, minimap and province set all follow here.
+const _realmParam = (typeof location !== "undefined"
   ? new URLSearchParams(location.search).get("realm") : "") || "";
+const ACTIVE_REALM = BUNDLE.realms ? (BUNDLE.realms[_realmParam] ? _realmParam : "halcann") : "";
 const _realmActive = !!(BUNDLE.realms && BUNDLE.realms[ACTIVE_REALM]);
-// When a realm is active, render ONLY its provinces: foreign land at the crop edge (outlines, dots,
-// labels) drops out, and cross-realm neighbour/adjacency lines suppress for free (their far endpoint is
-// no longer in P). Also the per-frame perf lever — the cull/hit-test loops shrink to the realm's share.
+// A realm renders ONLY its provinces: foreign land at the crop edge (outlines, dots, labels) drops out,
+// and cross-realm neighbour/adjacency lines suppress for free (their far endpoint is no longer in P).
+// Also the per-frame perf lever — the cull/hit-test loops shrink to the realm's share.
 const P = _realmActive ? BUNDLE.provinces.filter(p => p.realm === ACTIVE_REALM) : BUNDLE.provinces;
 const fmtInt = n => Math.round(n).toLocaleString("en-US");
 // projection: lon/lat -> the exact source pixel on terrain.bmp (the inverse of the
@@ -246,6 +247,30 @@ function centerOn(bx, by, k) {   // exported in the list at the foot of this mod
   S.baseVersion++;
 }
 
+/**
+ * Switch to another realm (docs/realms.md §The fog must not be mute — the one switch-realm action the
+ * dropdown, the on-map arrow and opening a session all fire). Navigates to the realm's URL: the crop,
+ * province set, background and minimap are all derived from ?realm= at load, so re-deriving them live
+ * would mean invalidating every per-province cache — a reload is simpler, and makes each realm a
+ * shareable URL and a back/forward history entry, which the doc wants anyway.
+ *
+ *  - no `dest`      → the dropdown: land on band WORLD, the whole realm (drops any ?p=/?z=).
+ *  - dest {province[, zoom]} → the arrow / a session: land on that province (the far portal, or the
+ *    colony) at the given zoom, so a crossing arrives at its far end.
+ */
+function switchRealm(realmKey, dest) {
+  const u = new URL(location.href);
+  if (realmKey) u.searchParams.set("realm", realmKey); else u.searchParams.delete("realm");
+  if (dest && dest.province != null) {
+    u.searchParams.set("p", dest.province);
+    if (dest.zoom != null) u.searchParams.set("z", Math.round(dest.zoom));
+  } else {
+    u.searchParams.delete("p");
+    u.searchParams.delete("z");
+  }
+  location.assign(u.toString());   // pushes history; the fresh load crops to the new realm
+}
+
 // ---- shared mutable state (was top-level lets; folded into one object so the modules
 // can read/write it across the ES-module boundary) ----
 export const S = {
@@ -280,4 +305,4 @@ export const S = {
   camBeforeFocus: null,
 };
 
-export { P, fmtInt, apiUrl, SERVER_BASE, centerOn, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, ROUTES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, BUNDLE, ACTIVE_REALM };
+export { P, fmtInt, apiUrl, SERVER_BASE, centerOn, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, ROUTES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, BUNDLE, ACTIVE_REALM, switchRealm };
