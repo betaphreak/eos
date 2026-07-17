@@ -54,6 +54,10 @@ class LobbyTest {
 	@AfterEach
 	void cleanup() {
 		host.stopAll();
+		// these classes share one cached Spring context, so they share the registry: forget this
+		// test's runs or its save slots are still spent when the next class runs
+		for (var r : host.registry().all())
+			host.forget(r.id());
 	}
 
 	@Test

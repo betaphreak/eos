@@ -40,6 +40,12 @@ public final class SessionHost {
 	// uncapped (~seconds for thousands of ticks), so hitting this means something is wrong, not slow.
 	private static final long RESTORE_TIMEOUT_MS = 600_000L;
 
+	/**
+	 * How many single-player runs one player may have going at once — their save slots (see
+	 * {@code docs/spectator-lobby.md} Phase 4).
+	 */
+	public static final int SAVE_SLOT_LIMIT = 5;
+
 	private final ConcurrentMap<String, HostedSession> sessions = new ConcurrentHashMap<>();
 
 	private final CommandStore commandStore;
@@ -107,6 +113,10 @@ public final class SessionHost {
 		SessionRecord recorded = registry.find(id).orElse(null);
 		if (recorded != null && recorded.isFinished())
 			throw new RunFinishedException(id, recorded.state(), recorded.endReason());
+		// a player's save slots are finite; a new one has to fit (re-founding a run you already have
+		// is not a new slot, hence the `recorded == null`)
+		if (recorded == null && isSaveSlot(spec, owner) && saveSlotsOf(owner).size() >= SAVE_SLOT_LIMIT)
+			throw new SaveSlotsFullException(owner);
 		return sessions.computeIfAbsent(id, k -> {
 			HostedSession hs = build(id, owner, spec);
 			// remember the run before it can end: the record is what survives this process, and a
@@ -119,6 +129,45 @@ public final class SessionHost {
 					state.name(), endReason, tick));
 			return hs;
 		});
+	}
+
+	/**
+	 * A single-player run: owned by a player, and not the shared ranked Timeline. The demo (unowned)
+	 * is nobody's slot, and a Timeline seat is a seat, not a save.
+	 */
+	private static boolean isSaveSlot(SessionSpec spec, String owner) {
+		return owner != null && !owner.isBlank() && !spec.isTimeline();
+	}
+
+	/**
+	 * This player's save slots — their single-player runs still in play.
+	 * <p>
+	 * A <b>finished</b> run does not hold a slot. Its record persists (it is their run, and the
+	 * lobby can still list it), but the slot it occupied is free: five collapses would otherwise lock
+	 * a player out of the game forever, and colonies collapse by design. A run merely {@code STOPPED}
+	 * <em>does</em> hold its slot — it is still playable, which is exactly the distinction
+	 * {@code docs/game-over.md} draws.
+	 *
+	 * @param userId the player
+	 * @return their live save slots, oldest first (empty for an unidentified caller)
+	 */
+	public List<SessionRecord> saveSlotsOf(String userId) {
+		if (userId == null || userId.isBlank())
+			return List.of();
+		List<SessionRecord> out = new ArrayList<>();
+		for (SessionRecord r : registry.all())
+			if (userId.equals(r.owner()) && !r.isTimeline() && !r.isFinished())
+				out.add(r);
+		return out;
+	}
+
+	/** Thrown when a player with a full set of save slots asks for another. */
+	public static final class SaveSlotsFullException extends RuntimeException {
+		private static final long serialVersionUID = 1L;
+
+		SaveSlotsFullException(String owner) {
+			super(owner + " already has " + SAVE_SLOT_LIMIT + " runs in play — finish or delete one");
+		}
 	}
 
 	/** Thrown when a run that has already ended is asked to found again under its own id. */

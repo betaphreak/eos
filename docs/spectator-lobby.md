@@ -1,8 +1,8 @@
 # Design & plan: the Spectator Lobby, single player & ranked Timelines
 
-**Status:** Phases **0, 1, 2, 3 (core) and 6** are SHIPPED — see each below. The whole server side is
-in; what remains is **4** (single player) and **5** (the lobby UI), plus the Timeline registry and
-scoring. **Date:** 2026-07-17.
+**Status:** Phases **0, 1, 2, 3 (core), 4 and 6** are SHIPPED — the whole server side is in. What
+remains is **Phase 5** (the lobby UI — all frontend), plus the Timeline registry and scoring.
+**Date:** 2026-07-17.
 **Depends on:** [`docs/authentication.md`](authentication.md) (accounts + ownership, Phases 1–3 shipped),
 [`docs/client-server.md`](client-server.md) (the hosted-session spine), [`docs/game-over.md`](game-over.md)
 (the terminal state a run ends on).
@@ -379,13 +379,36 @@ winner**. Plus the wire path: join/roster/clock authz end to end.
   throwaway. Until then a Timeline is created explicitly, and the public site still points at the
   demo (amendment 3 waits on the registry).
 
-### Phase 4 — single player (server)
+### Phase 4 — single player ✅ DONE (2026-07-17)
 
-- **Save slots**: up to 5 owned sessions per user. Enforced in `create` — `SessionSpec` has no slot
-  concept, so N slots are N distinct specs under one owner.
-- **Start paused**: `create` currently calls `hs.start()` (RUNNING); single-player calls
-  `startPaused()`. The demo seeder keeps starting RUNNING — a demo nobody pressed play on is dead.
-- **Private**: visible and controllable only to its owner.
+**Shipped:**
+- **Five save slots** (`SessionHost.SAVE_SLOT_LIMIT`), enforced in `create`: a sixth run is a 409
+  naming the limit, while re-founding a run you already have is not a new slot.
+- **A save slot starts PAUSED** — you land on the world and survey it before committing, which is
+  the whole point. Three beginnings now, and they are not interchangeable: a **Timeline** is not
+  started at all (its gun is admin-only), a **save slot** starts paused, the **demo** runs
+  immediately (a demo nobody pressed play on is a dead demo).
+- **`DELETE /api/sessions/{id}`** — your own single-player runs only. Not the demo (nobody's), and
+  emphatically not a Timeline: deleting one would destroy its verdict and hand every player in it
+  another attempt. Not even an admin does that through this door.
+- **Private** — already true from Phase 1's visibility rule: a slot is listed only to its owner.
+
+**A rule the plan did not have, and needed:** **a finished run does not hold a slot.** Colonies
+collapse *by design*, so if a dead run kept its slot, five collapses would lock a player out of the
+game permanently. Its record persists — the run happened, and the lobby can still list it — but the
+slot is free. A run merely `STOPPED` **does** hold its slot: it is still playable. That is the same
+`STOPPED`/`GAME_OVER` distinction `docs/game-over.md` drew, doing real work a third time.
+
+**Verified:** server **109/109** (+6) — paused start vs the demo's running start; five slots and no
+sixth; a finished run freeing its slot while keeping its record; a stopped run keeping its slot;
+delete refused to strangers and the signed-out; a Timeline refusing deletion even for an admin.
+
+**A test-isolation trap worth knowing:** `SessionOwnershipTest`, `LobbyTest` and `SaveSlotTest`
+declare identical `@SpringBootTest` properties, so Spring hands them **one cached context** — one
+`SessionHost`, one registry. Records outlive `stopAll()` *by design*, so one class's leftover runs
+spent another's save slots (which is how this surfaced: a green class, red in the suite). Those
+classes now forget their runs in `@AfterEach`.
+
 
 ### Phase 5 — the lobby UI (web)
 

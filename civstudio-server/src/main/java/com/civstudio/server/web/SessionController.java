@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -138,13 +139,29 @@ public class SessionController {
 		// the founder owns the session; an anonymous founder creates an unowned/public session
 		// (open to all — the demo). Phase 2 (docs/authentication.md) will require login to found.
 		String owner = currentUser.userId(http);
-		HostedSession hs = host.create(new SessionSpec(seed, scenario, provinceId), owner);
-		// A Timeline is born EMPTY and opens for joins; starting it here would fire the gun on a
-		// world nobody has joined (and launch() rightly refuses an empty run). Its gun is a separate,
-		// admin-only act — control {action:"start"}. Every other scenario founds its colony up front
-		// and starts immediately, as before.
-		if (hs.state() == HostedSession.State.CREATED && !hs.isTimeline())
-			hs.start();
+		SessionSpec spec = new SessionSpec(seed, scenario, provinceId);
+		HostedSession hs;
+		try {
+			hs = host.create(spec, owner);
+		} catch (SessionHost.SaveSlotsFullException full) {
+			return ResponseEntity.status(409).body(Map.of("error", full.getMessage(),
+					"slots", host.saveSlotsOf(owner).size(), "limit", SessionHost.SAVE_SLOT_LIMIT));
+		} catch (SessionHost.RunFinishedException over) {
+			return ResponseEntity.status(409).body(Map.of("error", over.getMessage()));
+		}
+		// Three different beginnings, and they are not interchangeable:
+		//  - a TIMELINE is born empty and opens for joins; starting it here would fire the gun on a
+		//    world nobody has joined (and launch() rightly refuses an empty run). Its gun is a
+		//    separate, admin-only act — control {action:"start"}.
+		//  - a SAVE SLOT starts PAUSED and lands on the map with a press-play cue: you survey the
+		//    world before committing, which is the whole point of starting paused.
+		//  - the demo runs immediately — a demo nobody has pressed play on is a dead demo.
+		if (hs.state() == HostedSession.State.CREATED && !hs.isTimeline()) {
+			if (owner != null)
+				hs.startPaused();
+			else
+				hs.start();
+		}
 		return ResponseEntity.status(201).body(Map.of("id", hs.id(), "state", hs.state().name()));
 	}
 
@@ -233,6 +250,40 @@ public class SessionController {
 				return ResponseEntity.badRequest().body(Map.of("error", "unknown command type: " + type));
 			}
 		}
+	}
+
+	/**
+	 * Delete one of your save slots — the run and its record, gone.
+	 * <p>
+	 * <b>Your own single-player runs only.</b> Not the demo (nobody's), and emphatically not a
+	 * Timeline: forgetting one would destroy its verdict and hand every player in it another attempt,
+	 * which is what the registry exists to prevent. An admin does not get to bypass that either —
+	 * this endpoint is about a player tidying their own shelf, and the admin console has its own
+	 * (session-only) removal.
+	 *
+	 * @param id   the save slot
+	 * @param http the request
+	 * @return 204 when it is gone, 401 signed out, 403 if it is not yours to delete
+	 */
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Object> delete(@PathVariable String id, HttpServletRequest http) {
+		HostedSession hs = host.getOrRestore(id);
+		String user = currentUser.userId(http);
+		if (user == null)
+			return ResponseEntity.status(401).body(Map.of("error", "sign in to delete a run"));
+		// a finished run has no live session to restore, so fall back to its record for the check
+		String owner = hs != null ? hs.owner() : host.registry().find(id).map(r -> r.owner()).orElse(null);
+		boolean timeline = hs != null ? hs.isTimeline()
+				: host.registry().find(id).map(r -> r.isTimeline()).orElse(false);
+		if (owner == null && hs == null && host.registry().find(id).isEmpty())
+			return notFound(id);
+		if (timeline || owner == null)
+			return ResponseEntity.status(403)
+					.body(Map.of("error", "only your own single-player runs can be deleted"));
+		if (!owner.equals(user))
+			return ResponseEntity.status(403).body(Map.of("error", "not the owner of session " + id));
+		host.forget(id);
+		return ResponseEntity.noContent().build();
 	}
 
 	// Take your seat in a ranked Timeline: found your colony in the shared world. Requires a
