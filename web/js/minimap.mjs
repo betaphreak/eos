@@ -1,4 +1,4 @@
-import { cam, VIEW, MAP, centerOn, worldW, S, stage } from "./core.mjs";
+import { cam, VIEW, MAP, centerOn, S, stage } from "./core.mjs";
 import { band, BAND } from "./bands.mjs";
 
 // Minimap — a small world-raster thumbnail docked bottom-left of the stage, with a rectangle
@@ -67,14 +67,14 @@ function wireNav() {
 // scaled drawImage + a couple of strokes), so it tracks pan/zoom for free.
 export function drawMinimap() {
   if (!canvas || !mctx) return;
-  const period = worldW();
-  if (!(period > 0)) return;
 
-  // the visible screen box as fractions of the world raster (0..1). Horizontal wraps around the
-  // cylinder (fx0 mod 1, width capped at the full world); vertical is clamped to the poles.
-  const fw = Math.min(1, VIEW.w / period);
+  // the visible screen box as fractions of the world raster (0..1), both axes clamped to the map
+  // edges — no east-west wrap now the map is a finite sheet (docs/realms.md §Delete the wrap), so
+  // horizontal is computed exactly like vertical (no mod, no seam).
   let fx0 = ((-cam.x / cam.k) - VIEW.dx) / VIEW.dw;
-  fx0 = ((fx0 % 1) + 1) % 1;
+  let fx1 = ((VIEW.w - cam.x) / cam.k - VIEW.dx) / VIEW.dw;
+  fx0 = Math.max(0, Math.min(1, fx0)); fx1 = Math.max(0, Math.min(1, fx1));
+  const fw = fx1 - fx0;
   let fy0 = ((-cam.y / cam.k) - VIEW.dy) / VIEW.dh;
   let fy1 = ((VIEW.h - cam.y) / cam.k - VIEW.dy) / VIEW.dh;
   fy0 = Math.max(0, Math.min(1, fy0)); fy1 = Math.max(0, Math.min(1, fy1));
@@ -100,8 +100,8 @@ export function drawMinimap() {
   mctx.fillStyle = under ? "rgba(6,5,11,0.72)" : "rgba(6,9,14,0.22)"; mctx.fillRect(0, 0, mmW, mmH);   // dim the whole thumbnail…
 
   const ry = fy0 * mmH, rh = Math.max(2, fh * mmH), rw = fw * mmW, rx = fx0 * mmW;
-  // …the framed rect may straddle the east-west seam → draw it in up to two pieces
-  const pieces = (rx + rw <= mmW) ? [[rx, rw]] : [[rx, mmW - rx], [0, rx + rw - mmW]];
+  // one piece — the map is a finite sheet, so the framed rect never straddles a seam (there is none)
+  const pieces = [[rx, rw]];
   for (const [x, w] of pieces) {                       // re-light the framed slice (undo the dim; kept a ghost underworld)
     mctx.save();
     mctx.beginPath(); mctx.rect(x, ry, w, rh); mctx.clip();

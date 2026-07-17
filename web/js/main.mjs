@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, centerOn, worldW, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_MAX, isPolitical, isUnderground, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, centerOn, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_MAX, isPolitical, isUnderground, cssVar, S } from "./core.mjs";
 import { bandAlpha, kBand, band, bandName, regime, REGIME_INFO } from "./bands.mjs";
 import { drawPlots } from "./plots.mjs";                       // still used directly by drawCavernPlots
 import { scheduleLegendRefresh } from "./overlays/political.mjs";
@@ -151,21 +151,11 @@ function paintScene() {
   // inside the per-world-copy wrap loop below — see js/sea.mjs.
   renderScreenLayers();
 
-  // cylindrical wrap: render the scene once per world-copy that overlaps the viewport, by
-  // shifting the camera one wrap-period at a time — so each copy's own viewport culling and
-  // provPath cache stay correct. Deep zoom → a single copy → no extra work. viewVersion is
-  // derived per copy from baseVersion so the path cache is distinct per copy yet reused when idle.
-  const period = worldW();
-  if (!(period > 0)) { S.viewVersion = S.baseVersion * 16; renderScene(); ctx.restore(); drawMinimap(); return; }
-  const L = cam.x + cam.k * VIEW.dx;                 // primary world's left screen edge
-  const mMin = Math.floor((0 - L) / period), mMax = Math.floor((w - L) / period);
-  const baseX = cam.x;
-  for (let m = mMin; m <= mMax; m++) {
-    cam.x = baseX + m * period;
-    S.viewVersion = S.baseVersion * 16 + ((m - mMin) & 15);
-    renderScene();
-  }
-  cam.x = baseX;
+  // one world copy: the map is a finite sheet, not a cylinder, so there is no east-west wrap to tile
+  // (docs/realms.md §Delete the wrap). renderScene's own viewport culling and provPath cache do the
+  // rest; the camera is clamped to the map edges by clampPan.
+  S.viewVersion = S.baseVersion * 16;
+  renderScene();
   ctx.restore();
   drawMinimap();   // the bottom-left world thumbnail + viewport rectangle tracks pan/zoom
 }

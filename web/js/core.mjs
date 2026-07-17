@@ -205,14 +205,13 @@ function clampAxis(camv, base, dim, viewDim) {
   const m = viewDim / 2;
   return Math.min(m, Math.max(viewDim - size - m, pos)) - cam.k * base;
 }
-// the world's on-screen width (one full 360° of longitude) at the current zoom — the
-// horizontal wrap period of the cylindrical map
-function worldW() { return cam.k * VIEW.dw; }
 function clampPan() {
-  const w = worldW();
-  cam.x = ((cam.x % w) + w) % w;   // wrap east-west around the cylinder (seam is invisible: the
-                                   // draw loop tiles world copies to fill the viewport)
-  cam.y = clampAxis(cam.y, VIEW.dy, VIEW.dh, VIEW.h);   // but clamp north-south to the poles
+  // the map is a finite sheet, not a cylinder — clamp BOTH axes to its edges, no east-west wrap.
+  // docs/realms.md §The trap: the wrap is deleted, not flagged, so panning east hits the antimeridian
+  // edge instead of coming round the other side. clampAxis is the same "clamp this axis" logic the
+  // poles have always used (a province at the very edge can still be centred; the void fills beyond).
+  cam.x = clampAxis(cam.x, VIEW.dx, VIEW.dw, VIEW.w);   // east-west, to the map edges
+  cam.y = clampAxis(cam.y, VIEW.dy, VIEW.dh, VIEW.h);   // north-south, to the poles
 }
 
 /**
@@ -271,4 +270,4 @@ export const S = {
   camBeforeFocus: null,
 };
 
-export { P, fmtInt, apiUrl, SERVER_BASE, centerOn, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, ROUTES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, worldW, BUNDLE };
+export { P, fmtInt, apiUrl, SERVER_BASE, centerOn, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, ROUTES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, BUNDLE };

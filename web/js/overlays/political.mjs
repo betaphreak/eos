@@ -3,7 +3,7 @@
 // coloured by the active dimension (core.polOf / S.overlay), zoom-banded so the map yields to the
 // physical terrain as you dive in, plus the legend/search spotlight. The chrome (legend, entity
 // search, sidebar Politics block) lives in panel.mjs; this module owns only the canvas render.
-import { ctx, cam, P, provPath, provOnScreen, polOf, isPolitical, isUnderground, COUNTRIES, CULTURES, RELIGIONS, K_PLOT, K_TEX, lerp, VIEW, provSrcBox, pxr, pyr, worldW, S } from "../core.mjs";
+import { ctx, cam, P, provPath, provOnScreen, polOf, isPolitical, isUnderground, COUNTRIES, CULTURES, RELIGIONS, K_PLOT, K_TEX, lerp, VIEW, provSrcBox, pxr, pyr, S } from "../core.mjs";
 import { draw } from "../repaint.mjs";
 import { focusProvinceFit } from "../main.mjs";
 import { bandAlpha, kBand } from "../bands.mjs";
@@ -75,17 +75,16 @@ export function coverage() {
 const polTable = () => S.overlay === "culture" ? CULTURES : S.overlay === "faith" ? RELIGIONS : COUNTRIES;
 
 // whether a province's polygon is at least partly on-screen right now (its source-pixel bbox,
-// projected through the camera, intersects the viewport). Accounts for the cylindrical E-W wrap.
+// projected through the camera, intersects the viewport). One world copy — no east-west wrap now the
+// map is a finite sheet (docs/realms.md §Delete the wrap).
 function inViewport(p) {
   const box = provSrcBox(p);
   if (!box) return false;
   const x0 = pxr(box.x0), x1 = pxr(box.x1), y0 = pyr(box.y0), y1 = pyr(box.y1);
   const sy0 = Math.min(y0, y1), sy1 = Math.max(y0, y1);
   if (sy1 < 0 || sy0 > VIEW.h) return false;
-  let sx0 = Math.min(x0, x1), sx1 = Math.max(x0, x1);
-  const w = worldW();
-  for (let k = -1; k <= 1; k++) if (sx1 + k * w >= 0 && sx0 + k * w <= VIEW.w) return true;
-  return false;
+  const sx0 = Math.min(x0, x1), sx1 = Math.max(x0, x1);
+  return sx1 >= 0 && sx0 <= VIEW.w;
 }
 
 // province coverage counts restricted to the current viewport (the ledger lists only what's visible)

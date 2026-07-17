@@ -835,10 +835,22 @@ by the bundle golden test.
 > renders differently), so it waits for Phase 3, where the bake computes it once. Phase 1 ships realm
 > *membership* + the *name catalog* — the drift-free data shape — instead.
 
-**Phase 2 — Delete the wrap.** Remove `worldW()` and `wrapCopies()`; collapse the six sites to their
-single-copy branches; `clampPan` clamps (§The trap). **Ships against the whole uncropped map**, which is
-the entire point: the cylinder dies while the world is still 360° wide, so any fallout is visible and
-diffable *before* a crop exists to hide it.
+**Phase 2 — Delete the wrap. SHIPPED.** Remove `worldW()` and `wrapCopies()`; collapse the six sites to
+their single-copy branches; `clampPan` clamps (§The trap). **Ships against the whole uncropped map**,
+which is the entire point: the cylinder dies while the world is still 360° wide, so any fallout is
+visible and diffable *before* a crop exists to hide it.
+
+> **As built.** `worldW()` + `wrapCopies()` deleted; the render loop (`main.mjs`), both hit-tests
+> (`hittest.mjs`), the minimap frame (`minimap.mjs`), `political.inViewport` and `bandcaption.colonyInView`
+> all collapsed to their single-copy bodies; `clampPan` now clamps **x** with the same `clampAxis` the
+> poles already use (not a new modulo→clamp — the existing axis clamp generalises). The initial
+> whole-world framing is **provably unchanged**: `fitView` is *contain* (the crop fits the viewport at
+> k=1, `VIEW.dw ≤ VIEW.w`), so `clampAxis` centres and returns `cam.x=0` — exactly what the old
+> `((0%w)+w)%w` returned, and you cannot pan at k=1 anyway. The one intended difference is the edge
+> clamp when zoomed in and dragged east past the antimeridian (no wrap-around). Verified with
+> `tools/webverify`: boot clean (no console errors, bundle loaded), deep-zoom render pixel-identical to
+> the pre-change baseline within the run-to-run noise floor (0.38% vs 0.32%, identical max-Δ), all six
+> modules syntax-clean, zero dangling references.
 
 > **Not visually neutral, and that is intended.** The map stops repeating east-west: you now hit an edge
 > at the antimeridian instead of coming round the other side. Everything else — every province, label,

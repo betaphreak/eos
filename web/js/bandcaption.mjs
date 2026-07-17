@@ -14,7 +14,7 @@
 //      or invented value.
 //
 // See docs/zoom-bands.md §Band caption.
-import { P, VIEW, TRADE_GOODS, provGeo, S, provOnScreen, isUnderground, px, py, worldW } from "./core.mjs";
+import { P, VIEW, TRADE_GOODS, provGeo, S, provOnScreen, isUnderground, px, py } from "./core.mjs";
 import { band, BAND, BAND_NAMES } from "./bands.mjs";
 import { prettyKey } from "./plotlabel.mjs";
 import { landPlots, plotsPending, majorityTerrain, urbanCount } from "./plotstats.mjs";
@@ -85,17 +85,15 @@ const tierLabel = t => (t ? prettyKey(t) : null);
 // bar must never produce. So we gate on the colony projecting inside the viewport (it ships
 // latitude/longitude). At band 7 the viewport is a few plots wide, so on-screen ≈ here.
 //
-// Wrap-aware: the map is a cylinder, so test the colony against each world copy that can overlap
-// the viewport (same trick as panel.provinceAt).
+// The map is a finite sheet, so the colony falls in exactly one world — no east-west wrap copies to
+// test (docs/realms.md §Delete the wrap).
 function colonyInView() {
   const c = liveColony();
   if (!c || !c.name || c.latitude == null || c.longitude == null) return null;
   const y = py(c.latitude);
   if (y < 0 || y > VIEW.h) return null;
-  const x = px(c.longitude), w = worldW();
-  if (!(w > 0)) return (x >= 0 && x <= VIEW.w) ? c : null;
-  for (let k = -1; k <= 1; k++) { const sx = x + k * w; if (sx >= 0 && sx <= VIEW.w) return c; }
-  return null;
+  const x = px(c.longitude);
+  return (x >= 0 && x <= VIEW.w) ? c : null;
 }
 
 // ---- the caption table: one row per band ----
