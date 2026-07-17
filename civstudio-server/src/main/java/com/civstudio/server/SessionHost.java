@@ -13,6 +13,10 @@ import com.civstudio.server.chat.InMemoryChatStore;
 import com.civstudio.server.command.CommandStore;
 import com.civstudio.server.command.GameCommand;
 import com.civstudio.server.command.NoOpCommandStore;
+import com.civstudio.server.registry.InMemorySessionRegistry;
+import com.civstudio.server.registry.SeatRecord;
+import com.civstudio.server.registry.SessionRecord;
+import com.civstudio.server.registry.SessionRegistry;
 import com.civstudio.simulation.SimulationConfig;
 import com.civstudio.simulation.SimulationHarness;
 import jakarta.annotation.PreDestroy;
@@ -34,21 +38,30 @@ public final class SessionHost {
 
 	private final CommandStore commandStore;
 	private final ChatStore chatStore;
+	private final SessionRegistry registry;
 
 	/** In-memory only — for constructing a host directly (e.g. in a test), no persistence. */
 	public SessionHost() {
-		this(new NoOpCommandStore(), new InMemoryChatStore());
+		this(new NoOpCommandStore(), new InMemoryChatStore(), new InMemorySessionRegistry());
 	}
 
 	/**
 	 * @param commandStore durable command-log storage — a {@link NoOpCommandStore} when no
 	 *                     datasource is configured (see {@code PersistenceConfig})
 	 * @param chatStore    lobby chat storage — an {@link InMemoryChatStore} when no datasource
+	 * @param registry     where runs and seats are remembered — an {@link InMemorySessionRegistry}
+	 *                     when no datasource, which forgets them with the process
 	 */
 	@Autowired
-	public SessionHost(CommandStore commandStore, ChatStore chatStore) {
+	public SessionHost(CommandStore commandStore, ChatStore chatStore, SessionRegistry registry) {
 		this.commandStore = commandStore;
 		this.chatStore = chatStore;
+		this.registry = registry;
+	}
+
+	/** Where runs and seats are remembered across restarts (docs/spectator-lobby.md Phase 6). */
+	public SessionRegistry registry() {
+		return registry;
 	}
 
 	/**
@@ -77,7 +90,18 @@ public final class SessionHost {
 	 */
 	public HostedSession create(SessionSpec spec, String owner) {
 		String id = sessionKey(spec, owner);
-		return sessions.computeIfAbsent(id, k -> build(id, owner, spec));
+		return sessions.computeIfAbsent(id, k -> {
+			HostedSession hs = build(id, owner, spec);
+			// remember the run before it can end: the record is what survives this process, and a
+			// run that ended without ever being written down is a run that never happened
+			registry.save(new SessionRecord(id, spec.scenario(), spec.seed(), spec.provinceId(),
+					owner, hs.state().name(), null, 0));
+			// the terminal values are handed to us rather than read back: at this point the session
+			// has not published them yet, which is exactly what makes the record trustworthy
+			hs.onEnd((ended, state, endReason, tick) -> registry.updateProgress(ended.id(),
+					state.name(), endReason, tick));
+			return hs;
+		});
 	}
 
 	/**
@@ -202,6 +226,11 @@ public final class SessionHost {
 		Settlement held = hs.colonyOf(userId);
 		if (held != null)
 			return held; // idempotent: you already have your one seat
+		// ...and the durable record has the last word on that. The live map above only knows this
+		// process; the registry knows every process, so a redeploy cannot hand out a second seat.
+		if (registry.seatOf(sessionId, userId).isPresent())
+			throw new SessionRegistry.SeatTakenException(userId + " already holds a seat in "
+					+ sessionId + " (its colony is not in this process — the run needs restoring)");
 		if (hs.state() != HostedSession.State.CREATED)
 			throw new IllegalStateException("Timeline " + sessionId
 					+ " has already started — the roster is closed");
@@ -223,6 +252,11 @@ public final class SessionHost {
 		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
 		colony.setAutoBuildDistricts(true);   // the district view, as the demo colony gets
 
+		// write the seat down BEFORE claiming it in memory: if the constraint rejects it (a
+		// concurrent join by the same player), the colony is simply never seated, and we would
+		// rather waste a founding than hand one player two seats
+		registry.seat(new SeatRecord(sessionId, userId, colony.getName(),
+				site.id(), hs.colonies().size()));
 		hs.addColony(colony);
 		hs.claimColony(colony.getName(), userId);
 		return colony;

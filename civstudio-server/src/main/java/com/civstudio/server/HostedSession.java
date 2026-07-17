@@ -116,6 +116,30 @@ public final class HostedSession {
 	// thread that sees GAME_OVER also sees the reason that was written before it.
 	private volatile String endReason;
 
+	// notified when the run reaches a terminal state, so the host can write it down before this
+	// process forgets (docs/spectator-lobby.md Phase 6). Best-effort and never allowed to wedge the
+	// teardown: a registry that throws must not take the session's thread with it.
+	private volatile EndListener onEnd = (hs, state, reason, tick) -> {
+	};
+
+	/**
+	 * Notified once, on the session thread, when a run reaches a terminal state — <b>before</b> that
+	 * state is published, so anything that can see the ending can trust the record of it.
+	 * <p>
+	 * The terminal values are passed rather than read back off the session precisely because they
+	 * are not published yet: {@code session.state()} still reads the pre-terminal state here.
+	 */
+	@FunctionalInterface
+	public interface EndListener {
+		/**
+		 * @param session   the run that ended
+		 * @param state     its terminal state ({@link State#GAME_OVER} or {@link State#STOPPED})
+		 * @param endReason why it ended, or {@code null} if it was stopped from outside
+		 * @param tick      the tick it reached
+		 */
+		void ended(HostedSession session, State state, String endReason, long tick);
+	}
+
 	// wall-clock milliseconds per tick when RUNNING (0 = as fast as possible); a live knob
 	// (the server ticks ~one in-game day per second by default — see ServerMain)
 	private volatile long tickRateMillis = 1000;
@@ -443,6 +467,18 @@ public final class HostedSession {
 	}
 
 	/**
+	 * Be told when this run reaches a terminal state. The {@link SessionHost} uses it to write the
+	 * outcome down; a listener that throws is swallowed, because a failed record must not wedge the
+	 * session's teardown.
+	 *
+	 * @param listener the listener (replaces any previous one)
+	 */
+	public void onEnd(EndListener listener) {
+		this.onEnd = listener == null ? (hs, s, r, t) -> {
+		} : listener;
+	}
+
+	/**
 	 * Seat a freshly-founded colony in this run — the join seam. Allowed <b>only before the gun</b>
 	 * ({@link State#CREATED}): every colony in a Timeline must start on the same day, or a late
 	 * arrival is founding into a century-old world, which is the unfairness Timelines exist to
@@ -598,12 +634,19 @@ public final class HostedSession {
 			// the reason is read AFTER finishRun: that is where a dissolving colony actually
 			// departs as its band (SettlementLifecycle.finishRun), so before it there is nothing
 			// to tell "died" from "departed as a Caravan".
-			if (endedItself) {
-				endReason = describeEnd();
-				state = State.GAME_OVER;
-			} else {
-				state = State.STOPPED;
+			State terminal = endedItself ? State.GAME_OVER : State.STOPPED;
+			endReason = endedItself ? describeEnd() : null;
+			// Write the outcome down BEFORE publishing the terminal state. Anything that can see the
+			// run has ended — a client reading the final snapshot, a caller polling state() — must be
+			// able to trust that the record already says so, or it can read a registry that has not
+			// caught up and conclude the run is still open. (This bit: recording after the flip left
+			// a window where state() said GAME_OVER and the database still said CREATED.)
+			try {
+				onEnd.ended(this, terminal, endReason, tick);
+			} catch (RuntimeException e) {
+				log.warning(() -> "could not record the end of session " + id + ": " + e);
 			}
+			state = terminal;
 			emit(); // final snapshot so clients see the terminal state
 			try {
 				logTap.close();

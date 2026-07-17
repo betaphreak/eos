@@ -1,6 +1,7 @@
 # Design & plan: the Spectator Lobby, single player & ranked Timelines
 
-**Status:** PLANNED (no code yet). **Date:** 2026-07-17.
+**Status:** Phases **0, 2, 3 (core) and 6 (the record)** are SHIPPED — see each below. Phases 1
+(lobby room), 4 (single player), 5 (lobby UI) and Phase 6’s **restore** remain. **Date:** 2026-07-17.
 **Depends on:** [`docs/authentication.md`](authentication.md) (accounts + ownership, Phases 1–3 shipped),
 [`docs/client-server.md`](client-server.md) (the hosted-session spine), [`docs/game-over.md`](game-over.md)
 (the terminal state a run ends on).
@@ -374,7 +375,7 @@ winner**. Plus the wire path: join/roster/clock authz end to end.
 - Unit-test the pure parts under node (`web/js/*.test.mjs`), as `district-plots.mjs` does: the row
   model (kind/state/survivors → label) and the Ranked button's state resolution.
 
-### Phase 6 — sessions & Timelines live in the database (required)
+### Phase 6 — sessions & Timelines live in the database (required) — ✅ RECORD DONE, ⏳ RESTORE PENDING
 
 **Decided 2026-07-17: sessions and Timelines are tracked in the actual DB**, not in memory. Today
 `SessionHost` is a `ConcurrentHashMap` and nothing survives a redeploy — which silently erases every
@@ -386,31 +387,53 @@ via `PersistenceConfig`): an interface with an in-memory default and a JDBC impl
 datasource is configured, each store owning its own table, created on first use with
 `CREATE TABLE IF NOT EXISTS` (portable across H2 and PostgreSQL), touching nothing else.
 
-Sketch — the columns the features above actually need:
+#### ✅ The record — DONE (2026-07-17)
+
+**Shipped** (`registry/`, wired in `PersistenceConfig` exactly like the other stores — interface +
+in-memory default + JDBC once a datasource is configured):
 
 ```
-game_session(id PK, scenario, seed, province_id, kind, owner,
-             state, end_reason, tick, started_at, ended_at)
+game_session(id PK, scenario, seed, province_id, owner,
+             state, end_reason, tick, created_at, updated_at)
 
-timeline(id PK, seed, name, state, opened_at, ended_at,
-         winner_user, winner_colony)
-
-timeline_colony(timeline_id, user_id, colony_name,
-                founded_at, eliminated_at, final_tick,
-                UNIQUE (timeline_id, user_id))     -- one colony per player per Timeline
+session_seat(id PK, session_id, user_id, colony_name, province_id, seat_order, seated_at,
+             CONSTRAINT uq_session_seat_player UNIQUE (session_id, user_id))
 ```
 
-That `UNIQUE (timeline_id, user_id)` is the point: the one-per-player invariant becomes a **database
-constraint** rather than an emergent property of an idempotent hash map, so it holds across restarts
-and races.
+- **`UNIQUE (session_id, user_id)` is the point**: one seat per player is now a **database
+  constraint**, not an emergent property of an idempotent hash map, so it holds across restarts and
+  concurrent joins. `SessionHost.joinTimeline` consults the record, so **a redeploy cannot hand a
+  ranked player a second seat** — the test that proves it stops the host, rebuilds from the spec, and
+  watches the rejoin be refused.
+- **The sketch's separate `timeline` table collapsed into `game_session`.** A Timeline *is* a session
+  (its scenario), its anchor *is* `province_id`, and its winner *is* its `end_reason` — a second
+  table would restate all of it and need keeping in step.
+- **The outcome is recorded before it is published.** `HostedSession.EndListener` fires on the
+  session thread *before* the terminal state is visible, so anything that can see a run has ended can
+  trust the record of it. This was a real bug the test caught: recording after the flip left a window
+  where `state()` said `GAME_OVER` while the database still said `CREATED`.
+- **In-memory is not a stub** — it is the right implementation for a run not meant to outlive its
+  process (a test, a dev server), and enforces the same rule. It is simply **wrong for ranked**.
+
+**Verified:** server **91/91**, +5 against a real H2 datasource — the wiring; founding writing a row;
+seats recorded in join order with their provinces; **a redeploy refusing a second seat**; and a
+finished run's verdict/tick persisted without replaying a tick.
+
+#### ⏳ Restore — NOT DONE
 
 **Restore** stays the engine's own model — *state = f(SessionSpec, ordered command log)* — so a run
-is rebuilt by **replaying its command log onto its spec** (`CommandStore` is already JDBC-backed).
-Replay on boot is not free for a long Timeline, so restore lazily on first access rather than
-holding boot hostage. A **finished** run needs no replay at all: its terminal state, end reason and
-result are columns, which is enough for the lobby to list it and for a client to show the result.
+is rebuilt by **replaying its command log onto its spec** (`CommandStore` is already JDBC-backed),
+and for a Timeline, by re-founding its **roster** (`session_seat` in `seat_order` — founding is
+deterministic, which is why the order is recorded). Replay is cheap enough to be practical: a full
+4,426-tick collapse replays in seconds uncapped. Restore lazily on first access rather than holding
+boot hostage. A **finished** run needs no replay at all: its terminal state, end reason and tick are
+columns already — enough for the lobby to list it and a client to show the result.
 
-**Ranked cannot open to the public before this phase.**
+**Where that leaves ranked:** the *integrity* half is done (a redeploy can no longer grant a retry,
+and a finished Timeline stays finished). The *continuity* half is not: after a redeploy a seated
+player's world is gone, and the record knows their seat but nothing rebuilds it. So **ranked still
+cannot open to the public** — it is now blocked on restore rather than on losing runs silently,
+which is a better failure (loud, not quiet).
 
 ### Phase 7 — ship
 

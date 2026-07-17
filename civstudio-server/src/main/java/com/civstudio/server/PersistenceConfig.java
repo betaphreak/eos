@@ -16,6 +16,9 @@ import com.civstudio.server.command.CommandCodec;
 import com.civstudio.server.command.CommandStore;
 import com.civstudio.server.command.JdbcCommandStore;
 import com.civstudio.server.command.NoOpCommandStore;
+import com.civstudio.server.registry.InMemorySessionRegistry;
+import com.civstudio.server.registry.JdbcSessionRegistry;
+import com.civstudio.server.registry.SessionRegistry;
 import com.zaxxer.hikari.HikariDataSource;
 
 import tools.jackson.databind.ObjectMapper;
@@ -76,5 +79,23 @@ public class PersistenceConfig {
 		JdbcChatStore store = new JdbcChatStore(template);
 		store.initSchema();
 		return store;
+	}
+
+	/**
+	 * The session registry: durable ({@link JdbcSessionRegistry}) when a datasource is configured,
+	 * else an {@link InMemorySessionRegistry}. As with chat there is no no-op fallback — the host
+	 * always needs somewhere to remember its runs; without a datasource it simply forgets them when
+	 * the process ends, which is right for a test or a dev server and <b>wrong for ranked</b> (see
+	 * {@code docs/spectator-lobby.md} Phase 6: an in-memory registry hands out a fresh ranked
+	 * attempt on every redeploy).
+	 */
+	@Bean
+	SessionRegistry sessionRegistry(ObjectProvider<JdbcTemplate> jdbc) {
+		JdbcTemplate template = jdbc.getIfAvailable();
+		if (template == null)
+			return new InMemorySessionRegistry();
+		JdbcSessionRegistry registry = new JdbcSessionRegistry(template);
+		registry.initSchema();
+		return registry;
 	}
 }

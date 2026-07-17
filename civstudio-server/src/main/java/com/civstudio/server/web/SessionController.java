@@ -24,6 +24,7 @@ import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.SessionSpec;
 import com.civstudio.server.command.SetTaxRateCommand;
+import com.civstudio.server.registry.SessionRegistry;
 import com.civstudio.server.render.SessionSnapshot;
 import com.civstudio.settlement.Settlement;
 
@@ -219,6 +220,10 @@ public class SessionController {
 			return ResponseEntity.status(201).body(Map.of("colony", colony.getName(),
 					"province", colony.getProvince() == null ? 0 : colony.getProvince().id(),
 					"session", id));
+		} catch (SessionRegistry.SeatTakenException taken) {
+			// the durable record says this player already has a seat — even if this process does not
+			// hold their colony. A conflict, and deliberately NOT a silent second seat.
+			return ResponseEntity.status(409).body(Map.of("error", taken.getMessage()));
 		} catch (IllegalStateException closed) {
 			// the roster is closed (the Timeline is running or over) — a real conflict, not a bug
 			return ResponseEntity.status(409).body(Map.of("error", closed.getMessage()));
