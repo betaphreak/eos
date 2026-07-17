@@ -18,6 +18,7 @@ import { mergeRoutePlots } from "../routes.mjs";
 import { showLiveLog, ingestLog, ingestChat, resetLog, setChatSender } from "../livelog.mjs";
 import { showNotify, ingestNotify, seedNotify, resetNotify } from "../notify.mjs";
 import { minusDays, LIFETIME_DAYS, MAX_CARDS } from "../notify-age.mjs";
+import { makeLogGate } from "../snapshot-dedupe.mjs";
 
 const PALETTE = ["#e8c37a","#6bd08a","#7aa2e0","#e07a9e","#9e7ae0","#e0a97a","#7ae0d0","#c0e07a"];
 
@@ -29,6 +30,9 @@ const ROLE_COLOR = { SETTLER: "#e8c37a", WORKER: "#6bd08a", EXPLORER: "#7aa2e0",
 let es = null;          // the EventSource, while connected
 let sid = null;         // the live session id
 let snap = null;        // the latest snapshot
+// guards the log delta against re-ingestion: a reconnect is handed the cached frame again, and its
+// lines have already been posted (see snapshot-dedupe.mjs)
+const logGate = makeLogGate();
 let redraw = () => {};  // main.draw, injected on start
 let onState = () => {}; // panel transport-sync callback (play icon + speed chevrons)
 const trails = {};      // caravan leader -> [[lat,lon]…] recent path
@@ -169,6 +173,7 @@ async function rehydrateNotify(id) {
 // reconnect to the same server after a delay that backs off with consecutive failures (fast at first,
 // capped at RECONNECT_MAX_DELAY) — never gives up, so the map never drops to the picker on its own.
 function retryOrLost() {
+  if (ended) return;   // the run is over — there is nothing to reconnect to (docs/game-over.md)
   if (reconnectTimer) return;
   const delay = Math.min(RECONNECT_MAX_DELAY, RECONNECT_DELAY * Math.pow(1.6, Math.min(reconnectAttempts++, 6)));
   reconnectTimer = setTimeout(connectStream, delay);
@@ -194,6 +199,10 @@ export function stopLive() {
   for (const k in trails) delete trails[k];
   resetLog();
   resetNotify();
+  logGate.reset();   // the board is cleared, so the next session's lines are new again
+  ended = false;     // a fresh connection may be to a living session
+  const go = document.getElementById("gameover");
+  if (go) go.hidden = true;
   liveTabRunning(false);
   hud(false);
 }
@@ -230,8 +239,29 @@ function paintChrome(s) {
 // session would show whatever the HUD said when you left — no further snapshot is coming to fix it.
 document.addEventListener("visibilitychange", () => { if (!document.hidden && snap) paintChrome(snap); });
 
+// The run ended itself: show the terminal screen and stop chasing the session. This is the ONE case
+// where the never-give-up reconnect above must give up — a GAME_OVER session will never tick again,
+// so reconnecting to it just replays its cached final frame forever (docs/game-over.md). A session
+// merely STOPPED (an admin, a redeploy) is NOT this: we keep reconnecting through those.
+let ended = false;
+function showGameOver(s) {
+  if (ended) return;                       // the cached final frame arrives on every subscribe
+  ended = true;
+  if (es) { es.close(); es = null; }       // no more frames are coming
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  setHudStatus("game over");
+  const el = document.getElementById("gameover");
+  if (!el) return;
+  const reason = document.getElementById("goReason");
+  const date = document.getElementById("goDate");
+  if (reason) reason.textContent = s.endReason || "The run has ended.";
+  if (date) date.textContent = s.date ? `${s.date} · ${s.tick} days` : "";
+  el.hidden = false;
+}
+
 function onSnapshot(s) {
   snap = s;
+  if (s.state === "GAME_OVER") showGameOver(s);
   // accumulate the bands' pioneered trails (gap B → the route layer). A new trail plot changes the
   // canvas even when nothing moved, so it counts toward the repaint decision below.
   const routesChanged = mergeRoutePlots(s.routePlots);
@@ -243,10 +273,13 @@ function onSnapshot(s) {
   // open on the colony once — UNLESS the visitor deep-linked to a province/zoom (?p=&z=),
   // whose framing (applyHash) we must not stomp. A plain load (no deep link) still opens on the action.
   if (!framed && s.colonies[0]) { if (!hasDeepLink()) frameOn(s.colonies[0].latitude, s.colonies[0].longitude, 6); framed = true; }
-  ingestLog(s.log);           // feed the event-log bar this frame's new lines
+  // This frame's log is a DELTA, and a reconnect is handed the CACHED frame again — so ingest the
+  // lines only the first time we see a tick, or every reconnect re-posts them (docs/game-over.md).
+  const freshLines = logGate.accept(s.sessionId, s.tick) ? s.log : [];
+  ingestLog(freshLines);      // feed the event-log bar this frame's new lines
   // …and the notification board, which also needs s.date: it must age, redden and expire its cards
   // on every tick, including the overwhelmingly common one whose log delta is empty.
-  ingestNotify(s.log, s.date);
+  ingestNotify(freshLines, s.date);
   // The chrome below is a pure function of `snap`, so a hidden tab can skip it and rebuild on
   // return (paintChrome, wired to visibilitychange) — no point rewriting innerHTML nobody can see.
   // NB ingestLog above is deliberately NOT skipped: s.log is a per-tick DELTA, so a skipped tick

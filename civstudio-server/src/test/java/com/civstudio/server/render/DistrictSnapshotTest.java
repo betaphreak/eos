@@ -28,7 +28,7 @@ class DistrictSnapshotTest {
 	private static final LocalDate START = LocalDate.of(1444, 12, 11);
 
 	private static ColonyView project(Settlement c) {
-		return Snapshots.of("t", 42, "test", "RUNNING", 0, List.of(c), null,
+		return Snapshots.of("t", 42, "test", "RUNNING", null, 0, List.of(c), null,
 				List.of(), List.of()).colonies().get(0);
 	}
 

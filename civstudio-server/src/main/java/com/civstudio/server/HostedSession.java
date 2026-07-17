@@ -1,6 +1,7 @@
 package com.civstudio.server;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -56,8 +57,19 @@ public final class HostedSession {
 		RUNNING,
 		/** Halted; advances only by {@link HostedSession#step(int)}. */
 		PAUSED,
-		/** Finished (colonies done or stopped); the thread has exited. */
-		STOPPED
+		/**
+		 * Stopped from <em>outside</em> — an admin {@link HostedSession#stop()} or server
+		 * shutdown; the thread has exited. The run did not reach its own end, so a client may
+		 * reasonably keep watching for it to come back (e.g. across a redeploy).
+		 */
+		STOPPED,
+		/**
+		 * The run <em>ended itself</em> — game over. The thread has exited and this session will
+		 * never tick again, so a client must stop reconnecting and show its terminal screen (the
+		 * reason is in {@link HostedSession#endReason()}). Distinct from {@link #STOPPED} precisely
+		 * so a finished run is not mistaken for an idle one; see {@code docs/game-over.md}.
+		 */
+		GAME_OVER
 	}
 
 	private final String id;
@@ -79,6 +91,11 @@ public final class HostedSession {
 	private volatile long tick = 0;
 
 	private volatile State state = State.CREATED;
+
+	// why the run ended, once it has (null until then) — display text for the client's terminal
+	// screen. Set on the session thread before the state flips to GAME_OVER; volatile so an HTTP
+	// thread that sees GAME_OVER also sees the reason that was written before it.
+	private volatile String endReason;
 
 	// wall-clock milliseconds per tick when RUNNING (0 = as fast as possible); a live knob
 	// (the server ticks ~one in-game day per second by default — see ServerMain)
@@ -195,7 +212,11 @@ public final class HostedSession {
 	public void stop() {
 		Thread t;
 		synchronized (gate) {
-			state = State.STOPPED;
+			// never downgrade a finished run to "stopped from outside": a GAME_OVER session that an
+			// admin later stops (or that shutdown sweeps) is still a finished run, and its terminal
+			// state is the record of that.
+			if (state != State.GAME_OVER)
+				state = State.STOPPED;
 			gate.notifyAll();
 			t = thread;
 		}
@@ -311,6 +332,31 @@ public final class HostedSession {
 	}
 
 	/**
+	 * Why the run ended, as display text for a client's game-over screen ({@code "Dhenijansar
+	 * departed as a Caravan on 1452-03-02"}), or {@code null} while it has not ended itself. Only
+	 * ever set alongside {@link State#GAME_OVER} — a session stopped from outside has no reason,
+	 * because it did not reach an end.
+	 *
+	 * @return the end reason, or {@code null}
+	 */
+	public String endReason() {
+		return endReason;
+	}
+
+	/**
+	 * Whether the run is over for good — {@link State#STOPPED stopped from outside} or {@link
+	 * State#GAME_OVER game over}. Its thread has exited either way, so it will never tick again.
+	 * <p>
+	 * Ask this rather than comparing to a single terminal state: the two differ in <em>why</em> the
+	 * run ended (and so in what a client should do about it), never in whether it is running.
+	 *
+	 * @return {@code true} if this session will never tick again
+	 */
+	public boolean isTerminal() {
+		return state == State.STOPPED || state == State.GAME_OVER;
+	}
+
+	/**
 	 * The owning {@code app_user} id, or {@code null} if this is an unowned/public session
 	 * (the server-seeded demo). Control/command writes are gated on this — an unowned session
 	 * is open to anyone, an owned one only to its owner (see {@code docs/authentication.md}).
@@ -380,12 +426,17 @@ public final class HostedSession {
 		for (Settlement c : colonies)
 			c.start();
 		emit(); // tick-0 snapshot, so a subscriber (even to a paused session) sees state
+		// which of the two exits fired: the run reaching its own end (game over) or a stop() from
+		// outside. Knowable here and nowhere else — the finally cannot tell them apart after the fact.
+		boolean endedItself = false;
 		try {
 			while (true) {
 				if (!awaitTickPermit())
-					break; // stopped
-				if (allDead())
+					break; // stopped from outside
+				if (allDead()) {
+					endedItself = true; // the run reached its own end — game over
 					break;
+				}
 				long entering = tick;
 				// deterministic top-of-tick: apply the commands due for this tick
 				for (GameCommand cmd : commandLog.drainDueBy(entering))
@@ -403,7 +454,15 @@ public final class HostedSession {
 					// finalization is best-effort; a botched teardown must not wedge the host
 				}
 			}
-			state = State.STOPPED;
+			// the reason is read AFTER finishRun: that is where a dissolving colony actually
+			// departs as its band (SettlementLifecycle.finishRun), so before it there is nothing
+			// to tell "died" from "departed as a Caravan".
+			if (endedItself) {
+				endReason = describeEnd();
+				state = State.GAME_OVER;
+			} else {
+				state = State.STOPPED;
+			}
 			emit(); // final snapshot so clients see the terminal state
 			try {
 				logTap.close();
@@ -481,12 +540,29 @@ public final class HostedSession {
 		return true;
 	}
 
+	// Why this run ended, in the words a player should read. Called from the finally, after
+	// finishRun, so a dissolved colony has its band by now. The engine already distinguishes the two
+	// endings (SettlementLifecycle: a colony that crossed the workforce floor departs as a
+	// SettlerCaravan; one that simply ran out of laborers does not), so this reads that state rather
+	// than re-deriving the rule. Multi-colony sessions report each colony's fate — a Timeline's
+	// "won by <name>" belongs here later (docs/game-over.md §Amendment).
+	private String describeEnd() {
+		List<String> fates = new ArrayList<>();
+		for (Settlement c : colonies) {
+			String when = c.getDeathDate() == null ? "" : " on " + c.getDeathDate();
+			fates.add(c.getDepartedBand() != null
+					? c.getName() + " departed as a Caravan" + when
+					: c.getName() + " died" + when);
+		}
+		return String.join("; ", fates);
+	}
+
 	// assemble a fresh snapshot on this (session) thread and push it to subscribers; cache
 	// it for late joiners. A misbehaving subscriber is dropped rather than allowed to wedge
 	// the loop.
 	private void emit() {
 		SessionSnapshot snap = Snapshots.of(id, spec.seed(), spec.scenario(),
-				state.name(), tick, colonies, session.getWorldMap(), session.getCaravans(),
+				state.name(), endReason, tick, colonies, session.getWorldMap(), session.getCaravans(),
 				logBuffer.drain());
 		lastSnapshot = snap;
 		for (Consumer<SessionSnapshot> s : subscribers) {

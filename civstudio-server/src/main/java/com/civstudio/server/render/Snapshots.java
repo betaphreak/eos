@@ -38,7 +38,9 @@ public final class Snapshots {
 	 * @param sessionId the session id
 	 * @param seed      the session seed
 	 * @param scenario  the founding scenario id
-	 * @param state     the host's control state (RUNNING / PAUSED / STOPPED)
+	 * @param state     the host's control state (RUNNING / PAUSED / STOPPED / GAME_OVER)
+	 * @param endReason why the run ended (display text), or {@code null} unless {@code state} is
+	 *                  {@code GAME_OVER} — see {@code docs/game-over.md}
 	 * @param tick      the authoritative tick (in-game days elapsed)
 	 * @param colonies  the session's colonies
 	 * @param map       the world map (for caravan province names), or {@code null}
@@ -47,7 +49,7 @@ public final class Snapshots {
 	 * @return the render snapshot
 	 */
 	public static SessionSnapshot of(String sessionId, long seed, String scenario,
-			String state, long tick, List<Settlement> colonies, WorldMap map,
+			String state, String endReason, long tick, List<Settlement> colonies, WorldMap map,
 			List<Caravan> caravans, List<LogLine> log) {
 		List<ColonyView> colonyViews = new ArrayList<>(colonies.size());
 		LocalDate date = null;
@@ -73,7 +75,7 @@ public final class Snapshots {
 				caravanViews.add(caravanView(excursion, map));
 				collectRoutePlots(excursion, routed);
 			}
-		return new SessionSnapshot(sessionId, seed, scenario, state, tick,
+		return new SessionSnapshot(sessionId, seed, scenario, state, endReason, tick,
 				date == null ? "" : date.toString(), colonyViews, caravanViews, log,
 				new ArrayList<>(routed.values()));
 	}

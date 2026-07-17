@@ -233,6 +233,19 @@
       <div class="ld-trivia" aria-live="polite"><span class="ld-trivia-label">Did you know?</span><span class="ld-trivia-body"></span></div>
     </div>
 
+    <!-- game over: the run ended itself (docs/game-over.md). Shown when a snapshot arrives with
+         state GAME_OVER, at which point the client also STOPS reconnecting — the session will never
+         tick again. A direct child of .app (like #loading) so it covers the full viewport; the map
+         stays frozen behind it, dimmed, because the final state is worth looking at. -->
+    <div id="gameover" role="alertdialog" aria-labelledby="goTitle" aria-describedby="goReason" hidden>
+      <div class="go-card">
+        <div class="go-kicker">The chronicle ends</div>
+        <div class="go-title" id="goTitle">Game Over</div>
+        <div class="go-reason" id="goReason"></div>
+        <div class="go-date" id="goDate"></div>
+      </div>
+    </div>
+
     <aside class="railwrap" id="railwrap">
       <div class="rail-resize" id="railResize" role="separator" aria-orientation="vertical" aria-label="Resize panel" title="Drag to resize"></div>
       <button id="railClose" class="railclose" data-tip="Close panel (Esc)" aria-label="Close panel">&times;</button>

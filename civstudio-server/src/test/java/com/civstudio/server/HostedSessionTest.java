@@ -3,6 +3,7 @@ package com.civstudio.server;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -129,6 +130,82 @@ class HostedSessionTest {
 					"the command must apply at the top of its scheduled tick");
 			assertEquals(1, hs.commandLog().history().size(), "it enters the replay log once");
 			assertEquals(0, hs.commandLog().pendingCount(), "nothing left pending");
+		} finally {
+			hs.stop();
+		}
+	}
+
+	// block until the run is over (stopped or game over), or fail on timeout
+	private static void awaitTerminal(HostedSession hs, long timeoutMs) {
+		long deadline = System.nanoTime() + timeoutMs * 1_000_000L;
+		while (!hs.isTerminal()) {
+			if (System.nanoTime() > deadline)
+				fail("timed out waiting for the run to end (state " + hs.state()
+						+ ", tick " + hs.tick() + ")");
+			try {
+				Thread.sleep(20);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				fail("interrupted");
+			}
+		}
+	}
+
+	/**
+	 * A run that ends itself reaches {@link HostedSession.State#GAME_OVER} carrying why — the
+	 * distinction {@code docs/game-over.md} exists for. The demo colony dissolves into a caravan
+	 * once its workforce crosses the floor (~tick 2600 at this seed), so this drives the real
+	 * collapse rather than simulating one.
+	 */
+	@Test
+	@Timeout(600)
+	void aRunThatEndsItselfIsGameOverAndSaysWhy() {
+		SessionHost host = new SessionHost();
+		HostedSession hs = host.create(SessionSpec.caravanDemo(7654321L, DHENIJANSAR));
+		try {
+			hs.startPaused();
+			awaitSnapshot(hs, 0, 30_000);
+			hs.step(4000); // more credit than the collapse needs; the loop breaks when it dies
+			awaitTerminal(hs, 540_000);
+
+			assertEquals(HostedSession.State.GAME_OVER, hs.state(),
+					"a colony collapsing ends the run itself — that is not a STOPPED session");
+			assertNotNull(hs.endReason(), "game over says why");
+			assertTrue(hs.endReason().contains("departed as a Caravan"),
+					"the demo colony dissolves into a band rather than dying outright: "
+							+ hs.endReason());
+			assertTrue(hs.isTerminal());
+
+			// the client learns both from the final snapshot — the whole point of the field
+			SessionSnapshot last = hs.currentSnapshot();
+			assertEquals("GAME_OVER", last.state());
+			assertEquals(hs.endReason(), last.endReason());
+
+			// a finished run stays finished: an admin stop (or shutdown sweep) must not relabel it
+			hs.stop();
+			assertEquals(HostedSession.State.GAME_OVER, hs.state(),
+					"stop() must not downgrade a finished run to STOPPED");
+		} finally {
+			hs.stop();
+		}
+	}
+
+	/** A session stopped from OUTSIDE is not game over: it never reached its own end. */
+	@Test
+	@Timeout(90)
+	void stoppingFromOutsideIsNotGameOver() {
+		SessionHost host = new SessionHost();
+		HostedSession hs = host.create(SessionSpec.caravanDemo(555L, DHENIJANSAR));
+		try {
+			hs.startPaused();
+			awaitSnapshot(hs, 0, 30_000);
+			hs.stop();
+
+			assertEquals(HostedSession.State.STOPPED, hs.state());
+			assertNull(hs.endReason(), "no end was reached, so there is no reason to give");
+			assertTrue(hs.isTerminal(), "stopped is still over for good");
+			assertEquals("STOPPED", hs.currentSnapshot().state());
+			assertNull(hs.currentSnapshot().endReason());
 		} finally {
 			hs.stop();
 		}

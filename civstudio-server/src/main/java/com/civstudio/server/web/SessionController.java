@@ -1,6 +1,7 @@
 package com.civstudio.server.web;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -75,9 +76,19 @@ public class SessionController {
 	@GetMapping
 	public List<Map<String, Object>> list() {
 		List<Map<String, Object>> out = new ArrayList<>();
-		for (HostedSession hs : host.list())
-			out.add(Map.of("id", hs.id(), "scenario", hs.spec().scenario(), "seed",
-					hs.spec().seed(), "state", hs.state().name(), "tick", hs.tick()));
+		for (HostedSession hs : host.list()) {
+			// a mutable map, not Map.of: endReason is null unless the run ended itself, and Map.of
+			// rejects null values
+			Map<String, Object> row = new LinkedHashMap<>();
+			row.put("id", hs.id());
+			row.put("scenario", hs.spec().scenario());
+			row.put("seed", hs.spec().seed());
+			row.put("state", hs.state().name());
+			row.put("tick", hs.tick());
+			if (hs.endReason() != null)
+				row.put("endReason", hs.endReason());
+			out.add(row);
+		}
 		return out;
 	}
 
@@ -109,6 +120,11 @@ public class SessionController {
 		ResponseEntity<Object> denied = denyWrite(hs, http);
 		if (denied != null)
 			return denied;
+		// a finished run takes no orders: its thread is gone, so pause/resume/step would silently
+		// do nothing. Say so rather than returning a cheerful 200 that changed nothing.
+		if (hs.state() == HostedSession.State.GAME_OVER)
+			return ResponseEntity.status(409).body(Map.of("error", "session " + id + " is over",
+					"state", hs.state().name(), "endReason", String.valueOf(hs.endReason())));
 		String action = req.action() == null ? "" : req.action();
 		switch (action) {
 			case "pause" -> hs.pause();
@@ -239,9 +255,11 @@ public class SessionController {
 					if (f.event() != null)
 						ev.name(f.event()); // "chat" → the client's chat listener; null → default snapshot
 					emitter.send(ev);
-					// once the session has stopped and its final frame is flushed, end the stream
-					// (rather than leaving an open async request pinning the server on shutdown)
-					if (hs.state() == HostedSession.State.STOPPED && frames.isEmpty())
+					// once the run is over (stopped OR game over) and its final frame is flushed, end
+					// the stream (rather than leaving an open async request pinning the server on
+					// shutdown). Terminal-state check, not a STOPPED comparison: a GAME_OVER session
+					// is just as finished, and would otherwise hold this emitter open forever.
+					if (hs.isTerminal() && frames.isEmpty())
 						break;
 				}
 			} catch (InterruptedException e) {
