@@ -806,15 +806,34 @@ right — *don't* hand-edit `adjacencies.json` — is moot, because there is not
 > have drawn if it wanted a boat lane, and it may still be wanted someday for flavour. But the realms are
 > already connected, so it is no longer on the critical path for discoverability or for travel.
 
-**Phase 1 — Realm as data.** Resolve realm in the exporter by the four rules of §The model —
+**Phase 1 — Realm as data. SHIPPED.** Resolve realm in the exporter by the four rules of §The model —
 `Continent` for land, adjacent land for water, **adjacency endpoints for the four portal waypoints**, and
 none for the 3 quirks + 99 deep-ocean. Land it as **`Province.realm`, an engine
-field** (§Realm is an engine field), serialised into the bundle alongside a `realms` block (crop rect per
-realm). Exclude realm-less land from the settleable/site set, and **scope `TimelineSites` to one realm**
-(§Ranked is per realm).
+field** (§Realm is an engine field), serialised into the bundle. Exclude realm-less land from the
+settleable/site set, and **scope `TimelineSites` to one realm** (§Ranked is per realm).
 **One bundle for all realms** (decided) — the client filters and crops, so switching is instant and
 `WorldBundle`'s two `static volatile` cache fields stay as they are. Nothing renders differently. Guarded
 by the bundle golden test.
+
+> **As built.** `geo.Realm` (a fixed enum modelled on `Continent`, members `HALCANN`/`AELANTIR`/
+> `HINUILANDS`/`NONE`) + `Province.realm`, resolved and stamped onto `provinces.json` by a new
+> `geo.export.RealmExporter` (a pure derivation from the already-exported map — no external source —
+> that re-reads and re-writes the committed file, at the end of the stamp chain). The counts match
+> §The model exactly: Halcann 3422+187, Aelantir 1377+178, Hinuilands 2, `NONE` 3+99, **0 water
+> conflicts**, all four waypoints Halcann — the exporter asserts the last two. `WorldMap` gains a
+> `provincesByRealm` index + `provincesOfRealm`, and `settleableProvinces()` now excludes `Realm.NONE`.
+> The bundle ships a per-province `realm` key + a `geoNames.realm` name dictionary read **straight from
+> the `Realm` enum** (not a re-listed copy — §Drift warning). New `RealmTest` (5) + golden regen; full
+> reactor green (374 engine + 109 server).
+>
+> **One deliberate deviation: the `realms` block (crop rect per realm) is deferred to Phase 3, not
+> shipped here.** The authoritative crop rect is a *bake* product — `build.mjs` derives it from a margined,
+> clamped, per-pixel pass over `provinces.bmp` (§The background is baked) — and the committed
+> `web-asset-manifest.json` ships `bboxes: {}` (only the CI bake fills it), so there is nothing for
+> `WorldBundle` to union locally. Computing a crop rect independently in Java would be exactly the
+> drifting second copy §Drift warning forbids. Phase 1 has **no consumer** of the crop rect (nothing
+> renders differently), so it waits for Phase 3, where the bake computes it once. Phase 1 ships realm
+> *membership* + the *name catalog* — the drift-free data shape — instead.
 
 **Phase 2 — Delete the wrap.** Remove `worldW()` and `wrapCopies()`; collapse the six sites to their
 single-copy branches; `clampPan` clamps (§The trap). **Ships against the whole uncropped map**, which is

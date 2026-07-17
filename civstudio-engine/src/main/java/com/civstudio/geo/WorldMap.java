@@ -100,6 +100,7 @@ public final class WorldMap {
 	private final Map<String, List<Province>> provincesByCulture;
 	private final Map<String, List<Province>> provincesByReligion;
 	private final Map<String, List<Province>> provincesByTradeGood;
+	private final Map<Realm, List<Province>> provincesByRealm;
 	// committed per-edge great-circle km, keyed by province id and aligned to that
 	// province's neighbors() order (from the LandRouteExporter's /map/edges.json). Empty
 	// when the resource is absent (e.g. while the exporter itself bootstraps the map),
@@ -290,6 +291,7 @@ public final class WorldMap {
 		Map<String, List<Province>> provByCulture = new LinkedHashMap<>();
 		Map<String, List<Province>> provByReligion = new LinkedHashMap<>();
 		Map<String, List<Province>> provByTradeGood = new LinkedHashMap<>();
+		Map<Realm, List<Province>> provByRealm = new EnumMap<>(Realm.class);
 		for (Province p : byId.values()) {
 			if (p.ownerTag() != null)
 				provByOwner.computeIfAbsent(p.ownerTag(), k -> new ArrayList<>()).add(p);
@@ -299,15 +301,20 @@ public final class WorldMap {
 				provByReligion.computeIfAbsent(p.religion(), k -> new ArrayList<>()).add(p);
 			if (p.tradeGood() != null)
 				provByTradeGood.computeIfAbsent(p.tradeGood(), k -> new ArrayList<>()).add(p);
+			// realm is never null (an absent realm key defaults to Realm.NONE), so every
+			// province is indexed — Realm.NONE is a real bucket (the fogged provinces)
+			provByRealm.computeIfAbsent(p.realm(), k -> new ArrayList<>()).add(p);
 		}
 		provByOwner.replaceAll((k, ps) -> Collections.unmodifiableList(ps));
 		provByCulture.replaceAll((k, ps) -> Collections.unmodifiableList(ps));
 		provByReligion.replaceAll((k, ps) -> Collections.unmodifiableList(ps));
 		provByTradeGood.replaceAll((k, ps) -> Collections.unmodifiableList(ps));
+		provByRealm.replaceAll((k, ps) -> Collections.unmodifiableList(ps));
 		this.provincesByOwner = Collections.unmodifiableMap(provByOwner);
 		this.provincesByCulture = Collections.unmodifiableMap(provByCulture);
 		this.provincesByReligion = Collections.unmodifiableMap(provByReligion);
 		this.provincesByTradeGood = Collections.unmodifiableMap(provByTradeGood);
+		this.provincesByRealm = Collections.unmodifiableMap(provByRealm);
 
 		// committed edge weights, if the /map/edges.json resource is present: each
 		// entry's km[] aligns to the province's neighbors() order (validated), so an
@@ -489,11 +496,15 @@ public final class WorldMap {
 		return combined != null ? combined : province(id).neighbors();
 	}
 
-	/** The settleable ({@link ProvinceType#LAND}) provinces, in load order. */
+	/**
+	 * The settleable ({@link ProvinceType#LAND}) provinces, in load order — excluding {@link
+	 * Realm#NONE realm-less} land, which renders nowhere. A colony must belong to some realm's map,
+	 * so the two agree (docs/realms.md §"No realm" means no realm, in the sim too).
+	 */
 	public List<Province> settleableProvinces() {
 		List<Province> out = new ArrayList<>();
 		for (Province p : byId.values())
-			if (p.isSettleable())
+			if (p.isSettleable() && p.realm() != Realm.NONE)
 				out.add(p);
 		return out;
 	}
@@ -720,6 +731,17 @@ public final class WorldMap {
 	 */
 	public List<Province> provincesOfTradeGood(String key) {
 		return provincesByTradeGood.getOrDefault(key, List.of());
+	}
+
+	/**
+	 * The provinces of a {@link Realm} — including {@link Realm#NONE} (the fogged, realm-less
+	 * provinces). See {@code docs/realms.md}.
+	 *
+	 * @param realm a realm
+	 * @return that realm's provinces (unmodifiable, possibly empty)
+	 */
+	public List<Province> provincesOfRealm(Realm realm) {
+		return provincesByRealm.getOrDefault(realm, List.of());
 	}
 
 	/**

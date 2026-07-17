@@ -72,7 +72,7 @@ class WorldBundleGoldenTest {
 		List<String> hard = new ArrayList<>();     // non-lab field mismatches (must be zero)
 		int labFlips = 0, labOff = 0, labProvinces = 0;
 		String[] scalarFields = { "name", "lat", "lon", "plots", "waterPlots", "type",
-				"region", "area", "continent", "winter" };
+				"region", "area", "continent", "realm", "winter" };
 		for (var e : exp.entrySet()) {
 			int id = e.getKey();
 			JsonNode g = e.getValue(), a = act.get(id);

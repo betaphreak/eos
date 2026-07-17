@@ -41,6 +41,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *                   {@code null} if it has none; deserialized from the continent
  *                   {@code raw_key} (e.g. {@code "asia"}). See {@link
  *                   WorldMap#continentOf(int)}
+ * @param realm      the {@link Realm} this province belongs to — which of Halann's
+ *                   faked-onto-one-cylinder maps it renders on. Resolved at export
+ *                   ({@link com.civstudio.geo.export.RealmExporter}) from {@link
+ *                   #continent()} (land) or adjacent land (water); {@link Realm#NONE}
+ *                   for the projection/ice quirks and deep ocean. Never {@code null}
+ *                   (an absent {@code realm} key defaults to {@link Realm#NONE}). See
+ *                   {@code docs/realms.md}
  * @param climate    the {@link Climate} band ({@link Climate#TEMPERATE} if the
  *                   source did not classify it — never {@code null})
  * @param winter     the {@link WinterSeverity} ({@link WinterSeverity#NONE} by
@@ -93,6 +100,7 @@ public record Province(
 		@JsonProperty("region") String regionKey,
 		@JsonProperty("area") String areaKey,
 		@JsonProperty("continent") Continent continent,
+		Realm realm,
 		Climate climate,
 		WinterSeverity winter,
 		Monsoon monsoon,
@@ -115,6 +123,7 @@ public record Province(
 	 */
 	public Province {
 		neighbors = neighbors == null ? List.of() : List.copyOf(neighbors);
+		realm = realm == null ? Realm.NONE : realm;
 		climate = climate == null ? Climate.TEMPERATE : climate;
 		winter = winter == null ? WinterSeverity.NONE : winter;
 		monsoon = monsoon == null ? Monsoon.NONE : monsoon;

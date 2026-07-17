@@ -81,6 +81,16 @@ public final class WorldBundle {
 		CONTINENT_NAME.put("oceania", "Hinuilands");
 	}
 
+	// realm raw_key -> display name, read straight from the engine's Realm enum (the single source of
+	// truth) rather than re-listed here — the frontend gets its realm names from this dictionary and
+	// never re-derives continent->realm, the fourth-copy trap docs/realms.md §Drift warning guards.
+	private static final Map<String, String> REALM_NAME = new HashMap<>();
+	static {
+		for (com.civstudio.geo.Realm r : com.civstudio.geo.Realm.values())
+			if (r.rawKey() != null) // NONE is an absent realm, not a named one
+				REALM_NAME.put(r.rawKey(), r.displayName());
+	}
+
 	// cached serialized forms (the bundle is world-level and immutable per deploy)
 	private static volatile byte[] jsonBytes;
 	private static volatile byte[] gzipBytes;
@@ -172,6 +182,7 @@ public final class WorldBundle {
 			putKeyOrNull(o, "region", p, "region");
 			putKeyOrNull(o, "area", p, "area");
 			putKeyOrNull(o, "continent", p, "continent");
+			putKeyOrNull(o, "realm", p, "realm");
 			putKeyOrNull(o, "winter", p, "winter");
 			ArrayNode nb = o.putArray("nb");
 			if (p.hasNonNull("neighbors"))
@@ -213,8 +224,10 @@ public final class WorldBundle {
 		Set<String> usedRegions = usedKeys(shipped, "region");
 		Set<String> usedAreas = usedKeys(shipped, "area");
 		Set<String> usedContinents = usedKeys(shipped, "continent");
+		Set<String> usedRealms = usedKeys(shipped, "realm");
 		ObjectNode geoNames = NODES.objectNode();
 		geoNames.set("continent", pickKeys(CONTINENT_NAME, usedContinents));
+		geoNames.set("realm", pickKeys(REALM_NAME, usedRealms));
 		geoNames.set("region", pickKeys(regionDisplayName, usedRegions));
 		geoNames.set("area", pickKeys(areaDisplayName, usedAreas));
 		geoNames.set("superByRegion", pickKeys(srNameByRegion, usedRegions));

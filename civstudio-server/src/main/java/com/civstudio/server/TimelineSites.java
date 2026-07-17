@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 
 import com.civstudio.geo.Province;
+import com.civstudio.geo.Realm;
 import com.civstudio.settlement.Settlement;
 
 /**
@@ -19,6 +20,12 @@ import com.civstudio.settlement.Settlement;
  * <b>Deterministic.</b> No randomness: the picks are a pure function of the map, the anchor and the
  * join order, and ties break on province id. So a Timeline's roster replays exactly — which is what
  * lets a run be rebuilt from its spec + roster rather than a snapshot.
+ * <p>
+ * <b>Scoped to one {@link Realm}.</b> A Timeline is a single realm's ranked ladder (docs/realms.md
+ * §Ranked is per realm): the realm is the anchor's, and every joiner founds within it — so the
+ * royale never spans a boundary the UI cannot see across, and {@link Realm#NONE realm-less} land is
+ * never a site. (Start-scoping is only half of it; the cross-realm fey portals are gated closed —
+ * docs/realms.md §Crossing a realm on foot is gated — so no colony walks into another ladder.)
  */
 public final class TimelineSites {
 
@@ -36,13 +43,15 @@ public final class TimelineSites {
 	 * @throws IllegalStateException if the map has no viable province left
 	 */
 	public static Province pick(Collection<Province> world, List<Settlement> taken, Province anchor) {
-		if (taken.isEmpty() && viable(anchor))
+		// the Timeline's realm is the anchor's; every site must sit in it (and never in Realm.NONE)
+		Realm realm = anchor == null ? Realm.NONE : anchor.realm();
+		if (taken.isEmpty() && viable(anchor, realm))
 			return anchor;
 
 		Province best = null;
 		double bestDistance = -1;
 		for (Province p : world) {
-			if (!viable(p) || isTaken(p, taken))
+			if (!viable(p, realm) || isTaken(p, taken))
 				continue;
 			double d = nearestTakenDistance(p, taken);
 			// strictly-greater keeps the FIRST of equally-distant candidates, and `world` iterates
@@ -57,9 +66,13 @@ public final class TimelineSites {
 		return best;
 	}
 
-	/** A province worth founding into: settleable land with room for a colony to grow. */
-	private static boolean viable(Province p) {
-		return p != null && p.isSettleable() && p.plots() >= Settlement.MIN_FOUNDING_PLOTS;
+	/**
+	 * A province worth founding into: settleable land in this Timeline's realm (never {@link
+	 * Realm#NONE}) with room for a colony to grow.
+	 */
+	private static boolean viable(Province p, Realm realm) {
+		return p != null && p.realm() == realm && p.realm() != Realm.NONE
+				&& p.isSettleable() && p.plots() >= Settlement.MIN_FOUNDING_PLOTS;
 	}
 
 	private static boolean isTaken(Province p, List<Settlement> taken) {
