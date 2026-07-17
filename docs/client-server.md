@@ -473,6 +473,16 @@ Still open on the action side:
   log tail. Determinism guarantees correctness.
 - **Multi-node.** Sessions are independent (share only immutable reference data), so
   hosting shards cleanly across nodes by `sessionId` once state is serializable.
+- **Per-player session quota — 5 saves + 1 ranked play.** A player may hold **up to five**
+  single-player sessions, which function as **save slots**, plus **a single ranked play**. The
+  ranked run being singular is the point: five ranked branches you could pick the winner from
+  would not be worth ranking. This is what the persistence above is *for* — a save slot is a
+  persisted `SessionSpec` + `CommandLog`, not a memory dump, and sessions already carry an owner
+  (see `SessionOwnershipTest` and the owner cookie `/control` checks). Still to build: the quota
+  itself, slot persistence across restarts, and whatever marks a session ranked and stops it being
+  branched or reloaded. Single-player play itself is described in `docs/notifications.md`
+  §"This is how single-player works" — you start at the bottom of the `Rank` ladder as an
+  adventurer company and climb, seeing one rung either way.
 
 ---
 

@@ -60,25 +60,34 @@ const readBoard = () => page.evaluate(() => {
     })),
   };
 });
-// ground truth, straight from the server: the same window the board asks for
+// Ground truth, straight from the server: the same date window the board asks for, then the same RANK
+// window the board applies. The board is not "the tail" — it is the tail seen from a rank: a viewer
+// sees one rung either way, so a VILLAGE founding never reaches a CARAVAN band. Comparing against the
+// raw tail would assert an invariant that predates ranked events.
 const tailWindow = () => page.evaluate(async liveBase => {
   const { minusDays, LIFETIME_DAYS } = await import('/js/notify-age.mjs');
+  const { visibleTo, VIEWER_RANK_DEFAULT } = await import('/js/notify-rank.mjs');
   const list = await (await fetch(liveBase + '/api/sessions')).json();
   const id = list[0].id;
   const snap = await (await fetch(`${liveBase}/api/sessions/${id}/snapshot`)).json();
   const from = minusDays(snap.date, LIFETIME_DAYS);
-  const lines = await (await fetch(`${liveBase}/api/sessions/${id}/events?from=${from}&limit=60`)).json();
-  return { id, now: snap.date, from, lines };
+  const all = await (await fetch(`${liveBase}/api/sessions/${id}/events?from=${from}&limit=60`)).json();
+  const lines = all.filter(l => visibleTo(l.rankLevel, VIEWER_RANK_DEFAULT));
+  return { id, now: snap.date, from, lines, all, viewer: VIEWER_RANK_DEFAULT };
 }, live);
 
 console.log('\n--- A) recovered from the retained tail ---');
 const truth = await tailWindow();
-console.log(`session ${truth.id} · in-game ${truth.now} · window from ${truth.from} · ${truth.lines.length} line(s) in the tail`);
-console.log(JSON.stringify(truth.lines, null, 1));
+console.log(`session ${truth.id} · in-game ${truth.now} · window from ${truth.from} · ` +
+  `${truth.all.length} line(s) in the tail, ${truth.lines.length} visible to a viewer at rank ${truth.viewer}`);
+console.log(JSON.stringify(truth.all.map(l => `${l.date}  [${l.rank}/${l.rankLevel}]  ${l.text.slice(0, 46)}`), null, 1));
+const hidden = truth.all.length - truth.lines.length;
+if (hidden) console.log(`  (${hidden} line(s) are out of the viewer's rank window — a band is not told about a colony's affairs)`);
 if (!truth.lines.length)
-  console.log('  NOTE: the tail window is empty — the demo has run past its last log line.\n' +
-    '        Restart the server and re-run within ~90s to exercise this pass.');
-check(truth.lines.length > 0, 'the server has lines to recover (restart the server if this fails)');
+  console.log('  NOTE: nothing in the window is visible at this rank — the demo may have run past its\n' +
+    '        last log line. Restart the server and re-run within ~90s to exercise this pass.');
+check(truth.lines.length > 0, 'the server has lines this viewer can see (restart the server if this fails)');
+check(truth.all.every(l => Number.isInteger(l.rankLevel)), 'every tail line carries a rank level');
 
 // Rehydration is the tail of a long async chain — bundle fetch → boot → enter Live → /api/sessions →
 // /snapshot → /events → seed — so wait for the board to settle rather than guessing at a sleep.
