@@ -37,7 +37,9 @@ public class WebConfig {
 	CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration cfg = new CorsConfiguration();
 		cfg.setAllowedOriginPatterns(originPatterns());
-		cfg.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+		// DELETE is required by the lobby's "delete run" (SessionController#delete); without it the
+		// cross-origin (anbennar → dev) preflight blocks the request and the delete silently no-ops.
+		cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		cfg.setAllowedHeaders(List.of("*"));
 		cfg.setAllowCredentials(true); // the session cookie must ride cross-subdomain
 		cfg.setMaxAge(600L);

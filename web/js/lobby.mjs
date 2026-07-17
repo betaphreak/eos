@@ -194,10 +194,14 @@ function spectate(row) {
 
 async function remove(row) {
   if (!window.confirm(`Delete ${title(row)}? This cannot be undone.`)) return;
+  let ok = false, error = null;
   try {
-    await fetch(apiUrl("/api/sessions/" + encodeURIComponent(row.id)),
+    const res = await fetch(apiUrl("/api/sessions/" + encodeURIComponent(row.id)),
       { method: "DELETE", credentials: "include" });
-  } catch { /* the refresh below tells the truth either way */ }
+    ok = res.ok;
+    if (!ok) { try { error = (await res.json()).error; } catch { /* empty body */ } error = error || ("HTTP " + res.status); }
+  } catch (e) { error = String(e && e.message || e); }   // network/CORS failure — don't swallow it
+  if (!ok) $("lobbyHint").textContent = error || "could not delete the run";
   refresh();
 }
 
