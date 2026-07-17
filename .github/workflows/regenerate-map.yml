@@ -4,9 +4,10 @@ name: Regenerate map
 # terrain, features,
 # bonuses AND GeoNames place names — and uploads it to the Azure Files share the live server reads
 # (docs/client-server.md §Deployment). This is the step that USED to run on the dev box
-# (tools/deploy-plot-cache.ps1): production can't bake place names (no GeoNames dump on the server),
-# so a named cache must be shipped whenever plot generation changes (a ProvincePlotStore.MAP_VERSION
-# bump), else prod regenerates nameless plots on demand.
+# (tools/deploy-plot-cache.ps1). Place names come from the committed GeoNames subset that ships in the
+# engine jar (no 372 MB dump needed — any machine, incl. this runner, bakes named plots), but the plot
+# cache itself is large + per-province, so a fresh named cache must still be shipped whenever plot
+# generation changes (a ProvincePlotStore.MAP_VERSION bump), else prod regenerates plots on demand.
 #
 # It does NOT roll the Container App: the project subscription is a *guest* identity that can't
 # create role assignments (no CI service principal), so the app roll stays a manual
@@ -96,32 +97,10 @@ jobs:
           java-version: '25'
           cache: maven
 
-      # GeoNames cache as restore -> download -> save (NOT the single actions/cache step, whose
-      # post-step save is skipped when the job fails). Saving right after the download caches the
-      # ~400 MB allCountries.zip even if the bake later fails, so a re-run never re-downloads it.
-      - name: Restore the GeoNames dump cache
-        id: geocache
-        if: steps.guard.outputs.skip != 'true'
-        uses: actions/cache/restore@v4
-        with:
-          path: .geonames-cache
-          key: geonames-allcountries-v1
-
-      - name: Download the GeoNames dump (on cache miss)
-        if: steps.guard.outputs.skip != 'true' && steps.geocache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p .geonames-cache
-          echo "downloading GeoNames allCountries.zip (~400 MB) — the source for plot place names…"
-          curl -fSL --retry 3 -o .geonames-cache/allCountries.zip \
-            https://download.geonames.org/export/dump/allCountries.zip
-          ls -la .geonames-cache
-
-      - name: Save the GeoNames dump cache
-        if: steps.guard.outputs.skip != 'true' && steps.geocache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: .geonames-cache
-          key: geonames-allcountries-v1
+      # No GeoNames dump download any more: plot naming reads the committed ~4.5 MB subset
+      # (generated/geonames/subset.json.gz, on the engine classpath) via GeoNamesSubset, so the bake
+      # names plots without the 372 MB allCountries.zip. Rebuild the subset with GeoNamesSubsetExporter
+      # (dev-only, needs the full dump) when the region map or plot grids change; see docs/plot-place-naming.md.
 
       # cache the on-demand Anbennar (GitLab) + C2C (GitHub) source fetches so repeat runs don't
       # re-pull the map rasters / art. Both are ref-scoped subdirs (.anbennar-cache/<ref>, …), so the
