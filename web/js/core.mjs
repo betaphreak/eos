@@ -12,19 +12,23 @@ const SERVER_BASE = resolveBase();
 const apiUrl = path => SERVER_BASE + path;
 
 // ---- data prep ----
-const P = BUNDLE.provinces;
+// Realm selection (docs/realms.md): ?realm=<key> crops the view to a single realm — its baked
+// background + minimap (MAP) and its provinces (P). Absent or unknown → the whole world, the default
+// until Phase 5 turns realm selection into the masthead dropdown. Everything downstream reads MAP/P, so
+// the crop, projection window, minimap and province set all follow from this one pick.
+const ACTIVE_REALM = (typeof location !== "undefined"
+  ? new URLSearchParams(location.search).get("realm") : "") || "";
+const _realmActive = !!(BUNDLE.realms && BUNDLE.realms[ACTIVE_REALM]);
+// When a realm is active, render ONLY its provinces: foreign land at the crop edge (outlines, dots,
+// labels) drops out, and cross-realm neighbour/adjacency lines suppress for free (their far endpoint is
+// no longer in P). Also the per-frame perf lever — the cull/hit-test loops shrink to the realm's share.
+const P = _realmActive ? BUNDLE.provinces.filter(p => p.realm === ACTIVE_REALM) : BUNDLE.provinces;
 const fmtInt = n => Math.round(n).toLocaleString("en-US");
 // projection: lon/lat -> the exact source pixel on terrain.bmp (the inverse of the
 // maps ProvinceExporter used) -> the baked crop's fit rectangle -> screen, with a
 // pan/zoom camera (cam.k scale, cam.x/cam.y translate) applied last. Using the same
 // source-pixel formulas the build baked with keeps dots/rings pinned to the map.
-// Realm selection (docs/realms.md Phase 3 — Crop and bake): ?realm=<key> crops the view to a single
-// realm's baked background + minimap; absent or unknown → the whole-world map, the default until Phase
-// 5 turns realm selection into the masthead dropdown. Everything downstream reads MAP, so the crop, the
-// projection window and the minimap all follow from this one pick.
-const ACTIVE_REALM = (typeof location !== "undefined"
-  ? new URLSearchParams(location.search).get("realm") : "") || "";
-const MAP = (BUNDLE.realms && BUNDLE.realms[ACTIVE_REALM] && BUNDLE.realms[ACTIVE_REALM].map) || BUNDLE.map;
+const MAP = _realmActive ? BUNDLE.realms[ACTIVE_REALM].map : BUNDLE.map;
 const sxSrc = lon => (lon + 180) / 360 * (MAP.W - 1);
 const sySrc = lat => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r / 2 + Math.PI / 4)) / Math.PI) / 2 * MAP.H; };
 let VIEW = { w:0, h:0, dx:0, dy:0, dw:0, dh:0, dpr:1 };
