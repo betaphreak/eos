@@ -11,7 +11,7 @@
 import { isPolitical, activeZ, S } from "./core.mjs";
 import { drawRaster, drawLakes, drawSeaCells, drawImpassable, drawSurfacePlots,
          drawProvinceBorders, drawUnderworldVeil, drawCavernFloors, drawCavernPlots, drawCavernRims,
-         drawCaveEntrances, drawAdjacencies, drawHoverHighlight, drawSelectedHighlight } from "./main.mjs";
+         drawCaveEntrances, drawAdjacencies, drawRealmArrows, drawHoverHighlight, drawSelectedHighlight } from "./main.mjs";
 import { drawSeaBase } from "./sea.mjs";
 import { drawCostOverlay } from "./cost.mjs";
 import { drawTradeGoodIcons } from "./bonusicons.mjs";
@@ -68,6 +68,7 @@ export const LAYERS = [
   { id: "cavernRims",     z: [-1], band: "all",            draw: drawCavernRims },
   { id: "caveEntrances",  z: [0],  band: "all",            draw: drawCaveEntrances },
   { id: "adjacencies",    band: "≥3.3 (10×)",              draw: drawAdjacencies },
+  { id: "realmArrows",    z: [0],  band: "all",            draw: drawRealmArrows },   // cross-realm teleporter → "to <Realm>" arrow (self-gates on ?realm=)
   { id: "hover",          band: "all",                     draw: drawHoverHighlight },
   { id: "selected",       band: "all",                     draw: drawSelectedHighlight },
   { id: "live",           band: "all",  gate: () => S.overlay === "live", draw: drawLive },

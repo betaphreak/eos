@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, centerOn, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_MAX, isPolitical, isUnderground, cssVar, S } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, centerOn, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_MAX, isPolitical, isUnderground, cssVar, S, ACTIVE_REALM, LABEL_FONT } from "./core.mjs";
 import { bandAlpha, kBand, band, bandName, regime, REGIME_INFO } from "./bands.mjs";
 import { drawPlots } from "./plots.mjs";                       // still used directly by drawCavernPlots
 import { scheduleLegendRefresh } from "./overlays/political.mjs";
@@ -387,6 +387,77 @@ function teleportMark(x, y, dest) {
   if (dest) S.markers.push({ x, y, r: R, label: `<b>Portal</b><br><span class="r">⇄ ${dest}</span>` });
 }
 
+// ---- realm arrows: a cross-realm teleporter, promoted to a labelled arrow into the fog ----
+// docs/realms.md §The fog must not be mute. With P filtered to the active realm, drawAdjacencies drops
+// a cross-realm teleporter (its far endpoint is gone from Pby); we redraw it here as a red arrow at the
+// in-realm endpoint, pointing the way to the realm on the other side and naming it — so the fog is a
+// signpost, not an absence. Only on a cropped realm; the whole-world view has no "elsewhere" to point
+// at. The click that actually crosses realms is Phase 5 (this is the marker, not yet the affordance).
+const provAllById = BUNDLE.realms ? new Map(BUNDLE.provinces.map(p => [p.id, p])) : null;
+const realmNameOf = key => (BUNDLE.geoNames && BUNDLE.geoNames.realm && BUNDLE.geoNames.realm[key]) || key;
+const ARROW_LEN = 46, ARROW_HEAD = 12;
+
+function drawRealmArrows() {
+  if (!ACTIVE_REALM || !provAllById) return;
+  const adj = BUNDLE.adjacencies;
+  if (!adj || !adj.length) return;
+  // group cross-realm teleporters by their in-realm endpoint, averaging the direction to the far side —
+  // Domancadh has six portals to Halcann, so on Aelantir they collapse to one arrow, not six.
+  const arrows = new Map();
+  for (const [fromId, toId, , teleport] of adj) {
+    if (!teleport) continue;
+    const pf = provAllById.get(fromId), pt = provAllById.get(toId);
+    if (!pf || !pt) continue;
+    let near, far;
+    if (pf.realm === ACTIVE_REALM && pt.realm && pt.realm !== ACTIVE_REALM) { near = pf; far = pt; }
+    else if (pt.realm === ACTIVE_REALM && pf.realm && pf.realm !== ACTIVE_REALM) { near = pt; far = pf; }
+    else continue;   // both in this realm (the 86 Deepwoods rows) — not a crossing
+    let a = arrows.get(near.id);
+    if (!a) { a = { p: near, otherRealm: far.realm, fx: 0, fy: 0, n: 0 }; arrows.set(near.id, a); }
+    a.fx += px(far.lon); a.fy += py(far.lat); a.n++;   // far endpoint projects off-crop → a direction
+  }
+  if (!arrows.size) return;
+  ctx.save();
+  ctx.font = "700 12px " + LABEL_FONT;   // set once, for measureText and the labels
+  const placed = [];                      // label rects already drawn — de-clutters the Deepwoods cluster
+  for (const a of arrows.values()) {
+    const ox = px(a.p.lon), oy = py(a.p.lat);
+    if (ox < -40 || ox > VIEW.w + 40 || oy < -40 || oy > VIEW.h + 40) continue;
+    let dx = a.fx / a.n - ox, dy = a.fy / a.n - oy;
+    const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+    const label = "to " + realmNameOf(a.otherRealm);
+    // every crossing gets an arrow, but a label only if it clears the ones already placed — so the six
+    // clustered Deepwoods portals read as one "to Aelantir" at world zoom, separating as you zoom in.
+    const hx = ox + dx * ARROW_LEN, hy = oy + dy * ARROW_LEN, w = ctx.measureText(label).width;
+    const lx = hx + dx * 7, ly = hy + dy * 7, rx = dx >= 0 ? lx : lx - w;
+    const rect = { x0: rx, y0: ly - 8, x1: rx + w, y1: ly + 8 };
+    const show = !placed.some(r => rect.x0 < r.x1 && rect.x1 > r.x0 && rect.y0 < r.y1 && rect.y1 > r.y0);
+    if (show) placed.push(rect);
+    drawRealmArrow(ox, oy, dx, dy, show ? label : null);
+  }
+  ctx.restore();
+}
+
+// a static (un-animated) red arrow from (ox,oy) along the unit direction (dx,dy), with an optional
+// upright text label past the head (dropped when a nearby arrow already carries it). ctx.font is set
+// by the caller (drawRealmArrows), the only caller.
+function drawRealmArrow(ox, oy, dx, dy, label) {
+  const hx = ox + dx * ARROW_LEN, hy = oy + dy * ARROW_LEN;       // arrowhead tip
+  const nx = -dy, ny = dx;                                        // perpendicular
+  ctx.strokeStyle = ADJ_RED; ctx.fillStyle = ADJ_RED; ctx.lineWidth = 3; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(hx, hy); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(hx, hy);
+  ctx.lineTo(hx - dx * ARROW_HEAD + nx * ARROW_HEAD * 0.6, hy - dy * ARROW_HEAD + ny * ARROW_HEAD * 0.6);
+  ctx.lineTo(hx - dx * ARROW_HEAD - nx * ARROW_HEAD * 0.6, hy - dy * ARROW_HEAD - ny * ARROW_HEAD * 0.6);
+  ctx.closePath(); ctx.fill();
+  if (!label) return;
+  ctx.textAlign = dx >= 0 ? "left" : "right"; ctx.textBaseline = "middle";
+  const lx = hx + dx * 7, ly = hy + dy * 7;
+  ctx.lineWidth = 3; ctx.strokeStyle = "rgba(8,10,14,0.9)"; ctx.strokeText(label, lx, ly);
+  ctx.fillStyle = "#ff6a5a"; ctx.fillText(label, lx, ly);
+}
+
 // place province name labels over the map with a halo, skipping any that would
 // overflow the stage or collide with one already placed (priority: origin first,
 // then destinations, then the largest context provinces).
@@ -463,5 +534,5 @@ export { zoomAt, resize, focusProvince, focusProvinceFit, applyHash, hasDeepLink
 // close over main's raster/camera state and the Pby/hatch helpers)
 export { drawRaster, drawLakes, drawSeaCells, drawImpassable, drawSurfacePlots,
          drawProvinceBorders, drawUnderworldVeil, drawCavernFloors, drawCavernPlots, drawCavernRims,
-         drawCaveEntrances, drawAdjacencies,
+         drawCaveEntrances, drawAdjacencies, drawRealmArrows,
          drawHoverHighlight, drawSelectedHighlight };
