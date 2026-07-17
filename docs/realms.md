@@ -6,24 +6,34 @@ A **Realm** is a map. Today CivStudio has exactly one — the whole cylindrical 
 wrapping horizontally at 360° of longitude. This doc splits it into three, each cropped to its own
 pixels, each unaware the others exist.
 
-The Old World realm is named **Halann** (decided). The name was free: the province of that name
-(id 1173 — a dev-1/1/1 uncolonised Ringlet Isles islet) is on the map for an EU4 technical constraint
-rather than as a place, which is the same single-map artifact as everything else in this doc. Halann is
-strictly the planet's name and all three realms sit on it, so the label is a deliberate imprecision, not
-an oversight.
+The Old World realm is named **Halcann** (decided) — Anbennar's own word for it, *earth-center* in Old
+Castanorian, the landmass holding Cannor, Sarhal and Haless. The mod's localisation uses it as the direct
+antonym of Aelantir ("out of Aelantir to Halcann"), so the three realm names are all canon and all
+distinct: **Halann** is the *planet* the three realms sit on, and stays reserved for it. Halcann exists in
+Anbennar only as lore vocabulary — `map/continent.txt` has no such entry, it spans the `europe`/`asia`/
+`africa`/`serpentspine` engine continents — so the union is ours to define, which is exactly what a realm
+is.
 
 | Realm | Land | Water | Total | Crop | Playable |
 |---|---|---|---|---|---|
-| **Halann** | 3423 — `europe`, `asia`, `africa`, `serpentspine` | 188 | **3611** | 2532px (45.0%) | yes |
-| **Aelantir** | 1378 — `north_america`, `south_america` | 178 | **1556** | 2369px (42.1%) | yes |
+| **Halcann** | 3418 — `europe`, `asia`, `africa`, `serpentspine` | 187 | **3605** | 2437px (43.3%) | yes |
+| **Aelantir** | 1377 — `north_america`, `south_america` | 178 | **1555** | 2369px (42.1%) | yes |
 | **Hinuilands** | 2 — `oceania` | 0 | **2** | 162px (2.9%) | no — viewable only |
-| *(no realm)* | 3 quirks + 1 continent-less | 91 deep ocean | **95** | — | fogged everywhere |
+| *(no realm)* | 3 quirks | 99 deep ocean | **102** | — | fogged everywhere |
 
-3611 + 1556 + 2 + 91 + 3 + 1 = **5264** — it balances against the imported map exactly. (Land counts are
+3605 + 1555 + 2 + 102 = **5264** — it balances against the imported map exactly. (Land counts are
 below the raw continent totals because ~50 `SEA`/`LAKE` provinces carry a continent and are counted as
 water here: water is assigned by adjacency, never by continent.) Phase 0 adds 4 more.
 
-The Serpentspine underworld stays **inside Halann** as its existing `z:[-1]` plane — realm and z are
+> **These numbers are post-`fb79aaa`.** The committed map resources had drifted from the locked Anbennar
+> ref — the lock moved on 2026-07-12 and only `provinces.json` was regenerated — so an earlier draft of
+> this doc measured a world that was part pre-bump and part post. Regenerating moved 192 fields on 113
+> provinces, and three of them land squarely here: **Ekyunimoy is `oceania`, not `north_america`** (so it
+> is a *Hinuilands* quirk, not an Aelantir one); **Vyr Pas is `LAND`, not `GLADEWAY`**; and deep ocean is
+> **99**, not 91. Every conclusion below survived — including the load-bearing one, **zero water
+> conflicts** — but the counts moved, and the earlier ones are not worth trusting.
+
+The Serpentspine underworld stays **inside Halcann** as its existing `z:[-1]` plane — realm and z are
 orthogonal axes (§Realm is not z).
 
 ## Why this exists
@@ -31,7 +41,7 @@ orthogonal axes (§Realm is not z).
 **EU4 cannot have separate maps.** Everything must live on one cylinder, so Anbennar's modders faked
 their second and third worlds: Aelantir is a real landmass across a real ocean, but the Hinuilands —
 meant to be elsewhere entirely — became two isolated provinces stranded in the Pacific with no route in,
-plus 135 reserved-but-unpainted placeholders and a teleporter network wired to nothing.
+plus 243 reserved-but-unpainted placeholders and a teleporter network wired to nothing.
 
 CivStudio is not EU4 and has no such limit. **Realms is us lifting the limitation Anbennar worked
 around.** That framing decides the open questions below: where the data looks broken, it is usually a
@@ -44,20 +54,26 @@ Anbennar source at `.anbennar-cache` (→ `C:\Code\anbennar-eu4-dev`).
 
 ### Hinuilands is not painted, and nothing reaches it
 
-`hinuilands_superregion` has three regions — Titanoflora Riverlands, Lakelands, Forests — whose areas
-reference **135 province ids**. Exactly **one** is real. The rest are reserved placeholders in
-`map/definition.csv`, unpainted on `provinces.bmp`, so the importer correctly skips them:
+`hinuilands_superregion` has five regions — Titanoflora Riverlands, Lakelands, Forests, Valley, Savanna —
+spanning **61 areas** that reference **245 province ids**. Exactly **two** are real. The other 243 are
+reserved placeholders in `map/definition.csv`, unpainted on `provinces.bmp`, so the importer correctly
+skips them:
 
 ```
 3333;190;125;119;UnusedLand143_#be7d77;x
 3083;47;252;249;Unused70_#2ffcf9;x
 ```
 
-Every `titanoflora_forests_region` area (`arihan_area`, `manuata_area`, …) has **zero** provinces. The
-modders reserved the names and never drew the map.
+Every area is *populated* in `area.txt` — not one is an empty block — and 243 of the 245 ids it names
+were never drawn. The modders reserved the whole realm and painted two provinces of it.
 
-What survives is `Continent.OCEANIA` — **Vyr Pas** (3060, `GLADEWAY`, 739 plots) and **Vyr Cirentyn**
-(3061, `LAND`, owner N57, culture holoino). Both are **graph islands: zero neighbors**. In Anbennar's own
+Those two are exactly the *land* of `Continent.OCEANIA` — **Vyr Pas** (3060, `LAND`, 739 plots,
+`arihan_area` in the Forests region) and **Vyr Cirentyn** (3061, `LAND`, owner N57, culture holoino,
+`titanoflora_lakelands_6_area`). **The two sources agree**: realm-by-continent and realm-by-superregion
+select the same pair, so nothing about Hinuilands' membership is ambiguous, and Phase 1 can use
+`Continent` for it as it does for the other two realms.
+
+Both are **graph islands: zero neighbors**. In Anbennar's own
 source, Vyr Pas has no adjacency at all, and Vyr Cirentyn has exactly one:
 
 ```
@@ -90,6 +106,27 @@ in `WorldMap.combinedNeighbors`, and **`LandRouter` already traverses them today
 mechanic exists and works; it is only the *marker* that is missing, because the `teleport` flag is a
 rendering heuristic (`WorldBundle.java:233`, `gcKm > TELEPORT_KM` where `TELEPORT_KM = 800`) and the
 gladeways sit close together, so they draw as ordinary connection lines.
+
+> **The heuristic is 0-for-92, and the truth is already in the row.** `adjacencies.json` ships a
+> **`comment`** field — the four keys are `from`, `to`, `type`, `comment` — and the comment is literally
+> `Deepwoods_Teleporter`, `deepwoods_fey_portal`, `domandrod_summer_gate`. `WorldBundle` **discards it**
+> and re-derives `teleport` from great-circle distance instead. That guess is wrong in both directions:
+>
+> - it **misses all 92** real portals (gladeways sit close together, under 800km);
+> - it **fires on four things that are not portals** — the Ee Teah/Sachkriok/Talyasgam/Xaybatencos rows
+>   below, ordinary long sea and canal links.
+>
+> **Ship the flag from the comment and retire `TELEPORT_KM`** — Phase 0 is already opening this data,
+> and every consumer downstream (the arrow, the cross-realm line suppression, any future gating of the
+> Seasonal Court) needs to know *a teleporter is a teleporter*, not *these two provinces are far apart*.
+> Building Phase 4's arrow on a heuristic that has never once been right about a portal is not a
+> foundation.
+>
+> **It keeps the wire name `teleport`** (`[from, to, type, teleport]`, destructured at `main.mjs:363`) —
+> only its *source* changes, so no frontend change is needed. And it is emphatically **not** called
+> `portal`: `ProvincePortals.Portal` already means a border-midpoint anchor for corridor routing
+> (`docs/land-routing.md` Level 2), which has nothing to do with teleportation. One collision of that
+> word in the tree is enough.
 
 > **We drop 41 of the 92 portal rows, and all of them are needed.** Every dropped row has an endpoint of
 > `7025`, `7027`, `7030` or `7033` — absent from `provinces.json`. What is lost, by row type:
@@ -131,17 +168,17 @@ The only rows the 800km flag *does* fire on are four accidents, all within one c
  935km  sea    Xaybatencos -> Crooked Island [north_america]
 ```
 
-Nothing links Halann to Aelantir.
+Nothing links Halcann to Aelantir.
 
 ### The partition is free — zero cross-realm edges
 
-Not one land province in Halann pixel-touches Aelantir, and not one of the 408 water provinces touches
+Not one land province in Halcann pixel-touches Aelantir, and not one of the 408 water provinces touches
 land in more than one realm. The only three cross-*continent* adjacencies all stay within a realm:
 
 ```
 395km  sea    Altarcliff (north_america) -> Chesh (south_america)      # both Aelantir
- 35km  canal  Marrhold (europe) -> Natvirod 2 (serpentspine)           # both Halann (underworld)
-200km  canal  Nooks Cranny (serpentspine) -> Noms10 (asia)             # both Halann (underworld)
+ 35km  canal  Marrhold (europe) -> Natvirod 2 (serpentspine)           # both Halcann (underworld)
+200km  canal  Nooks Cranny (serpentspine) -> Noms10 (asia)             # both Halcann (underworld)
 ```
 
 The realms are already disconnected components of the province graph. Splitting them **cuts no edge**,
@@ -150,7 +187,7 @@ cannot start doing so because we drew a smaller map.
 
 ### The ocean splits cleanly — by adjacency, not by reachability
 
-BFS over water from each coast is useless: 419 water provinces reachable from Halann, 336 from
+BFS over water from each coast is useless: 419 water provinces reachable from Halcann, 336 from
 Aelantir, **301 shared**. Multi-hop reachability says nothing about ownership.
 
 **Anbennar's sea superregions cannot help — they are empty shells.** `map/superregion.txt` names all
@@ -169,20 +206,20 @@ eight: `west_american_sea`, `east_american_sea`, `north_european_sea`, `south_eu
 **Adjacency answers it exactly.** Assign each water province the realm of the land it *touches*:
 
 ```
-CLASSIC   188 water provinces
+HALCANN   187 water provinces
 AELANTIR  178
-deep ocean (touches no land)  91   -> fog
+deep ocean (touches no land)  99   -> fog
 CONFLICTS (touch 2+ realms)    0
 ```
 
-188 + 178 + 91 = 457 — all of it, unambiguously. Zero conflicts is not luck: no water province touches
+187 + 178 + 99 = 464 — all of it, unambiguously. Zero conflicts is not luck: no water province touches
 land in more than one realm (§The partition is free).
 
-**And "deep ocean" is a real category, not an invented one** — 91 provinces touch no land at all. That
+**And "deep ocean" is a real category, not an invented one** — 99 provinces touch no land at all. That
 is precisely the water that should be fogged, and the data volunteers the set. No threshold, no
 heuristic, no tuning.
 
-Crops stay contiguous with each realm's water included — Halann 2532px (45.0%), Aelantir 2369px
+Crops stay contiguous with each realm's water included — Halcann 2437px (43.3%), Aelantir 2369px
 (42.1%) — so this costs the pure crop nothing.
 
 ## The model
@@ -192,35 +229,159 @@ already carries the Anbennar display names (`Continent.java:33-39`) — both Ame
 `OCEANIA` to Hinuilands. The enum was written for this.
 
 **Two sources, one field.** Realm is *not* a pure function of `Continent`: the 408 water provinces have
-`continent: null`, so their realm comes from the sea superregion (§The ocean is one body) while land's
-comes from `Continent`. Resolve both **in the exporter** and ship a single `realm` key per province in
-the bundle. The frontend must never re-derive it — that is how `CONTINENT_NAME` ended up with three
+`continent: null`, so their realm comes from **the land they touch** (§The ocean splits cleanly) while
+land's comes from `Continent`. Resolve both **in the exporter** and ship a single `realm` key per province
+in the bundle. The frontend must never re-derive it — that is how `CONTINENT_NAME` ended up with three
 copies.
+
+**Four rules, not two.** The full resolution, in order — Phase 1 implements exactly this list:
+
+| provinces | realm from |
+|---|---|
+| land with a continent | `Continent` (both Americas → Aelantir, `OCEANIA` → Hinuilands, rest → Halcann) |
+| water | the realm of the land it is adjacent to (zero conflicts, §The ocean splits cleanly) |
+| the 3 quirks, the 99 deep-ocean | **none** → fog everywhere |
+
+> **Three rules, not four — the portal-waypoint rule was a guess, and the data refuted it.** An earlier
+> draft of this doc claimed Phase 0's four waypoints are placeholder-named hubs with no continent, so
+> land-by-`Continent` would resolve them to *no realm* and silently fog them. **Wrong.** Phase 0 shipped
+> and all four come back `continent: europe`, `region: west/east_deepwoods_region` — Anbennar assigned
+> them properly; only their *names* are filler. Rule 1 already lands them in Halcann.
+>
+> Keep it as an **assertion**, not a rule: Phase 1 should fail if a portal waypoint resolves to a realm
+> its adjacency endpoints disagree with. That is cheap, and it is the claim the guess was reaching for.
+>
+> (They are `FEY_GLADEWAY`, incidentally — `CavernExporter`'s count went 10 → 14 the day they landed.)
+
+**"No realm" means no realm, in the sim too.** The three quirks and the continent-less land province keep
+their ids, neighbors, plots and settleability — they just render nowhere. That is a live divergence:
+`TimelineSites` could spread a colony onto North Toreiel and no realm can show it, and a caravan can march
+into a province that draws as void. **Phase 1 excludes realm-less land from the settleable/site set** so
+the two agree.
 
 > **Drift warning.** `CONTINENT_NAME` is hardcoded a second time in `WorldBundle.java:72-81` and a third
 > in `web/build.mjs`. A realm mapping must not become a fourth copy. Ship the realm key **in the bundle
 > per province** and let the frontend read it, rather than re-deriving continent→realm in JS.
 
+### Realm is an engine field, not a bundle key
+
+`Province.realm`, typed `geo.Realm` (decided) — resolved at export, written to `provinces.json`, read back
+by `WorldMap`, and *serialised* into the bundle. Same shape as `ownerTag`, `culture`, `tradeGood`: canonical
+in the engine, mirrored to the client.
+
+The tempting alternative — realm as a bundle-only key, since only the viewer crops — **breaks the moment
+realm has a sim consequence, which it already does.** Excluding realm-less land from the settleable set is
+Java. Scoping Ranked to one realm (§Ranked is per realm) is Java. Both would have to re-derive
+continent→realm server-side, which is precisely the fourth copy §Drift warning exists to prevent — and it
+would be the *worst* copy, because the exporter's four rules include two (adjacent-land for water, endpoints
+for portal waypoints) that are graph walks, not table lookups. Resolve once, at export, where the adjacency
+data is already open.
+
+`Realm.NONE` (or a null) is a real member, not an oversight: it is the 95 provinces of the last table row,
+and the thing the settleable filter tests.
+
+### Ranked is per realm
+
+**A Timeline is scoped to exactly one realm** (decided). Its sites spread within that realm, its colonies
+race within that realm, and the last one standing wins *that realm's* Timeline. Halcann has its Ranked;
+Aelantir has its own. Hinuilands is not playable, so it has none.
+
+This is decided **now, at Phase 1**, because Phase 1 is what gates the settleable set — and the alternative
+is not a deferral, it is a bug that ships. Ranked today is one shared world (seed 7654321), lockstep, last
+colony standing, with `TimelineSites` spreading colonies across the map. Nothing in that stops it seeding
+Aelantir *and* Halcann, and the moment realms crop:
+
+- the royale spans a boundary the UI says you **cannot see across** — a spectator watches half a match;
+- the scoreboard ranks colonies that share a world but not a map, which is exactly the "session spans
+  realms" problem (§Deferred) arriving through the back door, unasked;
+- **it is one line now** (`TimelineSites` filters to the Timeline's realm) and a data migration later, once
+  Timelines with cross-realm rosters exist in the DB.
+
+So `Timeline` carries a realm, and it is not `Realm.NONE`. This also makes realms a **content axis** rather
+than only a view: a second realm is a second Ranked ladder on the same server, running the same engine, with
+its own geography — which is the cheapest new content the map has ever offered.
+
+### A session carries its realm, and joining switches
+
+**Realm is a field on `SessionSpec`, and opening a session switches the viewer to it** (decided). One realm
+per session; §Whether a session can span realms stays deferred and this does not touch it — the question
+here is only *which*, not *how many*.
+
+**Carried, not derived.** A colony sits in a province, so a session's realm *looks* derivable — but the
+derivation has no answer exactly when it is needed. A Timeline scenario is **born empty** and its realm has
+to exist before the first seat joins and founds anything; a finished run (`GAME_OVER`) has no living colony
+to read a province from, and it is still viewable. The spec is authoritative in both cases. It is also the
+savegame (`SessionSpec` + command log), so realm becomes part of what a save *is*, which is right: replaying
+a Halcann run into Aelantir is not a restore.
+
+Without the switch, the failure is quiet in the way this doc keeps warning about: open the Caravan view on
+Halcann while the session's colony lives in Aelantir and you get a live session streaming over the wrong
+map — `colonyInView` (`bandcaption.mjs:90`) correctly reports nothing, forever, and the band caption falls
+back rather than erroring. Nothing is broken; nothing is there.
+
+Two things fall out for free:
+
+- **The lobby is in the realm dropdown** (§UI), so the dropdown holds the realms *and*, one entry up, the
+  sessions — each of which names the realm it will take you to. The affordance and the destination sit in
+  the same menu.
+- **An old spec with no realm defaults to Halcann**, the same rule as a legacy `?p=` link (§Deep links need
+  a realm). So every session in the registry restores with no migration, which matters because restore is
+  lazy and replays from spec + roster + command log.
+
+### What a realm is not
+
+**A realm is a partition axis, not a plane axis.** It answers *which part of Halann am I looking at* — and
+it can only ever hold ground Anbennar already painted on the cylinder. Ask the test question, *can I add a
+realm?*, and the honest answer is: **only if it is already on the raster.**
+
+That is a deliberate bet, not a limitation to route around. All three realms are genuinely *places on the
+planet Halann*, so one coordinate space is not a shortcut — it is true. `gcKm` between Venail and Lastsight
+is a real distance; Vyr Pas gets real daylight at lat 25.96. Giving each realm a local origin would invent
+a lie to model a truth we already have, which is why §Keep the pixels absolute forbids it.
+
+**The plane axis already exists, and it is z.** The Serpentspine is a distinct surface at the same lat/lon,
+with its own clock (`FixedDaylightClock`), its own terrain (`TERRAIN_CAVERN`) and its own art. That is far
+closer to "a second map" than Aelantir is. So:
+
+| | **realm** | **z** |
+|---|---|---|
+| means | a partition of Halann's surface | a distinct plane at the same coordinates |
+| must | already exist on the 5632×2048 raster | — |
+| shares | one id space, one projection, one lat/lon | the coordinates, nothing else |
+| gets | a crop, a bake, fog | its own clock, terrain, yields, art |
+| where a **Feyrealm** would go | ✗ | ✓ |
+
+They compose (§Realm is not z), which is the proof they are different questions: `(Halcann, z=-1)` is a
+partition *and* a plane.
+
+So the rejected Feyrealm (§Rejected) was rejected on the right grounds and filed under the wrong axis. Its
+own sentence names the axis it belongs on: *"Hinuilands is a location on the planet Halann; a Feyrealm
+would be a parallel plane of the whole world."* A parallel plane is not a realm. It is `z:+1`, and nothing
+in this doc blocks it.
+
+**If you want a new map, ask which axis first.** A dropdown is where maps *appear*, so the instinct will be
+to add a realm. That instinct is right only for ground already on the cylinder.
+
 ### Realm is not z
 
-The underworld is `z:[-1]` *within Halann* — you walk into it from Cannor; no ocean, no portal. So:
+The underworld is `z:[-1]` *within Halcann* — you walk into it from Cannor; no ocean, no portal. So:
 
 - **realm** — which map you are looking at. Dropdown. Crops the view.
 - **z** — which level of that map. Button. Filters `LAYERS` via `activeZ()` (`core.mjs:102`).
 
-They compose: `(Halann, z=0)`, `(Halann, z=-1)`, `(Aelantir, z=0)`. Aelantir has no underworld (zero
+They compose: `(Halcann, z=0)`, `(Halcann, z=-1)`, `(Aelantir, z=0)`. Aelantir has no underworld (zero
 Dwarovar provinces outside `europe`/`asia`/`serpentspine`), so its plane button hides.
 
-**Decided: two separate controls**, not one flat list with "Halann (Underworld)" in it. `layers.mjs`
+**Decided: two separate controls**, not one flat list with "Halcann (Underworld)" in it. `layers.mjs`
 already filters on a z-**set** and generalises cleanly; folding realm into it would overload one axis
 with two meanings and tangle `activeZ()`.
 
 ### Ocean and fog
 
 Fog is **decorative**: it marks *this is not here*, not *you have not explored this*. The rule is
-symmetric — you cannot see Aelantir from Halann, and **on the Aelantir and Hinuilands maps there is no
+symmetric — you cannot see Aelantir from Halcann, and **on the Aelantir and Hinuilands maps there is no
 middle landmass**. Each realm keeps the water touching its own coast (§The ocean splits cleanly); every
-other realm's land, every other realm's water, and the **91 deep-ocean provinces that touch no land at
+other realm's land, every other realm's water, and the **99 deep-ocean provinces that touch no land at
 all** are fog.
 
 The baked art is already in the tree and has never had a consumer: `FOW_TILE` (`web/civ6.mjs:217-246` —
@@ -234,7 +395,7 @@ The baked art is already in the tree and has never had a consumer: `FOW_TILE` (`
 
 Hinuilands is ~all fog with two revealed provinces, so fog does 99% of its visual work. It uses **hatch,
 not parchment** (decided) — the realm reads as dim and unexplored rather than as blank paper, which is
-the honest impression: Anbennar reserved 135 provinces there and drew two.
+the honest impression: Anbennar reserved 245 provinces there and drew two.
 
 ### The fog must not be mute
 
@@ -247,11 +408,34 @@ not a border that stops you. **The whole outline is rimmed** (decided), so no st
 mute; where a teleporter sits on that edge, **a red arrow expands outward over the fog**, pointing the way
 to a place this map cannot show.
 
-The arrow is **not animated** and **carries a text label** — `to Aelantir`, `to Halann` (decided). A bare
+The arrow is **not animated** and **carries a text label** — `to Aelantir`, `to Halcann` (decided). A bare
 arrow says *something is out there*; a labelled one says *what*, which is the entire point. And it is
 **clickable** (decided): clicking it switches realm. So the arrow is the discovery path and the dropdown is
-the power-user route, rather than the dropdown being the only way to learn the other realms exist. Both
-fire the same switch-realm action (Phase 5).
+the power-user route, rather than the dropdown being the only way to learn the other realms exist.
+
+**The arrow and the dropdown fire the same action with different destinations** (decided). One switch-realm
+action, one `destination` argument:
+
+- **dropdown → fit the realm.** It means *show me that map*. You land at band WORLD, looking at the whole
+  thing.
+- **arrow → the far portal, at your current zoom.** It means *cross here*. You land on Eastern Lastsight
+  Islands looking back east at the fog you just came from — the same place, the same scale, the other side.
+
+Collapsing both onto "fit the realm" would make the arrow a decorated dropdown and throw away the one thing
+it is for: that a crossing has two ends and you arrive at the far one. The arrow is a *place*; the dropdown
+is a *view*.
+
+> **Switching realm otherwise holds nothing.** A realm switch from band 7 on a plot in Cannor cannot hold
+> its camera — the target realm has no such coordinate on its crop. Dropdown switches refit; the arrow is
+> the exception because it names a province to land on, which `focusProvince` already does.
+
+**A cross-realm adjacency must not draw as a line** — this is the arrow's other half, and it does not
+happen for free. Phase 1 ships **one bundle with all 5264 provinces**, so `WorldBundle`'s "both endpoints
+shipped" filter does not drop the Halcann↔Aelantir row; and at 1548km the legacy 800km heuristic *does*
+flag it. Left alone, Halcann's map draws an ordinary connection line from Coast of Venail straight across
+into Aelantir's fog — the exact thing the arrow exists to replace, rendered next to it. **A row whose two
+endpoints have different realms is suppressed as a line and promoted to the arrow**, on both maps. Same
+`teleport` + `realm` data as everywhere else in this doc; no new geometry.
 
 Red because the fog tiles are greyscale luminance masks (`FOW_TILE`) with no colour of their own, so a
 warm hue owns the layer without fighting it. There is no arrow art in the tree — the existing teleport
@@ -265,7 +449,7 @@ it rather than folded into the fog draw.
 
 This is what makes realms **discoverable rather than merely available**: the fog stops being an absence
 and becomes a signpost. The arrow is only correct for an **off-realm** destination — the 92 Deepwoods
-portal rows teleport *within* Halann, both endpoints on the same map, so they must not draw one.
+portal rows teleport *within* Halcann, both endpoints on the same map, so they must not draw one.
 
 ## Rendering: the cylinder goes away
 
@@ -286,32 +470,59 @@ The moment a realm crops smaller, `worldW()` silently becomes the realm's width 
 keeps working — **wrongly**. It tiles the realm side-by-side across the viewport forever, with no seam
 and no error. This fails silently, not loudly, and is the most dangerous property of the change.
 
-**Make `worldW()` honest: return `0` when the map is cropped.** `main.mjs:159` and `hittest.mjs:17-18`
-already treat `period <= 0` as "single copy", so most of the wrap collapses correctly *by construction*.
+**So the wrap does not get a flag — it gets deleted** (decided). `worldW()` and `wrapCopies()` go; every
+copy loop collapses to its single-copy branch; `clampPan` clamps. No `MAP.wrap`, no `period <= 0`
+sentinel, no dead cylinder path kept alive behind a boolean.
+
+The reason is §The trap itself. A flag leaves the tiling code in the tree, reachable, one truthy value
+away from the exact silent failure this section exists to prevent — and the flag would be permanently
+`false` the day Phase 3 lands, since **no realm wraps and no realm ever will** (a realm is a crop, and a
+crop of a cylinder is a sheet). Keeping a switch for a state that can never be true again is how the bug
+survives to be rediscovered. Delete the wrap and the trap cannot spring: there is nothing left to tile
+with.
+
+**Six call sites, and five already have the single-copy branch written** — the `period <= 0` guards
+(`main.mjs:159`, `hittest.mjs:17-18`, `bandcaption.mjs:96`) are the code that survives; deletion is mostly
+choosing the branch that already exists and dropping the other. `clampPan` is the one site with real new
+logic (modulo → clamp).
+
+This costs one real capability, and it is worth naming: **you can no longer pan east past the antimeridian
+and come round the other side.** On the whole-world map that is a visible change, not a neutral one (§Phase
+2) — the world becomes a finite sheet you hit the edge of. That is the correct behaviour for every realm,
+which is what the map will be made of.
 
 ### Three quirk provinces, and then no realm needs a roll
 
-A naive bounding box of Aelantir spans **5344px — 94.9% of the world** — because three provinces sit on
-the far side of the antimeridian from the rest:
+Two realms have an outlier that wrecks a naive bounding box, and they are **dropped from their realm**
+(decided). They are three provinces, but not one story — the regeneration (§post-`fb79aaa`) split them:
 
 ```
-North Toreiel  lon 173.16  LAND        sarmadfar_region  owner=undefined
-South Toreiel  lon 169.00  LAND        sarmadfar_region  owner=undefined
-Ekyunimoy      lon 124.12  IMPASSABLE  region=null       owner=undefined, zero neighbors
+Aelantir    6238  North Toreiel  lat  62.0  lon 173.16  LAND        sarmadfar_region   owner=undefined
+Aelantir    6237  South Toreiel  lat  57.1  lon 169.00  LAND        sarmadfar_region   owner=undefined
+Hinuilands  1808  Ekyunimoy      lat -65.87 lon 124.12  IMPASSABLE  region=null        zero neighbors
 ```
 
-They are a **data quirk, and are dropped from the realm** (decided). In EU4 this is not a quirk at all —
+**The Toreiels are a projection artifact, and in EU4 they are not a quirk at all** —
 `sarmadfar_region`'s other provinces sit at lon −150, and on a wrapping cylinder the region is perfectly
 contiguous across the date line. It only becomes a quirk when you crop. That is the single-map
-limitation showing up one last time, in the geometry.
+limitation showing up one last time, in the geometry. Without them, Aelantir's bbox falls from **5375px
+(95.4%)** to 2369px.
 
-With them gone, **every realm is contiguous and nothing rolls**:
+**Ekyunimoy is a different animal, and it moved realms under us.** An earlier draft called it an Aelantir
+outlier; the regenerated data says `continent: oceania`, so it is *Hinuilands'* outlier. It is a 27,782-plot
+**Antarctic** province at lat −65.87 — `IMPASSABLE`, no region, no owner, no neighbours: the polar ice
+shelf, which Anbennar parks in `oceania` because the engine demands every province sit on some continent.
+Keeping it drags Hinuilands' crop from 162px to **560px** and anchors it to the south pole, to show ice
+nobody can enter. Dropping it is what makes Hinuilands two provinces (§Hinuilands is not painted) rather
+than two provinces and a glacier.
+
+With all three gone, **every realm is contiguous and nothing rolls**:
 
 | realm | crop width | contiguous? |
 |---|---|---|
-| Halann | 2532px (45.0%) | yes |
-| Aelantir | **2279px (40.5%)** (was 5344px) | yes, once the three are dropped |
-| Hinuilands | 162px (2.9%) | yes |
+| Halcann | 2437px (43.3%) | yes |
+| Aelantir | **2369px (42.1%)** (was 5375px) | yes, once the Toreiels are dropped |
+| Hinuilands | **162px (2.9%)** (was 560px) | yes, once Ekyunimoy is dropped |
 
 So Phase 3 is a **pure crop** — no roll, no per-realm x offset, no seam-straddling polygons. Keep it
 that way: if a future province re-introduces a seam crossing, drop it or fix its continent rather than
@@ -342,21 +553,70 @@ topology) all read baked lat/lon and touch no pixels.
 > no exception thrown — just wrong numbers.** Don't. `build.mjs:472-480` already computes a clamped,
 > margined crop rect; the bundle is ready to crop. Nothing downstream is ready to notice.
 
+### The background is baked, so it is baked per realm
+
+**`MAP` is not a viewport rect — it is a baked image's extent.** `build.mjs:465-485` opens `terrain.bmp`,
+computes a margined crop rect **from the provinces it is handed** (`for (const p of provs)`), tints, and
+emits one WebP; `main.mjs:207` blits it whole (`drawImage(mapImg, 0, 0, MAP.dw, MAP.dh, …)`). So the world
+background is a *resource*, like the terrain tiles and the river ribbon — and three realms means **three
+bakes** (decided), a `map` manifest entry per realm.
+
+The pipeline is already shaped for it: the crop rect is derived from a province set, so **handing it
+Halcann's provinces bakes Halcann.** This is the art-side twin of "the bundle is ready to crop" — so is
+`build.mjs`.
+
+Three reasons this is the right call and not just the necessary one:
+
+**Resolution.** The shipped image is 2816×1024 — half the 5632×2048 source. Re-using it and drawing a
+sub-rect would give a realm *half-res* background over the pixels it actually shows. A per-realm bake spends
+the same output budget on 45% of the world instead of 100%: roughly **twice the detail, for free**, because
+the raster stops paying for a hemisphere nobody is looking at.
+
+**The overlap is real, so fog cannot live outside the crop alone.** Halcann is 45.0% of the world and
+Aelantir 42.1% — of a 100% world. They **overlap**, in the Atlantic, where each realm's water reaches
+toward the other (§The ocean splits cleanly assigns that water, but the crop rects are rectangles and do not
+respect the assignment). So Halcann's crop *contains* Aelantir pixels, and fog has to be drawn **inside** the
+crop over real baked terrain — not merely beyond its edge.
+
+**Baking the mask makes that fog exact and free.** The bake is the one place with a province-per-pixel view
+(`provinces.bmp`, the same raster `ProvinceExporter` reads) — so it can resolve realm per pixel and mask
+non-realm ground as it tints. That is pixel-accurate to the province paint, needs no union path, and costs
+nothing per frame. The alternative — a runtime clip over ~1650 foreign polygons — is approximate at the
+edges and pays every draw.
+
+> **This does not collide with §Ocean and fog's stacking claim; it sharpens it.** Realm fog is *static per
+> realm* — a property of the map, like the terrain under it — so it bakes. Explored fog (`RevealedMap`,
+> explorer-caravan Phase 6) is *per session, per day* — so it stays a runtime layer and draws on top. The
+> two were always different consumers of `FOW_TILE`; now they are different consumers at different times.
+> Realm fog is baked art, explored fog is a draw call.
+
+**The minimap is per realm too.** It is documented as "the bottom-left world thumbnail" (`main.mjs:170`) —
+and a *world* thumbnail on Halcann's map shows Aelantir, which breaks the symmetric rule (§Ocean and fog)
+in the one corner of the screen the crop does not reach. It becomes the **realm's** thumbnail: a third
+consumer of the per-realm bake, and the reason to treat "bake the background" as a set of realm resources
+rather than one image.
+
+> **The cost: "switching is instant" gains an asterisk.** Phase 1 ships **one bundle** (decided, §Phases) —
+> but three background images. The bundle switch is instant; the *art* switch is a WebP fetch. **Preload the
+> other realms' backgrounds on idle** (or on dropdown-open), so the common case is warm. Say so rather than
+> claiming an instancy the network does not provide.
+
 ### The work
 
 **Safe, no change:** all engine lat/lon consumers; `ProvincePlotStore`/`PlotService` (province-keyed,
 seed-independent); `plotIndex`; `provGeo`/`GEO_NAMES`; `rings`/`bbox`/`lab`.
 
-**Wrap-dependent, must change:**
+**Wrap-dependent, all deleted (Phase 2):**
 
 | site | today | after |
 |---|---|---|
-| `main.mjs:154-170` | renders once per world copy, `period = worldW()` | single pass (`:159` guard already handles `period <= 0`) |
-| `core.mjs:212-215` `clampPan` | `cam.x = ((cam.x % w) + w) % w` | clamp, not modulo — else panning east teleports you west |
-| `hittest.mjs:12-20,35-37,59` | `wrapCopies()` shifts the cursor per copy | single copy |
-| `minimap.mjs:70-76,102-104` | `fx0 % 1`, two-piece seam rect | clamp; single-piece branch |
-| `political.mjs:86-87` | `for (k = -1; k <= 1)` tests ±1 copy | just the one |
-| `bandcaption.mjs:95` | `worldW()` | — |
+| `core.mjs:209-210` | `worldW()` — the wrap period, exported | **gone**, with its export |
+| `core.mjs:212-215` `clampPan` | `cam.x = ((cam.x % w) + w) % w` | clamp to the crop — else panning east teleports you west. **The only site with new logic.** |
+| `main.mjs:154-170` | renders once per world copy | keep the `:159` single-copy body, drop the loop |
+| `hittest.mjs:12-20,35-37,59` | `wrapCopies()` shifts the cursor per copy | **`wrapCopies()` gone**; hit-test the one copy |
+| `minimap.mjs:70-76,102-104` | `fx0 % 1`, two-piece seam rect | single-piece rect; no seam exists |
+| `political.mjs:86-87` | `for (k = -1; k <= 1)` tests ±1 copy | just `k = 0`, inlined |
+| `bandcaption.mjs:95` | `colonyInView()` tests the colony against ±1 copy | keep its `!(w > 0)` branch (`:96`) — it *is* the answer |
 
 Labels, sea, borders, routes and adjacency lines have **no wrap code of their own** — they inherit it by
 drawing inside the loop, and need nothing beyond the loop collapsing.
@@ -369,15 +629,20 @@ Y clip — extend to X), or its existing off-ramp (`sea.mjs:32`, no `SEA_BANDS` 
 **Recompute per realm:** `rollupTier` geo label centroids (`WorldBundle.java:209,340`) are computed
 globally; a continent/superregion centroid can land outside a realm's crop, putting labels in the void.
 
+**Rebake per realm:** the world background image and the minimap thumbnail (§The background is baked) —
+both are baked resources whose extent *is* `MAP`, not runtime crops of a shared raster.
+
 ## UI
 
 The masthead becomes the realm selector. Today `advisors.mjs:23` builds the globe entry as
-`"Halann v" + BUNDLE.mapVersion`. It becomes a dropdown:
+`"Halann v" + BUNDLE.mapVersion` — a **planet**-level label, correct while there is one map. Realms make
+that entry **realm**-level, and the two words stop being interchangeable: you look at Halcann, on Halann.
+It becomes a dropdown:
 
 ```
 Lobby
 ────────────
-Halann v9        <- current
+Halcann v9       <- current
 Aelantir v9
 Hinuilands v9
 ```
@@ -387,7 +652,7 @@ the way home — `role="button"`, `data-tip="Back to the lobby · reset to the w
 is losing its "Anbennar" half (`CivStudio: Anbennar` → `CivStudio`). Moving the lobby into the dropdown
 lets the brand shrink without orphaning the affordance.
 
-The plane (surface/underworld) button stays separate, and hides outside Halann.
+The plane (surface/underworld) button stays separate, and hides outside Halcann.
 
 ### Deep links need a realm
 
@@ -399,7 +664,7 @@ still work (a legacy `?p=` auto-switches the realm under itself).
 **Switching realms pushes history** (decided) — so back/forward navigates realms, and a realm is a
 shareable URL. Each switch is a history entry; that is intended.
 
-**An omitted realm defaults to Halann** (decided). So every legacy `?p=` link keeps working with no
+**An omitted realm defaults to Halcann** (decided). So every legacy `?p=` link keeps working with no
 migration, and a bare URL opens where it always did.
 
 ## Cost
@@ -416,9 +681,17 @@ do not change a single plot grid. So: no `MAP_VERSION` bump, no cache drop. The 
 > place name would be wrong here: this is **space inside the portal**. They are named **Portal 1–4**
 > (decided), authored at export, not drawn from GeoNames. So Phase 0 needs no CI bake either.
 
+**But there is a web art rebake, at Phase 3.** The background and minimap are baked resources, so realms
+means running `node web/build.mjs` and shipping **three** background WebPs instead of one (§The background
+is baked). That is a `web/` asset + manifest change, not a plot-cache change — the two are unrelated caches
+and only the plot cache is keyed by `MAP_VERSION`. Bundle size grows by roughly the two extra realms'
+images; each is smaller than today's whole-world bake, and Hinuilands is 162px wide.
+
 The server still needs a redeploy — the bundle is assembled from engine resources
 (`WorldBundle.ensureCached()`), and `web/` auto-deploys on push while the server is manual. **Deploy the
-server first** or the frontend ships against a bundle with no realm field.
+server first** or the frontend ships against a bundle with no realm field. Phase 3 makes this sharper:
+`web/` auto-deploying a per-realm manifest against a server whose bundle has no `realms` block is a broken
+map, not a degraded one.
 
 ## Phases
 
@@ -426,10 +699,16 @@ Ordering principle: **data before pixels, and the silent failure before the thin
 Phase 2 exists solely so the wrap can be killed and verified *while the map is still whole* — if the
 crop lands first, every wrap bug appears at once, silently, with no baseline to diff against.
 
-**Phase 0 — Restore the portal network.** Ships alone, no Realms code, independent value. Whitelist
-provinces referenced by a portal adjacency row, defeating the placeholder-name filter for those only
-(`ProvinceExporter.java:134-138`), and name them **Portal 1–4**. → 5268 provinces, **92/92 portal rows
-survive** (from 51). Verify by count, not by eye.
+**Phase 0 — Restore the portal network, and mark it.** Ships alone, no Realms code, independent value.
+Two halves:
+ - **Whitelist** provinces referenced by a portal adjacency row, defeating the placeholder-name filter for
+   those only (`ProvinceExporter.java:134-138`), and name them **Portal 1–4**. → 5268 provinces, **92/92
+   portal rows survive** (from 51). Verify by count, not by eye.
+ - **Ship the `teleport` flag from the row's `comment`** and retire `TELEPORT_KM` (§Teleporters are real) —
+   the field is already in `adjacencies.json` and `WorldBundle` throws it away for a distance guess that
+   has never once been right about a portal. Everything downstream (arrow, line suppression, a future
+   seasonal gate) needs *is it a portal*, not *are these far apart*. → 92 marked, the 4 false positives
+   unmarked.
 
 > **Phase 0 is NOT behaviour-neutral, despite changing nothing visible.** The 41 restored rows become 41
 > new edges in `WorldMap.combinedNeighbors`, which is what `LandRouter` walks. Caravans that route near
@@ -437,7 +716,7 @@ survive** (from 51). Verify by count, not by eye.
 > arguably correct, but it is a **sim change, not a data change**. Run the full engine suite, not just the
 > server one, and expect the possibility of route-length fallout.
 
-**Phase 0b — Author the realm portal.** The Halann↔Aelantir sea teleporter is **authored now** (decided),
+**Phase 0b — Author the realm portal.** The Halcann↔Aelantir sea teleporter is **authored now** (decided),
 as a visible landmark rather than a working route — travel needs boats and is deferred, so nothing can
 use it yet. It exists so the arrow has something to mark and the realms are discoverable in v1.
  - **Sea-to-sea** — a boat sails to the ocean province holding the teleporter. **Land-to-land teleporters
@@ -446,30 +725,56 @@ use it yet. It exists so the arrow has something to mark and the realms are disc
    `building-unlocks.json` already uses for `TechTree`. Do not hand-edit `adjacencies.json` — it is
    regenerated from Anbennar's `adjacencies.csv` and an edit there is a landmine.
 
-**Phase 1 — Realm as data.** Resolve realm in the exporter — `Continent` for land, **adjacent land** for
-water, fog for the 91 deep-ocean provinces, and none for the three quirks. Ship one `realm` key per
-province plus a `realms` block (crop rect per realm). **One bundle for all realms** (decided) — the
-client filters and crops, so switching is instant and `WorldBundle`'s two `static volatile` cache fields
-stay as they are. Nothing renders differently. Guarded by the bundle golden test.
+**Phase 1 — Realm as data.** Resolve realm in the exporter by the four rules of §The model —
+`Continent` for land, adjacent land for water, **adjacency endpoints for the four portal waypoints**, and
+none for the 3 quirks + 99 deep-ocean. Land it as **`Province.realm`, an engine
+field** (§Realm is an engine field), serialised into the bundle alongside a `realms` block (crop rect per
+realm). Exclude realm-less land from the settleable/site set, and **scope `TimelineSites` to one realm**
+(§Ranked is per realm).
+**One bundle for all realms** (decided) — the client filters and crops, so switching is instant and
+`WorldBundle`'s two `static volatile` cache fields stay as they are. Nothing renders differently. Guarded
+by the bundle golden test.
 
-**Phase 2 — Make the wrap explicit.** Add `MAP.wrap`; `worldW()` returns `0` when `!wrap`. Fix the six
-wrap sites to honour it. **Ship with `wrap:true` → zero visual change**, and test with `wrap:false`
-against the uncropped map. This is the whole de-risking of §The trap: the wrap dies and is verified
-before any crop exists to hide the failure.
+**Phase 2 — Delete the wrap.** Remove `worldW()` and `wrapCopies()`; collapse the six sites to their
+single-copy branches; `clampPan` clamps (§The trap). **Ships against the whole uncropped map**, which is
+the entire point: the cylinder dies while the world is still 360° wide, so any fallout is visible and
+diffable *before* a crop exists to hide it.
 
-**Phase 3 — Roll and crop.** Per-realm x-roll + crop rect in `build.mjs`/`WorldBundle`, `MAP.W/H` held
-global. Flip `wrap:false`. Verify per realm with `tools/webverify`.
+> **Not visually neutral, and that is intended.** The map stops repeating east-west: you now hit an edge
+> at the antimeridian instead of coming round the other side. Everything else — every province, label,
+> plot, hit-test — must be pixel-identical, and that is the actual acceptance test (`tools/webverify`
+> against a pre-Phase-2 baseline). One deliberate difference, zero incidental ones.
 
-**Phase 4 — Fog the void.** First consumer of the baked `FOW_TILE` art; sea X-clip; per-realm
-`rollupTier` label centroids. Plus the **realm rim + red teleport arrow** (§The fog must not be mute) as
-its own layer entry, modelled on `drawCavernRims` — this is what makes the other realms discoverable, so
-it is not cosmetic polish to be cut.
+**Phase 3 — Crop and bake.** Per-realm crop rect **and per-realm background bake** in
+`build.mjs`/`WorldBundle` — a `map` manifest entry per realm, masked to the realm's own pixels at bake time
+(§The background is baked). `MAP.W/H` held global at 5632×2048 (§Keep the pixels absolute). **No roll, no
+per-realm x offset** — every realm is contiguous once the three quirks are dropped (§Three quirk
+provinces), so there is nothing to roll and the seam case never arises. Per-realm minimap thumbnail falls
+out of the same bake. Verify per realm with `tools/webverify`.
+
+> **Assert the no-roll invariant, don't assume it.** Phase 3 should fail loudly if a realm's provinces
+> are ever non-contiguous in x, rather than silently drawing a 95%-wide crop like Aelantir's naive bbox.
+> A future province that straddles the antimeridian then gets dropped or has its continent fixed — the
+> roll does not come back to accommodate it.
+
+**Phase 4 — Fog the void.** The runtime half of the fog, on top of Phase 3's baked mask: sea X-clip;
+per-realm `rollupTier` label centroids; **suppress cross-realm adjacency lines** (§The fog must not be
+mute — one bundle ships both endpoints, so the Venail↔Lastsight line draws into the fog unless stopped).
+Plus the **realm rim + red teleport arrow** as its own layer entry, modelled on `drawCavernRims` — this is
+what makes the other realms discoverable, so it is not cosmetic polish to be cut.
 
 **Phase 5 — The dropdown.** Realm selector + Lobby entry; brand loses "Anbennar"; plane button hides
-outside Halann; deep links gain a realm. Owns the **switch-realm action** that both the dropdown and the
-Phase 4 arrow fire — so the arrow's click lands here, not in Phase 4.
+outside Halcann; deep links gain a realm; **preload other realms' backgrounds on idle** (§The background is
+baked). Owns the **switch-realm action** that the dropdown, the Phase 4 arrow, and **opening a session**
+all fire — with its `destination` argument, since they differ: the dropdown fits the realm, the arrow lands
+on the far portal at the current zoom, a session frames its colony. So the arrow's click lands here, not in
+Phase 4. `SessionSpec` gains its realm field (§A session carries its realm), defaulting to Halcann when
+absent so the registry restores unmigrated.
 
-**Phase 6 — Hinuilands.** Falls out of 0–5 for free — a realm with two provinces and a lot of fog.
+**Phase 6 — Hinuilands.** Falls out of 0–5 for free — a realm with two provinces and a lot of fog. Check
+the band spine against its 162×321px crop (§Open). Add the **loading-screen trivia line**
+(`web/assets/loading/trivia.json`) here, once all three realms are real — Anbennar reserving 245 provinces
+in the Titanoflora and painting two is the tip that writes itself.
 
 Not in this list: travel (deferred).
 
@@ -500,9 +805,9 @@ it is not playable. It is reached by the dropdown. If it ever becomes reachable,
 gladeway teleporter network, not by sea.
 
 **Whether a session can span realms.** Deferred with the above. If a colony lives in one realm, realm is
-a bundle filter plus a crop — small. If something crosses mid-session, the snapshot needs a realm field,
-the viewer must follow the caravan across maps, and Ranked (one shared world, colonies in lockstep) has
-colonies on different maps at once. Much larger, **not** in scope.
+a bundle filter plus a crop — small. If something crosses mid-session, the snapshot needs a realm field
+and the viewer must follow the caravan across maps. Much larger, **not** in scope — and §Ranked is per
+realm is what keeps it out of scope rather than merely postponed.
 
 ## Adjacent opportunity: the Domandrod Seasonal Court
 
@@ -528,7 +833,7 @@ every input already exists: a real solar calendar, seasons, and hemisphere-aware
 levies already muster "every winter, by hemisphere" — `docs/explorer-caravan.md`). `LandRouter` already
 traverses these edges; the mechanic is *gating an edge we already walk*, not building a system.
 
-It also gives Aelantir a signature the way the Serpentspine gives Halann one: **Halann has an underworld;
+It also gives Aelantir a signature the way the Serpentspine gives Halcann one: **Halcann has an underworld;
 Aelantir has a fey court that is only reachable a quarter of the year.** A caravan that misses its season
 waits, or takes the long way — a real routing decision that costs nothing to author, because Anbennar
 already authored it.
@@ -549,22 +854,37 @@ If this is ever revisited, do not conflate the two: Hinuilands is a *location on
 Titanoflora, Prime Material — Anbennar simply has not drawn it). A Feyrealm would be a *parallel plane*
 of the whole world. Building one is not building the other.
 
-**The fey content that is painted lives in Halann** — the Deepwoods (`deepwoods_superregion`, 66
+**The fey content that is painted lives in Halcann** — the Deepwoods (`deepwoods_superregion`, 66
 provinces: 44 `ANCIENT_FOREST`, 11 `GLADEWAY`, 8 `FEY_GLADEWAY`), inside continent `europe`, plus five
 gladeways in Aelantir (`domandrod_region`). Anbennar groups them (`deepwoods_feytouched_gladeways`,
 `deepwoods_outward_gladeways`, `deepwoods_inner_gladeways`). They stay where they are.
 
 ## Open
 
-- **Where does the gamemaster's island live?** Province 1173 (Halann) is **kept, not dropped** (decided) —
-  reserved for a future **gamemaster's island**. Its continent is `asia`, so today it falls into the
-  Halann realm and would be a settleable dev-1 islet like any other. Options: leave it there and gate it
+- **Where does the gamemaster's island live?** Province 1173 is **kept, not dropped** (decided) —
+  reserved for a future **gamemaster's island**. It is a dev-1/1/1 uncolonised Ringlet Isles islet that
+  Anbennar happens to have named **Halann**, the planet's own name — a single-map artifact like everything
+  else here, and now also a name collision with the planet in our vocabulary (it is not Halcann, not the
+  planet, just an islet). Its continent is `asia`, so today it falls into the
+  Halcann realm and would be a settleable dev-1 islet like any other. Options: leave it there and gate it
   by role; or make it **its own admin-only realm** — a fourth dropdown entry visible only to
   `ROLE_ADMIN`/`civstudio.auth.admins`, which the realm dropdown makes nearly free. The second reads
   better (a GM vantage shouldn't be somewhere a player can sail to) but it is a v2 question; for now,
   just don't let Phase 1 quietly make it ordinary land.
-- **One land province has no continent** and so lands in no realm. Harmless (it fogs everywhere) but it
-  is one line to identify — worth a look during Phase 1 rather than shipping a province nobody can see.
+- ~~**One land province has no continent**~~ — **resolved by the regeneration** (§post-`fb79aaa`). It was
+  Atvatnstisðl (6264), and upstream now gives it `continent: africa`. It is also `IMPASSABLE` now, so it
+  was never going to be a place anyone stands. No land province is continent-less today; the only
+  realm-less land is the three deliberate quirks.
 - **Does the plane button hide or grey out** in Aelantir/Hinuilands?
+- **Does the band spine survive a 162px realm?** The nine bands (`js/bands.mjs`) and their three
+  interaction regimes were calibrated against a 5632px world. Hinuilands' crop is 162×321px — portrait,
+  tiny, and mostly empty. `fitView` on it lands somewhere the bands have never been asked about. Probably
+  harmless (`clampAxis` already centres an axis smaller than the viewport, so it simply will not pan), but
+  it is a screenshot, not an argument — check it at Phase 6.
 - **`HALANN_TIP`** (`advisors.mjs:24`) — *"Halann is the center of the Material Plane, which is the
-  center of all of the Planes of Existence."* — is written for one world. Per-realm tips, or drop it?
+  center of all of the Planes of Existence."* — is planet lore on what becomes a realm entry. It is still
+  *true*, just no longer about the thing it labels. Per-realm tips (Halcann has one: *earth-center*), or
+  drop it?
+- **Hinuilands' membership is settled** — both `Continent.OCEANIA` and `hinuilands_superregion` select the
+  same two provinces (§Hinuilands is not painted), so there is no ambiguity left here. Recorded because an
+  earlier draft implied the two sources disagreed.

@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.zip.GZIPOutputStream;
 
+import com.civstudio.geo.Adjacency;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -79,10 +80,6 @@ public final class WorldBundle {
 		CONTINENT_NAME.put("serpentspine", "Serpentspine");
 		CONTINENT_NAME.put("oceania", "Hinuilands");
 	}
-
-	// beyond this great-circle distance a straight adjacency line would sprawl across the map, so
-	// the endpoints are flagged teleport=1 and drawn as markers instead (web/build.mjs TELEPORT_KM)
-	private static final double TELEPORT_KM = 800;
 
 	// cached serialized forms (the bundle is world-level and immutable per deploy)
 	private static volatile byte[] jsonBytes;
@@ -224,18 +221,22 @@ public final class WorldBundle {
 		geoNames.set("superKeyByRegion", pickKeys(srKeyByRegion, usedRegions));
 
 		// ---- adjacencies: [from, to, type, teleport], both endpoints shipped ----
+		// `teleport` is read from the row's source comment (Adjacency.teleporter()) — it is data, not
+		// a distance guess. It used to be `gcKm > 800`, which was wrong in both directions: Anbennar's
+		// gladeways sit close together, so it missed all 92 real teleporters while firing on four
+		// ordinary long sea/canal links.
 		ArrayNode adjacencies = NODES.arrayNode();
 		for (JsonNode a : adjacenciesRaw) {
 			int from = a.get("from").asInt(), to = a.get("to").asInt();
 			if (!shippedIds.contains(from) || !shippedIds.contains(to))
 				continue;
-			double[] pa = latLon.get(from), pb = latLon.get(to);
-			int teleport = (pa != null && pb != null && gcKm(pa, pb) > TELEPORT_KM) ? 1 : 0;
+			String type = a.hasNonNull("type") ? a.get("type").asText() : "";
+			String comment = a.hasNonNull("comment") ? a.get("comment").asText() : "";
 			ArrayNode row = adjacencies.addArray();
 			row.add(from);
 			row.add(to);
-			row.add(a.hasNonNull("type") ? a.get("type").asText() : "");
-			row.add(teleport);
+			row.add(type);
+			row.add(new Adjacency(from, to, type, comment).teleporter() ? 1 : 0);
 		}
 
 		// ---- assemble: engine-derived data + the asset descriptors merged from the manifest ----
@@ -321,14 +322,6 @@ public final class WorldBundle {
 	// coordinates / plot-weighted means, so ties are not a practical concern)
 	private static double round3(double v) {
 		return Math.round(v * 1000.0) / 1000.0;
-	}
-
-	// haversine great-circle distance in km between two [lat, lon] points (build.mjs gcKm)
-	private static double gcKm(double[] a, double[] b) {
-		double la1 = Math.toRadians(a[0]), la2 = Math.toRadians(b[0]);
-		double dLa = la2 - la1, dLo = Math.toRadians(b[1] - a[1]);
-		double h = Math.pow(Math.sin(dLa / 2), 2) + Math.cos(la1) * Math.cos(la2) * Math.pow(Math.sin(dLo / 2), 2);
-		return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
 	}
 
 	/** Names a shipped province gets bucketed under for a label tier, or null to skip it. */

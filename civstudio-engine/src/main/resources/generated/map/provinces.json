@@ -29967,7 +29967,7 @@
   "area" : null,
   "continent" : "europe",
   "winter" : "normal",
-  "neighbors" : [ 450, 509, 511, 676, 677, 803, 804, 805, 806, 812, 813, 886, 887, 889, 892, 893, 894, 895, 896, 2425, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012, 3013, 3014, 3015, 3017, 3018, 3019, 3020, 3021, 3022, 3023, 3024, 3025, 3026, 3027, 3028, 3029, 3030, 3031, 3032, 3033, 3035, 3036, 3037, 3038, 3039, 3041, 3042, 3043, 3044, 3045, 3046, 3047, 3048, 3049, 3050, 3051, 3052, 3053, 3054, 3055, 3056, 3057, 3058, 3059, 3062, 3063, 3064, 3065, 3066, 3067, 3068, 3069, 3070, 3071, 3726, 4996, 4997, 6258 ]
+  "neighbors" : [ 450, 509, 511, 676, 677, 803, 804, 805, 806, 812, 813, 886, 887, 889, 892, 893, 894, 895, 896, 2425, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012, 3013, 3014, 3015, 3017, 3018, 3019, 3020, 3021, 3022, 3023, 3024, 3025, 3026, 3027, 3028, 3029, 3030, 3031, 3032, 3033, 3035, 3036, 3037, 3038, 3039, 3041, 3042, 3043, 3044, 3045, 3046, 3047, 3048, 3049, 3050, 3051, 3052, 3053, 3054, 3055, 3056, 3057, 3058, 3059, 3062, 3063, 3064, 3065, 3066, 3067, 3068, 3069, 3070, 3071, 3726, 4996, 4997, 6258, 7025, 7027, 7030, 7033 ]
 }, {
   "id" : 1783,
   "name" : "Dalairey Range",
@@ -52152,7 +52152,7 @@
   "base_tax" : 4,
   "base_production" : 5,
   "base_manpower" : 3,
-  "neighbors" : [ 1261, 1782, 3004, 3007 ]
+  "neighbors" : [ 1261, 1782, 3004, 3007, 7025 ]
 }, {
   "id" : 3006,
   "name" : "Chylys",
@@ -52232,7 +52232,7 @@
   "base_tax" : 1,
   "base_production" : 3,
   "base_manpower" : 1,
-  "neighbors" : [ 1782, 3010, 3050, 3067 ]
+  "neighbors" : [ 1782, 3010, 3050, 3067, 7027 ]
 }, {
   "id" : 3010,
   "name" : "Cenarka",
@@ -52332,7 +52332,7 @@
   "base_tax" : 2,
   "base_production" : 1,
   "base_manpower" : 2,
-  "neighbors" : [ 1782, 3013, 3015, 3016 ]
+  "neighbors" : [ 1782, 3013, 3015, 3016, 7027 ]
 }, {
   "id" : 3015,
   "name" : "Tarodens",
@@ -52412,7 +52412,7 @@
   "base_tax" : 3,
   "base_production" : 4,
   "base_manpower" : 3,
-  "neighbors" : [ 1782, 3019, 3020 ]
+  "neighbors" : [ 1782, 3019, 3020, 7025 ]
 }, {
   "id" : 3019,
   "name" : "Prehnryn",
@@ -53030,7 +53030,7 @@
   "base_tax" : 3,
   "base_production" : 3,
   "base_manpower" : 3,
-  "neighbors" : [ 1782, 3004 ]
+  "neighbors" : [ 1782, 3004, 7025 ]
 }, {
   "id" : 3050,
   "name" : "Vyr Sawel",
@@ -53050,7 +53050,7 @@
   "base_tax" : 1,
   "base_production" : 1,
   "base_manpower" : 1,
-  "neighbors" : [ 1782, 3009 ]
+  "neighbors" : [ 1782, 3009, 7027 ]
 }, {
   "id" : 3051,
   "name" : "Vyr Prehnryn",
@@ -100344,6 +100344,86 @@
   "base_production" : 2,
   "base_manpower" : 2,
   "neighbors" : [ 6823, 6824, 6825, 6828, 6839, 6841 ]
+}, {
+  "id" : 7025,
+  "name" : "Portal 1",
+  "lat" : 66.9,
+  "lon" : 20.55,
+  "plots" : 100,
+  "waterPlots" : 5,
+  "type" : "FEY_GLADEWAY",
+  "region" : "west_deepwoods_region",
+  "area" : "clirypriah_area",
+  "continent" : "europe",
+  "owner" : "I27",
+  "controller" : "I27",
+  "culture" : "wood_elf",
+  "religion" : "fey_court",
+  "trade_goods" : "tropical_wood",
+  "base_tax" : 1,
+  "base_production" : 1,
+  "base_manpower" : 1,
+  "neighbors" : [ 1782, 3005, 3018, 3049 ]
+}, {
+  "id" : 7027,
+  "name" : "Portal 2",
+  "lat" : 63.78,
+  "lon" : 22.15,
+  "plots" : 91,
+  "waterPlots" : 6,
+  "type" : "FEY_GLADEWAY",
+  "region" : "west_deepwoods_region",
+  "area" : "cenag_area",
+  "continent" : "europe",
+  "owner" : "I35",
+  "controller" : "I35",
+  "culture" : "forest_goblin",
+  "religion" : "goblinic_shamanism",
+  "trade_goods" : "tropical_wood",
+  "base_tax" : 1,
+  "base_production" : 1,
+  "base_manpower" : 1,
+  "neighbors" : [ 1782, 3009, 3014, 3050 ]
+}, {
+  "id" : 7030,
+  "name" : "Portal 3",
+  "lat" : 70.29,
+  "lon" : 28.29,
+  "plots" : 36,
+  "waterPlots" : 0,
+  "type" : "FEY_GLADEWAY",
+  "region" : "east_deepwoods_region",
+  "area" : "scothaear_area",
+  "continent" : "europe",
+  "owner" : "B82",
+  "controller" : "B82",
+  "culture" : "forest_goblin",
+  "religion" : "pactseeker",
+  "trade_goods" : "tropical_wood",
+  "base_tax" : 1,
+  "base_production" : 1,
+  "base_manpower" : 2,
+  "neighbors" : [ 1782 ]
+}, {
+  "id" : 7033,
+  "name" : "Portal 4",
+  "lat" : 65.4,
+  "lon" : 31.93,
+  "plots" : 33,
+  "waterPlots" : 0,
+  "type" : "FEY_GLADEWAY",
+  "region" : "east_deepwoods_region",
+  "area" : "criodharka_area",
+  "continent" : "europe",
+  "owner" : "I37",
+  "controller" : "I37",
+  "culture" : "forest_goblin",
+  "religion" : "pactseeker",
+  "trade_goods" : "tropical_wood",
+  "base_tax" : 1,
+  "base_production" : 1,
+  "base_manpower" : 1,
+  "neighbors" : [ 1782 ]
 }, {
   "id" : 7035,
   "name" : "YnnicResev1",

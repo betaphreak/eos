@@ -574,6 +574,61 @@
   "type" : "",
   "comment" : "Dwarovar"
 }, {
+  "from" : 7025,
+  "to" : 3050,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 7025,
+  "to" : 3051,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 7025,
+  "to" : 3052,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 7025,
+  "to" : 3053,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 7025,
+  "to" : 3057,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 7025,
+  "to" : 3058,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 7025,
+  "to" : 3063,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 7025,
+  "to" : 3066,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 7025,
+  "to" : 7027,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 7025,
+  "to" : 7030,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 7025,
+  "to" : 7033,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
   "from" : 3050,
   "to" : 3051,
   "type" : "",
@@ -609,6 +664,21 @@
   "type" : "",
   "comment" : "Deepwoods_Teleporter"
 }, {
+  "from" : 3050,
+  "to" : 7027,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3050,
+  "to" : 7030,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3050,
+  "to" : 7033,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
   "from" : 3051,
   "to" : 3052,
   "type" : "",
@@ -639,6 +709,21 @@
   "type" : "",
   "comment" : "Deepwoods_Teleporter"
 }, {
+  "from" : 3051,
+  "to" : 7027,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3051,
+  "to" : 7030,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3051,
+  "to" : 7033,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
   "from" : 3052,
   "to" : 3053,
   "type" : "",
@@ -664,6 +749,21 @@
   "type" : "",
   "comment" : "Deepwoods_Teleporter"
 }, {
+  "from" : 3052,
+  "to" : 7027,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3052,
+  "to" : 7030,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3052,
+  "to" : 7033,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
   "from" : 3053,
   "to" : 3057,
   "type" : "",
@@ -684,6 +784,21 @@
   "type" : "",
   "comment" : "Deepwoods_Teleporter"
 }, {
+  "from" : 3053,
+  "to" : 7027,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3053,
+  "to" : 7030,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3053,
+  "to" : 7033,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
   "from" : 3057,
   "to" : 3058,
   "type" : "",
@@ -699,6 +814,21 @@
   "type" : "",
   "comment" : "Deepwoods_Teleporter"
 }, {
+  "from" : 3057,
+  "to" : 7027,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3057,
+  "to" : 7030,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3057,
+  "to" : 7033,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
   "from" : 3058,
   "to" : 3063,
   "type" : "",
@@ -709,8 +839,58 @@
   "type" : "",
   "comment" : "Deepwoods_Teleporter"
 }, {
+  "from" : 3058,
+  "to" : 7027,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3058,
+  "to" : 7030,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3058,
+  "to" : 7033,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
   "from" : 3063,
   "to" : 3066,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3063,
+  "to" : 7027,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3063,
+  "to" : 7030,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3063,
+  "to" : 7033,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3066,
+  "to" : 7027,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3066,
+  "to" : 7030,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 3066,
+  "to" : 7033,
+  "type" : "",
+  "comment" : "Deepwoods_Teleporter"
+}, {
+  "from" : 7030,
+  "to" : 7033,
   "type" : "",
   "comment" : "Deepwoods_Teleporter"
 }, {
@@ -870,6 +1050,16 @@
   "comment" : "Assakadail"
 }, {
   "from" : 6258,
+  "to" : 6241,
+  "type" : "canal",
+  "comment" : "deepwoods_fey_portal"
+}, {
+  "from" : 6258,
+  "to" : 7025,
+  "type" : "canal",
+  "comment" : "deepwoods_fey_portal"
+}, {
+  "from" : 6258,
   "to" : 3050,
   "type" : "canal",
   "comment" : "deepwoods_fey_portal"
@@ -914,6 +1104,21 @@
   "type" : "canal",
   "comment" : "deepwoods_fey_portal"
 }, {
+  "from" : 6258,
+  "to" : 7027,
+  "type" : "canal",
+  "comment" : "deepwoods_fey_portal"
+}, {
+  "from" : 6258,
+  "to" : 7030,
+  "type" : "canal",
+  "comment" : "deepwoods_fey_portal"
+}, {
+  "from" : 6258,
+  "to" : 7033,
+  "type" : "canal",
+  "comment" : "deepwoods_fey_portal"
+}, {
   "from" : 6241,
   "to" : 6242,
   "type" : "canal",
@@ -931,6 +1136,31 @@
 }, {
   "from" : 6241,
   "to" : 6243,
+  "type" : "canal",
+  "comment" : "domandrod_fey_portal"
+}, {
+  "from" : 6241,
+  "to" : 3053,
+  "type" : "canal",
+  "comment" : "domandrod_fey_portal"
+}, {
+  "from" : 6241,
+  "to" : 7025,
+  "type" : "canal",
+  "comment" : "domandrod_fey_portal"
+}, {
+  "from" : 6241,
+  "to" : 3050,
+  "type" : "canal",
+  "comment" : "domandrod_fey_portal"
+}, {
+  "from" : 6241,
+  "to" : 3059,
+  "type" : "canal",
+  "comment" : "domandrod_fey_portal"
+}, {
+  "from" : 6241,
+  "to" : 3063,
   "type" : "canal",
   "comment" : "domandrod_fey_portal"
 }, {

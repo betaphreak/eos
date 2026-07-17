@@ -48,10 +48,15 @@ class WorldBundleGoldenTest {
 
 		// Regeneration hook: after an intentional bundle change, rewrite the fixture with
 		//   mvn -pl civstudio-server test -Dtest=WorldBundleGoldenTest -Dbundle.golden.regen=true
-		// then review the diff and commit src/test/resources/web/bundle-golden.json.gz.
+		// then review the diff and commit the fixture.
+		//
+		// The path is anchored on ${basedir} (surefire sets it), NOT relative: mvn runs from the
+		// reactor root, so a bare "src/test/..." wrote a stray fixture to the repo root and left the
+		// real one untouched — the regen appeared to work and changed nothing. A leftover from the
+		// engine/server module split.
 		if (Boolean.getBoolean("bundle.golden.regen")) {
-			java.nio.file.Path out = java.nio.file.Path.of(
-					"src/test/resources/web/bundle-golden.json.gz");
+			java.nio.file.Path out = java.nio.file.Path.of(System.getProperty("basedir", "."))
+					.resolve("src/test/resources/web/bundle-golden.json.gz");
 			java.nio.file.Files.createDirectories(out.getParent());
 			try (var gz = new java.util.zip.GZIPOutputStream(java.nio.file.Files.newOutputStream(out))) {
 				gz.write(MAPPER.writeValueAsBytes(actual));

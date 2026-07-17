@@ -43,6 +43,13 @@ public final class AdjacencyExporter {
 	// onto a mismatched Anbennar province — a map-spanning / wrap-around artifact — and is dropped
 	// entirely. Genuinely long-but-plausible connections are kept (the web renders those beyond a
 	// shorter line threshold as "teleporter" endpoint markers rather than a map-crossing line).
+	//
+	// TELEPORTERS ARE EXEMPT (Adjacency.teleporter()). The test asks "is this length plausible for a
+	// thing you walk across" — which a portal is not: it has no length at all, only two ends. Applying
+	// it to the fey portals silently severed the six longest, five of them Domancadh's — Anbennar's own
+	// authored link from the Domandrod fey enclave to the Deepwoods, 5266-5768km across the ocean. That
+	// is not a mismatched vanilla canal; it is the mod's cosmology, and it is the one thing in the
+	// imported map that connects the Old World to the New.
 	private static final double MAX_KM = 4000.0;
 
 	private AdjacencyExporter() {
@@ -81,20 +88,22 @@ public final class AdjacencyExporter {
 				dropped++;
 				continue;
 			}
+			String type = f[2].trim();
+			String comment = f.length >= 9 ? f[8].trim() : "";
+			Adjacency adj = new Adjacency(from, to, type, comment);
 			// drop implausibly long connections — leftover vanilla EU4 canals (kiel/panama/suez, …)
 			// map onto mismatched Anbennar provinces on opposite sides of the map. A real strait /
 			// canal / tunnel is local; these would draw map-spanning lines and be wormhole shortcuts
-			// in the routing graph.
-			if (greatCircleKm(latLon.get(from), latLon.get(to)) > MAX_KM) {
+			// in the routing graph. A teleporter is exempt: being a wormhole is the point, so its
+			// length carries no information about whether it is real (see MAX_KM).
+			if (!adj.teleporter() && greatCircleKm(latLon.get(from), latLon.get(to)) > MAX_KM) {
 				farDropped++;
 				continue;
 			}
 			long key = ((long) Math.min(from, to) << 32) | (Math.max(from, to) & 0xffffffffL);
 			if (!seen.add(key))
 				continue;
-			String type = f[2].trim();
-			String comment = f.length >= 9 ? f[8].trim() : "";
-			out.add(new Adjacency(from, to, type, comment));
+			out.add(adj);
 		}
 
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(new File(OUTPUT), out);

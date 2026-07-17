@@ -18,12 +18,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 
+import com.civstudio.geo.Adjacency;
 import com.civstudio.geo.ProvinceType;
 import tools.jackson.databind.ObjectMapper;
 
@@ -86,11 +88,22 @@ public final class ProvinceExporter {
 	 */
 	private static final Pattern PLACEHOLDER_NAME = Pattern.compile("Anbennar\\d+");
 
+	/** Anbennar's adjacency table, read here only to whitelist teleporter waypoints. */
+	private static final String ADJACENCIES = "map/adjacencies.csv";
+
+	/**
+	 * The authored name given to a restored teleporter waypoint, suffixed {@code 1..N} in
+	 * ascending id order. Deliberately not a GeoNames draw like every other land province
+	 * ({@code docs/plot-place-naming.md}): a real Earth place name would be a lie here —
+	 * this is space inside the portal, not a place on the map.
+	 */
+	private static final String WAYPOINT_NAME = "Portal ";
+
 	private ProvinceExporter() {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Map<Integer, Def> defs = loadDefinitions();
+		Map<Integer, Def> defs = loadDefinitions(teleporterEndpoints());
 		Set<Integer> seaIds = new HashSet<>();
 		Set<Integer> lakeIds = new HashSet<>();
 		loadTypes(seaIds, lakeIds);
@@ -108,12 +121,45 @@ public final class ProvinceExporter {
 	}
 
 	/**
+	 * The province ids referenced by a <b>teleporter</b> adjacency row (@link
+	 * Adjacency#teleporter()} — the Deepwoods gladeway mesh, the fey portals and the
+	 * Domandrod seasonal gates). Parsed straight from Anbennar's CSV rather than from the
+	 * generated {@code adjacencies.json}, so this exporter keeps no ordering dependency on
+	 * {@link AdjacencyExporter} (which reads <em>this</em> exporter's output).
+	 */
+	private static Set<Integer> teleporterEndpoints() throws Exception {
+		Set<Integer> ids = new HashSet<>();
+		for (String raw : Files.readAllLines(AnbennarFiles.get(ADJACENCIES))) {
+			String line = raw.trim();
+			if (line.isEmpty() || line.startsWith("#") || line.startsWith("-1"))
+				continue;
+			String[] f = line.split(";", -1);
+			if (f.length < 9 || !f[0].matches("-?\\d+") || !f[1].matches("-?\\d+"))
+				continue;
+			if (new Adjacency(0, 0, "", f[8].trim()).teleporter()) {
+				ids.add(Integer.parseInt(f[0]));
+				ids.add(Integer.parseInt(f[1]));
+			}
+		}
+		return ids;
+	}
+
+	/**
 	 * Parse {@code definition.csv} into a colour&rarr;{@link Def} map, skipping
 	 * {@code RNW}/{@code Unused} placeholder rows. The CSV is {@code
 	 * id;r;g;b;Name_#hex;...}; the colour key is {@code (r<<16)|(g<<8)|b}.
+	 * <p>
+	 * <b>Except teleporter waypoints.</b> Anbennar uses placeholder-<em>named</em> provinces
+	 * as functional gladeway hubs — the name is filler, the role is not — so a row whose id
+	 * appears in {@code teleporters} is kept despite its name and given an authored {@code
+	 * Portal N}. Without this the name filter silently severs the portal graph: four ids
+	 * (7025/7027/7030/7033) are dropped and 41 of the 92 teleporter rows lose an endpoint.
+	 * The whitelist is deliberately narrow — loosening the name filter itself would drag in
+	 * all ~1400 RNW/unnamed-ocean placeholders.
 	 */
-	private static Map<Integer, Def> loadDefinitions() throws Exception {
+	private static Map<Integer, Def> loadDefinitions(Set<Integer> teleporters) throws Exception {
 		Map<Integer, Def> defs = new HashMap<>();
+		Map<Integer, Def> waypoints = new TreeMap<>();   // id-ordered, so Portal N is deterministic
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
 				Files.newInputStream(AnbennarFiles.get(DEFINITIONS)), StandardCharsets.UTF_8))) {
 			br.readLine(); // header
@@ -130,17 +176,27 @@ public final class ProvinceExporter {
 					int r = Integer.parseInt(parts[1].trim());
 					int g = Integer.parseInt(parts[2].trim());
 					int b = Integer.parseInt(parts[3].trim());
+					int color = (r << 16) | (g << 8) | b;
 					String rawName = parts[4].trim();
-					if (rawName.startsWith("RNW") || rawName.startsWith("Unused"))
-						continue;
+					boolean placeholder = rawName.startsWith("RNW") || rawName.startsWith("Unused");
 					String name = rawName.split("_#")[0].replace('_', ' ').trim();
-					if (PLACEHOLDER_NAME.matcher(name).matches())
-						continue; // an unnamed/unused placeholder province
-					defs.put((r << 16) | (g << 8) | b, new Def(id, name, (r << 16) | (g << 8) | b));
+					placeholder |= PLACEHOLDER_NAME.matcher(name).matches();
+					if (placeholder) {
+						if (teleporters.contains(id))
+							waypoints.put(id, new Def(id, null, color));   // named below, in id order
+						continue;   // an unnamed/unused placeholder province
+					}
+					defs.put(color, new Def(id, name, color));
 				} catch (NumberFormatException ignored) {
 					// malformed line — skip
 				}
 			}
+		}
+		int n = 0;
+		for (Def d : waypoints.values()) {
+			Def named = new Def(d.id(), WAYPOINT_NAME + (++n), d.color());
+			defs.put(d.color(), named);
+			System.out.println("restored teleporter waypoint " + d.id() + " as " + named.name());
 		}
 		return defs;
 	}

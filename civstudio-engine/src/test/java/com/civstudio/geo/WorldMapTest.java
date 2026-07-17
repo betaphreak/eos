@@ -25,8 +25,10 @@ class WorldMapTest {
 	void loadsTheCommittedSnapshot() {
 		WorldMap map = WorldMap.load();
 		// pins the committed export snapshot (full Anbennar world, keyed on the
-		// distinct province_id after the two double-imported dups were merged)
-		assertEquals(5264, map.size());
+		// distinct province_id after the two double-imported dups were merged). 5268, not 5264:
+		// the four teleporter waypoints (Portal 1-4) are whitelisted past the placeholder-name
+		// filter, because Anbennar uses placeholder-named provinces as functional gladeway hubs.
+		assertEquals(5268, map.size());
 		assertTrue(map.settleableProvinces().size() < map.size(),
 				"some provinces are water, not all settleable");
 	}

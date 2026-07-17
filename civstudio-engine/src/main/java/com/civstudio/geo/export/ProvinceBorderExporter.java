@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 
@@ -61,8 +60,6 @@ public final class ProvinceBorderExporter {
 	private static final String PROVINCES_BMP = "map/provinces.bmp";
 	private static final String PROVINCES_JSON = "civstudio-engine/src/main/resources/generated/map/provinces.json";
 	private static final String OUTPUT = "civstudio-server/src/main/resources/map/borders.json";
-
-	private static final Pattern PLACEHOLDER_NAME = Pattern.compile("Anbennar\\d+");
 
 	/** Drop components smaller than this many pixels — stray colour speckle, not real land. */
 	private static final int MIN_COMPONENT_PX = 6;
@@ -126,7 +123,17 @@ public final class ProvinceBorderExporter {
 				rows.size(), totalPts, out.length() / 1024.0, out.getAbsolutePath());
 	}
 
-	/** Parse {@code definition.csv} into a province-id &rarr; rgb map (mirrors ProvinceExporter). */
+	/**
+	 * Parse {@code definition.csv} into a province-id &rarr; rgb map.
+	 * <p>
+	 * <b>Unfiltered, deliberately.</b> This used to re-derive {@link ProvinceExporter}'s
+	 * {@code RNW}/{@code Unused}/{@code Anbennar<id>} placeholder-name filter, which made it a second
+	 * opinion on which provinces exist — and a stale one: the teleporter waypoints
+	 * {@code ProvinceExporter} whitelists past that filter arrived here with no colour, so they got no
+	 * outline and could not be drawn or picked. {@link #loadAllProvinceIds()} already reads
+	 * {@code provinces.json}, which <em>is</em> the authority, and an id absent from it is never looked
+	 * up — so filtering here can only ever disagree, never help.
+	 */
 	private static Map<Integer, Integer> invertDefinitions() throws Exception {
 		Map<Integer, Integer> idToColor = new HashMap<>();
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
@@ -141,9 +148,6 @@ public final class ProvinceBorderExporter {
 				try {
 					int id = Integer.parseInt(p[0].trim());
 					int r = Integer.parseInt(p[1].trim()), g = Integer.parseInt(p[2].trim()), b = Integer.parseInt(p[3].trim());
-					String name = p[4].trim();
-					if (name.startsWith("RNW") || name.startsWith("Unused")) continue;
-					if (PLACEHOLDER_NAME.matcher(name.split("_#")[0].replace('_', ' ').trim()).matches()) continue;
 					idToColor.put(id, (r << 16) | (g << 8) | b);
 				} catch (NumberFormatException ignored) {
 					// malformed line — skip
