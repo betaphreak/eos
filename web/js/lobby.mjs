@@ -14,6 +14,10 @@
 // would mean the lobby could only exist after the very wait it is meant to fill. Its only need from
 // core was the server base, which it resolves the same way core does (below).
 import { title, status, isOver, canDelete, singlePlayer, ranked, order } from "./lobby-rows.mjs";
+// Sign-in lives in the lobby (the account control renders into #siteAuth in its header), so this
+// imports auth — which is why auth had to stop importing core.mjs too. Both must survive being
+// loaded before the world does.
+import { initSiteAuth, whoAmI, onAuthChange } from "./auth.mjs";
 
 const REFRESH_MS = 4000;   // the list is a poll: a browser list does not need frame-accurate pushes
 const SLOT_LIMIT = 5;      // mirrors SessionHost.SAVE_SLOT_LIMIT; the server is still the authority
@@ -54,6 +58,9 @@ export function initLobby(serverBase) {
     closeLobby();
   });
 
+  // signing in or out repaints the room: which buttons you may press is a fact about you
+  onAuthChange(me => { signedIn = !!me.authenticated; paint(); gateChat(); });
+
   $("lobbySay").onsubmit = e => { e.preventDefault(); say(); };
   $("lobbySolo").onclick = () => showSetup(true);
   $("lobbyRanked").onclick = onRanked;
@@ -74,9 +81,20 @@ export function openLobby(serverBase) {
   el.hidden = false;
   $("lobbyServer").textContent = base.replace(/^https?:\/\//, "");
   showSetup(false);
+  // Ask the server who you are, rather than guessing from the rows. Inferring sign-in from "do you
+  // own any of these runs" said SIGNED OUT to a signed-in player with no runs yet — who could then
+  // never make their first. The account control (sign in / register / sign out) paints itself.
+  whoAmI().then(me => { signedIn = !!me.authenticated; paint(); gateChat(); });
+  initSiteAuth();
   refresh();
   timer = setInterval(refresh, REFRESH_MS);
   connectChat();
+}
+
+// the composer is for people who can post; everyone else gets told how to become one
+function gateChat() {
+  $("lobbySay").hidden = !signedIn;
+  $("lobbySignin").hidden = signedIn;
 }
 
 /** Back to the map. */
@@ -97,8 +115,6 @@ async function refresh() {
     const res = await fetch(apiUrl("/api/sessions"), { credentials: "include", cache: "no-store" });
     if (!res.ok) return;
     rows = await res.json();
-    // "mine" is the server's answer to who you are — a cheaper, truer signal than asking separately
-    signedIn = rows.some(r => r.mine) || signedIn;
     paint();
   } catch { /* a lobby that cannot reach the server just shows what it last knew */ }
 }
@@ -267,9 +283,11 @@ async function say() {
   input.value = "";
   const out = await post("/api/lobby/chat", { text });
   if (out.status === 401) {
-    // signed out: the composer is not a lie you get to type into
-    $("lobbySay").hidden = true;
-    $("lobbySignin").hidden = false;
+    // the session lapsed under us — re-ask who we are rather than assume, and let the gate follow
+    const me = await whoAmI();
+    signedIn = !!me.authenticated;
+    gateChat();
+    paint();
   }
 }
 

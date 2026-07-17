@@ -1091,9 +1091,11 @@ body.auth-anon #clock { cursor: not-allowed; }
   box-shadow: 0 18px 60px rgba(0,0,0,.5); overflow: hidden;
 }
 .lb-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  display: flex; align-items: center; gap: 12px;
   padding: 16px 20px 12px; border-bottom: 1px solid var(--line-soft);
 }
+/* the account control (sign in / who you are / sign out) lives in the lobby head now */
+.lb-head .site-auth { margin-left: auto; position: relative; }
 .lb-title { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: .02em; }
 .lb-sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
 .lb-x {
@@ -1135,6 +1137,9 @@ body.auth-anon #clock { cursor: not-allowed; }
   color: var(--ink-soft); display: flex; flex-direction: column; gap: 2px;
 }
 .lb-line b { color: var(--ink); font-weight: 600; }
+/* [hidden] again: a class that sets display beats the UA rule, so say it. (Third time in this file —
+   .lb-card, .lb-setup and now the composer. If you set display on something you toggle, pair it.) */
+.lb-say[hidden] { display: none; }
 .lb-say { display: flex; gap: 6px; margin-top: 8px; }
 .lb-say input {
   flex: 1; min-width: 0; padding: 6px 8px; border-radius: 6px;

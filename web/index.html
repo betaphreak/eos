@@ -167,8 +167,8 @@
         <!-- render rate + server round-trip, filled by js/diag.mjs; sits with the account handle since
              both are "how is this session doing for me" rather than anything about the world -->
         <div class="diag-chip" id="diagChip" style="margin-left:auto" aria-label="Performance and latency"></div>
-        <!-- sign-in for the picked server (Steam / OIDC); filled by js/auth.mjs -->
-        <div class="site-auth" id="siteAuth"></div>
+        <!-- (sign-in moved to the lobby — user management lives where your runs do. auth.mjs still
+             renders into #siteAuth, which is now in the lobby's header.) -->
       </div>
     </div>
     </header>
@@ -244,6 +244,12 @@
             <div class="lb-title" id="lobbyTitle">CivStudio</div>
             <div class="lb-sub">Spectator Lobby · <span id="lobbyServer">—</span></div>
           </div>
+          <!-- Who you are lives HERE, not in the top bar: user management belongs where your runs
+               are. auth.mjs renders into #siteAuth wherever it lives, so this is a relocation, not a
+               rewrite — and the lobby opens during the load, so you can sign in before the map even
+               arrives. Signing in with a provider IS registering: there are no CivStudio passwords
+               (docs/authentication.md). -->
+          <div class="site-auth" id="siteAuth"></div>
           <button id="lobbyClose" class="lb-x" aria-label="Back to the map">&times;</button>
         </div>
         <div class="lb-body">
@@ -258,7 +264,7 @@
               <input id="lobbyText" maxlength="280" autocomplete="off" placeholder="type…" aria-label="Message">
               <button type="submit">Say</button>
             </form>
-            <div class="lb-signin" id="lobbySignin" hidden>Sign in to chat</div>
+            <div class="lb-signin" id="lobbySignin" hidden>Sign in above to chat and play — there are no passwords here: signing in with Steam or Google <em>is</em> registering.</div>
           </section>
         </div>
         <div class="lb-play">

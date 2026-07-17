@@ -22,7 +22,8 @@ boot();
 initTechTree();
 initAdvisor();   // build the advisor selector + sub-bar, deriving the mode from boot()'s render state
 initShortcuts();
-initSiteAuth();
+initSiteAuth();   // resolves identity at boot: the control now lives in the LOBBY header, but the
+                  // body.auth-anon class it sets gates the map transport whether the lobby is open or not
 initDiag();      // the top bar's fps · latency readout (starts the ping poll)
 initLobby();     // the Spectator Lobby, opened by the brand ("home") — docs/spectator-lobby.md
 // exposed on window for the same reason the picker is: index.html's pre-module boot flow and

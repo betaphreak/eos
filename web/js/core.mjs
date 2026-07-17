@@ -1,12 +1,14 @@
 "use strict";
+import { resolveBase } from "./server-base.mjs";
+
 const BUNDLE = window.BUNDLE;
 
-// the spectator-server origin the /api/* calls target, resolved exactly like live.mjs and the
-// index.html bootstrap: an explicit ?live=<url>, else the base the bootstrap recorded on the
-// fetched bundle, else the default cloud server. The server is the single source of the map/geo
-// bundle (/api/bundle) and the jar-derivable assets /api/tiers and /api/techs.
-const SERVER_BASE = new URLSearchParams(location.search).get("live")
-  || (BUNDLE.live && BUNDLE.live.base) || "https://dev.civstudio.com";
+// the spectator-server origin the /api/* calls target. The resolution itself lives in
+// server-base.mjs — the lobby and the sign-in inside it need the same answer BEFORE the bundle
+// exists, and this module reads window.BUNDLE at import time, so it cannot be their source for it.
+// The server is the single source of the map/geo bundle (/api/bundle) and the jar-derivable assets
+// /api/tiers and /api/techs.
+const SERVER_BASE = resolveBase();
 const apiUrl = path => SERVER_BASE + path;
 
 // ---- data prep ----

@@ -3,7 +3,12 @@
 // every call targets LIVE_BASE — the server chosen on the loading screen — and carries the
 // session cookie (credentials: include), so it only works when the server is same-site with the
 // site (the civstudio.com cloud servers; localhost for local dev). See docs/authentication.md.
-import { SERVER_BASE as LIVE_BASE } from "./core.mjs";   // one resolver, in core — see its header
+// The resolver lives in server-base.mjs, NOT core.mjs: this module now runs inside the lobby, which
+// opens while the bundle is still downloading, and core reads window.BUNDLE at import time. Resolved
+// per call rather than at import for the same reason — at import there may be no bundle to ask.
+import { resolveBase } from "./server-base.mjs";
+
+const LIVE_BASE = () => resolveBase();
 
 // how each provider id renders in the sign-in menu; the server's /providers says which are offered
 const PROVIDER_LABEL = { steam: "🎮  Steam", google: "G  Google" };
@@ -16,7 +21,7 @@ const PROVIDER_LABEL = { steam: "🎮  Steam", google: "G  Google" };
 // If the popup is blocked, fall back to the old full-page redirect.
 function startLogin(provider) {
   const back = encodeURIComponent(location.href);
-  const url = LIVE_BASE + (provider === "steam"
+  const url = LIVE_BASE() + (provider === "steam"
     ? `/api/auth/steam/login?redirect=${back}`
     : `/oauth2/authorization/${provider}?redirect=${back}`);
   const w = 520, h = 700;
@@ -36,7 +41,7 @@ function startLogin(provider) {
 function closePopup(p) { try { p.close(); } catch { /* cross-origin/already closed */ } }
 
 async function logout() {
-  try { await fetch(LIVE_BASE + "/api/auth/logout", { method: "POST", credentials: "include" }); }
+  try { await fetch(LIVE_BASE() + "/api/auth/logout", { method: "POST", credentials: "include" }); }
   catch (err) { /* refresh anyway to reflect signed-out state */ }
   refresh();
 }
@@ -45,7 +50,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 async function getJson(path) {
-  const r = await fetch(LIVE_BASE + path, { credentials: "include" });
+  const r = await fetch(LIVE_BASE() + path, { credentials: "include" });
   if (!r.ok) throw new Error(String(r.status));
   return r.json();
 }
@@ -58,6 +63,26 @@ export async function initSiteAuth() {
   });
   await refresh();
 }
+
+/**
+ * Who you are, as the server sees it — the one honest answer to that question.
+ * The lobby needs it directly: it cannot infer sign-in from whether you own any runs, because a
+ * signed-in player with none would look signed out and could never make their first.
+ *
+ * @return the identity, or a signed-out stand-in if the server cannot say
+ */
+export async function whoAmI() {
+  try {
+    const me = await getJson("/api/auth/me");
+    return me || { authenticated: false };
+  } catch {
+    return { authenticated: false };   // unreachable /me reads as signed out; controls stay gated
+  }
+}
+
+/** Notified whenever the identity changes (sign-in completes, sign-out) — the lobby repaints on it. */
+const authListeners = [];
+export function onAuthChange(fn) { authListeners.push(fn); }
 
 // (re)fetch the offered providers + current identity and repaint the control. Called at init, when a
 // sign-in popup completes, and after sign-out — so auth state updates without a page navigation.
@@ -73,6 +98,8 @@ async function refresh() {
     .then(m => m || { authenticated: false })
     .catch(() => ({ authenticated: false })); // unreachable /me → treat as signed-out (controls stay gated)
   render(box, providers, me);
+  for (const fn of authListeners)
+    try { fn(me); } catch { /* one listener must not break the rest */ }
 }
 
 function render(box, providers, me) {
@@ -90,15 +117,6 @@ function render(box, providers, me) {
     const who = me.displayName || me.id;
     btn.innerHTML = (me.avatarUrl ? `<img src="${esc(me.avatarUrl)}" alt="">` : "🎮 ")
       + `<span>${esc(who)}</span> ▾`;
-    // Your runs live in the lobby, so it belongs in the menu under your own name. Signing out was
-    // the only thing here, which left "how do I get back?" answered solely by knowing to click the
-    // title — not an answer. (The signed-out menu is a list of providers under "Sign in": a Lobby
-    // entry among them would be answering a question nobody asked there. The brand serves them, and
-    // now says so.)
-    const lobby = document.createElement("button");
-    lobby.textContent = "Lobby";
-    lobby.onclick = () => { if (window.__lobby && window.__lobby.open) window.__lobby.open(); };
-    menu.appendChild(lobby);
     const out = document.createElement("button");
     out.textContent = "Sign out";
     out.onclick = logout;

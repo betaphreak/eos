@@ -70,6 +70,9 @@ const opened = await page.evaluate(() => {
       sub: r.querySelector('.lb-item-sub')?.textContent || '',
       deletable: !!r.querySelector('.lb-del'),
     })),
+    // the composer must be GONE when signed out, not merely marked hidden — computed style again
+    composerShown: (() => { const f = document.getElementById('lobbySay'); return !!f && getComputedStyle(f).display !== 'none'; })(),
+    signInControl: !!document.querySelector('#lobby #siteAuth .site-auth-btn'),
     solo: { label: document.getElementById('lobbySolo')?.textContent,
             disabled: document.getElementById('lobbySolo')?.disabled,
             hint: document.getElementById('lobbySolo')?.title },
@@ -122,6 +125,8 @@ const checks = {
   listsWhatIsRunning: opened.rows.length > 0,
   chatArrivedLive: chat.some(l => l.includes('pushed while the lobby was open')),
   signedOutCannotPlay: opened.solo.disabled === true && /Sign in/i.test(opened.solo.hint || ''),
+  signInLivesInTheLobby: opened.signInControl === true,
+  composerHiddenWhenSignedOut: opened.composerShown === false,
   rankedSaysThereIsNoTimeline: opened.ranked.disabled === true,
   setupStaysShutForTheSignedOut: setup.visible === false,
   escLeavesTheLobby: afterEsc1.lobby === false || afterEsc2 === false,
