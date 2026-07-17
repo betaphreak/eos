@@ -18,7 +18,13 @@ const fmtInt = n => Math.round(n).toLocaleString("en-US");
 // maps ProvinceExporter used) -> the baked crop's fit rectangle -> screen, with a
 // pan/zoom camera (cam.k scale, cam.x/cam.y translate) applied last. Using the same
 // source-pixel formulas the build baked with keeps dots/rings pinned to the map.
-const MAP = BUNDLE.map;
+// Realm selection (docs/realms.md Phase 3 — Crop and bake): ?realm=<key> crops the view to a single
+// realm's baked background + minimap; absent or unknown → the whole-world map, the default until Phase
+// 5 turns realm selection into the masthead dropdown. Everything downstream reads MAP, so the crop, the
+// projection window and the minimap all follow from this one pick.
+const ACTIVE_REALM = (typeof location !== "undefined"
+  ? new URLSearchParams(location.search).get("realm") : "") || "";
+const MAP = (BUNDLE.realms && BUNDLE.realms[ACTIVE_REALM] && BUNDLE.realms[ACTIVE_REALM].map) || BUNDLE.map;
 const sxSrc = lon => (lon + 180) / 360 * (MAP.W - 1);
 const sySrc = lat => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r / 2 + Math.PI / 4)) / Math.PI) / 2 * MAP.H; };
 let VIEW = { w:0, h:0, dx:0, dy:0, dw:0, dh:0, dpr:1 };
@@ -199,11 +205,11 @@ if (typeof MutationObserver !== "undefined" && typeof document !== "undefined")
 function clampAxis(camv, base, dim, viewDim) {
   const size = cam.k * dim, pos = camv + cam.k * base;
   if (size <= viewDim) return (viewDim - size) / 2 - cam.k * base;   // centre, no pan on this axis
-  // allow the map to be panned until its top/bottom edge reaches the viewport centre (margin =
-  // viewDim/2), so a province at the very edge of the mapped latitudes can still be centred (e.g.
-  // a deep link to a far-north coast). Beyond the edge the polar sea gradient fills the gap.
-  const m = viewDim / 2;
-  return Math.min(m, Math.max(viewDim - size - m, pos)) - cam.k * base;
+  // clamp the map's edges to the viewport edges (margin 0): once an axis is larger than the viewport
+  // you may pan within it, but never past its edge — so the map always fills the viewport and no
+  // out-of-bounds void (nor the sea fill over it) can be panned into view. A realm crop is a finite
+  // sheet; there is nothing beyond its edge to reveal.
+  return Math.min(0, Math.max(viewDim - size, pos)) - cam.k * base;
 }
 function clampPan() {
   // the map is a finite sheet, not a cylinder — clamp BOTH axes to its edges, no east-west wrap.
@@ -270,4 +276,4 @@ export const S = {
   camBeforeFocus: null,
 };
 
-export { P, fmtInt, apiUrl, SERVER_BASE, centerOn, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, ROUTES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, BUNDLE };
+export { P, fmtInt, apiUrl, SERVER_BASE, centerOn, MAP, sxSrc, sySrc, VIEW, cam, fitView, baseXr, baseYr, pxr, pyr, px, py, TCOL, LABEL_FONT, K_PLOT, K_TEX, K_MAX, TT, RIVER, SEA, SHORE, ICE_ART, BONUS_ICONS, TREES, ROUTES, FEATURE_OVERLAYS, IMPROVEMENT_OVERLAYS, SEA_BANDS, TRADE_GOODS, COUNTRIES, CULTURES, RELIGIONS, provGeo, polOf, isPolitical, isUnderground, activeZ, latAtScreenY, LY, NB4, terrainRgb, provSrcBox, provOnScreen, provBoxHas, lerp, provPath, cv, ctx, stage, cssVar, clampAxis, clampPan, BUNDLE, ACTIVE_REALM };

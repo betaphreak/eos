@@ -226,6 +226,7 @@ const provinces = [...shipped].map(id => byId.get(id)).filter(Boolean).map(p => 
   // geography as raw Clausewitz keys only; display names are resolved client-side from the shipped
   // `geoNames` dictionaries (interning them here duplicated ~850 KB of names across all provinces)
   region: p.region || null, area: p.area || null, continent: p.continent || null,
+  realm: p.realm || null,                // which realm's crop this province belongs to (Phase 1); groups the per-realm bakes
   winter: p.winter || null,
   nb: p.neighbors.filter(n => shipped.has(n)),
   rings: ringsById.get(p.id) || null,    // outline in source pixels (null for sea/lake → bbox culls, packPlots)
@@ -239,6 +240,37 @@ const provinces = [...shipped].map(id => byId.get(id)).filter(Boolean).map(p => 
 // so lon/lat invert back to the exact source pixel, and a crop aligns 1:1 with
 // the province dots as long as the page projects with the same two formulas.
 const map = bakeTerrain(provinces);
+
+// ---- per-realm crops + background bakes (docs/realms.md Phase 3 — Crop and bake) ----
+// Each realm crops to its own provinces' pixel extent, baked at up to 2816px — so it spends the same
+// output budget on ~45% of the world, roughly 2× the detail. The whole-world `map` above stays the
+// DEFAULT view; the client selects a realm's crop via ?realm= (Phase 5 turns that into the dropdown
+// default). Realm.NONE provinces (the 3 quirks + deep ocean) belong to no realm and are not baked.
+const REALM_KEYS = ['halcann', 'aelantir', 'hinuilands'];
+const realms = {};
+for (const rk of REALM_KEYS) {
+  const rprovs = provinces.filter(p => p.realm === rk);
+  if (!rprovs.length) { console.warn(`  realm ${rk}: no provinces — skipped`); continue; }
+  assertContiguousX(rprovs, rk);
+  realms[rk] = { map: bakeTerrain(rprovs, `terrain/terrain-${rk}`) };
+  console.log(`  realm ${rk}: ${rprovs.length} provinces, crop ${realms[rk].map.dw}×${realms[rk].map.dh}px`);
+}
+
+// Fail loudly if a realm's provinces straddle the antimeridian (non-contiguous in x). Every realm is
+// contiguous once the three quirks are Realm.NONE (docs/realms.md §Three quirk provinces), and each is
+// ≤46% of the raster wide — so a span past ~70% means a seam-straddling province slipped in. Drop it or
+// fix its continent; the roll does not come back to accommodate it (§Assert the no-roll invariant).
+function assertContiguousX(provs, realmKey) {
+  const W = 5632;
+  const sx = lon => (lon + 180) / 360 * (W - 1);
+  let x0 = 1e9, x1 = -1e9;
+  for (const p of provs) { const x = sx(p.lon); if (x < x0) x0 = x; if (x > x1) x1 = x; }
+  const span = x1 - x0;
+  if (span > W * 0.7)
+    throw new Error(`realm ${realmKey} spans ${(span / W * 100).toFixed(0)}% of the raster in x — a `
+      + `province straddles the antimeridian (non-contiguous). Drop it or fix its continent `
+      + `(docs/realms.md §Three quirk provinces); the roll is not coming back.`);
+}
 
 // per-plot terrain zoom layer (a base WorldMap layer the Caravan View draws over):
 // pack every displayed province's canonical plot grid into one range-fetched
@@ -430,7 +462,7 @@ const bboxes = {};                    // ring-less (sea/lake) provinces' plot-ex
 for (const p of provinces) if (p.bbox) bboxes[p.id] = p.bbox;
 const manifest = {
   seed: +SEED,
-  map, terrainColors, terrainLayer, terrainTiles, river, sea, shore, ice, bonusIcons, trees, routes, featureOverlays, improvementOverlays, districtTiles, fow, seaBands,
+  map, realms, terrainColors, terrainLayer, terrainTiles, river, sea, shore, ice, bonusIcons, trees, routes, featureOverlays, improvementOverlays, districtTiles, fow, seaBands,
   loading,                            // committed loading-screen art (assets/loading/loading-*.jpg), or []
   bboxes,                             // {provId: [x0,y0,x1,y1]} for ring-less provinces (server can't derive)
 };
@@ -457,7 +489,7 @@ console.log(`  improvement overlays: ${improvementOverlays ? Object.keys(improve
 // ---------------------------------------------------------------------------
 // terrain baking
 // ---------------------------------------------------------------------------
-function bakeTerrain(provs) {
+function bakeTerrain(provs, name = 'terrain/terrain') {
   // the EU4 terrain raster is no longer vendored under data/anbennar — prefer a local copy if present,
   // else the on-demand Anbennar cache (warmed by the anbPrefetch of map/terrain.bmp above)
   const vendored = path.join(ROOT, 'data/anbennar/terrain.bmp');
@@ -546,7 +578,7 @@ function bakeTerrain(provs) {
   // transparent. Lossy WebP with full-quality alpha: the raster is the blurred base under the crisp
   // per-plot terrain and shown small at world view, so lossy RGB is invisible while alphaQuality 100
   // keeps the coastline cut-out sharp.
-  const src = queueWebp('terrain/terrain', dw, dh, rgb, alpha, { quality: 80 });
+  const src = queueWebp(name, dw, dh, rgb, alpha, { quality: 80 });
 
   return {
     src,

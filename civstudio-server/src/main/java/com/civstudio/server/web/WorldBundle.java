@@ -260,7 +260,7 @@ public final class WorldBundle {
 		// "fow" is the Civ6 fog-of-war art (docs/explorer-caravan.md §8) — baked and shipped ahead of
 		// the RevealedMap that will consume it, so it is absent from an un-rebaked manifest and simply
 		// arrives null (nothing renders it yet).
-		for (String k : List.of("map", "terrainColors", "terrainLayer", "terrainTiles", "river",
+		for (String k : List.of("map", "realms", "terrainColors", "terrainLayer", "terrainTiles", "river",
 				"sea", "shore", "ice", "bonusIcons", "trees", "routes", "featureOverlays", "improvementOverlays",
 				"districtTiles", "fow", "seaBands", "loading"))
 			root.set(k, manifest.get(k));

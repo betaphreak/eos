@@ -17,8 +17,6 @@ import { noteFrame } from "./diag.mjs";                        // the top bar's 
 // the server" screen (its health poll holds it while the server is down), so once the map is
 // ready it should clear right away rather than lingering.
 const loadEl = document.getElementById("loading");
-const loadStart = performance.now();
-const MIN_LOADING_MS = 3000;   // hold the splash ≥3s after connecting before switching to the stage
 let loadingActive = false;
 if (loadEl) loadingActive = true;              // always manage it so first paint hides it (below)
 // (The cycling splash art AND the "Did you know?" tip are driven by the index.html bootstrap so they
@@ -28,8 +26,7 @@ if (loadEl) loadingActive = true;              // always manage it so first pain
 function hideLoading() {
   if (!loadingActive) return;
   loadingActive = false;
-  const wait = Math.max(0, MIN_LOADING_MS - (performance.now() - loadStart));
-  setTimeout(() => { loadEl.classList.add("gone"); }, wait);
+  loadEl.classList.add("gone");   // first paint is ready — clear the splash immediately, no minimum hold
 }
 
 const mapImg = new Image();
@@ -139,12 +136,16 @@ function paintScene() {
   ctx.clearRect(0,0,w,h);
   ctx.fillStyle = "#070a10"; ctx.fillRect(0,0,w,h);   // void beyond the rendered latitude band
 
-  // clip the whole scene to the imported map's own latitude band (its raster Y extent) rather than
-  // out to ±89°: beyond the mapped land there is no real data, so the polar "arctic" ocean/ice fill
-  // was useless — leave the plain dark void there instead.
+  // clip the whole scene to the imported map's own raster extent — BOTH axes — rather than out to
+  // ±89° / the full viewport width. Beyond the mapped land there is no real data, so the polar
+  // "arctic" ocean/ice fill was useless, and (once a realm crops smaller than the viewport aspect)
+  // the sea would otherwise paint the left/right letterbox void blue. Leave plain dark void there.
   const yTop = cam.y + cam.k * VIEW.dy, yBot = cam.y + cam.k * (VIEW.dy + VIEW.dh);
+  const xLeft = cam.x + cam.k * VIEW.dx, xRight = cam.x + cam.k * (VIEW.dx + VIEW.dw);
   ctx.save();
-  ctx.beginPath(); ctx.rect(0, Math.min(yTop, yBot), w, Math.abs(yBot - yTop)); ctx.clip();
+  ctx.beginPath();
+  ctx.rect(Math.min(xLeft, xRight), Math.min(yTop, yBot), Math.abs(xRight - xLeft), Math.abs(yBot - yTop));
+  ctx.clip();
 
   // the ocean base behind everything (the land raster's sea is transparent, so this shows through
   // it), then the polar ice cap over the open water. Screen-space, so drawn ONCE here rather than

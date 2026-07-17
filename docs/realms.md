@@ -869,6 +869,29 @@ out of the same bake. Verify per realm with `tools/webverify`.
 > A future province that straddles the antimeridian then gets dropped or has its continent fixed — the
 > roll does not come back to accommodate it.
 
+> **As built (part 1 — crop, bake, clip; the fog mask is part 2).** `build.mjs` bakes a per-realm
+> background by handing `bakeTerrain` each realm's provinces (each ≤2816px → ~2× the whole-world
+> detail: Halcann 2781×2048, Aelantir 2634×2048, Hinuilands 263×454), asserts x-contiguity
+> (`assertContiguousX`, fails past 70% raster width), and emits a `realms:{<key>:{map}}` block in the
+> manifest with `W/H` held global at 5632×2048. `WorldBundle` merges it; the client picks the crop via
+> `MAP = BUNDLE.realms[?realm].map || BUNDLE.map` (`core.mjs`, ACTIVE_REALM) — **whole-world stays the
+> default**, realms are opt-in via `?realm=` until Phase 5's dropdown, so prod does not regress. The
+> per-realm minimap falls out free (it reuses `MAP.src`). Verified per realm with `tools/webverify`:
+> each crop renders distinct and correct, province dots aligned, zero console errors.
+>
+> Two rendering fixes landed here (they surfaced the moment a realm cropped narrower than the viewport
+> aspect): the scene clip now bounds **both** axes to the map's raster extent (was Y-only), so the sea
+> no longer paints the left/right letterbox void blue — it reads as dark void; and `clampAxis` drops
+> its `viewDim/2` margin to **0**, so the map's edges clamp to the viewport edges and no out-of-bounds
+> void can be panned into view. Also removed `MIN_LOADING_MS` (the splash now clears on first paint, as
+> its own comment already promised).
+>
+> **Part 2, still pending: the baked realm fog mask** (§The background is baked). A realm's crop
+> rectangle contains a sliver of the neighbouring realm across the Atlantic (Brazil's tip on Halcann's
+> west edge, Cannor on Aelantir's east edge, foreign land around Hinuilands' two provinces). Masking it
+> needs a per-pixel province→realm resolve from `provinces.bmp`, which `build.mjs` does not read yet
+> (only `terrain.bmp`) — the bigger lift, done next.
+
 **Phase 4 — Fog the void.** The runtime half of the fog, on top of Phase 3's baked mask: sea X-clip;
 per-realm `rollupTier` label centroids; **suppress cross-realm adjacency lines** (§The fog must not be
 mute — one bundle ships both endpoints, so the Venail↔Lastsight line draws into the fog unless stopped).
