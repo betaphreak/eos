@@ -67,11 +67,14 @@ public class SessionController {
 	private final SessionHost host;
 	private final ObjectMapper json;
 	private final CurrentUserResolver currentUser;
+	private final SessionAuthz authz;
 
-	public SessionController(SessionHost host, ObjectMapper json, CurrentUserResolver currentUser) {
+	public SessionController(SessionHost host, ObjectMapper json, CurrentUserResolver currentUser,
+			SessionAuthz authz) {
 		this.host = host;
 		this.json = json;
 		this.currentUser = currentUser;
+		this.authz = authz;
 	}
 
 	@GetMapping
@@ -122,17 +125,9 @@ public class SessionController {
 		// play/pause/step/rate/stop change state shared by every spectator, so control requires a
 		// signed-in user (any authenticated user for the unowned/public demo; the owner for an owned
 		// session). Spectating stays anonymous. See docs/authentication.md.
-		// authenticate first, THEN authorize: an anonymous caller is 401 here as everywhere else,
-		// never 403 — "sign in" and "you may not" are different answers to different questions
-		ResponseEntity<Object> denied = denyWrite(hs, http);
+		ResponseEntity<Object> denied = authz.denyClock(hs, http);
 		if (denied != null)
 			return denied;
-		// A Timeline's clock belongs to everyone in it, so it belongs to no player: nobody gets to
-		// pause the world their rivals are living in. Admins only, for maintenance — the one
-		// exception the owner asked for (docs/spectator-lobby.md).
-		if (hs.isTimeline() && !currentUser.isAdmin(http))
-			return ResponseEntity.status(403)
-					.body(Map.of("error", "the Timeline's clock runs for everyone — admins only"));
 		// a finished run takes no orders: its thread is gone, so pause/resume/step would silently
 		// do nothing. Say so rather than returning a cheerful 200 that changed nothing.
 		if (hs.state() == HostedSession.State.GAME_OVER)
@@ -177,7 +172,7 @@ public class SessionController {
 		// a command acts on a COLONY, so it is that colony's owner who may submit it — not the run's
 		// (docs/spectator-lobby.md Phase 2). They coincide for a single-player run and the demo.
 		String colony = req.colony() == null || req.colony().isBlank() ? null : req.colony();
-		ResponseEntity<Object> denied = denyColonyWrite(hs, colony, http);
+		ResponseEntity<Object> denied = authz.denyColonyCommand(hs, colony, http);
 		if (denied != null)
 			return denied;
 		String type = req.type() == null ? "" : req.type();
@@ -216,11 +211,11 @@ public class SessionController {
 		HostedSession hs = host.get(id);
 		if (hs == null)
 			return notFound(id);
-		String user = currentUser.userId(http);
-		if (user == null)
-			return ResponseEntity.status(401).body(Map.of("error", "sign in to join the Timeline"));
+		ResponseEntity<Object> denied = authz.denyJoin(http);
+		if (denied != null)
+			return denied;
 		try {
-			Settlement colony = host.joinTimeline(id, user);
+			Settlement colony = host.joinTimeline(id, currentUser.userId(http));
 			return ResponseEntity.status(201).body(Map.of("colony", colony.getName(),
 					"province", colony.getProvince() == null ? 0 : colony.getProvince().id(),
 					"session", id));
@@ -242,9 +237,10 @@ public class SessionController {
 		HostedSession hs = host.get(id);
 		if (hs == null)
 			return notFound(id);
+		ResponseEntity<Object> denied = authz.denyChat(http);
+		if (denied != null)
+			return denied;
 		String user = currentUser.displayName(http);
-		if (user == null)
-			return ResponseEntity.status(401).body(Map.of("error", "sign in to chat"));
 		String text = req == null || req.text() == null ? "" : req.text().strip();
 		if (text.isEmpty())
 			return ResponseEntity.badRequest().body(Map.of("error", "empty message"));
@@ -380,42 +376,8 @@ public class SessionController {
 	// authorize a write (control or command): the caller must be signed in, and — for an owned
 	// session — be the owner or an admin. Returns the deny response (401 unauthenticated / 403
 	// not-owner) or null when allowed. Read/spectate endpoints (list, stream) are never gated.
-	private ResponseEntity<Object> denyWrite(HostedSession hs, HttpServletRequest http) {
-		String user = currentUser.userId(http);
-		if (user == null)
-			return ResponseEntity.status(401).body(Map.of("error", "sign in to control the session"));
-		String owner = hs.owner();
-		if (owner != null && !owner.equals(user) && !currentUser.isAdmin(http))
-			return forbidden(hs.id());
-		return null;
-	}
-
-	// May this request command `colonyName` (null = the whole run, i.e. every colony)? The Phase-2
-	// question: a session can hold many players' colonies, so ownership is asked of the COLONY.
-	// Unchanged for today's one-colony runs, where a colony's owner IS the run's owner.
-	private ResponseEntity<Object> denyColonyWrite(HostedSession hs, String colonyName,
-			HttpServletRequest http) {
-		if (colonyName == null)
-			return denyWrite(hs, http); // no target named: the run's owner is the gate, as before
-		String user = currentUser.userId(http);
-		if (user == null)
-			return ResponseEntity.status(401).body(Map.of("error", "sign in to command a colony"));
-		if (hs.colonyByName(colonyName) == null)
-			return ResponseEntity.status(404)
-					.body(Map.of("error", "no colony " + colonyName + " in session " + hs.id()));
-		String colonyOwner = hs.ownerOf(colonyName);
-		if (colonyOwner != null && !colonyOwner.equals(user) && !currentUser.isAdmin(http))
-			return ResponseEntity.status(403)
-					.body(Map.of("error", "not the owner of colony " + colonyName));
-		return null;
-	}
-
 	private static ResponseEntity<Object> notFound(String id) {
 		return ResponseEntity.status(404).body(Map.of("error", "no session " + id));
-	}
-
-	private static ResponseEntity<Object> forbidden(String id) {
-		return ResponseEntity.status(403).body(Map.of("error", "not the owner of session " + id));
 	}
 
 	// map the wire lever name (camelCase from the browser, or the enum name) to the enum
