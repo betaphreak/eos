@@ -29,6 +29,9 @@ const ROLE_COLOR = { SETTLER: "#e8c37a", WORKER: "#6bd08a", EXPLORER: "#7aa2e0",
 
 let es = null;          // the EventSource, while connected
 let sid = null;         // the live session id
+// the session the LOBBY chose, if any. Null means "whatever is running" — the plain visitor's
+// answer, and what this has always done. See spectateSession / docs/spectator-lobby.md Phase 5.
+let preferred = null;
 let snap = null;        // the latest snapshot
 // guards the log delta against re-ingestion: a reconnect is handed the cached frame again, and its
 // lines have already been posted (see snapshot-dedupe.mjs)
@@ -118,7 +121,9 @@ async function connectStream() {
     // Notifications are PER SESSION: a re-founded session (a new id — e.g. after a server redeploy)
     // starts an empty board. A plain reconnect to the same session keeps it, since the cards there
     // are still that session's.
-    const next = list[0].id;
+    // Which session? The one the lobby picked, if it is still there; otherwise the first, which is
+    // what a plain visitor arriving at the bare site has always got.
+    const next = (preferred && list.some(s => s.id === preferred)) ? preferred : list[0].id;
     if (next !== sid) { resetNotify(); await rehydrateNotify(next); }
     sid = next;
     if (es) es.close();
@@ -178,6 +183,26 @@ function retryOrLost() {
   const delay = Math.min(RECONNECT_MAX_DELAY, RECONNECT_DELAY * Math.pow(1.6, Math.min(reconnectAttempts++, 6)));
   reconnectTimer = setTimeout(connectStream, delay);
 }
+
+/**
+ * Watch a particular session — the lobby's pick. Re-points the feed at it: the board is per session,
+ * so this is a fresh one, and a game-over screen from the last session must not survive the move.
+ * Fired as a DOM event by lobby.mjs so the lobby need not import the overlay (nor the overlay the
+ * lobby), the same decoupling the tech tree uses for snapshots.
+ */
+window.addEventListener("civstudio:spectate", e => {
+  const id = e.detail && e.detail.id;
+  if (!id || id === sid) return;
+  preferred = id;
+  ended = false;
+  const go = document.getElementById("gameover");
+  if (go) go.hidden = true;
+  if (es) { es.close(); es = null; }
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  reconnectAttempts = 0;
+  framed = false;                 // open on the new session's colony, as a fresh load would
+  connectStream();
+});
 
 /** Send a control action (pause/resume/step/rate) to the live session. */
 export async function controlLive(action, value) {

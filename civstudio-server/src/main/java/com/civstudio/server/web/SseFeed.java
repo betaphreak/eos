@@ -69,6 +69,12 @@ public class SseFeed {
 
 		Thread drainer = Thread.ofVirtual().name("sse-" + name).start(() -> {
 			try {
+				// Open the connection before there is anything to say. Spring does not flush the
+				// response headers until the first event, so a feed with nothing to send yet — a
+				// lobby whose chat is quiet — leaves the client waiting on headers that never come:
+				// EventSource never fires onopen, never evaluates CORS, and the first real message
+				// arrives to nobody. A comment is a legal SSE frame that no client mistakes for data.
+				emitter.send(SseEmitter.event().comment("open"));
 				while (true) {
 					Frame f = frames.take();
 					SseEmitter.SseEventBuilder ev = SseEmitter.event().data(f.data(), MediaType.TEXT_PLAIN);

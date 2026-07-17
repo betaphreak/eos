@@ -1070,3 +1070,108 @@ body.auth-anon #clock { cursor: not-allowed; }
 }
 .go-reason { font-size: 15px; line-height: 1.5; color: var(--ink); }
 .go-date { margin-top: 10px; font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+/* ── the Spectator Lobby (docs/spectator-lobby.md Phase 5) ────────────────────
+   The room before you pick a session. Full-viewport over the live map, like
+   #loading, but translucent: the world you are choosing among is worth seeing
+   behind the choosing. */
+#lobby {
+  position: absolute; inset: 0; z-index: 55; display: grid; place-items: center;
+  background: rgba(6,9,14,.72); backdrop-filter: blur(6px);
+  animation: go-in .25s ease both;
+}
+#lobby[hidden] { display: none; }
+/* a class that sets display beats the UA's [hidden]{display:none} — say it explicitly, or the
+   setup panel is "hidden" to the DOM and plainly visible to the eye */
+.lb-card[hidden] { display: none; }
+.lb-card {
+  width: min(880px, 92vw); max-height: 86vh; display: flex; flex-direction: column;
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.5); overflow: hidden;
+}
+.lb-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 20px 12px; border-bottom: 1px solid var(--line-soft);
+}
+.lb-title { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: .02em; }
+.lb-sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+.lb-x {
+  background: none; border: 0; color: var(--ink-soft); font-size: 24px; line-height: 1;
+  cursor: pointer; padding: 0 4px;
+}
+.lb-x:hover { color: var(--ink); }
+.lb-body { display: grid; grid-template-columns: 1.35fr 1fr; gap: 0; min-height: 0; flex: 1; }
+.lb-col { display: flex; flex-direction: column; min-height: 0; padding: 14px 16px; }
+.lb-col + .lb-col { border-left: 1px solid var(--line-soft); }
+.lb-col h3 {
+  margin: 0 0 8px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-faint); font-weight: 600;
+}
+.lb-count { color: var(--ink-faint); font-weight: 400; }
+.lb-list { overflow-y: auto; display: flex; flex-direction: column; gap: 4px; min-height: 120px; }
+.lb-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-2) 70%, transparent); border: 1px solid transparent;
+}
+.lb-item:hover { border-color: var(--line); }
+.lb-item.mine { border-left: 2px solid var(--accent); }
+.lb-item.over { opacity: .55; }
+.lb-item-main {
+  flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  background: none; border: 0; cursor: pointer; text-align: left; padding: 0; color: inherit;
+}
+.lb-item-title { font-size: 14px; font-weight: 600; color: var(--ink); }
+.lb-item-sub { font-size: 11px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.lb-item-meta { font-size: 11px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.lb-del {
+  background: none; border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+  font-size: 10px; padding: 3px 7px; color: var(--ink-soft);
+}
+.lb-del:hover { color: #e07a9e; border-color: #e07a9e; }
+.lb-empty { font-size: 12px; color: var(--ink-faint); padding: 10px 2px; }
+.lb-chat {
+  flex: 1; overflow-y: auto; min-height: 120px; font-size: 12px; line-height: 1.5;
+  color: var(--ink-soft); display: flex; flex-direction: column; gap: 2px;
+}
+.lb-line b { color: var(--ink); font-weight: 600; }
+.lb-say { display: flex; gap: 6px; margin-top: 8px; }
+.lb-say input {
+  flex: 1; min-width: 0; padding: 6px 8px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); font: inherit;
+  font-size: 12px;
+}
+.lb-say button, .lb-mini {
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--ink-soft);
+  border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer;
+}
+.lb-say button:hover, .lb-mini:hover { color: var(--ink); border-color: var(--accent); }
+.lb-signin { margin-top: 8px; font-size: 12px; color: var(--ink-faint); }
+.lb-play {
+  display: flex; align-items: center; gap: 10px; padding: 12px 18px;
+  border-top: 1px solid var(--line-soft);
+}
+.lb-btn {
+  padding: 8px 14px; border-radius: 8px; border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.lb-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+.lb-btn:disabled { opacity: .4; cursor: not-allowed; border-color: var(--line); background: none; }
+.lb-btn.lb-ghost { border-color: var(--line); background: none; font-weight: 400; }
+.lb-hint { font-size: 11px; color: var(--ink-faint); flex: 1; }
+.lb-esc { font-size: 11px; color: var(--ink-faint); }
+/* new-run setup: a step inside the lobby, not another screen */
+.lb-setup { position: absolute; width: min(420px, 90vw); }
+.lb-field { display: flex; flex-direction: column; gap: 4px; padding: 12px 18px 0; font-size: 12px; color: var(--ink); }
+.lb-note { font-size: 11px; color: var(--ink-faint); }
+.lb-field .lb-row { display: flex; gap: 6px; }
+.lb-field input {
+  flex: 1; min-width: 0; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line);
+  background: var(--panel-2); color: var(--ink); font: inherit; font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 720px) {
+  .lb-body { grid-template-columns: 1fr; }
+  .lb-col + .lb-col { border-left: 0; border-top: 1px solid var(--line-soft); }
+}

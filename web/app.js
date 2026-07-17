@@ -16,6 +16,7 @@ import { initShortcuts } from "./js/shortcuts.mjs";
 import { initSiteAuth } from "./js/auth.mjs";
 import { initAdvisor } from "./js/advisors.mjs";
 import { initDiag } from "./js/diag.mjs";
+import { initLobby, openLobby, closeLobby, lobbyOpen } from "./js/lobby.mjs";
 
 boot();
 initTechTree();
@@ -23,3 +24,7 @@ initAdvisor();   // build the advisor selector + sub-bar, deriving the mode from
 initShortcuts();
 initSiteAuth();
 initDiag();      // the top bar's fps · latency readout (starts the ping poll)
+initLobby();     // the Spectator Lobby, opened by the brand ("home") — docs/spectator-lobby.md
+// exposed on window for the same reason the picker is: index.html's pre-module boot flow and
+// panel.mjs's home gesture both need to reach it without importing this module graph
+window.__lobby = { open: openLobby, close: closeLobby, isOpen: lobbyOpen };

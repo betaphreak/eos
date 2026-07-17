@@ -101,6 +101,12 @@ public class SessionController {
 			row.put("date", hs.date().toString());     // the in-game date a lobby row shows
 			row.put("watching", hs.spectators());      // 👁 on the row
 			row.put("mine", me != null && me.equals(hs.owner()));
+			// What the row is CALLED. A run is named by its colony for now — naming is deferred to
+			// countries (docs/spectator-lobby.md §Naming), and this is the one field that changes when
+			// they land. Absent for a Timeline (it is the world's, not a colony's) and for a run with
+			// no colony yet, where the client falls back to the id.
+			if (!hs.isTimeline() && !hs.colonies().isEmpty())
+				row.put("colony", hs.colonies().get(0).getName());
 			if (hs.isTimeline()) {
 				// a Timeline's row is about the contest: how many are still standing, of how many
 				// founded. (Amendment 4 — a player with a living colony should see a rank window

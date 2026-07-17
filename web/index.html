@@ -233,6 +233,63 @@
       <div class="ld-trivia" aria-live="polite"><span class="ld-trivia-label">Did you know?</span><span class="ld-trivia-body"></span></div>
     </div>
 
+    <!-- The Spectator Lobby (docs/spectator-lobby.md Phase 5): the room you are in before you have
+         picked a session — a browser of what is running, and a chat that belongs to no session.
+         Opened by the brand ("home") over the live map; Esc or a click outside returns to it.
+         Populated by js/lobby.mjs. -->
+    <div id="lobby" role="dialog" aria-modal="true" aria-labelledby="lobbyTitle" hidden>
+      <div class="lb-card">
+        <div class="lb-head">
+          <div>
+            <div class="lb-title" id="lobbyTitle">CivStudio</div>
+            <div class="lb-sub">Spectator Lobby · <span id="lobbyServer">—</span></div>
+          </div>
+          <button id="lobbyClose" class="lb-x" aria-label="Back to the map">&times;</button>
+        </div>
+        <div class="lb-body">
+          <section class="lb-col" aria-labelledby="lobbySessionsH">
+            <h3 id="lobbySessionsH">Sessions <span class="lb-count" id="lobbyCount"></span></h3>
+            <div class="lb-list" id="lobbySessions" role="list"></div>
+          </section>
+          <section class="lb-col" aria-labelledby="lobbyChatH">
+            <h3 id="lobbyChatH">Lobby chat</h3>
+            <div class="lb-chat" id="lobbyChat" role="log" aria-live="polite"></div>
+            <form class="lb-say" id="lobbySay">
+              <input id="lobbyText" maxlength="280" autocomplete="off" placeholder="type…" aria-label="Message">
+              <button type="submit">Say</button>
+            </form>
+            <div class="lb-signin" id="lobbySignin" hidden>Sign in to chat</div>
+          </section>
+        </div>
+        <div class="lb-play">
+          <button id="lobbySolo" class="lb-btn"></button>
+          <button id="lobbyRanked" class="lb-btn"></button>
+          <span class="lb-hint" id="lobbyHint"></span>
+          <span class="lb-esc">Esc &rarr; map</span>
+        </div>
+      </div>
+
+      <!-- new-run setup: the seed IS the world, so it is chosen, not rolled behind your back
+           (docs/spectator-lobby.md §Naming, setup and the public site) -->
+      <div class="lb-card lb-setup" id="lobbySetup" hidden>
+        <div class="lb-head"><div class="lb-title">New run</div></div>
+        <label class="lb-field">Seed
+          <span class="lb-note">the world itself — the same seed is the same world, every time</span>
+          <span class="lb-row"><input id="setupSeed" inputmode="numeric" autocomplete="off">
+            <button type="button" id="setupRoll" class="lb-mini">Roll</button></span>
+        </label>
+        <label class="lb-field">Province
+          <span class="lb-note">where you found</span>
+          <input id="setupProvince" inputmode="numeric" autocomplete="off" value="4411">
+        </label>
+        <div class="lb-play">
+          <button id="setupFound" class="lb-btn">Found</button>
+          <button id="setupCancel" class="lb-btn lb-ghost">Cancel</button>
+          <span class="lb-hint" id="setupHint"></span>
+        </div>
+      </div>
+    </div>
+
     <!-- game over: the run ended itself (docs/game-over.md). Shown when a snapshot arrives with
          state GAME_OVER, at which point the client also STOPS reconnecting — the session will never
          tick again. A direct child of .app (like #loading) so it covers the full viewport; the map

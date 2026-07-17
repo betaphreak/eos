@@ -29,15 +29,18 @@ import "./btntip.mjs";
 
 // the app shell — panel sets --bar-total on it from the top bar's height (the rail owns its own DOM)
 const appEl = document.querySelector(".app");
-// the title acts as "home": reset to the world view and re-open the server picker (index.html's
-// boot flow exposes it on window.__picker) as a dismissable overlay over the live map — Esc or a
-// click outside returns to the map; picking a different server reloads into it. Falls back to a
-// reload-to-picker if the overlay isn't available (defensive; it always is after boot).
+// The title acts as "home": reset to the world view and open the SPECTATOR LOBBY over the live map
+// (docs/spectator-lobby.md) — Esc or a click outside returns to the map. The lobby is where you now
+// land, because "what is running, and what do I want to play" is the question home actually asks;
+// choosing a SERVER is the rarer act, and lives on the picker the lobby links to (window.__picker,
+// exposed by index.html's boot flow). Falls back to the picker, then to a reload, if the lobby
+// module is unavailable (defensive; it always is after boot).
 const brandEl = document.getElementById("brand");
 if (brandEl) {
   const home = () => {
     resetView();
-    if (window.__picker && window.__picker.open) window.__picker.open();
+    if (window.__lobby && window.__lobby.open) window.__lobby.open();
+    else if (window.__picker && window.__picker.open) window.__picker.open();
     else location.href = location.pathname;
   };
   brandEl.onclick = home;
