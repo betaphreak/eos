@@ -76,28 +76,41 @@ class LogLineTest {
 	}
 
 	@Test
-	void theVisibilityRuleIsRankRelativeToTheViewer() {
-		// THE rule the board filters on: a player plays AT a rank and wants everything above their
-		// level plus at most one rung below — far enough to see how their vassals perform, no further.
-		//   visible   <=> event.rankLevel >= viewer.level - 1
+	void theVisibilityRuleIsAThreeRungWindowAroundTheViewer() {
+		// THE rule the board filters on (web/js/notify-rank.mjs owns it; this pins that the wire
+		// carries what it needs). A player plays AT a rank and sees one rung either way: their vassals
+		// below, themselves, and the tier they answer to above.
+		//   visible   <=> |event.rankLevel - viewer.level| <= 1
 		//   full card <=> event.rankLevel >= viewer.level
 		LogLine household = LogLine.of("d", "a family's news", INFO, Rank.HOUSEHOLD); // 0
 		LogLine holding = LogLine.of("d", "a noble house's news", INFO, Rank.HOLDING); // 2
 		LogLine village = LogLine.of("d", "the colony's news", INFO, Rank.VILLAGE);    // 3
+		LogLine kingdom = LogLine.of("d", "a kingdom's war", INFO, Rank.KINGDOM);      // 12
 
-		// a captain (CARAVAN, 1) knows every family in the band
-		assertTrue(household.rankLevel() >= Rank.CARAVAN.level() - 1, "a captain sees a household");
+		// a captain (CARAVAN, 1) knows every family in the band...
+		assertTrue(visible(household, Rank.CARAVAN), "a captain sees a household");
+		// ...and is told nothing of politics it can neither act on nor care about. Bounding the window
+		// ABOVE is what makes the lowest rank playable — where single-player starts, as an adventurer
+		// company.
+		assertFalse(visible(kingdom, Rank.CARAVAN), "a caravan is not told about a kingdom's war");
+		assertFalse(visible(village, Rank.CARAVAN), "nor even about a colony two rungs up");
+
 		// a ruler (VILLAGE, 3) hears about their noble vassals (HOLDING, 2) but not the peasantry
-		assertTrue(holding.rankLevel() >= Rank.VILLAGE.level() - 1, "a ruler sees their holdings");
-		assertFalse(household.rankLevel() >= Rank.VILLAGE.level() - 1, "…but not one family's affairs");
+		assertTrue(visible(holding, Rank.VILLAGE), "a ruler sees their holdings");
+		assertFalse(visible(household, Rank.VILLAGE), "…but not one family's affairs");
 		// a mayor (CITY, 4) sees the villages under them, and nothing smaller
-		assertTrue(village.rankLevel() >= Rank.CITY.level() - 1, "a mayor sees a village");
-		assertFalse(holding.rankLevel() >= Rank.CITY.level() - 1, "…but not a single holding");
+		assertTrue(visible(village, Rank.CITY), "a mayor sees a village");
+		assertFalse(visible(holding, Rank.CITY), "…but not a single holding");
 
 		// prominence is the same axis: your level and above is a full card, the rung below is a dim
 		// vassal line. So the SAME event reads differently by who is watching — which is the point.
 		assertTrue(village.rankLevel() >= Rank.VILLAGE.level(), "a ruler's own colony news is a full card");
 		assertFalse(holding.rankLevel() >= Rank.VILLAGE.level(), "a vassal's news is a dim one-liner");
+	}
+
+	// the rule under test, spelled out once
+	private static boolean visible(LogLine line, Rank viewer) {
+		return Math.abs(line.rankLevel() - viewer.level()) <= 1;
 	}
 
 	@Test

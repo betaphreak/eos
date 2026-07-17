@@ -204,29 +204,45 @@ the thing the event is about*. The ladder is contiguous and alternates singular/
 
 ### The visibility rule
 
-A human player plays *at* a rank, and wants **everything above their level, plus at most one rank
-below** — far enough down to see how their vassals perform, and no further:
+A human player plays *at* a rank and sees a window **three rungs wide, centred on themselves**: one
+below (how their vassals perform), their own level, and one above (the tier they answer to).
 
 ```
-visible   ⟺  event.rank.level() >= playerRank.level() - 1
-full card ⟺  event.rank.level() >= playerRank.level()          (your level and above)
+visible   ⟺  |event.rank.level() - playerRank.level()| <= 1
+full card ⟺  event.rank.level() >= playerRank.level()          (your level and the rung above)
 dim       ⟺  event.rank.level() == playerRank.level() - 1      (your vassals)
 ```
+
+**Bounded above as well as below** — the part that is easy to get wrong. If you are playing an
+adventurer company, a kingdom's war is news you can neither act on nor care about, and letting it
+through would drown the band's own story. A hegemon has the same problem pointed the other way.
 
 This replaces the `curated` heuristic outright: prominence stops being a guess about wording and
 becomes a statement about scope, relative to the viewer.
 
-It also declutters **as you climb**, which is exactly the settlement-tier ladder
-(Captain → Ruler → Mayor; see `docs/settlement-tier-ladder-plan.md`):
+The window **slides as you climb**, which is exactly the settlement-tier ladder (Captain → Ruler →
+Mayor; see `docs/settlement-tier-ladder-plan.md`) — the game declutters itself:
 
 | You play as | at rank | you see | i.e. |
 |---|---|---|---|
-| Captain | CARAVAN (1) | ≥ HOUSEHOLD (0) | every family in the band — early on you know them all |
-| Ruler | VILLAGE (3) | ≥ HOLDING (2) | noble houses, not individual peasants |
-| Mayor | CITY (4) | ≥ VILLAGE (3) | the settlements under you, not their households |
+| Adventurer company | CARAVAN (1) | HOUSEHOLD…HOLDING (0–2) | your families, your band, the holding you deal with |
+| Ruler | VILLAGE (3) | HOLDING…CITY (2–4) | noble houses and the city above, not the peasantry |
+| Mayor | CITY (4) | VILLAGE…LEAGUE (3–5) | the settlements under you, not their households |
 
-A POI death is HOUSEHOLD-scope, so a Captain gets a card and a Mayor does not — the same event, ranked
+A POI death is HOUSEHOLD-scope, so a captain gets a card and a mayor does not — the same event, ranked
 once, filtered per viewer.
+
+Mind the alternating ladder when reasoning about "one rank up": the rung above a COUNTY (8) is a
+MARCH (9), the *collective* of counties — not the DUCHY (10) that consolidates it. One rung, not one
+title you would recognise from a map.
+
+### This is how single-player works
+
+The player starts at the **bottom** of the ladder — an Anbennar-style **adventurer company** — and
+climbs. The rank window is therefore not a convenience filter bolted onto a spectator view; it is the
+game's information model. What you are told is a function of what you are, and growing changes both.
+That is why the window must be bounded above: the lowest rank has to be playable on its own terms,
+not a firehose of politics belonging to ranks you have not reached.
 
 ### As built
 
