@@ -1,0 +1,47 @@
+"use strict";
+// Unit tests for the pure built-plot ranking (district-plots.mjs). Run: node --test web/js/
+// (the web/ direction is node:test — see docs/urban-plots.md, web-unit-tests-wanted).
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { nearestPlots } from "./district-plots.mjs";
+
+const sx = q => q.x, sy = q => q.y;                    // identity projection
+const grid = (w, h) => {                               // w×h plots at integer coords
+  const out = [];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) out.push({ x, y });
+  return out;
+};
+
+test("a partly-built core lights only its district count", () => {
+  // the shape of the reported bug: 74 urban plots, 30 districts — 30 live, 44 abandoned
+  const plots = grid(10, 8).slice(0, 74);
+  const built = nearestPlots(plots, 30, 5, 4, sx, sy);
+  assert.equal(built.size, 30);
+  assert.equal(plots.filter(q => !built.has(q)).length, 44);
+});
+
+test("the built plots are the ones nearest the colony centre", () => {
+  const plots = grid(5, 5);
+  const built = nearestPlots(plots, 5, 2, 2, sx, sy);     // centre plot + its 4 orthogonals
+  const at = (x, y) => plots.find(q => q.x === x && q.y === y);
+  for (const q of [at(2, 2), at(2, 1), at(1, 2), at(3, 2), at(2, 3)]) assert.ok(built.has(q));
+  assert.ok(!built.has(at(0, 0)), "a corner plot is outside a 5-district core");
+});
+
+test("a fully-built core reports null — every plot is live", () => {
+  const plots = grid(3, 3);
+  assert.equal(nearestPlots(plots, 9, 1, 1, sx, sy), null);
+  assert.equal(nearestPlots(plots, 12, 1, 1, sx, sy), null, "more districts than plots still means all");
+});
+
+test("a colony with no districts lights nothing", () => {
+  const built = nearestPlots(grid(3, 3), 0, 1, 1, sx, sy);
+  assert.equal(built.size, 0);                            // a camp has no built centre
+});
+
+test("the pick is stable — equidistant plots break ties on (y, x)", () => {
+  const plots = grid(4, 4);
+  const a = [...nearestPlots(plots, 6, 1.5, 1.5, sx, sy)].map(q => `${q.x},${q.y}`);
+  const b = [...nearestPlots(plots.slice().reverse(), 6, 1.5, 1.5, sx, sy)].map(q => `${q.x},${q.y}`);
+  assert.deepEqual(a.slice().sort(), b.slice().sort(), "input order must not change the pick");
+});

@@ -15,8 +15,10 @@ side dropped `markUrbanPlots` (no client re-terraining — the ground is already
 (centred icon, not a full-hex tile) — the default district; other types emerge from the buildings a
 plot raises. A plot **not linked to a live settlement reads as ABANDONED** — a desaturated/ruined
 `dis-neighborhood-abandoned` variant baked in `build.mjs`; the province hosting the live colony
-renders **active** neighborhoods (matched client-side via plot-bounds containment). The POV colony's
-built buildings still ring its centre as button icons.
+renders **active** neighborhoods (matched client-side via plot-bounds containment) — but only on the
+plots its districts actually occupy: a colony of N districts (`ColonyView.startingDistricts`) lights
+the **N urban plots nearest its centre**, so the core is live and the unbuilt outskirts stay ruins.
+The POV colony's built buildings still ring its centre as button icons.
 
 *Caravan camp rule (`MarchingCaravan.claimCampOn`):* a marching band may **not camp on an urban plot
 of a province that already holds a settlement** (`ProvincePlotPool.hasSettlement()` — any owned plot);

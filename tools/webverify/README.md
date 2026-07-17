@@ -61,6 +61,19 @@ JSON: whether the app booted (`hasBundle`, province count, loading screen cleare
 `maintenance:false`, bundle loaded) and **down** (expect `maintenance:true`) to verify the
 health-gated bootstrap.
 
+### `district-verify.mjs` — live vs abandoned district-chip tally
+```bash
+node district-verify.mjs [provId=4411] [zoom=220] [--live=<base>]
+```
+Checks the district view's core invariant (`docs/urban-plots.md`): the spectated colony lights
+exactly as many urban plots as it has districts, and the rest of its core reads abandoned. It hooks
+`drawImage` before the app boots and tallies one frame's neighborhood chips by baked variant, so it
+observes the real render path rather than re-deriving the rule; the district count is read off the
+same snapshot stream the renderer uses, since the demo colony collapses (and sheds districts) as it
+ticks. Exits non-zero on a mismatch and writes `district-abandoned.png`. Needs the server **up** with
+a live session (`pwsh tools/dev-local.ps1`); the pure ranking behind it is unit-tested in
+`web/js/district-plots.test.mjs`.
+
 > The site's terrain zoom range-fetches `plots.pack`, which `file://` blocks — so
 > always verify through an HTTP server (either script's server, `npx serve web`,
 > or `swa start ./web`), never by opening `index.html` off disk.

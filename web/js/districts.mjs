@@ -13,6 +13,7 @@
 import { P, ctx, pxr, pyr, px, py, provOnScreen, isPolitical, BUNDLE, apiUrl } from "./core.mjs";
 import { bandAlpha } from "./bands.mjs";
 import { liveColony } from "./overlays/live.mjs";
+import { nearestPlots } from "./district-plots.mjs";
 
 // --- Civ6 district-hex chips (D4a): {TYPE: {src,w,h}} → loaded Images. We draw NEIGHBORHOOD
 // (+ its baked ABANDONED variant); CITY_CENTER is a last-ditch fallback. ---
@@ -66,6 +67,17 @@ function colonyProvince(colony) {
   return null;
 }
 
+// The set of the live colony's urban plots that are actually BUILT — a city of N districts lights N
+// of its province's urban plots; the rest of the urban core is unclaimed ground and still reads as
+// abandoned. The lit plots are the N nearest the colony's center, so the core is live and the
+// outskirts are ruins. Null means "every urban plot is live" (the core is fully built out).
+function livePlots(prov, colony) {
+  const n = Math.max(0, colony.startingDistricts | 0);
+  const urban = prov._plots.filter(q => q.urban);
+  return nearestPlots(urban, n, px(colony.longitude), py(colony.latitude),
+    q => pxr(q.x), q => pyr(q.y));
+}
+
 // draw a small neighborhood chip centred at (cx, cy), sized to `s` px. `active` picks the live
 // neighborhood art; otherwise the ABANDONED (ruined) variant — its own baked webp when present,
 // else the live tile drawn desaturated/darkened so an unlinked site still reads as forsaken.
@@ -108,15 +120,18 @@ export function drawDistricts() {
 
   const colony = liveColony();
   const liveProv = colony && Number.isFinite(colony.latitude) ? colonyProvince(colony) : null;
+  const built = liveProv ? livePlots(liveProv, colony) : null;
   const s = iconSize(plotPx);
 
   // (1) geographic: a small neighborhood chip on every city's urban core plots. Abandoned by
-  // default (an unlinked map site); active on the province that currently hosts the live colony.
+  // default (an unlinked map site); active on the live colony's province — but only on the plots
+  // its districts actually occupy, the rest of that core being unbuilt ground.
   for (const p of P) {
     if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
-    const active = p === liveProv;
+    const live = p === liveProv;
     for (const q of p._plots) {
       if (!q.urban) continue;
+      const active = live && (!built || built.has(q));
       drawNeighborhood(active, pxr(q.x) + plotPx / 2, pyr(q.y) + plotPx / 2, s);
     }
   }
