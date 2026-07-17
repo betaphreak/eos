@@ -69,7 +69,7 @@
 }, {
   "key" : "gozengun_superregion",
   "name" : "Gozengun",
-  "regions" : [ "shuvuushudi_region", "odheongu_region", "khaashalg_region", "moduk_region", "nomsyulhan_region" ]
+  "regions" : [ "shuvuushudi_region", "gowon_region", "khaashalg_region", "moduk_region", "nomsyulhan_region" ]
 }, {
   "key" : "vimdatrong_superregion",
   "name" : "Vimdatrong",
@@ -101,7 +101,7 @@
 }, {
   "key" : "east_sarhal_superregion",
   "name" : "East Sarhal",
-  "regions" : [ "bamaliwuni_region", "ishyamtumu_region", "yetefesefi_region", "telekenid_region", "yezel_mora_region", "dreksaret_region", "denibari_region" ]
+  "regions" : [ "bamaliwuni_region", "ishyamtumu_region", "yetefesefi_region", "telekenid_region", "shadow_swamp_region", "dreksaret_region", "denibari_region" ]
 }, {
   "key" : "taneyas_superregion",
   "name" : "Taneyas",
@@ -113,13 +113,17 @@
 }, {
   "key" : "kanolowele_superregion",
   "name" : "Kanolowele",
-  "regions" : [ "cotlkae_region", "insyaan_mushroom_forest_region", "yanacotlele_region", "anakuele_region", "ankae_region", "great_plateau_region" ]
+  "regions" : [ "cotlkae_region", "insyaan_mushroom_forest_region", "yanacotlele_region", "anakuele_region", "anakae_region", "great_plateau_region" ]
 }, {
-  "key" : "south_insyaa_superregion",
-  "name" : "South Insyaa",
-  "regions" : [ "horn_of_insyaa_region", "tagaala_mangroves_region", "west_insyaan_lowlands_region", "malogadin_coast_region", "central_charkuchar_region", "west_charkuchar_region", "east_charkuchar_region", "south_charkuchar_region", "titanoflora_valley_region", "titanoflora_savanna_region" ]
+  "key" : "insyaan_lowlands_superregion",
+  "name" : "Insyaan Lowlands",
+  "regions" : [ "horn_of_insyaa_region", "tagaala_mangroves_region", "west_insyaan_lowlands_region", "malogadin_coast_region" ]
+}, {
+  "key" : "charkuchar_superregion",
+  "name" : "Charkuchar",
+  "regions" : [ "gamunkuchar_region", "jalaarkuchar_region", "pirzakuchar_region", "wayamokuchar_region" ]
 }, {
   "key" : "hinuilands_superregion",
   "name" : "Hinuilands",
-  "regions" : [ "titanoflora_riverlands_region", "titanoflora_lakelands_region", "titanoflora_forests_region" ]
+  "regions" : [ "titanoflora_riverlands_region", "titanoflora_lakelands_region", "titanoflora_forests_region", "titanoflora_valley_region", "titanoflora_savanna_region" ]
 } ]

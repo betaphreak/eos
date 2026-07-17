@@ -145,9 +145,11 @@ class WorldMapTest {
 		assertFalse(wesdam.city(), "Wesdam is not a city_terrain province");
 		assertTrue(wesdam.development() > 0, "an owned province has base development");
 
-		// the flag is sparse (only the 113 city_terrain provinces carry it)
+		// the flag is sparse (only the 112 city_terrain provinces carry it). Was 113 until the
+		// resources were regenerated against the locked Anbennar ref: Kottar Orenkoraim (6559) is
+		// a LAKE upstream, and a lake cannot be a city.
 		long cities = map.provinces().stream().filter(Province::city).count();
-		assertEquals(113, cities, "the city_terrain provinces");
+		assertEquals(112, cities, "the city_terrain provinces");
 	}
 
 	@Test
@@ -189,10 +191,13 @@ class WorldMapTest {
 	void loadsTheAreaRegionAndContinentTiers() {
 		WorldMap map = WorldMap.load();
 		// pins the committed snapshots (non-empty Anbennar blocks; the 7
-		// geographic continents, the utility pseudo-continents skipped)
-		assertEquals(1570, map.areas().size());
+		// geographic continents, the utility pseudo-continents skipped). The area and
+		// super-region counts moved (1570->1573, 31->32) when the resources were regenerated
+		// against the locked Anbennar ref: upstream split south_insyaa_superregion into
+		// insyaan_lowlands_superregion + charkuchar_superregion and reorganised its areas.
+		assertEquals(1573, map.areas().size());
 		assertEquals(178, map.regions().size());
-		assertEquals(31, map.superRegions().size());
+		assertEquals(32, map.superRegions().size());
 		// the 7 geographic continents (a fixed enum; utility blocks excluded)
 		assertEquals(7, Continent.values().length);
 		assertEquals(7, map.continents().size());

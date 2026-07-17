@@ -1193,9 +1193,4 @@
   "to" : 6735,
   "type" : "sea",
   "comment" : "Matamot-HisostYamok"
-}, {
-  "from" : 6838,
-  "to" : 6836,
-  "type" : "canal",
-  "comment" : "nomsyulhan_crossing"
 } ]
