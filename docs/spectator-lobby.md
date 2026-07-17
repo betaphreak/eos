@@ -1,7 +1,7 @@
 # Design & plan: the Spectator Lobby, single player & ranked Timelines
 
-**Status:** Phases **0, 2, 3 (core) and 6 (the record)** are SHIPPED — see each below. Phases 1
-(lobby room), 4 (single player), 5 (lobby UI) and Phase 6’s **restore** remain. **Date:** 2026-07-17.
+**Status:** Phases **0, 2, 3 (core) and 6** are SHIPPED — see each below. Phases 1 (lobby room),
+4 (single player) and 5 (lobby UI) remain. **Date:** 2026-07-17.
 **Depends on:** [`docs/authentication.md`](authentication.md) (accounts + ownership, Phases 1–3 shipped),
 [`docs/client-server.md`](client-server.md) (the hosted-session spine), [`docs/game-over.md`](game-over.md)
 (the terminal state a run ends on).
@@ -375,7 +375,7 @@ winner**. Plus the wire path: join/roster/clock authz end to end.
 - Unit-test the pure parts under node (`web/js/*.test.mjs`), as `district-plots.mjs` does: the row
   model (kind/state/survivors → label) and the Ranked button's state resolution.
 
-### Phase 6 — sessions & Timelines live in the database (required) — ✅ RECORD DONE, ⏳ RESTORE PENDING
+### Phase 6 — sessions & Timelines live in the database (required) — ✅ DONE
 
 **Decided 2026-07-17: sessions and Timelines are tracked in the actual DB**, not in memory. Today
 `SessionHost` is a `ConcurrentHashMap` and nothing survives a redeploy — which silently erases every
@@ -419,21 +419,41 @@ session_seat(id PK, session_id, user_id, colony_name, province_id, seat_order, s
 seats recorded in join order with their provinces; **a redeploy refusing a second seat**; and a
 finished run's verdict/tick persisted without replaying a tick.
 
-#### ⏳ Restore — NOT DONE
+#### ✅ Restore — DONE (2026-07-17)
 
-**Restore** stays the engine's own model — *state = f(SessionSpec, ordered command log)* — so a run
-is rebuilt by **replaying its command log onto its spec** (`CommandStore` is already JDBC-backed),
-and for a Timeline, by re-founding its **roster** (`session_seat` in `seat_order` — founding is
-deterministic, which is why the order is recorded). Replay is cheap enough to be practical: a full
-4,426-tick collapse replays in seconds uncapped. Restore lazily on first access rather than holding
-boot hostage. A **finished** run needs no replay at all: its terminal state, end reason and tick are
-columns already — enough for the lobby to list it and a client to show the result.
+Restore is the engine's own model, not a snapshot: *state = f(SessionSpec, ordered command log)*.
+`SessionHost.restore(id)` rebuilds a run from its record — spec re-founds the world, a Timeline's
+**seats re-found in `seat_order`** (founding is deterministic, which is why the order is recorded),
+the command log replays, and the run **fast-forwards** to its recorded tick, because there is no
+shortcut to tick N but to run N days. Lazy: `getOrRestore` is what every endpoint now asks, so a
+restore happens on first access rather than holding boot hostage. A run still open for joins (tick
+0) needs no fast-forward at all — the cheap, exact case.
 
-**Where that leaves ranked:** the *integrity* half is done (a redeploy can no longer grant a retry,
-and a finished Timeline stays finished). The *continuity* half is not: after a redeploy a seated
-player's world is gone, and the record knows their seat but nothing rebuilds it. So **ranked still
-cannot open to the public** — it is now blocked on restore rather than on losing runs silently,
-which is a better failure (loud, not quiet).
+- **The recorded province is checked, not trusted.** If re-founding puts a player somewhere else,
+  the world is not the one the run was played in, and restore fails loudly rather than quietly
+  seating someone in the wrong place.
+- **A finished run is never rebuilt** — its outcome is columns. And `create` now **refuses to
+  re-found it** (`RunFinishedException`), which closed a real hole: `create` unconditionally saved a
+  fresh `CREATED`/tick-0 record, so a redeploy re-founding the ranked spec would have *erased the
+  verdict* — handing out the retry by overwriting rather than by forgetting.
+- **`STOPPED` is not finished.** Only `GAME_OVER` is. A graceful shutdown stops *every* session, so
+  conflating the two would make one redeploy permanently kill everything it touched. This is exactly
+  why `docs/game-over.md` split the states, and `SessionRecord.isFinished()` is the predicate that
+  keeps them apart.
+- **The demo is the one thing allowed to forget itself.** Its colony collapses by design, and a
+  finished run stays finished — so a fresh boot would find its own shop window permanently dead.
+  `SessionRegistry.forget` exists for that, and only that: forgetting a Timeline would destroy its
+  verdict. (This disappears when the public site points at the live Timeline — amendment 3.)
+
+**Verified:** server **96/96**, and end-to-end against a live server with a **file-backed** H2 across
+a real process kill: a Timeline created, alice seated at the anchor (Dhenijansar 4411) and bob far
+off (Sardach 2063); the process killed; a **fresh process** listing `[]`; alice's rejoin rebuilding
+the whole Timeline and returning **her original seat**; and later joiners landing in third and fourth
+distinct provinces — proving the picker sees the restored roster.
+
+**Where that leaves ranked:** both halves are now in — integrity (no retries, verdicts final) and
+continuity (a run survives a redeploy). Ranked's remaining blockers are product, not persistence:
+the Timeline registry (which Timeline is current), scoring, and the lobby itself.
 
 ### Phase 7 — ship
 

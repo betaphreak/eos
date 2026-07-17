@@ -111,6 +111,12 @@ public final class JdbcSessionRegistry implements SessionRegistry {
 	}
 
 	@Override
+	public void forget(String id) {
+		jdbc.update("DELETE FROM session_seat WHERE session_id = ?", id);
+		jdbc.update("DELETE FROM game_session WHERE id = ?", id);
+	}
+
+	@Override
 	public List<SeatRecord> seats(String sessionId) {
 		return jdbc.query("SELECT * FROM session_seat WHERE session_id = ? ORDER BY seat_order",
 				SEAT_MAPPER, sessionId);

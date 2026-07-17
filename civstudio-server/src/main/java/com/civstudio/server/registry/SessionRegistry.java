@@ -77,6 +77,18 @@ public interface SessionRegistry {
 	 */
 	Optional<SeatRecord> seatOf(String sessionId, String userId);
 
+	/**
+	 * Forget a run and its seats entirely, as though it had never been played.
+	 * <p>
+	 * <b>Deliberately hard to reach for.</b> This is how a finished run's verdict is destroyed, so it
+	 * is for disposable fixtures only — the demo, which is a shop window and not a record of anyone's
+	 * play. Forgetting a ranked Timeline would silently grant every one of its players another
+	 * attempt, which is the thing this whole registry exists to prevent.
+	 *
+	 * @param id the run to forget (a no-op if nothing is recorded under it)
+	 */
+	void forget(String id);
+
 	/** Thrown when a player who already holds a seat in a run tries to take another. */
 	class SeatTakenException extends RuntimeException {
 		private static final long serialVersionUID = 1L;

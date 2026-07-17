@@ -3,6 +3,8 @@ package com.civstudio.server.registry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -110,6 +112,125 @@ class SessionPersistenceTest {
 		assertNotNull(registry.seatOf(id, "alice").orElseThrow().colonyName());
 		// a player who never joined is still welcome
 		assertNotNull(host.joinTimeline(id, "bob"));
+	}
+
+	/**
+	 * A finished run is finished. Re-founding its spec — which is exactly what a redeploy does — must
+	 * not quietly reopen it: that would hand a ranked player the retry the whole phase exists to
+	 * deny, by erasing the verdict rather than by losing it.
+	 */
+	@Test
+	@Timeout(180)
+	void refoundingAFinishedRunDoesNotReopenIt() {
+		SessionSpec spec = new SessionSpec(6004L, "registry-test", DHENIJANSAR);
+		HostedSession hs = host.create(spec, "alice");
+		String id = hs.id();
+		// stand in for a run that ended: the registry is the authority on that
+		registry.updateProgress(id, "GAME_OVER", "Dhenijansar departed as a Caravan on 1452-03-02", 2639);
+
+		host.stopAll(); // the redeploy
+
+		assertThrows(SessionHost.RunFinishedException.class, () -> host.create(spec, "alice"),
+				"a finished run must not be re-founded under its own id");
+		SessionRecord after = registry.find(id).orElseThrow();
+		assertEquals("GAME_OVER", after.state(), "its verdict must not be overwritten");
+		assertEquals(2639, after.tick());
+		assertNotNull(after.endReason());
+	}
+
+	/**
+	 * Restore, the continuity half: a Timeline still open for joins comes back with its roster
+	 * intact — same players, same colonies, same provinces — because founding is deterministic and
+	 * the seats replay in the order they were taken. The cheap, exact case: nothing to fast-forward.
+	 */
+	@Test
+	@Timeout(300)
+	void restoringAnOpenTimelineRebuildsItsRoster() {
+		SessionSpec spec = SessionSpec.timeline(6005L, DHENIJANSAR);
+		HostedSession before = host.create(spec, null);
+		Settlement aliceBefore = host.joinTimeline(before.id(), "alice");
+		Settlement bobBefore = host.joinTimeline(before.id(), "bob");
+		String id = before.id();
+
+		host.stopAll(); // the redeploy: this process forgets everything
+
+		HostedSession after = host.restore(id);
+		assertNotNull(after, "an unfinished run must be restorable");
+		assertEquals(2, after.colonies().size(), "both seats came back");
+		assertEquals(HostedSession.State.CREATED, after.state(), "and it is still open for joins");
+
+		Settlement aliceAfter = after.colonyOf("alice");
+		Settlement bobAfter = after.colonyOf("bob");
+		assertNotNull(aliceAfter, "alice still holds her seat");
+		assertNotNull(bobAfter);
+		assertEquals(aliceBefore.getName(), aliceAfter.getName(), "the same colony, re-founded");
+		assertEquals(aliceBefore.getProvince().id(), aliceAfter.getProvince().id());
+		assertEquals(bobBefore.getName(), bobAfter.getName());
+		assertEquals(bobBefore.getProvince().id(), bobAfter.getProvince().id());
+		assertEquals("alice", after.ownerOf(aliceAfter.getName()), "and it is still hers");
+	}
+
+	/**
+	 * STOPPED is not finished. A graceful shutdown stops <b>every</b> session, so if "stopped from
+	 * outside" counted as over, a single redeploy would permanently kill everything it touched —
+	 * the exact opposite of what restore is for. Only a run that ended <em>itself</em> is beyond
+	 * coming back (see {@code docs/game-over.md} on why the two states are distinct).
+	 */
+	@Test
+	@Timeout(180)
+	void aRunStoppedByAShutdownIsNotFinishedAndComesBack() {
+		SessionSpec spec = new SessionSpec(6008L, "registry-test", DHENIJANSAR);
+		HostedSession hs = host.create(spec, "alice");
+		hs.startPaused();
+		hs.stop(); // what shutdown does to every session
+
+		assertEquals("STOPPED", registry.find(hs.id()).orElseThrow().state());
+		host.stopAll();
+
+		assertNotNull(host.getOrRestore(hs.id()), "a shutdown must not be a death sentence");
+		host.stopAll();
+		assertNotNull(host.create(spec, "alice"), "...and re-founding it is fine too");
+	}
+
+	/** A restored run picks up where it left off: the recorded tick is replayed, not skipped. */
+	@Test
+	@Timeout(300)
+	void restoringARunningSessionFastForwardsToItsTick() {
+		SessionSpec spec = new SessionSpec(6006L, "registry-test", DHENIJANSAR);
+		HostedSession before = host.create(spec, "alice");
+		before.setTickRateMillis(0);
+		before.startPaused();
+		before.step(40);
+		long deadline = System.nanoTime() + 120_000L * 1_000_000L;
+		while (before.tick() < 40 && System.nanoTime() < deadline)
+			Thread.onSpinWait();
+		assertEquals(40, before.tick());
+		String id = before.id();
+		String dateBefore = before.date().toString();
+		before.stop(); // recorded as STOPPED at tick 40
+
+		host.stopAll();
+		HostedSession after = host.getOrRestore(id);
+		assertNotNull(after);
+		assertEquals(40, after.tick(), "it replayed the days it had lived, rather than restarting");
+		assertEquals(dateBefore, after.date().toString(), "so its clock reads the same day");
+		assertEquals(1, after.colonies().size());
+	}
+
+	/** getOrRestore is the caller's door: a live run is handed back, a recorded one rebuilt. */
+	@Test
+	@Timeout(180)
+	void getOrRestoreReturnsNullForWhatCannotComeBack() {
+		assertNull(host.getOrRestore("never-existed"), "nothing recorded, nothing to restore");
+
+		SessionSpec spec = new SessionSpec(6007L, "registry-test", DHENIJANSAR);
+		HostedSession hs = host.create(spec, "alice");
+		assertSame(hs, host.getOrRestore(hs.id()), "a live run is simply handed back");
+
+		registry.updateProgress(hs.id(), "GAME_OVER", "it ended", 10);
+		host.stopAll();
+		assertNull(host.getOrRestore(hs.id()),
+				"a finished run is not rebuilt — its outcome is columns, not a world");
 	}
 
 	/** A finished run's outcome is a column: it survives without replaying a single tick. */

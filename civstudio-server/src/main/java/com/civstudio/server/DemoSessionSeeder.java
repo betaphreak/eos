@@ -33,8 +33,23 @@ public class DemoSessionSeeder implements ApplicationRunner {
 			log.info("demo session disabled (civstudio.demo.enabled=false)");
 			return;
 		}
+		SessionSpec spec = SessionSpec.caravanDemo(demo.getSeed(), demo.getProvinceId());
 		try {
-			HostedSession hs = host.create(SessionSpec.caravanDemo(demo.getSeed(), demo.getProvinceId()));
+			HostedSession hs;
+			try {
+				hs = host.create(spec);
+			} catch (SessionHost.RunFinishedException over) {
+				// The demo's colony collapses — that is the point of it — and a finished run is
+				// finished, so a fresh boot would find its own shop window permanently dead. The demo
+				// is a FIXTURE, not a record of anyone's play, so it is the one thing allowed to
+				// forget itself and start over. A ranked Timeline must never take this path: its
+				// verdict is the whole product. (When the public site points at the live Timeline —
+				// docs/spectator-lobby.md amendment 3 — this reseeding goes away with the demo.)
+				log.info("the demo run {} is over ({}) — forgetting it and dealing a fresh one",
+						spec.id(), over.getMessage());
+				host.forget(spec.id());
+				hs = host.create(spec);
+			}
 			hs.setTickRateMillis(demo.getTickRateMillis());
 			if (hs.state() == HostedSession.State.CREATED)
 				hs.start();

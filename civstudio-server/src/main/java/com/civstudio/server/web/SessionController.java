@@ -120,7 +120,7 @@ public class SessionController {
 	@PostMapping("/{id}/control")
 	public ResponseEntity<Object> control(@PathVariable String id, @RequestBody ControlRequest req,
 			HttpServletRequest http) {
-		HostedSession hs = host.get(id);
+		HostedSession hs = host.getOrRestore(id);
 		if (hs == null)
 			return notFound(id);
 		// play/pause/step/rate/stop change state shared by every spectator, so control requires a
@@ -167,7 +167,7 @@ public class SessionController {
 	@PostMapping("/{id}/commands")
 	public ResponseEntity<Object> command(@PathVariable String id, @RequestBody CommandRequest req,
 			HttpServletRequest http) {
-		HostedSession hs = host.get(id);
+		HostedSession hs = host.getOrRestore(id);
 		if (hs == null)
 			return notFound(id);
 		// a command acts on a COLONY, so it is that colony's owner who may submit it — not the run's
@@ -209,7 +209,7 @@ public class SessionController {
 	// docs/spectator-lobby.md Phase 3. Idempotent: asking twice returns the seat you already hold.
 	@PostMapping("/{id}/join")
 	public ResponseEntity<Object> join(@PathVariable String id, HttpServletRequest http) {
-		HostedSession hs = host.get(id);
+		HostedSession hs = host.getOrRestore(id);
 		if (hs == null)
 			return notFound(id);
 		ResponseEntity<Object> denied = authz.denyJoin(http);
@@ -239,7 +239,7 @@ public class SessionController {
 	@PostMapping("/{id}/chat")
 	public ResponseEntity<Object> chat(@PathVariable String id, @RequestBody(required = false) ChatRequest req,
 			HttpServletRequest http) {
-		HostedSession hs = host.get(id);
+		HostedSession hs = host.getOrRestore(id);
 		if (hs == null)
 			return notFound(id);
 		ResponseEntity<Object> denied = authz.denyChat(http);
@@ -261,7 +261,7 @@ public class SessionController {
 	// ungated like the other spectate endpoints. 204 while the session has not yet emitted a frame.
 	@GetMapping("/{id}/snapshot")
 	public ResponseEntity<Object> snapshot(@PathVariable String id) {
-		HostedSession hs = host.get(id);
+		HostedSession hs = host.getOrRestore(id);
 		if (hs == null)
 			return notFound(id);
 		SessionSnapshot snap = hs.currentSnapshot();
@@ -285,7 +285,7 @@ public class SessionController {
 			@RequestParam(required = false) String to,
 			@RequestParam(required = false) String grep,
 			@RequestParam(required = false, defaultValue = "0") int limit) {
-		HostedSession hs = host.get(id);
+		HostedSession hs = host.getOrRestore(id);
 		if (hs == null)
 			return notFound(id);
 		return ResponseEntity.ok(hs.eventTail(level, from, to, grep, Math.min(limit, MAX_EVENT_LIMIT)));
@@ -296,7 +296,7 @@ public class SessionController {
 	// this connection's own virtual thread drains it to the socket until the client disconnects.
 	@GetMapping("/{id}/stream")
 	public SseEmitter stream(@PathVariable String id) {
-		HostedSession hs = host.get(id);
+		HostedSession hs = host.getOrRestore(id);
 		if (hs == null)
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no session " + id);
 

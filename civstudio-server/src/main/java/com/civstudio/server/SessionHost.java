@@ -20,6 +20,7 @@ import com.civstudio.server.registry.SessionRegistry;
 import com.civstudio.simulation.SimulationConfig;
 import com.civstudio.simulation.SimulationHarness;
 import jakarta.annotation.PreDestroy;
+import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -31,8 +32,13 @@ import org.springframework.stereotype.Component;
  * its own emergent explorer levies), registers it, and hands it back for the transport to
  * subscribe to.
  */
+@Log
 @Component
 public final class SessionHost {
+
+	// how long a lazy restore may spend replaying before we call it broken. Generous: a restore runs
+	// uncapped (~seconds for thousands of ticks), so hitting this means something is wrong, not slow.
+	private static final long RESTORE_TIMEOUT_MS = 600_000L;
 
 	private final ConcurrentMap<String, HostedSession> sessions = new ConcurrentHashMap<>();
 
@@ -90,6 +96,17 @@ public final class SessionHost {
 	 */
 	public HostedSession create(SessionSpec spec, String owner) {
 		String id = sessionKey(spec, owner);
+		HostedSession live = sessions.get(id);
+		if (live != null)
+			return live;
+		// A FINISHED run is finished. Re-founding its spec is exactly what a redeploy does, so
+		// without this a redeploy would reopen an ended Timeline — handing out the very retry the
+		// registry exists to deny, by erasing the verdict rather than by losing it. To play again you
+		// need a new run, not the same id back. (A disposable fixture — the demo — calls forget()
+		// first, deliberately and out loud.)
+		SessionRecord recorded = registry.find(id).orElse(null);
+		if (recorded != null && recorded.isFinished())
+			throw new RunFinishedException(id, recorded.state(), recorded.endReason());
 		return sessions.computeIfAbsent(id, k -> {
 			HostedSession hs = build(id, owner, spec);
 			// remember the run before it can end: the record is what survives this process, and a
@@ -102,6 +119,112 @@ public final class SessionHost {
 					state.name(), endReason, tick));
 			return hs;
 		});
+	}
+
+	/** Thrown when a run that has already ended is asked to found again under its own id. */
+	public static final class RunFinishedException extends RuntimeException {
+		private static final long serialVersionUID = 1L;
+
+		private final transient String endReason;
+
+		RunFinishedException(String id, String state, String endReason) {
+			super("run " + id + " is over (" + state + ")"
+					+ (endReason == null ? "" : ": " + endReason));
+			this.endReason = endReason;
+		}
+
+		/** Why the run ended, or {@code null} if it was stopped rather than finished. */
+		public String endReason() {
+			return endReason;
+		}
+	}
+
+	/**
+	 * Bring a recorded run back into this process — the restore path ({@code
+	 * docs/spectator-lobby.md} Phase 6). Rebuilds it the way the engine says a run <em>is</em>
+	 * defined: its {@link SessionSpec spec}, its roster, and its ordered command log.
+	 * <ol>
+	 * <li>the spec re-founds the world (the engine is seed-reproducible);</li>
+	 * <li>a Timeline's <b>seats are re-founded in {@code seat_order}</b> — founding is
+	 * deterministic, so replaying the join order reproduces the same colonies in the same
+	 * provinces. The recorded province is <b>checked</b>, not trusted: a mismatch means the world
+	 * moved under us and is worth failing loudly for;</li>
+	 * <li>the command log replays (already the case — {@link #build} loads it);</li>
+	 * <li>the run is <b>fast-forwarded</b> to its recorded tick, because {@code state = f(spec,
+	 * log)} and there is no shortcut to tick N but to run N days. This is why it is done lazily,
+	 * on first access, rather than holding boot hostage.</li>
+	 * </ol>
+	 * A run that never started (tick 0, {@code CREATED} — a Timeline still open for joins) needs no
+	 * fast-forward at all, which is the cheap and fully-exact case.
+	 *
+	 * @param id the recorded run's id
+	 * @return the restored session, or {@code null} if nothing is recorded under that id or the run
+	 *         is over (a finished run needs no rebuilding — its outcome is columns)
+	 */
+	public synchronized HostedSession restore(String id) {
+		HostedSession live = sessions.get(id);
+		if (live != null)
+			return live;
+		SessionRecord r = registry.find(id).orElse(null);
+		// only a run that ENDED ITSELF is beyond restoring. A STOPPED one was stopped from outside —
+		// which is what shutdown does to every session — so it is exactly what restore is for.
+		if (r == null || r.isFinished())
+			return null;
+		SessionSpec spec = new SessionSpec(r.seed(), r.scenario(), r.provinceId());
+		HostedSession hs = build(id, r.owner(), spec);
+		hs.onEnd((ended, state, endReason, tick) -> registry.updateProgress(ended.id(),
+				state.name(), endReason, tick));
+		sessions.put(id, hs);
+
+		// re-found the roster, in the order it was taken
+		for (SeatRecord s : registry.seats(id)) {
+			Settlement colony = foundSeat(hs);
+			if (colony.getProvince() == null || colony.getProvince().id() != s.provinceId())
+				throw new IllegalStateException("restoring " + id + ": " + s.userId()
+						+ " was seated in province " + s.provinceId() + " but re-founding put them in "
+						+ (colony.getProvince() == null ? "none" : colony.getProvince().id())
+						+ " — the world is not the one this run was played in");
+			seat(hs, colony, s.userId());
+		}
+
+		if (r.tick() > 0) {
+			// fast-forward: run the recorded days as fast as the machine allows, then hold. The
+			// command log replays itself on the way, at the ticks it was stamped with.
+			hs.setTickRateMillis(0);
+			hs.startPaused();
+			hs.step((int) Math.min(Integer.MAX_VALUE, r.tick()));
+			awaitTick(hs, r.tick());
+			if ("RUNNING".equals(r.state()))
+				hs.resume();
+		}
+		log.info(() -> "restored session " + id + " (" + r.scenario() + ", tick " + r.tick()
+				+ ", " + registry.seats(id).size() + " seats)");
+		return hs;
+	}
+
+	/**
+	 * The live run with this id, restoring it from its record if this process does not hold it —
+	 * what a caller that wants to <em>use</em> a session should ask for. Returns {@code null} for a
+	 * run that neither exists nor can be restored (including a finished one).
+	 *
+	 * @param id the session id
+	 * @return the session, or {@code null}
+	 */
+	public HostedSession getOrRestore(String id) {
+		HostedSession hs = sessions.get(id);
+		return hs != null ? hs : restore(id);
+	}
+
+	// block until a restoring session has replayed up to `tick`. It runs uncapped, so this is a
+	// short spin over seconds, not a wait on wall-clock pacing (a 4,426-tick collapse replays in ~3s).
+	private static void awaitTick(HostedSession hs, long tick) {
+		long deadline = System.nanoTime() + RESTORE_TIMEOUT_MS * 1_000_000L;
+		while (hs.tick() < tick && !hs.isTerminal()) {
+			if (System.nanoTime() > deadline)
+				throw new IllegalStateException("restoring " + hs.id() + " timed out at tick "
+						+ hs.tick() + " of " + tick);
+			Thread.onSpinWait();
+		}
 	}
 
 	/**
@@ -129,11 +252,26 @@ public final class SessionHost {
 		return List.copyOf(sessions.values());
 	}
 
-	/** Stop and remove a session (no-op if absent). */
+	/** Stop and remove a session from this process (no-op if absent). Its record survives. */
 	public void remove(String id) {
 		HostedSession hs = sessions.remove(id);
 		if (hs != null)
 			hs.stop();
+	}
+
+	/**
+	 * Stop a run and <b>erase every trace of it</b>, record and seats included — as though it had
+	 * never been played.
+	 * <p>
+	 * For disposable fixtures only. Forgetting a ranked Timeline would hand every one of its players
+	 * a fresh attempt and destroy its verdict, which is exactly what the registry exists to prevent;
+	 * the demo, being a shop window rather than anyone's record, is the case this is for.
+	 *
+	 * @param id the run to forget
+	 */
+	public void forget(String id) {
+		remove(id);
+		registry.forget(id);
 	}
 
 	/** Stop and remove every session — the server-shutdown path. */
@@ -235,6 +373,23 @@ public final class SessionHost {
 			throw new IllegalStateException("Timeline " + sessionId
 					+ " has already started — the roster is closed");
 
+		int seatOrder = hs.colonies().size();
+		Settlement colony = foundSeat(hs);
+		// write the seat down BEFORE seating it in memory: if the constraint rejects it (a
+		// concurrent join by the same player), the colony is simply never seated, and we would
+		// rather waste a founding than hand one player two seats
+		registry.seat(new SeatRecord(sessionId, userId, colony.getName(),
+				colony.getProvince().id(), seatOrder));
+		seat(hs, colony, userId);
+		return colony;
+	}
+
+	// Found the NEXT seat's colony in `hs` — the site the picker gives for the colonies seated so
+	// far. Shared by a join (which then records the seat) and a restore (which is replaying seats
+	// already recorded), so both found by exactly the same path: that identity is what makes a
+	// restored roster the same roster. The colony is not seated yet — the caller does that once it
+	// is satisfied the seat is legitimate.
+	private Settlement foundSeat(HostedSession hs) {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		GameSession session = hs.session();
 		com.civstudio.geo.Province site = TimelineSites.pick(session.getWorldMap().provinces(),
@@ -251,15 +406,13 @@ public final class SessionHost {
 		SimulationHarness h = new SimulationHarness(cfg, colony);
 		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
 		colony.setAutoBuildDistricts(true);   // the district view, as the demo colony gets
+		return colony;
+	}
 
-		// write the seat down BEFORE claiming it in memory: if the constraint rejects it (a
-		// concurrent join by the same player), the colony is simply never seated, and we would
-		// rather waste a founding than hand one player two seats
-		registry.seat(new SeatRecord(sessionId, userId, colony.getName(),
-				site.id(), hs.colonies().size()));
+	// seat a founded colony and give it to its player
+	private static void seat(HostedSession hs, Settlement colony, String userId) {
 		hs.addColony(colony);
 		hs.claimColony(colony.getName(), userId);
-		return colony;
 	}
 
 }

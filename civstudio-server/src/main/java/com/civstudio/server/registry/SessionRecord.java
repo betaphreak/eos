@@ -27,9 +27,30 @@ package com.civstudio.server.registry;
 public record SessionRecord(String id, String scenario, long seed, int provinceId, String owner,
 		String state, String endReason, long tick) {
 
-	/** Whether this run is over for good — it will never tick again, whatever the reason. */
+	/**
+	 * Whether this run <b>ended itself</b> — game over. Such a run is finished for good: it is never
+	 * re-founded and never restored, because its outcome is these columns and re-running it would
+	 * mean handing its players a second attempt.
+	 * <p>
+	 * Deliberately <em>not</em> the same question as {@link #isTerminal()}. A {@code STOPPED} run was
+	 * stopped from <em>outside</em> — which is what a graceful shutdown does to <b>every</b> session
+	 * — so it must come back. Confusing the two would make a redeploy permanently kill everything it
+	 * touched, which is the opposite of the point. See {@code docs/game-over.md}.
+	 *
+	 * @return {@code true} if the run reached its own end
+	 */
+	public boolean isFinished() {
+		return "GAME_OVER".equals(state);
+	}
+
+	/**
+	 * Whether the run was not ticking when last recorded — finished, or stopped from outside. Useful
+	 * for reporting; for "may this run come back?", ask {@link #isFinished()}.
+	 *
+	 * @return {@code true} if it was not running
+	 */
 	public boolean isTerminal() {
-		return "STOPPED".equals(state) || "GAME_OVER".equals(state);
+		return "STOPPED".equals(state) || isFinished();
 	}
 
 	/** Whether this record is a ranked Timeline. */

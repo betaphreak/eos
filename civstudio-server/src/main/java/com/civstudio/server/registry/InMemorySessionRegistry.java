@@ -53,6 +53,12 @@ public final class InMemorySessionRegistry implements SessionRegistry {
 	}
 
 	@Override
+	public synchronized void forget(String id) {
+		records.remove(id);
+		seats.remove(id);
+	}
+
+	@Override
 	public synchronized List<SeatRecord> seats(String sessionId) {
 		return new ArrayList<>(seats.getOrDefault(sessionId, List.of()));
 	}
