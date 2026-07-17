@@ -216,6 +216,16 @@ public class Laborer extends AbstractHousehold {
 					getHead().fullName(), skills.peakSkill(), skills.peakLevel(),
 					skills));
 			colony.addPersonOfInterest(this);
+		} else if (colony.isStarted()) {
+			// An ordinary household is still demographic narrative, so the notification board shows
+			// it — as routine churn (a dim one-liner) rather than a full card, which is why this
+			// wording deliberately avoids the curated-event allow-list ("founded", "settl", …) that
+			// the notable line above hits. See LogLine.of / docs/notifications.md.
+			//
+			// isStarted() is what makes "new" mean new: the colony's whole initial population is
+			// constructed BEFORE start(), so without this gate a founding would post ~400 of these
+			// in a single day.
+			log.fine(String.format("the %s household was formed", getHead().surname()));
 		}
 
 		this.config = config;
@@ -276,6 +286,12 @@ public class Laborer extends AbstractHousehold {
 					skills));
 			colony.addPersonOfInterest(this);
 		}
+		// An ORDINARY promotion is deliberately silent. This ctor is the replacement path — the pool
+		// promotes a peasant to succeed a laborer who died — so it fires once per death, not once per
+		// new household: 258 times in a 9-year run, 36 of them on a single collapse day. A successor
+		// is succession, not growth, and at that volume it buries the events it sits beside (the
+		// starvation wave that caused those very deaths). Genuine new households log in the founding
+		// ctor above. The yearly digest still carries the totals. See docs/notifications.md.
 	}
 
 	/**

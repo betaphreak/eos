@@ -29,9 +29,13 @@ public record LogLine(String date, String text, boolean curated, String sev) {
 	// substrings (lowercased) that mark a line as a notable, curated event — kept specific so a
 	// routine line doesn't match incidentally (e.g. the annual digest mentions "nobles"/"deaths").
 	// Tunable; this is a display heuristic, not a contract.
+	//
+	// "notable", "promot" and "succeeded" carry the dynasty/demographic narrative the live tap now
+	// delivers (SimLog's tap floor is FINE): a person raised from the peasantry, a notable arrival or
+	// death, a house succeeding. Without them a promotion arrived on the board as routine churn.
 	private static final String[] CURATED = {
-			"founded", "died", "death", "dissolv", "collaps", "ennobl",
-			"tax rate", "settl", "re-found", "immigr", "born", "wed", "marri", "starv"
+			"founded", "died", "death", "dissolv", "collaps", "ennobl", "notable", "promot",
+			"succeeded", "tax rate", "settl", "re-found", "immigr", "born", "wed", "marri", "starv"
 	};
 
 	/**

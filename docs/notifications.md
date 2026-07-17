@@ -47,6 +47,49 @@ clipped off the top. FCFS order, upward motion and top-clipping need no JS layou
 virtualization. The host sits *inside* `.stage` (unlike the `position: fixed` `#toastHost`) so it
 reflows with the rail rather than being covered by it.
 
+## What reaches the board (two floors)
+
+`SimLog` gates the file sink and the live tap on **separate floors**, because they answer different
+questions. The file is a *developer* artifact you turn down to read one run's economics
+(`-Deos.log.level`, default `INFO`). The tap feeds this *player-facing* board, which wants the
+dynasty/demographic narrative turned up (`-Deos.log.tap.level`, default `FINE`).
+
+They used to share one floor, and that made the board structurally unable to show the things it most
+wanted: **every** promotion, ennoblement, notable arrival and POI death is logged at `FINE`, below the
+`INFO` file floor, so the board only ever saw colony lifecycle and the annual digest. All 11 FINE
+statements in the engine are exactly that narrative. The demotion was deliberate
+(`Settlement.java` calls the digest "the always-on alternative to the high-frequency per-event logs");
+splitting the floor keeps that decision for the file and still feeds the board.
+
+**Only `com.civstudio` records travel.** The dispatch handler attaches to the sim's own logger and
+raises only *its* level — never the root's. Raising the root turns FINE on for every logger in the
+JVM, and the JDK's `jdk.event.security` then dumps all **144** trusted root CAs the moment the default
+`SSLContext` initialises (no network call needed). A run at `-Deos.log.level=FINE` used to write 144
+`X509Certificate` lines into `output/<seed>/<seed>.log` — 79% of the file — burying the 39 lines of
+actual narrative, and they would have become 144 notification cards.
+
+Measured on `HomogeneousEconomy` (seed 7654321, ~9 in-game years): **39 sim lines at FINE** — 13 on
+founding day, then ~1–5 per year — and only 12 more at FINER. Volume is a non-issue.
+
+### Mass deaths
+
+Ordinary deaths are logged nowhere at any level (only POI deaths, at FINE), so a starvation wave was
+invisible until the yearly digest. `Settlement.noteDeathToll` raises **one aggregate event** for a day
+whose household toll spikes over the colony's own trailing 30-day norm (≥3× and ≥3 deaths, and only
+once that window is full). Measured against a *baseline* rather than a fixed count because a
+metropolis buries people daily and a hamlet almost never — one threshold cannot serve both. A
+sustained wave stops being news as it becomes the norm, so a year-long collapse does not post a card
+a day (25 events across the 9-year run).
+
+### Replacement churn is deliberately silent
+
+An ordinary peasant promoted to succeed a dead laborer is **not** logged. That path fires once per
+death, not once per new household — **258 times in a 9-year run, 36 of them on one collapse day** —
+and a successor is succession, not growth. At that volume it buried the very events it sat beside (the
+starvation wave that caused those deaths). Genuine new households (a fresh surname: fissions,
+expedition returns, immigration) do log, as routine one-liners; notable arrivals and promotions log as
+full cards. The digest still carries the totals.
+
 ## The two feeds
 
 The board reads the same session's log twice, and the distinction is the whole design:
@@ -141,9 +184,27 @@ The waits are **conditions, not sleeps** — under a 1166ms map frame, a fixed 4
 toss, and a card still sliding up from `translateY(8px)` has a rect 8px stale, exactly the width of
 the gap between cards.
 
+## Next: events need a Rank
+
+`curated` is a boolean guessed from a **keyword allow-list** (`LogLine.of`), and it is already showing
+its age: the tap's narrative forced `"promot"`/`"notable"`/`"succeeded"` onto the list, and the
+ordinary-household wording has to deliberately *dodge* it to render routine. A keyword guess will not
+survive the sprawl of many settlements — with 50 colonies logging, the board needs to know what
+matters, not what a substring matched.
+
+The fix is to carry the domain's existing **`Rank`** (`com.civstudio.agent.Rank`: HOUSEHOLD → CARAVAN
+→ HOLDING → VILLAGE → CITY → LEAGUE → … → HEGEMONY — "the scope of what it commands", with a
+`level()` for ordering) on each event: the scope of the thing the event is *about*. A household-scope
+event in one of fifty colonies is noise; a village-scope one is news, and the board filters on
+`Rank.level()` instead of guessing. `curated` then becomes derived rather than heuristic.
+
+Design work, not yet started: the API shape (every call site is a bare Lombok `log.info`/`log.fine`
+today, which carries no room for a rank), the mapping of existing events onto ranks, and whether the
+board exposes a rank floor to the viewer.
+
 ## Deferred
 
-- **Filtering / muting** a category or a colony.
+- **Filtering / muting** a category or a colony (subsumed by the Rank work above).
 - **Click-through**: a card that frames the camera on the colony or plot it names. `LogLine` has no
   colony field (`SimLog.Entry` strips it), so this needs a wire change.
 - **`stopLive` does not cancel a pending reconnect timer** — noticed while testing; a `stopLive`

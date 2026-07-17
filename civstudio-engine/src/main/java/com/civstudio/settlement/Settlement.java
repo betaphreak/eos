@@ -2,6 +2,7 @@ package com.civstudio.settlement;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -320,6 +321,19 @@ public class Settlement {
 	// persons of interest who died since the last annual digest, summarized and reset
 	// once a year by logAnnualDigest (the per-death log itself is FINE, off by default)
 	private int poiDeathsThisYear = 0;
+
+	// --- mass-death detection (noteDeathToll) ---------------------------------------------------
+	// Ordinary deaths are never logged individually — that is the volume the annual digest exists to
+	// avoid — so a bad day was previously invisible until the yearly summary, or until the colony was
+	// already gone. This raises ONE aggregate event for a day whose toll spikes above the colony's own
+	// recent norm, which is what makes it scale: a metropolis loses people every day and a hamlet
+	// almost never, so a fixed threshold would either shout at the big colony or stay silent for the
+	// small one.
+	private static final int DEATH_BASELINE_DAYS = 30;    // the trailing window the norm is taken over
+	private static final double DEATH_SPIKE_FACTOR = 3.0; // a day this many times the norm is a spike
+	private static final int DEATH_SPIKE_MIN = 3;         // ...and never fewer than this, so 1-vs-0.2 isn't news
+	private final ArrayDeque<Integer> recentDeaths = new ArrayDeque<>(DEATH_BASELINE_DAYS);
+	private int recentDeathsSum = 0;
 
 	// the session that owns this colony, set by GameSession.newSettlement; a colony
 	// constructed directly (some tests) has none, and then a dissolved band is held
@@ -781,6 +795,42 @@ public class Settlement {
 	 */
 	public void setOnTierDescent(java.util.function.Consumer<SettlementTier> callback) {
 		this.onTierDescent = callback;
+	}
+
+	/**
+	 * Record the day's household death toll and raise one aggregate event if it <b>spikes</b> above
+	 * the colony's recent norm — a starvation wave, a plague year — since ordinary deaths are
+	 * otherwise never logged at all and the yearly digest arrives far too late to read as news.
+	 *
+	 * <p>The norm is the mean daily toll over the trailing {@value #DEATH_BASELINE_DAYS} days,
+	 * measured <b>before</b> today is folded in (so a spike is judged against the colony's past, not
+	 * against itself), and nothing fires until that window is full — which also keeps a colony's
+	 * founding, when the baseline is still empty and every death would read as an infinite multiple,
+	 * from crying wolf.
+	 *
+	 * <p>Package-private rather than private only so the decision itself can be driven directly by a
+	 * test ({@code SettlementDeathTollTest}) — waiting for a run to happen to produce a starvation
+	 * wave would test the scenario, not this rule.
+	 *
+	 * @param diedToday
+	 *            households that died this step
+	 */
+	void noteDeathToll(int diedToday) {
+		boolean warm = recentDeaths.size() >= DEATH_BASELINE_DAYS;
+		double norm = warm ? (double) recentDeathsSum / recentDeaths.size() : 0;
+		if (warm && diedToday >= DEATH_SPIKE_MIN && diedToday >= DEATH_SPIKE_FACTOR * norm) {
+			// INFO: rare by construction, and a genuine turn of the colony's story — so it belongs in
+			// the file log next to the lifecycle events, not only on the board. "died" puts it on the
+			// board as a full card (LogLine.of).
+			log.info(String.format("%d households died in %s on %s — %s", diedToday, getName(), getDate(),
+					norm > 0
+							? String.format("%.0fx its recent daily average of %.2f", diedToday / norm, norm)
+							: "a colony that had buried no one in the preceding month"));
+		}
+		recentDeaths.addLast(diedToday);
+		recentDeathsSum += diedToday;
+		if (recentDeaths.size() > DEATH_BASELINE_DAYS)
+			recentDeathsSum -= recentDeaths.removeFirst();
 	}
 
 	/**
@@ -1699,8 +1749,11 @@ public class Settlement {
 		// remove the dead and spawn any replacement agents (e.g. a new
 		// household when a laborer dies), so the population can stay stable
 		ArrayList<Agent> replacements = new ArrayList<Agent>();
+		int diedToday = 0;
 		for (Agent agent : deadAgents) {
 			agents.remove(agent);
+			if (agent instanceof Household)
+				diedToday++;
 			// release a dead landed household's share of its home plot before its successor is spawned,
 			// so the replacement's new household reuses that land (turnover keeps the core on the land;
 			// see claimHomePlot step 1). A no-op for a landless household or one without a home plot.
@@ -1733,6 +1786,7 @@ public class Settlement {
 			}
 		}
 		deadAgents.clear();
+		noteDeathToll(diedToday);
 		agents.addAll(replacements);
 
 		// run per-step side effects (e.g. external money inflow), then admit any

@@ -40,9 +40,23 @@ import com.civstudio.settlement.Settlement;
  * <li><tt>log.finer(...)</tt> — the economic churn (firm charter/dissolve, peasant
  * starvation).</li>
  * </ul>
- * The floor is set by the <tt>-Deos.log.level</tt> system property (default
- * {@code INFO}); raise it to {@code FINE} or {@code FINER}/{@code ALL} to add the
- * narrative or the churn when debugging one run.
+ * <b>Two floors, because there are two audiences.</b> The <b>file</b> floor is set by
+ * <tt>-Deos.log.level</tt> (default {@code INFO}); lower it to {@code FINE} or
+ * {@code FINER}/{@code ALL} to add the narrative or the churn when debugging one run. The
+ * <b>live {@linkplain #tap(Settlement, Consumer) tap}</b> has its own,
+ * <tt>-Deos.log.tap.level</tt> (default {@code FINE}) — because the file is a developer
+ * artifact you turn <em>down</em> to read a run's economics, while the tap feeds the
+ * player-facing notification board, which wants the dynasty/demographic narrative turned
+ * <em>up</em>. One shared floor forced a choice between the two: at the default the board
+ * could only ever show colony lifecycle and the annual digest, since every promotion,
+ * ennoblement, notable arrival and POI death is FINE. See {@code docs/notifications.md}.
+ * <p>
+ * <b>Only the sim's own records.</b> The dispatch handler attaches to the
+ * <tt>com.civstudio</tt> logger, and only that logger's level is raised — never the root's.
+ * Raising the root turns FINE on for every logger in the JVM, and the JDK's
+ * <tt>jdk.event.security</tt> then dumps all 144 trusted root CAs the moment the default
+ * {@code SSLContext} initialises (no network call required), which used to bury a run's 39
+ * lines of narrative under 144 {@code X509Certificate} lines.
  * <p>
  * <b>Where records go.</b> Two handlers are installed once per process: a
  * session-<b>demultiplexing</b> file handler and a <b>console</b> handler. The file
@@ -76,9 +90,18 @@ public final class SimLog {
 	// how many sessions run; the per-session files are keyed separately (see SINKS).
 	private static volatile boolean handlersInstalled = false;
 
-	// the verbosity floor (from -Deos.log.level), resolved once when the handlers are
-	// installed and reused for the dispatch handler
+	// the sim's own logger namespace — the dispatch handler attaches HERE rather than to the root,
+	// so no third-party logger's records can reach a session file or the live tap. Every engine and
+	// server class logs under it (Lombok @Log keys the logger off the class name).
+	private static final String SIM_LOGGER = "com.civstudio";
+
+	// the verbosity floor for the FILE sink (from -Deos.log.level), resolved once when the handlers
+	// are installed
 	private static volatile Level level = Level.INFO;
+
+	// the verbosity floor for the live TAP (from -Deos.log.tap.level), independent of the file's:
+	// the board wants the FINE narrative even while the file stays at INFO. See installProcessHandlers.
+	private static volatile Level tapLevel = Level.FINE;
 
 	// the logging context (date source + label) for records on the emitting thread.
 	// per-thread so concurrent colonies (a thread each) don't overwrite a single
@@ -161,16 +184,36 @@ public final class SimLog {
 		// INFO). INFO keeps only the colony lifecycle and the annual digest plus
 		// anomalies; FINE adds the dynasty/demographic narrative (ennoblement, notable
 		// arrivals, POI deaths); FINER (or ALL) adds the economic churn (firm
-		// charter/dissolve, peasant starvation). Both the root logger and the dispatch
-		// handler must allow the level — the root gates records before any handler.
+		// charter/dissolve, peasant starvation).
 		level = parseLevel(System.getProperty("eos.log.level", "INFO"));
+		// …and the floor for the live TAP, separately (-Deos.log.tap.level, default FINE).
+		// The two are different questions: the file is a DEVELOPER artifact, whose verbosity you
+		// turn down to read one run's economics, while the tap feeds the player-facing notification
+		// board, which wants the dynasty/demographic NARRATIVE — ennoblement, promotions, notable
+		// arrivals, POI deaths. That narrative is exactly the FINE tier, so a single shared floor
+		// forced a choice between a readable log and a populated board. See docs/notifications.md.
+		tapLevel = parseLevel(System.getProperty("eos.log.tap.level", "FINE"));
 
 		// the full record sink: routes every record at or above the configured level to
-		// the emitting thread's session file, so many sessions in one JVM stay separate
+		// the emitting thread's session file, so many sessions in one JVM stay separate.
+		// Its own level is the LOWER of the two floors — it is the outer gate for both
+		// sinks, and publish() then applies each floor individually.
 		Handler dispatch = new DispatchHandler();
-		dispatch.setLevel(level);
+		Level lowest = level.intValue() <= tapLevel.intValue() ? level : tapLevel;
+		dispatch.setLevel(lowest);
 		dispatch.setFormatter(new DateFormatter());
-		root.addHandler(dispatch);
+
+		// Attach the dispatch to the SIM's logger, not the root — and raise only ITS level.
+		// Raising the ROOT to FINE (as this used to) turns on FINE for every logger in the JVM,
+		// including the JDK's own: `jdk.event.security` dumps all 144 trusted root CAs the moment
+		// the default SSLContext initialises (no network call needed), so a run at -Deos.log.level=FINE
+		// wrote 144 X509Certificate lines into output/<seed>/<seed>.log — 79% of the file — burying
+		// the 39 lines of actual simulation narrative. The sim only ever logs under com.civstudio
+		// (Lombok @Log keys the logger off the class), so gating there keeps third-party records from
+		// ever being produced, let alone written or streamed to the board.
+		Logger sim = Logger.getLogger(SIM_LOGGER);
+		sim.setLevel(lowest);
+		sim.addHandler(dispatch);
 
 		// the live sink: only warnings/anomalies to stderr, so a multi-colony run
 		// doesn't flood the console while real problems still appear immediately
@@ -193,10 +236,11 @@ public final class SimLog {
 				}
 			};
 			out.setLevel(parseLevel(stdoutLevel));
-			root.addHandler(out);
+			sim.addHandler(out);   // the sim's log, not every library's — see the dispatch note above
 		}
 
-		root.setLevel(level);
+		// NB the root logger's level is deliberately left alone (INFO). It used to be raised to the
+		// configured floor, which is what let jdk.event.security's certificate dump into the file.
 		handlersInstalled = true;
 	}
 
@@ -360,11 +404,19 @@ public final class SimLog {
 				return;
 			Ctx ctx = CURRENT.get();
 			Settlement colony = ctx == null ? null : ctx.colony();
-			// format on the emitting thread (the DateFormatter reads the same Ctx), then
-			// hand the finished line to the session's sink
 			String path = logFilePath(colony);
-			String formatted = getFormatter().format(record);
-			sinkFor(path).write(formatted);
+			int lvl = record.getLevel().intValue();
+			// Each sink applies its OWN floor: the file keeps the -Deos.log.level verbosity a
+			// developer chose, while the tap (the notification board) takes the FINE narrative
+			// regardless. The handler's own level already passed the lower of the two.
+			if (lvl >= level.intValue()) {
+				// format on the emitting thread (the DateFormatter reads the same Ctx), then
+				// hand the finished line to the session's sink
+				String formatted = getFormatter().format(record);
+				sinkFor(path).write(formatted);
+			}
+			if (lvl < tapLevel.intValue())
+				return;
 			// mirror to the session's live tap, if any (the spectator log feed) — as structured
 			// fields (date + message), so the client can render its own "server@date" header
 			Consumer<Entry> listener = LISTENERS.get(path);
