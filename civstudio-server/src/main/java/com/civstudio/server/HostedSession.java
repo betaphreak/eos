@@ -374,8 +374,8 @@ public final class HostedSession {
 		// tap this session's log into the snapshot feed before founding, so the "was founded"
 		// lines are captured; closed in the finally below when the session tears down
 		AutoCloseable logTap = SimLog.tap(colonies.get(0), e -> {
-			logBuffer.add(e.date(), e.message(), e.level());
-			eventLog.add(e.date(), e.message(), e.level());
+			logBuffer.add(e.date(), e.message(), e.level(), e.rank());
+			eventLog.add(e.date(), e.message(), e.level(), e.rank());
 		});
 		for (Settlement c : colonies)
 			c.start();

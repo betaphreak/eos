@@ -184,23 +184,78 @@ The waits are **conditions, not sleeps** — under a 1166ms map frame, a fixed 4
 toss, and a card still sliding up from `translateY(8px)` has a rect 8px stale, exactly the width of
 the gap between cards.
 
-## Next: events need a Rank
+## Events carry a Rank
+
+**Status:** shipped 2026-07-17.
 
 `curated` is a boolean guessed from a **keyword allow-list** (`LogLine.of`), and it is already showing
 its age: the tap's narrative forced `"promot"`/`"notable"`/`"succeeded"` onto the list, and the
 ordinary-household wording has to deliberately *dodge* it to render routine. A keyword guess will not
-survive the sprawl of many settlements — with 50 colonies logging, the board needs to know what
+survive the sprawl of many settlements — with fifty colonies logging, the board needs to know what
 matters, not what a substring matched.
 
-The fix is to carry the domain's existing **`Rank`** (`com.civstudio.agent.Rank`: HOUSEHOLD → CARAVAN
-→ HOLDING → VILLAGE → CITY → LEAGUE → … → HEGEMONY — "the scope of what it commands", with a
-`level()` for ordering) on each event: the scope of the thing the event is *about*. A household-scope
-event in one of fifty colonies is noise; a village-scope one is news, and the board filters on
-`Rank.level()` instead of guessing. `curated` then becomes derived rather than heuristic.
+So each event carries the domain's existing **`Rank`** (`com.civstudio.agent.Rank`) — *the scope of
+the thing the event is about*. The ladder is contiguous and alternates singular/plural:
 
-Design work, not yet started: the API shape (every call site is a bare Lombok `log.info`/`log.fine`
-today, which carries no room for a rank), the mapping of existing events onto ranks, and whether the
-board exposes a rank floor to the viewer.
+```
+ 0 HOUSEHOLD   2 HOLDING   4 CITY     6 BARONY     8 COUNTY   10 DUCHY      12 KINGDOM     14 EMPIRE
+ 1 CARAVAN     3 VILLAGE   5 LEAGUE   7 VISCOUNTY  9 MARCH    11 PRINCIPATE 13 FEDERATION  15 HEGEMONY
+```
+
+### The visibility rule
+
+A human player plays *at* a rank, and wants **everything above their level, plus at most one rank
+below** — far enough down to see how their vassals perform, and no further:
+
+```
+visible   ⟺  event.rank.level() >= playerRank.level() - 1
+full card ⟺  event.rank.level() >= playerRank.level()          (your level and above)
+dim       ⟺  event.rank.level() == playerRank.level() - 1      (your vassals)
+```
+
+This replaces the `curated` heuristic outright: prominence stops being a guess about wording and
+becomes a statement about scope, relative to the viewer.
+
+It also declutters **as you climb**, which is exactly the settlement-tier ladder
+(Captain → Ruler → Mayor; see `docs/settlement-tier-ladder-plan.md`):
+
+| You play as | at rank | you see | i.e. |
+|---|---|---|---|
+| Captain | CARAVAN (1) | ≥ HOUSEHOLD (0) | every family in the band — early on you know them all |
+| Ruler | VILLAGE (3) | ≥ HOLDING (2) | noble houses, not individual peasants |
+| Mayor | CITY (4) | ≥ VILLAGE (3) | the settlements under you, not their households |
+
+A POI death is HOUSEHOLD-scope, so a Captain gets a card and a Mayor does not — the same event, ranked
+once, filtered per viewer.
+
+### As built
+
+- **`SimLog.event(Rank, Level, String)`** is the event API — the honest answer to "the messages are
+  logged to the default loggers instead of notifications". The rank rides as the `LogRecord`'s
+  parameter, which is the one field JUL offers for structured data, so **every existing
+  `log.info`/`@Log` call site stays exactly as it is** and simply reads as unranked downstream.
+  Rank and level stay independent: *rank decides who cares, level decides whether it is written to
+  disk.*
+- **`SimLog.Entry.rank`** → **`LogLine.rank` / `rankLevel`** on the wire. The *level* is sent, not just
+  the name, so the client needn't carry a copy of the ladder to compare two ranks. An unranked line is
+  `-1`, below every real rank, and is always shown rather than silently dropped.
+- **`web/js/notify-rank.mjs`** — the pure rule (`visibleTo` / `prominentTo`), unit-tested.
+- **Mapped so far:** POI deaths, notable arrivals and promotions, household formation → `HOUSEHOLD`;
+  ennoblement and noble houses → `HOLDING` (a noble *is* a holding, so a ruler's vassals reach them);
+  colony founded/died/departed/dissolved, tier growth and starve-down, mass deaths, the annual digest
+  → `VILLAGE`; a levy lost on the road → `CARAVAN`.
+
+### Still open
+
+- **The viewer's rank** is a default (`CARAVAN`, what the live demo's captain actually is) until there
+  is a player seat to ask (see [[project-direction]]). `setViewerRank` re-filters the board, but only
+  *downward*: cards already filtered out were never stored, so raising then lowering the rank does not
+  restore them until the next rehydrate.
+- **The remaining call sites** are still unranked (`Ruler`/`Captain` succession, firm charter/dissolve,
+  band starvation, the harness's Mayor/Ruler reform). They show unconditionally until mapped.
+- Whether a **warning/anomaly** should override the filter regardless of rank.
+- `curated` still exists for the log bar and as the unranked fallback. Once every site is ranked it can
+  go, and with it the keyword allow-list.
 
 ## Deferred
 

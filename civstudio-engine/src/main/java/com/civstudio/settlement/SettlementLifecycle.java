@@ -1,8 +1,11 @@
 package com.civstudio.settlement;
 
 import java.time.LocalDate;
+import java.util.logging.Level;
 
 import com.civstudio.agent.Agent;
+import com.civstudio.agent.Rank;
+import com.civstudio.io.SimLog;
 import com.civstudio.agent.Household;
 import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.agent.Retinue;
@@ -51,7 +54,7 @@ class SettlementLifecycle {
 		if (started)
 			return;
 		started = true;
-		log.info(colony.getName() + " was founded on " + colony.getDate() + ".");
+		SimLog.event(Rank.VILLAGE, Level.INFO, colony.getName() + " was founded on " + colony.getDate() + ".");
 	}
 
 	/** Whether {@link #start()} has been called (distinct from {@link #isAlive()}). */
@@ -100,14 +103,14 @@ class SettlementLifecycle {
 			if (campForagers() == 0) {
 				died = true;
 				deathDate = colony.getDate();
-				log.info(colony.getName() + " died on " + deathDate
+				SimLog.event(Rank.VILLAGE, Level.INFO, colony.getName() + " died on " + deathDate
 						+ " (its foraging band is spent)");
 				colony.releasePlotsToPool();
 			} else if (campStarving()) {
 				died = true;
 				dissolving = true; // the captain leads the band out (SettlerCaravan.dissolve)
 				deathDate = colony.getDate();
-				log.info(colony.getName() + " is striking camp to depart as a Caravan on "
+				SimLog.event(Rank.VILLAGE, Level.INFO, colony.getName() + " is striking camp to depart as a Caravan on "
 						+ deathDate + " (cannot sustain its foraging band here)");
 				colony.releasePlotsToPool();
 			}
@@ -119,14 +122,14 @@ class SettlementLifecycle {
 				died = true;
 				dissolving = true;
 				deathDate = colony.getDate();
-				log.info(colony.getName() + " is dissolving into a Caravan on " + deathDate
+				SimLog.event(Rank.VILLAGE, Level.INFO, colony.getName() + " is dissolving into a Caravan on " + deathDate
 						+ " (workforce " + workforce + " < floor "
 						+ Settlement.DISSOLUTION_WORKFORCE_FLOOR + ")");
 			}
 		} else if (workforce == 0) {
 			died = true;
 			deathDate = colony.getDate();
-			log.info(colony.getName() + " died on " + deathDate
+			SimLog.event(Rank.VILLAGE, Level.INFO, colony.getName() + " died on " + deathDate
 					+ " (its last laborer is gone)");
 		}
 		if (died)
@@ -191,7 +194,7 @@ class SettlementLifecycle {
 		departedBand = SettlerCaravan.dissolve(colony);
 		if (colony.getSession() != null)
 			colony.getSession().addCaravan(departedBand);
-		log.info(colony.getName() + " departed as a Caravan ("
+		SimLog.event(Rank.VILLAGE, Level.INFO, colony.getName() + " departed as a Caravan ("
 				+ departedBand.getFollowing().size() + " in the following, hoard "
 				+ (long) departedBand.getHoard() + " copper)");
 	}

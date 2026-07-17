@@ -2,6 +2,8 @@ package com.civstudio.server.render;
 
 import java.util.Locale;
 
+import com.civstudio.agent.Rank;
+
 /**
  * One event-log line from a hosted session: streamed to the browser in a {@link SessionSnapshot} (the
  * live log bar renders it as {@code <server>@<date>  <text>}; the notification board renders it as a
@@ -20,11 +22,19 @@ import java.util.Locale;
  * @param date    the emitting colony's in-game date (ISO-8601), the message's timestamp
  * @param text    the log message
  * @param curated whether this is a notable event (foundings, deaths, policy changes, anomalies) —
- *                shown by default in the log bar, and a full card rather than a dim one-liner on the
- *                notification board — versus routine churn
+ *                shown by default in the log bar — versus routine churn. A keyword guess, and the
+ *                log bar's filter; the notification board ranks by {@code rankLevel} instead.
  * @param sev     severity for colouring: {@code "info"}, {@code "warn"} or {@code "error"}
+ * @param rank    the {@link Rank} name of what the event is <b>about</b> — {@code "HOUSEHOLD"} for a
+ *                birth, {@code "VILLAGE"} for a founding — or null for an unranked line
+ * @param rankLevel
+ *                {@link Rank#level()}, or {@code -1} when unranked. The number the board actually
+ *                filters on: a viewer plays at a rank and sees everything at or above it plus one
+ *                rung below (their vassals), so the same event is a card for a captain and silence
+ *                for a mayor. Sent as the level, not just the name, so the client needn't carry a
+ *                copy of the ladder to compare two ranks. See {@code docs/notifications.md}.
  */
-public record LogLine(String date, String text, boolean curated, String sev) {
+public record LogLine(String date, String text, boolean curated, String sev, String rank, int rankLevel) {
 
 	// substrings (lowercased) that mark a line as a notable, curated event — kept specific so a
 	// routine line doesn't match incidentally (e.g. the annual digest mentions "nobles"/"deaths").
@@ -43,11 +53,14 @@ public record LogLine(String date, String text, boolean curated, String sev) {
 	 * the curated flag. The single place either is decided.
 	 *
 	 * @param level the JUL level value (WARNING = 900, SEVERE = 1000)
+	 * @param rank  the event's {@link Rank} — the scope of what it is about — or null if the line was
+	 *              logged through a plain {@code log.info} rather than {@code SimLog.event}
 	 */
-	public static LogLine of(String date, String message, int level) {
+	public static LogLine of(String date, String message, int level, Rank rank) {
 		boolean warning = level >= 900;
 		String sev = level >= 1000 ? "error" : warning ? "warn" : "info";
-		return new LogLine(date, message, warning || curated(message), sev);
+		return new LogLine(date, message, warning || curated(message), sev,
+				rank == null ? null : rank.name(), rank == null ? -1 : rank.level());
 	}
 
 	/** Whether a message names a notable event. Warnings are curated regardless — see {@link #of}. */

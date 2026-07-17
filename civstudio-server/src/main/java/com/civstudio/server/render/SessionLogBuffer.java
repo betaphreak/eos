@@ -1,6 +1,8 @@
 package com.civstudio.server.render;
 
 import java.util.List;
+
+import com.civstudio.agent.Rank;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,8 +28,8 @@ public final class SessionLogBuffer {
 	private final AtomicInteger size = new AtomicInteger();
 
 	/** Append a message (from the SimLog tap) with its in-game date and JUL level value. */
-	public void add(String date, String message, int level) {
-		pending.add(LogLine.of(date, message, level));
+	public void add(String date, String message, int level, Rank rank) {
+		pending.add(LogLine.of(date, message, level, rank));
 		if (size.incrementAndGet() > CAP && pending.poll() != null)
 			size.decrementAndGet();
 	}

@@ -17,6 +17,7 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.StreamHandler;
 
+import com.civstudio.agent.Rank;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
 
@@ -95,6 +96,10 @@ public final class SimLog {
 	// server class logs under it (Lombok @Log keys the logger off the class name).
 	private static final String SIM_LOGGER = "com.civstudio";
 
+	// ranked events (SimLog.event) log under this child of SIM_LOGGER, so they inherit the sim's
+	// level and handler like any @Log call site while staying identifiable
+	private static final String EVENT_LOGGER = SIM_LOGGER + ".event";
+
 	// the verbosity floor for the FILE sink (from -Deos.log.level), resolved once when the handlers
 	// are installed
 	private static volatile Level level = Level.INFO;
@@ -125,11 +130,20 @@ public final class SimLog {
 	/**
 	 * One log record delivered to a {@linkplain #tap tap}, as structured fields so a consumer can
 	 * present its own header rather than the file format's colony prefix: the in-game {@code date}
-	 * of the emitting colony (ISO-8601, or empty if unbound), the raw {@code message}, and the JUL
+	 * of the emitting colony (ISO-8601, or empty if unbound), the raw {@code message}, the JUL
 	 * {@code level} value ({@link Level#intValue()} — e.g. 800 INFO, 900 WARNING, 1000 SEVERE) so a
-	 * consumer can colour by severity.
+	 * consumer can colour by severity, and the event's {@link Rank}.
+	 *
+	 * @param rank
+	 *            the <b>scope</b> of what the event is about — a {@link Rank#HOUSEHOLD} birth, a
+	 *            {@link Rank#VILLAGE} founding, a {@link Rank#DUCHY} war — or {@code null} for a line
+	 *            logged through a plain {@code log.info(…)} rather than {@link #event}. It is what
+	 *            lets a reader watching many settlements keep the sprawl readable: a player plays at a
+	 *            rank and wants everything above it plus one rung below (their vassals), so the same
+	 *            event is a card for a captain and silence for a mayor. See {@code
+	 *            docs/notifications.md}.
 	 */
-	public record Entry(String date, String message, int level) {
+	public record Entry(String date, String message, int level, Rank rank) {
 	}
 
 	// the prefix source: a colony supplies the in-game date, and the label is its
@@ -291,6 +305,42 @@ public final class SimLog {
 	}
 
 	/**
+	 * Log a <b>ranked event</b>: a thing that happened, at the {@link Rank} of whatever it happened
+	 * to. This is the call the notification board is fed by, and the difference from a bare
+	 * {@code log.info(…)} is the rank — without it a reader watching fifty settlements has no way to
+	 * tell a peasant's death from a duchy's collapse, and the board can only guess at prominence from
+	 * the wording.
+	 *
+	 * <p>The rank is the <em>scope of the subject</em>, not a severity: a household forming is
+	 * {@link Rank#HOUSEHOLD} however dramatic, a colony dying is {@link Rank#VILLAGE} however quiet. A
+	 * viewer plays at a rank and sees everything at or above it, plus one rung below (their vassals):
+	 * so the same {@code HOUSEHOLD} line is a card for a captain and nothing at all for a mayor. See
+	 * {@code docs/notifications.md}.
+	 *
+	 * <p>{@code level} stays the <em>file</em>'s verbosity dial and is independent (the two floors —
+	 * see the class note): rank decides who cares, level decides whether it is written to disk.
+	 *
+	 * @param rank
+	 *            the scope of what the event is about
+	 * @param level
+	 *            the file verbosity this line belongs to (INFO lifecycle, FINE narrative, …)
+	 * @param message
+	 *            the event text
+	 */
+	public static void event(Rank rank, Level level, String message) {
+		Logger logger = Logger.getLogger(EVENT_LOGGER);
+		if (!logger.isLoggable(level))
+			return;
+		LogRecord record = new LogRecord(level, message);
+		record.setLoggerName(EVENT_LOGGER);
+		// the rank rides as the record's parameter — the one field JUL offers for structured data,
+		// and what lets every existing log.info/@Log call site stay exactly as it is (they simply
+		// carry no rank, and read as unranked downstream)
+		record.setParameters(new Object[] { rank });
+		logger.log(record);
+	}
+
+	/**
 	 * Register a live tap on the session <tt>colony</tt> belongs to: <tt>listener</tt> is handed
 	 * every formatted record for that session, on the emitting (colony worker) thread, in addition
 	 * to the file sink — so it must be cheap and thread-safe. Replaces any prior tap for the same
@@ -424,10 +474,17 @@ public final class SimLog {
 				try {
 					String date = ctx == null ? "" : ctx.date();
 					listener.accept(new Entry(date, record.getMessage(),
-							record.getLevel().intValue()));
+							record.getLevel().intValue(), rankOf(record)));
 				} catch (RuntimeException e) {
 					LISTENERS.remove(path, listener); // a tap must never break logging
 				}
+		}
+
+		// the Rank a SimLog.event attached as the record's parameter; null for a plain log.info/@Log
+		// line, which carries no rank and is left for the consumer to place
+		private static Rank rankOf(LogRecord record) {
+			Object[] params = record.getParameters();
+			return params != null && params.length > 0 && params[0] instanceof Rank r ? r : null;
 		}
 
 		@Override

@@ -1,10 +1,13 @@
 package com.civstudio.agent.laborer;
 
 import java.time.LocalDate;
+import java.util.logging.Level;
 
 import com.civstudio.agent.AbstractHousehold;
 import com.civstudio.agent.Granary;
 import com.civstudio.agent.Member;
+import com.civstudio.agent.Rank;
+import com.civstudio.io.SimLog;
 import com.civstudio.race.Race;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.Account;
@@ -211,7 +214,7 @@ public class Laborer extends AbstractHousehold {
 		// and is a person of interest the colony tracks (and logs yearly)
 		if (isNotable()) {
 			var skills = getHead().skills();
-			log.fine(String.format(
+			SimLog.event(Rank.HOUSEHOLD, Level.FINE, String.format(
 					"%s founded a household in the colony — notable in %s (level %d); %s",
 					getHead().fullName(), skills.peakSkill(), skills.peakLevel(),
 					skills));
@@ -225,7 +228,8 @@ public class Laborer extends AbstractHousehold {
 			// isStarted() is what makes "new" mean new: the colony's whole initial population is
 			// constructed BEFORE start(), so without this gate a founding would post ~400 of these
 			// in a single day.
-			log.fine(String.format("the %s household was formed", getHead().surname()));
+			SimLog.event(Rank.HOUSEHOLD, Level.FINE,
+					String.format("the %s household was formed", getHead().surname()));
 		}
 
 		this.config = config;
@@ -280,7 +284,7 @@ public class Laborer extends AbstractHousehold {
 		// a notable promoted head is recorded by name, like any notable arrival
 		if (isNotable()) {
 			var skills = getHead().skills();
-			log.fine(String.format(
+			SimLog.event(Rank.HOUSEHOLD, Level.FINE, String.format(
 					"%s was promoted from the peasantry — notable in %s (level %d); %s",
 					getHead().fullName(), skills.peakSkill(), skills.peakLevel(),
 					skills));

@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.civstudio.agent.Rank;
+
 /**
  * A bounded, retained tail of a hosted session's event log — the analysis counterpart to
  * {@link SessionLogBuffer}. Where {@code SessionLogBuffer} is a <b>drain-once</b> queue emptied into
@@ -37,8 +39,8 @@ public final class SessionEventLog {
 	 * delta. This used to flag only warnings as curated, which meant a founding read as a notable
 	 * event live and as routine churn when replayed from here.
 	 */
-	public synchronized void add(String date, String message, int level) {
-		ring.addLast(LogLine.of(date, message, level));
+	public synchronized void add(String date, String message, int level, Rank rank) {
+		ring.addLast(LogLine.of(date, message, level, rank));
 		if (ring.size() > CAP)
 			ring.removeFirst();
 	}

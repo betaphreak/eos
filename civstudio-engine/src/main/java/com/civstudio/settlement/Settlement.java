@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.logging.Level;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -24,7 +25,9 @@ import com.civstudio.geo.Province;
 import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.agent.Household;
 import com.civstudio.agent.Member;
+import com.civstudio.agent.Rank;
 import com.civstudio.agent.Retinue;
+import com.civstudio.io.SimLog;
 import com.civstudio.calendar.DayType;
 import com.civstudio.calendar.LiturgicalCalendar;
 import com.civstudio.agent.firm.BuilderFirm;
@@ -819,10 +822,11 @@ public class Settlement {
 		boolean warm = recentDeaths.size() >= DEATH_BASELINE_DAYS;
 		double norm = warm ? (double) recentDeathsSum / recentDeaths.size() : 0;
 		if (warm && diedToday >= DEATH_SPIKE_MIN && diedToday >= DEATH_SPIKE_FACTOR * norm) {
-			// INFO: rare by construction, and a genuine turn of the colony's story — so it belongs in
-			// the file log next to the lifecycle events, not only on the board. "died" puts it on the
-			// board as a full card (LogLine.of).
-			log.info(String.format("%d households died in %s on %s — %s", diedToday, getName(), getDate(),
+			// VILLAGE scope, not HOUSEHOLD: the subject is the colony having a catastrophic day, not
+			// any one family — so it reaches a ruler and a mayor alike, where the individual deaths
+			// that compose it do not. INFO because it is rare by construction and a genuine turn of
+			// the colony's story, so it belongs in the file log beside the lifecycle events.
+			SimLog.event(Rank.VILLAGE, Level.INFO, String.format("%d households died in %s on %s — %s", diedToday, getName(), getDate(),
 					norm > 0
 							? String.format("%.0fx its recent daily average of %.2f", diedToday / norm, norm)
 							: "a colony that had buried no one in the preceding month"));
@@ -1111,7 +1115,7 @@ public class Settlement {
 			SettlementTier from = tier;
 			foodEconomy.spendForGrowth(cost);
 			setTier(next);
-			log.info(name + " grew from " + from + " to " + next + " on " + getDate()
+			SimLog.event(Rank.VILLAGE, Level.INFO, name + " grew from " + from + " to " + next + " on " + getDate()
 					+ " (" + householdCount() + " households, " + totalResidents() + " residents)");
 			if (onTierAdvance != null)
 				onTierAdvance.accept(next);
@@ -1133,7 +1137,7 @@ public class Settlement {
 			SettlementTier down = tier.previous().orElseThrow();
 			setTier(down);
 			foodEconomy.setFoodBox(foodEconomy.getFoodBox() + down.foodToChange());
-			log.info(name + " starved down from " + from + " to " + down + " on " + getDate()
+			SimLog.event(Rank.VILLAGE, Level.INFO, name + " starved down from " + from + " to " + down + " on " + getDate()
 					+ " (" + totalResidents() + " residents)");
 			if (onTierDescent != null)
 				onTierDescent.accept(down);
@@ -1335,7 +1339,7 @@ public class Settlement {
 				return true;
 			if (!e.isSpent())
 				return false;
-			log.info(name + " lost an expedition on the road: the levy under "
+			SimLog.event(Rank.CARAVAN, Level.INFO, name + " lost an expedition on the road: the levy under "
 					+ e.getLeader() + " starved out and never came home, on " + getDate() + ".");
 			return true;
 		});
@@ -1589,7 +1593,7 @@ public class Settlement {
 		// pop is the workforce (laborer households); children breaks out the under-age
 		// members it does not count (household-born + pool wards), so the digest shows
 		// the next generation maturing toward the workforce
-		log.info(String.format(
+		SimLog.event(Rank.VILLAGE, Level.INFO, String.format(
 				"annual digest: pop=%d children=%d nobles=%d firms=%d pool=%d poolKids=%d "
 						+ "POI deaths=%d CPI=%.1f",
 				laborers, children, nobles, firms, pool, poolKids, poiDeathsThisYear,
@@ -1766,7 +1770,9 @@ public class Settlement {
 			// year's digest
 			if (agent instanceof Household h && personsOfInterest.remove(h)) {
 				poiDeathsThisYear++;
-				log.fine(h.getHead().fullName() + " ("
+				// HOUSEHOLD scope: one family's loss. A captain who knows every family in the band
+				// gets a card; a mayor, two rungs up, never hears about it.
+				SimLog.event(Rank.HOUSEHOLD, Level.FINE, h.getHead().fullName() + " ("
 						+ h.role().toLowerCase(Locale.ROOT) + ", "
 						+ h.getHead().skills() + ") died at age " + h.getAgeYears());
 			}

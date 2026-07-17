@@ -26,8 +26,16 @@ const check = (ok, what) => { console.log(`${ok ? '  ok  ' : '  FAIL'} ${what}`)
 // of seconds, and live starting LATE is not a slow no-op: connectStream calls resetNotify on session
 // discovery, so a late start wipes whatever the test had put on the board and every assertion below
 // reads someone else's state.
+//
+// Gate on the DOM, NOT on `import('/js/overlays/live.mjs').liveActive()`. That import looks harmless
+// and is a trap: live.mjs → core.mjs reads window.BUNDLE at MODULE-EVAL, so importing it before the
+// index.html bootstrap has fetched the bundle throws — and an ES module's evaluation failure is
+// CACHED, so the app's own later import of live.mjs gets the same rejection and Live mode never
+// starts at all. The probe broke the thing it was measuring. The board's host un-hiding is the same
+// signal (hud(true) → showNotify(true)) and costs nothing.
 const waitForLive = async () => page.waitForFunction(
-  async () => (await import('/js/overlays/live.mjs')).liveActive(), null, { timeout: 120000 });
+  () => { const h = document.getElementById('notifyHost'); return !!h && !h.hidden; },
+  null, { timeout: 120000 });
 
 await page.goto(url, { waitUntil: 'load' });
 await waitForLive().catch(() => console.log('  (timed out waiting for Live mode to connect)'));

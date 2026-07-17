@@ -3,6 +3,7 @@ package com.civstudio.agent.noble;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 
 import com.civstudio.agent.firm.ScienceFirm;
 import com.civstudio.agent.laborer.Laborer;
@@ -15,6 +16,7 @@ import com.civstudio.agent.firm.Firm;
 import com.civstudio.agent.firm.StrategicFirm;
 import com.civstudio.race.Race;
 import com.civstudio.bank.Account;
+import com.civstudio.io.SimLog;
 import com.civstudio.bank.Bank;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.good.Enjoyment;
@@ -210,7 +212,10 @@ public class Noble extends AbstractHousehold {
 
 		// the new noble is a person of interest the colony tracks
 		colony.addPersonOfInterest(this);
-		log.fine(String.format(
+		// HOLDING scope, not HOUSEHOLD: a noble IS a holding (the firms and banks it owns), so a
+		// ruler at VILLAGE still hears about it — its vassals are exactly the rung below — while an
+		// ordinary household's affairs do not reach that far.
+		SimLog.event(Rank.HOLDING, Level.FINE, String.format(
 				"%s was ennobled — risen from commoner to noble, now banking in %s.",
 				getHead().fullName(), bank.getCurrency()));
 
@@ -249,7 +254,7 @@ public class Noble extends AbstractHousehold {
 		colony.addPersonOfInterest(this);
 		if (isNotable()) {
 			var skills = getHead().skills();
-			log.fine(String.format(
+			SimLog.event(Rank.HOLDING, Level.FINE, String.format(
 					"%s founded a noble house in the colony — notable in %s (level %d); %s",
 					getHead().fullName(), skills.peakSkill(), skills.peakLevel(),
 					skills));
