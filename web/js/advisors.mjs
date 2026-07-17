@@ -137,6 +137,7 @@ function openLobby() {
   else if (window.__picker && window.__picker.open) window.__picker.open();
 }
 function wireGlobeDropdown(btn) {
+  btn.insertAdjacentHTML("beforeend", '<span class="adv-caret">▾</span>');   // signal it opens a menu
   btn.addEventListener("click", e => {
     e.stopPropagation();
     const menu = realmMenu(), open = menu.hidden;

@@ -605,6 +605,9 @@
     // core.mjs: core reads window.BUNDLE at import time, which is precisely what has not arrived yet.
     // Best-effort: a lobby that fails to load must never cost you the map.
     function openLobbyDuringLoad(base) {
+      // a realm switch (switchRealm) navigates straight to the map — skip the auto-open lobby that one
+      // time so the new realm is what you land on, not the lobby over it.
+      try { if (sessionStorage.getItem("cs.realmSwitch")) { sessionStorage.removeItem("cs.realmSwitch"); return; } } catch (e) {}
       import("./js/lobby.mjs")
         .then(function (m) { m.openLobby(base); })
         .catch(function (e) { if (window.console) console.warn("lobby unavailable:", e); });

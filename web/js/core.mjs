@@ -268,6 +268,9 @@ function switchRealm(realmKey, dest) {
     u.searchParams.delete("p");
     u.searchParams.delete("z");
   }
+  // a realm switch is a deliberate navigation to the MAP — don't reopen the lobby over it on the fresh
+  // load (index.html's openLobbyDuringLoad honours this), else the switch reads as "nothing happened".
+  try { sessionStorage.setItem("cs.realmSwitch", "1"); } catch { /* private mode — the lobby just opens */ }
   location.assign(u.toString());   // pushes history; the fresh load crops to the new realm
 }
 
