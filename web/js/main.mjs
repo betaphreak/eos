@@ -1,4 +1,4 @@
-import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, centerOn, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_MAX, isPolitical, isUnderground, cssVar, S, ACTIVE_REALM, LABEL_FONT, switchRealm } from "./core.mjs";
+import { BUNDLE, MAP, VIEW, cam, ctx, cv, stage, P, provPath, provOnScreen, px, py, pxr, pyr, clampPan, centerOn, sxSrc, sySrc, baseXr, baseYr, fitView, provSrcBox, K_PLOT, K_TEX, K_MAX, isPolitical, isUnderground, cssVar, S, ACTIVE_REALM, LABEL_FONT, switchRealm } from "./core.mjs";
 import { bandAlpha, kBand, band, bandName, regime, REGIME_INFO } from "./bands.mjs";
 import { drawPlots } from "./plots.mjs";                       // still used directly by drawCavernPlots
 import { scheduleLegendRefresh } from "./overlays/political.mjs";
@@ -162,6 +162,7 @@ function paintScene() {
   // it), then the polar ice cap over the open water. Screen-space, so drawn ONCE here rather than
   // inside the per-world-copy wrap loop below — see js/sea.mjs.
   renderScreenLayers();
+  drawRealmFogUnder();   // parchment between the sea and the land raster → the outer ocean reads as fog
 
   // one world copy: the map is a finite sheet, not a cylinder, so there is no east-west wrap to tile
   // (docs/realms.md §Delete the wrap). renderScene's own viewport culling and provPath cache do the
@@ -177,30 +178,37 @@ function paintScene() {
 // and the void beyond the crop — washed with the hatch tile, so the realm reads as land + its own
 // waters in a sea of fog (docs/realms.md §Ocean and fog).
 //
-// Built on a CACHED offscreen layer, rebuilt only when the camera moves (viewVersion): fill the whole
-// viewport with fog, then erase the on-screen province polygons with destination-out. destination-out
-// is idempotent over the overlapping shared edges of adjacent provinces — so, unlike an even-odd clip
-// of the complement, it leaves no fogged grid along province borders. Each idle frame is then just a
-// blit; only a pan/zoom pays the rebuild.
-let _fogCanvas = null, _fogVer = -1;
+// Two cheap passes, and no per-frame province geometry (so no gaps between the simplified rings, and
+// nothing to cache):
+//  - drawRealmFogUnder runs INSIDE the map clip, between the sea and the land raster: it lays parchment
+//    over the whole map region (i.e. over the sea). drawRaster then paints the realm's opaque LAND over
+//    it — clearing land pixel-perfectly — while the raster's transparent/soft-alpha ocean lets the
+//    parchment show through (the deep-water tint just darkens it). So the outer sea reads as unknown
+//    paper with no land bleed. The province borders/labels/portals are drawn AFTER, so they stay on top.
+//  - drawRealmFog runs AFTER the scene and fills the VOID beyond the crop (viewport minus the map rect)
+//    with the same parchment, so the letterbox is unknown too.
+// The fog fades out as you zoom in past the region view: the outer sea is "unknown" at a glance, but
+// up close you should see the coastal plots, not paper. Full below K_PLOT, gone by K_TEX.
+function realmFogFade() { return Math.max(0, Math.min(1, (K_TEX - cam.k) / (K_TEX - K_PLOT))); }
+function _fogFill(a) {
+  ctx.globalAlpha = 0.9 * a; ctx.fillStyle = fowPat; ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  ctx.globalAlpha = 0.14 * a; ctx.fillStyle = "#3a2c18"; ctx.fillRect(0, 0, VIEW.w, VIEW.h);   // sepia deepening
+  ctx.globalAlpha = 1;
+}
+function drawRealmFogUnder() {
+  const a = fowPat ? realmFogFade() : 0;
+  if (a > 0.01) _fogFill(a);   // called inside the map clip, before drawRaster
+}
 function drawRealmFog() {
-  if (!fowPat) return;
-  const dw = cv.width, dh = cv.height;
-  if (_fogVer !== S.viewVersion || !_fogCanvas || _fogCanvas.width !== dw || _fogCanvas.height !== dh) {
-    if (!_fogCanvas) _fogCanvas = document.createElement("canvas");
-    _fogCanvas.width = dw; _fogCanvas.height = dh;
-    const fc = _fogCanvas.getContext("2d");
-    fc.setTransform(VIEW.dpr, 0, 0, VIEW.dpr, 0, 0);
-    fc.clearRect(0, 0, VIEW.w, VIEW.h);
-    // EU4 terra-incognita: the unexplored sea reads as old map parchment (nearly opaque so it covers
-    // the water, with a faint sepia deepening so it isn't a flat sheet).
-    fc.globalAlpha = 0.9; fc.fillStyle = fc.createPattern(fowImg, "repeat"); fc.fillRect(0, 0, VIEW.w, VIEW.h);
-    fc.globalAlpha = 0.14; fc.fillStyle = "#3a2c18"; fc.fillRect(0, 0, VIEW.w, VIEW.h);
-    fc.globalAlpha = 1; fc.globalCompositeOperation = "destination-out";
-    for (const p of P) if (p.rings && provOnScreen(p)) fc.fill(provPath(p));   // punch the realm's provinces clear
-    _fogVer = S.viewVersion;
-  }
-  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(_fogCanvas, 0, 0); ctx.restore();
+  if (!fowPat || realmFogFade() <= 0.01) return;
+  const xL = cam.x + cam.k * VIEW.dx, xR = cam.x + cam.k * (VIEW.dx + VIEW.dw);
+  const yT = cam.y + cam.k * VIEW.dy, yB = cam.y + cam.k * (VIEW.dy + VIEW.dh);
+  const mx = Math.min(xL, xR), my = Math.min(yT, yB), mw = Math.abs(xR - xL), mh = Math.abs(yB - yT);
+  if (mx <= 0 && my <= 0 && mx + mw >= VIEW.w && my + mh >= VIEW.h) return;   // map fills the viewport → no void
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, VIEW.w, VIEW.h); ctx.rect(mx, my, mw, mh); ctx.clip("evenodd");
+  _fogFill(realmFogFade());
+  ctx.restore();
 }
 // deterministic 0..1 per province id — a stable per-cell jitter (no Math.random, survives redraws)
 const pjit = id => ((Math.imul(id | 0, 2654435761) >>> 0) % 1000) / 1000;
