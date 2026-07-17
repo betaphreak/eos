@@ -135,6 +135,37 @@ class HostedSessionTest {
 		}
 	}
 
+	/**
+	 * The session keeps its own clock — tick counted from the founding date — rather than asking
+	 * the colonies what day it is ({@code docs/spectator-lobby.md} §Phase 0). The invariant that
+	 * makes that switch safe: while a colony lives, the two agree exactly, because both are
+	 * {@code startDate + steps} and a live colony steps once per tick.
+	 */
+	@Test
+	@Timeout(90)
+	void theSessionClockAgreesWithItsLivingColonies() {
+		SessionHost host = new SessionHost();
+		HostedSession hs = host.create(SessionSpec.caravanDemo(7654321L, DHENIJANSAR));
+		try {
+			hs.startPaused();
+			SessionSnapshot start = awaitSnapshot(hs, 0, 30_000);
+			assertEquals(hs.date().toString(), start.date(), "the snapshot reports the session clock");
+			assertEquals(start.colonies().get(0).date(), start.date(),
+					"at tick 0 the session and its colony are on the founding date");
+
+			for (int step : new int[] { 1, 7, 30 }) {
+				long before = hs.tick();
+				hs.step(step);
+				SessionSnapshot s = awaitSnapshot(hs, before + step, 60_000);
+				assertEquals(s.colonies().get(0).date(), s.date(),
+						"the session's clock must not drift from a living colony's");
+				assertEquals(hs.date().toString(), s.date());
+			}
+		} finally {
+			hs.stop();
+		}
+	}
+
 	// block until the run is over (stopped or game over), or fail on timeout
 	private static void awaitTerminal(HostedSession hs, long timeoutMs) {
 		long deadline = System.nanoTime() + timeoutMs * 1_000_000L;

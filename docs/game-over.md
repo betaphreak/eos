@@ -137,8 +137,10 @@ The **end reason** grows a case accordingly: *dissolved into a Caravan* / *died*
 - **The clock coupling is the real constraint** and it outlives this note: bands cannot outlive
   their colony while the session date comes from live colonies. Any future "the band re-founds" or
   "explorers rally on the ruin" work starts by breaking that coupling.
-  **Now scheduled (2026-07-17):** `docs/spectator-lobby.md` **Phase 0** breaks it — the session
-  derives its date from its own tick. That does not change this note's plan (dissolution still ends
+  **Now broken (2026-07-17), ✅ done:** `docs/spectator-lobby.md` **Phase 0** shipped — the session
+  derives its date from its own tick, and `tickBands` no longer no-ops when no colony can date the
+  day. Nothing observable changed yet (the loop still breaks on `allDead()` first), but the
+  *constraint* is gone. That does not change this note's plan (dissolution still ends
   a single-player run), but it is what later lets an eliminated royale player wander on as their
   departed band, demoted to `Rank.CARAVAN` (lobby amendment 2).
 - **Ranked play** (see the sp-saves-and-ranked-play note) needs an end-of-run record. `GAME_OVER` +

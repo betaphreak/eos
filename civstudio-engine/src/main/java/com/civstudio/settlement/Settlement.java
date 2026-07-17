@@ -1652,6 +1652,21 @@ public class Settlement {
 	}
 
 	/**
+	 * The colony's founding date — the date of step 0, from which {@link #getDate()} is derived.
+	 * Fixed for the colony's life, and unaffected by its death (a dead colony's {@link #getDate()}
+	 * freezes, but its origin does not move).
+	 * <p>
+	 * A hosted run reads this as its own clock's origin, so the session's date can be derived from
+	 * the authoritative tick rather than scavenged from whichever colonies are still alive — see
+	 * {@code docs/spectator-lobby.md} §Phase 0.
+	 *
+	 * @return the date of step 0
+	 */
+	public LocalDate getStartDate() {
+		return startDate;
+	}
+
+	/**
 	 * The {@link DayType} of the current in-game date — whether today is an
 	 * ordinary workday, the weekly day of rest (Sunday), or a liturgical feast
 	 * day. Delegates to the colony's shared {@link LiturgicalCalendar}.

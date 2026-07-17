@@ -90,6 +90,12 @@ public final class HostedSession {
 	// a fresh value while the session thread advances it
 	private volatile long tick = 0;
 
+	// The run's clock origin: the colonies' founding date. The session's date is derived from this
+	// plus the tick above (see date()) — it is NOT scavenged from whichever colonies are still
+	// alive, which is what let the last colony's death freeze every wandering band with it.
+	// See docs/spectator-lobby.md §Phase 0.
+	private final LocalDate startDate;
+
 	private volatile State state = State.CREATED;
 
 	// why the run ended, once it has (null until then) — display text for the client's terminal
@@ -153,6 +159,10 @@ public final class HostedSession {
 		this.colonies = List.copyOf(colonies);
 		this.commandStore = commandStore;
 		this.chatStore = chatStore;
+		// the clock origin: the colonies are founded together, on the same day, so any of them
+		// carries it. Read once here rather than per tick — a colony's start date never moves, and
+		// reading it from a colony LATER would reintroduce the very dependency this removes.
+		this.startDate = this.colonies.isEmpty() ? LocalDate.EPOCH : this.colonies.get(0).getStartDate();
 	}
 
 	/** Start ticking freely (paced by the tick rate). */
@@ -357,6 +367,22 @@ public final class HostedSession {
 	}
 
 	/**
+	 * The session's in-game date — its {@linkplain #tick() tick} counted forward from the run's
+	 * founding date. <b>The session's own clock:</b> it does not ask the colonies what day it is,
+	 * so it keeps time even when none of them is left to answer.
+	 * <p>
+	 * Identical to a living colony's {@code getDate()} — both are {@code startDate + steps}, and a
+	 * live colony steps exactly once per tick. The difference only shows once nothing is alive: the
+	 * colonies' dates freeze where they died, while the session's clock is free to run on (which is
+	 * what lets wandering bands outlive their colony). See {@code docs/spectator-lobby.md} §Phase 0.
+	 *
+	 * @return the session's current in-game date
+	 */
+	public LocalDate date() {
+		return startDate.plusDays(tick);
+	}
+
+	/**
 	 * The owning {@code app_user} id, or {@code null} if this is an unowned/public session
 	 * (the server-seeded demo). Control/command writes are gated on this — an unowned session
 	 * is open to anyone, an owned one only to its owner (see {@code docs/authentication.md}).
@@ -476,14 +502,17 @@ public final class HostedSession {
 	// advance every live colony one in-game day (sequential lockstep), then the session's
 	// wandering bands — the marching six of the demo (see docs/caravan-march.md)
 	private void advanceOneDay() {
-		LocalDate date = null;
 		for (Settlement c : colonies)
-			if (!c.isDead()) {
+			if (!c.isDead())
 				c.newDay();
-				if (date == null || c.getDate().isAfter(date))
-					date = c.getDate();
-			}
-		tickBands(date);
+		// The day the colonies just stepped INTO. `tick` is still the day we entered — the loop
+		// increments it after this returns — so the day now in progress is tick + 1.
+		//
+		// This used to be the max date over the LIVE colonies, which meant the bands' clock died
+		// with the last colony (tickBands no-ops on a null date), stranding the very band a
+		// dissolving colony had just departed as. The session's own clock has no such gap.
+		// Identical while any colony lives: both are startDate + steps. See docs/spectator-lobby.md.
+		tickBands(startDate.plusDays(tick + 1));
 	}
 
 	// advance the session's wandering bands one day on the session band RNG — single-
@@ -491,8 +520,11 @@ public final class HostedSession {
 	// labelled (realm) since a band belongs to no one colony. Draws nothing with no bands.
 	private void tickBands(LocalDate date) {
 		List<Caravan> bands = session.getCaravans();
-		if (bands.isEmpty() || date == null)
+		if (bands.isEmpty())
 			return;
+		// NB no null-date guard any more: the date is the session's own clock, which always knows
+		// what day it is. It was that guard — reached whenever no colony was left to date the day —
+		// that froze the bands the moment their colony died.
 		final LocalDate d = date;
 		SimLog.asRealm(colonies.get(0), () -> {
 			Rng rng = session.getBandRng();
@@ -562,7 +594,7 @@ public final class HostedSession {
 	// the loop.
 	private void emit() {
 		SessionSnapshot snap = Snapshots.of(id, spec.seed(), spec.scenario(),
-				state.name(), endReason, tick, colonies, session.getWorldMap(), session.getCaravans(),
+				state.name(), endReason, tick, date(), colonies, session.getWorldMap(), session.getCaravans(),
 				logBuffer.drain());
 		lastSnapshot = snap;
 		for (Consumer<SessionSnapshot> s : subscribers) {

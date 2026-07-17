@@ -42,6 +42,10 @@ public final class Snapshots {
 	 * @param endReason why the run ended (display text), or {@code null} unless {@code state} is
 	 *                  {@code GAME_OVER} — see {@code docs/game-over.md}
 	 * @param tick      the authoritative tick (in-game days elapsed)
+	 * @param date      the session's in-game date — its own clock ({@code HostedSession.date()}),
+	 *                  not a poll of the colonies: a session whose colonies are all dead still
+	 *                  knows what day it is. May be {@code null} for a caller with no clock, which
+	 *                  reports an empty date exactly as an unknown one always did
 	 * @param colonies  the session's colonies
 	 * @param map       the world map (for caravan province names), or {@code null}
 	 * @param caravans  the session's wandering bands
@@ -49,16 +53,11 @@ public final class Snapshots {
 	 * @return the render snapshot
 	 */
 	public static SessionSnapshot of(String sessionId, long seed, String scenario,
-			String state, String endReason, long tick, List<Settlement> colonies, WorldMap map,
-			List<Caravan> caravans, List<LogLine> log) {
+			String state, String endReason, long tick, LocalDate date, List<Settlement> colonies,
+			WorldMap map, List<Caravan> caravans, List<LogLine> log) {
 		List<ColonyView> colonyViews = new ArrayList<>(colonies.size());
-		LocalDate date = null;
-		for (Settlement c : colonies) {
-			// the session's date is the furthest-advanced colony's (a dead one froze early)
-			if (date == null || c.getDate().isAfter(date))
-				date = c.getDate();
+		for (Settlement c : colonies)
 			colonyViews.add(colonyView(c));
-		}
 		List<CaravanView> caravanViews = new ArrayList<>(caravans.size());
 		// routed plots the bands have pioneered (deduped by position) — the live per-plot route data
 		// the web draw layer stamps (gap B, docs/route-rendering.md)

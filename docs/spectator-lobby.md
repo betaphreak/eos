@@ -241,13 +241,34 @@ before committing. The ranked world is already running when you arrive; there is
 
 ## The plan
 
-### Phase 0 — the session owns its clock (engine/server, prerequisite)
+### Phase 0 — the session owns its clock ✅ DONE (2026-07-17)
 
-Derive the session date from the authoritative tick and the run's start date, not from live colonies:
-`advanceOneDay()` stops asking survivors what day it is, and `tickBands()` gets a date even when no
-colony lives. Unblocks amendments 1–2, the royale endgame, and the long-parked caravan re-founding.
-Behaviour-preserving while any colony lives — which is every case today, so the existing suites are
-the regression net.
+The session's date is now derived from the authoritative tick and the run's founding date, not from
+whichever colonies are still alive.
+
+**Shipped:**
+- **`Settlement.getStartDate()`** — the colony's step-0 date. It already derived `getDate()` as
+  `startDate.plusDays(timeStep)`; this exposes the origin so a host can keep the same clock.
+- **`HostedSession.startDate` + `date()`** — `startDate.plusDays(tick)`. Read once at construction
+  (a colony's origin never moves; reading it from a colony *later* would reintroduce the very
+  dependency this removes). `LocalDate.EPOCH` for the degenerate colony-less session.
+- **`advanceOneDay()`** no longer polls live colonies for the date; it passes `startDate + (tick+1)`
+  — the day just stepped into, since the loop increments `tick` after it returns.
+- **`tickBands()` lost its null-date guard.** *That guard was the freeze*: reached whenever no colony
+  was left to date the day. The session's own clock has no such gap.
+- **`Snapshots.of`** takes the date rather than re-deriving it, so the snapshot reports the session's
+  clock.
+
+**Why it is safe:** while a colony lives, the two clocks are identical — both are
+`startDate + steps`, and a live colony steps exactly once per tick. Confirmed against **production
+data**: the demo reported `1452-03-03` at tick 2639, and `1444-12-11 + 2639 days` is exactly
+`1452-03-03`. A new `HostedSessionTest#theSessionClockAgreesWithItsLivingColonies` pins the
+invariant, and the full reactor (engine + server 73/73) is green.
+
+**What it does *not* do yet:** nothing observable changes today, because the run loop still breaks on
+`allDead()` before the clock could matter. Phase 0 is purely enabling — it removes the *reason* a
+band cannot outlive its colony. The features that spend it (amendments 1–2, the royale endgame,
+caravan re-founding) come later and now have a clock to run on.
 
 ### Phase 1 — the lobby room (server)
 
