@@ -43,6 +43,30 @@ Confirmed with the owner (2026-07-17):
 | Information | **Spectators see everything; players see their rank window** (±1 rank, bounded above). |
 | Persistence | **Sessions and Timelines are tracked in the database**, following the existing JDBC-store pattern. Not optional — see Phase 6. |
 | AI / test sessions | Owned by a reserved **"AI"** identity (that is what the lobby shows), **uncapped by default**, and isolated by their own seed — they never touch the ranked world. |
+| Naming a run | **Deferred.** Eventually a run is named after its **country**; until then a row shows its colony. No naming UI, no name column — see below. |
+| Starting a run | **A setup panel** (seed + province) before founding, not one click. |
+| The public site | **Keep the demo for now**; it switches to the live Timeline when the **registry** lands. |
+
+### Naming, setup and the public site (decided 2026-07-17)
+
+**A run will be named after its country.** Not its colony, and not "slot 2 of 5" — so the naming
+work is *deferred rather than designed around*: a lobby row shows its colony's name today
+(`Dhenijansar · 1447-02`), which is generated, meaningful, and needs no new column or rename
+endpoint. When countries arrive the label changes in one place. The political layer already has the
+raw material — `Country` / `Province.ownerTag` / `WorldMap.provincesByOwner`
+(`docs/political-map.md`) — so this is a real destination, not a placeholder.
+
+**Founding takes a setup panel, not a button.** Seed and province are chosen before a run is
+founded. It costs a screen, but it lets a player replay a known world (the seed *is* the world) and
+it is where real game setup will grow — race, difficulty, start date. The one-click alternative was
+rejected: the survey-before-you-play moment is what the paused start already gives you, so the panel
+is not paying for that.
+
+**The public site keeps the demo** until the Timeline registry exists. The demo now reseeds itself
+when it collapses (Phase 6's `forget` path), so it self-heals rather than sitting on a permanent
+game-over — which was the objection amendment 3 answered. The switch to a live Timeline then happens
+**once**, when there is a registry to say which Timeline is current, rather than half-done twice with
+a hardcoded id.
 
 ### AI & test sessions (decided 2026-07-17)
 
@@ -410,14 +434,25 @@ spent another's save slots (which is how this surfaced: a green class, red in th
 classes now forget their runs in `@AfterEach`.
 
 
-### Phase 5 — the lobby UI (web)
+### Phase 5 — the lobby UI (web) — the only phase left
+
+Everything below is frontend; the server endpoints it needs all exist.
 
 - Grow `#ldPicker` into the lobby: server choice, then the session list + chat + play row.
-- Signed-out: list + spectate work; the composer becomes a sign-in prompt.
-- The Ranked button resolves its four faces from the session list + your colony's state.
-- A paused single-player session lands with the press-play cue.
-- Unit-test the pure parts under node (`web/js/*.test.mjs`), as `district-plots.mjs` does: the row
-  model (kind/state/survivors → label) and the Ranked button's state resolution.
+- **The list** polls `GET /api/sessions`, whose rows already carry `kind` / `date` / `watching` /
+  `mine` / `seats` / `standing` / `endReason`. A row is labelled by its **colony** for now (naming
+  is deferred to countries — see §Naming).
+- **The chat** is `GET /api/lobby/stream` (backlog replayed on connect) + `POST /api/lobby/chat`.
+  Signed-out: the list and spectating work, the composer becomes a sign-in prompt.
+- **Single Player** opens a **setup panel** (seed + province) and `POST /api/sessions`; the run lands
+  **paused** on the map with a press-play cue. A sixth run is a 409 the panel must show honestly
+  ("finish or delete one"), and a run is deletable from its row (`DELETE /api/sessions/{id}`).
+- **Ranked** resolves its faces from the list + your colony's state. Its entry point waits on the
+  **Timeline registry** — until there is a current Timeline to name, the button has nothing to point
+  at (see §The public site).
+- Unit-test the pure parts under node (`web/js/*.test.mjs`), as `district-plots.mjs` and
+  `snapshot-dedupe.mjs` do: the row model (kind/state/standing → label) and the Ranked button's state
+  resolution. Drive the real thing with `tools/webverify`.
 
 ### Phase 6 — sessions & Timelines live in the database (required) — ✅ DONE
 
