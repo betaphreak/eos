@@ -33,6 +33,16 @@ const mapImg = new Image();
 let mapReady = false;
 mapImg.onload = () => { mapReady = true; draw(); hideLoading(); };
 mapImg.src = MAP.src;
+// realm fog-of-war: a hatch tile (BUNDLE.fow) laid over the VOID beyond the active realm's crop, so
+// "off the edge of this map" reads as fogged unknown rather than flat black. Only in a realm, and only
+// where there IS void (it vanishes once the map fills the viewport at depth), so it never clutters the
+// deep view the way a full-scene hatch did.
+const fowImg = new Image();
+let fowPat = null;
+if (ACTIVE_REALM && BUNDLE.fow && BUNDLE.fow.HATCH_MED) {
+  fowImg.onload = () => { fowPat = ctx.createPattern(fowImg, "repeat"); draw(); };
+  fowImg.src = BUNDLE.fow.HATCH_MED.src;
+}
 // The ocean base + polar ice cap used to live here as ~60 lines of hardcoded paint() calls — the
 // last draws in the scene that weren't in a registry. They now live in js/sea.mjs and are ordered by
 // the SCREEN_LAYERS stack (layers.mjs); initSea wires their async art loads to a repaint.
@@ -158,7 +168,32 @@ function paintScene() {
   S.viewVersion = S.baseVersion * 16;
   renderScene();
   ctx.restore();
+  drawRealmFog();  // hatch the void beyond the realm (screen-space, over the dark fill, under the minimap)
   drawMinimap();   // the bottom-left world thumbnail + viewport rectangle tracks pan/zoom
+}
+
+// The realm's fog of war: the void beyond its crop, textured with the hatch tile so it reads as
+// "beyond the known world" (docs/realms.md §Ocean and fog). Screen-space, clipped to the void =
+// viewport minus the map rect, so it never touches the realm itself and disappears at deep zoom.
+function drawRealmFog() {
+  if (!fowPat) return;
+  const xL = cam.x + cam.k * VIEW.dx, xR = cam.x + cam.k * (VIEW.dx + VIEW.dw);
+  const yT = cam.y + cam.k * VIEW.dy, yB = cam.y + cam.k * (VIEW.dy + VIEW.dh);
+  const mx = Math.min(xL, xR), my = Math.min(yT, yB), mw = Math.abs(xR - xL), mh = Math.abs(yB - yT);
+  if (mx <= 0 && my <= 0 && mx + mw >= VIEW.w && my + mh >= VIEW.h) return;   // map fills the viewport → no void
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, VIEW.w, VIEW.h);
+  ctx.rect(mx, my, mw, mh);
+  ctx.clip("evenodd");                 // the void only — the map rect is punched out
+  ctx.globalAlpha = 0.42;
+  ctx.fillStyle = fowPat;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  // a soft dark wash so the hatch reads as gloom, not a bright grid, and deepens away from the edge
+  ctx.globalAlpha = 0.32;
+  ctx.fillStyle = "#05070c";
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+  ctx.restore();
 }
 // deterministic 0..1 per province id — a stable per-cell jitter (no Math.random, survives redraws)
 const pjit = id => ((Math.imul(id | 0, 2654435761) >>> 0) % 1000) / 1000;
@@ -395,7 +430,6 @@ function teleportMark(x, y, dest) {
 // at. The click that actually crosses realms is Phase 5 (this is the marker, not yet the affordance).
 const provAllById = BUNDLE.realms ? new Map(BUNDLE.provinces.map(p => [p.id, p])) : null;
 const realmNameOf = key => (BUNDLE.geoNames && BUNDLE.geoNames.realm && BUNDLE.geoNames.realm[key]) || key;
-const ARROW_LEN = 46, ARROW_HEAD = 12;
 
 function drawRealmArrows() {
   if (!ACTIVE_REALM || !provAllById) return;
@@ -428,39 +462,46 @@ function drawRealmArrows() {
     const label = "to " + realmNameOf(a.otherRealm);
     // every crossing gets an arrow, but a label only if it clears the ones already placed — so the six
     // clustered Deepwoods portals read as one "to Aelantir" at world zoom, separating as you zoom in.
-    const hx = ox + dx * ARROW_LEN, hy = oy + dy * ARROW_LEN, w = ctx.measureText(label).width;
-    const lx = hx + dx * 7, ly = hy + dy * 7, rx = dx >= 0 ? lx : lx - w;
-    const rect = { x0: rx, y0: ly - 8, x1: rx + w, y1: ly + 8 };
+    const lx0 = ox + dx * 22, ly0 = oy + dy * 22, w = ctx.measureText(label).width;   // label sits past the glyph
+    const rx = dx >= 0 ? lx0 : lx0 - w;
+    const rect = { x0: rx, y0: ly0 - 8, x1: rx + w, y1: ly0 + 8 };
     const show = !placed.some(r => rect.x0 < r.x1 && rect.x1 > r.x0 && rect.y0 < r.y1 && rect.y1 > r.y0);
     if (show) placed.push(rect);
-    drawRealmArrow(ox, oy, dx, dy, show ? label : null);
-    // a click target over the arrow's length — maptip.mjs turns a hit into switchRealm(otherRealm, far
-    // portal), so clicking the arrow crosses and lands on the far end (docs/realms.md §The fog... one
-    // switch-realm action). `realm`/`prov` mark it a realm arrow; `label` gives the hover affordance.
-    S.markers.push({ x: ox + dx * ARROW_LEN / 2, y: oy + dy * ARROW_LEN / 2, r: ARROW_LEN / 2 + 8,
-      label: `<b>Cross ⇄ ${realmNameOf(a.otherRealm)}</b>`, realm: a.otherRealm, prov: a.farId });
+    drawRealmPortal(ox, oy, dx, dy, show ? label : null);
+    // a click target over the portal glyph — maptip.mjs turns a hit into switchRealm(otherRealm, far
+    // portal), so clicking crosses and lands on the far end (docs/realms.md §The fog... one switch-realm
+    // action). `realm`/`prov` mark it; `label` gives the hover affordance.
+    S.markers.push({ x: ox, y: oy, r: 16,
+      label: `<b>⇄ Cross to ${realmNameOf(a.otherRealm)}</b>`, realm: a.otherRealm, prov: a.farId });
   }
   ctx.restore();
 }
 
-// a static (un-animated) red arrow from (ox,oy) along the unit direction (dx,dy), with an optional
-// upright text label past the head (dropped when a nearby arrow already carries it). ctx.font is set
-// by the caller (drawRealmArrows), the only caller.
-function drawRealmArrow(ox, oy, dx, dy, label) {
-  const hx = ox + dx * ARROW_LEN, hy = oy + dy * ARROW_LEN;       // arrowhead tip
-  const nx = -dy, ny = dx;                                        // perpendicular
-  ctx.strokeStyle = ADJ_RED; ctx.fillStyle = ADJ_RED; ctx.lineWidth = 3; ctx.lineCap = "round";
-  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(hx, hy); ctx.stroke();
+// The crossing to another realm is a FEY PORTAL, not a military arrow — so it reads as gladeway magic:
+// a soft teal glyph at the in-realm endpoint (a glowing ring with a dark eye), a chevron nodding toward
+// the fog it opens into, and an optional teal label. ctx.font is set by the caller (drawRealmArrows).
+const PORTAL_R = 8;
+function drawRealmPortal(ox, oy, dx, dy, label) {
+  const glow = ctx.createRadialGradient(ox, oy, 0, ox, oy, PORTAL_R * 2.4);
+  glow.addColorStop(0, "rgba(120,236,214,0.5)");
+  glow.addColorStop(0.55, "rgba(90,200,186,0.18)");
+  glow.addColorStop(1, "rgba(90,200,186,0)");
+  ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(ox, oy, PORTAL_R * 2.4, 0, 7); ctx.fill();
+  ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.strokeStyle = "#7cf0dc";
+  ctx.beginPath(); ctx.arc(ox, oy, PORTAL_R, 0, 7); ctx.stroke();                       // the portal ring
+  ctx.fillStyle = "rgba(10,20,22,0.9)"; ctx.beginPath(); ctx.arc(ox, oy, PORTAL_R * 0.45, 0, 7); ctx.fill();
+  // a chevron just outside the ring, nodding the way to the other realm
+  const cx = ox + dx * (PORTAL_R + 7), cy = oy + dy * (PORTAL_R + 7), nx = -dy, ny = dx, s = 5;
   ctx.beginPath();
-  ctx.moveTo(hx, hy);
-  ctx.lineTo(hx - dx * ARROW_HEAD + nx * ARROW_HEAD * 0.6, hy - dy * ARROW_HEAD + ny * ARROW_HEAD * 0.6);
-  ctx.lineTo(hx - dx * ARROW_HEAD - nx * ARROW_HEAD * 0.6, hy - dy * ARROW_HEAD - ny * ARROW_HEAD * 0.6);
-  ctx.closePath(); ctx.fill();
+  ctx.moveTo(cx - dx * s + nx * s, cy - dy * s + ny * s);
+  ctx.lineTo(cx, cy);
+  ctx.lineTo(cx - dx * s - nx * s, cy - dy * s - ny * s);
+  ctx.stroke();
   if (!label) return;
   ctx.textAlign = dx >= 0 ? "left" : "right"; ctx.textBaseline = "middle";
-  const lx = hx + dx * 7, ly = hy + dy * 7;
-  ctx.lineWidth = 3; ctx.strokeStyle = "rgba(8,10,14,0.9)"; ctx.strokeText(label, lx, ly);
-  ctx.fillStyle = "#ff6a5a"; ctx.fillText(label, lx, ly);
+  const lx = cx + dx * 7, ly = cy + dy * 7;
+  ctx.lineWidth = 3; ctx.strokeStyle = "rgba(6,12,14,0.92)"; ctx.strokeText(label, lx, ly);
+  ctx.fillStyle = "#a6f7e6"; ctx.fillText(label, lx, ly);
 }
 
 // place province name labels over the map with a halo, skipping any that would
