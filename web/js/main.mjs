@@ -39,9 +39,10 @@ mapImg.src = MAP.src;
 // deep view the way a full-scene hatch did.
 const fowImg = new Image();
 let fowPat = null;
-if (ACTIVE_REALM && BUNDLE.fow && BUNDLE.fow.HATCH_MED) {
+const _fowTile = BUNDLE.fow && (BUNDLE.fow.PARCHMENT || BUNDLE.fow.HATCH_MED);   // EU4 terra-incognita parchment
+if (ACTIVE_REALM && _fowTile) {
   fowImg.onload = () => { fowPat = ctx.createPattern(fowImg, "repeat"); draw(); };
-  fowImg.src = BUNDLE.fow.HATCH_MED.src;
+  fowImg.src = _fowTile.src;
 }
 // The ocean base + polar ice cap used to live here as ~60 lines of hardcoded paint() calls — the
 // last draws in the scene that weren't in a registry. They now live in js/sea.mjs and are ordered by
@@ -172,28 +173,34 @@ function paintScene() {
   drawMinimap();   // the bottom-left world thumbnail + viewport rectangle tracks pan/zoom
 }
 
-// The realm's fog of war: the void beyond its crop, textured with the hatch tile so it reads as
-// "beyond the known world" (docs/realms.md §Ocean and fog). Screen-space, clipped to the void =
-// viewport minus the map rect, so it never touches the realm itself and disappears at deep zoom.
+// The realm's fog of war: EVERY space not covered by one of the realm's provinces — the outer ocean
+// and the void beyond the crop — washed with the hatch tile, so the realm reads as land + its own
+// waters in a sea of fog (docs/realms.md §Ocean and fog).
+//
+// Built on a CACHED offscreen layer, rebuilt only when the camera moves (viewVersion): fill the whole
+// viewport with fog, then erase the on-screen province polygons with destination-out. destination-out
+// is idempotent over the overlapping shared edges of adjacent provinces — so, unlike an even-odd clip
+// of the complement, it leaves no fogged grid along province borders. Each idle frame is then just a
+// blit; only a pan/zoom pays the rebuild.
+let _fogCanvas = null, _fogVer = -1;
 function drawRealmFog() {
   if (!fowPat) return;
-  const xL = cam.x + cam.k * VIEW.dx, xR = cam.x + cam.k * (VIEW.dx + VIEW.dw);
-  const yT = cam.y + cam.k * VIEW.dy, yB = cam.y + cam.k * (VIEW.dy + VIEW.dh);
-  const mx = Math.min(xL, xR), my = Math.min(yT, yB), mw = Math.abs(xR - xL), mh = Math.abs(yB - yT);
-  if (mx <= 0 && my <= 0 && mx + mw >= VIEW.w && my + mh >= VIEW.h) return;   // map fills the viewport → no void
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, 0, VIEW.w, VIEW.h);
-  ctx.rect(mx, my, mw, mh);
-  ctx.clip("evenodd");                 // the void only — the map rect is punched out
-  ctx.globalAlpha = 0.42;
-  ctx.fillStyle = fowPat;
-  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
-  // a soft dark wash so the hatch reads as gloom, not a bright grid, and deepens away from the edge
-  ctx.globalAlpha = 0.32;
-  ctx.fillStyle = "#05070c";
-  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
-  ctx.restore();
+  const dw = cv.width, dh = cv.height;
+  if (_fogVer !== S.viewVersion || !_fogCanvas || _fogCanvas.width !== dw || _fogCanvas.height !== dh) {
+    if (!_fogCanvas) _fogCanvas = document.createElement("canvas");
+    _fogCanvas.width = dw; _fogCanvas.height = dh;
+    const fc = _fogCanvas.getContext("2d");
+    fc.setTransform(VIEW.dpr, 0, 0, VIEW.dpr, 0, 0);
+    fc.clearRect(0, 0, VIEW.w, VIEW.h);
+    // EU4 terra-incognita: the unexplored sea reads as old map parchment (nearly opaque so it covers
+    // the water, with a faint sepia deepening so it isn't a flat sheet).
+    fc.globalAlpha = 0.9; fc.fillStyle = fc.createPattern(fowImg, "repeat"); fc.fillRect(0, 0, VIEW.w, VIEW.h);
+    fc.globalAlpha = 0.14; fc.fillStyle = "#3a2c18"; fc.fillRect(0, 0, VIEW.w, VIEW.h);
+    fc.globalAlpha = 1; fc.globalCompositeOperation = "destination-out";
+    for (const p of P) if (p.rings && provOnScreen(p)) fc.fill(provPath(p));   // punch the realm's provinces clear
+    _fogVer = S.viewVersion;
+  }
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(_fogCanvas, 0, 0); ctx.restore();
 }
 // deterministic 0..1 per province id — a stable per-cell jitter (no Math.random, survives redraws)
 const pjit = id => ((Math.imul(id | 0, 2654435761) >>> 0) % 1000) / 1000;
