@@ -239,6 +239,11 @@ const provinces = [...shipped].map(id => byId.get(id)).filter(Boolean).map(p => 
 //   lat = mercatorLatitude(pixel y)                 (web-mercator in pixel y)
 // so lon/lat invert back to the exact source pixel, and a crop aligns 1:1 with
 // the province dots as long as the page projects with the same two formulas.
+// realm fog-mask lookup state, declared here (not by provinceRealmLookup/realmAt below) because the
+// per-realm bakes call those at module-eval, before a `let` further down would leave its dead zone.
+let _prLookup = null;
+const PBMP_ROW = 5632 * 3;   // provinces.bmp: 24-bit, width a multiple of 4 → no row padding
+
 const map = bakeTerrain(provinces);
 
 // ---- per-realm crops + background bakes (docs/realms.md Phase 3 — Crop and bake) ----
@@ -252,7 +257,7 @@ for (const rk of REALM_KEYS) {
   const rprovs = provinces.filter(p => p.realm === rk);
   if (!rprovs.length) { console.warn(`  realm ${rk}: no provinces — skipped`); continue; }
   assertContiguousX(rprovs, rk);
-  realms[rk] = { map: bakeTerrain(rprovs, `terrain/terrain-${rk}`) };
+  realms[rk] = { map: bakeTerrain(rprovs, `terrain/terrain-${rk}`, rk) };
   console.log(`  realm ${rk}: ${rprovs.length} provinces, crop ${realms[rk].map.dw}×${realms[rk].map.dh}px`);
 }
 
@@ -324,7 +329,7 @@ await (async () => {
   await civ4Prefetch({ arts, files: ['CIV4BonusInfos.xml', 'CIV4ArtDefines_Bonus.xml', 'res/Fonts/GameFont_120.tga'] });
 })();
 // Warm the Anbennar trade-good icon strip + its ordering source for bakeTradeGoodIcons (see anbennar.mjs).
-await anbPrefetch(['gfx/interface/resources.dds', 'common/tradegoods/00_tradegoods.txt', 'map/terrain.bmp']);
+await anbPrefetch(['gfx/interface/resources.dds', 'common/tradegoods/00_tradegoods.txt', 'map/terrain.bmp', 'map/provinces.bmp', 'map/definition.csv']);
 
 const terrainColors = terrainDisplayColors(terrainRealColors());
 const terrainLayer = terrainLayerOrders();   // TERRAIN_* -> Civ4 LayerOrder (drives edge blending)
@@ -489,7 +494,7 @@ console.log(`  improvement overlays: ${improvementOverlays ? Object.keys(improve
 // ---------------------------------------------------------------------------
 // terrain baking
 // ---------------------------------------------------------------------------
-function bakeTerrain(provs, name = 'terrain/terrain') {
+function bakeTerrain(provs, name = 'terrain/terrain', realmKey = null) {
   // the EU4 terrain raster is no longer vendored under data/anbennar — prefer a local copy if present,
   // else the on-demand Anbennar cache (warmed by the anbPrefetch of map/terrain.bmp above)
   const vendored = path.join(ROOT, 'data/anbennar/terrain.bmp');
@@ -514,6 +519,13 @@ function bakeTerrain(provs, name = 'terrain/terrain') {
   const buf = fs.readFileSync(BMP);
   const dataOff = buf.readUInt32LE(10);
   const idxAt = (x, y) => buf[dataOff + (H - 1 - y) * W + x];  // 8-bit, bottom-up, W is 4-aligned
+  // realm fog mask (docs/realms.md §The background is baked): when baking one realm, resolve each land
+  // pixel's province→realm from provinces.bmp and DROP the pixels that belong to another realm (the
+  // Atlantic overlap — Brazil's tip in Halcann's crop, Cannor in Aelantir's). A dropped pixel is
+  // treated exactly like a sea sub-pixel below (excluded from colour, lowers alpha), so foreign land
+  // reads as the realm's surrounding ocean rather than a stray coastline. Pixel-accurate to the paint,
+  // free per frame. The whole-world bake passes realmKey=null and masks nothing.
+  const pr = realmKey ? provinceRealmLookup() : null;
   const TINT = terrainTint(terrainRealColors());
   // latitude cooling: terrain.bmp ignores latitude (it paints the far north green), so tint the
   // high-latitude land pixels toward a pale tundra tone by the C2C temperature model — mirrors
@@ -548,6 +560,7 @@ function bakeTerrain(provs, name = 'terrain/terrain') {
           ntot++;
           const idx = idxAt(xx, yy);
           if (WATER.has(idx)) continue;      // sea sub-pixel: excluded from colour, lowers alpha
+          if (pr && realmAt(pr, xx, yy) !== realmKey) continue;   // foreign land → fogged (see the mask note above)
           const t = TINT[idx]; r += t[0]; g += t[1]; b += t[2]; nl++;
         }
       const k = j * dw + i, o = k * 3;
@@ -586,6 +599,39 @@ function bakeTerrain(provs, name = 'terrain/terrain') {
     // places dots at (sx-x0)/(x1-x0), (sy-y0)/(y1-y0) over this same image.
     x0, y0, x1, y1, W, H, dw, dh,
   };
+}
+
+// ---- realm fog mask lookup: provinces.bmp (province-per-pixel) → realm ----
+// Lazily loaded once and shared across the per-realm bakes. provinces.bmp is a 24-bit BGR raster
+// (one unique colour per province, bottom-up); definition.csv maps that colour → province id, and
+// the shipped provinces carry their realm (Phase 1). We fold both into one colour→realm map so a
+// pixel resolves with a single lookup. This is the same raster/decode ProvinceExporter reads on the
+// Java side (colour key = r<<16 | g<<8 | b). `_prLookup`/`PBMP_ROW` are declared up by the bake calls
+// (they run at module-eval before this line, so a `let` here would sit in its temporal dead zone).
+function provinceRealmLookup() {
+  if (_prLookup) return _prLookup;
+  const bmpPath = anbGet('map/provinces.bmp');
+  const defPath = anbGet('map/definition.csv');
+  if (!bmpPath || !defPath)
+    throw new Error('provinces.bmp / definition.csv not found (Anbennar cache) — cannot bake the realm fog mask');
+  const colorToRealm = new Map();
+  for (const line of fs.readFileSync(defPath, 'utf8').split(/\r?\n/).slice(1)) {   // slice(1): skip header
+    const t = line.trim();
+    if (!t || t.startsWith('#')) continue;
+    const p = t.split(';');
+    if (p.length < 4) continue;
+    const id = +p[0], r = +p[1], g = +p[2], b = +p[3];
+    if (!Number.isFinite(id)) continue;
+    const prov = byId.get(id);
+    if (prov && prov.realm) colorToRealm.set((r << 16) | (g << 8) | b, prov.realm);
+  }
+  const buf = fs.readFileSync(bmpPath);
+  _prLookup = { buf, dataOff: buf.readUInt32LE(10), colorToRealm };
+  return _prLookup;
+}
+function realmAt(pr, x, y) {
+  const o = pr.dataOff + (2048 - 1 - y) * PBMP_ROW + x * 3;   // bottom-up
+  return pr.colorToRealm.get((pr.buf[o + 2] << 16) | (pr.buf[o + 1] << 8) | pr.buf[o]);   // BGR → RGB key
 }
 
 // EU4 terrain.bmp palette index -> a dark, in-palette colour. The BMP's own

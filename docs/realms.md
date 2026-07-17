@@ -886,11 +886,19 @@ out of the same bake. Verify per realm with `tools/webverify`.
 > void can be panned into view. Also removed `MIN_LOADING_MS` (the splash now clears on first paint, as
 > its own comment already promised).
 >
-> **Part 2, still pending: the baked realm fog mask** (§The background is baked). A realm's crop
-> rectangle contains a sliver of the neighbouring realm across the Atlantic (Brazil's tip on Halcann's
-> west edge, Cannor on Aelantir's east edge, foreign land around Hinuilands' two provinces). Masking it
-> needs a per-pixel province→realm resolve from `provinces.bmp`, which `build.mjs` does not read yet
-> (only `terrain.bmp`) — the bigger lift, done next.
+> **As built (part 2 — the baked realm fog mask).** `bakeTerrain` now takes a `realmKey`; when set, a
+> lazy `provinceRealmLookup()` reads `provinces.bmp` (24-bit BGR, one colour per province) + `definition.csv`
+> (colour→id, the same decode `ProvinceExporter` uses, key `r<<16|g<<8|b`) into one colour→realm map, and
+> each source land pixel whose province belongs to another realm is dropped exactly like a sea sub-pixel —
+> so the Atlantic overlap (Brazil's tip on Halcann's west edge, Cannor on Aelantir's east edge, the foreign
+> landmass around Hinuilands' two provinces) reads as the realm's surrounding ocean instead of a stray
+> coastline. Pixel-accurate to the paint, free per frame, whole-world bake unaffected (`realmKey=null`).
+> Verified: Hinuilands now shows only its two provinces in open sea; Aelantir's east edge is clean.
+>
+> Still deferred to **Phase 4**: foreign province *outlines/dots/labels* still draw at the crop edge —
+> `renderScene` iterates every province, so suppressing them is the "filter the province set to the active
+> realm" work (also the modest per-frame perf lever), which sits with the rest of the fog (rim, arrow,
+> cross-realm line suppression).
 
 **Phase 4 — Fog the void.** The runtime half of the fog, on top of Phase 3's baked mask: sea X-clip;
 per-realm `rollupTier` label centroids; **suppress cross-realm adjacency lines** (§The fog must not be
