@@ -1,7 +1,8 @@
 # Design & plan: the Spectator Lobby, single player & ranked Timelines
 
-**Status:** Phases **0, 2, 3 (core) and 6** are SHIPPED — see each below. Phases 1 (lobby room),
-4 (single player) and 5 (lobby UI) remain. **Date:** 2026-07-17.
+**Status:** Phases **0, 1, 2, 3 (core) and 6** are SHIPPED — see each below. The whole server side is
+in; what remains is **4** (single player) and **5** (the lobby UI), plus the Timeline registry and
+scoring. **Date:** 2026-07-17.
 **Depends on:** [`docs/authentication.md`](authentication.md) (accounts + ownership, Phases 1–3 shipped),
 [`docs/client-server.md`](client-server.md) (the hosted-session spine), [`docs/game-over.md`](game-over.md)
 (the terminal state a run ends on).
@@ -271,17 +272,37 @@ invariant, and the full reactor (engine + server 73/73) is green.
 band cannot outlive its colony. The features that spend it (amendments 1–2, the royale endgame,
 caravan re-founding) come later and now have a clock to run on.
 
-### Phase 1 — the lobby room (server)
+### Phase 1 — the lobby room ✅ DONE (2026-07-17)
 
-- **A lobby chat room**, distinct from any session. `ChatStore` is keyed by session id, so the room
-  is a **reserved key** (e.g. `@lobby`) — same persistence, same replay, same server-resolved name.
-- **Its own SSE feed.** Session chat rides the session's snapshot stream; the lobby has no session,
-  so it needs a small `LobbyController`: `GET /api/lobby/stream` (chat + session-list changes),
-  `POST /api/lobby/chat` (any signed-in user, mirroring `SessionController#chat`).
-- **Enrich the session list.** `GET /api/sessions` gains what a row needs: kind (timeline / demo /
-  single-player), in-game date, spectator count, and for a Timeline its survivor tally.
-- **Filter by visibility**: public sessions (Timeline + demo) to everyone, plus the caller's own save
-  slots when signed in.
+**Shipped:**
+- **`LobbyRoom`** — the one chat channel that belongs to no session, so you can talk *before* you
+  have picked anything (what makes the lobby a place rather than a menu). It is a `ChatStore` room
+  under the reserved key **`@lobby`** rather than a store of its own: the store is keyed by session
+  id, and a key no `<scenario>-<seed>` can produce buys the same persistence, the same backlog
+  replay and the same server-resolved display names for free. Durable exactly when chat is.
+- **`LobbyController`** — `GET /api/lobby/stream` (chat SSE, backlog replayed on connect) and
+  `POST /api/lobby/chat` (any signed-in user; the poster's name is resolved server-side, never taken
+  from the body). Listening is anonymous, talking is not — the house rule everywhere here.
+- **`SseFeed`** — the SSE transport, extracted from `SessionController` now that a second feed
+  exists. This is the refactor flagged earlier as coming due *at the second caller, not before*:
+  queueing, the drain thread, drop-oldest and unsubscribe-on-disconnect live there, and a controller
+  now says only what its feed carries and when it ends. `SessionController` 452 → 389 lines.
+- **The enriched list** — `GET /api/sessions` rows now carry `kind` (timeline / demo /
+  single-player), the in-game `date`, `watching` (the eye count, from `HostedSession.spectators()`),
+  `mine`, and for a Timeline `seats`/`standing` — how the contest stands.
+- **Visibility** — public runs (a Timeline, the demo) are listed for everyone including the signed
+  out; a player's save slots only for them; admins see all.
+
+**Deviation from the plan, deliberate:** the lobby feed carries **chat only**. The plan had it
+pushing session-list changes too, but a browser list does not need frame-accurate pushes — the lobby
+refreshes `GET /api/sessions`, which is one fewer moving part and no worse to look at. Chat genuinely
+does need a push: a conversation on a poll is not a conversation.
+
+**Verified:** server **103/103** (+7), and live over the wire: a listener received a message pushed
+as it was posted; a **late arrival got the three-message backlog replayed and then the next message
+live**; anonymous posting is 401. Those 103 include every session-stream test, which is what makes
+the `SseFeed` extraction a refactor rather than a rewrite.
+
 
 ### Phase 2 — per-colony ownership ✅ DONE (2026-07-17)
 

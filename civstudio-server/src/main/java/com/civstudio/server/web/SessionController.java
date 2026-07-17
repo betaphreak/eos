@@ -4,11 +4,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,7 +26,6 @@ import com.civstudio.server.render.SessionSnapshot;
 import com.civstudio.settlement.Settlement;
 
 import jakarta.servlet.http.HttpServletRequest;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * The REST + SSE surface of the spectator/interactive server (see {@code docs/client-server.md}),
@@ -53,10 +49,6 @@ import tools.jackson.databind.ObjectMapper;
 @RequestMapping("/api/sessions")
 public class SessionController {
 
-	// per-connection SSE buffer depth; if a client falls this far behind, the oldest frames are
-	// dropped rather than blocking the session thread
-	private static final int SSE_QUEUE_CAPACITY = 64;
-
 	// max lobby chat message length (longer is truncated)
 	private static final int MAX_CHAT_LEN = 280;
 
@@ -66,35 +58,74 @@ public class SessionController {
 	private static final int MAX_EVENT_LIMIT = 512;
 
 	private final SessionHost host;
-	private final ObjectMapper json;
 	private final CurrentUserResolver currentUser;
 	private final SessionAuthz authz;
+	private final SseFeed feed;
 
-	public SessionController(SessionHost host, ObjectMapper json, CurrentUserResolver currentUser,
-			SessionAuthz authz) {
+	public SessionController(SessionHost host, CurrentUserResolver currentUser,
+			SessionAuthz authz, SseFeed feed) {
 		this.host = host;
-		this.json = json;
 		this.currentUser = currentUser;
 		this.authz = authz;
+		this.feed = feed;
 	}
 
+	/**
+	 * The hosted sessions — the lobby's list (see {@code docs/spectator-lobby.md} Phase 1).
+	 * <p>
+	 * <b>Visibility:</b> public runs (a Timeline, the demo) are listed for everyone, including the
+	 * signed-out — spectating is never gated. A player's own save slots are listed only to them: a
+	 * private run is nobody else's business, and a lobby that leaked them would be a lobby people
+	 * stopped using. Admins see everything, since they are the ones asked to fix it.
+	 *
+	 * @param http the request (the caller's identity decides what their own means)
+	 * @return one row per visible session
+	 */
 	@GetMapping
-	public List<Map<String, Object>> list() {
+	public List<Map<String, Object>> list(HttpServletRequest http) {
+		String me = currentUser.userId(http);
+		boolean admin = currentUser.isAdmin(http);
 		List<Map<String, Object>> out = new ArrayList<>();
 		for (HostedSession hs : host.list()) {
-			// a mutable map, not Map.of: endReason is null unless the run ended itself, and Map.of
-			// rejects null values
+			if (!admin && !isPublic(hs) && !java.util.Objects.equals(hs.owner(), me))
+				continue;   // someone else's private run
+			// a mutable map, not Map.of: the nullable fields below would make Map.of throw
 			Map<String, Object> row = new LinkedHashMap<>();
 			row.put("id", hs.id());
 			row.put("scenario", hs.spec().scenario());
+			row.put("kind", kindOf(hs));
 			row.put("seed", hs.spec().seed());
 			row.put("state", hs.state().name());
 			row.put("tick", hs.tick());
+			row.put("date", hs.date().toString());     // the in-game date a lobby row shows
+			row.put("watching", hs.spectators());      // 👁 on the row
+			row.put("mine", me != null && me.equals(hs.owner()));
+			if (hs.isTimeline()) {
+				// a Timeline's row is about the contest: how many are still standing, of how many
+				// founded. (Amendment 4 — a player with a living colony should see a rank window
+				// rather than the whole board — is a later, separate change.)
+				row.put("seats", hs.colonies().size());
+				row.put("standing", hs.survivors());
+			}
 			if (hs.endReason() != null)
 				row.put("endReason", hs.endReason());
 			out.add(row);
 		}
 		return out;
+	}
+
+	// A public run is one anybody may watch: a ranked Timeline (the point of a leaderboard is
+	// watching the top run) and any unowned session — the demo. A run with an owner is that player's
+	// save slot, and private.
+	private static boolean isPublic(HostedSession hs) {
+		return hs.isTimeline() || hs.owner() == null;
+	}
+
+	// what the lobby calls this run
+	private static String kindOf(HostedSession hs) {
+		if (hs.isTimeline())
+			return "timeline";
+		return hs.owner() == null ? "demo" : "single-player";
 	}
 
 	@PostMapping
@@ -300,74 +331,13 @@ public class SessionController {
 		if (hs == null)
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no session " + id);
 
-		SseEmitter emitter = new SseEmitter(Long.MAX_VALUE); // no timeout — an open-ended feed
-		BlockingQueue<Frame> frames = new ArrayBlockingQueue<>(SSE_QUEUE_CAPACITY);
-		// snapshots (session thread) and chat (an HTTP poster thread) both enqueue here, dropping the
-		// oldest frame if the client has fallen behind — so neither the sim nor a chatter ever blocks
-		// on a slow spectator. The connection's own virtual thread drains to the socket.
-		AutoCloseable sub = hs.subscribe(snap -> offerFrame(frames, new Frame(null, toJson(snap))));
-		AutoCloseable chatSub = hs.subscribeChat(msg -> offerFrame(frames, new Frame("chat", toJson(msg))));
-		Thread drainer = Thread.ofVirtual().name("sse-" + id).start(() -> {
-			try {
-				while (true) {
-					Frame f = frames.take();
-					SseEmitter.SseEventBuilder ev = SseEmitter.event().data(f.data(), MediaType.TEXT_PLAIN);
-					if (f.event() != null)
-						ev.name(f.event()); // "chat" → the client's chat listener; null → default snapshot
-					emitter.send(ev);
-					// once the run is over (stopped OR game over) and its final frame is flushed, end
-					// the stream (rather than leaving an open async request pinning the server on
-					// shutdown). Terminal-state check, not a STOPPED comparison: a GAME_OVER session
-					// is just as finished, and would otherwise hold this emitter open forever.
-					if (hs.isTerminal() && frames.isEmpty())
-						break;
-				}
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			} catch (Exception disconnected) {
-				// client closed the tab / emitter completed — fall through to unsubscribe
-			} finally {
-				closeQuietly(sub);
-				closeQuietly(chatSub);
-				try {
-					emitter.complete();
-				} catch (RuntimeException ignored) {
-					// completion is best-effort
-				}
-			}
-		});
-		Runnable cleanup = () -> {
-			closeQuietly(sub);
-			closeQuietly(chatSub);
-			drainer.interrupt();
-		};
-		emitter.onCompletion(cleanup);
-		emitter.onTimeout(cleanup);
-		emitter.onError(t -> cleanup.run());
-		return emitter;
-	}
-
-	private String toJson(Object value) {
-		try {
-			return json.writeValueAsString(value);
-		} catch (RuntimeException e) {
-			return null;
-		}
-	}
-
-	// drop-oldest enqueue: never block the producer (session thread / chat poster) on a slow client
-	private static void offerFrame(BlockingQueue<Frame> q, Frame f) {
-		if (f.data() == null)
-			return; // a serialization failure — skip this frame rather than enqueue a null
-		if (!q.offer(f)) {
-			q.poll();
-			q.offer(f);
-		}
-	}
-
-	// one SSE frame: the payload plus its event name — null is the default ("message") event, a
-	// snapshot; "chat" is a lobby message the client's chat listener handles separately
-	private record Frame(String event, String data) {
+		// The transport is SseFeed's problem (queueing, the drain thread, drop-oldest, unsubscribing);
+		// what belongs HERE is only what this feed carries and when it ends. It ends on the run being
+		// terminal — stopped OR game over — since a finished session would otherwise hold the request
+		// open forever.
+		return feed.open("session-" + id, hs::isTerminal, sink -> List.of(
+				hs.subscribe(snap -> sink.publish(null, snap)),      // default event: the snapshot
+				hs.subscribeChat(msg -> sink.publish("chat", msg))));  // the client's chat listener
 	}
 
 	private static void closeQuietly(AutoCloseable sub) {

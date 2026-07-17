@@ -456,6 +456,16 @@ public final class HostedSession {
 		return session;
 	}
 
+	/**
+	 * How many connections are watching this run right now — the eye count on a lobby row. Counts the
+	 * snapshot subscribers (open SSE feeds), which is what "watching" means here.
+	 *
+	 * @return the spectator count
+	 */
+	public int spectators() {
+		return subscribers.size();
+	}
+
 	/** The session's colonies. */
 	public List<Settlement> colonies() {
 		return java.util.Collections.unmodifiableList(colonies);
