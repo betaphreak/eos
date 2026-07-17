@@ -33,8 +33,19 @@ const check = (ok, what) => { console.log(`${ok ? '  ok  ' : '  FAIL'} ${what}`)
 // CACHED, so the app's own later import of live.mjs gets the same rejection and Live mode never
 // starts at all. The probe broke the thing it was measuring. The board's host un-hiding is the same
 // signal (hud(true) → showNotify(true)) and costs nothing.
+// Also waits out the loading splash (#loading, z-index 50). The board sits inside .stage at z-index 5,
+// so it renders BEHIND the splash — every DOM assertion here passes while it is still up, and only
+// the screenshot gives the game away. Against a remote site the prefetch takes long enough that a
+// shot taken on the DOM signal alone is a picture of the loading screen.
 const waitForLive = async () => page.waitForFunction(
-  () => { const h = document.getElementById('notifyHost'); return !!h && !h.hidden; },
+  () => {
+    const h = document.getElementById('notifyHost');
+    const load = document.getElementById('loading');
+    // the splash fades out via a `gone` CLASS (opacity 0), never `hidden`/display:none — so that is
+    // the only signal that reads true once it is actually out of the way
+    const splashUp = load && !load.classList.contains('gone');
+    return !!h && !h.hidden && !splashUp;
+  },
   null, { timeout: 120000 });
 
 await page.goto(url, { waitUntil: 'load' });
