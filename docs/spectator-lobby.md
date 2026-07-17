@@ -282,14 +282,37 @@ caravan re-founding) come later and now have a clock to run on.
 - **Filter by visibility**: public sessions (Timeline + demo) to everyone, plus the caller's own save
   slots when signed in.
 
-### Phase 2 — per-colony ownership (server, the seam change)
+### Phase 2 — per-colony ownership ✅ DONE (2026-07-17)
 
-- **A colony carries an owner.** `HostedSession` grows a colony→owner map (the session-level `owner`
-  stays, meaning "who owns the *run*" — null/house for the Timeline).
-- **Commands name a colony** and are accepted only from its owner; the existing owner check moves
-  from session to colony. Single-player is the degenerate case (one colony, one owner) and must keep
-  working unchanged.
-- **`/control` on the Timeline is admin-only**, refused for players.
+The seam change: ownership asks about the **colony**, not the run.
+
+**Shipped:**
+- **`HostedSession.ownerOf(colonyName)` / `claimColony(colonyName, userId)` / `colonyByName(...)`.**
+  A `colonyOwners` map holds the claims; `ownerOf` falls back to the run's owner when a colony is
+  unclaimed, which is exactly what keeps today's sessions behaving as before (a single-player
+  colony answers with its owner; the unowned demo's answers `null` = open to any signed-in user).
+  A seat cannot be taken from under its owner: re-claiming for the same user is a no-op, claiming
+  someone else's throws.
+- **`SetTaxRateCommand` names its colony.** This was the real bug in waiting: `apply()` looped over
+  **every colony in the session** and set the lever on all of them. In a Timeline, one player's tax
+  command would have moved every rival's taxes. It now moves the named colony only. The colony is
+  named (not indexed) because names are drawn from the seed and so are stable across a replay.
+- **`POST /commands` gained `colony`**, gated by `denyColonyWrite` — the caller must own *that*
+  colony (admins bypass; an unknown colony is a 404, not a silent no-op). `submit_command` over MCP
+  takes the same parameter, so an agent is held to the same rule.
+- **Replay compatibility**: a `null` colony means "every colony" — what pre-Phase-2 commands *meant
+  when they were issued* — and the codec omits the field entirely for them, so old rows in the
+  command log replay to the state the run actually had. Pinned by `CommandCodecTest`.
+
+**Verified:** server **78/78**, with 4 new cases — a command gated on the colony's owner rather than
+the run's; a *claimed* colony belonging to its player even though the run is house-owned (the shape
+a Timeline needs); the target surviving the persistence round-trip; and a pre-Phase-2 row still
+meaning every colony.
+
+**Deferred to Phase 3 (with the Timeline that needs it):** `/control` is still gated on the run's
+owner, which means an *unowned* session is controllable by any signed-in user — fine for the demo,
+wrong for a Timeline, where the clock must be **admins only**. There is no Timeline yet to gate, and
+inventing a "shared session" flag before the scenario exists would be guesswork.
 
 ### Phase 3 — the ranked Timeline (server)
 

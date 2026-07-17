@@ -148,8 +148,10 @@ public class SessionController {
 		HostedSession hs = host.get(id);
 		if (hs == null)
 			return notFound(id);
-		// like control, submitting a command requires a signed-in user (owner for an owned session)
-		ResponseEntity<Object> denied = denyWrite(hs, http);
+		// a command acts on a COLONY, so it is that colony's owner who may submit it — not the run's
+		// (docs/spectator-lobby.md Phase 2). They coincide for a single-player run and the demo.
+		String colony = req.colony() == null || req.colony().isBlank() ? null : req.colony();
+		ResponseEntity<Object> denied = denyColonyWrite(hs, colony, http);
 		if (denied != null)
 			return denied;
 		String type = req.type() == null ? "" : req.type();
@@ -163,9 +165,16 @@ public class SessionController {
 				double rate = req.rate() != null ? req.rate() : 0;
 				if (!(rate >= 0 && rate <= 1))
 					return ResponseEntity.badRequest().body(Map.of("error", "rate must be in [0,1], got " + rate));
-				hs.submit(new SetTaxRateCommand(tick, lever, rate));
-				return ResponseEntity.status(202).body(Map.of("accepted", true, "type", type,
-						"lever", lever.name(), "rate", rate, "tick", tick));
+				hs.submit(new SetTaxRateCommand(tick, colony, lever, rate));
+				Map<String, Object> ok = new LinkedHashMap<>();
+				ok.put("accepted", true);
+				ok.put("type", type);
+				if (colony != null)
+					ok.put("colony", colony);
+				ok.put("lever", lever.name());
+				ok.put("rate", rate);
+				ok.put("tick", tick);
+				return ResponseEntity.status(202).body(ok);
 			}
 			default -> {
 				return ResponseEntity.badRequest().body(Map.of("error", "unknown command type: " + type));
@@ -331,6 +340,26 @@ public class SessionController {
 		return null;
 	}
 
+	// May this request command `colonyName` (null = the whole run, i.e. every colony)? The Phase-2
+	// question: a session can hold many players' colonies, so ownership is asked of the COLONY.
+	// Unchanged for today's one-colony runs, where a colony's owner IS the run's owner.
+	private ResponseEntity<Object> denyColonyWrite(HostedSession hs, String colonyName,
+			HttpServletRequest http) {
+		if (colonyName == null)
+			return denyWrite(hs, http); // no target named: the run's owner is the gate, as before
+		String user = currentUser.userId(http);
+		if (user == null)
+			return ResponseEntity.status(401).body(Map.of("error", "sign in to command a colony"));
+		if (hs.colonyByName(colonyName) == null)
+			return ResponseEntity.status(404)
+					.body(Map.of("error", "no colony " + colonyName + " in session " + hs.id()));
+		String colonyOwner = hs.ownerOf(colonyName);
+		if (colonyOwner != null && !colonyOwner.equals(user) && !currentUser.isAdmin(http))
+			return ResponseEntity.status(403)
+					.body(Map.of("error", "not the owner of colony " + colonyName));
+		return null;
+	}
+
 	private static ResponseEntity<Object> notFound(String id) {
 		return ResponseEntity.status(404).body(Map.of("error", "no session " + id));
 	}
@@ -358,8 +387,13 @@ public class SessionController {
 	public record ControlRequest(String action, Long value) {
 	}
 
-	/** Body of {@code POST /api/sessions/{id}/commands}. */
-	public record CommandRequest(String type, String lever, Double rate, Long tick) {
+	/**
+	 * Body of {@code POST /api/sessions/{id}/commands}. {@code colony} names the colony the command
+	 * acts on — required to act in a session holding more than one, since a lever must move the
+	 * caller's own colony and no one else's; optional (and meaning "the one colony") in a
+	 * single-colony run. See {@code docs/spectator-lobby.md} Phase 2.
+	 */
+	public record CommandRequest(String type, String colony, String lever, Double rate, Long tick) {
 	}
 
 	/** Body of {@code POST /api/sessions/{id}/chat}. */

@@ -2,6 +2,7 @@ package com.civstudio.server.web;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -123,6 +124,65 @@ class SessionOwnershipTest {
 
 		assertEquals(403, control(id, "bob"));
 		assertEquals(200, control(id, "alice"));
+	}
+
+	/**
+	 * Phase 2 ({@code docs/spectator-lobby.md}): a command names its COLONY, and it is that
+	 * colony's owner who may submit it. An unclaimed colony belongs to whoever owns the run, so a
+	 * single-player session behaves exactly as it did before.
+	 */
+	@Test
+	@Timeout(120)
+	void aCommandIsGatedOnTheColonysOwnerNotTheRuns() throws Exception {
+		HostedSession hs = host.create(new SessionSpec(4247L, SCENARIO, DHENIJANSAR), "alice");
+		hs.startPaused();
+		String colony = hs.colonies().get(0).getName();
+
+		// unclaimed: the colony answers with the run's owner
+		assertEquals("alice", hs.ownerOf(colony));
+		assertEquals(202, commandColony(hs.id(), "alice", colony), "the owner may move her lever");
+		assertEquals(403, commandColony(hs.id(), "bob", colony), "a stranger may not");
+		assertEquals(401, commandColony(hs.id(), null, colony), "nor may anonymous");
+		assertEquals(202, commandColony(hs.id(), "super-admin", colony),
+				"an admin bypasses colony ownership");
+
+		// a command naming a colony the session does not have is a 404, not a silent no-op
+		assertEquals(404, commandColony(hs.id(), "alice", "Nowhere"));
+	}
+
+	/**
+	 * The seat, not the run: a colony CLAIMED by a player belongs to that player even though the
+	 * run belongs to someone else — the shape a royale Timeline needs (a house-owned session full
+	 * of players' colonies).
+	 */
+	@Test
+	@Timeout(120)
+	void aClaimedColonyBelongsToItsPlayerNotTheRunsOwner() throws Exception {
+		// a house-owned (unowned) session — as a Timeline will be
+		HostedSession hs = host.create(new SessionSpec(4248L, SCENARIO, DHENIJANSAR), null);
+		hs.startPaused();
+		String colony = hs.colonies().get(0).getName();
+
+		// unclaimed + unowned run: open to any signed-in user (today's demo behaviour)
+		assertEquals(202, commandColony(hs.id(), "carol", colony));
+
+		hs.claimColony(colony, "bob"); // bob takes the seat
+		assertEquals("bob", hs.ownerOf(colony));
+		assertEquals(202, commandColony(hs.id(), "bob", colony), "the seat's owner may command it");
+		assertEquals(403, commandColony(hs.id(), "carol", colony),
+				"a claimed colony is no longer anyone's to command");
+
+		// a seat cannot be taken from under its owner, nor claimed twice by different users
+		assertThrows(IllegalStateException.class, () -> hs.claimColony(colony, "carol"));
+		hs.claimColony(colony, "bob"); // idempotent for the same user
+		assertThrows(IllegalArgumentException.class, () -> hs.claimColony("Nowhere", "bob"));
+	}
+
+	// POST a setTaxRate command naming `colony`, as `user` (null = anonymous); return the status
+	private int commandColony(String id, String user, String colony) throws Exception {
+		return send("POST", "/api/sessions/" + id + "/commands", user,
+				"{\"type\":\"setTaxRate\",\"colony\":\"" + colony
+						+ "\",\"lever\":\"bankProfit\",\"rate\":0.3}").statusCode();
 	}
 
 	// POST a harmless control action (pause) as `user` (null = anonymous); return the status code

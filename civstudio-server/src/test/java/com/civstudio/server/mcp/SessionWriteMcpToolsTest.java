@@ -32,7 +32,7 @@ class SessionWriteMcpToolsTest {
 		SessionWriteMcpTools t = new SessionWriteMcpTools(new SessionHost(), authz(false));
 		assertThrows(SecurityException.class, () -> t.createSession(null, null, null));
 		assertThrows(SecurityException.class, () -> t.controlSession("x", "pause", null));
-		assertThrows(SecurityException.class, () -> t.submitCommand("x", "setTaxRate", "bankProfit", 0.3, null));
+		assertThrows(SecurityException.class, () -> t.submitCommand("x", "setTaxRate", "bankProfit", 0.3, null, null));
 	}
 
 	@Test
@@ -49,7 +49,7 @@ class SessionWriteMcpToolsTest {
 		t.controlSession(id, "pause", null); // pause so stepping is deterministic
 		assertNotNull(hs.colonies().get(0).getRuler(), "the demo colony has a ruler");
 
-		SessionWriteMcpTools.CommandResult cmd = t.submitCommand(id, "setTaxRate", "bankProfit", 0.3, null);
+		SessionWriteMcpTools.CommandResult cmd = t.submitCommand(id, "setTaxRate", "bankProfit", 0.3, null, null);
 		assertTrue(cmd.accepted());
 		assertEquals("BANK_PROFIT", cmd.lever());
 
@@ -63,8 +63,8 @@ class SessionWriteMcpToolsTest {
 
 		// validation: unknown action / lever / out-of-range rate are rejected
 		assertThrows(IllegalArgumentException.class, () -> t.controlSession(id, "bogus", null));
-		assertThrows(IllegalArgumentException.class, () -> t.submitCommand(id, "setTaxRate", "nope", 0.3, null));
-		assertThrows(IllegalArgumentException.class, () -> t.submitCommand(id, "setTaxRate", "bankProfit", 1.5, null));
+		assertThrows(IllegalArgumentException.class, () -> t.submitCommand(id, "setTaxRate", "nope", 0.3, null, null));
+		assertThrows(IllegalArgumentException.class, () -> t.submitCommand(id, "setTaxRate", "bankProfit", 1.5, null, null));
 
 		host.stopAll();
 	}

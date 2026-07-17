@@ -1,5 +1,6 @@
 package com.civstudio.server.command;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import tools.jackson.databind.JsonNode;
@@ -30,8 +31,16 @@ public final class CommandCodec {
 
 	/** The command-specific fields as a JSON object (the {@code tick} is a separate column). */
 	public String payload(GameCommand command) {
-		if (command instanceof SetTaxRateCommand s)
-			return json.writeValueAsString(Map.of("lever", s.lever().name(), "rate", s.rate()));
+		if (command instanceof SetTaxRateCommand s) {
+			// `colony` is written only when the command names one — an all-colonies command stays
+			// byte-identical to what this codec has always written, and Map.of would reject the null
+			Map<String, Object> fields = new LinkedHashMap<>();
+			if (s.colony() != null)
+				fields.put("colony", s.colony());
+			fields.put("lever", s.lever().name());
+			fields.put("rate", s.rate());
+			return json.writeValueAsString(fields);
+		}
 		throw new IllegalArgumentException("no codec for command " + command.getClass().getName());
 	}
 
@@ -39,7 +48,10 @@ public final class CommandCodec {
 	public GameCommand decode(String type, long tick, String payload) {
 		JsonNode n = json.readTree(payload);
 		return switch (type) {
+			// a row with no `colony` predates Phase 2 and meant "every colony" when it was issued —
+			// null preserves that, so replaying an old log reaches the state it originally did
 			case "setTaxRate" -> new SetTaxRateCommand(tick,
+					n.hasNonNull("colony") ? n.get("colony").asText() : null,
 					SetTaxRateCommand.Lever.valueOf(n.get("lever").asText()),
 					n.get("rate").asDouble());
 			default -> throw new IllegalArgumentException("unknown persisted command type: " + type);

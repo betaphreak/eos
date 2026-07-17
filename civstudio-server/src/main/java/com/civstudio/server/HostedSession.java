@@ -81,6 +81,16 @@ public final class HostedSession {
 	private final SessionSpec spec;
 	private final GameSession session;
 	private final List<Settlement> colonies;
+
+	// Per-COLONY owners, by colony name — the seam a shared world needs (docs/spectator-lobby.md
+	// Phase 2). `owner` above is who owns the RUN; this is who owns each seat in it. They coincide
+	// for a single-player run (one colony, one owner) and for the demo (unowned), and diverge in a
+	// royale Timeline: one house-owned session holding many players' colonies, where "may you
+	// command this?" is a question about the COLONY, not the run. Empty until a colony is claimed;
+	// ownerOf() falls back to the run's owner, which is what keeps today's sessions behaving
+	// exactly as before. Concurrent: claims arrive on HTTP threads, reads on the session thread.
+	private final java.util.concurrent.ConcurrentMap<String, String> colonyOwners =
+			new java.util.concurrent.ConcurrentHashMap<>();
 	private final CommandLog commandLog = new CommandLog();
 	private final CommandStore commandStore;
 	private final ChatStore chatStore;
@@ -414,6 +424,60 @@ public final class HostedSession {
 	/** The session's colonies. */
 	public List<Settlement> colonies() {
 		return colonies;
+	}
+
+	/**
+	 * The session's colony of that name, or {@code null} if it has none. Colony names are drawn
+	 * from the seed, so they are stable across a replay of the same spec — which is what lets a
+	 * command name its target by name and still replay deterministically.
+	 *
+	 * @param colonyName the colony's name
+	 * @return the colony, or {@code null}
+	 */
+	public Settlement colonyByName(String colonyName) {
+		if (colonyName == null)
+			return null;
+		for (Settlement c : colonies)
+			if (c.getName().equals(colonyName))
+				return c;
+		return null;
+	}
+
+	/**
+	 * Who owns the named colony — the seat, not the run. A colony {@linkplain #claimColony claimed}
+	 * by a player belongs to that player; an unclaimed one belongs to whoever owns the run, so a
+	 * single-player colony answers with its owner and the unowned demo's answers {@code null}
+	 * (unowned — any signed-in user may act, as before).
+	 * <p>
+	 * This is the question a write should ask in a shared world: in a royale Timeline the run is
+	 * house-owned while each colony has its own player. See {@code docs/spectator-lobby.md} Phase 2.
+	 *
+	 * @param colonyName the colony's name
+	 * @return the owning {@code app_user} id, or {@code null} if the colony is unowned
+	 */
+	public String ownerOf(String colonyName) {
+		String claimed = colonyOwners.get(colonyName);
+		return claimed != null ? claimed : owner;
+	}
+
+	/**
+	 * Claim a colony for a player — the join seam (a player taking a seat in a shared world).
+	 * A colony may be claimed only once: re-claiming it for the same user is a no-op, and claiming
+	 * someone else's is rejected, so a seat cannot be taken from under its owner.
+	 *
+	 * @param colonyName the colony to claim
+	 * @param userId     the claiming {@code app_user} id
+	 * @throws IllegalArgumentException if the session has no such colony, or {@code userId} is blank
+	 * @throws IllegalStateException    if the colony is already claimed by someone else
+	 */
+	public void claimColony(String colonyName, String userId) {
+		if (userId == null || userId.isBlank())
+			throw new IllegalArgumentException("a colony is claimed by a user");
+		if (colonyByName(colonyName) == null)
+			throw new IllegalArgumentException("no colony " + colonyName + " in session " + id);
+		String prior = colonyOwners.putIfAbsent(colonyName, userId);
+		if (prior != null && !prior.equals(userId))
+			throw new IllegalStateException("colony " + colonyName + " is already claimed");
 	}
 
 	/** The command log (the session's ordered input/replay history). */

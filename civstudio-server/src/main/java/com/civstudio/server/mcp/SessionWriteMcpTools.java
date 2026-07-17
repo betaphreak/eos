@@ -91,6 +91,8 @@ public class SessionWriteMcpTools {
 			@McpToolParam(description = "Lever: 'bankProfit' or 'nobleIncome'", required = true)
 			String lever,
 			@McpToolParam(description = "Tax rate in [0,1]", required = true) double rate,
+			@McpToolParam(description = "Colony name to act on; omit in a single-colony session to "
+					+ "move them all", required = false) String colony,
 			@McpToolParam(description = "Apply tick (defaults to now+1)", required = false) Long tick) {
 		authz.requireAdmin();
 		HostedSession hs = require(sessionId);
@@ -101,9 +103,14 @@ public class SessionWriteMcpTools {
 			throw new IllegalArgumentException("unknown lever: " + lever + " (bankProfit|nobleIncome)");
 		if (!(rate >= 0 && rate <= 1))
 			throw new IllegalArgumentException("rate must be in [0,1], got " + rate);
+		// an agent names its colony like any other player would; unknown names are rejected rather
+		// than silently moving nothing (docs/spectator-lobby.md Phase 2)
+		String target = colony == null || colony.isBlank() ? null : colony;
+		if (target != null && hs.colonyByName(target) == null)
+			throw new IllegalArgumentException("no colony " + target + " in session " + sessionId);
 		long next = hs.tick() + 1;
 		long applyTick = Math.max(next, tick != null ? tick : next);
-		hs.submit(new SetTaxRateCommand(applyTick, l, rate));
+		hs.submit(new SetTaxRateCommand(applyTick, target, l, rate));
 		return new CommandResult(true, l.name(), rate, applyTick);
 	}
 
