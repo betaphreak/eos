@@ -28,3 +28,10 @@ initLobby();     // the Spectator Lobby, opened by the brand ("home") — docs/s
 // exposed on window for the same reason the picker is: index.html's pre-module boot flow and
 // panel.mjs's home gesture both need to reach it without importing this module graph
 window.__lobby = { open: openLobby, close: closeLobby, isOpen: lobbyOpen };
+// A session picked in the lobby DURING the load (index.html opens it while the bundle downloads):
+// the choice is waiting on window, and live.mjs will connect to it — but only Live mode shows it, so
+// switch there. Clicking the toggle rather than reaching into its state keeps one source of truth.
+if (window.__spectate) {
+  const liveBtn = document.querySelector('#overlayToggle button[data-ov="live"]');
+  if (liveBtn && !liveBtn.classList.contains('on')) liveBtn.click();
+}

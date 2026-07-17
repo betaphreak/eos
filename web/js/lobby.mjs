@@ -9,18 +9,37 @@
 //
 // Everything here is painting and plumbing. The decisions — what a row is called, what its status
 // says, which face a button wears — live in lobby-rows.mjs, pure and unit-tested.
-import { apiUrl, SERVER_BASE } from "./core.mjs";
+// NB this module deliberately does NOT import core.mjs. The lobby opens *during the load* — while
+// the bundle is still downloading — and core.mjs reads window.BUNDLE at import time, so importing it
+// would mean the lobby could only exist after the very wait it is meant to fill. Its only need from
+// core was the server base, which it resolves the same way core does (below).
 import { title, status, isOver, canDelete, singlePlayer, ranked, order } from "./lobby-rows.mjs";
 
 const REFRESH_MS = 4000;   // the list is a poll: a browser list does not need frame-accurate pushes
 const SLOT_LIMIT = 5;      // mirrors SessionHost.SAVE_SLOT_LIMIT; the server is still the authority
 
 let el, rows = [], signedIn = false, es = null, timer = null, open = false;
+let base = "";             // the server this lobby is a lobby FOR
 
 const $ = id => document.getElementById(id);
+const apiUrl = path => base + path;
 
-/** Wire the lobby once, at boot. Idempotent. */
-export function initLobby() {
+// The same resolution core.mjs does — an explicit ?live=, else the base the bootstrap recorded on
+// the fetched bundle, else the default cloud server — but without needing the bundle to exist yet.
+function resolveBase(given) {
+  if (given) return given.replace(/\/+$/, "");
+  const explicit = new URLSearchParams(location.search).get("live");
+  if (explicit) return explicit.replace(/\/+$/, "");
+  const b = window.BUNDLE;
+  return (b && b.live && b.live.base) || "https://dev.civstudio.com";
+}
+
+/**
+ * Wire the lobby once. Idempotent, and safe to call before the bundle exists.
+ * @param serverBase the server this lobby lists (defaults to the one the page is pointed at)
+ */
+export function initLobby(serverBase) {
+  base = resolveBase(serverBase);
   el = $("lobby");
   if (!el || el.dataset.wired) return;
   el.dataset.wired = "1";
@@ -43,12 +62,17 @@ export function initLobby() {
   $("setupFound").onclick = found;
 }
 
-/** Open the lobby over the map. */
-export function openLobby() {
-  initLobby();
+/**
+ * Open the lobby — over the map (from "home"), or over the loading splash while the world is still
+ * downloading, which is what it is really for: the wait becomes the choosing.
+ *
+ * @param serverBase the server to list (defaults to the one the page is pointed at)
+ */
+export function openLobby(serverBase) {
+  initLobby(serverBase);
   open = true;
   el.hidden = false;
-  $("lobbyServer").textContent = SERVER_BASE.replace(/^https?:\/\//, "");
+  $("lobbyServer").textContent = base.replace(/^https?:\/\//, "");
   showSetup(false);
   refresh();
   timer = setInterval(refresh, REFRESH_MS);
@@ -143,6 +167,10 @@ function applyBtn(btn, face) {
 // event live.mjs listens for, so neither module imports the other.
 function spectate(row) {
   closeLobby();
+  // The lobby can be open BEFORE the app exists — during the load, which is the point of it — so the
+  // choice must survive until live.mjs is there to hear it. Stash it on window (which live.mjs reads
+  // when it first connects) AND fire the event, for when the app is already up.
+  window.__spectate = row.id;
   const live = document.querySelector('#overlayToggle button[data-ov="live"]');
   if (live && !live.classList.contains("on")) live.click();
   window.dispatchEvent(new CustomEvent("civstudio:spectate", { detail: { id: row.id } }));
@@ -214,7 +242,7 @@ function connectChat() {
   // No withCredentials: listening is anonymous (the house rule), and asking for credentials turns
   // this into a cross-origin request the server's CORS does not allow — which failed silently, so
   // the chat simply never arrived. The session feed has always connected plainly, for the same reason.
-  es = new EventSource(SERVER_BASE + "/api/lobby/stream");
+  es = new EventSource(base + "/api/lobby/stream");
   es.addEventListener("chat", e => {
     try { addLine(JSON.parse(e.data)); } catch { /* ignore a bad frame */ }
   });

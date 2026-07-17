@@ -27,7 +27,7 @@ Confirmed with the owner (2026-07-17):
 
 | Question | Decision |
 |---|---|
-| Where does the lobby live? | **Extend the existing server-picker splash** — already a dismissable full-viewport overlay, already the "home" gesture. |
+| Where does the lobby live? | **On the loading splash, during the load** — it opens as soon as the server answers, while the bundle is still downloading, so the wait becomes the choosing. Also reachable from "home" (the brand) and the account menu. |
 | Chat reach | **Global chat in the lobby; per-session chat while watching.** No persistent dock, no channel switcher. |
 | Ranked model | **Royale** — one shared world, many players' colonies, elimination. *Not* parallel solitaire on a shared seed. |
 | Ranked world | **One shared session** on seed **7654321**, all ranked colonies in it, lockstep. |

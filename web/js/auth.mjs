@@ -90,6 +90,15 @@ function render(box, providers, me) {
     const who = me.displayName || me.id;
     btn.innerHTML = (me.avatarUrl ? `<img src="${esc(me.avatarUrl)}" alt="">` : "🎮 ")
       + `<span>${esc(who)}</span> ▾`;
+    // Your runs live in the lobby, so it belongs in the menu under your own name. Signing out was
+    // the only thing here, which left "how do I get back?" answered solely by knowing to click the
+    // title — not an answer. (The signed-out menu is a list of providers under "Sign in": a Lobby
+    // entry among them would be answering a question nobody asked there. The brand serves them, and
+    // now says so.)
+    const lobby = document.createElement("button");
+    lobby.textContent = "Lobby";
+    lobby.onclick = () => { if (window.__lobby && window.__lobby.open) window.__lobby.open(); };
+    menu.appendChild(lobby);
     const out = document.createElement("button");
     out.textContent = "Sign out";
     out.onclick = logout;

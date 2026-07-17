@@ -29,9 +29,11 @@ const ROLE_COLOR = { SETTLER: "#e8c37a", WORKER: "#6bd08a", EXPLORER: "#7aa2e0",
 
 let es = null;          // the EventSource, while connected
 let sid = null;         // the live session id
-// the session the LOBBY chose, if any. Null means "whatever is running" — the plain visitor's
-// answer, and what this has always done. See spectateSession / docs/spectator-lobby.md Phase 5.
-let preferred = null;
+// The session the LOBBY chose, if any. Null means "whatever is running" — the plain visitor's
+// answer, and what this has always done. Seeded from window.__spectate because the lobby opens
+// during the LOAD, before this module exists: a choice made there is waiting for us by the time we
+// run. See docs/spectator-lobby.md Phase 5.
+let preferred = window.__spectate || null;
 let snap = null;        // the latest snapshot
 // guards the log delta against re-ingestion: a reconnect is handed the cached frame again, and its
 // lines have already been posted (see snapshot-dedupe.mjs)

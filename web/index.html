@@ -177,7 +177,7 @@
       <canvas id="map"></canvas>
       <!-- the wordmark, moved off the top bar (§ space-saving) into a faint, unobtrusive watermark over
            the map; still clickable (back to server selection · reset to the world view) -->
-      <span class="brand brand-watermark" id="brand" role="button" tabindex="0" data-tip="Back to server selection · reset to the world view" aria-label="Back to server selection"><span class="brand-a">CivStudio</span><span class="brand-sep">:</span> <span class="brand-b">Anbennar</span></span>
+      <span class="brand brand-watermark" id="brand" role="button" tabindex="0" data-tip="Back to the lobby · reset to the world view" aria-label="Back to the lobby"><span class="brand-a">CivStudio</span><span class="brand-sep">:</span> <span class="brand-b">Anbennar</span></span>
       <div class="regime-pulse" id="regimePulse" aria-hidden="true"></div>
 
       <div class="legend" id="polLegend" aria-label="Political legend" hidden></div>
@@ -580,6 +580,17 @@
       try { if (s.id !== "custom") localStorage.setItem(REMEMBER_KEY, s.id); } catch (e) {}
     }
 
+    // Open the Spectator Lobby over the loading splash, as soon as the server answers and while the
+    // bundle is still downloading (docs/spectator-lobby.md). The wait is already happening — this is
+    // what makes it the choosing rather than a progress bar, and it is why lobby.mjs imports no
+    // core.mjs: core reads window.BUNDLE at import time, which is precisely what has not arrived yet.
+    // Best-effort: a lobby that fails to load must never cost you the map.
+    function openLobbyDuringLoad(base) {
+      import("./js/lobby.mjs")
+        .then(function (m) { m.openLobby(base); })
+        .catch(function (e) { if (window.console) console.warn("lobby unavailable:", e); });
+    }
+
     function connect(s) {
       connecting = true; render();
       if (bar) bar.hidden = false;
@@ -590,7 +601,7 @@
           if (!r.ok) throw new Error("HTTP " + r.status);
           return r.json().then(function (h) { if (!h || h.status !== "UP") throw new Error("status " + (h && h.status)); });
         })
-        .then(function () { return fetch(s.base + "/api/bundle", { credentials: "omit" }); })
+        .then(function () { openLobbyDuringLoad(s.base); return fetch(s.base + "/api/bundle", { credentials: "omit" }); })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .then(function (b) { b.live = { base: s.base }; window.BUNDLE = b; remember(s); return prefetch(s.base); })
         .then(function () { return import("./app.js"); })
