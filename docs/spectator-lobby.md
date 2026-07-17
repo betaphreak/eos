@@ -314,21 +314,48 @@ owner, which means an *unowned* session is controllable by any signed-in user �
 wrong for a Timeline, where the clock must be **admins only**. There is no Timeline yet to gate, and
 inventing a "shared session" flag before the scenario exists would be guesswork.
 
-### Phase 3 — the ranked Timeline (server)
+### Phase 3 — the ranked Timeline ✅ CORE DONE (2026-07-17)
 
-- **A `timeline` scenario**: one shared session, seed 7654321, house-owned, always running.
-- **Join** = found a colony in the Timeline for the calling user. **One colony per player per
-  Timeline**, enforced explicitly (a clear error, not a silent second colony).
-- **Elimination**: a player's colony collapsing does not end the session. The Timeline ends when one
-  colony stands (or none) → session `GAME_OVER`, winner recorded.
-- **Demotion to `Rank.CARAVAN`** (amendment 2): the collapsing colony's `SettlerCaravan` becomes the
-  player's — it wanders, and may re-found to climb back. Needs Phase 0. Ship the plain "eliminated,
-  go spectate" path first and add this behind it; it is the most speculative piece here.
-- **Rank-windowed views** (amendment 4): a player with a living colony sees ±1 rank; spectators and
-  the eliminated see the full board.
-- **Timeline registry**: which Timeline is current, its seed, when it opened/ended, and the archived
-  result of past ones. **The public site points at the current Timeline** (amendment 3); the
-  `caravan-demo` scenario stays for tests and local dev.
+**Shipped:**
+- **A `timeline` scenario** (`SessionSpec.timeline(seed, anchorProvinceId)`), house-owned and born
+  **empty** — it founds no colony of its own, opening in `CREATED` and filling as players join.
+- **`SessionHost.joinTimeline(sessionId, userId)`** — picks the site, founds the colony there,
+  claims it. **One seat per player**: asking twice returns the seat you hold, so a double-click
+  cannot make you two players. Only before the gun.
+- **`TimelineSites`** — one province each, spread across the map: the first joiner takes the anchor,
+  each later joiner takes the viable province (settleable, ≥ `MIN_FOUNDING_PLOTS`) **furthest from
+  its nearest rival** (max-min distance, the idea `ProvincePlotPool.foundingCenter` uses within a
+  province, lifted to the world). Deterministic — no randomness, ties on province id — so a
+  Timeline's roster replays exactly.
+- **The gun**: `POST /control {action:"start"}`, admin-only, closing the roster. `POST /sessions`
+  no longer auto-starts a Timeline (it would fire the gun on an empty world).
+- **`POST /sessions/{id}/join`** — 401 anonymous, 201 with your colony + province, 409 once running.
+- **The clock is admins-only** (the piece deferred from Phase 2): no player may pause the world
+  their rivals live in. Authenticate *then* authorize — anonymous is 401, a seated player 403.
+- **A Timeline ends when the contest does**, not when everyone is dead: `runOver()` is
+  scenario-aware — one colony standing decides it — and the end reason is a **verdict** ("… stands
+  alone and wins the Timeline on <date>"). A solo Timeline is the exception: with no rival to
+  outlive it runs until its colony dies, like a single-player run.
+
+**The trap worth recording:** `allDead()` over an **empty** roster is vacuously true, so a Timeline
+nobody joined would break on the loop's first pass and report itself **won**. `launch()` now refuses
+an empty run outright, and a test pins it.
+
+**Verified:** server **86/86**, +8 cases — born empty and filling; the anchor then a distant second
+site; one seat per player; the roster closing at the gun; every colony starting on the same day; the
+empty-Timeline trap; join being Timeline-only; and a **real two-player Timeline run out to a named
+winner**. Plus the wire path: join/roster/clock authz end to end.
+
+**Deferred (unbuilt):**
+- **Demotion to `Rank.CARAVAN`** (amendment 2) — the most speculative piece; the plain "eliminated,
+  go spectate" path is what ships. Phase 0 removed its blocker, but the loop's break on the terminal
+  condition is still the gate.
+- **Rank-windowed views** (amendment 4) — a read-model change: a player with a living colony sees
+  ±1 rank; spectators and the eliminated see the full board.
+- **The Timeline registry** — which Timeline is current, its seed, when it opened/ended, and past
+  results. This is a **DB** concern (Phase 6), and inventing an in-memory registry first would be
+  throwaway. Until then a Timeline is created explicitly, and the public site still points at the
+  demo (amendment 3 waits on the registry).
 
 ### Phase 4 — single player (server)
 

@@ -133,6 +133,8 @@ public final class SessionHost {
 	// other scenario ids reuse the same standard-colony founding without the bands.
 	private HostedSession build(String id, String owner, SessionSpec spec) {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
+		if (spec.isTimeline())
+			return buildTimeline(id, owner, spec, cfg);
 		// SimulationHarness.create builds the GameSession, founds the colony into the
 		// province, and installs the (now per-session) log — see docs/client-server.md
 		SimulationHarness h = SimulationHarness.create(cfg, spec.seed(), spec.provinceId());
@@ -150,13 +152,80 @@ public final class SessionHost {
 		// (installExplorerProvisioning — the ruler drafts the pool's least-skilled adults each lean
 		// season, docs/explorer-caravan.md). Those emergent levies pioneer trails the route layer draws
 		// (gap B, docs/route-rendering.md), so the demo needs no directed caravans of its own.
-		HostedSession hs = new HostedSession(id, owner, spec, session, List.of(colony), commandStore,
-				chatStore);
+		HostedSession hs = new HostedSession(id, owner, spec, session, List.of(colony),
+				cfg.startDate(), commandStore, chatStore);
 		// resume: replay any previously-persisted commands (keyed by the surrogate id) into the
 		// fresh session's log so state = f(spec, command log) holds across a restart
 		for (GameCommand cmd : commandStore.load(id))
 			hs.replay(cmd);
 		return hs;
+	}
+
+	// A ranked Timeline is born EMPTY: it founds no colony of its own and fills as players join
+	// (joinTimeline), which is why it must be given its clock origin rather than read one off a
+	// colony it does not yet have. House-owned (the `owner` a Timeline is created with is the house,
+	// not a player) — each seat inside it is owned per colony instead. See docs/spectator-lobby.md.
+	private HostedSession buildTimeline(String id, String owner, SessionSpec spec,
+			SimulationConfig cfg) {
+		GameSession session = new GameSession(spec.seed());
+		HostedSession hs = new HostedSession(id, owner, spec, session, List.of(), cfg.startDate(),
+				commandStore, chatStore);
+		for (GameCommand cmd : commandStore.load(id))
+			hs.replay(cmd);
+		return hs;
+	}
+
+	/**
+	 * Seat a player in a ranked Timeline: pick their site, found their colony there, and claim it
+	 * for them. <b>One colony per player per Timeline</b> — asking twice returns the seat you
+	 * already hold rather than founding a second, so a double-click cannot make you two players.
+	 * <p>
+	 * Only before the gun ({@link HostedSession.State#CREATED}): every colony must start on the same
+	 * day, or a late arrival founds into a century-old world. The colony is named for its province,
+	 * so a Timeline reads as a map of real places.
+	 *
+	 * @param sessionId the Timeline's session id
+	 * @param userId    the joining {@code app_user} id
+	 * @return the player's colony (freshly founded, or the one they already hold)
+	 * @throws IllegalArgumentException if there is no such session, it is not a Timeline, or the
+	 *                                  user is not identified
+	 * @throws IllegalStateException    if the Timeline has already started
+	 */
+	public synchronized Settlement joinTimeline(String sessionId, String userId) {
+		if (userId == null || userId.isBlank())
+			throw new IllegalArgumentException("a Timeline seat belongs to a player");
+		HostedSession hs = sessions.get(sessionId);
+		if (hs == null)
+			throw new IllegalArgumentException("no session " + sessionId);
+		if (!hs.isTimeline())
+			throw new IllegalArgumentException("session " + sessionId + " is not a Timeline");
+		Settlement held = hs.colonyOf(userId);
+		if (held != null)
+			return held; // idempotent: you already have your one seat
+		if (hs.state() != HostedSession.State.CREATED)
+			throw new IllegalStateException("Timeline " + sessionId
+					+ " has already started — the roster is closed");
+
+		SimulationConfig cfg = SimulationConfig.DEFAULT;
+		GameSession session = hs.session();
+		com.civstudio.geo.Province site = TimelineSites.pick(session.getWorldMap().provinces(),
+				hs.colonies(), session.getWorldMap().province(hs.spec().provinceId()));
+		Settlement colony = session.newSettlement(site.name(), cfg.startDate(),
+				cfg.meanInitAgeYears(), cfg.targetNStock(), cfg.meanSkillMale(),
+				cfg.meanSkillFemale(), site);
+		// the per-session log is initialised by the FIRST colony and bound for each one after, so
+		// every colony's founding records carry it (the TwinSettlementEconomy pattern)
+		if (hs.colonies().isEmpty())
+			com.civstudio.io.SimLog.init(colony);
+		else
+			com.civstudio.io.SimLog.bind(colony);
+		SimulationHarness h = new SimulationHarness(cfg, colony);
+		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		colony.setAutoBuildDistricts(true);   // the district view, as the demo colony gets
+
+		hs.addColony(colony);
+		hs.claimColony(colony.getName(), userId);
+		return colony;
 	}
 
 }

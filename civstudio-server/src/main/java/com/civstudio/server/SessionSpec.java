@@ -18,9 +18,35 @@ public record SessionSpec(long seed, String scenario, int provinceId) {
 	/** The Phase-A demo scenario: one standard colony plus six directed caravans. */
 	public static final String CARAVAN_DEMO = "caravan-demo";
 
+	/**
+	 * The ranked <b>Timeline</b>: one shared world many players found into, ticking in lockstep,
+	 * last colony standing (see {@code docs/spectator-lobby.md}). Unlike every other scenario it
+	 * founds <b>no colony</b> — a Timeline is born empty and fills as players join, which is why
+	 * it opens in {@link HostedSession.State#CREATED} and only starts once the gun fires.
+	 */
+	public static final String TIMELINE = "timeline";
+
 	public SessionSpec {
 		if (scenario == null || scenario.isBlank())
 			throw new IllegalArgumentException("a session spec needs a scenario id");
+	}
+
+	/** Whether this spec founds a shared ranked Timeline rather than a colony of its own. */
+	public boolean isTimeline() {
+		return TIMELINE.equals(scenario);
+	}
+
+	/**
+	 * The ranked Timeline at the given seed. The {@code provinceId} is the <b>anchor</b>: the site
+	 * the first player to join founds into, from which later joiners are spread across the map.
+	 * Naming it (rather than picking at random) keeps a Timeline's roster reproducible.
+	 *
+	 * @param seed     the shared world's seed — the same for every player in this Timeline
+	 * @param anchorProvinceId the province the first joiner founds into
+	 * @return the Timeline spec
+	 */
+	public static SessionSpec timeline(long seed, int anchorProvinceId) {
+		return new SessionSpec(seed, TIMELINE, anchorProvinceId);
 	}
 
 	/**

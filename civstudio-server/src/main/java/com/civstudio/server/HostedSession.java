@@ -80,7 +80,10 @@ public final class HostedSession {
 	private final String owner;
 	private final SessionSpec spec;
 	private final GameSession session;
-	private final List<Settlement> colonies;
+	// The session's colonies. Mutable, but ONLY while CREATED: a Timeline is born empty and fills
+	// as players join, then the gun fires and the roster is closed for the run (docs/spectator-lobby.md
+	// Phase 3). Copy-on-write because joins arrive on HTTP threads while the session thread reads.
+	private final List<Settlement> colonies = new CopyOnWriteArrayList<>();
 
 	// Per-COLONY owners, by colony name — the seam a shared world needs (docs/spectator-lobby.md
 	// Phase 2). `owner` above is who owns the RUN; this is who owns each seat in it. They coincide
@@ -157,22 +160,24 @@ public final class HostedSession {
 	 * @param owner    the owning {@code app_user} id, or {@code null} for an unowned/public
 	 *                 session (the server-seeded demo)
 	 * @param spec     the founding spec (seed/scenario/province — the determinism root)
-	 * @param session  the game session (owns the seed, world map and wandering bands)
-	 * @param colonies the session's colonies (advanced in lockstep each tick)
+	 * @param session   the game session (owns the seed, world map and wandering bands)
+	 * @param colonies  the session's founding colonies (advanced in lockstep each tick) — empty for
+	 *                  a Timeline, which fills as players join
+	 * @param startDate the run's clock origin: the date its colonies are founded on. Given rather
+	 *                  than read off a colony, so an empty Timeline still knows what day it is —
+	 *                  the session's clock is a property of the run (see {@link #date()})
 	 */
 	public HostedSession(String id, String owner, SessionSpec spec, GameSession session,
-			List<Settlement> colonies, CommandStore commandStore, ChatStore chatStore) {
+			List<Settlement> colonies, LocalDate startDate, CommandStore commandStore,
+			ChatStore chatStore) {
 		this.id = id;
 		this.owner = owner;
 		this.spec = spec;
 		this.session = session;
-		this.colonies = List.copyOf(colonies);
+		this.colonies.addAll(colonies);
 		this.commandStore = commandStore;
 		this.chatStore = chatStore;
-		// the clock origin: the colonies are founded together, on the same day, so any of them
-		// carries it. Read once here rather than per tick — a colony's start date never moves, and
-		// reading it from a colony LATER would reintroduce the very dependency this removes.
-		this.startDate = this.colonies.isEmpty() ? LocalDate.EPOCH : this.colonies.get(0).getStartDate();
+		this.startDate = startDate;
 	}
 
 	/** Start ticking freely (paced by the tick rate). */
@@ -188,6 +193,12 @@ public final class HostedSession {
 	private synchronized void launch(State initial) {
 		if (thread != null)
 			throw new IllegalStateException("session " + id + " already started");
+		// An empty run has nobody to simulate — and worse, it would look FINISHED: allDead() over an
+		// empty roster is vacuously true, so the loop would break on its first pass and report game
+		// over. A Timeline nobody joined is not a Timeline anyone won; refuse the gun instead.
+		if (colonies.isEmpty())
+			throw new IllegalStateException("session " + id + " has no colonies — nothing to run"
+					+ (isTimeline() ? " (no player has joined this Timeline)" : ""));
 		state = initial;
 		thread = Thread.ofVirtual().name("session-" + id).start(this::run);
 	}
@@ -423,7 +434,47 @@ public final class HostedSession {
 
 	/** The session's colonies. */
 	public List<Settlement> colonies() {
-		return colonies;
+		return java.util.Collections.unmodifiableList(colonies);
+	}
+
+	/** Whether this run is a shared ranked {@linkplain SessionSpec#TIMELINE Timeline}. */
+	public boolean isTimeline() {
+		return spec.isTimeline();
+	}
+
+	/**
+	 * Seat a freshly-founded colony in this run — the join seam. Allowed <b>only before the gun</b>
+	 * ({@link State#CREATED}): every colony in a Timeline must start on the same day, or a late
+	 * arrival is founding into a century-old world, which is the unfairness Timelines exist to
+	 * prevent. {@link SessionHost#joinTimeline} founds the colony and calls this.
+	 *
+	 * @param colony the founded colony
+	 * @throws IllegalStateException if the run has already started
+	 */
+	public void addColony(Settlement colony) {
+		synchronized (gate) {
+			if (state != State.CREATED)
+				throw new IllegalStateException(
+						"session " + id + " has already started (" + state + ") — the roster is closed");
+			colonies.add(colony);
+		}
+	}
+
+	/** The colony this user holds in this run, or {@code null} — one seat per player. */
+	public Settlement colonyOf(String userId) {
+		for (Settlement c : colonies)
+			if (userId != null && userId.equals(ownerOf(c.getName())))
+				return c;
+		return null;
+	}
+
+	/** How many colonies are still standing — a Timeline's survivor count. */
+	public int survivors() {
+		int alive = 0;
+		for (Settlement c : colonies)
+			if (!c.isDead())
+				alive++;
+		return alive;
 	}
 
 	/**
@@ -523,7 +574,7 @@ public final class HostedSession {
 			while (true) {
 				if (!awaitTickPermit())
 					break; // stopped from outside
-				if (allDead()) {
+				if (runOver()) {
 					endedItself = true; // the run reached its own end — game over
 					break;
 				}
@@ -630,10 +681,19 @@ public final class HostedSession {
 	}
 
 	private boolean allDead() {
-		for (Settlement c : colonies)
-			if (!c.isDead())
-				return false;
-		return true;
+		return survivors() == 0;
+	}
+
+	// Has the run reached its own end? Scenario-aware, because "over" means different things:
+	//   - a single-player run ends when its colony dies (nothing left to watch);
+	//   - a TIMELINE ends when at most ONE colony stands — the contest is decided, and the last
+	//     player standing has won; there is no one left for them to outlive.
+	// A solo Timeline (only one player joined) is the exception: with no rival to outlive it would
+	// be "won" before the gun, so it runs until its colony dies, like a single-player run.
+	private boolean runOver() {
+		if (!isTimeline())
+			return allDead();
+		return colonies.size() >= 2 ? survivors() <= 1 : allDead();
 	}
 
 	// Why this run ended, in the words a player should read. Called from the finally, after
@@ -643,6 +703,13 @@ public final class HostedSession {
 	// than re-deriving the rule. Multi-colony sessions report each colony's fate — a Timeline's
 	// "won by <name>" belongs here later (docs/game-over.md §Amendment).
 	private String describeEnd() {
+		// a Timeline ends in a VERDICT, not a post-mortem: the last colony standing won it
+		if (isTimeline() && colonies.size() >= 2) {
+			for (Settlement c : colonies)
+				if (!c.isDead())
+					return c.getName() + " stands alone and wins the Timeline on " + date();
+			return "no colony survived the Timeline";
+		}
 		List<String> fates = new ArrayList<>();
 		for (Settlement c : colonies) {
 			String when = c.getDeathDate() == null ? "" : " on " + c.getDeathDate();

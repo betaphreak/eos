@@ -25,6 +25,7 @@ import com.civstudio.server.SessionHost;
 import com.civstudio.server.SessionSpec;
 import com.civstudio.server.command.SetTaxRateCommand;
 import com.civstudio.server.render.SessionSnapshot;
+import com.civstudio.settlement.Settlement;
 
 import jakarta.servlet.http.HttpServletRequest;
 import tools.jackson.databind.ObjectMapper;
@@ -103,7 +104,11 @@ public class SessionController {
 		// (open to all — the demo). Phase 2 (docs/authentication.md) will require login to found.
 		String owner = currentUser.userId(http);
 		HostedSession hs = host.create(new SessionSpec(seed, scenario, provinceId), owner);
-		if (hs.state() == HostedSession.State.CREATED)
+		// A Timeline is born EMPTY and opens for joins; starting it here would fire the gun on a
+		// world nobody has joined (and launch() rightly refuses an empty run). Its gun is a separate,
+		// admin-only act — control {action:"start"}. Every other scenario founds its colony up front
+		// and starts immediately, as before.
+		if (hs.state() == HostedSession.State.CREATED && !hs.isTimeline())
 			hs.start();
 		return ResponseEntity.status(201).body(Map.of("id", hs.id(), "state", hs.state().name()));
 	}
@@ -117,9 +122,17 @@ public class SessionController {
 		// play/pause/step/rate/stop change state shared by every spectator, so control requires a
 		// signed-in user (any authenticated user for the unowned/public demo; the owner for an owned
 		// session). Spectating stays anonymous. See docs/authentication.md.
+		// authenticate first, THEN authorize: an anonymous caller is 401 here as everywhere else,
+		// never 403 — "sign in" and "you may not" are different answers to different questions
 		ResponseEntity<Object> denied = denyWrite(hs, http);
 		if (denied != null)
 			return denied;
+		// A Timeline's clock belongs to everyone in it, so it belongs to no player: nobody gets to
+		// pause the world their rivals are living in. Admins only, for maintenance — the one
+		// exception the owner asked for (docs/spectator-lobby.md).
+		if (hs.isTimeline() && !currentUser.isAdmin(http))
+			return ResponseEntity.status(403)
+					.body(Map.of("error", "the Timeline's clock runs for everyone — admins only"));
 		// a finished run takes no orders: its thread is gone, so pause/resume/step would silently
 		// do nothing. Say so rather than returning a cheerful 200 that changed nothing.
 		if (hs.state() == HostedSession.State.GAME_OVER)
@@ -127,6 +140,19 @@ public class SessionController {
 					"state", hs.state().name(), "endReason", String.valueOf(hs.endReason())));
 		String action = req.action() == null ? "" : req.action();
 		switch (action) {
+			// the gun: start a Timeline that has been open for joins. Separate from resume (which only
+			// un-pauses an already-running session) because this is the moment the roster closes and
+			// everyone's colony starts on the same day.
+			case "start" -> {
+				if (hs.state() != HostedSession.State.CREATED)
+					return ResponseEntity.status(409).body(Map.of("error",
+							"session " + id + " has already started", "state", hs.state().name()));
+				try {
+					hs.start();
+				} catch (IllegalStateException empty) {
+					return ResponseEntity.status(409).body(Map.of("error", empty.getMessage()));
+				}
+			}
 			case "pause" -> hs.pause();
 			case "resume" -> hs.resume();
 			case "step" -> hs.step(req.value() != null ? req.value().intValue() : 1);
@@ -179,6 +205,30 @@ public class SessionController {
 			default -> {
 				return ResponseEntity.badRequest().body(Map.of("error", "unknown command type: " + type));
 			}
+		}
+	}
+
+	// Take your seat in a ranked Timeline: found your colony in the shared world. Requires a
+	// signed-in user (the seat is theirs), and only works before the gun — see
+	// docs/spectator-lobby.md Phase 3. Idempotent: asking twice returns the seat you already hold.
+	@PostMapping("/{id}/join")
+	public ResponseEntity<Object> join(@PathVariable String id, HttpServletRequest http) {
+		HostedSession hs = host.get(id);
+		if (hs == null)
+			return notFound(id);
+		String user = currentUser.userId(http);
+		if (user == null)
+			return ResponseEntity.status(401).body(Map.of("error", "sign in to join the Timeline"));
+		try {
+			Settlement colony = host.joinTimeline(id, user);
+			return ResponseEntity.status(201).body(Map.of("colony", colony.getName(),
+					"province", colony.getProvince() == null ? 0 : colony.getProvince().id(),
+					"session", id));
+		} catch (IllegalStateException closed) {
+			// the roster is closed (the Timeline is running or over) — a real conflict, not a bug
+			return ResponseEntity.status(409).body(Map.of("error", closed.getMessage()));
+		} catch (IllegalArgumentException bad) {
+			return ResponseEntity.badRequest().body(Map.of("error", bad.getMessage()));
 		}
 	}
 

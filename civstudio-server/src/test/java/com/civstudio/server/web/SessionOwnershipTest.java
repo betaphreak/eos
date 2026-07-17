@@ -178,6 +178,45 @@ class SessionOwnershipTest {
 		assertThrows(IllegalArgumentException.class, () -> hs.claimColony("Nowhere", "bob"));
 	}
 
+	/**
+	 * A Timeline over the wire ({@code docs/spectator-lobby.md} Phase 3): joining takes a seat, the
+	 * roster closes at the gun, and the shared clock is admins-only — nobody pauses the world their
+	 * rivals are living in.
+	 */
+	@Test
+	@Timeout(180)
+	void aTimelineIsJoinedByPlayersAndClockedOnlyByAdmins() throws Exception {
+		HostedSession hs = host.create(SessionSpec.timeline(4249L, DHENIJANSAR), null);
+
+		// anonymous may watch, never take a seat
+		assertEquals(401, join(hs.id(), null));
+		assertEquals(201, join(hs.id(), "alice"));
+		assertEquals(201, join(hs.id(), "bob"));
+		assertEquals(201, join(hs.id(), "alice"), "idempotent — she still holds one seat");
+		assertEquals(2, hs.colonies().size(), "two players, two colonies");
+
+		// the clock belongs to everyone, so no player may touch it — even one seated in it
+		assertEquals(403, control(hs.id(), "alice"), "a player cannot pause the shared world");
+		assertEquals(403, control(hs.id(), "bob"));
+		assertEquals(401, control(hs.id(), null));
+
+		// ...but each player commands their OWN colony
+		String aliceColony = host.get(hs.id()).colonyOf("alice").getName();
+		assertEquals(202, commandColony(hs.id(), "alice", aliceColony));
+		assertEquals(403, commandColony(hs.id(), "bob", aliceColony),
+				"bob does not set alice's taxes");
+
+		// the gun is an admin's to fire, and it closes the roster
+		assertEquals(200, send("POST", "/api/sessions/" + hs.id() + "/control", "super-admin",
+				"{\"action\":\"start\"}").statusCode());
+		assertEquals(409, join(hs.id(), "carol"), "the roster is closed once it runs");
+	}
+
+	// POST a join as `user` (null = anonymous); return the status code
+	private int join(String id, String user) throws Exception {
+		return send("POST", "/api/sessions/" + id + "/join", user, "{}").statusCode();
+	}
+
 	// POST a setTaxRate command naming `colony`, as `user` (null = anonymous); return the status
 	private int commandColony(String id, String user, String colony) throws Exception {
 		return send("POST", "/api/sessions/" + id + "/commands", user,
