@@ -51,6 +51,13 @@ import java.util.List;
  *                       ships {@code latitude}/{@code longitude}, but a client cannot turn those back
  *                       into a province without inverting the map projection — so the web rail reads
  *                       this to show a selected province's live colony inline
+ * @param centerX        the raster x of the colony's {@linkplain com.civstudio.settlement.Settlement#getCityCenter()
+ *                       city-center plot} — the water-first plot the colony actually founded on, in the
+ *                       same source-pixel space as the web's plot coordinates. {@code null} when no plot
+ *                       is laid yet. The colony's {@code latitude}/{@code longitude} are its
+ *                       <b>province's</b> anchor, not its centre (see {@code docs/urban-plots.md}), so a
+ *                       client with only those rings the wrong plot — this says the centre outright
+ * @param centerY        the raster y of the city-center plot, or {@code null} when no plot is laid
  */
 public record ColonyView(String name, boolean alive, String date, int population,
 		int children, int nobles, int firms, int poolSize, double cpi,
@@ -58,5 +65,6 @@ public record ColonyView(String name, boolean alive, String date, int population
 		double latitude, double longitude, double bankProfitTax, double nobleIncomeTax,
 		List<AdvisorView> advisors, List<String> knownTechs, int startingDistricts,
 		String culture, List<DistrictView> districts,
-		String researchingTech, double researchProgress, String tier, int provinceId) {
+		String researchingTech, double researchProgress, String tier, int provinceId,
+		Integer centerX, Integer centerY) {
 }

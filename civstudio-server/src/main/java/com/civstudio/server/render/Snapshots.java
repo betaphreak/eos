@@ -17,6 +17,7 @@ import com.civstudio.agent.Retinue;
 import com.civstudio.agent.firm.Firm;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.market.ConsumerGoodMarket;
+import com.civstudio.settlement.Plot;
 import com.civstudio.settlement.Settlement;
 
 /**
@@ -147,12 +148,18 @@ public final class Snapshots {
 		// those back into a province without inverting the map projection — so a rail that wants to
 		// show "this province holds the live colony" needs the id said outright.
 		int provinceId = c.getProvince() == null ? 0 : c.getProvince().id();
+		// the city-center plot — the water-first plot the colony founded on. The lat/lon above are
+		// the PROVINCE's anchor, which can sit a plot or two off the real centre, so the district
+		// view needs the centre said outright rather than inferred from them.
+		Plot center = c.getCityCenter();
+		Integer centerX = center == null ? null : center.x();
+		Integer centerY = center == null ? null : center.y();
 		return new ColonyView(c.getName(), c.isAlive(), date.toString(), population,
 				children, nobles, firms, pool, c.getInflation(), necessity, enjoyment,
 				c.getPlotCount(), c.getMaxPlots(), c.getLatitude(), c.getLongitude(),
 				bankProfitTax, nobleIncomeTax, advisorViews(c), knownTechs,
 				c.getStartingDistrictCount(), culture, districts, researchingTech, researchProgress,
-				c.getTier() == null ? null : c.getTier().name(), provinceId);
+				c.getTier() == null ? null : c.getTier().name(), provinceId, centerX, centerY);
 	}
 
 	// project the colony's district plots that carry buildings — the placed-building state

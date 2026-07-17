@@ -46,23 +46,32 @@ page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
 
 // tally neighborhood-chip draws by variant, before any app code runs
 await page.addInitScript(() => {
-  window.__chips = { live: 0, abandoned: 0 };
+  window.__chips = { live: 0, abandoned: 0, centerChips: 0, centerAt: null };
   window.__lastChips = null;
   const orig = CanvasRenderingContext2D.prototype.drawImage;
-  CanvasRenderingContext2D.prototype.drawImage = function (img, ...rest) {
+  CanvasRenderingContext2D.prototype.drawImage = function (img, dx, dy, ...rest) {
     const src = (img && img.src) || '';
-    if (/dis-neighborhood/.test(src)) {
+    if (/dis-(neighborhood|city_center)/.test(src)) {
       // the abandoned chip is either its own baked variant, or the live art drawn through the
       // grayscale "fake ruin" filter — both count as abandoned
       if (/abandoned/.test(src) || /grayscale/.test(this.filter || '')) window.__chips.abandoned++;
-      else window.__chips.live++;
+      else {
+        window.__chips.live++;
+        // the city-center chip: the one live plot drawn with CITY_CENTER art rather than a
+        // neighborhood. Its draw position pins WHICH plot the view thinks the centre is.
+        if (/dis-city_center/.test(src)) {
+          window.__chips.centerChips++;
+          window.__chips.centerAt = { dx, dy };
+        }
+      }
     }
-    return orig.call(this, img, ...rest);
+    return orig.call(this, img, dx, dy, ...rest);
   };
   // Track the district count off the SAME snapshot stream the renderer reads. The demo colony
   // collapses as it ticks (its district count falls with it), so a snapshot fetched after the fact
   // races the frame — pairing them here is what makes the comparison meaningful.
   window.__districts = null;
+  window.__center = null;
   const OrigES = window.EventSource;
   window.EventSource = class extends OrigES {
     constructor(...a) {
@@ -71,7 +80,10 @@ await page.addInitScript(() => {
         try {
           const j = JSON.parse(e.data);
           const c = j && j.colonies && j.colonies[0];
-          if (c) window.__districts = c.startingDistricts;
+          if (c) {
+            window.__districts = c.startingDistricts;
+            window.__center = { x: c.centerX, y: c.centerY };
+          }
         } catch { /* ignore a bad frame, as live.mjs does */ }
       });
     }
@@ -83,8 +95,9 @@ await page.addInitScript(() => {
   // we came here to measure.
   (function loop() {
     const c = window.__chips;
-    if (c.live || c.abandoned) window.__lastChips = { ...c, districts: window.__districts };
-    window.__chips = { live: 0, abandoned: 0 };
+    if (c.live || c.abandoned)
+      window.__lastChips = { ...c, districts: window.__districts, center: window.__center };
+    window.__chips = { live: 0, abandoned: 0, centerChips: 0, centerAt: null };
     requestAnimationFrame(loop);
   })();
 });
@@ -123,23 +136,37 @@ const { urbanPlots, otherUrban } = await page.evaluate(pid => {
   return { urbanPlots: mine, otherUrban: other };
 }, provId);
 
-const { live, abandoned, districts } = shot.chips;
+const { live, abandoned, districts, centerChips, center } = shot.chips;
 // The invariant under test: the colony lights exactly as many plots as it has districts — the bug
 // was every urban plot in its province reading live (74, its whole core). Everything else on screen
 // is abandoned: its own unbuilt outskirts, plus any neighbouring city site in view — so the
 // abandoned tally is only checked for the floor its own outskirts put under it (attributing each
 // chip to a province would mean re-deriving the projection here).
 const outskirts = districts != null && urbanPlots != null ? Math.max(0, urbanPlots - districts) : null;
+// the plot the colony calls its city center — named, so a human can see WHICH site it picked
+const centerPlot = center && Number.isFinite(center.x)
+  ? await page.evaluate(({ pid, c }) => {
+      const p = window.BUNDLE.provinces.find(q => q.id === pid);
+      const q = p && p._plots && p._plots.find(z => z.x === c.x && z.y === c.y);
+      return q ? { name: q.name, x: q.x, y: q.y, river: q.river !== 0, terrain: q.terrain } : null;
+    }, { pid: provId, c: center })
+  : null;
+
 const checks = {
   litExactlyItsDistricts: districts != null && live === Math.min(districts, urbanPlots ?? districts),
   outskirtsAbandoned: outskirts != null && abandoned >= outskirts,
   drewTheWholeCore: urbanPlots != null && live + abandoned >= urbanPlots,
+  // the colony's centre plot draws CITY_CENTER art — exactly one chip, and only once it has a
+  // district to seat it (a colony with 0 districts lights nothing at all)
+  drewOneCityCenter: districts === 0 ? centerChips === 0 : centerChips === 1,
+  centerIsAPlotOfThisProvince: districts === 0 || centerPlot != null,
   noErrors: errors.length === 0,
 };
 const pass = Object.values(checks).every(Boolean);
 console.log(JSON.stringify({
   province: provId, colony: colony && colony.name, districts, urbanPlots, otherUrbanLoaded: otherUrban,
-  drawn: { live, abandoned, total: live + abandoned },
+  cityCenter: center, cityCenterPlot: centerPlot,
+  drawn: { live, abandoned, cityCenterChips: centerChips, total: live + abandoned },
   checks, pass, errors,
 }, null, 2));
 if (!pass) process.exitCode = 1;

@@ -46,13 +46,23 @@ async function loadBuildingMeta() {
 }
 loadBuildingMeta();
 
+// The colony's CITY CENTER in screen px — the centre of its `centerX`/`centerY` plot, the
+// water-first plot the engine actually founded on. Falls back to the colony's lat/lon, which is its
+// PROVINCE's anchor and can sit a plot or two off the true centre (docs/urban-plots.md) — only
+// reached for a colony whose centre plot isn't laid yet, or an older server that omits the fields.
+function centerPx(colony, plotPx) {
+  if (Number.isFinite(colony.centerX) && Number.isFinite(colony.centerY))
+    return { x: pxr(colony.centerX) + plotPx / 2, y: pyr(colony.centerY) + plotPx / 2 };
+  return { x: px(colony.longitude), y: py(colony.latitude) };
+}
+
 // the province that hosts the live colony (so its urban plots read as ACTIVE, not abandoned): the
 // on-screen province whose plot bounds contain the colony's map point. The district view only fades
 // in at deep zoom, where one city province fills the view, so a plot-bbox containment test is exact
 // enough (and cheap — only loaded provinces are scanned). Null when the colony's province is off
 // screen (every visible urban plot is then correctly an unlinked, abandoned site).
-function colonyProvince(colony) {
-  const cx = px(colony.longitude), cy = py(colony.latitude);
+function colonyProvince(colony, plotPx) {
+  const { x: cx, y: cy } = centerPx(colony, plotPx);
   for (const p of P) {
     if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
     let urban = false, x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
@@ -69,20 +79,25 @@ function colonyProvince(colony) {
 
 // The set of the live colony's urban plots that are actually BUILT — a city of N districts lights N
 // of its province's urban plots; the rest of the urban core is unclaimed ground and still reads as
-// abandoned. The lit plots are the N nearest the colony's center, so the core is live and the
-// outskirts are ruins. Null means "every urban plot is live" (the core is fully built out).
-function livePlots(prov, colony) {
+// abandoned. The lit plots are the N nearest the city center, so the core is live and the outskirts
+// are ruins. Null means "every urban plot is live" (the core is fully built out).
+function livePlots(prov, colony, plotPx) {
   const n = Math.max(0, colony.startingDistricts | 0);
   const urban = prov._plots.filter(q => q.urban);
-  return nearestPlots(urban, n, px(colony.longitude), py(colony.latitude),
-    q => pxr(q.x), q => pyr(q.y));
+  const c = centerPx(colony, plotPx);
+  return nearestPlots(urban, n, c.x, c.y, q => pxr(q.x) + plotPx / 2, q => pyr(q.y) + plotPx / 2);
 }
 
-// draw a small neighborhood chip centred at (cx, cy), sized to `s` px. `active` picks the live
-// neighborhood art; otherwise the ABANDONED (ruined) variant — its own baked webp when present,
-// else the live tile drawn desaturated/darkened so an unlinked site still reads as forsaken.
-function drawNeighborhood(active, cx, cy, s) {
-  const live = tileImg.NEIGHBORHOOD || tileImg.CITY_CENTER;
+// is `q` the colony's city-center plot?
+const isCenter = (q, colony) => q.x === colony.centerX && q.y === colony.centerY;
+
+// draw a small district chip centred at (cx, cy), sized to `s` px. `active` picks the live art;
+// otherwise the ABANDONED (ruined) variant — its own baked webp when present, else the live tile
+// drawn desaturated/darkened so an unlinked site still reads as forsaken. A live colony's own
+// centre plot draws the CITY_CENTER chip rather than a generic neighborhood, so the city reads as
+// having a seat; an abandoned site is ruins either way.
+function drawNeighborhood(active, cx, cy, s, center = false) {
+  const live = (center && tileImg.CITY_CENTER) || tileImg.NEIGHBORHOOD || tileImg.CITY_CENTER;
   let im = active ? live : (tileImg.NEIGHBORHOOD_ABANDONED || live);
   if (!im || !im.complete || !im.naturalWidth) return;
   const fake = !active && !tileImg.NEIGHBORHOOD_ABANDONED;  // no baked variant → fake the ruin look
@@ -107,9 +122,9 @@ function drawBuildingIcon(id, cx, cy, s) {
   }
 }
 
-/** The district view — a small neighborhood chip on every city's urban plots (abandoned unless the
- *  plot belongs to the live colony's province) + the POV colony's built buildings ringing its
- *  center. Fades in at deep zoom (reading a city's plots). */
+/** The district view — a small district chip on every city's urban plots (abandoned unless the plot
+ *  is one the live colony's districts occupy; its centre plot draws the CITY_CENTER art) + the POV
+ *  colony's built buildings ringing that centre. Fades in at deep zoom (reading a city's plots). */
 export function drawDistricts() {
   const a = bandAlpha([4.5, 5.5]);   // fade in past the pip, when zoomed into a city
   if (a <= 0.01 || isPolitical()) return;
@@ -119,26 +134,27 @@ export function drawDistricts() {
   ctx.globalAlpha = a;
 
   const colony = liveColony();
-  const liveProv = colony && Number.isFinite(colony.latitude) ? colonyProvince(colony) : null;
-  const built = liveProv ? livePlots(liveProv, colony) : null;
+  const anchored = colony && (Number.isFinite(colony.latitude) || Number.isFinite(colony.centerX));
+  const liveProv = anchored ? colonyProvince(colony, plotPx) : null;
+  const built = liveProv ? livePlots(liveProv, colony, plotPx) : null;
   const s = iconSize(plotPx);
 
-  // (1) geographic: a small neighborhood chip on every city's urban core plots. Abandoned by
-  // default (an unlinked map site); active on the live colony's province — but only on the plots
-  // its districts actually occupy, the rest of that core being unbuilt ground.
+  // (1) geographic: a small district chip on every city's urban core plots. Abandoned by default
+  // (an unlinked map site); active on the live colony's province — but only on the plots its
+  // districts actually occupy, the rest of that core being unbuilt ground.
   for (const p of P) {
     if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
     const live = p === liveProv;
     for (const q of p._plots) {
       if (!q.urban) continue;
       const active = live && (!built || built.has(q));
-      drawNeighborhood(active, pxr(q.x) + plotPx / 2, pyr(q.y) + plotPx / 2, s);
+      drawNeighborhood(active, pxr(q.x) + plotPx / 2, pyr(q.y) + plotPx / 2, s, live && isCenter(q, colony));
     }
   }
 
-  // (2) live: the POV colony's built buildings, ringed on its center over its (active) neighborhood
-  if (colony && Number.isFinite(colony.latitude) && Array.isArray(colony.districts) && colony.districts.length) {
-    const cx = px(colony.longitude), cy = py(colony.latitude);
+  // (2) live: the POV colony's built buildings, ringed on its city center over that plot's chip
+  if (anchored && Array.isArray(colony.districts) && colony.districts.length) {
+    const { x: cx, y: cy } = centerPx(colony, plotPx);
     const ids = [];
     for (const dist of colony.districts) for (const id of (dist.buildings || [])) ids.push(id);
     if (ids.length) {
