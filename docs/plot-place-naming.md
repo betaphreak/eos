@@ -27,12 +27,36 @@ Deliberately no micro-states — big provinces need rich gazetteers, so the tiny
 nations were swapped for large ones (a region can need up to ~80k distinct names; North Eltchamas
 is the biggest single province).
 
+## The committed subset (the default source)
+
+The bake no longer needs the 372 MB dump. A committed **subset** —
+`generated/geonames/subset.json.gz` (~4.5 MB, classpath `/geonames/subset.json.gz`) — ships in the
+engine jar, so **any machine bakes names**: production, CI, a fresh clone. `GeoNamesSubset.load`
+reads it into the same per-country `CountryGazetteer`s the full dump would yield;
+`WorldPlotGenerator.nameWorld` prefers it, falling back to the full dump only when the subset is
+absent (i.e. while rebuilding it), and skipping naming only if neither is present.
+
+**How it is bounded (`GeoNamesSubsetExporter`).** For each mapped country it keeps the **top-K places
+by population**, `K = ceil(maxProvincePlots(region) × 1.5)` (floored at 256). That bound is sound
+because names are unique *per province* with cross-province reuse (`PlaceNamer`), so a country's pool
+only needs to name its **largest single province** — `GeoNamesSubsetTest` asserts pool ≥ largest
+province for every country (bar Kuwait/Trinidad, which recycle with the full dump too). The same
+class/population filter is applied (`GeoNamesGazetteer.parse` reused), so the subset is a strict
+sub-selection. **Names change once** vs the full-dump bake (bounding drops the low-population tail, so
+the spatial picks differ) — a cosmetic, deterministic one-time re-bake. Rebuild it (needs the full
+dump) with:
+
+```
+mvn -pl civstudio-engine compile exec:exec -Dsim.main=com.civstudio.geo.names.GeoNamesSubsetExporter
+```
+
 ## The pipeline (bake time)
 
-1. **`GeoNamesFiles`** resolves the offline `allCountries` dump from a gitignored
+1. **`GeoNamesSubset`** loads the committed subset from the classpath (the default). Only when it is
+   absent does **`GeoNamesFiles`** resolve the offline `allCountries` dump from a gitignored
    `.geonames-cache/` (sys-prop `civstudio.geonames.cacheDir` / env `GEONAMES_CACHE_DIR`), streaming
-   the `.txt`/`.gz`/`.zip` transparently. Read **once**, at bake time only.
-2. **`GeoNamesGazetteer`** parses `allCountries`, keeping feature classes P/A/T/L/H and population
+   the `.txt`/`.gz`/`.zip` transparently. Either way, read **once**, at bake time only.
+2. **`GeoNamesGazetteer`** (dump path) parses `allCountries`, keeping feature classes P/A/T/L/H and population
    ≤ 250k (so no famous metropolis lands on a plot), UTF-8 names (the `name` column, not
    `asciiname` — native scripts survive). It builds one **`CountryGazetteer`** per mapped country: a
    lat/lon grid supporting *largest-population-in-rect* and *nearest-unused* queries.
@@ -58,7 +82,9 @@ tested in `plotlabel.test.mjs`) + the hover handler in `web/js/panel.mjs` render
 
 ## Deploying names to production
 
-Production can't bake (no dump), so the locally-baked cache must be shipped to the AzureFile share.
+Naming itself no longer needs the dump — the committed subset (above) ships in the jar, so a bake on
+any machine names plots. The plot **cache** is still baked once and shipped to the AzureFile share
+(the cache is large and per-province; only its *source of names* changed).
 `pwsh tools/deploy-plot-cache.ps1` bumps `MAP_VERSION`, moves the local baked cache to the new
 version dir, uploads it to `<share>/map/v<new>`, and prunes old versions (keeps
 `v<new>` + `v<new-1>`). Run `tools/deploy-server.ps1` after it so the new image serves `v<new>` and
@@ -69,5 +95,6 @@ is the server/API it fetches from).
 
 ## Data source & licence
 
-GeoNames `allCountries` (~400 MB zip, ~13M rows), pinned by `geonames-source.lock`. Licensed
-**CC BY 4.0** — credited in the README.
+GeoNames `allCountries` (~400 MB zip, ~13M rows), pinned by `geonames-source.lock` — now a *dev-only*
+dependency, needed only to rebuild the committed subset. Licensed **CC BY 4.0** — credited in the
+README (the committed subset is a derived work under the same licence).

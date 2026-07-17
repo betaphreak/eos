@@ -17,6 +17,7 @@ import com.civstudio.geo.TerrainRegistry;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.geo.names.CountryGazetteer;
 import com.civstudio.geo.names.GeoNamesGazetteer;
+import com.civstudio.geo.names.GeoNamesSubset;
 import com.civstudio.geo.names.PlaceNamingPass;
 import com.civstudio.settlement.Plot;
 import com.civstudio.settlement.ProvincePlotStore;
@@ -103,17 +104,28 @@ public final class WorldPlotGenerator {
 	 * plot cache.
 	 */
 	private static void nameWorld(WorldMap map, TerrainRegistry registry) throws Exception {
-		if (!GeoNamesFiles.isAvailable()) {
-			System.out.println("GeoNames dump not present in " + GeoNamesFiles.cacheDir().toAbsolutePath()
-					+ " — skipping plot naming (plots stay nameless). See com.civstudio.data.GeoNamesFiles.");
-			return;
-		}
 		long t0 = System.currentTimeMillis();
 		RegionEarthMap earth = RegionEarthMap.load();
 		Set<String> countries = new HashSet<>(earth.countries());
-		System.out.println("naming plots: loading GeoNames gazetteers for " + countries.size()
-				+ " countries (one pass over the dump)...");
-		Map<String, CountryGazetteer> gazetteers = GeoNamesGazetteer.loadFromCache(countries);
+
+		// Prefer the committed ~4 MB subset (GeoNamesSubset) — it ships in the jar, so ANY machine can
+		// bake names (prod, CI, a fresh clone). The 372 MB full dump is only the fallback, used when the
+		// subset resource is absent (e.g. re-baking the subset itself); if neither is present, skip.
+		Map<String, CountryGazetteer> gazetteers;
+		if (GeoNamesSubset.isAvailable()) {
+			gazetteers = GeoNamesSubset.load(countries);
+			System.out.println("naming plots: loaded the committed GeoNames subset for " + countries.size()
+					+ " countries (" + GeoNamesSubset.RESOURCE + ")");
+		} else if (GeoNamesFiles.isAvailable()) {
+			System.out.println("naming plots: no committed subset — loading gazetteers for " + countries.size()
+					+ " countries from the full dump (one pass)...");
+			gazetteers = GeoNamesGazetteer.loadFromCache(countries);
+		} else {
+			System.out.println("GeoNames subset not on the classpath and no dump in "
+					+ GeoNamesFiles.cacheDir().toAbsolutePath() + " — skipping plot naming (plots stay"
+					+ " nameless). Build the subset with GeoNamesSubsetExporter, or see GeoNamesFiles.");
+			return;
+		}
 		long places = gazetteers.values().stream().mapToLong(CountryGazetteer::size).sum();
 		System.out.printf("  loaded %,d places across %d countries in %ds; naming by region...%n",
 				places, gazetteers.size(), (System.currentTimeMillis() - t0) / 1000);
