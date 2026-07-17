@@ -168,22 +168,66 @@ The only rows the 800km flag *does* fire on are four accidents, all within one c
  935km  sea    Xaybatencos -> Crooked Island [north_america]
 ```
 
-Nothing links Halcann to Aelantir.
+Nothing links Halcann to Aelantir **by sea, or by any road**. What links them is a fey portal, and that
+is the next section.
 
-### The partition is free — zero cross-realm edges
+### Anbennar already built the crossing, and we were deleting it
 
-Not one land province in Halcann pixel-touches Aelantir, and not one of the 408 water provinces touches
-land in more than one realm. The only three cross-*continent* adjacencies all stay within a realm:
+**The single most important thing in this doc, and it was found by accident.** Phase 0 shipped, and the
+six teleporter rows that the `MAX_KM = 4000` filter had been eating turned out to be this:
+
+```
+5491km  Dwhainadbrahin [HALCANN]  -> Domancadh [AELANTIR]   deepwoods_fey_portal
+5388km  Domancadh [AELANTIR]      -> Vyr Tars [HALCANN]     domandrod_fey_portal
+5266km  Domancadh [AELANTIR]      -> Portal 1 [HALCANN]     domandrod_fey_portal
+5707km  Domancadh [AELANTIR]      -> Vyr Sawel [HALCANN]    domandrod_fey_portal
+5337km  Domancadh [AELANTIR]      -> Vyr Ian [HALCANN]      domandrod_fey_portal
+5768km  Domancadh [AELANTIR]      -> Vyr Tronna [HALCANN]   domandrod_fey_portal
+```
+
+**Anbennar authored a cross-realm teleporter network.** Domancadh — the Domandrod fey enclave in Aelantir
+— is wired to the Deepwoods gladeways in Halcann by six portals. Not a sea route, not a canal: fey magic,
+which is exactly how a mod with no second map moves you between worlds. We dropped every one of them
+because 5000km "cannot be a real connection" — the same mistake as the name filter and the distance
+marker, for the third time (§Teleporters are real).
+
+**They are land-to-land, and `LandRouter` already walks them.** So as of Phase 0, verified against the
+committed graph:
+
+```
+Wesdam (Cannor) -> … 33 provinces … -> Clirypriah -> Portal 1 [HALCANN] -> Domancadh [AELANTIR]
+```
+
+**You can walk from Cannor to Aelantir.** Today. On foot. Through the province this session named Portal 1
+— the nameless hub Anbennar left as filler is the gateway between the Old World and the New.
+
+That upends three things, and they are not small:
+
+- **The realms are *not* disconnected components.** The old claim here — "splitting them cuts no edge, so
+  `WorldMap.path()` and `LandRouter` need no realm-awareness" — **is false.** A route *can* leave a realm.
+  `LandRouter` therefore needs exactly one realm check, and only one: a cross-realm portal is gated
+  default-closed (§Crossing a realm on foot is gated), so a caravan cannot walk off the edge of the map
+  unless the gate is open.
+- **§Phase 0b is redundant.** It proposed *authoring* a Halcann↔Aelantir sea teleporter so the realms would
+  be discoverable. There is no need to invent one: Anbennar already authored six, with better lore than an
+  invented sea gate, and the arrow (§The fog must not be mute) now has a real anchor —
+  **Portal 1 ↔ Domancadh**.
+- **§Deferred's inter-realm travel is not deferred — the mechanism exists.** It said travel "needs boats,
+  which do not exist — caravans are land-only". The fey portals *are* land-only, and gated by season
+  rather than by boats. The thing we were deferring already exists in the map data.
+
+**Still true, and now the only thing holding the partition up:** the *pixel* and *water* geography is
+still cleanly separable. Not one land province in Halcann pixel-touches Aelantir, and not one water
+province touches land in more than one realm (§The ocean splits cleanly). The crop is unaffected. What
+changed is that the province *graph* is connected, which is a routing question, not a rendering one.
+
+The only three cross-*continent* adjacencies that are ordinary geography all stay within a realm:
 
 ```
 395km  sea    Altarcliff (north_america) -> Chesh (south_america)      # both Aelantir
  35km  canal  Marrhold (europe) -> Natvirod 2 (serpentspine)           # both Halcann (underworld)
 200km  canal  Nooks Cranny (serpentspine) -> Noms10 (asia)             # both Halcann (underworld)
 ```
-
-The realms are already disconnected components of the province graph. Splitting them **cuts no edge**,
-so `WorldMap.path()` and `LandRouter` need no realm-awareness: a route that could never leave a realm
-cannot start doing so because we drew a smaller map.
 
 ### The ocean splits cleanly — by adjacency, not by reachability
 
@@ -213,7 +257,7 @@ CONFLICTS (touch 2+ realms)    0
 ```
 
 187 + 178 + 99 = 464 — all of it, unambiguously. Zero conflicts is not luck: no water province touches
-land in more than one realm (§The partition is free).
+land in more than one realm (§Anbennar already built the crossing — the *water* geography stays cleanly separable even though the graph does not).
 
 **And "deep ocean" is a real category, not an invented one** — 99 provinces touch no land at all. That
 is precisely the water that should be fogged, and the data volunteers the set. No threshold, no
@@ -301,6 +345,11 @@ So `Timeline` carries a realm, and it is not `Realm.NONE`. This also makes realm
 than only a view: a second realm is a second Ranked ladder on the same server, running the same engine, with
 its own geography — which is the cheapest new content the map has ever offered.
 
+**Scoping the *start* is only half of it** — Phase 0 proved a caravan can walk between realms through the
+fey portals, so a Halcann colony could otherwise migrate into Aelantir's ladder mid-match. The other half
+is §Crossing a realm on foot is gated: the cross-realm portals are default-closed, so no colony walks
+between ladders. Start-scoping plus the gate is what makes Ranked-per-realm hold.
+
 ### A session carries its realm, and joining switches
 
 **Realm is a field on `SessionSpec`, and opening a session switches the viewer to it** (decided). One realm
@@ -327,6 +376,31 @@ Two things fall out for free:
 - **An old spec with no realm defaults to Halcann**, the same rule as a legacy `?p=` link (§Deep links need
   a realm). So every session in the registry restores with no migration, which matters because restore is
   lazy and replays from spec + roster + command log.
+
+### Crossing a realm on foot is gated, not free
+
+Phase 0 established that a caravan *can* walk Cannor → Portal 1 → Domancadh into Aelantir — the fey portals
+are real edges `LandRouter` already traverses (§Anbennar already built the crossing). **A cross-realm
+portal is gated, not freely walkable** (decided): the edge exists, the arrow marks it, but an ordinary
+caravan cannot take it. It opens only under a condition.
+
+**The gate is the Seasonal Court, not a new system.** The `domandrod_*_gate` rows are *already* seasonal
+(§the Domandrod Seasonal Court) — a date predicate on an adjacency, built on the solar calendar and
+hemisphere-aware winter that already exist. Cross-realm traversal is the same predicate one level up: a
+`teleport` edge whose endpoints are in different realms is passable only when its gate condition holds
+(a season, later perhaps a fey pact or a tech). So "gate the crossing" and "build the Seasonal Court" are
+**one mechanism**, not two — which is why this is the cheap answer as well as the lore-true one.
+
+This makes **§Ranked is per realm airtight against migration**: a colony seeded in Halcann cannot drift
+into Aelantir's ladder mid-match, because the only edge out is gated and a colony does not hold a fey pact.
+Scoping `TimelineSites` to one realm (Phase 1) bounds where colonies *start*; the gate bounds where they
+can *go*. Both are needed, and now both hold.
+
+> **This is the realm check §The partition is free swore `LandRouter` would never need** — and it is a
+> narrow one: not "reject any route that leaves the realm" (that would forbid the crossing entirely), but
+> "a cross-realm `teleport` edge carries a gate predicate, default-closed." Ungated `teleport` edges — the
+> 86 intra-Halcann Deepwoods rows — are unaffected and stay freely walkable. The check fires only on the
+> six edges whose endpoints' realms differ.
 
 ### What a realm is not
 
@@ -418,8 +492,9 @@ action, one `destination` argument:
 
 - **dropdown → fit the realm.** It means *show me that map*. You land at band WORLD, looking at the whole
   thing.
-- **arrow → the far portal, at your current zoom.** It means *cross here*. You land on Eastern Lastsight
-  Islands looking back east at the fog you just came from — the same place, the same scale, the other side.
+- **arrow → the far portal, at your current zoom.** It means *cross here*. Click the arrow on Portal 1 and
+  you land on **Domancadh** in Aelantir, looking back at the fog you just came from — the same place, the
+  same scale, the other side of the same fey portal a caravan would walk through.
 
 Collapsing both onto "fit the realm" would make the arrow a decorated dropdown and throw away the one thing
 it is for: that a crossing has two ends and you arrive at the far one. The arrow is a *place*; the dropdown
@@ -430,12 +505,14 @@ is a *view*.
 > the exception because it names a province to land on, which `focusProvince` already does.
 
 **A cross-realm adjacency must not draw as a line** — this is the arrow's other half, and it does not
-happen for free. Phase 1 ships **one bundle with all 5264 provinces**, so `WorldBundle`'s "both endpoints
-shipped" filter does not drop the Halcann↔Aelantir row; and at 1548km the legacy 800km heuristic *does*
-flag it. Left alone, Halcann's map draws an ordinary connection line from Coast of Venail straight across
-into Aelantir's fog — the exact thing the arrow exists to replace, rendered next to it. **A row whose two
-endpoints have different realms is suppressed as a line and promoted to the arrow**, on both maps. Same
-`teleport` + `realm` data as everywhere else in this doc; no new geometry.
+happen for free. Phase 1 ships **one bundle with all 5268 provinces**, so `WorldBundle` ships the six
+**Domancadh fey-portal rows** (§Anbennar already built the crossing) with both endpoints present — and
+they are already flagged `teleport` from the source comment, so nothing draws them as a line *within* a
+realm today. But across realms, left alone, Halcann's map would still mark Portal 1 with a teleporter glyph
+pointing at Domancadh, a province the crop cannot show. **A row whose two endpoints have different realms
+is suppressed as an ordinary marker and promoted to the arrow**, on both maps — the arrow *is* the
+cross-realm teleporter's marker. Same `teleport` + `realm` data as everywhere else in this doc; no new
+geometry.
 
 Red because the fog tiles are greyscale luminance masks (`FOW_TILE`) with no colour of their own, so a
 warm hue owns the layer without fighting it. There is no arrow art in the tree — the existing teleport
@@ -448,8 +525,10 @@ where it opens*. A realm rim is that move one level up, and should be built as i
 it rather than folded into the fog draw.
 
 This is what makes realms **discoverable rather than merely available**: the fog stops being an absence
-and becomes a signpost. The arrow is only correct for an **off-realm** destination — the 92 Deepwoods
-portal rows teleport *within* Halcann, both endpoints on the same map, so they must not draw one.
+and becomes a signpost. The arrow is only correct for an **off-realm** destination — and the test is the
+`realm` of the two endpoints, not the row's kind. Of the 92 teleporter rows, **86 stay within Halcann**
+(the Deepwoods mesh, both endpoints on the same map) and draw the ordinary cave-mouth glyph; **6 cross to
+Aelantir** (the Domancadh portals) and draw the arrow. A row is an arrow iff its endpoints' realms differ.
 
 ## Rendering: the cylinder goes away
 
@@ -716,14 +795,16 @@ Two halves:
 > arguably correct, but it is a **sim change, not a data change**. Run the full engine suite, not just the
 > server one, and expect the possibility of route-length fallout.
 
-**Phase 0b — Author the realm portal.** The Halcann↔Aelantir sea teleporter is **authored now** (decided),
-as a visible landmark rather than a working route — travel needs boats and is deferred, so nothing can
-use it yet. It exists so the arrow has something to mark and the realms are discoverable in v1.
- - **Sea-to-sea** — a boat sails to the ocean province holding the teleporter. **Land-to-land teleporters
-   are deferred** (decided), so this is not the coastal land pair.
- - Authored data is not imported data: it needs an **overlay merged at export**, the pattern
-   `building-unlocks.json` already uses for `TechTree`. Do not hand-edit `adjacencies.json` — it is
-   regenerated from Anbennar's `adjacencies.csv` and an edit there is a landmine.
+**~~Phase 0b — Author the realm portal.~~ CUT — Anbennar already authored it.** This phase proposed
+inventing a Halcann↔Aelantir sea teleporter so the arrow would have something to mark. Phase 0 proved it
+unnecessary: the six **Domancadh fey portals** (§Anbennar already built the crossing) are a real,
+imported, land-to-land cross-realm link that `LandRouter` already walks. The arrow marks
+**Portal 1 ↔ Domancadh**; no overlay, no authored data, nothing to hand-edit. The one thing this phase got
+right — *don't* hand-edit `adjacencies.json` — is moot, because there is nothing to add.
+
+> The sea-crossing analysis (§Deferred) is kept as a *record*, not a plan: it is the route Anbennar would
+> have drawn if it wanted a boat lane, and it may still be wanted someday for flavour. But the realms are
+> already connected, so it is no longer on the critical path for discoverability or for travel.
 
 **Phase 1 — Realm as data.** Resolve realm in the exporter by the four rules of §The model —
 `Continent` for land, adjacent land for water, **adjacency endpoints for the four portal waypoints**, and
@@ -780,25 +861,34 @@ Not in this list: travel (deferred).
 
 ## Deferred
 
-**Inter-realm travel.** The intended shape: a teleporter is an authored adjacency between two **sea**
-provinces; a player's boat sails to the ocean province holding the teleporter and is carried to Aelantir,
-and back. This needs boats, which do not exist — caravans are land-only. Until then the realms are three
-views of one world and nothing crosses.
+**Inter-realm travel — no longer deferred; the mechanism exists** (§Anbennar already built the crossing).
+The Domancadh fey portals are land-to-land, already imported, already walked by `LandRouter`. What this
+section describes — a *sea* crossing needing boats — was one way to build a crossing; Anbennar's fey magic
+is another, and it is the one that already exists. Boats remain unbuilt, but travel between realms no
+longer waits on them.
 
-The crossing is already chosen (§Phase 0b). Narrowest sea-to-sea pair per latitude band:
+The crossing is **gated, not open** (§Crossing a realm on foot is gated): the portal is default-closed and
+opens on the Seasonal Court's calendar, so it is a real, conditional route rather than a free highway. That
+is what keeps Ranked-per-realm airtight while still letting the crossing be real.
+
+**A sea lane is now optional flavour, not the mechanism.** The analysis below is kept because a boat route
+may still be wanted someday — a mundane crossing for those without a fey pact — but it is no longer the
+plan. Narrowest sea-to-sea pair per latitude band:
 
 ```
 POLAR   lat 84    719km   Fjordsbay -> Sealpod Route
-NORTH   lat 56/51 1548km  Coast of Venail (1265) -> Eastern Lastsight Islands (1567)   <- chosen
+NORTH   lat 56/51 1548km  Coast of Venail (1265) -> Eastern Lastsight Islands (1567)   <- best candidate
 MID     lat 27/30 2361km  Sandspite Approach -> Banished Sea
 TROPIC  lat  3/8  2278km  Corsair Reaches -> Bay of Hope
 ```
 
 The polar pair is shorter but it is a technicality — lat 84 sits in the stretched dead zone at the top of
 the Mercator projection, and an Arctic hop is a strange colonisation route. **Coast of Venail → Eastern
-Lastsight Islands** is the Cannor→Aelantir route proper: Venail is Cannor's west coast (`venail_area`,
-`lencenor_region`, the human heartland), at a latitude the projection treats honestly. And Anbennar named
-the far side **Lastsight** — the last sight of land. It named the edge of the known world for us.
+Lastsight Islands** would be the Cannor→Aelantir sea route proper: Venail is Cannor's west coast
+(`venail_area`, `lencenor_region`, the human heartland), at a latitude the projection treats honestly. And
+Anbennar named the far side **Lastsight** — the last sight of land. It named the edge of the known world
+for us. If a mundane crossing is ever wanted alongside the fey portals, this is the pair — but nothing is
+committed to it now.
 
 **Hinuilands gets no ocean teleporter** — it has no coast (nearest water is 1295km from Vyr Cirentyn) and
 it is not playable. It is reached by the dropdown. If it ever becomes reachable, it is via the existing
@@ -812,6 +902,11 @@ realm is what keeps it out of scope rather than merely postponed.
 ## Adjacent opportunity: the Domandrod Seasonal Court
 
 Not part of Realms; recorded here because Phase 0 is what surfaces it, and it would otherwise be lost.
+
+> **This is the same Domandrod as §Anbennar already built the crossing.** The five `domandrod_fey_portal`
+> rows *are* the cross-realm link a caravan now walks (Domancadh is in `domandrod_region`); this section is
+> about the **four seasonal gates** on top of that link — a distinct, still-valid idea. The crossing is
+> the door; the Seasonal Court is the door being open only a quarter of the year.
 
 Anbennar authored **four seasonal gates**, all fully intact in our import, all leading into
 `domandrod_region` — a fey enclave in **Aelantir**:
