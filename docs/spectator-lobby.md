@@ -1,8 +1,9 @@
 # Design & plan: the Spectator Lobby, single player & ranked Timelines
 
-**Status:** Phases **0, 1, 2, 3 (core), 4 and 6** are SHIPPED — the whole server side is in. What
-remains is **Phase 5** (the lobby UI — all frontend), plus the Timeline registry and scoring.
-**Date:** 2026-07-17.
+**Status:** **ALL PHASES SHIPPED** (0, 1, 2, 3 core, 4, 5, 6) — the lobby is live end to end, and
+opens during the load. Deferred by decision, not omission: the **Timeline registry** (which the
+Ranked button and the public-site switch both wait on), **scoring**, `Rank.CARAVAN` demotion, and
+rank-windowed views. **Date:** 2026-07-17.
 **Depends on:** [`docs/authentication.md`](authentication.md) (accounts + ownership, Phases 1–3 shipped),
 [`docs/client-server.md`](client-server.md) (the hosted-session spine), [`docs/game-over.md`](game-over.md)
 (the terminal state a run ends on).
@@ -13,8 +14,9 @@ Today the site drops you straight onto a map spectating whatever the server seed
 place to *be* — no way to see what's running, no way to start your own run, and chat only exists
 once you're already inside a session.
 
-The **Spectator Lobby** is that place: a room with a session browser and a chat, reached before you
-pick anything and reachable again from "home". From it you can **spectate** anything public, **spawn
+The **Spectator Lobby** is that place: a room with a session browser and a chat, open **while the
+world is still downloading** — so the wait you were already having becomes the choosing — and
+reachable again from "home" and your account menu. From it you can **spectate** anything public, **spawn
 a single-player run**, or take your seat in the **ranked Timeline**.
 
 And **Ranked is a royale, not a leaderboard.** Every ranked player founds a colony in *one shared
@@ -434,25 +436,49 @@ spent another's save slots (which is how this surfaced: a green class, red in th
 classes now forget their runs in `@AfterEach`.
 
 
-### Phase 5 — the lobby UI (web) — the only phase left
+### Phase 5 — the lobby UI ✅ DONE (2026-07-17)
 
-Everything below is frontend; the server endpoints it needs all exist.
+**Shipped:**
+- **`lobby-rows.mjs`** — the decisions, pure and unit-tested (8 cases): what a row is called, what
+  its status says, which face each button wears, what order the list is in. `lobby.mjs` only paints.
+  A row is named by its **colony** for now; `title()` is the single place that changes when runs are
+  named after countries.
+- **`lobby.mjs`** — the room: the list (polling `GET /api/sessions`), the chat (`/api/lobby/stream`
+  + `POST /api/lobby/chat`), the play row, the new-run **setup panel** (the seed is a *field* — the
+  seed *is* the world, so choosing it lets you replay a known one), and delete on your own rows.
+- **It opens DURING the load** (the faithful reading of "the lobby is what the splash becomes"): the
+  moment the server answers health, `index.html`'s boot flow imports it and opens it, while the
+  bundle is still downloading. Measured in a browser: **lobby up at 201ms, `/api/bundle` done at
+  886ms, map at 919ms** — it beats the world down the wire by ~685ms, and the wait you were already
+  having becomes the choosing.
+- **Which is why `lobby.mjs` imports no `core.mjs`.** `core` reads `window.BUNDLE` at import time,
+  so importing it would mean the lobby could only exist *after* the wait it exists to fill. It
+  resolves the server base the same way `core` does; a test asserts it imports with **no BUNDLE at
+  all**, because that property *is* the feature.
+- **A choice outlives the page that made it**: `spectate()` stashes the session on `window`,
+  `live.mjs` seeds `preferred` from it when it finally loads (it had always taken `list[0]`), and
+  `app.js` switches to Live mode, since only Live shows a session.
+- **Ways back**: the brand ("home"), and **Lobby** in the account menu — signing out had been the
+  only entry there, so "how do I get back?" was answered solely by knowing to click the title.
 
-- Grow `#ldPicker` into the lobby: server choice, then the session list + chat + play row.
-- **The list** polls `GET /api/sessions`, whose rows already carry `kind` / `date` / `watching` /
-  `mine` / `seats` / `standing` / `endReason`. A row is labelled by its **colony** for now (naming
-  is deferred to countries — see §Naming).
-- **The chat** is `GET /api/lobby/stream` (backlog replayed on connect) + `POST /api/lobby/chat`.
-  Signed-out: the list and spectating work, the composer becomes a sign-in prompt.
-- **Single Player** opens a **setup panel** (seed + province) and `POST /api/sessions`; the run lands
-  **paused** on the map with a press-play cue. A sixth run is a 409 the panel must show honestly
-  ("finish or delete one"), and a run is deletable from its row (`DELETE /api/sessions/{id}`).
-- **Ranked** resolves its faces from the list + your colony's state. Its entry point waits on the
-  **Timeline registry** — until there is a current Timeline to name, the button has nothing to point
-  at (see §The public site).
-- Unit-test the pure parts under node (`web/js/*.test.mjs`), as `district-plots.mjs` and
-  `snapshot-dedupe.mjs` do: the row model (kind/state/standing → label) and the Ranked button's state
-  resolution. Drive the real thing with `tools/webverify`.
+**Verified:** web **82/82**, plus two browser probes — `lobby-verify.mjs` (opens from home, lists
+what is running, receives a message pushed while open, refuses to let the signed-out play, Esc
+returns to the map) and `lobby-load-verify.mjs` (the timings above, and a session picked during the
+load surviving into the app).
+
+**Three bugs found by looking rather than assuming:**
+- **A quiet SSE feed never opened.** Spring does not flush response headers until the first event, so
+  a lobby whose chat was silent left `EventSource` waiting on headers that never came — no `onopen`,
+  no CORS evaluation, and the first real message arriving to nobody. `SseFeed` now sends a comment
+  frame on connect. (This was also the unexplained "0 bytes received" on the deployed server.)
+- **Rows showed raw ids** — the list carried no colony name.
+- **`.lb-card{display:flex}` overrode `[hidden]{display:none}`**, so the setup panel was permanently
+  on screen. The probe read the `hidden` *attribute* and reported it hidden; the **screenshot** told
+  the truth. The probe now reads computed style.
+
+**Waiting on the registry:** the Ranked button says "No Timeline is open" — honestly — until a
+registry names a current Timeline.
+
 
 ### Phase 6 — sessions & Timelines live in the database (required) — ✅ DONE
 
