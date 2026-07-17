@@ -72,3 +72,46 @@ export function get(rel) {
   const local = path.join(CACHE, norm(rel));
   return fs.existsSync(local) ? local : null;
 }
+
+// https://gitlab.com/api/v4/projects/<url-encoded group/project>
+function projectApiBase() {
+  const u = new URL(BASE);
+  const project = u.pathname.replace(/^\/+/, '').replace(/\.git$/, '');
+  return `${u.protocol}//${u.host}/api/v4/projects/${encodeURIComponent(project)}`;
+}
+
+/**
+ * Mod-relative blob paths under a directory (recursive). The Node sibling of
+ * {@code AnbennarFiles.list}. Fast offline path: if the cache (the `.anbennar-cache` junction → a
+ * local clone) already holds the directory, walk it on disk — no network. Otherwise fall back to the
+ * paginated GitLab tree API. Returned paths are mod-relative with forward slashes.
+ */
+export async function list(dir) {
+  dir = norm(dir);
+  const localDir = path.join(CACHE, dir);
+  if (fs.existsSync(localDir)) {
+    const out = [];
+    const walk = d => {
+      for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+        const fp = path.join(d, e.name);
+        if (e.isDirectory()) walk(fp);
+        else out.push(path.relative(CACHE, fp).replace(/\\/g, '/'));
+      }
+    };
+    walk(localDir);
+    if (out.length) return out;
+  }
+  const apiBase = projectApiBase();
+  const blobs = [];
+  for (let page = 1; ; ) {
+    const url = `${apiBase}/repository/tree?path=${encodeURIComponent(dir)}`
+      + `&ref=${encodeURIComponent(REF)}&recursive=true&per_page=100&page=${page}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`GitLab tree API ${r.status} for ${dir}`);
+    for (const e of await r.json()) if (e.type === 'blob') blobs.push(e.path);
+    const next = r.headers.get('x-next-page');
+    if (!next) break;
+    page = parseInt(next, 10);
+  }
+  return blobs;
+}

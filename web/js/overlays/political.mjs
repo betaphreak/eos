@@ -3,8 +3,9 @@
 // coloured by the active dimension (core.polOf / S.overlay), zoom-banded so the map yields to the
 // physical terrain as you dive in, plus the legend/search spotlight. The chrome (legend, entity
 // search, sidebar Politics block) lives in panel.mjs; this module owns only the canvas render.
-import { ctx, cam, P, provPath, provOnScreen, polOf, isPolitical, isUnderground, COUNTRIES, CULTURES, RELIGIONS, K_PLOT, K_TEX, lerp, VIEW, provSrcBox, pxr, pyr, S } from "../core.mjs";
+import { ctx, cam, P, provPath, provOnScreen, polOf, isPolitical, isUnderground, COUNTRIES, CULTURES, RELIGIONS, K_PLOT, K_TEX, lerp, VIEW, provSrcBox, pxr, pyr, LABEL_FONT, S } from "../core.mjs";
 import { draw } from "../repaint.mjs";
+import { loadArt } from "../plotcanvas.mjs";
 import { focusProvinceFit } from "../main.mjs";
 import { bandAlpha, kBand } from "../bands.mjs";
 
@@ -48,6 +49,101 @@ export function drawPolitical() {
     }
     ctx.restore();
   }
+  drawCountryLabels();
+}
+
+// ---- country flags (window.FLAGS, baked by build-flags.mjs): the Nations-legend chips and the
+// on-map country labels. The atlas image loads lazily on the first political draw; an absent FLAGS
+// (404 → feature off) or a not-yet-loaded image simply draws no flag. ----
+const FLAGS = window.FLAGS || null;
+let flagImg = null, flagReady = false;
+function flagAtlas() {
+  if (!FLAGS) return null;
+  if (!flagImg) flagImg = loadArt(FLAGS, () => { flagReady = true; });
+  return flagReady ? flagImg : null;
+}
+
+// Inline CSS background-sprite for one flag cell at D px — the legend chip. "" when the tag has no
+// flag or the atlas is absent (falls back to the colour swatch alone).
+function flagChipHtml(tag, D = 18) {
+  if (!FLAGS || FLAGS.index[tag] === undefined) return "";
+  const i = FLAGS.index[tag];
+  const sheetW = FLAGS.cols * D, sheetH = Math.ceil(FLAGS.count / FLAGS.cols) * D;
+  const x = -(i % FLAGS.cols) * D, y = -Math.floor(i / FLAGS.cols) * D;
+  return `<span class="flagchip" style="width:${D}px;height:${D}px;`
+    + `background-image:url(${FLAGS.src});background-size:${sheetW}px ${sheetH}px;`
+    + `background-position:${x}px ${y}px"></span>`;
+}
+
+// Per-country label anchor: the bbox-area-weighted centroid of the country's owned provinces (source
+// px), cached per plane (ownership is static, so it's built once per plane). Area-weighting sits the
+// label over the country's bulk rather than the midpoint of a sprawling exclave pair.
+let _anchors = { plane: null, map: null };
+function countryAnchors() {
+  if (_anchors.plane === S.plane && _anchors.map) return _anchors.map;
+  const acc = new Map();
+  for (const p of P) {
+    if (!p.owner || !planeShows(p)) continue;
+    const box = provSrcBox(p);
+    if (!box) continue;
+    const area = Math.max(1, (box.x1 - box.x0) * (box.y1 - box.y0));
+    const cx = (box.x0 + box.x1) / 2, cy = (box.y0 + box.y1) / 2;
+    const a = acc.get(p.owner) || { sx: 0, sy: 0, area: 0 };
+    a.sx += cx * area; a.sy += cy * area; a.area += area;
+    acc.set(p.owner, a);
+  }
+  const map = new Map();
+  for (const [tag, a] of acc) map.set(tag, { sx: a.sx / a.area, sy: a.sy / a.area, area: a.area });
+  _anchors = { plane: S.plane, map };
+  return map;
+}
+
+// On-map country labels for the Nations overlay: a flag chip + name at each country's anchor. Shown
+// only in the overview (below K_PLOT, where the fills read as territory rather than terrain), fading
+// out as you zoom toward plot detail, and greedily de-collided — biggest countries claim the space
+// first — so the map never drowns in labels. Nation overlay only (cultures/faiths have no flag).
+const LBL_FLAG_PX = 16, LBL_FONT_PX = 12, LBL_GAP = 5, LBL_PAD = 3, LBL_MAX = 140;
+function drawCountryLabels() {
+  if (S.overlay !== "nation") return;
+  const img = flagAtlas();
+  if (!img) return;
+  const alpha = Math.max(0, Math.min(1, (K_PLOT - cam.k) / (K_PLOT * 0.4)));
+  if (alpha <= 0.01) return;
+
+  const cand = [];
+  for (const [tag, a] of countryAnchors()) {
+    const e = COUNTRIES[tag];
+    if (!e || FLAGS.index[tag] === undefined) continue;
+    const x = pxr(a.sx), y = pyr(a.sy);
+    if (x < -80 || x > VIEW.w + 80 || y < -40 || y > VIEW.h + 40) continue;
+    cand.push({ tag, name: e.name, x, y, area: a.area });
+  }
+  cand.sort((p, q) => q.area - p.area);   // largest nations win the collision space
+
+  ctx.save();
+  ctx.font = `600 ${LBL_FONT_PX}px ${LABEL_FONT}`;
+  ctx.textBaseline = "middle";
+  ctx.globalAlpha = alpha;
+  const placed = [];
+  for (const c of cand) {
+    if (placed.length >= LBL_MAX) break;
+    const w = LBL_FLAG_PX + LBL_GAP + ctx.measureText(c.name).width;
+    const h = Math.max(LBL_FLAG_PX, LBL_FONT_PX);
+    const x0 = c.x - w / 2, y0 = c.y - h / 2, x1 = x0 + w, y1 = y0 + h;
+    if (placed.some(r => x0 < r.x1 + LBL_PAD && x1 > r.x0 - LBL_PAD && y0 < r.y1 + LBL_PAD && y1 > r.y0 - LBL_PAD))
+      continue;
+    placed.push({ x0, y0, x1, y1 });
+    const i = FLAGS.index[c.tag];
+    const sx = (i % FLAGS.cols) * FLAGS.cell, sy = Math.floor(i / FLAGS.cols) * FLAGS.cell;
+    const fx = x0, fy = c.y - LBL_FLAG_PX / 2;
+    ctx.drawImage(img, sx, sy, FLAGS.cell, FLAGS.cell, fx, fy, LBL_FLAG_PX, LBL_FLAG_PX);
+    ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 1;
+    ctx.strokeRect(fx + 0.5, fy + 0.5, LBL_FLAG_PX - 1, LBL_FLAG_PX - 1);
+    const tx = fx + LBL_FLAG_PX + LBL_GAP;
+    ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,.7)"; ctx.strokeText(c.name, tx, c.y);
+    ctx.fillStyle = "#fff"; ctx.fillText(c.name, tx, c.y);
+  }
+  ctx.restore();
 }
 
 // ---- political chrome: legend, entity search, sidebar block, and the lazy political.js loader.
@@ -129,7 +225,8 @@ export function renderPolLegend() {
   if (legendCollapsed === null) legendCollapsed = matchMedia("(max-width: 640px)").matches;
   let html = `<button class="lg-h lg-toggle" aria-expanded="${!legendCollapsed}">${title} · ${rows.length}<span class="lg-caret" aria-hidden="true">▾</span></button><div class="leg-scroll">`;
   for (const [k, n] of rows) { const e = table[k];
-    html += `<button class="legrow" data-key="${k}"><span class="sw" style="background:${e.color}"></span><span class="leg-nm">${e.name}</span><span class="km">${n}</span></button>`;
+    const flag = S.overlay === "nation" ? flagChipHtml(k) : "";
+    html += `<button class="legrow" data-key="${k}"><span class="sw" style="background:${e.color}"></span>${flag}<span class="leg-nm">${e.name}</span><span class="km">${n}</span></button>`;
   }
   polLegend.innerHTML = html + `</div>`;
   polLegend.hidden = false;

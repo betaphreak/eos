@@ -370,6 +370,10 @@
        evaluates (core.mjs reads it at eval, like window.BUNDLE). A deferred classic script runs before
        the dynamically-imported module app, and a 404 just leaves TRADEGOODS undefined (feature off). -->
   <script defer src="tradegoods.js"></script>
+  <!-- window.FLAGS: the country-flag atlas manifest (build-flags.mjs), read by the political overlay
+       for the Nations legend chips and the on-map country labels. Same defer/optional contract as
+       tradegoods.js — a 404 just leaves FLAGS undefined (flags off, colour swatch only). -->
+  <script defer src="flags.js"></script>
   <!-- window.BUNDLE (the map/geo backbone) now comes from the spectator server — the single
        source of truth, assembled by com.civstudio.server.web.WorldBundle — instead of a committed
        data.js. The loading screen can hold up a SERVER PICKER (dev is the default cloud server,

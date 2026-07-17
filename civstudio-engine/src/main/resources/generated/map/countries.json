@@ -32,7 +32,7 @@
   "color" : "#b2b2b2"
 }, {
   "tag" : "A09",
-  "name" : "Sorncost",
+  "name" : "Sorncóst",
   "color" : "#823c6c"
 }, {
   "tag" : "A10",
@@ -56,7 +56,7 @@
   "color" : "#c8a09b"
 }, {
   "tag" : "A15",
-  "name" : "Eilisin",
+  "name" : "Eilísin",
   "color" : "#b96161"
 }, {
   "tag" : "A16",
@@ -80,7 +80,7 @@
   "color" : "#ef3434"
 }, {
   "tag" : "A21",
-  "name" : "Venail",
+  "name" : "Venáil",
   "color" : "#99efde"
 }, {
   "tag" : "A22",
@@ -100,15 +100,15 @@
   "color" : "#ddc681"
 }, {
   "tag" : "A26",
-  "name" : "Redscale Clan",
+  "name" : "Redscale",
   "color" : "#ae4b4b"
 }, {
   "tag" : "A27",
-  "name" : "Bluescale Clan",
+  "name" : "Bluescale",
   "color" : "#4b93ae"
 }, {
   "tag" : "A28",
-  "name" : "Greenscale Clan",
+  "name" : "Greenscale",
   "color" : "#81975e"
 }, {
   "tag" : "A29",
@@ -148,7 +148,7 @@
   "color" : "#ab7a40"
 }, {
   "tag" : "A38",
-  "name" : "Anbenncost",
+  "name" : "Anbenncóst",
   "color" : "#5fb2ba"
 }, {
   "tag" : "A39",
@@ -172,7 +172,7 @@
   "color" : "#e9e9e9"
 }, {
   "tag" : "A44",
-  "name" : "Esmaraine",
+  "name" : "Esmarainé",
   "color" : "#cb8548"
 }, {
   "tag" : "A45",
@@ -184,7 +184,7 @@
   "color" : "#87a6a5"
 }, {
   "tag" : "A47",
-  "name" : "Eborthil",
+  "name" : "Eborthíl",
   "color" : "#cfb664"
 }, {
   "tag" : "A48",
@@ -212,11 +212,11 @@
   "color" : "#ffc90f"
 }, {
   "tag" : "A54",
-  "name" : "Crothan",
+  "name" : "Crothán",
   "color" : "#269ca2"
 }, {
   "tag" : "A55",
-  "name" : "Menibor",
+  "name" : "Menibór",
   "color" : "#e6e632"
 }, {
   "tag" : "A56",
@@ -332,7 +332,7 @@
   "color" : "#319f9f"
 }, {
   "tag" : "A84",
-  "name" : "Galeinn",
+  "name" : "Galéinn",
   "color" : "#f8f8f8"
 }, {
   "tag" : "A85",
@@ -356,15 +356,15 @@
   "color" : "#7e83ce"
 }, {
   "tag" : "A90",
-  "name" : "Seinathil",
+  "name" : "Seinathíl",
   "color" : "#cd458f"
 }, {
   "tag" : "A91",
-  "name" : "Deamoine",
+  "name" : "Deamóine",
   "color" : "#97e2b2"
 }, {
   "tag" : "A92",
-  "name" : "Leslinpar",
+  "name" : "Leslinpár",
   "color" : "#f8f08f"
 }, {
   "tag" : "A93",
@@ -372,7 +372,7 @@
   "color" : "#b984a4"
 }, {
   "tag" : "A94",
-  "name" : "Gabmorionn",
+  "name" : "Gabmórionn",
   "color" : "#7db2cb"
 }, {
   "tag" : "A95",
@@ -380,7 +380,7 @@
   "color" : "#52d2e8"
 }, {
   "tag" : "A96",
-  "name" : "Lasean",
+  "name" : "Laseán",
   "color" : "#63234e"
 }, {
   "tag" : "A97",
@@ -392,7 +392,7 @@
   "color" : "#262262"
 }, {
   "tag" : "A99",
-  "name" : "Varaine",
+  "name" : "Varainé",
   "color" : "#99c29f"
 }, {
   "tag" : "B00",
@@ -400,7 +400,7 @@
   "color" : "#007a5b"
 }, {
   "tag" : "B01",
-  "name" : "Greentide",
+  "name" : "The Greentide",
   "color" : "#529720"
 }, {
   "tag" : "B02",
@@ -416,7 +416,7 @@
   "color" : "#833436"
 }, {
   "tag" : "B05",
-  "name" : "Pioneers Guild",
+  "name" : "Pioneer's Guild",
   "color" : "#d1a06b"
 }, {
   "tag" : "B06",
@@ -480,43 +480,43 @@
   "color" : "#232628"
 }, {
   "tag" : "B21",
-  "name" : "Heartgrinder Clan",
+  "name" : "Heartgrinder",
   "color" : "#808000"
 }, {
   "tag" : "B22",
-  "name" : "Venomtooth Clan",
+  "name" : "Venomtooth",
   "color" : "#728c00"
 }, {
   "tag" : "B23",
-  "name" : "Rotcleaver Clan",
+  "name" : "Rotcleaver",
   "color" : "#9acd32"
 }, {
   "tag" : "B24",
-  "name" : "Clouded Eye Clan",
+  "name" : "Clouded Eye",
   "color" : "#f0fff0"
 }, {
   "tag" : "B25",
-  "name" : "Bladebreaker Clan",
+  "name" : "Bladebreaker",
   "color" : "#49796b"
 }, {
   "tag" : "B26",
-  "name" : "Severed Ear Clan",
+  "name" : "Severed Ear",
   "color" : "#00693e"
 }, {
   "tag" : "B27",
-  "name" : "Bonecarver Clan",
+  "name" : "Bonecarver",
   "color" : "#a9ba9e"
 }, {
   "tag" : "B28",
-  "name" : "Dogeater Clan",
+  "name" : "Dogeater",
   "color" : "#3eb489"
 }, {
   "tag" : "B29",
-  "name" : "Deadfang Clan",
+  "name" : "Deadfang",
   "color" : "#365e3b"
 }, {
   "tag" : "B30",
-  "name" : "Bloodgorger Clan",
+  "name" : "Bloodgorger",
   "color" : "#50c878"
 }, {
   "tag" : "B31",
@@ -560,31 +560,31 @@
   "color" : "#0047ab"
 }, {
   "tag" : "B41",
-  "name" : "Earworm Tribe",
+  "name" : "Earworm",
   "color" : "#321932"
 }, {
   "tag" : "B42",
-  "name" : "Groundhawk Tribe",
+  "name" : "Groundhawk",
   "color" : "#64aa1e"
 }, {
   "tag" : "B43",
-  "name" : "Flying Hound Tribe",
+  "name" : "Flying Hound",
   "color" : "#aa1e64"
 }, {
   "tag" : "B44",
-  "name" : "Flung Head Tribe",
+  "name" : "Flung Head",
   "color" : "#1e64aa"
 }, {
   "tag" : "B45",
-  "name" : "Headwearer Tribe",
+  "name" : "Headwearer",
   "color" : "#146428"
 }, {
   "tag" : "B46",
-  "name" : "Grasshopper Muncher Tribe",
+  "name" : "Grasshopper Muncher",
   "color" : "#914883"
 }, {
   "tag" : "B47",
-  "name" : "Stalbor",
+  "name" : "Stalbór",
   "color" : "#a491df"
 }, {
   "tag" : "B48",
@@ -604,19 +604,19 @@
   "color" : "#b6c4eb"
 }, {
   "tag" : "B52",
-  "name" : "Cael_Deinn",
+  "name" : "Cael'Deinn",
   "color" : "#a12a2a"
 }, {
   "tag" : "B53",
-  "name" : "Nurcestir",
+  "name" : "Núrcestir",
   "color" : "#d1a06b"
 }, {
   "tag" : "B54",
-  "name" : "Esthil",
+  "name" : "Esthíl",
   "color" : "#232628"
 }, {
   "tag" : "B55",
-  "name" : "Counts League",
+  "name" : "Count's League",
   "color" : "#646464"
 }, {
   "tag" : "B56",
@@ -632,15 +632,15 @@
   "color" : "#0f75bb"
 }, {
   "tag" : "B59",
-  "name" : "Pashaine",
+  "name" : "Pashainé",
   "color" : "#82378c"
 }, {
   "tag" : "B60",
-  "name" : "Farranean",
+  "name" : "Farraneán",
   "color" : "#a0b955"
 }, {
   "tag" : "B61",
-  "name" : "Edhardrachon Breakaway",
+  "name" : "The Edhardrachon",
   "color" : "#c0c0c0"
 }, {
   "tag" : "B62",
@@ -696,7 +696,7 @@
   "color" : "#aa786e"
 }, {
   "tag" : "B75",
-  "name" : "Ainethan",
+  "name" : "Ainethán",
   "color" : "#e1b346"
 }, {
   "tag" : "B76",
@@ -768,7 +768,7 @@
   "color" : "#c3a087"
 }, {
   "tag" : "B93",
-  "name" : "Ildumar",
+  "name" : "Ildumár",
   "color" : "#faa401"
 }, {
   "tag" : "B94",
@@ -792,19 +792,19 @@
   "color" : "#416496"
 }, {
   "tag" : "B99",
-  "name" : "Aranthil",
+  "name" : "Aranthíl",
   "color" : "#7d91a0"
 }, {
   "tag" : "F21",
-  "name" : "Birsartanses",
+  "name" : "Birzartanšes",
   "color" : "#cf62ad"
 }, {
   "tag" : "F22",
-  "name" : "Dartaxagerdim",
+  "name" : "Dartaxâgerdim",
   "color" : "#49c634"
 }, {
   "tag" : "F23",
-  "name" : "Ovdal Tungr",
+  "name" : "Ovdal Tûngr",
   "color" : "#cc7515"
 }, {
   "tag" : "F24",
@@ -844,7 +844,7 @@
   "color" : "#990330"
 }, {
   "tag" : "F33",
-  "name" : "Akalses",
+  "name" : "Akalšes",
   "color" : "#475995"
 }, {
   "tag" : "F34",
@@ -884,7 +884,7 @@
   "color" : "#0238a9"
 }, {
   "tag" : "F43",
-  "name" : "Zansap",
+  "name" : "Zanšap",
   "color" : "#57b1c8"
 }, {
   "tag" : "F44",
@@ -892,7 +892,7 @@
   "color" : "#914316"
 }, {
   "tag" : "F45",
-  "name" : "Hasr",
+  "name" : "Hašr",
   "color" : "#374df5"
 }, {
   "tag" : "F46",
@@ -904,15 +904,15 @@
   "color" : "#ffc600"
 }, {
   "tag" : "F48",
-  "name" : "Siadan",
+  "name" : "Siádan",
   "color" : "#ade4db"
 }, {
   "tag" : "F49",
-  "name" : "Elaienna",
+  "name" : "Elaiénna",
   "color" : "#fdf950"
 }, {
   "tag" : "F50",
-  "name" : "Mulen",
+  "name" : "Mulén",
   "color" : "#d9937d"
 }, {
   "tag" : "F51",
@@ -920,11 +920,11 @@
   "color" : "#f18732"
 }, {
   "tag" : "F52",
-  "name" : "Surakes",
+  "name" : "Surakeš",
   "color" : "#d56a62"
 }, {
   "tag" : "F53",
-  "name" : "Musaskalam",
+  "name" : "Mušaskalam",
   "color" : "#313961"
 }, {
   "tag" : "F54",
@@ -936,7 +936,7 @@
   "color" : "#822314"
 }, {
   "tag" : "F56",
-  "name" : "Dasmatus",
+  "name" : "Dasmatuš",
   "color" : "#bebe32"
 }, {
   "tag" : "F57",
@@ -1024,11 +1024,11 @@
   "color" : "#6464c8"
 }, {
   "tag" : "F79",
-  "name" : "Sihrusam",
+  "name" : "Sihrušam",
   "color" : "#c2b669"
 }, {
   "tag" : "F80",
-  "name" : "Nansalen",
+  "name" : "Nanšalen",
   "color" : "#8fb0ea"
 }, {
   "tag" : "F81",
@@ -1056,19 +1056,19 @@
   "color" : "#f4fff4"
 }, {
   "tag" : "F87",
-  "name" : "Panuses",
+  "name" : "Panušes",
   "color" : "#ff3f6f"
 }, {
   "tag" : "F88",
-  "name" : "Lawassar",
+  "name" : "Lawaššar",
   "color" : "#303698"
 }, {
   "tag" : "F89",
-  "name" : "Arkasul",
+  "name" : "Arkašul",
   "color" : "#66190c"
 }, {
   "tag" : "F90",
-  "name" : "Misarallen",
+  "name" : "Mišarallen",
   "color" : "#f0502d"
 }, {
   "tag" : "F91",
@@ -1088,7 +1088,7 @@
   "color" : "#629888"
 }, {
   "tag" : "F95",
-  "name" : "Iskurthid",
+  "name" : "Iškurthid",
   "color" : "#3457d5"
 }, {
   "tag" : "F96",
@@ -1096,7 +1096,7 @@
   "color" : "#a80037"
 }, {
   "tag" : "F97",
-  "name" : "Bastard Empire",
+  "name" : "Phoenix Empire",
   "color" : "#ac273c"
 }, {
   "tag" : "F98",
@@ -1108,7 +1108,7 @@
   "color" : "#ac1e0b"
 }, {
   "tag" : "G00",
-  "name" : "Ameion Civil War",
+  "name" : "Nákyra",
   "color" : "#ac281f"
 }, {
   "tag" : "G01",
@@ -1148,7 +1148,7 @@
   "color" : "#be6363"
 }, {
   "tag" : "G10",
-  "name" : "Ruinsail",
+  "name" : "Ruinsail Confederacy",
   "color" : "#2d211d"
 }, {
   "tag" : "G15",
@@ -1156,11 +1156,11 @@
   "color" : "#add7f7"
 }, {
   "tag" : "G16",
-  "name" : "Aen Saldayno",
+  "name" : "Ae'n Saldayno",
   "color" : "#7a5272"
 }, {
   "tag" : "G17",
-  "name" : "XotiGuao",
+  "name" : "Xoti'Guao",
   "color" : "#89877b"
 }, {
   "tag" : "G18",
@@ -1172,7 +1172,7 @@
   "color" : "#0a6b22"
 }, {
   "tag" : "G20",
-  "name" : "Araya",
+  "name" : "Aráya",
   "color" : "#32a17a"
 }, {
   "tag" : "G21",
@@ -1296,7 +1296,7 @@
   "color" : "#21b596"
 }, {
   "tag" : "G51",
-  "name" : "Arpedifer",
+  "name" : "Arpedifér",
   "color" : "#28e4ed"
 }, {
   "tag" : "G52",
@@ -1308,7 +1308,7 @@
   "color" : "#0ca0e4"
 }, {
   "tag" : "G54",
-  "name" : "Besolaki",
+  "name" : "Besolakí",
   "color" : "#be16f7"
 }, {
   "tag" : "G55",
@@ -1320,15 +1320,15 @@
   "color" : "#d97152"
 }, {
   "tag" : "G57",
-  "name" : "Apikhoxi",
+  "name" : "Apikhoxí",
   "color" : "#440510"
 }, {
   "tag" : "G58",
-  "name" : "Keyolion",
+  "name" : "Keyolíon",
   "color" : "#7595ed"
 }, {
   "tag" : "G59",
-  "name" : "Anisikheion",
+  "name" : "Anisíkheion",
   "color" : "#7d8158"
 }, {
   "tag" : "G60",
@@ -1336,11 +1336,11 @@
   "color" : "#a19c4c"
 }, {
   "tag" : "G61",
-  "name" : "Kimanis",
+  "name" : "Kimánis",
   "color" : "#3b1e58"
 }, {
   "tag" : "G62",
-  "name" : "Amgremos",
+  "name" : "Amgremós",
   "color" : "#9f82bc"
 }, {
   "tag" : "G63",
@@ -1444,7 +1444,7 @@
   "color" : "#3e5058"
 }, {
   "tag" : "G88",
-  "name" : "Arapache",
+  "name" : "Árapache",
   "color" : "#5e6e64"
 }, {
   "tag" : "G89",
@@ -1460,7 +1460,7 @@
   "color" : "#623436"
 }, {
   "tag" : "G92",
-  "name" : "Saamirses",
+  "name" : "Saamiršes",
   "color" : "#d5629d"
 }, {
   "tag" : "G93",
@@ -1476,7 +1476,7 @@
   "color" : "#1f31ee"
 }, {
   "tag" : "G96",
-  "name" : "Thilvis",
+  "name" : "Thílvis",
   "color" : "#b2b2b2"
 }, {
   "tag" : "G97",
@@ -1580,7 +1580,7 @@
   "color" : "#d4af37"
 }, {
   "tag" : "H22",
-  "name" : "Kheios",
+  "name" : "Kheiós",
   "color" : "#3c78b4"
 }, {
   "tag" : "H23",
@@ -1665,7 +1665,7 @@
 }, {
   "tag" : "H43",
   "name" : "Neratica",
-  "color" : "#222222"
+  "color" : "#212121"
 }, {
   "tag" : "H44",
   "name" : "Shining Circle",
@@ -1684,15 +1684,15 @@
   "color" : "#94c9b1"
 }, {
   "tag" : "H48",
-  "name" : "Menibor Free Company",
+  "name" : "Menibór Free Company",
   "color" : "#e6d131"
 }, {
   "tag" : "H49",
-  "name" : "Tiru Moine",
+  "name" : "Tiru Móine",
   "color" : "#e6d131"
 }, {
   "tag" : "H50",
-  "name" : "Varbuks Freemen",
+  "name" : "Varbuk's Freemen",
   "color" : "#42f5c8"
 }, {
   "tag" : "H51",
@@ -1744,7 +1744,7 @@
   "color" : "#108a90"
 }, {
   "tag" : "H63",
-  "name" : "Nur Dhanaenn",
+  "name" : "Núr Dhánaenn",
   "color" : "#108a90"
 }, {
   "tag" : "H64",
@@ -1796,7 +1796,7 @@
   "color" : "#0d352e"
 }, {
   "tag" : "H76",
-  "name" : "Arg-Ordstun",
+  "name" : "Arg-Ôrdstun",
   "color" : "#c8c8c8"
 }, {
   "tag" : "H77",
@@ -1868,7 +1868,7 @@
   "color" : "#444e3e"
 }, {
   "tag" : "H94",
-  "name" : "Obsidian Legions",
+  "name" : "Obsidian Legion",
   "color" : "#080e2a"
 }, {
   "tag" : "H95",
@@ -1900,11 +1900,11 @@
   "color" : "#3c2850"
 }, {
   "tag" : "I02",
-  "name" : "Krakdhumvror",
+  "name" : "Krakdhûmvror",
   "color" : "#94c9e6"
 }, {
   "tag" : "I03",
-  "name" : "Dur-Vazhatun",
+  "name" : "Dûr-Vazhatun",
   "color" : "#001977"
 }, {
   "tag" : "I04",
@@ -1912,7 +1912,7 @@
   "color" : "#4a6f79"
 }, {
   "tag" : "I05",
-  "name" : "Mithradhum",
+  "name" : "Mithradhûm",
   "color" : "#51e7d5"
 }, {
   "tag" : "I06",
@@ -1924,7 +1924,7 @@
   "color" : "#958365"
 }, {
   "tag" : "I08",
-  "name" : "Haraz Orldhum",
+  "name" : "Haraz Orldhûm",
   "color" : "#4a5061"
 }, {
   "tag" : "I09",
@@ -1956,7 +1956,7 @@
   "color" : "#0f52ba"
 }, {
   "tag" : "I16",
-  "name" : "Gor Burad",
+  "name" : "Gor Bûrad",
   "color" : "#f04848"
 }, {
   "tag" : "I17",
@@ -1964,11 +1964,11 @@
   "color" : "#5da19a"
 }, {
   "tag" : "I18",
-  "name" : "Grozumdihr",
+  "name" : "Grôzumdihr",
   "color" : "#87e187"
 }, {
   "tag" : "I19",
-  "name" : "Ovdal-az-An",
+  "name" : "Ovdal-az-Ân",
   "color" : "#72cae3"
 }, {
   "tag" : "I20",
@@ -1976,19 +1976,19 @@
   "color" : "#996ccc"
 }, {
   "tag" : "I21",
-  "name" : "Tuwad-Dhumankon",
+  "name" : "Tuwad-Dhûmankon",
   "color" : "#1bfd66"
 }, {
   "tag" : "I22",
-  "name" : "Gronstunad",
+  "name" : "Grônstunad",
   "color" : "#00a86b"
 }, {
   "tag" : "I23",
-  "name" : "Haraz Dhumankon",
+  "name" : "Haraz Dhûmankon",
   "color" : "#382b46"
 }, {
   "tag" : "I24",
-  "name" : "Aul Dwarov",
+  "name" : "Aul-Dwarov",
   "color" : "#214060"
 }, {
   "tag" : "I25",
@@ -2008,7 +2008,7 @@
   "color" : "#64c371"
 }, {
   "tag" : "I29",
-  "name" : "Salla Cenag",
+  "name" : "Salla Cenág",
   "color" : "#fffcde"
 }, {
   "tag" : "I30",
@@ -2028,7 +2028,7 @@
   "color" : "#9f9e9f"
 }, {
   "tag" : "I34",
-  "name" : "Salla Ghul",
+  "name" : "Salla Ghúl",
   "color" : "#662d91"
 }, {
   "tag" : "I35",
@@ -2248,7 +2248,7 @@
   "color" : "#dcd228"
 }, {
   "tag" : "I89",
-  "name" : "Khuraen Ulaeg",
+  "name" : "Khüraen Ulaeg",
   "color" : "#640f0f"
 }, {
   "tag" : "I90",
@@ -2320,11 +2320,11 @@
   "color" : "#0992a8"
 }, {
   "tag" : "J08",
-  "name" : "Kozuurigur",
+  "name" : "Kozuurigür",
   "color" : "#b43e8a"
 }, {
   "tag" : "J09",
-  "name" : "Lankuuhsta",
+  "name" : "Länkuuhsta",
   "color" : "#ffcdb5"
 }, {
   "tag" : "J10",
@@ -2372,7 +2372,7 @@
   "color" : "#7c7019"
 }, {
   "tag" : "J21",
-  "name" : "Marekiiv",
+  "name" : "Märekiiv",
   "color" : "#6eccdc"
 }, {
   "tag" : "J22",
@@ -2408,7 +2408,7 @@
   "color" : "#1ccc66"
 }, {
   "tag" : "J30",
-  "name" : "Lankina",
+  "name" : "Länkinä",
   "color" : "#7b35e8"
 }, {
   "tag" : "J31",
@@ -2492,11 +2492,11 @@
   "color" : "#dac53f"
 }, {
   "tag" : "J51",
-  "name" : "Ponjogde",
+  "name" : "Ponjögde",
   "color" : "#36e9e9"
 }, {
   "tag" : "J52",
-  "name" : "Ikogshaantus",
+  "name" : "Ikögshaantus",
   "color" : "#074a4a"
 }, {
   "tag" : "J53",
@@ -2568,7 +2568,7 @@
   "color" : "#08203d"
 }, {
   "tag" : "J79",
-  "name" : "Katalperai",
+  "name" : "Katelperai",
   "color" : "#619062"
 }, {
   "tag" : "J80",
@@ -2588,7 +2588,7 @@
   "color" : "#00b836"
 }, {
   "tag" : "J84",
-  "name" : "Taychend",
+  "name" : "Taychendi Empire",
   "color" : "#b44600"
 }, {
   "tag" : "J85",
@@ -2604,31 +2604,31 @@
   "color" : "#503e58"
 }, {
   "tag" : "J88",
-  "name" : "Udralach",
+  "name" : "Údralach",
   "color" : "#52d039"
 }, {
   "tag" : "J89",
-  "name" : "Chaparun",
+  "name" : "Chapárun",
   "color" : "#f9effc"
 }, {
   "tag" : "J90",
-  "name" : "Cara Lafquen",
+  "name" : "Cara Lafquén",
   "color" : "#a6d1de"
 }, {
   "tag" : "J91",
-  "name" : "Iruasawid",
+  "name" : "Irúasawid",
   "color" : "#f96c8d"
 }, {
   "tag" : "J92",
-  "name" : "Trigica",
+  "name" : "Trígica",
   "color" : "#f3fa8f"
 }, {
   "tag" : "J93",
-  "name" : "Hinediu Yulas",
+  "name" : "Hinediú Yulas",
   "color" : "#4b3e1e"
 }, {
   "tag" : "J95",
-  "name" : "Rhasail",
+  "name" : "Rhasáil",
   "color" : "#d50027"
 }, {
   "tag" : "J96",
@@ -2644,7 +2644,7 @@
   "color" : "#e6e73e"
 }, {
   "tag" : "J99",
-  "name" : "Validaunea",
+  "name" : "Validaunéa",
   "color" : "#002454"
 }, {
   "tag" : "L01",
@@ -2788,7 +2788,7 @@
   "color" : "#1fd1b3"
 }, {
   "tag" : "L36",
-  "name" : "Lelanan",
+  "name" : "Lelanàn",
   "color" : "#ff8080"
 }, {
   "tag" : "L37",
@@ -2820,7 +2820,7 @@
   "color" : "#e53e6f"
 }, {
   "tag" : "L44",
-  "name" : "Ananiltra",
+  "name" : "Anàniltra",
   "color" : "#37dcdc"
 }, {
   "tag" : "L45",
@@ -2864,7 +2864,7 @@
   "color" : "#827717"
 }, {
   "tag" : "L55",
-  "name" : "Naleni",
+  "name" : "Naléni",
   "color" : "#ff8a65"
 }, {
   "tag" : "L56",
@@ -2880,7 +2880,7 @@
   "color" : "#b39ddb"
 }, {
   "tag" : "L59",
-  "name" : "Bwa_Tanizu",
+  "name" : "Bwa Tanizu",
   "color" : "#f832b4"
 }, {
   "tag" : "L60",
@@ -3044,11 +3044,11 @@
   "color" : "#639e75"
 }, {
   "tag" : "M01",
-  "name" : "Grizehud",
+  "name" : "Grizehûd",
   "color" : "#974fa8"
 }, {
   "tag" : "M02",
-  "name" : "Dursikari",
+  "name" : "Dûrsikari",
   "color" : "#bf9d6f"
 }, {
   "tag" : "M03",
@@ -3064,7 +3064,7 @@
   "color" : "#cc5500"
 }, {
   "tag" : "M10",
-  "name" : "Taokakurekohurukauaia",
+  "name" : "T€k‹rek‡hukau",
   "color" : "#35cdbe"
 }, {
   "tag" : "M11",
@@ -3072,11 +3072,11 @@
   "color" : "#e0e5c1"
 }, {
   "tag" : "M12",
-  "name" : "Kaora To Tatau To",
+  "name" : "Kaora To T€tau To",
   "color" : "#e2953c"
 }, {
   "tag" : "M13",
-  "name" : "Kamutu Taratu Mahikou Amatou",
+  "name" : "Kamutarihikou",
   "color" : "#7637ac"
 }, {
   "tag" : "M14",
@@ -3084,7 +3084,7 @@
   "color" : "#a6324d"
 }, {
   "tag" : "M15",
-  "name" : "Konei Hei Awhina",
+  "name" : "Konei Hei •whina",
   "color" : "#d0643d"
 }, {
   "tag" : "M16",
@@ -3092,7 +3092,7 @@
   "color" : "#ba1818"
 }, {
   "tag" : "M17",
-  "name" : "Ru Ana A Tangura",
+  "name" : "R‹ Ana A Halana",
   "color" : "#5ee46b"
 }, {
   "tag" : "M18",
@@ -3100,11 +3100,11 @@
   "color" : "#2a76da"
 }, {
   "tag" : "M19",
-  "name" : "Sa'paomi",
+  "name" : "Sa’paomi",
   "color" : "#6371c9"
 }, {
   "tag" : "M20",
-  "name" : "Toa Tangaroa",
+  "name" : "Toa T€ngaroa",
   "color" : "#77bd80"
 }, {
   "tag" : "M21",
@@ -3144,7 +3144,7 @@
   "color" : "#5eda55"
 }, {
   "tag" : "M30",
-  "name" : "I-Numbe",
+  "name" : "I-Numbë",
   "color" : "#ffffff"
 }, {
   "tag" : "M31",
@@ -3152,7 +3152,7 @@
   "color" : "#f89393"
 }, {
   "tag" : "M32",
-  "name" : "Kaikoura",
+  "name" : "Kaik‡ura",
   "color" : "#00660d"
 }, {
   "tag" : "M33",
@@ -3291,42 +3291,6 @@
   "name" : "dummy_seafaring_demonborns",
   "color" : "#bcec99"
 }, {
-  "tag" : "M81",
-  "name" : "dummy_water_school",
-  "color" : "#bcec99"
-}, {
-  "tag" : "M82",
-  "name" : "dummy_water_earth_school",
-  "color" : "#bcec99"
-}, {
-  "tag" : "M83",
-  "name" : "dummy_water_fire_school",
-  "color" : "#bcec99"
-}, {
-  "tag" : "M84",
-  "name" : "dummy_earth_school",
-  "color" : "#bcec99"
-}, {
-  "tag" : "M85",
-  "name" : "dummy_earth_water_school",
-  "color" : "#bcec99"
-}, {
-  "tag" : "M86",
-  "name" : "dummy_earth_fire_school",
-  "color" : "#bcec99"
-}, {
-  "tag" : "M87",
-  "name" : "dummy_fire_school",
-  "color" : "#bcec99"
-}, {
-  "tag" : "M88",
-  "name" : "dummy_fire_water_school",
-  "color" : "#bcec99"
-}, {
-  "tag" : "M89",
-  "name" : "dummy_fire_earth_school",
-  "color" : "#bcec99"
-}, {
   "tag" : "N00",
   "name" : "Ahetl Mulyatl",
   "color" : "#000096"
@@ -3348,7 +3312,7 @@
   "color" : "#00c8e6"
 }, {
   "tag" : "N05",
-  "name" : "Hapali'naina",
+  "name" : "H€pali'naina",
   "color" : "#80ffff"
 }, {
   "tag" : "N06",
@@ -3356,7 +3320,7 @@
   "color" : "#838996"
 }, {
   "tag" : "N07",
-  "name" : "Keotlepoz",
+  "name" : "Ke'otlepoz",
   "color" : "#e3e0cd"
 }, {
   "tag" : "N08",
@@ -3376,11 +3340,11 @@
   "color" : "#3c3c3c"
 }, {
   "tag" : "N12",
-  "name" : "MtKaui Keakol",
+  "name" : "Mt’Kaui Ke’akol",
   "color" : "#0f7fd4"
 }, {
   "tag" : "N13",
-  "name" : "Houhaliaa",
+  "name" : "Houhalia’a",
   "color" : "#006a80"
 }, {
   "tag" : "N14",
@@ -3420,7 +3384,7 @@
   "color" : "#7d1010"
 }, {
   "tag" : "N23",
-  "name" : "Tauhakelehali",
+  "name" : "Tau’hakelehali",
   "color" : "#cc7722"
 }, {
   "tag" : "N24",
@@ -3436,7 +3400,7 @@
   "color" : "#d3d3d3"
 }, {
   "tag" : "N27",
-  "name" : "Myaika Nhouaka",
+  "name" : "Myai’ka Nhou’aka",
   "color" : "#d42a2a"
 }, {
   "tag" : "N28",
@@ -3444,11 +3408,11 @@
   "color" : "#6a8000"
 }, {
   "tag" : "N29",
-  "name" : "Malikanawa",
+  "name" : "Malik€n€wa",
   "color" : "#5500ff"
 }, {
   "tag" : "N30",
-  "name" : "Koatepec",
+  "name" : "Ko'atepec",
   "color" : "#e6665e"
 }, {
   "tag" : "N31",
@@ -3460,7 +3424,7 @@
   "color" : "#9d33a7"
 }, {
   "tag" : "N33",
-  "name" : "Kitetl",
+  "name" : "Ki’tetl",
   "color" : "#400b0b"
 }, {
   "tag" : "N34",
@@ -3468,11 +3432,11 @@
   "color" : "#ff57c1"
 }, {
   "tag" : "N35",
-  "name" : "Kusaimauna",
+  "name" : "Kusa'imauna",
   "color" : "#fa523c"
 }, {
   "tag" : "N36",
-  "name" : "Haifumana",
+  "name" : "Ha'ifumana",
   "color" : "#041bc9"
 }, {
   "tag" : "N37",
@@ -3504,7 +3468,7 @@
   "color" : "#381d50"
 }, {
   "tag" : "N44",
-  "name" : "Waimauna",
+  "name" : "Wa'imauna",
   "color" : "#e0c40d"
 }, {
   "tag" : "N45",
@@ -3516,11 +3480,11 @@
   "color" : "#00ff72"
 }, {
   "tag" : "N47",
-  "name" : "Na Kiai",
+  "name" : "Na Kia'i",
   "color" : "#0059b3"
 }, {
   "tag" : "N48",
-  "name" : "Huia Koluila",
+  "name" : "Hui'a Kolu'ila",
   "color" : "#efe8a9"
 }, {
   "tag" : "N49",
@@ -3528,23 +3492,23 @@
   "color" : "#79fc9c"
 }, {
   "tag" : "N50",
-  "name" : "Kheteawepha",
+  "name" : "Khe'teawepha",
   "color" : "#b5a642"
 }, {
   "tag" : "N51",
-  "name" : "Lakohe Iamoku",
+  "name" : "Lakohe ‘Iamoku",
   "color" : "#eba169"
 }, {
   "tag" : "N52",
-  "name" : "Nuio Hopuana",
+  "name" : "Nui’o Ho’puana",
   "color" : "#12b0c2"
 }, {
   "tag" : "N53",
-  "name" : "Ponhamuphona",
+  "name" : "Ponhamu'phona",
   "color" : "#9ab973"
 }, {
   "tag" : "N54",
-  "name" : "Nohakai",
+  "name" : "No’hakai",
   "color" : "#ccccff"
 }, {
   "tag" : "N55",
@@ -3552,7 +3516,7 @@
   "color" : "#c1a788"
 }, {
   "tag" : "N56",
-  "name" : "Poni Kuahoii",
+  "name" : "Poni Kuahoi'i",
   "color" : "#000046"
 }, {
   "tag" : "N57",
@@ -3572,7 +3536,7 @@
   "color" : "#ee762a"
 }, {
   "tag" : "N61",
-  "name" : "Wao Nakahea",
+  "name" : "Wao N€kahea",
   "color" : "#bc634f"
 }, {
   "tag" : "N62",
@@ -3588,7 +3552,7 @@
   "color" : "#a00058"
 }, {
   "tag" : "N65",
-  "name" : "Kotli Komhitzi",
+  "name" : "Kotli'komhitzi",
   "color" : "#880808"
 }, {
   "tag" : "N66",
@@ -3604,7 +3568,7 @@
   "color" : "#ff00c8"
 }, {
   "tag" : "N69",
-  "name" : "Aqtlapuai",
+  "name" : "Aqtl'apuai",
   "color" : "#fdfeca"
 }, {
   "tag" : "N70",
@@ -3612,7 +3576,7 @@
   "color" : "#e46fb5"
 }, {
   "tag" : "N71",
-  "name" : "Houpunikaupuni",
+  "name" : "Houpuni Kaupuni",
   "color" : "#ffa229"
 }, {
   "tag" : "N72",
@@ -3620,7 +3584,7 @@
   "color" : "#0095b3"
 }, {
   "tag" : "N73",
-  "name" : "Satrialaam",
+  "name" : "Satriaalam",
   "color" : "#ad235e"
 }, {
   "tag" : "N74",
@@ -3648,19 +3612,19 @@
   "color" : "#95b300"
 }, {
   "tag" : "N80",
-  "name" : "Rokadie",
+  "name" : "Rokãdie",
   "color" : "#d278cc"
 }, {
   "tag" : "N81",
   "name" : "Coapoco",
-  "color" : "#ffaf51"
+  "color" : "#ff7900"
 }, {
   "tag" : "N82",
   "name" : "Dimang",
   "color" : "#0037ff"
 }, {
   "tag" : "N83",
-  "name" : "Imbabo",
+  "name" : "Imbãbo",
   "color" : "#694014"
 }, {
   "tag" : "N84",
@@ -3676,7 +3640,7 @@
   "color" : "#9d33a7"
 }, {
   "tag" : "N87",
-  "name" : "Gor Auri",
+  "name" : "Gor’Auri",
   "color" : "#be0032"
 }, {
   "tag" : "N88",
@@ -3688,7 +3652,7 @@
   "color" : "#b39500"
 }, {
   "tag" : "N90",
-  "name" : "Kabakige",
+  "name" : "Kãbakige",
   "color" : "#a92f02"
 }, {
   "tag" : "N91",
@@ -3705,7 +3669,7 @@
 }, {
   "tag" : "N94",
   "name" : "Izimaa",
-  "color" : "#570404"
+  "color" : "#f57818"
 }, {
   "tag" : "N95",
   "name" : "Saan Matama",
@@ -3736,7 +3700,7 @@
   "color" : "#5c4625"
 }, {
   "tag" : "P01",
-  "name" : "Uchaimauna",
+  "name" : "Ucha’imauna",
   "color" : "#8b07de"
 }, {
   "tag" : "P10",
@@ -3788,7 +3752,7 @@
   "color" : "#cc42e6"
 }, {
   "tag" : "P22",
-  "name" : "Anatu'agao",
+  "name" : "Anatu'€gao",
   "color" : "#ff8901"
 }, {
   "tag" : "P23",
@@ -3868,19 +3832,19 @@
   "color" : "#042209"
 }, {
   "tag" : "Q04",
-  "name" : "Krysaxon",
+  "name" : "Itobix",
   "color" : "#c69b58"
 }, {
   "tag" : "Q05",
-  "name" : "Yaikoft",
+  "name" : "Yaikobix",
   "color" : "#6191f2"
 }, {
   "tag" : "Q06",
-  "name" : "Syngrax",
+  "name" : "Ivirobix",
   "color" : "#643500"
 }, {
   "tag" : "Q07",
-  "name" : "Rramiwix",
+  "name" : "Iwixobix",
   "color" : "#3f6455"
 }, {
   "tag" : "R00",
@@ -4101,7 +4065,7 @@
 }, {
   "tag" : "R54",
   "name" : "Parusahan Saya",
-  "color" : "#6f6d8a"
+  "color" : "#574f50"
 }, {
   "tag" : "R55",
   "name" : "Dhurajaghan",
@@ -4136,19 +4100,19 @@
   "color" : "#994c00"
 }, {
   "tag" : "R63",
-  "name" : "Thunderfist Clan",
+  "name" : "Thunderfist",
   "color" : "#967d50"
 }, {
   "tag" : "R64",
-  "name" : "Bloodsong Clan",
+  "name" : "Bloodsong",
   "color" : "#935b42"
 }, {
   "tag" : "R65",
-  "name" : "Blackstep Clan",
+  "name" : "Blackstep",
   "color" : "#14321e"
 }, {
   "tag" : "R66",
-  "name" : "Stolen Gem Clan",
+  "name" : "Stolen Gem",
   "color" : "#5b4f2c"
 }, {
   "tag" : "R67",
@@ -4216,7 +4180,7 @@
   "color" : "#ffe13d"
 }, {
   "tag" : "R83",
-  "name" : "Semifire",
+  "name" : "Semifírë",
   "color" : "#cffdbc"
 }, {
   "tag" : "R84",
@@ -4308,27 +4272,27 @@
   "color" : "#2e2be0"
 }, {
   "tag" : "S16",
-  "name" : "Uwakila_Baashi",
+  "name" : "Uwakila Baashi",
   "color" : "#fafff5"
 }, {
   "tag" : "S17",
-  "name" : "Qabiika_Baddabi",
+  "name" : "Baddabi",
   "color" : "#644807"
 }, {
   "tag" : "S18",
-  "name" : "Qabiika_Beeragga",
+  "name" : "Beeragga",
   "color" : "#e18f15"
 }, {
   "tag" : "S19",
-  "name" : "Qabiika_Weggabiga",
+  "name" : "Weggabiga",
   "color" : "#004800"
 }, {
   "tag" : "S20",
-  "name" : "Qabiika_Dadubakha",
+  "name" : "Dadubakha",
   "color" : "#b42121"
 }, {
   "tag" : "S21",
-  "name" : "Kabilu_Gawakhiza",
+  "name" : "Gawakhiza",
   "color" : "#395dcc"
 }, {
   "tag" : "S22",
@@ -4364,7 +4328,7 @@
   "color" : "#e67300"
 }, {
   "tag" : "S30",
-  "name" : "Death_Bringing_Cobra",
+  "name" : "Death Bringing Cobra",
   "color" : "#001a11"
 }, {
   "tag" : "S31",
@@ -4376,47 +4340,47 @@
   "color" : "#6414c8"
 }, {
   "tag" : "S33",
-  "name" : "T_Red_Fanged_Gorilla",
+  "name" : "Red Fanged Gorilla",
   "color" : "#fa3737"
 }, {
   "tag" : "S34",
-  "name" : "T_Cunning_River_Eel",
+  "name" : "Cunning River Kyil",
   "color" : "#46d5b0"
 }, {
   "tag" : "S35",
-  "name" : "T_Well_Fed_Elephant",
+  "name" : "Well Fed Elephant",
   "color" : "#de8644"
 }, {
   "tag" : "S36",
-  "name" : "T_Stealthy_Duiker",
+  "name" : "Stealthy Duiker",
   "color" : "#5e635b"
 }, {
   "tag" : "S37",
-  "name" : "T_Swift_Legged_Bongo",
+  "name" : "Swift Legged Bongo",
   "color" : "#f6f583"
 }, {
   "tag" : "S38",
-  "name" : "T_Work_Doing_Hippo",
+  "name" : "Work Doing Hippo",
   "color" : "#9921a6"
 }, {
   "tag" : "S39",
-  "name" : "T_Hut_Building_Weaver_Bird",
+  "name" : "Hut Building Weaver Bird",
   "color" : "#ec4124"
 }, {
   "tag" : "S40",
-  "name" : "T_Forest_Hiding_Okapi",
+  "name" : "Forest Hiding Okapi",
   "color" : "#2d7c7e"
 }, {
   "tag" : "S41",
-  "name" : "T_Prey_Finding_Leopard",
+  "name" : "Prey Finding Leopard",
   "color" : "#01454b"
 }, {
   "tag" : "S42",
-  "name" : "T_Friend_Helping_Parrot",
+  "name" : "Friend Helping Parrot",
   "color" : "#0487c3"
 }, {
   "tag" : "S43",
-  "name" : "T_Violent_Hearted_Goose",
+  "name" : "Violent Hearted Goose",
   "color" : "#fff5f5"
 }, {
   "tag" : "S44",
@@ -4436,7 +4400,7 @@
   "color" : "#420e1d"
 }, {
   "tag" : "S48",
-  "name" : "Tikur Adayni",
+  "name" : "Tikur Adanyi",
   "color" : "#e72a6f"
 }, {
   "tag" : "S49",
@@ -4484,7 +4448,7 @@
   "color" : "#a1456e"
 }, {
   "tag" : "S60",
-  "name" : "Meretgaban",
+  "name" : "Meretgeban",
   "color" : "#9418ff"
 }, {
   "tag" : "S61",
@@ -4540,7 +4504,7 @@
   "color" : "#e1ab04"
 }, {
   "tag" : "S74",
-  "name" : "Tnismoted",
+  "name" : "Tnismot",
   "color" : "#f54286"
 }, {
   "tag" : "S75",
@@ -4712,23 +4676,23 @@
   "color" : "#96957a"
 }, {
   "tag" : "U11",
-  "name" : "Landshark Clan",
+  "name" : "Landshark",
   "color" : "#c8ea64"
 }, {
   "tag" : "U12",
-  "name" : "Oubbligschild Clan",
+  "name" : "Oubbligschild",
   "color" : "#2be82b"
 }, {
   "tag" : "U13",
-  "name" : "Greysheep Clan",
+  "name" : "Greysheep",
   "color" : "#7d7d7d"
 }, {
   "tag" : "U14",
-  "name" : "Mountainhugger Clan",
+  "name" : "Mountainhugger",
   "color" : "#585058"
 }, {
   "tag" : "U15",
-  "name" : "Marble Head Clan",
+  "name" : "Marblehead",
   "color" : "#f6f690"
 }, {
   "tag" : "U16",
@@ -4736,11 +4700,11 @@
   "color" : "#5a783c"
 }, {
   "tag" : "U17",
-  "name" : "Crathanor",
+  "name" : "Crathánor",
   "color" : "#3b94eb"
 }, {
   "tag" : "U18",
-  "name" : "Reuyel",
+  "name" : "Re-Uyel",
   "color" : "#c976b1"
 }, {
   "tag" : "U19",
@@ -4776,7 +4740,7 @@
   "color" : "#b75040"
 }, {
   "tag" : "U27",
-  "name" : "Theinos",
+  "name" : "Theínós",
   "color" : "#7e1b85"
 }, {
   "tag" : "U28",
@@ -4792,7 +4756,7 @@
   "color" : "#180c1b"
 }, {
   "tag" : "U31",
-  "name" : "Triarchy",
+  "name" : "The Triarchy",
   "color" : "#1f51ff"
 }, {
   "tag" : "U32",
@@ -4868,7 +4832,7 @@
   "color" : "#0c3066"
 }, {
   "tag" : "U50",
-  "name" : "Leidhancost",
+  "name" : "Leidhancóst",
   "color" : "#cae00f"
 }, {
   "tag" : "U52",
@@ -4876,11 +4840,11 @@
   "color" : "#454596"
 }, {
   "tag" : "U53",
-  "name" : "Obaithail",
+  "name" : "Obaitháil",
   "color" : "#2e3192"
 }, {
   "tag" : "U54",
-  "name" : "Morail",
+  "name" : "Móraíl",
   "color" : "#964552"
 }, {
   "tag" : "U55",
@@ -4898,10 +4862,6 @@
   "tag" : "U60",
   "name" : "Soruin",
   "color" : "#50d26c"
-}, {
-  "tag" : "U61",
-  "name" : "Turtleback Isle",
-  "color" : "#234abe"
 }, {
   "tag" : "U62",
   "name" : "Malatel",
@@ -4980,7 +4940,7 @@
   "color" : "#00a2e8"
 }, {
   "tag" : "V08",
-  "name" : "Suldokli",
+  "name" : "Sudokli",
   "color" : "#70442c"
 }, {
   "tag" : "V09",
@@ -5236,7 +5196,7 @@
   "color" : "#c8c8c8"
 }, {
   "tag" : "Y39",
-  "name" : "Pezarang",
+  "name" : "P'ezarang",
   "color" : "#700bbb"
 }, {
   "tag" : "Y40",
@@ -5448,7 +5408,7 @@
   "color" : "#7d7878"
 }, {
   "tag" : "Y92",
-  "name" : "Rung Igedch",
+  "name" : "Rüng Igedch",
   "color" : "#3273a8"
 }, {
   "tag" : "Y93",
@@ -5457,7 +5417,7 @@
 }, {
   "tag" : "Y94",
   "name" : "Dalmangaji",
-  "color" : "#440510"
+  "color" : "#735528"
 }, {
   "tag" : "Y95",
   "name" : "Baegye",
@@ -5508,7 +5468,7 @@
   "color" : "#a20002"
 }, {
   "tag" : "Z08",
-  "name" : "Bjarnrik",
+  "name" : "Bjarnrík",
   "color" : "#b97a57"
 }, {
   "tag" : "Z09",
@@ -5616,7 +5576,7 @@
   "color" : "#000000"
 }, {
   "tag" : "Z35",
-  "name" : "Rosande",
+  "name" : "Rósande",
   "color" : "#833436"
 }, {
   "tag" : "Z36",
@@ -5652,7 +5612,7 @@
   "color" : "#1c1f96"
 }, {
   "tag" : "Z44",
-  "name" : "Silblaidd orda",
+  "name" : "Orda Silblaidd",
   "color" : "#9170c8"
 }, {
   "tag" : "Z45",
@@ -5664,7 +5624,7 @@
   "color" : "#f1ae76"
 }, {
   "tag" : "Z47",
-  "name" : "Doombringer Clan",
+  "name" : "Doombringer",
   "color" : "#aca6d9"
 }, {
   "tag" : "Z48",
@@ -5700,7 +5660,7 @@
   "color" : "#bd0808"
 }, {
   "tag" : "Z56",
-  "name" : "Kuxhezte",
+  "name" : "Kuxheztë",
   "color" : "#511010"
 }, {
   "tag" : "Z57",
@@ -5724,7 +5684,7 @@
   "color" : "#755555"
 }, {
   "tag" : "Z62",
-  "name" : "Thangoya",
+  "name" : "Thàngoya",
   "color" : "#aac841"
 }, {
   "tag" : "Z63",
@@ -5752,23 +5712,23 @@
   "color" : "#981c66"
 }, {
   "tag" : "Z69",
-  "name" : "Aelnar_Lithiel",
+  "name" : "Lithiel Oathguardians",
   "color" : "#1c28b4"
 }, {
   "tag" : "Z70",
-  "name" : "Aelnar_Kayd",
+  "name" : "Kayd Hands",
   "color" : "#3c3296"
 }, {
   "tag" : "Z71",
-  "name" : "Aelnar_Aelthanas",
+  "name" : "Aelthanas Followers",
   "color" : "#1c3296"
 }, {
   "tag" : "Z72",
-  "name" : "Aelnar_Sicrheior",
+  "name" : "Sicrheior Spears",
   "color" : "#5f3296"
 }, {
   "tag" : "Z73",
-  "name" : "Aelnar_Dahvar",
+  "name" : "Dahvar Zealots",
   "color" : "#461f96"
 }, {
   "tag" : "Z74",
@@ -5776,31 +5736,31 @@
   "color" : "#3e78b2"
 }, {
   "tag" : "Z75",
-  "name" : "The First Acolyte",
+  "name" : "First Acolyte",
   "color" : "#505050"
 }, {
   "tag" : "Z76",
-  "name" : "The Second Acolyte",
+  "name" : "Second Acolyte",
   "color" : "#303030"
 }, {
   "tag" : "Z77",
-  "name" : "The Third Acolyte",
+  "name" : "Third Acolyte",
   "color" : "#16111b"
 }, {
   "tag" : "Z78",
-  "name" : "The Fourth Acolyte",
+  "name" : "Fourth Acolyte",
   "color" : "#190f0f"
 }, {
   "tag" : "Z79",
-  "name" : "The Fifth Acolyte",
+  "name" : "Fifth Acolyte",
   "color" : "#191919"
 }, {
   "tag" : "Z80",
-  "name" : "The Sixth Acolyte",
+  "name" : "Sixth Acolyte",
   "color" : "#070e15"
 }, {
   "tag" : "Z81",
-  "name" : "The Seventh Acolyte",
+  "name" : "Seventh Acolyte",
   "color" : "#19141d"
 }, {
   "tag" : "Z82",
@@ -5812,7 +5772,7 @@
   "color" : "#780013"
 }, {
   "tag" : "Z84",
-  "name" : "Varheim",
+  "name" : "Várheim",
   "color" : "#2c5c39"
 }, {
   "tag" : "Z85",
@@ -5828,11 +5788,11 @@
   "color" : "#133a14"
 }, {
   "tag" : "Z88",
-  "name" : "Vaengheim",
+  "name" : "Vængheim",
   "color" : "#d7daff"
 }, {
   "tag" : "Z89",
-  "name" : "Digoveda",
+  "name" : "Ðigoveða",
   "color" : "#ef8383"
 }, {
   "tag" : "Z90",

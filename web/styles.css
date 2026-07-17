@@ -338,6 +338,9 @@ canvas#map { position: absolute; inset: 0; width: 100%; height: 100%; display: b
 #polLegend .leg-scroll::-webkit-scrollbar { width: 7px; }
 #polLegend .leg-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
 .sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; flex: none; }
+/* the Nations-legend flag chip: one cell of the flag atlas (window.FLAGS) via a background sprite */
+.legrow .flagchip { display: inline-block; flex: none; border-radius: 2px; background-repeat: no-repeat;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.35); }
 .legrow .leg-nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .heatkey { margin-top: 5px; padding-top: 7px; border-top: 1px solid var(--line-soft); }
 .hk-bar { height: 8px; border-radius: 4px; margin-top: 2px;
