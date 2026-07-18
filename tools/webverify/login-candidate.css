@@ -1,0 +1,52 @@
+/* ===== Login: web/-style cinematic dark splash + gold-hairline glass card =====
+   Pinned dark and self-contained (web/'s splash is always dark, independent of the UI theme), since
+   Strapi exposes no theme selector to scope against. Everything scoped under #main-content so the ID
+   out-specifies styled-components' single-class rules. */
+body {
+  background:
+    radial-gradient(1200px 620px at 50% -12%, rgba(230, 176, 74, 0.12), transparent 60%),
+    radial-gradient(820px 520px at 50% 118%, rgba(110, 168, 255, 0.05), transparent 60%),
+    linear-gradient(180deg, #0c111b 0%, #080b12 100%) !important;
+}
+#main-content { background: transparent !important; }
+
+/* the auth card → translucent navy glass with a gold hairline + deep shadow (web/ .ld-picker) */
+#main-content > div:first-child {
+  background: rgba(13, 17, 25, 0.55) !important;
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+  border: 1px solid rgba(230, 176, 74, 0.42) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55) !important;
+  padding: 40px 44px 34px !important;
+}
+
+/* serif, warm-parchment title (web/ .ld-title) */
+#main-content h1 {
+  font-family: Georgia, "Times New Roman", serif !important;
+  color: #f2e6cf !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+}
+/* subtitle + field labels pinned light-on-dark */
+#main-content label,
+#main-content > div:first-child > div span,
+#main-content p { color: #aeb9ca !important; }
+/* inputs: dark glass, light text, gold focus (border handled by the theme's primary) */
+#main-content input {
+  background: rgba(190, 205, 230, 0.05) !important;
+  color: #eef2f8 !important;
+  border-color: rgba(190, 205, 230, 0.18) !important;
+}
+#main-content input::placeholder { color: #6b7688 !important; }
+/* the forgot-password link → gold */
+#main-content a { color: #e6b04a !important; }
+/* the wordmark logo → faint gold glow */
+#main-content img { filter: drop-shadow(0 2px 14px rgba(230, 176, 74, 0.28)); }
+/* gold submit with dark ink (incl. its label span) */
+#main-content form button {
+  background: #e6b04a !important;
+  border-color: #e6b04a !important;
+}
+#main-content form button,
+#main-content form button span { color: #1a1206 !important; }

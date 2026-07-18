@@ -19,6 +19,13 @@ export default {
     // Quiet the Strapi-branding noise, matching a self-hosted product feel.
     tutorials: false,
     notifications: { releases: false },
+    // Rebrand the login copy off "Strapi".
+    translations: {
+      en: {
+        'Auth.form.welcome.title': 'Welcome to CivStudio',
+        'Auth.form.welcome.subtitle': 'Sign in to the administer content',
+      },
+    },
   },
   // Widget registration MUST live in `register`, not `bootstrap`: the admin passes the full
   // StrapiApp here (so `app.widgets` exists), whereas the `bootstrap` hook's argument is a
@@ -67,9 +74,43 @@ export default {
         font-family: system-ui, "Segoe UI", Roboto, -apple-system, sans-serif;
       }
 
-      /* gold primary buttons want dark ink, not white (web/'s convention — a bright-gold fill in dark
-         mode is unreadable under white text). Scoped to primary-variant buttons by their gold bg. */
-      button[data-variant="default"], button[data-variant="primary"] { color: #1a1206 !important; }
+      /* (Solid-button text ink is handled by the buttonNeutral0 theme token — see theme.ts.) */
+
+      /* ===== Login: web/-style cinematic dark splash + gold-hairline glass card =====
+         Pinned dark and self-contained (web/'s splash is always dark, independent of the UI theme).
+         Scoped to the AUTH pages via body:not(:has(nav)) — authed pages render the MainNav <nav>, the
+         login page doesn't — so these login-structural rules never touch the content-manager layout.
+         Rules are under #main-content so the ID out-specifies styled-components' single-class rules. */
+      body:not(:has(nav)) {
+        background:
+          radial-gradient(1200px 620px at 50% -12%, rgba(230,176,74,.12), transparent 60%),
+          radial-gradient(820px 520px at 50% 118%, rgba(110,168,255,.05), transparent 60%),
+          linear-gradient(180deg, #0c111b 0%, #080b12 100%) !important;
+      }
+      body:not(:has(nav)) #main-content { background: transparent !important; }
+      body:not(:has(nav)) #main-content > div:first-child {
+        background: rgba(13,17,25,.55) !important;
+        -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
+        border: 1px solid rgba(230,176,74,.42) !important;
+        border-radius: 16px !important; box-shadow: 0 20px 60px rgba(0,0,0,.55) !important;
+        padding: 40px 44px 34px !important;
+      }
+      body:not(:has(nav)) #main-content h1 {
+        font-family: Georgia, "Times New Roman", serif !important;
+        color: #f2e6cf !important; font-weight: 600 !important; letter-spacing: .02em !important;
+      }
+      body:not(:has(nav)) #main-content label,
+      body:not(:has(nav)) #main-content > div:first-child > div span,
+      body:not(:has(nav)) #main-content p { color: #aeb9ca !important; }
+      body:not(:has(nav)) #main-content input {
+        background: rgba(190,205,230,.05) !important; color: #eef2f8 !important;
+        border-color: rgba(190,205,230,.18) !important;
+      }
+      body:not(:has(nav)) #main-content input::placeholder { color: #6b7688 !important; }
+      body:not(:has(nav)) #main-content a { color: #e6b04a !important; }
+      body:not(:has(nav)) #main-content img { filter: drop-shadow(0 2px 14px rgba(230,176,74,.28)); }
+      body:not(:has(nav)) #main-content form button,
+      body:not(:has(nav)) #main-content form button span { color: #1a1206 !important; }
     `;
     document.head.appendChild(style);
   },

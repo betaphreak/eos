@@ -30,6 +30,10 @@ const light = {
     primary700: '#7c4c0a',
     buttonPrimary500: '#cf8f1e',
     buttonPrimary600: '#a9690f',
+    // dark ink on solid buttons (web/'s gold-button convention). The DS uses buttonNeutral0 for the
+    // text of every solid button (primary/danger/success); dark ink beats white on gold AND on
+    // red/green, so this one token fixes button contrast app-wide.
+    buttonNeutral0: '#1a1206',
     // secondary — web/ blue (#6ea8ff / #4f8fce)
     secondary100: '#e7f0fb',
     secondary200: '#c2dcf6',
