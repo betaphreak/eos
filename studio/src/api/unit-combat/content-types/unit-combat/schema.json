@@ -1,0 +1,65 @@
+{
+  "kind": "collectionType",
+  "collectionName": "unit_combats",
+  "info": {
+    "singularName": "unit-combat",
+    "pluralName": "unit-combats",
+    "displayName": "Unit Combat",
+    "description": "A C2C combat class; maps to a signature skill."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "name": {
+      "type": "string"
+    },
+    "signatureSkill": {
+      "type": "enumeration",
+      "enum": [
+        "STEWARDSHIP",
+        "CONSTRUCTION",
+        "SURVIVAL",
+        "WARFARE",
+        "COMMERCE",
+        "FAITH",
+        "HUNTING",
+        "MEDICINE",
+        "SUBTERFUGE",
+        "INTELLECTUAL",
+        "SOCIAL",
+        "PRODUCTION"
+      ]
+    },
+    "categoryButton": {
+      "type": "string"
+    },
+    "earlyWithdrawChange": {
+      "type": "integer"
+    },
+    "tauntChange": {
+      "type": "integer"
+    },
+    "dodgeModifierChange": {
+      "type": "integer"
+    },
+    "damageModifierChange": {
+      "type": "integer"
+    },
+    "precisionModifierChange": {
+      "type": "integer"
+    },
+    "captureResistanceModifierChange": {
+      "type": "integer"
+    },
+    "forMilitary": {
+      "type": "boolean"
+    }
+  }
+}

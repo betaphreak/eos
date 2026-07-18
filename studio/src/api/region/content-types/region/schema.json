@@ -9,27 +9,35 @@
   "options": {
     "draftAndPublish": false
   },
-  "pluginOptions": {},
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
   "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
     "name": {
       "type": "string",
-      "required": true
+      "required": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
     },
-    "rawKey": {
-      "type": "string",
-      "required": true
-    },
-    "provinceAreas": {
+    "areas": {
       "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::province-area.province-area",
-      "mappedBy": "region"
-    },
-    "superRegion": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::super-region.super-region",
-      "inversedBy": "regions"
+      "relation": "manyToMany",
+      "target": "api::area.area"
     }
   }
 }

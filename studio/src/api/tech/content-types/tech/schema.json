@@ -5,26 +5,47 @@
     "singularName": "tech",
     "pluralName": "techs",
     "displayName": "Tech",
-    "description": "Technology tree nodes"
+    "description": "A technology-tree node (C2C). Era is an enum attribute; And/Or prerequisites are self-relations."
   },
   "options": {
     "draftAndPublish": false
   },
-  "pluginOptions": {},
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
   "attributes": {
-    "type": {
+    "key": {
       "type": "string",
+      "pluginOptions": { "i18n": { "localized": false } },
       "required": true,
       "unique": true
     },
+    "name": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": true } },
+      "required": true
+    },
+    "help": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "quote": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
     "description": {
-      "type": "string"
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
     },
     "civilopedia": {
-      "type": "text"
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
     },
     "advisor": {
       "type": "enumeration",
+      "pluginOptions": { "i18n": { "localized": false } },
       "enum": [
         "ADVISOR_GROWTH",
         "ADVISOR_ECONOMY",
@@ -34,19 +55,53 @@
         "ADVISOR_RELIGION"
       ]
     },
-    "cost": {
-      "type": "integer"
-    },
     "era": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::era.era"
+      "type": "enumeration",
+      "pluginOptions": { "i18n": { "localized": false } },
+      "enum": [
+        "PREHISTORIC",
+        "ANCIENT",
+        "CLASSICAL",
+        "MEDIEVAL",
+        "RENAISSANCE",
+        "INDUSTRIAL",
+        "ATOMIC",
+        "INFORMATION",
+        "NANOTECH",
+        "TRANSHUMAN"
+      ]
+    },
+    "cost": {
+      "type": "integer",
+      "pluginOptions": { "i18n": { "localized": false } }
     },
     "gridX": {
-      "type": "integer"
+      "type": "integer",
+      "pluginOptions": { "i18n": { "localized": false } }
     },
     "gridY": {
-      "type": "integer"
+      "type": "integer",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "trade": {
+      "type": "boolean",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "goodyTech": {
+      "type": "boolean",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "sound": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "button": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "flavors": {
+      "type": "json",
+      "pluginOptions": { "i18n": { "localized": false } }
     },
     "andPreReqs": {
       "type": "relation",
@@ -58,23 +113,17 @@
       "relation": "manyToMany",
       "target": "api::tech.tech"
     },
-    "quote": {
-      "type": "text"
+    "unlockedBuildings": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::building.building",
+      "mappedBy": "prereqTech"
     },
-    "sound": {
-      "type": "string"
-    },
-    "button": {
-      "type": "string"
-    },
-    "trade": {
-      "type": "boolean"
-    },
-    "goodyTech": {
-      "type": "boolean"
-    },
-    "extraData": {
-      "type": "json"
+    "unlockedUnits": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::unit.unit",
+      "mappedBy": "prereqTech"
     }
   }
 }

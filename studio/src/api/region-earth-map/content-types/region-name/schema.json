@@ -1,0 +1,23 @@
+{
+  "kind": "singleType",
+  "collectionName": "region_names",
+  "info": {
+    "singularName": "region-name",
+    "pluralName": "region-names",
+    "displayName": "Region Name",
+    "description": "The Anbennar-region → Earth ISO-3166 country-code map that drives plot place-naming (from geo/region-earth-map.json)."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "regions": {
+      "type": "json",
+      "required": true
+    },
+    "notes": {
+      "type": "text"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "place_names",
+  "info": {
+    "singularName": "place-name",
+    "pluralName": "place-names",
+    "displayName": "Place Name",
+    "description": "GeoNames populated-place subset (plot place-naming)."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "geonameId": {
+      "type": "integer",
+      "required": true,
+      "unique": true
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "countryCode": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "decimal"
+    },
+    "longitude": {
+      "type": "decimal"
+    },
+    "elevation": {
+      "type": "integer"
+    },
+    "featureClass": {
+      "type": "string"
+    }
+  }
+}

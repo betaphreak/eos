@@ -4,7 +4,8 @@
   "info": {
     "singularName": "province",
     "pluralName": "provinces",
-    "displayName": "Province"
+    "displayName": "Province",
+    "description": "An imported Anbennar EU4 province — the world-map hub entity."
   },
   "options": {
     "draftAndPublish": false
@@ -17,85 +18,150 @@
   "attributes": {
     "provinceId": {
       "type": "integer",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
+      "pluginOptions": { "i18n": { "localized": false } },
       "required": true,
       "unique": true,
-      "min": 0,
-      "max": 9999
+      "min": 0
     },
     "name": {
       "type": "string",
-      "pluginOptions": {
-        "i18n": {
-          "localized": true
-        }
-      },
-      "minLength": 1,
-      "maxLength": 127,
-      "required": true,
-      "unique": false
+      "pluginOptions": { "i18n": { "localized": true } },
+      "required": true
+    },
+    "latitude": {
+      "type": "decimal",
+      "pluginOptions": { "i18n": { "localized": false } },
+      "min": -90,
+      "max": 90
+    },
+    "longitude": {
+      "type": "decimal",
+      "pluginOptions": { "i18n": { "localized": false } },
+      "min": -180,
+      "max": 180
     },
     "plots": {
       "type": "integer",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "required": true,
+      "pluginOptions": { "i18n": { "localized": false } },
       "default": 0,
-      "min": 0,
-      "max": 100000
+      "min": 0
     },
-    "r": {
+    "waterPlots": {
       "type": "integer",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "required": true,
-      "min": 0,
-      "max": 255
+      "pluginOptions": { "i18n": { "localized": false } },
+      "default": 0,
+      "min": 0
     },
-    "g": {
+    "type": {
+      "type": "enumeration",
+      "pluginOptions": { "i18n": { "localized": false } },
+      "default": "LAND",
+      "enum": [
+        "LAND",
+        "CAVERN",
+        "DWARVEN_HOLD",
+        "DWARVEN_HOLD_SURFACE",
+        "DWARVEN_ROAD",
+        "ANCIENT_FOREST",
+        "GLADEWAY",
+        "FEY_GLADEWAY",
+        "BLOODGROVES",
+        "MUSHROOM_FOREST",
+        "SHADOW_SWAMP",
+        "GLACIER",
+        "SEA",
+        "LAKE",
+        "IMPASSABLE"
+      ]
+    },
+    "continent": {
+      "type": "enumeration",
+      "pluginOptions": { "i18n": { "localized": false } },
+      "enum": [
+        "europe",
+        "serpentspine",
+        "asia",
+        "africa",
+        "north_america",
+        "south_america",
+        "oceania"
+      ]
+    },
+    "realm": {
+      "type": "enumeration",
+      "pluginOptions": { "i18n": { "localized": false } },
+      "enum": [
+        "halcann",
+        "aelantir",
+        "hinuilands"
+      ]
+    },
+    "winter": {
+      "type": "enumeration",
+      "pluginOptions": { "i18n": { "localized": false } },
+      "enum": ["mild", "normal", "severe"]
+    },
+    "monsoon": {
+      "type": "enumeration",
+      "pluginOptions": { "i18n": { "localized": false } },
+      "enum": ["mild", "normal", "severe"]
+    },
+    "climate": {
+      "type": "enumeration",
+      "pluginOptions": { "i18n": { "localized": false } },
+      "enum": ["arctic", "arid", "tropical"]
+    },
+    "baseTax": {
       "type": "integer",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "required": true,
-      "min": 0,
-      "max": 255
+      "pluginOptions": { "i18n": { "localized": false } }
     },
-    "b": {
+    "baseProduction": {
       "type": "integer",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "required": true,
-      "min": 0,
-      "max": 255
+      "pluginOptions": { "i18n": { "localized": false } }
     },
-    "hexCode": {
-      "type": "string",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "default": "INVALID",
-      "minLength": 7,
-      "maxLength": 7,
-      "required": true,
-      "unique": false
+    "baseManpower": {
+      "type": "integer",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "city": {
+      "type": "boolean",
+      "pluginOptions": { "i18n": { "localized": false } },
+      "default": false
+    },
+    "owner": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::country.country"
+    },
+    "controller": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::country.country"
+    },
+    "culture": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::culture.culture"
+    },
+    "religion": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::religion.religion"
+    },
+    "tradeGood": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::trade-good.trade-good"
+    },
+    "area": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::area.area"
+    },
+    "region": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::region.region"
     },
     "neighbors": {
       "type": "relation",
@@ -108,107 +174,6 @@
       "relation": "manyToMany",
       "target": "api::province.province",
       "mappedBy": "neighbors"
-    },
-    "minX": {
-      "type": "integer",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "required": false,
-      "min": 0
-    },
-    "minY": {
-      "type": "integer",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "min": 0
-    },
-    "maxX": {
-      "type": "integer",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "min": 0
-    },
-    "maxY": {
-      "type": "integer",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "min": 0
-    },
-    "svgOuterBound": {
-      "type": "text",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "required": true
-    },
-    "latitude": {
-      "type": "decimal",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "required": true,
-      "min": -90,
-      "max": 90
-    },
-    "provinceArea": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::province-area.province-area",
-      "inversedBy": "provinces"
-    },
-    "provinceType": {
-      "type": "enumeration",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "required": true,
-      "default": "LAND",
-      "enum": [
-        "LAND",
-        "SEA",
-        "LAKE",
-        "WASTELAND"
-      ]
-    },
-    "waterPlots": {
-      "type": "integer",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "default": 0
-    },
-    "sprite": {
-      "type": "media",
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
-        }
-      },
-      "multiple": false,
-      "allowedTypes": [
-        "images",
-        "files"
-      ]
     }
   }
 }

@@ -1,0 +1,108 @@
+{
+  "kind": "collectionType",
+  "collectionName": "bonuses",
+  "info": {
+    "singularName": "bonus",
+    "pluralName": "bonuses",
+    "displayName": "Bonus",
+    "description": "A resource bonus (absorbs manufactured-bonuses via bonusClass=BONUSCLASS_MANUFACTURED)."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "bonusClass": {
+      "type": "enumeration",
+      "enum": [
+        "BONUSCLASS_CROP",
+        "BONUSCLASS_LIVESTOCK",
+        "BONUSCLASS_LUXURY",
+        "BONUSCLASS_MANUFACTURED",
+        "BONUSCLASS_MISC",
+        "BONUSCLASS_PRODUCTION",
+        "BONUSCLASS_SEAFOOD",
+        "BONUSCLASS_STRATEGIC",
+        "BONUSCLASS_WONDER"
+      ]
+    },
+    "yieldChanges": {
+      "type": "json"
+    },
+    "techReveal": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tech.tech"
+    },
+    "techCityTrade": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tech.tech"
+    },
+    "health": {
+      "type": "integer"
+    },
+    "happiness": {
+      "type": "integer"
+    },
+    "minLatitude": {
+      "type": "integer"
+    },
+    "maxLatitude": {
+      "type": "integer"
+    },
+    "hills": {
+      "type": "boolean"
+    },
+    "flatlands": {
+      "type": "boolean"
+    },
+    "peaks": {
+      "type": "boolean"
+    },
+    "validTerrains": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::terrain.terrain"
+    },
+    "validFeatures": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::feature.feature"
+    },
+    "validFeatureTerrains": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::terrain.terrain"
+    },
+    "placementOrder": {
+      "type": "integer"
+    },
+    "constAppearance": {
+      "type": "integer"
+    },
+    "randApps": {
+      "type": "json"
+    },
+    "tilesPer": {
+      "type": "integer"
+    },
+    "minAreaSize": {
+      "type": "integer"
+    },
+    "groupRange": {
+      "type": "integer"
+    },
+    "groupRand": {
+      "type": "integer"
+    },
+    "techEra": {
+      "type": "integer"
+    }
+  }
+}

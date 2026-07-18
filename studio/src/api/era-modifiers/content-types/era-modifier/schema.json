@@ -1,0 +1,20 @@
+{
+  "kind": "singleType",
+  "collectionName": "era_modifiers",
+  "info": {
+    "singularName": "era-modifier",
+    "pluralName": "era-modifiers",
+    "displayName": "Era Modifiers",
+    "description": "Per-era Civ-style percentage modifiers (growth/train/construct/create/research/build/improve/gp/anarchy), keyed by the era enum. Replaces the per-era fields of the retired 'era' collection."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "modifiers": {
+      "type": "json",
+      "required": true
+    }
+  }
+}

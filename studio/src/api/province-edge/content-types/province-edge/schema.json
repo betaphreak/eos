@@ -1,0 +1,24 @@
+{
+  "kind": "collectionType",
+  "collectionName": "province_edges",
+  "info": {
+    "singularName": "province-edge",
+    "pluralName": "province-edges",
+    "displayName": "Province Edge",
+    "description": "Per-province land-route edge geometry (km parallel to province.neighbors)."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "province": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::province.province"
+    },
+    "km": {
+      "type": "json"
+    }
+  }
+}

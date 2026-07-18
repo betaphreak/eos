@@ -1,0 +1,29 @@
+{
+  "kind": "collectionType",
+  "collectionName": "tier1_providers",
+  "info": {
+    "singularName": "tier1-provider",
+    "pluralName": "tier1-providers",
+    "displayName": "Tier-1 Source",
+    "description": "A tier-1 (raw) resource provider — output bonus + gatherers."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "output": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::bonus.bonus"
+    },
+    "gatherers": {
+      "type": "json"
+    }
+  }
+}

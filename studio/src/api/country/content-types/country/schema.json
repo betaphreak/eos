@@ -4,37 +4,44 @@
   "info": {
     "singularName": "country",
     "pluralName": "countries",
-    "displayName": "Country"
+    "displayName": "Country",
+    "description": "A polity (Anbennar EU4 tag)."
   },
   "options": {
     "draftAndPublish": false
   },
-  "pluginOptions": {},
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
   "attributes": {
+    "tag": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
     "name": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 63,
       "required": true,
-      "unique": true
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
     },
-    "code": {
+    "color": {
       "type": "string",
-      "minLength": 3,
-      "maxLength": 3,
-      "required": true,
-      "unique": true
-    },
-    "source": {
-      "type": "string",
-      "required": false,
-      "unique": false
-    },
-    "cultures": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::culture.culture",
-      "mappedBy": "primaryCountry"
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
     }
   }
 }

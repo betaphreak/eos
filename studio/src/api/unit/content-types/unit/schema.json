@@ -1,0 +1,228 @@
+{
+  "kind": "collectionType",
+  "collectionName": "units",
+  "info": {
+    "singularName": "unit",
+    "pluralName": "units",
+    "displayName": "Unit",
+    "description": "A C2C land unit."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "name": {
+      "type": "string",
+      "required": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "pedia": {
+      "type": "text",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "prereqTech": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tech.tech",
+      "inversedBy": "unlockedUnits"
+    },
+    "andTechs": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::tech.tech"
+    },
+    "obsoleteTech": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tech.tech"
+    },
+    "combatClass": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::unit-combat.unit-combat"
+    },
+    "defaultUnitAI": {
+      "type": "enumeration",
+      "enum": [
+        "UNITAI_ARTIST",
+        "UNITAI_ATTACK",
+        "UNITAI_ATTACK_CITY",
+        "UNITAI_CITY_DEFENSE",
+        "UNITAI_CITY_SPECIAL",
+        "UNITAI_COUNTER",
+        "UNITAI_ENGINEER",
+        "UNITAI_EXPLORE",
+        "UNITAI_GENERAL",
+        "UNITAI_GREAT_ADMIRAL",
+        "UNITAI_GREAT_HUNTER",
+        "UNITAI_HEALER",
+        "UNITAI_HUNTER",
+        "UNITAI_INFILTRATOR",
+        "UNITAI_MERCHANT",
+        "UNITAI_MISSIONARY",
+        "UNITAI_PILLAGE",
+        "UNITAI_PILLAGE_COUNTER",
+        "UNITAI_PROPERTY_CONTROL",
+        "UNITAI_PROPHET",
+        "UNITAI_RESERVE",
+        "UNITAI_SCIENTIST",
+        "UNITAI_SETTLE",
+        "UNITAI_SPY",
+        "UNITAI_SUBDUED_ANIMAL",
+        "UNITAI_WORKER"
+      ],
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "caravanRole": {
+      "type": "enumeration",
+      "enum": [
+        "COVERT",
+        "EXPLORER",
+        "HEALER",
+        "HUNTER",
+        "MILITARY",
+        "MISSIONARY",
+        "SETTLER",
+        "TRADE",
+        "WORKER"
+      ],
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "domain": {
+      "type": "enumeration",
+      "enum": [
+        "DOMAIN_LAND",
+        "DOMAIN_SEA",
+        "DOMAIN_AIR",
+        "DOMAIN_IMMOBILE"
+      ],
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "quality": {
+      "type": "enumeration",
+      "enum": [
+        "QUALITY_PATHETIC",
+        "QUALITY_INFERIOR",
+        "QUALITY_POOR",
+        "QUALITY_MEDIOCRE",
+        "QUALITY_STANDARD",
+        "QUALITY_EXCEPTIONAL",
+        "QUALITY_SUPERIOR",
+        "QUALITY_ELITE",
+        "QUALITY_EPIC"
+      ],
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "bandSizeClass": {
+      "type": "enumeration",
+      "enum": [
+        "GROUP_SOLO",
+        "GROUP_PARTY",
+        "GROUP_SQUAD",
+        "GROUP_COMPANY",
+        "GROUP_BATTALION",
+        "GROUP_FORCES"
+      ],
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "moves": {
+      "type": "integer",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "combat": {
+      "type": "integer",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "builds": {
+      "type": "json",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "artDefineTag": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "button": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "special": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "species": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    }
+  }
+}

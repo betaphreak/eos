@@ -1,0 +1,28 @@
+{
+  "kind": "singleType",
+  "collectionName": "map_version",
+  "info": {
+    "singularName": "map-version",
+    "pluralName": "map-versions",
+    "displayName": "Map Version",
+    "description": "The authoritative content/plot-cache generation stamp. Retires the compile-time-inlined MAP_VERSION/GEN_VERSION constant: engine, server and bake read mapVersion at boot to key the .map plot cache; contentVersion is bumped on every reseed so a run records which content snapshot it used (reproducibility = seed + contentVersion)."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "mapVersion": {
+      "type": "integer",
+      "required": true,
+      "min": 0
+    },
+    "contentVersion": {
+      "type": "string",
+      "required": true
+    },
+    "note": {
+      "type": "text"
+    }
+  }
+}

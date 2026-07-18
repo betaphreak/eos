@@ -1,0 +1,92 @@
+{
+  "kind": "collectionType",
+  "collectionName": "housings",
+  "info": {
+    "singularName": "housing",
+    "pluralName": "housings",
+    "displayName": "Housing Building",
+    "description": "A C2C housing building (population-gated auto-build)."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "prereqTech": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tech.tech"
+    },
+    "obsoleteTech": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tech.tech"
+    },
+    "obsoletesToBuilding": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::building.building"
+    },
+    "prereqPopulation": {
+      "type": "integer"
+    },
+    "freshWater": {
+      "type": "boolean"
+    },
+    "autoBuild": {
+      "type": "boolean"
+    },
+    "bonus": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::bonus.bonus"
+    },
+    "prereqBonuses": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::bonus.bonus"
+    },
+    "prereqBuildings": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::building.building"
+    },
+    "prereqOrBuildings": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::building.building"
+    },
+    "prereqOrFeatures": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::feature.feature"
+    },
+    "prereqOrTerrains": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::terrain.terrain"
+    },
+    "replacements": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::building.building"
+    },
+    "health": {
+      "type": "integer"
+    },
+    "happiness": {
+      "type": "integer"
+    },
+    "yieldChanges": {
+      "type": "json"
+    },
+    "commerceChanges": {
+      "type": "json"
+    }
+  }
+}

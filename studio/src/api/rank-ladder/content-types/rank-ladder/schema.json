@@ -1,0 +1,20 @@
+{
+  "kind": "singleType",
+  "collectionName": "rank_ladder",
+  "info": {
+    "singularName": "rank-ladder",
+    "pluralName": "rank-ladders",
+    "displayName": "Rank Ladder",
+    "description": "The social/political rank ladder: per-rank titles (administrative/military/diplomatic, gendered) and casus-belli copy, keyed by the rank enum. Replaces the retired 'rank' collection (English-only for now)."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "ranks": {
+      "type": "json",
+      "required": true
+    }
+  }
+}

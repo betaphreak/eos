@@ -1,0 +1,87 @@
+{
+  "kind": "collectionType",
+  "collectionName": "recipes",
+  "info": {
+    "singularName": "recipe",
+    "pluralName": "recipes",
+    "displayName": "Recipe",
+    "description": "A C2C production recipe — a building that turns input bonuses into an output bonus under tech/terrain/vicinity prerequisites."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "building": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::building.building"
+    },
+    "bonus": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::bonus.bonus"
+    },
+    "outputs": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::bonus.bonus"
+    },
+    "prereqBonuses": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::bonus.bonus"
+    },
+    "vicinityBonuses": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::bonus.bonus"
+    },
+    "rawVicinityBonuses": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::bonus.bonus"
+    },
+    "prereqTech": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tech.tech"
+    },
+    "obsoleteTech": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tech.tech"
+    },
+    "prereqBuildings": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::building.building"
+    },
+    "prereqOrBuildings": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::building.building"
+    },
+    "prereqOrTerrains": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::terrain.terrain"
+    },
+    "prereqOrFeatures": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::feature.feature"
+    },
+    "river": {
+      "type": "boolean"
+    },
+    "freshWater": {
+      "type": "boolean"
+    }
+  }
+}

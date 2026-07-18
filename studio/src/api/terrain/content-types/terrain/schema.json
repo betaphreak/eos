@@ -1,0 +1,35 @@
+{
+  "kind": "collectionType",
+  "collectionName": "terrains",
+  "info": {
+    "singularName": "terrain",
+    "pluralName": "terrains",
+    "displayName": "Terrain"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "yields": {
+      "type": "json"
+    },
+    "found": {
+      "type": "boolean"
+    },
+    "buildModifier": {
+      "type": "integer"
+    },
+    "healthPercent": {
+      "type": "integer"
+    },
+    "movement": {
+      "type": "integer"
+    }
+  }
+}

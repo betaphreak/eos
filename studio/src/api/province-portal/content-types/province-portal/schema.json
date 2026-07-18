@@ -1,0 +1,24 @@
+{
+  "kind": "collectionType",
+  "collectionName": "province_portals",
+  "info": {
+    "singularName": "province-portal",
+    "pluralName": "province-portals",
+    "displayName": "Province Portal",
+    "description": "Per-province portal pixel geometry (teleporter endpoints)."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "province": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::province.province"
+    },
+    "portals": {
+      "type": "json"
+    }
+  }
+}

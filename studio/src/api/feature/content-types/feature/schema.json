@@ -1,0 +1,49 @@
+{
+  "kind": "collectionType",
+  "collectionName": "features",
+  "info": {
+    "singularName": "feature",
+    "pluralName": "features",
+    "displayName": "Feature"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "yieldChanges": {
+      "type": "json"
+    },
+    "clearCost": {
+      "type": "integer"
+    },
+    "requiresFlatlands": {
+      "type": "boolean"
+    },
+    "requiresRiver": {
+      "type": "boolean"
+    },
+    "validTerrains": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::terrain.terrain"
+    },
+    "healthPercent": {
+      "type": "integer"
+    },
+    "growth": {
+      "type": "integer"
+    },
+    "movement": {
+      "type": "integer"
+    },
+    "appearance": {
+      "type": "integer"
+    }
+  }
+}

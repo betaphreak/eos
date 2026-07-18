@@ -4,39 +4,51 @@
   "info": {
     "singularName": "culture",
     "pluralName": "cultures",
-    "displayName": "Culture",
-    "description": "Sub-grouping within a race (e.g., Cliff Gnome, Lorentish)"
+    "displayName": "Culture"
   },
   "options": {
     "draftAndPublish": false
   },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
   "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
     "name": {
       "type": "string",
       "required": true,
-      "unique": false,
-      "minLength": 1
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
     },
-    "race": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::race.race",
-      "inversedBy": "cultures"
-    },
-    "primaryCountry": {
-      "type": "relation",
-      "relation": "oneToOne",
-      "target": "api::country.country"
-    },
-    "source": {
+    "group": {
       "type": "string",
-      "required": false
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
     },
-    "nameGroups": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::name-group.name-group",
-      "mappedBy": "culture"
+    "color": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
     }
   }
 }

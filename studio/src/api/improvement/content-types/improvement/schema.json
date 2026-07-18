@@ -1,0 +1,67 @@
+{
+  "kind": "collectionType",
+  "collectionName": "improvements",
+  "info": {
+    "singularName": "improvement",
+    "pluralName": "improvements",
+    "displayName": "Improvement"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "yieldChanges": {
+      "type": "json"
+    },
+    "prereqTech": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tech.tech"
+    },
+    "hillsMakesValid": {
+      "type": "boolean"
+    },
+    "freshWaterMakesValid": {
+      "type": "boolean"
+    },
+    "validTerrains": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::terrain.terrain"
+    },
+    "validFeatures": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::feature.feature"
+    },
+    "buildCost": {
+      "type": "integer"
+    },
+    "healthPercent": {
+      "type": "integer"
+    },
+    "upgradeType": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::improvement.improvement"
+    },
+    "upgradeTime": {
+      "type": "integer"
+    },
+    "culture": {
+      "type": "integer"
+    },
+    "actsAsCity": {
+      "type": "boolean"
+    },
+    "techYieldChanges": {
+      "type": "json"
+    }
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "kind": "collectionType",
+  "collectionName": "feasts",
+  "info": {
+    "singularName": "feast",
+    "pluralName": "feasts",
+    "displayName": "Feast",
+    "description": "A liturgical feast day (race-scoped)."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "month": {
+      "type": "integer",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "day": {
+      "type": "integer",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "name": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "race": {
+      "type": "enumeration",
+      "enum": [
+        "human",
+        "harimari",
+        "elven",
+        "dwarven",
+        "degenerated_elf",
+        "amadian_ruinborn_elf",
+        "devandi_ruinborn_elf",
+        "effelai_ruinborn_elf",
+        "eltibhari_ruinborn_elf",
+        "eordan_ruinborn_elf",
+        "harafic_ruinborn_elf",
+        "kheionai_ruinborn_elf",
+        "north_ruinborn_elf",
+        "south_ruinborn_elf",
+        "taychendi_ruinborn_elf",
+        "ynnic_ruinborn_elf",
+        "akasi",
+        "alenic",
+        "anbennarian",
+        "bom",
+        "bulwari",
+        "businori",
+        "centaur",
+        "dostanorian_g",
+        "escanni",
+        "gerudian",
+        "giantkind",
+        "gnollish",
+        "gnomish",
+        "goblin",
+        "gowon",
+        "halfling",
+        "harpy",
+        "hobgoblin",
+        "inyaswarosa",
+        "irsukuba",
+        "kai",
+        "kelino",
+        "khantaar",
+        "kheteratan",
+        "khudi",
+        "kobold",
+        "lencori",
+        "lizardfolk",
+        "mengi",
+        "middle_raheni",
+        "ogre",
+        "orcish",
+        "reachman",
+        "triunic",
+        "trollsbayer",
+        "tyvorkan",
+        "upper_raheni",
+        "vurebindu",
+        "west_sarhaly",
+        "wuhyun",
+        "yan",
+        "yanglam"
+      ],
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    }
+  }
+}

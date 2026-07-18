@@ -1,0 +1,42 @@
+{
+  "kind": "collectionType",
+  "collectionName": "route_models",
+  "info": {
+    "singularName": "route-model",
+    "pluralName": "route-models",
+    "displayName": "Route Model",
+    "description": "Civ4 route (road/rail) render model — art reference."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "routeType": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::route.route"
+    },
+    "modelFileKey": {
+      "type": "string"
+    },
+    "modelFile": {
+      "type": "string"
+    },
+    "lateModelFile": {
+      "type": "string"
+    },
+    "animated": {
+      "type": "boolean"
+    },
+    "connections": {
+      "type": "string"
+    },
+    "modelConnections": {
+      "type": "string"
+    },
+    "rotations": {
+      "type": "json"
+    }
+  }
+}

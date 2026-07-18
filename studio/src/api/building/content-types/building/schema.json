@@ -1,0 +1,98 @@
+{
+  "kind": "collectionType",
+  "collectionName": "buildings",
+  "info": {
+    "singularName": "building",
+    "pluralName": "buildings",
+    "displayName": "Building",
+    "description": "A C2C building."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "name": {
+      "type": "string",
+      "required": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "pedia": {
+      "type": "text",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": [
+        "CULTURE",
+        "ECONOMY",
+        "GROWTH",
+        "MILITARY",
+        "RELIGION",
+        "SCIENCE"
+      ],
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "prereqTech": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tech.tech",
+      "inversedBy": "unlockedBuildings"
+    },
+    "andTechs": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::tech.tech"
+    },
+    "artDefineTag": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "button": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "cost": {
+      "type": "integer",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    }
+  }
+}

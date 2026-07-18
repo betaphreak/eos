@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "adjacencies",
+  "info": {
+    "singularName": "adjacency",
+    "pluralName": "adjacencies",
+    "displayName": "Adjacency",
+    "description": "A special province-to-province link (sea/canal/lake crossing)."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "from": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::province.province"
+    },
+    "to": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::province.province"
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": [
+        "sea",
+        "canal",
+        "lake"
+      ]
+    },
+    "comment": {
+      "type": "string"
+    }
+  }
+}

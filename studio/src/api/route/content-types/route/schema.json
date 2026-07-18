@@ -1,0 +1,46 @@
+{
+  "kind": "collectionType",
+  "collectionName": "routes",
+  "info": {
+    "singularName": "route",
+    "pluralName": "routes",
+    "displayName": "Route"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "value": {
+      "type": "integer"
+    },
+    "movement": {
+      "type": "integer"
+    },
+    "flatMovement": {
+      "type": "integer"
+    },
+    "advancedStartCost": {
+      "type": "integer"
+    },
+    "bonusType": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::bonus.bonus"
+    },
+    "seaTunnel": {
+      "type": "boolean"
+    },
+    "yields": {
+      "type": "json"
+    },
+    "trail": {
+      "type": "boolean"
+    }
+  }
+}

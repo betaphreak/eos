@@ -4,26 +4,40 @@
   "info": {
     "singularName": "super-region",
     "pluralName": "super-regions",
-    "displayName": "SuperRegion"
+    "displayName": "Super Region"
   },
   "options": {
     "draftAndPublish": false
   },
-  "pluginOptions": {},
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
   "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
     "name": {
       "type": "string",
-      "required": true
-    },
-    "rawKey": {
-      "type": "string",
-      "required": true
+      "required": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
     },
     "regions": {
       "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::region.region",
-      "mappedBy": "superRegion"
+      "relation": "manyToMany",
+      "target": "api::region.region"
     }
   }
 }

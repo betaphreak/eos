@@ -1,9 +1,25 @@
 # Plan: rebuild the Studio (Strapi) data model as the engine's authoritative content store
 
-> **Status:** design, not started (2026-07-18). Companion reference: the measured exporter inventory
-> in [`studio-exporter-datasets.md`](studio-exporter-datasets.md). Studio lives at `studio/` (Strapi
-> 5, Node/TS); the engine is `civstudio-engine` (Java 25). Big, multi-phase — read the Risks section
-> before committing.
+> **Status:** Phases 1–2 **built** (2026-07-18); Phases 3–6 not started. Companion reference: the
+> measured exporter inventory in [`studio-exporter-datasets.md`](studio-exporter-datasets.md). Studio
+> lives at `studio/` (Strapi 5, Node/TS); the engine is `civstudio-engine` (Java 25). Big, multi-phase
+> — read the Risks section before committing.
+>
+> **Built so far (Phase 1 + 2):** the 12 stale API types + their `config/sync` content-manager entries
+> are deleted; the new model is authored as **29 collection types + 4 single types** and loads clean in
+> Strapi (`strapi ts:generate-types` → 0 errors, all relations resolve). Authoring was hybrid:
+> `province`/`tech`/`recipe` hand-written; the other 26 emitted by `studio/scripts/gen-schemas.mjs`
+> (one declarative spec, all enum value-sets centralized as the single source, mirrored from the engine
+> enums + measured datasets). `studio/scripts/validate-schemas.mjs` structurally lints every schema
+> (JSON, UID resolution, inverse-pair consistency) with no DB. Single types this pass are the four
+> **data-bearing** ones only — `era-modifiers`, `rank-ladder`, `region-name` (the region→ISO place-name
+> map, renamed from `region-earth-map`), `map-version`; `simulation-config` / `balance-parameters` /
+> `calendar-settings` are **deferred** (code-side tunables, not exporter data). `studio/package.json`
+> `version` is realigned to the reactor (0.9.46). **Not yet done:** the seeder (Phase 3), the engine
+> `WorldSource` read path + `/api/world-bundle` (Phase 4), cutover/deleting `generated/` (Phase 5).
+> Two api **folders** on disk still read `era-modifiers`/`region-earth-map` while their content-types
+> are `era-modifier`/`region-name` (an IntelliJ VFS lock blocked the folder rename; UID is folder-based
+> so it loads fine — rename the folders to match once the lock clears).
 
 ## Goals (from the directives that shaped this)
 

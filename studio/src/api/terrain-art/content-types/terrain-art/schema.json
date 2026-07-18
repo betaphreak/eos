@@ -1,0 +1,42 @@
+{
+  "kind": "collectionType",
+  "collectionName": "terrain_arts",
+  "info": {
+    "singularName": "terrain-art",
+    "pluralName": "terrain-arts",
+    "displayName": "Terrain Art",
+    "description": "Per-terrain render art reference."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "terrain": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::terrain.terrain"
+    },
+    "artTag": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "grid": {
+      "type": "string"
+    },
+    "detail": {
+      "type": "string"
+    },
+    "layerOrder": {
+      "type": "integer"
+    },
+    "alphaShader": {
+      "type": "boolean"
+    },
+    "blend": {
+      "type": "json"
+    }
+  }
+}
