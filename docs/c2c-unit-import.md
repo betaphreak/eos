@@ -23,7 +23,7 @@ combat model (both explicitly future; cf. explorer-doc decision 16).
 | --- | --- | --- |
 | 1 | **Import scope** | **Land buildable only.** `DOMAIN_LAND`, non-animal, from the three core files `U_Land`, `U_Workers`, `CIV4UnitInfos`. **Exclude** the animal/subdued sets, all sea + air, **U_Neanderthals** (race-specific — belongs with the per-race overlay machinery, cf. `RaceNameGenerator`) and **U_LandFly** (helicopters/gunships — the Renaissance cap gates nearly all out anyway). |
 | 2 | **Gate** | **Identical to buildings.** A unit is in-scope iff it has a `<PrereqTech>` **and its whole tech-prereq expression resolves within the kept techs** — the primary `<PrereqTech>` **and** every `<TechTypes>` AND-entry must name a tech surviving into `techs.json` (the Prehistoric→Renaissance horizon capped at `TECH_INDUSTRIAL_LIFESTYLE`). Reuse the exact kept-tech set (read from the baked `techs.json`) and the `CAP_TECH` handling from `BuildingInfoExporter`. |
-| 3 | **No-`PrereqTech` units** | **Dropped** (mirror buildings). This drops `UNIT_BAND`/`UNIT_TRIBE` (the pre-first-tech ancient starters the explorer levy currently embodies). **Consequence:** the *first* catalog unit a band can embody is the earliest **tech-unlocked** land unit of its role — before that, a band has no catalog identity (its current behaviour). Accepted; consistent with the building gate. |
+| 3 | **No-`PrereqTech` units** | **REVISED (owner, Phase 1): kept, not dropped — linked to `TECH_SEDENTARY_LIFESTYLE`.** The original decision (drop them, mirroring buildings) was reversed during Phase 1: a land unit with no `<PrereqTech>` is now **linked to the early `TECH_SEDENTARY_LIFESTYLE`** so the ancient starters (`UNIT_BAND`/`UNIT_TRIBE`) and the **capture/immigration units** (`UNIT_CAPTIVE_MILITARY`/`_CIVILIAN`/`_IMMIGRANT`, `UNIT_FREED_SLAVE`) enter the catalog with an early unlock rather than being excluded. A unit with a *real* prereq beyond the horizon is still gated out. The capture/immigration units are additionally tagged `"special"` (`CAPTIVE`/`FREED_SLAVE`) for the future capture/slavery/property mechanics (the SUBTERFUGE seam). 75 units were linked this way in the Phase-1 bake. |
 | 4 | **Stat depth** | **Caravan-relevant core** per row: `{ id, name, pedia, prereqTech, andTechs, combatClass, defaultUnitAI, caravanRole, domain, iMoves, iCombat, iCost, obsoleteTech, artDefineTag, button }` **plus the whitelisted `<SubCombatTypes>` tags** (decision 12): `bandSizeClass` (`GROUP_*`), `era` (`ERA_*`), `species` (`SPECIES_*`), `quality` (`QUALITY_*`). Enough to drive the march (`iMoves`), identity (`name`/`pedia`), art (`button`), the role fold (`combatClass`), obsolescence, band size, era ordering, and the tech gate. No weapon/armor/attack-form tags, bonuses-vs-class, free-promotions, formation (dormant reference with no consumer). |
 | 5 | **Role model** | **Extend `CaravanRole` with 5 new roles** (below). The `CaravanRole` fold keys off the unit's **`<Combat>` (UnitCombat class) primary, `<DefaultUnitAI>` fallback** (decision 11). Store **both raw** (`combatClass` + `defaultUnitAI`) on every row, so a finer split later never needs a re-bake. |
 | 6 | **New roles** | 4 existing (`SETTLER`←`UNITAI_SETTLE`, `WORKER`←`UNITAI_WORKER`+`WORKER_SEA`, `EXPLORER`←`UNITAI_EXPLORE`, `MILITARY`←all combat + property-control AIs) **+ 5 new**: **`TRADE`**←`MERCHANT`; **`MISSIONARY`**←`MISSIONARY`,`PROPHET`; **`HUNTER`**←`HUNTER`,`GREAT_HUNTER`; **`HEALER`**←`HEALER`; **`COVERT`**←`SPY`,`INFILTRATOR`. Great people (`GENERAL`/`SCIENTIST`/`ARTIST`/`ENGINEER`) and stray sea AIs **fold to nearest** (no `GREAT_PERSON` role — no subsystem justifies one yet). **9 roles total.** |
@@ -277,10 +277,20 @@ production/build-queue model the roadmap grows.
 Each phase is independently compilable/testable; the catalog is inert until the selection rule +
 march wiring fire (Phase 5), exactly as the building import landed dormant through Phase 4.
 
-- **Phase 1 — `UnitInfoExporter` → `units.json` + `unit-unlocks.json` + `unit-combats.json`.** The
-  gated import + the `<Combat>`→role/skill fold + the unlock overlay + the functional UnitCombat
-  reference table (decision 11). Add the unit files + `CIV4UnitCombatInfos.xml` + `CIV4ArtDefines_Unit.xml`
-  + unit GameText to `Civ4Files.FILE_MAP`. Extend `CaravanRole` (+5). Report the real in-scope count /
+- **Phase 1 — `UnitInfoExporter` → `units.json` + `unit-unlocks.json` + `unit-combats.json`. SHIPPED
+  2026-07-18.** The gated import + the `<Combat>`→role/skill fold + the unlock overlay + the functional
+  UnitCombat reference table (decision 11). **Real counts:** **273 units** in scope (264 `U_Land` + 9
+  `U_Workers` + 0 `CIV4UnitInfos`; 24 non-land + 166 gated-out; 75 no-prereq linked to
+  `TECH_SEDENTARY_LIFESTYLE`), 273 UNLOCK effects over 99 techs, **28 functional UnitCombat classes**.
+  By role: MILITARY 129, MISSIONARY 55, COVERT 24, HUNTER 19, WORKER 11, HEALER/TRADE 10, SETTLER 8,
+  EXPLORER 7. Worker `<Builds>` **captured now** (9 units carry a repertoire — the
+  `docs/c2c-build-import.md` seam, folded forward). `TechTree` merges `unit-unlocks.json` on the same
+  footing as building unlocks; `TechResearchTest` now asserts the research→`UNIT_*` token seam end to
+  end (the Phase-4 verification, folded in). The `<Combat>`→`CaravanRole`→signature-`Skill` fold lives
+  on `CaravanRole` (`fromUnit`/`signatureSkillOf`); non-role combat classes (EXECUTIVE/PRODIGY/
+  ENTERTAINER) fold via `<DefaultUnitAI>` rather than a MILITARY default. **No behaviour change** (the
+  catalog is dormant; unit tokens grant but nothing reads them). Add the unit files +
+  `CIV4UnitCombatInfos.xml` + `CIV4ArtDefines_Unit.xml` + unit GameText to `Civ4Files.FILE_MAP`. Report the real in-scope count /
   per-role + per-combat-class histogram / unresolved-name + missing-button counts. **No behaviour
   change** (nothing loads the JSON yet; the unlock overlay grants tokens but nothing reads unit tokens).
 - **Phase 2 — button-art bake.** `web/build-units.mjs` → `unit-icons.webp` + `units-meta.json` (reuse

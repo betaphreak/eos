@@ -55,6 +55,10 @@ class CaravanTypesTest {
 			// from a home colony (ExplorerCaravan.muster; see ExplorerForagingTest)
 			case EXPLORER -> throw new UnsupportedOperationException(
 					"explorer bands are mustered, not built here");
+			// the imported catalog roles (docs/c2c-unit-import.md) have no band class yet —
+			// a unit takes one and shows in the tech tree, but mustering is a later phase
+			case TRADE, MISSIONARY, HUNTER, HEALER, COVERT -> throw new UnsupportedOperationException(
+					"catalog-only role has no band class yet");
 		};
 	}
 

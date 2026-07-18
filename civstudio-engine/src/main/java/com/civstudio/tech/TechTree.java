@@ -52,6 +52,10 @@ public final class TechTree {
 	// /tech-effects.json so regenerating it never clobbers hand-authored effects; the two overlays
 	// are merged (effect lists concatenated per tech) at load. Absent → no building unlocks.
 	private static final String BUILDING_UNLOCKS_RESOURCE = "/building-unlocks.json";
+	// the generated unit-unlock overlay (UnitInfoExporter, docs/c2c-unit-import.md): per kept
+	// tech, an UNLOCK effect for each UNIT_* it unlocks. Merged alongside the building overlay,
+	// on the same footing, so researching a tech grants its unit tokens. Absent → no unit unlocks.
+	private static final String UNIT_UNLOCKS_RESOURCE = "/unit-unlocks.json";
 
 	// the highest era the tech tree models; techs beyond it (the lone Industrial node
 	// and any later) are dropped at load. The scope is expressed here rather than by
@@ -131,9 +135,10 @@ public final class TechTree {
 	 *             prerequisite does not resolve to a kept tech
 	 */
 	public static TechTree load() {
-		// merge the hand-authored overlay with the generated building-unlock overlay
-		return loadWith(mergeEffects(TechEffects.load(EFFECTS_RESOURCE),
-				TechEffects.load(BUILDING_UNLOCKS_RESOURCE)));
+		// merge the hand-authored overlay with the generated building- and unit-unlock overlays
+		return loadWith(mergeEffects(mergeEffects(TechEffects.load(EFFECTS_RESOURCE),
+				TechEffects.load(BUILDING_UNLOCKS_RESOURCE)),
+				TechEffects.load(UNIT_UNLOCKS_RESOURCE)));
 	}
 
 	/**
@@ -163,8 +168,9 @@ public final class TechTree {
 	 * @return the loaded tech tree with that race overlay plus the building unlocks
 	 */
 	public static TechTree loadWithRaceOverlay(String raceOverlayResource) {
-		return loadWith(mergeEffects(TechEffects.load(raceOverlayResource),
-				TechEffects.load(BUILDING_UNLOCKS_RESOURCE)));
+		return loadWith(mergeEffects(mergeEffects(TechEffects.load(raceOverlayResource),
+				TechEffects.load(BUILDING_UNLOCKS_RESOURCE)),
+				TechEffects.load(UNIT_UNLOCKS_RESOURCE)));
 	}
 
 	// merge two effect overlays, concatenating the effect lists of any tech present in both

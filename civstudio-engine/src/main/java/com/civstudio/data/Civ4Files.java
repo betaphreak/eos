@@ -92,6 +92,23 @@ public final class Civ4Files {
 					"Assets/XML/GameText/Human_Sacrifice_CIV4GameText.xml"),
 			Map.entry("assets/XML/GameText/Cannibalism_CIV4GameText.xml",
 					"Assets/XML/GameText/Cannibalism_CIV4GameText.xml"),
+			// unit import (UnitInfoExporter): the three core land-unit files, the UnitCombat
+			// class table, the artDefineTag -> <Button> map, and the GameText holding the
+			// TXT_KEY_UNIT_* (names/pedia) and TXT_KEY_UNITCOMBAT_* strings (docs/c2c-unit-import.md)
+			Map.entry("assets/XML/Units/U_Land_CIV4UnitInfos.xml",
+					"Assets/XML/Units/U_Land_CIV4UnitInfos.xml"),
+			Map.entry("assets/XML/Units/U_Workers_CIV4UnitInfos.xml",
+					"Assets/XML/Units/U_Workers_CIV4UnitInfos.xml"),
+			Map.entry("assets/XML/Units/CIV4UnitInfos.xml",
+					"Assets/XML/Units/CIV4UnitInfos.xml"),
+			Map.entry("assets/XML/Units/CIV4UnitCombatInfos.xml",
+					"Assets/XML/Units/CIV4UnitCombatInfos.xml"),
+			Map.entry("assets/XML/Art/CIV4ArtDefines_Unit.xml",
+					"Assets/XML/Art/CIV4ArtDefines_Unit.xml"),
+			Map.entry("assets/XML/GameText/Units_CIV4GameText.xml",
+					"Assets/XML/GameText/Units_CIV4GameText.xml"),
+			Map.entry("assets/XML/GameText/Combat_CIV4GameText.xml",
+					"Assets/XML/GameText/Combat_CIV4GameText.xml"),
 			Map.entry("res/Fonts/GameFont.tga", "Assets/res/Fonts/GameFont.tga"),
 			// C2C ships this atlas under an odd name; it was renamed on vendoring
 			Map.entry("res/Fonts/GameFont_120.tga",

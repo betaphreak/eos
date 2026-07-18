@@ -1,0 +1,920 @@
+{
+  "TECH_SEDENTARY_LIFESTYLE" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BAND"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SETTLER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_1"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_2"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_3"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_4"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_5"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_6"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_7"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_ADVENTURE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_BULLSEYE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_BURGERWORLD"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_EMPCLOTH"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_EWTRADE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_FASHION"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_MALLWART"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_MAPSTER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_MCDOWELLS"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_MILEHIGH"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_MOBBY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MOONBEAN_EXECUTIVE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_RED"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_SAFARI"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_ULTSOLDIER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXECUTIVE_WONKA"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_JEWISH_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CHRISTIAN_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ISLAMIC_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HINDU_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BUDDHIST_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CONFUCIAN_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_TAOIST_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HELLENIC_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ZOROASTRIAN_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EGYPT_MYTH_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_NAGUALISM_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ANDEAN_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_DRUID_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_TENGRI_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_VOODOO_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_YORUBA_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_NGAI_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_RODNOVERY_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SCIENTOLOGY_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SHAMAN_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SHINTO_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SIKH_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_JAINISM_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MESO_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MORMON_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ASATRU_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BAHAI_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CANAANITE_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CAODAI_MISSIONARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BRUTE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MILITIA_MEDIEVAL"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_PALACE_GUARD"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_TREASURE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_PROPHET"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ARTIST"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SCIENTIST"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MERCHANT"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GREAT_ENGINEER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GREAT_GENERAL"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GREAT_ADMIRAL"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GREAT_HUNTER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GREAT_SPY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_DOCTOR"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GREAT_STATESMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GREAT_DETECTIVE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CAPTIVE_MILITARY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CAPTIVE_CIVILIAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CAPTIVE_IMMIGRANT"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_FREED_SLAVE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SPARTACUS"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GLADIATOR"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WORKER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_UNDEAD_WORKER"
+  } ],
+  "TECH_TRIBALISM" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_TRIBE"
+  } ],
+  "TECH_COLONIALISM" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_COLONIST"
+  } ],
+  "TECH_NOMADISM" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WANDERER"
+  } ],
+  "TECH_TRAILS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SCOUT"
+  } ],
+  "TECH_EXPLORATION" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GUIDE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_STALKERS"
+  } ],
+  "TECH_ROAD_BUILDING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXPLORER"
+  } ],
+  "TECH_CAMELID_DOMESTICATION" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_PACK_LLAMA"
+  } ],
+  "TECH_PLOUGH" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_PACKMULE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WORKANIMAL"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WORKBUFFALO"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WORKMULE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WORKELEPHANT"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WORKLLAMA"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WORKCAMEL"
+  } ],
+  "TECH_COMPASS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ADVENTURER"
+  } ],
+  "TECH_PERSISTENCE_HUNTING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CHASER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MASTER_CHASER"
+  } ],
+  "TECH_TRACKING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_TRACKER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MASTER_TRACKER"
+  } ],
+  "TECH_HUNTING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HUNTER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MASTER_HUNTER"
+  } ],
+  "TECH_BRONZE_WORKING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_RANGER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EARLY_MACEMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_AXEMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_COMPOSITE_BOWMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CHARIOT"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BANDIT_FOOTPAD"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BANDIT_RIDER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MASTER_RANGER"
+  } ],
+  "TECH_FEUDALISM" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WARDEN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EARLY_IMP_GUARD"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MASTER_WARDEN"
+  } ],
+  "TECH_MATCHLOCK" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GAME_HUNTER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ARQUEBUSIER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CUIRASSIER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HIGHWAYMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SHARPSHOOTER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WARLORDIIIS"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WARLORDIII"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CAMEL_CUIRASSIER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MASTER_GAME_HUNTER"
+  } ],
+  "TECH_RIFLING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BIG_GAME_HUNTER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_RIFLEMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_PARTISAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MASTER_BIG_GAME_HUNTER"
+  } ],
+  "TECH_WRITING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SPY"
+  } ],
+  "TECH_POLITICAL_PHILOSOPHY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SLEEPER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SCOUNDREL"
+  } ],
+  "TECH_CHIVALRY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_RA_FIST"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_RA_KNIGHT"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CHIVALRY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_LORD"
+  } ],
+  "TECH_FUNDAMENTALISM" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_INQUISITOR"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CRUSADER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HASHISHIN"
+  } ],
+  "TECH_HARD_HAMMER_PERCUSSION" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CLUBMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_TRIBAL_GUARDIAN"
+  } ],
+  "TECH_SHARPENING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SPIKED_CLUBMAN"
+  } ],
+  "TECH_COMPOSITE_TOOLS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_STONE_MACEMAN"
+  } ],
+  "TECH_OBSIDIAN_WEAPONS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_OBSIDIAN_MACEMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_OBSIDIAN_AXEMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_OBSIDIAN_SWORDSMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_OBSIDIAN_SPEARMAN"
+  } ],
+  "TECH_CIVIL_SERVICE" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MACEMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_LOKI"
+  } ],
+  "TECH_AXE_MAKING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_STONE_AXEMAN"
+  } ],
+  "TECH_ARMOR_CRAFTING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HEAVY_AXEMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HEAVY_SWORDSMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HEAVY_PIKEMAN"
+  } ],
+  "TECH_IRON_WORKING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_LIGHT_SWORDSMAN"
+  } ],
+  "TECH_SMITHING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SWORDSMAN"
+  } ],
+  "TECH_DIVINE_RIGHT" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_FANATIC"
+  } ],
+  "TECH_SIMPLE_WOOD_WORKING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WOODEN_SPEARMAN"
+  } ],
+  "TECH_SPEAR_MAKING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_STONE_SPEARMAN"
+  } ],
+  "TECH_COPPER_WORKING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SPEARMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_JAVELINEER"
+  } ],
+  "TECH_SIEGE_WARFARE" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_PIKEMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SKIRMISHER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WAR_WAGON"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BALLISTA_ELEPHANT"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SIEGE_RAM"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SIEGE_TOWER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BALLISTA"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SIEGE_ONAGER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ANCIENT_ROCKETEER"
+  } ],
+  "TECH_ARCHERY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ARCHER"
+  } ],
+  "TECH_YEOMANRY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_LONGBOWMAN"
+  } ],
+  "TECH_ANCIENT_MACHINERY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BELLYBOWMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_OXYBELES"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_LITHOBOLOS"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SIEGE_ENGINEER"
+  } ],
+  "TECH_ANCIENT_BALLISTICS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_LIGHT_CROSSBOWMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HORSE_CROSSBOWMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SCORPION"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CATAPULT"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CARROBALLISTA"
+  } ],
+  "TECH_ENGINEERING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CROSSBOWMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HEAVY_BALLISTA"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_TREBUCHET"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_FOOD_SUPPLY_TRAIN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SUPPLY_TRAIN"
+  } ],
+  "TECH_METALLURGY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HEAVY_CROSSBOWMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SIEGE_WAGON"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_RIBAULDEQUIN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CULVERIN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_FALCONET"
+  } ],
+  "TECH_TOOL_MAKING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_STONE_THROWER"
+  } ],
+  "TECH_BINDING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SLINGER"
+  } ],
+  "TECH_ATLATL_MAKING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ATLATL"
+  } ],
+  "TECH_OIL_LAMPS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ARSONIST"
+  } ],
+  "TECH_EXPLOSIVES" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GRENADIER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GREAT_BOMBARD"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ORGAN_GUN"
+  } ],
+  "TECH_GUNPOWDER" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MILITIA_RENAISSANCE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_FLAMING_ARROW"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BOMBARD"
+  } ],
+  "TECH_FLINTLOCK" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MUSKETMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_LANCER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_REN_IMP_GUARD"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CITY_GUARD"
+  } ],
+  "TECH_CHARIOTRY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EARLYCHARIOT"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CHARIOTARCHER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CARTWRIGHT"
+  } ],
+  "TECH_ANIMAL_RIDING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HORSEMAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CAMEL_RIDER"
+  } ],
+  "TECH_MOUNTED_ARCHERY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HORSE_ARCHER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CAMEL_ARCHER"
+  } ],
+  "TECH_HORSE_BREEDING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MOUNTED_INFANTRY"
+  } ],
+  "TECH_STIRRUP" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_LIGHT_CAVALRY"
+  } ],
+  "TECH_INVENTION" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HEAVY_CAVALRY"
+  } ],
+  "TECH_ARMORED_CAVALRY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_KNIGHT"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WAR_ELEPHANT"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CAMEL_KNIGHT"
+  } ],
+  "TECH_CAVALRY_TACTICS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_DRAGOON"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CARABINIER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BOMBARD_ELEPHANT"
+  } ],
+  "TECH_MILITARY_TRADITION" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CAVALRY"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CAMEL_GUNNER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CAMEL_CAVALRY"
+  } ],
+  "TECH_MILITARY_TRAINING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ELEPHANT_RIDER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WARDOG"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WARLORDIS"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WARLORDI"
+  } ],
+  "TECH_WARFARE" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_LOG_RAM"
+  } ],
+  "TECH_THE_WHEEL" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BATTERING_RAM"
+  } ],
+  "TECH_GRAND_WAR" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MOTAR"
+  } ],
+  "TECH_NATIONALISM" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CANNON"
+  } ],
+  "TECH_ALCHEMY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ANCIENT_HAND_CANNON"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ANCIENT_FLAMETHROWER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HELLSMOUTH_DOG"
+  } ],
+  "TECH_HOT_AIR_BALLOON" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BALLOON"
+  } ],
+  "TECH_CANINE_DOMESTICATION" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_TRAINEDDOG"
+  } ],
+  "TECH_LEADERSHIP" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GUARDDOG"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_VICEROY"
+  } ],
+  "TECH_CLASSICAL_LIFESTYLE" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_KINGS_GUARD"
+  } ],
+  "TECH_DECEPTION" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WATCHER"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EXILE"
+  } ],
+  "TECH_CONDUCT" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ENFORCERS"
+  } ],
+  "TECH_DUALISM" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_TOWN_WATCHMEN"
+  } ],
+  "TECH_LAW_ENFORCEMENT" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_PATROLS"
+  } ],
+  "TECH_WARRANTS_AND_DECREES" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GUARD"
+  } ],
+  "TECH_THEFT" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_THIEF"
+  } ],
+  "TECH_NOCTURNALISM" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ROGUE"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_AMBUSHER"
+  } ],
+  "TECH_LOCKS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BURGLAR"
+  } ],
+  "TECH_USURY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_CUTTHROAT"
+  } ],
+  "TECH_CODE_OF_LAWS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ASSASSIN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_JUDGE"
+  } ],
+  "TECH_CORPORATION" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_LAWYER"
+  } ],
+  "TECH_THEOLOGY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MONK"
+  } ],
+  "TECH_ARISTOCRACY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_NOBLE"
+  } ],
+  "TECH_VASSALAGE" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WARLORD_VASSAL"
+  } ],
+  "TECH_HERALDRY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WARLORDIIS"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WARLORDII"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_ENTERTAINER"
+  } ],
+  "TECH_ANIMAL_HUSBANDRY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SHEPHERD"
+  } ],
+  "TECH_VETERINARY_MEDICINE" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_VET"
+  } ],
+  "TECH_BATTLEFIELD_MEDICINE" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_FIELD_VET"
+  } ],
+  "TECH_CLOCKWORKS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GEAR_MECHANIC"
+  } ],
+  "TECH_HERBALISM" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_WISE_WOMAN"
+  } ],
+  "TECH_NATUROPATHY" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_HEALER"
+  } ],
+  "TECH_FOLK_MEDICINE" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_MEDICINE_MAN"
+  } ],
+  "TECH_ANCIENT_MEDICINE" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_APOTHECARY"
+  } ],
+  "TECH_PLAGUE_MEDICINE" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_DR"
+  } ],
+  "TECH_ELIXIRS_AND_TONICS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SURGEON"
+  } ],
+  "TECH_CONSTRUCTION" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_IMMIGRANT"
+  } ],
+  "TECH_ORAL_TRADITION" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_STORY_TELLER"
+  } ],
+  "TECH_LINGUISTICS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_BARD"
+  } ],
+  "TECH_BARTER" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EARLY_FOOD_MERCHANT_C2C"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_EARLY_MERCHANT_C2C"
+  } ],
+  "TECH_TRADE" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_FOOD_CARAVAN"
+  }, {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_TRADE_CARAVAN"
+  } ],
+  "TECH_MARTIAL_ARTS" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_SHAOLINMK"
+  } ],
+  "TECH_GATHERING" : [ {
+    "kind" : "UNLOCK",
+    "target" : "UNIT_GATHERER"
+  } ]
+}

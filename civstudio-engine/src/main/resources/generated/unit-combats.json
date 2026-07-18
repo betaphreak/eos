@@ -1,0 +1,177 @@
+[ {
+  "id" : "UNITCOMBAT_RECON",
+  "name" : "Recons",
+  "signatureSkill" : "SURVIVAL",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/recons.dds",
+  "iEarlyWithdrawChange" : 25,
+  "iTauntChange" : 50,
+  "iDodgeModifierChange" : 20,
+  "iDamageModifierChange" : -20,
+  "iPrecisionModifierChange" : 10,
+  "iCaptureResistanceModifierChange" : -20,
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_ARCHER",
+  "name" : "Archers",
+  "signatureSkill" : "WARFARE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/archers.dds",
+  "iCaptureResistanceModifierChange" : -10,
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_MOUNTED",
+  "name" : "Mounted",
+  "signatureSkill" : "WARFARE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/mounted.dds",
+  "iCaptureResistanceModifierChange" : 20,
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_MELEE",
+  "name" : "Melee",
+  "signatureSkill" : "WARFARE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/melee.dds",
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_SIEGE",
+  "name" : "Siege Weapons",
+  "signatureSkill" : "WARFARE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/siege_weapons.dds",
+  "iCaptureResistanceModifierChange" : -20,
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_GUN",
+  "name" : "Gunpowders",
+  "signatureSkill" : "WARFARE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/gunpowder_units.dds",
+  "iCaptureResistanceModifierChange" : 10,
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_ANIMAL",
+  "name" : "Animals",
+  "signatureSkill" : "HUNTING",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/animals.dds",
+  "iEarlyWithdrawChange" : 20,
+  "iCaptureResistanceModifierChange" : 1000
+}, {
+  "id" : "UNITCOMBAT_SPY",
+  "name" : "Espionage",
+  "signatureSkill" : "SUBTERFUGE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/spies.dds"
+}, {
+  "id" : "UNITCOMBAT_WORKER",
+  "name" : "Workers",
+  "signatureSkill" : "CONSTRUCTION",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/workers.dds"
+}, {
+  "id" : "UNITCOMBAT_SETTLER",
+  "name" : "Settlers",
+  "signatureSkill" : "STEWARDSHIP",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/settlers.dds"
+}, {
+  "id" : "UNITCOMBAT_MISSIONARY",
+  "name" : "Missionaries",
+  "signatureSkill" : "FAITH",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/missionaries.dds"
+}, {
+  "id" : "UNITCOMBAT_TRADE",
+  "name" : "Traders",
+  "signatureSkill" : "COMMERCE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/traders.dds",
+  "iCaptureResistanceModifierChange" : -50
+}, {
+  "id" : "UNITCOMBAT_HUNTER",
+  "name" : "Hunters",
+  "signatureSkill" : "HUNTING",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/hunters.dds",
+  "iCaptureResistanceModifierChange" : -10
+}, {
+  "id" : "UNITCOMBAT_HERO",
+  "name" : "Heroic",
+  "signatureSkill" : "WARFARE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/heroic.dds",
+  "iCaptureResistanceModifierChange" : 50,
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_CRIMINAL",
+  "name" : "Criminals",
+  "signatureSkill" : "SUBTERFUGE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/criminals.dds",
+  "iCaptureResistanceModifierChange" : -10,
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_EXECUTIVE",
+  "name" : "Executives",
+  "signatureSkill" : "PRODUCTION",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/executives.dds"
+}, {
+  "id" : "UNITCOMBAT_THROWING",
+  "name" : "Throwing",
+  "signatureSkill" : "WARFARE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/throwing_units.dds",
+  "iCaptureResistanceModifierChange" : -5,
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_LAW_ENFORCEMENT",
+  "name" : "Law Enforcement",
+  "signatureSkill" : "SUBTERFUGE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/law_enforcers.dds",
+  "iCaptureResistanceModifierChange" : -10,
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_RUFFIAN",
+  "name" : "Ruffian",
+  "signatureSkill" : "SUBTERFUGE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/ruffian.dds",
+  "iCaptureResistanceModifierChange" : -10
+}, {
+  "id" : "UNITCOMBAT_STRIKE_TEAM",
+  "name" : "Strike Team",
+  "signatureSkill" : "WARFARE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/strike_teams.dds",
+  "iCaptureResistanceModifierChange" : 20,
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_ROCKET_LAUNCHER",
+  "name" : "Rocket Launcher",
+  "signatureSkill" : "WARFARE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/missiles.dds",
+  "iCaptureResistanceModifierChange" : -30,
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_BALLOON",
+  "name" : "Balloon",
+  "signatureSkill" : "WARFARE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/balloons.dds",
+  "iCaptureResistanceModifierChange" : -20,
+  "bForMilitary" : true
+}, {
+  "id" : "UNITCOMBAT_ENTERTAINER",
+  "name" : "Entertainer",
+  "signatureSkill" : "SOCIAL",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/entertainer.dds",
+  "iCaptureResistanceModifierChange" : -50
+}, {
+  "id" : "UNITCOMBAT_ADMINISTRATOR",
+  "name" : "Administrator",
+  "signatureSkill" : "STEWARDSHIP",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/administrators.dds"
+}, {
+  "id" : "UNITCOMBAT_PRODIGY",
+  "name" : "Prodigy",
+  "signatureSkill" : "INTELLECTUAL",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/prodigy.dds"
+}, {
+  "id" : "UNITCOMBAT_CAPTAIN",
+  "name" : "Captain",
+  "signatureSkill" : "WARFARE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/captains.dds"
+}, {
+  "id" : "UNITCOMBAT_CAPTIVE",
+  "name" : "Captive",
+  "signatureSkill" : "WARFARE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/captives.dds"
+}, {
+  "id" : "UNITCOMBAT_HEALTH_CARE",
+  "name" : "Health Care Units",
+  "signatureSkill" : "MEDICINE",
+  "categoryButton" : "Art/Interface/Buttons/units/sparth/categories/healthcare_units.dds"
+} ]
