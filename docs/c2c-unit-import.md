@@ -293,9 +293,14 @@ march wiring fire (Phase 5), exactly as the building import landed dormant throu
   `CIV4UnitCombatInfos.xml` + `CIV4ArtDefines_Unit.xml` + unit GameText to `Civ4Files.FILE_MAP`. Report the real in-scope count /
   per-role + per-combat-class histogram / unresolved-name + missing-button counts. **No behaviour
   change** (nothing loads the JSON yet; the unlock overlay grants tokens but nothing reads unit tokens).
-- **Phase 2 — button-art bake.** `web/build-units.mjs` → `unit-icons.webp` + `units-meta.json` (reuse
-  `web/icon-bake.mjs`), **plus the UnitCombat `categories/*.dds` icon set** (the grouping icons for
-  the tech-tree unit row). Log the colour-chip fallback count.
+- **Phase 2 — button-art bake. SHIPPED 2026-07-18.** `web/build-units.mjs` (the `build-buildings.mjs`
+  sibling, reusing `web/icon-bake.mjs`) bakes **two** 64² sheets: `web/assets/units/unit-icons.webp`
+  (**256/273** units, 17 atlas-only base-game buttons → colour-chip fallback, same as buildings) keyed
+  into `units-meta.json`, **plus** `web/assets/units/unit-combat-icons.webp` (**28/28** UnitCombat
+  `categories/*.dds` grouping icons, 0 missing) keyed into `unit-combats-meta.json`. Each meta is a flat
+  `{id: {icon:[x,y,64,64]}}` the server (Phase 3 `UnitBundle`) merges onto its engine JSON —
+  `units-meta.json`→`units.json`, `unit-combats-meta.json`→`unit-combats.json`. Dormant until the
+  Phase-3 tech-tree row consumes them.
 - **Phase 3 — `/api/units` + tech-tree unit row.** `UnitBundle`; the per-node unit row + rail
   inspector + search corpus + session-aware dimming in `techtree.mjs`. Bump the reactor patch
   version; add a trivia line. Verify headless (`tools/webverify`).
