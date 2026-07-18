@@ -89,6 +89,16 @@ plugin (Config Sync admin page or its CLI) rather than editing by hand.
 ## Deployment
 
 Deployed as a Docker container (multi-stage `dockerfile`, `node:22-alpine`, runs as non-root `node`
-user, `npm run start`, port 1337). Recent git history shows env vars are injected via the hosting
-platform's Container App / Actions config rather than baked into the image. `sharp`/`libvips` OS deps
-are installed in the image for image processing.
+user, `npm run start`, port 1337). Env vars are injected via the Azure Container App config rather
+than baked into the image. `sharp`/`libvips` OS deps are installed in the image for image processing.
+
+Live as the Azure Container App **`civstudio-backend-app`** (resource group `civstudio`, image
+`civstudio.azurecr.io/civstudio-backend`), serving the admin + API at **https://civstudio.com**. The
+app pulls from ACR via its own managed identity (no registry credentials in the deploy path).
+
+Roll it with **`tools/deploy-studio.ps1`** from the monorepo root (needs local Docker + an
+authenticated `az` session): it `az acr login`s, builds the `studio/` image, pushes it, runs
+`az containerapp update`, then polls until the active revision runs the new image tag and `/_health`
+answers 204. This mirrors `tools/deploy-server.ps1`. `.github/workflows/strapi-deploy.yml` (at the
+monorepo root) is a build-only CI backup — it builds+pushes on a push to `studio/**` but cannot roll
+the app (the repo's guest Azure identity has no deploy service principal).

@@ -1,0 +1,54 @@
+name: CivStudio Studio
+
+# Builds the Strapi 5 CMS image (studio/, the content/admin backend) and pushes it to the shared
+# registry (civstudio.azurecr.io). Like deploy-server.yml, it does NOT roll the Container App: this
+# repo's Azure subscription is reached by a *guest* identity that cannot create role assignments, so
+# no CI service principal exists (there is deliberately no AZURE_CREDENTIALS secret here — the
+# standalone backend repo's auto-deploy flow can't be reproduced). Rolling civstudio-backend-app to
+# the new image is a one-liner run from an authenticated az session (printed at the end of the run).
+# CI's job is the build+push that can't be done on the dev box.
+#
+# Auth: ACR admin credentials as repo secrets ACR_USERNAME / ACR_PASSWORD (shared with the server
+# workflow; ACR_LOGIN_SERVER / AZURE_RG are repo variables). No Azure AD login, no service principal.
+#
+# The Docker build context is studio/ (its own dockerfile + .dockerignore); nothing outside studio/
+# is needed to build the image, hence the studio/** path filter.
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'studio/**'                               # the Strapi app (source, config, dockerfile)
+      - '.github/workflows/strapi-deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: build-studio-image
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Log in to ACR
+        run: |
+          echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ vars.ACR_LOGIN_SERVER }}" \
+            --username "${{ secrets.ACR_USERNAME }}" --password-stdin
+
+      - name: Build and push image
+        run: |
+          IMG="${{ vars.ACR_LOGIN_SERVER }}/civstudio-backend"
+          # Build context is studio/ so the dockerfile's COPY paths and studio/.dockerignore apply.
+          docker build -f studio/dockerfile \
+            -t "$IMG:${{ github.sha }}" -t "$IMG:latest" studio
+          docker push "$IMG:${{ github.sha }}"
+          docker push "$IMG:latest"
+
+      - name: Next step (manual deploy)
+        run: |
+          echo "Image pushed: ${{ vars.ACR_LOGIN_SERVER }}/civstudio-backend:${{ github.sha }}"
+          echo "Roll the Strapi Container App from an authenticated az session:"
+          echo "  az containerapp update -n civstudio-backend-app -g ${{ vars.AZURE_RG }} \\"
+          echo "    --image ${{ vars.ACR_LOGIN_SERVER }}/civstudio-backend:${{ github.sha }}"
