@@ -45,6 +45,15 @@ export default {
     ]);
   },
   bootstrap() {
+    // Make the CivStudio dark (navy) look the DEFAULT appearance: Strapi falls back to 'system' when
+    // STRAPI_THEME is unset — seed 'dark' the first time so the branded dark theme is the first
+    // impression. Users can still switch (Profile → Appearance); we only seed when unset.
+    try {
+      if (!localStorage.getItem('STRAPI_THEME')) localStorage.setItem('STRAPI_THEME', 'dark');
+    } catch {
+      /* private mode / storage disabled — fall back to Strapi's default */
+    }
+
     // DOM-only tweaks the theme tokens can't reach (safe in bootstrap).
     const style = document.createElement('style');
     style.innerHTML = `
