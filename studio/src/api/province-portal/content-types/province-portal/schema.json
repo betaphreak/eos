@@ -12,6 +12,11 @@
   },
   "pluginOptions": {},
   "attributes": {
+    "provinceId": {
+      "type": "integer",
+      "required": true,
+      "unique": true
+    },
     "province": {
       "type": "relation",
       "relation": "manyToOne",

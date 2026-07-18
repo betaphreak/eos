@@ -12,6 +12,11 @@
   },
   "pluginOptions": {},
   "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
     "routeType": {
       "type": "relation",
       "relation": "manyToOne",

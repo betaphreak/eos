@@ -5,12 +5,18 @@
 // CommonJS on purpose: booting Strapi through ESM (`node seed.mjs`) trips ERR_UNSUPPORTED_DIR_IMPORT
 // on @strapi/core's lodash/fp import; require() resolves Strapi's CJS build, which is fine.
 //
-// Idempotent: matches on natural key (tag/key/id/…), updates scalars if present, creates if absent,
-// then relinks relations two-phase. Re-running converges. Run from studio/:  node scripts/seed.js
+// Two-phase, idempotent: PHASE A upserts every collection's scalar/enum fields keyed on its natural
+// key (tag/key/id/…), building a key→documentId map per type; PHASE B relinks all relations by
+// resolving foreign natural keys through those maps (so self-relations like tech prereqs and province
+// neighbors, and the province hub, all resolve). Re-running converges — no duplicates. tech↔building
+// and tech↔unit unlocks are NOT seeded from the overlay files: they are the inverse of
+// building/unit.prereqTech, so setting prereqTech populates them for free.
 //
-// Scope (this pass, per the locked decisions): core model. DEFERRED — place-name (GeoNames) and the
-// full all-race name-pool (needs the Java RaceNameGenerator); era-modifiers/rank-ladder single types
-// (no JSON source yet). name-pool seeds human + harimari only.
+// Scope (locked decisions): core model. DEFERRED — place-name (GeoNames) and the full all-race
+// name-pool (needs the Java RaceNameGenerator); era-modifiers/rank-ladder single types (no JSON
+// source). name-pool seeds human + harimari only; tech-effect is an empty stub today (0 rows).
+//
+// Run from studio/:  node scripts/seed.js
 
 const { createStrapi, compileStrapi } = require('@strapi/strapi');
 const { readFileSync } = require('node:fs');
@@ -22,6 +28,16 @@ const MAP = join(GEN, 'map');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
+const int = (v) => (v === null || v === undefined || v === '' ? undefined : parseInt(v, 10));
+const bool = (v) => (v === undefined ? undefined : v === true || v === '1' || v === 1);
+const stripEra = (v) => (v ? v.replace(/^C2C_ERA_/, '') : undefined);
+const enumOrNull = (v) => (v ? v : undefined); // "" / null enum → omit
+const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
+/** Extract an And/Or prereq node's tech list ({PrereqTech: s|[s]}) into an array. */
+const prereqs = (node) => {
+  const p = node && node.PrereqTech;
+  return p ? (Array.isArray(p) ? p : [p]) : [];
+};
 
 /** Run async fn over items with bounded concurrency. */
 async function pool(items, size, fn) {
@@ -36,100 +52,311 @@ async function pool(items, size, fn) {
   );
 }
 
+const uid = (n) => `api::${n}.${n}`;
+const CONC = 24;
+
+// ── content specs ────────────────────────────────────────────────────────────
+// Each: { name, key, load, keyOf?, scalars, rel? }.  scalars(r) → non-relation fields; rel(r, R) →
+// relation fields resolved via R.one(name,key)/R.many(name,keys). Omit `key` (added from keyOf).
+function buildSpecs() {
+  const load = (p) => () => readJson(p);
+  return [
+    // ── geography leaves ──
+    { name: 'country', key: 'tag', keyOf: (r) => r.tag, load: load(join(MAP, 'countries.json')),
+      scalars: (r) => ({ name: r.name, color: r.color }) },
+    { name: 'culture', key: 'key', load: load(join(MAP, 'cultures.json')),
+      scalars: (r) => ({ name: r.name, group: r.group, color: r.color }) },
+    { name: 'religion', key: 'key', load: load(join(MAP, 'religions.json')),
+      scalars: (r) => ({ name: r.name, group: r.group, color: r.color }) },
+    { name: 'trade-good', key: 'key', load: load(join(MAP, 'tradegoods.json')),
+      scalars: (r) => ({ name: r.name, color: r.color, category: r.category }) },
+
+    // ── terrain / plot reference ──
+    { name: 'terrain', key: 'key', keyOf: (r) => r.type, load: load(join(GEN, 'terrains.json')),
+      scalars: (r) => ({ yields: r.yields, found: r.bFound, buildModifier: r.buildModifier,
+        healthPercent: r.healthPercent, movement: r.movement }) },
+    { name: 'feature', key: 'key', keyOf: (r) => r.type, load: load(join(GEN, 'features.json')),
+      scalars: (r) => ({ yieldChanges: r.yieldChanges, clearCost: r.clearCost,
+        requiresFlatlands: r.requiresFlatlands, requiresRiver: r.requiresRiver,
+        healthPercent: r.healthPercent, growth: r.growth, movement: r.movement, appearance: r.appearance }),
+      rel: (r, R) => ({ validTerrains: R.many('terrain', r.validTerrains) }) },
+    { name: 'bonus', key: 'key', keyOf: (r) => r.type,
+      load: () => [...readJson(join(GEN, 'bonuses.json')), ...readJson(join(GEN, 'manufactured-bonuses.json'))],
+      scalars: (r) => ({ bonusClass: enumOrNull(r.bonusClass), yieldChanges: r.yieldChanges,
+        health: r.health, happiness: r.happiness, minLatitude: r.minLatitude, maxLatitude: r.maxLatitude,
+        hills: r.hills, flatlands: r.flatlands, peaks: r.peaks, placementOrder: r.placementOrder,
+        constAppearance: r.constAppearance, randApps: r.randApps, tilesPer: r.tilesPer,
+        minAreaSize: r.minAreaSize, groupRange: r.groupRange, groupRand: r.groupRand, techEra: r.techEra }),
+      rel: (r, R) => ({ techReveal: R.one('tech', r.techReveal), techCityTrade: R.one('tech', r.techCityTrade),
+        validTerrains: R.many('terrain', r.validTerrains), validFeatures: R.many('feature', r.validFeatures),
+        validFeatureTerrains: R.many('terrain', r.validFeatureTerrains) }) },
+    { name: 'improvement', key: 'key', keyOf: (r) => r.type, load: load(join(GEN, 'improvements.json')),
+      scalars: (r) => ({ yieldChanges: r.yieldChanges, hillsMakesValid: r.hillsMakesValid,
+        freshWaterMakesValid: r.freshWaterMakesValid, buildCost: r.buildCost, healthPercent: r.healthPercent,
+        upgradeTime: r.upgradeTime, culture: r.culture, actsAsCity: r.actsAsCity, techYieldChanges: r.techYieldChanges }),
+      rel: (r, R) => ({ prereqTech: R.one('tech', r.prereqTech), validTerrains: R.many('terrain', r.validTerrains),
+        validFeatures: R.many('feature', r.validFeatures), upgradeType: R.one('improvement', r.upgradeType) }) },
+    { name: 'route', key: 'key', keyOf: (r) => r.type, load: load(join(GEN, 'routes.json')),
+      scalars: (r) => ({ value: r.value, movement: r.movement, flatMovement: r.flatMovement,
+        advancedStartCost: r.advancedStartCost, seaTunnel: r.seaTunnel, yields: r.yields, trail: r.trail }),
+      rel: (r, R) => ({ bonusType: R.one('bonus', r.bonusType) }) },
+    { name: 'terrain-art', key: 'artTag', keyOf: (r) => r.artTag, load: load(join(MAP, 'terrain-art.json')),
+      scalars: (r) => ({ path: r.path, grid: r.grid, detail: r.detail, layerOrder: r.layerOrder,
+        alphaShader: r.alphaShader, blend: r.blend }),
+      rel: (r, R) => ({ terrain: R.one('terrain', r.terrain) }) },
+    { name: 'route-model', key: 'key',
+      keyOf: (r) => `${r.routeType}_${r.modelFileKey}_${r.connections}_${r.modelConnections}`,
+      load: load(join(MAP, 'route-models.json')),
+      scalars: (r) => ({ modelFileKey: r.modelFileKey, modelFile: r.modelFile, lateModelFile: r.lateModelFile,
+        animated: r.animated, connections: r.connections, modelConnections: r.modelConnections, rotations: r.rotations }),
+      rel: (r, R) => ({ routeType: R.one('route', r.routeType) }) },
+
+    // ── tech tree (self-graph) + game definitions ──
+    { name: 'tech', key: 'key', keyOf: (r) => r.Type, load: load(join(GEN, 'techs.json')),
+      scalars: (r) => ({ name: r.name, help: r.help, quote: r.quote, description: r.Description,
+        civilopedia: r.Civilopedia, advisor: enumOrNull(r.Advisor), era: stripEra(r.Era), cost: int(r.iCost),
+        gridX: int(r.iGridX), gridY: int(r.iGridY), trade: bool(r.bTrade), goodyTech: bool(r.bGoodyTech),
+        sound: r.Sound, button: r.Button, flavors: r.Flavors }),
+      rel: (r, R) => ({ andPreReqs: R.many('tech', prereqs(r.AndPreReqs)), orPreReqs: R.many('tech', prereqs(r.OrPreReqs)) }) },
+    { name: 'combat-class', key: 'key', keyOf: (r) => r.id, load: load(join(GEN, 'unit-combats.json')),
+      scalars: (r) => ({ name: r.name, signatureSkill: enumOrNull(r.signatureSkill), categoryButton: r.categoryButton,
+        earlyWithdrawChange: r.iEarlyWithdrawChange, tauntChange: r.iTauntChange,
+        dodgeModifierChange: r.iDodgeModifierChange, damageModifierChange: r.iDamageModifierChange,
+        precisionModifierChange: r.iPrecisionModifierChange,
+        captureResistanceModifierChange: r.iCaptureResistanceModifierChange, forMilitary: r.bForMilitary }) },
+    { name: 'building', key: 'key', keyOf: (r) => r.id, load: load(join(GEN, 'buildings.json')),
+      scalars: (r) => ({ name: r.name, pedia: r.pedia, category: enumOrNull(r.category),
+        artDefineTag: r.artDefineTag, button: r.button, cost: int(r.cost) }),
+      rel: (r, R) => ({ prereqTech: R.one('tech', r.prereqTech), andTechs: R.many('tech', r.andTechs) }) },
+    { name: 'unit', key: 'key', keyOf: (r) => r.id, load: load(join(GEN, 'units.json')),
+      scalars: (r) => ({ name: r.name || r.id, pedia: r.pedia, defaultUnitAI: enumOrNull(r.defaultUnitAI),
+        caravanRole: enumOrNull(r.caravanRole), domain: enumOrNull(r.domain), quality: enumOrNull(r.quality),
+        bandSizeClass: enumOrNull(r.bandSizeClass), moves: r.iMoves, combat: r.iCombat, builds: r.builds,
+        artDefineTag: r.artDefineTag, button: r.button, special: r.special, species: r.species }),
+      rel: (r, R) => ({ prereqTech: R.one('tech', r.prereqTech), obsoleteTech: R.one('tech', r.obsoleteTech),
+        combatClass: R.one('combat-class', r.combatClass), andTechs: R.many('tech', r.andTechs) }) },
+    { name: 'housing', key: 'key', keyOf: (r) => r.type, load: load(join(GEN, 'housing.json')),
+      scalars: (r) => ({ prereqPopulation: r.prereqPopulation, freshWater: r.freshWater, autoBuild: r.autoBuild,
+        health: r.health, happiness: r.happiness, yieldChanges: r.yieldChanges, commerceChanges: r.commerceChanges }),
+      rel: (r, R) => ({ prereqTech: R.one('tech', r.prereqTech), obsoleteTech: R.one('tech', r.obsoleteTech),
+        obsoletesToBuilding: R.one('building', r.obsoletesToBuilding), bonus: R.one('bonus', r.bonus),
+        prereqBonuses: R.many('bonus', r.prereqBonuses), prereqBuildings: R.many('building', r.prereqBuildings),
+        prereqOrBuildings: R.many('building', r.prereqOrBuildings), replacements: R.many('building', r.replacements),
+        prereqOrFeatures: R.many('feature', r.prereqOrFeatures), prereqOrTerrains: R.many('terrain', r.prereqOrTerrains) }) },
+    { name: 'recipe', key: 'key', keyOf: (r) => r.type, load: load(join(GEN, 'recipes.json')),
+      scalars: (r) => ({ river: r.river, freshWater: r.freshWater }),
+      rel: (r, R) => ({ building: R.one('building', r.type), bonus: R.one('bonus', r.bonus),
+        outputs: R.many('bonus', r.outputs), prereqBonuses: R.many('bonus', r.prereqBonuses),
+        vicinityBonuses: R.many('bonus', r.vicinityBonuses), rawVicinityBonuses: R.many('bonus', r.rawVicinityBonuses),
+        prereqTech: R.one('tech', r.prereqTech), obsoleteTech: R.one('tech', r.obsoleteTech),
+        prereqBuildings: R.many('building', r.prereqBuildings), prereqOrBuildings: R.many('building', r.prereqOrBuildings),
+        prereqOrTerrains: R.many('terrain', r.prereqOrTerrains), prereqOrFeatures: R.many('feature', r.prereqOrFeatures) }) },
+    { name: 'resource-source', key: 'key', keyOf: (r) => r.type, load: load(join(GEN, 'tier1-providers.json')),
+      scalars: (r) => ({ gatherers: r.gatherers }),
+      rel: (r, R) => ({ output: R.one('bonus', r.output) }) },
+
+    // ── geography hierarchy + hub ──
+    { name: 'area', key: 'key', load: load(join(MAP, 'areas.json')),
+      scalars: (r) => ({ name: r.name }),
+      rel: (r, R) => ({ provinces: R.many('province', r.provinces) }) },
+    { name: 'region', key: 'key', load: load(join(MAP, 'regions.json')),
+      scalars: (r) => ({ name: r.name }),
+      rel: (r, R) => ({ areas: R.many('area', r.areas) }) },
+    { name: 'super-region', key: 'key', load: load(join(MAP, 'superregions.json')),
+      scalars: (r) => ({ name: r.name }),
+      rel: (r, R) => ({ regions: R.many('region', r.regions) }) },
+    { name: 'province', key: 'provinceId', keyOf: (r) => r.id, load: load(join(MAP, 'provinces.json')),
+      scalars: (r) => ({ name: r.name, latitude: r.lat, longitude: r.lon, plots: r.plots, waterPlots: r.waterPlots,
+        type: enumOrNull(r.type), continent: enumOrNull(r.continent), realm: enumOrNull(r.realm),
+        winter: enumOrNull(r.winter), monsoon: enumOrNull(r.monsoon), climate: enumOrNull(r.climate),
+        baseTax: r.base_tax, baseProduction: r.base_production, baseManpower: r.base_manpower, city: r.city }),
+      rel: (r, R) => ({ owner: R.one('country', r.owner), controller: R.one('country', r.controller),
+        culture: R.one('culture', r.culture), religion: R.one('religion', r.religion),
+        tradeGood: R.one('trade-good', r.trade_goods), area: R.one('area', r.area), region: R.one('region', r.region),
+        neighbors: R.many('province', r.neighbors) }) },
+
+    // ── geometry sidecars ──
+    { name: 'adjacency', key: 'key', keyOf: (r) => `${r.from}_${r.to}`, load: load(join(MAP, 'adjacencies.json')),
+      scalars: (r) => ({ type: enumOrNull(r.type), comment: r.comment }),
+      rel: (r, R) => ({ from: R.one('province', r.from), to: R.one('province', r.to) }) },
+    { name: 'province-edge', key: 'provinceId', keyOf: (r) => r.id, load: load(join(MAP, 'edges.json')),
+      scalars: (r) => ({ km: r.km }),
+      rel: (r, R) => ({ province: R.one('province', r.id) }) },
+    { name: 'province-portal', key: 'provinceId', keyOf: (r) => r.id, load: load(join(MAP, 'portals.json')),
+      scalars: (r) => ({ portals: r.portals }),
+      rel: (r, R) => ({ province: R.one('province', r.id) }) },
+  ];
+}
+
 // ── seeder ───────────────────────────────────────────────────────────────────
 async function main() {
   const app = await createStrapi(await compileStrapi()).load();
-  app.log.level = 'error'; // quiet the request logger during bulk work
-  const keyMaps = {}; // uid → Map(naturalKey → documentId)
+  app.log.level = 'error';
+  const maps = {}; // name → Map(naturalKey → documentId)
+  let misses = 0;
+  const errors = []; // {phase, name, key, msg}
+  const rec = (phase, name, key, e) => {
+    if (errors.length < 20) errors.push(`[${phase}] ${name} ${key}: ${e.message}`);
+    errors.count = (errors.count || 0) + 1;
+  };
 
-  /**
-   * Idempotent natural-key upsert of `rows` into `uid`.
-   * @param uid       content-type uid, e.g. 'api::country.country'
-   * @param keyField  Strapi attribute holding the natural key (unique)
-   * @param rows      source records
-   * @param toData    (row) => Strapi data object for the SCALAR fields (no relations)
-   * @param keyOf     (row) => natural key value (defaults to row[keyField])
-   * @returns Map(naturalKey → documentId)
-   */
-  async function upsert(uid, keyField, rows, toData, keyOf = (r) => r[keyField]) {
-    // preload existing docs → key→documentId (page through; draftAndPublish is off)
-    const existing = new Map();
-    const PAGE = 1000;
+  const R = {
+    one: (name, key) => {
+      if (key === null || key === undefined) return undefined;
+      const id = maps[name] && maps[name].get(key);
+      if (!id) misses++;
+      return id;
+    },
+    many: (name, keys) => {
+      const m = maps[name] || new Map();
+      return (keys || []).map((k) => {
+        const id = m.get(k);
+        if (!id) misses++;
+        return id;
+      }).filter(Boolean);
+    },
+  };
+
+  async function findAll(u, fields) {
+    const out = [];
+    const PAGE = 2000;
     for (let start = 0; ; start += PAGE) {
-      const batch = await app.documents(uid).findMany({ fields: [keyField], start, limit: PAGE });
-      for (const d of batch) existing.set(d[keyField], d.documentId);
+      const batch = await app.documents(u).findMany({ fields, start, limit: PAGE });
+      out.push(...batch);
       if (batch.length < PAGE) break;
     }
+    return out;
+  }
 
+  // PHASE A — scalars, build key→documentId maps
+  const specs = buildSpecs();
+  for (const spec of specs) {
+    const u = uid(spec.name);
+    const keyOf = spec.keyOf || ((r) => r[spec.key]);
+    spec.rows = spec.load();
+    const existing = new Map();
+    for (const d of await findAll(u, [spec.key])) existing.set(d[spec.key], d.documentId);
     const map = new Map();
     let created = 0;
     let updated = 0;
-    await pool(rows, 20, async (row) => {
+    await pool(spec.rows, CONC, async (row) => {
       const key = keyOf(row);
-      const data = { [keyField]: key, ...toData(row) };
-      const docId = existing.get(key);
-      if (docId) {
-        await app.documents(uid).update({ documentId: docId, data });
-        map.set(key, docId);
-        updated++;
-      } else {
-        const doc = await app.documents(uid).create({ data });
-        map.set(key, doc.documentId);
-        created++;
+      const data = clean({ [spec.key]: key, ...spec.scalars(row) });
+      try {
+        const docId = existing.get(key);
+        if (docId) {
+          await app.documents(u).update({ documentId: docId, data });
+          map.set(key, docId);
+          updated++;
+        } else {
+          const doc = await app.documents(u).create({ data });
+          map.set(key, doc.documentId);
+          created++;
+        }
+      } catch (e) {
+        rec('A', spec.name, key, e);
       }
     });
-    keyMaps[uid] = map;
-    console.log(`[seed] ${uid.padEnd(28)} ${String(rows.length).padStart(5)} rows  (+${created} ~${updated})`);
-    return map;
+    maps[spec.name] = map;
+    console.log(`[A] ${spec.name.padEnd(16)} ${String(spec.rows.length).padStart(5)}  (+${created} ~${updated})`);
   }
 
-  // ── Phase A: relation-free leaf types ───────────────────────────────────────
-  await upsert('api::country.country', 'tag', readJson(join(MAP, 'countries.json')), (r) => ({
-    name: r.name,
-    color: r.color,
-  }));
+  // PHASE B — relations
+  for (const spec of specs) {
+    if (!spec.rel) continue;
+    const u = uid(spec.name);
+    const keyOf = spec.keyOf || ((r) => r[spec.key]);
+    let linked = 0;
+    await pool(spec.rows, CONC, async (row) => {
+      const docId = maps[spec.name].get(keyOf(row));
+      if (!docId) return;
+      const data = clean(spec.rel(row, R));
+      if (Object.keys(data).length === 0) return;
+      try {
+        await app.documents(u).update({ documentId: docId, data });
+        linked++;
+      } catch (e) {
+        rec('B', spec.name, keyOf(row), e);
+      }
+    });
+    console.log(`[B] ${spec.name.padEnd(16)} linked ${linked}`);
+  }
 
-  await upsert('api::culture.culture', 'key', readJson(join(MAP, 'cultures.json')), (r) => ({
-    name: r.name,
-    group: r.group,
-    color: r.color,
-  }));
+  // ── calendar / naming (no relations) ──
+  await wipeReseed(app, uid('feast'), loadFeasts(), (r) => r);
+  await upsertPlain(app, uid('name-pool'), 'key', loadNamePools(), (r) => r);
 
-  await upsert('api::religion.religion', 'key', readJson(join(MAP, 'religions.json')), (r) => ({
-    name: r.name,
-    group: r.group,
-    color: r.color,
-  }));
+  // ── single types (this pass: the two with a real source) ──
+  await setSingle(app, uid('region-earth-map'), loadRegionEarthMap());
+  await setSingle(app, uid('map-version'), loadMapVersion());
 
-  await upsert('api::trade-good.trade-good', 'key', readJson(join(MAP, 'tradegoods.json')), (r) => ({
-    name: r.name,
-    color: r.color,
-    category: r.category,
-  }));
-
-  await upsert('api::terrain.terrain', 'key', readJson(join(GEN, 'terrains.json')), (r) => ({
-    yields: r.yields,
-    found: r.bFound,
-    buildModifier: r.buildModifier,
-    healthPercent: r.healthPercent,
-    movement: r.movement,
-  }), (r) => r.type);
-
-  await upsert('api::combat-class.combat-class', 'key', readJson(join(GEN, 'unit-combats.json')), (r) => ({
-    name: r.name,
-    signatureSkill: r.signatureSkill,
-    categoryButton: r.categoryButton,
-    earlyWithdrawChange: r.iEarlyWithdrawChange,
-    tauntChange: r.iTauntChange,
-    dodgeModifierChange: r.iDodgeModifierChange,
-    damageModifierChange: r.iDamageModifierChange,
-    precisionModifierChange: r.iPrecisionModifierChange,
-    captureResistanceModifierChange: r.iCaptureResistanceModifierChange,
-    forMilitary: r.bForMilitary,
-  }), (r) => r.id);
-
-  console.log('[seed] Phase A (leaf types) done.');
+  console.log(`[seed] done. unresolved relation targets: ${misses}; row errors: ${errors.count || 0}`);
+  if (errors.length) console.log('  sample errors:\n   ' + errors.join('\n   '));
   await app.destroy();
+}
+
+// ── loose seeders (keyless / single) ─────────────────────────────────────────
+async function wipeReseed(app, u, rows, toData) {
+  const existing = [];
+  const PAGE = 2000;
+  for (let start = 0; ; start += PAGE) {
+    const batch = await app.documents(u).findMany({ fields: ['documentId'], start, limit: PAGE });
+    existing.push(...batch);
+    if (batch.length < PAGE) break;
+  }
+  await pool(existing, CONC, (d) => app.documents(u).delete({ documentId: d.documentId }));
+  await pool(rows, CONC, (r) => app.documents(u).create({ data: clean(toData(r)) }));
+  console.log(`[C] ${u.split('.').pop().padEnd(16)} reseeded ${rows.length}`);
+}
+
+async function upsertPlain(app, u, key, rows, toData) {
+  const existing = new Map();
+  for (const d of await app.documents(u).findMany({ fields: [key], limit: 5000 })) existing.set(d[key], d.documentId);
+  await pool(rows, CONC, async (r) => {
+    const data = clean({ [key]: r[key], ...toData(r) });
+    const docId = existing.get(r[key]);
+    if (docId) await app.documents(u).update({ documentId: docId, data });
+    else await app.documents(u).create({ data });
+  });
+  console.log(`[C] ${u.split('.').pop().padEnd(16)} upserted ${rows.length}`);
+}
+
+async function setSingle(app, u, data) {
+  const cur = await app.documents(u).findFirst();
+  if (cur) await app.documents(u).update({ documentId: cur.documentId, data: clean(data) });
+  else await app.documents(u).create({ data: clean(data) });
+  console.log(`[S] ${u.split('.').pop()} set`);
+}
+
+// ── source loaders for the loose bits ────────────────────────────────────────
+function loadFeasts() {
+  const out = [];
+  for (const [race, file] of [['human', join(RES, 'feasts.json')], ['harimari', join(RES, 'feasts-harimari.json')]]) {
+    for (const f of readJson(file)) out.push({ month: f.month, day: f.day, name: f.name, race });
+  }
+  return out;
+}
+function loadNamePools() {
+  const out = [];
+  const srcs = [['human', join(RES, 'human-names')], ['harimari', join(GEN, 'names', 'harimari')]];
+  for (const [race, dir] of srcs) {
+    for (const kind of ['male', 'female', 'dynasty']) {
+      out.push({ key: `${race}-${kind}`, race, kind, names: readJson(join(dir, `${kind}.json`)) });
+    }
+  }
+  return out;
+}
+function loadRegionEarthMap() {
+  const { note, specialNotes, ...regions } = readJson(join(RES, 'geo', 'region-earth-map.json'));
+  const notes = [note, specialNotes ? JSON.stringify(specialNotes, null, 2) : null].filter(Boolean).join('\n\n');
+  return { regions, notes };
+}
+function loadMapVersion() {
+  const src = readFileSync(join(RES, '..', 'java', 'com', 'civstudio', 'settlement', 'ProvincePlotStore.java'), 'utf8');
+  const m = src.match(/MAP_VERSION\s*=\s*(\d+)/);
+  const mapVersion = m ? parseInt(m[1], 10) : 0;
+  const contentVersion = `seed-${new Date().toISOString().slice(0, 10)}`;
+  return { mapVersion, contentVersion, note: 'Seeded from ProvincePlotStore.MAP_VERSION by scripts/seed.js.' };
 }
 
 main().catch((e) => {

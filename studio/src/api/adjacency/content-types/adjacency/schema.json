@@ -12,6 +12,11 @@
   },
   "pluginOptions": {},
   "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
     "from": {
       "type": "relation",
       "relation": "manyToOne",

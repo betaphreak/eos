@@ -175,6 +175,7 @@ const SPECS = [
     name: 'adjacency', plural: 'adjacencies', display: 'Adjacency',
     description: 'A special province-to-province link (sea/canal/lake crossing).',
     attributes: {
+      key: S({ required: true, unique: true }), // `${from}_${to}` — natural key for upsert
       from: m2o('province'),
       to: m2o('province'),
       type: En('adjacencyType'),
@@ -185,6 +186,7 @@ const SPECS = [
     name: 'province-edge', display: 'Province Edge',
     description: 'Per-province land-route edge geometry (km parallel to province.neighbors).',
     attributes: {
+      provinceId: I({ required: true, unique: true }), // the province id — natural key for upsert
       province: m2o('province'),
       km: J(), // [n] — parallel to the province's neighbor list
     },
@@ -193,6 +195,7 @@ const SPECS = [
     name: 'province-portal', display: 'Province Portal',
     description: 'Per-province portal pixel geometry (teleporter endpoints).',
     attributes: {
+      provinceId: I({ required: true, unique: true }), // the province id — natural key for upsert
       province: m2o('province'),
       portals: J(), // [{ to, x, y }]
     },
@@ -201,6 +204,7 @@ const SPECS = [
     name: 'route-model', display: 'Route Model',
     description: 'Civ4 route (road/rail) render model — art reference.',
     attributes: {
+      key: S({ required: true, unique: true }), // `${routeType}_${modelFileKey}_${connections}_${modelConnections}`
       routeType: m2o('route'),
       modelFileKey: S(),
       modelFile: S(),

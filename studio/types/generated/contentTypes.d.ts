@@ -447,6 +447,9 @@ export interface ApiAdjacencyAdjacency extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     from: Schema.Attribute.Relation<'manyToOne', 'api::province.province'>;
+    key: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -1325,6 +1328,9 @@ export interface ApiProvinceEdgeProvinceEdge
     > &
       Schema.Attribute.Private;
     province: Schema.Attribute.Relation<'manyToOne', 'api::province.province'>;
+    provinceId: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -1356,6 +1362,9 @@ export interface ApiProvincePortalProvincePortal
       Schema.Attribute.Private;
     portals: Schema.Attribute.JSON;
     province: Schema.Attribute.Relation<'manyToOne', 'api::province.province'>;
+    provinceId: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -1852,6 +1861,9 @@ export interface ApiRouteModelRouteModel extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    key: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
     lateModelFile: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<

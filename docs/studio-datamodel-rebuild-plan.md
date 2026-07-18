@@ -14,9 +14,21 @@
 > (JSON, UID resolution, inverse-pair consistency) with no DB. Single types this pass are the four
 > **data-bearing** ones only — `era-modifiers`, `rank-ladder`, `region-earth-map` (the region→ISO
 > place-name map), `map-version`; `simulation-config` / `balance-parameters` /
-> `calendar-settings` are **deferred** (code-side tunables, not exporter data). **Not yet done:** the
-> seeder (Phase 3), the engine `WorldSource` read path + `/api/world-bundle` (Phase 4),
-> cutover/deleting `generated/` (Phase 5).
+> `calendar-settings` are **deferred** (code-side tunables, not exporter data).
+>
+> **Phase 3 seeder BUILT (2026-07-18):** `studio/scripts/seed.js` — a standalone CommonJS ETL that
+> boots Strapi programmatically and upserts the engine's committed exporter JSON via the Document
+> Service. Two-phase, idempotent (natural-key upsert → then relation relink through a key→documentId
+> map). Seeds the full **core model** — all 27 collections at exact reference-doc counts (province
+> 5268, edges 5268, portals 6094, area 1573, building 1270, unit 273, bonus 432 [+manufactured], tech
+> 339, …), the `province` hub + `neighbors` self-relation (28606 links), the tech self-graph, and the
+> two data-bearing single types (`region-earth-map`, `map-version`=9). Four keyless derived tables
+> (`adjacency`/`province-edge`/`province-portal`/`route-model`) gained a natural-key scalar so they
+> upsert uniformly. ~4249 relation targets are unresolved-by-design (portals to filtered provinces;
+> building/bonus refs to techs gated out of the kept horizon — the engine ignores these too).
+> **DEFERRED still:** `place-name` (GeoNames), full all-race `name-pool` (seeds human+harimari only),
+> `era-modifiers`/`rank-ladder` single types (no JSON source). **Not yet done:** the engine
+> `WorldSource` read path + `/api/world-bundle` (Phase 4), cutover/deleting `generated/` (Phase 5).
 >
 > **Naming pass (2026-07-18):** collection-type names follow **philosophy A** — mirror the
 > source/engine vocabulary (`bonus`, `feature`, `improvement`, `area`, `adjacency` stay as the C2C/EU4
