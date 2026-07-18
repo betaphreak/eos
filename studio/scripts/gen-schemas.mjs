@@ -34,7 +34,7 @@ const ENUMS = {
   // com.civstudio.tech.Advisor
   advisor: ['ADVISOR_GROWTH', 'ADVISOR_ECONOMY', 'ADVISOR_MILITARY',
     'ADVISOR_SCIENCE', 'ADVISOR_CULTURE', 'ADVISOR_RELIGION'],
-  // com.civstudio.skill.Skill (12; unit-combat signature skill)
+  // com.civstudio.skill.Skill (12; combat-class signature skill)
   skill: ['STEWARDSHIP', 'CONSTRUCTION', 'SURVIVAL', 'WARFARE', 'COMMERCE',
     'FAITH', 'HUNTING', 'MEDICINE', 'SUBTERFUGE', 'INTELLECTUAL', 'SOCIAL',
     'PRODUCTION'],
@@ -252,7 +252,7 @@ const SPECS = [
       prereqTech: m2oInv('tech', 'unlockedUnits'),
       andTechs: m2m('tech'),
       obsoleteTech: m2o('tech'),
-      combatClass: m2o('unit-combat'),
+      combatClass: m2o('combat-class'),
       defaultUnitAI: En('unitAI'),
       caravanRole: En('caravanRole'),
       domain: En('unitDomain'),
@@ -268,8 +268,8 @@ const SPECS = [
     },
   },
   {
-    name: 'unit-combat', display: 'Unit Combat',
-    description: 'A C2C combat class; maps to a signature skill.',
+    name: 'combat-class', plural: 'combat-classes', display: 'Combat Class',
+    description: 'A C2C unit combat class; maps to a signature skill.',
     attributes: {
       key: S({ required: true, unique: true }), // UNITCOMBAT_*
       name: S(),
@@ -309,8 +309,8 @@ const SPECS = [
     },
   },
   {
-    name: 'tier1-provider', display: 'Tier-1 Source',
-    description: 'A tier-1 (raw) resource provider — output bonus + gatherers.',
+    name: 'resource-source', display: 'Resource Source',
+    description: 'A base (C2C tier-1) resource producer — output bonus + gatherers.',
     attributes: {
       key: S({ required: true, unique: true }),
       output: m2o('bonus'),

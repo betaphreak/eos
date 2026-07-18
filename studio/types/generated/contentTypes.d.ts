@@ -661,6 +661,62 @@ export interface ApiBuildingBuilding extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiCombatClassCombatClass extends Struct.CollectionTypeSchema {
+  collectionName: 'combat_classes';
+  info: {
+    description: 'A C2C unit combat class; maps to a signature skill.';
+    displayName: 'Combat Class';
+    pluralName: 'combat-classes';
+    singularName: 'combat-class';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    captureResistanceModifierChange: Schema.Attribute.Integer;
+    categoryButton: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    damageModifierChange: Schema.Attribute.Integer;
+    dodgeModifierChange: Schema.Attribute.Integer;
+    earlyWithdrawChange: Schema.Attribute.Integer;
+    forMilitary: Schema.Attribute.Boolean;
+    key: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::combat-class.combat-class'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String;
+    precisionModifierChange: Schema.Attribute.Integer;
+    publishedAt: Schema.Attribute.DateTime;
+    signatureSkill: Schema.Attribute.Enumeration<
+      [
+        'STEWARDSHIP',
+        'CONSTRUCTION',
+        'SURVIVAL',
+        'WARFARE',
+        'COMMERCE',
+        'FAITH',
+        'HUNTING',
+        'MEDICINE',
+        'SUBTERFUGE',
+        'INTELLECTUAL',
+        'SOCIAL',
+        'PRODUCTION',
+      ]
+    >;
+    tauntChange: Schema.Attribute.Integer;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiCountryCountry extends Struct.CollectionTypeSchema {
   collectionName: 'countries';
   info: {
@@ -1612,13 +1668,14 @@ export interface ApiRecipeRecipe extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiRegionNameRegionName extends Struct.SingleTypeSchema {
-  collectionName: 'region_names';
+export interface ApiRegionEarthMapRegionEarthMap
+  extends Struct.SingleTypeSchema {
+  collectionName: 'region_earth_maps';
   info: {
     description: 'The Anbennar-region \u2192 Earth ISO-3166 country-code map that drives plot place-naming (from geo/region-earth-map.json).';
-    displayName: 'Region Name';
-    pluralName: 'region-names';
-    singularName: 'region-name';
+    displayName: 'Region Earth Map';
+    pluralName: 'region-earth-maps';
+    singularName: 'region-earth-map';
   };
   options: {
     draftAndPublish: false;
@@ -1630,7 +1687,7 @@ export interface ApiRegionNameRegionName extends Struct.SingleTypeSchema {
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
-      'api::region-name.region-name'
+      'api::region-earth-map.region-earth-map'
     > &
       Schema.Attribute.Private;
     notes: Schema.Attribute.Text;
@@ -1737,6 +1794,40 @@ export interface ApiReligionReligion extends Struct.CollectionTypeSchema {
           localized: true;
         };
       }>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiResourceSourceResourceSource
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'resource_sources';
+  info: {
+    description: 'A base (C2C tier-1) resource producer \u2014 output bonus + gatherers.';
+    displayName: 'Resource Source';
+    pluralName: 'resource-sources';
+    singularName: 'resource-source';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    gatherers: Schema.Attribute.JSON;
+    key: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::resource-source.resource-source'
+    > &
+      Schema.Attribute.Private;
+    output: Schema.Attribute.Relation<'manyToOne', 'api::bonus.bonus'>;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -2185,40 +2276,6 @@ export interface ApiTerrainTerrain extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiTier1ProviderTier1Provider
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'tier1_providers';
-  info: {
-    description: 'A tier-1 (raw) resource provider \u2014 output bonus + gatherers.';
-    displayName: 'Tier-1 Source';
-    pluralName: 'tier1-providers';
-    singularName: 'tier1-provider';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    gatherers: Schema.Attribute.JSON;
-    key: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::tier1-provider.tier1-provider'
-    > &
-      Schema.Attribute.Private;
-    output: Schema.Attribute.Relation<'manyToOne', 'api::bonus.bonus'>;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
 export interface ApiTradeGoodTradeGood extends Struct.CollectionTypeSchema {
   collectionName: 'trade_goods';
   info: {
@@ -2273,62 +2330,6 @@ export interface ApiTradeGoodTradeGood extends Struct.CollectionTypeSchema {
         };
       }>;
     publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiUnitCombatUnitCombat extends Struct.CollectionTypeSchema {
-  collectionName: 'unit_combats';
-  info: {
-    description: 'A C2C combat class; maps to a signature skill.';
-    displayName: 'Unit Combat';
-    pluralName: 'unit-combats';
-    singularName: 'unit-combat';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    captureResistanceModifierChange: Schema.Attribute.Integer;
-    categoryButton: Schema.Attribute.String;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    damageModifierChange: Schema.Attribute.Integer;
-    dodgeModifierChange: Schema.Attribute.Integer;
-    earlyWithdrawChange: Schema.Attribute.Integer;
-    forMilitary: Schema.Attribute.Boolean;
-    key: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::unit-combat.unit-combat'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String;
-    precisionModifierChange: Schema.Attribute.Integer;
-    publishedAt: Schema.Attribute.DateTime;
-    signatureSkill: Schema.Attribute.Enumeration<
-      [
-        'STEWARDSHIP',
-        'CONSTRUCTION',
-        'SURVIVAL',
-        'WARFARE',
-        'COMMERCE',
-        'FAITH',
-        'HUNTING',
-        'MEDICINE',
-        'SUBTERFUGE',
-        'INTELLECTUAL',
-        'SOCIAL',
-        'PRODUCTION',
-      ]
-    >;
-    tauntChange: Schema.Attribute.Integer;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -2412,7 +2413,7 @@ export interface ApiUnitUnit extends Struct.CollectionTypeSchema {
       }>;
     combatClass: Schema.Attribute.Relation<
       'manyToOne',
-      'api::unit-combat.unit-combat'
+      'api::combat-class.combat-class'
     >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -3043,6 +3044,7 @@ declare module '@strapi/strapi' {
       'api::area.area': ApiAreaArea;
       'api::bonus.bonus': ApiBonusBonus;
       'api::building.building': ApiBuildingBuilding;
+      'api::combat-class.combat-class': ApiCombatClassCombatClass;
       'api::country.country': ApiCountryCountry;
       'api::culture.culture': ApiCultureCulture;
       'api::era-modifier.era-modifier': ApiEraModifierEraModifier;
@@ -3058,9 +3060,10 @@ declare module '@strapi/strapi' {
       'api::province.province': ApiProvinceProvince;
       'api::rank-ladder.rank-ladder': ApiRankLadderRankLadder;
       'api::recipe.recipe': ApiRecipeRecipe;
-      'api::region-name.region-name': ApiRegionNameRegionName;
+      'api::region-earth-map.region-earth-map': ApiRegionEarthMapRegionEarthMap;
       'api::region.region': ApiRegionRegion;
       'api::religion.religion': ApiReligionReligion;
+      'api::resource-source.resource-source': ApiResourceSourceResourceSource;
       'api::route-model.route-model': ApiRouteModelRouteModel;
       'api::route.route': ApiRouteRoute;
       'api::super-region.super-region': ApiSuperRegionSuperRegion;
@@ -3068,9 +3071,7 @@ declare module '@strapi/strapi' {
       'api::tech.tech': ApiTechTech;
       'api::terrain-art.terrain-art': ApiTerrainArtTerrainArt;
       'api::terrain.terrain': ApiTerrainTerrain;
-      'api::tier1-provider.tier1-provider': ApiTier1ProviderTier1Provider;
       'api::trade-good.trade-good': ApiTradeGoodTradeGood;
-      'api::unit-combat.unit-combat': ApiUnitCombatUnitCombat;
       'api::unit.unit': ApiUnitUnit;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;

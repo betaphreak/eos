@@ -19,7 +19,7 @@ for (const name of apiDirs) {
   const ctRoot = join(API, name, 'content-types');
   if (!existsSync(ctRoot)) { errors.push(`${name}: missing content-types/`); continue; }
   // the content-type subfolder may differ from the api folder (Strapi keys the
-  // UID off both independently — see the era-modifier / region-name single types)
+  // UID off both independently — see the era-modifier / region-earth-map single types)
   const ctDirs = readdirSync(ctRoot).filter((d) => statSync(join(ctRoot, d)).isDirectory());
   if (ctDirs.length !== 1) { errors.push(`${name}: expected exactly one content-type dir, found ${ctDirs.length}`); continue; }
   const ctName = ctDirs[0];

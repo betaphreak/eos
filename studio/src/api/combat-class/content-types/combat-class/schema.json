@@ -1,11 +1,11 @@
 {
   "kind": "collectionType",
-  "collectionName": "unit_combats",
+  "collectionName": "combat_classes",
   "info": {
-    "singularName": "unit-combat",
-    "pluralName": "unit-combats",
-    "displayName": "Unit Combat",
-    "description": "A C2C combat class; maps to a signature skill."
+    "singularName": "combat-class",
+    "pluralName": "combat-classes",
+    "displayName": "Combat Class",
+    "description": "A C2C unit combat class; maps to a signature skill."
   },
   "options": {
     "draftAndPublish": false

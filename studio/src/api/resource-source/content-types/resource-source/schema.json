@@ -1,11 +1,11 @@
 {
   "kind": "collectionType",
-  "collectionName": "tier1_providers",
+  "collectionName": "resource_sources",
   "info": {
-    "singularName": "tier1-provider",
-    "pluralName": "tier1-providers",
-    "displayName": "Tier-1 Source",
-    "description": "A tier-1 (raw) resource provider — output bonus + gatherers."
+    "singularName": "resource-source",
+    "pluralName": "resource-sources",
+    "displayName": "Resource Source",
+    "description": "A base (C2C tier-1) resource producer — output bonus + gatherers."
   },
   "options": {
     "draftAndPublish": false

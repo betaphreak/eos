@@ -12,14 +12,27 @@
 > (one declarative spec, all enum value-sets centralized as the single source, mirrored from the engine
 > enums + measured datasets). `studio/scripts/validate-schemas.mjs` structurally lints every schema
 > (JSON, UID resolution, inverse-pair consistency) with no DB. Single types this pass are the four
-> **data-bearing** ones only — `era-modifiers`, `rank-ladder`, `region-name` (the region→ISO place-name
-> map, renamed from `region-earth-map`), `map-version`; `simulation-config` / `balance-parameters` /
-> `calendar-settings` are **deferred** (code-side tunables, not exporter data). `studio/package.json`
-> `version` is realigned to the reactor (0.9.46). **Not yet done:** the seeder (Phase 3), the engine
-> `WorldSource` read path + `/api/world-bundle` (Phase 4), cutover/deleting `generated/` (Phase 5).
-> Two api **folders** on disk still read `era-modifiers`/`region-earth-map` while their content-types
-> are `era-modifier`/`region-name` (an IntelliJ VFS lock blocked the folder rename; UID is folder-based
-> so it loads fine — rename the folders to match once the lock clears).
+> **data-bearing** ones only — `era-modifiers`, `rank-ladder`, `region-earth-map` (the region→ISO
+> place-name map), `map-version`; `simulation-config` / `balance-parameters` /
+> `calendar-settings` are **deferred** (code-side tunables, not exporter data). **Not yet done:** the
+> seeder (Phase 3), the engine `WorldSource` read path + `/api/world-bundle` (Phase 4),
+> cutover/deleting `generated/` (Phase 5).
+>
+> **Naming pass (2026-07-18):** collection-type names follow **philosophy A** — mirror the
+> source/engine vocabulary (`bonus`, `feature`, `improvement`, `area`, `adjacency` stay as the C2C/EU4
+> and Java classes name them, for Studio↔engine parity) — with three clarity fixes: `tier1-provider`→
+> `resource-source`, `unit-combat`→`combat-class`, and the `region-name` single type reverted to
+> `region-earth-map`. The api folders now all match their content-type UIDs.
+>
+> **Session cont. (2026-07-18):** the new schema is now **live in the deployed Strapi admin**
+> (`civstudio.com/admin`) — the 29 collection + 4 single content types shipped in the studio image
+> rolled this session, **empty/unseeded** (the seeder is still Phase 3). Studio version is now
+> **0.9.47** (kept in sync with the reactor). Related studio work also landed this session but
+> **outside this data-model plan** (separate tracks, noted here only for orientation): the server admin
+> console moved into **Strapi admin homepage widgets** ([`admin-console.md`](admin-console.md)); the
+> container images moved **Azure ACR → public GitHub Container Registry** with a buildx layer-cached CI
+> ([`client-server.md`](client-server.md) §Deployment); and the admin gained a **CivStudio brand theme**
+> (gold/navy, ported from `web/`) with a web/-style login splash (`studio/src/admin/{theme.ts,app.tsx}`).
 
 ## Goals (from the directives that shaped this)
 
@@ -57,7 +70,7 @@ becomes a **relation**; every `[key]` array becomes a many-relation.
 | Group | Collection types | From datasets |
 |---|---|---|
 | **Geography** | `province`, `country`, `culture`, `religion`, `trade-good`, `area`, `region`, `super-region`, `adjacency`, `province-edge`, `province-portal` | #1–11 |
-| **Game definitions** | `tech`, `building`, `unit`, `unit-combat`, `housing`, `recipe`, `tier1-provider` | #14, 18–20, 27–29 |
+| **Game definitions** | `tech`, `building`, `unit`, `combat-class`, `housing`, `recipe`, `resource-source` | #14, 18–20, 27–29 |
 | **Terrain / plot** | `terrain`, `feature`, `bonus`, `improvement`, `route`, `route-model`, `terrain-art` | #21–26, 12–13 |
 | **Naming / calendar** | `name-pool` (race+kind), `feast` (race field), `tech-effect` (race-keyed) | #30, 31, tech-effects |
 | **Reference** | `place-name` (GeoNames subset) | generated/geonames |
@@ -123,7 +136,7 @@ Cross-cutting from the expansion:
 ### C. Enums as attributes (no reference collections)
 
 Per decision: `era`, `advisor`, `rank`, `race`, `skill` are plain enumeration strings on the types
-that reference them (e.g. `tech.era`, `tech.advisor`, `unit-combat.signatureSkill`), alongside the
+that reference them (e.g. `tech.era`, `tech.advisor`, `combat-class.signatureSkill`), alongside the
 descriptor enums (`province.type`/`realm`/`continent`/`climate`/`winter`/`monsoon`,
 `trade-good.category`, `building.category`, `bonus.bonusClass`, `adjacency.type`, unit descriptors).
 No `era`/`rank`/`race`/`advisor`/`skill` tables.

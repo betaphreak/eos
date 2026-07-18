@@ -62,7 +62,7 @@
     "combatClass": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "api::unit-combat.unit-combat"
+      "target": "api::combat-class.combat-class"
     },
     "defaultUnitAI": {
       "type": "enumeration",
