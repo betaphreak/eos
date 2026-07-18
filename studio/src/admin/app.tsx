@@ -5,11 +5,16 @@ export default {
   config: {
     locales: [],
   },
-  bootstrap(app: any) {
+  // Widget registration MUST live in `register`, not `bootstrap`: the admin passes the full
+  // StrapiApp here (so `app.widgets` exists), whereas the `bootstrap` hook's argument is a
+  // restricted Pick that has NO `widgets` — calling `app.widgets.register` there throws and blanks
+  // the entire admin SPA. The optional-chaining guard is belt-and-braces so a future API shift can
+  // never take the whole admin down again.
+  register(app: any) {
     // CivStudio server ops as admin homepage widgets — the replacement for the retired
     // web/admin.html console. They call the game server's gated /api/admin/** + /api/sessions/**
     // cross-origin with the operator's server session (see src/admin/lib/serverApi.ts).
-    app.widgets.register([
+    app.widgets?.register?.([
       {
         id: 'civstudio-server-ops',
         icon: Server,
@@ -23,8 +28,9 @@ export default {
         component: async () => (await import('./components/SessionsWidget')).default,
       },
     ]);
-
-    // 1. Keep your existing CSS injection
+  },
+  bootstrap() {
+    // Keep the existing CSS injection (DOM-only — safe in bootstrap).
     const style = document.createElement('style');
     style.innerHTML = `
       a[href*="strapi.io/pricing"], div:has(> a[href*="strapi.io/pricing"]) { display: none !important; }
