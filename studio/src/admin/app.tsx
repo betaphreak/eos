@@ -76,6 +76,17 @@ export default {
 
       /* (Solid-button text ink is handled by the buttonNeutral0 theme token — see theme.ts.) */
 
+      /* Homepage widgets: pin our two ops widgets to half-width (6/12). Strapi's default-layout
+         algorithm (createDefaultWidgetWidths) gives every widget 6 columns EXCEPT, when the total
+         widget count is odd, the last-registered one — which is ours — gets a full 12. There is no
+         width field on the widget registration API (5.42), so force the span here. The Grid.Item (the
+         grid child carrying grid-column) is the DIRECT parent of the WidgetRoot that holds
+         data-strapi-widget-id — target it via :has(> …), scoped under the grid container. */
+      [data-strapi-grid-container] :has(> [data-strapi-widget-id="global::civstudio-server-ops"]),
+      [data-strapi-grid-container] :has(> [data-strapi-widget-id="global::civstudio-sessions"]) {
+        grid-column: span 6 !important;
+      }
+
       /* ===== Login: web/-style cinematic dark splash + gold-hairline glass card =====
          Pinned dark and self-contained (web/'s splash is always dark, independent of the UI theme).
          Scoped to the AUTH pages via body:not(:has(nav)) — authed pages render the MainNav <nav>, the
