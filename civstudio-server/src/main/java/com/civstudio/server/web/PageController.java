@@ -1,6 +1,7 @@
 package com.civstudio.server.web;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,21 +12,32 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.civstudio.server.CivStudioProperties;
+
 /**
  * Serves the server's self-contained HTML pages, read from the working directory (the repo root
- * locally, {@code /app} in the image — the Dockerfile copies each in). The <b>admin console</b>
- * ({@code web/admin.html}) is at {@code /} (its actions are all admin-gated server-side, see {@link
- * AdminController} / {@code docs/admin-console.md}); the spectator {@code web/lobby.html} moved to
- * {@code /lobby}. The full map site lives on Static Web Apps and talks to this server's {@code
- * /api/**}.
+ * locally, {@code /app} in the image — the Dockerfile copies each in). The <b>admin console</b> is
+ * no longer a page here: its UI moved to homepage widgets in the Strapi admin, so {@code /} now
+ * <b>redirects</b> to {@link CivStudioProperties.Admin#getConsoleUrl()} and the widgets call this
+ * server's admin API ({@link AdminController}, {@code /api/sessions/**}) cross-origin. The spectator
+ * {@code web/lobby.html} is at {@code /lobby}. The full map site lives on Static Web Apps and talks
+ * to this server's {@code /api/**}. See {@code docs/admin-console.md}.
  */
 @RestController
 public class PageController {
 
-	/** The admin console — the default page on the server host. */
+	private final CivStudioProperties props;
+
+	public PageController(CivStudioProperties props) {
+		this.props = props;
+	}
+
+	/** Redirect to the Strapi admin that now hosts the ops widgets (the old admin.html is retired). */
 	@GetMapping("/")
-	public ResponseEntity<byte[]> adminPage() throws IOException {
-		return page("admin.html");
+	public ResponseEntity<Void> root() {
+		return ResponseEntity.status(302)
+				.location(URI.create(props.getAdmin().getConsoleUrl()))
+				.build();
 	}
 
 	/** The spectator chat lobby (moved off {@code /}). */

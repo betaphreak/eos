@@ -1,10 +1,29 @@
 import type { StrapiApp } from '@strapi/strapi/admin';
+import { Server, Command } from '@strapi/icons';
 
 export default {
   config: {
     locales: [],
   },
   bootstrap(app: any) {
+    // CivStudio server ops as admin homepage widgets — the replacement for the retired
+    // web/admin.html console. They call the game server's gated /api/admin/** + /api/sessions/**
+    // cross-origin with the operator's server session (see src/admin/lib/serverApi.ts).
+    app.widgets.register([
+      {
+        id: 'civstudio-server-ops',
+        icon: Server,
+        title: { id: 'civstudio.widget.serverOps.title', defaultMessage: 'Server ops' },
+        component: async () => (await import('./components/ServerOpsWidget')).default,
+      },
+      {
+        id: 'civstudio-sessions',
+        icon: Command,
+        title: { id: 'civstudio.widget.sessions.title', defaultMessage: 'Live sessions' },
+        component: async () => (await import('./components/SessionsWidget')).default,
+      },
+    ]);
+
     // 1. Keep your existing CSS injection
     const style = document.createElement('style');
     style.innerHTML = `

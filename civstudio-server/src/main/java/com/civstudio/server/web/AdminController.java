@@ -22,10 +22,12 @@ import com.civstudio.settlement.ProvincePlotStore;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Admin-only server operations behind {@code /api/admin/**} — the backend for the admin console
- * ({@code web/admin.html}, served at {@code /}). Every endpoint is gated by {@link
+ * Admin-only server operations behind {@code /api/admin/**} — the backend for the admin console,
+ * which now lives as homepage widgets in the Strapi admin (the {@code web/admin.html} page was
+ * retired; {@code /} redirects there). Every endpoint is gated by {@link
  * CurrentUserResolver#isAdmin} (the existing {@code ROLE_ADMIN} / {@code civstudio.auth.admins}
- * allow-list); a non-admin gets {@code 403}. The console reads session state from the ordinary
+ * allow-list); a non-admin gets {@code 403}. The widgets call these endpoints cross-origin (CORS
+ * allows the {@code civstudio.com} sites with credentials) and read session state from the ordinary
  * {@code /api/sessions} endpoints (admins bypass the ownership check there). See {@code
  * docs/admin-console.md}.
  */

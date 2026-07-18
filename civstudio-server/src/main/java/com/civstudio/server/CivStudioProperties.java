@@ -158,7 +158,9 @@ public class CivStudioProperties {
 	}
 
 	/**
-	 * Admin-console config (the {@code /api/admin/**} backend, {@code web/admin.html}).
+	 * Admin-console config (the {@code /api/admin/**} backend). The console UI itself now lives as
+	 * homepage widgets in the Strapi admin (see {@link #consoleUrl}); the retired {@code
+	 * web/admin.html} page has been replaced by a redirect from {@code /}.
 	 */
 	public static class Admin {
 		/**
@@ -171,12 +173,28 @@ public class CivStudioProperties {
 		 */
 		private String plotCacheStorageUrl = "";
 
+		/**
+		 * Where {@code GET /} redirects now that the admin console lives in the Strapi admin — the
+		 * Strapi Homepage that hosts the CivStudio ops widgets (env {@code CIVSTUDIO_ADMIN_CONSOLEURL}).
+		 * Those widgets call this server's {@code /api/admin/**} + {@code /api/sessions/**} cross-origin
+		 * (CORS already allows the {@code civstudio.com} sites with credentials).
+		 */
+		private String consoleUrl = "https://civstudio.com/admin";
+
 		public String getPlotCacheStorageUrl() {
 			return plotCacheStorageUrl;
 		}
 
 		public void setPlotCacheStorageUrl(String plotCacheStorageUrl) {
 			this.plotCacheStorageUrl = plotCacheStorageUrl;
+		}
+
+		public String getConsoleUrl() {
+			return consoleUrl;
+		}
+
+		public void setConsoleUrl(String consoleUrl) {
+			this.consoleUrl = consoleUrl;
 		}
 	}
 
