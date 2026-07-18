@@ -1,18 +1,16 @@
 name: CivStudio Server
 
-# Builds the live spectator server image (docs/client-server.md) and pushes it to the shared
-# registry (civstudio.azurecr.io). It does NOT deploy the Container App: the project
+# Builds the live spectator server image (docs/client-server.md) and pushes it to GitHub Container
+# Registry (ghcr.io/<owner>/civstudio-server). It does NOT deploy the Container App: the project
 # subscription is accessed by a *guest* identity that can create/manage resources but cannot
 # create role assignments, so no CI service principal can be granted ARM rights. Rolling the
 # app to a new image is therefore a one-liner run from an authenticated session (see
 # docs/client-server.md §Deployment → "Updating"). CI's job is the part that can't be done on
-# the dev box: building the image (no local Docker; ACR Tasks are absent in the registry's
-# belgiumcentral region, so `az acr build` can't run there either — we build with Docker on
-# the runner and push, which is region-independent).
+# the dev box: building the image and pushing it.
 #
-# Auth: ACR admin credentials as repo secrets ACR_USERNAME / ACR_PASSWORD (no Azure AD login,
-# no service principal). Enable this workflow by adding those two secrets; until then it is a
-# no-op you can trigger manually.
+# Auth: the built-in GITHUB_TOKEN (permissions: packages: write) — no stored registry secrets, no
+# Azure AD login, no service principal. The pushed package is PUBLIC, so the Container App pulls it
+# with no credentials (make it public once, in the repo's Packages settings, after the first push).
 on:
   push:
     branches: [master]
@@ -31,23 +29,29 @@ concurrency:
   group: build-server-image
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: write             # push to ghcr.io with the built-in GITHUB_TOKEN
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      # ghcr requires an all-lowercase owner; github.repository_owner (betaphreak) already is
+      IMG: ghcr.io/${{ github.repository_owner }}/civstudio-server
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0            # full history so `git rev-list --count HEAD` is the real build number
 
-      - name: Log in to ACR
+      - name: Log in to GHCR
         run: |
-          echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ vars.ACR_LOGIN_SERVER }}" \
-            --username "${{ secrets.ACR_USERNAME }}" --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
+            --username "${{ github.actor }}" --password-stdin
 
       - name: Build and push image
         run: |
-          IMG="${{ vars.ACR_LOGIN_SERVER }}/civstudio-server"
           # build identity for /actuator/info (the .git is not in the Docker context, so pass it in)
           BUILD_NUMBER="$(git rev-list --count HEAD)"
           BUILD_COMMIT="$(git rev-parse --short HEAD)"
@@ -60,7 +64,7 @@ jobs:
 
       - name: Next step (manual deploy)
         run: |
-          echo "Image pushed: ${{ vars.ACR_LOGIN_SERVER }}/civstudio-server:${{ github.sha }}"
+          echo "Image pushed: $IMG:${{ github.sha }}"
           echo "Roll the app from an authenticated az session:"
           echo "  az containerapp update -n civstudio-server -g civstudio \\"
-          echo "    --image ${{ vars.ACR_LOGIN_SERVER }}/civstudio-server:${{ github.sha }}"
+          echo "    --image $IMG:${{ github.sha }}"

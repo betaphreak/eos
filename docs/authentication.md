@@ -213,7 +213,7 @@ Phase 2, the `game_session` registry), so the command rows stay lean.
 
 - **Secrets**: OIDC client-id/secret per provider, the Steam Web API key, and the JWT signing
   key are all env-injected (Container App secrets), never committed — same discipline as
-  `ACR_*`/`EOS_CORS_ORIGINS`.
+  `EOS_CORS_ORIGINS` (image pulls need no registry secret — GHCR images are public).
 - **Datasource required in prod**: users + ownership need Postgres. The server keeps booting
   datasource-free (spectator-only, no login) for local dev and tests — when no datasource is
   present, the auth beans degrade to "spectate only, cannot found/own" rather than failing

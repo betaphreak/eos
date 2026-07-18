@@ -4,24 +4,28 @@
 
 .DESCRIPTION
   The streamlined local-Docker path (needs Rancher Desktop / Docker Desktop with dockerd +
-  an authenticated `az` session). Replaces the throwaway-West-Europe-ACR build trick: push
-  straight to civstudio.azurecr.io (belgiumcentral push/pull works fine — only ACR *Tasks*
-  are absent there) and roll the Container App.
+  an authenticated `az` session). Pushes the image to GitHub Container Registry
+  (ghcr.io/betaphreak/civstudio-server) and rolls the Container App. The GHCR package is PUBLIC, so
+  the Container App pulls it with no registry credentials (one-time: after the first push, set the
+  package to Public in the repo's Packages settings, or the pull 401s).
 
   Always redeploy after a change that affects what the live server serves (engine resources,
   the web-asset manifest / plotIndex, the bundle, or server code) — the static site and server
   drift apart otherwise and the plot layer silently breaks. See docs/client-server.md §Deployment.
 
-  Steps: verify docker + az → az acr login → docker build (multi-stage, bakes the engine jar +
-  build-info) → docker push → az containerapp update → poll /actuator until the new version serves →
+  Steps: verify docker + az → docker login ghcr.io → docker build (multi-stage, bakes the engine jar
+  + build-info) → docker push → az containerapp update → poll /actuator until the new version serves →
   prune old local images (only on a verified-live deploy; the registry keeps them for rollback).
+
+  Auth for the push: `$env:GHCR_TOKEN` (a PAT with write:packages) if set, else the gh CLI token
+  (`gh auth token`; needs the write:packages scope — `gh auth refresh -h github.com -s write:packages`).
 
 .PARAMETER Tag
   Image tag. Defaults to the current git commit SHA (the deploy convention). A dirty tree gets
   a "-dirty" suffix so an uncommitted build is never mistaken for a commit.
 
 .PARAMETER SkipBuild
-  Skip build+push and just roll the Container App to an image tag already in the ACR.
+  Skip build+push and just roll the Container App to an image tag already in GHCR.
 
 .EXAMPLE
   pwsh tools/deploy-server.ps1
@@ -36,8 +40,8 @@ $ErrorActionPreference = 'Stop'
 
 $RG       = 'civstudio'
 $APP      = 'civstudio-server'
-$REGISTRY = 'civstudio'                       # az ACR name
-$LOGIN    = 'civstudio.azurecr.io'            # registry login server
+$LOGIN    = 'ghcr.io'                          # registry login server
+$OWNER    = 'betaphreak'                       # ghcr namespace (GitHub owner, lowercase)
 $REPO     = 'civstudio-server'
 $HEALTH   = 'https://dev.civstudio.com/actuator/info'   # where we confirm the roll landed
 
@@ -51,7 +55,7 @@ try {
     $dirty = "$(git status --porcelain)".Trim()
     $Tag   = if ($dirty) { "$sha-dirty" } else { $sha }
   }
-  $image = "$LOGIN/$REPO`:$Tag"
+  $image = "$LOGIN/$OWNER/$REPO`:$Tag"
   # build identity baked into /actuator/info (the .git is not in the image context, so pass it in) —
   # computed ALWAYS (not just when building) so the post-roll verify can assert the served commit.
   $buildNumber = "$(git rev-list --count HEAD)".Trim()   # auto-incrementing monotonic build number
@@ -63,8 +67,13 @@ try {
   az account show --query name -o tsv | Out-Null
 
   if (-not $SkipBuild) {
-    Write-Host "==> az acr login ($REGISTRY)" -ForegroundColor Cyan
-    az acr login -n $REGISTRY | Out-Null
+    Write-Host "==> docker login ghcr.io" -ForegroundColor Cyan
+    # a PAT with write:packages (env GHCR_TOKEN) wins; else fall back to the gh CLI token, which
+    # needs that scope too (`gh auth refresh -h github.com -s write:packages`).
+    $ghcrToken = if ($env:GHCR_TOKEN) { $env:GHCR_TOKEN } else { (gh auth token 2>$null) }
+    if (-not $ghcrToken) { throw "No GHCR token: set `$env:GHCR_TOKEN (PAT w/ write:packages) or sign in with `gh auth login`." }
+    $ghcrToken | docker login $LOGIN --username $OWNER --password-stdin | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "docker login $LOGIN failed (token needs write:packages: gh auth refresh -h github.com -s write:packages)" }
 
     Write-Host "==> docker build (build #$buildNumber, commit $buildCommit)" -ForegroundColor Cyan
     docker build -t $image `
@@ -113,7 +122,7 @@ try {
   }
 
   # HOUSEKEEPING — only now that the new build is verified live: drop old LOCAL images. The registry
-  # keeps every tag, so rollback (`-SkipBuild -Tag <old>`) still pulls old images from ACR; locally we
+  # keeps every tag, so rollback (`-SkipBuild -Tag <old>`) still pulls old images from GHCR; locally we
   # only need the one just deployed. Removes the other civstudio-server tags + any dangling images (not
   # the build cache — that stays, to keep the next rebuild fast). Best-effort: the deploy already
   # succeeded, so a cleanup hiccup must never fail it.
@@ -121,8 +130,8 @@ try {
   $prevEAP = $ErrorActionPreference
   try {
     $ErrorActionPreference = 'Continue'   # a single rmi failure must not abort the loop
-    $old = @(docker images "$LOGIN/$REPO" --format '{{.Tag}}' | Where-Object { $_ -and $_ -ne $Tag })
-    foreach ($t in $old) { docker rmi "$LOGIN/$REPO`:$t" 2>$null | Out-Null }
+    $old = @(docker images "$LOGIN/$OWNER/$REPO" --format '{{.Tag}}' | Where-Object { $_ -and $_ -ne $Tag })
+    foreach ($t in $old) { docker rmi "$LOGIN/$OWNER/$REPO`:$t" 2>$null | Out-Null }
     docker image prune -f 2>$null | Out-Null   # dangling (untagged) images
     Write-Host "    removed $($old.Count) old local tag(s) + dangling images; kept $Tag" -ForegroundColor Green
   } catch {

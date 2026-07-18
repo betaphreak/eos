@@ -264,15 +264,16 @@ pieces we reuse, so there is almost no greenfield infra:
 | Resource | Name | Region | Note |
 |---|---|---|---|
 | Resource group | `civstudio` | belgiumcentral | shared |
-| Container registry | `civstudio` (`civstudio.azurecr.io`) | belgiumcentral | shared, admin-enabled |
+| Container registry | **GitHub Container Registry** (`ghcr.io/betaphreak/*`) | — | public images; not an Azure resource |
 | Managed environment | `civstudio-managed-env` | West Europe | shared |
 | **Container App** | **`civstudio-server`** | West Europe | port 8080, external ingress, min/max-replicas 1, 1 CPU / 2 GiB |
 
-The same environment also hosts an unrelated app (`civstudio-backend-app`, port 1337); the
+The same environment also hosts the Strapi backend (`civstudio-backend-app`, port 1337); the
 spectator server is a separate app on port 8080 and does not touch it. As deployed the app
-answers at `civstudio-server.<env-hash>.westeurope.azurecontainerapps.io` and pulls from the
-ACR with the registry's **admin credentials** (managed-identity pull would need a role
-assignment — see below — that the deploying identity can't create).
+answers at `civstudio-server.<env-hash>.westeurope.azurecontainerapps.io` and pulls its image
+from **GHCR** (`ghcr.io/betaphreak/civstudio-server`). The package is **public**, so the Container
+App pulls it with **no registry credentials at all** (no ACR, no managed-identity role assignment,
+no stored PAT) — which sidesteps the identity constraint below for the *pull* path.
 
 **The identity constraint that shapes everything.** The `CivStudio` subscription is accessed
 by a **guest** account (`…#EXT#@…`) that holds **Contributor, not Owner/User Access
@@ -286,25 +287,27 @@ Administrator**. It can create and manage *resources* (it created all of the abo
 - **Deploy is done from an authenticated `az` session**, not CI. Creating/updating the
   Container App and binding the hostname are *resource* ops the guest can do.
 
-**Building the image (the one thing the dev box can't do).** No local Docker, and ACR
-**Tasks** are absent in **belgiumcentral** (`az acr build` against `civstudio` fails with
-`NoRegisteredProviderFound`; push/pull work there fine). The first image was built by a
-**throwaway ACR in West Europe** (where Tasks exist): `az acr create civstudiobuild …` →
-`az acr build` → `az acr import` into `civstudio` → `az acr delete civstudiobuild`. The same
-trick (or `docker build`+push from any machine with Docker) produces later images.
+**Building & pushing the image.** The image goes to **GHCR** (`ghcr.io/betaphreak/civstudio-server`)
+— any Docker host can build and push. Two paths:
+- **Local:** `tools/deploy-server.ps1` (`docker login ghcr.io` with `$env:GHCR_TOKEN` or the gh CLI
+  token → `docker build` → push → roll → post-roll verify).
+- **CI (`deploy-server.yml`) — build & push only:** builds on the GitHub runner and pushes with the
+  **built-in `GITHUB_TOKEN`** (`permissions: packages: write`) — no stored registry secrets. It does
+  **not** deploy; it prints the `az containerapp update` one-liner to run.
 
-**CI (`deploy-server.yml`) — build & push only.** Given the above, the workflow builds the
-image with Docker **on the GitHub runner** and pushes it to the ACR using **admin
-credentials** (repo secrets `ACR_USERNAME` / `ACR_PASSWORD`; no Azure AD login, no SP). It
-does **not** deploy — it prints the `az containerapp update` one-liner to run. It's a no-op
-until those two secrets are added. Repo **variables** `ACR_NAME`, `ACR_LOGIN_SERVER`,
-`CONTAINERAPP_NAME`, `CONTAINERAPP_ENV`, `AZURE_RG` are set (the deploy one-liner reads them).
+> **One-time:** the first push creates the GHCR package as **private** — set it to **Public** (repo →
+> Packages → the package → Package settings → Change visibility) so the Container App can pull it
+> credential-free. Do this once per image (`civstudio-server`, `civstudio-backend`).
 
-**Updating.**
+The old ACR path (`civstudio.azurecr.io`) is retired: it needed a **throwaway West-Europe ACR** to
+build (Tasks are absent in belgiumcentral) and stored `ACR_USERNAME`/`ACR_PASSWORD` admin secrets.
+GHCR removes both — no Azure registry, no registry secrets.
+
+**Updating (roll the app — still from an authenticated `az` session).**
 ```bash
-# build a new image (throwaway-ACR trick, or CI, or any Docker host), tag it into civstudio, then:
+# build+push a new image (tools/deploy-server.ps1, CI, or any Docker host), then:
 az containerapp update -n civstudio-server -g civstudio \
-  --image civstudio.azurecr.io/civstudio-server:<tag>
+  --image ghcr.io/betaphreak/civstudio-server:<tag>
 ```
 
 **Deployment runbook — the correct order and actions.** A change can touch three surfaces
@@ -349,7 +352,7 @@ map silently break:
    Skip this step entirely for a pure server-code or web-JS change (generation unchanged).
 
 3. **Deploy the server** — `pwsh tools/deploy-server.ps1` (Docker build → push to
-   `civstudio.azurecr.io` → `az containerapp update` → poll `/actuator/info`). Picks up new
+   `ghcr.io/betaphreak/civstudio-server` → `az containerapp update` → poll `/actuator/info`). Picks up new
    engine resources, server code, and the rebaked manifest. Do it **after** the bake (step 2),
    never before: the image serves `v<MAP_VERSION>`, so rolling it while `map/v<new>` is still
    empty makes prod regenerate every province on demand — nameless.

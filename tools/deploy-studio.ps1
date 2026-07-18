@@ -4,27 +4,32 @@
 
 .DESCRIPTION
   The local-Docker path (needs Rancher Desktop / Docker Desktop with dockerd + an authenticated
-  `az` session) — the sibling of tools/deploy-server.ps1. Pushes straight to civstudio.azurecr.io
-  (belgiumcentral push/pull works; only ACR *Tasks* are absent there) and rolls the Container App
-  `civstudio-backend-app`, which serves the Strapi admin + API at https://civstudio.com.
+  `az` session) — the sibling of tools/deploy-server.ps1. Pushes the image to GitHub Container
+  Registry (ghcr.io/betaphreak/civstudio-backend) and rolls the Container App
+  `civstudio-backend-app`, which serves the Strapi admin + API at https://civstudio.com. The GHCR
+  package is PUBLIC, so the Container App pulls it with no registry credentials (one-time: set the
+  package to Public in the repo's Packages settings after the first push).
 
   Why local (not fully-automated CI): this repo's Azure subscription is reached by a *guest*
-  identity that cannot create role assignments, so no CI service principal exists. The Container App
-  pulls from ACR via its own managed identity, so a plain `az containerapp update --image` rolls it
-  with no registry credentials. .github/workflows/strapi-deploy.yml is a build-only backup for when
-  this box is off; it cannot roll the app.
+  identity that cannot create role assignments, so no CI service principal exists — a plain
+  `az containerapp update --image` rolls the app from an authenticated az session.
+  .github/workflows/strapi-deploy.yml is a build-only backup for when this box is off; it cannot
+  roll the app.
 
-  Steps: verify docker + az -> az acr login -> docker build (studio/ context, multi-stage: npm ci +
-  strapi build) -> docker push -> az containerapp update -> poll until the app's ACTIVE revision runs
-  THIS image tag and /_health answers 204 -> prune old local images (only on a verified-live deploy;
-  the registry keeps them for rollback).
+  Steps: verify docker + az -> docker login ghcr.io -> docker build (studio/ context, multi-stage:
+  npm ci + strapi build) -> docker push -> az containerapp update -> poll until the app's ACTIVE
+  revision runs THIS image tag and /_health answers 204 -> prune old local images (only on a
+  verified-live deploy; the registry keeps them for rollback).
+
+  Auth for the push: `$env:GHCR_TOKEN` (a PAT with write:packages) if set, else the gh CLI token
+  (`gh auth token`; needs write:packages — `gh auth refresh -h github.com -s write:packages`).
 
 .PARAMETER Tag
   Image tag. Defaults to the current git commit SHA (the deploy convention). A dirty tree gets a
   "-dirty" suffix so an uncommitted build is never mistaken for a commit.
 
 .PARAMETER SkipBuild
-  Skip build+push and just roll the Container App to an image tag already in the ACR.
+  Skip build+push and just roll the Container App to an image tag already in GHCR.
 
 .EXAMPLE
   pwsh tools/deploy-studio.ps1
@@ -39,8 +44,8 @@ $ErrorActionPreference = 'Stop'
 
 $RG       = 'civstudio'
 $APP      = 'civstudio-backend-app'
-$REGISTRY = 'civstudio'                       # az ACR name
-$LOGIN    = 'civstudio.azurecr.io'            # registry login server
+$LOGIN    = 'ghcr.io'                          # registry login server
+$OWNER    = 'betaphreak'                       # ghcr namespace (GitHub owner, lowercase)
 $REPO     = 'civstudio-backend'               # image repo (matches the app's current image)
 $HEALTH   = 'https://civstudio.com/_health'   # Strapi health endpoint (204 when serving)
 
@@ -54,7 +59,7 @@ try {
     $dirty = "$(git status --porcelain)".Trim()
     $Tag   = if ($dirty) { "$sha-dirty" } else { $sha }
   }
-  $image = "$LOGIN/$REPO`:$Tag"
+  $image = "$LOGIN/$OWNER/$REPO`:$Tag"
   Write-Host "==> Deploying image: $image" -ForegroundColor Cyan
 
   # sanity: tools present
@@ -62,8 +67,13 @@ try {
   az account show --query name -o tsv | Out-Null
 
   if (-not $SkipBuild) {
-    Write-Host "==> az acr login ($REGISTRY)" -ForegroundColor Cyan
-    az acr login -n $REGISTRY | Out-Null
+    Write-Host "==> docker login ghcr.io" -ForegroundColor Cyan
+    # a PAT with write:packages (env GHCR_TOKEN) wins; else fall back to the gh CLI token, which
+    # needs that scope too (`gh auth refresh -h github.com -s write:packages`).
+    $ghcrToken = if ($env:GHCR_TOKEN) { $env:GHCR_TOKEN } else { (gh auth token 2>$null) }
+    if (-not $ghcrToken) { throw "No GHCR token: set `$env:GHCR_TOKEN (PAT w/ write:packages) or sign in with `gh auth login`." }
+    $ghcrToken | docker login $LOGIN --username $OWNER --password-stdin | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "docker login $LOGIN failed (token needs write:packages: gh auth refresh -h github.com -s write:packages)" }
 
     # Build context is studio/ so the dockerfile's COPY paths and studio/.dockerignore apply.
     Write-Host "==> docker build (studio/)" -ForegroundColor Cyan
@@ -117,15 +127,15 @@ try {
   }
 
   # HOUSEKEEPING -- only now that the new build is verified live: drop old LOCAL images. The registry
-  # keeps every tag, so rollback (`-SkipBuild -Tag <old>`) still pulls from ACR; locally we only need
+  # keeps every tag, so rollback (`-SkipBuild -Tag <old>`) still pulls from GHCR; locally we only need
   # the one just deployed. Best-effort: the deploy already succeeded, so a cleanup hiccup must never
   # fail it.
   Write-Host "==> cleaning up old local images (keeping $Tag)" -ForegroundColor Cyan
   $prevEAP = $ErrorActionPreference
   try {
     $ErrorActionPreference = 'Continue'
-    $old = @(docker images "$LOGIN/$REPO" --format '{{.Tag}}' | Where-Object { $_ -and $_ -ne $Tag })
-    foreach ($t in $old) { docker rmi "$LOGIN/$REPO`:$t" 2>$null | Out-Null }
+    $old = @(docker images "$LOGIN/$OWNER/$REPO" --format '{{.Tag}}' | Where-Object { $_ -and $_ -ne $Tag })
+    foreach ($t in $old) { docker rmi "$LOGIN/$OWNER/$REPO`:$t" 2>$null | Out-Null }
     docker image prune -f 2>$null | Out-Null
     Write-Host "    removed $($old.Count) old local tag(s) + dangling images; kept $Tag" -ForegroundColor Green
   } catch {

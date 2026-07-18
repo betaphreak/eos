@@ -218,6 +218,6 @@ jobs:
             echo ""
             echo "To serve it, roll the server from an authenticated session (guest identity — manual, see docs/client-server.md):"
             echo '```'
-            echo "az containerapp update -n civstudio-server -g civstudio --image civstudio.azurecr.io/civstudio-server:latest"
+            echo "az containerapp update -n civstudio-server -g civstudio --image ghcr.io/betaphreak/civstudio-server:latest"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
