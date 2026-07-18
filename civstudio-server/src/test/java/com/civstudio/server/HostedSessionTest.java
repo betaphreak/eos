@@ -202,7 +202,8 @@ class HostedSessionTest {
 			assertEquals(HostedSession.State.GAME_OVER, hs.state(),
 					"a colony collapsing ends the run itself — that is not a STOPPED session");
 			assertNotNull(hs.endReason(), "game over says why");
-			assertTrue(hs.endReason().contains("departed as a Caravan"),
+			assertTrue(hs.endReason().contains("abandoned")
+					&& hs.endReason().contains("survivors"),
 					"the demo colony dissolves into a band rather than dying outright: "
 							+ hs.endReason());
 			assertTrue(hs.isTerminal());

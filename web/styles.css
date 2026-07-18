@@ -1065,7 +1065,11 @@ body.auth-anon #clock { cursor: not-allowed; }
    (dimmed) behind: the final state of the world is the thing worth looking at,
    and a solid splash would hide the very colony the message is about. */
 #gameover {
-  position: absolute; inset: 0; z-index: 60; display: grid; place-items: center;
+  /* Sits BELOW the top bar (top: bar height), not inset:0 — so the masthead stays visible
+     and clickable while the game-over screen is up: the globe → Lobby control must still open
+     the lobby over this panel (which is why #lobby's z-index is higher). */
+  position: absolute; top: var(--bar-total, var(--bar-h)); left: 0; right: 0; bottom: 0;
+  z-index: 60; display: grid; place-items: center;
   background: radial-gradient(1000px 600px at 50% 40%, rgba(6,9,14,.55), rgba(6,9,14,.86));
   backdrop-filter: blur(3px);
   animation: go-in .5s ease both;
@@ -1094,7 +1098,10 @@ body.auth-anon #clock { cursor: not-allowed; }
    #loading, but translucent: the world you are choosing among is worth seeing
    behind the choosing. */
 #lobby {
-  position: absolute; inset: 0; z-index: 55; display: grid; place-items: center;
+  /* The lobby is the TOP layer — always above everything (game-over z60, the globe/realm menu
+     z70, toasts, HUD): it is the room you step back into, so nothing may cover it. Keep this the
+     highest z-index in the app. */
+  position: absolute; inset: 0; z-index: 100; display: grid; place-items: center;
   background: rgba(6,9,14,.72); backdrop-filter: blur(6px);
   animation: go-in .25s ease both;
 }

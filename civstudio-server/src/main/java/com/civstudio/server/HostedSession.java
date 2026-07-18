@@ -19,6 +19,8 @@ import com.civstudio.server.render.SessionLogBuffer;
 import com.civstudio.server.render.SessionSnapshot;
 import com.civstudio.server.render.Snapshots;
 import com.civstudio.settlement.GameSession;
+import com.civstudio.agent.Member;
+import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.util.Rng;
 
@@ -387,8 +389,9 @@ public final class HostedSession {
 	}
 
 	/**
-	 * Why the run ended, as display text for a client's game-over screen ({@code "Dhenijansar
-	 * departed as a Caravan on 1452-03-02"}), or {@code null} while it has not ended itself. Only
+	 * Why the run ended, as display text for a client's game-over screen ({@code "the survivors —
+	 * 4 adults and 2 children — abandoned Dhenijansar on 1452-03-02"}), or {@code null} while it has
+	 * not ended itself. Only
 	 * ever set alongside {@link State#GAME_OVER} — a session stopped from outside has no reason,
 	 * because it did not reach an end.
 	 *
@@ -766,11 +769,40 @@ public final class HostedSession {
 		List<String> fates = new ArrayList<>();
 		for (Settlement c : colonies) {
 			String when = c.getDeathDate() == null ? "" : " on " + c.getDeathDate();
-			fates.add(c.getDepartedBand() != null
-					? c.getName() + " departed as a Caravan" + when
-					: c.getName() + " died" + when);
+			SettlerCaravan band = c.getDepartedBand();
+			if (band == null) {
+				fates.add(c.getName() + " died" + when);
+				continue;
+			}
+			// the survivors took to the road as a band rather than dying outright — report who
+			// left (adults vs children, classified as of the colony's death) and the city they left
+			LocalDate on = c.getDeathDate() != null ? c.getDeathDate() : date();
+			int adults = 0, children = 0;
+			for (Member m : bandMembers(band)) {
+				if (m.isAdult(on))
+					adults++;
+				else
+					children++;
+			}
+			fates.add("the survivors — " + plural(adults, "adult", "adults") + " and "
+					+ plural(children, "child", "children") + " — abandoned " + c.getName() + when);
 		}
 		return String.join("; ", fates);
+	}
+
+	// the whole departed band: its following plus its leader (promoted out of the following, so
+	// counted separately — guarded against a double-count should it ever appear in both)
+	private static List<Member> bandMembers(SettlerCaravan band) {
+		List<Member> all = new ArrayList<>(band.getFollowing().getMembers());
+		Member leader = band.getLeader();
+		if (leader != null && !all.contains(leader))
+			all.add(leader);
+		return all;
+	}
+
+	// "1 adult" / "3 adults"
+	private static String plural(int n, String one, String many) {
+		return n + " " + (n == 1 ? one : many);
 	}
 
 	// assemble a fresh snapshot on this (session) thread and push it to subscribers; cache
