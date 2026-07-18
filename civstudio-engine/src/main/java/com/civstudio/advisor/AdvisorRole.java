@@ -11,9 +11,9 @@ import com.civstudio.skill.Skill;
  * <p>
  * Each role optionally names the {@link Skill} that best fits it: the roster
  * seats the top-skilled noble in that skill (a scholar heads Technology, a
- * social operator heads Foreign). Roles with no matching skill — Religion and
- * Globe, whose crafts have no skill in the twelve — are seated by overall
- * ability instead. The role selection is a deterministic presentation contract;
+ * social operator heads Foreign, the most faithful heads Religion). Globe, whose
+ * craft has no skill in the twelve, is seated by overall ability instead. The
+ * role selection is a deterministic presentation contract;
  * see {@code docs/privy-council.md} §0.
  */
 public enum AdvisorRole {
@@ -24,8 +24,8 @@ public enum AdvisorRole {
 	/** The diplomat — the ablest social operator handles foreign affairs. */
 	FOREIGN("foreign", Skill.SOCIAL),
 
-	/** The theologian — no matching skill, so seated by overall ability. */
-	RELIGION("religion", null),
+	/** The theologian — the colony's most faithful noble heads religion. */
+	RELIGION("religion", Skill.FAITH),
 
 	/** The navigator — no matching skill, so seated by overall ability. */
 	GLOBE("globe", null);

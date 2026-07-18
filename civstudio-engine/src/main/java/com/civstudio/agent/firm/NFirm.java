@@ -60,10 +60,10 @@ public class NFirm extends ConsumerGoodFirm {
 	}
 
 	/** Necessity production is subsistence agriculture: it trains {@link
-	 * Skill#PLANTS}. */
+	 * Skill#SURVIVAL}. */
 	@Override
 	public Set<Skill> laborSkills() {
-		return Set.of(Skill.PLANTS);
+		return Set.of(Skill.SURVIVAL);
 	}
 
 	/** A necessity firm produces in the {@link Sector#NECESSITY} sector. */

@@ -4,22 +4,28 @@ import com.civstudio.name.Person;
 
 /**
  * A skill a {@link Person person} can have and improve — the "type" of
- * a {@link SkillRecord}. The twelve skills are modelled on RimWorld's skill set.
- * (Decay, genetic aptitudes and traits are intentionally outside this model.)
+ * a {@link SkillRecord}. The twelve skills are aligned with the nine
+ * {@link com.civstudio.agent.CaravanRole caravan roles}: each role has one
+ * <b>signature skill</b> that governs (and is trained by) a band acting in that
+ * role, plus three non-role skills carrying live logic — {@code INTELLECTUAL}
+ * (tech science), {@code SOCIAL} (leadership / ennoblement / marriage) and the
+ * general {@code PRODUCTION} making-skill. See {@code docs/c2c-unit-import.md}
+ * §Skill–role realignment. (Decay, genetic aptitudes and traits are
+ * intentionally outside this model.)
  */
 public enum Skill {
-	CONSTRUCTION(0),
-	PLANTS(1),
-	INTELLECTUAL(2),
-	MINING(3),
-	SHOOTING(4),
-	MELEE(5),
-	SOCIAL(6),
-	ANIMALS(7),
-	COOKING(8),
-	MEDICINE(9),
-	ARTISTIC(10),
-	CRAFTING(11);
+	STEWARDSHIP(0),   // SETTLER  — found & govern
+	CONSTRUCTION(1),  // WORKER   — build routes/improvements
+	SURVIVAL(2),      // EXPLORER — scout, forage, subsist
+	WARFARE(3),       // MILITARY — fight
+	COMMERCE(4),      // TRADE    — trade
+	FAITH(5),         // MISSIONARY — proselytize
+	HUNTING(6),       // HUNTER   — hunt
+	MEDICINE(7),      // HEALER   — heal
+	SUBTERFUGE(8),    // COVERT   — spy / crime↔order
+	INTELLECTUAL(9),  // non-role — science
+	SOCIAL(10),       // non-role — leadership / marriage
+	PRODUCTION(11);   // non-role — general making
 
 	// an explicit, stable index in [0, 11]. Currently equal to ordinal(), but kept
 	// as its own field so the declaration order can change later without shifting

@@ -60,11 +60,11 @@ public class EFirm extends ConsumerGoodFirm {
 			return null;
 	}
 
-	/** Producing enjoyment goods trains a mix of {@link Skill#ARTISTIC},
-	 * {@link Skill#CRAFTING} and {@link Skill#SOCIAL}. */
+	/** Producing enjoyment goods trains a mix of {@link Skill#PRODUCTION}
+	 * (the making) and {@link Skill#SOCIAL} (the performance/appeal). */
 	@Override
 	public Set<Skill> laborSkills() {
-		return Set.of(Skill.ARTISTIC, Skill.CRAFTING, Skill.SOCIAL);
+		return Set.of(Skill.PRODUCTION, Skill.SOCIAL);
 	}
 
 	/** An enjoyment firm produces in the {@link Sector#ENJOYMENT} sector. */

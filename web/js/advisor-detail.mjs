@@ -129,7 +129,7 @@ function memberRow(m) {
 }
 
 // the skill that earns each seat (matches AdvisorRole.matchSkill) — highlighted in the sheet
-const ROLE_SKILL = { technology: "intellectual", foreign: "social" };
+const ROLE_SKILL = { technology: "intellectual", foreign: "social", religion: "faith" };
 
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;

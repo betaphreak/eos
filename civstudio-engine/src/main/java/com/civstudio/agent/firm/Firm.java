@@ -123,7 +123,7 @@ public abstract class Firm extends Agent implements Property {
 	 * {@link LaborMarket#clear()}). Defaults to none — a firm whose
 	 * work is not mapped to a skill grants no experience. Concrete firms override
 	 * this (e.g. a necessity firm, subsistence agriculture, trains
-	 * {@link Skill#PLANTS}).
+	 * {@link Skill#SURVIVAL}).
 	 *
 	 * @return the skills this firm's labor trains (possibly empty)
 	 */

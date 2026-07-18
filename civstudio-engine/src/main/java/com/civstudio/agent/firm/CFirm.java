@@ -143,9 +143,9 @@ public class CFirm extends Firm {
 		return null;
 	}
 
-	/** Producing capital goods (machines/tools) trains {@link Skill#CRAFTING}. */
+	/** Producing capital goods (machines/tools) trains {@link Skill#PRODUCTION}. */
 	@Override
 	public Set<Skill> laborSkills() {
-		return Set.of(Skill.CRAFTING);
+		return Set.of(Skill.PRODUCTION);
 	}
 }

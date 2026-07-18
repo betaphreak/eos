@@ -234,9 +234,27 @@ it (the existing on-the-job-training path, re-pointed at the signature skill).
 the **firm skill sets** (`NFirm`, `EFirm`, `CFirm` — S4); **`AdvisorRole.matchSkill`** + the frontend
 `ROLE_SKILL` map (S5); the `SOCIAL`/`INTELLECTUAL` call sites keep working unchanged (names kept);
 the server person projections (`PersonDetail`/`PersonProjections`) and MCP tools surface skills **by
-name generically**, so they auto-update; `advisor-detail.mjs` auto-updates (S6). **No** array-width
-change (count stays 12). **Re-baseline expected** on the skill RNG stream (S3), so land it as its own
-commit with the smoke tests re-blessed.
+name generically**, so they auto-update (`PersonProjections.skills()` iterates `Skill.all()` and
+emits `s.name().toLowerCase()` — the only bare skill strings anywhere are the frontend `ROLE_SKILL`
+map, an unavoidable JS↔Java boundary that can't import the enum); `advisor-detail.mjs` auto-updates
+(S6). **No** array-width change (count stays 12). **Re-baseline expected** on the skill RNG stream
+(S3), so land it as its own commit with the smoke tests re-blessed.
+
+**Tests the re-do touches (Phase 0, shipped 2026-07-18).** Two kinds. (1) **Compile-breaking** —
+three test files name now-deleted skill constants and must be repointed to survivors:
+`SkillSystemTest` (`PLANTS`/`MINING`/`COOKING`/`CRAFTING` → `SURVIVAL`/`HUNTING`/`MEDICINE`/
+`PRODUCTION`, plus the tie-break index comments 2/11 → 9/11), `LaborMarketTest` (`PLANTS` →
+`SURVIVAL`; the `ARTISTIC`+`CRAFTING`+`SOCIAL` three-skill-mean case → `COMMERCE`+`PRODUCTION`+
+`SOCIAL`), `LaborTrainsSkillsTest` (`PLANTS` → `SURVIVAL`). (2) **Re-blessed for the RNG re-baseline**
+— the clean re-index *permutes each person's per-skill birth draws* (the enum-order loop in
+`Demography.newSkillRecords` assigns the same draw sequence to different skills), which flipped two
+**seed-fragile statistical integration tests** that were riding a thin margin: `LaborTrainsSkillsTest`
+(necessity-trained skill vs an untrained one — the population mean was always confounded by per-skill
+birth draws and diluted by unemployed/churned laborers; re-blessed to an **all-necessity, small
+fully-employed labor force on a wide reserve** so the training signal dominates) and
+`BirthsTest.marriedHouseholdsBearChildren` (the old tight config collapsed to lone unmarried heads
+under the re-baselined economy — same stabilizing recipe applied to `runFertilePoolColony`). Neither
+mechanism changed; only the seed exposure did. **No test became obsolete** — nothing was removed.
 
 ---
 
@@ -248,12 +266,13 @@ caravan trade, [[project-direction]]). Phases 1–4 are pure data/UI (dormant); 
 producer-determined caravan realization) is the behaviour-changing capstone and couples to whatever
 production/build-queue model the roadmap grows.
 
-- **Phase 0 — skill–role realignment (independent; land first, own commit).** Re-do `Skill.java`
-  (the new 12, clean re-index), remap the firm skill sets (S4), point the Religion advisor seat at
-  `FAITH` (S5) + the frontend `ROLE_SKILL` religion entry. Re-bless the smoke tests (skill-draw
-  re-baseline, S3). Behaviour changes only in the seed of skill draws + the two firms' scaling skill;
-  the character sheet + person feed auto-update. Independent of the unit import — a prerequisite only
-  for the Phase-5 band↔skill link (S7).
+- **Phase 0 — skill–role realignment (independent; land first, own commit). SHIPPED 2026-07-18.**
+  Re-did `Skill.java` (the new 12, clean re-index), remapped the firm skill sets (S4), pointed the
+  Religion advisor seat at `FAITH` (S5) + the frontend `ROLE_SKILL` religion entry, and repointed /
+  re-blessed the touched tests (see **Tests the re-do touches** above). Full stack green (engine 378 +
+  server 109). Behaviour changes only in the seed of skill draws + the two firms' scaling skill; the
+  character sheet + person feed auto-update. Independent of the unit import — a prerequisite only for
+  the Phase-5 band↔skill link (S7).
 
 Each phase is independently compilable/testable; the catalog is inert until the selection rule +
 march wiring fire (Phase 5), exactly as the building import landed dormant through Phase 4.
@@ -359,8 +378,11 @@ import is shaped so they're reachable without a re-bake.
   (grant `UNIT_*` tokens); `web/js/techtree.mjs` (per-node unit row + inspector + search);
   `MarchingCaravan` (Phase 5 `unitId` + identity/stat draw + band↔skill link).
 - Changed (Phase 0 — skill realignment): `com.civstudio.skill.Skill` (the new 12, clean re-index);
-  `NFirm`/`EFirm`/`CFirm` (firm skill remap, S4); `AdvisorRole.matchSkill` (Religion→`FAITH`, S5);
-  `web/js/advisor-detail.mjs` `ROLE_SKILL` map (add `religion: "faith"`; names auto-update).
+  `NFirm`/`EFirm`/`CFirm` (firm skill remap, S4) + `Firm`/`LaborMarket` skill-doc comments;
+  `AdvisorRole.matchSkill` (Religion→`FAITH`, S5); `web/js/advisor-detail.mjs` `ROLE_SKILL` map (add
+  `religion: "faith"`; names auto-update). Tests: `SkillSystemTest` / `LaborMarketTest` /
+  `LaborTrainsSkillsTest` repointed off deleted skill constants; `LaborTrainsSkillsTest` +
+  `BirthsTest` re-blessed (stable-colony configs) for the RNG re-baseline.
 - Reuse: `Civ4Files`/`civ4.mjs` fetch+cache, `BuildingInfoExporter` kept-tech computation + gate +
   unlock-overlay pattern, `Civ4Xml` DOM helpers, `web/icon-bake.mjs`, the `TechBundle`/`BuildingBundle`
   server pattern, `TechEffect.Unlock` / `mergeEffects`, `CaravanRole` / `MarchingCaravan`.

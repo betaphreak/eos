@@ -277,8 +277,8 @@ public class LaborMarket extends Market {
 	}
 
 	// the worker's effective skill level for an employer: the (rounded) mean of
-	// its levels in the employer's labor skills — so a necessity firm reads PLANTS,
-	// a capital firm CRAFTING, etc. — or its overall level when the employer trains
+	// its levels in the employer's labor skills — so a necessity firm reads SURVIVAL,
+	// a capital firm PRODUCTION, etc. — or its overall level when the employer trains
 	// no specific skill. Package-private for direct unit testing.
 	static int relevantLevel(SkillTracker skills, Set<Skill> firmSkills) {
 		if (firmSkills == null || firmSkills.isEmpty())

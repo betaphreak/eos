@@ -124,12 +124,16 @@ class BirthsTest {
 	 */
 	private static SimulationHarness runFertilePoolColony() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.durationYears(1).numEFirms(2).numNFirms(10)
+				.durationYears(3).numEFirms(0).numNFirms(40)
 				// pin the founding skill to the survival regime this wedding/births test
 				// needs (the higher default destabilizes a small colony — see
 				// docs/food-balance.md); this test exercises births, not skill
 				.meanSkillMale(5).meanSkillFemale(2)
-				.retinueSize(120).promotionRatio(0.4).build();
+				// a small labor force the all-necessity sector fully employs, on a wide
+				// peasant reserve, so laborers stay alive and prosperous long enough to
+				// marry and bear children within the horizon (the old tight config
+				// collapsed to lone unmarried heads under the re-baselined economy)
+				.retinueSize(300).promotionRatio(0.15).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
@@ -142,7 +146,7 @@ class BirthsTest {
 		// enable births: a high per-day rate and a shallow food buffer so paired
 		// households breed quickly within the short horizon
 		h.getColony().setFertilityConfig(FertilityConfig.DEFAULT.toBuilder()
-				.dailyBirthProb(0.1).foodBufferDays(3).build());
+				.dailyBirthProb(0.2).foodBufferDays(3).build());
 		h.run();
 		return h;
 	}

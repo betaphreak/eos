@@ -16,8 +16,8 @@ import com.civstudio.skill.SkillTracker;
 /**
  * Unit tests for the labor market's skill→labor rule ({@link
  * LaborMarket#relevantLevel}): the worker's effective level for a firm is its
- * proficiency in that firm's own work, so a necessity firm (PLANTS) reads the
- * worker's PLANTS level, a multi-skill firm the mean of its skills, and a
+ * proficiency in that firm's own work, so a necessity firm (SURVIVAL) reads the
+ * worker's SURVIVAL level, a multi-skill firm the mean of its skills, and a
  * skill-less firm the worker's overall level.
  */
 class LaborMarketTest {
@@ -32,22 +32,22 @@ class LaborMarketTest {
 	@Test
 	void readsTheFirmsSingleSkill() {
 		Map<Skill, Integer> levels = new EnumMap<>(Skill.class);
-		levels.put(Skill.PLANTS, 14);
+		levels.put(Skill.SURVIVAL, 14);
 		SkillTracker t = trackerWith(levels);
-		// a necessity firm (subsistence agriculture) reads the worker's PLANTS level
-		assertEquals(14, LaborMarket.relevantLevel(t, Set.of(Skill.PLANTS)));
+		// a necessity firm (subsistence agriculture) reads the worker's SURVIVAL level
+		assertEquals(14, LaborMarket.relevantLevel(t, Set.of(Skill.SURVIVAL)));
 	}
 
 	@Test
 	void averagesAMultiSkillFirm() {
 		Map<Skill, Integer> levels = new EnumMap<>(Skill.class);
-		levels.put(Skill.ARTISTIC, 12);
-		levels.put(Skill.CRAFTING, 8);
+		levels.put(Skill.COMMERCE, 12);
+		levels.put(Skill.PRODUCTION, 8);
 		levels.put(Skill.SOCIAL, 10);
 		SkillTracker t = trackerWith(levels);
-		// an enjoyment firm reads the rounded mean of its three skills: (12+8+10)/3
+		// a multi-skill firm reads the rounded mean of its three skills: (12+8+10)/3
 		assertEquals(10, LaborMarket.relevantLevel(t,
-				Set.of(Skill.ARTISTIC, Skill.CRAFTING, Skill.SOCIAL)));
+				Set.of(Skill.COMMERCE, Skill.PRODUCTION, Skill.SOCIAL)));
 	}
 
 	@Test

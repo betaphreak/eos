@@ -67,7 +67,7 @@ class SkillSystemTest {
 	void peakLevelIsTheHighestSingleSkill() {
 		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
 		recs.put(Skill.SOCIAL, new SkillRecord(18, Passion.NONE));
-		recs.put(Skill.PLANTS, new SkillRecord(7, Passion.NONE));
+		recs.put(Skill.SURVIVAL, new SkillRecord(7, Passion.NONE));
 		SkillTracker t = SkillTracker.of(recs);
 		// peak is the single best skill (18), well above the all-round mean
 		assertEquals(18, t.peakLevel());
@@ -98,8 +98,8 @@ class SkillSystemTest {
 	@Test
 	void peakSkillBreaksTiesTowardTheLowestIndex() {
 		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
-		recs.put(Skill.INTELLECTUAL, new SkillRecord(12, Passion.NONE)); // index 2
-		recs.put(Skill.CRAFTING, new SkillRecord(12, Passion.NONE)); // index 11
+		recs.put(Skill.INTELLECTUAL, new SkillRecord(12, Passion.NONE)); // index 9
+		recs.put(Skill.PRODUCTION, new SkillRecord(12, Passion.NONE)); // index 11
 		assertEquals(Skill.INTELLECTUAL, SkillTracker.of(recs).peakSkill());
 	}
 
@@ -113,8 +113,8 @@ class SkillSystemTest {
 			assertTrue(s.contains(skill + "="), "missing " + skill + " in " + s);
 		// a known record renders with its glyph inside the dump
 		Map<Skill, SkillRecord> recs = new EnumMap<>(Skill.class);
-		recs.put(Skill.PLANTS, new SkillRecord(14, Passion.MAJOR));
-		assertTrue(SkillTracker.of(recs).toString().contains("PLANTS=14!"));
+		recs.put(Skill.SURVIVAL, new SkillRecord(14, Passion.MAJOR));
+		assertTrue(SkillTracker.of(recs).toString().contains("SURVIVAL=14!"));
 	}
 
 	@Test
@@ -183,13 +183,13 @@ class SkillSystemTest {
 	void trackerTickDecaysRecords() {
 		SkillTracker t = SkillTracker.empty();
 		// push one skill well above the floor, then let it sit idle through ticks
-		t.getSkill(Skill.MINING).setPassion(Passion.NONE);
-		t.learn(Skill.MINING, 100_000); // drive to max
-		int before = t.getSkill(Skill.MINING).getLevel();
+		t.getSkill(Skill.HUNTING).setPassion(Passion.NONE);
+		t.learn(Skill.HUNTING, 100_000); // drive to max
+		int before = t.getSkill(Skill.HUNTING).getLevel();
 		// enough idle days to erode the full top-level XP bucket and drop a level
 		for (int day = 0; day < 10_000; day++)
 			t.tick();
-		assertTrue(t.getSkill(Skill.MINING).getLevel() < before,
+		assertTrue(t.getSkill(Skill.HUNTING).getLevel() < before,
 				"tick() should decay an idle high skill");
 	}
 
@@ -213,10 +213,10 @@ class SkillSystemTest {
 	@Test
 	void trackerLearnRoutesToRecord() {
 		SkillTracker t = SkillTracker.empty();
-		t.getSkill(Skill.MINING).setPassion(Passion.MINOR);
-		t.learn(Skill.MINING, 100);
-		assertEquals(1, t.getSkill(Skill.MINING).getLevel());
+		t.getSkill(Skill.HUNTING).setPassion(Passion.MINOR);
+		t.learn(Skill.HUNTING, 100);
+		assertEquals(1, t.getSkill(Skill.HUNTING).getLevel());
 		// other skills untouched
-		assertEquals(0, t.getSkill(Skill.COOKING).getLevel());
+		assertEquals(0, t.getSkill(Skill.MEDICINE).getLevel());
 	}
 }
