@@ -157,7 +157,7 @@ const provinceSearch = createSearchBox({
     return scored.slice(0, 12).map(s => ({ kind: "province", p: s.p }));
   },
   renderRow(m, i, active) {
-    if (m.kind === "tech" || m.kind === "building") return searchRowHtml(m, i, active);
+    if (m.kind === "tech" || m.kind === "building" || m.kind === "unit") return searchRowHtml(m, i, active);
     const act = active ? " active" : "";
     if (m.kind === "province") {
       const reg = (provGeo(m.p).region || [])[0] || "";
@@ -170,7 +170,7 @@ const provinceSearch = createSearchBox({
       <span class="sr-meta">${m.n} prov</span></div>`;
   },
   onPick(m) {
-    if (m.kind === "tech" || m.kind === "building") { pickSearchResult(m); return; }  // §4a
+    if (m.kind === "tech" || m.kind === "building" || m.kind === "unit") { pickSearchResult(m); return; }  // §4a
     if (m.kind === "province") goToProvince(m.p);
     else focusEntity(m.key);                           // zoom to the polity's largest province + spotlight it
   },

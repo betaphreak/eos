@@ -54,6 +54,8 @@ public final class ResourceManifest {
 						"generated/techs.json + generated/building-unlocks.json + techs-meta.json"),
 				new Entry("buildings", "/api/buildings", BuildingBundle.gzip().length, true,
 						"generated/buildings.json + buildings-meta.json"),
+				new Entry("units", "/api/units", UnitBundle.gzip().length, true,
+						"generated/{units,unit-combats}.json + {units,unit-combats}-meta.json"),
 				new Entry("tiers", "/api/tiers", AssetController.tiersGzipLength(), true,
 						"map/tierborders.json"),
 				// Per-province plot grids are generated on demand and cached per province, so they have

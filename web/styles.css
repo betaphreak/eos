@@ -480,6 +480,7 @@ input[type="range"].scrub::-moz-range-thumb {
   color: var(--ink-soft); background: var(--panel-2); border: 1px solid var(--line-soft); }
 .search-row .sr-kind-tech { color: #cbdcf2; background: rgba(79,143,206,.16); border-color: rgba(79,143,206,.30); }
 .search-row .sr-kind-building { color: #e6cfa6; background: rgba(200,134,42,.16); border-color: rgba(200,134,42,.30); }
+.search-row .sr-kind-unit { color: #b9dcc0; background: rgba(90,164,105,.16); border-color: rgba(90,164,105,.30); }
 .search-row .sr-id { color: var(--ink-faint); font-family: ui-monospace, monospace; font-size: 10.5px; }
 .search-row .sr-meta { color: var(--ink-faint); font-size: 11px; margin-left: auto; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; max-width: 46%; }
@@ -815,6 +816,8 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .tech-spec { position: absolute; left: 9px; right: 9px; bottom: 3px; height: 3px; display: flex;
   gap: 1px; border-radius: 2px; overflow: hidden; opacity: .85; pointer-events: none; }
 .tech-spec > span { display: block; min-width: 2px; }
+/* the unit-role spectrum bar sits just above the building-category one (a tech can unlock both) */
+.tech-uspec { bottom: 7px; opacity: .75; }
 /* Researched state, when spectating a live colony (.researched is only set then — with no session the
    tree is a reference work and every node stays a plain card).
 
@@ -845,8 +848,11 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .tech-bcell.locked { opacity: .4; filter: saturate(.35); }
 .tech-bcell.locked:hover { opacity: .8; }
 
-/* --- the focus LOD: the selected tech's building grid, in the rail (see techtree.mjs) --------- */
-.tech-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+/* --- the focus LOD: the selected tech's building + unit grids, in the rail (see techtree.mjs) --- */
+.tech-grid, .tech-ugrid { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+/* the unit inspector's combat-class line: its category icon + name + folded signature skill */
+.unit-class { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-soft); }
+.unit-class-ico { width: 20px; height: 20px; flex: none; background-repeat: no-repeat; border-radius: 4px; }
 /* a category group: its buildings wrap in a row over a faint category-tinted backing + left rule,
    so similar buildings sit together and the category reads before the icons do */
 .tech-bgroup { display: flex; flex-wrap: wrap; gap: 4px; padding: 5px 6px; border-radius: 7px;

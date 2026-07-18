@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
  * {@code assets/techs.pack}).</li>
  * <li>{@code GET /api/buildings} — the building pack assembled by {@link BuildingBundle} (the
  * kept-tech-gated C2C buildings + their icon rects, for the tech-tree building grid).</li>
+ * <li>{@code GET /api/units} — the unit pack assembled by {@link UnitBundle} (the kept-tech-gated
+ * C2C land units + their UnitCombat classes + icon rects, for the tech-tree unit row).</li>
  * </ul>
  * Both are world-level and immutable per deploy, so they are cached and gzipped like the bundle
  * ({@link BundleController}). The tech pack is served as {@code application/octet-stream} gzip
@@ -67,6 +69,14 @@ public class AssetController {
 				.header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
 				.header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
 				.body(BuildingBundle.gzip());
+	}
+
+	@GetMapping("/api/units")
+	public ResponseEntity<byte[]> units() {
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
+				.header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
+				.body(UnitBundle.gzip());
 	}
 
 	/**

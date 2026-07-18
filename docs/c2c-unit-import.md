@@ -301,12 +301,22 @@ march wiring fire (Phase 5), exactly as the building import landed dormant throu
   `{id: {icon:[x,y,64,64]}}` the server (Phase 3 `UnitBundle`) merges onto its engine JSON —
   `units-meta.json`→`units.json`, `unit-combats-meta.json`→`unit-combats.json`. Dormant until the
   Phase-3 tech-tree row consumes them.
-- **Phase 3 — `/api/units` + tech-tree unit row.** `UnitBundle`; the per-node unit row + rail
-  inspector + search corpus + session-aware dimming in `techtree.mjs`. Bump the reactor patch
-  version; add a trivia line. Verify headless (`tools/webverify`).
-- **Phase 4 — engine unlock model verified.** `TechTree.mergeEffects` merges `unit-unlocks.json`
-  (default + race paths); `ResearchState.complete()` grants `UNIT_*` tokens; assert end-to-end in a
-  `UnitResearchTest` (mirror `TechResearchTest`). Still no placement/selection → runs stay clean.
+- **Phase 3 — `/api/units` + tech-tree unit row. SHIPPED 2026-07-18.** `UnitBundle` merges
+  `units.json`+`units-meta.json` and `unit-combats.json`+`unit-combats-meta.json` into one pack
+  (`{units, combats}`), served gzipped at `GET /api/units` (`AssetController`, `ResourceManifest`
+  entry). In `techtree.mjs`: a second **role-spectrum bar** per node (`.tech-uspec`, above the
+  building bar), a per-node **unit grid** in the rail grouped by `caravanRole` (reusing the building
+  cell/group classes with a role colour), a **unit inspector** (`showUnitRail`: large art, role +
+  `special`, move/combat/hammers/obsolete stats, the `<Combat>` class with its category icon +
+  folded signature skill, pedia, unlocked-by), the unified search gaining a **"Unit" kind chip**
+  (`panel.mjs` guards widened), and session-aware dimming via the shared `unitUnlocked` predicate.
+  Reactor patch bumped **0.9.45→0.9.46**; trivia line added; verified headless
+  (`tools/webverify/unit-verify.mjs` — 273 units + 28 combats load, grid/inspector/search all render,
+  zero console errors). Server 109 green.
+- **Phase 4 — engine unlock model. DONE (folded into Phases 1+3).** `TechTree.mergeEffects` already
+  merges `unit-unlocks.json` on the default + race paths (Phase 1); `ResearchState.complete()` grants
+  `UNIT_*` tokens with no engine change (dispatches on effect type); `TechResearchTest` asserts the
+  research→`UNIT_*` token seam end-to-end. No separate `UnitResearchTest` needed. Runs stay clean.
 - **Phase 5 — caravan realization (the behavior-changing step; gate off by default).** The selection
   rule (`pickUnitForRole`, obsolescence-honoring) + `MarchingCaravan.unitId` + the identity/march-stat
   draw (§1a): band display name from the unit, `baseMovePoints` from `iMoves`, button icon on the map
