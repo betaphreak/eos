@@ -17,6 +17,7 @@ import com.civstudio.agent.Retinue;
 import com.civstudio.agent.firm.Firm;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.market.ConsumerGoodMarket;
+import com.civstudio.server.web.UnitBundle;
 import com.civstudio.settlement.Plot;
 import com.civstudio.settlement.Settlement;
 
@@ -222,6 +223,9 @@ public final class Snapshots {
 		int bandSize = 0;
 		double larder = 0;
 		boolean settled = false;
+		String unitId = null, unitName = null, signatureSkill = null;
+		int[] unitIcon = null;
+		int leaderSkill = 0;
 		if (band instanceof MarchingCaravan m) {
 			// the march reads only the MarchFollowing slice (size + larder); a Retinue and a
 			// DraftBand both satisfy it (docs/explorer-caravan.md)
@@ -229,9 +233,19 @@ public final class Snapshots {
 			bandSize = following.size();
 			larder = following.getLarder();
 			settled = m.hasArrived();
+			// the role signature skill + leader level read out for any marching band; the embodied
+			// unit's identity/art (docs/c2c-unit-import.md §1a) only when the colony fielded one
+			signatureSkill = m.signatureSkill().name();
+			leaderSkill = m.leaderSkillLevel();
+			unitId = m.getUnitId();
+			if (unitId != null) {
+				unitName = m.getUnitName();
+				unitIcon = UnitBundle.iconRect(unitId);
+			}
 		}
 		return new CaravanView(leaderName, leaderName, band.getLatitude(),
 				band.getLongitude(), onGraph ? band.getProvinceId() : -1, province, onGraph,
-				settled, bandSize, larder, band.getHoard(), band.role().name());
+				settled, bandSize, larder, band.getHoard(), band.role().name(),
+				unitId, unitName, unitIcon, signatureSkill, leaderSkill);
 	}
 }

@@ -26,6 +26,11 @@ const PALETTE = ["#e8c37a","#6bd08a","#7aa2e0","#e07a9e","#9e7ae0","#e0a97a","#7
 // blue, military red — so the flavors read apart on the map; falls back to the palette by
 // index for an unknown/absent role
 const ROLE_COLOR = { SETTLER: "#e8c37a", WORKER: "#6bd08a", EXPLORER: "#7aa2e0", MILITARY: "#e07a9e" };
+// the imported unit-icon sheet (build-units.mjs) — a band that embodies a UNIT_* draws its button
+// icon from here (via the snapshot's unitIcon rect); 64² cells, 50 cols. docs/c2c-unit-import.md §5.
+const USHEET = new Image();
+USHEET.src = "assets/units/unit-icons.webp";
+const cap1 = s => s ? s[0] + s.slice(1).toLowerCase() : s;
 
 let es = null;          // the EventSource, while connected
 let sid = null;         // the live session id
@@ -253,7 +258,7 @@ function liveTabRunning(on) {
 // population, prices, the date, the roster, the event log — is chrome, and chrome has no business
 // forcing a full scene render. A tick where only the numbers moved is the common case at speed 1.
 const sceneSig = s => JSON.stringify([
-  s.caravans.map(c => [c.leader, c.role, c.latitude, c.longitude, c.settled]),
+  s.caravans.map(c => [c.leader, c.role, c.latitude, c.longitude, c.settled, c.unitId]),
   (s.colonies || []).map(c => [c.latitude, c.longitude]),
 ]);
 let lastSig = null;
@@ -364,8 +369,37 @@ export function drawLive() {
       ctx.restore();
     }
     const x = px(c.longitude), y = py(c.latitude), r = c.settled ? 6 : 4.6;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fillStyle = col; ctx.fill();
-    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.strokeStyle = "#0b0f16"; ctx.lineWidth = 1.6; ctx.stroke();
+    // Overland (BAND.PROVINCE+) shows the embodied unit: its button icon as the marker + a name and
+    // signature-skill readout below. At atlas zoom (or a band with no embodied unit) it stays a role
+    // dot — the icon would be oversized against the tiny provinces. docs/c2c-unit-import.md §1a.
+    const overland = atLeast(BAND.PROVINCE);
+    if (overland && c.unitIcon && USHEET.complete && USHEET.naturalWidth) {
+      const S = c.settled ? 24 : 20, sx = c.unitIcon[0], sy = c.unitIcon[1];
+      ctx.beginPath(); ctx.arc(x, y, S / 2 + 2, 0, 7);
+      ctx.fillStyle = "rgba(6,9,14,.85)"; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = col; ctx.stroke();
+      ctx.save();
+      ctx.beginPath(); ctx.arc(x, y, S / 2, 0, 7); ctx.clip();
+      ctx.drawImage(USHEET, sx, sy, 64, 64, x - S / 2, y - S / 2, S, S);
+      ctx.restore();
+    } else {
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fillStyle = col; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.strokeStyle = "#0b0f16"; ctx.lineWidth = 1.6; ctx.stroke();
+    }
+    if (overland && c.unitName) {
+      const ly = y + 14;
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.font = `600 11px ${LABEL_FONT}`;
+      ctx.lineWidth = 3; ctx.strokeStyle = "rgba(6,9,14,.85)"; ctx.strokeText(c.unitName, x, ly);
+      ctx.fillStyle = "#eef2f8"; ctx.fillText(c.unitName, x, ly);
+      if (c.signatureSkill) {
+        const skill = `${cap1(c.signatureSkill)} · ${c.leaderSkill}`;
+        ctx.font = `500 9.5px ${LABEL_FONT}`;
+        ctx.strokeText(skill, x, ly + 13);
+        ctx.fillStyle = "#aeb8c6"; ctx.fillText(skill, x, ly + 13);
+      }
+      ctx.textAlign = "start"; ctx.textBaseline = "alphabetic";
+    }
   });
 
   // the city: at the overview (plots not textured) draw a small marker; once zoomed past the

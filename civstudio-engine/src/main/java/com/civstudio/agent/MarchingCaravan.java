@@ -26,6 +26,7 @@ import com.civstudio.settlement.Plot;
 import com.civstudio.settlement.PlotCorridor;
 import com.civstudio.settlement.ProvincePlotPool;
 import com.civstudio.settlement.SolarClock;
+import com.civstudio.skill.Skill;
 import com.civstudio.tech.ResearchSnapshot;
 import com.civstudio.tech.Tech;
 import com.civstudio.tech.TechTree;
@@ -88,6 +89,13 @@ public abstract class MarchingCaravan extends Caravan {
 	// re-founds so progress is not lost (see SettlerCaravan.dissolve / ResearchState.restore)
 	@Getter
 	protected ResearchSnapshot research;
+
+	// the imported C2C unit this band EMBODIES — an identity/art overlay picked at muster from the
+	// colony's fielded units (null if it could field none of this role's units yet). Behaviour-
+	// neutral: it drives only the band's display name/art and the signature-skill readout, never the
+	// march or role effectiveness (that is the flag-gated Phase 5b). See docs/c2c-unit-import.md §1a.
+	@Getter
+	protected UnitInfo embodiedUnit;
 
 	// the province the band set out from: it will not re-found here, only at a fresh site.
 	// OFF_GRAPH for an off-graph band. Generic (every band has an origin).
@@ -187,6 +195,41 @@ public abstract class MarchingCaravan extends Caravan {
 		this.following = following;
 		this.originProvinceId = OFF_GRAPH;
 		following.detach();
+	}
+
+	// ---- embodied unit: the identity/art overlay (docs/c2c-unit-import.md §1a) -------------
+
+	/**
+	 * <b>Embody</b> this band with an imported {@link UnitInfo unit} — its identity/art overlay,
+	 * chosen at muster from the colony's fielded units for the role (see
+	 * {@link UnitCatalog#pickBest}). Behaviour-neutral: it feeds only the band's display, never the
+	 * march or role effectiveness. A {@code null} leaves the band with its default identity.
+	 *
+	 * @param unit the unit this band embodies, or {@code null}
+	 */
+	protected void embody(UnitInfo unit) {
+		this.embodiedUnit = unit;
+	}
+
+	/** The embodied unit's id ({@code UNIT_*}), or {@code null} if the band embodies none. */
+	public String getUnitId() {
+		return embodiedUnit == null ? null : embodiedUnit.id();
+	}
+
+	/** The embodied unit's display name, or {@code null} if the band embodies none. */
+	public String getUnitName() {
+		return embodiedUnit == null ? null : embodiedUnit.displayName();
+	}
+
+	/** The {@link Skill} this band's {@link #role() role} is governed by (and that acting trains). */
+	public Skill signatureSkill() {
+		return role().signatureSkill();
+	}
+
+	/** The band leader's level in the role's {@linkplain #signatureSkill() signature skill} (0 if none). */
+	public int leaderSkillLevel() {
+		Member leader = getLeader();
+		return leader == null ? 0 : leader.skills().level(signatureSkill());
 	}
 
 	// ---- the goal seam: what a flavor specializes (its C2C "mission") --------------------

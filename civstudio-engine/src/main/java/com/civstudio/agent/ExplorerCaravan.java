@@ -114,6 +114,10 @@ public final class ExplorerCaravan extends MarchingCaravan {
 		// the explorer forages for its haul, so it pitches a camp each night (which enables
 		// the forage/gather window) as it marches
 		setCampingEnabled(true);
+		// embody the best explorer unit the colony can currently field (identity/art overlay only —
+		// deterministic, no RNG, no march/effectiveness change; null leaves the default identity)
+		Set<String> known = home.getResearch() != null ? home.getResearch().getKnown() : Set.of();
+		embody(UnitCatalog.get().pickBest(CaravanRole.EXPLORER, home.getGrantedTechTokens(), known));
 	}
 
 	/**

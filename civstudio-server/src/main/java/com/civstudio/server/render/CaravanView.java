@@ -20,8 +20,17 @@ package com.civstudio.server.render;
  * @param role      the band's {@link com.civstudio.agent.CaravanRole role} name (SETTLER /
  *                  WORKER / EXPLORER / MILITARY) — what it is for, so the map can tell the
  *                  flavors apart
+ * @param unitId    the imported C2C unit this band <em>embodies</em> ({@code UNIT_*}), or
+ *                  {@code null} if it embodies none (docs/c2c-unit-import.md §1a)
+ * @param unitName  the embodied unit's display name, or {@code null}
+ * @param unitIcon  the embodied unit's icon sprite rect {@code [x,y,w,h]} into
+ *                  {@code assets/units/unit-icons.webp}, or {@code null}
+ * @param signatureSkill the band's role signature skill name (e.g. {@code "SURVIVAL"}), or
+ *                  {@code null} for a non-marching band
+ * @param leaderSkill    the band leader's level in that signature skill
  */
 public record CaravanView(String label, String leader, double latitude, double longitude,
 		int provinceId, String province, boolean onGraph, boolean settled, int bandSize,
-		double larder, double hoard, String role) {
+		double larder, double hoard, String role,
+		String unitId, String unitName, int[] unitIcon, String signatureSkill, int leaderSkill) {
 }

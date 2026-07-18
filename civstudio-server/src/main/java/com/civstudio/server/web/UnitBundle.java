@@ -42,6 +42,10 @@ public final class UnitBundle {
 	// gzip-compressed pack, built once and cached (served as octet-stream, gunzipped in-page)
 	private static volatile byte[] gzipBytes;
 
+	// units-meta.json parsed once, for the per-unit icon-rect lookup the render layer uses to stamp
+	// an embodied unit's sprite rect onto its CaravanView (docs/c2c-unit-import.md §Phase 5)
+	private static volatile JsonNode unitMeta;
+
 	/** The enriched unit + unit-combat set, minified and gzip-compressed, built once and cached. */
 	public static byte[] gzip() {
 		byte[] b = gzipBytes;
@@ -83,6 +87,32 @@ public final class UnitBundle {
 			o.remove("artDefineTag");
 		}
 		return rows;
+	}
+
+	/**
+	 * The icon sprite rect {@code [x,y,w,h]} of a unit in {@code assets/units/unit-icons.webp}, or
+	 * {@code null} if the unit has no baked icon. Read from the committed {@code units-meta.json}
+	 * (cached) — used by the render layer to give a band's embodied unit its art on the live map.
+	 *
+	 * @param unitId the {@code UNIT_*} id
+	 * @return the rect, or {@code null}
+	 */
+	public static int[] iconRect(String unitId) {
+		if (unitId == null)
+			return null;
+		JsonNode meta = unitMeta;
+		if (meta == null) {
+			meta = load("/units-meta.json");
+			unitMeta = meta;
+		}
+		JsonNode row = meta.get(unitId);
+		if (row == null)
+			return null;
+		JsonNode icon = row.get("icon");
+		if (icon == null || !icon.isArray() || icon.size() < 4)
+			return null;
+		return new int[] { icon.get(0).asInt(), icon.get(1).asInt(),
+				icon.get(2).asInt(), icon.get(3).asInt() };
 	}
 
 	private static JsonNode load(String resource) {

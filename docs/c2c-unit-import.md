@@ -317,14 +317,27 @@ march wiring fire (Phase 5), exactly as the building import landed dormant throu
   merges `unit-unlocks.json` on the default + race paths (Phase 1); `ResearchState.complete()` grants
   `UNIT_*` tokens with no engine change (dispatches on effect type); `TechResearchTest` asserts the
   research→`UNIT_*` token seam end-to-end. No separate `UnitResearchTest` needed. Runs stay clean.
-- **Phase 5 — caravan realization (the behavior-changing step; gate off by default).** The selection
-  rule (`pickUnitForRole`, obsolescence-honoring) + `MarchingCaravan.unitId` + the identity/march-stat
-  draw (§1a): band display name from the unit, `baseMovePoints` from `iMoves`, button icon on the map
-  band + inspector. Adds the **band↔skill cross-link** (S7): the band inspector shows the embodied
-  unit's role signature skill + the leader's level, and role effectiveness scales with that skill
-  (needs Phase 0). Expect a **collapse-timing re-baseline** if `iMoves` shifts explorer reach; gate
-  behind a flag until measured (the granary/fission/explorer dormant-then-on pattern). Buildable
-  build-queue + combat stay **out of scope** (future).
+- **Phase 5a — caravan realization, IDENTITY only (behaviour-neutral). SHIPPED 2026-07-18, Explorer
+  only.** New engine `UnitCatalog` loads `/units.json` (the `TechEffects`/`TechTree` resource-load
+  pattern, lenient) and `pickBest(role, grantedTokens, knownTechs)` picks the colony's best-available
+  **non-obsolete unlocked** unit of a role (interim ordering by `iCost` as the era proxy, id tie-break;
+  no RNG). `ExplorerCaravan` embodies its pick at muster; `MarchingCaravan` gains `embodiedUnit` +
+  `getUnitId`/`getUnitName`/`signatureSkill`/`leaderSkillLevel`. The render snapshot (`CaravanView` +
+  `Snapshots`) carries `unitId`/`unitName`/`unitIcon` (rect via `UnitBundle.iconRect`)/`signatureSkill`
+  /`leaderSkill`; the live map (`live.mjs`) draws the embodied unit's **button icon as the band marker
+  + a name and "Skill · level" readout** at Overland zoom (`BAND.PROVINCE`+), a role dot otherwise.
+  **Behaviour-neutral** — deterministic, no RNG, no move-point/effectiveness change — so all smoke
+  tests pass unchanged (engine 385, server 111). Covered by `UnitCatalogTest` (5), `ExplorerEmbodimentTest`
+  (2), `UnitBundleTest` (2). *Verification note:* the Java pipeline (selection → embodiment → snapshot
+  → icon lookup) is fully unit-tested; the on-screen embodied band was **not** driven headlessly — it
+  needs a research-progressed colony mustering a levy that unlocks a non-obsolete explorer unit (a
+  Classical-complete demo colony already obsoletes the earliest explorers, which `pickBest` correctly
+  skips), which the caravan demo doesn't produce.
+- **Phase 5b — the behaviour-changing part (flag-gated; NOT yet built).** `iMoves` → the move-point
+  budget (owner: **anchor to the median unit** so typical bands keep today's reach, minimising the
+  collapse-timing re-baseline) + role effectiveness scaling with the signature skill; the other four
+  band classes (Settler/Worker/Military). Gate behind a default-off flag and re-bless the smoke tests.
+  Buildable build-queue + combat stay **out of scope** (future).
 
 Each phase: build → (web) `node web/build*.mjs` + refresh engine jar + `spring-boot:run` + webverify;
 (engine) `mvn -pl civstudio-engine test`. Commit per phase (fold docs into the code commit).
