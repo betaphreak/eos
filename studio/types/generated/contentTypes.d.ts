@@ -772,7 +772,7 @@ export interface ApiCultureCulture extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiEraModifiersEraModifier extends Struct.SingleTypeSchema {
+export interface ApiEraModifierEraModifier extends Struct.SingleTypeSchema {
   collectionName: 'era_modifiers';
   info: {
     description: "Per-era Civ-style percentage modifiers (growth/train/construct/create/research/build/improve/gp/anarchy), keyed by the era enum. Replaces the per-era fields of the retired 'era' collection.";
@@ -790,7 +790,7 @@ export interface ApiEraModifiersEraModifier extends Struct.SingleTypeSchema {
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
-      'api::era-modifiers.era-modifier'
+      'api::era-modifier.era-modifier'
     > &
       Schema.Attribute.Private;
     modifiers: Schema.Attribute.JSON & Schema.Attribute.Required;
@@ -1612,7 +1612,7 @@ export interface ApiRecipeRecipe extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiRegionEarthMapRegionName extends Struct.SingleTypeSchema {
+export interface ApiRegionNameRegionName extends Struct.SingleTypeSchema {
   collectionName: 'region_names';
   info: {
     description: 'The Anbennar-region \u2192 Earth ISO-3166 country-code map that drives plot place-naming (from geo/region-earth-map.json).';
@@ -1630,7 +1630,7 @@ export interface ApiRegionEarthMapRegionName extends Struct.SingleTypeSchema {
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
-      'api::region-earth-map.region-name'
+      'api::region-name.region-name'
     > &
       Schema.Attribute.Private;
     notes: Schema.Attribute.Text;
@@ -3045,7 +3045,7 @@ declare module '@strapi/strapi' {
       'api::building.building': ApiBuildingBuilding;
       'api::country.country': ApiCountryCountry;
       'api::culture.culture': ApiCultureCulture;
-      'api::era-modifiers.era-modifier': ApiEraModifiersEraModifier;
+      'api::era-modifier.era-modifier': ApiEraModifierEraModifier;
       'api::feast.feast': ApiFeastFeast;
       'api::feature.feature': ApiFeatureFeature;
       'api::housing.housing': ApiHousingHousing;
@@ -3058,7 +3058,7 @@ declare module '@strapi/strapi' {
       'api::province.province': ApiProvinceProvince;
       'api::rank-ladder.rank-ladder': ApiRankLadderRankLadder;
       'api::recipe.recipe': ApiRecipeRecipe;
-      'api::region-earth-map.region-name': ApiRegionEarthMapRegionName;
+      'api::region-name.region-name': ApiRegionNameRegionName;
       'api::region.region': ApiRegionRegion;
       'api::religion.religion': ApiReligionReligion;
       'api::route-model.route-model': ApiRouteModelRouteModel;
