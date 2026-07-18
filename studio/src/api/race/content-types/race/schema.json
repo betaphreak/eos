@@ -1,0 +1,33 @@
+{
+  "kind": "collectionType",
+  "collectionName": "races",
+  "info": {
+    "singularName": "race",
+    "pluralName": "races",
+    "displayName": "Race",
+    "description": "Top-level racial grouping (e.g., Gnomish, Elven)"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "minLength": 1
+    },
+    "cultures": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::culture.culture",
+      "mappedBy": "race"
+    },
+    "nameGroups": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::name-group.name-group",
+      "mappedBy": "race"
+    }
+  }
+}

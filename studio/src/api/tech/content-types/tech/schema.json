@@ -1,0 +1,80 @@
+{
+  "kind": "collectionType",
+  "collectionName": "techs",
+  "info": {
+    "singularName": "tech",
+    "pluralName": "techs",
+    "displayName": "Tech",
+    "description": "Technology tree nodes"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "type": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "description": {
+      "type": "string"
+    },
+    "civilopedia": {
+      "type": "text"
+    },
+    "advisor": {
+      "type": "enumeration",
+      "enum": [
+        "ADVISOR_GROWTH",
+        "ADVISOR_ECONOMY",
+        "ADVISOR_MILITARY",
+        "ADVISOR_SCIENCE",
+        "ADVISOR_CULTURE",
+        "ADVISOR_RELIGION"
+      ]
+    },
+    "cost": {
+      "type": "integer"
+    },
+    "era": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::era.era"
+    },
+    "gridX": {
+      "type": "integer"
+    },
+    "gridY": {
+      "type": "integer"
+    },
+    "andPreReqs": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::tech.tech"
+    },
+    "orPreReqs": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::tech.tech"
+    },
+    "quote": {
+      "type": "text"
+    },
+    "sound": {
+      "type": "string"
+    },
+    "button": {
+      "type": "string"
+    },
+    "trade": {
+      "type": "boolean"
+    },
+    "goodyTech": {
+      "type": "boolean"
+    },
+    "extraData": {
+      "type": "json"
+    }
+  }
+}

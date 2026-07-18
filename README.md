@@ -123,6 +123,12 @@ The engine is headless, but two surfaces render it:
   Container Apps at **[dev.civstudio.com](https://dev.civstudio.com)**. Design and
   deployment notes: [`docs/client-server.md`](docs/client-server.md),
   [`docs/mcp-server.md`](docs/mcp-server.md).
+- **The studio / control plane** ([`studio/`](studio/)) — a **Strapi 5** headless
+  CMS + admin backend (Node/TypeScript) that holds the content authority the web
+  viewer and server read (geography, cultures, tech, ranks, name groups). It is
+  the intended home of a **unified admin dashboard** that folds in the server's
+  admin console and embeds the map viewer above. Node project, **not** part of the
+  Maven reactor build; see [`studio/CLAUDE.md`](studio/CLAUDE.md).
 
 ## Honest model status
 

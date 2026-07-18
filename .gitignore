@@ -61,3 +61,25 @@ civstudio-server/target/
 # throwaway scratch files (underscore-prefixed): temp verify scripts, crops, server/deploy logs
 /tools/webverify/_*
 /web/_*
+
+# Never commit a .env anywhere in the repo (real secrets: APP_KEYS, DB password, JWT, etc.).
+.env
+.env.*
+# studio/ — the Strapi 5 CMS / admin backend (Node, NOT a Maven reactor module). Consolidated here
+# from the project's own .gitignore so the root file is the single source of truth (the generic
+# OS/editor boilerplate Strapi ships is intentionally NOT copied in — only the real build artifacts).
+# See studio/CLAUDE.md.
+/studio/node_modules/
+/studio/dist/
+/studio/build/
+/studio/.strapi/
+/studio/.tmp/
+/studio/.strapi-updater.json
+/studio/.strapi-cloud.json
+/studio/exports/
+/studio/license.txt
+/studio/.tsbuildinfo
+/studio/.eslintcache
+/studio/coverage/
+/studio/public/uploads/*
+!/studio/public/uploads/.gitkeep

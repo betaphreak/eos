@@ -1,0 +1,447 @@
+{
+  "key": "plugin_content_manager_configuration_content_types::api::rank.rank",
+  "value": {
+    "settings": {
+      "bulkable": false,
+      "filterable": true,
+      "searchable": false,
+      "pageSize": 50,
+      "relationOpenMode": "modal",
+      "mainField": "name",
+      "defaultSortBy": "name",
+      "defaultSortOrder": "ASC"
+    },
+    "metadatas": {
+      "id": {
+        "edit": {},
+        "list": {
+          "label": "id",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "name": {
+        "edit": {
+          "label": "name",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "name",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "isPlural": {
+        "edit": {
+          "label": "isPlural",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "isPlural",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "level": {
+        "edit": {
+          "label": "level",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "level",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "admM": {
+        "edit": {
+          "label": "admM",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "admM",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "admF": {
+        "edit": {
+          "label": "admF",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "admF",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "admDesc": {
+        "edit": {
+          "label": "admDesc",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "admDesc",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "dipM": {
+        "edit": {
+          "label": "dipM",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "dipM",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "dipF": {
+        "edit": {
+          "label": "dipF",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "dipF",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "dipDesc": {
+        "edit": {
+          "label": "dipDesc",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "dipDesc",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "milM": {
+        "edit": {
+          "label": "milM",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "milM",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "milF": {
+        "edit": {
+          "label": "milF",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "milF",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "milDesc": {
+        "edit": {
+          "label": "milDesc",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "milDesc",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "cbLow": {
+        "edit": {
+          "label": "cbLow",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "cbLow",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "cbLowDesc": {
+        "edit": {
+          "label": "cbLowDesc",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "cbLowDesc",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "cbEq": {
+        "edit": {
+          "label": "cbEq",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "cbEq",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "cbEqDesc": {
+        "edit": {
+          "label": "cbEqDesc",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "cbEqDesc",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "cbHigh": {
+        "edit": {
+          "label": "cbHigh",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "cbHigh",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "cbHighDesc": {
+        "edit": {
+          "label": "cbHighDesc",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "cbHighDesc",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdAt": {
+        "edit": {
+          "label": "createdAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "createdAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedAt": {
+        "edit": {
+          "label": "updatedAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "updatedAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdBy": {
+        "edit": {
+          "label": "createdBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "createdBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedBy": {
+        "edit": {
+          "label": "updatedBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "updatedBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "documentId": {
+        "edit": {},
+        "list": {
+          "label": "documentId",
+          "searchable": true,
+          "sortable": true
+        }
+      }
+    },
+    "layouts": {
+      "edit": [
+        [
+          {
+            "name": "name",
+            "size": 4
+          },
+          {
+            "name": "level",
+            "size": 4
+          },
+          {
+            "name": "isPlural",
+            "size": 4
+          }
+        ],
+        [
+          {
+            "name": "admM",
+            "size": 6
+          },
+          {
+            "name": "admF",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "admDesc",
+            "size": 12
+          }
+        ],
+        [
+          {
+            "name": "dipM",
+            "size": 6
+          },
+          {
+            "name": "dipF",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "dipDesc",
+            "size": 12
+          },
+          {
+            "name": "milM",
+            "size": 6
+          },
+          {
+            "name": "milF",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "milDesc",
+            "size": 12
+          }
+        ],
+        [
+          {
+            "name": "cbLow",
+            "size": 4
+          },
+          {
+            "name": "cbLowDesc",
+            "size": 8
+          }
+        ],
+        [
+          {
+            "name": "cbEq",
+            "size": 4
+          },
+          {
+            "name": "cbEqDesc",
+            "size": 8
+          }
+        ],
+        [
+          {
+            "name": "cbHigh",
+            "size": 4
+          },
+          {
+            "name": "cbHighDesc",
+            "size": 8
+          }
+        ]
+      ],
+      "list": [
+        "id",
+        "name",
+        "isPlural",
+        "level"
+      ]
+    },
+    "uid": "api::rank.rank"
+  },
+  "type": "object",
+  "environment": null,
+  "tag": null
+}

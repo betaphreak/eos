@@ -1,0 +1,277 @@
+{
+  "key": "plugin_content_manager_configuration_content_types::api::province-relation.province-relation",
+  "value": {
+    "settings": {
+      "bulkable": true,
+      "filterable": true,
+      "searchable": true,
+      "pageSize": 50,
+      "relationOpenMode": "modal",
+      "mainField": "name",
+      "defaultSortBy": "id",
+      "defaultSortOrder": "ASC"
+    },
+    "metadatas": {
+      "id": {
+        "edit": {},
+        "list": {
+          "label": "id",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "name": {
+        "edit": {
+          "label": "name",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "name",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "srcProvince": {
+        "edit": {
+          "label": "srcProvince",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "srcProvince",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "destProvince": {
+        "edit": {
+          "label": "destProvince",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "destProvince",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "length": {
+        "edit": {
+          "label": "length",
+          "description": "Length",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "length",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "relationType": {
+        "edit": {
+          "label": "relationType",
+          "description": "Relation Type",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "relationType",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "startX": {
+        "edit": {
+          "label": "startX",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "startX",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "startY": {
+        "edit": {
+          "label": "startY",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "startY",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "stopX": {
+        "edit": {
+          "label": "stopX",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "stopX",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "stopY": {
+        "edit": {
+          "label": "stopY",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "stopY",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdAt": {
+        "edit": {
+          "label": "createdAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "createdAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedAt": {
+        "edit": {
+          "label": "updatedAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "updatedAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdBy": {
+        "edit": {
+          "label": "createdBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "createdBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedBy": {
+        "edit": {
+          "label": "updatedBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "updatedBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "documentId": {
+        "edit": {},
+        "list": {
+          "label": "documentId",
+          "searchable": true,
+          "sortable": true
+        }
+      }
+    },
+    "layouts": {
+      "edit": [
+        [
+          {
+            "name": "name",
+            "size": 4
+          },
+          {
+            "name": "relationType",
+            "size": 4
+          },
+          {
+            "name": "length",
+            "size": 4
+          }
+        ],
+        [
+          {
+            "name": "srcProvince",
+            "size": 6
+          },
+          {
+            "name": "destProvince",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "startX",
+            "size": 6
+          },
+          {
+            "name": "startY",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "stopX",
+            "size": 6
+          },
+          {
+            "name": "stopY",
+            "size": 6
+          }
+        ]
+      ],
+      "list": [
+        "id",
+        "srcProvince",
+        "destProvince",
+        "length"
+      ]
+    },
+    "uid": "api::province-relation.province-relation"
+  },
+  "type": "object",
+  "environment": null,
+  "tag": null
+}

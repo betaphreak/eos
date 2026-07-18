@@ -1,0 +1,67 @@
+{
+  "kind": "collectionType",
+  "collectionName": "eras",
+  "info": {
+    "singularName": "era",
+    "pluralName": "eras",
+    "displayName": "Era",
+    "description": "Game eras and their global modifiers"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "label": {
+      "type": "string",
+      "required": true
+    },
+    "eraId": {
+      "type": "integer",
+      "required": true,
+      "unique": true,
+      "min": 0
+    },
+    "growthPercent": {
+      "type": "integer",
+      "default": 100
+    },
+    "trainPercent": {
+      "type": "integer",
+      "default": 100
+    },
+    "constructPercent": {
+      "type": "integer",
+      "default": 100
+    },
+    "createPercent": {
+      "type": "integer",
+      "default": 100
+    },
+    "researchPercent": {
+      "type": "integer",
+      "default": 100
+    },
+    "buildPercent": {
+      "type": "integer",
+      "default": 100
+    },
+    "improvePercent": {
+      "type": "integer",
+      "default": 100
+    },
+    "gpPercent": {
+      "type": "integer",
+      "default": 100
+    },
+    "anarchyPercent": {
+      "type": "integer",
+      "default": 100
+    }
+  }
+}

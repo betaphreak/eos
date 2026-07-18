@@ -1,0 +1,114 @@
+{
+  "documentId": "o08q988327fel88et24lug1j",
+  "name": "Authenticated",
+  "description": "Default role given to authenticated user.",
+  "type": "authenticated",
+  "locale": null,
+  "permissions": [
+    {
+      "documentId": "g8hwase119d1bxy31xyt6sg2",
+      "action": "api::country.country.create",
+      "locale": null
+    },
+    {
+      "documentId": "igfpcojoox3e3ksmil33z9rm",
+      "action": "api::country.country.delete",
+      "locale": null
+    },
+    {
+      "documentId": "k6vvht0ppl3qegexoq0wfi7l",
+      "action": "api::country.country.find",
+      "locale": null
+    },
+    {
+      "documentId": "aazw5hwigl45u94vcknjzq9f",
+      "action": "api::country.country.findOne",
+      "locale": null
+    },
+    {
+      "documentId": "j9flggwepyk0a5dsxyiy5no9",
+      "action": "api::country.country.update",
+      "locale": null
+    },
+    {
+      "documentId": "vv0caip6tioy7xlkrmlsvesm",
+      "action": "api::province-relation.province-relation.bulkCreate",
+      "locale": null
+    },
+    {
+      "documentId": "fm222uztfw4fxvafqx5gwbwl",
+      "action": "api::province-relation.province-relation.create",
+      "locale": null
+    },
+    {
+      "documentId": "gbnwt9jv79e75x2jy8e7hrx2",
+      "action": "api::province-relation.province-relation.delete",
+      "locale": null
+    },
+    {
+      "documentId": "o68ywweu1frjk47ebbjf7t38",
+      "action": "api::province-relation.province-relation.find",
+      "locale": null
+    },
+    {
+      "documentId": "fp5oug7t66x0vimaw27cduk8",
+      "action": "api::province-relation.province-relation.findOne",
+      "locale": null
+    },
+    {
+      "documentId": "mhs938hei150z8jxm8re2aa6",
+      "action": "api::province-relation.province-relation.update",
+      "locale": null
+    },
+    {
+      "documentId": "qfghj0diamkwzxhmb0q5wnp4",
+      "action": "api::province.province.bulkCreate",
+      "locale": null
+    },
+    {
+      "documentId": "i9fhuiuggmpmkdfecdpysetr",
+      "action": "api::province.province.bulkLink",
+      "locale": null
+    },
+    {
+      "documentId": "b319hgpyzutrr6z1gflu63iu",
+      "action": "api::province.province.create",
+      "locale": null
+    },
+    {
+      "documentId": "kgaju10r6nv4ge94d4am8jar",
+      "action": "api::province.province.delete",
+      "locale": null
+    },
+    {
+      "documentId": "aci3pqjnyjprhslt98kj9djn",
+      "action": "api::province.province.find",
+      "locale": null
+    },
+    {
+      "documentId": "zdx3y28bpmyme5ois88d790z",
+      "action": "api::province.province.findOne",
+      "locale": null
+    },
+    {
+      "documentId": "go2bjt5c22ciatuh68d0ehhg",
+      "action": "api::province.province.update",
+      "locale": null
+    },
+    {
+      "documentId": "rmt193anxhhgrj22de74p93x",
+      "action": "plugin::users-permissions.auth.changePassword",
+      "locale": null
+    },
+    {
+      "documentId": "x6xehedlhortk61xa8xjxrwc",
+      "action": "plugin::users-permissions.auth.logout",
+      "locale": null
+    },
+    {
+      "documentId": "p6ebyaafkkhs392i5f56b3fl",
+      "action": "plugin::users-permissions.user.me",
+      "locale": null
+    }
+  ]
+}

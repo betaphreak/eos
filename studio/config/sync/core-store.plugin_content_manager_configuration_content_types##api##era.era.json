@@ -1,0 +1,329 @@
+{
+  "key": "plugin_content_manager_configuration_content_types::api::era.era",
+  "value": {
+    "settings": {
+      "bulkable": true,
+      "filterable": true,
+      "searchable": true,
+      "pageSize": 10,
+      "relationOpenMode": "modal",
+      "mainField": "name",
+      "defaultSortBy": "documentId",
+      "defaultSortOrder": "ASC"
+    },
+    "metadatas": {
+      "id": {
+        "edit": {},
+        "list": {
+          "label": "id",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "name": {
+        "edit": {
+          "label": "name",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "name",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "label": {
+        "edit": {
+          "label": "label",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "label",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "eraId": {
+        "edit": {
+          "label": "eraId",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "eraId",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "growthPercent": {
+        "edit": {
+          "label": "growthPercent",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "growthPercent",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "trainPercent": {
+        "edit": {
+          "label": "trainPercent",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "trainPercent",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "constructPercent": {
+        "edit": {
+          "label": "constructPercent",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "constructPercent",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createPercent": {
+        "edit": {
+          "label": "createPercent",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "createPercent",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "researchPercent": {
+        "edit": {
+          "label": "researchPercent",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "researchPercent",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "buildPercent": {
+        "edit": {
+          "label": "buildPercent",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "buildPercent",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "improvePercent": {
+        "edit": {
+          "label": "improvePercent",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "improvePercent",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "gpPercent": {
+        "edit": {
+          "label": "gpPercent",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "gpPercent",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "anarchyPercent": {
+        "edit": {
+          "label": "anarchyPercent",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "anarchyPercent",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdAt": {
+        "edit": {
+          "label": "createdAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "createdAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedAt": {
+        "edit": {
+          "label": "updatedAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "updatedAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdBy": {
+        "edit": {
+          "label": "createdBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "createdBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedBy": {
+        "edit": {
+          "label": "updatedBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "updatedBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "documentId": {
+        "edit": {},
+        "list": {
+          "label": "documentId",
+          "searchable": true,
+          "sortable": true
+        }
+      }
+    },
+    "layouts": {
+      "edit": [
+        [
+          {
+            "name": "name",
+            "size": 4
+          },
+          {
+            "name": "label",
+            "size": 4
+          },
+          {
+            "name": "eraId",
+            "size": 4
+          }
+        ],
+        [
+          {
+            "name": "constructPercent",
+            "size": 4
+          },
+          {
+            "name": "growthPercent",
+            "size": 4
+          },
+          {
+            "name": "createPercent",
+            "size": 4
+          }
+        ],
+        [
+          {
+            "name": "researchPercent",
+            "size": 4
+          },
+          {
+            "name": "trainPercent",
+            "size": 4
+          },
+          {
+            "name": "gpPercent",
+            "size": 4
+          }
+        ],
+        [
+          {
+            "name": "buildPercent",
+            "size": 4
+          },
+          {
+            "name": "improvePercent",
+            "size": 4
+          },
+          {
+            "name": "anarchyPercent",
+            "size": 4
+          }
+        ]
+      ],
+      "list": [
+        "id",
+        "createdAt",
+        "updatedAt",
+        "createdBy"
+      ]
+    },
+    "uid": "api::era.era"
+  },
+  "type": "object",
+  "environment": null,
+  "tag": null
+}

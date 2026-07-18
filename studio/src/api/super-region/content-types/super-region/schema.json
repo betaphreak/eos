@@ -1,0 +1,29 @@
+{
+  "kind": "collectionType",
+  "collectionName": "super_regions",
+  "info": {
+    "singularName": "super-region",
+    "pluralName": "super-regions",
+    "displayName": "SuperRegion"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "rawKey": {
+      "type": "string",
+      "required": true
+    },
+    "regions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::region.region",
+      "mappedBy": "superRegion"
+    }
+  }
+}

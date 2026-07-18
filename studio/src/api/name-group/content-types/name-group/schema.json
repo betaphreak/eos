@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "name_groups",
+  "info": {
+    "singularName": "name-group",
+    "pluralName": "name-groups",
+    "displayName": "Name Group"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "group": {
+      "type": "string",
+      "maxLength": 63,
+      "required": true
+    },
+    "rarity": {
+      "type": "integer",
+      "default": -1,
+      "min": -1
+    },
+    "names": {
+      "type": "json"
+    },
+    "race": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::race.race",
+      "inversedBy": "nameGroups"
+    },
+    "culture": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::culture.culture",
+      "inversedBy": "nameGroups"
+    }
+  }
+}

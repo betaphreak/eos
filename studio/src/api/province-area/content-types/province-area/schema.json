@@ -1,0 +1,38 @@
+{
+  "kind": "collectionType",
+  "collectionName": "province_areas",
+  "info": {
+    "singularName": "province-area",
+    "pluralName": "province-areas",
+    "displayName": "Province Area",
+    "description": "Geographical grouping of provinces"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "rawKey": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "provinces": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::province.province",
+      "mappedBy": "provinceArea"
+    },
+    "region": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::region.region",
+      "inversedBy": "provinceAreas"
+    }
+  }
+}

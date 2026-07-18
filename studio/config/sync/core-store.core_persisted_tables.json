@@ -1,0 +1,11 @@
+{
+  "key": "core_persisted_tables",
+  "value": [
+    {
+      "name": "strapi_history_versions"
+    }
+  ],
+  "type": "object",
+  "environment": null,
+  "tag": null
+}

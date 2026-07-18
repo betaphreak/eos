@@ -1,0 +1,68 @@
+{
+  "kind": "collectionType",
+  "collectionName": "province_relations",
+  "info": {
+    "singularName": "province-relation",
+    "pluralName": "province-relations",
+    "displayName": "Province Relation"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 255,
+      "required": true
+    },
+    "srcProvince": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::province.province"
+    },
+    "destProvince": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::province.province"
+    },
+    "length": {
+      "type": "decimal",
+      "required": true,
+      "min": 0
+    },
+    "relationType": {
+      "type": "enumeration",
+      "required": false,
+      "default": "LAND",
+      "enum": [
+        "LAND",
+        "SEA",
+        "CANAL",
+        "LAKE",
+        "AMPHIBIOUS"
+      ]
+    },
+    "startX": {
+      "type": "integer",
+      "required": true,
+      "min": 0
+    },
+    "startY": {
+      "type": "integer",
+      "required": true,
+      "min": 0
+    },
+    "stopX": {
+      "type": "integer",
+      "required": true,
+      "min": 0
+    },
+    "stopY": {
+      "type": "integer",
+      "required": true,
+      "min": 0
+    }
+  }
+}

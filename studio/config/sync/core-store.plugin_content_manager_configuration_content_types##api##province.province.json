@@ -1,0 +1,460 @@
+{
+  "key": "plugin_content_manager_configuration_content_types::api::province.province",
+  "value": {
+    "settings": {
+      "bulkable": true,
+      "filterable": true,
+      "searchable": true,
+      "pageSize": 100,
+      "relationOpenMode": "modal",
+      "mainField": "name",
+      "defaultSortBy": "plots",
+      "defaultSortOrder": "ASC"
+    },
+    "metadatas": {
+      "id": {
+        "edit": {},
+        "list": {
+          "label": "id",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "provinceId": {
+        "edit": {
+          "label": "provinceId",
+          "description": "Anbennar ID",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "provinceId",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "name": {
+        "edit": {
+          "label": "name",
+          "description": "Anbennar Name",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "name",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "plots": {
+        "edit": {
+          "label": "plots",
+          "description": "Plots",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "plots",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "r": {
+        "edit": {
+          "label": "r",
+          "description": "Red",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "r",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "g": {
+        "edit": {
+          "label": "g",
+          "description": "Green",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "g",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "b": {
+        "edit": {
+          "label": "b",
+          "description": "Blue",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "b",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "hexCode": {
+        "edit": {
+          "label": "hexCode",
+          "description": "Color",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "hexCode",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "neighbors": {
+        "edit": {
+          "label": "neighbors",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "neighbors",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "isNeighborOf": {
+        "edit": {
+          "label": "isNeighborOf",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "isNeighborOf",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "minX": {
+        "edit": {
+          "label": "minX",
+          "description": "Left X",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "minX",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "minY": {
+        "edit": {
+          "label": "minY",
+          "description": "Top Y",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "minY",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "maxX": {
+        "edit": {
+          "label": "maxX",
+          "description": "Right X",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "maxX",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "maxY": {
+        "edit": {
+          "label": "maxY",
+          "description": "Bottom Y",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "maxY",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "svgOuterBound": {
+        "edit": {
+          "label": "svgOuterBound",
+          "description": "Outer Bounds (SVG)",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "svgOuterBound",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "latitude": {
+        "edit": {
+          "label": "latitude",
+          "description": "Latitude",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "latitude",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "provinceArea": {
+        "edit": {
+          "label": "provinceArea",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "provinceArea",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "provinceType": {
+        "edit": {
+          "label": "provinceType",
+          "description": "Province Type",
+          "placeholder": "",
+          "visible": true,
+          "editable": false
+        },
+        "list": {
+          "label": "provinceType",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "waterPlots": {
+        "edit": {
+          "label": "waterPlots",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "waterPlots",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "sprite": {
+        "edit": {
+          "label": "sprite",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "sprite",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "createdAt": {
+        "edit": {
+          "label": "createdAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "createdAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedAt": {
+        "edit": {
+          "label": "updatedAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "updatedAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdBy": {
+        "edit": {
+          "label": "createdBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "createdBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedBy": {
+        "edit": {
+          "label": "updatedBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "updatedBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "documentId": {
+        "edit": {},
+        "list": {
+          "label": "documentId",
+          "searchable": true,
+          "sortable": true
+        }
+      }
+    },
+    "layouts": {
+      "edit": [
+        [
+          {
+            "name": "name",
+            "size": 4
+          },
+          {
+            "name": "provinceId",
+            "size": 4
+          },
+          {
+            "name": "latitude",
+            "size": 4
+          },
+          {
+            "name": "provinceType",
+            "size": 4
+          },
+          {
+            "name": "plots",
+            "size": 4
+          },
+          {
+            "name": "waterPlots",
+            "size": 4
+          }
+        ],
+        [
+          {
+            "name": "r",
+            "size": 4
+          },
+          {
+            "name": "g",
+            "size": 4
+          },
+          {
+            "name": "b",
+            "size": 4
+          }
+        ],
+        [
+          {
+            "name": "neighbors",
+            "size": 6
+          },
+          {
+            "name": "isNeighborOf",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "provinceArea",
+            "size": 6
+          },
+          {
+            "name": "sprite",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "minX",
+            "size": 6
+          },
+          {
+            "name": "minY",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "maxX",
+            "size": 6
+          },
+          {
+            "name": "maxY",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "svgOuterBound",
+            "size": 12
+          }
+        ]
+      ],
+      "list": [
+        "name",
+        "provinceId",
+        "latitude",
+        "plots"
+      ]
+    },
+    "uid": "api::province.province"
+  },
+  "type": "object",
+  "environment": null,
+  "tag": null
+}

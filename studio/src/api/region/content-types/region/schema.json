@@ -1,0 +1,35 @@
+{
+  "kind": "collectionType",
+  "collectionName": "regions",
+  "info": {
+    "singularName": "region",
+    "pluralName": "regions",
+    "displayName": "Region"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "rawKey": {
+      "type": "string",
+      "required": true
+    },
+    "provinceAreas": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::province-area.province-area",
+      "mappedBy": "region"
+    },
+    "superRegion": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::super-region.super-region",
+      "inversedBy": "regions"
+    }
+  }
+}
