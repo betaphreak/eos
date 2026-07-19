@@ -325,17 +325,20 @@ function showStopped(s) {
   }
   if (stoppedShown) return;                  // the cached stopped frame arrives on every subscribe
   stoppedShown = true;
-  setHudStatus(finished ? "game over" : "stopped");
+  setHudStatus("game over");
   const el = document.getElementById("gameover");
   if (!el) return;
   const kicker = document.querySelector("#gameover .go-kicker");
   const titleEl = document.getElementById("goTitle");
   const reason = document.getElementById("goReason");
   const date = document.getElementById("goDate");
-  if (kicker) kicker.textContent = finished ? "The chronicle ends" : "The clock has stopped";
-  if (titleEl) titleEl.textContent = finished ? "Game Over" : "Session Stopped";
+  // any stopped clock reads GAME OVER with the transport disabled (owner decision, 2026-07-19) — a
+  // stopped run is not one you can drive, whichever way it stopped. A suspended (LIVE-outcome) stop
+  // keeps reconnecting under the hood, so a restored run clears this card (hideStopped).
+  if (kicker) kicker.textContent = "The chronicle ends";
+  if (titleEl) titleEl.textContent = "Game Over";
   if (reason) reason.textContent = s.endReason
-    || (finished ? "The run has ended." : "This session has stopped — it may resume when it is restored.");
+    || (finished ? "The run has ended." : "The session has stopped.");
   if (date) date.textContent = s.date ? `${s.date} · ${s.tick} days` : "";
   el.hidden = false;
 }

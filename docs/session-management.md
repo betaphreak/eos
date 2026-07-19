@@ -105,14 +105,20 @@ The derived questions each read one axis, and the traps disappear:
 - `canRestore()` (a redeploy brings it back) = `clock == STOPPED && outcome == LIVE`.
 
 **Client presentation of a stopped run (owner decision).** Whenever the client receives a
-`clock == STOPPED` frame — a plain external stop *or* a real game-over — it shows the **terminal
-("game over") screen and disables play/pause**: a stopped run is not something you can drive, so the
-transport must not pretend otherwise. This is a *presentation* rule keyed on `clockState`, and it does
-**not** change the server's restore semantics: an external stop keeps `outcome == LIVE`, so a redeploy
-still brings it back (that recovery is critical infra — see `docs/game-over.md`). The two cases differ
-only in the banner text (a verdict from `endReason`, vs. a generic "session stopped") and in whether
-the client keeps a background reconnect: it gives up for `outcome != LIVE`, and keeps trying for a
-suspended `LIVE` stop so the map re-attaches when the run is restored.
+`clock == STOPPED` frame — a plain external stop *or* a real game-over — it shows the **"Game Over"
+screen and disables play/pause**: a stopped run is not something you can drive, so the transport must
+not pretend otherwise, and the card reads **Game Over** either way (the owner's call — a stopped clock
+is over as far as the player is concerned). This is a *presentation* rule keyed on `clockState`, and it
+does **not** change the server's restore semantics: an external stop keeps `outcome == LIVE`, so a
+redeploy still brings it back (that recovery is critical infra — see `docs/game-over.md`). The only
+behavioural difference between the two is the background reconnect: the client gives up for
+`outcome != LIVE`, and keeps trying for a suspended `LIVE` stop so the card clears and the map
+re-attaches when the run is restored.
+
+<b>The one open question this leaves</b> — should a run stopped from outside also be *un-restorable*
+(a truly decided outcome), or stay `LIVE`/restorable? Kept `LIVE` for now, because making it decided
+would break redeploy recovery (a graceful shutdown stops every session); the "Game Over" wording is
+presentation-only. Flagged for the owner.
 
 `WON` / `LOST` / `ABANDONED` are decided in `HostedSession.run()`'s terminal block, where
 `describeEnd()` already distinguishes them (a Timeline verdict; a colony that died; survivors who
