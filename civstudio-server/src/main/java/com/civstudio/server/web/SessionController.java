@@ -178,7 +178,12 @@ public class SessionController {
 			else
 				hs.start();
 		}
-		return ResponseEntity.status(201).body(Map.of("id", hs.id(), "state", hs.state().name()));
+		// realm: the client opens the new session by crossing to its realm's map (docs/realms.md §A
+		// session carries its realm), and the founder has only this response to learn it from — the
+		// list row that also carries it is filtered to the owner but is a separate, racy fetch. Same
+		// value realmOf() puts on a list row.
+		return ResponseEntity.status(201)
+				.body(Map.of("id", hs.id(), "state", hs.state().name(), "realm", realmOf(hs)));
 	}
 
 	@PostMapping("/{id}/control")

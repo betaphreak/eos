@@ -261,7 +261,10 @@ async function found() {
   }
   showSetup(false);
   refresh();
-  spectate({ id: out.body.id });   // it lands PAUSED: survey the world, then press play
+  // carry the realm the server founded us into, so spectate() crosses to that realm's map when it
+  // differs from the one on screen (docs/realms.md §A session carries its realm). Without it a session
+  // founded outside Halcann would open on the wrong map. It lands PAUSED: survey the world, then press play.
+  spectate({ id: out.body.id, realm: out.body.realm });
 }
 
 // ---- chat -----------------------------------------------------------------

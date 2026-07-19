@@ -126,7 +126,14 @@ async function connectStream() {
   reconnectTimer = null;
   setHudStatus(reconnectAttempts ? "reconnecting…" : "connecting…");
   try {
-    const list = await (await fetch(LIVE_BASE + "/api/sessions", { cache: "no-store" })).json();
+    // credentials: a single-player session is PRIVATE — the server lists it only to its owner (see
+    // SessionController.list). Without the cookie this fetch is anonymous, so a player's own run is
+    // filtered out, `preferred` never matches, and we fall back to list[0] — the public demo. That is
+    // why founding a session left the map stuck on the demo: multi-session discovery needs the owner's
+    // identity. The cookie is cross-origin to LIVE_BASE, so it only rides with credentials:"include"
+    // (the same reason the lobby's own list fetch sends it). The /stream subscription below stays
+    // anonymous — spectating by id is ungated; it is only DISCOVERY that must know who you are.
+    const list = await (await fetch(LIVE_BASE + "/api/sessions", { cache: "no-store", credentials: "include" })).json();
     if (!list.length) { setHudStatus("no live session"); retryOrLost(); return; }
     // Notifications are PER SESSION: a re-founded session (a new id — e.g. after a server redeploy)
     // starts an empty board. A plain reconnect to the same session keeps it, since the cards there
