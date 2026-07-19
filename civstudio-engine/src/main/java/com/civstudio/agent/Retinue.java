@@ -737,6 +737,19 @@ public class Retinue extends Agent implements MarchFollowing {
 		return List.copyOf(peasants);
 	}
 
+	/** {@inheritDoc} The pool's peasants (living — dead ones are pruned each {@link #act() step}). */
+	@Override
+	public List<Member> members() {
+		return getMembers();
+	}
+
+	/** {@inheritDoc} Frees the promoted member's skill row (as {@link #release}) — it leaves the pool
+	 *  to lead the band. */
+	@Override
+	public void remove(Member member) {
+		release(member);
+	}
+
 	/** @return the pool's current larder (necessity units it carries) */
 	public double getLarder() {
 		return necessity.getQuantity();

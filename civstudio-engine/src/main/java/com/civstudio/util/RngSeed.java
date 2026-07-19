@@ -57,7 +57,12 @@ public final class RngSeed {
 		/** The session-level wandering-band stream (caravan movement / settle decisions). */
 		BAND(0x94D049BB133111EBL),
 		/** Per-colony explorer-levy stream (ExplorerCaravan muster/march — docs/explorer-caravan.md). */
-		EXCURSION(0xC2B2AE3D27D4EB4FL);
+		EXCURSION(0xC2B2AE3D27D4EB4FL),
+		/** The session-level band-leader mortality stream: old-age death rolls for a wandering band's
+		 *  leader, which drive leader succession (docs/caravan.md). Salted apart from every other
+		 *  stream so adding leader mortality perturbs none of the existing draws (the band's own
+		 *  movement rides {@link #BAND}); a run with no bands draws nothing here. */
+		LEADER(0x2545F4914F6CDD1DL);
 
 		private final long salt;
 

@@ -363,6 +363,25 @@ public class GameSession {
 		return bandRng;
 	}
 
+	// mortality service for wandering-band LEADERS. A colony-less band has no Demography of its own
+	// (the leader is a bare Member on the Caravan, ticked by nothing), so its old-age death roll — the
+	// one that drives leader succession (docs/caravan.md) — reads this session-level one. Lazy (a run
+	// with no bands builds none) and on the salted LEADER stream, so it perturbs no existing draw.
+	private Demography leaderDemography;
+
+	/**
+	 * The mortality service that rolls a wandering band's {@linkplain Caravan#getLeader() leader}'s
+	 * old-age death (which triggers succession to the ablest survivor). Session-scoped because a band
+	 * has no colony; on its own salted stream so it never perturbs an existing draw.
+	 *
+	 * @return the band-leader demography (built once, reused)
+	 */
+	public synchronized Demography leaderDemography() {
+		if (leaderDemography == null)
+			leaderDemography = new Demography(rngSeed.forSession(RngSeed.Stream.LEADER));
+		return leaderDemography;
+	}
+
 	/**
 	 * The seed this session was created with — the single source of its
 	 * reproducibility. Used to scope a run's output: every colony of this session

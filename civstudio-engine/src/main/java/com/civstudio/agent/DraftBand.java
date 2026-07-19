@@ -89,6 +89,20 @@ public final class DraftBand implements MarchFollowing {
 		return List.copyOf(draftees);
 	}
 
+	/** {@inheritDoc} The band's drafted people (living — dead-at-home ones are pruned each {@link
+	 *  #act() step}). */
+	@Override
+	public List<Member> members() {
+		return draftees();
+	}
+
+	/** {@inheritDoc} The promoted levy leaves the ranks to lead (its home household still accounts it
+	 *  — a draftee is only referenced here). */
+	@Override
+	public void remove(Member member) {
+		draftees.remove(member);
+	}
+
 	/**
 	 * Remove and return the band's entire carried larder — the surplus the caravan deposits
 	 * into its home colony's food store on return (see {@code docs/explorer-caravan.md}).

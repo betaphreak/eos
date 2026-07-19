@@ -32,6 +32,7 @@ import com.civstudio.tech.Tech;
 import com.civstudio.tech.TechTree;
 import com.civstudio.util.Rng;
 import lombok.Getter;
+import lombok.extern.java.Log;
 
 /**
  * A <b>marching band</b>: the {@link Caravan} that carries a {@link #getFollowing()
@@ -59,6 +60,7 @@ import lombok.Getter;
  * route. All movement and target choice ride the session-level band RNG passed to
  * {@link #tick(LocalDate, Rng)}, so bands on the map stay reproducible.
  */
+@Log
 public abstract class MarchingCaravan extends Caravan {
 
 	/**
@@ -228,6 +230,51 @@ public abstract class MarchingCaravan extends Caravan {
 		return leader == null ? 0 : leader.skills().level(signatureSkill());
 	}
 
+	// Roll the leader's old-age death and, on death, hand command to the band's ablest survivor. The
+	// leader is a bare Member with no colony/Demography of its own, so the roll reads the session's
+	// salted band-leader stream (GameSession.leaderDemography) — it perturbs no existing draw. A
+	// no-op for an off-graph band (no session). See docs/caravan.md (leader succession).
+	private void succeedIfLeaderDied(LocalDate date) {
+		if (session() == null)
+			return;
+		Member fallen = getLeader();
+		if (fallen == null)
+			return;
+		if (fallen.isAlive())
+			fallen.rollOldAgeDeath(session().leaderDemography(), date); // add the leader's old-age mortality
+		if (fallen.isAlive())
+			return; // the leader lives on — no succession
+		// the leader is dead — of old age here, or (for an explorer levy, whose leader is one of the
+		// draftees) died at home and was pruned by the following. Hand command to the ablest survivor.
+		Member heir = ablestSurvivor(following.members());
+		if (heir == null)
+			return; // nobody able to take over — the band marches on leaderless until it settles/prunes
+		following.remove(heir);   // the heir leaves the ranks to lead (the leader is carried apart)
+		following.remove(fallen); // and the fallen leader leaves them too (no-op if it was never in them)
+		setLeader(heir);
+		log.fine(() -> fallen.fullName() + " died on the road; " + heir.fullName()
+				+ " (Survival " + heir.skills().level(Skill.SURVIVAL) + ") takes command of the band.");
+	}
+
+	// The ablest SURVIVOR of `members`: the living member with the highest SURVIVAL skill, ties broken
+	// toward the earliest in list order (a strict >, the stable "first maximum" pick Retinue uses) —
+	// fully deterministic, no RNG, so succession never perturbs a replay. Null if none are living.
+	// Package-private + static so the selection is unit-tested directly (MarchingCaravanSuccessionTest).
+	static Member ablestSurvivor(List<Member> members) {
+		Member best = null;
+		int bestSurvival = -1;
+		for (Member m : members) {
+			if (!m.isAlive())
+				continue;
+			int s = m.skills().level(Skill.SURVIVAL);
+			if (s > bestSurvival) {
+				best = m;
+				bestSurvival = s;
+			}
+		}
+		return best;
+	}
+
 	// ---- the goal seam: what a flavor specializes (its C2C "mission") --------------------
 
 	/**
@@ -353,6 +400,8 @@ public abstract class MarchingCaravan extends Caravan {
 			releaseCamp();
 			return null; // a spent band — no one left; the session's driver prunes it
 		}
+		// the leader ages: if it dies of old age, the band's ablest survivor takes command
+		succeedIfLeaderDied(date);
 		// dawn: strike last night's camp before deciding today's move
 		releaseCamp();
 

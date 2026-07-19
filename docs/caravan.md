@@ -409,6 +409,33 @@ out).
   colony — so the `Caravan` base is kept **flavor-agnostic** (leader, following-as-data,
   hoard, position, movement) and each flavor specializes only `tick()` and its goal.
 
+## Leader succession + the composition panel (realized 2026-07-19)
+
+A wandering band's leader is now **mortal**, and its makeup is **inspectable** from the map.
+
+- **Survival-based succession (supersedes the earlier "heir, else ablest" plan below).** The leader
+  (`Caravan.leader`, no longer `final`) rolls an old-age death each march day —
+  `MarchingCaravan.succeedIfLeaderDied`, on a session-level `Demography` off a **new salted RNG
+  stream** (`RngSeed.Stream.LEADER`, `GameSession.leaderDemography`) so it perturbs no existing draw.
+  On the leader's death (of old age, or — for an explorer levy whose leader is one of the draftees —
+  at home), command passes to the **ablest surviving `Member` by `SURVIVAL` skill**, ties broken
+  toward the earliest in following order (`MarchingCaravan.ablestSurvivor`, deterministic, RNG-free,
+  unit-tested). This is meritocratic, not the dynasty-heir-first draw the 2026-07-02 plan sketched —
+  the owner asked for pure survival succession (recent decision wins). The initial leader is still
+  picked at muster (`ExplorerCaravan.muster` picks the *overall* ablest), so the badge marks the real
+  leader wherever it ranks by survival; it becomes the top survivor only once a succession fires.
+- **Stable band id.** `Caravan.id` (a process-unique counter, not seed-reproducible — never persisted)
+  rides `CaravanView.id`, the handle a client selects a band by across ticks (the leader name is not
+  unique and changes on succession).
+- **Composition endpoint + rail panel.** `GET /api/sessions/{sid}/caravan/{id}` (`CaravanController` →
+  `CaravanProjections` → `CaravanDetail`) serves a band's **band-average skill profile** + the
+  **roster ordered by `SURVIVAL` descending**, the leader flagged — read defensively off the request
+  thread like the person endpoint. Clicking a band's map icon (a hit-target `drawLive` pushes into
+  `S.markers`, hit-tested in `maptip`) opens it in the right rail (`web/js/caravan-detail.mjs`),
+  re-resolved by id each snapshot (live header, refetch on makeup change, deselect when the band
+  settles/dissolves). `MarchFollowing.members()`/`remove()` are the new engine seams the roster and
+  succession read.
+
 ## Caravan types (realized 2026-07-12)
 
 The flavor split forecast above has **landed** (structurally — the three new missions are

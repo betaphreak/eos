@@ -39,11 +39,21 @@ public abstract class Caravan {
 	/** Sentinel {@link #getProvinceId() province id} for an off-graph band. */
 	public static final int OFF_GRAPH = -1;
 
+	// a process-unique handle for the band — the stable id the render snapshot carries so a client
+	// can keep a band SELECTED across ticks (the leader name is not unique and can change on
+	// succession). Deliberately NOT seed-reproducible: it is never persisted (the savegame is the
+	// spec + command log), so a replay/restore re-mints ids and the client re-selects on reconnect.
+	private static final java.util.concurrent.atomic.AtomicLong SEQ =
+			new java.util.concurrent.atomic.AtomicLong();
+	@Getter
+	private final long id = SEQ.incrementAndGet();
+
 	// the band's leader: the dynasty Member that commands it (the Captain, the title
 	// Rank.CARAVAN carries) and becomes the holder/Ruler if the band re-founds. Not a
-	// household class — just the Member, carried across the settle/unsettle hinge.
+	// household class — just the Member, carried across the settle/unsettle hinge. Reassignable:
+	// on the leader's death a wandering band promotes its ablest survivor (see MarchingCaravan).
 	@Getter
-	private final Member leader;
+	private Member leader;
 
 	// the band's carried hoard — its money, a copper amount held outside any bank
 	// (the colony's circulating money, conserved into one figure on dissolution)
@@ -119,6 +129,18 @@ public abstract class Caravan {
 		this.session = null;
 		this.latitude = latitude;
 		this.longitude = longitude;
+	}
+
+	/**
+	 * Install a new {@link #getLeader() leader} — the succession seam. A wandering band promotes its
+	 * ablest surviving member when the leader dies ({@link MarchingCaravan#successIfLeaderDied}); the
+	 * base band never calls this (it has no following). Kept {@code protected} so only the band's own
+	 * succession drives it.
+	 *
+	 * @param newLeader the member taking command (non-null, living)
+	 */
+	protected void setLeader(Member newLeader) {
+		this.leader = newLeader;
 	}
 
 	/**

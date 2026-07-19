@@ -225,7 +225,7 @@ public final class Snapshots {
 				unitIcon = UnitBundle.iconRect(unitId);
 			}
 		}
-		return new CaravanView(leaderName, leaderName, band.getLatitude(),
+		return new CaravanView(band.getId(), leaderName, leaderName, band.getLatitude(),
 				band.getLongitude(), onGraph ? band.getProvinceId() : -1, province, onGraph,
 				settled, bandSize, larder, band.getHoard(), band.role().name(),
 				unitId, unitName, unitIcon, signatureSkill, leaderSkill);

@@ -11,7 +11,7 @@
 // bootstrap recorded on the bundle, else the deployed server). It used to be re-derived here and in
 // auth.mjs: three copies of the same two lines, all of which had to stay in lockstep with the
 // bootstrap that actually picks the server.
-import { ctx, px, py, cssVar, VIEW, baseXr, baseYr, sxSrc, sySrc, LABEL_FONT, centerOn, SERVER_BASE as LIVE_BASE } from "../core.mjs";
+import { ctx, px, py, cssVar, VIEW, baseXr, baseYr, sxSrc, sySrc, LABEL_FONT, centerOn, S, SERVER_BASE as LIVE_BASE } from "../core.mjs";
 import { hasDeepLink } from "../main.mjs";
 import { atLeast, BAND, bandAlpha } from "../bands.mjs";
 import { setRouteSession, invalidateRoutes } from "../routefetch.mjs";
@@ -96,6 +96,9 @@ export function liveColony() { return (snap && snap.colonies && snap.colonies[0]
 
 /** The live session id (for the person-detail endpoint), or null when never connected. */
 export function liveSid() { return sid; }
+/** The current snapshot's wandering bands (empty off Live) — so the caravan rail can re-resolve a
+ *  selected band by id each tick and detect when it has settled/dissolved. */
+export function liveCaravans() { return (snap && snap.caravans) || []; }
 
 // notified with the fresh roster on each snapshot, so the advisor selector/rail track succession
 let onRoster = () => {};
@@ -473,19 +476,26 @@ export function drawLive() {
     // signature-skill readout below. At atlas zoom (or a band with no embodied unit) it stays a role
     // dot — the icon would be oversized against the tiny provinces. docs/c2c-unit-import.md §1a.
     const overland = atLeast(BAND.PROVINCE);
-    if (overland && c.unitIcon && USHEET.complete && USHEET.naturalWidth) {
-      const S = c.settled ? 24 : 20, sx = c.unitIcon[0], sy = c.unitIcon[1];
-      ctx.beginPath(); ctx.arc(x, y, S / 2 + 2, 0, 7);
+    const drewIcon = overland && c.unitIcon && USHEET.complete && USHEET.naturalWidth;
+    const isz = c.settled ? 24 : 20;   // icon box side (px)
+    if (drewIcon) {
+      const sx = c.unitIcon[0], sy = c.unitIcon[1];
+      ctx.beginPath(); ctx.arc(x, y, isz / 2 + 2, 0, 7);
       ctx.fillStyle = "rgba(6,9,14,.85)"; ctx.fill();
       ctx.lineWidth = 2; ctx.strokeStyle = col; ctx.stroke();
       ctx.save();
-      ctx.beginPath(); ctx.arc(x, y, S / 2, 0, 7); ctx.clip();
-      ctx.drawImage(USHEET, sx, sy, 64, 64, x - S / 2, y - S / 2, S, S);
+      ctx.beginPath(); ctx.arc(x, y, isz / 2, 0, 7); ctx.clip();
+      ctx.drawImage(USHEET, sx, sy, 64, 64, x - isz / 2, y - isz / 2, isz, isz);
       ctx.restore();
     } else {
       ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fillStyle = col; ctx.fill();
       ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.strokeStyle = "#0b0f16"; ctx.lineWidth = 1.6; ctx.stroke();
     }
+    // record a click/hover hit-target for this band (docs/caravan.md — the composition panel). Rides
+    // the same S.markers pipeline as the cave/realm glyphs (reset each frame by paintScene, hit-tested
+    // by maptip.markerAt); a caravan marker carries the CaravanView so the click can open its rail.
+    S.markers.push({ x, y, r: (drewIcon ? isz / 2 + 3 : r + 3),
+      label: c.unitName ? `${c.unitName} · ${c.leader}` : c.leader, caravan: c });
     if (overland && c.unitName) {
       const ly = y + 14;
       ctx.textAlign = "center"; ctx.textBaseline = "top";

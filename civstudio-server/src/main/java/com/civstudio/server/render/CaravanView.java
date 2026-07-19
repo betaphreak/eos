@@ -6,6 +6,9 @@ package com.civstudio.server.render;
  * plain immutable record so it serializes straight to JSON and never exposes the live agent
  * graph. Assembled on the session thread by {@link Snapshots} between ticks.
  *
+ * @param id        the band's stable id — what the client selects a band by (the leader name is not
+ *                  unique and changes on succession); the key for {@code GET
+ *                  /api/sessions/{sid}/caravan/{id}} (its composition detail)
  * @param label     a display label (the band's leader)
  * @param leader    the band leader's full name
  * @param latitude  current latitude (decimal degrees, north positive)
@@ -29,7 +32,7 @@ package com.civstudio.server.render;
  *                  {@code null} for a non-marching band
  * @param leaderSkill    the band leader's level in that signature skill
  */
-public record CaravanView(String label, String leader, double latitude, double longitude,
+public record CaravanView(long id, String label, String leader, double latitude, double longitude,
 		int provinceId, String province, boolean onGraph, boolean settled, int bandSize,
 		double larder, double hoard, String role,
 		String unitId, String unitName, int[] unitIcon, String signatureSkill, int leaderSkill) {

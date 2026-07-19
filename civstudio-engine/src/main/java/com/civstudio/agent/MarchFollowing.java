@@ -41,4 +41,23 @@ public interface MarchFollowing {
 	 * that is always wandering (a {@link DraftBand}) treats this as a no-op.
 	 */
 	void detach();
+
+	/**
+	 * The following's <b>living</b> members, in a stable order — for the band-composition roster and
+	 * leader succession. A {@link Retinue}'s are its transferred peasants; a {@link DraftBand}'s are
+	 * references to people still accounted in their home households/pool. The list is a copy the
+	 * caller may sort freely.
+	 *
+	 * @return the living members (never null; empty for a spent following)
+	 */
+	java.util.List<Member> members();
+
+	/**
+	 * Remove a member from the ranks — the succession seam: the survivor promoted to {@link
+	 * Caravan#getLeader() leader} leaves the following (the leader is carried apart from it). A no-op
+	 * if the member is not present.
+	 *
+	 * @param member the member to remove
+	 */
+	void remove(Member member);
 }

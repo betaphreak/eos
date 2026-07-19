@@ -13,6 +13,7 @@ import { provinceAt, plotAt } from "./hittest.mjs";
 import { prettyKey, plotTip } from "./plotlabel.mjs";
 import { consumePanMoved } from "./input.mjs";
 import { selectProvince } from "./rail.mjs";
+import { openCaravanRail } from "./caravan-detail.mjs";
 
 // ---- interaction: hover province ----
 const tip=document.getElementById("tip");
@@ -83,6 +84,8 @@ stage.addEventListener("click", e=>{
   // a realm arrow takes the click: cross to the other realm, landing on the far portal at this zoom
   const mk = markerAt(mx, my);
   if (mk && mk.realm) { switchRealm(mk.realm, { province: mk.prov, zoom: cam.k }); return; }
+  // a caravan icon takes the click: open the band's composition panel (docs/caravan.md)
+  if (mk && mk.caravan) { openCaravanRail(mk.caravan); return; }
   // else the click selects the province under the cursor (toggles off if re-clicked)
   const prov = provinceAt(mx, my);
   if (prov) selectProvince(S.selectedProv===prov ? null : prov);

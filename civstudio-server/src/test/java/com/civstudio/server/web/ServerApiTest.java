@@ -25,6 +25,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.SessionSpec;
+import com.civstudio.server.render.CaravanDetail;
 import com.civstudio.server.render.ProvinceRoutes;
 import com.civstudio.server.render.SessionSnapshot;
 
@@ -450,6 +451,55 @@ class ServerApiTest {
 		SessionSnapshot snap = json.readValue(currentSnapshotBody(hs), SessionSnapshot.class);
 		assertTrue(snap.routeDirty().contains(DHENIJANSAR),
 				"a province born pre-paved should be flagged in routeDirty, got " + snap.routeDirty());
+	}
+
+	@Test
+	@Timeout(120)
+	void caravanEndpointServesABandsSurvivalSortedComposition() throws Exception {
+		// an unknown session has no band to serve
+		HttpResponse<String> missing = client.send(
+				HttpRequest.newBuilder(uri("/api/sessions/nope/caravan/1")).GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(404, missing.statusCode());
+
+		HostedSession hs = host.create(SessionSpec.caravanDemo(225L, DHENIJANSAR));
+		hs.startPaused();
+		// the colony musters its foraging explorers emergently over winter — step until a band exists
+		hs.step(300);
+		long deadline = System.nanoTime() + 90_000_000_000L;
+		long bandId = -1;
+		while (bandId < 0 && System.nanoTime() < deadline) {
+			SessionSnapshot s = hs.currentSnapshot();
+			if (s != null && !s.caravans().isEmpty())
+				bandId = s.caravans().get(0).id();
+			else
+				Thread.sleep(10);
+		}
+		assertTrue(bandId >= 0, "the demo colony should muster a band within the season");
+
+		HttpResponse<String> res = client.send(
+				HttpRequest.newBuilder(uri("/api/sessions/" + hs.id() + "/caravan/" + bandId)).GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(200, res.statusCode());
+		assertTrue(res.headers().firstValue("Cache-Control").orElse("").contains("no-cache"),
+				"a band's makeup changes as it marches, so the sheet must not be cached");
+		CaravanDetail d = json.readValue(res.body(), CaravanDetail.class);
+		assertEquals(bandId, d.id());
+		assertTrue(!d.members().isEmpty(), "the band has a roster");
+		assertEquals(12, d.skills().size(), "the band-average profile covers every skill");
+		// the roster is ordered by SURVIVAL descending (the leader-succession order)
+		for (int i = 1; i < d.members().size(); i++)
+			assertTrue(d.members().get(i - 1).survival() >= d.members().get(i).survival(),
+					"roster must be survival-descending");
+		// exactly one member is flagged the leader
+		assertEquals(1, d.members().stream().filter(CaravanDetail.Crew::leader).count(),
+				"exactly one leader is flagged");
+
+		// a bogus band id on a real session is a clean 404
+		HttpResponse<String> noBand = client.send(
+				HttpRequest.newBuilder(uri("/api/sessions/" + hs.id() + "/caravan/999999999")).GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(404, noBand.statusCode());
 	}
 
 	private String currentSnapshotBody(HostedSession hs) throws Exception {
