@@ -15,20 +15,20 @@ import java.util.Map;
  * parser (no lists, no operators); it extracts the shallow structure these
  * exporters need.
  */
-final class ClausewitzBlocks {
+public final class ClausewitzBlocks {
 
 	/** A top-level {@code name = { body }} block; {@code body} is the raw inner text. */
-	record Block(String name, String body) {
+	public record Block(String name, String body) {
 	}
 
 	/** The top-level structure of a parsed string: its blocks and scalar assignments. */
-	record Parsed(List<Block> blocks, Map<String, String> scalars) {
+	public record Parsed(List<Block> blocks, Map<String, String> scalars) {
 	}
 
 	private ClausewitzBlocks() {
 	}
 
-	static String stripComments(String content) {
+	public static String stripComments(String content) {
 		return content.replaceAll("#.*", "");
 	}
 
@@ -37,7 +37,7 @@ final class ClausewitzBlocks {
 	 * (nested contents left raw) and each {@code name = scalar} assignment. Braces
 	 * are matched so nested blocks are skipped as whole units.
 	 */
-	static Parsed parse(String s) {
+	public static Parsed parse(String s) {
 		List<Block> blocks = new ArrayList<>();
 		Map<String, String> scalars = new LinkedHashMap<>();
 		int i = 0, n = s.length();

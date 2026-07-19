@@ -115,10 +115,10 @@ behavioural difference between the two is the background reconnect: the client g
 `outcome != LIVE`, and keeps trying for a suspended `LIVE` stop so the card clears and the map
 re-attaches when the run is restored.
 
-<b>The one open question this leaves</b> — should a run stopped from outside also be *un-restorable*
-(a truly decided outcome), or stay `LIVE`/restorable? Kept `LIVE` for now, because making it decided
-would break redeploy recovery (a graceful shutdown stops every session); the "Game Over" wording is
-presentation-only. Flagged for the owner.
+<b>Settled (owner, 2026-07-19):</b> a run stopped from outside stays `LIVE`/**restorable** — the
+"Game Over" screen is presentation-only. Making it a decided outcome would have a graceful
+shutdown/redeploy permanently kill every running session (including players' save slots), which is
+exactly what restore exists to prevent.
 
 `WON` / `LOST` / `ABANDONED` are decided in `HostedSession.run()`'s terminal block, where
 `describeEnd()` already distinguishes them (a Timeline verdict; a colony that died; survivors who
@@ -227,7 +227,7 @@ does not send. (This note's changes are being held **before prod** for exactly t
 | D | `ClockState` + `Outcome` split (engine-adjacent server, wire, MCP, web) | **SHIPPED** |
 | E | `SessionAuthz.canSee` visibility + `SessionKind.begin()` beginnings | **SHIPPED** |
 | F | `Civ4HandicapInfo.xml` handicap catalog + `difficulty` validation (effects deferred) | **SHIPPED** |
-| G | Alignment-grid campaign selector (Good↔Evil × Order↔Chaos, expansion-gated) — model + reference data captured; grid picker + Anbennar start-tag wiring later | PLANNED |
+| G | Alignment-grid campaign selector — now its own design + plan + interactive mockup in [`docs/campaign-selector.md`](campaign-selector.md) (astrolabe picker, heraldry, campaign exporter → Strapi) | PLANNED (designed) |
 
 Phase F baked the catalog to a committed engine resource `/handicaps.json` (12 handicaps) via
 `com.civstudio.handicap.export.HandicapInfoExporter` (`mvn -pl civstudio-engine exec:exec
