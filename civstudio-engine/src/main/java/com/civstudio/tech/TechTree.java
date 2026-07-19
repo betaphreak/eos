@@ -108,14 +108,25 @@ public final class TechTree {
 			validatePrereqs(t, t.andPrereqs());
 		}
 
-		// fail-fast: every overlay key must name a kept tech (so an effect authored
-		// for a mistyped or out-of-scope id surfaces immediately rather than silently
-		// applying to nothing)
-		for (String type : effects.keySet())
-			if (!byType.containsKey(type))
-				throw new IllegalStateException(
-						"tech-effect overlay names an unknown tech: " + type);
-		this.effects = Map.copyOf(effects);
+		// Drop overlay entries whose key isn't a kept tech: the building-/unit-unlock overlays are
+		// machine-generated (the inverse of prereqTech) and can name a tech that survives the exporter's
+		// horizon but is dropped here by the era filter — its unlock would apply to nothing. Committed
+		// overlays name only kept techs, so nothing is dropped on the classpath (behavior-neutral); this
+		// makes the tree tolerant of overlay/tree drift, e.g. the reconstructed unlock overlays the
+		// Strapi world bundle serves. (tech-effects is a hand-authored stub today, so a typo there no-ops
+		// rather than failing fast — an accepted trade for that robustness.)
+		Map<String, List<TechEffect>> keptEffects = new LinkedHashMap<>();
+		int droppedOverlay = 0;
+		for (Map.Entry<String, List<TechEffect>> e : effects.entrySet()) {
+			if (byType.containsKey(e.getKey()))
+				keptEffects.put(e.getKey(), e.getValue());
+			else
+				droppedOverlay++;
+		}
+		if (droppedOverlay > 0)
+			System.err.println("TechTree: dropped " + droppedOverlay
+					+ " overlay entr(y/ies) naming non-kept techs");
+		this.effects = Map.copyOf(keptEffects);
 	}
 
 	private void validatePrereqs(Tech t, List<String> prereqs) {
