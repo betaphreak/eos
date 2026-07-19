@@ -20,6 +20,11 @@ public class CivStudioProperties {
 	private final Plots plots = new Plots();
 	private final Dev dev = new Dev();
 	private final Admin admin = new Admin();
+	private final WorldSource worldSource = new WorldSource();
+
+	public WorldSource getWorldSource() {
+		return worldSource;
+	}
 
 	public Demo getDemo() {
 		return demo;
@@ -506,6 +511,59 @@ public class CivStudioProperties {
 
 		public void setOrigins(List<String> origins) {
 			this.origins = origins;
+		}
+	}
+
+	/**
+	 * Which {@link com.civstudio.data.WorldSource} the engine boots its invariant world data from
+	 * (studio-datamodel-rebuild Phase 4). Bound under {@code civstudio.world-source.*}, but the source
+	 * is actually INSTALLED very early by {@code WorldSourceInitializer} (an
+	 * {@code ApplicationEnvironmentPreparedEvent} listener reading the same keys off the Environment),
+	 * because it must run before any engine world-data class loads — {@code UnitCatalog} is an eager
+	 * static singleton that captures the source at class-load. This bound copy exists for documentation
+	 * and for beans that want to read the choice.
+	 */
+	public static class WorldSource {
+		/** {@code classpath} (default — committed {@code generated/*.json}) | {@code strapi} (GET the
+		 *  world bundle) | {@code fixture} (a saved snapshot). */
+		private String mode = "classpath";
+		/** {@code strapi} mode: the studio world-bundle URL. */
+		private String url = "http://localhost:1337/api/world-bundle";
+		/** {@code strapi} mode: bearer token for the world bundle ({@code WORLD_BUNDLE_TOKEN}); blank = none. */
+		private String token = "";
+		/** {@code fixture} mode: path to a saved bundle snapshot ({@code .json} / {@code .json.gz}). */
+		private String fixture = "";
+
+		public String getMode() {
+			return mode;
+		}
+
+		public void setMode(String mode) {
+			this.mode = mode;
+		}
+
+		public String getUrl() {
+			return url;
+		}
+
+		public void setUrl(String url) {
+			this.url = url;
+		}
+
+		public String getToken() {
+			return token;
+		}
+
+		public void setToken(String token) {
+			this.token = token;
+		}
+
+		public String getFixture() {
+			return fixture;
+		}
+
+		public void setFixture(String fixture) {
+			this.fixture = fixture;
 		}
 	}
 }

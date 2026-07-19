@@ -5,6 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 
+import com.civstudio.server.data.WorldSourceInitializer;
+
 /**
  * The Spring Boot entry point for the CivStudio spectator/interactive server (see
  * {@code docs/client-server.md} and {@code docs/spring-boot-migration.md}). Boot stands up the
@@ -27,6 +29,10 @@ import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 public class ServerMain {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ServerMain.class, args);
+		SpringApplication app = new SpringApplication(ServerMain.class);
+		// Install the engine's WorldSource before the context (and any eager engine class) loads — see
+		// WorldSourceInitializer. Default mode=classpath keeps the committed generated/*.json.
+		app.addListeners(new WorldSourceInitializer());
+		app.run(args);
 	}
 }

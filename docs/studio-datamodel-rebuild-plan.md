@@ -51,14 +51,30 @@
 > recipe prereqBuildings ref `BUILDING_FACTORY` absent from buildings.json), which relations can't hold,
 > so the store/bundle correctly drop them (the verify strips them from committed too — behavior-neutral,
 > the engine can't resolve them either). **DEFERRED from the bundle:** the geonames subset (place-name)
-> + non-human/harimari name pools (per the seeder scope). **Next (Phase 4 cont.):** the ENGINE
-> `WorldSource` seam — an `InputStream open(String path)` interface threaded into the ~10 independent
-> `getResourceAsStream + MAPPER.readValue` loaders (WorldMap, TerrainRegistry, TechTree, UnitCatalog,
-> LiturgicalCalendar, …; there is NO shared resource abstraction today), with `ClasspathWorldSource`
-> (behavior-neutral default) + `StrapiWorldSource` (JDK HttpClient) + `FixtureWorldSource` (snapshot,
-> for `mvn test`); at integration, confirm the modeled subset covers the engine's actual field needs by
-> running the sim through StrapiWorldSource and comparing behavior. **Not yet done:** that engine seam;
-> cutover/deleting `generated/` (Phase 5).
+> + non-human/harimari name pools (per the seeder scope).
+>
+> **Phase 4 ENGINE SEAM SHIPPED (2026-07-19, commits 54ae768 + 480de66).** `com.civstudio.data.
+> WorldSource` (`InputStream open(String path)` + `exists`) held ambiently by `WorldSources.current()`
+> — default `ClasspathWorldSource` (= the old `getResourceAsStream`, behavior-neutral), settable once at
+> the composition root. All ~10 loaders + 2 existence checks rewired; **full engine suite 387 green**.
+> Bundle-backed impls: `BundleWorldSource` (serves path-keyed `resources[path]`, classpath fallback,
+> mapVersion/contentVersion) with `StrapiWorldSource` (JDK HttpClient GET `/api/world-bundle`, bearer
+> `WORLD_BUNDLE_TOKEN`) and `FixtureWorldSource` (`.json[.gz]` snapshot). `WorldSourceIntegrationTest`
+> boots the real WorldMap/TerrainRegistry/TechTree through a fixture bundle and asserts counts ==
+> classpath (skip-guarded on `-Dworldbundle.fixture`); verified locally against a live snapshot.
+> **Gotcha:** `UnitCatalog` is an eager static singleton — it captures the source at class-load, so the
+> composition root must `set()` before any world-data class loads. **Fix:** `TechTree` now DROPS overlay
+> entries naming non-kept techs (was: throw) — the reconstructed building/unit-unlock overlays can name
+> an era-filtered tech; behavior-neutral on classpath.
+>
+> **DECIDED (with owner): full cutover.** Studio = invariant content/definitions (versioned, engine
+> never writes back); server = live runtime game state, boots invariant data from studio via
+> `StrapiWorldSource`; reproducibility = seed + content-version + command log; multiple server instances
+> become possible (independent sessions restore from DB spec+log on any instance; the single shared
+> Ranked world still needs one tick authority). `web/` is unchanged — it consumes the SERVER's
+> render-shaped `/api/bundle`, which becomes Strapi-backed transitively. **Remaining steps are the
+> unchecked boxes under Phase 4 & Phase 5 in the Migration phases section** (composition-root wiring →
+> server-reader rewire → fixture pipeline → flip default → delete `generated/` → seed prod).
 >
 > **Naming pass (2026-07-18):** collection-type names follow **philosophy A** — mirror the
 > source/engine vocabulary (`bonus`, `feature`, `improvement`, `area`, `adjacency` stay as the C2C/EU4
@@ -307,19 +323,45 @@ relation relink, batched inserts, idempotent upsert keyed on natural keys (`tag`
 Wire the tech↔building / tech↔unit unlock relations from the overlay files. Verify counts match the
 reference doc exactly.
 
-**Phase 4 — Engine read path + Strapi bundle endpoint.** Build the custom `GET /api/world-bundle`
-controller in `studio/` (denormalize collections → the flat shape the engine parses; gzip;
-version-stamp with `map-version`/`content-version`). Add the `WorldSource` seam in the engine;
-implement `StrapiWorldSource` (JDK `HttpClient` against that endpoint) and `FixtureWorldSource`
-(snapshot). Rewire `WorldMap` + all `generated/`-reading loaders through `WorldSource`. Read the
-version at boot and key the `.map` plot cache on it. Keep both sources behind config so the switch is
-flippable.
+**Phase 4 — Engine read path + Strapi bundle endpoint.**
+- [x] **Build `GET /api/world-bundle`** in `studio/` — path-keyed, gzipped, version-stamped; projects
+  all 37 datasets to the flat committed shapes. **Verified faithful** (`verify-bundle.js`). *(d5ee775)*
+- [x] **`WorldSource` seam in the engine** — `com.civstudio.data.WorldSource` (`open`/`exists`) held by
+  `WorldSources.current()`, default `ClasspathWorldSource` (behavior-neutral). All ~10 loaders rewired;
+  387 tests green. *(54ae768)*
+- [x] **`StrapiWorldSource` + `FixtureWorldSource`** (over `BundleWorldSource`) + unit/integration
+  tests. Integration test boots the real loaders through a fixture bundle == classpath. *(480de66)*
+- [x] **Composition-root wiring** — `WorldSourceInitializer` (an `ApplicationEnvironmentPreparedEvent`
+  listener registered in `ServerMain.main()`) installs the source **before the context/any bean/any
+  engine class loads** — earlier than a `@Component` configurer, which matters for `UnitCatalog`'s eager
+  static singleton. Config `civstudio.world-source.mode=classpath|strapi|fixture` (+ `url`/`token` for
+  strapi, `fixture` path), default classpath (inert). `@SpringBootTest` contexts keep the classpath
+  default (listener only in `main()`). Verified: unit tests + a real server boot in `fixture` mode
+  founded the demo session (6 caravans → exercised `UnitCatalog` via the bundle), health 200; server
+  suite 115 green.
+- [ ] **Rewire the server's OWN parallel readers** through `WorldSource` — `server.web.WorldBundle`,
+  `BuildingBundle`, `TechBundle`, `UnitBundle`, `AssetController` read `generated/` independently today;
+  routing them through `WorldSource` (or the engine's `WorldData`) is what makes the server's
+  `/api/bundle` — and therefore `web/` — transitively Strapi-backed. **This is the "full cutover" the
+  owner asked for.**
+- [ ] **Read the version at boot** (`BundleWorldSource.mapVersion()`/`contentVersion()`) — log it, and
+  fold it into the `.map` plot-cache key + savegame reproducibility (seed + content-version + log).
+- [ ] **Fixture pipeline** — CI produces a bundle snapshot (curl `/api/world-bundle` against a seeded
+  studio → gzipped file in a gitignored cache) so `mvn test` runs offline via `FixtureWorldSource`.
 
-**Phase 5 — Cutover.** Flip the default to `StrapiWorldSource`. **Delete `resources/generated/`** (and
-`/map/`) from git; update `.gitignore` (a fixture snapshot lives in a gitignored cache, like `.map`).
-Repoint/retire the exporters (their role becomes "seed Strapi", not "write committed JSON"). Regen
-`config/sync`; set read permissions (public read or an API token). Realign the studio version with the
-reactor. Update `studio/CLAUDE.md`, `docs/architecture.md`, and the exporter docs.
+**Phase 5 — Cutover.**
+- [ ] **Seed PROD studio** (it is currently empty/unseeded) — run `seed.js` against the prod Postgres
+  before prod boots through it.
+- [ ] **Flip the default to `StrapiWorldSource`** (mode=strapi) in prod/dev config; keep classpath/
+  fixture for offline + tests.
+- [ ] **Delete `resources/generated/`** (and `/map/`) from git; update `.gitignore` (the fixture
+  snapshot lives in a gitignored cache, like `.map`). Repoint/retire the exporters (their role becomes
+  "seed Strapi", not "write committed JSON").
+- [ ] Regen studio `config/sync`; set read permissions (the `WORLD_BUNDLE_TOKEN` secret across dev/CI/
+  prod). Realign the studio version with the reactor.
+- [ ] Update `studio/CLAUDE.md`, `docs/architecture.md`, `CLAUDE.md`, and the exporter docs.
+- [ ] Scheduled content export → committed JSON snapshots (backup/history + fixture + DR image; arch
+  rec #8).
 
 **Phase 6 — Verify.** Fresh-seed a DB; boot the engine against local Strapi; assert entity counts
 (5268 provinces, 339 techs, 1270 buildings, 273 units, …) match; run a scenario smoke test through

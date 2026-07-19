@@ -71,6 +71,15 @@ civstudio:
     seed: 7654321
     province-id: 4411
     tick-rate-millis: 3000
+  world-source:
+    # Where the engine boots its INVARIANT world data (studio-datamodel-rebuild Phase 4):
+    #   classpath (default) = committed generated/*.json | strapi = GET the studio world bundle |
+    #   fixture = a saved snapshot. Installed VERY early by WorldSourceInitializer (before any engine
+    #   class loads). Default classpath is a no-op, so this is inert until a deployment opts in.
+    mode: ${CIVSTUDIO_WORLDSOURCE_MODE:classpath}
+    url: ${CIVSTUDIO_WORLDSOURCE_URL:http://localhost:1337/api/world-bundle}
+    token: ${WORLD_BUNDLE_TOKEN:}
+    fixture: ${CIVSTUDIO_WORLDSOURCE_FIXTURE:}
   anbennar:
     # Canonical upstream source of the Anbennar EU4 mod files (GitLab, not GitHub). These are NOT
     # vendored in the repo; the engine (com.civstudio.data.AnbennarFiles) downloads them individually,
