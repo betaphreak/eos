@@ -29,7 +29,7 @@ class DistrictSnapshotTest {
 
 	private static ColonyView project(Settlement c) {
 		return Snapshots.of("t", 42, "test", "RUNNING", "LIVE", null, 0, c.getDate(), List.of(c), null,
-				List.of(), List.of()).colonies().get(0);
+				List.of(), List.of(), List.of()).colonies().get(0);
 	}
 
 	@Test

@@ -53,11 +53,15 @@ public final class Snapshots {
 	 * @param map       the world map (for caravan province names), or {@code null}
 	 * @param caravans  the session's wandering bands
 	 * @param log       the event-log lines since the previous frame (the live log bar's feed)
+	 * @param routeDirty the ids of provinces whose route layer changed since the previous frame — the
+	 *                   viewport-windowed feed's refetch signal (docs/route-rendering.md); drained
+	 *                   from the session each emit by the caller
 	 * @return the render snapshot
 	 */
 	public static SessionSnapshot of(String sessionId, long seed, String scenario,
 			String clockState, String outcome, String endReason, long tick, LocalDate date,
-			List<Settlement> colonies, WorldMap map, List<Caravan> caravans, List<LogLine> log) {
+			List<Settlement> colonies, WorldMap map, List<Caravan> caravans, List<LogLine> log,
+			List<Integer> routeDirty) {
 		List<ColonyView> colonyViews = new ArrayList<>(colonies.size());
 		for (Settlement c : colonies)
 			colonyViews.add(colonyView(c));
@@ -79,7 +83,7 @@ public final class Snapshots {
 			}
 		return new SessionSnapshot(sessionId, seed, scenario, clockState, outcome, endReason, tick,
 				date == null ? "" : date.toString(), colonyViews, caravanViews, log,
-				new ArrayList<>(routed.values()));
+				new ArrayList<>(routed.values()), routeDirty);
 	}
 
 	// collect a band's trailed plots into `out`, keyed by packed (x,y) so a plot crossed by more than

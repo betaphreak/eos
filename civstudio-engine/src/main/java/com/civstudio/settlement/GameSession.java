@@ -135,6 +135,14 @@ public class GameSession {
 	private ProvinceRaster provinceRaster;
 	private final Map<Integer, ProvincePlotPool> plotPoolByProvince = new HashMap<>();
 
+	// provinces whose route layer changed since the render loop last drained this — the "refetch
+	// your in-view routes here" signal the snapshot advertises (docs/route-rendering.md §Viewport-
+	// windowed route persistence). Fed by markRouteDirty (a band laying a trail; a pool created
+	// pre-paved), drained each emit by the host. The pool holds the authoritative layer; this is
+	// only the change notification, so a drop just delays a refetch until the next change or a
+	// viewport re-entry.
+	private final Set<Integer> dirtyRouteProvinces = new LinkedHashSet<>();
+
 	// provinces whose barony-level plot map has already been claimed by a settlement,
 	// so a province shared by several settlements dumps its whole plot field once
 	// rather than once per settlement (see firstPlotMapFor / PlotMapPrinter).
@@ -287,12 +295,54 @@ public class GameSession {
 				// server's PlotService), and reused every run regardless of seed (see
 				// ProvincePlotStore / docs/province-plots.md)
 				Rng terrainRng = rngSeed.forProvinceCanonical(RngSeed.Stream.TERRAIN, id);
-				return ProvincePlotPool.loadOrGenerate(province, terrainRegistry,
+				ProvincePlotPool pool = ProvincePlotPool.loadOrGenerate(province, terrainRegistry,
 						provinceRaster, terrainRng);
+				// a pool born with routes (urban city-core pre-paving) is a change a client viewing
+				// this province must pick up — mark it dirty so the next snapshot tells them to fetch.
+				if (pool.hasRoutes())
+					dirtyRouteProvinces.add(id);
+				return pool;
 			} catch (IOException e) {
 				throw new UncheckedIOException("failed to build plot pool for province " + id, e);
 			}
 		});
+	}
+
+	/**
+	 * The province's plot pool <b>if it already exists</b>, else {@code null} — a non-generating
+	 * lookup (unlike {@link #provincePlotPool}, which builds on demand). The route feed uses this: a
+	 * province with no pool has no routes, and answering must never pay the pool's generation cost.
+	 *
+	 * @param provinceId the province to look up
+	 * @return the existing pool, or {@code null} if none has been built this session
+	 */
+	public synchronized ProvincePlotPool plotPoolIfPresent(int provinceId) {
+		return plotPoolByProvince.get(provinceId);
+	}
+
+	/**
+	 * Flag a province's route layer as changed, so the next render snapshot tells clients to refetch
+	 * its routes (docs/route-rendering.md). Called on the session thread when a band pioneers a trail
+	 * ({@link com.civstudio.agent.MarchingCaravan#layTrail}) or a pool is born pre-paved. Idempotent.
+	 *
+	 * @param provinceId the province whose route layer changed
+	 */
+	public synchronized void markRouteDirty(int provinceId) {
+		dirtyRouteProvinces.add(provinceId);
+	}
+
+	/**
+	 * Take and clear the set of provinces whose route layer changed since the last drain — the
+	 * snapshot's route dirty-signal. Called once per emit on the session thread.
+	 *
+	 * @return the changed province ids (a copy the caller owns), empty if none
+	 */
+	public synchronized List<Integer> drainRouteDirty() {
+		if (dirtyRouteProvinces.isEmpty())
+			return List.of();
+		List<Integer> drained = new ArrayList<>(dirtyRouteProvinces);
+		dirtyRouteProvinces.clear();
+		return drained;
 	}
 
 	/**

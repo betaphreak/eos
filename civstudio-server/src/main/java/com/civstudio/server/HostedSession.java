@@ -864,7 +864,7 @@ public final class HostedSession {
 	private void emit() {
 		SessionSnapshot snap = Snapshots.of(id, spec.seed(), spec.scenario(),
 				clock.name(), outcome.name(), endReason, tick, date(), colonies, session.getWorldMap(),
-				session.getCaravans(), logBuffer.drain());
+				session.getCaravans(), logBuffer.drain(), session.drainRouteDirty());
 		lastSnapshot = snap;
 		for (Consumer<SessionSnapshot> s : subscribers) {
 			try {

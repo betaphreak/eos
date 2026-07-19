@@ -14,8 +14,10 @@ below). The snapshot's per-band `routePlots` window (a 512-plot rolling buffer p
 not *persist* the network: a late-joining spectator never receives trails pioneered before it
 connected, a page reload wipes the accumulated layer, and a dissolved band stops broadcasting its
 still-existing trail. The fix moves the authoritative layer server-side (a session/province-scoped
-registry) and serves it per province on viewport entry. **Step 1 (engine registry) is BUILT**; the
-endpoint, snapshot dirty-signal and client cache follow.
+registry) and serves it per province on viewport entry. **Steps 1 (engine registry) and 2 (endpoint
++ snapshot dirty-signal) are BUILT**; the client cache (step 3) follows. Steps 2→3 are an
+expand/contract migration: the legacy `routePlots` broadcast is kept alongside the new feed until the
+client flips over, so every intermediate stays deployable.
 
 This is the follow-through on the owner's Phase-3 decision (see `docs/explorer-caravan.md`
 §Phase 3 "Route art"): **use the real Civ4 route art via `tools/nifbake`, not procedural
@@ -165,14 +167,23 @@ network size, and it *shrinks* the snapshot (a short id list replaces the ≤512
   road-builders call `recordRoute`). The layer now lives on the pool, so it survives band death and
   is authoritative per province. Behavioural no-op: the existing `trailedPlots`/`routePlots`
   snapshot path is left in place until step 2 swaps the server over.
-- **Step 2 — endpoint + dirty signal.** A session/province-scoped controller reading the registry
-  (gzipped like `PlotController`, but **not** `immutable`-cached — keyed by the province's
-  `routeRev`). `Snapshots.build` drops `collectRoutePlots`/`routePlots` and emits the `routeDirty`
-  id list instead; `RoutePlotView` is retired.
-- **Step 3 — client cache.** A per-province route cache in `plots.mjs`/`routes.mjs` filled on
-  viewport entry and invalidated for in-view provinces named in `routeDirty`. `drawRoutes` (which
-  already maps `q.route → tier`) consumes it unchanged. A cache-invalidation unit test rides the
-  `web-unit-tests-wanted` convention (`node --test web/js/`).
+- **Step 2 — endpoint + dirty signal (BUILT).** `RouteController` serves `GET
+  /api/sessions/{sid}/routes/{provinceId}` → a `ProvinceRoutes(provinceId, rev, plots)` JSON body,
+  `no-cache` (routes are per-session mutable, unlike the immutably-cached plot grid), read off the
+  engine registry via `GameSession.plotPoolIfPresent` — a province with no pool answers an empty
+  layer rather than paying its generation. `ProvincePlotPool.routeSnapshot()` reads the plots and
+  their `rev` atomically so a client deduping on `rev` never stores a version newer than the plots it
+  holds. The engine tracks per-province dirtiness (`GameSession.markRouteDirty`, fed by
+  `MarchingCaravan.layTrail` and by a pool born pre-paved) and `HostedSession.emit` drains it into
+  the snapshot's `routeDirty` id list. Expand/contract: `SessionSnapshot.routePlots` and
+  `collectRoutePlots` are **kept** so the current client still renders; step 3 removes them. Covered
+  by `ServerApiTest.routeFeedServesAProvincesStandingLayerAndTheSnapshotFlagsItDirty`.
+- **Step 3 — client cache + contract.** A per-province route cache in `plots.mjs`/`routes.mjs` filled
+  on viewport entry from the new endpoint and invalidated for in-view provinces named in
+  `routeDirty`; `drawRoutes` (which already maps `q.route → tier`) consumes it, extended with the
+  world-space cross-province `neighbourMask` below. Then **contract**: drop `routePlots` /
+  `collectRoutePlots` / the snapshot field / `mergeRoutePlots`. A cache-invalidation unit test rides
+  the `web-unit-tests-wanted` convention (`node --test web/js/`).
 
 ### Roads must connect across province boundaries (like rivers)
 

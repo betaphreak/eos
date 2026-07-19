@@ -636,9 +636,12 @@ public abstract class MarchingCaravan extends Caravan {
 					trailedPlots.remove(0);
 				laid = true;
 			}
-		// a new route changes route-aware move costs, so drop the province's cached corridors
-		if (laid)
+		// a new route changes route-aware move costs, so drop the province's cached corridors; and
+		// flag the province so the next snapshot tells clients to refetch its route layer
+		if (laid) {
 			pool.invalidateCorridorCache();
+			session().markRouteDirty(getProvinceId());
+		}
 	}
 
 	// strike the camp at dawn: free the plot the band occupied overnight

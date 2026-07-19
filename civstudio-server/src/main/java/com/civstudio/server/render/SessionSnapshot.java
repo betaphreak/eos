@@ -27,9 +27,17 @@ import java.util.List;
  * @param caravans   the wandering bands' projections
  * @param log        the event-log lines emitted since the previous frame (the live log bar's feed)
  * @param routePlots the plots that carry a route (trails the bands pioneered) — the live per-plot
- *                   route data the draw layer stamps (gap B, {@code docs/route-rendering.md})
+ *                   route data the draw layer stamps (the legacy per-band broadcast channel, being
+ *                   replaced by the viewport-windowed feed; kept until the client flips over —
+ *                   {@code docs/route-rendering.md} §Viewport-windowed route persistence)
+ * @param routeDirty the ids of provinces whose route layer changed since the previous frame — the
+ *                   signal a client uses to refetch only its in-view provinces from {@code
+ *                   GET /api/sessions/{id}/routes/{provinceId}}. Bounded (bands touch a handful of
+ *                   provinces per day); a dropped frame just delays a refetch (self-heals). See
+ *                   {@code docs/route-rendering.md} §Viewport-windowed route persistence
  */
 public record SessionSnapshot(String sessionId, long seed, String scenario, String clockState,
 		String outcome, String endReason, long tick, String date, List<ColonyView> colonies,
-		List<CaravanView> caravans, List<LogLine> log, List<RoutePlotView> routePlots) {
+		List<CaravanView> caravans, List<LogLine> log, List<RoutePlotView> routePlots,
+		List<Integer> routeDirty) {
 }

@@ -176,33 +176,51 @@ public final class ProvincePlotPool {
 	 */
 	public void recordRoute(Plot plot) {
 		assert plot.routeType() != null : "recordRoute called before layRoute";
-		routedPlots.add(plot);
-		routeRev++;
+		// synchronized because the route feed reads this off the request thread while the sim thread
+		// lays trails; the set doubles as the monitor guarding it and routeRev (see routedPlots()).
+		synchronized (routedPlots) {
+			routedPlots.add(plot);
+			routeRev++;
+		}
 	}
 
 	/**
-	 * The plots of this province that carry a route — the whole standing network, in first-laid
-	 * order. This is the authoritative layer the viewport-windowed route feed serves per province
-	 * (docs/route-rendering.md); it survives band dissolution (unlike {@link
-	 * com.civstudio.agent.MarchingCaravan#trailedPlots()}). Returns a snapshot copy, safe to read
-	 * between ticks while the sim thread may lay more.
+	 * A consistent read of this province's route layer — its routed plots (the whole standing
+	 * network, in first-laid order) paired with the {@code rev} they were read at, taken atomically
+	 * under one lock so the two never disagree even as the sim thread lays more. This is what the
+	 * viewport-windowed route feed serves per province (docs/route-rendering.md); the layer survives
+	 * band dissolution (unlike {@link com.civstudio.agent.MarchingCaravan#trailedPlots()}).
 	 *
-	 * @return a copy of the routed plots, in the order they were first laid
+	 * @return a snapshot of the routed plots and the route revision, safe to read off the sim thread
 	 */
-	public List<Plot> routedPlots() {
-		return new ArrayList<>(routedPlots);
+	public RouteSnapshot routeSnapshot() {
+		synchronized (routedPlots) {
+			return new RouteSnapshot(routeRev, new ArrayList<>(routedPlots));
+		}
 	}
 
 	/**
-	 * A monotonic version stamp for this province's route layer, bumped on every {@link
-	 * #recordRoute}. The render snapshot advertises the provinces whose rev advanced so a client
-	 * refetches only in-view provinces whose routes actually changed. Seeded urban pre-paving does
-	 * not bump it (a first-view fetch carries that regardless).
+	 * Whether this province carries any route at all — a cheap check used to decide whether a
+	 * freshly-built (possibly pre-paved) pool should notify viewing clients (see {@link
+	 * GameSession#provincePlotPool}).
 	 *
-	 * @return the current route revision
+	 * @return {@code true} if at least one plot carries a route
 	 */
-	public int routeRev() {
-		return routeRev;
+	public boolean hasRoutes() {
+		synchronized (routedPlots) {
+			return !routedPlots.isEmpty();
+		}
+	}
+
+	/**
+	 * A consistent snapshot of a province's route layer — the routed plots and the {@code rev} they
+	 * were read at, taken together so a client that dedupes redundant fetches on {@code rev} never
+	 * stores a rev newer than the plots it holds.
+	 *
+	 * @param rev   the route revision at the read
+	 * @param plots the routed plots (a copy the caller owns), in first-laid order
+	 */
+	public record RouteSnapshot(int rev, List<Plot> plots) {
 	}
 
 	/** All plots of the province (free and claimed), an unmodifiable view. */
