@@ -10,6 +10,7 @@ import "./js/core.mjs";
 import "./js/plots.mjs";
 import "./js/labels.mjs";
 import "./js/main.mjs";
+import "./js/colony-detail.mjs";   // top-bar vitals → click a figure → colony composition rail
 import { boot } from "./js/panel.mjs";
 import { initTechTree } from "./js/techtree.mjs";
 import { initShortcuts } from "./js/shortcuts.mjs";

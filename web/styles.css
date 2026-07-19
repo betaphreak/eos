@@ -924,10 +924,15 @@ table.cmp tr.click:hover td { background: var(--line-soft); }
 .live-vitals { display: inline-flex; align-items: center; gap: 9px; flex-wrap: wrap;
   font: 600 11.5px ui-monospace, "Cascadia Code", Consolas, monospace; font-variant-numeric: tabular-nums;
   color: var(--ink); }
-.live-vitals .lv { display: inline-flex; align-items: center; gap: 3px; cursor: default; }
+/* each figure opens the colony composition rail (colony-detail.mjs) — clickable, brightening on hover */
+.live-vitals .lv { display: inline-flex; align-items: center; gap: 3px; cursor: pointer; border-radius: 4px;
+  padding: 1px 2px; transition: color .12s, background .12s; }
+.live-vitals .lv:hover { color: var(--accent); background: rgba(190, 205, 230, .10); }
 .live-vitals .lv-i { font-family: system-ui, "Segoe UI Emoji", sans-serif; opacity: .8; font-size: 11px; }
-/* connection state ("connecting…") holds the same strip until the first snapshot replaces it */
-.live-vitals .lv-status { color: var(--ink-faint); font-style: italic; }
+/* connection state ("connecting…") holds the same strip until the first snapshot replaces it — not a
+   figure, so it is not a click target */
+.live-vitals .lv-status { color: var(--ink-faint); font-style: italic; cursor: default; }
+.live-vitals .lv-status:hover { color: var(--ink-faint); background: none; }
 /* the pulsing dot heading the province rail's inline live-colony block */
 .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: inline-block;
   margin-right: 6px; animation: livepulse 2s ease-in-out infinite; }

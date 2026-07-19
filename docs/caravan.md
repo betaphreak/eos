@@ -435,6 +435,15 @@ A wandering band's leader is now **mortal**, and its makeup is **inspectable** f
   re-resolved by id each snapshot (live header, refetch on makeup change, deselect when the band
   settles/dissolves). `MarchFollowing.members()`/`remove()` are the new engine seams the roster and
   succession read.
+- **The settlement counterpart (realized 2026-07-19).** The same panel shape now serves the colony:
+  `GET /api/sessions/{sid}/colony` (`ColonyController` → `ColonyProjections` → `ColonyDetail`) projects
+  the POV colony's **colony-average skill profile** (across household heads) + the **household roster**
+  (ruler and nobles first, then laborers, each class ranked by its head's ablest skill, the ruler
+  badged). Clicking any figure in the top bar's live-vitals strip (`#liveVitals`, a delegated click on
+  the persistent container) opens it in the right rail (`web/js/colony-detail.mjs`) — header + vitals
+  live off each snapshot's `ColonyView`, skills + roster lazy-fetched and refetched only when the
+  makeup key (`population|nobles|poolSize`) changes. A colony and a province/band are mutually
+  exclusive rail subjects.
 
 ## Caravan types (realized 2026-07-12)
 
