@@ -27,8 +27,28 @@
 > upsert uniformly. ~4249 relation targets are unresolved-by-design (portals to filtered provinces;
 > building/bonus refs to techs gated out of the kept horizon — the engine ignores these too).
 > **DEFERRED still:** `place-name` (GeoNames), full all-race `name-pool` (seeds human+harimari only),
-> `era-modifiers`/`rank-ladder` single types (no JSON source). **Not yet done:** the engine
-> `WorldSource` read path + `/api/world-bundle` (Phase 4), cutover/deleting `generated/` (Phase 5).
+> `era-modifiers`/`rank-ladder` single types (no JSON source).
+>
+> **Phase 4 STARTED (2026-07-19) — the `/api/world-bundle` endpoint (studio side).** A custom
+> collectionless route (`studio/src/api/world-bundle/`) serves one gzipped, version-stamped,
+> **PATH-KEYED** bundle: `bundle.resources["/map/provinces.json"]` is byte-for-byte what the engine
+> reads from that classpath resource today, so the engine's `WorldSource.open(path)` just serializes
+> `resources[path]` and every Jackson parser is unchanged. The projection **reverses `seed.js`** (Strapi
+> attrs → committed keys, relations → natural keys). This pass covers the **WorldMap subsystem** (the 11
+> `map/*.json` + `terrains`/`unit-combats`), **verified faithful** against the committed JSON by
+> `studio/scripts/verify-bundle.js` — all datasets `mismatch=0`, incl. the relational province hub (5268
+> provinces, every relation reversed) and the geo hierarchy. Gated by a `WORLD_BUNDLE_TOKEN` shared
+> secret (open when unset, for dev). **Finding:** committed `areas.json` references 1563 phantom province
+> ids absent from `provinces.json` (export cruft); relations can't represent them, so the normalized
+> store correctly drops them (the seeder did too) — the bundle is cleaner than the file, behavior-neutral
+> pending the engine-side check. **Next (Phase 4 cont.):** project the remaining engine datasets (tech +
+> overlays, TerrainRegistry detail features/bonuses/improvements/routes, units, buildings, feasts,
+> region-earth-map, human-names); then the ENGINE `WorldSource` seam — an `InputStream open(String
+> path)` interface threaded into the ~10 independent `getResourceAsStream + MAPPER.readValue` loaders
+> (WorldMap, TerrainRegistry, TechTree, UnitCatalog, LiturgicalCalendar, …; there is NO shared resource
+> abstraction today), with `ClasspathWorldSource` (behavior-neutral default) + `StrapiWorldSource` (JDK
+> HttpClient) + `FixtureWorldSource` (snapshot, for `mvn test`). **Not yet done:** that engine seam;
+> cutover/deleting `generated/` (Phase 5).
 >
 > **Naming pass (2026-07-18):** collection-type names follow **philosophy A** — mirror the
 > source/engine vocabulary (`bonus`, `feature`, `improvement`, `area`, `adjacency` stay as the C2C/EU4
