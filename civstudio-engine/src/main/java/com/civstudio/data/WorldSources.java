@@ -26,9 +26,4 @@ public final class WorldSources {
 	public static void set(WorldSource source) {
 		current = (source != null) ? source : new ClasspathWorldSource();
 	}
-
-	/** Restore the classpath default (for test teardown). */
-	public static void reset() {
-		current = new ClasspathWorldSource();
-	}
 }

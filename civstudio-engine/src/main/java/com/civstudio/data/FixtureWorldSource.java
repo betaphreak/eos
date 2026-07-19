@@ -1,5 +1,6 @@
 package com.civstudio.data;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -8,10 +9,12 @@ import java.util.zip.GZIPInputStream;
 import tools.jackson.databind.JsonNode;
 
 /**
- * A {@link BundleWorldSource} that loads the world bundle from a saved snapshot file (plain
- * {@code .json} or gzipped {@code .json.gz}). This is the offline / {@code mvn test} contract: tests
- * and offline dev boot the engine from a cached bundle with no Strapi reachable. The snapshot is a
- * gitignored/CI-produced artifact, not committed source-of-truth.
+ * A {@link BundleWorldSource} that loads the world bundle from a saved snapshot (plain {@code .json}
+ * or gzipped {@code .json.gz}). This is the offline / {@code mvn test} contract: tests and offline dev
+ * boot the engine from a cached bundle with no Strapi reachable. The snapshot is either the
+ * <b>committed engine test fixture</b> ({@code src/test/resources/world-bundle.json.gz}, loaded from
+ * the classpath by {@link #fromClasspath} — see {@code FixtureWorldSourceInstaller}) or an out-of-tree
+ * file (a CI/offline artifact, loaded via the {@link #FixtureWorldSource(Path) Path} constructor).
  */
 public final class FixtureWorldSource extends BundleWorldSource {
 
@@ -29,23 +32,28 @@ public final class FixtureWorldSource extends BundleWorldSource {
 	 * bootstrap that installs the source, so it cannot depend on the source already being set.
 	 */
 	public static FixtureWorldSource fromClasspath(String resource) {
-		try (InputStream raw = FixtureWorldSource.class.getResourceAsStream(resource)) {
-			if (raw == null)
-				throw new IllegalStateException("world-bundle snapshot not on classpath: " + resource);
-			try (InputStream in = resource.endsWith(".gz") ? new GZIPInputStream(raw) : raw) {
-				return new FixtureWorldSource(parse(in));
-			}
-		} catch (java.io.IOException e) {
+		InputStream raw = FixtureWorldSource.class.getResourceAsStream(resource);
+		if (raw == null)
+			throw new IllegalStateException("world-bundle snapshot not on classpath: " + resource);
+		try {
+			return new FixtureWorldSource(decode(raw, resource.endsWith(".gz")));
+		} catch (IOException e) {
 			throw new IllegalStateException("world-bundle snapshot read failed: " + resource, e);
 		}
 	}
 
 	private static JsonNode read(Path snapshot) {
-		try (InputStream raw = Files.newInputStream(snapshot);
-				InputStream in = snapshot.toString().endsWith(".gz") ? new GZIPInputStream(raw) : raw) {
-			return parse(in);
-		} catch (java.io.IOException e) {
+		try {
+			return decode(Files.newInputStream(snapshot), snapshot.toString().endsWith(".gz"));
+		} catch (IOException e) {
 			throw new IllegalStateException("world-bundle snapshot read failed: " + snapshot, e);
+		}
+	}
+
+	/** Parse the bundle from a raw stream, gunzipping first when {@code gzipped}. Closes {@code raw}. */
+	private static JsonNode decode(InputStream raw, boolean gzipped) throws IOException {
+		try (InputStream in = gzipped ? new GZIPInputStream(raw) : raw) {
+			return parse(in);
 		}
 	}
 }
