@@ -2,26 +2,22 @@
  * world-bundle projection — normalized Strapi content → the FLAT per-dataset shapes the engine's
  * committed exporter JSON uses (docs/studio-datamodel-rebuild-plan.md, Phase 4).
  *
- * The bundle is PATH-KEYED: bundle.resources["/map/provinces.json"] is exactly what the engine reads
- * from the classpath resource `/map/provinces.json` today. So the engine's WorldSource seam just does
- * open(path) → serialize(resources[path]) and every existing Jackson parser is unchanged.
+ * PATH-KEYED: bundle.resources["/map/provinces.json"] is exactly what the engine reads from the
+ * classpath resource `/map/provinces.json` today, so the engine's WorldSource.open(path) just
+ * serializes resources[path] and every Jackson parser is unchanged.
  *
- * The transforms REVERSE scripts/seed.js: seed.js renamed committed keys → Strapi attrs (id→key,
- * lat→latitude, base_tax→baseTax, foreign keys → relations); here we rename back and resolve relations
- * to their natural keys. Faithfulness is verifiable by diffing bundle output against generated/*.json.
- *
- * Coverage this pass: the WorldMap subsystem (map/*.json) + the two trivial leaves terrains /
- * unit-combats. TODO(next): tech (techs + overlays), TerrainRegistry detail (features/bonuses/
- * improvements/routes), units, buildings, recipes/housing/tier1, feasts, region-earth-map, human-names.
+ * Transforms REVERSE scripts/seed.js: Strapi attrs → committed keys, relations → natural keys, and the
+ * numeric/enum coercions seed.js applied (era prefix, string↔int, bool↔"1"/"0"). Some committed fields
+ * the schema doesn't model are intentionally dropped (tech iAsset/Quote-key/SoundMP); the bundle is the
+ * modeled subset. Faithfulness is checked by scripts/verify-bundle.js against generated/*.json.
  */
 
-// `any` on the UID: these are runtime-valid content-type UIDs, but Strapi's documents() wants a UID
-// *literal* type it can't infer from a computed string, so we opt out of that overload's typing.
 const uid = (n: string): any => `api::${n}.${n}`;
-/** Drop null/undefined so a projected record matches the committed JSON's present-keys (clean diff). */
 const clean = (o: any) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null));
+const ks = (arr: any[], f = 'key') => (arr || []).map((x: any) => x[f]); // relation array → natural-key list
+const str = (v: any) => (v === null || v === undefined ? undefined : String(v)); // committed keeps these as strings
+const bit = (v: any) => (v === undefined || v === null ? undefined : v ? '1' : '0'); // committed bools are "1"/"0"
 
-/** Page through every row of a collection (draftAndPublish is off, so no status juggling). */
 async function all(u: any, opts: any = {}): Promise<any[]> {
   const out: any[] = [];
   const PAGE = 2000;
@@ -45,12 +41,31 @@ export default {
   },
 
   async resources() {
-    const [countries, cultures, religions, tradegoods, areas, regions, superregions,
-           provinces, adjacencies, edges, portals, terrains, unitCombats] = await Promise.all([
-      this.countries(), this.cultures(), this.religions(), this.tradegoods(),
-      this.areas(), this.regions(), this.superregions(), this.provinces(),
-      this.adjacencies(), this.edges(), this.portals(), this.terrains(), this.unitCombats(),
+    const [
+      countries, cultures, religions, tradegoods, areas, regions, superregions, provinces,
+      adjacencies, edges, portals, terrains, features, bonusesAll, improvements, routes,
+      techs, unitCombats, units, buildings, recipes, housing, resourceSources, routeModels,
+      terrainArt, feastsHuman, feastsHarimari, humanNames, regionEarthMap,
+    ] = await Promise.all([
+      this.countries(), this.cultures(), this.religions(), this.tradegoods(), this.areas(),
+      this.regions(), this.superregions(), this.provinces(), this.adjacencies(), this.edges(),
+      this.portals(), this.terrains(), this.features(), this.bonuses(), this.improvements(),
+      this.routes(), this.techs(), this.unitCombats(), this.units(), this.buildings(),
+      this.recipes(), this.housing(), this.resourceSources(), this.routeModels(), this.terrainArt(),
+      this.feasts('human'), this.feasts('harimari'), this.namePools('human'), this.regionEarthMap(),
     ]);
+
+    // bonus is one collection; committed splits it into base bonuses.json vs manufactured-bonuses.json.
+    // The files share no types and have disjoint class sets — manufactured-bonuses.json holds the
+    // MANUFACTURED and WONDER classes; bonuses.json holds CROP/LUXURY/PRODUCTION/STRATEGIC/… — so split
+    // by class set.
+    const isManuf = (b: any) => b.bonusClass === 'BONUSCLASS_MANUFACTURED' || b.bonusClass === 'BONUSCLASS_WONDER';
+    const manufactured = bonusesAll.filter(isManuf);
+    const baseBonuses = bonusesAll.filter((b: any) => !isManuf(b));
+    // building-unlocks / unit-unlocks are the inverse of prereqTech — reconstruct from the projections.
+    const buildingUnlocks = invertPrereq(buildings, 'id', (t, id) => ({ target: id, kind: 'UNLOCK' }));
+    const unitUnlocks = invertPrereq(units, 'id', (t, id) => ({ kind: 'UNLOCK', target: id }));
+
     return {
       '/map/countries.json': countries,
       '/map/cultures.json': cultures,
@@ -63,96 +78,159 @@ export default {
       '/map/adjacencies.json': adjacencies,
       '/map/edges.json': edges,
       '/map/portals.json': portals,
+      '/map/route-models.json': routeModels,
+      '/map/terrain-art.json': terrainArt,
       '/terrains.json': terrains,
+      '/features.json': features,
+      '/bonuses.json': baseBonuses,
+      '/manufactured-bonuses.json': manufactured,
+      '/improvements.json': improvements,
+      '/routes.json': routes,
+      '/techs.json': techs,
+      '/tech-effects.json': {}, // empty stub today
+      '/building-unlocks.json': buildingUnlocks,
+      '/unit-unlocks.json': unitUnlocks,
       '/unit-combats.json': unitCombats,
+      '/units.json': units,
+      '/buildings.json': buildings,
+      '/recipes.json': recipes,
+      '/housing.json': housing,
+      '/tier1-providers.json': resourceSources,
+      '/feasts.json': feastsHuman,
+      '/feasts-harimari.json': feastsHarimari,
+      '/human-names/male.json': humanNames.male,
+      '/human-names/female.json': humanNames.female,
+      '/human-names/dynasty.json': humanNames.dynasty,
+      '/geo/region-earth-map.json': regionEarthMap,
     };
   },
 
-  // ── relation-free leaves ──
-  async countries() {
-    return (await all(uid('country'), { fields: ['tag', 'name', 'color'] }))
-      .map((r) => clean({ tag: r.tag, name: r.name, color: r.color }));
-  },
-  async cultures() {
-    return (await all(uid('culture'), { fields: ['key', 'name', 'group', 'color'] }))
-      .map((r) => clean({ key: r.key, name: r.name, group: r.group, color: r.color }));
-  },
-  async religions() {
-    return (await all(uid('religion'), { fields: ['key', 'name', 'group', 'color'] }))
-      .map((r) => clean({ key: r.key, name: r.name, group: r.group, color: r.color }));
-  },
-  async tradegoods() {
-    return (await all(uid('trade-good'), { fields: ['key', 'name', 'color', 'category'] }))
-      .map((r) => clean({ key: r.key, name: r.name, color: r.color, category: r.category }));
-  },
-  async terrains() {
-    return (await all(uid('terrain'), { fields: ['key', 'yields', 'found', 'buildModifier', 'healthPercent', 'movement'] }))
-      .map((r) => clean({ type: r.key, yields: r.yields, bFound: r.found, buildModifier: r.buildModifier, healthPercent: r.healthPercent, movement: r.movement }));
-  },
-  async unitCombats() {
-    return (await all(uid('combat-class'), { fields: ['key', 'name', 'signatureSkill', 'categoryButton', 'earlyWithdrawChange', 'tauntChange', 'dodgeModifierChange', 'damageModifierChange', 'precisionModifierChange', 'captureResistanceModifierChange', 'forMilitary'] }))
-      .map((r) => clean({
-        id: r.key, name: r.name, signatureSkill: r.signatureSkill, categoryButton: r.categoryButton,
-        iEarlyWithdrawChange: r.earlyWithdrawChange, iTauntChange: r.tauntChange,
-        iDodgeModifierChange: r.dodgeModifierChange, iDamageModifierChange: r.damageModifierChange,
-        iPrecisionModifierChange: r.precisionModifierChange, iCaptureResistanceModifierChange: r.captureResistanceModifierChange,
-        bForMilitary: r.forMilitary,
-      }));
-  },
+  // ── geography leaves ──
+  async countries() { return (await all(uid('country'), { fields: ['tag', 'name', 'color'] })).map((r) => clean({ tag: r.tag, name: r.name, color: r.color })); },
+  async cultures() { return (await all(uid('culture'), { fields: ['key', 'name', 'group', 'color'] })).map((r) => clean({ key: r.key, name: r.name, group: r.group, color: r.color })); },
+  async religions() { return (await all(uid('religion'), { fields: ['key', 'name', 'group', 'color'] })).map((r) => clean({ key: r.key, name: r.name, group: r.group, color: r.color })); },
+  async tradegoods() { return (await all(uid('trade-good'), { fields: ['key', 'name', 'color', 'category'] })).map((r) => clean({ key: r.key, name: r.name, color: r.color, category: r.category })); },
 
-  // ── geography hierarchy (reverse the m2m relations to natural-key lists) ──
-  async areas() {
-    return (await all(uid('area'), { fields: ['key', 'name'], populate: { provinces: { fields: ['provinceId'] } } }))
-      .map((r) => clean({ key: r.key, name: r.name, provinces: (r.provinces || []).map((p: any) => p.provinceId) }));
-  },
-  async regions() {
-    return (await all(uid('region'), { fields: ['key', 'name'], populate: { areas: { fields: ['key'] } } }))
-      .map((r) => clean({ key: r.key, name: r.name, areas: (r.areas || []).map((a: any) => a.key) }));
-  },
-  async superregions() {
-    return (await all(uid('super-region'), { fields: ['key', 'name'], populate: { regions: { fields: ['key'] } } }))
-      .map((r) => clean({ key: r.key, name: r.name, regions: (r.regions || []).map((x: any) => x.key) }));
-  },
+  // ── geography hierarchy ──
+  async areas() { return (await all(uid('area'), { fields: ['key', 'name'], populate: { provinces: { fields: ['provinceId'] } } })).map((r) => clean({ key: r.key, name: r.name, provinces: ks(r.provinces, 'provinceId') })); },
+  async regions() { return (await all(uid('region'), { fields: ['key', 'name'], populate: { areas: { fields: ['key'] } } })).map((r) => clean({ key: r.key, name: r.name, areas: ks(r.areas) })); },
+  async superregions() { return (await all(uid('super-region'), { fields: ['key', 'name'], populate: { regions: { fields: ['key'] } } })).map((r) => clean({ key: r.key, name: r.name, regions: ks(r.regions) })); },
 
-  // ── the province hub (reverse relations to natural keys; neighbors → province ids) ──
   async provinces() {
     const rows = await all(uid('province'), {
       fields: ['provinceId', 'name', 'latitude', 'longitude', 'plots', 'waterPlots', 'type', 'continent', 'realm', 'winter', 'monsoon', 'climate', 'baseTax', 'baseProduction', 'baseManpower', 'city'],
-      populate: {
-        owner: { fields: ['tag'] }, controller: { fields: ['tag'] },
-        culture: { fields: ['key'] }, religion: { fields: ['key'] }, tradeGood: { fields: ['key'] },
-        area: { fields: ['key'] }, region: { fields: ['key'] }, neighbors: { fields: ['provinceId'] },
-      },
+      populate: { owner: { fields: ['tag'] }, controller: { fields: ['tag'] }, culture: { fields: ['key'] }, religion: { fields: ['key'] }, tradeGood: { fields: ['key'] }, area: { fields: ['key'] }, region: { fields: ['key'] }, neighbors: { fields: ['provinceId'] } },
     });
     return rows.map((r) => clean({
-      id: r.provinceId, name: r.name, lat: num(r.latitude), lon: num(r.longitude),
-      plots: r.plots, waterPlots: r.waterPlots, type: r.type,
-      region: r.region?.key, area: r.area?.key, continent: r.continent, realm: r.realm,
-      winter: r.winter, monsoon: r.monsoon, climate: r.climate,
-      owner: r.owner?.tag, controller: r.controller?.tag,
+      id: r.provinceId, name: r.name, lat: num(r.latitude), lon: num(r.longitude), plots: r.plots, waterPlots: r.waterPlots,
+      type: r.type, region: r.region?.key, area: r.area?.key, continent: r.continent, realm: r.realm,
+      winter: r.winter, monsoon: r.monsoon, climate: r.climate, owner: r.owner?.tag, controller: r.controller?.tag,
       culture: r.culture?.key, religion: r.religion?.key, trade_goods: r.tradeGood?.key,
-      base_tax: r.baseTax, base_production: r.baseProduction, base_manpower: r.baseManpower,
-      city: r.city || undefined,
-      neighbors: (r.neighbors || []).map((n: any) => n.provinceId).sort((a: number, b: number) => a - b),
+      base_tax: r.baseTax, base_production: r.baseProduction, base_manpower: r.baseManpower, city: r.city || undefined,
+      neighbors: ks(r.neighbors, 'provinceId'), // NOT sorted — edges.km[] is parallel to this order
     }));
   },
+  async adjacencies() { return (await all(uid('adjacency'), { fields: ['type', 'comment'], populate: { from: { fields: ['provinceId'] }, to: { fields: ['provinceId'] } } })).map((r) => clean({ from: r.from?.provinceId, to: r.to?.provinceId, type: r.type ?? '', comment: r.comment })); },
+  async edges() { return (await all(uid('province-edge'), { fields: ['provinceId', 'km'] })).map((r) => clean({ id: r.provinceId, km: r.km })); },
+  async portals() { return (await all(uid('province-portal'), { fields: ['provinceId', 'portals'] })).map((r) => clean({ id: r.provinceId, portals: r.portals })); },
 
-  // ── geometry sidecars ──
-  async adjacencies() {
-    return (await all(uid('adjacency'), { fields: ['type', 'comment'], populate: { from: { fields: ['provinceId'] }, to: { fields: ['provinceId'] } } }))
-      .map((r) => clean({ from: r.from?.provinceId, to: r.to?.provinceId, type: r.type ?? '', comment: r.comment }));
+  // ── terrain / plot reference ──
+  async terrains() { return (await all(uid('terrain'), { fields: ['key', 'yields', 'found', 'buildModifier', 'healthPercent', 'movement'] })).map((r) => clean({ type: r.key, yields: r.yields, bFound: r.found, buildModifier: r.buildModifier, healthPercent: r.healthPercent, movement: r.movement })); },
+  async features() {
+    return (await all(uid('feature'), { fields: ['key', 'yieldChanges', 'clearCost', 'requiresFlatlands', 'requiresRiver', 'healthPercent', 'growth', 'movement', 'appearance'], populate: { validTerrains: { fields: ['key'] } } }))
+      .map((r) => clean({ type: r.key, yieldChanges: r.yieldChanges, clearCost: r.clearCost, requiresFlatlands: r.requiresFlatlands, requiresRiver: r.requiresRiver, validTerrains: ks(r.validTerrains), healthPercent: r.healthPercent, growth: r.growth, movement: r.movement, appearance: r.appearance }));
   },
-  async edges() {
-    return (await all(uid('province-edge'), { fields: ['provinceId', 'km'] }))
-      .map((r) => clean({ id: r.provinceId, km: r.km }));
+  async bonuses() {
+    return (await all(uid('bonus'), {
+      fields: ['key', 'bonusClass', 'yieldChanges', 'health', 'happiness', 'minLatitude', 'maxLatitude', 'hills', 'flatlands', 'peaks', 'placementOrder', 'constAppearance', 'randApps', 'tilesPer', 'minAreaSize', 'groupRange', 'groupRand', 'techEra'],
+      populate: { techReveal: { fields: ['key'] }, techCityTrade: { fields: ['key'] }, validTerrains: { fields: ['key'] }, validFeatures: { fields: ['key'] }, validFeatureTerrains: { fields: ['key'] } },
+    })).map((r) => clean({
+      type: r.key, bonusClass: r.bonusClass, yieldChanges: r.yieldChanges, techReveal: r.techReveal?.key, techCityTrade: r.techCityTrade?.key,
+      health: r.health, happiness: r.happiness, minLatitude: r.minLatitude, maxLatitude: r.maxLatitude, hills: r.hills, flatlands: r.flatlands, peaks: r.peaks,
+      validTerrains: ks(r.validTerrains), validFeatures: ks(r.validFeatures), validFeatureTerrains: ks(r.validFeatureTerrains),
+      placementOrder: r.placementOrder, constAppearance: r.constAppearance, randApps: r.randApps, tilesPer: r.tilesPer, minAreaSize: r.minAreaSize, groupRange: r.groupRange, groupRand: r.groupRand, techEra: r.techEra,
+    }));
   },
-  async portals() {
-    return (await all(uid('province-portal'), { fields: ['provinceId', 'portals'] }))
-      .map((r) => clean({ id: r.provinceId, portals: r.portals }));
+  async improvements() {
+    return (await all(uid('improvement'), { fields: ['key', 'yieldChanges', 'hillsMakesValid', 'freshWaterMakesValid', 'buildCost', 'healthPercent', 'upgradeTime', 'culture', 'actsAsCity', 'techYieldChanges'], populate: { prereqTech: { fields: ['key'] }, validTerrains: { fields: ['key'] }, validFeatures: { fields: ['key'] }, upgradeType: { fields: ['key'] } } }))
+      .map((r) => clean({ type: r.key, yieldChanges: r.yieldChanges, prereqTech: r.prereqTech?.key, hillsMakesValid: r.hillsMakesValid, freshWaterMakesValid: r.freshWaterMakesValid, validTerrains: ks(r.validTerrains), validFeatures: ks(r.validFeatures), buildCost: r.buildCost, healthPercent: r.healthPercent, upgradeType: r.upgradeType?.key, upgradeTime: r.upgradeTime, culture: r.culture, actsAsCity: r.actsAsCity, techYieldChanges: r.techYieldChanges }));
+  },
+  async routes() {
+    return (await all(uid('route'), { fields: ['key', 'value', 'movement', 'flatMovement', 'advancedStartCost', 'seaTunnel', 'yields', 'trail'], populate: { bonusType: { fields: ['key'] } } }))
+      .map((r) => clean({ type: r.key, value: r.value, movement: r.movement, flatMovement: r.flatMovement, advancedStartCost: r.advancedStartCost, bonusType: r.bonusType?.key, seaTunnel: r.seaTunnel, yields: r.yields, trail: r.trail }));
+  },
+  async routeModels() {
+    return (await all(uid('route-model'), { fields: ['modelFileKey', 'modelFile', 'lateModelFile', 'animated', 'connections', 'modelConnections', 'rotations'], populate: { routeType: { fields: ['key'] } } }))
+      .map((r) => clean({ routeType: r.routeType?.key, modelFileKey: r.modelFileKey, modelFile: r.modelFile, lateModelFile: r.lateModelFile, animated: r.animated, connections: r.connections, modelConnections: r.modelConnections, rotations: r.rotations }));
+  },
+  async terrainArt() {
+    return (await all(uid('terrain-art'), { fields: ['artTag', 'path', 'grid', 'detail', 'layerOrder', 'alphaShader', 'blend'], populate: { terrain: { fields: ['key'] } } }))
+      .map((r) => clean({ terrain: r.terrain?.key, artTag: r.artTag, path: r.path, grid: r.grid, detail: r.detail, layerOrder: r.layerOrder, alphaShader: r.alphaShader, blend: r.blend }));
+  },
+
+  // ── tech tree + game definitions ──
+  async techs() {
+    return (await all(uid('tech'), { fields: ['key', 'name', 'help', 'quote', 'description', 'civilopedia', 'advisor', 'era', 'cost', 'gridX', 'gridY', 'trade', 'goodyTech', 'sound', 'button', 'flavors'], populate: { andPreReqs: { fields: ['key'] }, orPreReqs: { fields: ['key'] } } }))
+      .map((r) => clean({
+        Type: r.key, name: r.name, help: r.help, quote: r.quote, Description: r.description, Civilopedia: r.civilopedia,
+        Advisor: r.advisor, Era: r.era ? `C2C_ERA_${r.era}` : undefined, iCost: str(r.cost), iGridX: str(r.gridX), iGridY: str(r.gridY),
+        bTrade: bit(r.trade), bGoodyTech: bit(r.goodyTech), Sound: r.sound, Button: r.button, Flavors: r.flavors,
+        AndPreReqs: prereqNode(ks(r.andPreReqs)), OrPreReqs: prereqNode(ks(r.orPreReqs)),
+      }));
+  },
+  async unitCombats() {
+    return (await all(uid('combat-class'), { fields: ['key', 'name', 'signatureSkill', 'categoryButton', 'earlyWithdrawChange', 'tauntChange', 'dodgeModifierChange', 'damageModifierChange', 'precisionModifierChange', 'captureResistanceModifierChange', 'forMilitary'] }))
+      .map((r) => clean({ id: r.key, name: r.name, signatureSkill: r.signatureSkill, categoryButton: r.categoryButton, iEarlyWithdrawChange: r.earlyWithdrawChange, iTauntChange: r.tauntChange, iDodgeModifierChange: r.dodgeModifierChange, iDamageModifierChange: r.damageModifierChange, iPrecisionModifierChange: r.precisionModifierChange, iCaptureResistanceModifierChange: r.captureResistanceModifierChange, bForMilitary: r.forMilitary }));
+  },
+  async units() {
+    return (await all(uid('unit'), { fields: ['key', 'name', 'pedia', 'defaultUnitAI', 'caravanRole', 'domain', 'quality', 'bandSizeClass', 'moves', 'combat', 'builds', 'artDefineTag', 'button', 'special', 'species'], populate: { prereqTech: { fields: ['key'] }, obsoleteTech: { fields: ['key'] }, combatClass: { fields: ['key'] }, andTechs: { fields: ['key'] } } }))
+      .map((r) => clean({ id: r.key, name: r.name, pedia: r.pedia, prereqTech: r.prereqTech?.key, combatClass: r.combatClass?.key, defaultUnitAI: r.defaultUnitAI, caravanRole: r.caravanRole, domain: r.domain, iMoves: r.moves, iCombat: r.combat, obsoleteTech: r.obsoleteTech?.key, quality: r.quality, bandSizeClass: r.bandSizeClass, andTechs: ks(r.andTechs), artDefineTag: r.artDefineTag, button: r.button, builds: r.builds, special: r.special, species: r.species }));
+  },
+  async buildings() {
+    return (await all(uid('building'), { fields: ['key', 'name', 'pedia', 'category', 'artDefineTag', 'button', 'cost'], populate: { prereqTech: { fields: ['key'] }, andTechs: { fields: ['key'] } } }))
+      .map((r) => clean({ id: r.key, name: r.name, pedia: r.pedia, category: r.category, prereqTech: r.prereqTech?.key, andTechs: ks(r.andTechs), artDefineTag: r.artDefineTag, button: r.button, cost: str(r.cost) }));
+  },
+  async recipes() {
+    return (await all(uid('recipe'), { fields: ['key', 'river', 'freshWater'], populate: { bonus: { fields: ['key'] }, outputs: { fields: ['key'] }, prereqBonuses: { fields: ['key'] }, vicinityBonuses: { fields: ['key'] }, rawVicinityBonuses: { fields: ['key'] }, prereqTech: { fields: ['key'] }, obsoleteTech: { fields: ['key'] }, prereqBuildings: { fields: ['key'] }, prereqOrBuildings: { fields: ['key'] }, prereqOrTerrains: { fields: ['key'] }, prereqOrFeatures: { fields: ['key'] } } }))
+      .map((r) => clean({ type: r.key, outputs: ks(r.outputs), bonus: r.bonus?.key, prereqBonuses: ks(r.prereqBonuses), vicinityBonuses: ks(r.vicinityBonuses), rawVicinityBonuses: ks(r.rawVicinityBonuses), prereqTech: r.prereqTech?.key, obsoleteTech: r.obsoleteTech?.key, prereqBuildings: ks(r.prereqBuildings), prereqOrBuildings: ks(r.prereqOrBuildings), prereqOrTerrains: ks(r.prereqOrTerrains), prereqOrFeatures: ks(r.prereqOrFeatures), river: r.river, freshWater: r.freshWater }));
+  },
+  async housing() {
+    return (await all(uid('housing'), { fields: ['key', 'prereqPopulation', 'freshWater', 'autoBuild', 'health', 'happiness', 'yieldChanges', 'commerceChanges'], populate: { prereqTech: { fields: ['key'] }, obsoleteTech: { fields: ['key'] }, obsoletesToBuilding: { fields: ['key'] }, bonus: { fields: ['key'] }, prereqBonuses: { fields: ['key'] }, prereqBuildings: { fields: ['key'] }, prereqOrBuildings: { fields: ['key'] }, replacements: { fields: ['key'] }, prereqOrFeatures: { fields: ['key'] }, prereqOrTerrains: { fields: ['key'] } } }))
+      .map((r) => clean({ type: r.key, prereqTech: r.prereqTech?.key, obsoleteTech: r.obsoleteTech?.key, obsoletesToBuilding: r.obsoletesToBuilding?.key, prereqPopulation: r.prereqPopulation, freshWater: r.freshWater, autoBuild: r.autoBuild, bonus: r.bonus?.key, prereqBonuses: ks(r.prereqBonuses), prereqBuildings: ks(r.prereqBuildings), prereqOrBuildings: ks(r.prereqOrBuildings), prereqOrFeatures: ks(r.prereqOrFeatures), prereqOrTerrains: ks(r.prereqOrTerrains), replacements: ks(r.replacements), health: r.health, happiness: r.happiness, yieldChanges: r.yieldChanges, commerceChanges: r.commerceChanges }));
+  },
+  async resourceSources() {
+    return (await all(uid('resource-source'), { fields: ['key', 'gatherers'], populate: { output: { fields: ['key'] } } }))
+      .map((r) => clean({ type: r.key, output: r.output?.key, gatherers: r.gatherers }));
+  },
+
+  // ── calendar / naming ──
+  async feasts(race: string) {
+    return (await all(uid('feast'), { fields: ['month', 'day', 'name', 'race'] }))
+      .filter((r) => r.race === race)
+      .map((r) => clean({ month: r.month, day: r.day, name: r.name }));
+  },
+  async namePools(race: string) {
+    const rows = await all(uid('name-pool'), { fields: ['race', 'kind', 'names'] });
+    const pick = (kind: string) => (rows.find((r) => r.race === race && r.kind === kind) || {}).names || [];
+    return { male: pick('male'), female: pick('female'), dynasty: pick('dynasty') };
+  },
+  async regionEarthMap() {
+    const rem: any = await strapi.documents(uid('region-earth-map')).findFirst({});
+    // seed.js's rest-spread double-nested the map under regions.regions; un-nest defensively.
+    const inner = rem?.regions?.regions ?? rem?.regions ?? {};
+    return { regions: inner };
   },
 };
 
-/** decimal columns come back as strings from some drivers — coerce to number for lat/lon. */
-function num(v: any) {
-  return v === null || v === undefined ? undefined : typeof v === 'string' ? parseFloat(v) : v;
+// TECH prereq node: committed uses {PrereqTech: key} for one, {PrereqTech: [keys]} for many, omitted if none.
+function prereqNode(keys: string[]) {
+  if (!keys || keys.length === 0) return undefined;
+  return { PrereqTech: keys.length === 1 ? keys[0] : keys };
 }
+// building/unit unlock overlay = inverse of prereqTech: { TECH_X: [entry(TECH_X, id)] }.
+function invertPrereq(rows: any[], idField: string, entry: (tech: string, id: string) => any) {
+  const out: Record<string, any[]> = {};
+  for (const r of rows) if (r.prereqTech) (out[r.prereqTech] = out[r.prereqTech] || []).push(entry(r.prereqTech, r[idField]));
+  return out;
+}
+function num(v: any) { return v === null || v === undefined ? undefined : typeof v === 'string' ? parseFloat(v) : v; }

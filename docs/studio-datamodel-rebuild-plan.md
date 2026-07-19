@@ -34,20 +34,30 @@
 > **PATH-KEYED** bundle: `bundle.resources["/map/provinces.json"]` is byte-for-byte what the engine
 > reads from that classpath resource today, so the engine's `WorldSource.open(path)` just serializes
 > `resources[path]` and every Jackson parser is unchanged. The projection **reverses `seed.js`** (Strapi
-> attrs → committed keys, relations → natural keys). This pass covers the **WorldMap subsystem** (the 11
-> `map/*.json` + `terrains`/`unit-combats`), **verified faithful** against the committed JSON by
-> `studio/scripts/verify-bundle.js` — all datasets `mismatch=0`, incl. the relational province hub (5268
-> provinces, every relation reversed) and the geo hierarchy. Gated by a `WORLD_BUNDLE_TOKEN` shared
-> secret (open when unset, for dev). **Finding:** committed `areas.json` references 1563 phantom province
-> ids absent from `provinces.json` (export cruft); relations can't represent them, so the normalized
-> store correctly drops them (the seeder did too) — the bundle is cleaner than the file, behavior-neutral
-> pending the engine-side check. **Next (Phase 4 cont.):** project the remaining engine datasets (tech +
-> overlays, TerrainRegistry detail features/bonuses/improvements/routes, units, buildings, feasts,
-> region-earth-map, human-names); then the ENGINE `WorldSource` seam — an `InputStream open(String
-> path)` interface threaded into the ~10 independent `getResourceAsStream + MAPPER.readValue` loaders
-> (WorldMap, TerrainRegistry, TechTree, UnitCatalog, LiturgicalCalendar, …; there is NO shared resource
-> abstraction today), with `ClasspathWorldSource` (behavior-neutral default) + `StrapiWorldSource` (JDK
-> HttpClient) + `FixtureWorldSource` (snapshot, for `mvn test`). **Not yet done:** that engine seam;
+> attrs → committed keys, relations → natural keys). The endpoint now covers **ALL 37 datasets** the
+> engine + server read — the 13 `map/*.json`, terrains/features/bonuses(+manufactured)/improvements/
+> routes, techs (+ tech-effects/building-unlocks/unit-unlocks overlays), unit-combats/units/buildings,
+> recipes/housing/tier1-providers, feasts (+harimari), human-names, region-earth-map — **every one
+> verified faithful** by `studio/scripts/verify-bundle.js` (per-record canonical diff vs committed).
+> Gated by a `WORLD_BUNDLE_TOKEN` shared secret (open when unset, for dev). **Reversal specifics:** the
+> single `bonus` collection splits back to `bonuses.json` vs `manufactured-bonuses.json` by class set
+> (manufactured file = MANUFACTURED+WONDER); `building-unlocks`/`unit-unlocks` are RECONSTRUCTED as the
+> inverse of `prereqTech`; tech re-adds the `C2C_ERA_` prefix + string/bool coercions; `edges.km[]` is
+> parallel to `province.neighbors` so neighbor order is preserved (verified order-sensitively). **Known
+> benign deltas** (documented in verify output): the bundle drops committed fields the schema doesn't
+> model (tech `iAsset`/`Quote`-key/`SoundMP` + ~40 unused C2C flags; building `help`), and — the big
+> one — **phantom refs**: C2C data references a broader universe than the kept collections (committed
+> `areas.json` has 1563 phantom province ids; QUARRY's validFeatures are 0-of-18 in the 11-feature set;
+> recipe prereqBuildings ref `BUILDING_FACTORY` absent from buildings.json), which relations can't hold,
+> so the store/bundle correctly drop them (the verify strips them from committed too — behavior-neutral,
+> the engine can't resolve them either). **DEFERRED from the bundle:** the geonames subset (place-name)
+> + non-human/harimari name pools (per the seeder scope). **Next (Phase 4 cont.):** the ENGINE
+> `WorldSource` seam — an `InputStream open(String path)` interface threaded into the ~10 independent
+> `getResourceAsStream + MAPPER.readValue` loaders (WorldMap, TerrainRegistry, TechTree, UnitCatalog,
+> LiturgicalCalendar, …; there is NO shared resource abstraction today), with `ClasspathWorldSource`
+> (behavior-neutral default) + `StrapiWorldSource` (JDK HttpClient) + `FixtureWorldSource` (snapshot,
+> for `mvn test`); at integration, confirm the modeled subset covers the engine's actual field needs by
+> running the sim through StrapiWorldSource and comparing behavior. **Not yet done:** that engine seam;
 > cutover/deleting `generated/` (Phase 5).
 >
 > **Naming pass (2026-07-18):** collection-type names follow **philosophy A** — mirror the
