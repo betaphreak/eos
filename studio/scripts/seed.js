@@ -20,6 +20,7 @@
 
 const { createStrapi, compileStrapi } = require('@strapi/strapi');
 const { readFileSync } = require('node:fs');
+const { randomBytes } = require('node:crypto');
 const { join } = require('node:path');
 
 const RES = join(__dirname, '..', '..', 'civstudio-engine', 'src', 'main', 'resources');
@@ -50,6 +51,82 @@ async function pool(items, size, fn) {
       }
     }),
   );
+}
+
+// An opaque 24-char Strapi documentId (the value is arbitrary — only uniqueness matters for bulk rows).
+const genDocId = () => randomBytes(12).toString('hex');
+
+/**
+ * BULK seed path (--bulk): the per-row Document Service does ~65k round-trips (crippling over a remote
+ * DB's latency). Instead, wipe then raw-INSERT via knex — PHASE A batch-inserts each collection's rows
+ * in a few statements (building natural-key → int-id maps by re-selecting), PHASE B batch-inserts the
+ * relation `_lnk` rows resolved through those maps (with order columns). ~65k round-trips → a few
+ * hundred. Assumes a clean slate, so it always wipes first. The small loose bits (feast/name-pool/single
+ * types) stay on the Document Service path (main()) — they're trivial.
+ */
+async function bulkSeed(app, specs) {
+  await wipe(app);
+  const db = app.db.connection;
+  const now = new Date();
+  const idMaps = {}; // name → Map(naturalKey → int id)
+
+  // PHASE A — scalars
+  for (const spec of specs) {
+    const meta = app.db.metadata.get(uid(spec.name));
+    const keyOf = spec.keyOf || ((r) => r[spec.key]);
+    spec.rows = spec.load();
+    const rows = spec.rows.map((r) => {
+      const dbRow = {};
+      const set = (attrName, val) => { const a = meta.attributes[attrName]; if (a) dbRow[a.columnName] = val; };
+      set('documentId', genDocId()); set('createdAt', now); set('updatedAt', now); set('publishedAt', now); set('locale', 'en');
+      const scalars = clean({ [spec.key]: keyOf(r), ...spec.scalars(r) });
+      for (const [attr, val] of Object.entries(scalars)) {
+        const a = meta.attributes[attr];
+        if (a && a.columnName) dbRow[a.columnName] = a.type === 'json' ? JSON.stringify(val) : val;
+      }
+      return dbRow;
+    });
+    if (rows.length) await db.batchInsert(meta.tableName, rows, 1000);
+    const keyCol = meta.attributes[spec.key].columnName;
+    const m = new Map();
+    for (const row of await db(meta.tableName).select('id', keyCol)) m.set(row[keyCol], row.id);
+    idMaps[spec.name] = m;
+    console.log(`[bulkA] ${spec.name.padEnd(16)} ${String(rows.length).padStart(5)}`);
+  }
+
+  // PHASE B — relation link tables
+  const R = {
+    one: (name, key) => (key === null || key === undefined ? undefined : idMaps[name] && idMaps[name].get(key)),
+    many: (name, keys) => (keys || []).map((k) => idMaps[name] && idMaps[name].get(k)).filter((x) => x != null),
+  };
+  for (const spec of specs) {
+    if (!spec.rel) continue;
+    const meta = app.db.metadata.get(uid(spec.name));
+    const keyOf = spec.keyOf || ((r) => r[spec.key]);
+    const buckets = {}; // linkTable → { rows, inv: Map(targetId → count) }
+    for (const r of spec.rows) {
+      const sourceId = idMaps[spec.name].get(keyOf(r));
+      if (sourceId == null) continue;
+      const rel = spec.rel(r, R);
+      for (const [field, target] of Object.entries(rel)) {
+        const a = meta.attributes[field];
+        const jt = a && a.joinTable;
+        if (!jt) continue;
+        const bucket = buckets[jt.name] || (buckets[jt.name] = { rows: [], inv: new Map(), jt });
+        const targets = Array.isArray(target) ? target : target != null ? [target] : [];
+        targets.forEach((tid, i) => {
+          const row = { [jt.joinColumn.name]: sourceId, [jt.inverseJoinColumn.name]: tid };
+          if (jt.orderColumnName) row[jt.orderColumnName] = i + 1;
+          if (jt.inverseOrderColumnName) { const c = (bucket.inv.get(tid) || 0) + 1; bucket.inv.set(tid, c); row[jt.inverseOrderColumnName] = c; }
+          bucket.rows.push(row);
+        });
+      }
+    }
+    for (const [linkTable, bucket] of Object.entries(buckets)) {
+      if (bucket.rows.length) await db.batchInsert(linkTable, bucket.rows, 2000);
+      console.log(`[bulkB] ${spec.name.padEnd(16)} ${linkTable.padEnd(30)} ${bucket.rows.length}`);
+    }
+  }
 }
 
 /** TRUNCATE every api::* content table (CASCADE truncates their relation link tables too). */
@@ -216,8 +293,11 @@ async function main() {
   // for a CLEAN reseed. Needed when a DB carries stale rows the idempotent upsert wouldn't remove
   // (e.g. prod still holding old-model provinces/countries). Only touches api::* tables — admin/plugin
   // tables are untouched.
-  if (process.argv.includes('--wipe')) await wipe(app);
+  // --bulk (raw SQL, ~100x fewer round-trips — for a remote/high-latency DB) always wipes itself.
+  const bulk = process.argv.includes('--bulk');
+  if (process.argv.includes('--wipe') && !bulk) await wipe(app);
 
+  const specs = buildSpecs();
   const maps = {}; // name → Map(naturalKey → documentId)
   let misses = 0;
   const errors = []; // {phase, name, key, msg}
@@ -254,58 +334,62 @@ async function main() {
     return out;
   }
 
-  // PHASE A — scalars, build key→documentId maps
-  const specs = buildSpecs();
-  for (const spec of specs) {
-    const u = uid(spec.name);
-    const keyOf = spec.keyOf || ((r) => r[spec.key]);
-    spec.rows = spec.load();
-    const existing = new Map();
-    for (const d of await findAll(u, [spec.key])) existing.set(d[spec.key], d.documentId);
-    const map = new Map();
-    let created = 0;
-    let updated = 0;
-    await pool(spec.rows, CONC, async (row) => {
-      const key = keyOf(row);
-      const data = clean({ [spec.key]: key, ...spec.scalars(row) });
-      try {
-        const docId = existing.get(key);
-        if (docId) {
-          await app.documents(u).update({ documentId: docId, data });
-          map.set(key, docId);
-          updated++;
-        } else {
-          const doc = await app.documents(u).create({ data });
-          map.set(key, doc.documentId);
-          created++;
+  if (bulk) {
+    // Fast path: raw bulk INSERT (see bulkSeed). The loose bits below still use the Document Service.
+    await bulkSeed(app, specs);
+  } else {
+    // PHASE A — scalars, build key→documentId maps
+    for (const spec of specs) {
+      const u = uid(spec.name);
+      const keyOf = spec.keyOf || ((r) => r[spec.key]);
+      spec.rows = spec.load();
+      const existing = new Map();
+      for (const d of await findAll(u, [spec.key])) existing.set(d[spec.key], d.documentId);
+      const map = new Map();
+      let created = 0;
+      let updated = 0;
+      await pool(spec.rows, CONC, async (row) => {
+        const key = keyOf(row);
+        const data = clean({ [spec.key]: key, ...spec.scalars(row) });
+        try {
+          const docId = existing.get(key);
+          if (docId) {
+            await app.documents(u).update({ documentId: docId, data });
+            map.set(key, docId);
+            updated++;
+          } else {
+            const doc = await app.documents(u).create({ data });
+            map.set(key, doc.documentId);
+            created++;
+          }
+        } catch (e) {
+          rec('A', spec.name, key, e);
         }
-      } catch (e) {
-        rec('A', spec.name, key, e);
-      }
-    });
-    maps[spec.name] = map;
-    console.log(`[A] ${spec.name.padEnd(16)} ${String(spec.rows.length).padStart(5)}  (+${created} ~${updated})`);
-  }
+      });
+      maps[spec.name] = map;
+      console.log(`[A] ${spec.name.padEnd(16)} ${String(spec.rows.length).padStart(5)}  (+${created} ~${updated})`);
+    }
 
-  // PHASE B — relations
-  for (const spec of specs) {
-    if (!spec.rel) continue;
-    const u = uid(spec.name);
-    const keyOf = spec.keyOf || ((r) => r[spec.key]);
-    let linked = 0;
-    await pool(spec.rows, CONC, async (row) => {
-      const docId = maps[spec.name].get(keyOf(row));
-      if (!docId) return;
-      const data = clean(spec.rel(row, R));
-      if (Object.keys(data).length === 0) return;
-      try {
-        await app.documents(u).update({ documentId: docId, data });
-        linked++;
-      } catch (e) {
-        rec('B', spec.name, keyOf(row), e);
-      }
-    });
-    console.log(`[B] ${spec.name.padEnd(16)} linked ${linked}`);
+    // PHASE B — relations
+    for (const spec of specs) {
+      if (!spec.rel) continue;
+      const u = uid(spec.name);
+      const keyOf = spec.keyOf || ((r) => r[spec.key]);
+      let linked = 0;
+      await pool(spec.rows, CONC, async (row) => {
+        const docId = maps[spec.name].get(keyOf(row));
+        if (!docId) return;
+        const data = clean(spec.rel(row, R));
+        if (Object.keys(data).length === 0) return;
+        try {
+          await app.documents(u).update({ documentId: docId, data });
+          linked++;
+        } catch (e) {
+          rec('B', spec.name, keyOf(row), e);
+        }
+      });
+      console.log(`[B] ${spec.name.padEnd(16)} linked ${linked}`);
+    }
   }
 
   // ── calendar / naming (no relations) ──

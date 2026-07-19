@@ -16,15 +16,9 @@
 name: Seed Studio
 
 on:
-  workflow_dispatch:
-    inputs:
-      wipe:
-        description: 'TRUNCATE content tables first (clean reseed — removes stale rows)'
-        type: boolean
-        default: true
-      concurrency:
-        description: 'Write concurrency (SEED_CONCURRENCY)'
-        default: '16'
+  workflow_dispatch: {}
+  # Uses seed.js --bulk (raw batch INSERT): always a clean wipe+reseed, ~65k per-row round-trips
+  # collapsed to a few hundred, so it's fast even transatlantic (runner in the US, DB in Belgium).
 
 # Never let two seeds race the same DB.
 concurrency:
@@ -61,7 +55,6 @@ jobs:
           DATABASE_SSL: 'true'
           DATABASE_SSL_REJECT_UNAUTHORIZED: 'false' # Azure cert chain
           DATABASE_POOL_MAX: '20'
-          SEED_CONCURRENCY: ${{ inputs.concurrency }}
           # Strapi boot requires these present; the seeder never uses them, so ephemeral values are fine.
           APP_KEYS: 'ci-seed-1,ci-seed-2'
           API_TOKEN_SALT: 'ci-seed-api-token-salt'
@@ -69,4 +62,4 @@ jobs:
           TRANSFER_TOKEN_SALT: 'ci-seed-transfer-salt'
           JWT_SECRET: 'ci-seed-jwt'
           ENCRYPTION_KEY: 'ci-seed-encryption-key'
-        run: node scripts/seed.js ${{ inputs.wipe && '--wipe' || '' }}
+        run: node scripts/seed.js --bulk
