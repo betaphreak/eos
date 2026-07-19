@@ -8,6 +8,7 @@ import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEven
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.ConfigurableEnvironment;
 
+import com.civstudio.data.BundleWorldSource;
 import com.civstudio.data.ClasspathWorldSource;
 import com.civstudio.data.FixtureWorldSource;
 import com.civstudio.data.StrapiWorldSource;
@@ -43,16 +44,18 @@ public class WorldSourceInitializer implements ApplicationListener<ApplicationEn
 			case "strapi" -> {
 				String url = env.getProperty("civstudio.world-source.url", "http://localhost:1337/api/world-bundle");
 				String token = env.getProperty("civstudio.world-source.token", "");
-				WorldSources.set(new StrapiWorldSource(URI.create(url), token));
-				log("strapi " + url);
+				BundleWorldSource src = new StrapiWorldSource(URI.create(url), token);
+				WorldSources.set(src);
+				log("strapi " + url + version(src));
 			}
 			case "fixture" -> {
 				String path = env.getProperty("civstudio.world-source.fixture", "");
 				if (path.isBlank())
 					throw new IllegalStateException(
 							"civstudio.world-source.mode=fixture but civstudio.world-source.fixture is unset");
-				WorldSources.set(new FixtureWorldSource(Path.of(path)));
-				log("fixture " + path);
+				BundleWorldSource src = new FixtureWorldSource(Path.of(path));
+				WorldSources.set(src);
+				log("fixture " + path + version(src));
 			}
 			case "classpath" -> {
 				WorldSources.set(new ClasspathWorldSource());
@@ -60,6 +63,12 @@ public class WorldSourceInitializer implements ApplicationListener<ApplicationEn
 			}
 			default -> throw new IllegalStateException("unknown civstudio.world-source.mode: " + mode);
 		}
+	}
+
+	// The content-version a bundle source booted at — recorded so a run's world snapshot is traceable
+	// (reproducibility = seed + content-version + command log).
+	private static String version(BundleWorldSource src) {
+		return " (mapVersion=" + src.mapVersion() + ", contentVersion=" + src.contentVersion() + ")";
 	}
 
 	private static void log(String desc) {

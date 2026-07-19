@@ -356,9 +356,11 @@ reference doc exactly.
   (`{mapVersion, contentVersion}`, cheap) + `ETag`/`If-None-Match`→`304`. Verified: 1st request 930ms
   (heavy projection) → 2nd 26ms (cache hit), 304 on a matching ETag, bundle still faithful. This
   de-risks many-instance / frequent-restart boots hammering the DB.
-- [ ] **Read the version at boot** (`BundleWorldSource.mapVersion()`/`contentVersion()`) — log it, fold
-  it into the `.map` plot-cache key + savegame reproducibility; have `StrapiWorldSource` revalidate via
-  `/version` (+ `If-None-Match`) so repeated boots of the same content skip the full fetch.
+- [~] **Read the version at boot** — `WorldSourceInitializer` now logs `mapVersion`/`contentVersion`
+  for bundle sources (traceability; reproducibility = seed + content-version + log). REMAINING: fold the
+  content-version into the `.map` plot-cache key + savegame; have `StrapiWorldSource` revalidate via
+  `/version` (+ `If-None-Match`) + persist a disk cache keyed by content-version so repeated boots of the
+  same content skip the full fetch.
 - [x] **Fixture pipeline** — `WorldSourceIntegrationTest` now RUNS on every `mvn test` (was skipped):
   it uses `-Dworldbundle.fixture=<snapshot>` when given, else auto-assembles a bundle from the classpath
   `generated/` resources (so it's inert-proof pre-cutover). `tools/make-world-bundle.mjs` snapshots a
