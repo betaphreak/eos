@@ -14,7 +14,7 @@
 //
 // Scope (locked decisions): core model. DEFERRED — place-name (GeoNames) and the full all-race
 // name-pool (needs the Java RaceNameGenerator); era-modifiers/rank-ladder single types (no JSON
-// source). name-pool seeds human + harimari only; tech-effect is an empty stub today (0 rows).
+// source). name-pool seeds HUMAN only (non-human names are runtime-generated, not bundle data); tech-effect is an empty stub today (0 rows).
 //
 // Run from studio/:  node scripts/seed.js
 
@@ -447,14 +447,14 @@ function loadFeasts() {
   return out;
 }
 function loadNamePools() {
-  const out = [];
-  const srcs = [['human', join(RES, 'human-names')], ['harimari', join(GEN, 'names', 'harimari')]];
-  for (const [race, dir] of srcs) {
-    for (const kind of ['male', 'female', 'dynasty']) {
-      out.push({ key: `${race}-${kind}`, race, kind, names: readJson(join(dir, `${kind}.json`)) });
-    }
-  }
-  return out;
+  // Only human names are committed/authored (/human-names/). Non-human races' pools are generated on
+  // demand at runtime by NameStore (a gitignored per-machine cache under generated/names/) and are NOT
+  // read from the world bundle — so studio holds the human pools only. (generated/names/ is gitignored,
+  // so a clean CI checkout has no harimari cache anyway.)
+  const dir = join(RES, 'human-names');
+  return ['male', 'female', 'dynasty'].map((kind) => ({
+    key: `human-${kind}`, race: 'human', kind, names: readJson(join(dir, `${kind}.json`)),
+  }));
 }
 function loadRegionEarthMap() {
   const { note, specialNotes, ...regions } = readJson(join(RES, 'geo', 'region-earth-map.json'));
