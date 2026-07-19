@@ -58,7 +58,7 @@ public final class UnitCatalog {
 
 	private static UnitCatalog load() {
 		Map<CaravanRole, List<UnitInfo>> byRole = new EnumMap<>(CaravanRole.class);
-		try (InputStream in = UnitCatalog.class.getResourceAsStream(RESOURCE)) {
+		try (InputStream in = com.civstudio.data.WorldSources.current().open(RESOURCE)) {
 			if (in == null) {
 				System.err.println("UnitCatalog: " + RESOURCE + " not on classpath — empty catalog");
 				return new UnitCatalog(byRole);

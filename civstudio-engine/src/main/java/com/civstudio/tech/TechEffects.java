@@ -45,7 +45,7 @@ final class TechEffects {
 	 *             if the resource is present but malformed
 	 */
 	static Map<String, List<TechEffect>> load(String resource) {
-		try (InputStream in = TechEffects.class.getResourceAsStream(resource)) {
+		try (InputStream in = com.civstudio.data.WorldSources.current().open(resource)) {
 			if (in == null)
 				return Map.of(); // overlay is optional
 			Map<String, List<TechEffect>> overlay = MAPPER.readValue(in,

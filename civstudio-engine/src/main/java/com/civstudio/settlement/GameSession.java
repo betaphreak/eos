@@ -391,7 +391,7 @@ public class GameSession {
 
 	// whether a classpath resource exists, for the per-race calendar fallback
 	private static boolean resourceExists(String path) {
-		return GameSession.class.getResource(path) != null;
+		return com.civstudio.data.WorldSources.current().exists(path);
 	}
 
 	/**

@@ -54,7 +54,7 @@ public final class NameTable {
 	 * @return the loaded table
 	 */
 	public static NameTable load(String resource) {
-		try (InputStream in = NameTable.class.getResourceAsStream(resource)) {
+		try (InputStream in = com.civstudio.data.WorldSources.current().open(resource)) {
 			if (in == null)
 				throw new IllegalStateException("Name resource not found: " + resource);
 			List<Tier> tiers = MAPPER.readValue(in, new TypeReference<List<Tier>>() {

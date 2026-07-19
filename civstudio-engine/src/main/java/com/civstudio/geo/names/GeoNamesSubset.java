@@ -42,7 +42,7 @@ public final class GeoNamesSubset {
 
 	/** Whether the committed subset is on the classpath (it is, after a bake of the exporter). */
 	public static boolean isAvailable() {
-		return GeoNamesSubset.class.getResource(RESOURCE) != null;
+		return com.civstudio.data.WorldSources.current().exists(RESOURCE);
 	}
 
 	/**
@@ -58,7 +58,7 @@ public final class GeoNamesSubset {
 		Map<String, List<GeoNamesPlace>> byCountry = new HashMap<>();
 		for (String cc : countries)
 			byCountry.put(cc, new ArrayList<>());
-		try (InputStream raw = GeoNamesSubset.class.getResourceAsStream(RESOURCE)) {
+		try (InputStream raw = com.civstudio.data.WorldSources.current().open(RESOURCE)) {
 			if (raw == null)
 				throw new IOException("GeoNames subset not on the classpath: " + RESOURCE);
 			try (InputStream gz = new GZIPInputStream(raw)) {

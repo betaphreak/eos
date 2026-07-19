@@ -72,7 +72,7 @@ public final class RegionEarthMap {
 	 */
 	public static RegionEarthMap load() {
 		RegionMapFile file;
-		try (InputStream in = RegionEarthMap.class.getResourceAsStream(RESOURCE)) {
+		try (InputStream in = com.civstudio.data.WorldSources.current().open(RESOURCE)) {
 			if (in == null)
 				throw new IllegalStateException(
 						"Region→Earth map resource not found: " + RESOURCE);

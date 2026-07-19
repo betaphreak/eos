@@ -420,7 +420,7 @@ public final class WorldMap {
 
 	private static <T> List<T> loadList(String resource,
 			TypeReference<List<T>> type) {
-		try (InputStream in = WorldMap.class.getResourceAsStream(resource)) {
+		try (InputStream in = com.civstudio.data.WorldSources.current().open(resource)) {
 			if (in == null)
 				throw new IllegalStateException(
 						"World map resource not found: " + resource);
@@ -435,7 +435,7 @@ public final class WorldMap {
 	// for the optional committed edge-weight table (absent while the exporter bootstraps)
 	private static <T> List<T> loadListOptional(String resource,
 			TypeReference<List<T>> type) {
-		try (InputStream in = WorldMap.class.getResourceAsStream(resource)) {
+		try (InputStream in = com.civstudio.data.WorldSources.current().open(resource)) {
 			if (in == null)
 				return List.of();
 			return MAPPER.readValue(in, type);

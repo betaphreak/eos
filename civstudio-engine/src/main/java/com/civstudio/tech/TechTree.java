@@ -184,7 +184,7 @@ public final class TechTree {
 
 	// parse the tech graph and build the tree over an already-resolved effect overlay
 	private static TechTree loadWith(Map<String, List<TechEffect>> effects) {
-		try (InputStream in = TechTree.class.getResourceAsStream(RESOURCE)) {
+		try (InputStream in = com.civstudio.data.WorldSources.current().open(RESOURCE)) {
 			if (in == null)
 				throw new IllegalStateException(
 						"Tech tree resource not found: " + RESOURCE);

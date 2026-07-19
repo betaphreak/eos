@@ -95,7 +95,7 @@ public final class LiturgicalCalendar {
 	 */
 	public static LiturgicalCalendar load(String resource) {
 		try (InputStream in =
-				LiturgicalCalendar.class.getResourceAsStream(resource)) {
+				com.civstudio.data.WorldSources.current().open(resource)) {
 			if (in == null)
 				throw new IllegalStateException(
 						"Feast calendar resource not found: " + resource);

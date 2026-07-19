@@ -70,7 +70,7 @@ public final class TerrainRegistry {
 	}
 
 	private static <T> List<T> loadList(String resource, TypeReference<List<T>> type) {
-		try (InputStream in = TerrainRegistry.class.getResourceAsStream(resource)) {
+		try (InputStream in = com.civstudio.data.WorldSources.current().open(resource)) {
 			if (in == null)
 				throw new IllegalStateException("Terrain resource not found: " + resource);
 			return MAPPER.readValue(in, type);
