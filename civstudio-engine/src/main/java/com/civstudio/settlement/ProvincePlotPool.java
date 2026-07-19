@@ -56,11 +56,11 @@ public final class ProvincePlotPool {
 	private final Map<Long, PlotCorridor> corridorCache = new HashMap<>();
 
 	// the authoritative per-session route layer for this province: the plots that carry a route
-	// (trail/paved road/…), in the order they were first laid. Unlike the ephemeral per-band window
-	// in MarchingCaravan.trailedPlots, this lives on the pool, so it survives a band's dissolution
-	// and is the whole standing network — what the viewport-windowed route feed serves per province
-	// (docs/route-rendering.md §Viewport-windowed route persistence). routeRev bumps on every change,
-	// the "this province's routes moved since you last fetched" signal the render snapshot advertises.
+	// (trail/paved road/…), in the order they were first laid. It lives on the pool, not on the band
+	// that pioneered it, so it survives the band's dissolution and is the whole standing network —
+	// what the viewport-windowed route feed serves per province (docs/route-rendering.md §Viewport-
+	// windowed route persistence). routeRev bumps on every change, the "this province's routes moved
+	// since you last fetched" signal the render snapshot advertises.
 	private final Set<Plot> routedPlots = new LinkedHashSet<>();
 	private int routeRev;
 
@@ -189,7 +189,7 @@ public final class ProvincePlotPool {
 	 * network, in first-laid order) paired with the {@code rev} they were read at, taken atomically
 	 * under one lock so the two never disagree even as the sim thread lays more. This is what the
 	 * viewport-windowed route feed serves per province (docs/route-rendering.md); the layer survives
-	 * band dissolution (unlike {@link com.civstudio.agent.MarchingCaravan#trailedPlots()}).
+	 * band dissolution (it lives on the pool, not on the band that pioneered it).
 	 *
 	 * @return a snapshot of the routed plots and the route revision, safe to read off the sim thread
 	 */

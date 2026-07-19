@@ -149,10 +149,6 @@ public abstract class MarchingCaravan extends Caravan {
 	// it); a bare wander leaves it off and pays no generation cost.
 	private boolean campingEnabled;
 	private Plot campPlot;
-	// the plots this band has stamped a route on as it pioneered a trail (see laysTrail / layTrail) —
-	// the live per-plot route data the render snapshot ships (gap B, docs/route-rendering.md).
-	private final List<Plot> trailedPlots = new ArrayList<>();
-	private static final int MAX_TRAILED_FOR_RENDER = 512;
 	// the province the band crossed into its current one from (the corridor entry side);
 	// OFF_GRAPH until it has made a hop (then the entry portal falls back to the centroid)
 	private int enteredFrom = OFF_GRAPH;
@@ -602,13 +598,6 @@ public abstract class MarchingCaravan extends Caravan {
 		return following.size() == 0;
 	}
 
-	/** The plots this band has stamped a route on, in crossing order — the live per-plot route data
-	 *  the render snapshot ships (gap B, docs/route-rendering.md). Only a trail-laying band (an {@link
-	 *  ExplorerCaravan}) fills this. */
-	public List<Plot> trailedPlots() {
-		return trailedPlots;
-	}
-
 	// stamp ROUTE_TRAIL on each BARE plot of the day's corridor — the pioneering: the ground
 	// the band crossed becomes explored/passable. Only bare plots are stamped (a better
 	// existing route is never downgraded); a null/empty corridor or a session-less band is a
@@ -627,13 +616,8 @@ public abstract class MarchingCaravan extends Caravan {
 			if (p.routeType() == null) {
 				p.layRoute(trail);
 				// record into the pool's standing route layer — this survives the band's death and
-				// is what the viewport-windowed feed serves (docs/route-rendering.md). The per-band
-				// trailedPlots window below is the legacy snapshot channel, kept until step 2 swaps
-				// the server over; it keeps only a recent window (the plot keeps its route forever).
+				// is what the viewport-windowed feed serves per province (docs/route-rendering.md).
 				pool.recordRoute(p);
-				trailedPlots.add(p);
-				if (trailedPlots.size() > MAX_TRAILED_FOR_RENDER)
-					trailedPlots.remove(0);
 				laid = true;
 			}
 		// a new route changes route-aware move costs, so drop the province's cached corridors; and

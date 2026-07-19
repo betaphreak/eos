@@ -8,11 +8,11 @@ package com.civstudio.server.render;
  * BUNDLE.routes.byType}).
  *
  * <p>{@code Plot.routeType} is per-session mutable and excluded from the static plot cache, so it
- * travels on a live channel. Two carry it (see {@code docs/route-rendering.md} §Viewport-windowed
- * route persistence): the legacy per-band snapshot broadcast ({@code SessionSnapshot.routePlots},
- * being retired) and the viewport-windowed feed ({@code GET /api/sessions/{id}/routes/{provinceId}}
- * → {@link ProvinceRoutes}), which serves the whole standing layer of one province on demand. This
- * record is the element of both.
+ * travels on a live channel: the viewport-windowed route feed ({@code GET
+ * /api/sessions/{id}/routes/{provinceId}} → {@link ProvinceRoutes}), which serves the whole standing
+ * layer of one province on demand (see {@code docs/route-rendering.md} §Viewport-windowed route
+ * persistence). This record is that feed's per-plot element. (The old per-band snapshot broadcast,
+ * {@code SessionSnapshot.routePlots}, has been retired in favour of the feed.)
  *
  * @param x    the plot's global raster x (matches the web feed's plot {@code x})
  * @param y    the plot's global raster y

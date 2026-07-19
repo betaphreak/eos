@@ -11,6 +11,10 @@ page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
 await page.goto(url, { waitUntil: 'load' });
 await page.waitForTimeout(1500);
+// the spectator lobby opens over the map during load — hide it by default so a live shot sees the
+// map, not the modal + its backdrop blur (Esc → map). Harmless if no lobby is showing.
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
 // switch to Live mode (dispatch the button's own click — reliable in headless where the
 // segmented-toggle geometry can defeat a pointer click)
 await page.evaluate(() => document.querySelector('#overlayToggle button[data-ov="live"]').click());

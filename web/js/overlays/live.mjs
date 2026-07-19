@@ -14,7 +14,7 @@
 import { ctx, px, py, cssVar, VIEW, baseXr, baseYr, sxSrc, sySrc, LABEL_FONT, centerOn, SERVER_BASE as LIVE_BASE } from "../core.mjs";
 import { hasDeepLink } from "../main.mjs";
 import { atLeast, BAND, bandAlpha } from "../bands.mjs";
-import { mergeRoutePlots } from "../routes.mjs";
+import { setRouteSession, invalidateRoutes } from "../routefetch.mjs";
 import { showLiveLog, ingestLog, ingestChat, resetLog, setChatSender } from "../livelog.mjs";
 import { showNotify, ingestNotify, seedNotify, resetNotify } from "../notify.mjs";
 import { minusDays, LIFETIME_DAYS, MAX_CARDS } from "../notify-age.mjs";
@@ -263,6 +263,7 @@ export async function controlLive(action, value) {
 export function stopLive() {
   if (es) { es.close(); es = null; }
   snap = null; sid = null;
+  setRouteSession(null);   // drop the route-index so the next session starts clean
   for (const k in trails) delete trails[k];
   resetLog();
   resetNotify();
@@ -394,9 +395,11 @@ function onSnapshot(s) {
   // suspended run that gets restored re-attaches cleanly.
   if (s.clockState === "STOPPED") showStopped(s);
   else hideStopped();
-  // accumulate the bands' pioneered trails (gap B → the route layer). A new trail plot changes the
-  // canvas even when nothing moved, so it counts toward the repaint decision below.
-  const routesChanged = mergeRoutePlots(s.routePlots);
+  // point the viewport-windowed route feed at this session and flag the provinces whose route layer
+  // changed this frame, so the draw layer refetches only those (routefetch.mjs). The refetch is async
+  // and repaints itself when the layer lands, so it does not feed the repaint decision below.
+  setRouteSession(s.sessionId);
+  invalidateRoutes(s.routeDirty);
   s.caravans.forEach(c => {
     const t = (trails[c.leader] = trails[c.leader] || []);
     t.push([c.latitude, c.longitude]);
@@ -421,7 +424,7 @@ function onSnapshot(s) {
   // driven by nothing but the clock — every tick forced a full scene render, up to UNCAPPED at
   // speed 5 (LIVE_RATES ends in 0), however far the camera was parked from the action.
   const sig = sceneSig(s);
-  if (routesChanged || sig !== lastSig) { lastSig = sig; redraw(); }
+  if (sig !== lastSig) { lastSig = sig; redraw(); }
   onRoster(liveRoster());     // let the advisor selector/rail track the roster (succession)
   // let the tech tree (if open) refresh its researched-state styling from the new known set —
   // decoupled via a DOM event so live.mjs need not import techtree.mjs

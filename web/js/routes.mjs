@@ -5,14 +5,18 @@
 // square, so straights/corners/tees/crosses meet at plot edges. A per-plot ground-detail layer, so it
 // lives in the same band as terrain textures / feature sprites (fades in Province→Terrain).
 //
-// Data source: the engine's per-plot RouteType maps to a tier via ROUTES.byType. Until that per-plot
-// channel reaches the client (gap B, docs/explorer-caravan.md §Phase 5), city-core plots — which the
-// engine founds pre-paved (ProvincePlotPool) and which markUrbanPlots already flags `urban` — stand in
-// as PAVED_ROAD, so a paved city core is visible on zoom-in with no new server data.
+// Data source: the engine's per-plot RouteType maps to a tier via ROUTES.byType. In Live mode the
+// standing route layer is fetched per province from the viewport-windowed feed (routefetch.mjs →
+// route-index.mjs), so a late-joining or reloading client sees the whole network. Off Live (WorldMap),
+// or before a province's layer loads, city-core plots — which the engine founds pre-paved
+// (ProvincePlotPool) and which the plot grid flags `urban` — stand in as PAVED_ROAD, so a paved city
+// core is visible on zoom-in with no session. docs/route-rendering.md §Viewport-windowed route persistence.
 import { P, ctx, ROUTES, pxr, pyr, provOnScreen, isPolitical } from "./core.mjs";
 import { draw } from "./repaint.mjs";
 import { bandAlpha } from "./bands.mjs";
 import { routePiece, neighbourMask } from "./route-tiling.mjs";
+import { routeType, routeVersion } from "./route-index.mjs";
+import { ensureProvinceRoutes } from "./routefetch.mjs";
 
 const TIERS = ["trail", "road", "rail"];
 // per-tier opacity: a pioneered dirt trail whispers, a built road/rail speaks — so a network reads
@@ -27,36 +31,12 @@ if (ROUTES) for (const k of TIERS) if (ROUTES[k]) {
   atlas[k] = im;
 }
 
-// live per-plot routes from the session snapshot (gap B): "x,y" → ROUTE_* type key. Accumulated
-// (a route persists once seen) so it survives the engine's bounded trail window and applies even to
-// plots whose province loads later. See docs/route-rendering.md.
-const routeField = new Map();
-// bumped whenever routeField actually changes — the invalidation key for the per-province tiling
-// cache below, so a province only re-tiles when the field it was tiled from moved.
-let fieldVersion = 0;
-
-/** Merge the live snapshot's routed plots into the field, then the next repaint stamps them.
- *  Called by the live overlay on each snapshot; a no-op off Live mode.
- *  Returns whether anything actually changed — the snapshot re-sends a bounded window of trail
- *  plots every tick, so most merges are pure repeats, and the caller uses this to decide whether a
- *  repaint is owed at all. */
-export function mergeRoutePlots(plots) {
-  if (!plots || !plots.length) return false;
-  let changed = false;
-  for (const rp of plots) {
-    const k = rp.x + "," + rp.y;
-    if (routeField.get(k) === rp.type) continue;
-    routeField.set(k, rp.type);
-    changed = true;
-  }
-  if (changed) fieldVersion++;
-  return changed;
-}
-
-/** The route tier a plot draws in, or null. Prefers the live per-plot RouteType (gap B — trails the
- *  bands pioneered), then any static `q.route`, then treats urban city-core plots as paved road. */
+/** The route tier a plot draws in, or null. Prefers the live per-plot RouteType from the global
+ *  route-index (the trails bands pioneered + pre-paved cores the feed serves), then any static
+ *  `q.route`, then treats urban city-core plots as paved road (the stand-in before the layer loads /
+ *  off Live). */
 function plotTier(q) {
-  const live = routeField.get(q.x + "," + q.y);
+  const live = routeType(q.x, q.y);
   if (live && ROUTES.byType[live]) return ROUTES.byType[live];
   if (q.route && ROUTES.byType[q.route]) return ROUTES.byType[q.route];
   if (q.urban) return "road";
@@ -78,7 +58,8 @@ function stampCell(img, rect, dx, dy, size, rot) {
 // and re-ran neighbourMask/routePiece for every routed plot, on every frame, forever. Invalidated by
 // the field version and by the plots array identity (a province's plots arrive asynchronously).
 function routeTiles(p) {
-  if (p._routeTiles && p._routeTilesV === fieldVersion && p._routeTilesP === p._plots)
+  const v = routeVersion();
+  if (p._routeTiles && p._routeTilesV === v && p._routeTilesP === p._plots)
     return p._routeTiles;
   const routed = new Map();
   for (const q of p._plots) { const t = plotTier(q); if (t) routed.set(q.x + "," + q.y, t); }
@@ -86,12 +67,17 @@ function routeTiles(p) {
   for (const q of p._plots) {
     const tier = routed.get(q.x + "," + q.y);
     if (!tier) continue;
-    // connect only to same-tier neighbours (a trail doesn't fuse into a paved road)
-    const mask = neighbourMask((dx, dy) => routed.get((q.x + dx) + "," + (q.y + dy)) === tier);
+    // connect only to same-tier neighbours (a trail doesn't fuse into a paved road). A neighbour
+    // counts if this province's own map has it (covers the urban stand-in, which the global index
+    // may not) OR the GLOBAL route-index does (a plot in the NEXT province, so roads meet across the
+    // seam — the cross-province connectivity, like rivers). docs/route-rendering.md.
+    const mask = neighbourMask((dx, dy) =>
+      routed.get((q.x + dx) + "," + (q.y + dy)) === tier
+      || ROUTES.byType[routeType(q.x + dx, q.y + dy)] === tier);
     const { piece, rot } = routePiece(mask);
     tiles.push({ x: q.x, y: q.y, tier, piece, rot });
   }
-  p._routeTiles = tiles; p._routeTilesV = fieldVersion; p._routeTilesP = p._plots;
+  p._routeTiles = tiles; p._routeTilesV = v; p._routeTilesP = p._plots;
   return tiles;
 }
 
@@ -106,7 +92,11 @@ export function drawRoutes() {
   ctx.globalAlpha = a;
   ctx.imageSmoothingEnabled = true;
   for (const p of P) {
-    if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
+    if (!provOnScreen(p)) continue;
+    // we are zoomed into the route band and this province is in view — make sure its live route layer
+    // is fetched (a no-op off Live, when loaded, or while pending). Bounds fetching to the viewport.
+    ensureProvinceRoutes(p);
+    if (!p._plots || !p._plots.length) continue;
     for (const t of routeTiles(p)) {
       if (!ready[t.tier]) continue;
       const rect = ROUTES[t.tier].cell[t.piece];

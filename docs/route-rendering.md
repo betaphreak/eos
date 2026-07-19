@@ -14,10 +14,10 @@ below). The snapshot's per-band `routePlots` window (a 512-plot rolling buffer p
 not *persist* the network: a late-joining spectator never receives trails pioneered before it
 connected, a page reload wipes the accumulated layer, and a dissolved band stops broadcasting its
 still-existing trail. The fix moves the authoritative layer server-side (a session/province-scoped
-registry) and serves it per province on viewport entry. **Steps 1 (engine registry) and 2 (endpoint
-+ snapshot dirty-signal) are BUILT**; the client cache (step 3) follows. Steps 2→3 are an
-expand/contract migration: the legacy `routePlots` broadcast is kept alongside the new feed until the
-client flips over, so every intermediate stays deployable.
+registry) and serves it per province on viewport entry. **All three steps are BUILT** — engine
+registry (1), endpoint + snapshot dirty-signal (2), client cache + cross-province fusion + contract
+(3). The legacy `routePlots` broadcast has been removed; verified locally (a cold live shot fetches
+every in-view province's layer and draws the network, no console errors). Not yet deployed.
 
 This is the follow-through on the owner's Phase-3 decision (see `docs/explorer-caravan.md`
 §Phase 3 "Route art"): **use the real Civ4 route art via `tools/nifbake`, not procedural
@@ -178,12 +178,14 @@ network size, and it *shrinks* the snapshot (a short id list replaces the ≤512
   the snapshot's `routeDirty` id list. Expand/contract: `SessionSnapshot.routePlots` and
   `collectRoutePlots` are **kept** so the current client still renders; step 3 removes them. Covered
   by `ServerApiTest.routeFeedServesAProvincesStandingLayerAndTheSnapshotFlagsItDirty`.
-- **Step 3 — client cache + contract.** A per-province route cache in `plots.mjs`/`routes.mjs` filled
-  on viewport entry from the new endpoint and invalidated for in-view provinces named in
-  `routeDirty`; `drawRoutes` (which already maps `q.route → tier`) consumes it, extended with the
-  world-space cross-province `neighbourMask` below. Then **contract**: drop `routePlots` /
-  `collectRoutePlots` / the snapshot field / `mergeRoutePlots`. A cache-invalidation unit test rides
-  the `web-unit-tests-wanted` convention (`node --test web/js/`).
+- **Step 3 — client cache + contract (BUILT).** `route-index.mjs` is the pure global `(x,y)→type`
+  index (node-tested, `route-index.test.mjs`); `routefetch.mjs` fetches a province's layer on viewport
+  entry (bounded by the draw band's early-return), dedupes on `rev`, and refetches only provinces the
+  snapshot flags in `routeDirty` — session-scoped, cleared on a session switch. `routes.mjs`'s
+  `plotTier` reads the index (with `q.urban` as the off-Live / pre-load stand-in) and its neighbour
+  mask consults the **global** index so roads fuse across province seams. Contracted: `routePlots`,
+  `collectRoutePlots`, the snapshot field, `mergeRoutePlots`, and `MarchingCaravan.trailedPlots` are
+  gone. `RoutePlotView` is now the feed's element only.
 
 ### Roads must connect across province boundaries (like rivers)
 
