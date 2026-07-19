@@ -32,6 +32,16 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- Test-only: LauncherSessionListener API, so FixtureWorldSourceInstaller can install the
+             committed world-bundle snapshot as the suite-wide WorldSource before any test class loads
+             (generated/ is no longer committed). Surefire already brings the launcher at runtime; this
+             puts it on the test-compile classpath too. -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
         <!-- Test-only: a real embedded SQL datasource for the JdbcRowSink tests (the engine stays
              driver-free at runtime — a launcher supplies H2/Postgres). Pinned to the version Spring
              Boot 4.1 manages for the server, so both modules run one H2. -->
@@ -96,6 +106,25 @@
                         <argument>${sim.main}</argument>
                     </arguments>
                 </configuration>
+            </plugin>
+            <!--
+              Publish a test-jar so the server module can reuse the engine's committed world-bundle
+              snapshot (src/test/resources/world-bundle.json.gz) and its LauncherSessionListener
+              (META-INF/services/…LauncherSessionListener → FixtureWorldSourceInstaller). One snapshot,
+              one installer, shared: since generated/ is no longer committed, both suites boot the
+              engine from the fixture. Surefire does not scan dependency jars for tests, so the engine's
+              test classes are not re-run in the server module.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

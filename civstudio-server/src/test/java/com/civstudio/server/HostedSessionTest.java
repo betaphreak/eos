@@ -185,8 +185,8 @@ class HostedSessionTest {
 	/**
 	 * A run that ends itself reaches {@link HostedSession.State#GAME_OVER} carrying why — the
 	 * distinction {@code docs/game-over.md} exists for. The demo colony dissolves into a caravan
-	 * once its workforce crosses the floor (~tick 2600 at this seed), so this drives the real
-	 * collapse rather than simulating one.
+	 * once its workforce crosses the floor (~tick 4100 at this seed, on the studio-sourced content),
+	 * so this drives the real collapse rather than simulating one.
 	 */
 	@Test
 	@Timeout(600)
@@ -196,7 +196,7 @@ class HostedSessionTest {
 		try {
 			hs.startPaused();
 			awaitSnapshot(hs, 0, 30_000);
-			hs.step(4000); // more credit than the collapse needs; the loop breaks when it dies
+			hs.step(6000); // more credit than the collapse needs (~tick 4100); the loop breaks when it dies
 			awaitTerminal(hs, 540_000);
 
 			assertEquals(HostedSession.State.GAME_OVER, hs.state(),

@@ -36,9 +36,10 @@ class BundleWorldSourceTest {
 		}
 		assertTrue(src.exists("/map/countries.json"));
 
-		// a path absent from the bundle falls back to the classpath (/units.json is a real committed resource)
-		assertTrue(src.exists("/units.json"));
-		try (InputStream in = src.open("/units.json")) {
+		// a path absent from the bundle falls back to the classpath (/human-names/male.json is committed —
+		// hand-authored, outside generated/, so it survives the studio cutover)
+		assertTrue(src.exists("/human-names/male.json"));
+		try (InputStream in = src.open("/human-names/male.json")) {
 			assertNotNull(in);
 		}
 

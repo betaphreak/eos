@@ -361,13 +361,14 @@ reference doc exactly.
   content-version into the `.map` plot-cache key + savegame; have `StrapiWorldSource` revalidate via
   `/version` (+ `If-None-Match`) + persist a disk cache keyed by content-version so repeated boots of the
   same content skip the full fetch.
-- [x] **Fixture pipeline** — `WorldSourceIntegrationTest` now RUNS on every `mvn test` (was skipped):
-  it uses `-Dworldbundle.fixture=<snapshot>` when given, else auto-assembles a bundle from the classpath
-  `generated/` resources (so it's inert-proof pre-cutover). `tools/make-world-bundle.mjs` snapshots a
-  live studio's `/api/world-bundle` to a `.json[.gz]` file (the gitignored/CI artifact). Verified the
-  whole chain: studio → snapshot tool → `FixtureWorldSource` → engine loaders == classpath; engine suite
-  387 green, 0 skipped. Post-cutover (generated/ deleted) the classpath auto-build stops working, so CI/
-  offline must supply a snapshot via the property (produced by the tool against a seeded studio).
+- [x] **Fixture pipeline** — `tools/make-world-bundle.mjs` snapshots a live studio's `/api/world-bundle`
+  to a `.json[.gz]` file. Post-cutover this snapshot is **committed** at
+  `civstudio-engine/src/test/resources/world-bundle.json.gz` and installed suite-wide by
+  `FixtureWorldSourceInstaller` (a JUnit `LauncherSessionListener`) so every `mvn test` boots the engine
+  from it with no Strapi reachable; the server module reuses it via an engine test-jar dependency.
+  `WorldSourceIntegrationTest` asserts the on-demand loaders come up non-empty through the fixture
+  (per-dataset faithfulness is checked at seed time by `verify-bundle.js` + against prod). See the
+  Phase-5 "Delete `resources/generated/`" entry for the final state.
 
 **Phase 5 — Cutover.**
 - [x] **Seed PROD studio** — done (2026-07-19). Prod carried stale old-model data (6114 provinces), so
@@ -390,10 +391,33 @@ reference doc exactly.
   (behavior-neutral, classpath default), then set `CIVSTUDIO_WORLDSOURCE_MODE=strapi` +
   `CIVSTUDIO_WORLDSOURCE_URL=https://civstudio.com/api/world-bundle` + `WORLD_BUNDLE_TOKEN`. **Verified
   live**: boot log `[WorldSource] ← strapi … (contentVersion=seed-2026-07-19)`, demo session founded,
-  health 200, `/api/bundle` served. **Prod boots its invariant data from Strapi.** Rollback = set
-  `mode=classpath`.
-- [ ] **Delete `resources/generated/`** (and `/map/`) — **HELD**: keep committed as the classpath
-  fallback/rollback until the strapi flip proves stable in prod. Repoint/retire the exporters after.
+  health 200, `/api/bundle` served. **Prod boots its invariant data from Strapi.**
+- [x] **Delete `resources/generated/`** (2026-07-19) — removed all 28 committed exporter datasets from
+  git (kept `generated/geonames/subset.json.gz` + the README, which are not in the world bundle and
+  still fall back to the classpath); `.gitignore` now ignores the regenerable tree. The suite boots
+  from the **committed world-bundle fixture** instead: `civstudio-engine/src/test/resources/world-bundle.json.gz`
+  (1.9 MB gz, `seed-2026-07-19`, mapVersion 9), installed suite-wide by `FixtureWorldSourceInstaller`
+  (a JUnit `LauncherSessionListener` via `META-INF/services`, so it runs before any eager loader like
+  `UnitCatalog`). The **server** module reuses the same snapshot + listener via an engine **test-jar**
+  dependency. Full reactor green with `generated/` gone: **engine 387 + server 115 = 502, 0 failures**.
+  - **Fidelity caveat (accepted).** The studio bundle drops some engine-read fields the raw exporters
+    emitted: `manufactured-bonuses.techReveal`/`techCityTrade` (176/326 — out-of-horizon techs resolve
+    to a null relation), `units.iCost` (0/273), `recipes.obsoleteTech` (0/318),
+    `housing.obsoletesToBuilding` (0/56), partial `obsoleteTech` on units/housing. Only the manufactured
+    `techReveal` invariant had an asserting test (relaxed to "in-horizon goods are gated"); the rest
+    change nothing the suite covers and affect only out-of-horizon/modern content. `buildings.help` is
+    dropped too but no engine reads it. **These are already live in prod** (`mode=strapi`) — the
+    deletion doesn't introduce them, only makes the pre-cutover JSON unrecoverable from the repo. If
+    exact fidelity is later wanted, fix studio's seed/serialization to preserve these fields and
+    re-snapshot.
+  - **Observed behavioral shift.** The studio content (shifted tech horizon + always-craftable
+    dropped-`techReveal` goods) moved the caravan-demo colony's self-collapse from ~tick 2600 to
+    ~tick 4098 (still `GAME_OVER` with the same "abandoned … survivors" reason). `HostedSessionTest`'s
+    step budget was bumped 4000 → 6000 to cover it. This is prod's behavior too (`mode=strapi`).
+  - **Rollback posture changed.** `mode=classpath` is now dead for a built jar (no committed
+    `generated/`). Rollback options: (a) `mode=fixture` pointing at the committed snapshot
+    (`CIVSTUDIO_WORLDSOURCE_MODE=fixture` + a path), or (b) keep studio up (it's the source of truth).
+    A working tree can still run `mode=classpath` after re-running the exporters.
 - [ ] Regen studio `config/sync`; set read permissions (the `WORLD_BUNDLE_TOKEN` secret across dev/CI/
   prod). Realign the studio version with the reactor.
 - [ ] Update `studio/CLAUDE.md`, `docs/architecture.md`, `CLAUDE.md`, and the exporter docs.

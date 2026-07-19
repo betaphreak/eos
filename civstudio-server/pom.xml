@@ -56,6 +56,16 @@
             <groupId>com.civstudio</groupId>
             <artifactId>civstudio-engine</artifactId>
         </dependency>
+        <!-- the engine's test fixtures: the committed world-bundle snapshot + the LauncherSessionListener
+             that installs it suite-wide. generated/ is no longer committed, so the server suite also boots
+             the engine from the fixture (auto-registered via META-INF/services from this jar). -->
+        <dependency>
+            <groupId>com.civstudio</groupId>
+            <artifactId>civstudio-engine</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Spring MVC + embedded Tomcat (run on virtual threads via application.yml) -->
         <dependency>
