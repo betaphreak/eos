@@ -101,6 +101,25 @@ const REL = {
   '/recipes.json': { outputs: ['bonus', 1], bonus: ['bonus'], prereqBonuses: ['bonus', 1], vicinityBonuses: ['bonus', 1], rawVicinityBonuses: ['bonus', 1], prereqTech: ['tech'], obsoleteTech: ['tech'], prereqBuildings: ['building', 1], prereqOrBuildings: ['building', 1], prereqOrTerrains: ['terrain', 1], prereqOrFeatures: ['feature', 1] },
   '/housing.json': { prereqTech: ['tech'], obsoleteTech: ['tech'], obsoletesToBuilding: ['building'], bonus: ['bonus'], prereqBonuses: ['bonus', 1], prereqBuildings: ['building', 1], prereqOrBuildings: ['building', 1], replacements: ['building', 1], prereqOrFeatures: ['feature', 1], prereqOrTerrains: ['terrain', 1] },
 };
+// Field-presence guard. The bundle projection legitimately omits some committed fields: fields the
+// engine DERIVES rather than reads verbatim (province region/area/continent/realm come from the
+// area/region relations + geography), and raw C2C attributes studio simply does not model (the ~40
+// flavor/AI tech flags, buildings.help, units.iCost, and the reference-only recipe/housing fields the
+// engine never reads at runtime). Those are ACCEPTED here so the run stays green on today's content.
+// Any dropped field NOT in this allowlist FAILS the run — so a reseed that silently loses a NEW field
+// (the class of drift that once shipped to prod unnoticed) is caught. See
+// docs/studio-datamodel-rebuild-plan.md Phase 5 (fidelity caveat). Shrink this list as studio's
+// coverage improves.
+const ACCEPTED_DROPPED = {
+  '/map/provinces.json': ['region', 'area', 'continent', 'realm'],
+  '/routes.json': ['bonusType'],
+  '/techs.json': ['iAsset', 'Quote', 'SoundMP', 'iHappiness', 'bLanguage', 'FirstFreeUnit', 'iPower', 'iWorkerSpeedModifier', 'iAIWeight', 'iHealth', 'iAITradeModifier', 'bWaterWork', 'TerrainTrades', 'bRiverTrade', 'bOpenBordersTrading', 'iTradeRoutes', 'bEmbassyTrading', 'iFirstFreeTechs', 'bTechTrading', 'iFeatureProductionModifier', 'bMapCentering', 'bGoldTrading', 'bBridgeBuilding', 'bIrrigation', 'PrereqOrBuildings', 'iGlobalTradeModifier', 'iGlobalForeignTradeModifier', 'iTradeMissionModifier', 'CommerceFlexible', 'DomainExtraMoves', 'bVassalTrading', 'bExtraWaterSeeFrom', 'bMapTrading', 'bCanPassPeaks', 'bCanFoundOnPeaks', 'bDefensivePactTrading', 'bMoveFastPeaks', 'iCorporationRevenueModifier', 'iCorporationMaintenanceModifier', 'bIgnoreIrrigation'],
+  '/units.json': ['iCost'],
+  '/buildings.json': ['help'],
+  '/recipes.json': ['bonus', 'obsoleteTech'],
+  '/housing.json': ['obsoletesToBuilding', 'bonus', 'prereqTech', 'obsoleteTech'],
+};
+
 function stripPhantom(rec, relspec) {
   if (!relspec) return rec;
   const out = { ...rec };
@@ -140,10 +159,14 @@ function stripPhantom(rec, relspec) {
       }
     }
     const extra = [...gMap.keys()].filter((k) => !cMap.has(k)).length;
-    const ok = missing === 0 && valMism === 0 && orderMism === 0 && extra === 0 && got.length === committed.length;
+    const accepted = new Set(ACCEPTED_DROPPED[d.path] || []);
+    const badDropped = [...dropped].filter((f) => !accepted.has(f)); // a NEW drop the allowlist doesn't cover
+    const okDropped = [...dropped].filter((f) => accepted.has(f));
+    const ok = missing === 0 && valMism === 0 && orderMism === 0 && extra === 0 && got.length === committed.length && badDropped.length === 0;
     allOk = allOk && ok;
     console.log(`${ok ? 'ok ' : 'XX '} ${d.path.padEnd(26)} c=${committed.length} b=${got.length} miss=${missing} valMism=${valMism} orderMism=${orderMism} extra=${extra}` +
-      (dropped.size ? ` dropped{${[...dropped].join(',')}}` : '') + (added.size ? ` added{${[...added].join(',')}}` : ''));
+      (badDropped.length ? ` DROPPED{${badDropped.join(',')}}` : '') +
+      (okDropped.length ? ` dropped-ok{${okDropped.join(',')}}` : '') + (added.size ? ` added{${[...added].join(',')}}` : ''));
     for (const [why, k, c, g] of samples) { console.log(`     ${why} key=${k}`); console.log('       committed:', JSON.stringify(c).slice(0, 200)); console.log('       bundle   :', JSON.stringify(g).slice(0, 200)); }
   }
 
@@ -161,7 +184,10 @@ function stripPhantom(rec, relspec) {
     if (!ok && !d.tolerateExtra) console.log('       committed:', JSON.stringify(c).slice(0, 160), '\n       bundle   :', JSON.stringify(g).slice(0, 160));
   }
 
-  console.log(allOk ? '\nALL DATASETS FAITHFUL ✓' : '\nDIFFERENCES FOUND (review dropped/added — dropped=unmodeled committed fields, added=extra bundle fields)');
+  console.log(allOk
+    ? '\nALL DATASETS FAITHFUL ✓ (dropped-ok = accepted omissions; DROPPED{…} would fail the guard)'
+    : '\nDIFFERENCES FOUND — DROPPED{…} is a NEW committed field missing from the bundle: either fix the'
+      + '\n  studio seed/projection to carry it, or (if intentional) add it to ACCEPTED_DROPPED. added=extra bundle fields.');
   process.exit(allOk ? 0 : 1);
 })().catch((e) => { console.error(e); process.exit(1); });
 

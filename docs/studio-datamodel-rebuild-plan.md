@@ -409,7 +409,10 @@ reference doc exactly.
     dropped too but no engine reads it. **These are already live in prod** (`mode=strapi`) — the
     deletion doesn't introduce them, only makes the pre-cutover JSON unrecoverable from the repo. If
     exact fidelity is later wanted, fix studio's seed/serialization to preserve these fields and
-    re-snapshot.
+    re-snapshot. **Field-presence guard added** (`studio/scripts/verify-bundle.js`): the drop check now
+    *fails* on any committed field missing from the bundle unless it is in an `ACCEPTED_DROPPED`
+    allowlist (seeded with exactly the omissions above). So a reseed that silently loses a **new** field
+    — the drift class that shipped here unnoticed — is caught; shrink the allowlist as coverage improves.
   - **Observed behavioral shift.** The studio content (shifted tech horizon + always-craftable
     dropped-`techReveal` goods) moved the caravan-demo colony's self-collapse from ~tick 2600 to
     ~tick 4098 (still `GAME_OVER` with the same "abandoned … survivors" reason). `HostedSessionTest`'s
