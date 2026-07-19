@@ -23,9 +23,12 @@ import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.SessionKind;
 import com.civstudio.server.SessionSpec;
+import com.civstudio.geo.WorldMap;
 import com.civstudio.handicap.HandicapCatalog;
 import com.civstudio.server.command.SetTaxRateCommand;
+import com.civstudio.server.registry.SessionRecord;
 import com.civstudio.server.registry.SessionRegistry;
+import com.civstudio.simulation.SimulationConfig;
 import com.civstudio.server.render.SessionSnapshot;
 import com.civstudio.settlement.Settlement;
 
@@ -90,49 +93,88 @@ public class SessionController {
 		String me = currentUser.userId(http);
 		boolean admin = currentUser.isAdmin(http);
 		List<Map<String, Object>> out = new ArrayList<>();
+		java.util.Set<String> liveIds = new java.util.HashSet<>();
+		WorldMap map = null;
 		for (HostedSession hs : host.list()) {
+			liveIds.add(hs.id());
+			if (map == null)
+				map = hs.session().getWorldMap();   // any live map serves to resolve a record's realm below
 			if (!authz.canSee(hs, me, admin))
 				continue;   // someone else's private run — the visibility rule lives in SessionAuthz
-			// a mutable map, not Map.of: the nullable fields below would make Map.of throw
-			Map<String, Object> row = new LinkedHashMap<>();
-			row.put("id", hs.id());
-			row.put("scenario", hs.spec().scenario());
-			row.put("kind", hs.kind().wire());
-			row.put("seed", hs.spec().seed());
-			// the two control axes, split out of the old single `state` (docs/session-management.md):
-			// clockState drives the transport/terminal UI, outcome the finished/verdict UI
-			row.put("clockState", hs.clock().name());
-			row.put("outcome", hs.outcome().name());
-			row.put("tick", hs.tick());
-			row.put("date", hs.date().toString());     // the in-game date a lobby row shows
-			row.put("watching", hs.spectators());      // 👁 on the row
-			row.put("mine", me != null && me.equals(hs.owner()));
-			row.put("realm", realmOf(hs));             // which realm's map to open (docs/realms.md §A session carries its realm)
-			// What the row is CALLED. A run is named by its colony for now — naming is deferred to
-			// countries (docs/spectator-lobby.md §Naming), and this is the one field that changes when
-			// they land. Absent for a Timeline (it is the world's, not a colony's) and for a run with
-			// no colony yet, where the client falls back to the id.
-			if (!hs.isTimeline() && !hs.colonies().isEmpty())
-				row.put("colony", hs.colonies().get(0).getName());
-			if (hs.isTimeline()) {
-				// a Timeline's row is about the contest: how many are still standing, of how many
-				// founded. (Amendment 4 — a player with a living colony should see a rank window
-				// rather than the whole board — is a later, separate change.)
-				row.put("seats", hs.colonies().size());
-				row.put("standing", hs.survivors());
-			}
-			if (hs.endReason() != null)
-				row.put("endReason", hs.endReason());
-			out.add(row);
+			out.add(liveRow(hs, me));
 		}
+		// The caller's OWN recorded runs that are NOT live in this process — restored lazily on access,
+		// so after a redeploy they sit in the registry unloaded. Without these the lobby would hide your
+		// save slots while they still count against your slot limit (saveSlotsOf reads the registry), so
+		// you'd be told "you already have 5" over an apparently near-empty shelf. Registry-only rows are
+		// lighter (no colony name / spectator count); opening one restores it in full.
+		if (me != null)
+			for (SessionRecord r : host.registry().all())
+				if (me.equals(r.owner()) && !liveIds.contains(r.id()))
+					out.add(recordRow(r, map));
 		return out;
 	}
 
-	// The realm a session lives in — the realm of its anchor province (the colony founds there, so it
-	// is the session's realm, even for a Timeline that is still born empty). Opening the session switches
-	// the client's map to this realm; it defaults to Halcann when the anchor has no realm.
-	private static String realmOf(HostedSession hs) {
-		com.civstudio.geo.Province p = hs.session().getWorldMap().province(hs.spec().provinceId());
+	// a lobby row for a LIVE session (the full-detail case: colony name, spectator count, live clock)
+	private Map<String, Object> liveRow(HostedSession hs, String me) {
+		// a mutable map, not Map.of: the nullable fields below would make Map.of throw
+		Map<String, Object> row = new LinkedHashMap<>();
+		row.put("id", hs.id());
+		row.put("scenario", hs.spec().scenario());
+		row.put("kind", hs.kind().wire());
+		row.put("seed", hs.spec().seed());
+		// the two control axes, split out of the old single `state` (docs/session-management.md):
+		// clockState drives the transport/terminal UI, outcome the finished/verdict UI
+		row.put("clockState", hs.clock().name());
+		row.put("outcome", hs.outcome().name());
+		row.put("tick", hs.tick());
+		row.put("date", hs.date().toString());     // the in-game date a lobby row shows
+		row.put("watching", hs.spectators());      // 👁 on the row
+		row.put("mine", me != null && me.equals(hs.owner()));
+		row.put("realm", realmKey(hs.session().getWorldMap(), hs.spec().provinceId()));
+		// What the row is CALLED. A run is named by its colony for now — naming is deferred to
+		// countries (docs/spectator-lobby.md §Naming), and this is the one field that changes when
+		// they land. Absent for a Timeline (it is the world's, not a colony's) and for a run with
+		// no colony yet, where the client falls back to the id.
+		if (!hs.isTimeline() && !hs.colonies().isEmpty())
+			row.put("colony", hs.colonies().get(0).getName());
+		if (hs.isTimeline()) {
+			// a Timeline's row is about the contest: how many are still standing, of how many
+			// founded. (Amendment 4 — a player with a living colony should see a rank window
+			// rather than the whole board — is a later, separate change.)
+			row.put("seats", hs.colonies().size());
+			row.put("standing", hs.survivors());
+		}
+		if (hs.endReason() != null)
+			row.put("endReason", hs.endReason());
+		return row;
+	}
+
+	// a lobby row built from a RECORD alone — a run recorded but not loaded in this process. The record
+	// has no colony name (the client titles it by id) nor a live spectator count; the in-game date is
+	// its clock origin (the shared founding date) plus the recorded tick.
+	private Map<String, Object> recordRow(SessionRecord r, WorldMap map) {
+		Map<String, Object> row = new LinkedHashMap<>();
+		row.put("id", r.id());
+		row.put("scenario", r.scenario());
+		row.put("kind", r.kindEnum().wire());
+		row.put("seed", r.seed());
+		row.put("clockState", r.clockState() == null ? "STOPPED" : r.clockState());
+		row.put("outcome", r.outcome() == null ? "LIVE" : r.outcome());
+		row.put("tick", r.tick());
+		row.put("date", SimulationConfig.DEFAULT.startDate().plusDays(r.tick()).toString());
+		row.put("watching", 0);
+		row.put("mine", true);   // only the caller's own records reach here
+		row.put("realm", realmKey(map, r.provinceId()));
+		if (r.endReason() != null)
+			row.put("endReason", r.endReason());
+		return row;
+	}
+
+	// The realm a run lives in — the realm of its anchor province. Opening the run switches the client's
+	// map to this realm; defaults to Halcann when the anchor has no realm (or the map is unavailable).
+	private static String realmKey(WorldMap map, int provinceId) {
+		com.civstudio.geo.Province p = map == null ? null : map.province(provinceId);
 		com.civstudio.geo.Realm r = p != null ? p.realm() : com.civstudio.geo.Realm.NONE;
 		return r == com.civstudio.geo.Realm.NONE ? "halcann" : r.rawKey();
 	}
@@ -176,7 +218,8 @@ public class SessionController {
 		// list row that also carries it is filtered to the owner but is a separate, racy fetch. Same
 		// value realmOf() puts on a list row.
 		return ResponseEntity.status(201).body(Map.of("id", hs.id(), "clockState", hs.clock().name(),
-				"outcome", hs.outcome().name(), "kind", hs.kind().wire(), "realm", realmOf(hs)));
+				"outcome", hs.outcome().name(), "kind", hs.kind().wire(),
+				"realm", realmKey(hs.session().getWorldMap(), hs.spec().provinceId())));
 	}
 
 	@PostMapping("/{id}/control")
@@ -284,7 +327,9 @@ public class SessionController {
 	 */
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Object> delete(@PathVariable String id, HttpServletRequest http) {
-		HostedSession hs = host.getOrRestore(id);
+		// get(), NOT getOrRestore(): deleting a registry-only slot must not first fast-forward-restore it
+		// just to forget it. The owner check + forget work off the record when the run is not live.
+		HostedSession hs = host.get(id);
 		String user = currentUser.userId(http);
 		if (user == null)
 			return ResponseEntity.status(401).body(Map.of("error", "sign in to delete a run"));

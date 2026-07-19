@@ -181,6 +181,34 @@ class SaveSlotTest {
 		assertTrue(bad.body().contains("impossible"), bad.body());
 	}
 
+	/**
+	 * A redeploy forgets the live sessions but not the records. The lobby must still show the caller's
+	 * recorded save slots — or they vanish from view while still counting against the 5-slot limit, so a
+	 * player is told "you already have 5" over an apparently near-empty shelf (docs/session-management.md).
+	 */
+	@Test
+	@Timeout(180)
+	void theLobbyShowsYourRecordedSlotsEvenWhenNotLoaded() throws Exception {
+		for (int i = 0; i < 3; i++)
+			assertEquals(201, create("hank", 8700 + i).statusCode());
+		assertEquals(3, host.saveSlotsOf("hank").size());
+
+		host.stopAll();   // the redeploy: this process forgets the live sessions, the registry keeps them
+
+		var rows = json.readTree(send("GET", "/api/sessions", "hank", null).body());
+		long mine = 0;
+		for (var row : rows)
+			if (row.path("mine").asBoolean())
+				mine++;
+		assertEquals(3, mine, "all three recorded slots show, even unloaded — matching the slot count");
+		assertEquals(host.saveSlotsOf("hank").size(), mine, "the lobby agrees with the slot limit");
+
+		// ...and a registry-only slot is deletable without first restoring it
+		String id = SessionHost.sessionKey(new SessionSpec(8700L, SCENARIO, DHENIJANSAR), "hank");
+		assertEquals(204, delete(id, "hank"));
+		assertEquals(2, host.saveSlotsOf("hank").size(), "the freed slot no longer counts");
+	}
+
 	private HttpResponse<String> create(String user, long seed) throws Exception {
 		return send("POST", "/api/sessions", user, "{\"seed\":" + seed + ",\"scenario\":\""
 				+ SCENARIO + "\",\"provinceId\":" + DHENIJANSAR + "}");
