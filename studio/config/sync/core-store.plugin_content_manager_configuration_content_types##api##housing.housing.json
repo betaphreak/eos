@@ -1,0 +1,461 @@
+{
+  "key": "plugin_content_manager_configuration_content_types::api::housing.housing",
+  "value": {
+    "settings": {
+      "bulkable": true,
+      "filterable": true,
+      "searchable": true,
+      "pageSize": 10,
+      "relationOpenMode": "modal",
+      "mainField": "key",
+      "defaultSortBy": "key",
+      "defaultSortOrder": "ASC"
+    },
+    "metadatas": {
+      "id": {
+        "edit": {},
+        "list": {
+          "label": "id",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "documentId": {
+        "edit": {},
+        "list": {
+          "label": "documentId",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "key": {
+        "edit": {
+          "label": "key",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "key",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "prereqTech": {
+        "edit": {
+          "label": "prereqTech",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "prereqTech",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "obsoleteTech": {
+        "edit": {
+          "label": "obsoleteTech",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "obsoleteTech",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "obsoletesToBuilding": {
+        "edit": {
+          "label": "obsoletesToBuilding",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "obsoletesToBuilding",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "prereqPopulation": {
+        "edit": {
+          "label": "prereqPopulation",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "prereqPopulation",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "freshWater": {
+        "edit": {
+          "label": "freshWater",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "freshWater",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "autoBuild": {
+        "edit": {
+          "label": "autoBuild",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "autoBuild",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "bonus": {
+        "edit": {
+          "label": "bonus",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "key"
+        },
+        "list": {
+          "label": "bonus",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "prereqBonuses": {
+        "edit": {
+          "label": "prereqBonuses",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "key"
+        },
+        "list": {
+          "label": "prereqBonuses",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "prereqBuildings": {
+        "edit": {
+          "label": "prereqBuildings",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "prereqBuildings",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "prereqOrBuildings": {
+        "edit": {
+          "label": "prereqOrBuildings",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "prereqOrBuildings",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "prereqOrFeatures": {
+        "edit": {
+          "label": "prereqOrFeatures",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "key"
+        },
+        "list": {
+          "label": "prereqOrFeatures",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "prereqOrTerrains": {
+        "edit": {
+          "label": "prereqOrTerrains",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "key"
+        },
+        "list": {
+          "label": "prereqOrTerrains",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "replacements": {
+        "edit": {
+          "label": "replacements",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "replacements",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "health": {
+        "edit": {
+          "label": "health",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "health",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "happiness": {
+        "edit": {
+          "label": "happiness",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "happiness",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "yieldChanges": {
+        "edit": {
+          "label": "yieldChanges",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "yieldChanges",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "commerceChanges": {
+        "edit": {
+          "label": "commerceChanges",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "commerceChanges",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "createdAt": {
+        "edit": {
+          "label": "createdAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "createdAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedAt": {
+        "edit": {
+          "label": "updatedAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "updatedAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdBy": {
+        "edit": {
+          "label": "createdBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "createdBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedBy": {
+        "edit": {
+          "label": "updatedBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "updatedBy",
+          "searchable": true,
+          "sortable": true
+        }
+      }
+    },
+    "layouts": {
+      "list": [
+        "id",
+        "key",
+        "prereqTech",
+        "obsoleteTech",
+        "obsoletesToBuilding",
+        "prereqPopulation"
+      ],
+      "edit": [
+        [
+          {
+            "name": "key",
+            "size": 6
+          },
+          {
+            "name": "prereqTech",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "obsoleteTech",
+            "size": 6
+          },
+          {
+            "name": "obsoletesToBuilding",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "prereqPopulation",
+            "size": 6
+          },
+          {
+            "name": "freshWater",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "autoBuild",
+            "size": 6
+          },
+          {
+            "name": "bonus",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "prereqBonuses",
+            "size": 6
+          },
+          {
+            "name": "prereqBuildings",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "prereqOrBuildings",
+            "size": 6
+          },
+          {
+            "name": "prereqOrFeatures",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "prereqOrTerrains",
+            "size": 6
+          },
+          {
+            "name": "replacements",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "health",
+            "size": 6
+          },
+          {
+            "name": "happiness",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "yieldChanges",
+            "size": 12
+          }
+        ],
+        [
+          {
+            "name": "commerceChanges",
+            "size": 12
+          }
+        ]
+      ]
+    },
+    "uid": "api::housing.housing"
+  },
+  "type": "object",
+  "environment": null,
+  "tag": null
+}

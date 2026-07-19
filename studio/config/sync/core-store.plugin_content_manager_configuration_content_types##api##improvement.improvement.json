@@ -1,0 +1,381 @@
+{
+  "key": "plugin_content_manager_configuration_content_types::api::improvement.improvement",
+  "value": {
+    "settings": {
+      "bulkable": true,
+      "filterable": true,
+      "searchable": true,
+      "pageSize": 10,
+      "relationOpenMode": "modal",
+      "mainField": "key",
+      "defaultSortBy": "key",
+      "defaultSortOrder": "ASC"
+    },
+    "metadatas": {
+      "id": {
+        "edit": {},
+        "list": {
+          "label": "id",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "documentId": {
+        "edit": {},
+        "list": {
+          "label": "documentId",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "key": {
+        "edit": {
+          "label": "key",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "key",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "yieldChanges": {
+        "edit": {
+          "label": "yieldChanges",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "yieldChanges",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "prereqTech": {
+        "edit": {
+          "label": "prereqTech",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "prereqTech",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "hillsMakesValid": {
+        "edit": {
+          "label": "hillsMakesValid",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "hillsMakesValid",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "freshWaterMakesValid": {
+        "edit": {
+          "label": "freshWaterMakesValid",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "freshWaterMakesValid",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "validTerrains": {
+        "edit": {
+          "label": "validTerrains",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "key"
+        },
+        "list": {
+          "label": "validTerrains",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "validFeatures": {
+        "edit": {
+          "label": "validFeatures",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "key"
+        },
+        "list": {
+          "label": "validFeatures",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "buildCost": {
+        "edit": {
+          "label": "buildCost",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "buildCost",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "healthPercent": {
+        "edit": {
+          "label": "healthPercent",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "healthPercent",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "upgradeType": {
+        "edit": {
+          "label": "upgradeType",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "key"
+        },
+        "list": {
+          "label": "upgradeType",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "upgradeTime": {
+        "edit": {
+          "label": "upgradeTime",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "upgradeTime",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "culture": {
+        "edit": {
+          "label": "culture",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "culture",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "actsAsCity": {
+        "edit": {
+          "label": "actsAsCity",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "actsAsCity",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "techYieldChanges": {
+        "edit": {
+          "label": "techYieldChanges",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "techYieldChanges",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "createdAt": {
+        "edit": {
+          "label": "createdAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "createdAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedAt": {
+        "edit": {
+          "label": "updatedAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "updatedAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdBy": {
+        "edit": {
+          "label": "createdBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "createdBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedBy": {
+        "edit": {
+          "label": "updatedBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "updatedBy",
+          "searchable": true,
+          "sortable": true
+        }
+      }
+    },
+    "layouts": {
+      "list": [
+        "id",
+        "key",
+        "prereqTech",
+        "hillsMakesValid",
+        "freshWaterMakesValid",
+        "buildCost"
+      ],
+      "edit": [
+        [
+          {
+            "name": "key",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "yieldChanges",
+            "size": 12
+          }
+        ],
+        [
+          {
+            "name": "prereqTech",
+            "size": 6
+          },
+          {
+            "name": "hillsMakesValid",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "freshWaterMakesValid",
+            "size": 6
+          },
+          {
+            "name": "validTerrains",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "validFeatures",
+            "size": 6
+          },
+          {
+            "name": "buildCost",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "healthPercent",
+            "size": 6
+          },
+          {
+            "name": "upgradeType",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "upgradeTime",
+            "size": 6
+          },
+          {
+            "name": "culture",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "actsAsCity",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "techYieldChanges",
+            "size": 12
+          }
+        ]
+      ]
+    },
+    "uid": "api::improvement.improvement"
+  },
+  "type": "object",
+  "environment": null,
+  "tag": null
+}

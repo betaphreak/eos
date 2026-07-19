@@ -29,9 +29,12 @@ npm run build        # Build the admin panel
 npm run console      # Interactive Strapi REPL (query the DB, run Document Service calls)
 npm run upgrade      # Upgrade Strapi to latest (npm run upgrade:dry for a dry run)
 
-node scripts/gen-schemas.mjs       # (re)generate the 26 repetitive content-type schemas from the spec
-node scripts/validate-schemas.mjs  # structural lint of every schema (no DB); CI-friendly
-npx strapi ts:generate-types       # authoritative: load the whole registry + regen types/generated
+node scripts/gen-schemas.mjs           # (re)generate the 26 repetitive content-type schemas from the spec
+node scripts/validate-schemas.mjs      # structural lint of every schema (no DB); CI-friendly
+node scripts/gen-view-configs.mjs      # (re)generate admin view layouts (edit form + list) from schemas → config/sync
+node scripts/validate-view-configs.mjs # structural lint of the view configs vs schemas (no DB); CI-friendly
+npx config-sync import -y              # apply config/sync (roles, view layouts, …) to the DB; `diff` to preview
+npx strapi ts:generate-types           # authoritative: load the whole registry + regen types/generated
 ```
 
 There is **no test suite, linter, or formatter** configured in this project. `tsc` runs as part of
@@ -111,7 +114,17 @@ When adding a custom route, remember to **enable its action's permission in the 
 `strapi-plugin-config-sync` is installed and syncs admin config (roles, content-manager layouts,
 plugin settings, i18n locales) as JSON files under `config/sync/`. These files are committed and are
 the source of truth for admin/permission configuration across environments — regenerate them via the
-plugin (Config Sync admin page or its CLI) rather than editing by hand.
+plugin (Config Sync admin page or the `config-sync` CLI: `import`/`export`/`diff`) rather than editing
+by hand.
+
+The **content-manager view layouts** for the api collection types (the edit form + list view — files
+`core-store.plugin_content_manager_configuration_content_types##api##<n>.<n>.json`) are **generated
+from the schemas** by `scripts/gen-view-configs.mjs` (mainField, sensible field order/sizes, list
+columns), NOT hand-edited or clicked in the admin — so a schema change reflows the form on a re-run.
+`scripts/validate-view-configs.mjs` lints them against the schemas with no DB. After generating, apply
+with `npx config-sync import -y`. (Admin/user **role** permissions are partly runtime-managed by
+Strapi — super-admin is auto-granted every existing type — so those two files show a standing
+`config-sync diff`; that is expected, not drift from these layouts.)
 
 ### Other config
 

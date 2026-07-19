@@ -1,0 +1,262 @@
+{
+  "key": "plugin_content_manager_configuration_content_types::api::terrain-art.terrain-art",
+  "value": {
+    "settings": {
+      "bulkable": true,
+      "filterable": true,
+      "searchable": true,
+      "pageSize": 10,
+      "relationOpenMode": "modal",
+      "mainField": "artTag",
+      "defaultSortBy": "artTag",
+      "defaultSortOrder": "ASC"
+    },
+    "metadatas": {
+      "id": {
+        "edit": {},
+        "list": {
+          "label": "id",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "documentId": {
+        "edit": {},
+        "list": {
+          "label": "documentId",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "terrain": {
+        "edit": {
+          "label": "terrain",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "key"
+        },
+        "list": {
+          "label": "terrain",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "artTag": {
+        "edit": {
+          "label": "artTag",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "artTag",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "path": {
+        "edit": {
+          "label": "path",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "path",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "grid": {
+        "edit": {
+          "label": "grid",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "grid",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "detail": {
+        "edit": {
+          "label": "detail",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "detail",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "layerOrder": {
+        "edit": {
+          "label": "layerOrder",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "layerOrder",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "alphaShader": {
+        "edit": {
+          "label": "alphaShader",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "alphaShader",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "blend": {
+        "edit": {
+          "label": "blend",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "blend",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "createdAt": {
+        "edit": {
+          "label": "createdAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "createdAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedAt": {
+        "edit": {
+          "label": "updatedAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "updatedAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdBy": {
+        "edit": {
+          "label": "createdBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "createdBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedBy": {
+        "edit": {
+          "label": "updatedBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "updatedBy",
+          "searchable": true,
+          "sortable": true
+        }
+      }
+    },
+    "layouts": {
+      "list": [
+        "id",
+        "artTag",
+        "terrain",
+        "path",
+        "grid",
+        "detail"
+      ],
+      "edit": [
+        [
+          {
+            "name": "terrain",
+            "size": 6
+          },
+          {
+            "name": "artTag",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "path",
+            "size": 6
+          },
+          {
+            "name": "grid",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "detail",
+            "size": 6
+          },
+          {
+            "name": "layerOrder",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "alphaShader",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "blend",
+            "size": 12
+          }
+        ]
+      ]
+    },
+    "uid": "api::terrain-art.terrain-art"
+  },
+  "type": "object",
+  "environment": null,
+  "tag": null
+}

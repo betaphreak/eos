@@ -31,36 +31,6 @@
       "locale": null
     },
     {
-      "documentId": "vv0caip6tioy7xlkrmlsvesm",
-      "action": "api::province-relation.province-relation.bulkCreate",
-      "locale": null
-    },
-    {
-      "documentId": "fm222uztfw4fxvafqx5gwbwl",
-      "action": "api::province-relation.province-relation.create",
-      "locale": null
-    },
-    {
-      "documentId": "gbnwt9jv79e75x2jy8e7hrx2",
-      "action": "api::province-relation.province-relation.delete",
-      "locale": null
-    },
-    {
-      "documentId": "o68ywweu1frjk47ebbjf7t38",
-      "action": "api::province-relation.province-relation.find",
-      "locale": null
-    },
-    {
-      "documentId": "fp5oug7t66x0vimaw27cduk8",
-      "action": "api::province-relation.province-relation.findOne",
-      "locale": null
-    },
-    {
-      "documentId": "mhs938hei150z8jxm8re2aa6",
-      "action": "api::province-relation.province-relation.update",
-      "locale": null
-    },
-    {
       "documentId": "qfghj0diamkwzxhmb0q5wnp4",
       "action": "api::province.province.bulkCreate",
       "locale": null

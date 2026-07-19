@@ -1,0 +1,300 @@
+{
+  "key": "plugin_content_manager_configuration_content_types::api::feature.feature",
+  "value": {
+    "settings": {
+      "bulkable": true,
+      "filterable": true,
+      "searchable": true,
+      "pageSize": 10,
+      "relationOpenMode": "modal",
+      "mainField": "key",
+      "defaultSortBy": "key",
+      "defaultSortOrder": "ASC"
+    },
+    "metadatas": {
+      "id": {
+        "edit": {},
+        "list": {
+          "label": "id",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "documentId": {
+        "edit": {},
+        "list": {
+          "label": "documentId",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "key": {
+        "edit": {
+          "label": "key",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "key",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "yieldChanges": {
+        "edit": {
+          "label": "yieldChanges",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "yieldChanges",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "clearCost": {
+        "edit": {
+          "label": "clearCost",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "clearCost",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "requiresFlatlands": {
+        "edit": {
+          "label": "requiresFlatlands",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "requiresFlatlands",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "requiresRiver": {
+        "edit": {
+          "label": "requiresRiver",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "requiresRiver",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "validTerrains": {
+        "edit": {
+          "label": "validTerrains",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "key"
+        },
+        "list": {
+          "label": "validTerrains",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "healthPercent": {
+        "edit": {
+          "label": "healthPercent",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "healthPercent",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "growth": {
+        "edit": {
+          "label": "growth",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "growth",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "movement": {
+        "edit": {
+          "label": "movement",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "movement",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "appearance": {
+        "edit": {
+          "label": "appearance",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "appearance",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdAt": {
+        "edit": {
+          "label": "createdAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "createdAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedAt": {
+        "edit": {
+          "label": "updatedAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "updatedAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdBy": {
+        "edit": {
+          "label": "createdBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "createdBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedBy": {
+        "edit": {
+          "label": "updatedBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "updatedBy",
+          "searchable": true,
+          "sortable": true
+        }
+      }
+    },
+    "layouts": {
+      "list": [
+        "id",
+        "key",
+        "clearCost",
+        "requiresFlatlands",
+        "requiresRiver",
+        "healthPercent"
+      ],
+      "edit": [
+        [
+          {
+            "name": "key",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "yieldChanges",
+            "size": 12
+          }
+        ],
+        [
+          {
+            "name": "clearCost",
+            "size": 6
+          },
+          {
+            "name": "requiresFlatlands",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "requiresRiver",
+            "size": 6
+          },
+          {
+            "name": "validTerrains",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "healthPercent",
+            "size": 6
+          },
+          {
+            "name": "growth",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "movement",
+            "size": 6
+          },
+          {
+            "name": "appearance",
+            "size": 6
+          }
+        ]
+      ]
+    },
+    "uid": "api::feature.feature"
+  },
+  "type": "object",
+  "environment": null,
+  "tag": null
+}

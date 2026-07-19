@@ -1,0 +1,475 @@
+{
+  "key": "plugin_content_manager_configuration_content_types::api::unit.unit",
+  "value": {
+    "settings": {
+      "bulkable": true,
+      "filterable": true,
+      "searchable": true,
+      "pageSize": 10,
+      "relationOpenMode": "modal",
+      "mainField": "name",
+      "defaultSortBy": "name",
+      "defaultSortOrder": "ASC"
+    },
+    "metadatas": {
+      "id": {
+        "edit": {},
+        "list": {
+          "label": "id",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "documentId": {
+        "edit": {},
+        "list": {
+          "label": "documentId",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "key": {
+        "edit": {
+          "label": "key",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "key",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "name": {
+        "edit": {
+          "label": "name",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "name",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "pedia": {
+        "edit": {
+          "label": "pedia",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "pedia",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "prereqTech": {
+        "edit": {
+          "label": "prereqTech",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "prereqTech",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "andTechs": {
+        "edit": {
+          "label": "andTechs",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "andTechs",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "obsoleteTech": {
+        "edit": {
+          "label": "obsoleteTech",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "obsoleteTech",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "combatClass": {
+        "edit": {
+          "label": "combatClass",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "combatClass",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "defaultUnitAI": {
+        "edit": {
+          "label": "defaultUnitAI",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "defaultUnitAI",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "caravanRole": {
+        "edit": {
+          "label": "caravanRole",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "caravanRole",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "domain": {
+        "edit": {
+          "label": "domain",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "domain",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "quality": {
+        "edit": {
+          "label": "quality",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "quality",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "bandSizeClass": {
+        "edit": {
+          "label": "bandSizeClass",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "bandSizeClass",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "moves": {
+        "edit": {
+          "label": "moves",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "moves",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "combat": {
+        "edit": {
+          "label": "combat",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "combat",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "builds": {
+        "edit": {
+          "label": "builds",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "builds",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "artDefineTag": {
+        "edit": {
+          "label": "artDefineTag",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "artDefineTag",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "button": {
+        "edit": {
+          "label": "button",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "button",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "special": {
+        "edit": {
+          "label": "special",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "special",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "species": {
+        "edit": {
+          "label": "species",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "species",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdAt": {
+        "edit": {
+          "label": "createdAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "createdAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedAt": {
+        "edit": {
+          "label": "updatedAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "updatedAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdBy": {
+        "edit": {
+          "label": "createdBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "createdBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedBy": {
+        "edit": {
+          "label": "updatedBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "updatedBy",
+          "searchable": true,
+          "sortable": true
+        }
+      }
+    },
+    "layouts": {
+      "list": [
+        "id",
+        "name",
+        "key",
+        "prereqTech",
+        "obsoleteTech",
+        "combatClass"
+      ],
+      "edit": [
+        [
+          {
+            "name": "key",
+            "size": 6
+          },
+          {
+            "name": "name",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "pedia",
+            "size": 12
+          }
+        ],
+        [
+          {
+            "name": "prereqTech",
+            "size": 6
+          },
+          {
+            "name": "andTechs",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "obsoleteTech",
+            "size": 6
+          },
+          {
+            "name": "combatClass",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "defaultUnitAI",
+            "size": 6
+          },
+          {
+            "name": "caravanRole",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "domain",
+            "size": 6
+          },
+          {
+            "name": "quality",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "bandSizeClass",
+            "size": 6
+          },
+          {
+            "name": "moves",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "combat",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "builds",
+            "size": 12
+          }
+        ],
+        [
+          {
+            "name": "artDefineTag",
+            "size": 6
+          },
+          {
+            "name": "button",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "special",
+            "size": 6
+          },
+          {
+            "name": "species",
+            "size": 6
+          }
+        ]
+      ]
+    },
+    "uid": "api::unit.unit"
+  },
+  "type": "object",
+  "environment": null,
+  "tag": null
+}

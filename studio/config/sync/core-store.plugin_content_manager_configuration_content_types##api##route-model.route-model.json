@@ -1,0 +1,280 @@
+{
+  "key": "plugin_content_manager_configuration_content_types::api::route-model.route-model",
+  "value": {
+    "settings": {
+      "bulkable": true,
+      "filterable": true,
+      "searchable": true,
+      "pageSize": 10,
+      "relationOpenMode": "modal",
+      "mainField": "key",
+      "defaultSortBy": "key",
+      "defaultSortOrder": "ASC"
+    },
+    "metadatas": {
+      "id": {
+        "edit": {},
+        "list": {
+          "label": "id",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "documentId": {
+        "edit": {},
+        "list": {
+          "label": "documentId",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "key": {
+        "edit": {
+          "label": "key",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "key",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "routeType": {
+        "edit": {
+          "label": "routeType",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "key"
+        },
+        "list": {
+          "label": "routeType",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "modelFileKey": {
+        "edit": {
+          "label": "modelFileKey",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "modelFileKey",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "modelFile": {
+        "edit": {
+          "label": "modelFile",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "modelFile",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "lateModelFile": {
+        "edit": {
+          "label": "lateModelFile",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "lateModelFile",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "animated": {
+        "edit": {
+          "label": "animated",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "animated",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "connections": {
+        "edit": {
+          "label": "connections",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "connections",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "modelConnections": {
+        "edit": {
+          "label": "modelConnections",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "modelConnections",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "rotations": {
+        "edit": {
+          "label": "rotations",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "rotations",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "createdAt": {
+        "edit": {
+          "label": "createdAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "createdAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedAt": {
+        "edit": {
+          "label": "updatedAt",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true
+        },
+        "list": {
+          "label": "updatedAt",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "createdBy": {
+        "edit": {
+          "label": "createdBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "createdBy",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "updatedBy": {
+        "edit": {
+          "label": "updatedBy",
+          "description": "",
+          "placeholder": "",
+          "visible": false,
+          "editable": true,
+          "mainField": "firstname"
+        },
+        "list": {
+          "label": "updatedBy",
+          "searchable": true,
+          "sortable": true
+        }
+      }
+    },
+    "layouts": {
+      "list": [
+        "id",
+        "key",
+        "routeType",
+        "modelFileKey",
+        "modelFile",
+        "lateModelFile"
+      ],
+      "edit": [
+        [
+          {
+            "name": "key",
+            "size": 6
+          },
+          {
+            "name": "routeType",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "modelFileKey",
+            "size": 6
+          },
+          {
+            "name": "modelFile",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "lateModelFile",
+            "size": 6
+          },
+          {
+            "name": "animated",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "connections",
+            "size": 6
+          },
+          {
+            "name": "modelConnections",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "rotations",
+            "size": 12
+          }
+        ]
+      ]
+    },
+    "uid": "api::route-model.route-model"
+  },
+  "type": "object",
+  "environment": null,
+  "tag": null
+}
