@@ -10,12 +10,15 @@ consumed by the engine + `web/` viewer. Content models mirror what the engine's 
 (`docs/studio-exporter-datasets.md`): world-map geography, the C2C tech/building/unit/terrain
 definitions, and naming/calendar/reference data.
 
-> **Data-model rebuild in progress** (`docs/studio-datamodel-rebuild-plan.md`). The 12 legacy content
-> types were replaced with a new model — **29 collection types + 4 single types** — that mirrors the
-> exporter datasets and makes Strapi the engine's authoritative store. Phases 1–2 (teardown + schema)
-> are built; the seeder and the engine read-path are not. Enums are plain `enumeration` attributes (no
-> `era`/`rank`/`race`/`advisor`/`skill` tables); FK keys are relations; the geometry/art sidecars
-> (`province-edge`/`province-portal`/`route-model`/`terrain-art`) are their own types.
+> **Data-model rebuild — SHIPPED & live on prod** (`docs/studio-datamodel-rebuild-plan.md`). The 12
+> legacy content types were replaced with a new model mirroring the exporter datasets, making Strapi
+> the engine's **authoritative content store**. The full chain is live: the seeder loads the exporter
+> JSON into Postgres, `GET /api/world-bundle` serves it version-stamped + token-gated, and the engine
+> boots from it (prod server: `StrapiWorldSource`; tests/offline: a committed world-bundle fixture).
+> `generated/` is **no longer committed** in the engine repo — the exporters now seed studio. Enums are
+> plain `enumeration` attributes (no `era`/`rank`/`race`/`advisor`/`skill` tables); FK keys are
+> relations; the geometry/art sidecars (`province-edge`/`province-portal`/`route-model`/`terrain-art`)
+> are their own types.
 
 ## Commands
 
@@ -44,24 +47,28 @@ Standard Strapi 5 layout under `src/api/<name>/` — each content type has `cont
 thin factory wrappers (`factories.createCoreController` etc.) and are auto-generated; the
 customizations below are what matter.
 
-### Custom bulk ingestion endpoints (the main custom code)
+### The custom code that matters: seeder + world-bundle endpoint
 
-The game client seeds large amounts of world data via custom bulk endpoints. These exist for
-**country, culture, province, and province-relation** only:
+Strapi is seeded and read through two custom pieces, not the admin CRUD (the old per-type
+`POST /<plural>/bulk` ingestion endpoints have been **removed**):
 
-- Route files are named `routes/bulk.ts` (separate from the auto-generated `routes/<name>.ts`) and
-  map `POST /<plural>/bulk` to a `bulkCreate` controller method.
-- Controllers override the core factory to add `bulkCreate`, which expects `{ data: [...] }` (an
-  array wrapped under a `data` key) and loops calling `strapi.documents('api::<name>.<name>').create(...)`
-  per item using the **Strapi 5 Document Service API** (not the legacy entity service).
-- **Province** additionally has `POST /provinces/bulk-links` → `bulkLink`, a two-phase pattern:
-  `bulkCreate` inserts provinces first, then `bulkLink` wires up the many-to-many `neighbors`
-  relations afterward (the client sends `documentId` + `neighbors` pairs). Province `bulkCreate`
-  forces `status: 'published'`.
+- **`scripts/seed.js`** — a standalone Node ETL (CommonJS: `node scripts/seed.js`; `--wipe` to
+  TRUNCATE first, `--bulk` for raw batch INSERTs, `SEED_CONCURRENCY` tunable). It boots Strapi
+  programmatically and upserts every collection from the engine's exporter JSON via the **Document
+  Service**, two-phase: scalars first (natural-key → `documentId`), then relink relations. This is
+  how content gets in; `.github/workflows/seed-studio.yml` runs it as a `workflow_dispatch`.
+- **`src/api/world-bundle/`** — a custom collectionless route serving `GET /api/world-bundle`: ONE
+  gzipped, version-stamped, **path-keyed** bundle where `resources["/map/provinces.json"]` is
+  byte-for-byte what the engine reads from that classpath resource, so the engine's `WorldSource`
+  just re-serializes `resources[path]` and every parser is unchanged. `services/world-bundle.ts`
+  REVERSES `seed.js` (Strapi attrs → committed keys, relations → natural keys); the response is cached
+  keyed on content-version (rebuilt only on a version change or `?fresh=1`), with a
+  `GET /api/world-bundle/version` + ETag / If-None-Match seam. Gated by the `WORLD_BUNDLE_TOKEN`
+  shared secret (open when unset, for dev). `scripts/verify-bundle.js` fetches it and diffs per-record
+  against the committed exporter JSON.
 
-When adding a bulk endpoint to another content type, replicate this pattern: add `routes/bulk.ts`,
-add the `bulkCreate` method to the controller, and **enable the custom action's permission in the
-Strapi Admin** (Settings → Roles) — custom routes are not covered by the default CRUD permissions.
+When adding a custom route, remember to **enable its action's permission in the Strapi Admin**
+(Settings → Roles) — custom routes are not covered by the default CRUD permissions.
 
 ### Domain model notes
 

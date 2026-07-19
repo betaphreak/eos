@@ -20,7 +20,8 @@ building/bonus infos already split), fetchable 1:1 — not curated splits of a m
 
 **The one big difference from Anbennar, up front:** `data/civ4/` is **`.dockerignore`-excluded and
 never read by the running server** — it is used **only at dev time** (the `geo/export/*` exporters
-that bake the committed `map/*.json` / resource JSON, and the node web bakers that bake the committed
+that bake the `generated/` `map/*.json` / resource JSON — which now **seed studio** and are no longer
+committed (`docs/studio-datamodel-rebuild-plan.md`) — and the node web bakers that bake the committed
 `web/assets`). So this is *simpler* than the Anbennar cut: **no runtime fetch, no mounted volume, no
 Spring/server config, no `AnbennarSourceConfigurer` analogue, no Docker/CI/deploy changes.** Purely a
 dev-time build-input concern.

@@ -219,13 +219,12 @@ rewrote all commit SHAs from the first `data/anbennar` commit onward — any oth
 - **Retiring the web bakers.** `web/build.mjs` / `bake-loading.mjs` will eventually stop needing mod
   files once plot/terrain data comes from the server. Until then they either use a small node fetch
   helper or are simply not run offline.
-- **Relocating generated exporter outputs out of `src/main/resources`.** Every exporter writes its
-  product (`map/*.json`, and the gitignored `map/provinces/*.json.gz` plot caches) into the
-  hand-authored resource tree, conflating generated data with source. The clean fix is a dedicated
-  committed generated-resources root declared in the engine POM (so the JSONs still land on the
-  classpath) with the regenerable caches moving to a real cache/`target` dir. Orthogonal to this
-  de-vendoring — touches all ~25 exporters + the POM — so tracked as its own follow-up. The
-  `anbennar-source.lock` added here rides along with that move when it happens.
+- **Relocating generated exporter outputs out of `src/main/resources`.** ✅ **DONE (and then some).**
+  The exporters now write into a dedicated `generated/` resource root (declared in the engine POM),
+  and that whole tree is **no longer committed** — studio is the authoritative content store, the
+  exporters *seed* it, and the engine boots from studio (`StrapiWorldSource`) or a committed
+  world-bundle fixture; only the GeoNames subset + `*.lock` pins + hand-authored `human-names/` stay
+  committed. See `docs/studio-datamodel-rebuild-plan.md`.
 
 ## Open questions
 

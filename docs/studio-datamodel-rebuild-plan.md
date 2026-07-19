@@ -420,7 +420,11 @@ reference doc exactly.
     A working tree can still run `mode=classpath` after re-running the exporters.
 - [ ] Regen studio `config/sync`; set read permissions (the `WORLD_BUNDLE_TOKEN` secret across dev/CI/
   prod). Realign the studio version with the reactor.
-- [ ] Update `studio/CLAUDE.md`, `docs/architecture.md`, `CLAUDE.md`, and the exporter docs.
+- [x] Update `studio/CLAUDE.md` (rebuild shipped+live; seeder + world-bundle endpoint replace the
+  removed bulk endpoints), `docs/architecture.md` (new "Where world data comes from — the content
+  store" section: the `WorldSource` seam, studio-authoritative, the committed fixture, the fidelity
+  caveat), `CLAUDE.md` (one-line subsystem pointer), `generated/README.md`, and the exporter docs
+  (`civ4-files.md` / `anbennar-files.md` — generated outputs seed studio, no longer committed).
 - [ ] Scheduled content export → committed JSON snapshots (backup/history + fixture + DR image; arch
   rec #8).
 
