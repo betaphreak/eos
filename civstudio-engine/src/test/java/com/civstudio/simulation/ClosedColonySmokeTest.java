@@ -2,12 +2,16 @@ package com.civstudio.simulation;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
+
+import com.civstudio.settlement.Settlement;
 
 /**
  * Smoke tests for the bundled <b>closed colonies</b>. Each now founds and replaces
@@ -17,30 +21,46 @@ import org.junit.jupiter.api.TestFactory;
  * settled colony dissolves and its survivors take to the road (see {@code
  * docs/caravan.md}). (The {@code -ea} checks in the agents/markets run throughout, so a
  * clean run exercises them.) Each case asserts its expected bank count (the banks
- * persist past the colony's dissolution) and that the colony ended by departing as a
- * band. Every colony now also populates the silver bank, since its export nobles are
- * raised by ennoblement (and re-bank in silver). The open run keeps its own dedicated
- * test.
+ * persist past the colony's dissolution), that it founded into the expected province
+ * and never overran that province's plots cap (the Phase 2.5 capacity gate,
+ * {@code docs/geography.md}), and that the colony ended by departing as a band. Every
+ * colony now also populates the silver bank, since its export nobles are raised by
+ * ennoblement (and re-bank in silver). The open run keeps its own dedicated test.
  */
 class ClosedColonySmokeTest {
 
-	/** One simulation under test: how to run it and its expected bank count. */
-	private record Case(String name, Supplier<SimulationHarness> run, int banks) {
+	/** One simulation under test: how to run it, its expected bank count, and where it founds. */
+	private record Case(String name, Supplier<SimulationHarness> run, int banks,
+			String province, double latitude, int maxPlots) {
 	}
 
 	private static Stream<Case> simulations() {
 		return Stream.of(
 				// 3 banks: the commoner copper bank, the silver bank the export nobles
-				// (raised by ennoblement) hold, and the ruler's gold bank
-				new Case("HomogeneousEconomy", HomogeneousEconomy::run, 3));
+				// (raised by ennoblement) hold, and the ruler's gold bank. Founds into
+				// Dhenijansar (74 plots) — the default-scenario province.
+				new Case("HomogeneousEconomy", HomogeneousEconomy::run, 3, "Dhenijansar", 23.16, 74));
 	}
 
 	@TestFactory
 	Stream<DynamicTest> runsToCompletionThenCollapses() {
 		return simulations().map(c -> DynamicTest.dynamicTest(c.name(), () -> {
 			SimulationHarness h = assertDoesNotThrow(() -> c.run().get());
-			assertEquals(c.banks(), h.getBanks().size(),
-					c.name() + " bank count");
+
+			// founds into the expected province and dynamic provisioning respects its plots cap —
+			// the colony ramps food firms until the settlement is physically full, then stops
+			// chartering rather than throwing on a failed grow (was DefaultProvinceFoundingTest).
+			Settlement colony = h.getColony();
+			assertNotNull(colony.getProvince(), c.name() + " should be founded into a province");
+			assertEquals(c.province(), colony.getProvince().name(), c.name() + " province");
+			assertEquals(c.latitude(), colony.getLatitude(), 1e-6);
+			assertEquals(c.maxPlots(), colony.getMaxPlots());
+			assertTrue(colony.getPlotCount() <= colony.getMaxPlots(),
+					"colony plot count " + colony.getPlotCount() + " exceeded its plots cap "
+							+ colony.getMaxPlots());
+
+			// the banks persist past dissolution; the colony ends by departing as a band
+			assertEquals(c.banks(), h.getBanks().size(), c.name() + " bank count");
 			SimulationAssertions.assertDepartedAsCaravan(h);
 		}));
 	}
