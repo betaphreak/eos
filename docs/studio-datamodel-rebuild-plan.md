@@ -352,8 +352,13 @@ reference doc exactly.
   (optional polish).
 - [ ] **Read the version at boot** (`BundleWorldSource.mapVersion()`/`contentVersion()`) — log it, and
   fold it into the `.map` plot-cache key + savegame reproducibility (seed + content-version + log).
-- [ ] **Fixture pipeline** — CI produces a bundle snapshot (curl `/api/world-bundle` against a seeded
-  studio → gzipped file in a gitignored cache) so `mvn test` runs offline via `FixtureWorldSource`.
+- [x] **Fixture pipeline** — `WorldSourceIntegrationTest` now RUNS on every `mvn test` (was skipped):
+  it uses `-Dworldbundle.fixture=<snapshot>` when given, else auto-assembles a bundle from the classpath
+  `generated/` resources (so it's inert-proof pre-cutover). `tools/make-world-bundle.mjs` snapshots a
+  live studio's `/api/world-bundle` to a `.json[.gz]` file (the gitignored/CI artifact). Verified the
+  whole chain: studio → snapshot tool → `FixtureWorldSource` → engine loaders == classpath; engine suite
+  387 green, 0 skipped. Post-cutover (generated/ deleted) the classpath auto-build stops working, so CI/
+  offline must supply a snapshot via the property (produced by the tool against a seeded studio).
 
 **Phase 5 — Cutover.**
 - [ ] **Seed PROD studio** (it is currently empty/unseeded) — run `seed.js` against the prod Postgres
