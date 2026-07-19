@@ -27,6 +27,9 @@
 .PARAMETER SkipBuild
   Skip build+push and just roll the Container App to an image tag already in GHCR.
 
+.PARAMETER ForceBuild
+  Force a local build+push even when the tag already exists on GHCR (the default auto-skips it).
+
 .EXAMPLE
   pwsh tools/deploy-server.ps1
   pwsh tools/deploy-server.ps1 -Tag 90db0ac... -SkipBuild
@@ -34,7 +37,8 @@
 [CmdletBinding()]
 param(
   [string]$Tag,
-  [switch]$SkipBuild
+  [switch]$SkipBuild,
+  [switch]$ForceBuild
 )
 $ErrorActionPreference = 'Stop'
 
@@ -44,6 +48,18 @@ $LOGIN    = 'ghcr.io'                          # registry login server
 $OWNER    = 'betaphreak'                       # ghcr namespace (GitHub owner, lowercase)
 $REPO     = 'civstudio-server'
 $HEALTH   = 'https://dev.civstudio.com/actuator/info'   # where we confirm the roll landed
+
+# Does OWNER/REPO:TAG already exist on GHCR? `docker manifest inspect` queries the registry directly
+# using Docker's stored credential (incl. helpers like wincred) and — verified — needs NO running
+# daemon (works with a dead DOCKER_HOST), so a clean-HEAD deploy can roll without starting Docker.
+# Exit 0 = present; any failure (absent / docker CLI missing / no cred) → $false, so we fall back to
+# building. Uses Docker's own auth (no packages scope needed). CI (deploy-server.yml) bakes the same
+# BUILD_COMMIT/BUILD_NUMBER, so the CI image passes the build-info post-roll verify.
+function Test-GhcrTagExists {
+  param([string]$Owner, [string]$Repo, [string]$ImageTag)
+  docker manifest inspect "$LOGIN/$Owner/$Repo`:$ImageTag" 2>$null | Out-Null
+  return ($LASTEXITCODE -eq 0)
+}
 
 $repoRoot = Split-Path -Parent $PSScriptRoot  # tools/ -> repo root
 Push-Location $repoRoot
@@ -62,11 +78,27 @@ try {
   $buildCommit = "$(git rev-parse --short HEAD)".Trim()
   Write-Host "==> Deploying image: $image (build #$buildNumber, commit $buildCommit)" -ForegroundColor Cyan
 
-  # sanity: tools present
-  docker info --format '{{.ServerVersion}}' | Out-Null
+  if ($SkipBuild -and $ForceBuild) { throw "Pass at most one of -SkipBuild / -ForceBuild." }
+
+  # AUTO-SKIP THE LOCAL BUILD when the tag is already on GHCR — CI (deploy-server.yml) builds+pushes
+  # every committed SHA in a few min (baking the same BUILD_COMMIT/BUILD_NUMBER), so a clean-HEAD
+  # deploy is normally just a roll (no Docker needed). A dirty tree tags "<sha>-dirty" (never on GHCR)
+  # so it always builds. -ForceBuild overrides.
+  if (-not $SkipBuild -and -not $ForceBuild) {
+    Write-Host "==> checking GHCR for $Tag" -ForegroundColor Cyan
+    if (Test-GhcrTagExists $OWNER $REPO $Tag) {
+      Write-Host "    already on GHCR (CI built it) — roll only; skipping local build. Use -ForceBuild to rebuild." -ForegroundColor Green
+      $SkipBuild = $true
+    } else {
+      Write-Host "    not on GHCR — will build locally." -ForegroundColor Yellow
+    }
+  }
+
+  # sanity: the roll always needs an authed az session; Docker only matters when we actually build.
   az account show --query name -o tsv | Out-Null
 
   if (-not $SkipBuild) {
+    docker info --format '{{.ServerVersion}}' | Out-Null
     Write-Host "==> docker login ghcr.io" -ForegroundColor Cyan
     # a PAT with write:packages (env GHCR_TOKEN) wins; else fall back to the gh CLI token, which
     # needs that scope too (`gh auth refresh -h github.com -s write:packages`).
@@ -126,18 +158,21 @@ try {
   # only need the one just deployed. Removes the other civstudio-server tags + any dangling images (not
   # the build cache — that stays, to keep the next rebuild fast). Best-effort: the deploy already
   # succeeded, so a cleanup hiccup must never fail it.
-  Write-Host "==> cleaning up old local images (keeping $Tag)" -ForegroundColor Cyan
-  $prevEAP = $ErrorActionPreference
-  try {
-    $ErrorActionPreference = 'Continue'   # a single rmi failure must not abort the loop
-    $old = @(docker images "$LOGIN/$OWNER/$REPO" --format '{{.Tag}}' | Where-Object { $_ -and $_ -ne $Tag })
-    foreach ($t in $old) { docker rmi "$LOGIN/$OWNER/$REPO`:$t" 2>$null | Out-Null }
-    docker image prune -f 2>$null | Out-Null   # dangling (untagged) images
-    Write-Host "    removed $($old.Count) old local tag(s) + dangling images; kept $Tag" -ForegroundColor Green
-  } catch {
-    Write-Warning "image cleanup skipped (deploy already succeeded): $_"
-  } finally {
-    $ErrorActionPreference = $prevEAP
+  # Only when we built locally — a roll-only deploy has no local images (and no Docker daemon needed).
+  if (-not $SkipBuild) {
+    Write-Host "==> cleaning up old local images (keeping $Tag)" -ForegroundColor Cyan
+    $prevEAP = $ErrorActionPreference
+    try {
+      $ErrorActionPreference = 'Continue'   # a single rmi failure must not abort the loop
+      $old = @(docker images "$LOGIN/$OWNER/$REPO" --format '{{.Tag}}' | Where-Object { $_ -and $_ -ne $Tag })
+      foreach ($t in $old) { docker rmi "$LOGIN/$OWNER/$REPO`:$t" 2>$null | Out-Null }
+      docker image prune -f 2>$null | Out-Null   # dangling (untagged) images
+      Write-Host "    removed $($old.Count) old local tag(s) + dangling images; kept $Tag" -ForegroundColor Green
+    } catch {
+      Write-Warning "image cleanup skipped (deploy already succeeded): $_"
+    } finally {
+      $ErrorActionPreference = $prevEAP
+    }
   }
 
   Write-Host "==> done." -ForegroundColor Cyan
