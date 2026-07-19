@@ -70,7 +70,9 @@ async function wipe(app) {
 }
 
 const uid = (n) => `api::${n}.${n}`;
-const CONC = 24;
+// Bounded write concurrency. Default 24 is fine for a local DB; lower it (SEED_CONCURRENCY=4) for a
+// remote/managed Postgres (e.g. Azure) whose connection limit + latency the higher fan-out overruns.
+const CONC = parseInt(process.env.SEED_CONCURRENCY || '24', 10);
 
 // ── content specs ────────────────────────────────────────────────────────────
 // Each: { name, key, load, keyOf?, scalars, rel? }.  scalars(r) → non-relation fields; rel(r, R) →
