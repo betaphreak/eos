@@ -370,13 +370,30 @@ reference doc exactly.
   offline must supply a snapshot via the property (produced by the tool against a seeded studio).
 
 **Phase 5 — Cutover.**
-- [ ] **Seed PROD studio** (it is currently empty/unseeded) — run `seed.js` against the prod Postgres
-  before prod boots through it.
-- [ ] **Flip the default to `StrapiWorldSource`** (mode=strapi) in prod/dev config; keep classpath/
-  fixture for offline + tests.
-- [ ] **Delete `resources/generated/`** (and `/map/`) from git; update `.gitignore` (the fixture
-  snapshot lives in a gitignored cache, like `.map`). Repoint/retire the exporters (their role becomes
-  "seed Strapi", not "write committed JSON").
+- [x] **Seed PROD studio** — done (2026-07-19). Prod carried stale old-model data (6114 provinces), so
+  `seed.js --wipe` against the prod Postgres (via the `.env`-swap script; `SEED_CONCURRENCY=8` — Azure
+  latency made it a ~40-min run) truncated + reseeded clean: all 26 counts exact, neighbors 28606,
+  `content-version=seed-2026-07-19`. Redeployed prod studio (`df76d78`, was `ab7d93b` which predated the
+  endpoint); **prod `/api/world-bundle` verified ALL DATASETS FAITHFUL** (2.8s cold, then cached).
+  NB: a future reseed wants a GitHub Actions `workflow_dispatch` (runner near Azure) — 40 min is painful.
+  SECURITY TODO: prod `/api/world-bundle` is currently OPEN (no `WORLD_BUNDLE_TOKEN` on the Container
+  App) — set the secret + the engine's token before the server flips to it (the game model shouldn't be
+  public).
+- [x] **🔒 Gate the endpoint** — `WORLD_BUNDLE_TOKEN` secret set on the studio Container App; prod
+  `/api/world-bundle` now 401 without the token, 200 with (game model no longer public).
+  - **Token location** (the value is NOT committed — this repo is public): it lives as the
+    `worldbundletoken` secret on **both** Container Apps (`civstudio-backend-app` serves the endpoint,
+    `civstudio-server` sends it). Read it: `az containerapp secret show -n civstudio-backend-app -g
+    civstudio --secret-name worldbundletoken`. **Rotate**: `az containerapp secret set --secrets
+    worldbundletoken=<new>` on *both* apps, then restart both (the endpoint and the server must match).
+- [x] **Flip prod SERVER to `mode=strapi`** (2026-07-19) — redeployed `civstudio-server` to `f559e02`
+  (behavior-neutral, classpath default), then set `CIVSTUDIO_WORLDSOURCE_MODE=strapi` +
+  `CIVSTUDIO_WORLDSOURCE_URL=https://civstudio.com/api/world-bundle` + `WORLD_BUNDLE_TOKEN`. **Verified
+  live**: boot log `[WorldSource] ← strapi … (contentVersion=seed-2026-07-19)`, demo session founded,
+  health 200, `/api/bundle` served. **Prod boots its invariant data from Strapi.** Rollback = set
+  `mode=classpath`.
+- [ ] **Delete `resources/generated/`** (and `/map/`) — **HELD**: keep committed as the classpath
+  fallback/rollback until the strapi flip proves stable in prod. Repoint/retire the exporters after.
 - [ ] Regen studio `config/sync`; set read permissions (the `WORLD_BUNDLE_TOKEN` secret across dev/CI/
   prod). Realign the studio version with the reactor.
 - [ ] Update `studio/CLAUDE.md`, `docs/architecture.md`, `CLAUDE.md`, and the exporter docs.

@@ -1,0 +1,72 @@
+# Manually seed the Studio (Strapi) content store — the fast, repeatable alternative to running
+# scripts/seed.js from a laptop (home → Azure at concurrency 8 took ~40 min; a runner co-located with
+# Azure at higher concurrency is a few minutes). Triggered by hand from the Actions tab.
+#
+# Why this works cleanly where the local run fought us: studio/.env is gitignored, so it's ABSENT in the
+# checkout — Strapi therefore reads DATABASE_* straight from this job's env (no .env override to fight),
+# and the seeder connects directly to Postgres (no world-bundle token needed).
+#
+# One-time setup — add these repo secrets (Settings → Secrets and variables → Actions):
+#   STUDIO_DB_HOST      e.g. civstudio-postgres.postgres.database.azure.com
+#   STUDIO_DB_NAME      e.g. postgres
+#   STUDIO_DB_USER      e.g. eu
+#   STUDIO_DB_PASSWORD  the prod DB password
+# (Optionally gate this behind a protected GitHub Environment named "production" for a review step.)
+
+name: Seed Studio
+
+on:
+  workflow_dispatch:
+    inputs:
+      wipe:
+        description: 'TRUNCATE content tables first (clean reseed — removes stale rows)'
+        type: boolean
+        default: true
+      concurrency:
+        description: 'Write concurrency (SEED_CONCURRENCY)'
+        default: '16'
+
+# Never let two seeds race the same DB.
+concurrency:
+  group: seed-studio
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    environment: production # add required reviewers here to gate prod seeds
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install studio dependencies
+        working-directory: studio
+        run: npm ci
+
+      - name: Seed
+        working-directory: studio
+        env:
+          # DB target — from repo secrets (no .env in the checkout, so these win)
+          DATABASE_CLIENT: postgres
+          DATABASE_HOST: ${{ secrets.STUDIO_DB_HOST }}
+          DATABASE_PORT: '5432'
+          DATABASE_NAME: ${{ secrets.STUDIO_DB_NAME }}
+          DATABASE_USERNAME: ${{ secrets.STUDIO_DB_USER }}
+          DATABASE_PASSWORD: ${{ secrets.STUDIO_DB_PASSWORD }}
+          DATABASE_SSL: 'true'
+          DATABASE_SSL_REJECT_UNAUTHORIZED: 'false' # Azure cert chain
+          DATABASE_POOL_MAX: '20'
+          SEED_CONCURRENCY: ${{ inputs.concurrency }}
+          # Strapi boot requires these present; the seeder never uses them, so ephemeral values are fine.
+          APP_KEYS: 'ci-seed-1,ci-seed-2'
+          API_TOKEN_SALT: 'ci-seed-api-token-salt'
+          ADMIN_JWT_SECRET: 'ci-seed-admin-jwt'
+          TRANSFER_TOKEN_SALT: 'ci-seed-transfer-salt'
+          JWT_SECRET: 'ci-seed-jwt'
+          ENCRYPTION_KEY: 'ci-seed-encryption-key'
+        run: node scripts/seed.js ${{ inputs.wipe && '--wipe' || '' }}
