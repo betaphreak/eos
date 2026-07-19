@@ -8,6 +8,15 @@ the `routes` layer (`web/js/routes.mjs`) auto-tiles them per plot. In the carava
 own **winter explorer levies** (no hand-seeded bands) pioneer the trails, which draw as roads
 radiating from the settlement.
 
+**Update (2026-07-19):** gap B's snapshot channel is being **replaced by a viewport-windowed feed**
+(see [§Viewport-windowed route persistence](#viewport-windowed-route-persistence-superseding-gap-b)
+below). The snapshot's per-band `routePlots` window (a 512-plot rolling buffer per living band) does
+not *persist* the network: a late-joining spectator never receives trails pioneered before it
+connected, a page reload wipes the accumulated layer, and a dissolved band stops broadcasting its
+still-existing trail. The fix moves the authoritative layer server-side (a session/province-scoped
+registry) and serves it per province on viewport entry. **Step 1 (engine registry) is BUILT**; the
+endpoint, snapshot dirty-signal and client cache follow.
+
 This is the follow-through on the owner's Phase-3 decision (see `docs/explorer-caravan.md`
 §Phase 3 "Route art"): **use the real Civ4 route art via `tools/nifbake`, not procedural
 ribbons.** Background on the engine-side route model (tiers, per-plot `Plot.routeType`,
@@ -109,13 +118,92 @@ founds pre-paved) stand in as paved road. **Caveat:** the urban core is already 
 `city.mjs` markers (mid-zoom) and the district hexes (deep-zoom), so the interim roads are
 largely occluded; the visible payoff is gap B's countryside routes, where nothing else draws.
 
+## Viewport-windowed route persistence (superseding gap B)
+
+Gap B's first cut broadcast trails through the render snapshot: each marching band re-emits its last
+`MAX_TRAILED_FOR_RENDER` (512) trailed plots every tick (`MarchingCaravan.trailedPlots()`), the
+server dedupes them into `SessionSnapshot.routePlots`, and the client *accumulates* what it is sent.
+That renders live trails but does **not persist the network**, because the emitted set is an
+ephemeral per-band rolling window, not the authoritative layer:
+
+1. **Late join** — a spectator connecting mid-run accumulates from empty and only ever receives the
+   current rolling windows, so it never sees historical trails.
+2. **Reload** — client accumulation is in-memory, so a page refresh wipes the visible network; most
+   of it never re-emits (the band has moved > 512 plots on).
+3. **Band death** — when a band dissolves, its trail stops broadcasting entirely, even though the
+   plots still carry the route in-engine (movement truth is durable; only the *feed* forgot).
+
+Meanwhile the authoritative full network already exists in-engine — `Plot.routeType` on every plot a
+band ever crossed — but nothing serves it as a whole. Restore is unaffected either way:
+`SessionHost.restore()` replays the sim day-by-day (`state = f(spec, log)`), so trails reconstruct
+for free; the gap is purely in *serving* the standing network to clients, not in durable storage.
+
+**The fix: a viewport-windowed feed that mirrors the per-province plot channel.** `GET
+/api/plots/{id}` already serves one province's plot grid on demand as it enters view (static, baked,
+immutably cached); the route layer copies that shape but is **session-scoped and mutable**:
+
+```
+GET /api/sessions/{sid}/routes/{provinceId}   → the routed plots in that province, this session
+```
+
+The client's viewport loop (`plots.mjs`, culling in-view provinces) fetches each in-view province's
+route set alongside its plot grid. Because routes mutate, the SSE snapshot carries a compact
+**freshness signal** — the province ids whose route layer changed recently (a `routeDirty` list;
+bands touch only a handful of provinces per tick) — and the client refetches only provinces that are
+*both dirty and in view*. Traffic scales with visible, changed area, not total network size.
+
+This is strictly better than a full-network broadcast here: it fixes all three defects (the server
+holds the authoritative layer and can serve any province), it is bounded by the viewport at any
+network size, and it *shrinks* the snapshot (a short id list replaces the ≤512×N-band plot blob).
+
+### The pieces, and phasing
+
+- **Step 1 — engine registry (BUILT).** A province-scoped routed-plot registry on
+  `ProvincePlotPool` (`routedPlots` + a monotonic `routeRev`), seeded from urban pre-paving in the
+  pool constructor and fed by `recordRoute(plot)` from every route-laying site
+  (`MarchingCaravan.layTrail`; urban pre-pave is captured by the constructor scan; future
+  road-builders call `recordRoute`). The layer now lives on the pool, so it survives band death and
+  is authoritative per province. Behavioural no-op: the existing `trailedPlots`/`routePlots`
+  snapshot path is left in place until step 2 swaps the server over.
+- **Step 2 — endpoint + dirty signal.** A session/province-scoped controller reading the registry
+  (gzipped like `PlotController`, but **not** `immutable`-cached — keyed by the province's
+  `routeRev`). `Snapshots.build` drops `collectRoutePlots`/`routePlots` and emits the `routeDirty`
+  id list instead; `RoutePlotView` is retired.
+- **Step 3 — client cache.** A per-province route cache in `plots.mjs`/`routes.mjs` filled on
+  viewport entry and invalidated for in-view provinces named in `routeDirty`. `drawRoutes` (which
+  already maps `q.route → tier`) consumes it unchanged. A cache-invalidation unit test rides the
+  `web-unit-tests-wanted` convention (`node --test web/js/`).
+
+### Roads must connect across province boundaries (like rivers)
+
+The draw layer's auto-tiler (`route-tiling.mjs` `routePiece(mask)`) picks a segment from a plot's
+4-bit N/E/S/W **neighbour mask**. At a province edge a plot's orthogonal neighbour lives in a
+*different* province's plot field (a different pool, a separately-fetched route set), so a
+naïve per-province `neighbourMask` sees no neighbour across the seam and draws a road **stub / dead
+end** at every boundary — exactly the failure rivers avoid by being computed on the whole-world
+raster, not per province. The per-province registry and feed are keyed by the shared packed `(x,y)`
+world raster position (the same coordinate `RoutePlotView`/the plot feed already use), so the fix is
+on the **client's `neighbourMask`**: resolve a boundary neighbour against the adjacent province's
+loaded route set (all in-view provinces are already loaded), not only the current one — a
+world-space neighbour lookup across the union of loaded route sets rather than a per-province one.
+Two consequences to honour in step 3:
+
+- The auto-tiler must index routed plots by **world `(x,y)`** across all loaded provinces (one
+  merged spatial map), so a plot on province A's edge fuses with the trail entering from province B.
+- A province coming into (or out of) view, or a neighbour's `routeRev` bumping, must re-evaluate the
+  **boundary plots of adjacent already-loaded provinces** too (their masks change when the neighbour
+  gains/loses a route), not just the province that changed. Cheapest correct rule: on any
+  route-set change for province P, re-tile P **and** the edge plots of P's loaded neighbours.
+
+(Trails still only fuse **same-tier** neighbours, boundary or not — a dirt trail entering a paved
+city core does not weld into one road, matching the in-province rule `drawRoutes` already applies.)
+
+Deploy note: engine + server + web, but **no `MAP_VERSION` bump and no CI plot-cache rebake** —
+routes are not baked into `.map`, so the static grid and its immutable cache are untouched. Deploy
+the server before the web auto-deploy (the client calls the new endpoint).
+
 ## Known follow-ups
 
-- **Gap B — data channel (the real payoff).** `Plot.routeType` is per-session mutable and excluded
-  from the static `plots.pack`, so it needs a **live** channel: expose the traversed/planned
-  corridor window (plot raster → lat/long + routeType) in the render `SessionSnapshot`, surfaced as
-  `q.route` on the client plots — which `drawRoutes` already consumes. `docs/explorer-caravan.md`
-  §Phase 5.
 - **Rail canonical orientation.** The `modrailroads` segments bake **90°-rotated** vs
   `path`/`roman roads` (rail `straight` is E–W, not N–S), so `routePiece`'s N/E/S/W convention
   places rail a quarter-turn off. Normalise per tier (rotate rail +90° in `stampCell`, or

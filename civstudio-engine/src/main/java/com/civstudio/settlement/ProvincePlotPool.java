@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 import com.civstudio.geo.PlotType;
 import com.civstudio.geo.Province;
@@ -53,6 +55,15 @@ public final class ProvincePlotPool {
 	private Map<Long, Plot> posIndex;
 	private final Map<Long, PlotCorridor> corridorCache = new HashMap<>();
 
+	// the authoritative per-session route layer for this province: the plots that carry a route
+	// (trail/paved road/…), in the order they were first laid. Unlike the ephemeral per-band window
+	// in MarchingCaravan.trailedPlots, this lives on the pool, so it survives a band's dissolution
+	// and is the whole standing network — what the viewport-windowed route feed serves per province
+	// (docs/route-rendering.md §Viewport-windowed route persistence). routeRev bumps on every change,
+	// the "this province's routes moved since you last fetched" signal the render snapshot advertises.
+	private final Set<Plot> routedPlots = new LinkedHashSet<>();
+	private int routeRev;
+
 	private ProvincePlotPool(Province province, List<Plot> plots) {
 		this.province = province;
 		this.plots = plots;
@@ -61,6 +72,13 @@ public final class ProvincePlotPool {
 		for (Plot p : plots) {
 			sx += p.x();
 			sy += p.y();
+			// seed the registry from any plot that already carries a route — the urban pre-paving
+			// (paveUrbanPlots) runs on the plot list before this constructor, so the city core's
+			// paved roads land here without touching that path. Seeding does not bump routeRev: a
+			// client fetches a province's routes on first view regardless; the rev is only the
+			// "changed since" delta signal.
+			if (p.routeType() != null)
+				routedPlots.add(p);
 		}
 		int n = Math.max(1, plots.size());
 		this.centroidX = Math.round((float) sx / n);
@@ -143,6 +161,48 @@ public final class ProvincePlotPool {
 	/** The province this pool belongs to. */
 	public Province province() {
 		return province;
+	}
+
+	/**
+	 * Record that a route was laid (or upgraded) on one of this province's plots, so the standing
+	 * route layer this pool serves stays authoritative. Every route-laying site calls this after
+	 * {@link Plot#layRoute}: a caravan pioneering a trail ({@link
+	 * com.civstudio.agent.MarchingCaravan#layTrail}), a future road-builder. Urban pre-paving is
+	 * captured by the constructor's seed scan instead, so it need not call here. Idempotent: a plot
+	 * already in the layer is not re-added, but any call bumps {@link #routeRev()} (an upgrade
+	 * trail→road is a change clients must refetch even though the plot was already routed).
+	 *
+	 * @param plot the plot a route was just laid on (must already carry a {@link Plot#routeType()})
+	 */
+	public void recordRoute(Plot plot) {
+		assert plot.routeType() != null : "recordRoute called before layRoute";
+		routedPlots.add(plot);
+		routeRev++;
+	}
+
+	/**
+	 * The plots of this province that carry a route — the whole standing network, in first-laid
+	 * order. This is the authoritative layer the viewport-windowed route feed serves per province
+	 * (docs/route-rendering.md); it survives band dissolution (unlike {@link
+	 * com.civstudio.agent.MarchingCaravan#trailedPlots()}). Returns a snapshot copy, safe to read
+	 * between ticks while the sim thread may lay more.
+	 *
+	 * @return a copy of the routed plots, in the order they were first laid
+	 */
+	public List<Plot> routedPlots() {
+		return new ArrayList<>(routedPlots);
+	}
+
+	/**
+	 * A monotonic version stamp for this province's route layer, bumped on every {@link
+	 * #recordRoute}. The render snapshot advertises the provinces whose rev advanced so a client
+	 * refetches only in-view provinces whose routes actually changed. Seeded urban pre-paving does
+	 * not bump it (a first-view fetch carries that regardless).
+	 *
+	 * @return the current route revision
+	 */
+	public int routeRev() {
+		return routeRev;
 	}
 
 	/** All plots of the province (free and claimed), an unmodifiable view. */

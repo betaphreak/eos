@@ -619,13 +619,18 @@ public abstract class MarchingCaravan extends Caravan {
 		RouteType trail = session().getTerrainRegistry().route(RouteType.TRAIL);
 		if (trail == null)
 			return;
+		// the corridor is walked within the current province's plot field, so its plots belong to
+		// that province's pool — the pool that owns the authoritative route layer we record into.
+		ProvincePlotPool pool = session().provincePlotPool(worldMap().province(getProvinceId()));
 		boolean laid = false;
 		for (Plot p : corridor.path())
 			if (p.routeType() == null) {
 				p.layRoute(trail);
-				// keep only a recent window for the render snapshot — the plot keeps its route
-				// (movement truth) forever; the client persists what it has already been sent, so
-				// dropping the oldest here just bounds the wire size for a long-wandering band.
+				// record into the pool's standing route layer — this survives the band's death and
+				// is what the viewport-windowed feed serves (docs/route-rendering.md). The per-band
+				// trailedPlots window below is the legacy snapshot channel, kept until step 2 swaps
+				// the server over; it keeps only a recent window (the plot keeps its route forever).
+				pool.recordRoute(p);
 				trailedPlots.add(p);
 				if (trailedPlots.size() > MAX_TRAILED_FOR_RENDER)
 					trailedPlots.remove(0);
@@ -633,7 +638,7 @@ public abstract class MarchingCaravan extends Caravan {
 			}
 		// a new route changes route-aware move costs, so drop the province's cached corridors
 		if (laid)
-			session().provincePlotPool(worldMap().province(getProvinceId())).invalidateCorridorCache();
+			pool.invalidateCorridorCache();
 	}
 
 	// strike the camp at dawn: free the plot the band occupied overnight
