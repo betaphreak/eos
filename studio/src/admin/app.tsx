@@ -24,6 +24,14 @@ export default {
       en: {
         'Auth.form.welcome.title': 'Welcome to CivStudio',
         'Auth.form.welcome.subtitle': 'Sign in to the administer content',
+        // The admin error boundary (ErrorElement) already logs the error to the console and offers a
+        // "Copy to clipboard" button with the full stack — but its default copy tells you to "notify
+        // your technical team" / open a Strapi GitHub issue, useless for a solo operator. Rewrite it to
+        // point at where the actual error already is. (We can't inject the dynamic message via a static
+        // translation; the console + Copy button carry it.)
+        'app.error': 'Something went wrong',
+        'app.error.message':
+          'The actual error is in your browser console (press F12 → Console). Use “Copy to clipboard” below to grab the full stack trace.',
       },
     },
   },
