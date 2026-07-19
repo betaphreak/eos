@@ -52,6 +52,23 @@ async function pool(items, size, fn) {
   );
 }
 
+/** TRUNCATE every api::* content table (CASCADE truncates their relation link tables too). */
+async function wipe(app) {
+  const tables = [];
+  for (const u of Object.keys(app.contentTypes)) {
+    if (!u.startsWith('api::')) continue;
+    const meta = app.db.metadata.get(u);
+    if (meta && meta.tableName) tables.push(meta.tableName);
+  }
+  if (!tables.length) {
+    console.log('[wipe] no api:: content tables found — nothing to truncate');
+    return;
+  }
+  const list = tables.map((t) => `"${t}"`).join(', ');
+  await app.db.connection.raw(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
+  console.log(`[wipe] truncated ${tables.length} content tables (CASCADE → link tables)`);
+}
+
 const uid = (n) => `api::${n}.${n}`;
 const CONC = 24;
 
@@ -192,6 +209,13 @@ function buildSpecs() {
 async function main() {
   const app = await createStrapi(await compileStrapi()).load();
   app.log.level = 'error';
+
+  // --wipe: TRUNCATE every api::* content table (CASCADE → their relation link tables) before seeding,
+  // for a CLEAN reseed. Needed when a DB carries stale rows the idempotent upsert wouldn't remove
+  // (e.g. prod still holding old-model provinces/countries). Only touches api::* tables — admin/plugin
+  // tables are untouched.
+  if (process.argv.includes('--wipe')) await wipe(app);
+
   const maps = {}; // name → Map(naturalKey → documentId)
   let misses = 0;
   const errors = []; // {phase, name, key, msg}
