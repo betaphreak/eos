@@ -350,8 +350,15 @@ reference doc exactly.
   not committed order; `web/` keys by id so it's functionally identical). Order is stable within a
   content-version; a natural-key sort in the projection could make it byte-stable across reseeds too
   (optional polish).
-- [ ] **Read the version at boot** (`BundleWorldSource.mapVersion()`/`contentVersion()`) — log it, and
-  fold it into the `.map` plot-cache key + savegame reproducibility (seed + content-version + log).
+- [x] **Version-keyed endpoint cache** (arch rec #3) — the `/api/world-bundle` controller/service now
+  caches the serialized+gzipped bundle keyed by `content-version` and rebuilds only when it changes
+  (or `?fresh=1`); concurrent rebuilds coalesce. Adds `GET /api/world-bundle/version`
+  (`{mapVersion, contentVersion}`, cheap) + `ETag`/`If-None-Match`→`304`. Verified: 1st request 930ms
+  (heavy projection) → 2nd 26ms (cache hit), 304 on a matching ETag, bundle still faithful. This
+  de-risks many-instance / frequent-restart boots hammering the DB.
+- [ ] **Read the version at boot** (`BundleWorldSource.mapVersion()`/`contentVersion()`) — log it, fold
+  it into the `.map` plot-cache key + savegame reproducibility; have `StrapiWorldSource` revalidate via
+  `/version` (+ `If-None-Match`) so repeated boots of the same content skip the full fetch.
 - [x] **Fixture pipeline** — `WorldSourceIntegrationTest` now RUNS on every `mvn test` (was skipped):
   it uses `-Dworldbundle.fixture=<snapshot>` when given, else auto-assembles a bundle from the classpath
   `generated/` resources (so it's inert-proof pre-cutover). `tools/make-world-bundle.mjs` snapshots a

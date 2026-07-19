@@ -14,5 +14,11 @@ export default {
       handler: 'world-bundle.index',
       config: { auth: false }, // controller enforces the WORLD_BUNDLE_TOKEN shared secret itself
     },
+    {
+      method: 'GET',
+      path: '/world-bundle/version',
+      handler: 'world-bundle.version',
+      config: { auth: false }, // cheap { mapVersion, contentVersion } probe for client revalidation
+    },
   ],
 };

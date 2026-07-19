@@ -12,8 +12,18 @@
  * modeled subset. Faithfulness is checked by scripts/verify-bundle.js against generated/*.json.
  */
 
+import zlib from 'node:zlib';
+
 const uid = (n: string): any => `api::${n}.${n}`;
 const clean = (o: any) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null));
+
+// Version-keyed projection cache (module-scoped → per Strapi process). The projection is a heavy DB
+// query (~50k rows + relations); assembling it on every boot/request would hammer the DB. Cache the
+// serialized+gzipped bytes keyed by content-version and recompute only when a reseed bumps the version
+// (or ?fresh=1 for an admin edit that didn't). A concurrent rebuild is coalesced via BUILDING.
+type CachedBundle = { version: string; json: string; gzip: Buffer };
+let CACHE: CachedBundle | null = null;
+let BUILDING: Promise<CachedBundle> | null = null;
 const ks = (arr: any[], f = 'key') => (arr || []).map((x: any) => x[f]); // relation array → natural-key list
 const str = (v: any) => (v === null || v === undefined ? undefined : String(v)); // committed keeps these as strings
 const bit = (v: any) => (v === undefined || v === null ? undefined : v ? '1' : '0'); // committed bools are "1"/"0"
@@ -33,6 +43,24 @@ export default {
   async build() {
     const [meta, resources] = await Promise.all([this.meta(), this.resources()]);
     return { meta, resources };
+  },
+
+  /** The serialized+gzipped bundle, cached by content-version. Pass fresh=true to force a rebuild. */
+  async serialized(fresh = false): Promise<CachedBundle> {
+    const current = (await this.meta()).contentVersion ?? 'none';
+    if (!fresh && CACHE && CACHE.version === current) return CACHE;
+    if (BUILDING) return BUILDING; // coalesce a concurrent rebuild
+    BUILDING = (async () => {
+      try {
+        const bundle = await this.build();
+        const json = JSON.stringify(bundle);
+        CACHE = { version: current, json, gzip: zlib.gzipSync(json) };
+        return CACHE;
+      } finally {
+        BUILDING = null;
+      }
+    })();
+    return BUILDING;
   },
 
   async meta() {
