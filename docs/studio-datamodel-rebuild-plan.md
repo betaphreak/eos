@@ -339,11 +339,17 @@ reference doc exactly.
   default (listener only in `main()`). Verified: unit tests + a real server boot in `fixture` mode
   founded the demo session (6 caravans → exercised `UnitCatalog` via the bundle), health 200; server
   suite 115 green.
-- [ ] **Rewire the server's OWN parallel readers** through `WorldSource` — `server.web.WorldBundle`,
-  `BuildingBundle`, `TechBundle`, `UnitBundle`, `AssetController` read `generated/` independently today;
-  routing them through `WorldSource` (or the engine's `WorldData`) is what makes the server's
-  `/api/bundle` — and therefore `web/` — transitively Strapi-backed. **This is the "full cutover" the
-  owner asked for.**
+- [x] **Rewire the server's OWN parallel readers** through `WorldSource` — `server.web.WorldBundle`,
+  `BuildingBundle`, `TechBundle`, `UnitBundle`, `AssetController` now do `WorldSources.current().open(p)`
+  instead of `getResourceAsStream`. Engine datasets (provinces/areas/regions/superregions/adjacencies/
+  buildings/techs/unit-combats/units) come from the bundle; server-only assets (borders, tierborders,
+  web-asset-manifest, `*-meta.json`) fall through to the classpath (not in the bundle). This makes
+  `/api/bundle` — and therefore `web/` — transitively Strapi-backed. Verified: server suite 115 green;
+  a real server boot in `fixture` vs `classpath` mode produced `/api/bundle` with the **same data set**
+  (`provinces`/`adjacencies`/`geoNames` differ by array/key ORDER only — the projection serves DB order,
+  not committed order; `web/` keys by id so it's functionally identical). Order is stable within a
+  content-version; a natural-key sort in the projection could make it byte-stable across reseeds too
+  (optional polish).
 - [ ] **Read the version at boot** (`BundleWorldSource.mapVersion()`/`contentVersion()`) — log it, and
   fold it into the `.map` plot-cache key + savegame reproducibility (seed + content-version + log).
 - [ ] **Fixture pipeline** — CI produces a bundle snapshot (curl `/api/world-bundle` against a seeded

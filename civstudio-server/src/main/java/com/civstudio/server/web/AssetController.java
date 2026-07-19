@@ -92,7 +92,7 @@ public class AssetController {
 		if (tiersJson != null)
 			return;
 		byte[] raw;
-		try (InputStream in = AssetController.class.getResourceAsStream("/map/tierborders.json")) {
+		try (InputStream in = com.civstudio.data.WorldSources.current().open("/map/tierborders.json")) {
 			if (in == null)
 				throw new IllegalStateException("/map/tierborders.json not on classpath");
 			raw = in.readAllBytes();

@@ -116,7 +116,7 @@ public final class UnitBundle {
 	}
 
 	private static JsonNode load(String resource) {
-		try (InputStream in = UnitBundle.class.getResourceAsStream(resource)) {
+		try (InputStream in = com.civstudio.data.WorldSources.current().open(resource)) {
 			if (in == null)
 				throw new IllegalStateException("unit resource not found on classpath: " + resource
 						+ (resource.endsWith("-meta.json")

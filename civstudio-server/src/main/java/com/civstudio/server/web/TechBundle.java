@@ -69,7 +69,7 @@ public final class TechBundle {
 	}
 
 	private static JsonNode load(String resource) {
-		try (InputStream in = TechBundle.class.getResourceAsStream(resource)) {
+		try (InputStream in = com.civstudio.data.WorldSources.current().open(resource)) {
 			if (in == null)
 				throw new IllegalStateException("tech resource not found on classpath: " + resource
 						+ (resource.endsWith("techs-meta.json")

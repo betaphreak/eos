@@ -72,7 +72,7 @@ public final class BuildingBundle {
 	}
 
 	private static JsonNode load(String resource) {
-		try (InputStream in = BuildingBundle.class.getResourceAsStream(resource)) {
+		try (InputStream in = com.civstudio.data.WorldSources.current().open(resource)) {
 			if (in == null)
 				throw new IllegalStateException("building resource not found on classpath: " + resource
 						+ (resource.endsWith("buildings-meta.json")
