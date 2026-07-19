@@ -216,12 +216,17 @@ does not send. (This note's changes are being held **before prod** for exactly t
 | Phase | What | Status |
 |-------|------|--------|
 | A | Map switches to the founded session (credentials on discovery + realm in the create response) | **SHIPPED** `51231bc` |
-| B | URL-addressable session identity (`?session=`) + dead-link notice; retire the `__spectate` / `cs.spectate` handoff | PLANNED |
-| C | `SessionKind` / `mode` / `difficulty` on spec + record; registry migration | PLANNED |
-| D | `ClockState` + `Outcome` split (engine-adjacent server, wire, MCP, web) | PLANNED |
-| E | `Visibility` / lifecycle policy + `SessionKind.begin()` beginnings | PLANNED |
-| F | `Civ4HandicapInfo.xml` handicap catalog + `difficulty` validation (effects deferred) | PLANNED |
-| G | Alignment-grid campaign selector (Good↔Evil × Order↔Chaos, expansion-gated) — model + reference data now, grid picker + Anbennar start-tag wiring later | PLANNED |
+| B | URL-addressable session identity (`?session=`) + dead-link notice; retire the `__spectate` / `cs.spectate` handoff | **SHIPPED** |
+| C | `SessionKind` / `mode` / `difficulty` on spec + record; registry migration | **SHIPPED** |
+| D | `ClockState` + `Outcome` split (engine-adjacent server, wire, MCP, web) | **SHIPPED** |
+| E | `SessionAuthz.canSee` visibility + `SessionKind.begin()` beginnings | **SHIPPED** |
+| F | `Civ4HandicapInfo.xml` handicap catalog + `difficulty` validation (effects deferred) | **SHIPPED** |
+| G | Alignment-grid campaign selector (Good↔Evil × Order↔Chaos, expansion-gated) — model + reference data captured; grid picker + Anbennar start-tag wiring later | PLANNED |
+
+Phase F baked the catalog to a committed engine resource `/handicaps.json` (12 handicaps) via
+`com.civstudio.handicap.export.HandicapInfoExporter` (`mvn -pl civstudio-engine exec:exec
+-Dsim.main=com.civstudio.handicap.export.HandicapInfoExporter`); `HandicapCatalog` loads it and
+`SessionController.create` resolves/validates `difficulty` against it. Multipliers stay unapplied.
 
 Design decisions locked with the owner (2026-07-19): full model cutover (not a non-breaking
 shim); extensible schema in one migration; **`TIMELINE` is its own `SessionKind`** (alongside `DEMO`,

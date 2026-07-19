@@ -4,7 +4,6 @@ import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 
-import com.civstudio.server.ClockState;
 import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.SessionSpec;
@@ -47,8 +46,7 @@ public class SessionWriteMcpTools {
 		String sc = scenario == null ? SessionSpec.CARAVAN_DEMO : scenario;
 		int p = provinceId == null ? 4411 : provinceId;
 		HostedSession hs = host.create(new SessionSpec(s, sc, p), authz.userId());
-		if (hs.clock() == ClockState.CREATED)
-			hs.start();
+		hs.kind().begin(hs);   // each kind begins its own way (docs/session-management.md)
 		return new CreateResult(hs.id(), hs.clock().name(), hs.outcome().name());
 	}
 

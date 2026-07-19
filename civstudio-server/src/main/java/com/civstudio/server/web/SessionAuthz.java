@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import com.civstudio.server.HostedSession;
+import com.civstudio.server.SessionKind;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -40,6 +41,24 @@ public class SessionAuthz {
 
 	public SessionAuthz(CurrentUserResolver currentUser) {
 		this.currentUser = currentUser;
+	}
+
+	/**
+	 * May this caller <b>see</b> this run in the lobby list — the visibility rule, in one place (it was
+	 * hand-rolled in {@code SessionController.list} and restated as an {@code isPublic} helper). A
+	 * {@linkplain SessionKind#isPublic() public} run (the demo, a Timeline) is everyone's; an owned
+	 * run is its owner's business, and an admin sees everything (they are the ones asked to fix it).
+	 * <p>
+	 * Spectating itself is never gated — this decides only what appears in someone's <em>list</em>, which
+	 * is what keeps a private save slot from leaking into a stranger's lobby.
+	 *
+	 * @param hs     the run
+	 * @param userId the caller's user id, or {@code null} if anonymous
+	 * @param admin  whether the caller is an admin
+	 * @return {@code true} if the caller may see this run
+	 */
+	public boolean canSee(HostedSession hs, String userId, boolean admin) {
+		return admin || hs.kind().isPublic() || java.util.Objects.equals(hs.owner(), userId);
 	}
 
 	/**

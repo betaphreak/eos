@@ -81,6 +81,34 @@ public enum SessionKind {
 	}
 
 	/**
+	 * How a freshly-created run of this kind <b>begins</b> — the three beginnings, made a property of
+	 * the kind rather than an {@code if} ladder duplicated across the create endpoints (see {@code
+	 * docs/session-management.md}). A no-op unless the session is still {@link ClockState#CREATED}, so
+	 * it is safe to call on a re-founded/already-running session.
+	 *
+	 * <ul>
+	 * <li>{@link #TIMELINE} — <b>waits for the gun</b>: born empty and opened for joins, it starts only
+	 *     when an admin fires it (and {@code launch} rightly refuses an empty run).</li>
+	 * <li>{@link #DEMO} — <b>runs immediately</b>: a demo nobody pressed play on is a dead demo.</li>
+	 * <li>{@link #SINGLE_PLAYER} / {@link #MULTIPLAYER} — <b>starts paused</b>: you land on the world
+	 *     and survey it before committing.</li>
+	 * </ul>
+	 *
+	 * @param hs the freshly-created session
+	 */
+	public void begin(HostedSession hs) {
+		if (hs.clock() != ClockState.CREATED)
+			return;
+		switch (this) {
+			case TIMELINE -> {
+				// the gun is a separate, admin-only act (control {action:"start"}) — do nothing here
+			}
+			case DEMO -> hs.start();
+			case SINGLE_PLAYER, MULTIPLAYER -> hs.startPaused();
+		}
+	}
+
+	/**
 	 * The stable wire token the web client keys on ({@code "demo"}, {@code "single-player"},
 	 * {@code "multiplayer"}, {@code "timeline"}) — the lowercase, hyphenated name the lobby rows used
 	 * before kind was modelled, kept identical so the client is unchanged.

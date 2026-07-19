@@ -73,6 +73,9 @@ public final class Civ4Files {
 			Map.entry("C2C_Planet_Generator_0_68.py", "PrivateMaps/C2C_Planet_Generator_0_68.py"),
 			Map.entry("assets/XML/Technologies/CIV4TechInfos.xml",
 					"Assets/XML/Technologies/CIV4TechInfos.xml"),
+			// handicap (difficulty) catalog — HandicapInfoExporter reads the 12 handicap levels
+			// (docs/session-management.md §Two difficulty selectors)
+			Map.entry("CIV4HandicapInfo.xml", "Assets/XML/GameInfo/CIV4HandicapInfo.xml"),
 			Map.entry("assets/XML/GameText/Tech_CIV4GameText.xml",
 					"Assets/XML/GameText/Tech_CIV4GameText.xml"),
 			// building import (BuildingInfoExporter): the artDefineTag -> <Button> map, and the

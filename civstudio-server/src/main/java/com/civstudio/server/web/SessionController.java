@@ -23,6 +23,7 @@ import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.SessionKind;
 import com.civstudio.server.SessionSpec;
+import com.civstudio.handicap.HandicapCatalog;
 import com.civstudio.server.command.SetTaxRateCommand;
 import com.civstudio.server.registry.SessionRegistry;
 import com.civstudio.server.render.SessionSnapshot;
@@ -90,8 +91,8 @@ public class SessionController {
 		boolean admin = currentUser.isAdmin(http);
 		List<Map<String, Object>> out = new ArrayList<>();
 		for (HostedSession hs : host.list()) {
-			if (!admin && !hs.kind().isPublic() && !java.util.Objects.equals(hs.owner(), me))
-				continue;   // someone else's private run
+			if (!authz.canSee(hs, me, admin))
+				continue;   // someone else's private run — the visibility rule lives in SessionAuthz
 			// a mutable map, not Map.of: the nullable fields below would make Map.of throw
 			Map<String, Object> row = new LinkedHashMap<>();
 			row.put("id", hs.id());
@@ -149,30 +150,27 @@ public class SessionController {
 		SessionSpec spec = new SessionSpec(seed, scenario, provinceId);
 		// kind is DERIVED from (owner, spec), never taken from the client — a caller must not be able to
 		// declare its private run a public demo. mode/difficulty are the client's to choose (the variant
-		// + Civ4 handicap); difficulty is opaque here until the handicap catalog validates it (Phase F).
+		// + Civ4 handicap). difficulty is validated against the imported handicap catalog and stored as a
+		// canonical key ('noble', 'deity', …); a blank one means the standard rung (docs/session-management.md).
 		SessionKind kind = SessionKind.of(owner, spec);
+		String difficulty;
+		try {
+			difficulty = HandicapCatalog.DEFAULT.resolve(r.difficulty());
+		} catch (IllegalArgumentException badDifficulty) {
+			return ResponseEntity.badRequest().body(Map.of("error", badDifficulty.getMessage()));
+		}
 		HostedSession hs;
 		try {
-			hs = host.create(spec, owner, kind, r.mode(), r.difficulty());
+			hs = host.create(spec, owner, kind, r.mode(), difficulty);
 		} catch (SessionHost.SaveSlotsFullException full) {
 			return ResponseEntity.status(409).body(Map.of("error", full.getMessage(),
 					"slots", host.saveSlotsOf(owner).size(), "limit", SessionHost.SAVE_SLOT_LIMIT));
 		} catch (SessionHost.RunFinishedException over) {
 			return ResponseEntity.status(409).body(Map.of("error", over.getMessage()));
 		}
-		// Three different beginnings, and they are not interchangeable:
-		//  - a TIMELINE is born empty and opens for joins; starting it here would fire the gun on a
-		//    world nobody has joined (and launch() rightly refuses an empty run). Its gun is a
-		//    separate, admin-only act — control {action:"start"}.
-		//  - a SAVE SLOT starts PAUSED and lands on the map with a press-play cue: you survey the
-		//    world before committing, which is the whole point of starting paused.
-		//  - the demo runs immediately — a demo nobody has pressed play on is a dead demo.
-		if (hs.clock() == ClockState.CREATED && !hs.isTimeline()) {
-			if (owner != null)
-				hs.startPaused();
-			else
-				hs.start();
-		}
+		// each kind knows how it begins — a Timeline waits for the gun, a save slot starts paused, the
+		// demo runs (docs/session-management.md); a no-op if this returned an already-running session
+		hs.kind().begin(hs);
 		// realm: the client opens the new session by crossing to its realm's map (docs/realms.md §A
 		// session carries its realm), and the founder has only this response to learn it from — the
 		// list row that also carries it is filtered to the owner but is a separate, racy fetch. Same

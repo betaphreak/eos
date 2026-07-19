@@ -159,6 +159,28 @@ class SaveSlotTest {
 		assertEquals(403, delete(demo.id(), "alice"));
 	}
 
+	/**
+	 * A run's difficulty is validated against the imported Civ4 handicap catalog and stored as a
+	 * canonical key; an unknown one is rejected, not silently accepted (docs/session-management.md).
+	 */
+	@Test
+	@Timeout(180)
+	void difficultyIsValidatedAgainstTheHandicapCatalog() throws Exception {
+		HttpResponse<String> good = send("POST", "/api/sessions", "gwen",
+				"{\"seed\":8950,\"scenario\":\"" + SCENARIO + "\",\"provinceId\":" + DHENIJANSAR
+						+ ",\"difficulty\":\"HANDICAP_EMPEROR\"}");
+		assertEquals(201, good.statusCode());
+		String id = json.readTree(good.body()).get("id").asText();
+		assertEquals("emperor", host.registry().find(id).orElseThrow().difficulty(),
+				"the handicap is stored as its canonical key");
+
+		HttpResponse<String> bad = send("POST", "/api/sessions", "gwen",
+				"{\"seed\":8951,\"scenario\":\"" + SCENARIO + "\",\"provinceId\":" + DHENIJANSAR
+						+ ",\"difficulty\":\"impossible\"}");
+		assertEquals(400, bad.statusCode(), "an unknown handicap is a bad request");
+		assertTrue(bad.body().contains("impossible"), bad.body());
+	}
+
 	private HttpResponse<String> create(String user, long seed) throws Exception {
 		return send("POST", "/api/sessions", user, "{\"seed\":" + seed + ",\"scenario\":\""
 				+ SCENARIO + "\",\"provinceId\":" + DHENIJANSAR + "}");

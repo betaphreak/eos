@@ -51,8 +51,7 @@ public class DemoSessionSeeder implements ApplicationRunner {
 				hs = host.create(spec);
 			}
 			hs.setTickRateMillis(demo.getTickRateMillis());
-			if (hs.clock() == ClockState.CREATED)
-				hs.start();
+			hs.kind().begin(hs);   // the demo (DEMO kind) runs immediately (docs/session-management.md)
 			log.info("seeded demo session {} (6 caravans, ~{}ms/tick)", hs.id(),
 					demo.getTickRateMillis());
 		} catch (RuntimeException e) {
