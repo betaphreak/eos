@@ -34,14 +34,19 @@ const cap1 = s => s ? s[0] + s.slice(1).toLowerCase() : s;
 
 let es = null;          // the EventSource, while connected
 let sid = null;         // the live session id
-// The session the LOBBY chose, if any. Null means "whatever is running" — the plain visitor's
-// answer, and what this has always done. Seeded from window.__spectate because the lobby opens
-// during the LOAD, before this module exists: a choice made there is waiting for us by the time we
-// run. See docs/spectator-lobby.md Phase 5.
-// window.__spectate is set by the lobby before this module exists; a cross-realm spectate additionally
-// stashes it in sessionStorage so the intent survives the realm-switch reload (docs/realms.md §A session
-// carries its realm). Read + clear that here.
-let preferred = window.__spectate || (() => { try { const s = sessionStorage.getItem("cs.spectate"); if (s) sessionStorage.removeItem("cs.spectate"); return s; } catch { return null; } })();
+// The session this client is watching, if a particular one was chosen. Null means "whatever is
+// running" — the plain visitor's answer, and what this has always done.
+//
+// The SOURCE OF TRUTH is the URL: ?session=<id> (docs/session-management.md). That makes the choice
+// reload-survivable and shareable, and means discovery is deterministic rather than re-derived from a
+// list on every reconnect (the class of bug that once left a founded session stuck on the demo).
+// window.__spectate / sessionStorage["cs.spectate"] are the pre-URL handoff — a choice made in the
+// lobby before this module (or the URL) existed — kept only as a fallback.
+function urlSession() {
+  try { return new URLSearchParams(location.search).get("session") || null; } catch { return null; }
+}
+let preferred = urlSession() || window.__spectate
+  || (() => { try { const s = sessionStorage.getItem("cs.spectate"); if (s) sessionStorage.removeItem("cs.spectate"); return s; } catch { return null; } })();
 let snap = null;        // the latest snapshot
 // guards the log delta against re-ingestion: a reconnect is handed the cached frame again, and its
 // lines have already been posted (see snapshot-dedupe.mjs)
@@ -67,8 +72,12 @@ function serverLabel() {
 /** Whether the live feed is currently connected (Live mode is active). */
 export function liveActive() { return es !== null; }
 
-/** The live session's control state (RUNNING/PAUSED/STOPPED), or null when not connected. */
-export function liveState() { return snap ? snap.state : null; }
+/** The live session's clock state (CREATED/RUNNING/PAUSED/STOPPED), or null when not connected.
+ *  Split out of the old single `state` (docs/session-management.md); the transport reads this. */
+export function liveState() { return snap ? snap.clockState : null; }
+
+/** The live session's outcome (LIVE/WON/LOST/ABANDONED), or null when not connected. */
+export function liveOutcome() { return snap ? snap.outcome : null; }
 
 /** The POV colony's privy-council roster from the latest snapshot (advisor role → court member),
  *  or [] when not connected. Populated by the server (docs/privy-council.md §0). */
@@ -103,7 +112,7 @@ export async function startLive(onRedraw, onSessionState) {
   hud(true);
   // already connected (the feed was kept alive in the background for the advisor roster when the
   // spectator left the live overlay) — just re-show its HUD and repaint, don't reconnect
-  if (es) { renderHud(); onState(snap && snap.state, snap && snap.date); redraw(); return; }
+  if (es) { renderHud(); onState(snap && snap.clockState, snap && snap.date); redraw(); return; }
   framed = false;
   reconnectAttempts = 0;
   connectStream();
@@ -134,13 +143,28 @@ async function connectStream() {
     // (the same reason the lobby's own list fetch sends it). The /stream subscription below stays
     // anonymous — spectating by id is ungated; it is only DISCOVERY that must know who you are.
     const list = await (await fetch(LIVE_BASE + "/api/sessions", { cache: "no-store", credentials: "include" })).json();
-    if (!list.length) { setHudStatus("no live session"); retryOrLost(); return; }
+    // Which session? The chosen one (?session= / the lobby's pick) is PINNED — it is not silently
+    // swapped for another. A bare visitor (no choice) takes whatever is running (list[0]).
     // Notifications are PER SESSION: a re-founded session (a new id — e.g. after a server redeploy)
-    // starts an empty board. A plain reconnect to the same session keeps it, since the cards there
-    // are still that session's.
-    // Which session? The one the lobby picked, if it is still there; otherwise the first, which is
-    // what a plain visitor arriving at the bare site has always got.
-    const next = (preferred && list.some(s => s.id === preferred)) ? preferred : list[0].id;
+    // starts an empty board; a plain reconnect to the same session keeps it.
+    let next;
+    if (preferred) {
+      if (list.some(s => s.id === preferred)) {
+        next = preferred;
+      } else if (!list.length) {
+        // an empty list with a session in mind: the server is probably mid-restart — keep trying to
+        // re-attach rather than declaring the run gone (a redeploy must not read as a dead link)
+        setHudStatus("connecting…"); retryOrLost(); return;
+      } else {
+        // a populated list that does NOT contain it: it is private to someone else, finished-and-
+        // forgotten, or never existed. Say so and stay put — never fall back to a different session
+        // (that silent swap is exactly what hid the founded-session bug). docs/session-management.md.
+        showDeadLink(preferred); return;
+      }
+    } else {
+      if (!list.length) { setHudStatus("no live session"); retryOrLost(); return; }
+      next = list[0].id;
+    }
     if (next !== sid) { resetNotify(); await rehydrateNotify(next); }
     sid = next;
     if (es) es.close();
@@ -212,6 +236,7 @@ window.addEventListener("civstudio:spectate", e => {
   if (!id || id === sid) return;
   preferred = id;
   ended = false;
+  stoppedShown = false;
   const go = document.getElementById("gameover");
   if (go) go.hidden = true;
   if (es) { es.close(); es = null; }
@@ -243,6 +268,7 @@ export function stopLive() {
   resetNotify();
   logGate.reset();   // the board is cleared, so the next session's lines are new again
   ended = false;     // a fresh connection may be to a living session
+  stoppedShown = false;
   const go = document.getElementById("gameover");
   if (go) go.hidden = true;
   liveTabRunning(false);
@@ -274,36 +300,97 @@ let lastSig = null;
 // from the snapshot alone, so it can be replayed from the retained `snap` at any time.
 function paintChrome(s) {
   renderHud();
-  onState(s.state, s.date);              // sync the transport controls (play icon, speed, date)
-  liveTabRunning(s.state === "RUNNING"); // tint the Spectate tab while the session is live/unpaused
+  onState(s.clockState, s.date);              // sync the transport controls (play icon, speed, date)
+  liveTabRunning(s.clockState === "RUNNING"); // tint the Spectate tab while the session is live/unpaused
 }
 // Coming back to the tab: rebuild the chrome from the last snapshot we kept. Without this a PAUSED
 // session would show whatever the HUD said when you left — no further snapshot is coming to fix it.
 document.addEventListener("visibilitychange", () => { if (!document.hidden && snap) paintChrome(snap); });
 
-// The run ended itself: show the terminal screen and stop chasing the session. This is the ONE case
-// where the never-give-up reconnect above must give up — a GAME_OVER session will never tick again,
-// so reconnecting to it just replays its cached final frame forever (docs/game-over.md). A session
-// merely STOPPED (an admin, a redeploy) is NOT this: we keep reconnecting through those.
-let ended = false;
-function showGameOver(s) {
-  if (ended) return;                       // the cached final frame arrives on every subscribe
-  ended = true;
-  if (es) { es.close(); es = null; }       // no more frames are coming
-  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-  setHudStatus("game over");
+// A stopped clock: show the terminal screen and disable play/pause. Two flavours, told apart by the
+// OUTCOME (docs/session-management.md):
+//   - FINISHED (outcome != LIVE — won/lost/abandoned): the run will never tick again, so this is the
+//     one case where the never-give-up reconnect must give up, or it replays the cached final frame
+//     forever (docs/game-over.md). We close the feed and stop retrying.
+//   - stopped from OUTSIDE (outcome == LIVE — an admin, a redeploy): still restorable, so we show the
+//     banner but keep the feed's reconnect alive; a restored RUNNING/PAUSED frame clears it (hideStopped).
+let ended = false;          // finished for good — no more frames are coming
+let stoppedShown = false;   // the terminal card is up (finished or suspended)
+function showStopped(s) {
+  const finished = s.outcome && s.outcome !== "LIVE";
+  if (finished && !ended) {
+    ended = true;
+    if (es) { es.close(); es = null; }       // no more frames are coming
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  }
+  if (stoppedShown) return;                  // the cached stopped frame arrives on every subscribe
+  stoppedShown = true;
+  setHudStatus(finished ? "game over" : "stopped");
   const el = document.getElementById("gameover");
   if (!el) return;
+  const kicker = document.querySelector("#gameover .go-kicker");
+  const titleEl = document.getElementById("goTitle");
   const reason = document.getElementById("goReason");
   const date = document.getElementById("goDate");
-  if (reason) reason.textContent = s.endReason || "The run has ended.";
+  if (kicker) kicker.textContent = finished ? "The chronicle ends" : "The clock has stopped";
+  if (titleEl) titleEl.textContent = finished ? "Game Over" : "Session Stopped";
+  if (reason) reason.textContent = s.endReason
+    || (finished ? "The run has ended." : "This session has stopped — it may resume when it is restored.");
   if (date) date.textContent = s.date ? `${s.date} · ${s.tick} days` : "";
   el.hidden = false;
+}
+// a live (running/paused) frame arrived — clear a terminal card that a suspended stop had put up, so
+// a restored run re-attaches without the "stopped" screen lingering. A truly finished run never gets
+// here (its feed is closed), so this cannot un-end one.
+function hideStopped() {
+  if (!stoppedShown) return;
+  stoppedShown = false;
+  const el = document.getElementById("gameover");
+  if (el) el.hidden = true;
+}
+
+// A chosen session the viewer cannot watch — private to someone else, finished-and-forgotten, or
+// never real. Show a notice and STAY PUT (docs/session-management.md): the map never silently swaps
+// to a different session. Reuses the terminal card with dead-link wording.
+function showDeadLink(id) {
+  ended = true;                             // there is nothing to reconnect to
+  if (es) { es.close(); es = null; }
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  setHudStatus("unavailable");
+  const el = document.getElementById("gameover");
+  if (!el) return;
+  const kicker = document.querySelector("#gameover .go-kicker");
+  const titleEl = document.getElementById("goTitle");
+  const reason = document.getElementById("goReason");
+  const date = document.getElementById("goDate");
+  if (kicker) kicker.textContent = "Nothing to watch here";
+  if (titleEl) titleEl.textContent = "Run unavailable";
+  if (reason) reason.textContent = "That run is private, has ended, or no longer exists.";
+  if (date) date.textContent = id ? String(id) : "";
+  stoppedShown = true;
+  el.hidden = false;
+}
+
+// the terminal card's "Back to lobby": dismiss the card and re-open the lobby (dynamic import, the
+// same path index.html's during-load open uses — live.mjs must not statically depend on lobby.mjs,
+// which deliberately imports no core). Wired once at module load; the button lives in the static HTML.
+{
+  const goLobby = document.getElementById("goLobby");
+  if (goLobby)
+    goLobby.addEventListener("click", () => {
+      const go = document.getElementById("gameover");
+      if (go) go.hidden = true;
+      import("../lobby.mjs").then(m => m.openLobby()).catch(() => { /* lobby unavailable — card just closes */ });
+    });
 }
 
 function onSnapshot(s) {
   snap = s;
-  if (s.state === "GAME_OVER") showGameOver(s);
+  // a stopped clock shows the terminal screen and disables play/pause — a game-over OR a plain
+  // external stop (docs/session-management.md). A live frame (running/paused) clears it, so a
+  // suspended run that gets restored re-attaches cleanly.
+  if (s.clockState === "STOPPED") showStopped(s);
+  else hideStopped();
   // accumulate the bands' pioneered trails (gap B → the route layer). A new trail plot changes the
   // canvas even when nothing moved, so it counts toward the repaint decision below.
   const routesChanged = mergeRoutePlots(s.routePlots);

@@ -101,6 +101,24 @@ public final class SessionHost {
 	 * @return the hosted session
 	 */
 	public HostedSession create(SessionSpec spec, String owner) {
+		return create(spec, owner, SessionKind.of(owner, spec), null, null);
+	}
+
+	/**
+	 * Found and register a session with an explicit {@linkplain SessionKind kind}, {@code mode} and
+	 * {@code difficulty} — the full founding path (see {@code docs/session-management.md}). The
+	 * two-argument {@link #create(SessionSpec, String)} derives the kind and takes the defaults for
+	 * the rest; a caller with a founding request (the controller) passes them through here.
+	 *
+	 * @param spec       the founding spec (the determinism root)
+	 * @param owner      the owning {@code app_user} id, or {@code null} for an unowned/public session
+	 * @param kind       the run's kind (visibility/auth category) — never {@code null}
+	 * @param mode       the mode variant, or {@code null} for the default
+	 * @param difficulty the Civ4 handicap key, or {@code null} for the default
+	 * @return the hosted session
+	 */
+	public HostedSession create(SessionSpec spec, String owner, SessionKind kind, String mode,
+			String difficulty) {
 		String id = sessionKey(spec, owner);
 		HostedSession live = sessions.get(id);
 		if (live != null)
@@ -112,31 +130,24 @@ public final class SessionHost {
 		// first, deliberately and out loud.)
 		SessionRecord recorded = registry.find(id).orElse(null);
 		if (recorded != null && recorded.isFinished())
-			throw new RunFinishedException(id, recorded.state(), recorded.endReason());
+			throw new RunFinishedException(id, recorded.legacyState(), recorded.endReason());
 		// a player's save slots are finite; a new one has to fit (re-founding a run you already have
 		// is not a new slot, hence the `recorded == null`)
-		if (recorded == null && isSaveSlot(spec, owner) && saveSlotsOf(owner).size() >= SAVE_SLOT_LIMIT)
+		if (recorded == null && kind.isSaveSlot() && saveSlotsOf(owner).size() >= SAVE_SLOT_LIMIT)
 			throw new SaveSlotsFullException(owner);
 		return sessions.computeIfAbsent(id, k -> {
-			HostedSession hs = build(id, owner, spec);
+			HostedSession hs = build(id, owner, kind, mode, difficulty, spec);
 			// remember the run before it can end: the record is what survives this process, and a
 			// run that ended without ever being written down is a run that never happened
 			registry.save(new SessionRecord(id, spec.scenario(), spec.seed(), spec.provinceId(),
-					owner, hs.state().name(), null, 0));
+					owner, kind.name(), mode, difficulty, hs.clock().name(), hs.outcome().name(),
+					null, 0));
 			// the terminal values are handed to us rather than read back: at this point the session
 			// has not published them yet, which is exactly what makes the record trustworthy
-			hs.onEnd((ended, state, endReason, tick) -> registry.updateProgress(ended.id(),
-					state.name(), endReason, tick));
+			hs.onEnd((ended, clock, outcome, endReason, tick) -> registry.updateProgress(ended.id(),
+					clock.name(), outcome.name(), endReason, tick));
 			return hs;
 		});
-	}
-
-	/**
-	 * A single-player run: owned by a player, and not the shared ranked Timeline. The demo (unowned)
-	 * is nobody's slot, and a Timeline seat is a seat, not a save.
-	 */
-	private static boolean isSaveSlot(SessionSpec spec, String owner) {
-		return owner != null && !owner.isBlank() && !spec.isTimeline();
 	}
 
 	/**
@@ -156,7 +167,7 @@ public final class SessionHost {
 			return List.of();
 		List<SessionRecord> out = new ArrayList<>();
 		for (SessionRecord r : registry.all())
-			if (userId.equals(r.owner()) && !r.isTimeline() && !r.isFinished())
+			if (userId.equals(r.owner()) && r.kindEnum().isSaveSlot() && !r.isFinished())
 				out.add(r);
 		return out;
 	}
@@ -220,9 +231,9 @@ public final class SessionHost {
 		if (r == null || r.isFinished())
 			return null;
 		SessionSpec spec = new SessionSpec(r.seed(), r.scenario(), r.provinceId());
-		HostedSession hs = build(id, r.owner(), spec);
-		hs.onEnd((ended, state, endReason, tick) -> registry.updateProgress(ended.id(),
-				state.name(), endReason, tick));
+		HostedSession hs = build(id, r.owner(), r.kindEnum(), r.mode(), r.difficulty(), spec);
+		hs.onEnd((ended, clock, outcome, endReason, tick) -> registry.updateProgress(ended.id(),
+				clock.name(), outcome.name(), endReason, tick));
 		sessions.put(id, hs);
 
 		// re-found the roster, in the order it was taken
@@ -243,7 +254,7 @@ public final class SessionHost {
 			hs.startPaused();
 			hs.step((int) Math.min(Integer.MAX_VALUE, r.tick()));
 			awaitTick(hs, r.tick());
-			if ("RUNNING".equals(r.state()))
+			if ("RUNNING".equals(r.clockState()))
 				hs.resume();
 		}
 		log.info(() -> "restored session " + id + " (" + r.scenario() + ", tick " + r.tick()
@@ -342,10 +353,11 @@ public final class SessionHost {
 
 	// found the session's world from the spec. Only the caravan demo is wired for Phase A;
 	// other scenario ids reuse the same standard-colony founding without the bands.
-	private HostedSession build(String id, String owner, SessionSpec spec) {
+	private HostedSession build(String id, String owner, SessionKind kind, String mode,
+			String difficulty, SessionSpec spec) {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		if (spec.isTimeline())
-			return buildTimeline(id, owner, spec, cfg);
+			return buildTimeline(id, owner, kind, mode, difficulty, spec, cfg);
 		// SimulationHarness.create builds the GameSession, founds the colony into the
 		// province, and installs the (now per-session) log — see docs/client-server.md
 		SimulationHarness h = SimulationHarness.create(cfg, spec.seed(), spec.provinceId());
@@ -363,8 +375,8 @@ public final class SessionHost {
 		// (installExplorerProvisioning — the ruler drafts the pool's least-skilled adults each lean
 		// season, docs/explorer-caravan.md). Those emergent levies pioneer trails the route layer draws
 		// (gap B, docs/route-rendering.md), so the demo needs no directed caravans of its own.
-		HostedSession hs = new HostedSession(id, owner, spec, session, List.of(colony),
-				cfg.startDate(), commandStore, chatStore);
+		HostedSession hs = new HostedSession(id, owner, kind, mode, difficulty, spec, session,
+				List.of(colony), cfg.startDate(), commandStore, chatStore);
 		// resume: replay any previously-persisted commands (keyed by the surrogate id) into the
 		// fresh session's log so state = f(spec, command log) holds across a restart
 		for (GameCommand cmd : commandStore.load(id))
@@ -376,11 +388,11 @@ public final class SessionHost {
 	// (joinTimeline), which is why it must be given its clock origin rather than read one off a
 	// colony it does not yet have. House-owned (the `owner` a Timeline is created with is the house,
 	// not a player) — each seat inside it is owned per colony instead. See docs/spectator-lobby.md.
-	private HostedSession buildTimeline(String id, String owner, SessionSpec spec,
-			SimulationConfig cfg) {
+	private HostedSession buildTimeline(String id, String owner, SessionKind kind, String mode,
+			String difficulty, SessionSpec spec, SimulationConfig cfg) {
 		GameSession session = new GameSession(spec.seed());
-		HostedSession hs = new HostedSession(id, owner, spec, session, List.of(), cfg.startDate(),
-				commandStore, chatStore);
+		HostedSession hs = new HostedSession(id, owner, kind, mode, difficulty, spec, session,
+				List.of(), cfg.startDate(), commandStore, chatStore);
 		for (GameCommand cmd : commandStore.load(id))
 			hs.replay(cmd);
 		return hs;
@@ -418,7 +430,7 @@ public final class SessionHost {
 		if (registry.seatOf(sessionId, userId).isPresent())
 			throw new SessionRegistry.SeatTakenException(userId + " already holds a seat in "
 					+ sessionId + " (its colony is not in this process — the run needs restoring)");
-		if (hs.state() != HostedSession.State.CREATED)
+		if (hs.clock() != ClockState.CREATED)
 			throw new IllegalStateException("Timeline " + sessionId
 					+ " has already started — the roster is closed");
 

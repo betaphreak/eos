@@ -28,12 +28,13 @@ public interface SessionRegistry {
 	/**
 	 * Record how far a run got and how it ended — its progress, not its founding.
 	 *
-	 * @param id        the session id (a no-op if it is not recorded)
-	 * @param state     its {@link com.civstudio.server.HostedSession.State}
-	 * @param endReason why it ended, or {@code null} if it has not ended itself
-	 * @param tick      the tick reached
+	 * @param id         the session id (a no-op if it is not recorded)
+	 * @param clockState its {@link com.civstudio.server.ClockState} (name)
+	 * @param outcome    its {@link com.civstudio.server.Outcome} (name) — {@code LIVE} unless it ended itself
+	 * @param endReason  why it ended, or {@code null} if it has not ended itself
+	 * @param tick       the tick reached
 	 */
-	void updateProgress(String id, String state, String endReason, long tick);
+	void updateProgress(String id, String clockState, String outcome, String endReason, long tick);
 
 	/**
 	 * The run recorded under this id.

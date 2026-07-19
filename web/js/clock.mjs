@@ -35,9 +35,18 @@ function renderSpeed() {
 // body when anonymous, gating both the click and the keyboard-shortcut paths
 function canControl() { return !document.body.classList.contains("auth-anon"); }
 
+// the clock is drivable only while it is actually ticking or paused — a CREATED (not started) or
+// STOPPED (ended / suspended) session takes no play/pause, so the transport is inert then
+// (docs/session-management.md: a stopped run shows game over with play/pause disabled).
+function clockControllable() {
+  const s = liveState();
+  return s === "RUNNING" || s === "PAUSED";
+}
+
 /** Toggle the live session between running and paused (the play button + the spacebar shortcut). */
 export function togglePlay() {
-  if (liveActive() && canControl()) controlLive(liveState() === "RUNNING" ? "pause" : "resume");
+  if (liveActive() && canControl() && clockControllable())
+    controlLive(liveState() === "RUNNING" ? "pause" : "resume");
 }
 
 /** Force paused — modals call this on open; the live session keeps ticking, so this is a no-op. */
@@ -45,18 +54,23 @@ export function pausePlayback() {}
 
 // a speed chevron sets the live session's tick rate (in-game days per second) over /control
 function onSpeed(level) {
-  if (!liveActive() || !canControl()) return;
+  if (!liveActive() || !canControl() || !clockControllable()) return;
   speed = Math.max(1, Math.min(5, level));
   controlLive("rate", LIVE_RATES[speed]);
   renderSpeed();
 }
 
-/** Reflect the live session's control state (and date) on the transport UI, per snapshot. */
-export function syncLiveTransport(state, date) {
-  const running = state === "RUNNING";
+/** Reflect the live session's clock state (and date) on the transport UI, per snapshot. */
+export function syncLiveTransport(clockState, date) {
+  const running = clockState === "RUNNING";
+  // a stopped or not-yet-started clock cannot be driven — grey the play button and the chevrons so the
+  // UI does not offer a control that would no-op (docs/session-management.md)
+  const controllable = clockState === "RUNNING" || clockState === "PAUSED";
   playing = running;
   playIcon.innerHTML = running ? PAUSE_ICON : PLAY_ICON;
   playBtn.setAttribute("aria-label", running ? "Pause" : "Play");
+  playBtn.disabled = !controllable;
+  speedBox.classList.toggle("disabled", !controllable);
   if (date != null) cDate.textContent = date;
   renderSpeed();
 }

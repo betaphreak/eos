@@ -1,6 +1,7 @@
 package com.civstudio.server.registry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Timeout;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import com.civstudio.server.ClockState;
 import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.SessionSpec;
@@ -63,7 +65,9 @@ class SessionPersistenceTest {
 		assertEquals(6001L, r.seed());
 		assertEquals(DHENIJANSAR, r.provinceId());
 		assertEquals("alice", r.owner());
-		assertEquals("CREATED", r.state(), "recorded before it can end");
+		assertEquals("CREATED", r.clockState(), "recorded before it can end");
+		assertEquals("LIVE", r.outcome(), "and it has not ended itself");
+		assertEquals("SINGLE_PLAYER", r.kind(), "an owned, non-Timeline run is a save slot");
 		assertTrue(registry.all().stream().anyMatch(x -> x.id().equals(hs.id())));
 	}
 
@@ -126,14 +130,17 @@ class SessionPersistenceTest {
 		HostedSession hs = host.create(spec, "alice");
 		String id = hs.id();
 		// stand in for a run that ended: the registry is the authority on that
-		registry.updateProgress(id, "GAME_OVER", "Dhenijansar departed as a Caravan on 1452-03-02", 2639);
+		registry.updateProgress(id, "STOPPED", "ABANDONED",
+				"Dhenijansar departed as a Caravan on 1452-03-02", 2639);
 
 		host.stopAll(); // the redeploy
 
 		assertThrows(SessionHost.RunFinishedException.class, () -> host.create(spec, "alice"),
 				"a finished run must not be re-founded under its own id");
 		SessionRecord after = registry.find(id).orElseThrow();
-		assertEquals("GAME_OVER", after.state(), "its verdict must not be overwritten");
+		assertTrue(after.isFinished(), "its verdict must not be overwritten");
+		assertEquals("ABANDONED", after.outcome());
+		assertEquals("GAME_OVER", after.legacyState(), "the legacy mirror still reads game over");
 		assertEquals(2639, after.tick());
 		assertNotNull(after.endReason());
 	}
@@ -157,7 +164,7 @@ class SessionPersistenceTest {
 		HostedSession after = host.restore(id);
 		assertNotNull(after, "an unfinished run must be restorable");
 		assertEquals(2, after.colonies().size(), "both seats came back");
-		assertEquals(HostedSession.State.CREATED, after.state(), "and it is still open for joins");
+		assertEquals(ClockState.CREATED, after.clock(), "and it is still open for joins");
 
 		Settlement aliceAfter = after.colonyOf("alice");
 		Settlement bobAfter = after.colonyOf("bob");
@@ -184,7 +191,10 @@ class SessionPersistenceTest {
 		hs.startPaused();
 		hs.stop(); // what shutdown does to every session
 
-		assertEquals("STOPPED", registry.find(hs.id()).orElseThrow().state());
+		SessionRecord stopped = registry.find(hs.id()).orElseThrow();
+		assertEquals("STOPPED", stopped.clockState());
+		assertEquals("LIVE", stopped.outcome(), "stopped from outside is not finished — it stays LIVE");
+		assertFalse(stopped.isFinished());
 		host.stopAll();
 
 		assertNotNull(host.getOrRestore(hs.id()), "a shutdown must not be a death sentence");
@@ -227,7 +237,7 @@ class SessionPersistenceTest {
 		HostedSession hs = host.create(spec, "alice");
 		assertSame(hs, host.getOrRestore(hs.id()), "a live run is simply handed back");
 
-		registry.updateProgress(hs.id(), "GAME_OVER", "it ended", 10);
+		registry.updateProgress(hs.id(), "STOPPED", "LOST", "it ended", 10);
 		host.stopAll();
 		assertNull(host.getOrRestore(hs.id()),
 				"a finished run is not rebuilt — its outcome is columns, not a world");
@@ -244,12 +254,12 @@ class SessionPersistenceTest {
 		long deadline = System.nanoTime() + 540_000L * 1_000_000L;
 		while (!hs.isTerminal() && System.nanoTime() < deadline)
 			Thread.onSpinWait();
-		assertEquals(HostedSession.State.GAME_OVER, hs.state(), "the demo colony collapses");
+		assertTrue(hs.isFinished(), "the demo colony collapses — the run ends itself");
 
 		SessionRecord r = registry.find(hs.id()).orElseThrow();
-		assertEquals("GAME_OVER", r.state(), "the end is written down, not just broadcast");
+		assertTrue(r.isFinished(), "the end is written down, not just broadcast");
+		assertEquals(hs.outcome().name(), r.outcome(), "the record's verdict matches the live one");
 		assertEquals(hs.endReason(), r.endReason());
 		assertEquals(hs.tick(), r.tick(), "how far it got");
-		assertTrue(r.isTerminal());
 	}
 }

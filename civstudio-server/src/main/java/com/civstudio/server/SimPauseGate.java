@@ -41,7 +41,7 @@ public final class SimPauseGate {
 	private synchronized void enter() {
 		if (active++ == 0)
 			for (HostedSession s : host.list())
-				if (s.state() == HostedSession.State.RUNNING) {
+				if (s.clock() == ClockState.RUNNING) {
 					s.pause();
 					pausedByMe.add(s);
 				}

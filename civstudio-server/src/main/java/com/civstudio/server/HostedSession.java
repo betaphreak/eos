@@ -51,28 +51,8 @@ import lombok.extern.java.Log;
 @Log
 public final class HostedSession {
 
-	/** The host's control state. */
-	public enum State {
-		/** Built, thread not started. */
-		CREATED,
-		/** Ticking freely (paced by the tick rate). */
-		RUNNING,
-		/** Halted; advances only by {@link HostedSession#step(int)}. */
-		PAUSED,
-		/**
-		 * Stopped from <em>outside</em> — an admin {@link HostedSession#stop()} or server
-		 * shutdown; the thread has exited. The run did not reach its own end, so a client may
-		 * reasonably keep watching for it to come back (e.g. across a redeploy).
-		 */
-		STOPPED,
-		/**
-		 * The run <em>ended itself</em> — game over. The thread has exited and this session will
-		 * never tick again, so a client must stop reconnecting and show its terminal screen (the
-		 * reason is in {@link HostedSession#endReason()}). Distinct from {@link #STOPPED} precisely
-		 * so a finished run is not mistaken for an idle one; see {@code docs/game-over.md}.
-		 */
-		GAME_OVER
-	}
+	// The run's control state is two orthogonal axes now, not one five-value enum: ClockState (what the
+	// clock is doing) and Outcome (how it ended). See docs/session-management.md and the fields below.
 
 	private final String id;
 	// the app_user id that owns this run, or null for an unowned (public) session such as the
@@ -81,6 +61,12 @@ public final class HostedSession {
 	// work (docs/authentication.md) — real owners arrive with login in Phase 2.
 	private final String owner;
 	private final SessionSpec spec;
+	// The run's taxonomy (docs/session-management.md): kind is the visibility/auth category, mode the
+	// variant within it (open set, may be null), difficulty a Civ4 handicap key (may be null). Metadata
+	// alongside the spec — not part of the reproducibility root — like the owner above.
+	private final SessionKind kind;
+	private final String mode;
+	private final String difficulty;
 	private final GameSession session;
 	// The session's colonies. Mutable, but ONLY while CREATED: a Timeline is born empty and fills
 	// as players join, then the gun fires and the roster is closed for the run (docs/spectator-lobby.md
@@ -111,35 +97,43 @@ public final class HostedSession {
 	// See docs/spectator-lobby.md §Phase 0.
 	private final LocalDate startDate;
 
-	private volatile State state = State.CREATED;
+	// the two control axes (docs/session-management.md). clock: what the clock is doing. outcome: how
+	// the run ended (LIVE until it does). volatile so control/HTTP threads read fresh values while the
+	// session thread advances them. outcome is written BEFORE clock flips to STOPPED in run()'s finally,
+	// so anything that sees the clock stopped also sees the decided outcome.
+	private volatile ClockState clock = ClockState.CREATED;
+	private volatile Outcome outcome = Outcome.LIVE;
 
 	// why the run ended, once it has (null until then) — display text for the client's terminal
-	// screen. Set on the session thread before the state flips to GAME_OVER; volatile so an HTTP
-	// thread that sees GAME_OVER also sees the reason that was written before it.
+	// screen. Set on the session thread before the clock flips to STOPPED; volatile so an HTTP
+	// thread that sees a decided outcome also sees the reason that was written before it.
 	private volatile String endReason;
 
 	// notified when the run reaches a terminal state, so the host can write it down before this
 	// process forgets (docs/spectator-lobby.md Phase 6). Best-effort and never allowed to wedge the
 	// teardown: a registry that throws must not take the session's thread with it.
-	private volatile EndListener onEnd = (hs, state, reason, tick) -> {
+	private volatile EndListener onEnd = (hs, clock, outcome, reason, tick) -> {
 	};
 
 	/**
-	 * Notified once, on the session thread, when a run reaches a terminal state — <b>before</b> that
-	 * state is published, so anything that can see the ending can trust the record of it.
+	 * Notified once, on the session thread, when a run's clock stops — <b>before</b> the stop is
+	 * published, so anything that can see the ending can trust the record of it.
 	 * <p>
 	 * The terminal values are passed rather than read back off the session precisely because they
-	 * are not published yet: {@code session.state()} still reads the pre-terminal state here.
+	 * are not published yet: {@code session.clock()}/{@code outcome()} still read the pre-terminal
+	 * values here.
 	 */
 	@FunctionalInterface
 	public interface EndListener {
 		/**
-		 * @param session   the run that ended
-		 * @param state     its terminal state ({@link State#GAME_OVER} or {@link State#STOPPED})
+		 * @param session   the run that stopped
+		 * @param clock     its terminal {@link ClockState} (always {@link ClockState#STOPPED})
+		 * @param outcome   its {@link Outcome} — {@link Outcome#LIVE} if stopped from outside, else the
+		 *                  decided verdict
 		 * @param endReason why it ended, or {@code null} if it was stopped from outside
 		 * @param tick      the tick it reached
 		 */
-		void ended(HostedSession session, State state, String endReason, long tick);
+		void ended(HostedSession session, ClockState clock, Outcome outcome, String endReason, long tick);
 	}
 
 	// wall-clock milliseconds per tick when RUNNING (0 = as fast as possible); a live knob
@@ -185,6 +179,9 @@ public final class HostedSession {
 	 * @param id       the session's surrogate id (registry + command-log key)
 	 * @param owner    the owning {@code app_user} id, or {@code null} for an unowned/public
 	 *                 session (the server-seeded demo)
+	 * @param kind     the run's {@link SessionKind} — its visibility/auth category
+	 * @param mode     the mode variant within the kind (open set), or {@code null} for the default
+	 * @param difficulty the Civ4 handicap key, or {@code null} for the default
 	 * @param spec     the founding spec (seed/scenario/province — the determinism root)
 	 * @param session   the game session (owns the seed, world map and wandering bands)
 	 * @param colonies  the session's founding colonies (advanced in lockstep each tick) — empty for
@@ -193,11 +190,15 @@ public final class HostedSession {
 	 *                  than read off a colony, so an empty Timeline still knows what day it is —
 	 *                  the session's clock is a property of the run (see {@link #date()})
 	 */
-	public HostedSession(String id, String owner, SessionSpec spec, GameSession session,
+	public HostedSession(String id, String owner, SessionKind kind, String mode, String difficulty,
+			SessionSpec spec, GameSession session,
 			List<Settlement> colonies, LocalDate startDate, CommandStore commandStore,
 			ChatStore chatStore) {
 		this.id = id;
 		this.owner = owner;
+		this.kind = kind == null ? SessionKind.of(owner, spec) : kind;
+		this.mode = mode;
+		this.difficulty = difficulty;
 		this.spec = spec;
 		this.session = session;
 		this.colonies.addAll(colonies);
@@ -208,15 +209,15 @@ public final class HostedSession {
 
 	/** Start ticking freely (paced by the tick rate). */
 	public void start() {
-		launch(State.RUNNING);
+		launch(ClockState.RUNNING);
 	}
 
 	/** Start halted — advance only via {@link #step(int)} (used by deterministic tests). */
 	public void startPaused() {
-		launch(State.PAUSED);
+		launch(ClockState.PAUSED);
 	}
 
-	private synchronized void launch(State initial) {
+	private synchronized void launch(ClockState initial) {
 		if (thread != null)
 			throw new IllegalStateException("session " + id + " already started");
 		// An empty run has nobody to simulate — and worse, it would look FINISHED: allDead() over an
@@ -225,15 +226,15 @@ public final class HostedSession {
 		if (colonies.isEmpty())
 			throw new IllegalStateException("session " + id + " has no colonies — nothing to run"
 					+ (isTimeline() ? " (no player has joined this Timeline)" : ""));
-		state = initial;
+		clock = initial;
 		thread = Thread.ofVirtual().name("session-" + id).start(this::run);
 	}
 
 	/** Pause a running session (no-op if not RUNNING). */
 	public void pause() {
 		synchronized (gate) {
-			if (state == State.RUNNING)
-				state = State.PAUSED;
+			if (clock == ClockState.RUNNING)
+				clock = ClockState.PAUSED;
 			gate.notifyAll();
 		}
 	}
@@ -241,8 +242,8 @@ public final class HostedSession {
 	/** Resume a paused session (no-op if not PAUSED). */
 	public void resume() {
 		synchronized (gate) {
-			if (state == State.PAUSED) {
-				state = State.RUNNING;
+			if (clock == ClockState.PAUSED) {
+				clock = ClockState.RUNNING;
 				gate.notifyAll();
 			}
 		}
@@ -258,7 +259,7 @@ public final class HostedSession {
 		if (n <= 0)
 			return;
 		synchronized (gate) {
-			if (state == State.PAUSED) {
+			if (clock == ClockState.PAUSED) {
 				stepCredits += n;
 				gate.notifyAll();
 			}
@@ -269,11 +270,12 @@ public final class HostedSession {
 	public void stop() {
 		Thread t;
 		synchronized (gate) {
-			// never downgrade a finished run to "stopped from outside": a GAME_OVER session that an
-			// admin later stops (or that shutdown sweeps) is still a finished run, and its terminal
-			// state is the record of that.
-			if (state != State.GAME_OVER)
-				state = State.STOPPED;
+			// Signal the loop to exit; the finally finalizes clock/outcome. This never touches the
+			// OUTCOME: a run that ended itself keeps its decided verdict (game over), and a run stopped
+			// from outside stays LIVE — a stopped-from-outside session is restorable (a redeploy brings
+			// it back), which is what keeps a shutdown from permanently killing everything it touched.
+			if (clock != ClockState.STOPPED)
+				clock = ClockState.STOPPED;
 			gate.notifyAll();
 			t = thread;
 		}
@@ -402,16 +404,28 @@ public final class HostedSession {
 	}
 
 	/**
-	 * Whether the run is over for good — {@link State#STOPPED stopped from outside} or {@link
-	 * State#GAME_OVER game over}. Its thread has exited either way, so it will never tick again.
-	 * <p>
-	 * Ask this rather than comparing to a single terminal state: the two differ in <em>why</em> the
-	 * run ended (and so in what a client should do about it), never in whether it is running.
+	 * Whether the clock has stopped — its thread has exited, so it will not tick again <em>in this
+	 * process</em>. True both for a run stopped from outside (still restorable) and one that ended
+	 * itself; the SSE feed closes on this, and the client shows its terminal screen and disables
+	 * play/pause. To ask instead whether the run is <em>finished for good</em> (never restored),
+	 * see {@link #isFinished()}.
 	 *
-	 * @return {@code true} if this session will never tick again
+	 * @return {@code true} if this session's clock has stopped
 	 */
 	public boolean isTerminal() {
-		return state == State.STOPPED || state == State.GAME_OVER;
+		return clock == ClockState.STOPPED;
+	}
+
+	/**
+	 * Whether the run reached its own end — its {@link Outcome} is decided (won / lost / abandoned).
+	 * A finished run never ticks again, holds no save slot, and is never restored. Deliberately not
+	 * the same as {@link #isTerminal()}: a run stopped from outside is terminal but not finished — it
+	 * stays {@link Outcome#LIVE} and comes back on restore. See {@code docs/game-over.md}.
+	 *
+	 * @return {@code true} if the run ended itself
+	 */
+	public boolean isFinished() {
+		return outcome.isDecided();
 	}
 
 	/**
@@ -449,9 +463,29 @@ public final class HostedSession {
 		return tick;
 	}
 
-	/** The current control state. */
-	public State state() {
-		return state;
+	/** What the clock is doing (created / running / paused / stopped). */
+	public ClockState clock() {
+		return clock;
+	}
+
+	/** The contest result — {@link Outcome#LIVE} until the run ends itself. */
+	public Outcome outcome() {
+		return outcome;
+	}
+
+	/** The run's kind — its visibility/auth category (docs/session-management.md). */
+	public SessionKind kind() {
+		return kind;
+	}
+
+	/** The mode variant within the kind (open set), or {@code null} for the default. */
+	public String mode() {
+		return mode;
+	}
+
+	/** The Civ4 handicap key, or {@code null} for the default. */
+	public String difficulty() {
+		return difficulty;
 	}
 
 	/** The underlying game session (seed, world map, wandering bands). */
@@ -487,7 +521,7 @@ public final class HostedSession {
 	 * @param listener the listener (replaces any previous one)
 	 */
 	public void onEnd(EndListener listener) {
-		this.onEnd = listener == null ? (hs, s, r, t) -> {
+		this.onEnd = listener == null ? (hs, c, o, r, t) -> {
 		} : listener;
 	}
 
@@ -502,9 +536,9 @@ public final class HostedSession {
 	 */
 	public void addColony(Settlement colony) {
 		synchronized (gate) {
-			if (state != State.CREATED)
+			if (clock != ClockState.CREATED)
 				throw new IllegalStateException(
-						"session " + id + " has already started (" + state + ") — the roster is closed");
+						"session " + id + " has already started (" + clock + ") — the roster is closed");
 			colonies.add(colony);
 		}
 	}
@@ -647,19 +681,20 @@ public final class HostedSession {
 			// the reason is read AFTER finishRun: that is where a dissolving colony actually
 			// departs as its band (SettlementLifecycle.finishRun), so before it there is nothing
 			// to tell "died" from "departed as a Caravan".
-			State terminal = endedItself ? State.GAME_OVER : State.STOPPED;
+			Outcome finalOutcome = endedItself ? decideOutcome() : Outcome.LIVE;
 			endReason = endedItself ? describeEnd() : null;
-			// Write the outcome down BEFORE publishing the terminal state. Anything that can see the
-			// run has ended — a client reading the final snapshot, a caller polling state() — must be
-			// able to trust that the record already says so, or it can read a registry that has not
-			// caught up and conclude the run is still open. (This bit: recording after the flip left
-			// a window where state() said GAME_OVER and the database still said CREATED.)
+			// Write the outcome down BEFORE publishing the stop. Anything that can see the run has ended
+			// — a client reading the final snapshot, a caller polling outcome() — must be able to trust
+			// that the record already says so, or it can read a registry that has not caught up and
+			// conclude the run is still open. Set outcome before the clock flips (below) for the same
+			// reason: a reader that sees the clock stopped must also see the decided outcome.
 			try {
-				onEnd.ended(this, terminal, endReason, tick);
+				onEnd.ended(this, ClockState.STOPPED, finalOutcome, endReason, tick);
 			} catch (RuntimeException e) {
 				log.warning(() -> "could not record the end of session " + id + ": " + e);
 			}
-			state = terminal;
+			outcome = finalOutcome;
+			clock = ClockState.STOPPED;
 			emit(); // final snapshot so clients see the terminal state
 			try {
 				logTap.close();
@@ -713,27 +748,27 @@ public final class HostedSession {
 	// freely-running session by the tick rate. Returns false once the session is stopped.
 	private boolean awaitTickPermit() {
 		synchronized (gate) {
-			while (state == State.PAUSED && stepCredits == 0)
+			while (clock == ClockState.PAUSED && stepCredits == 0)
 				try {
 					gate.wait();
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 					return false;
 				}
-			if (state == State.STOPPED)
+			if (clock == ClockState.STOPPED)
 				return false;
-			if (state == State.PAUSED && stepCredits > 0)
+			if (clock == ClockState.PAUSED && stepCredits > 0)
 				stepCredits--; // spend one step; loop back to PAUSED after this tick
 		}
 		// pace only a freely-running session (a single-step advances immediately)
-		if (state == State.RUNNING && tickRateMillis > 0)
+		if (clock == ClockState.RUNNING && tickRateMillis > 0)
 			try {
 				Thread.sleep(tickRateMillis);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				return false;
 			}
-		return state != State.STOPPED;
+		return clock != ClockState.STOPPED;
 	}
 
 	private boolean allDead() {
@@ -750,6 +785,24 @@ public final class HostedSession {
 		if (!isTimeline())
 			return allDead();
 		return colonies.size() >= 2 ? survivors() <= 1 : allDead();
+	}
+
+	// The decided Outcome for a run that ended itself — the machine-readable peer of describeEnd()'s
+	// text, read from the same engine state (finishRun has run, so a dissolved colony has its band), so
+	// the two can never disagree:
+	//   - a TIMELINE with rivals ends in a verdict — WON if a colony still stands, else LOST;
+	//   - otherwise the survivors either departed as a band (ABANDONED) or the colony died (LOST).
+	private Outcome decideOutcome() {
+		if (isTimeline() && colonies.size() >= 2) {
+			for (Settlement c : colonies)
+				if (!c.isDead())
+					return Outcome.WON;
+			return Outcome.LOST;
+		}
+		for (Settlement c : colonies)
+			if (c.getDepartedBand() != null)
+				return Outcome.ABANDONED;
+		return Outcome.LOST;
 	}
 
 	// Why this run ended, in the words a player should read. Called from the finally, after
@@ -810,8 +863,8 @@ public final class HostedSession {
 	// the loop.
 	private void emit() {
 		SessionSnapshot snap = Snapshots.of(id, spec.seed(), spec.scenario(),
-				state.name(), endReason, tick, date(), colonies, session.getWorldMap(), session.getCaravans(),
-				logBuffer.drain());
+				clock.name(), outcome.name(), endReason, tick, date(), colonies, session.getWorldMap(),
+				session.getCaravans(), logBuffer.drain());
 		lastSnapshot = snap;
 		for (Consumer<SessionSnapshot> s : subscribers) {
 			try {

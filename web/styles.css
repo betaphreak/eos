@@ -1098,6 +1098,17 @@ body.auth-anon #clock { cursor: not-allowed; }
 }
 .go-reason { font-size: 15px; line-height: 1.5; color: var(--ink); }
 .go-date { margin-top: 10px; font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.go-lobby {
+  margin-top: 20px; padding: 9px 20px; font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; color: var(--bg, #0b0f16); background: var(--accent);
+  border: 0; border-radius: 9px; transition: filter .15s ease;
+}
+.go-lobby:hover { filter: brightness(1.08); }
+
+/* a stopped/not-started clock can't be driven — dim the play button + speed chevrons so the
+   inert transport reads as unavailable (docs/session-management.md) */
+#playBtn:disabled { opacity: .4; cursor: default; }
+#speed.disabled { opacity: .4; pointer-events: none; }
 
 /* ── the Spectator Lobby (docs/spectator-lobby.md Phase 5) ────────────────────
    The room before you pick a session. Full-viewport over the live map, like

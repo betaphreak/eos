@@ -4,6 +4,7 @@ import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 
+import com.civstudio.server.ClockState;
 import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.SessionSpec;
@@ -46,9 +47,9 @@ public class SessionWriteMcpTools {
 		String sc = scenario == null ? SessionSpec.CARAVAN_DEMO : scenario;
 		int p = provinceId == null ? 4411 : provinceId;
 		HostedSession hs = host.create(new SessionSpec(s, sc, p), authz.userId());
-		if (hs.state() == HostedSession.State.CREATED)
+		if (hs.clock() == ClockState.CREATED)
 			hs.start();
-		return new CreateResult(hs.id(), hs.state().name());
+		return new CreateResult(hs.id(), hs.clock().name(), hs.outcome().name());
 	}
 
 	/** The floor on the tick interval a `rate` action may set (ms) — a guard so a hosted session
@@ -77,7 +78,7 @@ public class SessionWriteMcpTools {
 			default -> throw new IllegalArgumentException("unknown action: " + action
 					+ " (pause|resume|step|rate|stop)");
 		}
-		return new ControlResult(hs.id(), hs.state().name(), hs.tick());
+		return new ControlResult(hs.id(), hs.clock().name(), hs.outcome().name(), hs.tick());
 	}
 
 	@McpTool(name = "submit_command",
@@ -133,10 +134,10 @@ public class SessionWriteMcpTools {
 	}
 
 	/** Result of {@link #createSession}. */
-	public record CreateResult(String id, String state) {}
+	public record CreateResult(String id, String clockState, String outcome) {}
 
 	/** Result of {@link #controlSession}. */
-	public record ControlResult(String id, String state, long tick) {}
+	public record ControlResult(String id, String clockState, String outcome, long tick) {}
 
 	/** Result of {@link #submitCommand}. */
 	public record CommandResult(boolean accepted, String lever, double rate, long tick) {}

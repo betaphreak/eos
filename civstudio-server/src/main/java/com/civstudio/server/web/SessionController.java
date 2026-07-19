@@ -18,8 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.civstudio.server.ClockState;
 import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
+import com.civstudio.server.SessionKind;
 import com.civstudio.server.SessionSpec;
 import com.civstudio.server.command.SetTaxRateCommand;
 import com.civstudio.server.registry.SessionRegistry;
@@ -88,15 +90,18 @@ public class SessionController {
 		boolean admin = currentUser.isAdmin(http);
 		List<Map<String, Object>> out = new ArrayList<>();
 		for (HostedSession hs : host.list()) {
-			if (!admin && !isPublic(hs) && !java.util.Objects.equals(hs.owner(), me))
+			if (!admin && !hs.kind().isPublic() && !java.util.Objects.equals(hs.owner(), me))
 				continue;   // someone else's private run
 			// a mutable map, not Map.of: the nullable fields below would make Map.of throw
 			Map<String, Object> row = new LinkedHashMap<>();
 			row.put("id", hs.id());
 			row.put("scenario", hs.spec().scenario());
-			row.put("kind", kindOf(hs));
+			row.put("kind", hs.kind().wire());
 			row.put("seed", hs.spec().seed());
-			row.put("state", hs.state().name());
+			// the two control axes, split out of the old single `state` (docs/session-management.md):
+			// clockState drives the transport/terminal UI, outcome the finished/verdict UI
+			row.put("clockState", hs.clock().name());
+			row.put("outcome", hs.outcome().name());
 			row.put("tick", hs.tick());
 			row.put("date", hs.date().toString());     // the in-game date a lobby row shows
 			row.put("watching", hs.spectators());      // 👁 on the row
@@ -122,20 +127,6 @@ public class SessionController {
 		return out;
 	}
 
-	// A public run is one anybody may watch: a ranked Timeline (the point of a leaderboard is
-	// watching the top run) and any unowned session — the demo. A run with an owner is that player's
-	// save slot, and private.
-	private static boolean isPublic(HostedSession hs) {
-		return hs.isTimeline() || hs.owner() == null;
-	}
-
-	// what the lobby calls this run
-	private static String kindOf(HostedSession hs) {
-		if (hs.isTimeline())
-			return "timeline";
-		return hs.owner() == null ? "demo" : "single-player";
-	}
-
 	// The realm a session lives in — the realm of its anchor province (the colony founds there, so it
 	// is the session's realm, even for a Timeline that is still born empty). Opening the session switches
 	// the client's map to this realm; it defaults to Halcann when the anchor has no realm.
@@ -148,7 +139,7 @@ public class SessionController {
 	@PostMapping
 	public ResponseEntity<Object> create(@RequestBody(required = false) CreateRequest req,
 			HttpServletRequest http) {
-		CreateRequest r = req == null ? new CreateRequest(null, null, null) : req;
+		CreateRequest r = req == null ? new CreateRequest(null, null, null, null, null) : req;
 		long seed = r.seed() != null ? r.seed() : 7654321L;
 		String scenario = r.scenario() != null ? r.scenario() : SessionSpec.CARAVAN_DEMO;
 		int provinceId = r.provinceId() != null ? r.provinceId() : 4411;
@@ -156,9 +147,13 @@ public class SessionController {
 		// (open to all — the demo). Phase 2 (docs/authentication.md) will require login to found.
 		String owner = currentUser.userId(http);
 		SessionSpec spec = new SessionSpec(seed, scenario, provinceId);
+		// kind is DERIVED from (owner, spec), never taken from the client — a caller must not be able to
+		// declare its private run a public demo. mode/difficulty are the client's to choose (the variant
+		// + Civ4 handicap); difficulty is opaque here until the handicap catalog validates it (Phase F).
+		SessionKind kind = SessionKind.of(owner, spec);
 		HostedSession hs;
 		try {
-			hs = host.create(spec, owner);
+			hs = host.create(spec, owner, kind, r.mode(), r.difficulty());
 		} catch (SessionHost.SaveSlotsFullException full) {
 			return ResponseEntity.status(409).body(Map.of("error", full.getMessage(),
 					"slots", host.saveSlotsOf(owner).size(), "limit", SessionHost.SAVE_SLOT_LIMIT));
@@ -172,7 +167,7 @@ public class SessionController {
 		//  - a SAVE SLOT starts PAUSED and lands on the map with a press-play cue: you survey the
 		//    world before committing, which is the whole point of starting paused.
 		//  - the demo runs immediately — a demo nobody has pressed play on is a dead demo.
-		if (hs.state() == HostedSession.State.CREATED && !hs.isTimeline()) {
+		if (hs.clock() == ClockState.CREATED && !hs.isTimeline()) {
 			if (owner != null)
 				hs.startPaused();
 			else
@@ -182,8 +177,8 @@ public class SessionController {
 		// session carries its realm), and the founder has only this response to learn it from — the
 		// list row that also carries it is filtered to the owner but is a separate, racy fetch. Same
 		// value realmOf() puts on a list row.
-		return ResponseEntity.status(201)
-				.body(Map.of("id", hs.id(), "state", hs.state().name(), "realm", realmOf(hs)));
+		return ResponseEntity.status(201).body(Map.of("id", hs.id(), "clockState", hs.clock().name(),
+				"outcome", hs.outcome().name(), "kind", hs.kind().wire(), "realm", realmOf(hs)));
 	}
 
 	@PostMapping("/{id}/control")
@@ -199,19 +194,21 @@ public class SessionController {
 		if (denied != null)
 			return denied;
 		// a finished run takes no orders: its thread is gone, so pause/resume/step would silently
-		// do nothing. Say so rather than returning a cheerful 200 that changed nothing.
-		if (hs.state() == HostedSession.State.GAME_OVER)
+		// do nothing. Say so rather than returning a cheerful 200 that changed nothing. (Only a
+		// FINISHED run — a decided outcome — is refused here; a run merely stopped from outside is
+		// restorable, and getOrRestore above has already brought it back.)
+		if (hs.isFinished())
 			return ResponseEntity.status(409).body(Map.of("error", "session " + id + " is over",
-					"state", hs.state().name(), "endReason", String.valueOf(hs.endReason())));
+					"outcome", hs.outcome().name(), "endReason", String.valueOf(hs.endReason())));
 		String action = req.action() == null ? "" : req.action();
 		switch (action) {
 			// the gun: start a Timeline that has been open for joins. Separate from resume (which only
 			// un-pauses an already-running session) because this is the moment the roster closes and
 			// everyone's colony starts on the same day.
 			case "start" -> {
-				if (hs.state() != HostedSession.State.CREATED)
+				if (hs.clock() != ClockState.CREATED)
 					return ResponseEntity.status(409).body(Map.of("error",
-							"session " + id + " has already started", "state", hs.state().name()));
+							"session " + id + " has already started", "clockState", hs.clock().name()));
 				try {
 					hs.start();
 				} catch (IllegalStateException empty) {
@@ -227,7 +224,8 @@ public class SessionController {
 				return ResponseEntity.badRequest().body(Map.of("error", "unknown action: " + action));
 			}
 		}
-		return ResponseEntity.ok(Map.of("id", id, "state", hs.state().name(), "tick", hs.tick()));
+		return ResponseEntity.ok(Map.of("id", id, "clockState", hs.clock().name(),
+				"outcome", hs.outcome().name(), "tick", hs.tick()));
 	}
 
 	// submit a player command (the interactive seam). A command is tick-stamped and applied at the
@@ -438,8 +436,14 @@ public class SessionController {
 		};
 	}
 
-	/** Body of {@code POST /api/sessions} (all fields optional; defaults to the caravan demo). */
-	public record CreateRequest(Long seed, String scenario, Integer provinceId) {
+	/**
+	 * Body of {@code POST /api/sessions} (all fields optional; defaults to the caravan demo). {@code
+	 * mode} is the variant within the run's kind and {@code difficulty} a Civ4 handicap key — both
+	 * carried as founding metadata (see {@code docs/session-management.md}); the run's <em>kind</em> is
+	 * derived server-side from the founder, never taken from the client.
+	 */
+	public record CreateRequest(Long seed, String scenario, Integer provinceId, String mode,
+			String difficulty) {
 	}
 
 	/** Body of {@code POST /api/sessions/{id}/control}. */

@@ -59,13 +59,13 @@ class SaveSlotTest {
 	void aNewRunStartsPausedButTheDemoRuns() throws Exception {
 		HttpResponse<String> mine = create("alice", 8001);
 		assertEquals(201, mine.statusCode());
-		assertEquals("PAUSED", json.readTree(mine.body()).get("state").asText(),
+		assertEquals("PAUSED", json.readTree(mine.body()).get("clockState").asText(),
 				"a save slot waits for you to press play");
 
 		// the demo (unowned) still runs on arrival — a demo nobody pressed play on is a dead demo
 		HttpResponse<String> demo = create(null, 8002);
 		assertEquals(201, demo.statusCode());
-		assertEquals("RUNNING", json.readTree(demo.body()).get("state").asText());
+		assertEquals("RUNNING", json.readTree(demo.body()).get("clockState").asText());
 	}
 
 	@Test
@@ -100,7 +100,7 @@ class SaveSlotTest {
 
 		// one of dave's colonies collapses (the registry is the authority on that)
 		String dead = SessionHost.sessionKey(new SessionSpec(8400L, SCENARIO, DHENIJANSAR), "dave");
-		host.registry().updateProgress(dead, "GAME_OVER", "Dhenijansar departed as a Caravan", 2639);
+		host.registry().updateProgress(dead, "STOPPED", "ABANDONED", "Dhenijansar departed as a Caravan", 2639);
 
 		assertEquals(SessionHost.SAVE_SLOT_LIMIT - 1, host.saveSlotsOf("dave").size(),
 				"a finished run is a record, not a slot");

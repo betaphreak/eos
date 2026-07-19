@@ -1,9 +1,10 @@
 "use strict";
 // How a lobby row reads — the pure part of the Spectator Lobby (docs/spectator-lobby.md Phase 5).
 //
-// The server hands us rows from GET /api/sessions carrying kind / state / date / watching / mine /
-// seats / standing / endReason. Turning those into what a human reads is a decision per field, and
-// decisions are worth testing without a browser — so they live here, and lobby.mjs only paints.
+// The server hands us rows from GET /api/sessions carrying kind / clockState / outcome / date /
+// watching / mine / seats / standing / endReason (the old single `state` split into clockState +
+// outcome — docs/session-management.md). Turning those into what a human reads is a decision per
+// field, and decisions are worth testing without a browser — so they live here, and lobby.mjs paints.
 //
 // NAMING IS DEFERRED. A run will eventually be named after its COUNTRY (the political layer already
 // has Country / Province.ownerTag); until then a row is labelled by its colony, which is generated,
@@ -34,19 +35,23 @@ function timelineName(row) {
  */
 export function status(row) {
   if (!row) return "";
-  if (row.state === "GAME_OVER") return row.endReason || "over";
+  if (isOver(row)) return row.endReason || "over";
   if (row.kind === KIND.TIMELINE) {
-    if (row.state === "CREATED") return `open for joins · ${row.seats ?? 0} seated`;
+    if (row.clockState === "CREATED") return `open for joins · ${row.seats ?? 0} seated`;
     return `${row.standing ?? 0} of ${row.seats ?? 0} standing · ${row.date || ""}`.trim();
   }
-  if (row.state === "CREATED") return "not started";
-  if (row.state === "PAUSED") return `paused · ${row.date || ""}`.trim();
-  if (row.state === "STOPPED") return `stopped · ${row.date || ""}`.trim();
+  if (row.clockState === "CREATED") return "not started";
+  if (row.clockState === "PAUSED") return `paused · ${row.date || ""}`.trim();
+  if (row.clockState === "STOPPED") return `stopped · ${row.date || ""}`.trim();
   return row.date || "";
 }
 
-/** Whether this run is finished for good — the row reads as a record, not something to join. */
-export const isOver = row => !!row && row.state === "GAME_OVER";
+/**
+ * Whether this run is finished for good — a decided {@code outcome} (won / lost / abandoned), so the
+ * row reads as a record, not something to join. A run merely stopped from outside stays {@code LIVE}
+ * (it can come back), so it is NOT over. See docs/session-management.md.
+ */
+export const isOver = row => !!row && !!row.outcome && row.outcome !== "LIVE";
 
 /** Whether the viewer may delete this row: their own single-player runs, and only those. */
 export const canDelete = row => !!row && row.kind === KIND.SINGLE && !!row.mine;
@@ -82,7 +87,7 @@ export function ranked(rows, signedIn) {
   if (!timeline) return { label: "Ranked", enabled: false, hint: "No Timeline is open" };
   if (!signedIn)
     return { label: "Ranked", enabled: false, hint: "Sign in to take a seat", id: timeline.id };
-  if (timeline.state === "CREATED")
+  if (timeline.clockState === "CREATED")
     return { label: "Join " + title(timeline), enabled: true, join: true, id: timeline.id,
       hint: status(timeline) };
   // it has started: the roster is closed, so the honest offer is to watch it

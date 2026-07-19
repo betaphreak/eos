@@ -38,12 +38,12 @@ public class SessionMcpTools {
 	}
 
 	@McpTool(name = "list_sessions",
-			description = "List all hosted simulation sessions with their scenario, seed, control "
-					+ "state and current tick. Use a returned id to query the other tools.")
+			description = "List all hosted simulation sessions with their scenario, seed, kind, clock "
+					+ "state, outcome and current tick. Use a returned id to query the other tools.")
 	public List<SessionInfo> listSessions() {
 		return host.list().stream()
 				.map(hs -> new SessionInfo(hs.id(), hs.spec().scenario(), hs.spec().seed(),
-						hs.state().name(), hs.tick()))
+						hs.kind().wire(), hs.clock().name(), hs.outcome().name(), hs.tick()))
 				.toList();
 	}
 
@@ -129,7 +129,8 @@ public class SessionMcpTools {
 	}
 
 	/** One row of {@link #listSessions()}. */
-	public record SessionInfo(String id, String scenario, long seed, String state, long tick) {}
+	public record SessionInfo(String id, String scenario, long seed, String kind, String clockState,
+			String outcome, long tick) {}
 
 	/** One applied command in {@link #getCommandLog}; {@code lever}/{@code rate} null for other types. */
 	public record CommandInfo(long tick, String type, String lever, Double rate) {}

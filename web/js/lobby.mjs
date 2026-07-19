@@ -183,19 +183,31 @@ function applyBtn(btn, face) {
 // event live.mjs listens for, so neither module imports the other.
 function spectate(row) {
   // a session carries its realm (docs/realms.md §A session carries its realm) — if it lives in another
-  // realm, cross to it first, resuming the watch after the reload (the sessionStorage intents survive it).
+  // realm, cross to it first. The choice rides in the URL (?session=), so it survives the reload with
+  // no side-channel needed; the sessionStorage intents are kept as a belt-and-braces fallback.
   const active = new URLSearchParams(location.search).get("realm") || "halcann";
   if (row.realm && row.realm !== active) {
-    try { sessionStorage.setItem("cs.spectate", row.id); sessionStorage.setItem("cs.realmSwitch", "1"); } catch { /* private mode */ }
     const u = new URL(location.href);
-    u.searchParams.set("realm", row.realm); u.searchParams.delete("p"); u.searchParams.delete("z");
+    u.searchParams.set("realm", row.realm);
+    if (row.id) u.searchParams.set("session", row.id);
+    u.searchParams.delete("p"); u.searchParams.delete("z");
+    try { sessionStorage.setItem("cs.spectate", row.id); sessionStorage.setItem("cs.realmSwitch", "1"); } catch { /* private mode */ }
     location.assign(u.toString());
     return;
   }
   closeLobby();
-  // The lobby can be open BEFORE the app exists — during the load, which is the point of it — so the
-  // choice must survive until live.mjs is there to hear it. Stash it on window (which live.mjs reads
-  // when it first connects) AND fire the event, for when the app is already up.
+  // Pin the choice in the URL — the source of truth live.mjs reads on (re)connect
+  // (docs/session-management.md): shareable, reload-survivable, and never silently swapped. This
+  // replaced the fragile window-global + list[0] handoff that once left a founded session on the demo.
+  if (row.id) {
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set("session", row.id);
+      history.replaceState(history.state, "", u);
+    } catch { /* history unavailable — the event below still delivers the choice */ }
+  }
+  // The lobby can be open BEFORE the app exists (during the load); window.__spectate is the fallback
+  // for that pre-URL-read moment, and the event covers the already-running app.
   window.__spectate = row.id;
   const live = document.querySelector('#overlayToggle button[data-ov="live"]');
   if (live && !live.classList.contains("on")) live.click();

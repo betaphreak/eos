@@ -58,7 +58,8 @@ class HostedSessionTest {
 			SessionSnapshot start = awaitSnapshot(hs, 0, 30_000);
 			assertEquals(1, start.colonies().size(), "the demo has one colony");
 			assertTrue(start.colonies().get(0).population() > 0, "the colony has a workforce");
-			assertEquals("PAUSED", start.state());
+			assertEquals("PAUSED", start.clockState());
+			assertEquals("LIVE", start.outcome());
 			// no bands are hand-seeded any more (SessionHost): the colony musters its OWN foraging
 			// explorers emergently over the winter, so there are none at tick 0.
 
@@ -171,8 +172,8 @@ class HostedSessionTest {
 		long deadline = System.nanoTime() + timeoutMs * 1_000_000L;
 		while (!hs.isTerminal()) {
 			if (System.nanoTime() > deadline)
-				fail("timed out waiting for the run to end (state " + hs.state()
-						+ ", tick " + hs.tick() + ")");
+				fail("timed out waiting for the run to end (clock " + hs.clock()
+						+ ", outcome " + hs.outcome() + ", tick " + hs.tick() + ")");
 			try {
 				Thread.sleep(20);
 			} catch (InterruptedException e) {
@@ -183,10 +184,10 @@ class HostedSessionTest {
 	}
 
 	/**
-	 * A run that ends itself reaches {@link HostedSession.State#GAME_OVER} carrying why — the
-	 * distinction {@code docs/game-over.md} exists for. The demo colony dissolves into a caravan
-	 * once its workforce crosses the floor (~tick 4100 at this seed, on the studio-sourced content),
-	 * so this drives the real collapse rather than simulating one.
+	 * A run that ends itself is <b>finished</b> (a decided {@link Outcome}) and its clock is {@link
+	 * ClockState#STOPPED}, carrying why — the distinction {@code docs/game-over.md} exists for. The demo
+	 * colony dissolves into a caravan once its workforce crosses the floor (~tick 4100 at this seed, on
+	 * the studio-sourced content), so this drives the real collapse rather than simulating one.
 	 */
 	@Test
 	@Timeout(600)
@@ -199,8 +200,11 @@ class HostedSessionTest {
 			hs.step(6000); // more credit than the collapse needs (~tick 4100); the loop breaks when it dies
 			awaitTerminal(hs, 540_000);
 
-			assertEquals(HostedSession.State.GAME_OVER, hs.state(),
-					"a colony collapsing ends the run itself — that is not a STOPPED session");
+			assertTrue(hs.isFinished(),
+					"a colony collapsing ends the run itself — that is a decided outcome, not a plain stop");
+			assertEquals(ClockState.STOPPED, hs.clock(), "its clock has stopped");
+			// the demo colony dissolves into a band rather than dying outright → ABANDONED
+			assertEquals(Outcome.ABANDONED, hs.outcome());
 			assertNotNull(hs.endReason(), "game over says why");
 			assertTrue(hs.endReason().contains("abandoned")
 					&& hs.endReason().contains("survivors"),
@@ -208,15 +212,16 @@ class HostedSessionTest {
 							+ hs.endReason());
 			assertTrue(hs.isTerminal());
 
-			// the client learns both from the final snapshot — the whole point of the field
+			// the client learns both from the final snapshot — the whole point of the split fields
 			SessionSnapshot last = hs.currentSnapshot();
-			assertEquals("GAME_OVER", last.state());
+			assertEquals("STOPPED", last.clockState());
+			assertEquals("ABANDONED", last.outcome());
 			assertEquals(hs.endReason(), last.endReason());
 
 			// a finished run stays finished: an admin stop (or shutdown sweep) must not relabel it
 			hs.stop();
-			assertEquals(HostedSession.State.GAME_OVER, hs.state(),
-					"stop() must not downgrade a finished run to STOPPED");
+			assertTrue(hs.isFinished(), "stop() must not un-finish a finished run");
+			assertEquals(Outcome.ABANDONED, hs.outcome(), "its verdict must survive a later stop()");
 		} finally {
 			hs.stop();
 		}
@@ -233,10 +238,13 @@ class HostedSessionTest {
 			awaitSnapshot(hs, 0, 30_000);
 			hs.stop();
 
-			assertEquals(HostedSession.State.STOPPED, hs.state());
+			assertEquals(ClockState.STOPPED, hs.clock());
+			assertFalse(hs.isFinished(), "stopped from outside is not finished — it stays LIVE and restorable");
+			assertEquals(Outcome.LIVE, hs.outcome());
 			assertNull(hs.endReason(), "no end was reached, so there is no reason to give");
-			assertTrue(hs.isTerminal(), "stopped is still over for good");
-			assertEquals("STOPPED", hs.currentSnapshot().state());
+			assertTrue(hs.isTerminal(), "stopped is still over for good (clock-wise)");
+			assertEquals("STOPPED", hs.currentSnapshot().clockState());
+			assertEquals("LIVE", hs.currentSnapshot().outcome());
 			assertNull(hs.currentSnapshot().endReason());
 		} finally {
 			hs.stop();

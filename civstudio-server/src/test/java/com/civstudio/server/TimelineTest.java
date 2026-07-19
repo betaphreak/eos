@@ -1,6 +1,7 @@
 package com.civstudio.server;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -38,7 +39,8 @@ class TimelineTest {
 	void aTimelineIsBornEmptyAndFillsAsPlayersJoin() {
 		HostedSession hs = openTimeline(RANKED_SEED);
 		assertTrue(hs.isTimeline());
-		assertEquals(HostedSession.State.CREATED, hs.state(), "it opens for joins, not running");
+		assertEquals(SessionKind.TIMELINE, hs.kind(), "a Timeline is its own kind");
+		assertEquals(ClockState.CREATED, hs.clock(), "it opens for joins, not running");
 		assertTrue(hs.colonies().isEmpty(), "a Timeline founds no colony of its own");
 
 		Settlement alice = host.joinTimeline(hs.id(), "alice");
@@ -99,8 +101,7 @@ class TimelineTest {
 		HostedSession hs = openTimeline(1004L);
 		IllegalStateException e = assertThrows(IllegalStateException.class, hs::startPaused);
 		assertTrue(e.getMessage().contains("no player has joined"), e.getMessage());
-		assertNotEquals(HostedSession.State.GAME_OVER, hs.state(),
-				"an unjoined Timeline is not a Timeline someone won");
+		assertFalse(hs.isFinished(), "an unjoined Timeline is not a Timeline someone won");
 	}
 
 	@Test
@@ -135,8 +136,11 @@ class TimelineTest {
 		while (!hs.isTerminal() && System.nanoTime() < deadline)
 			Thread.onSpinWait();
 
-		assertEquals(HostedSession.State.GAME_OVER, hs.state(), "state was " + hs.state()
+		assertTrue(hs.isFinished(), "clock " + hs.clock() + " outcome " + hs.outcome()
 				+ " at tick " + hs.tick() + " with " + hs.survivors() + " standing");
+		assertEquals(ClockState.STOPPED, hs.clock());
+		// one colony standing is a WON verdict; both dying on the same day is LOST (no colony survived)
+		assertEquals(hs.survivors() >= 1 ? Outcome.WON : Outcome.LOST, hs.outcome());
 		assertTrue(hs.survivors() <= 1, "the Timeline ran on past its decision");
 		assertNotNull(hs.endReason());
 		assertTrue(hs.endReason().contains("wins the Timeline")

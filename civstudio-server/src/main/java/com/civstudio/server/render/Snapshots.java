@@ -36,13 +36,15 @@ public final class Snapshots {
 	/**
 	 * Project a hosted session's current state into a snapshot.
 	 *
-	 * @param sessionId the session id
-	 * @param seed      the session seed
-	 * @param scenario  the founding scenario id
-	 * @param state     the host's control state (RUNNING / PAUSED / STOPPED / GAME_OVER)
-	 * @param endReason why the run ended (display text), or {@code null} unless {@code state} is
-	 *                  {@code GAME_OVER} — see {@code docs/game-over.md}
-	 * @param tick      the authoritative tick (in-game days elapsed)
+	 * @param sessionId  the session id
+	 * @param seed       the session seed
+	 * @param scenario   the founding scenario id
+	 * @param clockState what the clock is doing (CREATED / RUNNING / PAUSED / STOPPED)
+	 * @param outcome    the contest result (LIVE / WON / LOST / ABANDONED) — see {@code
+	 *                   docs/session-management.md}
+	 * @param endReason  why the run ended (display text), or {@code null} unless it ended itself — see
+	 *                   {@code docs/game-over.md}
+	 * @param tick       the authoritative tick (in-game days elapsed)
 	 * @param date      the session's in-game date — its own clock ({@code HostedSession.date()}),
 	 *                  not a poll of the colonies: a session whose colonies are all dead still
 	 *                  knows what day it is. May be {@code null} for a caller with no clock, which
@@ -54,8 +56,8 @@ public final class Snapshots {
 	 * @return the render snapshot
 	 */
 	public static SessionSnapshot of(String sessionId, long seed, String scenario,
-			String state, String endReason, long tick, LocalDate date, List<Settlement> colonies,
-			WorldMap map, List<Caravan> caravans, List<LogLine> log) {
+			String clockState, String outcome, String endReason, long tick, LocalDate date,
+			List<Settlement> colonies, WorldMap map, List<Caravan> caravans, List<LogLine> log) {
 		List<ColonyView> colonyViews = new ArrayList<>(colonies.size());
 		for (Settlement c : colonies)
 			colonyViews.add(colonyView(c));
@@ -75,7 +77,7 @@ public final class Snapshots {
 				caravanViews.add(caravanView(excursion, map));
 				collectRoutePlots(excursion, routed);
 			}
-		return new SessionSnapshot(sessionId, seed, scenario, state, endReason, tick,
+		return new SessionSnapshot(sessionId, seed, scenario, clockState, outcome, endReason, tick,
 				date == null ? "" : date.toString(), colonyViews, caravanViews, log,
 				new ArrayList<>(routed.values()));
 	}
