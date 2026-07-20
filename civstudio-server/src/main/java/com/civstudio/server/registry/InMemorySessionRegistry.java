@@ -30,7 +30,8 @@ public final class InMemorySessionRegistry implements SessionRegistry {
 		if (r == null)
 			return; // nothing remembered to update — the caller's run was never recorded
 		records.put(id, new SessionRecord(r.id(), r.scenario(), r.seed(), r.provinceId(), r.owner(),
-				r.kind(), r.mode(), r.difficulty(), clockState, outcome, endReason, tick));
+				r.kind(), r.mode(), r.difficulty(), clockState, outcome, endReason, tick,
+				r.contentVersion()));
 	}
 
 	@Override

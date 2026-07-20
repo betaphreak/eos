@@ -52,6 +52,7 @@ public final class JdbcSessionRegistry implements SessionRegistry {
 				  outcome     VARCHAR(32),
 				  end_reason  VARCHAR(1000),
 				  tick        BIGINT       NOT NULL DEFAULT 0,
+				  content_version VARCHAR(128),
 				  created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				  updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 				)""");
@@ -62,6 +63,10 @@ public final class JdbcSessionRegistry implements SessionRegistry {
 		jdbc.execute("ALTER TABLE game_session ADD COLUMN IF NOT EXISTS difficulty  VARCHAR(64)");
 		jdbc.execute("ALTER TABLE game_session ADD COLUMN IF NOT EXISTS clock_state VARCHAR(32)");
 		jdbc.execute("ALTER TABLE game_session ADD COLUMN IF NOT EXISTS outcome     VARCHAR(32)");
+		// the content-store version a run was founded against. Deliberately NOT backfilled: a legacy
+		// row's world version is unrecoverable, and guessing it "the current one" would assert a
+		// reproducibility that was never checked. NULL means unknown, and unknown is the truth.
+		jdbc.execute("ALTER TABLE game_session ADD COLUMN IF NOT EXISTS content_version VARCHAR(128)");
 		// backfill legacy rows from the retained `state`. kind: the old owner/scenario coincidence,
 		// made explicit. clock_state: state, except GAME_OVER which was a stopped thread. outcome: a
 		// GAME_OVER row's verdict is unrecoverable from the old columns, so it reads LOST (finished);
@@ -99,17 +104,19 @@ public final class JdbcSessionRegistry implements SessionRegistry {
 		int updated = jdbc.update("""
 				UPDATE game_session SET scenario = ?, seed = ?, province_id = ?, owner = ?,
 				  state = ?, kind = ?, mode = ?, difficulty = ?, clock_state = ?, outcome = ?,
-				  end_reason = ?, tick = ?, updated_at = CURRENT_TIMESTAMP
+				  end_reason = ?, tick = ?, content_version = ?, updated_at = CURRENT_TIMESTAMP
 				WHERE id = ?""",
 				r.scenario(), r.seed(), r.provinceId(), r.owner(), r.legacyState(), r.kind(), r.mode(),
-				r.difficulty(), r.clockState(), r.outcome(), r.endReason(), r.tick(), r.id());
+				r.difficulty(), r.clockState(), r.outcome(), r.endReason(), r.tick(),
+				r.contentVersion(), r.id());
 		if (updated == 0)
 			jdbc.update("""
 					INSERT INTO game_session(id, scenario, seed, province_id, owner, state, kind, mode,
-					  difficulty, clock_state, outcome, end_reason, tick)
-					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+					  difficulty, clock_state, outcome, end_reason, tick, content_version)
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
 					r.id(), r.scenario(), r.seed(), r.provinceId(), r.owner(), r.legacyState(), r.kind(),
-					r.mode(), r.difficulty(), r.clockState(), r.outcome(), r.endReason(), r.tick());
+					r.mode(), r.difficulty(), r.clockState(), r.outcome(), r.endReason(), r.tick(),
+					r.contentVersion());
 	}
 
 	@Override
@@ -173,7 +180,8 @@ public final class JdbcSessionRegistry implements SessionRegistry {
 			rs.getString("id"), rs.getString("scenario"), rs.getLong("seed"),
 			rs.getInt("province_id"), rs.getString("owner"), rs.getString("kind"),
 			rs.getString("mode"), rs.getString("difficulty"), rs.getString("clock_state"),
-			rs.getString("outcome"), rs.getString("end_reason"), rs.getLong("tick"));
+			rs.getString("outcome"), rs.getString("end_reason"), rs.getLong("tick"),
+			rs.getString("content_version"));
 
 	private static final RowMapper<SeatRecord> SEAT_MAPPER = (rs, n) -> new SeatRecord(
 			rs.getString("session_id"), rs.getString("user_id"), rs.getString("colony_name"),

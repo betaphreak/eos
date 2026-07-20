@@ -26,4 +26,22 @@ public final class WorldSources {
 	public static void set(WorldSource source) {
 		current = (source != null) ? source : new ClasspathWorldSource();
 	}
+
+	/**
+	 * The content version of the active source, or {@code null} when it has none (the classpath
+	 * default, whose content is whatever was committed).
+	 * <p>
+	 * <b>Reproducibility is {@code seed + contentVersion + command log}</b>: the seed fixes every
+	 * random draw, but the *world* the run happened in — and, once balance data rides the bundle, the
+	 * numbers it was tuned with — comes from the content store, which changes independently of the
+	 * code. Recording it against a run is what makes "re-run this" a checkable claim rather than a
+	 * hope; a run recorded without one can never be shown to reproduce.
+	 * <p>
+	 * The {@code instanceof} lives here so callers do not each repeat it.
+	 *
+	 * @return the active content version, or {@code null} if the source does not carry one
+	 */
+	public static String contentVersion() {
+		return current instanceof BundleWorldSource bundle ? bundle.contentVersion() : null;
+	}
 }

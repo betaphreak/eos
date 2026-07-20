@@ -15,6 +15,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import com.civstudio.data.WorldSources;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.civstudio.server.ClockState;
@@ -261,5 +263,25 @@ class SessionPersistenceTest {
 		assertEquals(hs.outcome().name(), r.outcome(), "the record's verdict matches the live one");
 		assertEquals(hs.endReason(), r.endReason());
 		assertEquals(hs.tick(), r.tick(), "how far it got");
+	}
+
+	@Test
+	@Timeout(180)
+	void theContentVersionARunWasFoundedAgainstIsRecorded() {
+		// Reproducibility is seed + contentVersion + command log. The seed fixes the draws, but the
+		// world (and, once balance rides the bundle, the numbers it was tuned with) comes from studio
+		// and moves independently of the code — so the version has to be written down WITH the run.
+		HostedSession hs = host.create(new SessionSpec(6009L, "registry-test", DHENIJANSAR), "alice");
+		SessionRecord r = registry.find(hs.id()).orElseThrow();
+
+		// the test context runs on the classpath source, which carries no version — and that must
+		// round-trip as null ("unknown"), never be quietly filled in with whatever is current now
+		assertEquals(WorldSources.contentVersion(), r.contentVersion(),
+				"the record keeps the version the run was actually founded against");
+
+		// and it survives a progress update — the column must not be dropped by the UPDATE path
+		registry.updateProgress(hs.id(), "PAUSED", "LIVE", null, 42L);
+		assertEquals(WorldSources.contentVersion(), registry.find(hs.id()).orElseThrow().contentVersion(),
+				"updating progress must not erase the founding content version");
 	}
 }

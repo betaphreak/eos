@@ -30,10 +30,17 @@ import com.civstudio.server.SessionKind;
  * @param outcome    the run's {@link Outcome} (its name) — {@code LIVE} until it ends itself
  * @param endReason  why it ended (a verdict for a Timeline), or {@code null} unless it ended itself
  * @param tick       the last recorded tick — how far the run got
+ * @param contentVersion the content-store version the run was founded against, or {@code null} when
+ *                   the source carried none (the classpath default). Reproducibility is
+ *                   {@code seed + contentVersion + command log}: the seed fixes the draws, but the
+ *                   world — and, once balance data rides the bundle, the numbers it was tuned with —
+ *                   comes from studio and changes independently of the code. Without this column a
+ *                   re-run cannot even be shown to be comparable. Legacy rows read {@code null},
+ *                   which means "unknown", not "the current one"
  */
 public record SessionRecord(String id, String scenario, long seed, int provinceId, String owner,
 		String kind, String mode, String difficulty, String clockState, String outcome,
-		String endReason, long tick) {
+		String endReason, long tick, String contentVersion) {
 
 	/**
 	 * Whether this run <b>ended itself</b> — its {@link Outcome} is decided (won / lost / abandoned).

@@ -141,7 +141,7 @@ public final class SessionHost {
 			// run that ended without ever being written down is a run that never happened
 			registry.save(new SessionRecord(id, spec.scenario(), spec.seed(), spec.provinceId(),
 					owner, kind.name(), mode, difficulty, hs.clock().name(), hs.outcome().name(),
-					null, 0));
+					null, 0, com.civstudio.data.WorldSources.contentVersion()));
 			// the terminal values are handed to us rather than read back: at this point the session
 			// has not published them yet, which is exactly what makes the record trustworthy
 			hs.onEnd((ended, clock, outcome, endReason, tick) -> registry.updateProgress(ended.id(),
@@ -230,6 +230,7 @@ public final class SessionHost {
 		// which is what shutdown does to every session — so it is exactly what restore is for.
 		if (r == null || r.isFinished())
 			return null;
+		warnIfContentMoved(r);
 		SessionSpec spec = new SessionSpec(r.seed(), r.scenario(), r.provinceId());
 		HostedSession hs = build(id, r.owner(), r.kindEnum(), r.mode(), r.difficulty(), spec);
 		hs.onEnd((ended, clock, outcome, endReason, tick) -> registry.updateProgress(ended.id(),
@@ -303,6 +304,31 @@ public final class SessionHost {
 	}
 
 	/** The session with this id, or {@code null}. */
+	/**
+	 * Warn when a run is restored against a <b>different content version</b> than it was founded
+	 * against.
+	 * <p>
+	 * Restoring replays the spec + command log, which reproduces the run only if the world it replays
+	 * into is the same world. The content store changes independently of the code — and once balance
+	 * data rides the bundle, a content edit moves the numbers the run was tuned with — so a restore
+	 * across a version change is a run that will diverge from its own history.
+	 * <p>
+	 * A warning, not a refusal: the alternative is bricking every recorded run whenever content ships,
+	 * which is worse than a run that drifts. This makes the drift <em>visible</em> instead of silent,
+	 * which is the whole reason the column exists. A {@code null} on either side means "unknown" (a
+	 * legacy row, or a source carrying no version) and says nothing either way.
+	 *
+	 * @param r the record being restored
+	 */
+	private static void warnIfContentMoved(SessionRecord r) {
+		String founded = r.contentVersion();
+		String now = com.civstudio.data.WorldSources.contentVersion();
+		if (founded != null && now != null && !founded.equals(now))
+			log.warning(() -> "restoring " + r.id() + ": founded against content version " + founded
+					+ " but this process serves " + now
+					+ " — the replay may diverge from the recorded run");
+	}
+
 	public HostedSession get(String id) {
 		return sessions.get(id);
 	}
