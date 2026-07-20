@@ -257,11 +257,32 @@ close first.
 spectator identities — the lobby row still only says `mine` plus `seats`/`standing` counts. Add when a
 panel actually needs them.
 
-### C2 — The page shell
+### C2 — The page shell — **SHIPPED 2026-07-20**
 
-First custom admin page in this repo: `app.addMenuLink({to: '/plugins/civstudio-sessions', …})` in
-`studio/src/admin/app.tsx`, lazy `Component` per the established convention. Route
-`/plugins/civstudio-sessions/:id` for the detail view; the existing widget row links into it.
+First custom admin **page** in this repo (everything before it was a homepage widget or a
+content-manager view). `app.addMenuLink` in `studio/src/admin/app.tsx` → `pages/Sessions.tsx`
+(router) → `SessionListPage` / `SessionDetailPage`. Overview panel only; the rest is §C3.
+
+Two Strapi facts worth recording, both verified against `@strapi/admin` 5.42 rather than assumed:
+
+- **`to` must be RELATIVE.** `Router#addMenuLink` strips a leading slash and logs a warning, so it is
+  `to: 'civstudio-sessions'` (URL `/admin/civstudio-sessions`), not `/plugins/…`.
+- **The route is registered as `` `${to}/*` ``**, so the page owns its own nested routes — hence the
+  internal `<Routes>` with `index` and `:id`. No extra registration needed for the detail view.
+- Like `widgets`, `addMenuLink` must be called in **`register`**, not `bootstrap` (whose argument is a
+  restricted `Pick` without it).
+
+The widget and the page share `lib/sessions.ts` (state colours, `controlsFor`, `controlSession`,
+`sessionPath`) and `components/sessionBits.tsx` (`Pill`, `Detail`, `StatePair`, `SessionFigures`), so
+the two surfaces cannot disagree about what a state means or which controls the server accepts.
+
+The detail page finds its run by filtering `GET /api/sessions` rather than via a per-session route:
+that is the only endpoint returning the lobby row shape, and it already applies the caller's
+visibility rules — so a run the operator may not see simply is not there, and the page says "no
+session visible to you" without disclosing which of the two it is.
+
+Verified locally by `tools/webverify/sessions-page-verify.mjs` (menu link present, list renders live
+rows, clicking one routes to `/admin/civstudio-sessions/<id>`, no page errors).
 
 ### C3 — Panels
 

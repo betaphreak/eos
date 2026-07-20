@@ -58,6 +58,18 @@ export default {
         component: async () => (await import('./components/SessionsWidget')).default,
       },
     ]);
+
+    // The Sessions page — the roomier view the widget rows link into (docs/studio-control-plane-plan.md
+    // §C2). `to` is RELATIVE to the admin root on purpose: Router#addMenuLink strips a leading slash
+    // and warns. It registers the route as `<to>/*`, so the page owns its own nested routes (:id).
+    // Like `widgets`, this must be in `register` — `bootstrap`'s argument is a Pick without it.
+    app.addMenuLink?.({
+      to: 'civstudio-sessions',
+      icon: Command,
+      intlLabel: { id: 'civstudio.menu.sessions', defaultMessage: 'Sessions' },
+      permissions: [], // any authenticated admin; the game server enforces its own ROLE_ADMIN
+      Component: () => import('./pages/Sessions'),
+    });
   },
   bootstrap() {
     // Make the CivStudio dark (navy) look the DEFAULT appearance: Strapi falls back to 'system' when
