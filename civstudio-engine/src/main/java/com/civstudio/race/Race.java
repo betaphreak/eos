@@ -160,6 +160,57 @@ public enum Race {
 		return id;
 	}
 
+	// id -> race, built once. The ids ARE the Anbennar culture-group keys (this enum was imported
+	// from anb_cultures.txt), which is what makes the lookup below a rename rather than a mapping
+	// table someone has to maintain.
+	private static final java.util.Map<String, Race> BY_ID;
+	static {
+		java.util.Map<String, Race> m = new java.util.HashMap<>(values().length * 2);
+		for (Race r : values())
+			m.put(r.id, r);
+		BY_ID = java.util.Collections.unmodifiableMap(m);
+	}
+
+	/**
+	 * The race of an Anbennar <b>culture group</b> — how a settlement learns who lives in it.
+	 * <p>
+	 * A province carries a culture ({@code Province.culture}), a culture belongs to a group
+	 * ({@code Culture.group}), and that group key <em>is</em> this enum's {@link #id()}: both were
+	 * imported from {@code common/cultures/anb_cultures.txt}. So the world map already knows the race
+	 * of every province — it does not have to be authored a second time.
+	 * <p>
+	 * Measured against the shipped world: <b>57 of 70</b> culture groups name a race exactly. The
+	 * remainder ({@code baashidi}, {@code ynnsman}, {@code anakue}, … and the two odd ones out,
+	 * {@code construct} and {@code undead}) have no race authored yet and fall back to {@link #HUMAN}
+	 * — the same fallback every unauthored per-race resource takes (life table, calendar, tech
+	 * overlay; see {@code docs/race.md}). {@code HUMAN} is itself the one race with no culture group,
+	 * because it is the engine's default rather than an Anbennar people.
+	 * <p>
+	 * Takes the group key rather than a {@code Culture} on purpose: this package stays independent of
+	 * {@code com.civstudio.geo}.
+	 *
+	 * @param cultureGroup the culture group's {@code raw_key}, or {@code null}
+	 * @return the matching race, or {@link #HUMAN} when the group names none
+	 */
+	public static Race ofCultureGroup(String cultureGroup) {
+		if (cultureGroup == null || cultureGroup.isBlank())
+			return HUMAN;
+		return BY_ID.getOrDefault(cultureGroup.trim().toLowerCase(java.util.Locale.ROOT), HUMAN);
+	}
+
+	/**
+	 * Whether {@code cultureGroup} actually names a race, as opposed to falling back to {@link #HUMAN}.
+	 * Lets a caller tell "this is a human people" from "we have no race for these people yet", which
+	 * {@link #ofCultureGroup(String)} deliberately collapses.
+	 *
+	 * @param cultureGroup the culture group's {@code raw_key}, or {@code null}
+	 * @return {@code true} if a race is authored for that group
+	 */
+	public static boolean isAuthoredCultureGroup(String cultureGroup) {
+		return cultureGroup != null && !cultureGroup.isBlank()
+				&& BY_ID.containsKey(cultureGroup.trim().toLowerCase(java.util.Locale.ROOT));
+	}
+
 	/**
 	 * This race's mortality schedule, on which each of its people ages and dies.
 	 *

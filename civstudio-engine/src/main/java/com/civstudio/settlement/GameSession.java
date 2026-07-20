@@ -589,6 +589,17 @@ public class GameSession {
 	public synchronized Settlement newSettlement(String name, LocalDate startDate,
 			double meanInitAgeYears, double targetNStock, double meanSkillMale,
 			double meanSkillFemale, Province province) {
+		// Founds HUMAN regardless of who actually lives here, which the map already knows
+		// ({@link WorldMap#raceOf(Province)}: Rubyhold is dwarven, Dancers Retreat elven).
+		//
+		// Resolving it from the province is the intended design and was tried — it is blocked on
+		// NAME POOLS, not on anything here. Only HUMAN has hand-authored name tables; every other
+		// race is generated into a fixed dynasty pool dealt in disjoint slices, and a standard colony
+		// needs ~405 households (retinueSize 900 x promotionRatio 0.45) against a pool of a couple of
+		// hundred — founding into an Anbennarian or elven province dies on "dynasty master pool
+		// exhausted" partway through founding. Scaling per-race dynasty generation to colony size is
+		// the prerequisite; until then a non-human colony has to be a scenario's deliberate,
+		// small-pool choice (see ElvenEconomy, which sizes its retinue to fit).
 		return newSettlement(name, startDate, meanInitAgeYears, targetNStock,
 				meanSkillMale, meanSkillFemale, province, Race.HUMAN,
 				Map.of(Race.HUMAN, 1.0));

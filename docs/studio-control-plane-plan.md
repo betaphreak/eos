@@ -186,6 +186,25 @@ scenarios do override economy-derived fields (`ElvenEconomy` sets `retinueSize`/
 "explicitly set" from "inherited", so the only honest fix is to let the caller pick its base first.
 An uncalibrated era is refused outright rather than founding a colony on null tuning.
 
+**Also shipped — the world already knows who lives where.** A settlement does not need to be told its
+race: `Race.ofCultureGroup(String)` + `WorldMap.raceOf(Province)` read it off the map. A province has a
+culture, a culture has a group, and the group key *is* a race id — both were imported from
+`anb_cultures.txt`. Measured on the shipped world: **57 of 70** culture groups name a race exactly;
+the rest fall back to `HUMAN`, and `HUMAN` is the one race with no group (it is the engine's default,
+not an Anbennar people). Rubyhold is dwarven, Dancers Retreat elven, and Dhenijansar — group
+`south_raheni` — reads human. Pinned against the real map, including a guard against the failure mode
+that would look like working code: if the group keys ever drift from the race ids, every province
+silently reads `HUMAN` and the world loses its peoples.
+
+> **Blocked: founding by province race.** Wiring the province-founding overload to resolve its own race
+> is the intended design and was tried. It fails on **name pools**, not on anything structural: only
+> `HUMAN` has hand-authored name tables, every other race is generated into a fixed dynasty pool dealt
+> in disjoint slices, and a standard colony needs ~405 households (`retinueSize 900 × promotionRatio
+> 0.45`) against a pool of a couple of hundred — founding into an Anbennarian or elven province dies
+> mid-founding on `dynasty master pool exhausted`. **Scaling per-race dynasty generation to colony
+> size is the prerequisite.** Until then a non-human colony stays a scenario's deliberate choice, sized
+> to fit (`ElvenEconomy` sets `retinueSize(200)` for exactly this reason).
+
 **Still to do:** a **mixed-race** run still shares one config. `SessionHost` founds every colony from
 `DEFAULT`, and a Timeline could seat players of different races, so per-*colony* economy resolution
 remains open — `SimulationConfig` is per-run, and that is the next structural question, not something

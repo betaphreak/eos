@@ -17,6 +17,8 @@ import java.util.Set;
 import java.util.Map;
 import java.util.Optional;
 
+import com.civstudio.race.Race;
+
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
@@ -638,6 +640,31 @@ public final class WorldMap {
 	 */
 	public Optional<Culture> culture(String key) {
 		return Optional.ofNullable(culturesByKey.get(key));
+	}
+
+	/**
+	 * The {@link Race} of the people living in this province — its {@link Province#culture() culture}'s
+	 * {@link Culture#group() group}, which <em>is</em> a race id (both came from
+	 * {@code common/cultures/anb_cultures.txt}; see {@link Race#ofCultureGroup(String)}).
+	 * <p>
+	 * This is why a settlement need not be told who lives in it: the imported world already says so,
+	 * province by province. Rubyhold is dwarven, Dancers Retreat is elven, and Dhenijansar — culture
+	 * {@code rabhidarubsad}, group {@code south_raheni} — is one of the groups with no race authored,
+	 * so it reads {@link Race#HUMAN}.
+	 * <p>
+	 * Falls back to {@link Race#HUMAN} for a null province, an unmapped culture, or a group with no
+	 * race yet — the same fallback the rest of the per-race data takes.
+	 *
+	 * @param province the province, or {@code null}
+	 * @return the province's race, never {@code null}
+	 */
+	public Race raceOf(Province province) {
+		if (province == null)
+			return Race.HUMAN;
+		return culture(province.culture())
+				.map(Culture::group)
+				.map(Race::ofCultureGroup)
+				.orElse(Race.HUMAN);
 	}
 
 	/**
