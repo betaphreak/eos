@@ -37,6 +37,12 @@
         <!-- Which simulation `mvn exec:exec` runs (engine module); override with
              -Dsim.main=com.civstudio.simulation.SmallOpenEconomy -->
         <sim.main>com.civstudio.simulation.HomogeneousEconomy</sim.main>
+        <!-- Where `mvn exec:exec` gets its world data. generated/ is no longer committed (studio is
+             the content authority), so a forked scenario has no world unless told where one is; it
+             boots the same committed snapshot the test suite does. Override on the command line for
+             a live source: -Dcivstudio.world-source.mode=strapi -Dcivstudio.world-source.url=… -->
+        <civstudio.world-source.mode>fixture</civstudio.world-source.mode>
+        <civstudio.world-source.fixture>civstudio-engine/src/test/resources/world-bundle.json.gz</civstudio.world-source.fixture>
         <!-- 1.18.42 (Sep 2025) is the first Lombok with JDK 25 support -->
         <lombok.version>1.18.42</lombok.version>
         <!-- Jackson 3 (tools.jackson.* namespace), pinned to the version Spring Boot 4.1

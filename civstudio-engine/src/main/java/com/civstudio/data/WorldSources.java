@@ -12,9 +12,42 @@ package com.civstudio.data;
  */
 public final class WorldSources {
 
-	private static volatile WorldSource current = new ClasspathWorldSource();
+	private static volatile WorldSource current = fromSystemProperties();
 
 	private WorldSources() {
+	}
+
+	/**
+	 * The ambient default, resolved from system properties so a process with no composition root —
+	 * a scenario's {@code main} under {@code exec:exec}, a dev tool — can still name its world data.
+	 * Same keys and modes as the server's {@code WorldSourceInitializer}, which sets the source
+	 * explicitly and so never reaches this:
+	 * <ul>
+	 * <li>{@code -Dcivstudio.world-source.mode=classpath} (default) — the committed resources;</li>
+	 * <li>{@code ...=fixture -Dcivstudio.world-source.fixture=<path>} — a bundle snapshot on disk;</li>
+	 * <li>{@code ...=strapi -Dcivstudio.world-source.url=<url> [-D...token=<token>]}.</li>
+	 * </ul>
+	 * A named mode that cannot be built throws rather than falling back, so a run never silently
+	 * uses different world data than it was told to.
+	 */
+	private static WorldSource fromSystemProperties() {
+		String mode = System.getProperty("civstudio.world-source.mode", "classpath")
+				.trim().toLowerCase(java.util.Locale.ROOT);
+		return switch (mode) {
+			case "classpath" -> new ClasspathWorldSource();
+			case "fixture" -> {
+				String path = System.getProperty("civstudio.world-source.fixture", "");
+				if (path.isBlank())
+					throw new IllegalStateException("civstudio.world-source.mode=fixture but"
+							+ " civstudio.world-source.fixture is unset");
+				yield new FixtureWorldSource(java.nio.file.Path.of(path));
+			}
+			case "strapi" -> new StrapiWorldSource(
+					java.net.URI.create(System.getProperty("civstudio.world-source.url",
+							"http://localhost:1337/api/world-bundle")),
+					System.getProperty("civstudio.world-source.token", ""));
+			default -> throw new IllegalStateException("unknown civstudio.world-source.mode: " + mode);
+		};
 	}
 
 	/** The active source (never null). */

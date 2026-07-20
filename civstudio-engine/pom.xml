@@ -92,6 +92,12 @@
               data/anbennar rasters resolve exactly as they did before the split.
               Usage: mvn -pl civstudio-engine compile exec:exec
                      mvn -pl civstudio-engine compile exec:exec -Dsim.main=com.civstudio.simulation.SmallOpenEconomy
+
+              World data comes from the WorldSource seam, and generated/ is no longer committed,
+              so a bare fork has none — every scenario died on "Terrain resource not found".
+              It boots the same committed snapshot the test suite does (see world.source.fixture
+              below); override on the command line for a different source, e.g.
+                     -Dcivstudio.world-source.mode=strapi -Dcivstudio.world-source.url=…
             -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -101,6 +107,8 @@
                     <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
                     <arguments>
                         <argument>-ea</argument>
+                        <argument>-Dcivstudio.world-source.mode=${civstudio.world-source.mode}</argument>
+                        <argument>-Dcivstudio.world-source.fixture=${civstudio.world-source.fixture}</argument>
                         <argument>-classpath</argument>
                         <classpath/>
                         <argument>${sim.main}</argument>
