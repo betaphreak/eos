@@ -101,10 +101,17 @@ public class ScenarioMcpTools {
 				new CsvRowSinkFactory("output/" + seed),
 				new JdbcRowSinkFactory(store.dataSource(), runId, seed, scenario));
 
+		// record the run's reproducibility identity BEFORE running — a run is reproducible only as
+		// seed + contentVersion + command log, and the printer tables carry seed/scenario but not the
+		// content version. WorldSources.contentVersion() is null on the classpath source (recorded as
+		// unknown, never "the current one").
+		String contentVersion = com.civstudio.data.WorldSources.contentVersion();
+		store.recordRun(runId, seed, scenario, contentVersion);
+
 		CalibrationRun.Result r = CalibrationRun.run(cfg, seed, province, retinue,
 				applyEconomy(configOverrides), profile, sink, steps == null ? 0 : steps);
 
-		return new RunResult(runId, seed, scenario, r.finalDate().toString(), r.died(),
+		return new RunResult(runId, seed, scenario, contentVersion, r.finalDate().toString(), r.died(),
 				r.deathDate() == null ? null : r.deathDate().toString(),
 				r.laborers(), r.firms(), store.url());
 	}
@@ -257,16 +264,19 @@ public class ScenarioMcpTools {
 	/**
 	 * The outcome of a {@link #runScenario} call.
 	 *
-	 * @param runId     the run's id — pass to the query tools to read its series
-	 * @param seed      the run seed
-	 * @param scenario  the setup name
-	 * @param finalDate the in-game date the run ended on
-	 * @param died      whether the colony collapsed before the horizon
-	 * @param deathDate the collapse date, or null if it survived
-	 * @param laborers  living laborer households at the end
-	 * @param firms     living firms at the end
-	 * @param storeUrl  the JDBC URL of the run store the rows landed in
+	 * @param runId          the run's id — pass to the query tools to read its series
+	 * @param seed           the run seed
+	 * @param scenario       the setup name
+	 * @param contentVersion the content version founded against ({@code null} = unknown, the classpath
+	 *                       source) — a run reproduces only as seed + contentVersion + command log
+	 * @param finalDate      the in-game date the run ended on
+	 * @param died           whether the colony collapsed before the horizon
+	 * @param deathDate      the collapse date, or null if it survived
+	 * @param laborers       living laborer households at the end
+	 * @param firms          living firms at the end
+	 * @param storeUrl       the JDBC URL of the run store the rows landed in
 	 */
-	public record RunResult(String runId, long seed, String scenario, String finalDate, boolean died,
-			String deathDate, int laborers, int firms, String storeUrl) {}
+	public record RunResult(String runId, long seed, String scenario, String contentVersion,
+			String finalDate, boolean died, String deathDate, int laborers, int firms,
+			String storeUrl) {}
 }

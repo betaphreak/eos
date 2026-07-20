@@ -156,7 +156,15 @@ public class CalibrationQueryTools {
 					(aF != null && bF != null) ? bF - aF : null,
 					minOf(a, col), maxOf(a, col), minOf(b, col), maxOf(b, col)));
 		}
-		return new CompareResult(runIdA, runIdB, table, a.size(), b.size(), deltas);
+		// reproducibility guard: a delta between two runs on DIFFERENT content versions is not a
+		// clean "did this knob help?" — the tuning content itself moved under them. Surface it so a
+		// comparison across a content edit is not read as a behaviour change.
+		String vA = store.contentVersionOf(runIdA), vB = store.contentVersionOf(runIdB);
+		String versionWarning = java.util.Objects.equals(vA, vB) ? null
+				: "runs founded on different content versions (" + vA + " vs " + vB + ") — the delta"
+						+ " mixes the knob you changed with the content that changed underneath it";
+		return new CompareResult(runIdA, runIdB, table, a.size(), b.size(), deltas, vA, vB,
+				versionWarning);
 	}
 
 	@McpTool(name = "get_event_log",
@@ -336,7 +344,12 @@ public class CalibrationQueryTools {
 	public record ColumnDelta(String column, Double aFinal, Double bFinal, Double delta,
 			Double aMin, Double aMax, Double bMin, Double bMax) {}
 
-	/** The result of {@link #compareRuns}. */
+	/**
+	 * The result of {@link #compareRuns}. {@code contentVersionA}/{@code B} are the versions each run
+	 * was founded against ({@code null} = unknown); {@code versionWarning} is non-null only when they
+	 * differ, so a comparison across a content edit is not silently read as a behaviour change.
+	 */
 	public record CompareResult(String runIdA, String runIdB, String table, int rowsA, int rowsB,
-			List<ColumnDelta> columns) {}
+			List<ColumnDelta> columns, String contentVersionA, String contentVersionB,
+			String versionWarning) {}
 }

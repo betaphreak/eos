@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 import javax.sql.DataSource;
 
@@ -67,5 +72,60 @@ public class CalibrationStore {
 	/** The JDBC URL (reported back to the caller so it knows where the run landed). */
 	public String url() {
 		return url;
+	}
+
+	/**
+	 * Record a run's reproducibility identity in the {@code run_meta} table — one row per {@code
+	 * runId} carrying the seed, scenario and, crucially, the <b>content version</b> the run was
+	 * founded against.
+	 *
+	 * <p>Since balance and scenarios ride the world bundle, a run is reproducible only as {@code seed
+	 * + contentVersion + command log}: the same seed against a different content version is a
+	 * different run. The printer tables denormalize {@code seed}/{@code scenario} onto every row but
+	 * not the content version — so without this row a stored run silently loses which content it used,
+	 * and can never be shown to reproduce. A {@code null} version (the classpath source carries none)
+	 * is recorded as {@code NULL}, meaning <i>unknown</i> — never "the current one".
+	 *
+	 * @param runId          the run's stable id (primary key)
+	 * @param seed           the run seed
+	 * @param scenario       the scenario key
+	 * @param contentVersion the content version founded against, or {@code null} if the source has none
+	 */
+	public void recordRun(String runId, long seed, String scenario, String contentVersion) {
+		try (Connection c = dataSource.getConnection()) {
+			try (Statement s = c.createStatement()) {
+				s.execute("CREATE TABLE IF NOT EXISTS \"run_meta\" ("
+						+ "\"run_id\" VARCHAR(64) PRIMARY KEY, \"seed\" BIGINT, "
+						+ "\"scenario\" VARCHAR(128), \"content_version\" VARCHAR(128))");
+			}
+			// runId carries a random suffix, so a plain insert never collides; MERGE keeps it
+			// idempotent anyway (a re-run under the same id updates rather than throws)
+			try (PreparedStatement ps = c.prepareStatement("MERGE INTO \"run_meta\" "
+					+ "(\"run_id\", \"seed\", \"scenario\", \"content_version\") KEY(\"run_id\") "
+					+ "VALUES (?, ?, ?, ?)")) {
+				ps.setString(1, runId);
+				ps.setLong(2, seed);
+				ps.setString(3, scenario);
+				ps.setString(4, contentVersion); // null → SQL NULL (unknown)
+				ps.executeUpdate();
+			}
+		} catch (SQLException e) {
+			throw new IllegalStateException("failed to record run_meta for " + runId, e);
+		}
+	}
+
+	/** The content version a recorded run was founded against, or {@code null} if unknown/unrecorded. */
+	public String contentVersionOf(String runId) {
+		try (Connection c = dataSource.getConnection();
+				PreparedStatement ps = c.prepareStatement(
+						"SELECT \"content_version\" FROM \"run_meta\" WHERE \"run_id\" = ?")) {
+			ps.setString(1, runId);
+			try (ResultSet rs = ps.executeQuery()) {
+				return rs.next() ? rs.getString(1) : null;
+			}
+		} catch (SQLException e) {
+			// run_meta may not exist yet (a store with no recorded runs) — unknown, not an error
+			return null;
+		}
 	}
 }

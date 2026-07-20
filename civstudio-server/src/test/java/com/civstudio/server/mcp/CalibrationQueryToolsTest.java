@@ -3,12 +3,15 @@ package com.civstudio.server.mcp;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import com.civstudio.data.WorldSources;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -65,6 +68,22 @@ class CalibrationQueryToolsTest {
 		assertEquals(1, cmp.columns().size());
 		assertEquals(metric, cmp.columns().get(0).column());
 		assertTrue(cmp.rowsA() > 0 && cmp.rowsB() > 0, "both runs contributed rows to the compare");
+
+		// content-version stamping: both sweep runs recorded the source's version, so a run is
+		// reproducible as seed + contentVersion + command log. Same version → no warning.
+		assertEquals(WorldSources.contentVersion(), store.contentVersionOf(runA),
+				"the run recorded the content version it was founded against");
+		assertEquals(store.contentVersionOf(runA), cmp.contentVersionA());
+		assertNull(cmp.versionWarning(), "same content version → no reproducibility warning");
+
+		// force a mismatch: re-stamp run B as a different content edit; the compare must flag that
+		// its delta now mixes the swept knob with content that moved underneath it
+		store.recordRun(runB, points.get(1).seed(), "standard", "seed-DIFFERENT");
+		CalibrationQueryTools.CompareResult mismatched =
+				query.compareRuns(runA, runB, table.table(), List.of(metric));
+		assertNotNull(mismatched.versionWarning(), "a compare across content versions must warn");
+		assertTrue(mismatched.versionWarning().contains("seed-DIFFERENT"),
+				"the warning should name the differing version: " + mismatched.versionWarning());
 
 		// get_event_log: the run's persisted SimLog, filterable
 		List<Map<String, Object>> log = query.getEventLog(runA, null, null, null, null, null, null);
