@@ -381,16 +381,29 @@ absent ≠ empty contract as economies). Verified end to end against a live seed
 `GET /api/world-bundle` → `FixtureWorldSource` → `BalanceProfiles`. The committed fixture was
 regenerated and now carries both `/balance/*.json` keys; suite green against it (440+126).
 
-### A5 — Retire the MCP whitelist
+### A5 — `profileKey` in the MCP tools — **SHIPPED, 2026-07-20** (whitelist retained, not retired)
 
-Replace `ScenarioMcpTools.applyConfig`'s 11-key switch (`:132`) with generic binding over the profile,
-and let `run_scenario`/`sweep` take a `profileKey` in addition to ad-hoc overrides.
+`run_scenario` and `sweep` take a `profileKey`; it resolves through `BalanceProfiles.get()` (unknown
+key → the compiled defaults) and founds the colony on that profile via a new `CalibrationRun.run`
+overload that calls `setBalanceProfile`. **This is also the wiring A3 deferred** — the first
+production consumer of a loaded `BalanceProfile`. `list_scenarios` now returns a `ScenarioCatalog`
+(base setups + the authored profile keys) so an LLM picks a valid one.
 
-> **Trap — `contentVersion` becomes load-bearing.** Today it is a stderr stamp. Once balance rides the
-> bundle, *a content edit changes simulation behaviour*, so a run is only reproducible as
-> `seed + contentVersion + command log`. Before A4 lands, `contentVersion` must be **persisted on
-> `SessionRecord`** and surfaced in the lobby row / run store — otherwise old runs silently become
-> irreproducible with no way to detect it. Treat this as a hard prerequisite, not a follow-up.
+**The plan's "replace the 11-key switch with generic binding over the profile" no longer applies, and
+the whitelist is deliberately kept.** That premise assumed the profile would hold everything
+tunable; A0/A1 split the surface three ways, and the switch covers exactly the axes the profile does
+*not*: run-level shape (`durationYears`, `numEFirms`, …), the economy keys (→ `applyEconomy`), and
+the peasant-pool levers (→ `applyRetinue`). A flat `Map<String,Double>` cannot bind to the profile's
+nested config records anyway. So the honest end state is **two knobs, not one**: `profileKey` selects
+the agent-behaviour bundle, `configOverrides` nudges the orthogonal coarse fields on top of it.
+Application order is base-to-specific — profile, then economy, then the ad-hoc retinue override, whose
+base is the *profile's* retinue so the two do not fight.
+
+> **Trap (still standing) — `contentVersion` becomes load-bearing.** A content edit now changes
+> simulation behaviour, so a run is reproducible only as `seed + contentVersion + command log`.
+> `SessionRecord.contentVersion` already persists it (shipped earlier). The calibration run store,
+> however, does **not** yet stamp the content version against a `runId` — a follow-up if calibration
+> runs are to be reproducible across a content edit.
 
 ---
 

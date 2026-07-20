@@ -30,22 +30,25 @@ class ScenarioMcpToolsTest {
 
 	@Test
 	void rejectsUnknownScenario() {
-		assertThrows(IllegalArgumentException.class, () -> tools().runScenario("bogus", 1L, 1, null, null));
+		assertThrows(IllegalArgumentException.class,
+				() -> tools().runScenario("bogus", 1L, 1, null, null, null));
 	}
 
 	@Test
 	void rejectsUnknownConfigOverride() {
 		// an unknown override key is rejected, not silently ignored (fails before founding)
 		assertThrows(IllegalArgumentException.class,
-				() -> tools().runScenario("standard", 1L, 1, null, Map.of("noSuchLever", 1.0)));
+				() -> tools().runScenario("standard", 1L, 1, null, null, Map.of("noSuchLever", 1.0)));
 	}
 
 	@Test
 	void listsTheStandardSetup() {
-		List<ScenarioMcpTools.ScenarioInfo> scenarios = tools().listScenarios();
-		assertEquals(1, scenarios.size());
-		assertEquals("standard", scenarios.get(0).name());
-		assertTrue(scenarios.get(0).isRulerColony());
+		ScenarioMcpTools.ScenarioCatalog catalog = tools().listScenarios();
+		assertEquals(1, catalog.scenarios().size());
+		assertEquals("standard", catalog.scenarios().get(0).name());
+		assertTrue(catalog.scenarios().get(0).isRulerColony());
+		assertTrue(catalog.profiles().contains("default"),
+				"the default balance profile is always offered");
 	}
 
 	@Test
@@ -56,7 +59,7 @@ class ScenarioMcpToolsTest {
 
 		// a short run with an override applied; deterministic in the seed
 		ScenarioMcpTools.RunResult r = tools.runScenario("standard", 424242L, 60, 4411,
-				Map.of("durationYears", 40.0, "reliefBudgetPerPeasant", 3.0));
+				"default", Map.of("durationYears", 40.0, "reliefBudgetPerPeasant", 3.0));
 
 		assertNotNull(r.runId());
 		assertEquals(424242L, r.seed());

@@ -12,6 +12,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.civstudio.agent.RetinueConfig;
+import com.civstudio.balance.BalanceProfile;
+import com.civstudio.balance.BalanceProfiles;
 import com.civstudio.io.sink.CompositeRowSinkFactory;
 import com.civstudio.io.sink.CsvRowSinkFactory;
 import com.civstudio.io.sink.JdbcRowSinkFactory;
@@ -45,20 +47,25 @@ public class ScenarioMcpTools {
 	}
 
 	@McpTool(name = "list_scenarios",
-			description = "The named base setups run_scenario can found, so the LLM picks a valid one.")
-	public List<ScenarioInfo> listScenarios() {
-		return List.of(new ScenarioInfo("standard",
+			description = "The named base setups run_scenario can found, and the balance profiles "
+					+ "(agent-tuning bundles) it can found them on, so the LLM picks valid ones.")
+	public ScenarioCatalog listScenarios() {
+		List<ScenarioInfo> scenarios = List.of(new ScenarioInfo("standard",
 				"A standard ruler-bearing colony (peasant pool, three-tier banks, export sector, "
 						+ "ennobled aristocracy). Collapses by design as the pool reserve drains — the "
 						+ "food-balance calibration target.",
 				true));
+		// the authored balance profiles, from content (BalanceProfiles); "default" is always present
+		return new ScenarioCatalog(scenarios,
+				List.copyOf(BalanceProfiles.get().keys()));
 	}
 
 	@McpTool(name = "run_scenario",
 			description = "Found a standard ruler colony at a seed and run it headless, writing its "
 					+ "typed time series to the SQL run store (keyed by the returned runId) plus CSVs. "
-					+ "Deterministic in seed. configOverrides tunes whitelisted SimulationConfig / "
-					+ "peasant-pool fields; unknown keys are rejected.")
+					+ "Deterministic in seed. profileKey selects a named agent-tuning bundle (a "
+					+ "BalanceProfile — see list_scenarios); configOverrides then nudges whitelisted "
+					+ "run-level / economy / peasant-pool fields on top; unknown keys are rejected.")
 	public RunResult runScenario(
 			@McpToolParam(description = "Scenario setup name from list_scenarios (currently 'standard')",
 					required = true) String scenario,
@@ -68,15 +75,20 @@ public class ScenarioMcpTools {
 					required = false) Integer steps,
 			@McpToolParam(description = "World-map province id to found into (default 4411, Dhenijansar)",
 					required = false) Integer provinceId,
-			@McpToolParam(description = "Whitelisted overrides, e.g. {\"durationYears\":40,"
-					+ "\"retinueSize\":450,\"reliefBudgetPerPeasant\":3.0}", required = false)
+			@McpToolParam(description = "Named balance profile (agent-behaviour tuning) from "
+					+ "list_scenarios; omit or 'default' for the compiled defaults", required = false)
+			String profileKey,
+			@McpToolParam(description = "Whitelisted overrides applied ON TOP of the profile, e.g. "
+					+ "{\"durationYears\":40,\"retinueSize\":450,\"reliefBudgetPerPeasant\":3.0}",
+					required = false)
 			Map<String, Double> configOverrides) {
 		if (!"standard".equals(scenario))
 			throw new IllegalArgumentException("unknown scenario '" + scenario
 					+ "'; call list_scenarios (only 'standard' is available)");
 
 		SimulationConfig cfg = applyConfig(SimulationConfig.DEFAULT, configOverrides);
-		RetinueConfig retinue = applyRetinue(configOverrides);
+		BalanceProfile profile = resolveProfile(profileKey);
+		RetinueConfig retinue = applyRetinue(configOverrides, profile.retinue());
 		int province = provinceId == null ? DEFAULT_PROVINCE : provinceId;
 
 		String runId = scenario + "-" + seed + "-" + UUID.randomUUID().toString().substring(0, 8);
@@ -85,7 +97,7 @@ public class ScenarioMcpTools {
 				new JdbcRowSinkFactory(store.dataSource(), runId, seed, scenario));
 
 		CalibrationRun.Result r = CalibrationRun.run(cfg, seed, province, retinue,
-				applyEconomy(configOverrides), sink, steps == null ? 0 : steps);
+				applyEconomy(configOverrides), profile, sink, steps == null ? 0 : steps);
 
 		return new RunResult(runId, seed, scenario, r.finalDate().toString(), r.died(),
 				r.deathDate() == null ? null : r.deathDate().toString(),
@@ -108,6 +120,8 @@ public class ScenarioMcpTools {
 					required = true) long seed,
 			@McpToolParam(description = "Days to run each; omit for the full duration", required = false)
 			Integer steps,
+			@McpToolParam(description = "Named balance profile held fixed across the sweep; omit or "
+					+ "'default' for the compiled defaults", required = false) String profileKey,
 			@McpToolParam(description = "Overrides held fixed across the sweep, e.g. "
 					+ "{\"externalInflowPerStep\":1000,\"numNFirms\":8}", required = false)
 			Map<String, Double> baseOverrides) {
@@ -119,7 +133,7 @@ public class ScenarioMcpTools {
 				runSeed = value.longValue();
 			else
 				ov.put(param, value);
-			RunResult r = runScenario(scenario, runSeed, steps, null, ov);
+			RunResult r = runScenario(scenario, runSeed, steps, null, profileKey, ov);
 			out.add(new SweepPoint(value, r.runId(), r.seed(), r.died(),
 					r.deathDate() == null ? -1 : Integer.parseInt(r.deathDate().substring(0, 4)),
 					r.laborers(), r.firms()));
@@ -185,10 +199,12 @@ public class ScenarioMcpTools {
 	}
 
 	// the peasant-pool food levers live on RetinueConfig (set via SimulationHarness.setRetinueConfig)
-	private static RetinueConfig applyRetinue(Map<String, Double> ov) {
+	private static RetinueConfig applyRetinue(Map<String, Double> ov, RetinueConfig base) {
 		if (ov == null)
 			return null;
-		RetinueConfig.RetinueConfigBuilder b = RetinueConfig.DEFAULT.toBuilder();
+		// layer on the PROFILE's retinue, not DEFAULT — so a profile + an ad-hoc pool-lever override
+		// keeps the profile's other retinue fields rather than resetting them to the compiled defaults
+		RetinueConfig.RetinueConfigBuilder b = base.toBuilder();
 		boolean any = false;
 		if (ov.containsKey("reliefBudgetPerPeasant")) {
 			b.reliefBudgetPerPeasant(ov.get("reliefBudgetPerPeasant"));
@@ -201,8 +217,21 @@ public class ScenarioMcpTools {
 		return any ? b.build() : null;
 	}
 
-	/** One row of {@link #listScenarios()}. */
+	// resolve a named balance profile; null/blank/"default" → the compiled defaults. An unknown key
+	// founds on the defaults (BalanceProfiles.get's forgiving contract) rather than failing the run.
+	private static BalanceProfile resolveProfile(String profileKey) {
+		return BalanceProfiles.get().get(
+				profileKey == null || profileKey.isBlank() ? BalanceProfiles.DEFAULT_KEY : profileKey);
+	}
+
+	/** One base setup of {@link #listScenarios()}. */
 	public record ScenarioInfo(String name, String blurb, boolean isRulerColony) {}
+
+	/**
+	 * What {@link #listScenarios()} returns: the base setups {@code run_scenario} can found, and the
+	 * named balance {@code profiles} (agent-tuning bundles) it can found them on.
+	 */
+	public record ScenarioCatalog(List<ScenarioInfo> scenarios, List<String> profiles) {}
 
 	/**
 	 * One point of a {@link #sweep}: the swept value, its run's id (for follow-up queries), and the

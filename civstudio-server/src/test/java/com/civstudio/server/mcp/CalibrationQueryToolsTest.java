@@ -30,7 +30,7 @@ class CalibrationQueryToolsTest {
 
 		// sweep retinueSize over two values → two runs in the store
 		List<ScenarioMcpTools.SweepPoint> points = run.sweep("standard", "retinueSize",
-				List.of(150.0, 300.0), 4242L, 45, Map.of("durationYears", 40.0));
+				List.of(150.0, 300.0), 4242L, 45, null, Map.of("durationYears", 40.0));
 		assertEquals(2, points.size());
 		String runA = points.get(0).runId();
 		String runB = points.get(1).runId();

@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.function.UnaryOperator;
 
 import com.civstudio.agent.RetinueConfig;
+import com.civstudio.balance.BalanceProfile;
 import com.civstudio.era.Era;
 import com.civstudio.agent.firm.Firm;
 import com.civstudio.agent.laborer.Laborer;
@@ -92,7 +93,26 @@ public final class CalibrationRun {
 	public static Result run(SimulationConfig cfg, long seed, int provinceId,
 			RetinueConfig retinue, UnaryOperator<Era.Economy> economy, RowSinkFactory sink,
 			int steps) {
+		return run(cfg, seed, provinceId, retinue, economy, null, sink, steps);
+	}
+
+	/**
+	 * As {@link #run(SimulationConfig, long, int, RetinueConfig, UnaryOperator, RowSinkFactory, int)},
+	 * founding on a named {@link BalanceProfile} — the agent-behaviour tuning.
+	 *
+	 * <p>Application order is base-to-specific: the profile is the founding bundle, then the economy
+	 * tuning (a separate axis — the profile does not carry the economy), then the ad-hoc {@code
+	 * retinue} override on top (the profile's own retinue config is its floor). So a caller can pick a
+	 * profile <em>and</em> nudge one peasant-pool lever without the two fighting.
+	 *
+	 * @param profile optional agent-behaviour tuning; {@code null} leaves the colony on the defaults
+	 */
+	public static Result run(SimulationConfig cfg, long seed, int provinceId,
+			RetinueConfig retinue, UnaryOperator<Era.Economy> economy, BalanceProfile profile,
+			RowSinkFactory sink, int steps) {
 		SimulationHarness h = SimulationHarness.create(cfg, seed, provinceId);
+		if (profile != null)
+			h.setBalanceProfile(profile);
 		if (economy != null)
 			h.tuneEconomy(economy);
 		if (retinue != null)
