@@ -44,11 +44,34 @@ export interface ServerStatus {
   server: { uptimeMs: number; heapUsedMb: number; heapMaxMb: number; sessions: number; admins: number; you?: string };
 }
 
+/**
+ * One lobby row from `GET /api/sessions` — mirrors SessionController#liveRow / #recordRow.
+ *
+ * NOTE the two control axes: the old single `state` was split into `clockState` (transport) and
+ * `outcome` (verdict) by the session-management redesign, and the server stopped sending `owner`
+ * (replaced by the boolean `mine`). Everything past `id` is optional because a *record* row — a run
+ * recorded but not loaded in this process — carries no colony name and no live spectator count.
+ */
 export interface SessionRow {
   id: string;
-  owner?: string;
-  state: 'CREATED' | 'RUNNING' | 'PAUSED' | 'STOPPED' | string;
+  scenario?: string;
+  kind?: 'demo' | 'single-player' | 'multiplayer' | 'timeline' | string;
+  seed?: number;
+  clockState?: 'CREATED' | 'RUNNING' | 'PAUSED' | 'STOPPED' | string;
+  outcome?: 'LIVE' | 'WON' | 'LOST' | 'ABANDONED' | string;
   tick?: number;
+  /** in-game date, ISO yyyy-MM-dd */
+  date?: string;
+  /** spectators currently watching */
+  watching?: number;
+  mine?: boolean;
+  realm?: string;
+  /** a run is named by its colony; absent for a Timeline or a colony-less run */
+  colony?: string;
+  /** Timeline rows only: seats founded / colonies still standing */
+  seats?: number;
+  standing?: number;
+  endReason?: string;
 }
 
 export function formatDuration(ms: number): string {
