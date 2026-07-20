@@ -273,6 +273,38 @@ whole remaining step — and per that method's own javadoc it should "arrive as 
 constants here", which is exactly what A2–A5 below build. **Workstream A is the per-race economy
 feature**, not a parallel track.
 
+### A-econ — the era × race matrix as content — **SHIPPED (engine half), 2026-07-20**
+
+A1 decided the economy is authored on its own two axes and is *not* part of `BalanceProfile`, but
+left it without a delivery step — while being the thing that actually unblocks per-race economies
+(see `docs/race.md` §"wired per race but not yet authored"). This is that step, built first because
+the same loader then serves the profile.
+
+- **`era.EconomyCatalog`** reads `/balance/economies.json` through `WorldSources.current()` — a
+  two-level `era → race → Economy` map keyed by enum name. `Era.economy(Race)` consults it and falls
+  back to the compiled constant, so **authored content wins and the constants are the floor**.
+- A race with no column of its own falls back to `HUMAN`'s *within the matrix*, mirroring how race
+  already works for calendars and tech overlays. Authoring only a human column keeps every race on
+  it; authoring a dwarven one moves dwarves alone.
+- **Failure contract is strict, deliberately unlike `UnitCatalog`.** Absent → empty catalog, every
+  cell on its constant (behaviour-neutral, the offline path). Present-but-malformed → throws at
+  load. An economy is load-bearing: silently reverting to the constants would be a run reporting
+  numbers it did not use. `EconomyCatalog.load(WorldSource)` takes its source as a parameter so this
+  is testable without touching the shared instance.
+- **`era.export.EconomyExporter`** writes the compiled matrix out as content, into
+  `src/main/resources/generated/balance/` (gitignored, and flattened onto the classpath root at
+  package time, so it lands at `/balance/economies.json`). Emitting exactly what the engine runs on
+  is what makes the cutover behaviour-neutral; `EconomyCatalogTest` asserts that round-trip, which
+  doubles as a **drift guard** once studio serves the content.
+
+*Verified end-to-end*: with the resource generated locally the full suite stays green (431+126), and
+perturbing one value in it makes `Era.MEDIEVAL.economy(HUMAN)` return the authored number — so the
+content is genuinely winning, not silently absent.
+
+**Remaining for this matrix:** the studio side — a content type, `world-bundle.ts` emitting
+`resources['/balance/economies.json']`, `seed.js` ingesting it, and a fixture regen. Then a
+non-human column can be authored without a recompile, which is the whole point.
+
 ### A2 — Serialise/deserialise round-trip
 
 Jackson 3 handles records with no annotations. Add `BalanceProfileCodec` + a round-trip test asserting

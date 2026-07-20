@@ -111,8 +111,21 @@ public enum Era {
 	 * @return the tuning to found with, or {@code null} for an uncalibrated era
 	 */
 	public Economy economy(Race race) {
-		// no per-race column is authored yet — every race founds on the human one. The parameter is
-		// here so the call sites state which race they mean, instead of assuming.
+		// authored content wins; the compiled constant is the floor under it. Until the matrix is
+		// seeded, find() returns null for every cell and this is exactly the old behaviour.
+		Economy authored = EconomyCatalog.get().find(this, race);
+		return authored != null ? authored : economy;
+	}
+
+	/**
+	 * This era's economy <b>as compiled in</b>, ignoring the authored {@link EconomyCatalog} — the
+	 * human column, and the source the catalog's seed content is generated from. Use
+	 * {@link #economy(Race)} to found a colony; this is for producing and checking content, not for
+	 * running on.
+	 *
+	 * @return the compiled economy, or {@code null} for an uncalibrated era
+	 */
+	Economy compiledEconomy() {
 		return economy;
 	}
 
