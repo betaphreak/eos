@@ -6,6 +6,15 @@ FROM node:22-alpine AS build
 # Install OS dependencies required by 'sharp' (Strapi's image processing library)
 RUN apk update && apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev vips-dev > /dev/null 2>&1
 
+# Use sharp's PREBUILT musl binaries (@img/sharp-linuxmusl-*) instead of compiling it.
+#
+# sharp prefers a global libvips when it finds one that satisfies its minimum — and `vips-dev` above
+# puts one on the image. That flipped sharp 0.34 (which Strapi 5.50 brought in) into a from-source
+# node-gyp build, which then fails outright: "sharp: Please add node-addon-api to your dependencies".
+# The prebuilt binaries bundle their own libvips and are already in the lockfile, so the honest fix is
+# to stop letting the system copy win. Set before `npm ci` — sharp decides at install time.
+ENV SHARP_IGNORE_GLOBAL_LIBVIPS=1
+
 # Set to production so Strapi optimizes the Admin UI build
 ENV NODE_ENV=production
 
