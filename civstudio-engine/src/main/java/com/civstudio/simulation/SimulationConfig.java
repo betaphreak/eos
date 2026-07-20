@@ -7,6 +7,7 @@ import com.civstudio.agent.firm.ScienceConfig;
 import com.civstudio.agent.laborer.FertilityConfig;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.era.Era;
+import com.civstudio.race.Race;
 import lombok.Builder;
 
 /**
@@ -210,7 +211,11 @@ public record SimulationConfig(
 	 * The colony starts Medieval, so its economy supplies the era-specific
 	 * defaults (prices, taxes, immigration, firm/laborer init, pool/nobles).
 	 */
-	private static final Era.Economy MEDIEVAL = Era.MEDIEVAL.economy();
+	// The era x race cell DEFAULT is built from. Naming HUMAN explicitly rather than taking the
+	// era-wide accessor: these numbers are the human column, not universal ones, and a colony founded
+	// by another race should eventually resolve its own (see Era#economy(Race)). Static because
+	// DEFAULT is; resolving per founding race is the next step, not something a constant can do.
+	private static final Era.Economy MEDIEVAL = Era.MEDIEVAL.economy(Race.HUMAN);
 
 	/** The original canonical run configuration. */
 	public static final SimulationConfig DEFAULT = new SimulationConfig(

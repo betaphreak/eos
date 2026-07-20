@@ -151,11 +151,32 @@ unchanged.
 *Ship criterion:* full suite green with `BalanceProfile.DEFAULT` wired in; byte-identical run output for
 a fixed seed.
 
-### A1 — Flatten the `Era.MEDIEVAL.economy()` delegation
+### A1 — Economy is an era × race matrix, NOT part of the profile — **DECIDED 2026-07-20 (owner)**
 
-`SimulationConfig.DEFAULT` must be expressible as pure data. Either inline the 14 delegated values or
-make `Era.Economy` a serialisable component of the profile. **Decide before A2** — this is the one place
-where "just serialise the record" does not hold.
+The open question was whether to flatten `Era.MEDIEVAL.economy()` into `SimulationConfig.DEFAULT` or
+fold it into the balance profile. **Neither.** Economy stays **authored on two axes**: an era sets the
+technological/commercial epoch (one `Economy` per era), and a **race** sets who is living through it.
+Today's constants are the *human* column — authored before race was a lever, and read as universal
+when they are not: a race maturing at 9, or living for centuries, does not plausibly share humanity's
+pool size, promotion ratio or savings behaviour.
+
+That makes race the same shape it already is everywhere else in the engine — its own name tables and
+life table where they exist, the human calendar and tech overlay where they do not (`docs/race.md`) —
+and the same shape as the per-race tech trees, where the shipped `techs.json` is the human tree.
+
+**Consequence for `BalanceProfile`: it must NOT hold economies.** The 15 `Era.Economy` fields are
+authored content on their own axes; the profile covers the *other* tunables (the 13 per-owner agent
+configs, and the structural/run-level `SimulationConfig` fields — `numEFirms`/`numNFirms`,
+`foundingLaborersPerNFirm`, `durationYears`, the `foundAtCamp`/`homePlots` flags, …). That is a
+cleaner split than the original plan: two authored matrices, one tuning profile.
+
+**Shipped so far:** `Era.economy(Race)` names the axis, with every race falling back to the human
+column until its own is authored, and `SimulationConfig` now says `Era.MEDIEVAL.economy(Race.HUMAN)`
+so the human assumption is explicit rather than implicit. Behaviour-neutral (`EraEconomyTest`).
+
+**Still to do:** resolve the economy **at founding** from the colony's founding race rather than
+baking one static cell into `SimulationConfig.DEFAULT` — a static constant cannot vary by race, so
+this is the real work, and it is a prerequisite for authoring any non-human column.
 
 ### A2 — Serialise/deserialise round-trip
 
@@ -410,8 +431,9 @@ per-tick hot path.
 
 ## Open decisions
 
-1. **A1** — flatten `Era.MEDIEVAL.economy()` into `SimulationConfig.DEFAULT`, or make `Era.Economy` a
-   serialisable profile component? Affects whether `Era` stays the home of era-scaled economics.
+1. ~~**A1** — flatten `Era.MEDIEVAL.economy()`, or make it a profile component?~~ **Decided
+   2026-07-20:** neither — economy is an **era × race** authored matrix and stays out of the profile;
+   today's values are the human column. See §A1.
 2. **`contentVersion` on `SessionRecord`** — confirm this lands *before* A4, and whether old records
    without one are treated as "unknown" or refused.
 3. **B2 behaviour change** — what should `SessionHost.build` do with an unrecognised scenario string?

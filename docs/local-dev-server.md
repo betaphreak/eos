@@ -17,11 +17,13 @@ That's it. It installs a fresh engine jar, starts the server offline, and — on
 **fully started** — serves `web/` and opens `http://localhost:3000/?live=http://localhost:8080` in
 the URL logged for you to open (nothing opens itself — starting a server should not seize the screen).
 
-Equivalently, the plain Maven command does the frontend part on its own (the engine-jar
-refresh and the offline flag are what the script adds):
+Equivalently, the plain Maven command does the frontend part on its own — but it needs the world
+source spelled out, which is the main thing the script adds beyond the engine-jar refresh and the
+offline flag (see [World data](#world-data-the-fixture-not-the-classpath) below):
 
 ```powershell
-mvn -o -pl civstudio-server spring-boot:run     # -o = offline
+mvn -o -pl civstudio-server spring-boot:run `
+  "-Dspring-boot.run.arguments=--civstudio.world-source.mode=fixture --civstudio.world-source.fixture=civstudio-engine/src/test/resources/world-bundle.json.gz"
 ```
 
 Useful flags:
@@ -34,6 +36,53 @@ pwsh tools/dev-local.ps1 -Online                # let Maven reach the network
 
 Stop everything with `Ctrl-C` in the terminal — the node frontend is a child of the server JVM and
 is torn down on shutdown.
+
+## World data: the fixture, not the classpath
+
+`generated/` is **no longer committed** — studio is the authoritative content store (see
+[`docs/architecture.md`](architecture.md) §Where world data comes from). So the engine's default
+`classpath` world source has nothing to read, and a plain `spring-boot:run` dies on boot with:
+
+```
+java.lang.IllegalStateException: Terrain resource not found: /terrains.json
+```
+
+This is not a broken checkout; it is the de-vendoring working as designed. Local runs therefore boot
+from the **committed world-bundle fixture** — the same snapshot `mvn test` uses, and the only copy of
+the world in the repo:
+
+```
+civstudio-engine/src/test/resources/world-bundle.json.gz
+```
+
+`tools/dev-local.ps1` defaults to it and fails early with the regeneration command if it is missing.
+Override with `-WorldSource`:
+
+```powershell
+pwsh tools/dev-local.ps1                                   # fixture (default)
+pwsh tools/dev-local.ps1 -WorldSource strapi               # a studio you are running locally
+pwsh tools/dev-local.ps1 -WorldSource strapi -WorldSourceUrl https://civstudio.com/api/world-bundle `
+                         -WorldSourceToken $env:WORLD_BUNDLE_TOKEN
+```
+
+Refresh the fixture against a seeded studio with `node tools/make-world-bundle.mjs`.
+
+> The fixture is a **test** resource being used by a dev run. That is deliberate — it is the one
+> committed world bundle — but it means a stale fixture shows up as a stale local world, not as a
+> test failure.
+
+## Exercising the gated endpoints
+
+Most session reads are public, but a few are not (the command log is owner-or-admin), and signing in
+with Steam locally is not practical. `-TrustDevUser` makes the server trust the `X-CivStudio-User`
+header so you can act as an admin:
+
+```powershell
+pwsh tools/dev-local.ps1 -TrustDevUser                     # grants admin to "dev-admin"
+curl -H "X-CivStudio-User: dev-admin" http://localhost:8080/api/sessions/caravan-demo-7654321/commands
+```
+
+Dev-only by construction: the header is ignored unless `civstudio.auth.trust-dev-user-header` is on.
 
 ## How it works
 

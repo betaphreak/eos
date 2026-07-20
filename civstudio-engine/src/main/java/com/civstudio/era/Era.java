@@ -9,6 +9,8 @@ import com.civstudio.simulation.SimulationConfig.LaborerInit;
 import com.civstudio.simulation.SimulationConfig.PriceRange;
 import com.civstudio.tech.ResearchState;
 import com.civstudio.tech.TechTree;
+import com.civstudio.race.Race;
+
 import lombok.Builder;
 
 /**
@@ -81,10 +83,36 @@ public enum Era {
 	}
 
 	/**
-	 * The era's economic tuning, or {@code null} if the era is not yet
-	 * calibrated (currently only {@link #MEDIEVAL} is).
+	 * The economic tuning for this era as the <b>human</b> race founds it — equivalent to
+	 * {@link #economy(Race) economy(Race.HUMAN)}. {@code null} if the era is not yet calibrated
+	 * (currently only {@link #MEDIEVAL} is).
 	 */
 	public Economy economy() {
+		return economy(Race.HUMAN);
+	}
+
+	/**
+	 * The economic tuning for this era <b>as {@code race} founds it</b>.
+	 * <p>
+	 * Economy is a <b>two-axis authored matrix</b>: an era sets the technological/commercial epoch, a
+	 * race sets who is living through it. The values on the constants above are the <em>human</em>
+	 * column — they were authored before race was a lever and read as universal, which they are not:
+	 * a race that matures at 9 or lives for centuries ({@link Race#minInitAgeYears()},
+	 * {@link Race#lifeTable()}) does not plausibly share humanity's pool size, promotion ratio or
+	 * savings behaviour.
+	 * <p>
+	 * Only {@code (MEDIEVAL, HUMAN)} is authored today, so every race falls back to the human column —
+	 * the same shape race already takes everywhere else in the engine: its own name tables and life
+	 * table where they exist, the human liturgical calendar and tech overlay where they do not
+	 * (see {@code docs/race.md}). Per-race economies are the next lever to be authored, and they will
+	 * arrive as content rather than as constants here.
+	 *
+	 * @param race the founding race; {@code null} is read as {@link Race#HUMAN}
+	 * @return the tuning to found with, or {@code null} for an uncalibrated era
+	 */
+	public Economy economy(Race race) {
+		// no per-race column is authored yet — every race founds on the human one. The parameter is
+		// here so the call sites state which race they mean, instead of assuming.
 		return economy;
 	}
 
