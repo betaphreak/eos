@@ -35,6 +35,14 @@ class ScenarioMcpToolsTest {
 	}
 
 	@Test
+	void rejectsANonHeadlessScenario() {
+		// a timeline is a registered scenario but not headless-runnable — rejected, not silently
+		// founded as a standard colony
+		assertThrows(IllegalArgumentException.class,
+				() -> tools().runScenario("timeline", 1L, 1, null, null, null));
+	}
+
+	@Test
 	void rejectsUnknownConfigOverride() {
 		// an unknown override key is rejected, not silently ignored (fails before founding)
 		assertThrows(IllegalArgumentException.class,
@@ -42,11 +50,15 @@ class ScenarioMcpToolsTest {
 	}
 
 	@Test
-	void listsTheStandardSetup() {
+	void listsTheHeadlessRunnableRegistryScenarios() {
 		ScenarioMcpTools.ScenarioCatalog catalog = tools().listScenarios();
-		assertEquals(1, catalog.scenarios().size());
-		assertEquals("standard", catalog.scenarios().get(0).name());
-		assertTrue(catalog.scenarios().get(0).isRulerColony());
+		// the STANDARD_COLONY-shaped registry scenarios (standard, caravan-demo); camp/timeline are
+		// omitted as not headless-calibratable
+		List<String> keys = catalog.scenarios().stream().map(ScenarioMcpTools.ScenarioInfo::name).toList();
+		assertTrue(keys.contains("standard"), "the plain calibration base is offered: " + keys);
+		assertFalse(keys.contains("timeline"), "a timeline is not headless-runnable: " + keys);
+		assertFalse(keys.contains("camp"), "a camp is not headless-runnable: " + keys);
+		assertTrue(catalog.scenarios().stream().allMatch(ScenarioMcpTools.ScenarioInfo::isRulerColony));
 		assertTrue(catalog.profiles().contains("default"),
 				"the default balance profile is always offered");
 	}

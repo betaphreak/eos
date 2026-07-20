@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 import com.civstudio.agent.RetinueConfig;
 import com.civstudio.balance.BalanceProfile;
 import com.civstudio.balance.BalanceProfiles;
+import com.civstudio.scenario.ScenarioDef;
+import com.civstudio.scenario.ScenarioRegistry;
 import com.civstudio.io.sink.CompositeRowSinkFactory;
 import com.civstudio.io.sink.CsvRowSinkFactory;
 import com.civstudio.io.sink.JdbcRowSinkFactory;
@@ -47,17 +49,19 @@ public class ScenarioMcpTools {
 	}
 
 	@McpTool(name = "list_scenarios",
-			description = "The named base setups run_scenario can found, and the balance profiles "
-					+ "(agent-tuning bundles) it can found them on, so the LLM picks valid ones.")
+			description = "The headless-runnable scenarios run_scenario can found, and the balance "
+					+ "profiles (agent-tuning bundles) it can found them on, so the LLM picks valid "
+					+ "ones. Drawn from the ScenarioRegistry; camp/timeline shapes are omitted (not "
+					+ "headless-calibratable).")
 	public ScenarioCatalog listScenarios() {
-		List<ScenarioInfo> scenarios = List.of(new ScenarioInfo("standard",
-				"A standard ruler-bearing colony (peasant pool, three-tier banks, export sector, "
-						+ "ennobled aristocracy). Collapses by design as the pool reserve drains — the "
-						+ "food-balance calibration target.",
-				true));
+		// the registry's headless-runnable scenarios (STANDARD_COLONY shape) — camp boots its ruler
+		// economy late and timeline is multiplayer/born-empty, so neither runs to a headless collapse
+		List<ScenarioInfo> scenarios = ScenarioRegistry.get().all().stream()
+				.filter(d -> d.shape().headlessRunnable())
+				.map(d -> new ScenarioInfo(d.key(), d.blurb(), true))
+				.toList();
 		// the authored balance profiles, from content (BalanceProfiles); "default" is always present
-		return new ScenarioCatalog(scenarios,
-				List.copyOf(BalanceProfiles.get().keys()));
+		return new ScenarioCatalog(scenarios, List.copyOf(BalanceProfiles.get().keys()));
 	}
 
 	@McpTool(name = "run_scenario",
@@ -82,9 +86,10 @@ public class ScenarioMcpTools {
 					+ "{\"durationYears\":40,\"retinueSize\":450,\"reliefBudgetPerPeasant\":3.0}",
 					required = false)
 			Map<String, Double> configOverrides) {
-		if (!"standard".equals(scenario))
-			throw new IllegalArgumentException("unknown scenario '" + scenario
-					+ "'; call list_scenarios (only 'standard' is available)");
+		ScenarioDef def = ScenarioRegistry.get().resolve(scenario);
+		if (def == null || !def.shape().headlessRunnable())
+			throw new IllegalArgumentException("scenario '" + scenario + "' is not headless-runnable;"
+					+ " call list_scenarios for the valid keys");
 
 		SimulationConfig cfg = applyConfig(SimulationConfig.DEFAULT, configOverrides);
 		BalanceProfile profile = resolveProfile(profileKey);

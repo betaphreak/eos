@@ -17,6 +17,10 @@ import com.civstudio.server.registry.InMemorySessionRegistry;
 import com.civstudio.server.registry.SeatRecord;
 import com.civstudio.server.registry.SessionRecord;
 import com.civstudio.server.registry.SessionRegistry;
+import com.civstudio.balance.BalanceProfiles;
+import com.civstudio.scenario.FoundingShape;
+import com.civstudio.scenario.ScenarioDef;
+import com.civstudio.scenario.ScenarioRegistry;
 import com.civstudio.simulation.SimulationConfig;
 import com.civstudio.simulation.SimulationHarness;
 import jakarta.annotation.PreDestroy;
@@ -377,16 +381,31 @@ public final class SessionHost {
 		stopAll();
 	}
 
-	// found the session's world from the spec. Only the caravan demo is wired for Phase A;
-	// other scenario ids reuse the same standard-colony founding without the bands.
+	// found the session's world from the spec, resolving its scenario id through the ScenarioRegistry
+	// (workstream B) — shape + balance profile as DATA rather than a hardcoded isTimeline() branch.
 	private HostedSession build(String id, String owner, SessionKind kind, String mode,
 			String difficulty, SessionSpec spec) {
+		ScenarioDef def = ScenarioRegistry.get().resolve(spec.scenario());
+		if (def == null) {
+			// a scenario string the registry does not know — an old persisted session, or a typo.
+			// Warn loudly and found a standard colony (what every non-timeline id did before), rather
+			// than 404 a restore. The "standard" built-in is always present.
+			log.warning(() -> "unknown scenario '" + spec.scenario() + "' — founding standard");
+			def = ScenarioRegistry.get().resolve("standard");
+		}
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
-		if (spec.isTimeline())
+		if (def.shape() == FoundingShape.TIMELINE)
 			return buildTimeline(id, owner, kind, mode, difficulty, spec, cfg);
+		// a CAMP scenario founds low and climbs the tier ladder; its flags carry the subsistence
+		// home-plot economy the camp survives on (docs/settlement-tier-ladder-plan.md D4)
+		if (def.shape() == FoundingShape.CAMP)
+			cfg = cfg.toBuilder().foundAtCamp(true).homePlots(def.flag("homePlots", false)).build();
 		// SimulationHarness.create builds the GameSession, founds the colony into the
 		// province, and installs the (now per-session) log — see docs/client-server.md
 		SimulationHarness h = SimulationHarness.create(cfg, spec.seed(), spec.provinceId());
+		// the scenario's agent-behaviour tuning — "default" is behaviour-neutral, so caravan-demo
+		// and every legacy session found exactly as before (workstream A: BalanceProfiles)
+		h.setBalanceProfile(BalanceProfiles.get().get(def.balanceProfile()));
 		h.foundStandardColony();
 		// a City colony musters winter foraging expeditions by default (docs/explorer-caravan.md),
 		// which it drives and the render feed draws on the map; a Village founds none.
