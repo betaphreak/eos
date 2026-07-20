@@ -407,10 +407,25 @@ base is the *profile's* retinue so the two do not fight.
 
 ---
 
-## B — Scenario definitions (depends on A0–A3)
+## B — Scenario definitions — **B1–B3 SHIPPED, 2026-07-20; B4 (lobby picker) remains**
 
-**Goal:** a scenario becomes data — *seed + province + balance profile + founding shape + flags* — so it
-can be authored, enumerated, and launched without Java.
+**Goal:** a scenario becomes data — *balance profile + founding shape + flags* — so it can be
+authored, enumerated, and launched without Java.
+
+**Shipped:** `com.civstudio.scenario` (`FoundingShape` {STANDARD_COLONY, CAMP, TIMELINE},
+`ScenarioDef`, `ScenarioRegistry` content-loaded over four compiled built-ins); `SessionHost.build`
+resolves `spec.scenario()` through it and branches on shape (unknown → warn + standard, not a 404);
+`ScenarioMcpTools` lists/validates the registry's headless-runnable scenarios; and the studio
+`scenario` collection + `/scenarios.json` bundle key + seeder, verified end to end against a live
+Postgres. **Two deviations from the sketch below, both deliberate:** seed/province are *not* on the
+def (per-instance, they live on `SessionSpec`), and `balanceProfile` is a plain string not a relation
+(the engine reads a key; `BalanceProfiles.get` is forgiving; keeps seeding flat). Remit was
+server-session founding only — the engine `XxxEconomy` dev probes are untouched.
+
+**B4 — surface it (remains):** a scenario picker in the lobby / create-session flow, fed by the
+registry rather than a hardcoded string. Frontend + local-studio verification; deferred by scope.
+
+The original sketch, for reference:
 
 ### B1 — `ScenarioRegistry` (engine)
 
