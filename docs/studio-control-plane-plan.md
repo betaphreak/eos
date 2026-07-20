@@ -261,8 +261,17 @@ Two things worth carrying forward:
   through a full engine-green run. Use `mvn -o clean test` / `clean test-compile` for the real
   worklist.
 
-**Still open (not this phase):** `SessionHost` founds every colony from `DEFAULT`, so a Timeline
-seating players of different races still needs its per-seat economy resolved at founding.
+**Per-seat economy needs no further wiring** — an earlier draft of this section claimed `SessionHost`
+still founds every colony from `DEFAULT`, and that was wrong. Both hosted founding paths go through
+`GameSession.newSettlement(…, Province)`, which resolves the race from the province
+(`WorldMap.raceOf`) and installs `era.economy(race)` on the colony. `TimelineTest`
+(`eachSeatFoundsOnItsOwnRacesEconomy`) pins it at the seat path.
+
+What is missing is **content, not plumbing**: `Era.economy(Race)` answers the human column for every
+race, so two seats legitimately run identical numbers today. Authoring a non-human column is the
+whole remaining step — and per that method's own javadoc it should "arrive as content rather than as
+constants here", which is exactly what A2–A5 below build. **Workstream A is the per-race economy
+feature**, not a parallel track.
 
 ### A2 — Serialise/deserialise round-trip
 

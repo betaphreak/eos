@@ -12,6 +12,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import com.civstudio.era.Era;
 import com.civstudio.settlement.Settlement;
 
 /**
@@ -53,6 +54,32 @@ class TimelineTest {
 		assertEquals("bob", hs.ownerOf(bob.getName()));
 		assertNotEquals(alice.getProvince().id(), bob.getProvince().id(),
 				"rivals do not found on top of each other");
+	}
+
+	/**
+	 * Each seat founds on <b>its own</b> economy, resolved from the race of the province it stands
+	 * in — not on the run config's. The per-colony economy work exists so a Timeline can seat
+	 * players of different races and have them run different economics; this pins the wiring that
+	 * makes that possible, at the seat path rather than in the engine.
+	 * <p>
+	 * It deliberately does <em>not</em> assert that two seats differ: {@code Era.economy(Race)}
+	 * still answers the human column for every race, so today they legitimately match. What must
+	 * hold is that each colony carries the cell for the race it actually founded as, so authoring a
+	 * non-human column is all it takes — no further wiring.
+	 */
+	@Test
+	@Timeout(180)
+	void eachSeatFoundsOnItsOwnRacesEconomy() {
+		HostedSession hs = openTimeline(RANKED_SEED);
+		Settlement alice = host.joinTimeline(hs.id(), "alice");
+		Settlement bob = host.joinTimeline(hs.id(), "bob");
+
+		for (Settlement seat : new Settlement[] { alice, bob }) {
+			assertNotNull(seat.getEconomy(), seat.getName() + " founded with no economy");
+			assertEquals(Era.MEDIEVAL.economy(seat.getFoundingRace()), seat.getEconomy(),
+					seat.getName() + " must carry the cell for the race it founded as ("
+							+ seat.getFoundingRace() + "), not the run config's");
+		}
 	}
 
 	@Test

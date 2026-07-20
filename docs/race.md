@@ -44,10 +44,27 @@ per-person, but it forces a resolution rule for the two mechanics that are inher
 | Skills / gender | `Demography` | **person** | already a per-person draw; race may later shift the means |
 | Calendar (`LiturgicalCalendar`) | per session | **colony founding race** | `Firm.operatesOn(DayType)` rests *every* firm on a feast — there is one colony-wide rest calendar, not one per worker |
 | Tech (effects overlay) | `TechTree` / `ResearchState` | **colony founding race** | a colony has a single `ResearchState` with one focus and colony-wide sector multipliers — there is no per-person research |
+| Economy (`Era.Economy`) | `Settlement` (per colony) | **colony founding race** | prices, agent starting balances, tax rates and the peasant pool are colony-wide; a session may seat several races, so they cannot ride the run config |
 
 So the colony gains a single **founding race** (its ruler's race) that selects the
-calendar and the tech effect overlay, while individuals — including immigrants and
-spouses of other races — vary freely.
+calendar, the tech effect overlay and the economy, while individuals — including
+immigrants and spouses of other races — vary freely.
+
+### The economy is wired per race but not yet authored per race
+
+A colony carries its own `Era.Economy`, resolved at founding from the race of the
+province it stands in (`WorldMap.raceOf` → `Era.economy(race)`) and adjustable via
+`SimulationHarness.tuneEconomy`. Every founding path goes through it, hosted seats
+included — `TimelineTest.eachSeatFoundsOnItsOwnRacesEconomy` pins that.
+
+**But `Era.economy(Race)` returns the human column for every race today.** Only
+`(MEDIEVAL, HUMAN)` is authored, so a dwarven seat and a human seat in one Timeline
+currently run identical numbers. This is a missing *content column*, not missing
+plumbing: authoring a non-human economy is the entire remaining step, and it is
+meant to arrive **as content rather than as constants** — see
+[`docs/studio-control-plane-plan.md`](studio-control-plane-plan.md) workstream A.
+Until then, per-race economic variation is latent, and any claim that races "run
+different economics" is about capability, not observed behaviour.
 
 ## The `Race` enum
 
