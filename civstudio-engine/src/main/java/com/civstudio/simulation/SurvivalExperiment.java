@@ -34,8 +34,7 @@ public class SurvivalExperiment {
 				.immigrationThreshold(OpenColonyEconomy.IMMIGRATION_THRESHOLD)
 				.build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654322, DHENIJANSAR);
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(),
-				i -> 15);
+		h.foundStandardColony();
 
 		Settlement colony = h.getColony();
 		List<String> snapshots = new ArrayList<>();

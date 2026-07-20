@@ -40,8 +40,7 @@ public class CampFoundingEconomy {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.retinueSize(BAND_SIZE).foundAtCamp(true).homePlots(true).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, DHENIJANSAR);
-		h.foundStandardColony(
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		// the printers report the ruler/firms/banks/granary/plots — none of which exist while the
 		// colony is a foraging camp — so wire them when the ruler economy boots at SMALLHOLDING.
 		h.setOnEconomyBooted(() -> {

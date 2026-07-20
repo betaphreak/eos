@@ -37,7 +37,7 @@ class ExplorerTrailTest {
 	void anExplorerStampsTrailsOnThePlotsItCrosses() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder().durationYears(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, DHENIJANSAR);
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Settlement colony = h.getColony();
 		GameSession session = colony.getSession();
 		Retinue pool = h.getRetinue();

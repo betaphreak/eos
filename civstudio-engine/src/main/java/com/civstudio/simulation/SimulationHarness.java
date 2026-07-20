@@ -118,6 +118,10 @@ public class SimulationHarness {
 	 * small rate, so the sovereign's luxury habit draws the reserves down gradually
 	 * rather than exhausting them.
 	 */
+	// the necessity stock a freshly promoted laborer household starts with. Every scenario passed
+	// `i -> 15` by hand; it is a founding default, not a per-caller decision.
+	public static final double DEFAULT_LABORER_NSTOCK = 15;
+
 	public static final double DEFAULT_RULER_CONSUMPTION_RATE = 0.0002;
 
 	/**
@@ -353,13 +357,48 @@ public class SimulationHarness {
 		return new SimulationHarness(cfg, colony);
 	}
 
+	/**
+	 * The numbers this colony runs on — its own {@code (era, race)} cell, not the run's
+	 * (see {@link Settlement#getEconomy()}). A session may seat colonies of different races, so the
+	 * founding path must ask the colony rather than the run config.
+	 */
+	// the run config's economy fields as an Era.Economy — the phase-2 bridge above. Mirrors the
+	// mapping SimulationConfig.defaultFor does in reverse.
+	private static com.civstudio.era.Era.Economy economyOf(SimulationConfig cfg) {
+		return com.civstudio.era.Era.Economy.builder()
+				.ePrice(cfg.ePrice()).nPrice(cfg.nPrice())
+				.eFirm(cfg.eFirm()).nFirm(cfg.nFirm()).cFirm(cfg.cFirm())
+				.laborer(cfg.laborer())
+				.targetNStock(cfg.targetNStock())
+				.externalInflowPerStep(cfg.externalInflowPerStep())
+				.immigrationThreshold(cfg.immigrationThreshold())
+				.laborShare(cfg.laborShare())
+				.bankProfitTaxRate(cfg.bankProfitTaxRate())
+				.nobleIncomeTaxRate(cfg.nobleIncomeTaxRate())
+				.retinueSize(cfg.retinueSize())
+				.promotionRatio(cfg.promotionRatio())
+				.targetNobles(cfg.targetNobles())
+				.build();
+	}
+
+	private com.civstudio.era.Era.Economy econ() {
+		return colony.getEconomy();
+	}
+
 	public SimulationHarness(SimulationConfig cfg, Settlement colony) {
 		this.cfg = cfg;
 		this.colony = colony;
+		// PHASE-2 BRIDGE. The founding path now reads the colony's economy rather than the run
+		// config, but SimulationConfig still CARRIES those 15 fields and callers still override them
+		// there — so seed the colony from the config to keep the move of the reads behaviour-
+		// preserving. Until phase 3 deletes those fields and converts the override sites to
+		// tuneEconomy, econ() is exactly cfg, and a multi-race session still shares one economy.
+		// Remove this line with the fields; it is the last thing making the run config win.
+		colony.setEconomy(economyOf(cfg));
 		// seed the firm parameters with the run's labor-share (the rest are the
 		// canonical defaults); setFirmConfig can override before createFirms
 		this.firmConfig =
-				FirmConfig.DEFAULT.toBuilder().laborShare(cfg.laborShare()).build();
+				FirmConfig.DEFAULT.toBuilder().laborShare(econ().laborShare()).build();
 		// apply the run's fertility parameters to the colony (read live by Laborer.act);
 		// a test can still override via colony.setFertilityConfig before run()
 		colony.setFertilityConfig(cfg.fertility());
@@ -367,10 +406,10 @@ public class SimulationHarness {
 
 	/** Create the markets and register them (labor market first). */
 	public void createMarkets() {
-		enjoymentMkt = new ConsumerGoodMarket("Enjoyment", cfg.ePrice().min(),
-				cfg.ePrice().max(), colony);
-		necessityMkt = new ConsumerGoodMarket("Necessity", cfg.nPrice().min(),
-				cfg.nPrice().max(), colony);
+		enjoymentMkt = new ConsumerGoodMarket("Enjoyment", econ().ePrice().min(),
+				econ().ePrice().max(), colony);
+		necessityMkt = new ConsumerGoodMarket("Necessity", econ().nPrice().min(),
+				econ().nPrice().max(), colony);
 		laborMkt = new LaborMarket(colony);
 		capitalMkt = new CapitalMarket(colony);
 		// the wedding market is harmless without a pool (it then clears to nothing),
@@ -485,15 +524,15 @@ public class SimulationHarness {
 		// a representative firm bank for any firm the dynamic provisioning charters
 		// later (createDefaultRuler installs the factory with it)
 		charteredFirmBank = firmBank.apply(0);
-		CFirm cFirm = new CFirm(cfg.cFirm().checking(), cfg.cFirm().savings(),
-				cfg.cFirm().wageBudget(), capitalFirmBank, colony);
+		CFirm cFirm = new CFirm(econ().cFirm().checking(), econ().cFirm().savings(),
+				econ().cFirm().wageBudget(), capitalFirmBank, colony);
 		capitalFirms = new CFirm[] { cFirm };
 
 		eFirms = new EFirm[numEFirms];
 		for (int i = 0; i < numEFirms; i++)
-			eFirms[i] = new EFirm(cfg.eFirm().checking(),
-					eSavings.applyAsDouble(i), cfg.eFirm().output(),
-					cfg.eFirm().wageBudget(), cfg.eFirm().capital(),
+			eFirms[i] = new EFirm(econ().eFirm().checking(),
+					eSavings.applyAsDouble(i), econ().eFirm().output(),
+					econ().eFirm().wageBudget(), econ().eFirm().capital(),
 					capitalFirms, firmConfig, firmBank.apply(i), colony);
 
 		// necessity firms get a higher technology coefficient (see NECESSITY_TECH_FACTOR)
@@ -507,9 +546,9 @@ public class SimulationHarness {
 				.build();
 		nFirms = new NFirm[numNFirms];
 		for (int i = 0; i < numNFirms; i++)
-			nFirms[i] = new NFirm(cfg.nFirm().checking(),
-					nSavings.applyAsDouble(i), cfg.nFirm().output(),
-					cfg.nFirm().wageBudget(), cfg.nFirm().capital(),
+			nFirms[i] = new NFirm(econ().nFirm().checking(),
+					nSavings.applyAsDouble(i), econ().nFirm().output(),
+					econ().nFirm().wageBudget(), econ().nFirm().capital(),
 					capitalFirms, nFirmConfig, firmBank.apply(i), colony);
 
 		// add each firm to the colony, placing the on-plot ones (the necessity farms)
@@ -553,7 +592,7 @@ public class SimulationHarness {
 		int perFirm = cfg.foundingLaborersPerNFirm();
 		if (perFirm <= 0)
 			return cfg.numNFirms();
-		int laborForce = (int) Math.round(cfg.promotionRatio() * cfg.retinueSize());
+		int laborForce = (int) Math.round(econ().promotionRatio() * econ().retinueSize());
 		int sized = Math.max(cfg.numNFirms(),
 				(int) Math.ceil((double) laborForce / perFirm));
 		return Math.max(1, Math.min(sized, colony.getMaxPlots()));
@@ -610,7 +649,7 @@ public class SimulationHarness {
 	 * <tt>bank</tt>, into whose equity its export earnings flow). <b>No nobles are
 	 * created up front</b> — the ruler works the strategic firm from day 0 (so it is
 	 * never unstaffed) and the ablest laborers are ennobled up to {@code
-	 * cfg.targetNobles()} over the first weeks (see {@link #createDefaultRuler()} /
+	 * econ().targetNobles()} over the first weeks (see {@link #createDefaultRuler()} /
 	 * {@code topUpAristocracy}). Call this after {@link #createFirms} and
 	 * <em>before</em> {@link #createDefaultRuler()}.
 	 *
@@ -713,8 +752,8 @@ public class SimulationHarness {
 		ensureResearchAndScience(getCopperBank());
 		Bank gold = getGoldBank();
 		return installRuler(new Ruler(CurrencyType.GOLD.toCopper(DEFAULT_RULER_GOLD),
-				DEFAULT_RULER_CONSUMPTION_RATE, cfg.bankProfitTaxRate(),
-				cfg.nobleIncomeTaxRate(), gold, colony));
+				DEFAULT_RULER_CONSUMPTION_RATE, econ().bankProfitTaxRate(),
+				econ().nobleIncomeTaxRate(), gold, colony));
 	}
 
 	/**
@@ -738,7 +777,7 @@ public class SimulationHarness {
 		ensureResearchAndScience(getCopperBank());
 		Bank gold = getGoldBank();
 		return installRuler(new Ruler(leader, hoard, DEFAULT_RULER_CONSUMPTION_RATE,
-				cfg.bankProfitTaxRate(), cfg.nobleIncomeTaxRate(), gold, colony));
+				econ().bankProfitTaxRate(), econ().nobleIncomeTaxRate(), gold, colony));
 	}
 
 	// register a freshly-built ruler with the colony and wire the standard sovereign
@@ -770,11 +809,11 @@ public class SimulationHarness {
 		// factory. CITY builds a Mayor (climb TOWN -> METROPOLIS); VILLAGE builds a Ruler (the
 		// symmetric descent METROPOLIS -> TOWN reforms a Mayor back down to a Ruler).
 		mobility().registerRankFactory(Rank.CITY, (estate, c) -> new Mayor(estate,
-				DEFAULT_RULER_CONSUMPTION_RATE, cfg.bankProfitTaxRate(), cfg.nobleIncomeTaxRate(),
+				DEFAULT_RULER_CONSUMPTION_RATE, econ().bankProfitTaxRate(), econ().nobleIncomeTaxRate(),
 				getGoldBank(), c));
 		mobility().registerRankFactory(Rank.VILLAGE, (estate, c) -> new Ruler(estate.head(),
 				estate.checking() + estate.savings(), DEFAULT_RULER_CONSUMPTION_RATE,
-				cfg.bankProfitTaxRate(), cfg.nobleIncomeTaxRate(), getGoldBank(), c));
+				econ().bankProfitTaxRate(), econ().nobleIncomeTaxRate(), getGoldBank(), c));
 		return ruler.getBank();
 	}
 
@@ -870,7 +909,7 @@ public class SimulationHarness {
 
 	/**
 	 * Give the colony its <b>peasant pool</b> (banking in copper), seeded with
-	 * {@code cfg.retinueSize()} peasants the {@link Ruler}
+	 * {@code econ().retinueSize()} peasants the {@link Ruler}
 	 * feeds, and — so every pool-bearing colony can grow — a default {@link
 	 * BuilderFirm} staffed from that pool. Requires the necessity market (see {@link
 	 * #createMarkets()}) and a ruler (see {@link #createDefaultRuler()}) to exist
@@ -899,10 +938,10 @@ public class SimulationHarness {
 		// PeasantLabor market exists when the pool's constructor looks it up.
 		if (colony.getBuilder() == null)
 			createBuilder(bank, BuilderConfig.DEFAULT);
-		// seed the whole pool with cfg.retinueSize() peasants, each with a per-peasant
+		// seed the whole pool with econ().retinueSize() peasants, each with a per-peasant
 		// larder (see retinueConfig). foundLaborersFromRetinue then promotes
 		// promotionRatio of them on day 0, the rest stay as the standing reserve.
-		retinue = new Retinue(cfg.retinueSize(), bank, colony, retinueConfig);
+		retinue = new Retinue(econ().retinueSize(), bank, colony, retinueConfig);
 		colony.addAgent(retinue);
 		return retinue;
 	}
@@ -1074,9 +1113,9 @@ public class SimulationHarness {
 			IntToDoubleFunction initN, IntToDoubleFunction savings) {
 		laborers = new Laborer[numLaborers];
 		for (int i = 0; i < numLaborers; i++) {
-			laborers[i] = new Laborer(cfg.laborer().e(), initN.applyAsDouble(i),
-					cfg.laborer().checking(), savings.applyAsDouble(i),
-					cfg.laborer().savingsRate(), LaborerConfig.DEFAULT,
+			laborers[i] = new Laborer(econ().laborer().e(), initN.applyAsDouble(i),
+					econ().laborer().checking(), savings.applyAsDouble(i),
+					econ().laborer().savingsRate(), LaborerConfig.DEFAULT,
 					laborerBank.apply(i), colony);
 			colony.addAgent(laborers[i]);
 		}
@@ -1106,7 +1145,7 @@ public class SimulationHarness {
 		// first); the rest — the least skilled, plus every not-yet-grown child —
 		// remain as the standing reserve
 		int requested =
-				(int) Math.round(cfg.promotionRatio() * retinue.size());
+				(int) Math.round(econ().promotionRatio() * retinue.size());
 		// promote the whole highest-skill cohort in one batch (a single sort instead
 		// of `requested` linear scans of the pool); the order is identical to taking
 		// the highest skilled one at a time, so the per-laborer endowment draws below
@@ -1153,8 +1192,8 @@ public class SimulationHarness {
 			colony.addReplacementPolicy(dead -> {
 				if (!(dead instanceof Laborer))
 					return null;
-				return new Laborer((Laborer) dead, cfg.laborer().e(),
-						REPLACEMENT_NECESSITY_STOCK, cfg.laborer().savingsRate(),
+				return new Laborer((Laborer) dead, econ().laborer().e(),
+						REPLACEMENT_NECESSITY_STOCK, econ().laborer().savingsRate(),
 						LaborerConfig.DEFAULT, colony);
 			});
 	}
@@ -1188,8 +1227,8 @@ public class SimulationHarness {
 				peasant.getBirthDate());
 		// skill-based endowment: the sum of the head's twelve skill levels, in copper
 		double savings = peasant.skills().totalLevel();
-		Laborer laborer = new Laborer(head, cfg.laborer().e(), initNQty, 0, savings,
-				cfg.laborer().savingsRate(), LaborerConfig.DEFAULT, bank, colony);
+		Laborer laborer = new Laborer(head, econ().laborer().e(), initNQty, 0, savings,
+				econ().laborer().savingsRate(), LaborerConfig.DEFAULT, bank, colony);
 		// a home-plots colony seats the new household on a plot it farms for subsistence food
 		// (landless — null — if the site is full); the founding cohort and every promoted
 		// replacement flow through here. See docs/plot-working-plan.md P1.
@@ -1215,7 +1254,7 @@ public class SimulationHarness {
 	 *            the bank through which external money enters the colony
 	 */
 	public void enableExternalInflow(Bank gatewayBank) {
-		if (cfg.externalInflowPerStep() <= 0)
+		if (econ().externalInflowPerStep() <= 0)
 			return;
 		// a pool-bearing colony renews its labor force through the peasant pool, so the
 		// open-colony inflow recruits settlers into the pool (which promotion then draws
@@ -1230,13 +1269,13 @@ public class SimulationHarness {
 		// a bare (pool-less) colony has no reserve to refill, so external money instead
 		// bankrolls net-new laborer households opened straight from the gateway equity.
 		colony.addStepAction(() -> gatewayBank
-				.injectExternalFunds(cfg.externalInflowPerStep()));
+				.injectExternalFunds(econ().externalInflowPerStep()));
 		colony.setImmigrationPolicy(() -> {
 			List<Agent> immigrants = new ArrayList<>();
-			while (gatewayBank.getEquity() >= cfg.immigrationThreshold()) {
-				immigrants.add(new Laborer(cfg.laborer().e(),
-						REPLACEMENT_NECESSITY_STOCK, cfg.immigrationThreshold(),
-						0, cfg.laborer().savingsRate(), LaborerConfig.DEFAULT,
+			while (gatewayBank.getEquity() >= econ().immigrationThreshold()) {
+				immigrants.add(new Laborer(econ().laborer().e(),
+						REPLACEMENT_NECESSITY_STOCK, econ().immigrationThreshold(),
+						0, econ().laborer().savingsRate(), LaborerConfig.DEFAULT,
 						gatewayBank, colony, true));
 			}
 			return immigrants;
@@ -1273,10 +1312,10 @@ public class SimulationHarness {
 		colony.addStepAction(() -> {
 			if (retinue.size() >= reserveTarget)
 				return; // reserve full — no inflow needed this step
-			gatewayBank.injectExternalFunds(cfg.externalInflowPerStep());
+			gatewayBank.injectExternalFunds(econ().externalInflowPerStep());
 			while (retinue.size() < reserveTarget
-					&& gatewayBank.getEquity() >= cfg.immigrationThreshold()) {
-				gatewayBank.extractExternalEquity(cfg.immigrationThreshold());
+					&& gatewayBank.getEquity() >= econ().immigrationThreshold()) {
+				gatewayBank.extractExternalEquity(econ().immigrationThreshold());
 				retinue.addImmigrant();
 			}
 		});
@@ -1312,6 +1351,45 @@ public class SimulationHarness {
 	 * @return the colony's gold bank (the ruler's treasury), for printer wiring; the
 	 *         copper bank is available from {@link #getCopperBank()}
 	 */
+	/**
+	 * Found the standard colony on <b>its own</b> economy — the firm savings and the laborers'
+	 * necessity stock taken from the colony's {@code (era, race)} cell rather than named by the
+	 * caller.
+	 * <p>
+	 * This is what nearly every caller wants, and the explicit-lambda form below existed only because
+	 * the numbers used to live on the run config: every scenario wrote the same
+	 * {@code i -> cfg.eFirm().savings()} to pass a value back to the harness that the harness already
+	 * had. With the economy on the colony, a run seating several races gets each colony founded on its
+	 * own numbers here, which the caller-supplied lambdas could not express — they close over one
+	 * config for every colony.
+	 *
+	 * @return the ruler's gold bank
+	 */
+	/**
+	 * Adjust this colony's {@linkplain Settlement#getEconomy() economy} before founding — the explicit
+	 * way to run on numbers other than its race's.
+	 * <p>
+	 * This replaced overriding economy fields on {@link SimulationConfig}: those lived on the RUN, so
+	 * in a session seating several races one caller's tax rate or pool size silently applied to every
+	 * colony regardless of who founded it. Tuning the colony says which colony you meant.
+	 * <p>
+	 * Must be called <b>before</b> founding — the founding path reads these numbers to size the pool,
+	 * the firms and the aristocracy.
+	 *
+	 * @param tuning applied to the colony's current economy; the result replaces it
+	 * @return this harness, for chaining
+	 */
+	public SimulationHarness tuneEconomy(
+			java.util.function.UnaryOperator<com.civstudio.era.Era.Economy> tuning) {
+		colony.setEconomy(tuning.apply(econ()));
+		return this;
+	}
+
+	public Bank foundStandardColony() {
+		return foundStandardColony(i -> econ().eFirm().savings(), i -> econ().nFirm().savings(),
+				i -> DEFAULT_LABORER_NSTOCK);
+	}
+
 	public Bank foundStandardColony(IntToDoubleFunction eFirmSavings,
 			IntToDoubleFunction nFirmSavings, IntToDoubleFunction laborerNStock) {
 		// a geographic colony that opts in (cfg.foundAtCamp) is founded LOW — a Captain-led
@@ -1358,7 +1436,7 @@ public class SimulationHarness {
 				: colony.getSession().getTerrainRegistry().improvement("IMPROVEMENT_HUNTING_CAMP"));
 		// the pool — the camp's foragers (its workforce), in camp (settled-foraging) mode. No
 		// builder is created (that is a ruler-economy concern, wired at the boot).
-		retinue = new Retinue(cfg.retinueSize(), copper, colony, retinueConfig);
+		retinue = new Retinue(econ().retinueSize(), copper, colony, retinueConfig);
 		retinue.camp();
 		colony.addAgent(retinue);
 		// the captain — a freshly-drawn band leader. It holds no treasury at camp (the founding

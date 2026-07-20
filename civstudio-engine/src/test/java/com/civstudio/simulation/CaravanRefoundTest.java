@@ -34,8 +34,7 @@ class CaravanRefoundTest {
 				cfg.longitude());
 		SimLog.init(origin);
 		SimulationHarness h0 = new SimulationHarness(cfg, origin);
-		h0.foundStandardColony(i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings(), i -> 15);
+		h0.foundStandardColony();
 		h0.run();
 
 		SettlerCaravan band = SettlerCaravan.dissolve(origin);

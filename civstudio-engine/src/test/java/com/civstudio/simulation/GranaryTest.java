@@ -39,8 +39,7 @@ class GranaryTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
-		h.foundStandardColony(i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 
 		Granary granary = h.getGranary();
 		assertNotNull(granary, "a standard colony is founded with a granary");
@@ -84,8 +83,7 @@ class GranaryTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
-		h.foundStandardColony(i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Retinue retinue = h.getRetinue();
 		Granary granary = h.getGranary();
 		assertNotNull(retinue);
@@ -187,8 +185,7 @@ class GranaryTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
-		h.foundStandardColony(i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		return h;
 	}
 
@@ -200,8 +197,7 @@ class GranaryTest {
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.setGranaryConfig(com.civstudio.agent.GranaryConfig.DEFAULT.toBuilder()
 				.targetDays(0).build());
-		h.foundStandardColony(i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		return h;
 	}
 

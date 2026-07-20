@@ -28,8 +28,7 @@ class RetinueTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
-		h.foundStandardColony(i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 
 		Retinue retinue = h.getRetinue();
 		assertNotNull(retinue, "a standard colony founds its labor force from a pool");
@@ -63,8 +62,7 @@ class RetinueTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
-		h.foundStandardColony(i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Retinue retinue = h.getRetinue();
 		assertNotNull(retinue);
 

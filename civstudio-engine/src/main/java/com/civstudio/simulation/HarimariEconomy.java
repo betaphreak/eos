@@ -54,8 +54,7 @@ public class HarimariEconomy {
 
 		SimulationHarness h =
 				SimulationHarness.create(cfg, SEED, Race.HARIMARI, mix);
-		h.foundStandardColony(
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Bank bank = h.getCopperBank();
 		h.addCommonPrinters();
 		h.addBanksPrinter("Banks");

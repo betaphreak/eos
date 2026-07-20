@@ -40,8 +40,7 @@ class MixedRaceColonyTest {
 
 		SimulationHarness h =
 				SimulationHarness.create(cfg, 7654321, Race.HARIMARI, mix);
-		h.foundStandardColony(i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		h.run();
 
 		Settlement colony = h.getColony();

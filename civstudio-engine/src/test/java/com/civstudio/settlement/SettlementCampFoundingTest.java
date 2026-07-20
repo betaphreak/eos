@@ -29,7 +29,7 @@ class SettlementCampFoundingTest {
 	private static SimulationHarness campHarness(int provinceId) {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder().foundAtCamp(true).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321L, provinceId);
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		return h;
 	}
 
@@ -96,7 +96,7 @@ class SettlementCampFoundingTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.foundAtCamp(true).retinueSize(60).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321L, DHENIJANSAR);
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Settlement c = h.getColony();
 		c.start();
 		assertEquals(SettlementTier.CAMP, c.getTier());
@@ -120,7 +120,7 @@ class SettlementCampFoundingTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.foundAtCamp(true).retinueSize(25).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321L, DHENIJANSAR);
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Settlement c = h.getColony();
 		c.start();
 
@@ -142,7 +142,7 @@ class SettlementCampFoundingTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.foundAtCamp(true).retinueSize(40).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321L, EARGATE);
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Settlement c = h.getColony();
 		c.setCampForagePerForager(0.02); // well below CAMP_RATION (0.1) — the band cannot feed itself
 		c.start();

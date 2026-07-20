@@ -93,7 +93,7 @@ public final class CalibrationRun {
 				e -> logSink.writeRow(e.date(), e.level(), severity(e.level()), e.message()));
 		SimLog.bind(colony); // route this thread's log records (founding + run) to this colony
 
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		h.addCommonPrinters();
 
 		colony.run(steps > 0 ? steps : cfg.numStep());

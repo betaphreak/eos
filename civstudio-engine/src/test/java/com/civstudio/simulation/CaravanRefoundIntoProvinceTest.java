@@ -31,8 +31,7 @@ class CaravanRefoundIntoProvinceTest {
 				SimulationConfig.DEFAULT.toBuilder().durationYears(1).build();
 
 		SimulationHarness h0 = SimulationHarness.create(cfg, 24680, DHENIJANSAR);
-		h0.foundStandardColony(i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings(), i -> 15);
+		h0.foundStandardColony();
 		Settlement origin = h0.getColony();
 		assertNotNull(origin.getProvince(),
 				"the origin colony was founded into a province");

@@ -30,7 +30,7 @@ class CampBootViabilityTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.foundAtCamp(true).retinueSize(60).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, 4411);
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Settlement c = h.getColony();
 		c.start();
 

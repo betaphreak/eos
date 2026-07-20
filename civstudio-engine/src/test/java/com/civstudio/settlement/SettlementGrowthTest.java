@@ -21,7 +21,7 @@ class SettlementGrowthTest {
 	private static Settlement standardColony(int provinceId) {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321L, provinceId);
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Settlement c = h.getColony();
 		c.start();
 		return c;

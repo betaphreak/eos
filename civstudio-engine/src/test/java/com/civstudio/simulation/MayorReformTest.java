@@ -28,7 +28,7 @@ class MayorReformTest {
 	void aRulerUrbanizesIntoAMayorWithTheTreasuryConserved() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Settlement colony = h.getColony();
 		colony.start();
 		colony.run(60); // let the economy settle and the ruler build a treasury
@@ -67,7 +67,7 @@ class MayorReformTest {
 	void aMayorShrinksBackIntoARulerWithTheTreasuryConserved() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Settlement colony = h.getColony();
 		colony.start();
 		colony.run(60);

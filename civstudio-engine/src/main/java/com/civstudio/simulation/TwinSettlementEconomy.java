@@ -90,8 +90,7 @@ public class TwinSettlementEconomy {
 	 */
 	private static SimulationHarness build(SimulationConfig cfg, Settlement colony, String prefix) {
 		SimulationHarness h = new SimulationHarness(cfg, colony);
-		h.foundStandardColony(
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Bank copper = h.getCopperBank();
 		h.addCommonPrinters(prefix);
 		h.addBanksPrinter(prefix + "Banks");

@@ -28,8 +28,7 @@ class RulerTaxationTest {
 				.bankProfitTaxRate(bankRate).nobleIncomeTaxRate(nobleRate)
 				.durationYears(3).build();
 		SimulationHarness h = SimulationHarness.create(cfg, SEED);
-		h.foundStandardColony(i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		h.run();
 		return h;
 	}

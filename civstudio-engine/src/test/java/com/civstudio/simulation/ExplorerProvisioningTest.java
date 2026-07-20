@@ -21,7 +21,7 @@ class ExplorerProvisioningTest {
 	private static SimulationHarness colony(int province) {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder().durationYears(10).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, province);
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		return h;
 	}
 

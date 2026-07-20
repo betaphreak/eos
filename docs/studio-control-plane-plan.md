@@ -216,7 +216,24 @@ Rubyhold now founds a full-size **dwarven** colony and Eargate an **Anbennarian*
 repeating surnames; Dhenijansar still founds human, which is why every pre-existing scenario is
 unaffected.
 
-**Still to do:** a **mixed-race** run still shares one config. `SessionHost` founds every colony from
+**Per-colony economy — phases 1 & 2 SHIPPED.** `Settlement` carries the `(era, race)` cell for whoever
+founded it, and the founding path reads *that* rather than the run config: 48 reads moved from
+`cfg.X()` to `colony.getEconomy().X()`. `foundStandardColony()` now defaults its firm-savings and
+necessity-stock lambdas from the colony's own numbers — 43 call sites lost the boilerplate
+`i -> cfg.eFirm().savings()`, which only ever handed the harness back a value it already had, and
+which could not express a run seating several races because each lambda closes over one config.
+
+`Settlement#setEconomy` / `SimulationHarness#tuneEconomy` are the **option (a)** override seam: a
+scenario wanting numbers other than its race's says so out loud.
+
+> **Phase 2 carries a bridge that phase 3 removes.** `SimulationConfig` still holds the 15 economy
+> fields and ~20 call sites still override them there, so `SimulationHarness`'s constructor seeds the
+> colony's economy *from the config*. That keeps moving the reads behaviour-preserving — `econ()` is
+> exactly `cfg` — but it means **a multi-race session still shares one economy**. Deleting the fields
+> and converting the override sites to `tuneEconomy` is what actually fixes that, and it is phase 3.
+> The bridge is one line in the constructor, marked, and is the last thing making the run config win.
+
+**Still to do:** phase 3, and a **mixed-race** run still shares one config. `SessionHost` founds every colony from
 `DEFAULT`, and a Timeline could seat players of different races, so per-*colony* economy resolution
 remains open — `SimulationConfig` is per-run, and that is the next structural question, not something
 `defaultFor` answers.

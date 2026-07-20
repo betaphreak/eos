@@ -59,8 +59,7 @@ public class OpenColonyEconomy {
 		SimulationHarness h = SimulationHarness.create(cfg, 7654322, DHENIJANSAR);
 		// the same standard founding as HomogeneousEconomy; foundStandardColony wires the
 		// external inflow (here, pool immigration) since the config opens the colony
-		h.foundStandardColony(
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Bank bank = h.getCopperBank();
 		h.addCommonPrinters();
 		h.addBanksPrinter("Banks");

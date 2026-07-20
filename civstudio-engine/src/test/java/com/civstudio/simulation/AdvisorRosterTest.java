@@ -37,8 +37,7 @@ class AdvisorRosterTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(5).build();
 		SimulationHarness h = SimulationHarness.create(cfg, SEED);
-		h.foundStandardColony(i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		Settlement colony = h.getColony();
 		// run well into the colony's settled life, but short of its by-design collapse
 		colony.run(600);

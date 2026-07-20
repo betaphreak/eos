@@ -387,8 +387,7 @@ public final class SessionHost {
 		// SimulationHarness.create builds the GameSession, founds the colony into the
 		// province, and installs the (now per-session) log — see docs/client-server.md
 		SimulationHarness h = SimulationHarness.create(cfg, spec.seed(), spec.provinceId());
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(),
-				i -> 15);
+		h.foundStandardColony();
 		// a City colony musters winter foraging expeditions by default (docs/explorer-caravan.md),
 		// which it drives and the render feed draws on the map; a Village founds none.
 		Settlement colony = h.getColony();
@@ -491,7 +490,7 @@ public final class SessionHost {
 		else
 			com.civstudio.io.SimLog.bind(colony);
 		SimulationHarness h = new SimulationHarness(cfg, colony);
-		h.foundStandardColony(i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings(), i -> 15);
+		h.foundStandardColony();
 		colony.setAutoBuildDistricts(true);   // the district view, as the demo colony gets
 		return colony;
 	}
