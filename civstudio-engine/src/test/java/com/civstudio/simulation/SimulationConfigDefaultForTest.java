@@ -37,9 +37,9 @@ class SimulationConfigDefaultForTest {
 
 	@Test
 	void aScenariosOwnTweaksLayerOnTopOfTheColonysOwnEconomy() {
-		// the ElvenEconomy shape, at its post-phase-3 home: the economy belongs to the COLONY, so a
-		// scenario's deliberate overrides go through tuneEconomy rather than the run config. They must
-		// still WIN over the race base, and must not disturb the fields they don't name.
+		// the mono-racial-colony shape: the economy belongs to the COLONY, so a scenario's deliberate
+		// overrides go through tuneEconomy rather than the run config. They must still WIN over the
+		// race base, and must not disturb the fields they don't name.
 		SimulationConfig cfg = SimulationConfig.defaultFor(Race.ELVEN).toBuilder()
 				.settlementName("Aelvar")
 				.build();

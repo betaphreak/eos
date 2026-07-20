@@ -214,7 +214,7 @@ public class Settlement {
 
 	/**
 	 * Override this colony's economy — the explicit seam for a scenario that wants numbers other than
-	 * its race's ({@code ElvenEconomy} sizing its pool, {@code SmallOpenEconomy} opening its inflow).
+	 * its race's ({@code HarimariEconomy} sizing its pool, {@code SmallOpenEconomy} opening its inflow).
 	 * <p>
 	 * Explicit rather than inferred, deliberately. The alternative was letting a run-level config
 	 * carry economy fields and guessing which of them the caller "meant" — but a record cannot

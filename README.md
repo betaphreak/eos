@@ -169,7 +169,6 @@ mvn -pl civstudio-engine exec:exec -Dsim.main=com.civstudio.simulation.TwinSettl
 | `SmallOpenEconomy` | A bare colony (no ruler/pool) opened to money inflow + immigration; grows and stays stable. |
 | `TwinSettlementEconomy` | Two settlements founded into **one province**, run concurrently in lockstep, competing for its 74 plots. |
 | `HarimariEconomy` | A **mixed-race** colony founded by the harimari — race-varying names, calendar, mortality and tech. |
-| `ElvenEconomy` | A mono-racial elven colony — founding with one of the imported Anbennar races. |
 | `CampFoundingEconomy` | **Found-at-Camp**: a small band settles Dhenijansar as a foraging `CAMP`, climbs the `SettlementTier` ladder, boots its ruler economy at `SMALLHOLDING`, then departs as a band — the settle⇄unsettle cycle. |
 
 Each scenario is a `static run()` returning its `SimulationHarness`, plus a

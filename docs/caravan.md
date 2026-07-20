@@ -483,7 +483,7 @@ implemented). But most colonies are still **formed at compile time**: a fixed bo
 at scenario setup, not a band settling. Two concrete instances remain:
 
 1. **Every standard scenario** — `HomogeneousEconomy`, `TwinSettlementEconomy`,
-   `ElvenEconomy`, `HarimariEconomy`, `OpenColonyEconomy`, `SurvivalExperiment` (and
+   `HarimariEconomy`, `OpenColonyEconomy`, `SurvivalExperiment` (and
    the MCP `run_scenario`/`sweep` tools via `CalibrationRun`) — form their colony via
    `SimulationHarness.foundStandardColony(…)`,
    no band.
