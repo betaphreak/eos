@@ -22,10 +22,14 @@ import com.civstudio.race.Race;
  * the Anbennar clan surnames, humans from the human tables — ages on its race's life
  * table, and matures at its race's pace (the Harimari come of age younger).
  * <p>
- * The pool is sized modestly so the finite Harimari surname pool (278 names) is not
- * exhausted by promotions; otherwise this is a standard {@link
- * SimulationHarness#foundStandardColony founding sequence}, and like every pool colony
- * it collapses once the reserve drains.
+ * A standard {@link SimulationHarness#foundStandardColony founding sequence} at the
+ * standard pool scale — and like every pool colony it collapses once the reserve drains.
+ * <p>
+ * It used to found a deliberately small pool, because promoting a full one drew more
+ * distinct surnames than the imported Harimari list holds (278) and the colony died
+ * mid-founding on an exhausted dynasty pool. The pool now wraps instead of refusing, so
+ * the scenario founds at normal scale; four hundred medieval households not holding four
+ * hundred distinct surnames is the realistic outcome anyway.
  */
 public class HarimariEconomy {
 
@@ -38,11 +42,10 @@ public class HarimariEconomy {
 	 * @return the harness, exposing the constructed markets, banks and agents
 	 */
 	public static SimulationHarness run() {
-		// a modest pool: ~0.45 of 200 peasants are promoted to laborers, ~70% of them
-		// Harimari, so the Harimari living-household count stays well under the 278-name
-		// Harimari surname pool even as deaths churn it
 		// base on the race's own economy column, so an authored Harimari tuning reaches this
-		// scenario without touching it; the tweaks below still layer on top
+		// scenario without touching it. Nothing is tuned on top: the colony founds at the
+		// standard pool scale (900 peasants -> ~405 laborer households), which draws ~284
+		// Harimari surnames against a 278-name pool — fine since the dynasty pool wraps
 		SimulationConfig cfg = SimulationConfig.defaultFor(Race.HARIMARI).toBuilder()
 				.settlementName("Sehir")
 				.build();
@@ -52,7 +55,6 @@ public class HarimariEconomy {
 
 		SimulationHarness h =
 				SimulationHarness.create(cfg, SEED, Race.HARIMARI, mix);
-		h.tuneEconomy(e -> e.toBuilder().retinueSize(200).promotionRatio(0.45).build());
 		h.foundStandardColony();
 		Bank bank = h.getCopperBank();
 		h.addCommonPrinters();
