@@ -74,6 +74,73 @@ ticks. Exits non-zero on a mismatch and writes `district-abandoned.png`. Needs t
 a live session (`pwsh tools/dev-local.ps1`); the pure ranking behind it is unit-tested in
 `web/js/district-plots.test.mjs`.
 
+## Studio admin checks
+
+These drive the **Strapi admin** (`studio/`) rather than `web/`, through the same headless Edge.
+They log in via `login.mjs`, which uses the stable local-dev super-admin `studio/src/index.ts` seeds
+in development (`dev@local.dev` / `Devpass123!`, override with `STRAPI_ADMIN_EMAIL` /
+`STRAPI_ADMIN_PASSWORD`). Start studio first: `cd studio && npm run develop`.
+
+### `sessions-widget-verify.mjs` — the homepage "Live sessions" widget
+```bash
+node sessions-widget-verify.mjs [strapiBase]
+```
+Dumps the widget's rendered text and asserts the full session detail reaches the DOM (in-game date,
+tick, watching, scenario, seed, realm) rather than the bare id+tick row it showed while its type was
+stale. Writes `sessions-widget.png`.
+
+### `sessions-page-verify.mjs` — the Sessions admin page
+```bash
+node sessions-page-verify.mjs [strapiBase]
+```
+Asserts the menu link is registered, the list renders live rows, and clicking one routes to
+`/admin/civstudio-sessions/<id>`. Writes `sessions-page-list.png` / `sessions-page-detail.png`.
+
+### `sessions-panels-verify.mjs` — the five detail panels
+```bash
+node sessions-panels-verify.mjs [strapiBase]
+```
+Clicks each tab (Colony, Court, Bands, Events, Commands) and dumps what it renders, so a panel whose
+fetch fails shows up instead of passing quietly as an empty state. Writes one PNG per tab.
+
+**The Commands tab needs a local server** — see below. Against the deployed dev server it reports
+`405` (that endpoint postdates the deployment), and that is the correct, honest outcome.
+
+### `sessions-commands-verify.mjs` — the Commands panel's success path
+```bash
+node sessions-commands-verify.mjs [strapiBase] [gameServer]
+# e.g. node sessions-commands-verify.mjs http://localhost:1337 http://localhost:8080
+```
+The command log is the one **gated** session read, and it lives on an endpoint newer than the
+deployed server — so this script does two things at the network layer rather than reconfiguring the
+app: it rewrites game-server calls to the local server (fulfilling them itself, since Playwright
+cannot rewrite `https`→`http`), and injects the `X-CivStudio-User` dev identity to get past the gate.
+
+Run it against a **local server started with the dev identity trusted**:
+
+```bash
+# 1. the engine jar + parent pom must be in ~/.m2 (spring-boot:run resolves them from there)
+mvn -o -N install && mvn -o -pl civstudio-engine install -DskipTests
+
+# 2. the server. NOTE the world source: generated/ is no longer committed, so the default
+#    `classpath` mode dies on boot with "Terrain resource not found" — boot from the fixture.
+mvn -o -pl civstudio-server spring-boot:run -Dspring-boot.run.profiles=default \
+  -Dspring-boot.run.arguments="--civstudio.world-source.mode=fixture \
+    --civstudio.world-source.fixture=$PWD/civstudio-engine/src/test/resources/world-bundle.json.gz \
+    --civstudio.auth.trust-dev-user-header=true --civstudio.auth.admins=dev-admin"
+
+# (pwsh tools/dev-local.ps1 does the same and defaults to the fixture, but does not trust the
+#  dev identity header — add --civstudio.auth.* yourself for the gated read.)
+
+# 3. optional: give the log a row to render, then re-run the script
+curl -s -X POST -H "X-CivStudio-User: dev-admin" -H "Content-Type: application/json" \
+  -d '{"type":"setTaxRate","lever":"BANK_PROFIT","rate":0.25}' \
+  http://localhost:8080/api/sessions/caravan-demo-7654321/commands
+```
+
+It PASSes only on a real render — an error state or the sign-in gate fails, since seeing the success
+path is the whole point. Writes `sessions-panel-commands.png`.
+
 > The site's terrain zoom range-fetches `plots.pack`, which `file://` blocks — so
 > always verify through an HTTP server (either script's server, `npx serve web`,
 > or `swa start ./web`), never by opening `index.html` off disk.

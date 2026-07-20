@@ -53,6 +53,80 @@ export function StatePair({ session }: { session: SessionRow }) {
   );
 }
 
+/** A titled card — the unit every detail panel is built from. */
+export function Section({ title, action, children }:
+    { title: string; action?: ReactNode; children: ReactNode }) {
+  return (
+    <Box background="neutral0" hasRadius shadow="tableShadow" padding={5}>
+      <Flex direction="column" alignItems="stretch" gap={3}>
+        <Flex justifyContent="space-between" alignItems="center" gap={2}>
+          <Typography variant="delta" textColor="neutral800">
+            {title}
+          </Typography>
+          {action}
+        </Flex>
+        {children}
+      </Flex>
+    </Box>
+  );
+}
+
+/**
+ * One skill as a labelled bar. Skill levels are 0..20 (the RimWorld-style ladder), so the bar is
+ * scaled to 20 rather than to the row maximum — a colony whose best skill is 6 should *look* unskilled
+ * rather than have its 6 fill the width.
+ */
+export function SkillBar({ label, value, note }: { label: string; value: number; note?: ReactNode }) {
+  const pct = Math.max(0, Math.min(100, (value / 20) * 100));
+  return (
+    <Flex direction="column" alignItems="stretch" gap={1}>
+      <Flex justifyContent="space-between" alignItems="baseline" gap={2}>
+        <Typography variant="pi" textColor="neutral700" style={{ textTransform: 'capitalize' }}>
+          {label.replace(/_/g, ' ').toLowerCase()}
+        </Typography>
+        <Typography variant="pi" fontWeight="bold" textColor="neutral800">
+          {value.toFixed(1)}
+          {note ? ' ' : ''}
+          {note}
+        </Typography>
+      </Flex>
+      <Box background="neutral150" hasRadius style={{ height: 6, overflow: 'hidden' }}>
+        <Box background="primary600" style={{ height: '100%', width: `${pct}%` }} />
+      </Box>
+    </Flex>
+  );
+}
+
+/** An empty-state line for a panel with nothing to show. */
+export function Empty({ children }: { children: ReactNode }) {
+  return (
+    <Typography variant="omega" textColor="neutral600">
+      {children}
+    </Typography>
+  );
+}
+
+/**
+ * A panel whose fetch failed.
+ *
+ * This exists because the alternative is worse than an error: without it a failed request leaves
+ * `data` null and the panel renders its EMPTY state, so "the server said no" is indistinguishable
+ * from "there is nothing here" — a panel confidently reporting zero commands for a request that
+ * 405'd. Always prefer saying the read failed.
+ */
+export function LoadError({ message }: { message: string }) {
+  return (
+    <Flex direction="column" alignItems="flex-start" gap={1}>
+      <Typography variant="omega" textColor="danger600">
+        Could not read this from the game server.
+      </Typography>
+      <Typography variant="pi" textColor="neutral600">
+        {message}
+      </Typography>
+    </Flex>
+  );
+}
+
 /** The run's live figures + parameters, as a wrapping grid. */
 export function SessionFigures({ session }: { session: SessionRow }) {
   const s = session;

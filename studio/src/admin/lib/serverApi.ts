@@ -74,6 +74,190 @@ export interface SessionRow {
   endReason?: string;
 }
 
+// ---- session detail shapes (com.civstudio.server.render.*) ----
+// These mirror the Java render records field-for-field; see docs/studio-control-plane-plan.md §C1.
+
+/** A skill averaged across a group (ColonyDetail / CaravanDetail). `avg` is a 0..20 skill level. */
+export interface SkillAvg {
+  skill: string;
+  avg: number;
+}
+
+/** One household head in a colony's roster (ColonyDetail.Resident). */
+export interface Resident {
+  name: string;
+  role: string;
+  race: string;
+  age: number;
+  topSkill: string | null;
+  topSkillLevel: number;
+  ruler: boolean;
+  noble: boolean;
+}
+
+/** GET /api/sessions/{sid}/colony[?colony=] */
+export interface ColonyDetail {
+  name: string;
+  tier: string | null;
+  province: string | null;
+  rulerName: string | null;
+  population: number;
+  nobles: number;
+  poolSize: number;
+  skills: SkillAvg[];
+  members: Resident[];
+}
+
+/** One band member (CaravanDetail.Crew); the list is sorted by survival — the succession order. */
+export interface Crew {
+  name: string;
+  race: string;
+  age: number;
+  survival: number;
+  leader: boolean;
+}
+
+/** GET /api/sessions/{sid}/caravan/{id} */
+export interface CaravanDetail {
+  id: number;
+  leader: string;
+  unitName: string | null;
+  role: string | null;
+  bandSize: number;
+  larder: number;
+  hoard: number;
+  skills: SkillAvg[];
+  members: Crew[];
+}
+
+/** One of a person's 12 skills (PersonDetail.SkillView). */
+export interface SkillView {
+  skill: string;
+  level: number;
+  passion: 'none' | 'minor' | 'major' | string;
+}
+
+/** A person's household member (PersonDetail.MemberView). */
+export interface MemberView {
+  name: string;
+  relation: 'head' | 'spouse' | 'child' | string;
+  ageYears: number;
+  gender: string;
+  race: string;
+  alive: boolean;
+}
+
+/** GET /api/sessions/{sid}/person/{id}[?colony=] */
+export interface PersonDetail {
+  personId: number;
+  name: string;
+  race: string;
+  gender: string;
+  culture: string | null;
+  role: string;
+  ageYears: number;
+  skills: SkillView[];
+  household: MemberView[];
+}
+
+/** One event-log line (LogLine). `sev` drives the colour; `curated` marks the headline events. */
+export interface LogLine {
+  date: string;
+  text: string;
+  curated: boolean;
+  sev: 'info' | 'warn' | 'error' | string;
+  rank: string | null;
+  rankLevel: number;
+}
+
+/** One applied command (CommandView); lever/rate null for a type with no codec. */
+export interface CommandView {
+  tick: number;
+  type: string;
+  lever: string | null;
+  rate: number | null;
+}
+
+/** GET /api/sessions/{sid}/commands — the applied replay log plus the in-flight count. */
+export interface CommandLogView {
+  history: CommandView[];
+  pending: number;
+}
+
+/** A seated advisor (AdvisorView); unfilled roles are simply absent from the list. */
+export interface AdvisorView {
+  role: string;
+  personId: number;
+  name: string;
+  race: string;
+  gender: string;
+  culture: string | null;
+}
+
+/** A wandering band or colony excursion as it appears in the snapshot (CaravanView). */
+export interface CaravanView {
+  id: number;
+  label: string;
+  leader: string;
+  province: string;
+  provinceId: number;
+  onGraph: boolean;
+  settled: boolean;
+  bandSize: number;
+  larder: number;
+  hoard: number;
+  role: string;
+  unitName: string | null;
+  signatureSkill: string | null;
+  leaderSkill: number;
+}
+
+/** A colony's live vitals in the snapshot (ColonyView) — the subset the admin page reads. */
+export interface ColonyView {
+  name: string;
+  alive: boolean;
+  population: number;
+  children: number;
+  nobles: number;
+  firms: number;
+  poolSize: number;
+  cpi: number;
+  necessityPrice: number;
+  enjoymentPrice: number;
+  plotCount: number;
+  maxPlots: number;
+  bankProfitTax: number;
+  nobleIncomeTax: number;
+  advisors: AdvisorView[];
+  knownTechs: string[];
+  tier: string | null;
+  provinceId: number;
+  researchingTech: string | null;
+  researchProgress: number;
+  culture: string | null;
+}
+
+/**
+ * GET /api/sessions/{sid}/snapshot — the render frame.
+ *
+ * NOTE `log` is a DELTA (a drain-once buffer), not history: a STOPPED run's cached frame hands you
+ * the same lines forever. Use GET /events for anything historical. Answers **204** before the first
+ * frame, which serverFetch turns into `{}` — so every field must be treated as possibly absent.
+ */
+export interface SessionSnapshot {
+  sessionId?: string;
+  seed?: number;
+  scenario?: string;
+  clockState?: string;
+  outcome?: string;
+  endReason?: string | null;
+  tick?: number;
+  date?: string;
+  colonies?: ColonyView[];
+  caravans?: CaravanView[];
+  log?: LogLine[];
+}
+
 export function formatDuration(ms: number): string {
   const s = Math.floor(ms / 1000);
   const h = Math.floor(s / 3600);

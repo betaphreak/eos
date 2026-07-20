@@ -9,6 +9,10 @@
       * Maven runs offline (-o), so all dependencies come from ~/.m2.
       * The engine resolves its Anbennar/Civ4 mod sources from the local caches
         (the .anbennar-cache / .civ4-cache junctions), so founding the demo needs no network.
+      * World data comes from the committed world-bundle FIXTURE by default. This is required, not
+        optional: `generated/` is no longer committed (studio is the content authority), so the
+        default `classpath` world source has no /terrains.json and the server dies on boot with
+        "Terrain resource not found". Use -WorldSource strapi to run against a live CMS instead.
 
     `mvn spring-boot:run` activates the `dev` Spring profile (wired in civstudio-server/pom.xml),
     so DevFrontendLauncher starts web/dev-server.mjs and opens http://localhost:<WebPort>/?live=...
@@ -31,6 +35,16 @@ param(
     # Path + query appended to http://localhost:<WebPort> in the logged URL. Placeholders:
     # {live} -> http://localhost:<ServerPort>, {server} -> port, {webPort} -> port. Blank = default.
     [string] $OpenPath        = '',
+    # Where invariant world data comes from (civstudio.world-source.mode). 'fixture' is the default
+    # because it is the only source that works offline with no committed generated/ resources.
+    [ValidateSet('fixture', 'strapi', 'classpath')]
+    [string] $WorldSource     = 'fixture',
+    # fixture mode: the world-bundle snapshot to boot from. Defaults to the committed test fixture —
+    # the same one `mvn test` uses, and the only committed copy in the repo.
+    [string] $WorldBundle     = 'civstudio-engine/src/test/resources/world-bundle.json.gz',
+    # strapi mode: the CMS bundle endpoint + its shared secret (WORLD_BUNDLE_TOKEN).
+    [string] $WorldSourceUrl  = 'http://localhost:1337/api/world-bundle',
+    [string] $WorldSourceToken = '',
     [switch] $SkipEngineBuild,
     [switch] $Online
 )
@@ -70,9 +84,33 @@ Write-Host "==> Starting the server (offline=$(-not $Online)); the browser opens
 # as `--key=value` argv, which Spring binds into the Environment at the highest precedence.
 $appArgs = @(
     "--server.port=$ServerPort",
-    "--civstudio.dev.frontend.web-port=$WebPort"
+    "--civstudio.dev.frontend.web-port=$WebPort",
+    "--civstudio.world-source.mode=$WorldSource"
 )
 if ($OpenPath)  { $appArgs += "--civstudio.dev.frontend.open-path=$OpenPath" }
+
+# The world source is installed by WorldSourceInitializer before any bean loads, so a bad value here
+# is a boot failure, not a degraded run — fail early with the fix rather than a Spring stack trace.
+switch ($WorldSource) {
+    'fixture' {
+        $bundlePath = Join-Path $repoRoot $WorldBundle
+        if (-not (Test-Path $bundlePath)) {
+            throw "World bundle fixture not found: $bundlePath`n" +
+                  "Regenerate it with: node tools/make-world-bundle.mjs"
+        }
+        # forward slashes: the value rides a space-joined argument string into the forked JVM
+        $appArgs += "--civstudio.world-source.fixture=$($bundlePath -replace '\\', '/')"
+    }
+    'strapi' {
+        $appArgs += "--civstudio.world-source.url=$WorldSourceUrl"
+        if ($WorldSourceToken) { $appArgs += "--civstudio.world-source.token=$WorldSourceToken" }
+        Write-Host "==> World data from Strapi at $WorldSourceUrl (it must be running)" -ForegroundColor Cyan
+    }
+    'classpath' {
+        Write-Warning ("classpath world source: generated/ is no longer committed, so this boots " +
+            "only if you have restored those resources yourself. Expect 'Terrain resource not found'.")
+    }
+}
 $runArgs = @(
     '-pl', 'civstudio-server', 'spring-boot:run',
     "-Dspring-boot.run.arguments=$($appArgs -join ' ')"

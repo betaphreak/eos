@@ -284,17 +284,38 @@ session visible to you" without disclosing which of the two it is.
 Verified locally by `tools/webverify/sessions-page-verify.mjs` (menu link present, list renders live
 rows, clicking one routes to `/admin/civstudio-sessions/<id>`, no page errors).
 
-### C3 — Panels
+### C3 — Panels — **SHIPPED 2026-07-20**
 
-Reuse the `serverApi.ts` client and `useServerPoll`. Panels: **Overview** (the lobby row + `ColonyView`
-vitals), **Colony** (`ColonyDetail` — skills + resident roster, ruler first), **Caravans**
-(`CaravanView` list → `CaravanDetail`), **Court** (`AdvisorView` + `PersonDetail` on click),
-**Events** (`/events` with its `level`/`grep`/date filters — a real log viewer), **Commands** (C1).
+Five tabs under the Overview card, all on `serverApi.ts` + `useServerPoll`: **Colony** (`/colony` —
+vitals, colony-average skill profile, household roster), **Court** (`AdvisorView` from the snapshot →
+`/person/{id}` character sheet with passions + household), **Bands** (`CaravanView` from the snapshot
+→ `/caravan/{id}` crew in survival/succession order), **Events** (`/events` with the server's own
+`level`/`grep` filters), **Commands** (the §C1 route).
+
+The **colony dropdown** appears only when a run has more than one colony — a single-colony run gets
+no dead control. It drives both colony-scoped panels, and `?colony=` is sent only when the choice is
+*not* the run's first colony, so the single-colony case stays on the server's own default resolution
+(which also works before the first snapshot frame arrives, when no colony name is known yet).
+
+Caravans and advisors are read from the **snapshot**, because that is the only place either is
+enumerated — there is no `/caravans` route, and advisors live on `ColonyView`.
+
+**Testing** is documented in [`tools/webverify/README.md`](../tools/webverify/README.md) §Studio admin
+checks: `sessions-page-verify.mjs`, `sessions-panels-verify.mjs`, and `sessions-commands-verify.mjs`
+(which needs a local server, since the command log is gated *and* newer than the deployed build; the
+README carries the exact `spring-boot:run` invocation, including the **fixture** world source that
+`generated/`'s removal made mandatory).
 
 > **Trap — never render history from `snapshot.log`.** It is the drain-once delta; a STOPPED session's
 > cached frame will hand you the same one or two lines on every poll, forever. Use `/events` for
 > history. If you also render the live stream, replicate the monotonic-tick gate from
 > `web/js/snapshot-dedupe.mjs` — the server-side replay was never fixed.
+
+> **Trap — a failed read must never render as an empty state.** `useServerPoll` exposes `error`, and
+> the first cut of these panels ignored it: against a server predating the `/commands` route the
+> Commands panel confidently reported *"Applied 0 · No commands have been applied to this run"* for a
+> request that had **405**'d. "There is nothing here" is a claim about the run; never make it on a read
+> that did not happen. Every panel now returns `<LoadError>` when `error && !data`.
 
 ---
 
