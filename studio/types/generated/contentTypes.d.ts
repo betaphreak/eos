@@ -523,6 +523,40 @@ export interface ApiAreaArea extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiBalanceProfileBalanceProfile
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'balance_profiles';
+  info: {
+    description: "A named bundle of agent-behaviour tuning the engine founds a colony on (BalanceProfile: firm/bank/noble/retinue/laborer/wedding/granary/childrenFirm/strategicFirm/science/builderFirm configs). Served to the engine as /balance/profiles.json keyed by `key`; 'default' is always present. LOAD-BEARING \u2014 editing configs changes simulation behaviour, so a run is reproducible only as seed + contentVersion + command log. NOT the economy (that is the era x race matrix).";
+    displayName: 'Balance Profile';
+    pluralName: 'balance-profiles';
+    singularName: 'balance-profile';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    configs: Schema.Attribute.JSON & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    key: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    label: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::balance-profile.balance-profile'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiBonusBonus extends Struct.CollectionTypeSchema {
   collectionName: 'bonuses';
   info: {
@@ -3094,6 +3128,7 @@ declare module '@strapi/strapi' {
       'admin::user': AdminUser;
       'api::adjacency.adjacency': ApiAdjacencyAdjacency;
       'api::area.area': ApiAreaArea;
+      'api::balance-profile.balance-profile': ApiBalanceProfileBalanceProfile;
       'api::bonus.bonus': ApiBonusBonus;
       'api::building.building': ApiBuildingBuilding;
       'api::combat-class.combat-class': ApiCombatClassCombatClass;

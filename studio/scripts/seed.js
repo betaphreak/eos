@@ -401,6 +401,12 @@ async function main() {
   await setSingle(app, uid('map-version'), loadMapVersion());
   await setSingleIfSourced(app, uid('economy-matrix'), loadEconomies());
 
+  // ── balance profiles (a collection, one row per profile; gitignored source, so skip if absent) ──
+  const profiles = loadBalanceProfiles();
+  if (profiles) await upsertPlain(app, uid('balance-profile'), 'key', profiles, (r) => ({ label: r.label, configs: r.configs }));
+  else console.log('[C] balance-profile   SKIPPED — no source file'
+    + ' (run: mvn -pl civstudio-engine exec:exec -Dsim.main=com.civstudio.balance.export.BalanceProfileExporter)');
+
   console.log(`[seed] done. unresolved relation targets: ${misses}; row errors: ${errors.count || 0}`);
   if (errors.length) console.log('  sample errors:\n   ' + errors.join('\n   '));
   await app.destroy();
@@ -457,6 +463,13 @@ function loadEconomies() {
   const f = join(GEN, 'balance', 'economies.json');
   if (!existsSync(f)) return null;
   return { economies: readJson(f) };
+}
+function loadBalanceProfiles() {
+  // /balance/profiles.json is a map { key -> BalanceProfile }; flatten to one row per profile
+  const f = join(GEN, 'balance', 'profiles.json');
+  if (!existsSync(f)) return null;
+  const map = readJson(f);
+  return Object.entries(map).map(([key, configs]) => ({ key, label: key, configs }));
 }
 function loadFeasts() {
   const out = [];

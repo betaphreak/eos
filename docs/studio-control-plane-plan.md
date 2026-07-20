@@ -354,23 +354,32 @@ With ordering stable a regen is finally meaningful, so **the committed fixture w
 carries `/balance/economies.json`, so the offline suite exercises the content path rather than the
 absent-resource fallback. Suite green against it (431+126). Future fixture diffs are real signal.
 
-### A2 — Serialise/deserialise round-trip
+### A2 / A3 — round-trip + load through `WorldSource` — **SHIPPED, 2026-07-20**
 
-Jackson 3 handles records with no annotations. Add `BalanceProfileCodec` + a round-trip test asserting
-`read(write(DEFAULT)).equals(DEFAULT)`. Emit the canonical JSON to a new resource path
-**`/balance/profiles.json`** (a map of `profileKey → BalanceProfile`, with `"default"` present).
+`balance.BalanceProfiles` mirrors `EconomyCatalog` exactly: reads `/balance/profiles.json` (a map
+`profileKey → BalanceProfile`) through the `WorldSource` seam, `"default"` always resolvable and
+equal to `BalanceProfile.DEFAULT`, `get(key)` returning the defaults for any unknown key. Plain
+Jackson over the annotation-free config records — no `BalanceProfileCodec` was needed, and
+`BalanceProfilesTest` asserts `read(write(DEFAULT)).equals(DEFAULT)` (A2's ship criterion; all eleven
+configs round-trip, including the `RationSize`/`CurrencyType` enums). Same **load-bearing** failure
+contract as the economy matrix: absent → default-only (behaviour-neutral); malformed → throws at
+load. `balance.export.BalanceProfileExporter` writes the compiled `{"default": DEFAULT}` seed file
+(gitignored, flattened onto the classpath root).
 
-### A3 — Load through `WorldSource`
+> **Loaded, not yet consumed at founding.** `BalanceProfiles.get()` is available but nothing calls
+> `setBalanceProfile(BalanceProfiles.get().get(key))` yet — that wiring arrives with A5 (an MCP
+> `profileKey`) and B (scenario definitions naming a profile). A3 is the loader; consumption is
+> downstream.
 
-`BalanceProfiles.current()` reads `/balance/profiles.json` via `WorldSources.current().open(...)`,
-falling back to `BalanceProfile.DEFAULT` when absent (the `null`-return contract). Follow the
-`UnitCatalog.load()` shape exactly (`.../agent/UnitCatalog.java:59`).
+### A4 — Strapi content type + bundle key — **SHIPPED, 2026-07-20**
 
-### A4 — Strapi content type + bundle key
-
-New collection type `balance-profile` (key, label, and the config groups as components or JSON fields;
-**not** i18n — these are numbers). Extend `world-bundle.ts` to emit `resources['/balance/profiles.json']`,
-and `seed.js` to ingest it. Regenerate the test fixture with `tools/make-world-bundle.mjs`.
+`balance-profile` is a **collection** (one row per named profile: `key`, `label`, `configs` JSON),
+unlike the economy singleType — profiles are naturally many. `seed.js` flattens the exporter's
+`{key → profile}` map to rows and upserts them; `world-bundle.ts` folds the rows back to a map under
+`resources['/balance/profiles.json']`, sorted by `key` and **omitted when no rows exist** (the same
+absent ≠ empty contract as economies). Verified end to end against a live seeded Postgres: studio →
+`GET /api/world-bundle` → `FixtureWorldSource` → `BalanceProfiles`. The committed fixture was
+regenerated and now carries both `/balance/*.json` keys; suite green against it (440+126).
 
 ### A5 — Retire the MCP whitelist
 

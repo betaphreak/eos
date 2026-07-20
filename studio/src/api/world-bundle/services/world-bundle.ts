@@ -99,7 +99,7 @@ export default {
       countries, cultures, religions, tradegoods, areas, regions, superregions, provinces,
       adjacencies, edges, portals, terrains, features, bonusesAll, improvements, routes,
       techs, unitCombats, units, buildings, recipes, housing, resourceSources, routeModels,
-      terrainArt, feastsHuman, feastsHarimari, humanNames, regionEarthMap, economies,
+      terrainArt, feastsHuman, feastsHarimari, humanNames, regionEarthMap, economies, balanceProfiles,
     ] = await Promise.all([
       this.countries(), this.cultures(), this.religions(), this.tradegoods(), this.areas(),
       this.regions(), this.superregions(), this.provinces(), this.adjacencies(), this.edges(),
@@ -107,7 +107,7 @@ export default {
       this.routes(), this.techs(), this.unitCombats(), this.units(), this.buildings(),
       this.recipes(), this.housing(), this.resourceSources(), this.routeModels(), this.terrainArt(),
       this.feasts('human'), this.feasts('harimari'), this.namePools('human'), this.regionEarthMap(),
-      this.economies(),
+      this.economies(), this.balanceProfiles(),
     ]);
 
     // bonus is one collection; committed splits it into base bonuses.json vs manufactured-bonuses.json.
@@ -122,8 +122,9 @@ export default {
     const unitUnlocks = invertPrereq(units, 'id', (t, id) => ({ kind: 'UNLOCK', target: id }));
 
     return {
-      // omitted entirely when unauthored — see economies() on why absent != empty
+      // omitted entirely when unauthored — see economies()/balanceProfiles() on why absent != empty
       ...(economies ? { '/balance/economies.json': economies } : {}),
+      ...(balanceProfiles ? { '/balance/profiles.json': balanceProfiles } : {}),
       '/map/countries.json': countries,
       '/map/cultures.json': cultures,
       '/map/religions.json': religions,
@@ -288,6 +289,16 @@ export default {
     const row: any = await strapi.documents(uid('economy-matrix')).findFirst({});
     const m = row?.economies;
     return m && Object.keys(m).length > 0 ? m : null;
+  },
+  // The named balance profiles (engine: BalanceProfiles) — one row per profile, folded into a
+  // key -> configs map. Same absent != empty contract as economies(): null when no rows exist, so
+  // the key is omitted and the engine keeps its compiled defaults; a malformed profile throws there.
+  async balanceProfiles() {
+    const rows = await all(uid('balance-profile'), { sort: ['key:asc'], fields: ['key', 'configs'] });
+    if (!rows.length) return null;
+    const out: Record<string, any> = {};
+    for (const r of rows) out[r.key] = r.configs;
+    return out;
   },
 };
 

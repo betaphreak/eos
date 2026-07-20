@@ -1,0 +1,28 @@
+{
+  "kind": "collectionType",
+  "collectionName": "balance_profiles",
+  "info": {
+    "singularName": "balance-profile",
+    "pluralName": "balance-profiles",
+    "displayName": "Balance Profile",
+    "description": "A named bundle of agent-behaviour tuning the engine founds a colony on (BalanceProfile: firm/bank/noble/retinue/laborer/wedding/granary/childrenFirm/strategicFirm/science/builderFirm configs). Served to the engine as /balance/profiles.json keyed by `key`; 'default' is always present. LOAD-BEARING — editing configs changes simulation behaviour, so a run is reproducible only as seed + contentVersion + command log. NOT the economy (that is the era x race matrix)."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "label": {
+      "type": "string"
+    },
+    "configs": {
+      "type": "json",
+      "required": true
+    }
+  }
+}
