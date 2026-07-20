@@ -46,6 +46,7 @@ import com.civstudio.market.Market;
 import com.civstudio.mortality.Demography;
 import com.civstudio.name.Gender;
 import com.civstudio.name.NameRegistry;
+import com.civstudio.era.Era;
 import com.civstudio.race.Race;
 import com.civstudio.tech.Sector;
 import com.civstudio.tech.TechEffect;
@@ -196,6 +197,39 @@ public class Settlement {
 	// systems key off.
 	@Getter
 	private final Race foundingRace;
+
+	/**
+	 * The economic tuning this colony was founded on — the {@code (era, race)} cell for its
+	 * {@link #getFoundingRace() founding race} (see {@link Era#economy(Race)}).
+	 * <p>
+	 * <b>Per colony, not per run.</b> A session can seat colonies of different races — a Timeline
+	 * picks a different province per seat, and a province's culture decides who lives there — so the
+	 * numbers a colony runs on belong to the colony. Reading them off a run-level
+	 * {@code SimulationConfig} gave every seat the human economy regardless of who founded it.
+	 * <p>
+	 * Null only for a colony founded in an uncalibrated era, which nothing does today.
+	 */
+	@Getter
+	private Era.Economy economy;
+
+	/**
+	 * Override this colony's economy — the explicit seam for a scenario that wants numbers other than
+	 * its race's ({@code ElvenEconomy} sizing its pool, {@code SmallOpenEconomy} opening its inflow).
+	 * <p>
+	 * Explicit rather than inferred, deliberately. The alternative was letting a run-level config
+	 * carry economy fields and guessing which of them the caller "meant" — but a record cannot
+	 * distinguish a value you set from one you inherited, so the guess is either wrong for
+	 * multi-race runs or silently ignores your override. One value, one home, set out loud.
+	 * <p>
+	 * Must be called <b>before founding</b>: the founding path reads these numbers to size the pool,
+	 * the firms and the aristocracy, and changing them afterwards would leave a colony built to one
+	 * set of numbers running on another.
+	 *
+	 * @param economy the tuning to use instead of the race's, never {@code null}
+	 */
+	public void setEconomy(Era.Economy economy) {
+		this.economy = java.util.Objects.requireNonNull(economy, "economy");
+	}
 
 	// the race-mix weights every *generated* person is rolled against (pool seeding,
 	// founding draws, immigration), on the demographic RNG (see Demography.sampleRace).
@@ -473,7 +507,9 @@ public class Settlement {
 		this(name, startDate, rng, names, demography, terrainRegistry, terrainRng,
 				liturgicalCalendar, meanInitAgeYears, targetNStock, meanSkillMale,
 				meanSkillFemale, latitude, longitude, Race.HUMAN,
-				Map.of(Race.HUMAN, 1.0), null);
+				// the bare convenience ctor (tests, coordinate-only colonies): the canonical
+				// Medieval human cell, matching the human race it already hardcodes
+				Map.of(Race.HUMAN, 1.0), null, Era.MEDIEVAL.economy(Race.HUMAN));
 	}
 
 	/**
@@ -517,12 +553,30 @@ public class Settlement {
 	 * @param raceMix
 	 *            race &rarr; weight every generated person is rolled against
 	 */
+	/**
+	 * As the full constructor, resolving the colony's {@linkplain #getEconomy() economy} from its
+	 * founding race in the Medieval era — the era every colony founds in today. Kept so callers that
+	 * do not care about the economy (tests, direct constructions) need not name one.
+	 */
 	public Settlement(String name, LocalDate startDate, Rng rng,
 			NameRegistry names, Demography demography, TerrainRegistry terrainRegistry,
 			Rng terrainRng, LiturgicalCalendar liturgicalCalendar,
 			double meanInitAgeYears, double targetNStock, double meanSkillMale,
 			double meanSkillFemale, double latitude, double longitude,
 			Race foundingRace, Map<Race, Double> raceMix, Province province) {
+		this(name, startDate, rng, names, demography, terrainRegistry, terrainRng,
+				liturgicalCalendar, meanInitAgeYears, targetNStock, meanSkillMale,
+				meanSkillFemale, latitude, longitude, foundingRace, raceMix, province,
+				Era.MEDIEVAL.economy(foundingRace));
+	}
+
+	public Settlement(String name, LocalDate startDate, Rng rng,
+			NameRegistry names, Demography demography, TerrainRegistry terrainRegistry,
+			Rng terrainRng, LiturgicalCalendar liturgicalCalendar,
+			double meanInitAgeYears, double targetNStock, double meanSkillMale,
+			double meanSkillFemale, double latitude, double longitude,
+			Race foundingRace, Map<Race, Double> raceMix, Province province,
+			Era.Economy economy) {
 		this.name = name;
 		this.startDate = startDate;
 		this.rng = rng;
@@ -530,6 +584,7 @@ public class Settlement {
 		this.demography = demography;
 		this.foundingRace = foundingRace;
 		this.raceMix = raceMix;
+		this.economy = economy;
 		this.liturgicalCalendar = liturgicalCalendar;
 		this.meanInitAgeYears = meanInitAgeYears;
 		this.targetNStock = targetNStock;

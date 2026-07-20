@@ -654,7 +654,11 @@ public class GameSession {
 				colonyDemography, terrainRegistry, terrainRng,
 				getLiturgicalCalendar(foundingRace), meanInitAgeYears, targetNStock,
 				meanSkillMale, meanSkillFemale, latitude, longitude, foundingRace,
-				raceMix, province);
+				raceMix, province,
+				// the colony's own economy: the (era, race) cell for whoever founded it. Resolved
+				// here because a Settlement outlives any harness and a session may seat several
+				// races — see Settlement#getEconomy().
+				era.economy(foundingRace));
 		// the colony knows its session, so on dissolution it can register the band it
 		// departs as (colony-less bands live at the session level — see docs/caravan.md)
 		colony.setSession(this);
