@@ -110,6 +110,28 @@ public class SessionAuthz {
 	}
 
 	/**
+	 * May this request <b>read</b> the session's command log? The one read that is gated.
+	 * <p>
+	 * Spectating is never gated and every other session read is public — but the command log is the
+	 * record of what a player <em>did</em>, tick by tick, which is theirs and not a spectator's. So it
+	 * mirrors the gate on <em>writing</em> a command with no colony named ({@link
+	 * #denyColonyCommand}): the run's owner, or an admin. An unowned run (the demo) has nothing to
+	 * protect, so any signed-in user may read it, exactly as any signed-in user may command it.
+	 *
+	 * @param hs   the session
+	 * @param http the request
+	 * @return {@code null} if allowed, else the error response
+	 */
+	public ResponseEntity<Object> denyCommandLog(HostedSession hs, HttpServletRequest http) {
+		String user = currentUser.userId(http);
+		if (user == null)
+			return unauthenticated("sign in to read the command log");
+		if (!ownsRun(hs, user, http))
+			return forbidden("not the owner of session " + hs.id());
+		return null;
+	}
+
+	/**
 	 * May this request take a seat in this session? A seat belongs to a player, so it needs a
 	 * signed-in one; whether the session is joinable at all is the host's call, not the policy's.
 	 *

@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
 import com.civstudio.agent.Household;
 import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
-import com.civstudio.server.command.GameCommand;
-import com.civstudio.server.command.SetTaxRateCommand;
+import com.civstudio.server.render.CommandProjections;
+import com.civstudio.server.render.CommandView;
 import com.civstudio.server.render.LogLine;
 import com.civstudio.server.render.PersonDetail;
 import com.civstudio.server.render.PersonProjections;
@@ -97,11 +97,9 @@ public class SessionMcpTools {
 	@McpTool(name = "get_command_log",
 			description = "The session's ordered, tick-stamped command history — the applied replay "
 					+ "log (its savegame). Read-only; empty during pure spectator play.")
-	public List<CommandInfo> getCommandLog(
+	public List<CommandView> getCommandLog(
 			@McpToolParam(description = "Session id", required = true) String sessionId) {
-		return require(sessionId).commandLog().history().stream()
-				.map(SessionMcpTools::project)
-				.toList();
+		return CommandProjections.of(require(sessionId).commandLog()).history();
 	}
 
 	@McpTool(name = "get_map_version",
@@ -121,19 +119,9 @@ public class SessionMcpTools {
 		return hs;
 	}
 
-	/** Project a persisted command to a typed row. Mirrors {@code CommandCodec}'s one known type. */
-	static CommandInfo project(GameCommand c) {
-		if (c instanceof SetTaxRateCommand s)
-			return new CommandInfo(s.tick(), "setTaxRate", s.lever().name(), s.rate());
-		return new CommandInfo(c.tick(), c.getClass().getSimpleName(), null, null);
-	}
-
 	/** One row of {@link #listSessions()}. */
 	public record SessionInfo(String id, String scenario, long seed, String kind, String clockState,
 			String outcome, long tick) {}
-
-	/** One applied command in {@link #getCommandLog}; {@code lever}/{@code rate} null for other types. */
-	public record CommandInfo(long tick, String type, String lever, Double rate) {}
 
 	/** The map (plot-generation) version returned by {@link #getMapVersion()}. */
 	public record MapVersion(int mapVersion) {}

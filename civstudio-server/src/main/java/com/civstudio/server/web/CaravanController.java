@@ -35,7 +35,10 @@ public class CaravanController {
 
 	@GetMapping("/api/sessions/{sid}/caravan/{id}")
 	public ResponseEntity<CaravanDetail> caravan(@PathVariable String sid, @PathVariable long id) {
-		HostedSession hs = host.get(sid);
+		// getOrRestore, like the other detail reads: a run that is recorded but not loaded in this
+		// process should answer, not 404 half the page open. (RouteController deliberately keeps
+		// `get` — it is polled per viewport province, where paying a restore would be wrong.)
+		HostedSession hs = host.getOrRestore(sid);
 		if (hs == null)
 			return ResponseEntity.notFound().build();
 		Caravan band = findBand(hs, id);

@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.command.SetTaxRateCommand;
 import com.civstudio.server.command.SetTaxRateCommand.Lever;
+import com.civstudio.server.render.CommandProjections;
+import com.civstudio.server.render.CommandView;
 
 /**
  * Unit coverage for the read-only MCP tool projections — Spring-free (no context, no world import),
@@ -43,8 +45,9 @@ class SessionMcpToolsTest {
 
 	@Test
 	void projectsTheKnownCommandType() {
-		SessionMcpTools.CommandInfo row =
-				SessionMcpTools.project(new SetTaxRateCommand(42L, Lever.BANK_PROFIT, 0.25));
+		// the projection now lives in render/CommandProjections so the MCP tool and the HTTP route
+		// (GET /api/sessions/{id}/commands) cannot disagree about what a command looks like
+		CommandView row = CommandProjections.of(new SetTaxRateCommand(42L, Lever.BANK_PROFIT, 0.25));
 		assertEquals(42L, row.tick());
 		assertEquals("setTaxRate", row.type());
 		assertEquals("BANK_PROFIT", row.lever());
@@ -54,7 +57,7 @@ class SessionMcpToolsTest {
 	@Test
 	void projectsAnUnknownCommandWithoutLeverOrRate() {
 		// a future GameCommand with no codec still projects to {tick, type}, never crashing the log
-		SessionMcpTools.CommandInfo row = SessionMcpTools.project(new com.civstudio.server.command.GameCommand() {
+		CommandView row = CommandProjections.of(new com.civstudio.server.command.GameCommand() {
 			@Override public long tick() { return 7L; }
 			@Override public void apply(com.civstudio.server.HostedSession session) { }
 		});
