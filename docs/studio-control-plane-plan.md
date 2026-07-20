@@ -174,9 +174,22 @@ cleaner split than the original plan: two authored matrices, one tuning profile.
 column until its own is authored, and `SimulationConfig` now says `Era.MEDIEVAL.economy(Race.HUMAN)`
 so the human assumption is explicit rather than implicit. Behaviour-neutral (`EraEconomyTest`).
 
-**Still to do:** resolve the economy **at founding** from the colony's founding race rather than
-baking one static cell into `SimulationConfig.DEFAULT` — a static constant cannot vary by race, so
-this is the real work, and it is a prerequisite for authoring any non-human column.
+**Also shipped:** `SimulationConfig.defaultFor(Era, Race)` — the base a scenario builds on, with
+`DEFAULT` now defined as `defaultFor(MEDIEVAL, HUMAN)`. `ElvenEconomy`/`HarimariEconomy` start from
+their own race's cell, so an authored column will reach them untouched.
+
+A **factory**, deliberately, not resolution applied inside `SimulationHarness.create`: the economy has
+to be the *floor* that a scenario's `toBuilder()` tweaks sit on top of. Resolving the race economy
+after the caller had already customised would silently overwrite deliberate overrides — and several
+scenarios do override economy-derived fields (`ElvenEconomy` sets `retinueSize`/`promotionRatio`,
+`SmallOpenEconomy` sets `externalInflowPerStep`/`immigrationThreshold`). A record cannot distinguish
+"explicitly set" from "inherited", so the only honest fix is to let the caller pick its base first.
+An uncalibrated era is refused outright rather than founding a colony on null tuning.
+
+**Still to do:** a **mixed-race** run still shares one config. `SessionHost` founds every colony from
+`DEFAULT`, and a Timeline could seat players of different races, so per-*colony* economy resolution
+remains open — `SimulationConfig` is per-run, and that is the next structural question, not something
+`defaultFor` answers.
 
 ### A2 — Serialise/deserialise round-trip
 

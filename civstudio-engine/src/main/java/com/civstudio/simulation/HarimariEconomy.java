@@ -41,7 +41,9 @@ public class HarimariEconomy {
 		// a modest pool: ~0.45 of 200 peasants are promoted to laborers, ~70% of them
 		// Harimari, so the Harimari living-household count stays well under the 278-name
 		// Harimari surname pool even as deaths churn it
-		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+		// base on the race's own economy column, so an authored Harimari tuning reaches this
+		// scenario without touching it; the tweaks below still layer on top
+		SimulationConfig cfg = SimulationConfig.defaultFor(Race.HARIMARI).toBuilder()
 				.settlementName("Sehir")
 				.retinueSize(200)
 				.promotionRatio(0.45)

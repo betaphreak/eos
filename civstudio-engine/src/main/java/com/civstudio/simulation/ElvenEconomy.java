@@ -39,7 +39,9 @@ public class ElvenEconomy {
 	public static SimulationHarness run() {
 		// a modest pool: ~0.45 of 200 peasants are promoted to laborers, all elven,
 		// so the living-household count stays well under the 228-name elven surname pool
-		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+		// base on the race's own economy column, so an authored Elven tuning reaches this
+		// scenario without touching it; the tweaks below still layer on top
+		SimulationConfig cfg = SimulationConfig.defaultFor(Race.ELVEN).toBuilder()
 				.settlementName("Aelvar")
 				.retinueSize(200)
 				.promotionRatio(0.45)

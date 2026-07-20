@@ -207,59 +207,91 @@ public record SimulationConfig(
 	}
 
 	/**
-	 * The era whose {@link Era.Economy economic tuning} seeds {@link #DEFAULT}.
-	 * The colony starts Medieval, so its economy supplies the era-specific
-	 * defaults (prices, taxes, immigration, firm/laborer init, pool/nobles).
+	 * The canonical run configuration: {@link Era#MEDIEVAL} as the <b>human</b> race founds it.
+	 * <p>
+	 * Equivalent to {@link #defaultFor(Race) defaultFor(Race.HUMAN)}. Kept as a constant because most
+	 * scenarios, the server and the calibration tools all start from it.
 	 */
-	// The era x race cell DEFAULT is built from. Naming HUMAN explicitly rather than taking the
-	// era-wide accessor: these numbers are the human column, not universal ones, and a colony founded
-	// by another race should eventually resolve its own (see Era#economy(Race)). Static because
-	// DEFAULT is; resolving per founding race is the next step, not something a constant can do.
-	private static final Era.Economy MEDIEVAL = Era.MEDIEVAL.economy(Race.HUMAN);
+	public static final SimulationConfig DEFAULT = defaultFor(Era.MEDIEVAL, Race.HUMAN);
 
-	/** The original canonical run configuration. */
-	public static final SimulationConfig DEFAULT = new SimulationConfig(
-			"Dhenijansar",                         // settlementName
-			LocalDate.of(1444, 12, 11),            // startDate
-			25,                                    // durationYears
-			1,                                     // numEFirms (founding count; the
-			                                       //   ruler's dynamic provisioning
-			                                       //   grows the sector from here)
-			1,                                     // numNFirms (founding count)
-			MEDIEVAL.ePrice(),
-			MEDIEVAL.nPrice(),
-			MEDIEVAL.eFirm(),
-			MEDIEVAL.nFirm(),
-			MEDIEVAL.cFirm(),
-			MEDIEVAL.laborer(),
-			35,                                    // meanInitAgeYears
-			MEDIEVAL.targetNStock(),
-			7,                                     // meanSkillMale
-			5,                                     // meanSkillFemale
-			51.5074,                               // latitude (London)
-			-0.1278,                               // longitude (London)
-			MEDIEVAL.externalInflowPerStep(),
-			MEDIEVAL.immigrationThreshold(),
-			MEDIEVAL.laborShare(),
-			MEDIEVAL.bankProfitTaxRate(),
-			MEDIEVAL.nobleIncomeTaxRate(),
-			MEDIEVAL.retinueSize(),
-			MEDIEVAL.promotionRatio(),
-			MEDIEVAL.targetNobles(),
-			0.9,                                   // researchInitialFraction (90%)
-			1.0,                                   // researchCostScale
-			FertilityConfig.DEFAULT,               // fertility (births on by default)
-			30,                                    // foundingLaborersPerNFirm (size the
-			                                       //   founding food sector to demand)
-			0.2,                                   // expeditionTaxRate (crown keeps 20% of
-			                                       //   a returning haul; calibration)
-			0.3,                                   // expeditionNobleShare (the ablest
-			                                       //   returnee's ennoblement share)
-			false,                                 // foundAtCamp (found at maxTier with the
-			                                       //   ruler economy; geographic colonies
-			                                       //   opt in to found low and climb —
-			                                       //   docs/settlement-tier-ladder-plan.md D4)
-			false);                                // homePlots (pure-market economy by default;
+	/**
+	 * The canonical Medieval configuration <b>as {@code race} founds it</b>.
+	 *
+	 * @param race the founding race
+	 * @return the base configuration to build on
+	 */
+	public static SimulationConfig defaultFor(Race race) {
+		return defaultFor(Era.MEDIEVAL, race);
+	}
+
+	/**
+	 * The canonical configuration for an (era, race) cell — the <b>base</b> a scenario builds on.
+	 * <p>
+	 * A factory rather than something applied at founding, and the ordering is the whole point: the
+	 * economy must be the <em>floor</em> that a scenario's own {@code toBuilder()} tweaks sit on top
+	 * of. Resolving the race's economy later — inside {@code SimulationHarness.create}, say — would
+	 * silently overwrite deliberate overrides, and several scenarios do override economy-derived
+	 * fields ({@code ElvenEconomy} sets {@code retinueSize}/{@code promotionRatio}, {@code
+	 * SmallOpenEconomy} sets {@code externalInflowPerStep}/{@code immigrationThreshold}). A record
+	 * cannot tell "explicitly set" from "inherited", so the only honest fix is to make the caller
+	 * choose its base first.
+	 *
+	 * @param era  the founding era; must be calibrated (see {@link Era#economy(Race)})
+	 * @param race the founding race; falls back to the human column until its own is authored
+	 * @return the base configuration for that cell
+	 * @throws IllegalArgumentException if the era has no economy — better than founding a colony on
+	 *         silently-null tuning
+	 */
+	public static SimulationConfig defaultFor(Era era, Race race) {
+		Era.Economy econ = era.economy(race);
+		if (econ == null)
+			throw new IllegalArgumentException("era " + era + " has no economic tuning"
+					+ " (only calibrated eras can found a colony)");
+		return new SimulationConfig(
+				"Dhenijansar",                         // settlementName
+				LocalDate.of(1444, 12, 11),            // startDate
+				25,                                    // durationYears
+				1,                                     // numEFirms (founding count; the
+				                                       //   ruler's dynamic provisioning
+				                                       //   grows the sector from here)
+				1,                                     // numNFirms (founding count)
+				econ.ePrice(),
+				econ.nPrice(),
+				econ.eFirm(),
+				econ.nFirm(),
+				econ.cFirm(),
+				econ.laborer(),
+				35,                                    // meanInitAgeYears
+				econ.targetNStock(),
+				7,                                     // meanSkillMale
+				5,                                     // meanSkillFemale
+				51.5074,                               // latitude (London)
+				-0.1278,                               // longitude (London)
+				econ.externalInflowPerStep(),
+				econ.immigrationThreshold(),
+				econ.laborShare(),
+				econ.bankProfitTaxRate(),
+				econ.nobleIncomeTaxRate(),
+				econ.retinueSize(),
+				econ.promotionRatio(),
+				econ.targetNobles(),
+				0.9,                                   // researchInitialFraction (90%)
+				1.0,                                   // researchCostScale
+				FertilityConfig.DEFAULT,               // fertility (births on by default)
+				30,                                    // foundingLaborersPerNFirm (size the
+				                                       //   founding food sector to demand)
+				0.2,                                   // expeditionTaxRate (crown keeps 20% of
+				                                       //   a returning haul; calibration)
+				0.3,                                   // expeditionNobleShare (the ablest
+				                                       //   returnee's ennoblement share)
+				false,                                 // foundAtCamp (found at maxTier with the
+				                                       //   ruler economy; geographic colonies
+				                                       //   opt in to found low and climb —
+				                                       //   docs/settlement-tier-ladder-plan.md D4)
+				false);                                // homePlots (pure-market economy by default;
+				                                       //   a province-founded scenario opts into
+				                                       //   subsistence home plots — plot-working-plan.md P1)
+	}
 			                                       //   a province-founded scenario opts into
 			                                       //   subsistence home plots — plot-working-plan.md P1)
 }
