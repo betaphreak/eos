@@ -14,6 +14,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -418,6 +419,12 @@ class ServerApiTest {
 		assertEquals(404, missing.statusCode());
 
 		HostedSession hs = host.create(SessionSpec.caravanDemo(224L, DHENIJANSAR));
+		// routeDirty is a per-frame DELTA, so it must be observed on the live feed — subscribe BEFORE
+		// founding, or the frame that carries it has already gone by. (The cached frame is
+		// deliberately delta-free: a joiner has no route layers to invalidate, and refetches per
+		// viewport anyway — see SessionSnapshot#withoutDeltas and web/js/routefetch.mjs.)
+		List<SessionSnapshot> frames = new java.util.concurrent.CopyOnWriteArrayList<>();
+		AutoCloseable sub = hs.subscribe(frames::add);
 		hs.startPaused(); // founds the colony → builds DHENIJANSAR's pool → pre-paves its urban core
 		long deadline = System.nanoTime() + 60_000_000_000L;
 		while (hs.currentSnapshot() == null && System.nanoTime() < deadline)
@@ -447,10 +454,16 @@ class ServerApiTest {
 		assertEquals(0, empty.rev());
 		assertTrue(empty.plots().isEmpty(), "an unbuilt province serves an empty layer");
 
-		// the tick-0 snapshot flags the pre-paved province dirty, so a client viewing it refetches
-		SessionSnapshot snap = json.readValue(currentSnapshotBody(hs), SessionSnapshot.class);
-		assertTrue(snap.routeDirty().contains(DHENIJANSAR),
-				"a province born pre-paved should be flagged in routeDirty, got " + snap.routeDirty());
+		// a LIVE frame flags the pre-paved province dirty, so a client already viewing it refetches
+		sub.close();
+		assertTrue(frames.stream().anyMatch(f -> f.routeDirty().contains(DHENIJANSAR)),
+				"a province born pre-paved should be flagged dirty on a live frame; saw "
+						+ frames.stream().map(SessionSnapshot::routeDirty).toList());
+
+		// ...and the one-shot read never carries it, so a reconnect cannot replay stale invalidations
+		SessionSnapshot cached = json.readValue(currentSnapshotBody(hs), SessionSnapshot.class);
+		assertTrue(cached.routeDirty().isEmpty(), "GET /snapshot must serve no delta");
+		assertTrue(cached.log().isEmpty(), "GET /snapshot must serve no log delta");
 	}
 
 	@Test

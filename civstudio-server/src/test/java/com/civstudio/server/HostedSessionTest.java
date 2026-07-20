@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -270,6 +271,51 @@ class HostedSessionTest {
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			fail("interrupted");
+		} finally {
+			hs.stop();
+		}
+	}
+
+	@Test
+	@Timeout(180)
+	void theCachedSnapshotCarriesNoDeltasSoAJoinerNeverReplaysThem() {
+		SessionHost host = new SessionHost();
+		HostedSession hs = host.create(SessionSpec.caravanDemo(556L, DHENIJANSAR));
+		try {
+			hs.setTickRateMillis(0);
+			hs.start();
+			// founding alone logs several lines, so the LIVE frames genuinely carry a log delta
+			awaitSnapshot(hs, 5, 60_000);
+
+			// a live subscriber still sees deltas — that is what a delta is for
+			List<SessionSnapshot> live = new java.util.concurrent.CopyOnWriteArrayList<>();
+			AutoCloseable sub = hs.subscribe(live::add);
+			try {
+				// ...but the frame a JOINER is handed on subscribe must be delta-free
+				assertFalse(live.isEmpty(), "subscribing hands over the cached frame");
+				assertTrue(live.get(0).log().isEmpty(), "a joiner must not replay log lines it never missed");
+				assertTrue(live.get(0).routeDirty().isEmpty(), "a joiner has no route layers to invalidate");
+			} finally {
+				sub.close();
+			}
+
+			// the one-shot read is the same story: its caller never saw the previous frame
+			SessionSnapshot one = hs.currentSnapshot();
+			assertNotNull(one);
+			assertTrue(one.log().isEmpty(), "GET /snapshot must not serve a log delta");
+			assertTrue(one.routeDirty().isEmpty());
+
+			// and the state fields survive — this strips deltas, it does not gut the frame
+			assertFalse(one.colonies().isEmpty(), "the cached frame keeps its full state");
+			assertEquals(hs.id(), one.sessionId());
+
+			// stopping does not resurrect them: the cached frame is what every reconnect gets, and it
+			// stops changing here — the exact case that replayed the same lines forever
+			hs.stop();
+			SessionSnapshot afterStop = hs.currentSnapshot();
+			assertTrue(afterStop.log().isEmpty(), "a stopped run must not replay its last delta");
+		} catch (Exception e) {
+			fail("unexpected: " + e);
 		} finally {
 			hs.stop();
 		}

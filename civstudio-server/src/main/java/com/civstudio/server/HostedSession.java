@@ -327,6 +327,10 @@ public final class HostedSession {
 	 * current cached snapshot (if any), then every subsequent emission. Returns a handle
 	 * that unsubscribes when closed. The subscriber runs on the session thread, so it must
 	 * not block (a transport hands the snapshot to its own buffer).
+	 * <p>
+	 * The catch-up frame is <b>delta-free</b> ({@link SessionSnapshot#withoutDeltas()}): a joiner did
+	 * not see the previous frame, so its {@code log}/{@code routeDirty} deltas would be replayed
+	 * history, not news. Subsequent emissions carry their deltas normally.
 	 *
 	 * @param subscriber the snapshot consumer
 	 * @return an unsubscribe handle
@@ -619,7 +623,13 @@ public final class HostedSession {
 		return commandLog;
 	}
 
-	/** The last emitted snapshot, or {@code null} before the first emission. */
+	/**
+	 * The last emitted snapshot, <b>delta-free</b>, or {@code null} before the first emission.
+	 * <p>
+	 * {@code log} and {@code routeDirty} are always empty here: this is the one-shot read (used by
+	 * {@code GET /api/sessions/{id}/snapshot} and the {@code get_snapshot} MCP tool), and its caller
+	 * by definition did not see the previous frame. Read history from {@link #eventTail}.
+	 */
 	public SessionSnapshot currentSnapshot() {
 		return lastSnapshot;
 	}
@@ -865,7 +875,12 @@ public final class HostedSession {
 		SessionSnapshot snap = Snapshots.of(id, spec.seed(), spec.scenario(),
 				clock.name(), outcome.name(), endReason, tick, date(), colonies, session.getWorldMap(),
 				session.getCaravans(), logBuffer.drain(), session.drainRouteDirty());
-		lastSnapshot = snap;
+		// The live subscribers below get the frame WITH its deltas — they saw the previous frame, so
+		// the delta is exactly what they are missing. The CACHE keeps a delta-free copy, because
+		// everyone it is handed to (a late SSE joiner, GET /snapshot, the MCP get_snapshot tool) did
+		// not see the previous frame, and a stopped session would otherwise replay the same log lines
+		// on every reconnect for as long as it exists. See SessionSnapshot#withoutDeltas.
+		lastSnapshot = snap.withoutDeltas();
 		for (Consumer<SessionSnapshot> s : subscribers) {
 			try {
 				s.accept(snap);

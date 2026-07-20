@@ -35,4 +35,27 @@ import java.util.List;
 public record SessionSnapshot(String sessionId, long seed, String scenario, String clockState,
 		String outcome, String endReason, long tick, String date, List<ColonyView> colonies,
 		List<CaravanView> caravans, List<LogLine> log, List<Integer> routeDirty) {
+
+	/**
+	 * This frame with its two <b>per-frame deltas</b> — {@link #log()} and {@link #routeDirty()} —
+	 * emptied, leaving the full state fields untouched.
+	 * <p>
+	 * Deltas are only meaningful to a client that saw the previous frame. Handing them to someone who
+	 * did not is not merely useless, it is <em>wrong</em>: a late joiner replays log lines it never
+	 * missed, and a stopped session — whose cached frame never changes again — replays the same ones
+	 * on every reconnect, forever. That is exactly the bug {@code web/js/snapshot-dedupe.mjs} was
+	 * added to paper over client-side; this is the fix at the source, so every client (the browser,
+	 * the MCP tools, the admin panel) inherits it instead of re-implementing a tick gate.
+	 * <p>
+	 * Both fields are correct as empty for a joiner: history comes from {@code GET /events}, and a
+	 * client with no cached route layers has nothing to invalidate.
+	 *
+	 * @return a delta-free copy safe to hand anyone, at any time
+	 */
+	public SessionSnapshot withoutDeltas() {
+		if (log.isEmpty() && routeDirty.isEmpty())
+			return this;
+		return new SessionSnapshot(sessionId, seed, scenario, clockState, outcome, endReason, tick,
+				date, colonies, caravans, List.of(), List.of());
+	}
 }
