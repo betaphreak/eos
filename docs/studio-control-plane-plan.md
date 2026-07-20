@@ -233,7 +233,63 @@ scenario wanting numbers other than its race's says so out loud.
 > and converting the override sites to `tuneEconomy` is what actually fixes that, and it is phase 3.
 > The bridge is one line in the constructor, marked, and is the last thing making the run config win.
 
-**Still to do:** phase 3, and a **mixed-race** run still shares one config. `SessionHost` founds every colony from
+**Still to do:** phase 3 — see the worklist below.
+
+#### Phase 3 worklist (attempted 2026-07-20, reverted — not committed)
+
+Phase 3 was attempted end-to-end and backed out at the last step: the engine and scenarios converted
+cleanly, but ~23 test files need per-file surgery on multi-line builder chains, which is not a safe
+blind regex. Nothing is half-applied — the tree is at phase 2 and green. The recipe below is what was
+actually done before the revert, so it should replay quickly.
+
+**1. `SimulationConfig` — remove 14 of the 15 economy fields** (record components *and* the matching
+`econ.X()` arguments in `defaultFor`'s constructor call): `ePrice`, `nPrice`, `eFirm`, `nFirm`,
+`cFirm`, `laborer`, `externalInflowPerStep`, `immigrationThreshold`, `laborShare`,
+`bankProfitTaxRate`, `nobleIncomeTaxRate`, `retinueSize`, `promotionRatio`, `targetNobles`.
+
+**Keep `targetNStock`.** It is consumed at *settlement construction* — `newSettlement(..., targetNStock,
+...)` — before any harness exists, and is read back by `Laborer` through `Settlement#getTargetNStock()`.
+Moving it means dropping the constructor parameter across every `newSettlement` overload and their
+callers, which is its own change. Removing the other 14 without it is coherent; doing both at once is
+not.
+
+**2. `SimulationHarness` — delete the phase-2 bridge**: the marked `colony.setEconomy(economyOf(cfg))`
+line in the constructor and the `economyOf` helper. That line is the only thing still letting the run
+config win.
+
+**3. Engine consumers** — `DynamicFirmProvisioner` (14 reads) and `SocialMobility` (7 reads): rewrite
+`cfg.X()` to `colony.getEconomy().X()`. Both already hold a `colony` field, so it is a pure rename.
+
+**4. Six scenarios** — `ElvenEconomy`, `HarimariEconomy`, `OpenColonyEconomy`, `SurvivalExperiment`,
+`CampFoundingEconomy`, `SmallOpenEconomy`: lift the economy setters out of the `SimulationConfig`
+builder into `h.tuneEconomy(e -> e.toBuilder()....build())`, placed after the harness is created and
+**before founding**.
+
+**5. ~23 test files**, two regular patterns:
+- `cfg.<economyField>()` → `h.getColony().getEconomy().<field>()` (the harness local is `h` almost
+  everywhere) — safe regex.
+- economy setters inside a `SimulationConfig...toBuilder()` chain → moved into a `h.tuneEconomy(...)`
+  call after the harness line. This is the fiddly half: the chains span lines and mix economy with
+  non-economy setters (`settlementName`, `durationYears`, `foundAtCamp`, `homePlots`, `numEFirms`),
+  which must stay on the config.
+
+  By error count: `WeddingMarketTest` 12, `SimulationConfigDefaultForTest` 10, `LaborerEnnoblementTest` 8,
+  `SettlementCampFoundingTest`/`LaborTrainsSkillsTest`/`HouseholdDissolutionTest`/`ChildrenFirmTest`/
+  `BirthsTest` 6 each, `TechResearchTest`/`TechProductivityTest`/`RuinedNobleDemotionTest`/
+  `NobleOwnedBankDividendTest`/`NobleDemotionTest`/`HomePlotEconomyTest`/`CaravanRefoundTest` 4 each,
+  then `RulerTaxationTest`, `MixedRaceColonyTest`, `ExplorerRenewalTest`, `CommercialFarmTest`,
+  `CampBootViabilityTest` 2 each. `SimulationConfigDefaultForTest` needs rewriting rather than
+  converting — it asserts on economy fields that will no longer be on the config.
+
+> **Gotcha that cost real time:** Maven does **not** recompile the test sources after the record
+> changes shape. `mvn -o -pl civstudio-engine test` then runs *stale* test classes and reports
+> `NoSuchMethodError` at runtime instead of compile errors, which reads like a behaviour bug and is
+> not. Use `mvn -o -pl civstudio-engine clean test-compile` to get the real worklist.
+
+**Verification:** the suite is the safety net — these tests assert on colony sizes, tax collected and
+population, so a mis-converted override fails loudly rather than silently testing something else. The
+end state is that a dwarven seat and a human seat in one Timeline finally run different economics,
+which is the whole point of the phase. `SessionHost` founds every colony from
 `DEFAULT`, and a Timeline could seat players of different races, so per-*colony* economy resolution
 remains open — `SimulationConfig` is per-run, and that is the next structural question, not something
 `defaultFor` answers.
