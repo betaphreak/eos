@@ -324,11 +324,17 @@ README carries the exact `spring-boot:run` invocation, including the **fixture**
 **Goal:** the province content entry and the rendered province reach each other. Bidirectionality is
 what makes studio a control plane rather than two tools in one browser.
 
-### D1 — Admin → map (cheapest; no CSP change, no embedding)
+### D1 — Admin → map — **SHIPPED 2026-07-20**
 
-`injectComponent('editView', 'right-links', …)` on the province edit view: an "Open in world map" link to
-`https://anbennar.civstudio.com/?realm=<realm>&p=<provinceId>`. Reads `provinceId` + `realm` off the
-form. Deep-linking already works — `readDeepLink` handles `?p=&z=` and cross-realm navigation.
+`OpenInWorldMap` injected into `editView` / `right-links`. That zone is shared by **every** content
+type, so the component self-filters to `api::province.province` and renders nothing elsewhere. It
+reads the live **form values**, not the saved document, so an unsaved realm change links where the
+editor is looking rather than where the row last was; a province with no id yet (a new entry) gets no
+link rather than a link to nowhere.
+
+Registered in **`bootstrap`**, not `register`: the zone belongs to the content-manager *plugin*,
+which is loaded by then — and `getPlugin` is one of the few things bootstrap's restricted `Pick`
+does give us.
 
 ### D2 — Map → admin (needs the key lookup)
 
@@ -342,19 +348,46 @@ alternative — emitting `documentId` into the bundle — is a faithfulness chan
 `studio/scripts/verify-bundle.js` diffs per-record, and it couples a rendering artefact to a CMS
 implementation detail. Prefer the lookup.
 
-### D3 — Close the URL round-trip
+### D3 — Close the URL round-trip — **SHIPPED 2026-07-20**
 
-`selectProvince` must `history.replaceState` the `?p=` param, so "what I'm looking at" is always
-linkable. Small change in `web/js/rail.mjs:87`; keep it `replaceState` (not `push`) so province
-selection doesn't spam the back button.
+`selectProvince` now mirrors the selection into `?p=` via `history.replaceState` — browsing, not
+navigation, so Back still leaves the map instead of walking every glance. `z` is deliberately not
+written: zoom changes continuously, so capturing whatever it happened to be at click time would be
+arbitrary, and without it a reload frames the whole province (`focusProvinceFit`), which is the
+useful landing.
 
-### D4 — Embedded map page (optional, later)
+The query-string arithmetic lives in a new dependency-free `web/js/deeplink.mjs` (`selectionUrl`)
+because importing `rail.mjs` in node fails — it pulls in modules that read `window.BUNDLE` at module
+scope. Unit-tested in `web/js/deeplink.test.mjs` (6 cases, incl. that `realm`/`session`/`live` and
+the mode hash all survive).
 
-Only if D1–D3 prove insufficient. Requires: `'frame-src': ["'self'", 'https://anbennar.civstudio.com']`
-in `studio/config/middlewares.ts`, an explicit `frame-ancestors https://civstudio.com` on the SWA side
-(`web/staticwebapp.config.json` — currently unset, i.e. accidentally permissive rather than deliberately
-so), and a `postMessage` seam for cross-frame selection. `connect-src` already allows `https:`, so the
-bundle fetch needs no change.
+### D4 — Embedded map — **SHIPPED 2026-07-20**
+
+Two surfaces, one `WorldMapFrame`: a homepage **widget** (pinned full-width) and a **World map** page
+on the left nav (`/admin/civstudio-map`), which forwards `?p=`/`?realm=` into the frame — so
+`/admin/civstudio-map?p=4411` is a shareable admin link to a province. No `postMessage` bridge was
+needed: changing the iframe `src` re-navigates the viewer, and the viewer's existing deep-link
+contract does the rest.
+
+`frame-src` **and** `child-src` were added to `studio/config/middlewares.ts`. Helmet's `useDefaults`
+leaves `frame-src` falling back to `default-src 'self'`, which blocks the iframe outright — and the
+element renders either way, so the only symptom is an empty panel plus a console refusal. The verify
+script asserts on the refusal, not the element.
+
+Two things the embed needs that a cold visit does not, both URL params:
+- **`?live=<serverBase>`** — without it the viewer opens its "Choose a server" splash and waits. In an
+  admin panel the answer is never in doubt: it is the server the ops widgets already talk to.
+- **`?lobby=0`** — a new opt-out in `web/index.html`'s `openLobbyDuringLoad`. Embedded, the Spectator
+  Lobby is not a choosing but a modal in someone else's panel, over the map you asked for. A URL flag
+  rather than the existing `sessionStorage` route, because the embedder is cross-origin and cannot
+  reach into the viewer's storage. Links that open in their **own tab** deliberately keep the lobby —
+  there it *is* the front door. Verified both ways by `tools/webverify/lobby-optout-verify.mjs`.
+
+**Not done: `frame-ancestors` on the SWA side.** `web/staticwebapp.config.json` still sets no
+`X-Frame-Options`/`frame-ancestors`, so the viewer is embeddable by anyone — permissive by accident
+rather than by decision. Tightening it to `'self' https://civstudio.com` is worth doing, but
+deliberately *not* in the same change that starts depending on framing: `web/` auto-deploys on push,
+so a wrong origin list would break the embed the moment it shipped, with no staging step in between.
 
 ---
 

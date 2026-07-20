@@ -1,11 +1,12 @@
 import type { StrapiApp } from '@strapi/strapi/admin';
-import { Server, Command } from '@strapi/icons';
+import { Server, Command, Earth } from '@strapi/icons';
 import { civstudioTheme } from './theme';
 // `?url` forces a URL string (not an svgr React component) regardless of the admin's SVG plugin,
 // which is what config.menu/auth/head expect.
 import Favicon from './assets/favicon.svg?url';
 import MenuLogo from './assets/mark.svg?url';
 import AuthLogo from './assets/wordmark.svg?url';
+import OpenInWorldMap from './components/OpenInWorldMap';
 
 export default {
   config: {
@@ -57,6 +58,12 @@ export default {
         title: { id: 'civstudio.widget.sessions.title', defaultMessage: 'Live sessions' },
         component: async () => (await import('./components/SessionsWidget')).default,
       },
+      {
+        id: 'civstudio-worldmap',
+        icon: Earth,
+        title: { id: 'civstudio.widget.worldMap.title', defaultMessage: 'World map' },
+        component: async () => (await import('./components/WorldMapWidget')).default,
+      },
     ]);
 
     // The Sessions page — the roomier view the widget rows link into (docs/studio-control-plane-plan.md
@@ -70,8 +77,27 @@ export default {
       permissions: [], // any authenticated admin; the game server enforces its own ROLE_ADMIN
       Component: () => import('./pages/Sessions'),
     });
+
+    // The world map as its own admin destination (§D4). Deep-linkable: /admin/civstudio-map?p=4411.
+    app.addMenuLink?.({
+      to: 'civstudio-map',
+      icon: Earth,
+      intlLabel: { id: 'civstudio.menu.worldMap', defaultMessage: 'World map' },
+      permissions: [],
+      Component: () => import('./pages/WorldMap'),
+    });
   },
-  bootstrap() {
+  bootstrap(app: any) {
+    // "Open in world map" on the province edit view (docs/studio-control-plane-plan.md §D1). This
+    // goes in `bootstrap`, not `register`: the injection zone belongs to the content-manager PLUGIN,
+    // which is loaded by the time bootstrap runs — and `getPlugin` is one of the few things
+    // bootstrap's restricted Pick does give us. The component self-filters to provinces, since the
+    // zone is shared by every content type.
+    app.getPlugin?.('content-manager')?.injectComponent?.('editView', 'right-links', {
+      name: 'civstudio-open-in-worldmap',
+      Component: OpenInWorldMap,
+    });
+
     // Make the CivStudio dark (navy) look the DEFAULT appearance: Strapi falls back to 'system' when
     // STRAPI_THEME is unset — seed 'dark' the first time so the branded dark theme is the first
     // impression. Users can still switch (Profile → Appearance); we only seed when unset.
@@ -105,6 +131,10 @@ export default {
       [data-strapi-grid-container] :has(> [data-strapi-widget-id="global::civstudio-server-ops"]),
       [data-strapi-grid-container] :has(> [data-strapi-widget-id="global::civstudio-sessions"]) {
         grid-column: span 6 !important;
+      }
+      /* the map is the exception — it wants the whole row, whatever the widget count works out to */
+      [data-strapi-grid-container] :has(> [data-strapi-widget-id="global::civstudio-worldmap"]) {
+        grid-column: span 12 !important;
       }
 
       /* ===== Login: web/-style cinematic dark splash + gold-hairline glass card =====

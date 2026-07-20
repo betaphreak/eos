@@ -612,6 +612,13 @@
     // core.mjs: core reads window.BUNDLE at import time, which is precisely what has not arrived yet.
     // Best-effort: a lobby that fails to load must never cost you the map.
     function openLobbyDuringLoad(base) {
+      // ?lobby=0 — the map without the lobby over it. For EMBEDDED use (the Strapi admin's World map
+      // page and homepage widget frame the viewer): there the lobby is not a choosing, it is a
+      // modal in someone else's panel. A URL opt-out, not sessionStorage, because the embedder is
+      // cross-origin and cannot reach into this origin's storage.
+      try {
+        if (/^(0|no|false)$/i.test(new URL(location.href).searchParams.get("lobby") || "")) return;
+      } catch (e) {}
       // a realm switch (switchRealm) navigates straight to the map — skip the auto-open lobby that one
       // time so the new realm is what you land on, not the lobby over it.
       try { if (sessionStorage.getItem("cs.realmSwitch")) { sessionStorage.removeItem("cs.realmSwitch"); return; } } catch (e) {}

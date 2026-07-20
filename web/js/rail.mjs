@@ -14,6 +14,7 @@ import { loadPlots } from "./plotfetch.mjs";
 import { politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
 import { liveColony } from "./overlays/live.mjs";
 import { prettyKey } from "./plotlabel.mjs";
+import { selectionUrl } from "./deeplink.mjs";
 
 // ---- rail ----
 const rail=document.getElementById("rail");
@@ -89,6 +90,25 @@ function selectProvince(p) {
   if (p && !p._plots) loadPlots(p);   // stream in the server-generated terrain for the breakdown
   showRail(!!p);                     // selecting opens the info panel; deselecting collapses it
   renderRail(); draw();
+  writeSelectionToUrl(p);
+}
+/**
+ * Mirror the selection into ?p= so what you are looking at is always a shareable link
+ * (docs/studio-control-plane-plan.md §D3). Until now only switchRealm and the lobby wrote the query
+ * string, so selecting a province — the most common thing anyone does here — left the URL stale and
+ * a "look at this" link impossible to produce without hand-editing it.
+ *
+ * replaceState, not pushState: clicking through provinces is browsing, not navigation, and pushing
+ * would make Back walk every glance instead of leaving the map. `z` is deliberately NOT written —
+ * zoom changes continuously, and capturing whatever it happened to be at click time would be
+ * arbitrary; without it a reload frames the whole province (focusProvinceFit), which is the useful
+ * landing. The rest of the query (realm, session, live) is preserved by mutating the current URL.
+ */
+function writeSelectionToUrl(p) {
+  try {
+    const next = selectionUrl(location.href, p);
+    if (next !== location.href) history.replaceState(history.state, "", next);
+  } catch { /* no history API (file://) — selection still works, it just isn't linkable */ }
 }
 function provinceRail(p) {
   const g = provGeo(p);
