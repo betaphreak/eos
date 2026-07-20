@@ -1992,6 +1992,79 @@ export interface ApiRouteRoute extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiScenarioScenario extends Struct.CollectionTypeSchema {
+  collectionName: 'scenarios';
+  info: {
+    description: 'A foundable scenario as data (engine: ScenarioRegistry/ScenarioDef): its founding shape, the balance profile it tunes agents with, and free-form flags. Served to the engine as /scenarios.json; the host resolves spec.scenario() against it. Seed and province are NOT here \u2014 they are per-session instance params on the SessionSpec, not the scenario definition. balanceProfile is a plain string (a BalanceProfiles key, resolved forgivingly), not a relation.';
+    displayName: 'Scenario';
+    pluralName: 'scenarios';
+    singularName: 'scenario';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    balanceProfile: Schema.Attribute.String &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    blurb: Schema.Attribute.Text &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    flags: Schema.Attribute.JSON &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    key: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    label: Schema.Attribute.String &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::scenario.scenario'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    shape: Schema.Attribute.Enumeration<
+      ['STANDARD_COLONY', 'CAMP', 'TIMELINE']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiSuperRegionSuperRegion extends Struct.CollectionTypeSchema {
   collectionName: 'super_regions';
   info: {
@@ -3154,6 +3227,7 @@ declare module '@strapi/strapi' {
       'api::resource-source.resource-source': ApiResourceSourceResourceSource;
       'api::route-model.route-model': ApiRouteModelRouteModel;
       'api::route.route': ApiRouteRoute;
+      'api::scenario.scenario': ApiScenarioScenario;
       'api::super-region.super-region': ApiSuperRegionSuperRegion;
       'api::tech-effect.tech-effect': ApiTechEffectTechEffect;
       'api::tech.tech': ApiTechTech;

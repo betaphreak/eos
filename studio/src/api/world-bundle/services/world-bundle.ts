@@ -100,6 +100,7 @@ export default {
       adjacencies, edges, portals, terrains, features, bonusesAll, improvements, routes,
       techs, unitCombats, units, buildings, recipes, housing, resourceSources, routeModels,
       terrainArt, feastsHuman, feastsHarimari, humanNames, regionEarthMap, economies, balanceProfiles,
+      scenarios,
     ] = await Promise.all([
       this.countries(), this.cultures(), this.religions(), this.tradegoods(), this.areas(),
       this.regions(), this.superregions(), this.provinces(), this.adjacencies(), this.edges(),
@@ -107,7 +108,7 @@ export default {
       this.routes(), this.techs(), this.unitCombats(), this.units(), this.buildings(),
       this.recipes(), this.housing(), this.resourceSources(), this.routeModels(), this.terrainArt(),
       this.feasts('human'), this.feasts('harimari'), this.namePools('human'), this.regionEarthMap(),
-      this.economies(), this.balanceProfiles(),
+      this.economies(), this.balanceProfiles(), this.scenarios(),
     ]);
 
     // bonus is one collection; committed splits it into base bonuses.json vs manufactured-bonuses.json.
@@ -125,6 +126,7 @@ export default {
       // omitted entirely when unauthored — see economies()/balanceProfiles() on why absent != empty
       ...(economies ? { '/balance/economies.json': economies } : {}),
       ...(balanceProfiles ? { '/balance/profiles.json': balanceProfiles } : {}),
+      ...(scenarios ? { '/scenarios.json': scenarios } : {}),
       '/map/countries.json': countries,
       '/map/cultures.json': cultures,
       '/map/religions.json': religions,
@@ -299,6 +301,17 @@ export default {
     const out: Record<string, any> = {};
     for (const r of rows) out[r.key] = r.configs;
     return out;
+  },
+  // The foundable scenarios (engine: ScenarioRegistry) — a list of ScenarioDefs. Same absent != empty
+  // contract: null when no rows, so the engine keeps its compiled built-ins; content adds/overrides.
+  async scenarios() {
+    const rows = await all(uid('scenario'),
+      { sort: ['key:asc'], fields: ['key', 'label', 'blurb', 'shape', 'balanceProfile', 'flags'] });
+    if (!rows.length) return null;
+    return rows.map((r) => clean({
+      key: r.key, label: r.label, blurb: r.blurb, balanceProfile: r.balanceProfile,
+      shape: r.shape, flags: r.flags ?? {},
+    }));
   },
 };
 

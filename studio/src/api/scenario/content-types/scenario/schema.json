@@ -1,0 +1,76 @@
+{
+  "kind": "collectionType",
+  "collectionName": "scenarios",
+  "info": {
+    "singularName": "scenario",
+    "pluralName": "scenarios",
+    "displayName": "Scenario",
+    "description": "A foundable scenario as data (engine: ScenarioRegistry/ScenarioDef): its founding shape, the balance profile it tunes agents with, and free-form flags. Served to the engine as /scenarios.json; the host resolves spec.scenario() against it. Seed and province are NOT here — they are per-session instance params on the SessionSpec, not the scenario definition. balanceProfile is a plain string (a BalanceProfiles key, resolved forgivingly), not a relation."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "label": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "blurb": {
+      "type": "text",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "shape": {
+      "type": "enumeration",
+      "enum": [
+        "STANDARD_COLONY",
+        "CAMP",
+        "TIMELINE"
+      ],
+      "required": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "balanceProfile": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    },
+    "flags": {
+      "type": "json",
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      }
+    }
+  }
+}

@@ -407,6 +407,13 @@ async function main() {
   else console.log('[C] balance-profile   SKIPPED — no source file'
     + ' (run: mvn -pl civstudio-engine exec:exec -Dsim.main=com.civstudio.balance.export.BalanceProfileExporter)');
 
+  // ── scenarios (a collection, one row per ScenarioDef; gitignored source, so skip if absent) ──
+  const scenarios = loadScenarios();
+  if (scenarios) await upsertPlain(app, uid('scenario'), 'key', scenarios,
+    (r) => ({ label: r.label, blurb: r.blurb, shape: r.shape, balanceProfile: r.balanceProfile, flags: r.flags }));
+  else console.log('[C] scenario          SKIPPED — no source file'
+    + ' (run: mvn -pl civstudio-engine exec:exec -Dsim.main=com.civstudio.scenario.export.ScenarioExporter)');
+
   console.log(`[seed] done. unresolved relation targets: ${misses}; row errors: ${errors.count || 0}`);
   if (errors.length) console.log('  sample errors:\n   ' + errors.join('\n   '));
   await app.destroy();
@@ -470,6 +477,12 @@ function loadBalanceProfiles() {
   if (!existsSync(f)) return null;
   const map = readJson(f);
   return Object.entries(map).map(([key, configs]) => ({ key, label: key, configs }));
+}
+function loadScenarios() {
+  // /scenarios.json is already a list of ScenarioDefs — one row each
+  const f = join(GEN, 'scenarios.json');
+  if (!existsSync(f)) return null;
+  return readJson(f);
 }
 function loadFeasts() {
   const out = [];
