@@ -196,14 +196,25 @@ not an Anbennar people). Rubyhold is dwarven, Dancers Retreat elven, and Dhenija
 that would look like working code: if the group keys ever drift from the race ids, every province
 silently reads `HUMAN` and the world loses its peoples.
 
-> **Blocked: founding by province race.** Wiring the province-founding overload to resolve its own race
-> is the intended design and was tried. It fails on **name pools**, not on anything structural: only
-> `HUMAN` has hand-authored name tables, every other race is generated into a fixed dynasty pool dealt
-> in disjoint slices, and a standard colony needs ~405 households (`retinueSize 900 × promotionRatio
-> 0.45`) against a pool of a couple of hundred — founding into an Anbennarian or elven province dies
-> mid-founding on `dynasty master pool exhausted`. **Scaling per-race dynasty generation to colony
-> size is the prerequisite.** Until then a non-human colony stays a scenario's deliberate choice, sized
-> to fit (`ElvenEconomy` sets `retinueSize(200)` for exactly this reason).
+**Founding by province race — SHIPPED.** A colony now takes its race from the province it stands in.
+This was blocked on **name pools**, not on anything structural: only `HUMAN` has hand-authored surname
+tables (151k names across 822 tiers), while every other race is imported from Anbennar's
+`anb_cultures.txt` — a couple of hundred — against a standard colony of ~405 households. Founding
+anywhere non-human died mid-founding on `dynasty master pool exhausted`.
+
+The fix was to stop treating surname uniqueness as absolute. `DynastyPool` now **wraps** once its list
+is spent instead of refusing, and `NameRegistry`'s in-use set became a **counted multiset** so one
+surname may be held by several households (a plain set would have collapsed the duplicates and let one
+release free a name two households were still using). Slices stay disjoint for the first full pass, and
+never repeat a name *within* a slice.
+
+Global uniqueness was the unrealistic constraint, not the shortage of names: four hundred medieval
+households emphatically do not hold four hundred distinct surnames. Human runs are untouched — 151k
+surnames outlast anything this engine founds, so the wrap never fires there.
+
+Rubyhold now founds a full-size **dwarven** colony and Eargate an **Anbennarian** one, both with
+repeating surnames; Dhenijansar still founds human, which is why every pre-existing scenario is
+unaffected.
 
 **Still to do:** a **mixed-race** run still shares one config. `SessionHost` founds every colony from
 `DEFAULT`, and a Timeline could seat players of different races, so per-*colony* economy resolution

@@ -584,25 +584,23 @@ public class GameSession {
 	 * @param meanSkillMale    mean of the male skill distribution
 	 * @param meanSkillFemale  mean of the female skill distribution
 	 * @param province         the province to found into
-	 * @return a fresh human colony seated in {@code province}
+	 * @return a fresh colony seated in {@code province}, peopled by whoever lives there
 	 */
 	public synchronized Settlement newSettlement(String name, LocalDate startDate,
 			double meanInitAgeYears, double targetNStock, double meanSkillMale,
 			double meanSkillFemale, Province province) {
-		// Founds HUMAN regardless of who actually lives here, which the map already knows
-		// ({@link WorldMap#raceOf(Province)}: Rubyhold is dwarven, Dancers Retreat elven).
+		// Who lives here is not a parameter — the imported world already says so. A province has a
+		// culture, a culture has a group, and that group IS a race id (both from anb_cultures.txt),
+		// so founding into Rubyhold makes a dwarven colony and Dancers Retreat an elven one without
+		// a scenario having to know. See WorldMap#raceOf(Province).
 		//
-		// Resolving it from the province is the intended design and was tried — it is blocked on
-		// NAME POOLS, not on anything here. Only HUMAN has hand-authored name tables; every other
-		// race is generated into a fixed dynasty pool dealt in disjoint slices, and a standard colony
-		// needs ~405 households (retinueSize 900 x promotionRatio 0.45) against a pool of a couple of
-		// hundred — founding into an Anbennarian or elven province dies on "dynasty master pool
-		// exhausted" partway through founding. Scaling per-race dynasty generation to colony size is
-		// the prerequisite; until then a non-human colony has to be a scenario's deliberate,
-		// small-pool choice (see ElvenEconomy, which sizes its retinue to fit).
+		// This needed DynastyPool to stop refusing to repeat a surname: only HUMAN has hand-authored
+		// name tables, so a full-size colony of any other race outran its authored list and died
+		// mid-founding. Now the pool wraps, and 400 households share surnames the way 400 medieval
+		// households actually would.
+		Race race = getWorldMap().raceOf(province);
 		return newSettlement(name, startDate, meanInitAgeYears, targetNStock,
-				meanSkillMale, meanSkillFemale, province, Race.HUMAN,
-				Map.of(Race.HUMAN, 1.0));
+				meanSkillMale, meanSkillFemale, province, race, Map.of(race, 1.0));
 	}
 
 	// the shared founding body: builds the colony's per-colony Rng / NameRegistry /

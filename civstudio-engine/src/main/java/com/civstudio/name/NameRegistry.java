@@ -86,9 +86,14 @@ public final class NameRegistry {
 		// it was loaded with (accumulated across every slice this race pulls)
 		private final Map<String, Double> weightByName = new HashMap<>();
 
-		// surnames currently handed out (in use by a living dynasty of this colony); a
-		// surname dealt here is in exactly one of {drawable, this set}
-		private final Set<String> inUse = new HashSet<>();
+		// surnames currently handed out (in use by a living dynasty of this colony),
+		// COUNTED: a surname may be held by more than one household once its race's
+		// master pool has wrapped (see DynastyPool#deal — only HUMAN has enough
+		// authored surnames to give every household a distinct one). Each dealt
+		// instance is in exactly one of {drawable, this multiset}, so the slot
+		// accounting still balances; a set would have collapsed the duplicates and let
+		// one release free a surname two households were still using.
+		private final Map<String, Integer> inUse = new HashMap<>();
 
 		DynastyDraw(DynastyPool pool, int refillSize, DynastySlice initial) {
 			this.pool = pool;
@@ -174,15 +179,22 @@ public final class NameRegistry {
 			names[last] = null;
 			size--;
 			total -= weight;
-			inUse.add(name);
+			inUse.merge(name, 1, Integer::sum);
 			return name;
 		}
 
 		// return a surname to the drawable pool; a no-op (returns false) if this draw
 		// is not currently lending it (foreign or already released)
 		boolean release(String surname) {
-			if (!inUse.remove(surname))
+			// decrement rather than remove: with a wrapped pool the same surname can be
+			// held by several households, and each must return its own instance
+			Integer held = inUse.get(surname);
+			if (held == null)
 				return false; // foreign or already released — tolerate (disjoint slices)
+			if (held == 1)
+				inUse.remove(surname);
+			else
+				inUse.put(surname, held - 1);
 			double weight = weightByName.get(surname);
 			// a released surname was previously dealt here, so capacity (== dealtCount)
 			// already has a slot for it; size < dealtCount whenever a name is in use
