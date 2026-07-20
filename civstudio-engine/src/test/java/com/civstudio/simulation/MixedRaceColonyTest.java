@@ -32,7 +32,7 @@ class MixedRaceColonyTest {
 	@Test
 	void harimariColonyFoundsNamesAgesAndResearches() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.settlementName("Sehir").retinueSize(200).promotionRatio(0.45)
+				.settlementName("Sehir")
 				.durationYears(1).build();
 		Map<Race, Double> mix = new EnumMap<>(Race.class);
 		mix.put(Race.HARIMARI, 0.7);
@@ -40,6 +40,7 @@ class MixedRaceColonyTest {
 
 		SimulationHarness h =
 				SimulationHarness.create(cfg, 7654321, Race.HARIMARI, mix);
+		h.tuneEconomy(e -> e.toBuilder().retinueSize(200).promotionRatio(0.45).build());
 		h.foundStandardColony();
 		h.run();
 

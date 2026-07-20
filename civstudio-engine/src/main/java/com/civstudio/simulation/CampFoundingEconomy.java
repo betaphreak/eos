@@ -38,8 +38,9 @@ public class CampFoundingEconomy {
 		// food (the plot-working economy — docs/plot-working-plan.md P1), so survival is decoupled
 		// from the market and the small booted colony is viable on its own land.
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.retinueSize(BAND_SIZE).foundAtCamp(true).homePlots(true).build();
+				.foundAtCamp(true).homePlots(true).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, DHENIJANSAR);
+		h.tuneEconomy(e -> e.toBuilder().retinueSize(BAND_SIZE).build());
 		h.foundStandardColony();
 		// the printers report the ruler/firms/banks/granary/plots — none of which exist while the
 		// colony is a foraging camp — so wire them when the ruler economy boots at SMALLHOLDING.

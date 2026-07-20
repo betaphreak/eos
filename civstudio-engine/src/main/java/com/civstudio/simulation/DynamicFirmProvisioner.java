@@ -39,6 +39,11 @@ class DynamicFirmProvisioner implements FirmFactory {
 	private final Bank firmBank;
 	private final SocialMobility mobility;
 
+	/** The numbers this colony runs on — its own {@code (era, race)} cell, not the run's. */
+	private com.civstudio.era.Era.Economy econ() {
+		return colony.getEconomy();
+	}
+
 	DynamicFirmProvisioner(Settlement colony, SimulationConfig cfg,
 			CFirm[] capitalFirms, FirmConfig firmConfig, FirmConfig nFirmConfig,
 			Bank firmBank, SocialMobility mobility) {
@@ -60,16 +65,16 @@ class DynamicFirmProvisioner implements FirmFactory {
 		double seed;
 		ConsumerGoodFirm firm;
 		if (necessity) {
-			seed = cfg.nFirm().checking() + cfg.nFirm().savings();
-			firm = new NFirm(cfg.nFirm().checking(), cfg.nFirm().savings(),
-					cfg.nFirm().output(), cfg.nFirm().wageBudget(),
-					cfg.nFirm().capital(), capitalFirms, nFirmConfig,
+			seed = econ().nFirm().checking() + econ().nFirm().savings();
+			firm = new NFirm(econ().nFirm().checking(), econ().nFirm().savings(),
+					econ().nFirm().output(), econ().nFirm().wageBudget(),
+					econ().nFirm().capital(), capitalFirms, nFirmConfig,
 					firmBank, colony);
 		} else {
-			seed = cfg.eFirm().checking() + cfg.eFirm().savings();
-			firm = new EFirm(cfg.eFirm().checking(), cfg.eFirm().savings(),
-					cfg.eFirm().output(), cfg.eFirm().wageBudget(),
-					cfg.eFirm().capital(), capitalFirms, firmConfig,
+			seed = econ().eFirm().checking() + econ().eFirm().savings();
+			firm = new EFirm(econ().eFirm().checking(), econ().eFirm().savings(),
+					econ().eFirm().output(), econ().eFirm().wageBudget(),
+					econ().eFirm().capital(), capitalFirms, firmConfig,
 					firmBank, colony);
 		}
 

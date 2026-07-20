@@ -11,6 +11,7 @@ import com.civstudio.agent.Agent;
 import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.agent.ruler.Ruler;
 import com.civstudio.bank.Bank;
+import com.civstudio.era.Era;
 import com.civstudio.name.Gender;
 import com.civstudio.simulation.SimulationConfig;
 import com.civstudio.simulation.SimulationHarness;
@@ -93,13 +94,15 @@ class WeddingMarketTest {
 				// pin the founding skill to the survival regime this test needs (the
 				// higher default destabilizes a small colony — see docs/food-balance.md);
 				// this test exercises weddings, not skill
-				.meanSkillMale(5).meanSkillFemale(2)
-				.retinueSize(120).promotionRatio(0.4).build();
+				.meanSkillMale(5).meanSkillFemale(2).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		h.tuneEconomy(e -> e.toBuilder()
+				.retinueSize(120).promotionRatio(0.4).build());
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
+		Era.Economy econ = h.getColony().getEconomy();
 		h.createFirms(bank, i -> bank,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+				i -> econ.eFirm().savings(), i -> econ.nFirm().savings());
 		h.createDefaultStrategicSector(bank);
 		h.createDefaultRuler();
 		h.createDefaultRetinue();
@@ -119,13 +122,15 @@ class WeddingMarketTest {
 				.durationYears(2).numEFirms(2).numNFirms(10)
 				// pin the founding skill to the survival regime this test needs (see
 				// runSmallPoolColony); this test exercises immigrant recruitment, not skill
-				.meanSkillMale(5).meanSkillFemale(2)
-				.retinueSize(60).promotionRatio(0.8).build();
+				.meanSkillMale(5).meanSkillFemale(2).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		h.tuneEconomy(e -> e.toBuilder()
+				.retinueSize(60).promotionRatio(0.8).build());
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
+		Era.Economy econ = h.getColony().getEconomy();
 		h.createFirms(bank, i -> bank,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+				i -> econ.eFirm().savings(), i -> econ.nFirm().savings());
 		h.createDefaultStrategicSector(bank);
 		h.createDefaultRuler();
 		h.createDefaultRetinue();

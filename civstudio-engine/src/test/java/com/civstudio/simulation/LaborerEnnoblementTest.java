@@ -12,6 +12,7 @@ import com.civstudio.agent.firm.StrategicFirmConfig;
 import com.civstudio.agent.noble.Noble;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.CurrencyType;
+import com.civstudio.era.Era;
 import com.civstudio.settlement.Settlement;
 
 /**
@@ -35,8 +36,9 @@ class LaborerEnnoblementTest {
 		Settlement colony = h.getColony();
 		h.createMarkets();
 		Bank copper = h.getCopperBank();
+		Era.Economy econ = colony.getEconomy();
 		h.createFirms(copper, i -> copper,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+				i -> econ.eFirm().savings(), i -> econ.nFirm().savings());
 		// no strategic sector, so no nobles — createDefaultRuler still installs the
 		// dynamic provisioning factory
 		h.createDefaultRuler();
@@ -77,8 +79,9 @@ class LaborerEnnoblementTest {
 		// — but deliberately NO initial nobles, so a chartered firm has no owner and
 		// the ablest laborer is ennobled to both own it and staff the export firm
 		h.createNobleLaborMarket();
+		Era.Economy econ = colony.getEconomy();
 		h.createFirms(copper, i -> copper,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+				i -> econ.eFirm().savings(), i -> econ.nFirm().savings());
 		h.createStrategicFirm(copper, StrategicFirmConfig.DEFAULT);
 		h.primeNobleLabor();
 		h.createDefaultRuler();

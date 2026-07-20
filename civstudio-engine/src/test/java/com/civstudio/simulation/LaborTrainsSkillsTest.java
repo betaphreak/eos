@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import com.civstudio.agent.Agent;
 import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.bank.Bank;
+import com.civstudio.era.Era;
 import com.civstudio.skill.Skill;
 import com.civstudio.skill.SkillTracker;
 
@@ -65,9 +66,11 @@ class LaborTrainsSkillsTest {
 	 */
 	private static SimulationHarness runShort() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.durationYears(10).numEFirms(0).numNFirms(40)
-				.retinueSize(300).promotionRatio(0.15).build();
+				.durationYears(10).numEFirms(0).numNFirms(40).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		h.tuneEconomy(e -> e.toBuilder()
+				.retinueSize(300).promotionRatio(0.15).build());
+		Era.Economy econ = h.getColony().getEconomy();
 		// weddings are orthogonal to skill training and only add noise here (female
 		// ex-spouses becoming heads via widowhood with short training histories), so
 		// disable them to isolate the training mechanism this test measures
@@ -76,7 +79,7 @@ class LaborTrainsSkillsTest {
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
 		h.createFirms(bank, i -> bank,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+				i -> econ.eFirm().savings(), i -> econ.nFirm().savings());
 		h.createDefaultStrategicSector(bank);
 		h.createDefaultRuler();
 		h.createDefaultRetinue();

@@ -25,9 +25,10 @@ class RulerTaxationTest {
 	/** Build and run a standard colony with the given tax rates; short horizon. */
 	private static SimulationHarness run(double bankRate, double nobleRate) {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.bankProfitTaxRate(bankRate).nobleIncomeTaxRate(nobleRate)
 				.durationYears(3).build();
 		SimulationHarness h = SimulationHarness.create(cfg, SEED);
+		h.tuneEconomy(e -> e.toBuilder()
+				.bankProfitTaxRate(bankRate).nobleIncomeTaxRate(nobleRate).build());
 		h.foundStandardColony();
 		h.run();
 		return h;

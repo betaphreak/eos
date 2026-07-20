@@ -12,8 +12,12 @@ import lombok.Builder;
 
 /**
  * Run-level configuration for a simulation: the calendar (each step is one
- * in-game day), population sizes, market price bounds, and the initial state of
- * each agent type. Immutable; {@link #DEFAULT} holds the canonical values
+ * in-game day), the colony's site and founding shape, and the research/fertility
+ * knobs. The <b>economy</b> — prices, agent starting balances, tax rates, the
+ * peasant pool — is <em>not</em> here: it belongs to the colony, which resolves it
+ * from the race of its province ({@code Settlement#getEconomy()}) and lets a
+ * scenario adjust it via {@code SimulationHarness.tuneEconomy}. Immutable;
+ * {@link #DEFAULT} holds the canonical values
  * shared by the bundled simulations. Build a modified instance to script a
  * different run without editing source.
  *
@@ -23,12 +27,6 @@ import lombok.Builder;
  * @param durationYears number of in-game years the simulation runs
  * @param numEFirms    number of enjoyment firms
  * @param numNFirms    number of necessity firms
- * @param ePrice       initial price bounds for the enjoyment market
- * @param nPrice       initial price bounds for the necessity market
- * @param eFirm        initial state of each enjoyment firm
- * @param nFirm        initial state of each necessity firm
- * @param cFirm        initial state of the capital firm
- * @param laborer      initial state of each laborer
  * @param meanInitAgeYears mean initial age (years) of founding household heads,
  *                     the center of the normal distribution their ages are
  *                     drawn from
@@ -47,41 +45,6 @@ import lombok.Builder;
  *                     calculations (see {@code Settlement.getSunrise})
  * @param longitude    the colony's geographic longitude in decimal degrees (east
  *                     positive)
- * @param externalInflowPerStep money entering the colony from outside each
- *                     step, injected into the bank's equity; 0 leaves the
- *                     colony closed (no inflow, no immigration)
- * @param immigrationThreshold equity level at which the bank funds one new
- *                     immigrant household out of equity (and the household's
- *                     opening checking balance); only fires when
- *                     {@code externalInflowPerStep > 0}
- * @param laborShare   fraction of its revenue each consumer-good firm budgets
- *                     for wages (the labor-share wage-budget rule), so total
- *                     wage spending — and the market wage totalBudget/N —
- *                     scales with the colony as population grows; 0 falls back
- *                     to the legacy cash-flow-gap rule
- * @param bankProfitTaxRate fraction of each bank's distributable profit the
- *                     Ruler skims into its treasury each step (the bank-profit
- *                     tax); 0 disables it (the default, pending calibration)
- * @param nobleIncomeTaxRate fraction of each noble's per-step income the Ruler
- *                     skims into its treasury each step (the noble income tax);
- *                     0 disables it (the default, pending calibration)
- * @param retinueSize number of peasants a colony with a pool is seeded with (the
- *                     full pool — founding cohort plus standing reserve). Default
- *                     {@code 900}; the number of laborer households a pool colony
- *                     founds is {@code round(promotionRatio * retinueSize)}, so
- *                     this and {@code promotionRatio} together set the labor force.
- * @param promotionRatio the fraction of its peasant pool a colony promotes into
- *                     laborer households. On day 0 the ruler promotes the ablest
- *                     {@code round(promotionRatio * retinueSize)} peasants into
- *                     laborer households, and replaces later deaths from the
- *                     remaining reserve until it drains (see {@link
- *                     SimulationHarness#foundLaborersFromRetinue})
- * @param targetNobles the size of the aristocracy the colony maintains by
- *                     ennoblement. No nobles are created at founding; the ruler
- *                     elevates the ablest laborers (highest SOCIAL) into
- *                     silver-banking nobles up to this count over the first weeks,
- *                     working the strategic firm itself meanwhile so it is never
- *                     unstaffed. Default {@code 5}; does not scale with colony size
  * @param researchInitialFraction the fraction of the warm-start focus's cost a fresh
  *                     colony begins with (default {@code 0.9} — 90% complete). The
  *                     warm-start <em>focus</em> and the pre-known baseline are derived
@@ -130,26 +93,12 @@ public record SimulationConfig(
 		int durationYears,
 		int numEFirms,
 		int numNFirms,
-		PriceRange ePrice,
-		PriceRange nPrice,
-		FirmInit eFirm,
-		FirmInit nFirm,
-		CFirmInit cFirm,
-		LaborerInit laborer,
 		double meanInitAgeYears,
 		double targetNStock,
 		double meanSkillMale,
 		double meanSkillFemale,
 		double latitude,
 		double longitude,
-		double externalInflowPerStep,
-		double immigrationThreshold,
-		double laborShare,
-		double bankProfitTaxRate,
-		double nobleIncomeTaxRate,
-		int retinueSize,
-		double promotionRatio,
-		int targetNobles,
 		double researchInitialFraction,
 		double researchCostScale,
 		FertilityConfig fertility,
@@ -227,14 +176,11 @@ public record SimulationConfig(
 	/**
 	 * The canonical configuration for an (era, race) cell — the <b>base</b> a scenario builds on.
 	 * <p>
-	 * A factory rather than something applied at founding, and the ordering is the whole point: the
-	 * economy must be the <em>floor</em> that a scenario's own {@code toBuilder()} tweaks sit on top
-	 * of. Resolving the race's economy later — inside {@code SimulationHarness.create}, say — would
-	 * silently overwrite deliberate overrides, and several scenarios do override economy-derived
-	 * fields ({@code ElvenEconomy} sets {@code retinueSize}/{@code promotionRatio}, {@code
-	 * SmallOpenEconomy} sets {@code externalInflowPerStep}/{@code immigrationThreshold}). A record
-	 * cannot tell "explicitly set" from "inherited", so the only honest fix is to make the caller
-	 * choose its base first.
+	 * Since phase 3 the economy proper no longer lives here: a colony carries its own {@link
+	 * Era.Economy} (see {@code Settlement#getEconomy()}), resolved from the race of the province it
+	 * stands in, and a scenario tweaks it through {@code SimulationHarness.tuneEconomy}. What this
+	 * factory still reads off the cell is {@code targetNStock}, which is consumed at settlement
+	 * construction — before any harness exists — and so cannot ride the colony.
 	 *
 	 * @param era  the founding era; must be calibrated (see {@link Era#economy(Race)})
 	 * @param race the founding race; falls back to the human column until its own is authored
@@ -255,26 +201,12 @@ public record SimulationConfig(
 				                                       //   ruler's dynamic provisioning
 				                                       //   grows the sector from here)
 				1,                                     // numNFirms (founding count)
-				econ.ePrice(),
-				econ.nPrice(),
-				econ.eFirm(),
-				econ.nFirm(),
-				econ.cFirm(),
-				econ.laborer(),
 				35,                                    // meanInitAgeYears
 				econ.targetNStock(),
 				7,                                     // meanSkillMale
 				5,                                     // meanSkillFemale
 				51.5074,                               // latitude (London)
 				-0.1278,                               // longitude (London)
-				econ.externalInflowPerStep(),
-				econ.immigrationThreshold(),
-				econ.laborShare(),
-				econ.bankProfitTaxRate(),
-				econ.nobleIncomeTaxRate(),
-				econ.retinueSize(),
-				econ.promotionRatio(),
-				econ.targetNobles(),
 				0.9,                                   // researchInitialFraction (90%)
 				1.0,                                   // researchCostScale
 				FertilityConfig.DEFAULT,               // fertility (births on by default)
@@ -292,6 +224,4 @@ public record SimulationConfig(
 				                                       //   a province-founded scenario opts into
 				                                       //   subsistence home plots — plot-working-plan.md P1)
 	}
-			                                       //   a province-founded scenario opts into
-			                                       //   subsistence home plots — plot-working-plan.md P1)
 }

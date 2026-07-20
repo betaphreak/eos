@@ -94,8 +94,9 @@ class SettlementCampFoundingTest {
 		// the climb. Before the improvement the forage sits near parity; building it lifts the site
 		// food and the surplus carries the camp up the ladder.
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.foundAtCamp(true).retinueSize(60).build();
+				.foundAtCamp(true).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321L, DHENIJANSAR);
+		h.tuneEconomy(e -> e.toBuilder().retinueSize(60).build());
 		h.foundStandardColony();
 		Settlement c = h.getColony();
 		c.start();
@@ -118,8 +119,9 @@ class SettlementCampFoundingTest {
 		// must NOT climb to SMALLHOLDING and boot a doomed ruler economy — it stays a foraging camp.
 		// A 25-forager band is below MIN_VIABLE_BOOT_POPULATION (40).
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.foundAtCamp(true).retinueSize(25).build();
+				.foundAtCamp(true).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321L, DHENIJANSAR);
+		h.tuneEconomy(e -> e.toBuilder().retinueSize(25).build());
 		h.foundStandardColony();
 		Settlement c = h.getColony();
 		c.start();
@@ -140,8 +142,9 @@ class SettlementCampFoundingTest {
 		// larder is spent it starves and, unable to sustain the band on this ground, strikes camp
 		// and departs as a wandering caravan led by its captain (the CAMP -> caravan hand-off, E).
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.foundAtCamp(true).retinueSize(40).build();
+				.foundAtCamp(true).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321L, EARGATE);
+		h.tuneEconomy(e -> e.toBuilder().retinueSize(40).build());
 		h.foundStandardColony();
 		Settlement c = h.getColony();
 		c.setCampForagePerForager(0.02); // well below CAMP_RATION (0.1) — the band cannot feed itself

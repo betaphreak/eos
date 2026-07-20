@@ -45,8 +45,6 @@ public class HarimariEconomy {
 		// scenario without touching it; the tweaks below still layer on top
 		SimulationConfig cfg = SimulationConfig.defaultFor(Race.HARIMARI).toBuilder()
 				.settlementName("Sehir")
-				.retinueSize(200)
-				.promotionRatio(0.45)
 				.build();
 		Map<Race, Double> mix = new EnumMap<>(Race.class);
 		mix.put(Race.HARIMARI, 0.7);
@@ -54,6 +52,7 @@ public class HarimariEconomy {
 
 		SimulationHarness h =
 				SimulationHarness.create(cfg, SEED, Race.HARIMARI, mix);
+		h.tuneEconomy(e -> e.toBuilder().retinueSize(200).promotionRatio(0.45).build());
 		h.foundStandardColony();
 		Bank bank = h.getCopperBank();
 		h.addCommonPrinters();

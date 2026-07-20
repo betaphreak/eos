@@ -13,9 +13,10 @@ import com.civstudio.race.Race;
  * {@link SimulationConfig#defaultFor(Era, Race)} — the (era, race) base a scenario builds on
  * (see {@code docs/studio-control-plane-plan.md} §A1).
  *
- * <p>The ordering is what these pin: the economy is the FLOOR, and a scenario's own tweaks sit on
- * top of it. Resolving the race economy later would overwrite deliberate overrides, and several
- * scenarios override economy-derived fields.
+ * <p>Since phase 3 the economy itself belongs to the colony, not the run: what these pin is that
+ * {@code defaultFor} still resolves the right (era, race) cell, and that a scenario's own tweaks —
+ * now made through {@code SimulationHarness.tuneEconomy} — layer on top of that cell per colony
+ * rather than across the whole run.
  */
 class SimulationConfigDefaultForTest {
 
@@ -35,19 +36,37 @@ class SimulationConfigDefaultForTest {
 	}
 
 	@Test
-	void aScenariosOwnTweaksLayerOnTopOfTheRaceBase() {
-		// the ElvenEconomy shape: economy-derived fields deliberately overridden. These must WIN over
-		// the base — resolving the race economy after the fact would silently undo them.
+	void aScenariosOwnTweaksLayerOnTopOfTheColonysOwnEconomy() {
+		// the ElvenEconomy shape, at its post-phase-3 home: the economy belongs to the COLONY, so a
+		// scenario's deliberate overrides go through tuneEconomy rather than the run config. They must
+		// still WIN over the race base, and must not disturb the fields they don't name.
 		SimulationConfig cfg = SimulationConfig.defaultFor(Race.ELVEN).toBuilder()
 				.settlementName("Aelvar")
-				.retinueSize(200)
-				.promotionRatio(0.45)
 				.build();
+		SimulationHarness h = SimulationHarness.create(cfg, 31415927L);
+		h.tuneEconomy(e -> e.toBuilder().retinueSize(200).promotionRatio(0.45).build());
+
+		Era.Economy econ = h.getColony().getEconomy();
 		assertEquals("Aelvar", cfg.settlementName());
-		assertEquals(200, cfg.retinueSize(), "an explicit pool size must survive the race base");
-		assertEquals(0.45, cfg.promotionRatio());
-		// untouched economy fields still come from the cell
-		assertEquals(SimulationConfig.DEFAULT.laborShare(), cfg.laborShare());
+		assertEquals(200, econ.retinueSize(), "an explicit pool size must survive the race base");
+		assertEquals(0.45, econ.promotionRatio());
+		// untouched economy fields still come from the colony's own cell
+		assertEquals(Era.MEDIEVAL.economy(Race.ELVEN).laborShare(), econ.laborShare());
+	}
+
+	@Test
+	void theEconomyNoLongerRidesTheRunConfig() {
+		// the point of phase 3: two colonies in one run can differ economically, which a per-RUN
+		// config cannot express. Same cfg, two colonies, two tunings — they must not alias.
+		SimulationConfig cfg = SimulationConfig.DEFAULT;
+		SimulationHarness a = SimulationHarness.create(cfg, 1L);
+		SimulationHarness b = SimulationHarness.create(cfg, 2L);
+		a.tuneEconomy(e -> e.toBuilder().retinueSize(120).build());
+		b.tuneEconomy(e -> e.toBuilder().retinueSize(640).build());
+
+		assertEquals(120, a.getColony().getEconomy().retinueSize());
+		assertEquals(640, b.getColony().getEconomy().retinueSize(),
+				"tuning one colony must not reach the other — that was the phase-2 bridge's flaw");
 	}
 
 	@Test

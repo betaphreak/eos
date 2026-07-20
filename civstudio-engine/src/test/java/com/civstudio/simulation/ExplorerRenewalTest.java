@@ -97,9 +97,10 @@ class ExplorerRenewalTest {
 	void aReturningHaulEnnoblesTheAblestAndCashSeedsTheRest() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(1)
-				.externalInflowPerStep(0) // closed colony, so total money is conserved
 				.build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, DHENIJANSAR);
+		// closed colony, so total money is conserved
+		h.tuneEconomy(e -> e.toBuilder().externalInflowPerStep(0).build());
 		h.foundStandardColony();
 		Settlement colony = h.getColony();
 		Retinue pool = h.getRetinue();

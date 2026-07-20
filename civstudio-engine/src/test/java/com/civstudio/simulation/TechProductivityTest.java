@@ -31,8 +31,9 @@ class TechProductivityTest {
 		SimulationHarness h = SimulationHarness.create(cfg, 13579);
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
-		h.createFirms(bank, i -> bank, i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings());
+		h.createFirms(bank, i -> bank,
+				i -> h.getColony().getEconomy().eFirm().savings(),
+				i -> h.getColony().getEconomy().nFirm().savings());
 		return h;
 	}
 

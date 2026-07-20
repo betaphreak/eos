@@ -128,17 +128,19 @@ class BirthsTest {
 				// pin the founding skill to the survival regime this wedding/births test
 				// needs (the higher default destabilizes a small colony — see
 				// docs/food-balance.md); this test exercises births, not skill
-				.meanSkillMale(5).meanSkillFemale(2)
-				// a small labor force the all-necessity sector fully employs, on a wide
-				// peasant reserve, so laborers stay alive and prosperous long enough to
-				// marry and bear children within the horizon (the old tight config
-				// collapsed to lone unmarried heads under the re-baselined economy)
-				.retinueSize(300).promotionRatio(0.15).build();
+				.meanSkillMale(5).meanSkillFemale(2).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		// a small labor force the all-necessity sector fully employs, on a wide
+		// peasant reserve, so laborers stay alive and prosperous long enough to
+		// marry and bear children within the horizon (the old tight config
+		// collapsed to lone unmarried heads under the re-baselined economy)
+		h.tuneEconomy(e -> e.toBuilder()
+				.retinueSize(300).promotionRatio(0.15).build());
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
 		h.createFirms(bank, i -> bank,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+				i -> h.getColony().getEconomy().eFirm().savings(),
+				i -> h.getColony().getEconomy().nFirm().savings());
 		h.createDefaultStrategicSector(bank);
 		h.createDefaultRuler();
 		h.createDefaultRetinue();

@@ -362,25 +362,6 @@ public class SimulationHarness {
 	 * (see {@link Settlement#getEconomy()}). A session may seat colonies of different races, so the
 	 * founding path must ask the colony rather than the run config.
 	 */
-	// the run config's economy fields as an Era.Economy — the phase-2 bridge above. Mirrors the
-	// mapping SimulationConfig.defaultFor does in reverse.
-	private static com.civstudio.era.Era.Economy economyOf(SimulationConfig cfg) {
-		return com.civstudio.era.Era.Economy.builder()
-				.ePrice(cfg.ePrice()).nPrice(cfg.nPrice())
-				.eFirm(cfg.eFirm()).nFirm(cfg.nFirm()).cFirm(cfg.cFirm())
-				.laborer(cfg.laborer())
-				.targetNStock(cfg.targetNStock())
-				.externalInflowPerStep(cfg.externalInflowPerStep())
-				.immigrationThreshold(cfg.immigrationThreshold())
-				.laborShare(cfg.laborShare())
-				.bankProfitTaxRate(cfg.bankProfitTaxRate())
-				.nobleIncomeTaxRate(cfg.nobleIncomeTaxRate())
-				.retinueSize(cfg.retinueSize())
-				.promotionRatio(cfg.promotionRatio())
-				.targetNobles(cfg.targetNobles())
-				.build();
-	}
-
 	private com.civstudio.era.Era.Economy econ() {
 		return colony.getEconomy();
 	}
@@ -388,13 +369,6 @@ public class SimulationHarness {
 	public SimulationHarness(SimulationConfig cfg, Settlement colony) {
 		this.cfg = cfg;
 		this.colony = colony;
-		// PHASE-2 BRIDGE. The founding path now reads the colony's economy rather than the run
-		// config, but SimulationConfig still CARRIES those 15 fields and callers still override them
-		// there — so seed the colony from the config to keep the move of the reads behaviour-
-		// preserving. Until phase 3 deletes those fields and converts the override sites to
-		// tuneEconomy, econ() is exactly cfg, and a multi-race session still shares one economy.
-		// Remove this line with the fields; it is the last thing making the run config win.
-		colony.setEconomy(economyOf(cfg));
 		// seed the firm parameters with the run's labor-share (the rest are the
 		// canonical defaults); setFirmConfig can override before createFirms
 		this.firmConfig =
@@ -1382,6 +1356,9 @@ public class SimulationHarness {
 	public SimulationHarness tuneEconomy(
 			java.util.function.UnaryOperator<com.civstudio.era.Era.Economy> tuning) {
 		colony.setEconomy(tuning.apply(econ()));
+		// the firm parameters carry a copy of the labor share (seeded in the constructor, before
+		// this could run), so re-derive it or a tuned share would be silently ignored by the firms
+		this.firmConfig = firmConfig.toBuilder().laborShare(econ().laborShare()).build();
 		return this;
 	}
 

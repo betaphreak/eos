@@ -15,6 +15,7 @@ import com.civstudio.agent.noble.Noble;
 import com.civstudio.agent.noble.NobleConfig;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.CurrencyType;
+import com.civstudio.era.Era;
 import com.civstudio.settlement.Settlement;
 
 /**
@@ -35,13 +36,14 @@ class RuinedNobleDemotionTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		Settlement colony = h.getColony();
+		Era.Economy econ = colony.getEconomy();
 		h.createMarkets();
 		Bank copper = h.getCopperBank();
 		// a standard ruler+pool colony (no export sector needed) so it lives well
 		// past the one-year grace window; createDefaultRuler registers the demotion
 		// trigger as a step action
 		h.createFirms(copper, i -> copper,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+				i -> econ.eFirm().savings(), i -> econ.nFirm().savings());
 		h.createDefaultRuler();
 		h.createDefaultRetinue();
 		h.foundLaborersFromRetinue(i -> copper, i -> 15);

@@ -50,13 +50,14 @@ public class OpenColonyEconomy {
 		// the closed default, opened: a steady inflow refills the peasant pool toward its
 		// founding reserve, so the reserve never empties and the labor force is always
 		// replaced by promotion — the colony holds its population instead of collapsing
-		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.externalInflowPerStep(EXTERNAL_INFLOW_PER_STEP)
-				.immigrationThreshold(IMMIGRATION_THRESHOLD)
-				.build();
+		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		// a distinct seed from HomogeneousEconomy so the two runs' seed-scoped output
 		// (output/<seed>/) does not collide
 		SimulationHarness h = SimulationHarness.create(cfg, 7654322, DHENIJANSAR);
+		h.tuneEconomy(e -> e.toBuilder()
+				.externalInflowPerStep(EXTERNAL_INFLOW_PER_STEP)
+				.immigrationThreshold(IMMIGRATION_THRESHOLD)
+				.build());
 		// the same standard founding as HomogeneousEconomy; foundStandardColony wires the
 		// external inflow (here, pool immigration) since the config opens the colony
 		h.foundStandardColony();

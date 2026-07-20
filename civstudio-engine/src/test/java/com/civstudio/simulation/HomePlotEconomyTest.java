@@ -31,8 +31,9 @@ class HomePlotEconomyTest {
 	@Test
 	void landedHouseholdsSelfFeedFromTheirHomePlots() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.foundAtCamp(true).homePlots(true).retinueSize(60).build();
+				.foundAtCamp(true).homePlots(true).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, 4411);
+		h.tuneEconomy(e -> e.toBuilder().retinueSize(60).build());
 		h.foundStandardColony();
 		Settlement c = h.getColony();
 		c.start();
@@ -72,8 +73,9 @@ class HomePlotEconomyTest {
 	@Test
 	void plotsAreSharedUnderCrowdingWithNoHardCap() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.homePlots(true).retinueSize(300).build();
+				.homePlots(true).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, 4411);
+		h.tuneEconomy(e -> e.toBuilder().retinueSize(300).build());
 		h.foundStandardColony();
 		Settlement c = h.getColony();
 		c.start();

@@ -81,6 +81,11 @@ class SocialMobility implements ExpeditionReturn {
 	private long expeditionEnnobled;
 	private long expeditionNobleLed;
 
+	/** The numbers this colony runs on — its own {@code (era, race)} cell, not the run's. */
+	private com.civstudio.era.Era.Economy econ() {
+		return colony.getEconomy();
+	}
+
 	SocialMobility(Settlement colony, SimulationConfig cfg, NobleConfig nobleConfig,
 			Supplier<Bank> silverBank, Supplier<Bank> copperBank, Supplier<Retinue> pool) {
 		this.colony = colony;
@@ -99,7 +104,7 @@ class SocialMobility implements ExpeditionReturn {
 	 */
 	void install() {
 		// a colony with an export sector staffs it by ennoblement: while it has fewer
-		// than cfg.targetNobles() living nobles, the ruler raises the ablest laborer
+		// than econ().targetNobles() living nobles, the ruler raises the ablest laborer
 		// into a silver-banking noble (the ruler works the strategic firm meanwhile —
 		// see Ruler.act — so it is never unstaffed)
 		if (colony.getMarket(StrategicFirm.LABOR_MARKET) != null)
@@ -259,9 +264,9 @@ class SocialMobility implements ExpeditionReturn {
 			// balances rather than a fresh ruler-funded endowment
 			rankLadder.register(Rank.HOUSEHOLD, (estate, c) -> {
 				Member head = estate.head();
-				Laborer laborer = new Laborer(head, cfg.laborer().e(),
+				Laborer laborer = new Laborer(head, econ().laborer().e(),
 						SimulationHarness.REPLACEMENT_NECESSITY_STOCK, estate.checking(),
-						estate.savings(), cfg.laborer().savingsRate(),
+						estate.savings(), econ().laborer().savingsRate(),
 						LaborerConfig.DEFAULT, copperBank.get(), c);
 				for (Member m : estate.members())
 					if (m != head)
@@ -273,7 +278,7 @@ class SocialMobility implements ExpeditionReturn {
 	}
 
 	/**
-	 * Maintain the aristocracy at {@code cfg.targetNobles()} by ennoblement: a step
+	 * Maintain the aristocracy at {@code econ().targetNobles()} by ennoblement: a step
 	 * action (registered for colonies with an export sector) that, once a week,
 	 * raises the ablest laborer into a noble while the colony has too few. Weekly so
 	 * the class forms gradually over the first weeks (the ruler staffs the export
@@ -285,7 +290,7 @@ class SocialMobility implements ExpeditionReturn {
 			return;
 		long nobles = colony.getAgents().stream()
 				.filter(a -> a instanceof Noble n && n.isAlive()).count();
-		if (nobles >= cfg.targetNobles())
+		if (nobles >= econ().targetNobles())
 			return;
 		boolean hasLaborer = colony.getAgents().stream()
 				.anyMatch(a -> a instanceof Laborer l && l.isAlive());
@@ -348,8 +353,8 @@ class SocialMobility implements ExpeditionReturn {
 				new Person(child.person().givenName(), surname, child.gender(),
 						child.skills(), race),
 				child.getBirthDate(), child.getMother(), child.getFather());
-		Laborer household = new Laborer(head, cfg.laborer().e(), initNQty,
-				initCheckingBal, 0, cfg.laborer().savingsRate(), LaborerConfig.DEFAULT,
+		Laborer household = new Laborer(head, econ().laborer().e(), initNQty,
+				initCheckingBal, 0, econ().laborer().savingsRate(), LaborerConfig.DEFAULT,
 				bank, colony);
 		// a home-plots colony seats the new (fission-born or returned-explorer) household on a
 		// plot it farms for subsistence food, landless (null) if the site is full. See

@@ -105,13 +105,15 @@ class HouseholdDissolutionTest {
 	private static SimulationHarness poolColony() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(1).numEFirms(2).numNFirms(10)
-				.meanSkillMale(5).meanSkillFemale(2)
-				.retinueSize(120).promotionRatio(0.4).build();
+				.meanSkillMale(5).meanSkillFemale(2).build();
 		SimulationHarness h = assertDoesNotThrow(() -> SimulationHarness.create(cfg, 7654321));
+		h.tuneEconomy(e -> e.toBuilder()
+				.retinueSize(120).promotionRatio(0.4).build());
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
 		h.createFirms(bank, i -> bank,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+				i -> h.getColony().getEconomy().eFirm().savings(),
+				i -> h.getColony().getEconomy().nFirm().savings());
 		h.createDefaultStrategicSector(bank);
 		h.createDefaultRuler();
 		h.createDefaultRetinue();

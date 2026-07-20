@@ -13,6 +13,7 @@ import com.civstudio.agent.Member;
 import com.civstudio.agent.laborer.FertilityConfig;
 import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.bank.Bank;
+import com.civstudio.era.Era;
 import com.civstudio.simulation.SimulationConfig;
 import com.civstudio.simulation.SimulationHarness;
 
@@ -61,14 +62,16 @@ class ChildrenFirmTest {
 				// pin the founding skill to the survival regime this school/births test
 				// needs (the higher default destabilizes a small colony — see
 				// docs/food-balance.md); this test exercises schooling, not skill
-				.meanSkillMale(5).meanSkillFemale(2)
-				.retinueSize(120).promotionRatio(0.4).build();
+				.meanSkillMale(5).meanSkillFemale(2).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		h.tuneEconomy(e -> e.toBuilder()
+				.retinueSize(120).promotionRatio(0.4).build());
+		Era.Economy econ = h.getColony().getEconomy();
 		h.setChildrenFirmConfig(schoolConfig);
 		h.createMarkets();
 		Bank bank = h.getCopperBank();
 		h.createFirms(bank, i -> bank,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+				i -> econ.eFirm().savings(), i -> econ.nFirm().savings());
 		h.createDefaultStrategicSector(bank);
 		h.createDefaultRuler();
 		h.createDefaultRetinue();

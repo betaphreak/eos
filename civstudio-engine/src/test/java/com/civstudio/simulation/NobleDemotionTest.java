@@ -15,6 +15,7 @@ import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.agent.noble.Noble;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.CurrencyType;
+import com.civstudio.era.Era;
 import com.civstudio.settlement.Settlement;
 
 /**
@@ -37,13 +38,14 @@ class NobleDemotionTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		Settlement colony = h.getColony();
+		Era.Economy econ = colony.getEconomy();
 		h.createMarkets();
 		Bank copper = h.getCopperBank();
 		// a strategic export sector with no initial nobles, so the first chartered
 		// firm ennobles the ablest laborer (silver-banking) to own it
 		h.createNobleLaborMarket();
 		h.createFirms(copper, i -> copper,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+				i -> econ.eFirm().savings(), i -> econ.nFirm().savings());
 		h.createStrategicFirm(copper, StrategicFirmConfig.DEFAULT);
 		h.primeNobleLabor();
 		h.createDefaultRuler();

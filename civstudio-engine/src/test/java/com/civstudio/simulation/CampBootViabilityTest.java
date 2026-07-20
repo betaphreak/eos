@@ -28,8 +28,9 @@ class CampBootViabilityTest {
 	@Test
 	void aSmallBootedColonySurvivesTheDemandDeficientTransient() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
-				.foundAtCamp(true).retinueSize(60).build();
+				.foundAtCamp(true).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, 4411);
+		h.tuneEconomy(e -> e.toBuilder().retinueSize(60).build());
 		h.foundStandardColony();
 		Settlement c = h.getColony();
 		c.start();

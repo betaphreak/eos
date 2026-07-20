@@ -4,6 +4,7 @@ import java.util.function.IntFunction;
 
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.BankConfig;
+import com.civstudio.era.Era;
 
 /**
  * Simulation (small open colony): a minimum-scale bare colony — 2 enjoyment firms,
@@ -43,20 +44,23 @@ public class SmallOpenEconomy {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.numEFirms(2)
 				.numNFirms(2)
-				.externalInflowPerStep(EXTERNAL_INFLOW_PER_STEP)
-				.immigrationThreshold(IMMIGRATION_THRESHOLD)
 				.build();
 
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		h.tuneEconomy(e -> e.toBuilder()
+				.externalInflowPerStep(EXTERNAL_INFLOW_PER_STEP)
+				.immigrationThreshold(IMMIGRATION_THRESHOLD)
+				.build());
+		Era.Economy econ = h.getColony().getEconomy();
 		h.createMarkets();
 		Bank bankA = h.addBank(BankConfig.DEFAULT);
 		Bank bankB = h.addBank(BankConfig.DEFAULT);
 		IntFunction<Bank> alternate = i -> (i % 2 == 0) ? bankA : bankB;
 
 		h.createFirms(bankA, alternate,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+				i -> econ.eFirm().savings(), i -> econ.nFirm().savings());
 		h.createLaborers(NUM_LABORERS, alternate, i -> 15,
-				i -> cfg.laborer().savings());
+				i -> econ.laborer().savings());
 		// open the colony through bank A: external inflow + immigration grow the
 		// population (a no-op only when externalInflowPerStep is 0, which it isn't)
 		h.enableExternalInflow(bankA);

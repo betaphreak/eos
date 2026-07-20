@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 import com.civstudio.agent.SettlerCaravan;
+import com.civstudio.era.Era;
 import com.civstudio.io.SimLog;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
@@ -48,8 +49,9 @@ class CaravanRefoundTest {
 				cfg.meanSkillFemale());
 		SimLog.init(reborn);
 		SimulationHarness h1 = new SimulationHarness(cfg, reborn);
-		h1.reFoundStandardColony(band, i -> cfg.eFirm().savings(),
-				i -> cfg.nFirm().savings(), i -> 15);
+		Era.Economy econ = reborn.getEconomy();
+		h1.reFoundStandardColony(band, i -> econ.eFirm().savings(),
+				i -> econ.nFirm().savings(), i -> 15);
 
 		// the same dynasty that led the band out rules the new colony, at the band's
 		// site, with the three-currency banking rebuilt

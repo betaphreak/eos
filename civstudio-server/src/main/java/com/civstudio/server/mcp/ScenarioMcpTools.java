@@ -84,8 +84,8 @@ public class ScenarioMcpTools {
 				new CsvRowSinkFactory("output/" + seed),
 				new JdbcRowSinkFactory(store.dataSource(), runId, seed, scenario));
 
-		CalibrationRun.Result r = CalibrationRun.run(cfg, seed, province, retinue, sink,
-				steps == null ? 0 : steps);
+		CalibrationRun.Result r = CalibrationRun.run(cfg, seed, province, retinue,
+				applyEconomy(configOverrides), sink, steps == null ? 0 : steps);
 
 		return new RunResult(runId, seed, scenario, r.finalDate().toString(), r.died(),
 				r.deathDate() == null ? null : r.deathDate().toString(),
@@ -127,26 +127,29 @@ public class ScenarioMcpTools {
 		return out;
 	}
 
-	// apply the whitelisted SimulationConfig overrides; the peasant-pool keys are handled by
-	// applyRetinue and skipped here, and any other key is rejected (not silently dropped)
+	// the override keys that name the COLONY's economy rather than the run config — they moved off
+	// SimulationConfig when a colony started carrying its own (era, race) economy, and are applied
+	// through applyEconomy below. Kept as a set so applyConfig can skip them without re-listing.
+	private static final java.util.Set<String> ECONOMY_KEYS = java.util.Set.of(
+			"retinueSize", "promotionRatio", "targetNobles", "externalInflowPerStep",
+			"immigrationThreshold", "bankProfitTaxRate", "nobleIncomeTaxRate");
+
+	// apply the whitelisted SimulationConfig overrides; the economy keys are handled by applyEconomy
+	// and the peasant-pool keys by applyRetinue, both skipped here, and any other key is rejected
+	// (not silently dropped)
 	private static SimulationConfig applyConfig(SimulationConfig base, Map<String, Double> ov) {
 		if (ov == null || ov.isEmpty())
 			return base;
 		SimulationConfig.SimulationConfigBuilder b = base.toBuilder();
 		for (Map.Entry<String, Double> e : ov.entrySet()) {
 			double v = e.getValue();
+			if (ECONOMY_KEYS.contains(e.getKey()))
+				continue; // → applyEconomy
 			switch (e.getKey()) {
 				case "durationYears" -> b.durationYears((int) v);
 				case "numEFirms" -> b.numEFirms((int) v);
 				case "numNFirms" -> b.numNFirms((int) v);
 				case "foundingLaborersPerNFirm" -> b.foundingLaborersPerNFirm((int) v);
-				case "retinueSize" -> b.retinueSize((int) v);
-				case "promotionRatio" -> b.promotionRatio(v);
-				case "targetNobles" -> b.targetNobles((int) v);
-				case "externalInflowPerStep" -> b.externalInflowPerStep(v);
-				case "immigrationThreshold" -> b.immigrationThreshold(v);
-				case "bankProfitTaxRate" -> b.bankProfitTaxRate(v);
-				case "nobleIncomeTaxRate" -> b.nobleIncomeTaxRate(v);
 				// peasant-pool levers → applyRetinue; accepted here as no-ops
 				case "reliefBudgetPerPeasant", "bufferDays" -> { }
 				default -> throw new IllegalArgumentException(
@@ -154,6 +157,31 @@ public class ScenarioMcpTools {
 			}
 		}
 		return b.build();
+	}
+
+	// the economy overrides, as a tuning applied to the colony's own economy before it founds;
+	// null when none were named, which leaves the colony on its race's cell
+	private static java.util.function.UnaryOperator<com.civstudio.era.Era.Economy> applyEconomy(
+			Map<String, Double> ov) {
+		if (ov == null || ov.keySet().stream().noneMatch(ECONOMY_KEYS::contains))
+			return null;
+		return econ -> {
+			com.civstudio.era.Era.Economy.EconomyBuilder b = econ.toBuilder();
+			for (Map.Entry<String, Double> e : ov.entrySet()) {
+				double v = e.getValue();
+				switch (e.getKey()) {
+					case "retinueSize" -> b.retinueSize((int) v);
+					case "promotionRatio" -> b.promotionRatio(v);
+					case "targetNobles" -> b.targetNobles((int) v);
+					case "externalInflowPerStep" -> b.externalInflowPerStep(v);
+					case "immigrationThreshold" -> b.immigrationThreshold(v);
+					case "bankProfitTaxRate" -> b.bankProfitTaxRate(v);
+					case "nobleIncomeTaxRate" -> b.nobleIncomeTaxRate(v);
+					default -> { } // a config or retinue key; handled elsewhere
+				}
+			}
+			return b.build();
+		};
 	}
 
 	// the peasant-pool food levers live on RetinueConfig (set via SimulationHarness.setRetinueConfig)

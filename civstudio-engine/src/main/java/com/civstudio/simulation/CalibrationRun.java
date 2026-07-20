@@ -1,8 +1,10 @@
 package com.civstudio.simulation;
 
 import java.time.LocalDate;
+import java.util.function.UnaryOperator;
 
 import com.civstudio.agent.RetinueConfig;
+import com.civstudio.era.Era;
 import com.civstudio.agent.firm.Firm;
 import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.io.SimLog;
@@ -76,7 +78,23 @@ public final class CalibrationRun {
 	 */
 	public static Result run(SimulationConfig cfg, long seed, int provinceId,
 			RetinueConfig retinue, RowSinkFactory sink, int steps) {
+		return run(cfg, seed, provinceId, retinue, null, sink, steps);
+	}
+
+	/**
+	 * As {@link #run(SimulationConfig, long, int, RetinueConfig, RowSinkFactory, int)}, tuning the
+	 * colony's own economy before it founds.
+	 *
+	 * @param economy optional adjustment to the colony's {@linkplain Settlement#getEconomy()
+	 *                economy} — the home of the price/balance/tax/pool numbers since they stopped
+	 *                riding the run config; {@code null} leaves the colony on its race's cell
+	 */
+	public static Result run(SimulationConfig cfg, long seed, int provinceId,
+			RetinueConfig retinue, UnaryOperator<Era.Economy> economy, RowSinkFactory sink,
+			int steps) {
 		SimulationHarness h = SimulationHarness.create(cfg, seed, provinceId);
+		if (economy != null)
+			h.tuneEconomy(economy);
 		if (retinue != null)
 			h.setRetinueConfig(retinue);
 		Settlement colony = h.getColony();

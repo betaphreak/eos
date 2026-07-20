@@ -30,10 +30,12 @@ public class SurvivalExperiment {
 		// but over a long horizon and instrumented yearly
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
 				.durationYears(HORIZON_YEARS)
-				.externalInflowPerStep(OpenColonyEconomy.EXTERNAL_INFLOW_PER_STEP)
-				.immigrationThreshold(OpenColonyEconomy.IMMIGRATION_THRESHOLD)
 				.build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654322, DHENIJANSAR);
+		h.tuneEconomy(e -> e.toBuilder()
+				.externalInflowPerStep(OpenColonyEconomy.EXTERNAL_INFLOW_PER_STEP)
+				.immigrationThreshold(OpenColonyEconomy.IMMIGRATION_THRESHOLD)
+				.build());
 		h.foundStandardColony();
 
 		Settlement colony = h.getColony();

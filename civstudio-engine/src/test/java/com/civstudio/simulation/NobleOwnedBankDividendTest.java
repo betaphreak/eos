@@ -15,6 +15,7 @@ import com.civstudio.agent.noble.Noble;
 import com.civstudio.agent.noble.NobleConfig;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.CurrencyType;
+import com.civstudio.era.Era;
 import com.civstudio.settlement.Settlement;
 
 /**
@@ -40,11 +41,12 @@ class NobleOwnedBankDividendTest {
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		Settlement colony = h.getColony();
+		Era.Economy econ = colony.getEconomy();
 		h.createMarkets();
 		Bank copper = h.getCopperBank();
 		Bank silver = h.getSilverBank();
 		h.createFirms(copper, i -> copper,
-				i -> cfg.eFirm().savings(), i -> cfg.nFirm().savings());
+				i -> econ.eFirm().savings(), i -> econ.nFirm().savings());
 
 		// one noble, banking in silver, owning all the founding firms (its dividend
 		// income crosses copper -> silver, feeding the silver money-changer's FX
