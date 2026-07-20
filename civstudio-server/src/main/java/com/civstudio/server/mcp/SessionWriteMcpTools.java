@@ -4,6 +4,9 @@ import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 
+import com.civstudio.data.WorldSources;
+import com.civstudio.scenario.ScenarioDef;
+import com.civstudio.scenario.ScenarioRegistry;
 import com.civstudio.server.HostedSession;
 import com.civstudio.server.SessionHost;
 import com.civstudio.server.SessionSpec;
@@ -34,10 +37,14 @@ public class SessionWriteMcpTools {
 
 	@McpTool(name = "create_session",
 			description = "Found and start a hosted session from a spec (admin only). Defaults to the "
-					+ "caravan demo (seed 7654321, province 4411). Returns the session id and state.")
+					+ "caravan demo (seed 7654321, province 4411). The scenario names a ScenarioDef in "
+					+ "the registry (its founding shape + balance profile); an unknown one is rejected "
+					+ "with the valid keys. Returns the session id, state, and what it founded — shape, "
+					+ "balance profile, and the content version (a run reproduces as seed + "
+					+ "contentVersion + command log).")
 	public CreateResult createSession(
-			@McpToolParam(description = "Scenario name (default 'caravan-demo')", required = false)
-			String scenario,
+			@McpToolParam(description = "Scenario key from the registry (default 'caravan-demo')",
+					required = false) String scenario,
 			@McpToolParam(description = "Run seed (default 7654321)", required = false) Long seed,
 			@McpToolParam(description = "World-map province id (default 4411)", required = false)
 			Integer provinceId) {
@@ -45,9 +52,17 @@ public class SessionWriteMcpTools {
 		long s = seed == null ? 7654321L : seed;
 		String sc = scenario == null ? SessionSpec.CARAVAN_DEMO : scenario;
 		int p = provinceId == null ? 4411 : provinceId;
+		// validate up front for a NEW session — reject an unknown key with the valid ones, rather
+		// than letting SessionHost.build silently found standard (that fallback is for RESTORING a
+		// session whose scenario string predates the registry, not for a fresh create).
+		ScenarioDef def = ScenarioRegistry.get().resolve(sc);
+		if (def == null)
+			throw new IllegalArgumentException("unknown scenario '" + sc + "'; valid keys: "
+					+ ScenarioRegistry.get().all().stream().map(ScenarioDef::key).toList());
 		HostedSession hs = host.create(new SessionSpec(s, sc, p), authz.userId());
 		hs.kind().begin(hs);   // each kind begins its own way (docs/session-management.md)
-		return new CreateResult(hs.id(), hs.clock().name(), hs.outcome().name());
+		return new CreateResult(hs.id(), hs.clock().name(), hs.outcome().name(),
+				def.shape().name(), def.balanceProfile(), WorldSources.contentVersion());
 	}
 
 	/** The floor on the tick interval a `rate` action may set (ms) — a guard so a hosted session
@@ -131,8 +146,14 @@ public class SessionWriteMcpTools {
 		};
 	}
 
-	/** Result of {@link #createSession}. */
-	public record CreateResult(String id, String clockState, String outcome) {}
+	/**
+	 * Result of {@link #createSession}: the session id and clock/outcome, plus what it founded —
+	 * the scenario's {@code shape} and {@code balanceProfile}, and the {@code contentVersion} the
+	 * session was founded against ({@code null} = unknown, the classpath source). The last three let
+	 * the caller confirm it got the tuning it meant, and record the version a replay needs.
+	 */
+	public record CreateResult(String id, String clockState, String outcome, String shape,
+			String balanceProfile, String contentVersion) {}
 
 	/** Result of {@link #controlSession}. */
 	public record ControlResult(String id, String clockState, String outcome, long tick) {}

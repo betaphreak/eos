@@ -45,6 +45,16 @@ class SessionWriteMcpToolsTest {
 		String id = created.id();
 		HostedSession hs = host.get(id);
 		assertNotNull(hs, "create_session should register the session");
+		// the result reports what it founded — the scenario's shape/profile and the content version
+		assertEquals("STANDARD_COLONY", created.shape(), "caravan-demo founds a standard colony");
+		assertEquals("default", created.balanceProfile());
+
+		// an unknown scenario is rejected up front (not silently founded as standard, which is only
+		// the RESTORE fallback), and the error names the valid keys
+		IllegalArgumentException bad = assertThrows(IllegalArgumentException.class,
+				() -> t.createSession("no-such-scenario", 1L, 4411));
+		assertTrue(bad.getMessage().contains("caravan-demo"),
+				"the rejection should list valid scenario keys: " + bad.getMessage());
 
 		t.controlSession(id, "pause", null); // pause so stepping is deterministic
 		assertNotNull(hs.colonies().get(0).getRuler(), "the demo colony has a ruler");

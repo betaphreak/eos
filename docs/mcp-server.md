@@ -305,7 +305,7 @@ framing instead of REST.
 | Tool | Maps to | Write? |
 |---|---|---|
 | `list_sessions` | `host.list()` → id/scenario/seed/state/tick | read |
-| `create_session` | `host.create(SessionSpec, owner)` (+ `start`) | write (auth) |
+| `create_session` | validates the scenario against `ScenarioRegistry` (rejects unknown with valid keys), `host.create(SessionSpec, owner)` (+ `start`); returns shape/balanceProfile/contentVersion | write (auth) |
 | `control_session` | `pause`/`resume`/`step`/`setTickRateMillis`/`stop` | write (auth) |
 | `submit_command` | `hs.submit(new SetTaxRateCommand(tick, lever, rate))` | write (auth) |
 | `get_snapshot` | `hs.currentSnapshot()` → `SessionSnapshot`/`ColonyView` | read |
