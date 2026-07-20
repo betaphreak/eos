@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.civstudio.data.WorldSource;
-import com.civstudio.data.WorldSources;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
@@ -48,7 +47,10 @@ public final class BalanceProfiles {
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
 			.build();
 
-	private static final BalanceProfiles INSTANCE = load(WorldSources.current());
+	// built on first use and rebuilt if the active WorldSource changes — never captured at class-load
+	// (see WorldSourceCache for the ordering hazard this avoids)
+	private static final com.civstudio.data.WorldSourceCache<BalanceProfiles> CACHE =
+			new com.civstudio.data.WorldSourceCache<>(BalanceProfiles::load);
 
 	private final Map<String, BalanceProfile> byKey;
 
@@ -58,7 +60,7 @@ public final class BalanceProfiles {
 
 	/** The shared, content-loaded profiles. */
 	public static BalanceProfiles get() {
-		return INSTANCE;
+		return CACHE.get();
 	}
 
 	/**

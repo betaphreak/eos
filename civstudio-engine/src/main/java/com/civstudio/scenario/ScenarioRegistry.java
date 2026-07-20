@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.civstudio.data.WorldSource;
-import com.civstudio.data.WorldSources;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
@@ -60,7 +59,10 @@ public final class ScenarioRegistry {
 							+ " stands.",
 					"default", FoundingShape.TIMELINE, Map.of()));
 
-	private static final ScenarioRegistry INSTANCE = load(WorldSources.current());
+	// built on first use and rebuilt if the active WorldSource changes — never captured at class-load
+	// (see WorldSourceCache for the ordering hazard this avoids)
+	private static final com.civstudio.data.WorldSourceCache<ScenarioRegistry> CACHE =
+			new com.civstudio.data.WorldSourceCache<>(ScenarioRegistry::load);
 
 	private final Map<String, ScenarioDef> byKey;
 
@@ -70,7 +72,7 @@ public final class ScenarioRegistry {
 
 	/** The shared registry. */
 	public static ScenarioRegistry get() {
-		return INSTANCE;
+		return CACHE.get();
 	}
 
 	/**

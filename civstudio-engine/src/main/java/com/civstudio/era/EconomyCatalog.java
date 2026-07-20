@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.util.EnumMap;
 import java.util.Map;
 
-import com.civstudio.data.WorldSources;
 import com.civstudio.race.Race;
 
 import tools.jackson.core.type.TypeReference;
@@ -51,7 +50,10 @@ public final class EconomyCatalog {
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
 			.build();
 
-	private static final EconomyCatalog INSTANCE = load(WorldSources.current());
+	// built on first use and rebuilt if the active WorldSource changes — never captured at class-load
+	// (see WorldSourceCache for the ordering hazard this avoids)
+	private static final com.civstudio.data.WorldSourceCache<EconomyCatalog> CACHE =
+			new com.civstudio.data.WorldSourceCache<>(EconomyCatalog::load);
 
 	private final Map<Era, Map<Race, Era.Economy>> byEra;
 
@@ -61,7 +63,7 @@ public final class EconomyCatalog {
 
 	/** The shared catalog. */
 	public static EconomyCatalog get() {
-		return INSTANCE;
+		return CACHE.get();
 	}
 
 	/** Whether any economy at all was authored (false on the absent-resource path). */

@@ -31,7 +31,11 @@ public final class UnitCatalog {
 			.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
 			.build();
 
-	private static final UnitCatalog INSTANCE = load();
+	// built on first use and rebuilt if the active WorldSource changes — not captured at class-load,
+	// which the old `static final INSTANCE = load()` did (see WorldSourceCache). This catalog is an
+	// eager static singleton the client/server phase-0 notes call out by name; the cache fixes it too.
+	private static final com.civstudio.data.WorldSourceCache<UnitCatalog> CACHE =
+			new com.civstudio.data.WorldSourceCache<>(UnitCatalog::load);
 
 	// units grouped by role, each list in a stable (document) order
 	private final Map<CaravanRole, List<UnitInfo>> byRole;
@@ -42,7 +46,7 @@ public final class UnitCatalog {
 
 	/** The shared catalog. */
 	public static UnitCatalog get() {
-		return INSTANCE;
+		return CACHE.get();
 	}
 
 	/**
@@ -56,9 +60,9 @@ public final class UnitCatalog {
 		return byRole.getOrDefault(role, List.of());
 	}
 
-	private static UnitCatalog load() {
+	static UnitCatalog load(com.civstudio.data.WorldSource source) {
 		Map<CaravanRole, List<UnitInfo>> byRole = new EnumMap<>(CaravanRole.class);
-		try (InputStream in = com.civstudio.data.WorldSources.current().open(RESOURCE)) {
+		try (InputStream in = source.open(RESOURCE)) {
 			if (in == null) {
 				System.err.println("UnitCatalog: " + RESOURCE + " not on classpath — empty catalog");
 				return new UnitCatalog(byRole);
