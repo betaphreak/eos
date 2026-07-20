@@ -48,6 +48,7 @@ import com.civstudio.agent.ruler.Mayor;
 import com.civstudio.agent.ruler.Ruler;
 import com.civstudio.tech.ResearchState;
 import com.civstudio.bank.Bank;
+import com.civstudio.balance.BalanceProfile;
 import com.civstudio.bank.BankConfig;
 import com.civstudio.bank.CurrencyType;
 import com.civstudio.name.Person;
@@ -192,6 +193,23 @@ public class SimulationHarness {
 	// is created (createDefaultGranary / foundStandardColony). See docs/granary.md.
 	@Setter
 	private GranaryConfig granaryConfig = GranaryConfig.DEFAULT;
+
+	// The configs the default-creation paths used to pass inline as X.DEFAULT: the strategic export
+	// firm, the science firm, the builder, the tiered banks and the laborer households. Held as
+	// fields (defaulting to the canonical values, so behaviour is unchanged) so setBalanceProfile can
+	// vary them from one aggregate — the no-arg/default creators below read these rather than
+	// .DEFAULT. A caller passing an explicit config to createStrategicFirm/createScienceFirm/
+	// createBuilder/addBank still overrides per call.
+	@Setter
+	private StrategicFirmConfig strategicFirmConfig = StrategicFirmConfig.DEFAULT;
+	@Setter
+	private ScienceConfig scienceConfig = ScienceConfig.DEFAULT;
+	@Setter
+	private BuilderConfig builderConfig = BuilderConfig.DEFAULT;
+	@Setter
+	private BankConfig bankConfig = BankConfig.DEFAULT;
+	@Setter
+	private LaborerConfig laborerConfig = LaborerConfig.DEFAULT;
 
 	// the colony's social-mobility runtime (ennoblement, ruin demotion, household
 	// fission and the rank ladder), built lazily on first use (see mobility()); the
@@ -425,7 +443,7 @@ public class SimulationHarness {
 	 */
 	public Bank getCopperBank() {
 		if (copperBank == null) {
-			copperBank = addBank(BankConfig.DEFAULT);
+			copperBank = addBank(bankConfig);
 			// the commoners' bank has no single owner — name it for its clientele
 			copperBank.setName("Commoners' Bank");
 		}
@@ -442,7 +460,7 @@ public class SimulationHarness {
 	 */
 	public Bank getSilverBank() {
 		if (silverBank == null) {
-			silverBank = addBank(BankConfig.DEFAULT.toBuilder()
+			silverBank = addBank(bankConfig.toBuilder()
 					.currency(CurrencyType.SILVER)
 					.exchangeFeeRate(DEFAULT_EXCHANGE_FEE_RATE).build());
 			// the nobles' shared money-changer; a noble that comes to own it is
@@ -460,7 +478,7 @@ public class SimulationHarness {
 	 */
 	public Bank getGoldBank() {
 		if (goldBank == null) {
-			goldBank = addBank(BankConfig.DEFAULT.toBuilder()
+			goldBank = addBank(bankConfig.toBuilder()
 					.currency(CurrencyType.GOLD)
 					.exchangeFeeRate(DEFAULT_EXCHANGE_FEE_RATE).build());
 			// the crown's bank; renamed after the ruling house once the ruler exists
@@ -632,7 +650,7 @@ public class SimulationHarness {
 	 */
 	public void createDefaultStrategicSector(Bank bank) {
 		createNobleLaborMarket();
-		createStrategicFirm(bank, StrategicFirmConfig.DEFAULT);
+		createStrategicFirm(bank, strategicFirmConfig);
 		// the nobles who staff the export firm are raised from the laborers by
 		// ennoblement (they bank in silver); reserve the silver tier now so the banks
 		// stay ordered copper, silver, gold even though no noble exists yet
@@ -673,7 +691,7 @@ public class SimulationHarness {
 			colony.setResearch(research);
 		}
 		if (!hasScienceFirm())
-			createScienceFirm(bank, ScienceConfig.DEFAULT);
+			createScienceFirm(bank, scienceConfig);
 	}
 
 	// whether the colony already has a (living) science firm, so the research guarantee
@@ -911,7 +929,7 @@ public class SimulationHarness {
 		// live colony), staffed from this pool. Create it first so the dedicated
 		// PeasantLabor market exists when the pool's constructor looks it up.
 		if (colony.getBuilder() == null)
-			createBuilder(bank, BuilderConfig.DEFAULT);
+			createBuilder(bank, builderConfig);
 		// seed the whole pool with econ().retinueSize() peasants, each with a per-peasant
 		// larder (see retinueConfig). foundLaborersFromRetinue then promotes
 		// promotionRatio of them on day 0, the rest stay as the standing reserve.
@@ -937,7 +955,7 @@ public class SimulationHarness {
 	 */
 	public Retinue createRetinueFromBand(SettlerCaravan band, Bank bank) {
 		if (colony.getBuilder() == null)
-			createBuilder(bank, BuilderConfig.DEFAULT);
+			createBuilder(bank, builderConfig);
 		Retinue following = band.getFollowing();
 		retinue = new Retinue(following.getMembers(), following.getLarder(), bank,
 				colony, retinueConfig);
@@ -961,7 +979,7 @@ public class SimulationHarness {
 	 */
 	public Retinue createRetinueFromPool(Retinue campPool, Bank bank) {
 		if (colony.getBuilder() == null)
-			createBuilder(bank, BuilderConfig.DEFAULT);
+			createBuilder(bank, builderConfig);
 		// cap the adopted larder at a normal fresh-pool buffer (size × bufferDays): a camp that
 		// foraged for months banks a huge larder, and a settled reserve that opened over-stocked
 		// would buy no market food for months (suppressing necessity demand). Normalizing it makes
@@ -1089,7 +1107,7 @@ public class SimulationHarness {
 		for (int i = 0; i < numLaborers; i++) {
 			laborers[i] = new Laborer(econ().laborer().e(), initN.applyAsDouble(i),
 					econ().laborer().checking(), savings.applyAsDouble(i),
-					econ().laborer().savingsRate(), LaborerConfig.DEFAULT,
+					econ().laborer().savingsRate(), laborerConfig,
 					laborerBank.apply(i), colony);
 			colony.addAgent(laborers[i]);
 		}
@@ -1168,7 +1186,7 @@ public class SimulationHarness {
 					return null;
 				return new Laborer((Laborer) dead, econ().laborer().e(),
 						REPLACEMENT_NECESSITY_STOCK, econ().laborer().savingsRate(),
-						LaborerConfig.DEFAULT, colony);
+						laborerConfig, colony);
 			});
 	}
 
@@ -1202,7 +1220,7 @@ public class SimulationHarness {
 		// skill-based endowment: the sum of the head's twelve skill levels, in copper
 		double savings = peasant.skills().totalLevel();
 		Laborer laborer = new Laborer(head, econ().laborer().e(), initNQty, 0, savings,
-				econ().laborer().savingsRate(), LaborerConfig.DEFAULT, bank, colony);
+				econ().laborer().savingsRate(), laborerConfig, bank, colony);
 		// a home-plots colony seats the new household on a plot it farms for subsistence food
 		// (landless — null — if the site is full); the founding cohort and every promoted
 		// replacement flow through here. See docs/plot-working-plan.md P1.
@@ -1249,7 +1267,7 @@ public class SimulationHarness {
 			while (gatewayBank.getEquity() >= econ().immigrationThreshold()) {
 				immigrants.add(new Laborer(econ().laborer().e(),
 						REPLACEMENT_NECESSITY_STOCK, econ().immigrationThreshold(),
-						0, econ().laborer().savingsRate(), LaborerConfig.DEFAULT,
+						0, econ().laborer().savingsRate(), laborerConfig,
 						gatewayBank, colony, true));
 			}
 			return immigrants;
@@ -1359,6 +1377,34 @@ public class SimulationHarness {
 		// the firm parameters carry a copy of the labor share (seeded in the constructor, before
 		// this could run), so re-derive it or a tuned share would be silently ignored by the firms
 		this.firmConfig = firmConfig.toBuilder().laborShare(econ().laborShare()).build();
+		return this;
+	}
+
+	/**
+	 * Apply a whole {@link BalanceProfile} — the agent-behaviour tuning — in one call, the aggregate
+	 * form of the per-agent {@code setXxxConfig} setters. Must run <b>before founding</b>: these are
+	 * read as the colony's markets, banks, firms, pool and households are built.
+	 * <p>
+	 * The firm config is spliced with the colony's economy labor share the same way {@link
+	 * #tuneEconomy} does — the economy is the authority on that one field (it is an {@code
+	 * Era.Economy} value), so a profile's {@code firm.laborShare()} does not silently override it. If
+	 * you mean to change the labor share, tune the economy.
+	 *
+	 * @param profile the tuning to apply; {@link BalanceProfile#DEFAULT} is behaviour-neutral
+	 * @return this harness, for chaining
+	 */
+	public SimulationHarness setBalanceProfile(BalanceProfile profile) {
+		this.firmConfig = profile.firm().toBuilder().laborShare(econ().laborShare()).build();
+		this.bankConfig = profile.bank();
+		this.nobleConfig = profile.noble();
+		this.retinueConfig = profile.retinue();
+		this.laborerConfig = profile.laborer();
+		this.weddingConfig = profile.wedding();
+		this.granaryConfig = profile.granary();
+		this.childrenFirmConfig = profile.childrenFirm();
+		this.strategicFirmConfig = profile.strategicFirm();
+		this.scienceConfig = profile.science();
+		this.builderConfig = profile.builderFirm();
 		return this;
 	}
 

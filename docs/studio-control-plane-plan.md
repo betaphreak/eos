@@ -140,16 +140,33 @@ Detail endpoints use `host.get(sid)` (404 for an unloaded run) whereas `/snapsho
 **Goal:** tuning becomes a content edit + a re-seed, not a recompile. Unlocks the loop
 *author profile → `run_scenario`/`sweep` → `compare_runs`*.
 
-### A0 — `BalanceProfile` aggregate (engine, no Strapi yet)
+### A0 — `BalanceProfile` aggregate — **SHIPPED, 2026-07-20**
 
-Introduce `com.civstudio.balance.BalanceProfile`: a record holding `SimulationConfig` plus the 13
-per-owner configs, with a `DEFAULT` composed from the existing `DEFAULT`s (so it is behaviour-neutral by
-construction). Give `SimulationHarness` a single `setBalanceProfile(BalanceProfile)` that fans out to the
-existing `@Setter`s and factory arguments — the missing injection seam. Scenarios keep compiling
-unchanged.
+`com.civstudio.balance.BalanceProfile` is a record of the **eleven per-owner `*Config` records that
+standard-colony founding reads** — `firm`, `bank`, `noble`, `retinue`, `laborer`, `wedding`,
+`granary`, `childrenFirm`, `strategicFirm`, `science`, `builderFirm` — with `DEFAULT` composed from
+each field's own `DEFAULT`. `SimulationHarness.setBalanceProfile(profile)` fans out to all eleven in
+one call, the aggregate form of the per-agent `setXxxConfig` setters. Six already had `@Setter`s; the
+other five were passed inline as `X.DEFAULT` at their creation sites, so they became harness fields
+(defaulting to `DEFAULT`, so behaviour-neutral) that the no-arg/default creators now read.
 
-*Ship criterion:* full suite green with `BalanceProfile.DEFAULT` wired in; byte-identical run output for
-a fixed seed.
+**Scope narrowed from the original plan**, following the A1 split — the record is *not*
+`SimulationConfig + 13 configs`. Three homes, cleanly partitioned:
+- **`BalanceProfile`** — agent *behaviour* (the eleven configs).
+- **`SimulationConfig`** — run *shape* (`numEFirms`, `foundAtCamp`, `durationYears`, …), which
+  already has its injection point (it is passed to `create`). Folding it into the profile would give
+  those fields two homes.
+- **`EconomyCatalog` / `Era.Economy`** — the *economy*, authored content on the era × race axes.
+
+`MarchConfig` (caravan-march behaviour, not part of founding) and `FertilityConfig` (rides
+`SimulationConfig`, applied to the `Settlement`) are deliberately excluded — noted in the record's
+javadoc.
+
+*Ship criterion met:* full suite green (435+126), and `BalanceProfileTest` asserts
+`setBalanceProfile(DEFAULT)` leaves a two-year colony's population identical to an untouched run — the
+behaviour-neutral proof — plus that a tuned profile reaches founding and that a profile's
+`firm.laborShare` does **not** override the economy-owned labor share (the same splice `tuneEconomy`
+does; two authorities must not fight over one number).
 
 ### A1 — Economy is an era × race matrix, NOT part of the profile — **DECIDED 2026-07-20 (owner)**
 
