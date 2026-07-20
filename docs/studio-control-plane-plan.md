@@ -314,17 +314,28 @@ Two contract details, both about *absent ≠ empty*:
 - `seed.js` **skips loudly** when the exporter's file is missing (it writes to a gitignored dir, so a
   clean checkout legitimately has none) rather than seeding `{}`, for the same reason.
 
-> **The committed test fixture was deliberately NOT regenerated.** It still lacks
-> `/balance/economies.json`, which is harmless — absent means the constants stand, and
-> `EconomyCatalogTest` covers the loading logic directly. Regenerating it needs a follow-up when a
-> non-human column is actually authored.
->
-> **Why it was left:** a locally-produced bundle differs from the committed fixture in **30 of 35
-> shared keys** — while carrying the *same* `contentVersion`. The differences are **pure row
-> ordering**: identical counts, identical multisets, no content change. So a regen would be a 1.9 MB
-> binary churn that changes nothing, and — worse — the fixture cannot be meaningfully diffed across
-> regens, so real drift would hide inside the noise. Worth fixing at the source (a stable `ORDER BY`
-> in the bundle queries) before the fixture is next rebuilt.
+#### Bundle row ordering — FIXED, and the fixture regenerated (2026-07-20)
+
+Shipping the matrix surfaced this: a locally-rebuilt bundle differed from the committed fixture in
+**30 of 35 datasets** while carrying the *same* `contentVersion` — pure row ordering, identical
+counts and multisets. `all()` paged with `start`/`limit` and **no `ORDER BY`**, which is worse than
+cosmetic: Postgres guarantees no row order for an unordered `LIMIT/OFFSET` query, so a paged read can
+silently **repeat or skip rows across page boundaries**. A latent correctness bug, not just diff
+noise.
+
+Every fetcher now sorts on its type's **natural key** (`key`/`tag`/`provinceId`/`artTag`/…), with
+`id:asc` as the backstop for a caller that names none. Natural key rather than `id` on purpose: ids
+follow `seed.js`'s *concurrent* insert order, so they are stable within one database but **not across
+reseeds** — which is exactly the property the fixture needs. The two datasets whose natural key is
+not query-sortable are ordered after mapping: `adjacency` (its key is the `from`/`to` *relations*)
+and `feast` (ordered by calendar position, then name).
+
+*Verified*: two consecutive rebuilds are now **byte-identical** (36/36 datasets stable), no dataset
+changed row count, and the content matches the previous fixture exactly when order is ignored.
+
+With ordering stable a regen is finally meaningful, so **the committed fixture was rebuilt** — it now
+carries `/balance/economies.json`, so the offline suite exercises the content path rather than the
+absent-resource fallback. Suite green against it (431+126). Future fixture diffs are real signal.
 
 ### A2 — Serialise/deserialise round-trip
 
