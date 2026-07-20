@@ -45,6 +45,11 @@ param(
     # strapi mode: the CMS bundle endpoint + its shared secret (WORLD_BUNDLE_TOKEN).
     [string] $WorldSourceUrl  = 'http://localhost:1337/api/world-bundle',
     [string] $WorldSourceToken = '',
+    # Trust the X-CivStudio-User dev identity header, so the GATED reads/writes (the command log,
+    # session control) can be exercised locally without a real Steam login. Dev-only by construction:
+    # the server ignores the header unless this is on. `-DevAdmin` names the user it grants admin.
+    [switch] $TrustDevUser,
+    [string] $DevAdmin        = 'dev-admin',
     [switch] $SkipEngineBuild,
     [switch] $Online
 )
@@ -110,6 +115,13 @@ switch ($WorldSource) {
         Write-Warning ("classpath world source: generated/ is no longer committed, so this boots " +
             "only if you have restored those resources yourself. Expect 'Terrain resource not found'.")
     }
+}
+
+if ($TrustDevUser) {
+    $appArgs += '--civstudio.auth.trust-dev-user-header=true'
+    $appArgs += "--civstudio.auth.admins=$DevAdmin"
+    Write-Host ("==> dev identity trusted: send 'X-CivStudio-User: $DevAdmin' to act as an admin " +
+        '(gated reads like GET /api/sessions/{id}/commands)') -ForegroundColor Cyan
 }
 $runArgs = @(
     '-pl', 'civstudio-server', 'spring-boot:run',

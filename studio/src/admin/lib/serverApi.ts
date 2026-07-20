@@ -9,7 +9,11 @@
 // separate from their Strapi admin login).
 
 // Configurable at build time (env VITE_CIVSTUDIO_SERVER); defaults to the live dev server.
-const RAW = (import.meta as any)?.env?.VITE_CIVSTUDIO_SERVER as string | undefined;
+//
+// NOTE the exact `import.meta.env.X` shape. Vite's substitution is a LITERAL match, so the
+// optional-chaining form (`import.meta?.env?.X`) is never replaced and the override silently never
+// arrives — which is precisely what it did until 2026-07-20. See src/admin/vite.config.ts.
+const RAW = import.meta.env.VITE_CIVSTUDIO_SERVER;
 export const serverBase = (RAW || 'https://dev.civstudio.com').replace(/\/+$/, '');
 
 export const signInUrl = `${serverBase}/api/auth/steam/login`;

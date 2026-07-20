@@ -53,6 +53,20 @@ $OWNER    = 'betaphreak'                       # ghcr namespace (GitHub owner, l
 $REPO     = 'civstudio-backend'               # image repo (matches the app's current image)
 $HEALTH   = 'https://civstudio.com/_health'   # Strapi health endpoint (204 when serving)
 
+# The admin embeds and links to the world map viewer, which ships from web/ — and web/ deploys on a
+# PUSH to master (.github/workflows/deploy-web.yml) while this script is manual. So a studio image
+# built from an unpushed commit can depend on web/ code that is not going anywhere: the ?lobby=0
+# opt-out the embedded map relies on is exactly that shape. Warn rather than block — a studio-only
+# change is perfectly deployable from an unpushed commit, and only the operator knows which it is.
+try {
+    $ahead = (git rev-list --count 'origin/master..HEAD' 2>$null)
+    if ($LASTEXITCODE -eq 0 -and [int]$ahead -gt 0) {
+        Write-Warning ("HEAD is $ahead commit(s) ahead of origin/master. web/ deploys on push, so if " +
+            'this build depends on unpushed web/ changes they will NOT be live. Push first, or ' +
+            'continue if this is studio-only.')
+    }
+} catch { <# no git / no remote — not worth failing a deploy over #> }
+
 # Does OWNER/REPO:TAG already exist on GHCR? `docker manifest inspect` queries the registry directly
 # using Docker's stored credential (incl. helpers like wincred) and — verified — needs NO running
 # daemon (works with a dead DOCKER_HOST), so a clean-HEAD deploy can roll without starting Docker.

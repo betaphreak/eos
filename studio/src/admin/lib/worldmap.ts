@@ -8,7 +8,8 @@
 import { serverBase } from './serverApi';
 
 // Configurable at build time (env VITE_CIVSTUDIO_WORLDMAP); defaults to the live viewer.
-const RAW = (import.meta as any)?.env?.VITE_CIVSTUDIO_WORLDMAP as string | undefined;
+// Exact `import.meta.env.X` shape on purpose — see serverApi.ts.
+const RAW = import.meta.env.VITE_CIVSTUDIO_WORLDMAP;
 export const worldMapBase = (RAW || 'https://anbennar.civstudio.com').replace(/\/+$/, '');
 
 /**

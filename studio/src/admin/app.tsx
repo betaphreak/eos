@@ -110,10 +110,18 @@ export default {
     // DOM-only tweaks the theme tokens can't reach (safe in bootstrap).
     const style = document.createElement('style');
     style.innerHTML = `
-      /* hide upsell / EE links */
+      /* Hide upsell / EE links.
+         Every locked Enterprise feature routes through a "purchase-" settings page — Content History,
+         Releases, Review Workflows, Single Sign-On and Audit Logs are all
+         /admin/settings/purchase-<feature>. Matching that prefix covers the set AND anything Strapi
+         adds later, which enumerating did not: the previous rules named /settings/audit-logs,
+         /settings/sso and /settings/review-workflows, routes Strapi had already renamed, so they had
+         quietly stopped hiding anything. The :has() rule takes the list item with it, so the section
+         does not keep a gap where the entry was. */
       a[href*="strapi.io/pricing"], div:has(> a[href*="strapi.io/pricing"]) { display: none !important; }
-      a[href$="/settings/audit-logs"], a[href$="/settings/review-workflows"],
-      a[href$="/settings/sso"], a[href$="/settings/purchase-content"] { display: none !important; }
+      a[href*="/settings/purchase-"],
+      li:has(> a[href*="/settings/purchase-"]),
+      li:has(> div > a[href*="/settings/purchase-"]) { display: none !important; }
 
       /* match web/ chrome: system-ui body (the brand serif lives in the SVG logos, as in web/) */
       body, button, input, select, textarea {
