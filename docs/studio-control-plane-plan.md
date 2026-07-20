@@ -301,9 +301,30 @@ the same loader then serves the profile.
 perturbing one value in it makes `Era.MEDIEVAL.economy(HUMAN)` return the authored number — so the
 content is genuinely winning, not silently absent.
 
-**Remaining for this matrix:** the studio side — a content type, `world-bundle.ts` emitting
-`resources['/balance/economies.json']`, `seed.js` ingesting it, and a fixture regen. Then a
-non-human column can be authored without a recompile, which is the whole point.
+**Studio side — SHIPPED, 2026-07-20.** `economy-matrix` (a singleType with one JSON attribute, the
+`era-modifier` shape), `seed.js` ingesting the exporter's file, and `world-bundle.ts` emitting
+`resources['/balance/economies.json']`. Verified locally end to end against a real seeded Postgres:
+studio → `GET /api/world-bundle` → `FixtureWorldSource` → `EconomyCatalog` → `Era.economy(DWARVEN)`
+resolving through the matrix. **A non-human column is now a content edit**, which was the point.
+
+Two contract details, both about *absent ≠ empty*:
+- `economies()` returns `null` when unauthored and the key is then **omitted from the bundle**, not
+  emitted as `{}`. The engine reads an absent resource as "every cell keeps its compiled constant";
+  a present-but-empty one would be authored emptiness — a silent retune of every colony.
+- `seed.js` **skips loudly** when the exporter's file is missing (it writes to a gitignored dir, so a
+  clean checkout legitimately has none) rather than seeding `{}`, for the same reason.
+
+> **The committed test fixture was deliberately NOT regenerated.** It still lacks
+> `/balance/economies.json`, which is harmless — absent means the constants stand, and
+> `EconomyCatalogTest` covers the loading logic directly. Regenerating it needs a follow-up when a
+> non-human column is actually authored.
+>
+> **Why it was left:** a locally-produced bundle differs from the committed fixture in **30 of 35
+> shared keys** — while carrying the *same* `contentVersion`. The differences are **pure row
+> ordering**: identical counts, identical multisets, no content change. So a regen would be a 1.9 MB
+> binary churn that changes nothing, and — worse — the fixture cannot be meaningfully diffed across
+> regens, so real drift would hide inside the noise. Worth fixing at the source (a stable `ORDER BY`
+> in the bundle queries) before the fixture is next rebuilt.
 
 ### A2 — Serialise/deserialise round-trip
 

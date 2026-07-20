@@ -842,6 +842,35 @@ export interface ApiCultureCulture extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiEconomyMatrixEconomyMatrix extends Struct.SingleTypeSchema {
+  collectionName: 'economy_matrices';
+  info: {
+    description: "The era x race economy matrix the engine founds colonies on: prices, agent starting balances, tax rates and peasant-pool sizing, keyed era -> race -> economy (enum names). Served to the engine as /balance/economies.json; a race with no column of its own falls back to HUMAN's. LOAD-BEARING \u2014 editing these numbers changes simulation behaviour, so a run is reproducible only as seed + contentVersion + command log.";
+    displayName: 'Economy Matrix';
+    pluralName: 'economy-matrices';
+    singularName: 'economy-matrix';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    economies: Schema.Attribute.JSON & Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::economy-matrix.economy-matrix'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiEraModifierEraModifier extends Struct.SingleTypeSchema {
   collectionName: 'era_modifiers';
   info: {
@@ -3070,6 +3099,7 @@ declare module '@strapi/strapi' {
       'api::combat-class.combat-class': ApiCombatClassCombatClass;
       'api::country.country': ApiCountryCountry;
       'api::culture.culture': ApiCultureCulture;
+      'api::economy-matrix.economy-matrix': ApiEconomyMatrixEconomyMatrix;
       'api::era-modifier.era-modifier': ApiEraModifierEraModifier;
       'api::feast.feast': ApiFeastFeast;
       'api::feature.feature': ApiFeatureFeature;

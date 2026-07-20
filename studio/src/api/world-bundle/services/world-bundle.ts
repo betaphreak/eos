@@ -73,7 +73,7 @@ export default {
       countries, cultures, religions, tradegoods, areas, regions, superregions, provinces,
       adjacencies, edges, portals, terrains, features, bonusesAll, improvements, routes,
       techs, unitCombats, units, buildings, recipes, housing, resourceSources, routeModels,
-      terrainArt, feastsHuman, feastsHarimari, humanNames, regionEarthMap,
+      terrainArt, feastsHuman, feastsHarimari, humanNames, regionEarthMap, economies,
     ] = await Promise.all([
       this.countries(), this.cultures(), this.religions(), this.tradegoods(), this.areas(),
       this.regions(), this.superregions(), this.provinces(), this.adjacencies(), this.edges(),
@@ -81,6 +81,7 @@ export default {
       this.routes(), this.techs(), this.unitCombats(), this.units(), this.buildings(),
       this.recipes(), this.housing(), this.resourceSources(), this.routeModels(), this.terrainArt(),
       this.feasts('human'), this.feasts('harimari'), this.namePools('human'), this.regionEarthMap(),
+      this.economies(),
     ]);
 
     // bonus is one collection; committed splits it into base bonuses.json vs manufactured-bonuses.json.
@@ -95,6 +96,8 @@ export default {
     const unitUnlocks = invertPrereq(units, 'id', (t, id) => ({ kind: 'UNLOCK', target: id }));
 
     return {
+      // omitted entirely when unauthored — see economies() on why absent != empty
+      ...(economies ? { '/balance/economies.json': economies } : {}),
       '/map/countries.json': countries,
       '/map/cultures.json': cultures,
       '/map/religions.json': religions,
@@ -247,6 +250,15 @@ export default {
     // seed.js's rest-spread double-nested the map under regions.regions; un-nest defensively.
     const inner = rem?.regions?.regions ?? rem?.regions ?? {};
     return { regions: inner };
+  },
+  // The era x race economy matrix (engine: EconomyCatalog). Returns null when unauthored, so the
+  // key is OMITTED from the bundle rather than emitted empty: the engine reads an absent resource
+  // as "every cell keeps its compiled constant", while a present-but-empty {} would be authored
+  // emptiness. A malformed one makes the engine throw, by design — an economy is load-bearing.
+  async economies() {
+    const row: any = await strapi.documents(uid('economy-matrix')).findFirst({});
+    const m = row?.economies;
+    return m && Object.keys(m).length > 0 ? m : null;
   },
 };
 

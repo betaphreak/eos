@@ -1,0 +1,20 @@
+{
+  "kind": "singleType",
+  "collectionName": "economy_matrices",
+  "info": {
+    "singularName": "economy-matrix",
+    "pluralName": "economy-matrices",
+    "displayName": "Economy Matrix",
+    "description": "The era x race economy matrix the engine founds colonies on: prices, agent starting balances, tax rates and peasant-pool sizing, keyed era -> race -> economy (enum names). Served to the engine as /balance/economies.json; a race with no column of its own falls back to HUMAN's. LOAD-BEARING — editing these numbers changes simulation behaviour, so a run is reproducible only as seed + contentVersion + command log."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "economies": {
+      "type": "json",
+      "required": true
+    }
+  }
+}
