@@ -34,7 +34,8 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class WikiArticleExporter {
 
-	private static final String OUTPUT = "civstudio-engine/target/generated/wiki/wiki-article.json";
+	// gzipped — 2509 articles of prose is ~11 MB raw but compresses to ~2-3 MB; the seeder gunzips it
+	private static final String OUTPUT = "civstudio-engine/target/generated/wiki/wiki-article.json.gz";
 	private static final String WIKI_BASE = "https://anbennar.fandom.com/wiki/";
 	private static final int BATCH = 50; // MediaWiki's cap for a multi-title query
 
@@ -77,7 +78,10 @@ public final class WikiArticleExporter {
 		rows.sort((a, b) -> a.key().compareTo(b.key())); // stable natural-key order for a deterministic file
 
 		File out = Exports.outFile(OUTPUT);
-		MAPPER.writerWithDefaultPrettyPrinter().writeValue(out, rows);
+		// compact (not pretty) under gzip — the file is machine-read by the seeder, never eyeballed
+		try (var os = new java.util.zip.GZIPOutputStream(new java.io.FileOutputStream(out))) {
+			MAPPER.writeValue(os, rows);
+		}
 
 		report(rows, redirects, out);
 	}

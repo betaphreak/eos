@@ -1,0 +1,69 @@
+{
+  "kind": "collectionType",
+  "collectionName": "wiki_articles",
+  "info": {
+    "singularName": "wiki-article",
+    "pluralName": "wiki-articles",
+    "displayName": "Wiki Article",
+    "description": "An imported Anbennar Fandom lore article (CC BY-SA). Base type; typed subtypes + entity correlation are a later projection."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "title": {
+      "type": "string",
+      "required": true,
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "pageId": {
+      "type": "integer",
+      "unique": true,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "url": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "template": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "isStub": {
+      "type": "boolean",
+      "default": false,
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "summary": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "body": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": true } }
+    },
+    "categories": {
+      "type": "json",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "links": {
+      "type": "json",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "infobox": {
+      "type": "json",
+      "pluginOptions": { "i18n": { "localized": false } }
+    }
+  }
+}

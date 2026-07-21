@@ -155,9 +155,13 @@ Bump `contentVersion` so `StrapiWorldSource` re-fetches.
   markdown), `WikiExporter` over a stratified `Category:Countries` sample → `wiki-country.json` +
   `_unmatched` report. *Result:* **90%** auto-match (27/30; misses are genuinely tag-less lore), 0
   leftover markup, no encoding bug (`�` was console-only). No dump/Strapi/bundle wiring yet.
-- **P1 — full corpus, base type.** Wire the `.7z` dump ingest; export all articles into `wiki-article`
-  only (with `infobox` JSON + categories + links). Seed + bundle + `contentVersion` bump. Lore reachable
-  in-game as untyped articles.
+- **P1 — full corpus, base type. ✅ exporter + studio seed SHIPPED.** `WikiArticleExporter` walks the whole
+  mainspace (2509 articles, 99.96% clean) → gzipped `wiki-article.json.gz` (11 MB→3.5 MB); the
+  `wiki-article` Strapi type + a **loose seeder** (`seedWikiArticles` in `seed.js`, reads the gz from disk,
+  skips loudly if absent) load it. **Wiki lore does NOT ride the engine `world-bundle`** — the Java sim
+  never reads lore; it's for the web viewer + chatbot, which read Strapi directly. So no `world-bundle.ts`
+  change and no `contentVersion` coupling. *Remaining:* swap the API source for the `.7z` dump; decide a
+  committed home for the gz so CI can seed it (like the GeoNames subset).
 - **P2 — typed model + correlation.** Add the ~10 `wiki-*` subtypes and `wiki-category`; stamp the
   relations to `country`/`culture`/`religion`/`region`/`province`. Ship the unmatched report + overrides.
 - **P3 — images.** API image fetch → Strapi media (Azure Blob, per `studio/CLAUDE.md`) → infobox art

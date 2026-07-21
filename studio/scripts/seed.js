@@ -453,6 +453,9 @@ async function main() {
   await wipeReseed(app, uid('feast'), loadFeasts(), (r) => r);
   await upsertPlain(app, uid('name-pool'), 'key', loadNamePools(), (r) => r);
 
+  // ── wiki lore (no relations yet; typed subtypes + entity correlation are a later projection) ──
+  await seedWikiArticles(app);
+
   // ── single types (this pass: the ones with a real source) ──
   await setSingle(app, uid('region-earth-map'), loadRegionEarthMap());
   await setSingle(app, uid('map-version'), loadMapVersion());
@@ -520,6 +523,24 @@ async function setSingleIfSourced(app, u, data) {
     return;
   }
   await setSingle(app, u, data);
+}
+
+// Wiki lore is NOT engine world-bundle content (the Java sim never reads it — it's for the web viewer +
+// the future lore chatbot, which read Strapi directly). So it does not ride the bundle: the seeder reads
+// the gzipped exporter output straight from disk (docs/wiki-lore-import-plan.md P1). On a clean checkout
+// with no exporter output it skips loudly — the absent != empty contract, same as balance/scenario.
+async function seedWikiArticles(app) {
+  const f = join(GEN, 'wiki', 'wiki-article.json.gz');
+  if (!existsSync(f)) {
+    console.log('[C] wiki-article     SKIPPED — no source file'
+      + ' (run: mvn -pl civstudio-engine exec:exec -Dsim.main=com.civstudio.wiki.export.WikiArticleExporter)');
+    return;
+  }
+  const rows = JSON.parse(gunzipSync(readFileSync(f)).toString('utf8'));
+  await upsertPlain(app, uid('wiki-article'), 'key', rows, (r) => ({
+    title: r.title, pageId: r.pageId, url: r.url, template: r.template, isStub: r.isStub,
+    summary: r.summary, body: r.body, categories: r.categories, links: r.links, infobox: r.infobox,
+  }));
 }
 
 // ── source loaders for the loose bits ────────────────────────────────────────
