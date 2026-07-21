@@ -123,14 +123,23 @@ thin web chat UI in `web/`. Reuses the existing auth. Reproducibility still ride
 
 ## Phases (when P5 begins)
 
-- **C1 — substrate.** ✅ **chunker SHIPPED** (`WikiChunker`/`WikiChunkExporter`): section-chunks the
-  committed `wiki-article.json.gz` into **12,698 passages** (avg 651 chars, hard-capped at
-  `MAX_CHARS`=1200 so every chunk fits a small model's window), each carrying provenance
-  (`wikiKey`/`entityRef`/`entityKey`/`wikiUrl`) for citation + the hybrid join. Chunks are build-scratch
-  (`target/generated/wiki/wiki-chunk.json.gz`) — deterministic from the committed corpus, re-derived at
-  embed time. *Remaining:* the `vector` extension + `wiki_chunk` migration; stand up the embedding model
-  (self-host `bge-small` via TEI, or a hosted API); backfill embeddings. Gated on the embedding-provider
-  decision below.
+- **C1 — substrate. ✅ SHIPPED + PROVEN (retrieval works end-to-end).**
+  - **Chunker** (`WikiChunker`/`WikiChunkExporter`): section-chunks the committed `wiki-article.json.gz`
+    into **12,698 passages** (avg 651 chars, hard-capped at `MAX_CHARS`=1200), each with provenance
+    (`wikiKey`/`entityRef`/`entityKey`/`wikiUrl`). Chunks are build-scratch, re-derived at embed time.
+  - **Embeddings — decided:** self-host **bge-small-en-v1.5 (384-dim) via HuggingFace TEI** (no key,
+    on-infra). Query and backfill both hit one `/embed` HTTP endpoint.
+  - **Backfill** (`studio/scripts/backfill-lore.mjs`): embeds the chunks via TEI → loads `wiki_chunk`
+    (`vector(384)` + HNSW cosine index). DB target is `LORE_PG_*` (local) else the `DATABASE_*` Strapi DB
+    (prod) — `wiki_chunk` lives in the **same** DB as the canonical tables so the hybrid join works.
+    `--query "…"` does an ad-hoc retrieval.
+  - **pgvector — enabled:** `azure.extensions=VECTOR` set on **civstudio-postgres** (prod). Local Strapi
+    Postgres lacks the extension, so dev uses Docker on Rancher: `civ-pgv` (pgvector/pgvector:pg16 :5433)
+    + `civ-tei` (TEI cpu, bge-small, :8085).
+  - **Proven:** 12,698 chunks embedded + HNSW-indexed; queries return the right passages —
+    *"Who founded the Empire of Anbennar?"* → **0.850** "Empire of Anbennar · Founding — established 1221
+    at the Grand Summit of Aranthíl". *Remaining for prod:* deploy TEI as an Azure Container App +
+    `CREATE EXTENSION vector` on civstudio-postgres + run the backfill (a workflow, like seed-studio.yml).
 - **C2 — retrieval API.** Server-side embed-question → pgvector top-K (+ hybrid variants over canonical
   rows). No LLM yet — validate retrieval quality on a question set.
 - **C3 — generation.** Spring AI + Claude (`claude-haiku-4-5`) with document citations; a `/api/lore/ask`
