@@ -26,13 +26,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveArt, prefetch } from './civ4.mjs';
 import { iconPath, iconCell, packSheet } from './icon-bake.mjs';
+import { bundleResource } from './content-source.mjs';
 import sharp from 'sharp';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(WEB, '..');
 
-const UNITS_SRC = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/units.json');
-const COMBATS_SRC = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/unit-combats.json');
 const OUT_UNIT_ICONS = path.join(WEB, 'assets', 'units', 'unit-icons.webp');
 const OUT_COMBAT_ICONS = path.join(WEB, 'assets', 'units', 'unit-combat-icons.webp');
 const OUT_UNIT_META = path.join(ROOT, 'civstudio-server/src/main/resources/units-meta.json');
@@ -41,8 +40,8 @@ const OUT_COMBAT_META = path.join(ROOT, 'civstudio-server/src/main/resources/uni
 const CELL = 64;   // Civ4 unit buttons are 64×64
 const COLS = 50;   // sprite-sheet grid width (storage layout only — unrelated to the display grid)
 
-const units = JSON.parse(fs.readFileSync(UNITS_SRC, 'utf8'));
-const combats = JSON.parse(fs.readFileSync(COMBATS_SRC, 'utf8'));
+const units = bundleResource('/units.json');
+const combats = bundleResource('/unit-combats.json');
 
 // Warm the C2C art cache in parallel first, so the synchronous resolveArt below hits the disk
 // cache instead of a per-file round trip.

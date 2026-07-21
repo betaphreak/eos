@@ -24,19 +24,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveArt, prefetch } from './civ4.mjs';
 import { iconPath, iconCell, packSheet } from './icon-bake.mjs';
+import { bundleResource } from './content-source.mjs';
 import sharp from 'sharp';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(WEB, '..');
 
-const SRC = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/buildings.json');
 const OUT_ICONS = path.join(WEB, 'assets', 'buildings', 'building-icons.webp');
 const OUT_META = path.join(ROOT, 'civstudio-server/src/main/resources/buildings-meta.json');
 
 const CELL = 64;   // Civ4 building buttons are 64×64
 const COLS = 50;   // sprite-sheet grid width (storage layout only — unrelated to the display grid)
 
-const buildings = JSON.parse(fs.readFileSync(SRC, 'utf8'));
+const buildings = bundleResource('/buildings.json');
 
 // Warm the C2C art cache in parallel first, so the synchronous resolveArt below hits the disk
 // cache instead of a per-file round trip.

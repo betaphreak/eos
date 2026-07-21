@@ -4,22 +4,25 @@ Everything under this directory is **produced by an exporter/baker**, not author
 *source* (the upstream C2C/Anbennar data or the exporter code) and regenerate — never edit these
 JSON files by hand.
 
-**These files are not in git.** Studio (the Strapi CMS under `studio/`) is now the authoritative
-content store. The flow is: run the exporters → they write these JSON files locally → the studio
-seeder (`studio/scripts/seed.js`) ingests them into Strapi → the engine boots from studio, not from
-this directory:
+**These files are not in git, and nothing downstream reads them anymore** — they are pure,
+ephemeral **exporter build-scratch**, produced only during a local content regen. The single
+committed content artifact every consumer reads is the **world-bundle snapshot** at
+`civstudio-engine/src/test/resources/world-bundle.json.gz`:
 
-- **prod / server:** `StrapiWorldSource` fetches studio's `GET /api/world-bundle` (set via
-  `CIVSTUDIO_WORLDSOURCE_MODE=strapi`).
-- **tests / offline:** the committed **world-bundle fixture** at
-  `civstudio-engine/src/test/resources/world-bundle.json.gz`, installed suite-wide by
-  `FixtureWorldSourceInstaller` (snapshot produced with `tools/make-world-bundle.mjs`).
+- **tests / offline:** installed suite-wide by `FixtureWorldSourceInstaller`.
+- **prod / server:** `StrapiWorldSource` fetches studio's `GET /api/world-bundle` — and studio's
+  Postgres is seeded **from the committed bundle** (`studio/scripts/seed.js`, bundle mode).
+- **web bakes:** `web/build-{techs,buildings,units}.mjs` read the committed bundle via
+  `web/content-source.mjs`.
 
-So the exporters' role is now to **seed studio**, and this directory is a transient local staging
-area. `.gitignore` keeps the whole tree out of git except two committed exceptions that are *not* in
-the world bundle and still fall back to the classpath: `geonames/subset.json.gz` (the
-machine-independent place-name subset) and this README. See
-`docs/studio-datamodel-rebuild-plan.md`.
+So this directory is written only by the exporters (and read only *by each other* — the
+cross-exporter reads, e.g. `BuildingInfoExporter` reading the fresh `techs.json`) during a regen.
+The regen flow is: run the exporters → they write this scratch tree → seed a **local** studio from
+it (`node studio/scripts/seed.js --from-generated`) → snapshot the bundle
+(`tools/make-world-bundle.mjs`) → commit the refreshed `world-bundle.json.gz`, which is what
+everything above then reads. `.gitignore` keeps the whole tree out of git except two committed
+exceptions: `geonames/subset.json.gz` (the machine-independent place-name subset) and this README.
+See `docs/studio-datamodel-rebuild-plan.md`.
 
 **Classpath note (still true when the files are present locally):** at package time Maven
 **flattens this directory onto the classpath root** (see `civstudio-engine/pom.xml`

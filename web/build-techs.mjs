@@ -28,12 +28,12 @@ import { fileURLToPath } from 'node:url';
 import { loadGameFont, symbolRGBA, recolorHue, CELL as GF_CELL } from './gamefont.mjs';
 import { resolveArt as civ4ResolveArt, prefetch as civ4Prefetch } from './civ4.mjs';
 import { iconPath, iconCell, packSheet } from './icon-bake.mjs';
+import { bundleResource } from './content-source.mjs';
 import sharp from 'sharp';
 
 const WEB = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(WEB, '..');
 
-const SRC = path.join(ROOT, 'civstudio-engine/src/main/resources/generated/techs.json');
 // the art-coupled per-tech metadata (icon rects + beaker colour), merged onto techs.json by the
 // server (com.civstudio.server.web.TechBundle) at GET /api/techs. Lives in the engine resources
 // so it ships in the server jar alongside its techs.json source.
@@ -48,7 +48,7 @@ const COLS = 16;   // sprite-sheet grid width
 // iconPath/iconCell/packSheet are shared with build-buildings.mjs (icon-bake.mjs).
 const resolveArt = civ4ResolveArt;
 
-const techs = JSON.parse(fs.readFileSync(SRC, 'utf8'));
+const techs = bundleResource('/techs.json');
 
 // interim: which techs cost GREEN (naval) beakers instead of the blue default. C2C has no
 // naval flavour, so this is a curated set until eos models a research currency per tech —
