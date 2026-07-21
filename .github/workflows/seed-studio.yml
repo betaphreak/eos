@@ -31,6 +31,24 @@ jobs:
   seed:
     runs-on: ubuntu-latest
     environment: production # add required reviewers here to gate prod seeds
+    env:
+      # DB target — from repo secrets (no .env in the checkout, so these win)
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: ${{ secrets.STUDIO_DB_HOST }}
+      DATABASE_PORT: '5432'
+      DATABASE_NAME: ${{ secrets.STUDIO_DB_NAME }}
+      DATABASE_USERNAME: ${{ secrets.STUDIO_DB_USER }}
+      DATABASE_PASSWORD: ${{ secrets.STUDIO_DB_PASSWORD }}
+      DATABASE_SSL: 'true'
+      DATABASE_SSL_REJECT_UNAUTHORIZED: 'false' # Azure cert chain
+      DATABASE_POOL_MAX: '20'
+      # Strapi boot requires these present; the seeder never uses them, so ephemeral values are fine.
+      APP_KEYS: 'ci-seed-1,ci-seed-2'
+      API_TOKEN_SALT: 'ci-seed-api-token-salt'
+      ADMIN_JWT_SECRET: 'ci-seed-admin-jwt'
+      TRANSFER_TOKEN_SALT: 'ci-seed-transfer-salt'
+      JWT_SECRET: 'ci-seed-jwt'
+      ENCRYPTION_KEY: 'ci-seed-encryption-key'
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -46,22 +64,11 @@ jobs:
 
       - name: Seed
         working-directory: studio
-        env:
-          # DB target — from repo secrets (no .env in the checkout, so these win)
-          DATABASE_CLIENT: postgres
-          DATABASE_HOST: ${{ secrets.STUDIO_DB_HOST }}
-          DATABASE_PORT: '5432'
-          DATABASE_NAME: ${{ secrets.STUDIO_DB_NAME }}
-          DATABASE_USERNAME: ${{ secrets.STUDIO_DB_USER }}
-          DATABASE_PASSWORD: ${{ secrets.STUDIO_DB_PASSWORD }}
-          DATABASE_SSL: 'true'
-          DATABASE_SSL_REJECT_UNAUTHORIZED: 'false' # Azure cert chain
-          DATABASE_POOL_MAX: '20'
-          # Strapi boot requires these present; the seeder never uses them, so ephemeral values are fine.
-          APP_KEYS: 'ci-seed-1,ci-seed-2'
-          API_TOKEN_SALT: 'ci-seed-api-token-salt'
-          ADMIN_JWT_SECRET: 'ci-seed-admin-jwt'
-          TRANSFER_TOKEN_SALT: 'ci-seed-transfer-salt'
-          JWT_SECRET: 'ci-seed-jwt'
-          ENCRYPTION_KEY: 'ci-seed-encryption-key'
         run: node scripts/seed.js --bulk
+
+      # Apply committed config/sync (roles, PERMISSIONS, admin view layouts) to the prod DB — this is how
+      # the wiki-article public find/findOne (and any other permission changes) reach prod; there is no
+      # other automated path (the studio image entrypoint is just `npm run start`).
+      - name: Apply config-sync (roles, permissions, view layouts)
+        working-directory: studio
+        run: npx config-sync import -y
