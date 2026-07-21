@@ -153,7 +153,12 @@ thin web chat UI in `web/`. Reuses the existing auth. Reproducibility still ride
   (no Anthropic credential in this env); with a key it returns cited answers. *Refinement:* switch to
   Claude's native document citations (per the plan) instead of prompt-numbered `[n]`.
 - **C4 — tool-calling.** Let the agent also call MCP tools so structured/live facts blend with lore.
-- **C5 — web chat UI** on anbennar.civstudio.com.
+- **C5 — `@ask` in the lobby chat. ✅ SHIPPED** (in place of a full chat UI). Typing **`@ask <question>`**
+  in the spectator-lobby chat calls the lore service `POST /api/lore/ask` and renders a live-updating
+  *Loremaster* answer inline — a **local** Q&A (not broadcast to the room). The lobby chat panel was
+  enlarged (wider column + taller + bigger font). Lore-service base resolves `?lore=<url>` → localhost:8090
+  for local dev → empty on prod (@ask replies "not available yet") until the lore-service is deployed and
+  the default URL is set. `web/js/lobby.mjs` stays free of `core.mjs` (loads during the bundle fetch).
 
 ## Decisions to make at C1
 

@@ -1150,7 +1150,7 @@ body.auth-anon #clock { cursor: not-allowed; }
   cursor: pointer; padding: 0 4px;
 }
 .lb-x:hover { color: var(--ink); }
-.lb-body { display: grid; grid-template-columns: 1.35fr 1fr; gap: 0; min-height: 0; flex: 1; }
+.lb-body { display: grid; grid-template-columns: 1fr 1.3fr; gap: 0; min-height: 0; flex: 1; }
 .lb-col { display: flex; flex-direction: column; min-height: 0; padding: 14px 16px; }
 .lb-col + .lb-col { border-left: 1px solid var(--line-soft); }
 .lb-col h3 {
@@ -1180,10 +1180,13 @@ body.auth-anon #clock { cursor: not-allowed; }
 .lb-del:hover { color: #e07a9e; border-color: #e07a9e; }
 .lb-empty { font-size: 12px; color: var(--ink-faint); padding: 10px 2px; }
 .lb-chat {
-  flex: 1; overflow-y: auto; min-height: 120px; font-size: 12px; line-height: 1.5;
-  color: var(--ink-soft); display: flex; flex-direction: column; gap: 2px;
+  flex: 1; overflow-y: auto; min-height: 260px; font-size: 13px; line-height: 1.55;
+  color: var(--ink-soft); display: flex; flex-direction: column; gap: 3px;
 }
 .lb-line b { color: var(--ink); font-weight: 600; }
+/* @ask lore answers stand out from ordinary chat lines */
+.lb-line.lore { margin: 5px 0; color: var(--ink); }
+.lb-line.lore b { color: var(--accent); }
 /* [hidden] again: a class that sets display beats the UA rule, so say it. (Third time in this file —
    .lb-card, .lb-setup and now the composer. If you set display on something you toggle, pair it.) */
 .lb-say[hidden] { display: none; }
