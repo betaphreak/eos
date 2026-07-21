@@ -107,7 +107,7 @@ public final class BuildingInfoExporter {
 		Map<String, Integer> perFile = new LinkedHashMap<>();
 		Map<String, Integer> perCategory = new TreeMap<>();
 		Map<String, String> byId = new HashMap<>(); // id -> source file, for duplicate detection
-		int scanned = 0, noPrereq = 0, gatedOut = 0;
+		int scanned = 0, noPrereq = 0, gatedOut = 0, corporation = 0;
 		int noName = 0, noButton = 0, noCategory = 0, cappedUnlocks = 0;
 
 		for (String file : BUILDING_FILES) {
@@ -116,6 +116,16 @@ public final class BuildingInfoExporter {
 			for (Element b : Civ4Xml.infos(doc, "BuildingInfo")) {
 				scanned++;
 				String id = Civ4Xml.text(b, "Type");
+				// drop C2C corporation buildings: eos models no corporation system, and C2C keeps
+				// their display names in a separate GameText file (so they'd import name-less anyway).
+				// The corporation HQs carry <FoundsCorporation>, their franchises <PrereqCorporation>.
+				String foundsCorp = Civ4Xml.text(b, "FoundsCorporation");
+				String prereqCorp = Civ4Xml.text(b, "PrereqCorporation");
+				if ((foundsCorp != null && !foundsCorp.isEmpty())
+						|| (prereqCorp != null && !prereqCorp.isEmpty())) {
+					corporation++;
+					continue;
+				}
 				String primary = Civ4Xml.text(b, "PrereqTech"); // direct child only (not TechTypes)
 				if (primary == null || primary.isEmpty()) {
 					noPrereq++;
@@ -198,7 +208,8 @@ public final class BuildingInfoExporter {
 				+ " techs to " + UNLOCKS_OUTPUT
 				+ " (" + cappedUnlocks + " CAP-gated buildings excluded — engine drops the tech)");
 		System.out.println("  scanned " + scanned + " BuildingInfo records ("
-				+ noPrereq + " without <PrereqTech>, " + gatedOut + " gated out by tech scope)");
+				+ noPrereq + " without <PrereqTech>, " + gatedOut + " gated out by tech scope, "
+				+ corporation + " corporation buildings dropped)");
 		perFile.forEach((f, n) -> System.out.println("  " + f + ": " + n));
 		System.out.println("  by category: " + perCategory
 				+ " (+ " + noCategory + " uncategorized — no <Advisor>)");

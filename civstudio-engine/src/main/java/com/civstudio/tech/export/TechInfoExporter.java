@@ -65,9 +65,12 @@ public final class TechInfoExporter {
 	// the single global tech-cap constant (TechTree.CAP_TECH), shared with the data importers.
 	private static final String CAP = com.civstudio.tech.TechTree.CAP_TECH;
 
-	// the religion-founding techs (and Clockpunk) are dropped: eos has no religion-as-tech
-	// model, and C2C keeps their display names outside the tech localization file anyway.
-	// They are leaves in the graph (no kept tech depends on them), so dropping is clean.
+	// the religion-founding techs and the "-punk" genre techs are dropped: eos has no
+	// religion-as-tech model, and C2C keeps both their display names outside the tech
+	// localization file (so they'd import name-less anyway). They are leaves in the graph
+	// (no kept tech depends on them), so dropping is clean. The later-era religions
+	// (Bahai/Mormon/Cao Dai/Scientology) and later "-punk" techs (Steampunk/Dieselpunk,
+	// siblings of Prehistoric Clockpunk) came into scope with the Industrial+Atomic horizon.
 	private static final Set<String> DROP = Set.of(
 			"TECH_SHAMANISM", "TECH_DRUIDIC_TRADITIONS", "TECH_TENGRIISM",
 			"TECH_MESOPOTAMISM", "TECH_KEMETISM", "TECH_YORUBA", "TECH_SHINTO",
@@ -75,7 +78,9 @@ public final class TechInfoExporter {
 			"TECH_HINDUISM", "TECH_JUDAISM", "TECH_BUDDHISM", "TECH_HELLENISM",
 			"TECH_NAGHUALISM", "TECH_CONFUCIANISM", "TECH_TAOISM", "TECH_CHRISTIANITY",
 			"TECH_JAINISM", "TECH_ASATRU", "TECH_RODNOVERA", "TECH_ISLAM", "TECH_VOODOO",
-			"TECH_SIKHISM", "TECH_CLOCKPUNK");
+			"TECH_SIKHISM", "TECH_CLOCKPUNK",
+			"TECH_BAHAI", "TECH_MORMON", "TECH_CAO_DAI", "TECH_SCIENTOLOGY",
+			"TECH_STEAMPUNK", "TECH_DIESELPUNK");
 
 	private TechInfoExporter() {
 	}

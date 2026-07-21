@@ -30,8 +30,8 @@ class TechTreeTest {
 	void keepsOnlyInScopeTechs() {
 		// the C2C source has 943 techs across many eras; the converter
 		// (TechInfoExporter) keeps only Prehistoric..Atomic and drops the
-		// religion-founding techs, Clockpunk, and disabled placeholders -> 507 kept
-		assertEquals(507, TREE.size());
+		// religion-founding techs, Clockpunk/punk-genre, and disabled placeholders -> 501 kept
+		assertEquals(501, TREE.size());
 		assertNull(TREE.get("TECH_INFORMATION_LIFESTYLE"),
 				"the out-of-scope Information end-cap tech should be dropped");
 		assertNull(TREE.get("TECH_CHRISTIANITY"),
@@ -52,8 +52,8 @@ class TechTreeTest {
 		assertEquals(52, counts.get(Era.CLASSICAL));
 		assertEquals(51, counts.get(Era.MEDIEVAL));
 		assertEquals(58, counts.get(Era.RENAISSANCE));
-		assertEquals(67, counts.get(Era.INDUSTRIAL));
-		assertEquals(102, counts.get(Era.ATOMIC));
+		assertEquals(64, counts.get(Era.INDUSTRIAL));
+		assertEquals(99, counts.get(Era.ATOMIC));
 	}
 
 	@Test
