@@ -178,8 +178,13 @@ Bump `contentVersion` so `StrapiWorldSource` re-fetches.
   relation to an i18n type silently failed (`province linked 27/5268`). Fixed with a `localizeRels` helper
   (locale-qualified `{set:[{documentId, locale}]}` for i18n targets) — seed "row errors" **16,262 → 943**
   (the rest are genuine missing targets). *Remaining:* curated `wiki-overrides.json` for the tail.
-- **P3 — images.** API image fetch → Strapi media (Azure Blob, per `studio/CLAUDE.md`) → infobox art
-  in-game.
+- **P3 — infobox images. ✅ exporter SHIPPED.** `WikiArticleExporter` extracts each article's infobox
+  image filename (scanning `image`/`flag`/`portrait`/… params, unwrapping `[[File:…]]`) and resolves it to
+  its CDN URL via batched `prop=imageinfo` — `imageFile` + `imageUrl` on each row. **753 articles reference
+  an image, 725 resolved (96%)**; the unresolved are descriptive text mis-entered in the image param or
+  missing files. *Remaining:* surface `imageFile`/`imageUrl` on the Strapi type (studio scalars, next);
+  **P3b** — optionally re-host to Strapi media (Azure Blob) instead of hotlinking the wikia CDN (a heavier
+  download+upload bake, best at deploy time).
 - **P4 — in-game surfacing.** Web/engine reads lore off the canonical entity via the inverse relation
   (province/country/culture panels gain a lore tab). Separate follow-up doc.
 - **P5 — lore chatbot (RAG) on anbennar.civstudio.com.** A grounded Q&A assistant answering from the

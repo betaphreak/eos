@@ -8,9 +8,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -64,7 +66,12 @@ public final class WikiArticleExporter {
 	/** One imported wiki article — the flat base row (typed + correlated; relations are seeded from it). */
 	public record ArticleRow(String key, String title, long pageId, String url, String template,
 			String entityType, String entityRef, String entityKey, boolean isStub, String summary,
-			String body, List<String> categories, List<String> links, Map<String, String> infobox) {
+			String body, List<String> categories, List<String> links, Map<String, String> infobox,
+			String imageFile, String imageUrl) {
+		ArticleRow withImageUrl(String u) {
+			return new ArticleRow(key, title, pageId, url, template, entityType, entityRef, entityKey,
+					isStub, summary, body, categories, links, infobox, imageFile, u);
+		}
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -100,6 +107,15 @@ public final class WikiArticleExporter {
 		}
 		rows.sort((a, b) -> a.key().compareTo(b.key())); // stable natural-key order for a deterministic file
 
+		// P3: resolve each distinct infobox image filename to its CDN URL (batched imageinfo) and stamp it
+		Set<String> files = new LinkedHashSet<>();
+		for (ArticleRow r : rows)
+			if (r.imageFile() != null)
+				files.add(r.imageFile());
+		System.out.println("resolving " + files.size() + " distinct infobox images...");
+		Map<String, String> fileToUrl = resolveImages(files);
+		rows.replaceAll(r -> r.imageFile() == null ? r : r.withImageUrl(fileToUrl.get(r.imageFile())));
+
 		File out = Exports.outFile(OUTPUT);
 		// compact (not pretty) under gzip — the file is machine-read by the seeder, never eyeballed
 		try (var os = new GZIPOutputStream(new java.io.FileOutputStream(out))) {
@@ -124,7 +140,8 @@ public final class WikiArticleExporter {
 				template, entityType, hit[0], hit[1],
 				categories.contains("Stub") || categories.contains("Stubs"),
 				WikitextParser.summary(body), body, categories, WikitextParser.links(wikitext),
-				box.map(WikitextParser.Infobox::params).orElseGet(Map::of));
+				box.map(WikitextParser.Infobox::params).orElseGet(Map::of),
+				imageFilename(box), null);
 	}
 
 	// ---- classification + correlation ------------------------------------------------------------
@@ -205,6 +222,76 @@ public final class WikiArticleExporter {
 		return m;
 	}
 
+	// ---- infobox images (P3) ---------------------------------------------------------------------
+
+	// infobox param keys (normalized) that carry an image filename, most-common first
+	private static final List<String> IMAGE_KEYS = List.of(
+			"image", "flag", "portrait", "symbol", "logo", "photo", "banner", "crest", "picture",
+			"coat of arms", "coatofarms");
+
+	/** The image filename referenced by the infobox (canonicalized), or null. */
+	private static String imageFilename(Optional<WikitextParser.Infobox> box) {
+		if (box.isEmpty())
+			return null;
+		for (Map.Entry<String, String> e : box.get().params().entrySet()) {
+			String k = e.getKey().toLowerCase(Locale.ROOT).replace('_', ' ').trim();
+			if (IMAGE_KEYS.contains(k)) {
+				String f = normFile(cleanImageValue(e.getValue()));
+				if (f != null)
+					return f;
+			}
+		}
+		return null;
+	}
+
+	// a raw infobox image value → a bare filename: unwrap a [[File:…|…]] link, drop a leading File:/Image:
+	// prefix and any trailing |params
+	private static String cleanImageValue(String v) {
+		if (v == null)
+			return null;
+		v = v.trim();
+		if (v.startsWith("[[")) {
+			int end = v.indexOf("]]");
+			v = end > 0 ? v.substring(2, end) : v.substring(2);
+		}
+		v = v.split("\\|")[0].replaceFirst("(?i)^\\s*(file|image)\\s*:\\s*", "").trim();
+		return v.isEmpty() ? null : v;
+	}
+
+	// MediaWiki file titles are case-insensitive on the first letter and treat _ and space as equal;
+	// canonicalize so the infobox value and the imageinfo result key match
+	private static String normFile(String f) {
+		if (f == null)
+			return null;
+		f = f.replace('_', ' ').trim();
+		return f.isEmpty() ? null : Character.toUpperCase(f.charAt(0)) + f.substring(1);
+	}
+
+	/** Resolve {@code filename → CDN url} via batched {@code prop=imageinfo} (≤50 File: titles/request). */
+	private static Map<String, String> resolveImages(Collection<String> files) throws IOException {
+		Map<String, String> out = new HashMap<>();
+		List<String> list = new ArrayList<>(files);
+		for (int i = 0; i < list.size(); i += BATCH) {
+			List<String> slice = list.subList(i, Math.min(i + BATCH, list.size()));
+			StringBuilder titles = new StringBuilder();
+			for (String f : slice) {
+				if (titles.length() > 0)
+					titles.append('|');
+				titles.append("File:").append(f);
+			}
+			String json = WikiFiles.api("action=query&prop=imageinfo&iiprop=url&titles=" + enc(titles.toString()));
+			for (JsonNode p : MAPPER.readTree(json).path("query").path("pages")) {
+				String url = p.path("imageinfo").path(0).path("url").asText(null);
+				if (url == null)
+					continue;
+				String fname = normFile(p.path("title").asText().replaceFirst("(?i)^file:", ""));
+				if (fname != null)
+					out.put(fname, url);
+			}
+		}
+		return out;
+	}
+
 	// ---- fetch -----------------------------------------------------------------------------------
 
 	// every non-redirect mainspace (ns 0) article title, following apcontinue pagination
@@ -239,12 +326,17 @@ public final class WikiArticleExporter {
 		// per-entityType: total + (for correlatable types) how many matched a canonical key
 		Map<String, int[]> byType = new TreeMap<>(); // entityType → {total, matched}
 		List<Map<String, String>> unmatched = new ArrayList<>();
-		int stubs = 0, withInfobox = 0;
+		int stubs = 0, withInfobox = 0, withImage = 0, imgResolved = 0;
 		for (ArticleRow r : rows) {
 			if (r.isStub())
 				stubs++;
 			if (r.template() != null)
 				withInfobox++;
+			if (r.imageFile() != null) {
+				withImage++;
+				if (r.imageUrl() != null)
+					imgResolved++;
+			}
 			int[] c = byType.computeIfAbsent(r.entityType(), k -> new int[2]);
 			c[0]++;
 			if (CORRELATABLE.containsKey(r.entityType())) {
@@ -271,6 +363,8 @@ public final class WikiArticleExporter {
 				});
 		System.out.println("wrote " + unmatched.size() + " unmatched correlatable articles to "
 				+ UNMATCHED);
+		System.out.printf("infobox images: %d articles reference one, %d resolved to a CDN URL (%.0f%%)%n",
+				withImage, imgResolved, withImage == 0 ? 0.0 : 100.0 * imgResolved / withImage);
 	}
 
 	private static String enc(String s) {
