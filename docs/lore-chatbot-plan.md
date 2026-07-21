@@ -152,7 +152,13 @@ thin web chat UI in `web/`. Reuses the existing auth. Reproducibility still ride
   `ANTHROPIC_API_KEY` (503 without — degrades to search). Verified up to the graceful no-key path here
   (no Anthropic credential in this env); with a key it returns cited answers. *Refinement:* switch to
   Claude's native document citations (per the plan) instead of prompt-numbered `[n]`.
-- **C4 — tool-calling.** Let the agent also call MCP tools so structured/live facts blend with lore.
+- **C4 — agentic tool-calling. ✅ SHIPPED.** `askAgent` (in `lore-lib.mjs`, now the default behind
+  `/api/lore/ask` + the CLI `--ask`) turns the ask into a Claude **tool-use loop** with a `search_lore`
+  tool — the model decides what to search and searches **repeatedly** for multi-part questions, instead of
+  a fixed top-K stuff. Verified: *"Compare the Empire of Anbennar and Castanor…"* triggered multiple
+  searches (14 deduped sources across both empires) and produced a correct, cited, structured answer.
+  *Refinements:* a `lookup_entity` tool over the canonical tables (the hybrid join — prod-only, where
+  wiki_chunk shares the DB) and the live sim's MCP tools, so structured/live facts blend with lore.
 - **C5 — `@ask` in the lobby chat. ✅ SHIPPED** (in place of a full chat UI). Typing **`@ask <question>`**
   in the spectator-lobby chat calls the lore service `POST /api/lore/ask` and renders a live-updating
   *Loremaster* answer inline — a **local** Q&A (not broadcast to the room). The lobby chat panel was

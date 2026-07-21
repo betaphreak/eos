@@ -8,7 +8,7 @@
 //   POST /api/lore/ask  {question}  → { answer, sources }   (needs ANTHROPIC_API_KEY; 503 without one)
 import "dotenv/config";
 import { createServer } from "node:http";
-import { pg, retrieve, askClaude } from "./lore-lib.mjs";
+import { pg, retrieve, askAgent } from "./lore-lib.mjs";
 
 const PORT = process.env.LORE_PORT || 8090;
 
@@ -41,7 +41,7 @@ createServer(async (req, res) => {
       let body = ""; for await (const ch of req) body += ch;
       const question = String(JSON.parse(body || "{}").question || "").trim();
       if (!question) return send(res, 400, { error: "missing question" });
-      try { return send(res, 200, await askClaude(c, question)); }
+      try { return send(res, 200, await askAgent(c, question)); }
       catch (e) { return send(res, 503, { error: e.message }); } // no key / Claude error → degrade to search
     }
 

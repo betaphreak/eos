@@ -68,6 +68,56 @@ export async function askClaude(c, question, k = 8) {
   return { answer, sources };
 }
 
+// C4 — agentic RAG: Claude drives its own retrieval via a search_lore tool (deciding what and how many
+// times to search) instead of a fixed top-K stuff. Better for multi-part questions and cross-referencing.
+// (A lookup_entity tool over the canonical tables — the hybrid join — is a prod-only add: locally wiki_chunk
+// lives in its own DB without the country/culture tables. See docs/lore-chatbot-plan.md.)
+export async function askAgent(c, question, maxTurns = 5) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error("ANTHROPIC_API_KEY not set");
+  const tools = [{
+    name: "search_lore",
+    description: "Search the Anbennar wiki lore for passages relevant to a query. Call it (repeatedly, with "
+      + "focused queries) to gather what you need before answering; each result names its source article.",
+    input_schema: { type: "object", properties: { query: { type: "string", description: "a focused search query" } }, required: ["query"] },
+  }];
+  const system = "You are an Anbennar lore assistant. Use the search_lore tool to find relevant wiki passages, "
+    + "then answer the question grounded in what you found, citing article titles inline. Search each part of a "
+    + "multi-part question. If the lore doesn't cover something, say so plainly. Be concise.";
+  const messages = [{ role: "user", content: question }];
+  const sources = new Map(); // title → wikiUrl, deduped across searches
+  const call = async () => {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: 1024, system, tools, messages }),
+    });
+    if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    return res.json();
+  };
+  for (let turn = 0; turn < maxTurns; turn++) {
+    const j = await call();
+    messages.push({ role: "assistant", content: j.content });
+    if (j.stop_reason !== "tool_use") {
+      const answer = (j.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+      return { answer, sources: [...sources].map(([title, wikiUrl]) => ({ title, wikiUrl })) };
+    }
+    const results = [];
+    for (const b of j.content.filter((x) => x.type === "tool_use")) {
+      if (b.name === "search_lore") {
+        const rows = await retrieve(c, String(b.input.query || ""), 6);
+        rows.forEach((r) => sources.set(r.title, r.wiki_url));
+        results.push({ type: "tool_result", tool_use_id: b.id,
+          content: rows.length ? rows.map((r) => `[${r.title} · ${r.section}]\n${r.text}`).join("\n\n") : "(no matching lore)" });
+      } else {
+        results.push({ type: "tool_result", tool_use_id: b.id, content: "(unknown tool)", is_error: true });
+      }
+    }
+    messages.push({ role: "user", content: results });
+  }
+  return { answer: "(reached the search-step limit before answering)", sources: [...sources].map(([title, wikiUrl]) => ({ title, wikiUrl })) };
+}
+
 /** Embed every chunk and (re)load the pgvector wiki_chunk table + HNSW cosine index. */
 export async function backfill(c, log = console.log) {
   await c.query("CREATE EXTENSION IF NOT EXISTS vector");

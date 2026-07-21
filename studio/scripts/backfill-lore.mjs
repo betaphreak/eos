@@ -4,7 +4,7 @@
 //   node scripts/backfill-lore.mjs --ask "…"       grounded Claude answer (needs ANTHROPIC_API_KEY)
 // DB target: LORE_PG_* (local Docker pgvector) else DATABASE_* (prod civstudio-postgres). See lore-lib.mjs.
 import "dotenv/config";
-import { pg, retrieve, askClaude, backfill } from "./lore-lib.mjs";
+import { pg, retrieve, askAgent, backfill } from "./lore-lib.mjs";
 
 const arg = (f) => { const i = process.argv.indexOf(f); return i >= 0 ? process.argv[i + 1] : null; };
 const askQ = arg("--ask"), queryQ = arg("--query");
@@ -13,7 +13,7 @@ const c = pg();
 await c.connect();
 try {
   if (askQ) {
-    const { answer, sources } = await askClaude(c, askQ);
+    const { answer, sources } = await askAgent(c, askQ);
     console.log("\n" + answer + "\n\nSources:");
     sources.forEach((s, i) => console.log(`  [${i + 1}] ${s.title} — ${s.wikiUrl}`));
   } else if (queryQ) {
