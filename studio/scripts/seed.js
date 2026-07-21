@@ -527,10 +527,11 @@ async function setSingleIfSourced(app, u, data) {
 
 // Wiki lore is NOT engine world-bundle content (the Java sim never reads it — it's for the web viewer +
 // the future lore chatbot, which read Strapi directly). So it does not ride the bundle: the seeder reads
-// the gzipped exporter output straight from disk (docs/wiki-lore-import-plan.md P1). On a clean checkout
-// with no exporter output it skips loudly — the absent != empty contract, same as balance/scenario.
+// the committed gzipped subset straight from src/main/resources (docs/wiki-lore-import-plan.md P1) — the
+// one committed WikiArticleExporter output, like the GeoNames subset, so a clean checkout / CI seeds it
+// without re-scraping. Kept behind an existence guard (absent != empty) for robustness.
 async function seedWikiArticles(app) {
-  const f = join(GEN, 'wiki', 'wiki-article.json.gz');
+  const f = join(RES, 'wiki', 'wiki-article.json.gz');
   if (!existsSync(f)) {
     console.log('[C] wiki-article     SKIPPED — no source file'
       + ' (run: mvn -pl civstudio-engine exec:exec -Dsim.main=com.civstudio.wiki.export.WikiArticleExporter)');

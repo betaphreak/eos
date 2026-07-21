@@ -34,8 +34,10 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class WikiArticleExporter {
 
-	// gzipped — 2509 articles of prose is ~11 MB raw but compresses to ~2-3 MB; the seeder gunzips it
-	private static final String OUTPUT = "civstudio-engine/target/generated/wiki/wiki-article.json.gz";
+	// Committed exporter output (like the GeoNames subset) — written straight to src/main/resources, NOT
+	// the target/generated/ scratch the other exporters use, so a clean checkout / CI can seed the lore
+	// without re-scraping the wiki. Gzipped: 2509 articles of prose is ~11 MB raw, ~3.5 MB compressed.
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/wiki/wiki-article.json.gz";
 	private static final String WIKI_BASE = "https://anbennar.fandom.com/wiki/";
 	private static final int BATCH = 50; // MediaWiki's cap for a multi-title query
 

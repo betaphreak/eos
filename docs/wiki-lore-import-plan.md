@@ -160,8 +160,9 @@ Bump `contentVersion` so `StrapiWorldSource` re-fetches.
   `wiki-article` Strapi type + a **loose seeder** (`seedWikiArticles` in `seed.js`, reads the gz from disk,
   skips loudly if absent) load it. **Wiki lore does NOT ride the engine `world-bundle`** — the Java sim
   never reads lore; it's for the web viewer + chatbot, which read Strapi directly. So no `world-bundle.ts`
-  change and no `contentVersion` coupling. *Remaining:* swap the API source for the `.7z` dump; decide a
-  committed home for the gz so CI can seed it (like the GeoNames subset).
+  change and no `contentVersion` coupling. The gz is a **committed exporter output** — written straight to
+  `civstudio-engine/src/main/resources/wiki/` (like the GeoNames subset), so a clean checkout / CI seeds it
+  without re-scraping. *Remaining:* swap the API source for the `.7z` dump.
 - **P2 — typed model + correlation.** Add the ~10 `wiki-*` subtypes and `wiki-category`; stamp the
   relations to `country`/`culture`/`religion`/`region`/`province`. Ship the unmatched report + overrides.
 - **P3 — images.** API image fetch → Strapi media (Azure Blob, per `studio/CLAUDE.md`) → infobox art
