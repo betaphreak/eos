@@ -42,6 +42,10 @@ civstudio-server/target/
 /.anbennar-cache/
 /data/anbennar/
 
+# Anbennar Fandom wiki scrape cache — fetched on demand by com.civstudio.wiki.export.WikiFiles
+# (pinned by wiki-source.lock), dev-time only. See docs/wiki-lore-import-plan.md.
+/.wiki-cache/
+
 # Caveman2Cosmos (Civ4) art/XML — likewise no longer vendored. Fetched on demand from the C2C GitHub
 # repo (pinned by civ4-source.lock) into a local cache by com.civstudio.data.Civ4Files (+ the
 # web/civ4.mjs node sibling); dev-time only (nothing at runtime reads it). See docs/civ4-files.md.
