@@ -539,7 +539,8 @@ async function seedWikiArticles(app) {
   }
   const rows = JSON.parse(gunzipSync(readFileSync(f)).toString('utf8'));
   await upsertPlain(app, uid('wiki-article'), 'key', rows, (r) => ({
-    title: r.title, pageId: r.pageId, url: r.url, template: r.template, isStub: r.isStub,
+    title: r.title, pageId: r.pageId, url: r.url, template: r.template,
+    entityType: r.entityType, entityRef: r.entityRef, entityKey: r.entityKey, isStub: r.isStub,
     summary: r.summary, body: r.body, categories: r.categories, links: r.links, infobox: r.infobox,
   }));
 }

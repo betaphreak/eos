@@ -98,6 +98,48 @@
           "sortable": true
         }
       },
+      "entityType": {
+        "edit": {
+          "label": "entityType",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "entityType",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "entityRef": {
+        "edit": {
+          "label": "entityRef",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "entityRef",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "entityKey": {
+        "edit": {
+          "label": "entityKey",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "entityKey",
+          "searchable": true,
+          "sortable": true
+        }
+      },
       "isStub": {
         "edit": {
           "label": "isStub",
@@ -248,7 +290,7 @@
         "title",
         "pageId",
         "template",
-        "isStub"
+        "entityType"
       ],
       "edit": [
         [
@@ -278,6 +320,22 @@
             "name": "template",
             "size": 6
           },
+          {
+            "name": "entityType",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "entityRef",
+            "size": 6
+          },
+          {
+            "name": "entityKey",
+            "size": 6
+          }
+        ],
+        [
           {
             "name": "isStub",
             "size": 6

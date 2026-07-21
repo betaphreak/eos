@@ -40,6 +40,18 @@
       "type": "string",
       "pluginOptions": { "i18n": { "localized": false } }
     },
+    "entityType": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "entityRef": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "entityKey": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
     "isStub": {
       "type": "boolean",
       "default": false,
