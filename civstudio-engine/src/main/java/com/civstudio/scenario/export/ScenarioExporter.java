@@ -14,11 +14,12 @@ import com.civstudio.scenario.ScenarioRegistry;
  *
  * <p>Usage: {@code mvn -pl civstudio-engine exec:exec
  * -Dsim.main=com.civstudio.scenario.export.ScenarioExporter [-Dexec.args=<out>]}. Default
- * {@code src/main/resources/generated/scenarios.json} (gitignored, flattened onto the classpath root).
+ * {@code target/generated/scenarios.json} (gitignored exporter build-scratch; its content reaches the
+ * engine via the world-bundle, not the classpath).
  */
 public final class ScenarioExporter {
 
-	private static final Path DEFAULT_OUT = Path.of("civstudio-engine", "src", "main", "resources",
+	private static final Path DEFAULT_OUT = Path.of("civstudio-engine", "target",
 			"generated", "scenarios.json");
 
 	private ScenarioExporter() {

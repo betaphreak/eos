@@ -41,7 +41,7 @@ public final class MissionExporter {
 
 	private static final String MISSIONS_DIR = "missions";
 	private static final String LOC_DIR = "localisation";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/missions.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/missions.json";
 
 	// a localisation line:  arakeprun_ruins_of_greatness_title:0 "Ruins of Greatness"
 	private static final Pattern LOC_LINE = Pattern.compile(

@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.Exports;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +35,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class HousingExporter {
 
 	private static final String INPUT = "SpecialBuildings_CIV4BuildingInfos.xml";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/housing.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/housing.json";
 
 	/** Every housing building's {@code <Type>} starts with this. */
 	private static final String HOUSING_PREFIX = "BUILDING_HOUSING_";
@@ -73,7 +75,7 @@ public final class HousingExporter {
 		if (out.isEmpty())
 			throw new IllegalStateException("no " + HOUSING_PREFIX + "* buildings found in " + INPUT);
 
-		File f = new File(OUTPUT);
+		File f = Exports.outFile(OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(f, out);
 		System.out.println("wrote " + out.size() + " housing buildings to " + f.getAbsolutePath());
 	}

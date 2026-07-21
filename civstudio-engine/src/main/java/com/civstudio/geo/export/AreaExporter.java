@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -54,9 +55,9 @@ import tools.jackson.databind.ObjectMapper;
 public final class AreaExporter {
 
 	private static final String INPUT = "map/area.txt";
-	private static final String AREAS_OUTPUT = "civstudio-engine/src/main/resources/generated/map/areas.json";
-	private static final String REGIONS = "civstudio-engine/src/main/resources/generated/map/regions.json";
-	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
+	private static final String AREAS_OUTPUT = "civstudio-engine/target/generated/map/areas.json";
+	private static final String REGIONS = "civstudio-engine/target/generated/map/regions.json";
+	private static final String PROVINCES = "civstudio-engine/target/generated/map/provinces.json";
 
 	// area_key = { id id id ... } (ids only, no nested braces)
 	private static final Pattern AREA = Pattern.compile(
@@ -101,7 +102,7 @@ public final class AreaExporter {
 	}
 
 	private void writeAreas(List<Area> areas) throws Exception {
-		File out = new File(AREAS_OUTPUT);
+		File out = Exports.outFile(AREAS_OUTPUT);
 		mapper.writerWithDefaultPrettyPrinter().writeValue(out, areas);
 		System.out.println("wrote " + areas.size() + " areas to " + out.getAbsolutePath());
 	}
@@ -137,7 +138,7 @@ public final class AreaExporter {
 			for (int pid : a.provinceIds())
 				areaOf.putIfAbsent(pid, a.rawKey());
 
-		File file = new File(PROVINCES);
+		File file = Exports.outFile(PROVINCES);
 		List<Map<String, Object>> rows = mapper.readValue(file,
 				new TypeReference<List<Map<String, Object>>>() {
 				});

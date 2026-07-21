@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.Exports;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +31,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class RouteExporter {
 
 	private static final String INPUT = "CIV4RouteInfos.xml";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/routes.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/routes.json";
 
 	private RouteExporter() {
 	}
@@ -57,7 +59,7 @@ public final class RouteExporter {
 		if (out.isEmpty())
 			throw new IllegalStateException("no routes parsed from " + INPUT);
 
-		File f = new File(OUTPUT);
+		File f = Exports.outFile(OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(f, out);
 		System.out.println("wrote " + out.size() + " routes to " + f.getAbsolutePath());
 	}

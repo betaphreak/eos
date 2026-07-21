@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.Exports;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -48,8 +50,8 @@ public final class RecipeExporter {
 	private static final String CATALOG_INPUT = "Manufactured_CIV4BonusInfos.xml";
 	private static final String REGULAR_INPUT = "Regular_CIV4BuildingInfos.xml";
 	private static final String PROVIDERS_INPUT = "zProviders_CIV4BuildingInfos.xml";
-	private static final String RECIPES_OUTPUT = "civstudio-engine/src/main/resources/generated/recipes.json";
-	private static final String TIER1_OUTPUT = "civstudio-engine/src/main/resources/generated/tier1-providers.json";
+	private static final String RECIPES_OUTPUT = "civstudio-engine/target/generated/recipes.json";
+	private static final String TIER1_OUTPUT = "civstudio-engine/target/generated/tier1-providers.json";
 
 	private RecipeExporter() {
 	}
@@ -59,13 +61,13 @@ public final class RecipeExporter {
 		Map<String, Element> buildings = buildingIndex();
 
 		List<Recipe> recipes = exportRecipes(catalog, buildings);
-		File recipesFile = new File(RECIPES_OUTPUT);
+		File recipesFile = Exports.outFile(RECIPES_OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(recipesFile, recipes);
 		System.out.println("wrote " + recipes.size() + " recipes to "
 				+ recipesFile.getAbsolutePath());
 
 		List<TierOneSource> tier1 = exportTierOne(buildings);
-		File tier1File = new File(TIER1_OUTPUT);
+		File tier1File = Exports.outFile(TIER1_OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(tier1File, tier1);
 		System.out.println("wrote " + tier1.size() + " tier-1 providers to "
 				+ tier1File.getAbsolutePath());

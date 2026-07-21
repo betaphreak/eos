@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -36,8 +37,8 @@ import tools.jackson.databind.ObjectMapper;
 public final class AdjacencyExporter {
 
 	private static final String INPUT = "map/adjacencies.csv";
-	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/adjacencies.json";
+	private static final String PROVINCES = "civstudio-engine/target/generated/map/provinces.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/map/adjacencies.json";
 
 	// beyond this great-circle km an entry is a leftover vanilla EU4 canal (kiel/panama/suez, …)
 	// onto a mismatched Anbennar province — a map-spanning / wrap-around artifact — and is dropped
@@ -106,7 +107,7 @@ public final class AdjacencyExporter {
 			out.add(adj);
 		}
 
-		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(new File(OUTPUT), out);
+		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(Exports.outFile(OUTPUT), out);
 		System.out.println("wrote " + out.size() + " adjacencies (dropped " + dropped
 				+ " off-map, " + farDropped + " too far) to " + new File(OUTPUT).getAbsolutePath());
 	}

@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -32,7 +33,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class CultureExporter {
 
 	private static final String INPUT = "common/cultures/anb_cultures.txt";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/cultures.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/map/cultures.json";
 
 	// group-level blocks that are shared name lists, not cultures
 	private static final Set<String> NOT_CULTURE = Set.of(
@@ -57,7 +58,7 @@ public final class CultureExporter {
 		}
 		cultures.sort((a, b) -> a.key().compareTo(b.key()));
 
-		File out = new File(OUTPUT);
+		File out = Exports.outFile(OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(out, cultures);
 		System.out.println("wrote " + cultures.size() + " cultures to "
 				+ out.getAbsolutePath());

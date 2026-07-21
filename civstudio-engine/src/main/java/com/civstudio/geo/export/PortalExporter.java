@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -42,7 +43,7 @@ public final class PortalExporter {
 
 	private static final String DEFINITIONS = "map/definition.csv";
 	private static final String PROVINCES_BMP = "map/provinces.bmp";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/portals.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/map/portals.json";
 
 	private PortalExporter() {
 	}
@@ -90,7 +91,7 @@ public final class PortalExporter {
 		}
 
 		ObjectMapper mapper = new ObjectMapper();
-		File file = new File(OUTPUT);
+		File file = Exports.outFile(OUTPUT);
 		mapper.writerWithDefaultPrettyPrinter().writeValue(file, out);
 		System.out.println("wrote " + portalCount + " portals over " + out.size()
 				+ " provinces to " + file.getAbsolutePath());

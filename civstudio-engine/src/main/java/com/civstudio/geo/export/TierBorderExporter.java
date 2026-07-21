@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -53,8 +54,8 @@ public final class TierBorderExporter {
 
 	private static final String DEFINITIONS = "map/definition.csv";
 	private static final String PROVINCES_BMP = "map/provinces.bmp";
-	private static final String PROVINCES_JSON = "civstudio-engine/src/main/resources/generated/map/provinces.json";
-	private static final String SUPERREGIONS_JSON = "civstudio-engine/src/main/resources/generated/map/superregions.json";
+	private static final String PROVINCES_JSON = "civstudio-engine/target/generated/map/provinces.json";
+	private static final String SUPERREGIONS_JSON = "civstudio-engine/target/generated/map/superregions.json";
 	private static final String OUTPUT = "civstudio-server/src/main/resources/map/tierborders.json";
 
 	private static final Pattern PLACEHOLDER_NAME = Pattern.compile("Anbennar\\d+");
@@ -109,7 +110,7 @@ public final class TierBorderExporter {
 		out.put(SUPER_REGIONS.name(), traceTier(pixels, w, h, bySuper, SUPER_REGIONS, group));
 		out.put(REGIONS.name(), traceTier(pixels, w, h, byRegion, REGIONS, group));
 
-		File file = new File(OUTPUT);
+		File file = Exports.outFile(OUTPUT);
 		new ObjectMapper().writeValue(file, out);
 		System.out.printf("wrote tier outlines (%.0f KB) to %s%n",
 				file.length() / 1024.0, file.getAbsolutePath());

@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.Exports;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,11 +36,11 @@ import tools.jackson.databind.ObjectMapper;
 public final class ImprovementExporter {
 
 	private static final String INPUT = "CIV4ImprovementInfos.xml";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/improvements.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/improvements.json";
 	// the baked tech set — the Prehistoric→Renaissance horizon, ending on the single tech cap
 	// (TechTree.CAP_TECH); a tech beyond it is unreachable in eos, so any improvement data gated
 	// on it is dropped, exactly as BuildingInfoExporter caps the building set.
-	private static final String TECHS = "civstudio-engine/src/main/resources/generated/techs.json";
+	private static final String TECHS = "civstudio-engine/target/generated/techs.json";
 
 	/**
 	 * The curated firm-building + settlement-ladder subset, in {@code docs/plots.md} order. The
@@ -94,7 +96,7 @@ public final class ImprovementExporter {
 		if (!missing.isEmpty())
 			throw new IllegalStateException("curated improvements not found in XML: " + missing);
 
-		File f = new File(OUTPUT);
+		File f = Exports.outFile(OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(f, out);
 		System.out.println("wrote " + out.size() + " improvements to " + f.getAbsolutePath());
 	}

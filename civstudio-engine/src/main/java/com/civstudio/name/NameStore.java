@@ -31,7 +31,7 @@ public final class NameStore {
 	// writable cache dir; default resolves under the Maven working dir (repo root) when run from source
 	private static volatile Path cacheDir = Path.of(prop(
 			"civstudio.names.cacheDir", "CIVSTUDIO_NAMES_CACHE_DIR",
-			"civstudio-engine/src/main/resources/generated/names"));
+			"civstudio-engine/target/generated/names"));
 
 	// one lock per race so concurrent colony threads never generate the same race twice; a race known
 	// to be sparse/absent is remembered so we don't re-parse the 0.5 MB source on every fallback

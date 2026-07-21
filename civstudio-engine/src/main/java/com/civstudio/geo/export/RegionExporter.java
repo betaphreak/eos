@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -46,7 +47,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class RegionExporter {
 
 	private static final String INPUT = "map/region.txt";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/regions.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/map/regions.json";
 
 	// region_key = { areas = { area1 area2 ... } ...rest of body ignored }
 	// (comments + monsoon blocks are stripped first, so 'areas' leads the body
@@ -78,7 +79,7 @@ public final class RegionExporter {
 		}
 
 		ObjectMapper mapper = new ObjectMapper();
-		File out = new File(OUTPUT);
+		File out = Exports.outFile(OUTPUT);
 		mapper.writerWithDefaultPrettyPrinter().writeValue(out, regions);
 		System.out.println(
 				"wrote " + regions.size() + " regions to " + out.getAbsolutePath());

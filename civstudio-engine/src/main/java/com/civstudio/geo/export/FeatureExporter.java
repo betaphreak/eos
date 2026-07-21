@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.Exports;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -29,7 +31,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class FeatureExporter {
 
 	private static final String INPUT = "CIV4FeatureInfos.xml";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/features.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/features.json";
 
 	/**
 	 * The curated feature subset, in {@code docs/plots.md} order: the land features, plus
@@ -90,7 +92,7 @@ public final class FeatureExporter {
 		if (!missing.isEmpty())
 			throw new IllegalStateException("curated features not found in XML: " + missing);
 
-		File f = new File(OUTPUT);
+		File f = Exports.outFile(OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(f, out);
 		System.out.println("wrote " + out.size() + " features to " + f.getAbsolutePath());
 	}

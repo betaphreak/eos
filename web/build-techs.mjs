@@ -5,7 +5,7 @@
 // Two committed, run-INDEPENDENT assets (the tech tree is static reference data, unlike
 // build.mjs which needs an output/<seed> run):
 //
-//   civstudio-engine/src/main/resources/generated/techs-meta.json
+//   civstudio-server/src/main/resources/techs-meta.json
 //                              the art-coupled per-tech metadata the server can't regenerate —
 //                              each tech's `icon` sprite rect (a cell in tech-icons.webp) and its
 //                              curated `beaker` colour — keyed by tech Type. The tech GRAPH itself

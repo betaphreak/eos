@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.Exports;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -36,7 +38,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class ManufacturedBonusExporter {
 
 	private static final String INPUT = "Manufactured_CIV4BonusInfos.xml";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/manufactured-bonuses.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/manufactured-bonuses.json";
 
 	private ManufacturedBonusExporter() {
 	}
@@ -76,7 +78,7 @@ public final class ManufacturedBonusExporter {
 		if (out.isEmpty())
 			throw new IllegalStateException("no bonuses found in " + INPUT);
 
-		File f = new File(OUTPUT);
+		File f = Exports.outFile(OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(f, out);
 		System.out.println("wrote " + out.size() + " manufactured bonuses to " + f.getAbsolutePath());
 	}

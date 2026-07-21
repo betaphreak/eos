@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +42,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class TradeGoodExporter {
 
 	private static final String INPUT = "common/tradegoods/00_tradegoods.txt";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/tradegoods.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/map/tradegoods.json";
 
 	/** The EU4 placeholder good for undiscovered/uncolonized provinces — not a real good. */
 	private static final String UNKNOWN = "unknown";
@@ -113,7 +114,7 @@ public final class TradeGoodExporter {
 		}
 		goods.sort((a, b) -> a.key().compareTo(b.key()));
 
-		File out = new File(OUTPUT);
+		File out = Exports.outFile(OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(out, goods);
 		System.out.println("wrote " + goods.size() + " trade goods to "
 				+ out.getAbsolutePath());

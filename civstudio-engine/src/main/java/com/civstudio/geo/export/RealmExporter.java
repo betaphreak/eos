@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.Exports;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -49,7 +51,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class RealmExporter {
 
-	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
+	private static final String PROVINCES = "civstudio-engine/target/generated/map/provinces.json";
 
 	/**
 	 * The three deliberate quirks dropped from their realm (docs/realms.md §Three quirk provinces):
@@ -72,7 +74,7 @@ public final class RealmExporter {
 	}
 
 	private void stamp() throws Exception {
-		File file = new File(PROVINCES);
+		File file = Exports.outFile(PROVINCES);
 		List<Map<String, Object>> rows = mapper.readValue(file,
 				new TypeReference<List<Map<String, Object>>>() {
 				});

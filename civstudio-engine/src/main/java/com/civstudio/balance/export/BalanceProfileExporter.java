@@ -19,12 +19,12 @@ import com.civstudio.balance.BalanceProfiles;
  *
  * <p>Usage: {@code mvn -pl civstudio-engine exec:exec
  * -Dsim.main=com.civstudio.balance.export.BalanceProfileExporter [-Dexec.args=<out>]}, or pass the
- * output path as the first argument. Default {@code src/main/resources/generated/balance/profiles.json}
- * (gitignored, flattened onto the classpath root at package time).
+ * output path as the first argument. Default {@code target/generated/balance/profiles.json}
+ * (gitignored exporter build-scratch; its content reaches the engine via the world-bundle).
  */
 public final class BalanceProfileExporter {
 
-	private static final Path DEFAULT_OUT = Path.of("civstudio-engine", "src", "main", "resources",
+	private static final Path DEFAULT_OUT = Path.of("civstudio-engine", "target",
 			"generated", "balance", "profiles.json");
 
 	private BalanceProfileExporter() {

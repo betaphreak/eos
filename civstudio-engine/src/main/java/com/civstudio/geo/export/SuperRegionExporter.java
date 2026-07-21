@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -48,7 +49,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class SuperRegionExporter {
 
 	private static final String INPUT = "map/superregion.txt";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/superregions.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/map/superregions.json";
 
 	// superregion_key = { region_key region_key ... } (no nested braces)
 	private static final Pattern SUPERREGION = Pattern.compile(
@@ -76,7 +77,7 @@ public final class SuperRegionExporter {
 		}
 
 		ObjectMapper mapper = new ObjectMapper();
-		File out = new File(OUTPUT);
+		File out = Exports.outFile(OUTPUT);
 		mapper.writerWithDefaultPrettyPrinter().writeValue(out, superRegions);
 		System.out.println("wrote " + superRegions.size() + " super-regions to "
 				+ out.getAbsolutePath());

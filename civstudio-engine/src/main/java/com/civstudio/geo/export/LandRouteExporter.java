@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.Exports;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +35,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public final class LandRouteExporter {
 
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/edges.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/map/edges.json";
 
 	private LandRouteExporter() {
 	}
@@ -54,7 +56,7 @@ public final class LandRouteExporter {
 		}
 
 		ObjectMapper mapper = new ObjectMapper();
-		File out = new File(OUTPUT);
+		File out = Exports.outFile(OUTPUT);
 		mapper.writerWithDefaultPrettyPrinter().writeValue(out, edges);
 		System.out.println("wrote edge weights for " + edges.size() + " provinces ("
 				+ edgeCount + " directed edges) to " + out.getAbsolutePath());

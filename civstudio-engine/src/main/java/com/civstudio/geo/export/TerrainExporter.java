@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.Exports;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -33,7 +35,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class TerrainExporter {
 
 	private static final String INPUT = "CIV4TerrainInfos.xml";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/terrains.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/terrains.json";
 
 	/**
 	 * The curated subset: the settleable land terrains (in {@code docs/plots.md}
@@ -113,7 +115,7 @@ public final class TerrainExporter {
 		// the authored, source-less terrains (cavern floor, surface mushroom forest)
 		out.addAll(SYNTHETIC);
 
-		File f = new File(OUTPUT);
+		File f = Exports.outFile(OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(f, out);
 		System.out.println("wrote " + out.size() + " terrains to " + f.getAbsolutePath());
 	}

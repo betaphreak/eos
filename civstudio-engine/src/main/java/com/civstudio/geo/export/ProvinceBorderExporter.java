@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -58,7 +59,7 @@ public final class ProvinceBorderExporter {
 
 	private static final String DEFINITIONS = "map/definition.csv";
 	private static final String PROVINCES_BMP = "map/provinces.bmp";
-	private static final String PROVINCES_JSON = "civstudio-engine/src/main/resources/generated/map/provinces.json";
+	private static final String PROVINCES_JSON = "civstudio-engine/target/generated/map/provinces.json";
 	private static final String OUTPUT = "civstudio-server/src/main/resources/map/borders.json";
 
 	/** Drop components smaller than this many pixels — stray colour speckle, not real land. */
@@ -117,7 +118,7 @@ public final class ProvinceBorderExporter {
 		}
 
 		ObjectMapper mapper = new ObjectMapper();
-		File out = new File(OUTPUT);
+		File out = Exports.outFile(OUTPUT);
 		mapper.writeValue(out, rows);
 		System.out.printf("wrote %d province outlines (%d points, %.0f KB) to %s%n",
 				rows.size(), totalPts, out.length() / 1024.0, out.getAbsolutePath());

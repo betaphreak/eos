@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -54,7 +55,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class CavernExporter {
 
 	private static final String INPUT = "map/terrain.txt";
-	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
+	private static final String PROVINCES = "civstudio-engine/target/generated/map/provinces.json";
 
 	// each special Anbennar terrain block → the ProvinceType it stamps: the underground Dwarovar
 	// four, plus seven distinctive surface terrains that would otherwise flatten onto generic LAND.
@@ -139,7 +140,7 @@ public final class CavernExporter {
 	}
 
 	private void stampProvinces() throws Exception {
-		File file = new File(PROVINCES);
+		File file = Exports.outFile(PROVINCES);
 		List<Map<String, Object>> rows = mapper.readValue(file,
 				new TypeReference<List<Map<String, Object>>>() {
 				});

@@ -1,5 +1,7 @@
 package com.civstudio.settlement.export;
 
+import com.civstudio.data.Exports;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,12 +76,12 @@ public final class BuildingInfoExporter {
 			"assets/XML/GameText/Cannibalism_CIV4GameText.xml");
 
 	private static final String ART_XML = "assets/XML/Art/CIV4ArtDefines_Building.xml";
-	private static final String TECHS = "civstudio-engine/src/main/resources/generated/techs.json";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/buildings.json";
+	private static final String TECHS = "civstudio-engine/target/generated/techs.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/buildings.json";
 	// the generated tech-effect overlay: per kept tech, an UNLOCK effect for each building it unlocks
 	// (Phase 4). Kept separate from the hand-authored /tech-effects.json and merged by TechTree.
 	private static final String UNLOCKS_OUTPUT =
-			"civstudio-engine/src/main/resources/generated/building-unlocks.json";
+			"civstudio-engine/target/generated/building-unlocks.json";
 
 	// the lone past-ceiling tech kept in techs.json only as the tree's visual end-cap; the engine
 	// (TechTree) drops it at load, so a building gated on it gets no UNLOCK effect (it can't be
@@ -199,8 +201,8 @@ public final class BuildingInfoExporter {
 		}
 
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.writerWithDefaultPrettyPrinter().writeValue(new File(OUTPUT), out);
-		mapper.writerWithDefaultPrettyPrinter().writeValue(new File(UNLOCKS_OUTPUT), unlocks);
+		mapper.writerWithDefaultPrettyPrinter().writeValue(Exports.outFile(OUTPUT), out);
+		mapper.writerWithDefaultPrettyPrinter().writeValue(Exports.outFile(UNLOCKS_OUTPUT), unlocks);
 
 		int unlockEffects = unlocks.values().stream().mapToInt(List::size).sum();
 		System.out.println("Wrote " + out.size() + " buildings to " + OUTPUT);

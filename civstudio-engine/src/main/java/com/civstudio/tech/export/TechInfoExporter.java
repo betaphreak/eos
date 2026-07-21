@@ -18,6 +18,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.civstudio.data.Civ4Files;
+import com.civstudio.data.Exports;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -51,7 +52,7 @@ public final class TechInfoExporter {
 
 	private static final String TECH_XML = "assets/XML/Technologies/CIV4TechInfos.xml";
 	private static final String TEXT_XML = "assets/XML/GameText/Tech_CIV4GameText.xml";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/techs.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/techs.json";
 
 	// the eras eos models; techs of any later C2C era (Information, Nanotech, …) are dropped
 	private static final Set<String> IN_SCOPE = Set.of(
@@ -139,7 +140,7 @@ public final class TechInfoExporter {
 		}
 
 		new ObjectMapper().writerWithDefaultPrettyPrinter()
-				.writeValue(new File(OUTPUT), out);
+				.writeValue(Exports.outFile(OUTPUT), out);
 
 		System.out.println("Wrote " + out.size() + " techs to " + OUTPUT
 				+ " (dropped " + dropped + " out-of-scope era, "

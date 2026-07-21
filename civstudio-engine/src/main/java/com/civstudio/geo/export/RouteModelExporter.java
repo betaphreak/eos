@@ -33,7 +33,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class RouteModelExporter {
 
 	private static final String INPUT = "CIV4RouteModelInfos.xml";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/route-models.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/map/route-models.json";
 
 	/**
 	 * The curated route subset — the pre-modern types that fit the game's era; the far-future

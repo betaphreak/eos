@@ -40,7 +40,7 @@ public final class TerrainArtExporter {
 
 	private static final String ART = "CIV4ArtDefines_Terrain.xml";
 	private static final String INFOS = "CIV4TerrainInfos.xml";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/terrain-art.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/map/terrain-art.json";
 
 	/** The curated land subset — the same 16 terrains {@link TerrainExporter} keeps. */
 	private static final Set<String> KEEP = new LinkedHashSet<>(List.of(

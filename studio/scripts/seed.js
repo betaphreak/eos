@@ -28,7 +28,9 @@ const { randomBytes } = require('node:crypto');
 const { join, relative, sep } = require('node:path');
 
 const RES = join(__dirname, '..', '..', 'civstudio-engine', 'src', 'main', 'resources');
-const GEN = join(RES, 'generated');
+// the exporter build-scratch tree — the --from-generated source (gitignored, under Maven target/).
+// In the default bundle mode nothing is read from here; GEN only anchors bundleKey()'s path mapping.
+const GEN = join(RES, '..', '..', '..', 'target', 'generated');
 const MAP = join(GEN, 'map');
 // The committed world-bundle snapshot — the DEFAULT content source (see loadBundle / bundle mode below).
 const FIXTURE = join(RES, '..', '..', 'test', 'resources', 'world-bundle.json.gz');

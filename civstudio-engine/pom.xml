@@ -54,37 +54,15 @@
     </dependencies>
 
     <build>
-        <resources>
-            <!--
-              Computed exporter/baker outputs live in a `generated/` subtree in the SOURCE tree
-              (kept apart from the hand-authored resources — feasts*, tech-effects*, names/, the
-              *.lock pins), but are FLATTENED onto the classpath root at package time so every
-              runtime load path stays /terrains.json, /map/provinces.json, … unchanged. So this
-              reorg touches no runtime loader and the engine jar's classpath is byte-identical.
-              Regenerate a computed file with its exporter (writes into src/main/resources/generated/).
-              See docs/civ4-files.md / the generated/ README.
-            -->
-            <resource>
-                <directory>src/main/resources</directory>
-                <excludes>
-                    <exclude>generated/**</exclude>
-                </excludes>
-            </resource>
-            <resource>
-                <directory>src/main/resources/generated</directory>
-                <excludes>
-                    <exclude>README.md</exclude>
-                    <!--
-                      Web-build-only exporter outputs: terrain-art.json is read by web/build.mjs
-                      (from the SOURCE tree, not the classpath) to bake the terrain tiles; route-models.json
-                      has no active consumer. Neither is read by the engine sim at runtime, so they are kept
-                      out of the packaged jar (see the generated/ README).
-                    -->
-                    <exclude>map/terrain-art.json</exclude>
-                    <exclude>map/route-models.json</exclude>
-                </excludes>
-            </resource>
-        </resources>
+        <!--
+          Resources are the default src/main/resources tree (hand-authored: feasts*, human-names/,
+          geo/region-earth-map.json, geonames/subset.json.gz, the *.lock pins, …). The exporters no
+          longer write here: their computed outputs are gitignored build-scratch under
+          target/generated/, and nothing on the classpath reads them — consumers read the world-bundle
+          (StrapiWorldSource / the committed fixture). The one committed exporter output, the GeoNames
+          subset, is a normal resource at geonames/subset.json.gz (classpath /geonames/subset.json.gz).
+          See docs/exporter-outputs.md.
+        -->
         <plugins>
             <!--
               Runs a simulation in a forked JVM with assertions enabled (-ea). The working

@@ -1,5 +1,7 @@
 package com.civstudio.settlement.export;
 
+import com.civstudio.data.Exports;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,12 +79,12 @@ public final class UnitInfoExporter {
 			"assets/XML/GameText/Units_CIV4GameText.xml",
 			"assets/XML/GameText/Combat_CIV4GameText.xml");
 
-	private static final String TECHS = "civstudio-engine/src/main/resources/generated/techs.json";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/units.json";
+	private static final String TECHS = "civstudio-engine/target/generated/techs.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/units.json";
 	private static final String UNLOCKS_OUTPUT =
-			"civstudio-engine/src/main/resources/generated/unit-unlocks.json";
+			"civstudio-engine/target/generated/unit-unlocks.json";
 	private static final String COMBATS_OUTPUT =
-			"civstudio-engine/src/main/resources/generated/unit-combats.json";
+			"civstudio-engine/target/generated/unit-combats.json";
 
 	// the lone past-ceiling end-cap tech; the engine drops it at load, so a unit gated on
 	// it gets no UNLOCK effect (but still appears in units.json for the web view). The single
@@ -236,9 +238,9 @@ public final class UnitInfoExporter {
 		List<Map<String, Object>> combats = loadUnitCombats(inScopeCombats, english);
 
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.writerWithDefaultPrettyPrinter().writeValue(new File(OUTPUT), out);
-		mapper.writerWithDefaultPrettyPrinter().writeValue(new File(UNLOCKS_OUTPUT), unlocks);
-		mapper.writerWithDefaultPrettyPrinter().writeValue(new File(COMBATS_OUTPUT), combats);
+		mapper.writerWithDefaultPrettyPrinter().writeValue(Exports.outFile(OUTPUT), out);
+		mapper.writerWithDefaultPrettyPrinter().writeValue(Exports.outFile(UNLOCKS_OUTPUT), unlocks);
+		mapper.writerWithDefaultPrettyPrinter().writeValue(Exports.outFile(COMBATS_OUTPUT), combats);
 
 		int unlockEffects = unlocks.values().stream().mapToInt(List::size).sum();
 		System.out.println("Wrote " + out.size() + " units to " + OUTPUT);

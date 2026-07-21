@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -48,7 +49,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class ProvinceHistoryExporter {
 
 	private static final String INPUT_DIR = "history/provinces";
-	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
+	private static final String PROVINCES = "civstudio-engine/target/generated/map/provinces.json";
 
 	/** The game-start bookmark; dated blocks after this are ignored (encoded YYYYMMDD). */
 	private static final int START_DATE = 1444_11_11;
@@ -216,7 +217,7 @@ public final class ProvinceHistoryExporter {
 	}
 
 	private void stampProvinces() throws Exception {
-		File file = new File(PROVINCES);
+		File file = Exports.outFile(PROVINCES);
 		List<Map<String, Object>> rows = mapper.readValue(file,
 				new TypeReference<List<Map<String, Object>>>() {
 				});

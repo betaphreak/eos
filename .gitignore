@@ -26,16 +26,13 @@ civstudio-server/target/
 # the shared .map volume (see below) — the store never writes under src/ anymore. Kept as a
 # guard against a stale checkout or old code regenerating into the tree.
 /civstudio-engine/src/main/resources/map/provinces/
-# The generated/ subtree (exporter/baker outputs — map/tech/unit/building/recipe JSON, non-human race
-# name caches, …) is NO LONGER committed. Studio is the authoritative content store: the exporters now
-# SEED it, and the engine boots from it (prod: StrapiWorldSource over /api/world-bundle; tests/offline:
-# the committed world-bundle fixture at civstudio-engine/src/test/resources/world-bundle.json.gz).
-# Ignore the whole regenerable tree, keeping only the two machine-independent artifacts that are NOT in
-# the world bundle and still fall back to the classpath: the GeoNames place-name subset and the README.
-# See docs/studio-datamodel-rebuild-plan.md and docs/names.md.
-/civstudio-engine/src/main/resources/generated/*
-!/civstudio-engine/src/main/resources/generated/geonames/
-!/civstudio-engine/src/main/resources/generated/README.md
+# Exporter/baker outputs (map/tech/unit/building/recipe JSON, non-human race name caches, …) are
+# gitignored build-scratch, written under target/generated/ (already covered by the target/ rules
+# above) — nothing downstream reads them: consumers read the world-bundle (prod: StrapiWorldSource
+# over /api/world-bundle; tests/offline: the committed fixture at
+# civstudio-engine/src/test/resources/world-bundle.json.gz). The one committed exporter output, the
+# GeoNames place-name subset, is a normal resource at src/main/resources/geonames/subset.json.gz.
+# See docs/exporter-outputs.md, docs/studio-datamodel-rebuild-plan.md and docs/names.md.
 # derived .nif render sprites (the explored alternative to GameFont — docs/bonus-sprite-bake.md)
 /tools/nif-bake/out/
 # Anbennar EU4 mod files are no longer vendored. They are fetched on demand from GitLab (pinned by

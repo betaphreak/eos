@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -30,7 +31,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class ReligionExporter {
 
 	private static final String INPUT_DIR = "common/religions";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/religions.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/map/religions.json";
 
 	private ReligionExporter() {
 	}
@@ -56,7 +57,7 @@ public final class ReligionExporter {
 		}
 		religions.sort((a, b) -> a.key().compareTo(b.key()));
 
-		File out = new File(OUTPUT);
+		File out = Exports.outFile(OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(out, religions);
 		System.out.println("wrote " + religions.size() + " religions to "
 				+ out.getAbsolutePath());

@@ -1,5 +1,7 @@
 package com.civstudio.geo.export;
 
+import com.civstudio.data.Exports;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,8 +42,8 @@ import tools.jackson.databind.ObjectMapper;
 public final class BonusExporter {
 
 	private static final String INPUT = "CIV4BonusInfos.xml";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/bonuses.json";
-	private static final String TECHS = "civstudio-engine/src/main/resources/generated/techs.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/bonuses.json";
+	private static final String TECHS = "civstudio-engine/target/generated/techs.json";
 
 	// C2C era key → ordinal (later = higher); the exported tree stops at industrial, so a reveal
 	// tech absent from it is a modern/future tech (Bonus.ERA_MODERN).
@@ -110,7 +112,7 @@ public final class BonusExporter {
 		if (out.isEmpty())
 			throw new IllegalStateException("no bonuses found in " + INPUT);
 
-		File f = new File(OUTPUT);
+		File f = Exports.outFile(OUTPUT);
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(f, out);
 		System.out.println("wrote " + out.size() + " bonuses to " + f.getAbsolutePath());
 	}

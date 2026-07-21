@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -75,7 +76,7 @@ public final class ProvinceExporter {
 	private static final String DEFAULT_MAP = "map/default.map";
 	private static final String PROVINCES_BMP = "map/provinces.bmp";
 	private static final String RIVERS_BMP = "map/rivers.bmp";
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/map/provinces.json";
+	private static final String OUTPUT = "civstudio-engine/target/generated/map/provinces.json";
 
 	/** Paradox uses pure white for a non-river pixel on {@code rivers.bmp}. */
 	private static final int RIVER_NONE = 0xFFFFFF;
@@ -111,7 +112,7 @@ public final class ProvinceExporter {
 		List<Map<String, Object>> rows = scanRaster(defs, seaIds, lakeIds);
 
 		ObjectMapper mapper = new ObjectMapper();
-		File out = new File(OUTPUT);
+		File out = Exports.outFile(OUTPUT);
 		mapper.writerWithDefaultPrettyPrinter().writeValue(out, rows);
 		System.out.println("wrote " + rows.size() + " provinces to " + out.getAbsolutePath());
 	}

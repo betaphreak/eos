@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -53,7 +54,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class ContinentExporter {
 
 	private static final String INPUT = "map/continent.txt";
-	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
+	private static final String PROVINCES = "civstudio-engine/target/generated/map/provinces.json";
 
 	/** Non-geographic utility blocks in {@code continent.txt} (not continents). */
 	private static final Set<String> SKIP = Set.of(
@@ -106,7 +107,7 @@ public final class ContinentExporter {
 	 * field order stays province &rarr; area &rarr; continent &rarr; neighbors.
 	 */
 	private void stampProvinces(Map<Integer, String> continentOf) throws Exception {
-		File file = new File(PROVINCES);
+		File file = Exports.outFile(PROVINCES);
 		List<Map<String, Object>> rows = mapper.readValue(file,
 				new TypeReference<List<Map<String, Object>>>() {
 				});

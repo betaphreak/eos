@@ -13,7 +13,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Loads the committed GeoNames <b>subset</b> ({@code /generated/geonames/subset.json.gz}) into
+ * Loads the committed GeoNames <b>subset</b> ({@code /geonames/subset.json.gz}) into
  * per-country {@link CountryGazetteer}s — the same shape {@link GeoNamesGazetteer#loadFromCache}
  * produces from the full dump, but from a ~4&nbsp;MB committed file instead of the 372&nbsp;MB
  * {@code allCountries} dump.
@@ -31,10 +31,11 @@ public final class GeoNamesSubset {
 	}
 
 	/**
-	 * Classpath resource of the committed subset. The source file lives at
-	 * {@code src/main/resources/generated/geonames/subset.json.gz}, but the {@code generated/} tree is
-	 * mounted at the classpath <em>root</em> by the engine pom (like {@code /map/provinces.json}), so
-	 * on the classpath it is {@code /geonames/subset.json.gz}.
+	 * Classpath resource of the committed subset — a normal resource at
+	 * {@code src/main/resources/geonames/subset.json.gz}, so on the classpath it is
+	 * {@code /geonames/subset.json.gz}. (It is the one committed exporter output; the rest write to
+	 * the gitignored {@code target/generated/} scratch and are never on the classpath — consumers
+	 * read the world-bundle instead. See {@code docs/exporter-outputs.md}.)
 	 */
 	public static final String RESOURCE = "/geonames/subset.json.gz";
 

@@ -21,14 +21,14 @@ import com.civstudio.era.EconomyCatalog;
  *
  * <p>Usage: {@code mvn -pl civstudio-engine exec:exec
  * -Dsim.main=com.civstudio.era.export.EconomyExporter [-Dexec.args=<out>]}, or pass the output path
- * as the first argument. Default {@code generated/balance/economies.json}.
+ * as the first argument. Default {@code target/generated/balance/economies.json}.
  */
 public final class EconomyExporter {
 
-	// src/main/resources/generated/ is FLATTENED onto the classpath root at package time (see the
-	// engine pom's <resources> block), so this lands at /balance/economies.json — the path
-	// EconomyCatalog asks for. Gitignored: the committed copy of this content is studio's.
-	private static final Path DEFAULT_OUT = Path.of("civstudio-engine", "src", "main", "resources",
+	// gitignored exporter build-scratch (under Maven target/); nothing loads it from here. Its content
+	// reaches EconomyCatalog (/balance/economies.json) via the world-bundle — studio seeds from the
+	// committed bundle, and the bundle is snapshotted from a local studio seeded off this scratch.
+	private static final Path DEFAULT_OUT = Path.of("civstudio-engine", "target",
 			"generated", "balance", "economies.json");
 
 	private EconomyExporter() {

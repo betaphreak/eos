@@ -59,7 +59,10 @@ public final class GeoNamesSubsetExporter {
 	/** Floor on the per-country keep count, so a tiny region still gets a usable pool. */
 	private static final int MIN_K = 256;
 
-	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/geonames/subset.json.gz";
+	// the ONE committed exporter output — it ships in the jar (any machine bakes plot names), so it
+	// lives in the resource tree proper (classpath /geonames/subset.json.gz), NOT the gitignored
+	// target/generated/ scratch the other exporters write to.
+	private static final String OUTPUT = "civstudio-engine/src/main/resources/geonames/subset.json.gz";
 
 	public static void main(String[] args) throws Exception {
 		if (!GeoNamesFiles.isAvailable()) {

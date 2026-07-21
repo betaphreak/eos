@@ -1,6 +1,7 @@
 package com.civstudio.geo.export;
 
 import com.civstudio.data.AnbennarFiles;
+import com.civstudio.data.Exports;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -52,7 +53,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class ClimateExporter {
 
 	private static final String INPUT = "map/climate.txt";
-	private static final String PROVINCES = "civstudio-engine/src/main/resources/generated/map/provinces.json";
+	private static final String PROVINCES = "civstudio-engine/target/generated/map/provinces.json";
 
 	// key = { id id id ... } (the equator_y scalar has no braces, so it is skipped)
 	private static final Pattern BLOCK = Pattern.compile(
@@ -121,7 +122,7 @@ public final class ClimateExporter {
 	}
 
 	private void stampProvinces() throws Exception {
-		File file = new File(PROVINCES);
+		File file = Exports.outFile(PROVINCES);
 		List<Map<String, Object>> rows = mapper.readValue(file,
 				new TypeReference<List<Map<String, Object>>>() {
 				});
