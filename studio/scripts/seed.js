@@ -1,6 +1,9 @@
 // seed.js — Phase 3 seeder for the "Studio as the engine's authoritative content store" rebuild
-// (docs/studio-datamodel-rebuild-plan.md). Reads the engine's committed exporter JSON and upserts it
-// into Strapi via the Document Service (in-process — boots Strapi programmatically, no HTTP).
+// (docs/studio-datamodel-rebuild-plan.md). Reads the committed world-bundle snapshot by default (the
+// gitignored generated/ tree is only ephemeral exporter build-scratch now; pass --from-generated to seed
+// from it during a local content regen) and upserts into Strapi via the Document Service (in-process —
+// boots Strapi programmatically, no HTTP). Only the GEN/MAP datasets come from the bundle; the committed
+// RES-root loose files (feasts / human-names / geo/region-earth-map) are read as files either way.
 //
 // CommonJS on purpose: booting Strapi through ESM (`node seed.mjs`) trips ERR_UNSUPPORTED_DIR_IMPORT
 // on @strapi/core's lodash/fp import; require() resolves Strapi's CJS build, which is fine.
@@ -20,15 +23,53 @@
 
 const { createStrapi, compileStrapi } = require('@strapi/strapi');
 const { readFileSync, existsSync } = require('node:fs');
+const { gunzipSync } = require('node:zlib');
 const { randomBytes } = require('node:crypto');
-const { join } = require('node:path');
+const { join, relative, sep } = require('node:path');
 
 const RES = join(__dirname, '..', '..', 'civstudio-engine', 'src', 'main', 'resources');
 const GEN = join(RES, 'generated');
 const MAP = join(GEN, 'map');
+// The committed world-bundle snapshot — the DEFAULT content source (see loadBundle / bundle mode below).
+const FIXTURE = join(RES, '..', '..', 'test', 'resources', 'world-bundle.json.gz');
+
+// ── bundle source ────────────────────────────────────────────────────────────
+// generated/ is only ephemeral exporter build-scratch now; the SEED reads its datasets from the
+// committed world-bundle instead (so a fresh checkout / CI reseed needs no exporter output). BUNDLE is
+// set in main() unless --from-generated is passed (the local regen path that seeds from fresh scratch).
+// Only the gitignored GEN/MAP datasets are sourced from the bundle; the committed RES-root loose files
+// (feasts / human-names / geo/region-earth-map) are always present and read as files either way.
+let BUNDLE = null; // { meta, resources } when in bundle mode
+
+function loadBundle(p) {
+  const raw = readFileSync(p);
+  const json = p.endsWith('.gz') ? gunzipSync(raw) : raw;
+  return JSON.parse(json.toString('utf8'));
+}
+// A GEN-rooted file path -> its world-bundle resource key ('/techs.json', '/map/countries.json', …);
+// null for a path outside generated/ (a committed RES-root file, read from disk in either mode).
+function bundleKey(p) {
+  const rel = relative(GEN, p);
+  if (rel.startsWith('..')) return null;
+  return '/' + rel.split(sep).join('/');
+}
+// Whether a (GEN-rooted) source exists — from the bundle in bundle mode, else on disk. Replaces the
+// bare existsSync guards on the optional balance/scenario sources so they resolve from the bundle too.
+const hasSource = (p) => {
+  if (BUNDLE) { const k = bundleKey(p); return !!(k && Object.prototype.hasOwnProperty.call(BUNDLE.resources, k)); }
+  return existsSync(p);
+};
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
+// In bundle mode a GEN-rooted read resolves from the committed world-bundle (a dataset per resource
+// key); anything else (the committed RES-root loose files) falls through to disk. Treated read-only.
+const readJson = (p) => {
+  if (BUNDLE) {
+    const k = bundleKey(p);
+    if (k && Object.prototype.hasOwnProperty.call(BUNDLE.resources, k)) return BUNDLE.resources[k];
+  }
+  return JSON.parse(readFileSync(p, 'utf8'));
+};
 const int = (v) => (v === null || v === undefined || v === '' ? undefined : parseInt(v, 10));
 const bool = (v) => (v === undefined ? undefined : v === true || v === '1' || v === 1);
 const stripEra = (v) => (v ? v.replace(/^C2C_ERA_/, '') : undefined);
@@ -286,6 +327,20 @@ function buildSpecs() {
 
 // ── seeder ───────────────────────────────────────────────────────────────────
 async function main() {
+  // Content source: the committed world-bundle by default (generated/ is ephemeral exporter scratch).
+  // --from-generated reads the freshly-written generated/ tree instead — the local regen path, where the
+  // exporters have just produced new content and studio is seeded from it before a fixture snapshot.
+  // --bundle <path> overrides the snapshot location (else SEED_BUNDLE env, else the committed fixture).
+  if (!process.argv.includes('--from-generated')) {
+    const i = process.argv.indexOf('--bundle');
+    const path = (i >= 0 && process.argv[i + 1]) || process.env.SEED_BUNDLE || FIXTURE;
+    BUNDLE = loadBundle(path);
+    console.log(`[seed] bundle mode: ${path}`
+      + ` (meta=${JSON.stringify(BUNDLE.meta)}, ${Object.keys(BUNDLE.resources).length} datasets)`);
+  } else {
+    console.log('[seed] file mode (--from-generated): reading the generated/ exporter scratch tree');
+  }
+
   const app = await createStrapi(await compileStrapi()).load();
   app.log.level = 'error';
 
@@ -468,20 +523,20 @@ async function setSingleIfSourced(app, u, data) {
 // ── source loaders for the loose bits ────────────────────────────────────────
 function loadEconomies() {
   const f = join(GEN, 'balance', 'economies.json');
-  if (!existsSync(f)) return null;
+  if (!hasSource(f)) return null;
   return { economies: readJson(f) };
 }
 function loadBalanceProfiles() {
   // /balance/profiles.json is a map { key -> BalanceProfile }; flatten to one row per profile
   const f = join(GEN, 'balance', 'profiles.json');
-  if (!existsSync(f)) return null;
+  if (!hasSource(f)) return null;
   const map = readJson(f);
   return Object.entries(map).map(([key, configs]) => ({ key, label: key, configs }));
 }
 function loadScenarios() {
   // /scenarios.json is already a list of ScenarioDefs — one row each
   const f = join(GEN, 'scenarios.json');
-  if (!existsSync(f)) return null;
+  if (!hasSource(f)) return null;
   return readJson(f);
 }
 function loadFeasts() {
@@ -507,6 +562,12 @@ function loadRegionEarthMap() {
   return { regions, notes };
 }
 function loadMapVersion() {
+  // In bundle mode the version travels WITH the content — use the snapshot's own meta so a reseed
+  // stamps exactly the content it seeded (rather than today's date over possibly-older content).
+  if (BUNDLE) {
+    return { mapVersion: BUNDLE.meta.mapVersion, contentVersion: BUNDLE.meta.contentVersion,
+      note: 'Seeded from the committed world-bundle by scripts/seed.js.' };
+  }
   const src = readFileSync(join(RES, '..', 'java', 'com', 'civstudio', 'settlement', 'ProvincePlotStore.java'), 'utf8');
   const m = src.match(/MAP_VERSION\s*=\s*(\d+)/);
   const mapVersion = m ? parseInt(m[1], 10) : 0;

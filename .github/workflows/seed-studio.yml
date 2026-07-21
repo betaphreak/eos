@@ -2,9 +2,11 @@
 # scripts/seed.js from a laptop (home → Azure at concurrency 8 took ~40 min; a runner co-located with
 # Azure at higher concurrency is a few minutes). Triggered by hand from the Actions tab.
 #
-# Why this works cleanly where the local run fought us: studio/.env is gitignored, so it's ABSENT in the
-# checkout — Strapi therefore reads DATABASE_* straight from this job's env (no .env override to fight),
-# and the seeder connects directly to Postgres (no world-bundle token needed).
+# Self-sufficient: scripts/seed.js now reads the COMMITTED world-bundle snapshot
+# (civstudio-engine/src/test/resources/world-bundle.json.gz) by default — NOT the gitignored generated/
+# tree — so a clean checkout has everything it needs (generated/ is only local exporter build-scratch).
+# And studio/.env is gitignored → absent in the checkout, so Strapi reads DATABASE_* straight from this
+# job's env (no .env override to fight) and the seeder connects directly to Postgres (no bundle token).
 #
 # One-time setup — add these repo secrets (Settings → Secrets and variables → Actions):
 #   STUDIO_DB_HOST      e.g. civstudio-postgres.postgres.database.azure.com
