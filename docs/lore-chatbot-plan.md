@@ -144,9 +144,14 @@ thin web chat UI in `web/`. Reuses the existing auth. Reproducibility still ride
   service (reuses `pg`) over `lore-lib.mjs`: `GET /api/lore/search?q=&k=` embeds the question via TEI →
   pgvector top-K → JSON passages with provenance. CORS-open (public lore). Tested locally against the
   Docker substrate ("what are the harpies?" → Harpy·Introduction 0.765). Deploy as its own Azure Container
-  App next to TEI. *(Chosen over the Spring-AI-on-civstudio-server path: the retrieval + generation were
-  already proven in Node, and a standalone lore service is simpler + independently deployable. Portable to
-  Spring AI later if we want it co-hosted with the MCP server.)*
+  App next to TEI. **✅ Now PORTED into `civstudio-server`** (`com.civstudio.server.lore`): `LoreController`
+  (`GET /api/lore/search`, `POST /api/lore/ask`) + `LoreService` (TEI embed + pgvector retrieve + Claude
+  ask, all via JDK `HttpClient`/`JdbcTemplate` — **no new dependency**) + `LoreConfig` (a dedicated,
+  opt-in lore datasource, `@ConditionalOnProperty(civstudio.lore.datasource-url)` — inert until
+  configured). So the web talks to ONE backend. The Node `lore-service.mjs` stays as a dev fallback; the
+  backfill (`backfill-lore.mjs`) is unaffected. TEI + pgvector + Anthropic are the three services the
+  server orchestrates (none hosted in-JVM). Config: `CIVSTUDIO_LORE_DATASOURCE_URL/…`, `…_TEI_URL`,
+  `ANTHROPIC_API_KEY`.
 - **C3 — generation. ✅ wired (needs key).** `POST /api/lore/ask {question}` retrieves top-8 → grounds
   `claude-haiku-4-5` on the passages → `{answer, sources}` with inline `[n]` citations. Gated on
   `ANTHROPIC_API_KEY` (503 without — degrades to search). Verified up to the graceful no-key path here

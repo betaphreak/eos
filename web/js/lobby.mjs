@@ -38,16 +38,6 @@ function resolveBase(given) {
   return (b && b.live && b.live.base) || "https://dev.civstudio.com";
 }
 
-// The RAG lore chatbot service (P5) — its own host, deployed separately from the spectator server.
-// ?lore=<url> overrides; else localhost:8090 for local dev; else empty (@ask replies "not available yet")
-// until the lore-service is deployed and this default is set to its URL.
-function resolveLoreBase() {
-  const q = new URLSearchParams(location.search).get("lore");
-  if (q) return q.replace(/\/+$/, "");
-  if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return "http://localhost:8090";
-  return ""; // TODO: set to the deployed lore-service URL when it ships
-}
-const LORE_BASE = resolveLoreBase();
 
 /**
  * Wire the lobby once. Idempotent, and safe to call before the bundle exists.
@@ -343,14 +333,13 @@ async function askLore(question) {
   const who = document.createElement("b"); who.textContent = "Loremaster: ";
   const span = document.createElement("span"); span.textContent = "…thinking";
   line.append(who, span); box.append(line); box.scrollTop = box.scrollHeight;
-  if (!LORE_BASE) {
-    span.textContent = "the lore chatbot isn't available yet — run the lore service and add ?lore=http://localhost:8090";
-    return;
-  }
   try {
-    const res = await fetch(LORE_BASE + "/api/lore/ask", {
+    // the lore endpoint lives on the SAME server this lobby talks to (civstudio-server /api/lore/ask);
+    // 404 = that server was deployed without the lore backend configured.
+    const res = await fetch(apiUrl("/api/lore/ask"), {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question }),
     });
+    if (res.status === 404) { span.textContent = "the lore chatbot isn't enabled on this server yet."; return; }
     const j = await res.json().catch(() => ({}));
     span.textContent = res.ok ? (j.answer || "(no answer)") : `(${j.error || res.status})`;
   } catch { span.textContent = "(lore service unreachable)"; }

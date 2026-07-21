@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.civstudio.server.chat.ChatStore;
@@ -34,8 +35,13 @@ import tools.jackson.databind.ObjectMapper;
 @Configuration
 public class PersistenceConfig {
 
-	/** A pooled datasource, only when one is configured. */
+	/**
+	 * A pooled datasource for the session store, only when one is configured. {@code @Primary} so that
+	 * when the lore vector store adds its own dedicated datasource ({@code LoreConfig}), Boot's
+	 * auto-built {@link JdbcTemplate} (used by the stores below) unambiguously resolves to this one.
+	 */
 	@Bean
+	@Primary
 	@ConditionalOnProperty(name = "spring.datasource.url")
 	DataSource dataSource(@Value("${spring.datasource.url}") String url,
 			@Value("${spring.datasource.username:}") String username,

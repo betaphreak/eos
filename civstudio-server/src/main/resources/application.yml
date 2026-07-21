@@ -80,6 +80,17 @@ civstudio:
     url: ${CIVSTUDIO_WORLDSOURCE_URL:http://localhost:1337/api/world-bundle}
     token: ${WORLD_BUNDLE_TOKEN:}
     fixture: ${CIVSTUDIO_WORLDSOURCE_FIXTURE:}
+  lore:
+    # The lore chatbot (P5, docs/lore-chatbot-plan.md). Opt-in: the /api/lore/** endpoints exist only when
+    # datasource-url is set — the pgvector DB holding wiki_chunk (civ-pgv locally, civstudio-postgres on
+    # prod, where wiki_chunk shares the DB with the canonical tables). Embeddings from a self-hosted TEI
+    # (bge-small); generation from Claude via the Anthropic key. Inert (endpoints absent) by default.
+    datasource-url: ${CIVSTUDIO_LORE_DATASOURCE_URL:}
+    datasource-username: ${CIVSTUDIO_LORE_DATASOURCE_USERNAME:}
+    datasource-password: ${CIVSTUDIO_LORE_DATASOURCE_PASSWORD:}
+    tei-url: ${CIVSTUDIO_LORE_TEI_URL:http://localhost:8085/embed}
+    anthropic-key: ${ANTHROPIC_API_KEY:}
+    model: ${CIVSTUDIO_LORE_MODEL:claude-haiku-4-5}
   anbennar:
     # Canonical upstream source of the Anbennar EU4 mod files (GitLab, not GitHub). These are NOT
     # vendored in the repo; the engine (com.civstudio.data.AnbennarFiles) downloads them individually,

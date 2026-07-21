@@ -54,6 +54,45 @@ public class CivStudioProperties {
 		return anbennar;
 	}
 
+	private final Lore lore = new Lore();
+
+	public Lore getLore() {
+		return lore;
+	}
+
+	/**
+	 * The lore chatbot (P5, {@code docs/lore-chatbot-plan.md}). Opt-in: {@code LoreConfig} wires the
+	 * {@code /api/lore/**} endpoints only when {@code datasource-url} is set — the pgvector DB holding
+	 * {@code wiki_chunk} ({@code civstudio-postgres} on prod, the {@code civ-pgv} Docker container
+	 * locally). Question embeddings come from a self-hosted TEI at {@code tei-url}; the grounded answer
+	 * from Claude via {@code anthropic-key} (bind to the {@code ANTHROPIC_API_KEY} env). With no
+	 * datasource the endpoints are absent and the server is unaffected.
+	 */
+	public static class Lore {
+		private String datasourceUrl = "";
+		private String datasourceUsername = "";
+		private String datasourcePassword = "";
+		private String teiUrl = "http://localhost:8085/embed";
+		private String anthropicKey = "";
+		private String model = "claude-haiku-4-5";
+		private int searchK = 8;
+
+		public String getDatasourceUrl() { return datasourceUrl; }
+		public void setDatasourceUrl(String v) { this.datasourceUrl = v; }
+		public String getDatasourceUsername() { return datasourceUsername; }
+		public void setDatasourceUsername(String v) { this.datasourceUsername = v; }
+		public String getDatasourcePassword() { return datasourcePassword; }
+		public void setDatasourcePassword(String v) { this.datasourcePassword = v; }
+		public String getTeiUrl() { return teiUrl; }
+		public void setTeiUrl(String v) { this.teiUrl = v; }
+		public String getAnthropicKey() { return anthropicKey; }
+		public void setAnthropicKey(String v) { this.anthropicKey = v; }
+		public String getModel() { return model; }
+		public void setModel(String v) { this.model = v; }
+		public int getSearchK() { return searchK; }
+		public void setSearchK(int v) { this.searchK = v; }
+	}
+
 	/**
 	 * The canonical upstream source of the Anbennar EU4 mod files (map rasters + Clausewitz
 	 * metadata) that the engine reads on demand — the sim's runtime plot generation
