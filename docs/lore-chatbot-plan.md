@@ -140,10 +140,18 @@ thin web chat UI in `web/`. Reuses the existing auth. Reproducibility still ride
     *"Who founded the Empire of Anbennar?"* → **0.850** "Empire of Anbennar · Founding — established 1221
     at the Grand Summit of Aranthíl". *Remaining for prod:* deploy TEI as an Azure Container App +
     `CREATE EXTENSION vector` on civstudio-postgres + run the backfill (a workflow, like seed-studio.yml).
-- **C2 — retrieval API.** Server-side embed-question → pgvector top-K (+ hybrid variants over canonical
-  rows). No LLM yet — validate retrieval quality on a question set.
-- **C3 — generation.** Spring AI + Claude (`claude-haiku-4-5`) with document citations; a `/api/lore/ask`
-  endpoint returning answer + cited `wiki_url`s.
+- **C2 — retrieval API. ✅ SHIPPED + tested.** `studio/scripts/lore-service.mjs` — a small Node HTTP
+  service (reuses `pg`) over `lore-lib.mjs`: `GET /api/lore/search?q=&k=` embeds the question via TEI →
+  pgvector top-K → JSON passages with provenance. CORS-open (public lore). Tested locally against the
+  Docker substrate ("what are the harpies?" → Harpy·Introduction 0.765). Deploy as its own Azure Container
+  App next to TEI. *(Chosen over the Spring-AI-on-civstudio-server path: the retrieval + generation were
+  already proven in Node, and a standalone lore service is simpler + independently deployable. Portable to
+  Spring AI later if we want it co-hosted with the MCP server.)*
+- **C3 — generation. ✅ wired (needs key).** `POST /api/lore/ask {question}` retrieves top-8 → grounds
+  `claude-haiku-4-5` on the passages → `{answer, sources}` with inline `[n]` citations. Gated on
+  `ANTHROPIC_API_KEY` (503 without — degrades to search). Verified up to the graceful no-key path here
+  (no Anthropic credential in this env); with a key it returns cited answers. *Refinement:* switch to
+  Claude's native document citations (per the plan) instead of prompt-numbered `[n]`.
 - **C4 — tool-calling.** Let the agent also call MCP tools so structured/live facts blend with lore.
 - **C5 — web chat UI** on anbennar.civstudio.com.
 
