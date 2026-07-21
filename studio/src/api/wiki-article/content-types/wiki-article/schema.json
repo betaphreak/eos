@@ -77,6 +77,14 @@
       "type": "json",
       "pluginOptions": { "i18n": { "localized": false } }
     },
+    "imageFile": {
+      "type": "string",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "imageUrl": {
+      "type": "text",
+      "pluginOptions": { "i18n": { "localized": false } }
+    },
     "country": {
       "type": "relation",
       "relation": "manyToOne",

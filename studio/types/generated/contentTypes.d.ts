@@ -2742,6 +2742,18 @@ export interface ApiWikiArticleWikiArticle extends Struct.CollectionTypeSchema {
           localized: false;
         };
       }>;
+    imageFile: Schema.Attribute.String &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    imageUrl: Schema.Attribute.Text &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
     infobox: Schema.Attribute.JSON &
       Schema.Attribute.SetPluginOptions<{
         i18n: {

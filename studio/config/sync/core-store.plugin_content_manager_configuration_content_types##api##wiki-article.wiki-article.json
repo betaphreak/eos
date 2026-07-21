@@ -224,6 +224,34 @@
           "sortable": false
         }
       },
+      "imageFile": {
+        "edit": {
+          "label": "imageFile",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "imageFile",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "imageUrl": {
+        "edit": {
+          "label": "imageUrl",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "imageUrl",
+          "searchable": false,
+          "sortable": false
+        }
+      },
       "country": {
         "edit": {
           "label": "country",
@@ -458,6 +486,18 @@
         [
           {
             "name": "infobox",
+            "size": 12
+          }
+        ],
+        [
+          {
+            "name": "imageFile",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "imageUrl",
             "size": 12
           }
         ],

@@ -574,6 +574,7 @@ async function seedWikiArticles(app, findAll) {
   await pool(rows, CONC, async (r) => {
     const data = clean({ key: r.key, title: r.title, pageId: r.pageId, url: r.url, template: r.template,
       entityType: r.entityType, entityRef: r.entityRef, entityKey: r.entityKey, isStub: r.isStub,
+      imageFile: r.imageFile, imageUrl: r.imageUrl,
       summary: r.summary, body: r.body, categories: r.categories, links: r.links, infobox: r.infobox });
     const docId = existing.get(r.key);
     if (docId) { await app.documents(u).update({ documentId: docId, data }); wmap.set(r.key, docId); }
