@@ -4,8 +4,10 @@ package com.civstudio.settlement;
  * The <b>art era</b> a colony's district view is drawn in — the CivStudio analogue of a
  * Civ6 {@code ARTERA_*} ({@code docs/district-generator.md} §1 Layer 2, the
  * {@code EraDistribution} that swaps the building palette so a city visually ages). The
- * eos tech horizon runs Prehistoric&rarr;Renaissance (capped at
- * {@code TECH_INDUSTRIAL_LIFESTYLE}), so the era palette caps at {@link #RENAISSANCE}.
+ * eos tech horizon runs Prehistoric&rarr;Atomic (capped at
+ * {@code TECH_INFORMATION_LIFESTYLE}), but only Ancient&rarr;Renaissance district art is
+ * baked, so the era palette still caps at {@link #RENAISSANCE} (the art assets are the
+ * limiter, not the tech horizon).
  * <p>
  * The era is a <b>projection of research progress</b> — how far the colony is through
  * the kept-tech tree — via {@link #fromProgress(int, int)}. Being a pure function of

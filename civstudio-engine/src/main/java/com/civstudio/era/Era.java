@@ -26,12 +26,12 @@ import lombok.Builder;
  *     prototype {@code eras.json} (growth, research, build, …). Only {@code
  *     researchPercent} is wired today (it scales {@linkplain
  *     ResearchState research} cost per era); the rest are carried for
- *     future mechanics. Defined for {@link #PREHISTORIC} through {@link #RENAISSANCE}
+ *     future mechanics. Defined for {@link #PREHISTORIC} through {@link #ATOMIC}
  *     (the modeled span); {@code null} beyond.</li>
  * </ul>
  * The {@link GameSession} owns a single {@code Era} — the era every
  * colony in the session founds in (Medieval by default) — and the tech tree's scope
- * ceiling is {@link #RENAISSANCE} (see {@link TechTree}). Era-advancement
+ * ceiling is {@link #ATOMIC} (see {@link TechTree}). Era-advancement
  * during a run is future work; for now {@code Era} is the static home of these
  * per-era values.
  */
@@ -58,8 +58,8 @@ public enum Era {
 			5),                                    // targetNobles
 			new EraModifiers(120, 100, 100, 100, 250, 110, 100, 200, 80)),
 	RENAISSANCE(4, null, new EraModifiers(110, 100, 100, 100, 300, 100, 100, 190, 80)),
-	INDUSTRIAL(5, null, null),
-	ATOMIC(6, null, null),
+	INDUSTRIAL(5, null, new EraModifiers(100, 100, 100, 100, 350, 100, 100, 180, 80)),
+	ATOMIC(6, null, new EraModifiers(100, 100, 100, 100, 400, 100, 100, 170, 80)),
 	INFORMATION(7, null, null),
 	NANOTECH(8, null, null),
 	TRANSHUMAN(9, null, null);
@@ -250,7 +250,7 @@ public enum Era {
 	 * @param constructPercent building-construction cost modifier (no eos mechanic yet)
 	 * @param createPercent    wonder/project creation cost modifier (no eos mechanic yet)
 	 * @param researchPercent  <b>research cost modifier</b> — the per-era scaling on a
-	 *                         tech's cost (150 at Prehistoric rising to 300 at Renaissance)
+	 *                         tech's cost (150 at Prehistoric rising to 400 at Atomic)
 	 * @param buildPercent     worker/builder output cost modifier
 	 * @param improvePercent   tile-improvement cost modifier (no eos mechanic yet)
 	 * @param gpPercent        great-person cost modifier (no eos mechanic yet)

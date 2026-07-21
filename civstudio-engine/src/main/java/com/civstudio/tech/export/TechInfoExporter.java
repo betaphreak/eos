@@ -31,9 +31,9 @@ import tools.jackson.databind.ObjectMapper;
  * (from {@code Civilopedia}, the pedia paragraph) and {@code quote} (from
  * {@code Quote}), joined from the localization file.
  * <p>
- * Only the eras eos models are kept — Prehistoric&hellip;Renaissance (the modeled
+ * Only the eras eos models are kept — Prehistoric&hellip;Atomic (the modeled
  * ceiling, matching {@link com.civstudio.era.Era} / {@code TechTree}'s
- * {@code MAX_TECH_ERA}); the ~578 later-era C2C techs (Industrial and beyond) are
+ * {@code MAX_TECH_ERA}); the later-era C2C techs (Information and beyond) are
  * dropped, since the engine drops them at load and the web tree only shows what a
  * colony can research. Source (document) order — already grid-sorted (x, then y) — is
  * preserved.
@@ -53,13 +53,14 @@ public final class TechInfoExporter {
 	private static final String TEXT_XML = "assets/XML/GameText/Tech_CIV4GameText.xml";
 	private static final String OUTPUT = "civstudio-engine/src/main/resources/generated/techs.json";
 
-	// the eras eos models; techs of any later C2C era (Industrial, Atomic, …) are dropped
+	// the eras eos models; techs of any later C2C era (Information, Nanotech, …) are dropped
 	private static final Set<String> IN_SCOPE = Set.of(
 			"C2C_ERA_PREHISTORIC", "C2C_ERA_ANCIENT", "C2C_ERA_CLASSICAL",
-			"C2C_ERA_MEDIEVAL", "C2C_ERA_RENAISSANCE");
+			"C2C_ERA_MEDIEVAL", "C2C_ERA_RENAISSANCE", "C2C_ERA_INDUSTRIAL",
+			"C2C_ERA_ATOMIC");
 
-	// the one exception kept from beyond the ceiling: the Industrial entry tech, retained
-	// as the tree's visual end-cap (where the Renaissance leads). The engine still drops it
+	// the one exception kept from beyond the ceiling: the Information entry tech, retained
+	// as the tree's visual end-cap (where the Atomic era leads). The engine still drops it
 	// at load (its era is past MAX_TECH_ERA), so only the web tech-tree view shows it. The id is
 	// the single global tech-cap constant (TechTree.CAP_TECH), shared with the data importers.
 	private static final String CAP = com.civstudio.tech.TechTree.CAP_TECH;

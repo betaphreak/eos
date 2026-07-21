@@ -32,7 +32,7 @@ import com.civstudio.era.Era;
  * in a {@link GameSession} (which loads it lazily, on first use).
  * <p>
  * Loading does three things beyond parsing: it <b>drops out-of-scope techs</b> (any
- * whose era is past the {@link Era#RENAISSANCE} — i.e. the source's lone Industrial
+ * whose era is past {@link Era#ATOMIC} — i.e. the source's Information
  * node — see {@link Era}), discards every Civ4-specific effect/asset field, and
  * <b>validates the graph</b> (fail-fast): every prerequisite must resolve to a tech
  * that is itself kept, or {@link #load()} throws. Nothing else in the model reads
@@ -57,10 +57,10 @@ public final class TechTree {
 	// on the same footing, so researching a tech grants its unit tokens. Absent → no unit unlocks.
 	private static final String UNIT_UNLOCKS_RESOURCE = "/unit-unlocks.json";
 
-	// the highest era the tech tree models; techs beyond it (the lone Industrial node
-	// and any later) are dropped at load. The scope is expressed here rather than by
-	// which Era values exist, since Era is now the full ladder (see eos.era.Era).
-	private static final Era MAX_TECH_ERA = Era.RENAISSANCE;
+	// the highest era the tech tree models; techs beyond it (the Information node and any
+	// later) are dropped at load. The scope is expressed here rather than by which Era
+	// values exist, since Era is now the full ladder (see eos.era.Era).
+	private static final Era MAX_TECH_ERA = Era.ATOMIC;
 
 	/**
 	 * The eos <b>tech cap</b>: the single tech the tree ends on. It sits one step past the
@@ -71,7 +71,7 @@ public final class TechTree {
 	 * importers gate their data to the kept set this defines (see {@code
 	 * com.civstudio.tech.export.TechInfoExporter}, {@code geo.export.ImprovementExporter}).
 	 */
-	public static final String CAP_TECH = "TECH_INDUSTRIAL_LIFESTYLE";
+	public static final String CAP_TECH = "TECH_INFORMATION_LIFESTYLE";
 
 	private static final ObjectMapper MAPPER = JsonMapper.builder()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)

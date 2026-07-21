@@ -28,11 +28,12 @@ as downstream consumers of the "unlock / gate" effects — the rank ladder
 ## The imported data
 
 `techs.json` is a Civ4-mod tech graph, **regenerated from the vendored Caveman2Cosmos
-source** by `com.civstudio.tech.export.TechInfoExporter` (see below). It keeps **338
-techs** across the 5 eras eos models — Prehistoric 89, Ancient 88, Classical 52,
-Medieval 51, Renaissance 58 — the Prehistoric→Renaissance slice of C2C's 943-tech tree,
-with the religion-founding techs, Clockpunk, and disabled placeholders (`TECH_DUMMY`)
-dropped. Each tech carries:
+source** by `com.civstudio.tech.export.TechInfoExporter` (see below). It keeps **507
+techs** across the 7 eras eos models — Prehistoric 89, Ancient 88, Classical 52,
+Medieval 51, Renaissance 58, Industrial 67, Atomic 102 — the Prehistoric→Atomic slice of
+C2C's 943-tech tree (capped at the `TECH_INFORMATION_LIFESTYLE` visual end-cap, which the
+engine drops at load), with the religion-founding techs, Clockpunk, and disabled
+placeholders (`TECH_DUMMY`) dropped. Each tech carries:
 
 - `Type` (id, e.g. `TECH_MERCANTILISM`), `Era`, `Advisor` (one of 6 categories:
   Military, Economy, Growth, Culture, Religion, Science), `iCost` (research cost,

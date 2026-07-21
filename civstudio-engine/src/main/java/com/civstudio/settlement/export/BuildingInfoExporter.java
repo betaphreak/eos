@@ -81,11 +81,11 @@ public final class BuildingInfoExporter {
 	private static final String UNLOCKS_OUTPUT =
 			"civstudio-engine/src/main/resources/generated/building-unlocks.json";
 
-	// the lone past-Renaissance tech kept in techs.json only as the tree's visual end-cap; the engine
+	// the lone past-ceiling tech kept in techs.json only as the tree's visual end-cap; the engine
 	// (TechTree) drops it at load, so a building gated on it gets no UNLOCK effect (it can't be
-	// researched in-engine) — but still appears in buildings.json for the web view. Mirrors
-	// TechInfoExporter.CAP.
-	private static final String CAP_TECH = "TECH_INDUSTRIAL_LIFESTYLE";
+	// researched in-engine) — but still appears in buildings.json for the web view. The single
+	// global home for the horizon tech (mirrors TechInfoExporter.CAP).
+	private static final String CAP_TECH = com.civstudio.tech.TechTree.CAP_TECH;
 
 	private BuildingInfoExporter() {
 	}

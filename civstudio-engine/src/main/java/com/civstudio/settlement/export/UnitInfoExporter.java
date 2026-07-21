@@ -84,10 +84,10 @@ public final class UnitInfoExporter {
 	private static final String COMBATS_OUTPUT =
 			"civstudio-engine/src/main/resources/generated/unit-combats.json";
 
-	// the lone past-Renaissance end-cap tech; the engine drops it at load, so a unit gated on
-	// it gets no UNLOCK effect (but still appears in units.json for the web view). Mirrors
-	// BuildingInfoExporter.CAP_TECH / TechInfoExporter.CAP.
-	private static final String CAP_TECH = "TECH_INDUSTRIAL_LIFESTYLE";
+	// the lone past-ceiling end-cap tech; the engine drops it at load, so a unit gated on
+	// it gets no UNLOCK effect (but still appears in units.json for the web view). The single
+	// global home for the horizon tech (mirrors BuildingInfoExporter.CAP_TECH / TechInfoExporter.CAP).
+	private static final String CAP_TECH = com.civstudio.tech.TechTree.CAP_TECH;
 
 	// a unit with no <PrereqTech> is not dropped but linked here (owner) — the early tech that
 	// makes the ancient starters (UNIT_BAND/UNIT_TRIBE) and the capture/immigration units
