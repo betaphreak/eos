@@ -2719,9 +2719,11 @@ export interface ApiWikiArticleWikiArticle extends Struct.CollectionTypeSchema {
           localized: false;
         };
       }>;
+    country: Schema.Attribute.Relation<'manyToOne', 'api::country.country'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    culture: Schema.Attribute.Relation<'manyToOne', 'api::culture.culture'>;
     entityKey: Schema.Attribute.String &
       Schema.Attribute.SetPluginOptions<{
         i18n: {
@@ -2779,13 +2781,20 @@ export interface ApiWikiArticleWikiArticle extends Struct.CollectionTypeSchema {
           localized: false;
         };
       }>;
+    province: Schema.Attribute.Relation<'manyToOne', 'api::province.province'>;
     publishedAt: Schema.Attribute.DateTime;
+    region: Schema.Attribute.Relation<'manyToOne', 'api::region.region'>;
+    religion: Schema.Attribute.Relation<'manyToOne', 'api::religion.religion'>;
     summary: Schema.Attribute.Text &
       Schema.Attribute.SetPluginOptions<{
         i18n: {
           localized: true;
         };
       }>;
+    superRegion: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::super-region.super-region'
+    >;
     template: Schema.Attribute.String &
       Schema.Attribute.SetPluginOptions<{
         i18n: {

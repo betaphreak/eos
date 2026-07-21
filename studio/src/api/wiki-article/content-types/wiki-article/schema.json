@@ -76,6 +76,36 @@
     "infobox": {
       "type": "json",
       "pluginOptions": { "i18n": { "localized": false } }
+    },
+    "country": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::country.country"
+    },
+    "culture": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::culture.culture"
+    },
+    "religion": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::religion.religion"
+    },
+    "province": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::province.province"
+    },
+    "region": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::region.region"
+    },
+    "superRegion": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::super-region.super-region"
     }
   }
 }

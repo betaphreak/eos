@@ -224,6 +224,96 @@
           "sortable": false
         }
       },
+      "country": {
+        "edit": {
+          "label": "country",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "country",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "culture": {
+        "edit": {
+          "label": "culture",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "culture",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "religion": {
+        "edit": {
+          "label": "religion",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "religion",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "province": {
+        "edit": {
+          "label": "province",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "province",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "region": {
+        "edit": {
+          "label": "region",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "region",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "superRegion": {
+        "edit": {
+          "label": "superRegion",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "superRegion",
+          "searchable": true,
+          "sortable": true
+        }
+      },
       "createdAt": {
         "edit": {
           "label": "createdAt",
@@ -369,6 +459,36 @@
           {
             "name": "infobox",
             "size": 12
+          }
+        ],
+        [
+          {
+            "name": "country",
+            "size": 6
+          },
+          {
+            "name": "culture",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "religion",
+            "size": 6
+          },
+          {
+            "name": "province",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "region",
+            "size": 6
+          },
+          {
+            "name": "superRegion",
+            "size": 6
           }
         ]
       ]

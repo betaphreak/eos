@@ -346,6 +346,27 @@ async function main() {
   const app = await createStrapi(await compileStrapi()).load();
   app.log.level = 'error';
 
+  // This Strapi rejects a bare documentId on a relation whose TARGET is i18n-localized ("Invalid
+  // relations") — it needs the locale-qualified connect form { set: [{ documentId, locale }] }. localizeRels
+  // rewrites exactly those fields (non-i18n targets like terrain/bonus stay bare, which works). Without
+  // this, every relation to an i18n type (province.owner/culture/religion, region.areas, …) silently
+  // failed the PHASE B update — the bulk of the old "row errors". Document-Service path only; the --bulk
+  // raw-INSERT path writes link tables directly and never hits this validator.
+  const LOCALIZED = new Set(Object.entries(app.contentTypes)
+    .filter(([, ct]) => ct.pluginOptions?.i18n?.localized).map(([u]) => u));
+  const localizeRels = (u, data) => {
+    const attrs = app.contentTypes[u].attributes;
+    const out = {};
+    for (const [field, val] of Object.entries(data)) {
+      const target = attrs[field]?.target;
+      if (target && LOCALIZED.has(target) && val != null) {
+        const ids = Array.isArray(val) ? val : [val];
+        out[field] = { set: ids.map((id) => ({ documentId: id, locale: 'en' })) };
+      } else out[field] = val;
+    }
+    return out;
+  };
+
   // --wipe: TRUNCATE every api::* content table (CASCADE → their relation link tables) before seeding,
   // for a CLEAN reseed. Needed when a DB carries stale rows the idempotent upsert wouldn't remove
   // (e.g. prod still holding old-model provinces/countries). Only touches api::* tables — admin/plugin
@@ -439,7 +460,7 @@ async function main() {
         const data = clean(spec.rel(row, R));
         if (Object.keys(data).length === 0) return;
         try {
-          await app.documents(u).update({ documentId: docId, data });
+          await app.documents(u).update({ documentId: docId, data: localizeRels(u, data) });
           linked++;
         } catch (e) {
           rec('B', spec.name, keyOf(row), e);
@@ -453,8 +474,8 @@ async function main() {
   await wipeReseed(app, uid('feast'), loadFeasts(), (r) => r);
   await upsertPlain(app, uid('name-pool'), 'key', loadNamePools(), (r) => r);
 
-  // ── wiki lore (no relations yet; typed subtypes + entity correlation are a later projection) ──
-  await seedWikiArticles(app);
+  // ── wiki lore: scalars + one-way correlation relations to the canonical types (via entityRef/Key) ──
+  await seedWikiArticles(app, findAll);
 
   // ── single types (this pass: the ones with a real source) ──
   await setSingle(app, uid('region-earth-map'), loadRegionEarthMap());
@@ -530,7 +551,13 @@ async function setSingleIfSourced(app, u, data) {
 // the committed gzipped subset straight from src/main/resources (docs/wiki-lore-import-plan.md P1) — the
 // one committed WikiArticleExporter output, like the GeoNames subset, so a clean checkout / CI seeds it
 // without re-scraping. Kept behind an existence guard (absent != empty) for robustness.
-async function seedWikiArticles(app) {
+// entityRef → [canonical type, its natural-key field, the wiki-article one-way m2o field to set]
+const WIKI_REF = {
+  country: ['country', 'tag', 'country'], culture: ['culture', 'key', 'culture'],
+  religion: ['religion', 'key', 'religion'], province: ['province', 'provinceId', 'province'],
+  region: ['region', 'key', 'region'], 'super-region': ['super-region', 'key', 'superRegion'],
+};
+async function seedWikiArticles(app, findAll) {
   const f = join(RES, 'wiki', 'wiki-article.json.gz');
   if (!existsSync(f)) {
     console.log('[C] wiki-article     SKIPPED — no source file'
@@ -538,11 +565,50 @@ async function seedWikiArticles(app) {
     return;
   }
   const rows = JSON.parse(gunzipSync(readFileSync(f)).toString('utf8'));
-  await upsertPlain(app, uid('wiki-article'), 'key', rows, (r) => ({
-    title: r.title, pageId: r.pageId, url: r.url, template: r.template,
-    entityType: r.entityType, entityRef: r.entityRef, entityKey: r.entityKey, isStub: r.isStub,
-    summary: r.summary, body: r.body, categories: r.categories, links: r.links, infobox: r.infobox,
-  }));
+  const u = uid('wiki-article');
+
+  // PHASE A — scalars, building key → documentId
+  const existing = new Map();
+  for (const d of await findAll(u, ['key'])) existing.set(d.key, d.documentId);
+  const wmap = new Map();
+  await pool(rows, CONC, async (r) => {
+    const data = clean({ key: r.key, title: r.title, pageId: r.pageId, url: r.url, template: r.template,
+      entityType: r.entityType, entityRef: r.entityRef, entityKey: r.entityKey, isStub: r.isStub,
+      summary: r.summary, body: r.body, categories: r.categories, links: r.links, infobox: r.infobox });
+    const docId = existing.get(r.key);
+    if (docId) { await app.documents(u).update({ documentId: docId, data }); wmap.set(r.key, docId); }
+    else { const doc = await app.documents(u).create({ data }); wmap.set(r.key, doc.documentId); }
+  });
+
+  // PHASE B — correlation relations. entityRef names the canonical collection, entityKey its natural key;
+  // resolve to a documentId (queried here, so this works in bundle & bulk modes alike) and set the
+  // one-way m2o. entityKey is a string but a natural key may be numeric (provinceId) — match on String().
+  const refs = new Set(rows.filter((r) => r.entityRef && r.entityKey && WIKI_REF[r.entityRef]).map((r) => r.entityRef));
+  const canon = {};
+  for (const ref of refs) {
+    const [type, keyField] = WIKI_REF[ref];
+    const m = new Map();
+    for (const d of await findAll(uid(type), [keyField])) m.set(String(d[keyField]), d.documentId);
+    canon[ref] = m;
+  }
+  // Both wiki-article and the canonical types are i18n-localized; this Strapi version rejects a bare
+  // documentId on such a relation ("Invalid relations") and requires the locale-qualified connect form
+  // {set:[{documentId, locale}]}. (The core seeder's bare-documentId rels silently fail the same way —
+  // that's the bulk of its logged "row errors" — but it swallows them; we don't, so use the working form.)
+  let linked = 0, relFail = 0;
+  await pool(rows, CONC, async (r) => {
+    if (!r.entityRef || !r.entityKey || !WIKI_REF[r.entityRef]) return;
+    const targetId = canon[r.entityRef] && canon[r.entityRef].get(String(r.entityKey));
+    if (!targetId) return;
+    try {
+      await app.documents(u).update({ documentId: wmap.get(r.key),
+        data: { [WIKI_REF[r.entityRef][2]]: { set: [{ documentId: targetId, locale: 'en' }] } } });
+      linked++;
+    } catch (e) {
+      relFail++;
+    }
+  });
+  console.log(`[C] wiki-article     upserted ${rows.length}, linked ${linked}` + (relFail ? `, ${relFail} rel failures` : ''));
 }
 
 // ── source loaders for the loose bits ────────────────────────────────────────

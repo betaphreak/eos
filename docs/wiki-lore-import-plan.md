@@ -170,8 +170,14 @@ Bump `contentVersion` so `StrapiWorldSource` re-fetches.
   name→key join: COUNTRY 75%, REGION 53%, RELIGION 44%, CULTURE 37%, LOCATION 30% (`entityRef` +
   `entityKey` per row). The unmatched are **genuinely lore-only** — 0 of them have an exact fixture name
   (verified) — so the rates reflect that the wiki has far more lore entities than the game has tags/keys.
-  `_unmatched-correlation.json` report emitted for the curated-override tail. *Remaining (studio):* surface
-  `entityType`/`entityRef`/`entityKey` on the `wiki-article` type (+ optional Strapi relations later).
+  `_unmatched-correlation.json` report emitted for the curated-override tail. **Studio SHIPPED:**
+  `entityType`/`entityRef`/`entityKey` + one-way m2o **relations** (`country`/`culture`/`religion`/
+  `province`/`region`/`superRegion`) on the `wiki-article` type, seeded and verified (2509 typed, 553
+  relation links; `Empire of Anbennar → Z01`). Fixing these surfaced a **pre-existing core `seed.js` bug**:
+  it set relations with a bare `documentId`, which this Strapi rejects for i18n→i18n relations, so every
+  relation to an i18n type silently failed (`province linked 27/5268`). Fixed with a `localizeRels` helper
+  (locale-qualified `{set:[{documentId, locale}]}` for i18n targets) — seed "row errors" **16,262 → 943**
+  (the rest are genuine missing targets). *Remaining:* curated `wiki-overrides.json` for the tail.
 - **P3 — images.** API image fetch → Strapi media (Azure Blob, per `studio/CLAUDE.md`) → infobox art
   in-game.
 - **P4 — in-game surfacing.** Web/engine reads lore off the canonical entity via the inverse relation
