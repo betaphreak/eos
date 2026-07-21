@@ -123,8 +123,14 @@ thin web chat UI in `web/`. Reuses the existing auth. Reproducibility still ride
 
 ## Phases (when P5 begins)
 
-- **C1 — substrate.** Add the `vector` extension + `wiki_chunk` migration; stand up TEI with a chosen
-  small HF model (`bge-small`/`gte-small`/`nomic-embed-text`); backfill embeddings from the seeded lore.
+- **C1 — substrate.** ✅ **chunker SHIPPED** (`WikiChunker`/`WikiChunkExporter`): section-chunks the
+  committed `wiki-article.json.gz` into **12,698 passages** (avg 651 chars, hard-capped at
+  `MAX_CHARS`=1200 so every chunk fits a small model's window), each carrying provenance
+  (`wikiKey`/`entityRef`/`entityKey`/`wikiUrl`) for citation + the hybrid join. Chunks are build-scratch
+  (`target/generated/wiki/wiki-chunk.json.gz`) — deterministic from the committed corpus, re-derived at
+  embed time. *Remaining:* the `vector` extension + `wiki_chunk` migration; stand up the embedding model
+  (self-host `bge-small` via TEI, or a hosted API); backfill embeddings. Gated on the embedding-provider
+  decision below.
 - **C2 — retrieval API.** Server-side embed-question → pgvector top-K (+ hybrid variants over canonical
   rows). No LLM yet — validate retrieval quality on a question set.
 - **C3 — generation.** Spring AI + Claude (`claude-haiku-4-5`) with document citations; a `/api/lore/ask`
