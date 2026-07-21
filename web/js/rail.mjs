@@ -8,10 +8,11 @@
 // the panel<->techtree and panel<->plotfetch cycles go with it. panel keeps setOverlay/setPlane
 // (the mode toggles that DRIVE the rail) and re-exports renderRail/showRail/selectProvince, which
 // plotfetch.mjs, techtree.mjs and advisor-detail.mjs already import from it.
-import { P, provGeo, terrainRgb, TRADE_GOODS, S } from "./core.mjs";
+import { P, provGeo, terrainRgb, TRADE_GOODS, S, isPolitical } from "./core.mjs";
 import { draw } from "./repaint.mjs";
 import { loadPlots } from "./plotfetch.mjs";
 import { politicsBlock, ensurePolitical, politicalReady } from "./overlays/political.mjs";
+import { fillLore } from "./lore.mjs";
 import { liveColony } from "./overlays/live.mjs";
 import { prettyKey } from "./plotlabel.mjs";
 import { selectionUrl } from "./deeplink.mjs";
@@ -116,6 +117,9 @@ function provinceRail(p) {
   const crumbs = [g.continent, g.superRegion, g.region, g.area].filter(t => t && t[0])
     .map(t=>`<span>${t[0]}${t[1]?` <span class="pv-key">(${t[1]})</span>`:''}</span>`)
     .join('<span class="crumb-sep">›</span>');
+  // In a political overlay the rail is a POLITICAL panel (owner/culture/faith + lore) — the physical
+  // terrain/plots/elevation breakdown below belongs to the World/physical view, not here.
+  if (isPolitical()) { renderPoliticalRail(p, crumbs); return; }
   const coord = `${Math.abs(p.lat).toFixed(2)}°${p.lat>=0?"N":"S"}, ${Math.abs(p.lon).toFixed(2)}°${p.lon>=0?"E":"W"}`;
   let terrainHtml;
   if (p._plots && p._plots.length) {
@@ -167,28 +171,37 @@ function provinceRail(p) {
         <div class="metacell"><div class="k">Winter</div><div class="v" style="font-size:13px">${p.winter?prettyId(p.winter):"—"}</div></div>
       </div>
       ${politicsBlock(p)}
-      <div id="loreBox" class="lore-box"></div>
       ${colonyBlock(p)}
       ${terrainHtml}
     </div>`;
   document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; showRail(false); renderRail(); draw(); };
+}
+// The Political-view province rail (P4): political info + the lore for the ACTIVE overlay dimension,
+// and NO physical terrain breakdown (that lives in the World/physical view).
+function renderPoliticalRail(p, crumbs) {
+  rail.innerHTML = `
+    <button class="backbtn" id="backProv">← Back</button>
+    <div class="detail">
+      <div class="d-head"><h2 class="serif">${p.name}</h2></div>
+      <div class="rm-sub" style="color:var(--ink-soft);margin-top:-6px"><span class="r">${p.type.toLowerCase()}</span> · province ${p.id}</div>
+      ${crumbs ? `<div class="pv-crumbs">${crumbs}</div>` : ""}
+      ${politicsBlock(p)}
+      <div id="loreBox" class="lore-box"></div>
+      ${colonyBlock(p)}
+    </div>`;
+  document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; showRail(false); renderRail(); draw(); };
   fillProvinceLore(p);
 }
-// Fill the province rail's lore box (P4). Prefers the owner COUNTRY's wiki lore (richest coverage), which
-// needs the lazily-loaded political data for p.owner; falls back to culture, then the province itself.
-// Cheap to re-run on every rail render — ensurePolitical() and lore fetches both cache.
+// Fill the lore box with the article for the province's value on the active political dimension
+// (nation→country, culture→culture, faith→religion). ensurePolitical()/lore fetches both cache.
 async function fillProvinceLore(p) {
-  const L = await import("./lore.mjs");
-  let ref = "province", key = p.id;
-  try {
-    const pol = await import("./overlays/political.mjs");
-    await pol.ensurePolitical();
-    if (S.selectedProv !== p) return;               // selection moved on while political loaded
-    if (p.owner) { ref = "country"; key = p.owner; }
-    else if (p.culture) { ref = "culture"; key = p.culture; }
-  } catch { /* political overlay unavailable — fall back to province lore */ }
+  await ensurePolitical();                            // populates p.owner / p.culture / p.religion
+  if (S.selectedProv !== p || !isPolitical()) return; // selection or mode changed while loading
+  const dim = { nation: ["country", p.owner], culture: ["culture", p.culture], faith: ["religion", p.religion] }[S.overlay];
   const box = document.getElementById("loreBox");
-  if (box && S.selectedProv === p) L.fillLore(box, ref, key);
+  if (!box || S.selectedProv !== p) return;
+  if (dim && dim[1]) fillLore(box, dim[0], dim[1]);
+  else box.innerHTML = "";                            // province has no value on this dimension (e.g. unowned)
 }
 // The live colony's detail, inline, when the selected province is the one it sits in — replacing the
 // bespoke live HUD that used to take the whole rail over in Zeitgeist mode. Empty for every other
