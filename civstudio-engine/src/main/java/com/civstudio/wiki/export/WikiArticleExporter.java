@@ -2,14 +2,23 @@ package com.civstudio.wiki.export;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import com.civstudio.data.Exports;
 
@@ -17,16 +26,14 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Dev tool — <b>P1</b> of the wiki lore import (see {@code docs/wiki-lore-import-plan.md}). Walks the
- * <em>entire</em> Anbennar Fandom mainspace via {@link WikiFiles}, parses each article with
- * {@link WikitextParser} (infobox + {@code [[link]]} graph + categories + wikitext→cleaned markdown), and
- * emits the flat base {@code wiki-article.json} dataset that the {@code wiki-article} Strapi type is
- * seeded from. No correlation or typed subtypes yet — that is P2, a projection over this base data.
- * <p>
- * This slice sources from the MediaWiki API (paginated, cached under {@code .wiki-cache}); swapping in the
- * {@code Special:Statistics} {@code .7z} dump as the bulk source-of-record is a later change behind the
- * same {@link WikiFiles} seam. Redirects and empty pages are dropped; {@code Stub}-category pages are kept
- * but flagged.
+ * Dev tool — <b>P1+P2</b> of the wiki lore import (see {@code docs/wiki-lore-import-plan.md}). Walks the
+ * whole Anbennar Fandom mainspace via {@link WikiFiles}, parses each article with {@link WikitextParser}
+ * (infobox + {@code [[link]]} graph + categories + wikitext→cleaned markdown), <b>classifies</b> it into
+ * an {@code entityType} (from the infobox template, falling back to categories), and <b>correlates</b> the
+ * correlatable types to a canonical engine entity by a normalized name-join ({@link WikiNames}) against
+ * the committed world-bundle fixture: country/culture/religion → their key, location → a province id,
+ * region → a region/super-region key. The result is the committed {@code wiki-article.json.gz} the
+ * {@code wiki-article} Strapi type is seeded from, plus an {@code _unmatched-correlation.json} report.
  *
  * <pre>
  * mvn -pl civstudio-engine compile exec:exec -Dsim.main=com.civstudio.wiki.export.WikiArticleExporter
@@ -38,23 +45,37 @@ public final class WikiArticleExporter {
 	// the target/generated/ scratch the other exporters use, so a clean checkout / CI can seed the lore
 	// without re-scraping the wiki. Gzipped: 2509 articles of prose is ~11 MB raw, ~3.5 MB compressed.
 	private static final String OUTPUT = "civstudio-engine/src/main/resources/wiki/wiki-article.json.gz";
+	private static final String UNMATCHED = "civstudio-engine/target/generated/wiki/_unmatched-correlation.json";
+	// network-free correlation source (the committed test fixture carries every canonical entity)
+	private static final String FIXTURE = "civstudio-engine/src/test/resources/world-bundle.json.gz";
 	private static final String WIKI_BASE = "https://anbennar.fandom.com/wiki/";
 	private static final int BATCH = 50; // MediaWiki's cap for a multi-title query
+
+	// entityType → the canonical collection its name is joined against (others aren't correlatable)
+	private static final Map<String, String> CORRELATABLE = Map.of(
+			"COUNTRY", "country", "CULTURE", "culture", "RELIGION", "religion",
+			"LOCATION", "province", "REGION", "region");
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
 	private WikiArticleExporter() {
 	}
 
-	/** One imported wiki article — the flat base row (typed subtypes are projected from this in P2). */
+	/** One imported wiki article — the flat base row (typed + correlated; relations are seeded from it). */
 	public record ArticleRow(String key, String title, long pageId, String url, String template,
-			boolean isStub, String summary, String body, List<String> categories, List<String> links,
-			Map<String, String> infobox) {
+			String entityType, String entityRef, String entityKey, boolean isStub, String summary,
+			String body, List<String> categories, List<String> links, Map<String, String> infobox) {
 	}
 
 	public static void main(String[] args) throws Exception {
 		System.setOut(new java.io.PrintStream(System.out, true, StandardCharsets.UTF_8));
-		System.out.println("WikiArticleExporter P1 — snapshot " + WikiFiles.snapshot());
+		System.out.println("WikiArticleExporter P1+P2 — snapshot " + WikiFiles.snapshot());
+
+		Map<String, Map<String, String>> canon = loadCanon();
+		System.out.printf("loaded canonical indexes: %d countries, %d cultures, %d religions, %d regions, "
+				+ "%d super-regions, %d provinces%n",
+				canon.get("country").size(), canon.get("culture").size(), canon.get("religion").size(),
+				canon.get("region").size(), canon.get("super-region").size(), canon.get("province").size());
 
 		List<String> titles = allArticleTitles();
 		System.out.println("enumerated " + titles.size() + " mainspace articles");
@@ -72,7 +93,7 @@ public final class WikiArticleExporter {
 					redirects++;
 					continue;
 				}
-				rows.add(toRow(p.path("title").asText(), p.path("pageid").asLong(), content));
+				rows.add(toRow(p.path("title").asText(), p.path("pageid").asLong(), content, canon));
 			}
 			if (++batches % 10 == 0)
 				System.out.println("  ...parsed " + rows.size() + " articles");
@@ -81,23 +102,107 @@ public final class WikiArticleExporter {
 
 		File out = Exports.outFile(OUTPUT);
 		// compact (not pretty) under gzip — the file is machine-read by the seeder, never eyeballed
-		try (var os = new java.util.zip.GZIPOutputStream(new java.io.FileOutputStream(out))) {
+		try (var os = new GZIPOutputStream(new java.io.FileOutputStream(out))) {
 			MAPPER.writeValue(os, rows);
 		}
 
 		report(rows, redirects, out);
 	}
 
-	private static ArticleRow toRow(String title, long pageId, String wikitext) {
+	private static ArticleRow toRow(String title, long pageId, String wikitext,
+			Map<String, Map<String, String>> canon) {
 		Optional<WikitextParser.Infobox> box = WikitextParser.firstInfobox(wikitext);
+		String template = box.map(WikitextParser.Infobox::template).orElse(null);
 		String body = WikitextParser.toMarkdown(wikitext);
 		List<String> categories = WikitextParser.categories(wikitext);
+
+		String entityType = classify(template, categories);
+		String[] hit = correlate(entityType, title, canon); // {ref, key} or {null, null}
+
 		return new ArticleRow(
 				title.replace(' ', '_'), title, pageId, WIKI_BASE + enc(title.replace(' ', '_')),
-				box.map(WikitextParser.Infobox::template).orElse(null),
+				template, entityType, hit[0], hit[1],
 				categories.contains("Stub") || categories.contains("Stubs"),
 				WikitextParser.summary(body), body, categories, WikitextParser.links(wikitext),
 				box.map(WikitextParser.Infobox::params).orElseGet(Map::of));
+	}
+
+	// ---- classification + correlation ------------------------------------------------------------
+
+	/**
+	 * Classify an article into an entityType from its infobox template (normalized, so
+	 * {@code Country}/{@code Infobox country}/{@code Infobox_country} all fold to COUNTRY), falling back to
+	 * category membership for the types with no infobox template (religions, regions).
+	 */
+	static String classify(String template, List<String> categories) {
+		String t = template == null ? "" : template.toLowerCase(Locale.ROOT)
+				.replace('_', ' ').replace("infobox", "").trim();
+		switch (t) {
+			case "country": return "COUNTRY";
+			case "character": return "CHARACTER";
+			case "location": return "LOCATION";
+			case "race": return "RACE";
+			case "culture": return "CULTURE";
+			case "deity": return "DEITY";
+			case "dynasty": return "DYNASTY";
+			case "organization", "organisation", "company": return "ORGANIZATION";
+			case "river": return "RIVER";
+			case "event", "military conflict": return "EVENT";
+			default: break; // fall through to category inference
+		}
+		Set<String> cats = new HashSet<>(categories);
+		if (cats.contains("Deity")) return "DEITY";
+		if (cats.contains("Religion")) return "RELIGION";
+		if (cats.contains("Culture")) return "CULTURE";
+		if (cats.contains("Races")) return "RACE";
+		if (cats.contains("Region")) return "REGION";
+		if (cats.contains("Cities") || cats.contains("Locations")) return "LOCATION";
+		if (cats.contains("Wars and Conflicts")) return "EVENT";
+		if (cats.contains("Companies") || cats.contains("Organisations")) return "ORGANIZATION";
+		if (cats.contains("Dynasty")) return "DYNASTY";
+		if (cats.contains("People")) return "CHARACTER";
+		if (cats.contains("Countries")) return "COUNTRY";
+		return "ARTICLE"; // untyped fallback
+	}
+
+	/** {ref, key} of the canonical entity this article correlates to, or {null, null} (lore-only). */
+	private static String[] correlate(String entityType, String title,
+			Map<String, Map<String, String>> canon) {
+		String ref = CORRELATABLE.get(entityType);
+		if (ref == null)
+			return new String[] { null, null };
+		String key = WikiNames.match(title, canon.get(ref));
+		if (key == null && ref.equals("region")) { // a wiki "region" may be an engine super-region
+			key = WikiNames.match(title, canon.get("super-region"));
+			if (key != null)
+				return new String[] { "super-region", key };
+		}
+		return key == null ? new String[] { null, null } : new String[] { ref, key };
+	}
+
+	private static Map<String, Map<String, String>> loadCanon() throws IOException {
+		Map<String, Map<String, String>> canon = new HashMap<>();
+		try (InputStream in = new GZIPInputStream(Files.newInputStream(Path.of(FIXTURE)))) {
+			JsonNode res = MAPPER.readTree(in).path("resources");
+			canon.put("country", index(res.path("/map/countries.json"), "tag"));
+			canon.put("culture", index(res.path("/map/cultures.json"), "key"));
+			canon.put("religion", index(res.path("/map/religions.json"), "key"));
+			canon.put("region", index(res.path("/map/regions.json"), "key"));
+			canon.put("super-region", index(res.path("/map/superregions.json"), "key"));
+			canon.put("province", index(res.path("/map/provinces.json"), "id"));
+		}
+		return canon;
+	}
+
+	// a norm(name) → key index over a canonical dataset (name is the display field, key the natural key)
+	private static Map<String, String> index(JsonNode arr, String keyField) {
+		Map<String, String> m = new LinkedHashMap<>();
+		for (JsonNode r : arr) {
+			String name = r.path("name").asText(null);
+			if (name != null && !name.isBlank())
+				m.putIfAbsent(WikiNames.norm(name), r.path(keyField).asText());
+		}
+		return m;
 	}
 
 	// ---- fetch -----------------------------------------------------------------------------------
@@ -130,24 +235,42 @@ public final class WikiArticleExporter {
 
 	// ---- reporting -------------------------------------------------------------------------------
 
-	private static void report(List<ArticleRow> rows, int redirects, File out) {
+	private static void report(List<ArticleRow> rows, int redirects, File out) throws IOException {
+		// per-entityType: total + (for correlatable types) how many matched a canonical key
+		Map<String, int[]> byType = new TreeMap<>(); // entityType → {total, matched}
+		List<Map<String, String>> unmatched = new ArrayList<>();
 		int stubs = 0, withInfobox = 0;
-		Map<String, Integer> templates = new TreeMap<>();
 		for (ArticleRow r : rows) {
 			if (r.isStub())
 				stubs++;
-			if (r.template() != null) {
+			if (r.template() != null)
 				withInfobox++;
-				templates.merge(r.template(), 1, Integer::sum);
+			int[] c = byType.computeIfAbsent(r.entityType(), k -> new int[2]);
+			c[0]++;
+			if (CORRELATABLE.containsKey(r.entityType())) {
+				if (r.entityKey() != null)
+					c[1]++;
+				else
+					unmatched.add(Map.of("title", r.title(), "entityType", r.entityType()));
 			}
 		}
+		MAPPER.writerWithDefaultPrettyPrinter().writeValue(Exports.outFile(UNMATCHED), unmatched);
+
 		System.out.printf("%nwrote %d articles (%d redirects skipped, %d stubs, %d with an infobox) to %s%n",
 				rows.size(), redirects, stubs, withInfobox, out.getPath());
-		System.out.println("infobox templates:");
-		templates.entrySet().stream()
-				.sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
-				.limit(20)
-				.forEach(e -> System.out.printf("  %5d  %s%n", e.getValue(), e.getKey()));
+		System.out.println("entityType  (matched/total for correlatable):");
+		byType.entrySet().stream()
+				.sorted((a, b) -> Integer.compare(b.getValue()[0], a.getValue()[0]))
+				.forEach(e -> {
+					int[] c = e.getValue();
+					String rate = CORRELATABLE.containsKey(e.getKey())
+							? String.format("  %d/%d matched (%.0f%%)", c[1], c[0],
+									c[0] == 0 ? 0.0 : 100.0 * c[1] / c[0])
+							: "";
+					System.out.printf("  %-14s %5d%s%n", e.getKey(), c[0], rate);
+				});
+		System.out.println("wrote " + unmatched.size() + " unmatched correlatable articles to "
+				+ UNMATCHED);
 	}
 
 	private static String enc(String s) {

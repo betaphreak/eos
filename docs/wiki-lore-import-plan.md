@@ -163,8 +163,15 @@ Bump `contentVersion` so `StrapiWorldSource` re-fetches.
   change and no `contentVersion` coupling. The gz is a **committed exporter output** — written straight to
   `civstudio-engine/src/main/resources/wiki/` (like the GeoNames subset), so a clean checkout / CI seeds it
   without re-scraping. *Remaining:* swap the API source for the `.7z` dump.
-- **P2 — typed model + correlation.** Add the ~10 `wiki-*` subtypes and `wiki-category`; stamp the
-  relations to `country`/`culture`/`religion`/`region`/`province`. Ship the unmatched report + overrides.
+- **P2 — classification + correlation. ✅ exporter SHIPPED.** Rather than 11 parallel collections, each
+  article is classified into an **`entityType`** (13 types, from the infobox template normalized —
+  `Country`/`Infobox country`/`Infobox_country` all fold — falling back to categories for the
+  template-less religions/regions) and **correlated** to a canonical entity by the shared `WikiNames`
+  name→key join: COUNTRY 75%, REGION 53%, RELIGION 44%, CULTURE 37%, LOCATION 30% (`entityRef` +
+  `entityKey` per row). The unmatched are **genuinely lore-only** — 0 of them have an exact fixture name
+  (verified) — so the rates reflect that the wiki has far more lore entities than the game has tags/keys.
+  `_unmatched-correlation.json` report emitted for the curated-override tail. *Remaining (studio):* surface
+  `entityType`/`entityRef`/`entityKey` on the `wiki-article` type (+ optional Strapi relations later).
 - **P3 — images.** API image fetch → Strapi media (Azure Blob, per `studio/CLAUDE.md`) → infobox art
   in-game.
 - **P4 — in-game surfacing.** Web/engine reads lore off the canonical entity via the inverse relation

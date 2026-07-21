@@ -7,11 +7,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.zip.GZIPInputStream;
@@ -43,19 +41,6 @@ public final class WikiExporter {
 	private static final String OUT_DIR = "civstudio-engine/target/generated/wiki";
 	// network-free correlation source for P0 (the committed test fixture already carries every country)
 	private static final String FIXTURE = "civstudio-engine/src/test/resources/world-bundle.json.gz";
-
-	// leading government/organisational words to strip so "Kingdom of Lorent" joins country "Lorent"
-	private static final List<String> PREFIXES = List.of(
-			"kingdom of", "empire of", "grand duchy of", "archduchy of", "duchy of", "county of",
-			"barony of", "principality of", "republic of", "free city of", "hold of", "command of",
-			"march of", "lordship of", "confederation of", "dominion of", "theocracy of", "sultanate of",
-			"emirate of", "khanate of", "great clan of", "clan of", "tribe of", "city of", "state of",
-			"union of", "league of", "akalate of", "jaddari", "the");
-	// trailing government/organisational words to strip so "Ayarallen Queendom" joins country "Ayarallen"
-	private static final List<String> SUFFIXES = List.of(
-			"empire", "queendom", "kingdom", "overclan", "confederation", "republic", "clans", "clan",
-			"horde", "dominion", "khaganate", "akalate", "legion", "remnant", "state", "league", "union",
-			"hold", "command", "march", "principality", "duchy", "county");
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -95,7 +80,7 @@ public final class WikiExporter {
 			}
 			Optional<WikitextParser.Infobox> box = WikitextParser.firstInfobox(wt);
 			Map<String, String> params = box.map(WikitextParser.Infobox::params).orElseGet(Map::of);
-			String tag = correlate(title, nameToTag);
+			String tag = WikiNames.match(title, nameToTag);
 			String body = WikitextParser.toMarkdown(wt);
 			rows.add(new CountryRow(
 					title.replace(' ', '_'), title, tag, tag != null,
@@ -179,43 +164,9 @@ public final class WikiExporter {
 		try (InputStream in = new GZIPInputStream(Files.newInputStream(Path.of(FIXTURE)))) {
 			JsonNode countries = MAPPER.readTree(in).path("resources").path("/map/countries.json");
 			for (JsonNode c : countries)
-				index.putIfAbsent(norm(c.path("name").asText()), c.path("tag").asText());
+				index.putIfAbsent(WikiNames.norm(c.path("name").asText()), c.path("tag").asText());
 		}
 		return index;
-	}
-
-	/**
-	 * Normalized name-join: try the whole title, then the title with a leading government word stripped
-	 * ("Kingdom of Lorent" → Lorent), then with a trailing one stripped ("Ayarallen Queendom" →
-	 * Ayarallen). First candidate that hits the country index wins; null = lore-only (no EU4 tag).
-	 */
-	private static String correlate(String title, Map<String, String> nameToTag) {
-		String n = norm(title);
-		for (String cand : candidates(n)) {
-			String tag = nameToTag.get(cand);
-			if (tag != null)
-				return tag;
-		}
-		return null;
-	}
-
-	private static List<String> candidates(String n) {
-		List<String> out = new ArrayList<>();
-		out.add(n);
-		for (String pre : PREFIXES)
-			if (n.startsWith(pre + " "))
-				out.add(n.substring(pre.length() + 1));
-		for (String suf : SUFFIXES)
-			if (n.endsWith(" " + suf))
-				out.add(n.substring(0, n.length() - suf.length() - 1));
-		return out;
-	}
-
-	private static String norm(String s) {
-		if (s == null)
-			return "";
-		String x = Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
-		return x.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim();
 	}
 
 	// ---- output / util ---------------------------------------------------------------------------
