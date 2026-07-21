@@ -4,14 +4,15 @@
 exist (`agent/Rank.java`) as a single **aristocratic** register; nothing yet reads a country onto them.
 This note specifies the model (four axes + a recursion), how a country's placement is computed from
 imported data, and the full field inventory of the Anbennar country scripts.
-**Date:** 2026-07-20
+**Date:** 2026-07-20 · **Updated:** 2026-07-21 (§10: two questions resolved in the estate-system
+dialogue pass)
 **Depends on:** `agent/Rank.java` (`level`/`isPlural`, `TitleMode`, `CasusBelli`, `Relation`); the
 imported political layer (`geo/Country`, `WorldMap.provincesByOwner`, per-province
 `baseTax`/`baseProduction`/`baseManpower`); `settlement/SettlementTier` (the growth ladder rank reuses);
 the Anbennar EU4 source (`.anbennar-cache/<ref>/history/countries/*.txt`, `.../common/countries/*.txt`,
 `.../history/diplomacy/*.txt`, via `data.AnbennarFiles`).
 **Related:** [`docs/estate-system.md`](estate-system.md) (the runtime estate system this doc's §4
-structure feeds), `docs/political-map.md` (province ownership + `Country`), `docs/race.md` (the "authored per
+structure feeds — the spine; its four register spokes are `estate-nobles/burghers/church/tribes.md`), `docs/political-map.md` (province ownership + `Country`), `docs/race.md` (the "authored per
 axis, neutral fallback" shape reused here), `docs/settlement-tier-ladder-plan.md` (tier↔rank),
 `docs/rank-ladder-improvements.md`, and the memory notes on single-player as an adventurer company.
 
@@ -348,11 +349,14 @@ banks, relations) rather than a rank-tagged stub — a scope decision to take be
 794 countries); size-vs-title (size drives, `government_rank` gates only Empire, no floor); the empire
 set (rule + curated overlay of 5). Still open:
 
-- **Curated empire list maintenance** — 3 of 5 empires are hand-authored (Yezel Mora, Gnollakaz,
-  Danggun); the list needs a lore review for completeness and a home (a small committed resource, or a
-  studio content field).
+*Resolved 2026-07-21 (estate-system dialogue pass):* the **curated empire list lives in studio** as
+content-with-compiled-floor (the §9 pattern); **Purpose stays out of the title table** — its own
+small `(level, purpose) → institution` table in `ranks.json`. Still open:
+
+- **Curated empire list lore review** — the hand-authored 3 of 5 (Yezel Mora, Gnollakaz, Danggun)
+  need a completeness pass before the studio content is authored.
 - **Rank ↔ SettlementTier** — is a country's imported rank the *ceiling* a founded colony climbs toward
   (§5), or independent of it?
-- **Purpose × TitleMode storage** — a fifth typed dimension on titles, or Purpose kept separate from the
-  title table (it names the *institution*, not the *title*)?
-- **`Country` scope** — rank-tagged stub, or grow it into a full polity record (§9)?
+- **`Country` scope** — rank-tagged stub, or grow it into a full polity record (§9)? The clock is
+  decided — nations run a **coarse monthly tick** beside the daily settlements (`estate-system.md`
+  §6) — so the question is now just how much state the record carries.
