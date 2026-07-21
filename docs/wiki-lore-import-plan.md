@@ -150,9 +150,11 @@ Bump `contentVersion` so `StrapiWorldSource` re-fetches.
 
 ## Phases
 
-- **P0 — vertical slice (de-risk).** `WikiFiles` + `wiki-article` schema + parse ~20 `Country` pages;
-  validate infobox extraction, cleaned-markdown quality, and the name→`tag` correlation hit-rate. No
-  bundle wiring yet. *Exit:* correlation ≥ ~80% auto-match on the sample, readable `body`.
+- **P0 — vertical slice (de-risk). ✅ SHIPPED** (`2baea6e`). `WikiFiles` (API fetch + `.wiki-cache`,
+  lock/atomic/backoff), `WikitextParser` (brace-matched infobox + `[[link]]` graph + wikitext→cleaned
+  markdown), `WikiExporter` over a stratified `Category:Countries` sample → `wiki-country.json` +
+  `_unmatched` report. *Result:* **90%** auto-match (27/30; misses are genuinely tag-less lore), 0
+  leftover markup, no encoding bug (`�` was console-only). No dump/Strapi/bundle wiring yet.
 - **P1 — full corpus, base type.** Wire the `.7z` dump ingest; export all articles into `wiki-article`
   only (with `infobox` JSON + categories + links). Seed + bundle + `contentVersion` bump. Lore reachable
   in-game as untyped articles.
@@ -162,6 +164,9 @@ Bump `contentVersion` so `StrapiWorldSource` re-fetches.
   in-game.
 - **P4 — in-game surfacing.** Web/engine reads lore off the canonical entity via the inverse relation
   (province/country/culture panels gain a lore tab). Separate follow-up doc.
+- **P5 — lore chatbot (RAG) on anbennar.civstudio.com.** A grounded Q&A assistant answering from the
+  wiki lore **and** the structured Strapi facts. See *Forward* below — the reason P1/P2 store sectioned
+  markdown with per-entity provenance is to make this cheap when we get here.
 
 ## Data source & licence
 
@@ -173,6 +178,35 @@ display of it** (a source/credit line on the lore panel, and the entry's `wikiUr
 `wiki-*` row). Images carry their own per-file licences on the wiki; P3 must retain each file's source
 URL/attribution rather than assuming the corpus licence. This mirrors how GeoNames (**CC BY 4.0**,
 [`docs/plot-place-naming.md`](plot-place-naming.md)) and the C2C/Anbennar imports are credited.
+
+## Forward: the lore chatbot (RAG) — what to get right now
+
+The end goal is a chatbot on **anbennar.civstudio.com** that answers lore questions from this data. We
+are **not building it in this plan**, but a few near-free choices in P1/P2 decide whether it's easy or a
+rewrite later. The retrieval substrate a RAG assistant needs is *chunked text + embeddings + provenance*,
+and this import already produces most of it:
+
+- **Chunking is free from the structure we already keep.** The cleaned markdown preserves `==section==`
+  headers, so a chunker splits on them — each `History`/`Culture`/`Government` section is a natural
+  passage. *Implication for P1:* keep the section headings in `body` (we do); don't flatten to one blob.
+- **Provenance is already required by the licence.** Every `wiki-*` row keeps `wikiUrl` + the entity
+  relation, so a retrieved chunk can **cite its source** — which is exactly the CC BY-SA attribution
+  obligation. RAG citations and the licence credit are the same field; get it once.
+- **Ground on structured facts too, not just prose.** The correlation relations (`wiki-country → country`,
+  `wiki-location → province`, …) let the bot answer *"who owns Anbenncóst / what culture is Escann"* from
+  the **canonical Strapi rows** and blend that with the prose lore. Retrieval should span both the `wiki-*`
+  lore and the EU4-derived types — the join we're building here is what makes that possible.
+- **Where it will live (all already in the stack).** Postgres is the store, so **pgvector** is the natural
+  embedding home — a `wiki-chunk` type (or a vector column) of `(text, embedding, sourceEntity, wikiUrl)`,
+  populated in a later phase from the same seeded lore. The serving side has a home too: `civstudio-server`
+  already runs **Spring AI** (the MCP server, `docs/mcp-server.md`) — Spring AI's vector-store + RAG/advisor
+  abstractions make the chatbot a sibling of the existing tool surface, not a new stack. Reproducibility
+  still rides `contentVersion` (embeddings are rebuilt on a lore-version bump).
+
+*Net:* nothing extra to build now; just don't destroy section structure or drop `wikiUrl`, and prefer
+pgvector-in-Postgres + Spring AI when P5 lands. The full architecture (pgvector schema + HNSW index,
+hybrid retrieval, TEI embeddings, the Spring AI + Claude citation loop) is spec'd in
+[`docs/lore-chatbot-plan.md`](lore-chatbot-plan.md).
 
 ## Open questions
 

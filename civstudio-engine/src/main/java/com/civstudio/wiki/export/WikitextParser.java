@@ -32,6 +32,8 @@ public final class WikitextParser {
 
 	private static final Pattern REDIRECT = Pattern.compile(
 			"(?is)^\\s*#redirect\\s*\\[\\[\\s*([^\\]|#]+)");
+	private static final Pattern CATEGORY = Pattern.compile(
+			"(?i)\\[\\[\\s*category\\s*:\\s*([^\\]|#]+)");
 	private static final Pattern HTML_COMMENT = Pattern.compile("(?s)<!--.*?-->");
 	private static final Pattern REF_TAG = Pattern.compile("(?is)<ref[^>]*?/>|<ref[^>]*?>.*?</ref>");
 	private static final Pattern ANY_TAG = Pattern.compile("(?s)<[^>]+>");
@@ -84,6 +86,18 @@ public final class WikitextParser {
 			i = end;
 		}
 		return Optional.empty();
+	}
+
+	/** The {@code [[Category:Name]]} memberships declared in the page's wikitext, in first-seen order. */
+	public static List<String> categories(String wikitext) {
+		List<String> out = new ArrayList<>();
+		Matcher m = CATEGORY.matcher(wikitext);
+		while (m.find()) {
+			String c = m.group(1).trim();
+			if (!c.isEmpty() && !out.contains(c))
+				out.add(c);
+		}
+		return out;
 	}
 
 	/** All distinct {@code [[Target]]} / {@code [[Target|display]]} link targets, in first-seen order. */
