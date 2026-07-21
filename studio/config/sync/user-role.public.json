@@ -16,6 +16,16 @@
       "locale": null
     },
     {
+      "documentId": "loref1nd4wiki4rticle0001",
+      "action": "api::wiki-article.wiki-article.find",
+      "locale": null
+    },
+    {
+      "documentId": "loref1ndone4wiki4rticle1",
+      "action": "api::wiki-article.wiki-article.findOne",
+      "locale": null
+    },
+    {
       "documentId": "xzsinc9j0g9u0qaxc6pzbwlv",
       "action": "plugin::users-permissions.auth.callback",
       "locale": null

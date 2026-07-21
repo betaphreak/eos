@@ -167,10 +167,28 @@ function provinceRail(p) {
         <div class="metacell"><div class="k">Winter</div><div class="v" style="font-size:13px">${p.winter?prettyId(p.winter):"—"}</div></div>
       </div>
       ${politicsBlock(p)}
+      <div id="loreBox" class="lore-box"></div>
       ${colonyBlock(p)}
       ${terrainHtml}
     </div>`;
   document.getElementById("backProv").onclick = ()=>{ S.selectedProv=null; showRail(false); renderRail(); draw(); };
+  fillProvinceLore(p);
+}
+// Fill the province rail's lore box (P4). Prefers the owner COUNTRY's wiki lore (richest coverage), which
+// needs the lazily-loaded political data for p.owner; falls back to culture, then the province itself.
+// Cheap to re-run on every rail render — ensurePolitical() and lore fetches both cache.
+async function fillProvinceLore(p) {
+  const L = await import("./lore.mjs");
+  let ref = "province", key = p.id;
+  try {
+    const pol = await import("./overlays/political.mjs");
+    await pol.ensurePolitical();
+    if (S.selectedProv !== p) return;               // selection moved on while political loaded
+    if (p.owner) { ref = "country"; key = p.owner; }
+    else if (p.culture) { ref = "culture"; key = p.culture; }
+  } catch { /* political overlay unavailable — fall back to province lore */ }
+  const box = document.getElementById("loreBox");
+  if (box && S.selectedProv === p) L.fillLore(box, ref, key);
 }
 // The live colony's detail, inline, when the selected province is the one it sits in — replacing the
 // bespoke live HUD that used to take the whole rail over in Zeitgeist mode. Empty for every other

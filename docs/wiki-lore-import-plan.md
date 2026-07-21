@@ -185,8 +185,15 @@ Bump `contentVersion` so `StrapiWorldSource` re-fetches.
   missing files. *Remaining:* surface `imageFile`/`imageUrl` on the Strapi type (studio scalars, next);
   **P3b** — optionally re-host to Strapi media (Azure Blob) instead of hotlinking the wikia CDN (a heavier
   download+upload bake, best at deploy time).
-- **P4 — in-game surfacing.** Web/engine reads lore off the canonical entity via the inverse relation
-  (province/country/culture panels gain a lore tab). Separate follow-up doc.
+- **P4 — in-game lore panels. ✅ first cut SHIPPED.** The `web/` province rail gains a **lore section**:
+  on province click it fetches the correlated wiki lore (owner **country** when political data is loaded —
+  richest coverage — else culture, else the province) and renders title + infobox image + cleaned-markdown
+  body + wiki link. Lore is public CC BY-SA, so the web reads Strapi's REST **directly**
+  (`GET /api/wiki-articles?filters[entityRef]=…&filters[entityKey]=…`) — no server round-trip; `wiki-article`
+  `find`/`findOne` added to the Strapi Public role. New `web/js/md.mjs` (tiny escape-first markdown→HTML,
+  unit-tested) + `web/js/lore.mjs` (fetch/cache/render). Data path verified end-to-end against a local
+  Strapi (country/culture/province refs all resolve; `Empire of Anbennar → Z01`). *Remaining:* wire the
+  political-mode entity selection (nation/culture/faith) to lore too; visual polish; P3b media re-host.
 - **P5 — lore chatbot (RAG) on anbennar.civstudio.com.** A grounded Q&A assistant answering from the
   wiki lore **and** the structured Strapi facts. See *Forward* below — the reason P1/P2 store sectioned
   markdown with per-entity provenance is to make this cheap when we get here.
