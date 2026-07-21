@@ -47,10 +47,33 @@ const embedText = (x) => `${x.title} — ${x.section}\n${x.text}`;
 async function retrieve(c, question, k = 5) {
   const [qe] = await embed([question]);
   const r = await c.query(
-    `SELECT title, section, entity_ref, entity_key, wiki_url, left(text, 100) AS snip,
+    `SELECT title, section, entity_ref, entity_key, wiki_url, text,
             1 - (embedding <=> $1::vector) AS sim
      FROM wiki_chunk ORDER BY embedding <=> $1::vector LIMIT $2`, [vec(qe), k]);
   return r.rows;
+}
+
+// Full RAG answer: retrieve top-k passages → ground Claude on them → cited answer. Needs ANTHROPIC_API_KEY.
+// (A local proof of C3; the committed server does this in Spring AI with Claude's native document citations.)
+async function ask(c, question) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) { console.error("Set ANTHROPIC_API_KEY to generate answers. Retrieval only: --query \"…\""); process.exit(1); }
+  const rows = await retrieve(c, question, 8);
+  const context = rows.map((r, i) => `[${i + 1}] "${r.title}" (${r.section})\n${r.text}`).join("\n\n---\n\n");
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5", max_tokens: 1024,
+      system: "You are an Anbennar lore assistant. Answer using ONLY the numbered lore excerpts provided, "
+        + "citing sources inline as [n]. If the excerpts don't contain the answer, say so plainly. Be concise.",
+      messages: [{ role: "user", content: `Question: ${question}\n\nLore excerpts:\n\n${context}` }],
+    }),
+  });
+  if (!res.ok) { console.error("Anthropic", res.status, (await res.text()).slice(0, 300)); process.exit(1); }
+  const j = await res.json();
+  console.log("\n" + (j.content || []).filter((b) => b.type === "text").map((b) => b.text).join("") + "\n\nSources:");
+  rows.forEach((r, i) => console.log(`  [${i + 1}] ${r.title} — ${r.wiki_url}`));
 }
 
 async function backfill(c) {
@@ -85,10 +108,13 @@ async function backfill(c) {
 
 const c = pg();
 await c.connect();
-const qi = process.argv.indexOf("--query");
-if (qi >= 0 && process.argv[qi + 1]) {
-  for (const row of await retrieve(c, process.argv[qi + 1]))
-    console.log(`[${Number(row.sim).toFixed(3)}] ${row.title} · ${row.section} — ${row.snip.replace(/\n/g, " ")}…`);
+const arg = (flag) => { const i = process.argv.indexOf(flag); return i >= 0 ? process.argv[i + 1] : null; };
+const askQ = arg("--ask"), queryQ = arg("--query");
+if (askQ) {
+  await ask(c, askQ);
+} else if (queryQ) {
+  for (const row of await retrieve(c, queryQ))
+    console.log(`[${Number(row.sim).toFixed(3)}] ${row.title} · ${row.section} — ${row.text.slice(0, 100).replace(/\n/g, " ")}…`);
 } else {
   await backfill(c);
 }
