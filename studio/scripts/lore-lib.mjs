@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
 import { Client } from "pg";
+import { loadCivstudioChunks } from "./civstudio-chunks.mjs";
 
 export const DIM = 384;
 const TEI_BATCH = 32; // TEI default max-client-batch-size
@@ -118,15 +119,9 @@ export async function askAgent(c, question, maxTurns = 5) {
   return { answer: "(reached the search-step limit before answering)", sources: [...sources].map(([title, wikiUrl]) => ({ title, wikiUrl })) };
 }
 
-/** Embed every chunk and (re)load the pgvector wiki_chunk table + HNSW cosine index. */
-export async function backfill(c, log = console.log) {
-  await c.query("CREATE EXTENSION IF NOT EXISTS vector");
-  await c.query(`CREATE TABLE IF NOT EXISTS wiki_chunk (
-    id bigserial PRIMARY KEY, chunk_key text, wiki_key text, title text, entity_ref text, entity_key text,
-    wiki_url text, section text, text text, embedding vector(${DIM}))`);
-  await c.query("TRUNCATE wiki_chunk RESTART IDENTITY");
-  const chunks = JSON.parse(gunzipSync(readFileSync(CHUNKS)).toString("utf8"));
-  log(`[lore] embedding ${chunks.length} chunks via TEI (${TEI_URL})...`);
+/** Embed + INSERT a chunk array into wiki_chunk (no truncate, no index rebuild). Chunk fields:
+ *  chunkKey, wikiKey, title, entityRef, entityKey, wikiUrl, section, text. */
+export async function insertChunks(c, chunks, log = console.log) {
   for (let i = 0; i < chunks.length; i += TEI_BATCH) {
     const slice = chunks.slice(i, i + TEI_BATCH);
     const embs = await embed(slice.map(embedText));
@@ -141,9 +136,40 @@ export async function backfill(c, log = console.log) {
       (chunk_key,wiki_key,title,entity_ref,entity_key,wiki_url,section,text,embedding) VALUES ${vals.join(",")}`, params);
     if ((i + TEI_BATCH) % 2048 < TEI_BATCH) log(`  ${Math.min(i + TEI_BATCH, chunks.length)}/${chunks.length}`);
   }
+}
+
+async function ensureSchema(c) {
+  await c.query("CREATE EXTENSION IF NOT EXISTS vector");
+  await c.query(`CREATE TABLE IF NOT EXISTS wiki_chunk (
+    id bigserial PRIMARY KEY, chunk_key text, wiki_key text, title text, entity_ref text, entity_key text,
+    wiki_url text, section text, text text, embedding vector(${DIM}))`);
+}
+
+/** Embed the whole corpus — Anbennar wiki lore + the CivStudio guide — and (re)load wiki_chunk + its
+ *  HNSW cosine index. The CivStudio rows ride along so a full rebuild always includes them. */
+export async function backfill(c, log = console.log) {
+  await ensureSchema(c);
+  await c.query("TRUNCATE wiki_chunk RESTART IDENTITY");
+  const wiki = JSON.parse(gunzipSync(readFileSync(CHUNKS)).toString("utf8"));
+  const civ = loadCivstudioChunks();
+  log(`[lore] embedding ${wiki.length} wiki + ${civ.length} CivStudio chunks via TEI (${TEI_URL})...`);
+  await insertChunks(c, wiki, log);
+  await insertChunks(c, civ, log);
   log("[lore] building HNSW index (cosine)...");
   await c.query("DROP INDEX IF EXISTS wiki_chunk_embedding_idx");
   await c.query("CREATE INDEX wiki_chunk_embedding_idx ON wiki_chunk USING hnsw (embedding vector_cosine_ops)");
   const n = await c.query("SELECT count(*) n FROM wiki_chunk");
   log(`[lore] done — wiki_chunk rows: ${n.rows[0].n}`);
+}
+
+/** Refresh ONLY the CivStudio guide rows (entity_ref='civstudio') in place — no wiki re-embed, no
+ *  truncate, no index rebuild. For fast prod updates once the full corpus already exists. */
+export async function appendCivstudio(c, log = console.log) {
+  await ensureSchema(c);
+  const civ = loadCivstudioChunks();
+  await c.query("DELETE FROM wiki_chunk WHERE entity_ref = 'civstudio'");
+  log(`[lore] refreshing ${civ.length} CivStudio guide chunks via TEI (${TEI_URL})...`);
+  await insertChunks(c, civ, log);
+  const n = await c.query("SELECT count(*) n FROM wiki_chunk WHERE entity_ref = 'civstudio'");
+  log(`[lore] done — civstudio rows: ${n.rows[0].n}`);
 }

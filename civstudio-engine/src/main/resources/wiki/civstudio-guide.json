@@ -1,0 +1,737 @@
+[
+  {
+    "title": "The Simulation Kernel",
+    "section": "How a day unfolds",
+    "text": "Every step in CivStudio is one full in-game day, and every colony you watch runs the same fixed order of events. First, everyone in the settlement acts: laborers, firms, nobles and the ruler post offers to buy or sell based on yesterday's prices and their own situation — nothing is finalized yet. Then banks set their interest rates and pay or charge interest. Next, anyone who died is removed and replaced, and newcomers are admitted. Only then do the markets actually clear: all those pending offers meet and trade at a price discovered by supply and demand. Finally, the day's results are recorded. This 'intentions first, execution after' rhythm — deciding against yesterday's world, then settling today — is the heartbeat behind everything you see happen in a colony."
+  },
+  {
+    "title": "Markets, Firms & Labor",
+    "section": "How the economy runs itself",
+    "text": "Nothing in a CivStudio colony's economy is faked by a fixed formula where it can instead emerge. Firms making food, enjoyment goods and capital goods hire workers on a real labor market and produce according to how much labor and capital they combine. A worker's output isn't flat — it scales with their trained skills (which improve with practice and fade with disuse, much like a settler learning a trade), with how long the sun is up that day at the colony's latitude, and with how far they have to travel to reach the plot or workshop where they work. Prices for goods aren't set by anyone — they're discovered daily as buyers and sellers meet in the market and a price emerges that clears supply against demand."
+  },
+  {
+    "title": "Banking & the Three Currencies",
+    "section": "Copper, silver and gold",
+    "text": "Money in a CivStudio colony isn't a single number — it runs on a three-tier currency hierarchy that mirrors social class. Commoners and laborers bank and save in copper, the nobility banks in silver, and the ruler's own treasury deals in gold. Moving money between tiers isn't free: money-changers skim a real exchange fee converting between the currencies, just as you'd expect crossing between a commoner's purse and a lord's coffers. Banks at every tier extend credit — loans function as negative savings — and set their own interest rates each day based on conditions. The ruler taxes bank profits and noble income to fill the treasury, which funds everything from the colony's science effort to poor relief for its peasant reserve."
+  },
+  {
+    "title": "The Ruler & Dynamic Firms",
+    "section": "Chartering and dissolving businesses",
+    "text": "A settlement's ruler is more than a figurehead sitting on taxes — every month, the ruler actively charters new firms or dissolves failing ones so that each sector's productive capacity tracks real demand. If a good is chronically scarce, expect a new firm to spring up to meet it; if demand for something dries up, the ruler will let the firm serving it wind down rather than let capital sit idle. The ruler's treasury is filled by taxing bank profits and noble incomes, and that treasury in turn funds a science effort — the aristocracy's most intellectually gifted members are set to research, advancing the colony's tech tree and unlocking new buildings and productivity."
+  },
+  {
+    "title": "Households, Marriage & Children",
+    "section": "The life of a dynasty",
+    "text": "Every household in a CivStudio colony — laborer, noble or ruling — is a named dynasty, its names drawn from tables specific to its race. Households wed spouses out of the unmarried pool on the weekly day of rest, and children are born who train up their skills at a civic school until they reach working age and join the workforce. Diet is graded by class, running from gourmet fare for the wealthy down to bare relief rations for the struggling, and a colony-run granary buffers the food supply against shortfall. Death comes for everyone eventually — from old age on a real mortality schedule, or from hunger if the granary runs dry — and when a household head dies, a successor takes their place."
+  },
+  {
+    "title": "Ennoblement: A Raised Aristocracy",
+    "section": "Where nobles come from",
+    "text": "A CivStudio colony's aristocracy isn't founded ready-made — it is raised. There are no nobles present at the start of a peasant-pool colony; instead, the ruler watches the laborer households and promotes the ablest among them into the nobility over time. Newly ennobled families go on to own the colony's firms and banks as rentier proprietors, living off the income those enterprises generate, and noble status becomes hereditary from there — passed down through the dynasty rather than re-earned each generation. It's a form of social mobility built into the simulation: today's most capable laborer household can become tomorrow's ruling class."
+  },
+  {
+    "title": "The Peasant Pool",
+    "section": "Founding a colony from the reserve",
+    "text": "One way a CivStudio colony comes into being is by founding from a peasant pool: a reserve of unsettled people from which the ruler promotes the ablest into proper laborer households, putting them to work in the colony's economy. The remaining pool isn't abandoned — it's fed poor relief out of the treasury, a subsistence safety net for those not yet drawn into the workforce. This is the standard way a full ruler-led settlement — with its aristocracy, banks and economy — gets its start, as opposed to the alternative path of founding a small foraging camp that grows organically."
+  },
+  {
+    "title": "Founding at Camp & the Settlement Ladder",
+    "section": "From foraging band to city",
+    "text": "Not every CivStudio colony starts as a full-fledged settlement with a ruler and banks. Some begin as a small band founded at Camp — a handful of people foraging for what the land provides. From there, a colony can climb a settlement-tier ladder: Camp, Cottage, Hamlet, Smallholding, Town, up to Metropolis, growing its population and infrastructure at each rung. Once it reaches Smallholding, the colony boots up a full ruler-led economy — banks, taxation, a proper labor market. But growth isn't guaranteed: if a founding camp fails to take root, its people simply depart as a wandering band once more, ready to try settling elsewhere on the map."
+  },
+  {
+    "title": "Races of the World",
+    "section": "Nearly sixty peoples",
+    "text": "CivStudio draws its population from the wide cast of peoples native to the Anbennar setting — nearly sixty races in all, including humans, elves, dwarves, harimari and goblins, among many others. Race isn't just cosmetic: it shapes a person's naming conventions (each race draws from its own name tables), how quickly they age and how long they tend to live, which calendar of holy days and feasts they observe, and even which technologies are available to their people. A colony can be founded by a single race or as a genuinely mixed community, with every household's race quietly steering its demographics and culture in the background."
+  },
+  {
+    "title": "The World Map",
+    "section": "A real imported world",
+    "text": "CivStudio doesn't invent its geography — it imports the full map of Anbennar wholesale, 5,264 provinces strong, complete with the adjacency between them and their grouping into areas, regions, super-regions and continents, plus real climate. Every province also carries its canonical political situation — which nation owns it, its dominant culture, its prevailing religion — and a signature trade good, both drawn from the setting's own history. When you found a colony, you're not settling an abstract hex grid; you're planting it in a real place on a real map, with real neighbors, a real culture, and a real economic specialty already baked in."
+  },
+  {
+    "title": "Plots & Terrain",
+    "section": "Land that actually matters",
+    "text": "The land a settlement works isn't generic — every province is broken into individual plots decoded straight from real terrain and vegetation data, each carrying genuine terrain, vegetation feature, improvement and resource-bonus details. This isn't decoration: a farm planted on rich wheat-bearing land will genuinely outyield one worked on tundra, hilly ground slows down anyone marching across it, and true mountain peaks can never be settled at all. Every land plot even carries a real Earth-derived place name, so hovering over a patch of ground on the map shows you not just its terrain and features but a name that feels like somewhere real. A settlement's growth is capped by how many usable plots its home province actually has."
+  },
+  {
+    "title": "The Underworld & Exotic Terrains",
+    "section": "Beneath the surface, and beyond the ordinary",
+    "text": "Not everything in CivStudio happens under open sky. An underground plane called the Serpentspine exists beneath the surface map, home to the dwarven Dwarovar and their sun-free, food-scarce holds — a genuinely harsher place to make a living than the world above. On the surface itself, seven distinctive terrain types break from the ordinary: ancient, fey and blood forests, mushroom groves, shadow swamp and glacier, each promoted into its own full terrain type with bespoke yields rather than being folded into a generic catch-all. Together they mean the map holds real pockets of the strange and the dangerous, not just farmland and forest."
+  },
+  {
+    "title": "Caravans",
+    "section": "Wanderers of the road network",
+    "text": "Caravans in CivStudio are wandering bands that travel the world's roads by daylight, following a two-level route system that threads between provinces and through the plots within them. They ford rivers where the terrain demands it, forage whatever resources they're able to identify at their current level of technology, and lay down trails as they pass — making the route a little easier for whoever follows. A caravan can even re-found a colony that has fallen, planting a fresh settlement elsewhere on the map. They're a living presence on the map, not a scripted trade route — where they go and what they find depends on the world around them as they move through it."
+  },
+  {
+    "title": "Daylight & the Liturgical Calendar",
+    "section": "The sun and the sabbath",
+    "text": "Every location in CivStudio has its own true sunrise and sunset, calculated for its real position on the map — labor output genuinely rises and falls with the seasons, since a longer working day means more can get done. Layered over daylight is a pre-Reformation liturgical calendar, observed per race, which idles most firms on Sundays and on feast days throughout the year. So a colony's rhythm isn't just economic — it's shaped by both the literal length of daylight at its latitude and by the holy days its people observe, meaning production genuinely ebbs and flows across the seasons and the calendar."
+  },
+  {
+    "title": "The Tech Tree & Buildings",
+    "section": "Research and construction",
+    "text": "A colony's technology advances through a dedicated science sector, funded by the ruler and staffed by the aristocracy's most intellectually able members — research is a genuine labor allocation choice, not automatic. Advancing the tech tree lifts the productivity of whole economic sectors and gates access to new content, including a catalog of 1,270 buildings imported wholesale and unlocked only as a colony's tech reaches the right horizon. Cities that grow large enough lay out their buildings in Civ-style districts, sized according to how developed the underlying province was at the campaign's 1444 starting point — so a city's shape on the map reflects both its own growth and the land's historical development."
+  },
+  {
+    "title": "Colony Collapse: An Honest Model",
+    "section": "Why colonies can fail",
+    "text": "CivStudio deliberately favors emergent failure over scripted success. As things stand, a standard closed colony founded from a peasant pool will run for years — but eventually collapses once its founding peasant reserve drains away, because the labor model currently only replaces workers rather than growing the population fast enough through births to outpace decline. This isn't a bug being hidden; it's an accepted, confirmed outcome while the food economy is still being tuned, and the simulation is built to ensure that collapse happens cleanly, without anything breaking along the way. Not every colony is doomed, though: an open colony that admits outside immigration can hold a full workforce indefinitely, and a small band founded at camp can survive and even regrow through births once it's past its earliest, most fragile phase."
+  },
+  {
+    "title": "Watching a Colony Live",
+    "section": "The web map and the spectator server",
+    "text": "You don't have to just read CivStudio's output — you can watch a world unfold. A continuous-zoom web map presents the entire imported world with recolored real terrain, every province drawn as its own polygon, and, zoomed in close, individual plots rendered with real textures, hillshading, rivers and resource icons. The map has switchable modes for the political situation (who rules where, which culture and faith prevail), for trade goods, and for peeking into the dimmed underworld plane, plus a dedicated view for a city's districts. Layered over that, a live spectator feed streams a running settlement's day-by-day state straight to your browser, letting you watch a caravan or colony's story play out as it actually happens rather than after the fact."
+  },
+  {
+    "title": "The Rest-Day Calendar",
+    "section": "Workdays, weekends, and feasts",
+    "text": "CivStudio's settlements live by a 15th-century calendar, the kind kept before the Reformation. Every day falls into one of three kinds. Most days are ordinary workdays. Every Sunday is a weekend rest day — the only weekly day off, since this calendar has no Saturday-Sunday pairing; Saturday is worked like any other day. And scattered through the year are 31 fixed holy feasts — Christmas, Epiphany, Candlemas, the Apostles' days, Michaelmas, All Saints, and others — each a holiday that overrides the weekend rule, so a feast landing on a Sunday is still simply a holiday. Only fixed-date feasts are observed; movable ones tied to Easter's shifting date are not part of the cycle, and the feast list is the same everywhere regardless of a settlement's location. Roughly 80 days a year end up as rest days between the Sundays and the feasts combined."
+  },
+  {
+    "title": "How Rest Days Shut Down Labor",
+    "section": "Firms and the working calendar",
+    "text": "A settlement's workshops and firms don't all keep the same hours. By default a firm only operates on workdays — on a weekend or feast it hires nobody, and its workers simply rest that day. Two kinds of enterprise break that rule. Leisure and entertainment firms also stay open through the Sunday rest day, since the pleasure trade doesn't take the day off — though even they close for the great feasts. The colony's strategic export firm, worked by the noble class rather than common laborers, ignores the rest calendar entirely and runs every single day, since it's the settlement's economic lifeline. The upshot: on an ordinary workday everything runs; on a Sunday only the leisure trade and the export firm are open; on a feast day only the export firm runs, and every laboring household in the settlement rests."
+  },
+  {
+    "title": "Why Rest Days Don't Starve the Labor Market",
+    "section": "Fair-share hiring on closed days",
+    "text": "Workers in a settlement are drawn from one shared labor pool, so when most firms shut for a Sunday or a feast, naively reopening hiring could dump the whole idle workforce onto the handful of firms still open, flooding them with cheap labor. That doesn't happen: a closed firm still reserves its normal budget-sized share of the labor pool for bookkeeping purposes, it just hires no one to fill it — those workers sit idle rather than getting funneled elsewhere. An open firm on a rest day still only draws its own ordinary slice of workers, exactly as it would on a normal day. This keeps wages and hiring patterns stable across the rest-day cycle instead of swinging wildly between feast, weekend, and workday."
+  },
+  {
+    "title": "Riding Out the Rest-Day Cycle",
+    "section": "Smoothed revenue and food's extra capacity",
+    "text": "Two quieter mechanisms keep the rest-day calendar from destabilizing a settlement's economy. First, consumer-goods firms size their labor budget off a rolling month of average revenue rather than a single day's take — because a firm reopening after a closed day would otherwise show zero output from the day before, and budgeting off that alone would starve it of workers just when it needs to restart, spiraling into collapse. Second, firms producing food and other necessities run noticeably more productively than other consumer firms, because food production halts on every one of the year's roughly 80 rest days while the population still needs to eat daily — so the working days have to produce enough surplus to cover the idle ones too, which also means necessity workers get more practice honing their farming skill."
+  },
+  {
+    "title": "Daylight and Sun Times",
+    "section": "How settlements track the sun",
+    "text": "Every settlement sits at a real point on the map, given as a latitude and longitude, and every single day the colony calculates that day's sunrise and sunset for its exact location. Alongside sunrise and sunset, it also tracks dawn and dusk, the moments of first and last astronomical twilight, when the sky is only just beginning or ceasing to glow. These times shift day by day as the seasons turn, exactly as they would in the real world: long lazy summer days, short dark winters, and everything in between depending on how far north or south the settlement was founded. The default founding location, if none is chosen, is around the latitude of London. This daily rhythm of light and dark isn't just flavor, it directly shapes how much work your households and firms can get done, since labor output scales with how much daylight is available that day."
+  },
+  {
+    "title": "Daylight and Sun Times",
+    "section": "Daylight-scaled labor",
+    "text": "The length of daylight your settlement enjoys on a given day feeds directly into the labor market: households and firms can only work as much as the sun allows, so a long midsummer day supports more productive labor than a short midwinter one. Because a colony's solar times are recalculated fresh every day from its true geographic location, the seasonal swing in workable hours is a real, ongoing pressure on the economy, not a flat constant. A settlement founded far to the north or south will feel far more dramatic swings between long summer workdays and short winter ones than one founded near the equator, where daylight stays close to twelve hours year-round."
+  },
+  {
+    "title": "Daylight and Sun Times",
+    "section": "When twilight never comes",
+    "text": "At high latitudes in midsummer, the sun can sit so low that it never sinks far enough below the horizon for true astronomical twilight to occur, the sky simply never gets fully dark before dawn arrives again. When this happens at a settlement's location, that day's dawn and dusk are simply left undefined rather than the game inventing false numbers for them, and the length of true darkness is treated as not meaningful for that day. Sunrise and sunset themselves are unaffected by this and are calculated normally. It's a quiet nod to how real polar summers work: the closer a settlement sits to the far north or south, the more likely it is to experience these all-night-twilight stretches around midsummer."
+  },
+  {
+    "title": "The Peasant Pool",
+    "section": "Overview",
+    "text": "Beneath every settlement's working households sits a standing reserve of common folk who belong to no household at all — the peasant pool. These are people with names, ages, and skills, but no wage, no account, and no home of their own. They live under the direct care of the Ruler, who feeds them daily out of the treasury. The pool serves as the colony's labor reserve: when a laborer household's line dies out, the Ruler does not hand its estate to an heir. Instead, the ablest peasant in the pool is elevated — promoted — to found a brand-new laborer household from scratch. This replaces old-fashioned dynastic inheritance for common laborers with a meritocratic system: skill and diligence, not blood, decide who rises to fill a vacant workbench. Nobles and rulers still pass their stations to their own children, but the working class is renewed from the pool."
+  },
+  {
+    "title": "The Peasant Pool",
+    "section": "Feeding the Poor",
+    "text": "Peasants in the pool eat plainly — a relief ration, the smallest and cheapest tier of sustenance, well below what a working laborer or a noble enjoys. They never buy luxuries. Each peasant keeps a small personal larder as a buffer against hard times, and the Ruler restocks it daily from the necessity market, billing the cost to the royal treasury. Crucially, the Ruler's buying is price-sensitive: as necessities grow scarce and expensive, the pool's purchases shrink first, yielding the market to paying laborers rather than bidding against them. This means peasants can starve — but only when the market itself runs short of food, never merely because the Ruler is short of coin; a cash-poor Ruler simply borrows to keep the bills paid. Starvation is a supply problem, not a budget problem."
+  },
+  {
+    "title": "The Peasant Pool",
+    "section": "Promotion",
+    "text": "When a laborer household's last member dies without an heir, the Ruler reaches into the peasant pool and promotes its most skilled member — judged by overall ability — into a fresh laborer household. The promoted peasant keeps their name, age, and hard-won skills, but is granted an entirely new dynasty surname and a household funded fresh from the Ruler's own treasury (borrowed if necessary), not inherited from the household that died. The dead laborer's own estate is not passed on; it folds into the banking sector instead, and their now-extinct surname is freed for reuse. If the pool runs dry, no replacement is made at all — the labor force simply shrinks by one. This same promotion process is also how a colony's very first generation of laborers is raised, drawn out of the founding pool by ability rather than birthright."
+  },
+  {
+    "title": "The Peasant Pool",
+    "section": "Ruler's Taxation",
+    "text": "Caring for the peasant pool is not free, so the Ruler funds it by taxation — skimming a share of every bank's profits and a share of every noble's income into the royal treasury each day. This is the redistributive heartbeat of a settlement's economy: wealth accumulating in the banking sector and among the aristocracy is drawn off to feed the poor and capitalize new laborer households. Taxes paid in one currency are converted as needed, incurring the same money-changer's fee anyone else would pay on an exchange. Whether this taxation comfortably covers the Ruler's obligations — daily relief, funding new households, and its own habitual luxuries — or instead pushes the crown into ever-deepening debt is a matter of fine calibration, not a guaranteed outcome."
+  },
+  {
+    "title": "The Peasant Pool",
+    "section": "Children of the Pool",
+    "text": "A newly founded colony's peasant pool is not simply a cohort of ready adults — it is a true generation, roughly a third of it children too young to work. These young peasants eat a smaller child's ration, cannot yet be promoted into a laborer household, and take no part in courtship or marriage until they cross the threshold into adulthood. Only then do they join the promotable reserve. This staggers the pool's aging: rather than an entire founding generation growing old and promotable all at once, new adults keep trickling in as children mature, spreading out the colony's supply of replacement labor over a longer span and helping it weather its early years."
+  },
+  {
+    "title": "The Peasant Pool",
+    "section": "The Reserve Only Drains",
+    "text": "The peasant pool, as it stands, has no way to refill itself. Once a settlement is founded, its promotable reserve is fixed — every promotion into a laborer household, every old-age death, and every starvation among the peasants draws that reserve down and it never grows back. Over the years the standing reserve dwindles toward nothing; once it runs dry, laborers who die simply go unreplaced, the workforce shrinks, food production falls with it, and the colony's decline accelerates. This is a known and accepted feature of how settlements age today — a colony's eventual collapse is written into the design of its labor supply, not a bug to be patched away. A fuller solution, where a dead household's own children replenish the pool, remains unbuilt."
+  },
+  {
+    "title": "Births and Children",
+    "section": "How households grow",
+    "text": "Married households — laborers, nobles, even the ruling family — can bear children of their own. Each day, a household with an adult female of childbearing age has a modest chance of a birth, but only if its stored food is plentiful enough to comfortably feed everyone plus a newborn. Prosperous, well-fed households grow; struggling ones don't take on mouths they can't feed, so fertility throttles itself in hard times. A newborn joins its parents' household as a child, not as a new family of its own — households can grow well past the old two-person norm this way. It's worth knowing, though: children take about fifteen years to grow into workers, and a settlement in serious decline usually breaks down long before that — so births strengthen a colony's family lines, but can't by themselves rescue one that's already failing."
+  },
+  {
+    "title": "Coming of Age",
+    "section": "From child to worker",
+    "text": "A child cannot work, earn a wage, or take a spouse. Once a member reaches their people's working-age threshold — around fifteen years old for humans, the same age used whenever a grown recruit is drawn from elsewhere — they come of age: they switch to a full adult's ration, become eligible for hire on the labor market, and begin training their skills through work like any other laborer. Until that day, a child is simply another mouth to feed, contributing nothing to the household's income, though it may be growing its talents at a local school in the meantime."
+  },
+  {
+    "title": "Feeding a Household with Children",
+    "section": "Ration priority",
+    "text": "Children eat only a light snack ration, a small fraction of what a grown adult needs, so keeping them fed costs far less than keeping a worker fed. When a household's food runs short, its members are fed in a strict order: the head first, then any other adults, and children last — with the youngest child going without before an older one does. If even the head cannot be fed, the whole household collapses, its holdings settling on an heir or, if no one remains, its line ending entirely. In lean years, this ordering means it's the colony's newest and youngest who feel the pinch first."
+  },
+  {
+    "title": "Family Lines and Inheritance",
+    "section": "Parentage and succession",
+    "text": "Every child born within a colony has both a mother and father on record — the household's adult members who bore it — while anyone who arrived from outside (founders, recruits from the peasant pool, newlywed spouses, immigrants) has no such history, their origins simply unknown to the colony. This matters for succession: when a household's head dies, leadership doesn't default to an outsider — the next surviving member, often a grown child, steps up and inherits. This holds for ordinary laborer households, noble houses, and the ruling dynasty alike: a noble's or ruler's own child can grow up and inherit the house or the throne itself, keeping the family line unbroken. Only a household with no surviving member at all needs a fresh, unrelated successor."
+  },
+  {
+    "title": "The Children's School",
+    "section": "Raising a skilled generation",
+    "text": "Every colony with a ruler maintains a school for its children — a civic institution rather than a business, producing no goods, earning no revenue, and paying no wages. Each day it opens a limited number of places, filling them with its oldest children first (those nearest working age), and every enrolled child gains experience in one randomly chosen skill. Over months and years this builds each child an individual, uneven set of talents rather than a flat baseline, so that by the time they come of age and step into the workforce, they arrive already capable rather than starting from nothing. A child who finds no open place that day simply learns nothing until room opens up."
+  },
+  {
+    "title": "Children on the Road",
+    "section": "Caravans and the next generation",
+    "text": "When a colony's workforce collapses too far, it can dissolve entirely into a wandering band setting out to found a home elsewhere — and when it does, the colony's children are swept up into the band's traveling pool right alongside the adults, carrying the next generation forward rather than being left behind. While on the road, a child keeps eating a light ration rather than a full share, and cannot be chosen to lead the band or be married off until it naturally comes of age — the band simply waits for its children to grow rather than pressing them into roles too young. Their family ties survive the journey too: a child who ends up in the wandering pool still remembers who its parents were, even after its old household has broken apart."
+  },
+  {
+    "title": "Colony Collapse",
+    "section": "Why Settlements Eventually Decline",
+    "text": "Every ruler-led settlement in CivStudio, however prosperous it looks at founding, is shadowed by a slow food-driven decline. The mechanism is simple: a settlement's workshops must feed every mouth within it, and if food production ever falls short for long, the standing reserve of common folk kept in the settlement's service gets spent down first. Once that reserve is exhausted, deaths among ordinary working households start going unreplaced one by one, and the settlement's workforce contracts. Left unchecked, the decline is self-reinforcing: fewer workers means less food produced, which starves more workers, which shrinks the workforce further. A young settlement founded without enough food-producing workshops for its population can suffer this crunch within its first year or two; a well-provisioned one can hold steady for several years before the same slow contraction eventually catches up with it."
+  },
+  {
+    "title": "The Peasant Pool",
+    "section": "A Buffer That's Spent First",
+    "text": "Beyond its working laborer households, every ruler-led settlement keeps a standing pool of unlanded common folk in reserve — a source of future laborers, spouses, and now children as well, since the pool is a genuine mix of ages rather than adults alone. When food runs short, this reserve is the first thing sacrificed: it defers its own rations to the working households ahead of it, so its numbers can drain to nothing well before the laborers themselves go hungry. Children within the pool eat a smaller ration, do no labor, and cannot yet be promoted into a laborer household or married off — they simply wait to come of age, at which point they replenish the pool's promotable ranks. Because the pool absorbs the first shock of any shortage, watching its size is often the earliest sign a settlement's food economy is in trouble."
+  },
+  {
+    "title": "Famine Pricing",
+    "section": "When the Market Can't Find a Price",
+    "text": "In a settlement's death throes, the price of daily necessities doesn't just rise — it runs away, sometimes reaching ten or twenty times its normal level within a season. This isn't hoarding or greed: it happens because starving households will pay almost anything for their next day's food, so demand no longer eases off as price climbs. When the food actually available falls below what the settlement's households need just to survive, there is no price at which everyone can be served — buyers keep bidding regardless of cost, and the market's daily price search keeps ratcheting upward step after step with nothing to stop it. The runaway price is a symptom of real scarcity, not an illusion of plenty: production has genuinely fallen below what the population needs, and the spiraling cost accelerates the collapse by pricing out the very buyers who can least afford it."
+  },
+  {
+    "title": "Founding a Settlement's Food Supply",
+    "section": "Sizing the Larder at Founding",
+    "text": "A new ruler-led settlement is founded with its food-producing workshops scaled to the size of the population it must feed from day one, rather than a single workshop expected to grow into the job. This matters because a settlement's early larders — the food already stored by its households and reserve — can mask a production shortfall for months before the shortage bites, so a settlement founded under-provisioned can suffer a sudden, violent crunch in its first year as those stores run dry. Founding with enough workshops from the start smooths that crunch away and lets a settlement hold a stable population for years afterward, buying time for the deeper, slower food challenges every settlement eventually faces."
+  },
+  {
+    "title": "Ruler's Market Judgment",
+    "section": "Shuttering an Overbuilt Workshop",
+    "text": "A settlement's ruler doesn't only open new workshops to meet demand — they will also close a workshop down if it is flooding the market with a good nobody can afford, running it at a loss with the price crashed well below what it costs to produce. This lets an overbuilt sector contract instead of grinding on forever at a loss, freeing up workers for more useful trades. The ruler judges this by watching whether a good's price has crashed relative to what it fetched when the trade was first established — a true glut sits far below its founding price, distinguishing real oversupply from a workshop that's simply struggling to keep up with real demand, which the ruler leaves alone."
+  },
+  {
+    "title": "Explorer Caravans as Winter Foragers",
+    "section": "Foraging to Ease a Hungry Winter",
+    "text": "When a settlement's food situation grows dire, it can muster its least-skilled reserve folk into an explorer caravan and send them out to forage rather than eat at the settlement's own table. Traditionally mustered as the lean season sets in, the caravan marches out, forages across the countryside through the winter, and returns by mid-autumn with whatever food it has gathered, depositing it into the settlement's stores before its members rejoin the workforce. The lever helps in two ways at once: while the foragers are away, they aren't drawing on the settlement's food supply, and when they return they bring a fresh, if modest, supply gathered from beyond the settlement's own fields and markets. It buys a settlement extra time, though it's a trickle of relief rather than a cure for a settlement whose food production has fallen seriously behind its population."
+  },
+  {
+    "title": "The Granary",
+    "section": "The ever-normal granary",
+    "text": "Every settlement with a ruler maintains a granary: a strategic food reserve the crown itself buys into and sells from. When a glut of food would crash the market price, the granary steps in and buys up the surplus, stocking it away rather than letting the price collapse — this protects farmers' and food-sellers' income. When scarcity later drives the price toward a spike, the granary sells from its stockpile, adding real food back onto the market exactly when it's needed most and capping the worst of the shortage. The granary's target reserve size grows and shrinks with the settlement's population, so a larger colony keeps a correspondingly larger buffer. It acts by moving real food in and out of storage rather than just posting prices, which is what lets it defend against both gluts and famines with the same mechanism."
+  },
+  {
+    "title": "The Granary",
+    "section": "Funding the reserve",
+    "text": "The granary doesn't hoard its own fortune — its day-to-day cash position is settled against the ruler's treasury every day. When the granary spends money buying up a glut of food, the ruler covers the shortfall; when the granary sells stock during a shortage and turns a profit, that profit flows back into the crown's coffers. Because the granary characteristically buys cheap during gluts and sells dear during shortages, it tends to be roughly self-funding over time, and can even net the treasury a modest profit. Any money it moves passes through the same currency-exchange machinery as other crown transactions, so the usual money-changer fees still apply — the granary doesn't create a loophole around the settlement's banking system, just a buffer against food-price swings."
+  },
+  {
+    "title": "Granary Relief",
+    "section": "Feeding the starving poor",
+    "text": "The peasant pool — the settlement's reserve of unsettled households — normally lives off its own stored food. But if a lean spell empties that reserve before anyone starves, the pool can draw an emergency ration directly from the settlement's granary rather than going hungry. This relief is subsidized: the crown effectively already paid for the food when the granary originally bought it cheap during a glut, so the pool doesn't have to pay for the draw itself. It's a safety valve rather than a routine food source — in a healthy settlement the pool's own larder usually manages fine on its own, and the granary is only tapped when things get genuinely desperate, meaning the reserve stays available for its main job of steadying market prices."
+  },
+  {
+    "title": "Granary Relief",
+    "section": "Feeding the next generation",
+    "text": "Children are the first to go hungry when a household's food runs short — a household feeds its head, then its working adults, and only then its children. To keep the next generation alive through lean spells, an unfed child can draw an emergency ration straight from the settlement's granary rather than starving, paid for out of the crown's reserve rather than the family's own purse. When a colony-born child eventually comes of age, they leave their parents' household to found one of their own — and the granary can dower that new household with its founding stock of food, rather than draining the resources of the parents who raised them. Together these let a settlement's own children survive to found the next generation of households, rather than the settlement depending forever on newcomers to replace those who die."
+  },
+  {
+    "title": "The Tech Tree",
+    "section": "Overview",
+    "text": "Every settlement climbs a tech tree inherited from the deep well of civilization history: hundreds of technologies spanning ages from the Prehistoric through the Renaissance, each belonging to one of six advisory fields — Military, Economy, Growth, Culture, Religion, and Science. A technology becomes researchable once its prerequisites are known, and completing it can do up to three things: sharpen the productivity of a whole sector of the economy, unlock new content such as goods, firms, or buildings, or open the door to social and political advancement your settlement couldn't reach before. Not every technology carries an effect yet — many exist in the tree as placeholders for content still to come — but the graph itself, its eras, and its prerequisite chains are all live and drive what a settlement can achieve as it matures."
+  },
+  {
+    "title": "Research & the Science Firm",
+    "section": "How research is produced",
+    "text": "Research is not automatic — it is fueled by scholarship. A dedicated body of scholars, drawn from your nobility (and, in a colony's early days before nobles have been raised, the ruler personally), devotes its intellectual labor to study, converting that effort into research points every day. This scholarly work is a public good funded directly from the ruler's treasury — the crown pays the wages, and no goods change hands. A noble can study and still fully serve the merchant trade at the same time, so pursuing knowledge never starves your economy of labor. If a settlement has no ruler, it funds no scholars, and its research simply stops advancing."
+  },
+  {
+    "title": "Choosing What to Research",
+    "section": "The ruler's monthly decision",
+    "text": "A settlement pursues one field of research at a time. Research points accumulate toward whichever technology currently has the ruler's attention, and any points earned while nothing is being pursued — or beyond what a completed technology needed — are never wasted; they carry forward to the next pursuit. Once a month, as part of reviewing the realm's affairs, the ruler chooses the next technology to chase from among those currently available, by default favoring whichever is cheapest to complete — a steady, deliberate advance along the frontier of what the settlement could plausibly discover next."
+  },
+  {
+    "title": "Starting Knowledge & Founding Era",
+    "section": "What a settlement already knows",
+    "text": "A settlement does not start from nothing. Depending on the age the wider world has reached when it is founded, it begins already knowing every technology from earlier ages outright — a settlement founding in the Medieval age, for instance, arrives already versed in everything from the Prehistoric through the Classical eras, and is already most of the way toward mastering the technology that defines the Medieval age itself. From there, the settlement's scholars push the frontier forward into its own age and beyond, researching one step at a time rather than replaying the whole of history."
+  },
+  {
+    "title": "What Research Achieves",
+    "section": "Sector productivity",
+    "text": "The clearest reward of a completed technology is a lasting boost to how efficiently part of your economy works — a permanent, cumulative multiplier applied to a particular sector's output, whether that's the necessities your households consume, the luxuries they enjoy, the capital goods that build the settlement up, or the goods it exports to the wider world. Each technology's advisory field points it at a natural sector to improve — Growth technologies sharpen necessities, Economy technologies sharpen capital goods, Science technologies sharpen your export trade, and Culture or Religion technologies sharpen the goods your people enjoy. Military technologies, for now, do nothing — there is no warfare to apply them to yet, though they still occupy their place in the tree."
+  },
+  {
+    "title": "Research Survives Collapse",
+    "section": "Persistence across abandonment",
+    "text": "Knowledge is not lost when a settlement falls. If a colony is abandoned, everything its scholars had learned — the technologies it knew, the ones it had completed itself, whatever it was in the middle of researching, and the accumulated progress toward it — travels onward with the wandering band that walks away from the ruins. Should that band go on to found a new settlement, all of that learning is restored intact, and any technologies it had already completed have their benefits reapplied immediately. A people's hard-won understanding outlives any single settlement they built."
+  },
+  {
+    "title": "Caravans: A Colony's Wandering Afterlife",
+    "section": "What a caravan is",
+    "text": "When a settlement can no longer support itself, it doesn't simply vanish — its people take to the road as a caravan: a wandering band with a leader (its captain), a following of commoners, a carried hoard of money, and a stock of food. A caravan owns no land, banks with no one, and trades in no market; it survives purely on what it carries. Given time and a place to stop, the same band can found a brand-new settlement, letting the very people (and often the very ruling bloodline) of a fallen colony rise again elsewhere. Right now caravans found their new home in place rather than truly roaming the map — real cross-country wandering and trade are still being built — but the core cycle of collapse, wandering, and rebirth is fully working."
+  },
+  {
+    "title": "Collapse Becomes Migration",
+    "section": "How a settlement dissolves into a caravan",
+    "text": "A settlement doesn't just die when its workforce collapses — it dissolves. Once the number of working households falls below a survival threshold, every bank in the colony closes at once: all the circulating money is swept into a single traveling hoard, all the remaining food is bundled into the band's rations, and every surviving household — commoners and nobles alike — folds back into one undifferentiated following. The former ruler doesn't disappear with the rest; they lead the band away as its captain. The settlement itself is erased from the map with no ruins left behind. What was a structured colony a moment before becomes, in one stroke, a bare wandering band — collapse reframed as migration rather than an ending."
+  },
+  {
+    "title": "A Caravan's Hoard",
+    "section": "Money on the road",
+    "text": "A caravan has no bank to keep its money in, so when a settlement dissolves, every coin that was sitting in its banks — every account balance, every reserve — is totaled up and carried as a single portable hoard on the band itself. Nothing is lost or skimmed in the process: the hoard is worth exactly what the banks held a moment before. While the band travels it spends nothing from this hoard (there's no market to spend it in), and if it eventually founds a new settlement, that hoard becomes the new colony's opening treasury, chartering fresh banks around it just as before."
+  },
+  {
+    "title": "Life on the Road",
+    "section": "A caravan's ticking clock",
+    "text": "A caravan can only consume, never produce — it has no firms, no fields, no markets, just the food it carries. That makes every wandering band a decaying asset on a clock: its people eat down the shared stock of rations day by day, and there's no way to replenish it until the band settles down again. This is what gives urgency to founding a new colony — a band that dawdles too long risks running its stores dry before it ever finds a new home."
+  },
+  {
+    "title": "When a Caravan Runs Dry",
+    "section": "The end of an unlucky band",
+    "text": "If a wandering caravan's food runs out completely and its last member starves, the band is finished — it can no longer march, forage, settle, or do anything else, and it is removed from the world for good. Whatever hoard of money and goods it was still carrying disappears along with it; a hoard only has value in the hands of a living band, so once the last member is gone there's no one left to spend it. It's a genuine dead end for that bloodline and its followers — a caravan that fails to find a new home in time simply ceases to exist."
+  },
+  {
+    "title": "Founding a New Colony from the Road",
+    "section": "A band rises again",
+    "text": "A wandering caravan isn't doomed to wander forever — given a viable spot and enough people and wealth, it can settle down and found a brand-new colony. When it does, the band's leader becomes the new settlement's ruler, its carried hoard of money becomes the colony's opening treasury, and its followers become the new labor pool from which the first working households are drawn. The result is the same ruling bloodline and largely the same people, now settled somewhere fresh, banks and markets rebuilt from scratch around them. It's how a colony that collapses can, in time, be reborn rather than simply gone for good."
+  },
+  {
+    "title": "Caravan Leadership and Succession",
+    "section": "Captains die, bands carry on",
+    "text": "A caravan's leader is mortal — like anyone else, they can die of old age while the band is on the move. When that happens, the band doesn't fall apart or stall: command passes immediately to whichever surviving follower is most capable of keeping the group alive, judged by their survival skill rather than by bloodline or seniority. This is a meritocratic system, not a hereditary one — the ablest survivor leads, ties broken by who has traveled with the band the longest. A caravan's leader at any moment is always its single most reliable member, which matters because that same person becomes the ruler if the band ever founds a new colony."
+  },
+  {
+    "title": "Inspecting a Caravan's Makeup",
+    "section": "Reading a band from the map",
+    "text": "You can see exactly who makes up a wandering caravan by clicking its icon on the map. This opens a panel showing the band's average skill profile alongside its full roster of members, sorted by survival skill with the current leader clearly marked. The same kind of panel exists for settled colonies too — clicking on any of the population figures in a colony's vital-statistics readout opens its own roster and skill breakdown, ruler and nobles listed first, then laborers. Only one such panel can be open at a time, whether you're looking at a colony or a band on the road."
+  },
+  {
+    "title": "Caravan Marches",
+    "section": "Daylight sets the pace",
+    "text": "A caravan band on the move doesn't simply hop from province to province once a day — it marches real distance, bounded by how much daylight it actually has. Each day the band checks the daylight hours at its current position and the calendar date, using the same sun-tracking the settled colonies use. A band marching through a Mediterranean-style summer might have some fourteen hours of light to work with; the same band caught in a northern winter has far less. At the extremes of latitude, when winter light shrinks toward nothing (or a polar summer never ends), a band can find its usable marching window vanish entirely — when that happens it simply halts and lives off its stored food until the days lengthen again, rather than crawling forward uselessly. Marching speed itself is a human constant: roughly 4.6 km/h at a normal walking cadence, faster at a forced pace — unchanged whether the band is early or late in the world's history."
+  },
+  {
+    "title": "Caravan Marches",
+    "section": "The column's own weight",
+    "text": "A band on the march isn't a point on the map — it's a column of bodies strung out along the road, and that column has to uncoil out of camp every morning and coil back in every evening before it can rest. The bigger the band, the longer the column, and the more of each day's daylight gets eaten just filing out and filing back in rather than actually covering ground. A large enough band can spend an entire day's light doing nothing but stretching out and packing up again, making zero net progress — this is the concrete, in-world reason huge migrating bands crawl while small, lean ones range freely, and it's the pressure that eventually makes a swollen band want to split up or simply settle down where it stands. A band a tenth the size of another can cover several times the distance in the same day, for exactly this reason."
+  },
+  {
+    "title": "Caravan Marches",
+    "section": "Order of march",
+    "text": "A marching band isn't one undifferentiated mass — it files out of camp in a fixed order, front to back: scouts ranging ahead, a vanguard of fighting strength, surveyors sent forward to lay out the next camp, the command group, the main body carrying most of the people, the baggage train (the single largest, slowest block), and a rear guard bringing up the tail, with a flank guard roaming the vulnerable sides throughout the day rather than holding a fixed place in line. Each block has its own length and its own depart and arrival time, computed from how many souls make it up and how fast it can move — so a large band's morning is a genuine hour-by-hour procession, not an instant teleport. A small settler band traveling to found a new home uses a slimmed-down version of this order rather than the full military procession, since it has no scouts or fighting escort to field."
+  },
+  {
+    "title": "Overland Travel",
+    "section": "Corridors, rivers, and slopes",
+    "text": "Within a province, a marching band doesn't just teleport across — it advances plot by plot along a real corridor of ground between where it enters and where it exits, and rough or wild terrain costs more distance-budget to cross than easy open ground. A large or difficult province can take a band several days to traverse rather than one flat hop, and a run of small, easy provinces can be crossed several times over in a single day. Crossing between provinces themselves still costs a hop measured in real kilometers between their centers. Rivers are a special hazard: fording one costs the band a full day's advance outright, not a small toll, so a route riddled with river crossings is materially slower than one that avoids them. The real shape of the land factors in too — climbing a slope costs more effort than the flat ground would suggest, a gentle downhill is easier, and a steep descent is harder again, so a band's path naturally bends around difficult terrain rather than marching blindly through it."
+  },
+  {
+    "title": "The Nightly Camp",
+    "section": "Where a band sleeps — and where it might stay",
+    "text": "Wherever a marching band's day ends, it claims a single plot of ground for the night, pitches a camp on it, and releases the claim again at dawn when it moves on. This is deliberately light-touch: a nightly camp has no bank, no market, no formal rank — the band remains a wandering caravan, not a settlement, and its wealth stays whatever gold and goods it carries with it. But the camp matters beyond that one night: if a band ever decides to stop wandering and found a permanent home, it is that very camp plot — the ground it happened to be standing on when it chose to stay — that becomes the new settlement's founding center. In a very real sense, every night a band pitches camp it is pitching a place that could become a village; the night it chooses not to strike camp is the night a settlement is born there."
+  },
+  {
+    "title": "Foraging and Gathering",
+    "section": "Living off the land while marching",
+    "text": "A marching band doesn't only spend its daylight covering ground — if a day's march leaves daylight to spare and the ground it crossed holds a food resource, the band forages, adding to its stores and slowing (though not stopping) the slow decline of its supplies as it travels. With any daylight left over after that, the band also gathers other resources it comes across — ores, gems, and other valuables — into its carried goods, though more slowly than foraging food, split across whatever distinct resources it passed. These goods accumulate in whole units up to how much the band can physically carry, which shrinks if the band itself shrinks. A band can only forage or gather a resource it actually recognizes: what it can identify depends on how advanced its own knowledge is, so a band from an early age simply cannot see (and will neither report nor collect) resources that belong to a later era's understanding of the land."
+  },
+  {
+    "title": "Wandering Bands",
+    "section": "How a collapsed colony survives",
+    "text": "When a settlement fails, its people do not simply vanish. The survivors gather under a leader into a wandering band and set out across the real map in search of a new home. This band treks the world province by province, crossing from one region into a neighboring one a single day's journey at a time, following the actual roads of adjacency that connect the world's thousands of provinces to each other. The band carries its people, whatever coin it fled with, and whatever goods it can forage along the way. It is not aimless: every step is chosen deliberately toward a promising destination, and the same starting conditions will always produce the same route, so a band's journey can be trusted to unfold consistently rather than being a random stumble across the map."
+  },
+  {
+    "title": "Wandering Bands",
+    "section": "The larder and the settling decision",
+    "text": "A wandering band lives on borrowed time: its carried food supply, the larder, drains a little every day it stays on the road, and that decline is what forces the band's hand. The band is looking for a province with usable, settleable land and enough open ground to support a new settlement, but it will not necessarily hold out for the perfect spot. As the larder runs low and desperation rises, the band becomes willing to settle for a lesser site rather than starve searching for a better one. Once it reaches a province that clears its threshold of readiness — enough followers, enough hoarded wealth, and a viable plot of land — it stops wandering and re-founds a colony right there, inheriting that province's terrain, climate, and the amount of land available to build on, exactly as if a new colony had been founded there from the start."
+  },
+  {
+    "title": "Explorer Caravans",
+    "section": "Overview",
+    "text": "Every settlement that has grown into a true city (not a small single-plot village) will, in hard winters, muster a foraging expedition called an Explorer caravan. These are not scouts sent for their own sake — they are a hungry city's answer to a lean season. A band of unmarried young adults is drafted, provisioned, and marched out into unclaimed country to forage wild food and gather useful goods that the settlement itself could never grow or buy on its own market. When they return, their haul feeds the city, their earnings help them start new households, and the ground they crossed is folded into what the city knows of the wider world. A city starts with no caravans afield; only one band is mustered at a time, with a cooldown between departures, so the effort is measured rather than draining."
+  },
+  {
+    "title": "Being Drafted",
+    "section": "Who goes, and what happens to them",
+    "text": "An expedition is filled by drafting people, not banishing them — draftees remain members of their household or the settlement's laboring pool, simply marked as 'away.' Eligible draftees are unmarried grown adults: either idle laborers from the pool, or grown, unwed children still living in a household who haven't yet struck out on their own. Household heads and their spouses are never drafted, nor are children too young to work. While drafted, a person supplies no labor, cannot be promoted or married off, and is no longer fed at the settlement's table — the expedition itself feeds them from what it carries and forages. They still count as a living citizen in the town's records. The moment the survivors return home, all of this reverses: they rejoin work, courtship, and the family table exactly as before."
+  },
+  {
+    "title": "The Expedition Journey",
+    "section": "Muster, march, and the pull home",
+    "text": "A mustered band is provisioned two ways at once — the ruler buys them travel rations from the market, and each draftee carries half their usual share from home. The band then marches into country nobody from the settlement has set foot in yet, favoring unexplored ground over retreading old ground, foraging food and gathering useful resources from the wild plots it crosses along the way, and camping for the night where it can. Every good it gathers adds weight, and a heavily laden band moves slower — so the growing haul itself pulls the band back toward home, alongside the draftees' own wish to return and marry. A band aims to be home by mid-autumn, but this is not guaranteed: a slow or unlucky expedition can arrive late, or fail to make it back at all."
+  },
+  {
+    "title": "Movement on the Road",
+    "section": "How far a caravan travels each day",
+    "text": "An expedition's daily progress is measured in movement points, much like a classic strategy game's marching units: more daylight and a smaller band mean more ground covered, while a huge column crawls even in good light. Different terrain costs different amounts of that budget — open flat ground is cheap, forests, hills, and marsh are dearer, and a paved road or trail discounts the cost of the ground beneath it. Fording a river without a bridge halts the whole day's movement outright. No matter how expensive the next stretch of ground is, a band with any movement left will always press on at least one step rather than freeze in place — deep winter or a huge column simply creeps forward on its supplies instead of stopping dead. Crossing from one province into the next also always uses up the rest of that day's travel."
+  },
+  {
+    "title": "Homecoming — Reward and Renewal",
+    "section": "What happens when the band returns",
+    "text": "A returning expedition sells its surplus food straight into the settlement's larder and market — imported food finally reaching hungry tables — while the ruler sells off the band's other gathered goods and takes a tax cut of the proceeds. The rest of the money funds the draftees' futures: each surviving forager leaves the laboring pool for good and, seeded with their share of the earnings, founds a brand-new household of their own. If a noble more skilled than the returning band already exists, that noble is credited as the expedition's leader and rewarded instead; otherwise the ablest returnee is raised into the nobility outright. Every survivor, drafted or not, then re-enters the marriage market — turning a hard winter's foraging trip into new households, new marriages, and eventually new children for the settlement."
+  },
+  {
+    "title": "Trailblazing",
+    "section": "Pioneering the wilderness",
+    "text": "Explorer caravans are the only bands willing to strike out across truly wild, route-less country — every other kind of caravan needs at least a rough trail to follow. As an Explorer marches, it leaves a trail behind it on the plots it crosses, and that trail makes the ground easier and faster to travel for anyone who comes after (though it never overrides a better road already there). In this way, a settlement's winter foraging expeditions are quietly doing double duty: feeding the city and its people while also pioneering the paths that the wider world will one day use."
+  },
+  {
+    "title": "Overland Routes",
+    "section": "Real-distance pathfinding",
+    "text": "When a caravan sets out across Anbennar, its route isn't just a chain of province hops — it's measured in real kilometers. Every pair of neighboring provinces has a true great-circle distance between them, so a route between two far-flung provinces reflects the actual geography of the map: crossing a wide province costs more than crossing a narrow one, and the path chosen is the genuinely shortest one available, not just the fewest borders crossed. This is what lets a march be planned realistically over thousands of kilometers, and it's the backbone that a caravan's daily travel budget is spent against as it makes its way from home to a distant destination."
+  },
+  {
+    "title": "Corridors Through the Land",
+    "section": "Terrain-aware pathing within a province",
+    "text": "A caravan doesn't just teleport across a province — it threads a real corridor of ground from the border where it enters to the border where it leaves, and that corridor is built from the same terrain, vegetation, and relief that settlements themselves are founded upon. Open plains are quick going; deserts, dunes, swamps, jungle, and hills each genuinely slow the pace, because the path is costed plot by plot rather than assumed uniform. Sheer mountain peaks are impassable outright, so a corridor bends around them rather than climbing straight over. The corridor is worked out once for a given entry and exit point and then remembered, so only provinces actually on a caravan's route ever need this fine-grained treatment."
+  },
+  {
+    "title": "Slopes and Mountain Passes",
+    "section": "Elevation slows the climb",
+    "text": "Travel through hilly or mountainous country isn't just slower because of the terrain type underfoot — the slope of the land itself matters. A corridor climbing a steep rise moves more sluggishly than one crossing flat ground, following the natural logic of a traveler on foot: gentle grades barely register, but sustained climbs add up and a genuinely sharp ridge becomes so costly that the route simply bends around it rather than scaling it. Because Anbennar's terrain is generally smooth at the scale a caravan experiences it, this effect builds gradually over the course of a climb rather than striking as a sudden wall — so a route will visibly favor valleys and gentler contours over a direct line through the mountains."
+  },
+  {
+    "title": "Fording Rivers",
+    "section": "A river crossing costs a full day",
+    "text": "Rivers are not a minor inconvenience on the march — fording one costs a caravan a full day's travel outright, rather than a small slowdown folded into the terrain cost. This makes river-heavy country meaningfully slower going than the map's distances alone would suggest, and it's worth factoring into how you read a caravan's journal: a leg that looks short on the map can still eat several days if it has to ford its way across a tangle of waterways. Settlements and travelers alike have to reckon with rivers as real obstacles, not just decorative lines on the map."
+  },
+  {
+    "title": "Land-Bound Caravans",
+    "section": "No sailing across open water",
+    "text": "Caravans in Anbennar are creatures of the land, full stop — they will never route themselves across open sea or lakes, no matter how much shorter that path might look. Routing only ever considers genuinely land-connected provinces, so an island or peninsula that has no land bridge to the rest of the continent is simply unreachable by any overland caravan, and a route to such a place will correctly come back empty rather than having the caravan improvise a sea crossing. If you're planning a caravan's destination, check that it actually sits on a landmass connected by dry ground to your caravan's starting point — a place surrounded by sea on every side is out of reach until some future seafaring trade takes shape."
+  },
+  {
+    "title": "Settlement Plots & Land",
+    "section": "Overview",
+    "text": "Every settlement you found sits on real ground, not an abstract building count. As a colony grows, it claims individual build plots one after another, each with its own patch of terrain — grassland, plains, dense forest, jungle, desert, tundra and more — generated from the surrounding land's climate the moment the settlement is founded. A plot's terrain, and any wild growth on it like a forest or swamp, determines how fertile that ground is. Right now this matters most for farming: a colony's farms harvest more or less depending on exactly which plot they stand on, so where a farm is planted genuinely matters, not just how many a settlement has. The total number of plots any settlement can ever claim is capped by the surrounding province, so a colony's growth has a real, geographic ceiling."
+  },
+  {
+    "title": "The Travel-Time Ladder",
+    "section": "Commuting to Work",
+    "text": "A settlement's plots aren't arranged on a map grid — they're ordered by how long it takes a worker to walk out to one and back. The village center itself is the closest point, where the daily labor market gathers and, for now, where every worker lives. Each plot claimed after that sits one rung farther out, with round-trip travel time growing quickly the deeper the ladder runs. Every workday, some time is lost simply to the labor market convening, and workers assigned to distant farms lose still more to the commute itself — so a farm right by the village center is far more productive, hour for hour, than one out on the fringe. Past a certain distance a plot becomes effectively unworkable, since the round trip alone would eat the whole day. This naturally caps how far a village can sprawl before claiming new land stops paying off."
+  },
+  {
+    "title": "Clearing Wild Land",
+    "section": "Farms & Improvements",
+    "text": "Newly claimed land isn't ready to farm the moment it's claimed. Many plots start out wild, covered in forest, jungle, swamp or other growth that must first be cleared before a farm can be raised there — denser, rougher terrain takes longer to clear and build on. A necessity farm claims exactly one plot for itself, and once built it becomes a lasting improvement to that ground: even if the firm working it is later dissolved, the cleared land and the farm on it remain standing, so resettling that plot later is far cheaper than breaking new wild ground. Most other kinds of firms — workshops, trading posts, banks — need no land of their own at all; they operate out of the village center and never touch the outlying ladder of plots."
+  },
+  {
+    "title": "Hills and Rugged Ground",
+    "section": "Relief",
+    "text": "Not every plot a settlement generates is flat, workable ground. Some come up as hills, and a smaller share as true peaks — high ground so rugged it can never be settled or worked at all. A peak still occupies its own rung on the travel ladder and still counts against the settlement's total plot capacity, so a stretch of especially rough country pushes usable farmland farther from the village center than it otherwise would be — a real cost for settling near mountains, not just scenery. Hills, by contrast, are workable ground and hold promise for future mining ventures. Which terrains, hills and peaks a settlement generates all flow from the climate of the land it was founded in, from lush temperate grassland to arid desert or wind-scoured tundra."
+  },
+  {
+    "title": "Province Land & Plots",
+    "section": "How a province's land is generated",
+    "text": "Every province in the world is built from its real land: each small patch of ground, called a plot, corresponds to a single point of the true Anbennar landscape. When a province is first settled, its entire stretch of land is generated at once - real terrain sampled from the true map, hills and mountains clustered into believable ranges rather than scattered at random, forests and jungles spreading inland from rivers and coastlines, and rivers themselves marking out fertile floodplains. This land is generated once per province and shared by every settlement that ever takes root there - it's a fixed piece of geography, the same stretch of ground no matter how many times history plays out there."
+  },
+  {
+    "title": "Sharing a Province",
+    "section": "Multiple settlements, one pool of land",
+    "text": "A single province is often large enough to hold more than one settlement. Rather than each settlement having its own private strip of land, every settlement founded in a province draws from the same shared pool of plots. Unclaimed plots belong to the province itself; the moment a settlement claims one, it becomes that settlement's own territory. This means neighboring settlements sharing a province are genuinely competing for the same finite stretch of land - once every plot has been claimed by someone, no settlement there can grow any further, no matter how prosperous it is."
+  },
+  {
+    "title": "Claiming Land",
+    "section": "How settlements found and grow their territory",
+    "text": "When a settlement is founded, it plants its center on the best open ground available - fertile land near the middle of the province for the first settlement to arrive, or, for later arrivals, a spot kept as far as possible from every other settlement's claimed land, so settlements spread out rather than crowd together. From there it claims land outward, favoring the most fertile unclaimed plots close by. The farther a claimed plot lies from a settlement's center, the longer it takes workers to travel to and tend it, so nearby land is put to work well before land at the edges of a settlement's reach."
+  },
+  {
+    "title": "Territory and Collapse",
+    "section": "What becomes of claimed land",
+    "text": "A settlement's claimed land stays its own for as long as the settlement lives, even as individual farms and workshops on it are built, abandoned, and rebuilt over the years - territory, once claimed, isn't casually given up. Only when a settlement dies does its entire territory revert to the province's shared pool, freed for a neighbor - or some future settlement - to claim. In a province crowded with more than one settlement, this competition over a shared, finite stretch of land can hasten collapse: two settlements squeezed into a small province will typically exhaust the available land, and fall, sooner than a single settlement would on its own."
+  },
+  {
+    "title": "Urban Plots",
+    "section": "The city-in-a-province model",
+    "text": "Every province in the world is really two things at once: a city core and a rural hinterland around it. Rather than paving over a whole province's worth of farmland, only a handful of individual plots at the province's town site are built-up 'urban' ground — the rest keeps its real countryside terrain (grassland, hills, forest, whatever the land actually is). A founded settlement's town centre sits on this built-up ground, meaning the city itself never displaces its own farmland: the fields a colony works are separate plots from the plot its buildings stand on. Most provinces get a single urban plot; a handful of notable, historically significant provinces (including some famous capitals) get a denser little cluster instead of just one."
+  },
+  {
+    "title": "City Siting & Imported History",
+    "section": "Where the town centre lands",
+    "text": "A province's urban plot isn't placed at random or dead-centre — it's sited the way an old-school city founder would scout ground: scanning nearby land for the richest cluster of reachable resources, favouring flat or gently-hilled spots near rivers or coasts over cramped or rugged ones, and weighing how many valuable bonuses sit within comfortable reach. Each province also carries real imported historical weight — a measure of how developed that land was in the world it's drawn from — and that weight concentrates entirely on its urban plot. The urban plot itself is intentionally unfarmed: it's the town's built centre, not a worked field, so a colony's food supply always comes from its actual farmland rather than the plot the town hall sits on."
+  },
+  {
+    "title": "Neighborhood Districts — Live vs Abandoned",
+    "section": "How urban plots read on the map",
+    "text": "Every urban plot in the world shows a small neighborhood marker on the map, since every province has a town site whether or not anyone lives there. If a province holds no living settlement, its neighborhood markers read as abandoned — desaturated, ruined husks, a hint of a town site the world remembers but nobody currently occupies. Where a real colony is thriving, its province's urban plots come alive instead — but only as many as the colony has actually built districts for, and only the ones nearest its centre. So a growing colony's urban core lights up outward from the middle while its province's outer, unbuilt urban plots still sit as quiet ruins until the colony grows enough to reach them."
+  },
+  {
+    "title": "Caravan Camps and Urban Ground",
+    "section": "Where a marching band may not camp",
+    "text": "A wandering caravan choosing where to make camp for the night has one hard rule about built-up ground: it may not pitch camp on an urban plot belonging to a province that already hosts a living settlement — that ground is spoken for. An abandoned urban plot, in a province with no settlement to claim it, is fair game and open to camp on like any other patch of land. A caravan's own nightly camp doesn't count as a settlement in this sense, so a band doesn't end up locking itself out of resting on the very ground it's using."
+  },
+  {
+    "title": "Plot Place-Names",
+    "section": "What you see",
+    "text": "Every land plot in the world carries a real place name drawn from real-world geography, not just its terrain type. Hover over any plot at deep zoom on the map and you'll see a tooltip reading something like \"Bharatpur · Plains · Forest\" — the place name, its terrain, and any feature on it, side by side. These aren't randomly generated fantasy syllables: each name is a genuine town or landmark name borrowed from Earth, chosen deterministically so the same plot always shows the same name. It's a way of grounding Anbennar's fictional geography in the texture of real places without breaking the illusion of a lived-in world."
+  },
+  {
+    "title": "Plot Place-Names",
+    "section": "How the names are chosen",
+    "text": "Anbennar has no real-world location of its own, so the mapmakers paired each of the world's 146 land regions with one real Earth country, one-to-one — no country is reused twice. The pairing is chosen to echo the region's flavor: Rahen draws its names from India, Yanshen from China, Western Cannor from France, the Sarhal regions from Africa, the Insyaa regions from the Americas, and the underground Serpentspine from the Alps and Himalaya. Within a region, each plot's position maps onto a spot in its paired country's geography, and the nearest real town or landmark name from that country is borrowed for the plot. A name is only reused within the same region if that region's country genuinely runs out of distinct real names to draw from — otherwise every plot in a province gets a unique name."
+  },
+  {
+    "title": "Plot Place-Names",
+    "section": "Coverage",
+    "text": "Place-naming covers the entire world map: every settleable land region (roughly 4,600 land provinces across 127 regions) has been fully named, with no region left without real names to draw on. Only ocean and sea provinces, which have no land plots, are skipped. Small or famous world-capital-scale cities are deliberately avoided as source names, so you won't see a plot in Anbennar labeled after a real-world metropolis — the names come from a broad, population-bounded pool of real but modestly sized places, keeping the borrowed geography flavorful rather than distracting."
+  },
+  {
+    "title": "The World Map",
+    "section": "A Real Imported World",
+    "text": "CivStudio settlements aren't founded in a void — they sit on a real map imported from the world of Anbennar. The land is divided into thousands of provinces, each with real terrain, a real position (its own latitude and longitude), and a type: land, sea, or lake. Provinces nest into a wider geography just like a real atlas — grouped into areas, those into regions, those into super-regions, and beyond that into whole continents. Only land provinces can host a settlement; seas and lakes are the water that caravans and trade routes have to go around or across rather than settle on."
+  },
+  {
+    "title": "Founding a Settlement into a Province",
+    "section": "Where a Colony Comes From",
+    "text": "When a settlement is founded into a province, that province becomes its geography. Its real position on the map feeds directly into the colony's daylight — how long the sun is up each day — which in turn shapes the working day and how much labor households can put in. A province with water along its edge is marked coastal. This is why two settlements founded in different corners of the world can end up with noticeably different day lengths and work rhythms, before any other difference between them ever comes into play."
+  },
+  {
+    "title": "Province Size Caps",
+    "section": "Land Limits Growth",
+    "text": "Every province has a fixed amount of usable land — real ground, counted straight off the map — and a settlement founded there can never grow past what that land can physically hold. A settlement always starts small and grows one size class at a time, but each larger size demands more total land, and once a province's land is used up, growth simply stops: no more workshops get chartered, the settlement holds its footprint, and expansion only resumes if room actually opens up. Spacious provinces barely constrain a colony; a tight province can cap a settlement at a fairly small size purely because there's nowhere left to build."
+  },
+  {
+    "title": "The Travel Network",
+    "section": "Neighbors and Routes",
+    "text": "Every province on the map knows which other provinces actually touch its borders — a real neighbor web derived from the shape of the land itself. This web is the road network that caravans travel: a band moving between settlements, or wandering out to found a new one, plots its route by hopping from province to neighboring province, never leaping across the map. Some ground is marked impassable wasteland — no caravan can cross it and no settlement can be founded there — so any route bends around such land rather than through it."
+  },
+  {
+    "title": "Climate and the Land",
+    "section": "Weather Shapes the Harvest",
+    "text": "Provinces carry real environmental character drawn from their place in the world: a climate (temperate, tropical, arid, or arctic), a winter severity, and in some regions a monsoon season. Together these set a single multiplier on how productive a settlement's food-growing work is. Tropical warmth and a strong monsoon can push food output above the baseline; harsh arid heat, a severe winter, or arctic cold drag it down. So where a colony is founded doesn't just decide its daylight and how large it can grow — it also decides how generously the land itself rewards its farmers, while every other trade goes on unaffected by climate."
+  },
+  {
+    "title": "Realms of Halann",
+    "section": "Overview",
+    "text": "The world you explore in CivStudio is called Halann, and today it is divided into three realms: Halcann, Aelantir, and Hinuilands. A realm is not a separate world — it's a real region of Halann's own surface, with real geography, real distances, and real daylight. Two of the three are playable: Halcann, the Old World, and Aelantir, the New World across the ocean. The third, Hinuilands, exists on the map but is not settleable — a distant land barely touched by history, visible but out of reach. A handful of far-flung scraps belong to no realm at all: stray islands and the deep, uncharted ocean, which render as nothing but empty fog no matter which realm you're viewing."
+  },
+  {
+    "title": "Halcann, the Old World",
+    "section": "The realms",
+    "text": "Halcann is the Old World — its name means 'earth-center' in Old Castanorian. It is by far the largest realm, holding the continents of Cannor, Sarhal, and Haless: the human heartlands, the ancient Deepwoods, and everywhere history first considers 'home.' Beneath Halcann's surface lies the Serpentspine, a sunless underground plane of caverns and dwarven holds reached by descending from Cannor itself — with its own daylight, its own terrain, its own dangers — but it remains part of Halcann rather than a realm of its own. When people speak of 'the world' without qualifying it, they usually mean Halcann."
+  },
+  {
+    "title": "Aelantir, the New World",
+    "section": "The realms",
+    "text": "Aelantir is the New World: a great landmass across the ocean from Halcann, playable in full — its own settlements, its own trade, its own struggles. No road or sea lane connects it to the Old World. What links the two realms is stranger than a ship: a network of fey portals, magical doorways woven into the map itself rather than a mundane crossing. A caravan setting out from Halcann's Deepwoods can, in principle, walk the whole way there — through the forest, out a hidden portal, and arrive standing on Aelantir's soil, having crossed an ocean without ever touching water."
+  },
+  {
+    "title": "Hinuilands, the Unreached Land",
+    "section": "The realms",
+    "text": "Hinuilands is the third realm, and the strangest: only two of its provinces — Vyr Pas and Vyr Cirentyn — were ever actually placed on the map. Everything else set aside for it, dozens of regions' worth of riverlands, lakelands, forests, valleys and savanna, was planned but never drawn. Its two real provinces sit as isolated pockets of land with no road and no sea lane joining them to the rest of the world, so no caravan can march there. For now Hinuilands is viewable but not playable — a corner of the map you can look at, but not one you can found a settlement in."
+  },
+  {
+    "title": "Fey Portals and the Deepwoods",
+    "section": "Travel & portals",
+    "text": "Not every connection on the map is a road or a sea lane — some are magic. The Deepwoods, an ancient fey-touched forest region within Halcann, hides a real network of teleporter waypoints and gladeways: step onto the right province and you're carried instantly to another, sometimes far distant, without walking the ground between. Caravans already route through this network as a matter of course — it isn't a special event, just another kind of connection the road-finding is happy to use, occasionally finding a shortcut through the Deepwoods that beats the long way around."
+  },
+  {
+    "title": "The World's Edge",
+    "section": "The map",
+    "text": "Halann's map used to be a single wraparound cylinder: keep sailing or marching east long enough, and you'd eventually loop back around to where you started. That wraparound is gone. The world now renders as a finite sheet with real edges — you can pan and scroll to the boundary of the map, but you no longer circle endlessly around the far side. It's a small change with a real feel: the world finally has a shape, not just a repeating pattern stitched at the seam."
+  },
+  {
+    "title": "The Underworld (Serpentspine)",
+    "section": "Overview",
+    "text": "Beneath Anbennar's Serpentspine mountains lies the Dwarovar — a vast stacked cave network, home to the dwarven holds. CivStudio surfaces this as a separate Underworld plane you can toggle on the map. Flip it and the sunlit surface world dims to a faint ghost while the cave provinces relight in their true geographic position underground, drawn as warm, amber-rimmed rock floors. Over two hundred caverns are lit this way, sitting exactly where the real Serpentspine cave network runs. This isn't just a cosmetic overlay — settlements founded in these caverns actually live by different rules than surface colonies: no sun, different food, different labor rhythms. The camera doesn't auto-jump when you toggle; you stay where you are and simply see what's really beneath your feet."
+  },
+  {
+    "title": "The Underworld (Serpentspine)",
+    "section": "The sweatshop day",
+    "text": "Surface settlements track real sunrise and sunset, and a household's daily output scales with how much daylight it gets — eight hours of daylight is treated as a normal, full-output day. Underground there is no sun to track at all, so cavern settlements instead run on a fixed fourteen-hour working day, every day of the year, no seasons, no dawn or dusk — dwarves toiling long lamplit shifts far from any sky. Because that fixed day is nearly twice the eight-hour surface reference, underground labor runs noticeably hotter than a typical surface day, year-round. It's deliberate flavor — the underground trades away weather and sunlight for grueling, unbroken productivity — though it's a powerful economic edge that cave settlements' poor food supply is meant to keep in check."
+  },
+  {
+    "title": "The Underworld (Serpentspine)",
+    "section": "Cave floor & food",
+    "text": "Every plot in an underground settlement sits on bare cave floor rather than any surface terrain, and its people eat cave fungus instead of crops. That cave floor is food-poor — noticeably worse than open grassland — but rich in raw production, reflecting the ore and stone worked out of the rock. This scarcity is the underground's built-in balancing weight: cavern settlements get a strong labor boost from their unbroken lamplit workday, but a caver colony can't simply out-farm the surface too — its people have to make do with a much thinner food margin than a sunlit field would give them."
+  },
+  {
+    "title": "Special Surface Terrains",
+    "section": "Distinctive Anbennar landscapes",
+    "text": "Beyond the underground itself, several of Anbennar's most storied surface landscapes have been given their own true terrain identity rather than flattening into generic grassland or forest. Deep old-growth ancient forests, the verdant fey gladeways of the elves, the eerie teal fey gladeway variant, blood-magic-soaked crimson bloodgroves, violet fungal mushroom forests (found around Haless), shadowed marshy swamps, and pale glacial ice each render in their own authored color and carry their own food/production/trade yields — forests, swamp, and gladeways also come dressed in their signature tree or wetland cover across most of their land. These aren't underground at all; they're fully sunlit surface terrain, just distinctive enough in Anbennar's lore to deserve their own look and character on the map instead of blending into ordinary land."
+  },
+  {
+    "title": "Names & Dynasties",
+    "section": "Race-appropriate naming",
+    "text": "Every soul in CivStudio carries a given name and a dynasty surname drawn to match their race and culture. Humans draw from a vast trove of real-world given names and surnames — tens of thousands of possibilities, so two households rarely share a bloodline by coincidence. Every other people of Anbennar — dwarves, elves, orcs, and the rest — draw their names from that culture's own naming traditions as recorded in the lore of Anbennar itself, so a dwarven clan's names actually sound dwarven, and an elven house's names sound elven, each rooted in its people's real cultural naming conventions rather than a generic fantasy name generator."
+  },
+  {
+    "title": "Names & Dynasties",
+    "section": "Common names and rare names",
+    "text": "Not all names in CivStudio are equally likely to appear. Within each people's naming tradition, some given names and surnames are common — you'll meet many households bearing them — while others are rare, marking a family as distinctive or exotic even among its own kind. This mirrors how real naming traditions work: a handful of names dominate, while a long tail of unusual ones appears only occasionally. So a rare dynasty surname is a small flavor detail worth noticing — it's a name your colony won't see repeated often."
+  },
+  {
+    "title": "Race (Ancestry)",
+    "section": "Overview",
+    "text": "Every person in a colony has a race — an ancestry that shapes who they are as an individual, distinct from their social class or rank. Today two races walk the world: Humans, the default across nearly every settlement, and the Harimari, tiger-folk of Anbennar known for sharp features, clan pride, and a life lived faster than a human's. A single settlement can be mono-racial or a genuine mix, with residents of different ancestries living, working, marrying, and dying side by side. Race governs a person's lifespan and mortality schedule, how quickly they mature into adulthood, and which pool of given names and family surnames they're drawn from — but it never determines their station in life; a Harimari can rise to nobility or languish as a laborer exactly as a human can."
+  },
+  {
+    "title": "Race (Ancestry)",
+    "section": "Mortality and maturity by race",
+    "text": "A person's race sets the rhythm of their life. Harimari mature remarkably fast: a founding Harimari settler can be as young as 9 years old, and a Harimari recruited off the road as a young adult is typically 9 to 16 years of age. Humans, by contrast, need at least 15 years before founding a household, and a human recruit is usually 16 to 25. Each race also ages and dies on its own mortality schedule, meaning life expectancy and the shape of old age can differ by ancestry. These differences are baked into demography quietly — a mono-racial human colony behaves exactly as it always has, while a mixed-race settlement will visibly show peasants, immigrants, and founders of different races growing up, marrying, and passing on at different paces."
+  },
+  {
+    "title": "Race (Ancestry)",
+    "section": "The founding race sets colony-wide traditions",
+    "text": "While each resident's ancestry is personal, a handful of traditions are shared by an entire settlement rather than by each person — there is one calendar of rest days and feasts for the whole colony, and one path of research it pursues. These colony-wide traditions follow the founding ruler's race. A colony founded by a Harimari ruler keeps a Harimari calendar of festivals and leans its research toward the technologies its people favor, even though laborers, immigrants, and spouses of other races living there still keep their own personal ancestry, names, and lifespans. A colony's population mix is set at founding as a blend of races (for example, mostly Human with a Harimari minority); every peasant born into the pool, and every immigrant who arrives, has their ancestry drawn against that blend, while children and spouses always inherit their own family line's race rather than being redrawn."
+  },
+  {
+    "title": "The Harimari",
+    "section": "A living race with its own culture",
+    "text": "The Harimari are Anbennar's tiger-folk, and the first race to be given a distinct cultural identity in-game. They carry their own pool of given names — distinctive South Asian and Sanskrit-flavored names for both men and women — and a dynasty book of surnames blending real-world family names with evocative Anbennar clan epithets like 'of the White Stripe' or 'of the Jade Claw,' reserved as the rarest, most prestigious tier a noble founding a new house can draw. A Harimari-led colony keeps its own calendar of feasts — festivals of the hunt, the stripe, and the ancestors, distinct from human holy days — and leans its research toward trade, scholarship, and food production, while gaining little benefit from naval technologies. A noble who founds a fresh dynasty (rather than rising by ennoblement) is the one most likely to plant a rare clan name at the root of a new house."
+  },
+  {
+    "title": "Race (Ancestry)",
+    "section": "Technology favors different peoples differently",
+    "text": "The tree of technologies a colony can research is the same regardless of who founded it — no race is locked out of any discovery. What differs by race is how much a given technology actually helps once researched: a colony's ancestry can make certain techs deliver a strong boost, others a weaker one, and some essentially nothing at all — present in the tree, but quietly inert for that people. A Harimari-led colony, for instance, gains little from naval technologies but leans its bonuses toward trade, scholarship, and food-related discoveries instead. This means two colonies built along the same research path can still feel meaningfully different in practice, purely because of the ancestry that founded them."
+  },
+  {
+    "title": "Settlements: Village and City",
+    "section": "The two settlement types",
+    "text": "Every settlement is founded as one of two kinds, decided entirely by the land it's built on. A Village occupies an ordinary province: a single town-center plot and no room to expand beyond it. A City is founded on one of Anbennar's true city provinces, which carry several urban plots - its center plus real districts spreading across them. Which kind a settlement becomes isn't a matter of growth or achievement; it's fixed the moment it's founded, by how much urban land that spot on the map has. A City is meant to be a permanent settlement that endures depopulation, but that protection isn't active yet in practice - today a City can still collapse and empty out exactly the way a Village can, if its households and treasury fail it. Every inhabitable province, Village-sized or City-sized, always has at least one urban plot, so every settlement you found has a town center to build around."
+  },
+  {
+    "title": "Settlements: Village and City",
+    "section": "Where the town center is founded",
+    "text": "When a settlement is founded, the exact plot chosen for its town center - and, for a City, its district plots - isn't picked at random or from the middle of the province. Siting favors fresh water above all else: a candidate plot scores highest for touching the coast or lying near a river, with other terrain bonuses like favorable yields or hills counted only as secondary factors. This water-first logic is the same for a humble Village's single town-center plot and for a full City's spread of urban district plots, so a great city's heart is chosen by the same waterside instinct as a lone village's. If a province has no water at all to break the tie, placement simply falls back to the most central plot - so dry, waterless provinces settle exactly where you'd expect."
+  },
+  {
+    "title": "The Rank Ladder",
+    "section": "Command, not class",
+    "text": "Every household in a colony sits on a rung of the rank ladder, and its rung names what it commands rather than what kind of household it is. A common household commands only itself and its family. A noble household commands an estate of firms and property. A ruler commands an entire settlement. Climbing the ladder is a real transformation: the household's people and money carry across, but it becomes a different kind of actor with different powers, banking at a higher tier of currency to match its new standing. Falling down the ladder works the same way in reverse. This ladder is deliberately separate from a family's social class or wealth — a household can be prosperous or poor while still occupying the same rung, since rank tracks scope of command, not standard of living."
+  },
+  {
+    "title": "Ennoblement",
+    "section": "Rising into the aristocracy",
+    "text": "A colony continually looks among its laborer households for the ablest candidate for the nobility — judged by the head's social standing and practical skill, with youth breaking ties — and lifts that household up. Ennoblement is not a gift of a new family; the same household, the same people, the same accumulated wealth simply moves up a rung. Its money is carried over in full and re-banked from the common copper accounts into the silver accounts nobles use. Overnight, a family that farmed or labored finds itself among the landed and propertied, expected to hold firms, sit on estates, and answer to the throne for taxes owed. The transition takes effect only after the day's ordinary business has settled, so no ongoing trades or wages are disrupted by a household changing rank mid-day."
+  },
+  {
+    "title": "Ruined Nobles",
+    "section": "Falling from grace",
+    "text": "Nobility is not permanently secure. A noble household that spends a long stretch of time — roughly a year — sinking deeper into debt rather than climbing out of it is judged ruined and stripped of its rank. Before the fall, its firms and other holdings are handed off to whichever remaining noble in the colony is carrying the lightest load, so nothing is left masterless; if it was the settlement's only noble, those holdings sit unclaimed until the crown next fills a vacant noble seat. The ruined household itself is not destroyed — its people and whatever balance remains are carried down into an ordinary laborer household, re-banked from silver back into copper. In practice most nobles stay solvent by working the settlement's main export trade, so this collapse is the exception rather than the rule."
+  },
+  {
+    "title": "The Crown's Treasury and Bank Taxation",
+    "section": "Royal finance",
+    "text": "Every ruler-led settlement runs three tiers of bank: a copper bank serving the common laborers, a silver bank serving the nobility, and a gold bank that belongs to the crown alone. The ruler taxes the profits the public copper and silver banks earn from their spreads and currency exchange — that tax is real revenue flowing into royal coffers. The crown's own gold bank, however, is never taxed: its retained profit simply IS the treasury. Since the ruler already owns that bank outright, taxing it would just be the crown skimming money from itself into itself, so that double-dip is deliberately excluded from the tax base. In effect, the gold bank's growing equity and the ruler's war-chest are one and the same pool of wealth."
+  },
+  {
+    "title": "Trade Goods",
+    "section": "What they are",
+    "text": "Every province in the world produces a signature trade good — grain, iron, silk, and dozens of others drawn straight from Anbennar's own geography. Unlike the scattered resource bonuses you'll spot on individual patches of land, a trade good belongs to the whole province: it's a defining trait of the place itself, alongside who rules it, what culture its people share, and what faith they follow. An unsettled, undiscovered province shows no trade good at all — its riches are still unknown.\n\nEach good falls into one of five broad classes: Food, Luxury, Strategic, Manufactured, or Magical. The Magical class is distinctly Anbennar — things like damestear, mithril, precursor relics, fungi, and serpentbloom, resources tied to the world's stranger corners rather than ordinary commerce. Right now trade goods are a geographic fact you can observe on the map rather than something your settlements' markets buy, sell, or build around."
+  },
+  {
+    "title": "Trade Goods",
+    "section": "Seeing them on the map",
+    "text": "Zoom out to the world view and you'll see a small icon resting at the heart of each province — the true regional emblem for whatever that land produces, whether it's a sheaf of grain, an ore vein, or something stranger. These icons only appear when a province is large enough on your screen to read clearly, so the map doesn't clutter as you zoom past. Hover over a province and its trade good's name joins the rest of the tooltip alongside owner and terrain details.\n\nAs you zoom in further, toward the level where individual plots and their scattered resource bonuses become visible, the province-wide trade good icon fades out and gives way to the finer per-plot icons — a clean handoff from the big-picture regional resource to the small-scale bounty of each patch of land."
+  },
+  {
+    "title": "The Political Map",
+    "section": "Overview",
+    "text": "Beyond the physical map of terrain and rivers, the world can also be viewed in Political mode, which colors every land province by the nation that ruled it at the dawn of history — the opening moment of the Anbennar world, in the year 1444. Each province remembers who owned it, who controlled it, what culture its people spoke, and what faith they followed at that founding moment, drawn from the real, canonical history of Anbennar. Provinces that were unclaimed wilderness, uncolonized frontier, or open sea simply show no political color. This is a snapshot of the world's starting political order — the stage upon which your settlements' own history then unfolds."
+  },
+  {
+    "title": "The Political Map",
+    "section": "Nation, Culture, and Faith overlays",
+    "text": "Political mode isn't a single view — it's three, switched with an overlay control alongside the map. Nation mode colors each province by its ruling realm. Culture mode colors by the people's ethnic and linguistic heritage. Faith mode colors by dominant religion. Only one overlay shows at a time, and you can jump straight to any of them via a link. Hovering a province reveals the name and color of whichever entity is currently active, while a detail panel always lists all three at once — nation, culture, and faith together — so you can study a place's full identity even while only one layer is painted on the map itself."
+  },
+  {
+    "title": "The Political Map",
+    "section": "Zoom behavior",
+    "text": "The Political overlay is designed to get out of the way as you zoom in. From a world overview, provinces are painted in solid, full-strength color by whichever nation, culture, or faith owns them — ideal for surveying realms at a glance. As you zoom closer and the real per-plot terrain, forests, and rivers start rendering beneath, the political fill gradually fades toward transparency, letting the physical landscape show through. Zoom in further still, to individual-province detail, and the fill disappears almost entirely, leaving only colored borders and a highlight on whichever province your cursor rests over — so the terrain, not the paint, dominates close-up."
+  },
+  {
+    "title": "The Political Map",
+    "section": "Legend and search",
+    "text": "Political mode comes with a legend listing every nation, culture, or faith currently on screen, ranked by how much territory each one covers — the biggest players in the current view rise to the top. Hovering an entry in the legend spotlights its provinces on the map. A search box lets you look up any nation, culture, or religion by name directly; picking a result jumps the camera to that entity's largest territory, making it easy to find a realm or people even if you don't know where on the map they sit."
+  },
+  {
+    "title": "The Privy Council",
+    "section": "Overview",
+    "text": "Every settlement's leader keeps a Privy Council: a set of advisors, each one a real, named member of the ruling court, who between them let you view the world in different ways. Instead of digging through separate menus, you pick an advisor from a row of portrait buttons along the top of the screen, and the whole view changes to match their expertise — the map recolors, transforms, or gives way entirely to a different display. Only a handful of advisors are active today (Main Map, Foreign, Religion, Technology, Globe View, and Zeitgeist); a few more Civ-style roles are shown as greyed-out placeholders for later. Each advisor has its own hotkey, and a second control strip beneath the main bar changes to offer that advisor's own options."
+  },
+  {
+    "title": "The Privy Council",
+    "section": "The advisors and their views",
+    "text": "Each Privy Council advisor governs one way of looking at your settlement. The Main Map is the default physical view. The Foreign Advisor recolors the map by nation, with a culture view folded into the same tab. The Religion Advisor recolors it by faith. The Technology Advisor replaces the map entirely with the tech tree, its eras and zoom controls in the strip below. Globe View lets you flip between the surface world and the underworld, and adopts an overhead god's-eye perspective. Zeitgeist is the live, social advisor — it shows the settlement's real-time event feed and carries your sign-in and playback controls. Switching advisors doesn't just change color; it can swap what fills the screen outright, while zoom controls always stay available no matter which advisor you're viewing through."
+  },
+  {
+    "title": "The Privy Council",
+    "section": "Real advisors, real mortality",
+    "text": "Your advisors are not abstract icons — each one is an actual living noble drawn from the leader's own court, the aristocracy and the ruling household, never the common laboring folk. Their name is shown as the advisor's name, and the portrait reflects their race, drawn from real Anbennar court art. Because every person in the world is mortal, advisors can and do die of old age or misfortune. When that happens, the council doesn't stay empty — the most suitable qualifying noble automatically steps up to fill the vacated role (for instance, the court's most learned mind naturally gravitates to the Technology seat). You'll see a brief notice when a succession happens, and the portrait and name in that advisor's seat update to reflect the new officeholder."
+  },
+  {
+    "title": "The Privy Council",
+    "section": "Character sheets",
+    "text": "Curious about the person actually holding an advisor's seat? Clicking their portrait opens a full character sheet in the side panel: their name, race, and age; their skills shown as bars, with a flame icon marking any passions, and the particular skill that earned them the role highlighted. Below that sits their household — a list of family members, each with their name, relation, and age, and each one clickable to jump to that person's own sheet in turn, with a way back. It's a window into the living, aging, marrying, and dying cast of people actually running your settlement, not just a set of static titles."
+  },
+  {
+    "title": "The Privy Council",
+    "section": "Zeitgeist and going live",
+    "text": "Zeitgeist is the Privy Council's live and social advisor. While your settlement's event feed is actively streaming, a pulsing red LIVE badge appears — an unmistakable, Twitch-style signal that you're watching history unfold in real time rather than a static snapshot. This is also where your account controls live: signing in, your player handle, signing out, and the playback transport that lets you pause, resume, or adjust the speed of a running session. Play and speed controls only work once you're signed in, which is why the Privy Council groups live-viewing and your account together under the same advisor rather than scattering them separately."
+  },
+  {
+    "title": "The Zoom Spine",
+    "section": "Three Regimes of Play",
+    "text": "Zooming the world map isn't just about enlarging pixels — it carries you through three distinct ways of playing. Pulled all the way back, you're in Atlas mode: grand strategy, where nations, cultures, faiths, and whole provinces are what matter, much like studying an old parchment map. Zoom to the middle range and you enter Overland mode, the caravan and travel game — routes, colonies, and physical terrain take center stage. Zoom in deep and you reach Ground mode, a city-builder's view of individual plots, buildings, and the households living on them. The shift between these feels is seamless: the map dissolves smoothly from one regime into the next, with no jarring snap between \"levels.\" What you can click on and interact with changes as you cross each threshold, so the game itself feels different at each depth."
+  },
+  {
+    "title": "The Nine Bands",
+    "section": "Naming the Zoom Levels",
+    "text": "As you zoom from the widest view to the closest, the map passes through nine named rungs. In the grand-strategy range: World (the whole continent), Realm (super-regions), and Region. In the caravan/travel range: Province (borders, names, sea routes appear), Terrain (real ground textures and trade-good icons become visible), and Locale (deep terrain detail, points of interest). In the city-builder range: Plot (per-tile resources and bonuses), Settlement (a colony's buildings and bounds), and Building (the deepest possible zoom, where individual structures and people are legible). Each rung reveals more — province borders and names appear around the Province band, real terrain art and resource icons appear around Terrain, and building footprints only resolve once you're deep in Plot and beyond."
+  },
+  {
+    "title": "Reading Where You Are",
+    "section": "The Band Caption Chip",
+    "text": "A small readout near the map's top corner tells you two things at once: how deep you're zoomed, and what you're actually looking at. It might read \"Terrain · Sea Tropical\" while you're panning open ocean, or \"Settlement · Dhenijansar · Smallholding\" once you're hovering a living colony. The rung name (World, Terrain, Settlement, and so on) tells you how far you've zoomed; the phrase after it names the actual place, terrain, or settlement under your view's center — always keyed to the crosshair at the middle of the screen, not just whatever happens to be biggest on screen, so it stays stable as you pan and zoom. If nothing notable is there, it says so plainly — \"Uncharted ocean,\" \"Open water,\" \"No settlement here.\""
+  },
+  {
+    "title": "Crossing Between Regimes",
+    "section": "Visual and Input Cues",
+    "text": "Because clicking the map means something different in each of the three zoom regimes — picking a nation in Atlas, a caravan or colony in Overland, a plot or building in Ground — the game makes sure you notice when you cross from one into another. The mode readout swaps its icon and label, the cursor itself changes shape (an open hand for Atlas, a route reticle for Overland, a plot crosshair for Ground), and a brief colored flash pulses at the edge of the screen the instant you cross a boundary. These cues fire only on an actual crossing, not on every scroll tick, and the boundaries have a little give built in — so hovering right at a threshold doesn't make the mode flicker back and forth."
+  },
+  {
+    "title": "The City-Micro View",
+    "section": "Building Footprints at Deepest Zoom",
+    "text": "Zoom in far enough on a developed settlement and the map stops being an abstract colored blob and starts resolving into individual building lots — rectangles laid out across the urban core, sized and packed more densely wherever the underlying land is more developed. It's an early skeleton of a true city view: at this writing it shows footprints only, not finished building art, streets, or animated townsfolk, but it's enough to make a bustling settlement look like a real settlement rather than a single icon once you get close enough. Deeper still, at the very bottom of the zoom range, individual buildings and (eventually) the people living in them become the things you can select and inspect."
+  },
+  {
+    "title": "How a Day Unfolds",
+    "section": "The Step Loop",
+    "text": "Every day in a settlement follows the same fixed order. First, the day's sunrise and sunset are calculated for the colony's location and season. Then every living household and firm looks at yesterday's prices and its own income and decides what to buy or sell — these are intentions, not done deals yet. Next, the banks update their interest rates and pay or charge interest. Then the dead are cleared away and replaced — a peasant promoted, an heir installed, a newcomer admitted. Only after all that do the markets actually clear: every posted offer is matched against real supply and demand and money changes hands at a discovered price. Finally the day's events are written to the record, and inflation is recalculated. The key thing to understand: decisions are made against yesterday's world, and only settle today. Nothing is truly bought or sold until the market clears."
+  },
+  {
+    "title": "Laborers: The Working Households",
+    "section": "Agents",
+    "text": "Laborers are the backbone of a settlement — households that earn their bread by selling their work at the local firms. Each is built around a head (and sometimes a spouse) with a name, an age, and a set of twelve personal skills. A laborer weighs how much to spend on food versus little luxuries based on how full its larder is: the emptier the pantry, the more of its earnings go to bread rather than baubles. Laborers eat a modest daily ration — enough to live decently, but far less lavish than what nobles or rulers enjoy — and if a household head cannot feed itself, it starves and the line ends there. When a laborer household dies, in a settlement with a peasant reserve a fresh household is promoted up from that reserve to take its place; in a smaller, self-sufficient colony a same-family heir inherits instead, keeping the household's wealth and name alive."
+  },
+  {
+    "title": "Personal Skills and Training",
+    "section": "Skills",
+    "text": "Every person in the world carries twelve personal skills — things like construction, farming, intellect, crafting, and more — each ranked from utterly unskilled to true mastery. Skills aren't fixed: they are trained by doing. A laborer who works the fields daily grows more capable at farming; a noble who works the trading house sharpens their business acumen. Skills also fade with disuse once they rise above a basic competent level — mastery erodes without practice, though the fundamentals never vanish. Some people have a passion for a particular skill, learning it faster and letting it decay more slowly (a truly passionate master never forgets their craft at all). A person's overall aptitude — the average of their twelve skills — marks them as ordinary or exceptional, and unusually gifted individuals tend to carry rarer, more distinctive names."
+  },
+  {
+    "title": "How Wages Are Earned",
+    "section": "The Labor Market",
+    "text": "When laborers and firms meet in the labor market, pay isn't equal for equal skill — it's equal per head, but the work delivered scales sharply with ability. A worker who has mastered the trade their firm needs delivers vastly more real output than an unskilled newcomer, even though both draw the same wage from the firm's budget. Working also trains exactly the skills that job calls for — a farmhand grows more skilled at farming, an artisan at craft. How much daylight there is matters too: on the long days of summer, workers get more done; on short winter days, less — though this effect eases the further from the equator a settlement lies, so the depths of winter near the poles don't cripple the economy entirely. A worker's daily commute to a distant field also eats into the working day, so land close to the settlement's heart is worked more efficiently than remote plots."
+  },
+  {
+    "title": "How the Markets Set Prices",
+    "section": "Markets",
+    "text": "Goods in a settlement — food, little luxuries, tools — are bought and sold in open markets that search for the price at which what people want to buy roughly matches what's on offer, nudging only a little from the previous day's price rather than swinging wildly. When more people want a good than can get it, that unmet demand is quietly tracked — not just how much goes unfulfilled today, but whether that shortfall is worse than the sector's normal baseline. A sustained, above-normal shortage is a real signal of scarcity worth acting on, distinguishing a passing bad day from a lasting trend. This same signal is what tells a settlement's ruler where new workshops and farms are needed most."
+  },
+  {
+    "title": "Nobles: The Rentier Aristocracy",
+    "section": "Agents",
+    "text": "Nobles are not born to their station — every noble family in a settlement was raised up from common laborers, chosen for their sharp intellect and elevated to the aristocracy. A noble owns firms and banks rather than laboring at them, drawing a share of their profits and dividends each day and spending a portion back into the local markets, letting that wealth recirculate through the settlement. Nobles keep a well-stocked household larder and eat a genuinely lavish diet, never going hungry — though like anyone, they age and eventually pass their holdings to an heir of the same bloodline, so a noble house, once raised, endures across generations. A noble's intellect also directly powers the settlement's foreign trade — the more capable the noble working it, the more the settlement earns from its exports."
+  },
+  {
+    "title": "Ennoblement: Rising to the Aristocracy",
+    "section": "Ennoblement",
+    "text": "No settlement founds its aristocracy from nothing — nobles are made, not born into privilege. In the settlement's early weeks, the ruler steadily elevates the most intellectually gifted laborers into noble households, one every so often, until the aristocracy reaches its intended size — commonly around five great houses. Until that aristocracy is fully staffed, the ruler personally works the export trade to keep it running. If ever a new workshop is chartered and there isn't a single noble left to own it, one more laborer is elevated on the spot to take up the role. Once raised, a noble house passes down through its bloodline rather than being refilled from below — the meritocratic elevation only tops the ranks back up if a house dies out entirely."
+  },
+  {
+    "title": "The Ruler and the Crown Treasury",
+    "section": "Agents",
+    "text": "Every proper settlement has a ruler — its sovereign head of state, holding the treasury and answering to no one. The ruler taxes a slice of the public banks' profits and of every noble's income, all flowing into the crown's own coffers, and spends a little on its own indulgent pleasures while dining on the most sumptuous rations in the land. The ruler funds the founding of the settlement's entire workforce out of its treasury, personally works the export trade during the early days before the aristocracy is fully raised, and once a month reviews the whole economy — chartering new workshops where demand is strong, and in principle closing failing ones where it's overbuilt. Like any household, the ruler eventually passes the crown to an heir of the same line, so the treasury and the line of succession endure across generations."
+  },
+  {
+    "title": "Growing the Settlement: The Builder",
+    "section": "Agents",
+    "text": "A settlement does not simply exist on however much land it started with — it grows, plot by plot, and the builder is the crew that makes that growth happen. Staffed entirely by peasants drawn from the settlement's common reserve, the builder clears wild, overgrown land and readies it to host a farm, workshop, or other enterprise. Whoever requested the new plot — the firm that needs it — pays for the work; and because the peasants doing the clearing are wards of the ruler, their wages ultimately flow back to the crown that feeds them, with the labor itself sharpening their skill at construction. Without a builder, a living settlement can never expand past however much land it started with; a settlement with one grows to fill its land as its economy demands more farms and workshops, right up to the natural limit the surrounding countryside allows."
+  }
+]
