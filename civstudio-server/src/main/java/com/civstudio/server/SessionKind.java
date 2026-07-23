@@ -81,6 +81,18 @@ public enum SessionKind {
 	}
 
 	/**
+	 * Whether a human at the wheel picks this run's buildings — so the ruler-queue heuristic is turned
+	 * OFF and an empty queue raises the B6 pause-and-choose interrupt (docs/build-queue-plan.md). True
+	 * for a {@link #SINGLE_PLAYER} save slot and the {@link #DEMO}: the demo is unowned, so any
+	 * signed-in visitor may drive it ({@code SessionAuthz} treats a null owner as open to command). A
+	 * shared {@link #TIMELINE} keeps the heuristic — its lockstep world must never freeze on one seat's
+	 * empty queue.
+	 */
+	public boolean playerChoosesBuilds() {
+		return this == SINGLE_PLAYER || this == DEMO;
+	}
+
+	/**
 	 * How a freshly-created run of this kind <b>begins</b> — the three beginnings, made a property of
 	 * the kind rather than an {@code if} ladder duplicated across the create endpoints (see {@code
 	 * docs/session-management.md}). A no-op unless the session is still {@link ClockState#CREATED}, so

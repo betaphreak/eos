@@ -663,11 +663,15 @@ public final class HostedSession {
 		});
 		for (Settlement c : colonies)
 			c.start();
-		// the B6 seated-session mode: a SINGLE_PLAYER run turns the ruler-queue heuristic
-		// OFF, so an empty queue genuinely idles — which is what raises the pause-and-
-		// choose interrupt below. Demo/timeline sessions keep the heuristic (unattended /
-		// must never freeze the shared world).
-		if (kind() == SessionKind.SINGLE_PLAYER)
+		// the B6 seated-session mode: a player-driven run (SINGLE_PLAYER, and the DEMO — a
+		// visitor chooses for the shop-window colony) turns the ruler-queue heuristic OFF, so
+		// an empty queue genuinely idles and raises the pause-and-choose interrupt below. The
+		// shared TIMELINE keeps the heuristic — its lockstep world must never freeze on one
+		// seat's empty queue. (SessionKind.playerChoosesBuilds is the single home for the rule.)
+		// In tests there is NO player to answer the interrupt, so a paused session would hang
+		// forever — the test tier sets civstudio.buildchoice.interactive=false to keep the
+		// heuristic on (auto-build, never pause). See interactiveBuildChoice().
+		if (kind().playerChoosesBuilds() && interactiveBuildChoice())
 			for (Settlement c : colonies)
 				if (c.getBuildEconomy() != null)
 					c.getBuildEconomy().setHeuristicEnabled(false);
@@ -881,13 +885,21 @@ public final class HostedSession {
 		return n + " " + (n == 1 ? one : many);
 	}
 
-	// the B6 auto-pause (docs/build-queue-plan.md): a seated (SINGLE_PLAYER) session whose
-	// build-economy colony awaits a queue choice pauses itself between ticks — clock state
-	// only, never sim state, so replay is untouched. The snapshot (emitted immediately so
-	// the modal shows without waiting for the next cadence frame) carries the awaiting
-	// flag + candidates; submitting queue_build resumes (see submit()).
+	// Whether the pause-and-choose interrupt is live (default true). The test tier disables it
+	// (-Dcivstudio.buildchoice.interactive=false): a test has no player to answer the modal, so a
+	// paused session would hang the suite — with it off the heuristic stays on and colonies
+	// auto-build instead. Production (and the deployed demo) leaves it on.
+	private static boolean interactiveBuildChoice() {
+		return Boolean.parseBoolean(System.getProperty("civstudio.buildchoice.interactive", "true"));
+	}
+
+	// the B6 auto-pause (docs/build-queue-plan.md): a player-driven (SINGLE_PLAYER or DEMO)
+	// session whose build-economy colony awaits a queue choice pauses itself between ticks —
+	// clock state only, never sim state, so replay is untouched. The snapshot (emitted
+	// immediately so the modal shows without waiting for the next cadence frame) carries the
+	// awaiting flag + candidates; submitting queue_build resumes (see submit()).
 	private void maybeAwaitBuildChoice() {
-		if (kind() != SessionKind.SINGLE_PLAYER)
+		if (!kind().playerChoosesBuilds() || !interactiveBuildChoice())
 			return;
 		boolean awaiting = false;
 		for (Settlement c : colonies)

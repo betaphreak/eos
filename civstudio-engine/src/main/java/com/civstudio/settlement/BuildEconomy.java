@@ -276,10 +276,27 @@ public class BuildEconomy {
 	/**
 	 * Whether the center queue is <b>awaiting a player choice</b> (the B6 interrupt
 	 * predicate): idle with no pending orders <b>and</b> the heuristic off (a seated
-	 * session) — an unattended colony's idle-between-donations never counts.
+	 * session) <b>and</b> there is actually something to build — an unattended colony's
+	 * idle-between-donations never counts, and a colony with nothing buildable idles
+	 * rather than freezing the session behind an empty modal (it would present no choice).
 	 */
 	public boolean queueAwaitingChoice() {
-		return !heuristicEnabled && activeBuildId == null && playerOrders.isEmpty();
+		return !heuristicEnabled && activeBuildId == null && playerOrders.isEmpty()
+				&& hasCenterCandidate();
+	}
+
+	// whether any regular building could start at the center today — the cheap short-circuit
+	// behind queueAwaitingChoice (avoids buildableCandidates()'s allocate-and-sort per tick).
+	private boolean hasCenterCandidate() {
+		var plots = colony.getDistrictPlots();
+		if (plots.isEmpty())
+			return false;
+		Plot center = plots.get(0);
+		var known = knownTechs();
+		for (BuildingInfo b : BuildingCatalog.get().all())
+			if (centerCandidate(b, center, known))
+				return true;
+		return false;
 	}
 
 	/** Pending player-ordered ids (read-only view, for the snapshot/rail). */

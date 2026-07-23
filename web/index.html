@@ -319,20 +319,35 @@
          snapshot carries awaitingBuildChoice — the sim is auto-paused until the player picks the
          next center building(s). Same card pattern as #gameover; multi-select, ordered by click. -->
     <style>
-      /* B6 pause-and-choose modal: rides the #gameover card look; only the list is new */
+      /* B6 pause-and-choose modal: rides the #gameover card look; the list is a Civ4-style
+         production menu — icon · name · hammer cost · click-order badge (docs/build-queue-plan.md B6) */
       #buildchoice { position: absolute; inset: 0; z-index: 60; display: flex;
         align-items: center; justify-content: center; background: rgba(8, 10, 14, .55); }
       #buildchoice[hidden] { display: none; }
-      .bc-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
-        max-width: 30rem; max-height: 40vh; overflow-y: auto; margin: 10px 0 14px; }
-      .bc-item { font: inherit; padding: 4px 10px; border-radius: 999px; cursor: pointer;
-        border: 1px solid rgba(255, 255, 255, .25); background: rgba(255, 255, 255, .06);
-        color: inherit; }
-      .bc-item.picked { border-color: #d8b04a; background: rgba(216, 176, 74, .18); }
+      .bc-list { display: flex; flex-direction: column; gap: 4px; text-align: left;
+        width: 24rem; max-width: 84vw; max-height: 46vh; overflow-y: auto; margin: 10px 0 14px; }
+      .bc-item { display: flex; align-items: center; gap: 9px; font: inherit; cursor: pointer;
+        padding: 5px 8px; border-radius: 8px; color: inherit;
+        border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .05); }
+      .bc-item:hover { border-color: rgba(255, 255, 255, .30); background: rgba(255, 255, 255, .09); }
+      .bc-item.picked { border-color: #d8b04a; background: rgba(216, 176, 74, .16); }
+      .bc-ico { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 5px;
+        background: rgba(0, 0, 0, .25) no-repeat center; }
+      .bc-ico.chip { display: flex; align-items: center; justify-content: center;
+        font-weight: 700; color: rgba(255, 255, 255, .7); }
+      .bc-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+        white-space: nowrap; }
+      .bc-rec { margin-left: 6px; font-size: .72em; color: #d8b04a; letter-spacing: .02em; }
+      .bc-cost { flex: 0 0 auto; opacity: .82; font-variant-numeric: tabular-nums; }
+      .bc-cost .h { opacity: .55; margin-left: 1px; }
+      .bc-ord { flex: 0 0 auto; width: 1.35em; height: 1.35em; border-radius: 50%;
+        display: none; align-items: center; justify-content: center; font-size: .78em;
+        font-weight: 700; background: #d8b04a; color: #1a140a; }
+      .bc-item.picked .bc-ord { display: flex; }
     </style>
     <div id="buildchoice" role="dialog" aria-labelledby="bcTitle" aria-modal="true" hidden>
       <div class="go-card">
-        <div class="go-kicker">The crown awaits your decree</div>
+        <div class="go-kicker" id="bcKicker">The crown awaits your decree</div>
         <div class="go-title" id="bcTitle">Choose the next construction</div>
         <div class="bc-list" id="bcList"></div>
         <button class="go-lobby" id="bcSubmit" type="button" disabled>Begin construction</button>

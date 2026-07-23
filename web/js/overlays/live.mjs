@@ -599,41 +599,130 @@ async function postChat(text) {
 }
 
 // --- the B6 pause-and-choose modal (docs/build-queue-plan.md) -------------------------
-// Shown while the snapshot carries awaitingBuildChoice (the server auto-paused a seated
-// session on an empty ruler queue). Click order IS queue order; submit posts queue_build
-// and the server resumes. Candidate ids are prettified locally (the buildings bundle is
-// a techtree concern; bare ids suffice here).
-const bcPicked = [];
+// Shown while the snapshot carries awaitingBuildChoice — the server has genuinely paused a
+// seated (SINGLE_PLAYER) session's clock on an empty ruler queue (HostedSession.maybeAwait-
+// BuildChoice); submitting queue_build resumes it. Styled as a Civ4 "choose production" menu:
+// each candidate row is icon · name · hammer cost, click order IS queue order (a numbered
+// badge shows it), and the first candidate — the ruler-brain's highest-weighted pick — is
+// flagged ★ advised. Candidates arrive as bare ids; name/cost/icon join the /api/buildings
+// bundle (the same one the tech tree + districts read), falling back to a prettified id.
+const bcPicked = [];             // candidate ids in click order = queue order
+const bcRows = new Map();        // id -> { ord } (the badge span) — for renumbering on toggle
+
+const BC_SHEET = "assets/buildings/building-icons.webp";   // Phase-2 button sheet, 64² cells
+const bcSheet = new Image(); bcSheet.src = BC_SHEET;
+const bcSheetDims = () => [bcSheet.naturalWidth || 3200, bcSheet.naturalHeight || 1344];
+let bcMeta = null;               // id -> { name, cost, icon:[x,y] }, joined from /api/buildings
+async function loadBuildMeta() {
+  if (bcMeta) return bcMeta;
+  try {
+    const res = await fetch(LIVE_BASE + "/api/buildings");
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    let arr;
+    try {
+      const stream = new Response(buf).body.pipeThrough(new DecompressionStream("gzip"));
+      arr = JSON.parse(await new Response(stream).text());
+    } catch { arr = JSON.parse(new TextDecoder().decode(buf)); }
+    bcMeta = {};
+    for (const b of arr) bcMeta[b.id] = { name: b.name, cost: b.cost, icon: b.icon };
+    return bcMeta;
+  } catch { return null; }       // the modal still works on prettified ids
+}
+loadBuildMeta();
+
 function prettyBuilding(id) {
   return id.replace(/^BUILDING_/, "").toLowerCase().replace(/_/g, " ")
     .replace(/\b\w/g, ch => ch.toUpperCase());
 }
+
+// stamp a building's C2C button onto a 28px sprite cell (the techtree/districts idiom): the
+// bundle's [x,y] is a pixel offset into the 64²-cell sheet, scaled to the render size.
+function paintBuildIcon(el, icon, renderPx) {
+  const [x, y] = icon, [bw, bh] = bcSheetDims(), s = renderPx / 64;
+  el.style.backgroundImage = `url(${BC_SHEET})`;
+  el.style.backgroundSize = `${bw * s}px ${bh * s}px`;
+  el.style.backgroundPosition = `${-x * s}px ${-y * s}px`;
+}
+
+// re-stamp the 1-based order badge on every picked row (removing a pick shifts the rest) and
+// gate the submit button on having at least one pick.
+function bcRenumber() {
+  for (const { ord } of bcRows.values()) ord.textContent = "";
+  bcPicked.forEach((id, i) => { const r = bcRows.get(id); if (r) r.ord.textContent = String(i + 1); });
+  const submit = document.getElementById("bcSubmit");
+  if (submit) submit.disabled = bcPicked.length === 0;
+}
+
+function bcRow(id, advised) {
+  const meta = bcMeta && bcMeta[id];
+  const row = document.createElement("button");
+  row.type = "button"; row.className = "bc-item";
+
+  const ico = document.createElement("span"); ico.className = "bc-ico";
+  if (meta && meta.icon) paintBuildIcon(ico, meta.icon, 28);
+  else { ico.classList.add("chip"); ico.textContent = (meta && meta.name || prettyBuilding(id))[0]; }
+
+  const name = document.createElement("span"); name.className = "bc-name";
+  name.textContent = (meta && meta.name) || prettyBuilding(id);
+  if (advised) {
+    const rec = document.createElement("span"); rec.className = "bc-rec";
+    rec.textContent = "★ advised"; rec.title = "The court's recommendation";
+    name.appendChild(rec);
+  }
+
+  const cost = document.createElement("span"); cost.className = "bc-cost";
+  const c = meta && parseInt(meta.cost, 10);
+  if (Number.isFinite(c) && c > 0) cost.innerHTML = `${c}<span class="h">⚒</span>`;
+
+  const ord = document.createElement("span"); ord.className = "bc-ord";
+
+  row.append(ico, name, cost, ord);
+  if (bcPicked.includes(id)) row.classList.add("picked");
+  row.onclick = () => {
+    const i = bcPicked.indexOf(id);
+    if (i >= 0) { bcPicked.splice(i, 1); row.classList.remove("picked"); }
+    else { bcPicked.push(id); row.classList.add("picked"); }
+    bcRenumber();
+  };
+  bcRows.set(id, { ord });
+  return row;
+}
+
+function bcRender(candidates) {
+  const list = document.getElementById("bcList");
+  if (!list) return;
+  list.innerHTML = ""; bcRows.clear();
+  candidates.forEach((id, i) => list.appendChild(bcRow(id, i === 0)));   // [0] = brain's top pick
+  bcRenumber();
+}
+
 function syncBuildChoice(s) {
   const el = document.getElementById("buildchoice");
   if (!el) return;
   if (!s.awaitingBuildChoice || s.clockState === "STOPPED") { el.hidden = true; return; }
   if (!el.hidden) return; // already open — keep the player's in-progress picks
+
   bcPicked.length = 0;
-  const list = document.getElementById("bcList");
-  const submit = document.getElementById("bcSubmit");
-  list.innerHTML = "";
-  (s.buildCandidates || []).forEach(id => {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "bc-item"; b.textContent = prettyBuilding(id);
-    b.onclick = () => {
-      const i = bcPicked.indexOf(id);
-      if (i >= 0) { bcPicked.splice(i, 1); b.classList.remove("picked"); }
-      else { bcPicked.push(id); b.classList.add("picked"); }
-      submit.disabled = bcPicked.length === 0;
-    };
-    list.appendChild(b);
+  const colony = s.colonies && s.colonies[0] && s.colonies[0].name;
+  const kicker = document.getElementById("bcKicker");
+  if (kicker) kicker.textContent = colony
+    ? colony + " · the crown awaits your decree" : "The crown awaits your decree";
+
+  const candidates = s.buildCandidates || [];
+  bcRender(candidates);
+  // the bundle almost always beat us here (the modal opens on a server round-trip), but if not,
+  // re-render with real names/icons once it lands — safe while nothing's been picked yet.
+  if (!bcMeta) loadBuildMeta().then(m => {
+    if (m && !el.hidden && !bcPicked.length) bcRender(candidates);
   });
+
+  const submit = document.getElementById("bcSubmit");
   submit.disabled = true;
   submit.onclick = () => {
     if (!bcPicked.length) return;
     el.hidden = true;
-    postCommand({ type: "queueBuild", colony: s.colonies[0] && s.colonies[0].name,
-      items: bcPicked.slice() });
+    postCommand({ type: "queueBuild", colony, items: bcPicked.slice() });
   };
   el.hidden = false;
 }
