@@ -1006,6 +1006,8 @@ public class SimulationHarness {
 	 *            the CSV output file name
 	 */
 	public void addRetinuePrinter(String fileName) {
+		if (skipPrinters())
+			return;
 		colony.addPrinter(new RetinuePrinter(fileName, retinue));
 	}
 
@@ -1041,6 +1043,8 @@ public class SimulationHarness {
 	 *            the CSV output file name
 	 */
 	public void addGranaryPrinter(String fileName) {
+		if (skipPrinters())
+			return;
 		colony.addPrinter(new GranaryPrinter(fileName, granary));
 	}
 
@@ -1053,6 +1057,8 @@ public class SimulationHarness {
 	 *            the CSV output file name
 	 */
 	public void addHammerPrinter(String fileName) {
+		if (skipPrinters())
+			return;
 		if (colony.getBuildEconomy() != null)
 			colony.addPrinter(new com.civstudio.io.printer.HammerPrinter(fileName,
 					colony.getBuildEconomy()));
@@ -1668,6 +1674,8 @@ public class SimulationHarness {
 
 	/** Register the printers common to every simulation. */
 	public void addCommonPrinters() {
+		if (skipPrinters())
+			return;
 		addCommonPrinters("");
 	}
 
@@ -1681,6 +1689,8 @@ public class SimulationHarness {
 	 *            prepended to each printer's filename ({@code ""} for the default)
 	 */
 	public void addCommonPrinters(String prefix) {
+		if (skipPrinters())
+			return;
 		colony.addPrinter(new LaborersPrinter(prefix + "Laborer"));
 		// the consumer sectors (enjoyment, necessity) each report into one consolidated
 		// CSV — a row per sector per cycle, told apart by a Good column — the way the
@@ -1705,6 +1715,8 @@ public class SimulationHarness {
 	 *            name of the consolidated CSV (e.g. {@code "Banks"})
 	 */
 	public void addBanksPrinter(String fileName) {
+		if (skipPrinters())
+			return;
 		colony.addPrinter(new BanksPrinter(fileName));
 	}
 
@@ -1720,6 +1732,8 @@ public class SimulationHarness {
 	 * @param prefix prepended to each printer's filename ({@code ""} for the default)
 	 */
 	public void addPlotInventoryPrinters(String prefix) {
+		if (skipPrinters())
+			return;
 		// the inventory is per-settlement (what this colony holds); always register it
 		colony.addPrinter(new ProvinceInventoryPrinter(prefix + "Inventory"));
 		// the plot map is the whole barony's (province's) land, not any one
@@ -1745,6 +1759,8 @@ public class SimulationHarness {
 	 *            the bank whose equity the export earnings flow into
 	 */
 	public void addStrategicSectorPrinters(String prefix, Bank bank) {
+		if (skipPrinters())
+			return;
 		colony.addPrinter(
 				new ServicesPrinter(prefix + "Services", strategicFirm, bank));
 		colony.addPrinter(new NoblesPrinter(prefix + "Nobles"));
@@ -1779,5 +1795,14 @@ public class SimulationHarness {
 	public long currentLaborerCount() {
 		return colony.getAgents().stream().filter(a -> a instanceof Laborer)
 				.count();
+	}
+
+	// Whether the harness-wired scenario printers are SKIPPED — set by the test tier
+	// (-Dcivstudio.printers.skip=true in surefire): a scenario run under test needs no
+	// output/<seed>/ CSVs (they were the reason test classes had to serialize on the
+	// output dir). Printers a test constructs and adds DIRECTLY on the colony (the
+	// caravan-march journal tests read their own files back) are unaffected.
+	private static boolean skipPrinters() {
+		return Boolean.getBoolean("civstudio.printers.skip");
 	}
 }

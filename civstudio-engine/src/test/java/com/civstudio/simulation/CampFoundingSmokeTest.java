@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.Test;
  * ruler economy booted (its gold + silver banks appear alongside the camp's copper bank), and the
  * colony is <b>still alive</b> at the end.
  */
+@Tag("full-run")
 class CampFoundingSmokeTest {
 
 	@Test

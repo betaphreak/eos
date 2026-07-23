@@ -32,6 +32,8 @@
     </licenses>
 
     <properties>
+        <!-- fast tier by default; -Pfull runs the tagged full-length scenarios too -->
+        <civstudio.test.excludedGroups>full-run</civstudio.test.excludedGroups>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Which simulation `mvn exec:exec` runs (engine module); override with
@@ -116,6 +118,13 @@
                         <reuseForks>true</reuseForks>
                         <enableAssertions>true</enableAssertions>
                         <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
+                        <!-- the fast tier (default): mechanism tests + the ONE canonical
+                             full run (CanonicalRun via ClosedColonySmokeTest). The tagged
+                             full-length scenario runs join under -Pfull. -->
+                        <excludedGroups>${civstudio.test.excludedGroups}</excludedGroups>
+                        <!-- cap the test JVM: parallel classes + the retained canonical run
+                             must GC, not swap (16 GB box; two 3.2 GB JVMs once drove it to 0.6 GB free) -->
+                        <argLine>-Xmx3g -Dcivstudio.printers.skip=true</argLine>
                     </configuration>
                 </plugin>
 
@@ -133,4 +142,14 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <!-- the slow tier: mvn test -Pfull runs the tagged full-length scenario smokes too -->
+        <profile>
+            <id>full</id>
+            <properties>
+                <civstudio.test.excludedGroups></civstudio.test.excludedGroups>
+            </properties>
+        </profile>
+    </profiles>
 </project>

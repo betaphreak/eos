@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.civstudio.geo.Province;
@@ -24,6 +25,7 @@ import com.civstudio.settlement.Settlement;
  * ({@link SessionRunner} rethrows any thread failure). The run returns the Upper
  * harness (Lower is also built and run on its own thread).
  */
+@Tag("full-run")
 class TwinSettlementEconomyTest {
 
 	@Test

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
  * the invariants are checked directly here. The defining property is that the
  * population <i>grows</i> past its starting size rather than holding flat.
  */
+@Tag("full-run")
 class SmallOpenEconomyTest {
 
 	// laborers the run starts with (cf. SmallOpenEconomy's config)

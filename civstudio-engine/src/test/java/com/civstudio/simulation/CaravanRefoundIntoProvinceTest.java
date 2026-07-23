@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.civstudio.agent.SettlerCaravan;
@@ -18,6 +19,7 @@ import com.civstudio.settlement.Settlement;
  * not just bare coordinates. (An off-graph band re-founding at raw coordinates is
  * covered by {@link CaravanRefoundTest}.)
  */
+@Tag("full-run")
 class CaravanRefoundIntoProvinceTest {
 
 	// the default founding province: Dhenijansar (a small coastal LAND province whose

@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
@@ -28,7 +27,6 @@ import com.civstudio.settlement.Settlement;
  * colony now also populates the silver bank, since its export nobles are raised by
  * ennoblement (and re-bank in silver). The open run keeps its own dedicated test.
  */
-@ResourceLock("scenario-output")
 class ClosedColonySmokeTest {
 
 	/** One simulation under test: how to run it, its expected bank count, and where it founds. */

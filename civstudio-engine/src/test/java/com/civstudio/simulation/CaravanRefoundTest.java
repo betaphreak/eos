@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.civstudio.agent.SettlerCaravan;
@@ -19,6 +20,7 @@ import com.civstudio.settlement.Settlement;
  * session — led by the same dynasty, seeded with the band's people and hoard, and a
  * going concern in its own right.
  */
+@Tag("full-run")
 class CaravanRefoundTest {
 
 	@Test

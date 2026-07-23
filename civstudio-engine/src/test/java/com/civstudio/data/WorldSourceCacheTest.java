@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
  * shared: build on first use, and rebuild when the active {@link WorldSource} changes, so the value
  * always reflects the source active when it is read rather than the one present at class-load.
  */
+@Isolated
 class WorldSourceCacheTest {
 
 	private static WorldSource emptySource() {
