@@ -394,6 +394,11 @@ public final class SessionHost {
 			def = ScenarioRegistry.get().resolve("standard");
 		}
 		SimulationConfig cfg = SimulationConfig.DEFAULT;
+		// scenario flags may override the (since-2026-07-23 flag-on) plot/build-economy
+		// defaults — the legacy-market scenario founds the pure-market collapse-era colony
+		cfg = cfg.toBuilder()
+				.homePlots(def.flag("homePlots", cfg.homePlots()))
+				.buildEconomy(def.flag("buildEconomy", cfg.buildEconomy())).build();
 		if (def.shape() == FoundingShape.TIMELINE)
 			return buildTimeline(id, owner, kind, mode, difficulty, spec, cfg);
 		// a CAMP scenario founds low and climbs the tier ladder; its flags carry the subsistence

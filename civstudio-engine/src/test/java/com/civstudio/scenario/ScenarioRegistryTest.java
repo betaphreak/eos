@@ -90,7 +90,7 @@ class ScenarioRegistryTest {
 	@Test
 	void anAbsentResourceLeavesTheBuiltInsAlone() {
 		ScenarioRegistry reg = ScenarioRegistry.load(EMPTY_SOURCE);
-		assertEquals(5, reg.all().size());
+		assertEquals(6, reg.all().size());
 		assertNotNull(reg.resolve("timeline"));
 	}
 

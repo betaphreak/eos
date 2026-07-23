@@ -227,10 +227,10 @@ public record SimulationConfig(
 				                                       //   ruler economy; geographic colonies
 				                                       //   opt in to found low and climb —
 				                                       //   docs/settlement-tier-ladder-plan.md D4)
-				false,                                 // homePlots (pure-market economy by default;
+				true,                                  // homePlots (THE DEFAULT since the 2026-07-23 flip;
 				                                       //   a province-founded scenario opts into
 				                                       //   subsistence home plots — plot-working-plan.md P1)
-				false);                                // buildEconomy (no occupation choice by default;
+				true);                                 // buildEconomy (THE DEFAULT since the flip —
 				                                       //   the build-queue calibration scenario opts in —
 				                                       //   build-queue-plan.md B1)
 	}

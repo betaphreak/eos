@@ -119,6 +119,11 @@ public class BuilderFirm extends Firm {
 			Agent sponsor = p.getSponsor();
 			if (sponsor == null)
 				continue; // no one to bill — defer this work
+			// a dead sponsor (an elite housing commissioner whose estate settled — the
+			// default-flip's MayorReform finding) can no longer be billed: defer, so the
+			// commission waits for a successor rather than NPE-ing the bank
+			if (!sponsor.isAlive() || sponsor.getBank().getAcct(sponsor.getID()) == null)
+				continue;
 			double done = p.advance(room);
 			if (done <= 0)
 				continue;

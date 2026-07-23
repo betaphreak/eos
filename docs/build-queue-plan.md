@@ -437,6 +437,21 @@ B1 (occupation choice) ──► B2 (housing) ──► B4 (main queue) ──�
 - **B3 is independent** after B1 and can run in parallel with B2; B4 needs both.
 - **B6 last** — pure surface over a working queue.
 
+## The default flip (2026-07-23) + the viability probe
+
+**buildEconomy + homePlots are THE DEFAULT** (user decision): every colony founds with the
+plot-working build economy unless a scenario opts out. Flip findings: **the mature closed colony no
+longer collapses** — ClosedColonySmokeTest is rebaselined to assert HomogeneousEconomy SURVIVES its
+full 25 years (the clean-collapse doctrine ends); two real bugs surfaced and fixed (the commerce
+mint and BuilderFirm billing both guard settled accounts — dead households/commissioners defer, not
+NPE); CampBootViabilityTest + GranaryTest keep the pure-market economy explicitly (they test the
+retired subsistence-floor/granary-relief mechanisms, still real for landless colonies);
+TwinSettlementEconomy opts out until a shared-province land policy exists (two colonies' home
+plots exhaust Dhenijansar's 74 plots). **SmallestBandProbe** (kept as a standing dev tool):
+bisection found NO dying band — even a 5-peasant founding (≈2 households) survives 25 years on
+every seed tried. Small-colony survival is solved; the next threshold is THRIVING (population
+growth), a natural probe v2.
+
 ## Autobuilds = vernacular development (design lens, user 2026-07-23)
 
 C2C's `bAutoBuild` set is what a settlement does to itself, without the crown's queue — "what the

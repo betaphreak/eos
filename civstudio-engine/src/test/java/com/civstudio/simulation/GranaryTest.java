@@ -37,6 +37,9 @@ class GranaryTest {
 		// founding food sector over-supplies early, so the necessity price runs below the
 		// granary's floor and the granary buys the surplus into its reserve
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				// this test exercises the PURE-MARKET (granary-relief) mechanism, which the
+				// 2026-07-23 default-flip retired as a default — opt out explicitly
+				.homePlots(false).buildEconomy(false)
 				.durationYears(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.foundStandardColony();
@@ -81,6 +84,9 @@ class GranaryTest {
 	@Test
 	void poolDrawsReliefFromTheGranaryBeforeStarving() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				// this test exercises the PURE-MARKET (granary-relief) mechanism, which the
+				// 2026-07-23 default-flip retired as a default — opt out explicitly
+				.homePlots(false).buildEconomy(false)
 				.durationYears(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.foundStandardColony();
@@ -183,6 +189,9 @@ class GranaryTest {
 
 	private static SimulationHarness standardColony() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				// this test exercises the PURE-MARKET (granary-relief) mechanism, which the
+				// 2026-07-23 default-flip retired as a default — opt out explicitly
+				.homePlots(false).buildEconomy(false)
 				.durationYears(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.foundStandardColony();
@@ -193,6 +202,9 @@ class GranaryTest {
 	// gate sees an empty strategic store
 	private static SimulationHarness standardColonyWithoutGranaryStock() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				// this test exercises the PURE-MARKET (granary-relief) mechanism, which the
+				// 2026-07-23 default-flip retired as a default — opt out explicitly
+				.homePlots(false).buildEconomy(false)
 				.durationYears(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
 		h.setGranaryConfig(com.civstudio.agent.GranaryConfig.DEFAULT.toBuilder()

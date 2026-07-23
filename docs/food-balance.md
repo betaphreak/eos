@@ -1,5 +1,10 @@
 # Investigation note: the food-balance collapse
 
+> **Doctrine note (2026-07-23):** this document describes the collapse-era mechanics. Since the
+> build-economy default flip (docs/build-queue-plan.md) ruler colonies SURVIVE by default — the
+> mechanisms below remain real but are no longer the survival path.
+
+
 **Status:** investigation findings (2026-06-28). No code changed — this records *why*
 ruler colonies collapse at ~6–10 years, established by instrumenting the default
 colony's necessity economy over time. Companion to `docs/births.md` (which found

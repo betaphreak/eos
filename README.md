@@ -132,15 +132,17 @@ The engine is headless, but two surfaces render it:
 
 ## Honest model status
 
-The engine favors emergent failure over scripted success, and the current
-labor model is **replacement-only**: a standard closed colony runs for years,
-then collapses once its founding peasant reserve drains — by design, confirmed
-by a parameter sweep and accepted while the food economy
-is calibrated (births are implemented but children mature slower than the
-colony declines). The smoke-test suite asserts colonies reach that collapse
-*cleanly* — no invariant trips on the way down. The bare open scenario
-(`SmallOpenEconomy`) is stable and growing, and a small found-at-camp colony now
-survives and regenerates via births once past its maturation window.
+The engine favors emergent failure over scripted success — and as of the
+build-economy default flip (2026-07-23), a standard closed colony **survives**:
+households farm home plots for subsistence, choose daily between wage labor and
+working their own land, and hammer-build their housing (which gates weddings and
+fission). The long-accepted mature-colony collapse is fixed — measurably, not by
+script: withdrawing labor to the plots raises wages, richer households bear more
+children, and the smoke-test suite now asserts full-run survival. Viability
+extends all the way down: a five-peasant founding band survives its 25 years
+(`SmallestBandProbe`). The open scenario (`SmallOpenEconomy`) remains stable and
+growing; the pure-market collapse-era economy survives only as explicit opt-outs
+in the tests that cover its mechanisms.
 
 ## Build & run
 
@@ -164,7 +166,7 @@ mvn -pl civstudio-engine exec:exec -Dsim.main=com.civstudio.simulation.TwinSettl
 
 | Scenario | What it demonstrates |
 |---|---|
-| `HomogeneousEconomy` | The default: a standard ruler-bearing colony founded into the province of Dhenijansar, run to collapse. |
+| `HomogeneousEconomy` | The default: a standard ruler-bearing colony founded into the province of Dhenijansar, surviving its full run under the build economy. |
 | `OpenColonyEconomy` | The same colony **opened** to an external inflow that refills its peasant pool — holds a full workforce for years. |
 | `SmallOpenEconomy` | A bare colony (no ruler/pool) opened to money inflow + immigration; grows and stays stable. |
 | `TwinSettlementEconomy` | Two settlements founded into **one province**, run concurrently in lockstep, competing for its 74 plots. |

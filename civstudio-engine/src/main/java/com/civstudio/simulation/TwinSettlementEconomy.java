@@ -51,9 +51,14 @@ public class TwinSettlementEconomy {
 		GameSession session = new GameSession(SEED);
 		Province dhenijansar = session.getWorldMap().province(DHENIJANSAR);
 
+		// two colonies share ONE province: home-plot claims exhaust its 74 plots before the
+		// firms can seat (default-flip finding) — the twin probe keeps the pure-market
+		// economy until a shared-province land policy exists
 		SimulationConfig upperCfg = SimulationConfig.DEFAULT.toBuilder()
+				.homePlots(false).buildEconomy(false)
 				.settlementName("Upper").build();
 		SimulationConfig lowerCfg = SimulationConfig.DEFAULT.toBuilder()
+				.homePlots(false).buildEconomy(false)
 				.settlementName("Lower").build();
 
 		// both founded into the same province (Dhenijansar): they share its plot field

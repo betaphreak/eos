@@ -186,15 +186,17 @@ class HostedSessionTest {
 
 	/**
 	 * A run that ends itself is <b>finished</b> (a decided {@link Outcome}) and its clock is {@link
-	 * ClockState#STOPPED}, carrying why — the distinction {@code docs/game-over.md} exists for. The demo
-	 * colony dissolves into a caravan once its workforce crosses the floor (~tick 4100 at this seed, on
-	 * the studio-sourced content), so this drives the real collapse rather than simulating one.
+	 * ClockState#STOPPED}, carrying why — the distinction {@code docs/game-over.md} exists for. Since
+	 * the build-economy default flip the standard colony SURVIVES, so this founds the
+	 * <b>legacy-market</b> scenario (the pure-market collapse-era economy, kept precisely for this):
+	 * its colony still dissolves into a caravan once its workforce crosses the floor (~tick 4100 at
+	 * this seed), driving the real game-over path rather than simulating one.
 	 */
 	@Test
 	@Timeout(600)
 	void aRunThatEndsItselfIsGameOverAndSaysWhy() {
 		SessionHost host = new SessionHost();
-		HostedSession hs = host.create(SessionSpec.caravanDemo(7654321L, DHENIJANSAR));
+		HostedSession hs = host.create(new SessionSpec(7654321L, "legacy-market", DHENIJANSAR));
 		try {
 			hs.startPaused();
 			awaitSnapshot(hs, 0, 30_000);

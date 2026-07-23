@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
@@ -27,6 +28,7 @@ import com.civstudio.settlement.Settlement;
  * colony now also populates the silver bank, since its export nobles are raised by
  * ennoblement (and re-bank in silver). The open run keeps its own dedicated test.
  */
+@ResourceLock("scenario-output")
 class ClosedColonySmokeTest {
 
 	/** One simulation under test: how to run it, its expected bank count, and where it founds. */
@@ -39,7 +41,9 @@ class ClosedColonySmokeTest {
 				// 3 banks: the commoner copper bank, the silver bank the export nobles
 				// (raised by ennoblement) hold, and the ruler's gold bank. Founds into
 				// Dhenijansar (74 plots) — the default-scenario province.
-				new Case("HomogeneousEconomy", HomogeneousEconomy::run, 3, "Dhenijansar", 23.16, 74));
+				// via CanonicalRun: the ONE full default-colony run the fast tier pays for,
+				// shared read-only with every other class asserting on the finished colony
+				new Case("HomogeneousEconomy", CanonicalRun::get, 3, "Dhenijansar", 23.16, 74));
 	}
 
 	@TestFactory
@@ -59,9 +63,14 @@ class ClosedColonySmokeTest {
 					"colony plot count " + colony.getPlotCount() + " exceeded its plots cap "
 							+ colony.getMaxPlots());
 
-			// the banks persist past dissolution; the colony ends by departing as a band
 			assertEquals(c.banks(), h.getBanks().size(), c.name() + " bank count");
-			SimulationAssertions.assertDepartedAsCaravan(h);
+			// THE DEFAULT-FLIP REBASELINE (2026-07-23): under the build economy the mature
+			// closed colony SURVIVES its full 25 years — the collapse this test asserted for
+			// years is fixed by the occupation choice (labor-supply withdrawal raises wages,
+			// housing gates demographics, subsistence rides home plots). The clean-collapse
+			// doctrine ends here: survival is the new expected outcome.
+			assertTrue(colony.isAlive(),
+					c.name() + " survives its full run under the build economy");
 		}));
 	}
 }

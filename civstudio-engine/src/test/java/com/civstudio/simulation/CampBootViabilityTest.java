@@ -28,6 +28,9 @@ class CampBootViabilityTest {
 	@Test
 	void aSmallBootedColonySurvivesTheDemandDeficientTransient() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder()
+				// this test exercises the PURE-MARKET (subsistence-floor) mechanism, which the
+				// 2026-07-23 default-flip retired as a default — opt out explicitly
+				.homePlots(false).buildEconomy(false)
 				.foundAtCamp(true).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, 4411);
 		h.tuneEconomy(e -> e.toBuilder().retinueSize(60).build());

@@ -54,6 +54,11 @@ public final class ScenarioRegistry {
 					"Founds low as a foraging camp and climbs the tier ladder, booting its ruler"
 							+ " economy at Smallholding; each household works a home plot.",
 					"default", FoundingShape.CAMP, Map.of("homePlots", true)),
+			new ScenarioDef("legacy-market", "Legacy Market",
+					"The pure-market collapse-era economy (no home plots, no build economy) —"
+							+ " kept for game-over mechanics and contrast runs.",
+					"default", FoundingShape.STANDARD_COLONY,
+					Map.of("homePlots", false, "buildEconomy", false)),
 			new ScenarioDef("hammers", "Hammer Economy",
 					"The frontier camp with the build economy on: settled households choose daily"
 							+ " between wage labor and working their plot for hammers + commerce.",

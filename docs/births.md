@@ -1,5 +1,10 @@
 # Design note: births and children
 
+> **Doctrine note (2026-07-23):** this document describes the collapse-era mechanics. Since the
+> build-economy default flip (docs/build-queue-plan.md) ruler colonies SURVIVE by default — the
+> mechanisms below remain real but are no longer the survival path.
+
+
 **Status:** Phases 1, 2 and 4 implemented (births on by default + parentage + the
 ChildrenFirm), and **births are now universal across every household type** —
 `Laborer`, `Noble` and `Ruler` all breed through one shared mechanism, with a

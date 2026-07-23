@@ -112,8 +112,10 @@ public class BuildEconomy {
 		totalHammersDonated += leftover;
 		spendDonation(leftover); // the ruler's center queue (B4)
 		periodHammers += hammers;
-		// mint: commerce coin appears in the household's account with no counterparty
-		if (commerce > 0)
+		// mint: commerce coin appears in the household's account with no counterparty.
+		// Guarded on the account existing — a household whose account is closed (mid-step
+		// death, an estate already settled) must not NPE the bank (default-flip finding)
+		if (commerce > 0 && laborer.getBank().getAcct(laborer.getID()) != null)
 			laborer.getBank().credit(laborer.getID(), commerce, Bank.SECIC);
 		totalCommerceMinted += commerce;
 		periodCommerce += commerce;

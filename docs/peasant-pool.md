@@ -1,5 +1,10 @@
 # Design note: the peasant pool
 
+> **Doctrine note (2026-07-23):** this document describes the collapse-era mechanics. Since the
+> build-economy default flip (docs/build-queue-plan.md) ruler colonies SURVIVE by default — the
+> mechanisms below remain real but are no longer the survival path.
+
+
 **Status:** proposed (design only — not yet implemented)
 **Date:** 2026-06-14
 **Depends on:** the `Person`/`Member` split (`agent.com.civstudio.Member`) and the per-member
