@@ -396,6 +396,21 @@ verb.
 
 ## Calibration scenario & acceptance
 
+**First calibration pass (2026-07-23), 25-year HammerEconomy vs CampFoundingEconomy, seed 7654321:**
+- **Survival parity** ✓ — identical 298 monthly rows, same end-of-run pattern.
+- **Housing wave bounded** ✓ — plot days 429 (month 1) → ~75 (month 6); the founding wave completes in
+  ~5–6 months. Test now asserts a MAJORITY housed after the settled year.
+- **Firms retain labor** ✓ — post-wave market days dominate 4–6:1.
+- **The demographic tooth needed one fix**: households on zero-production plots (grassland) were
+  PERMANENTLY homeless → child-months collapsed 82% (3,238 → 569). Fix: **`HAMMER_FLOOR` 0.5** — a
+  plot day yields at least half a hammer on any ground (hut-raising is not terrain-bound; commerce
+  keeps no floor). Result: child-months **6,228 — +92% over baseline**, plausibly genuine (plot days
+  train CONSTRUCTION/COMMERCE → higher productivity → fatter food cushions than baseline households
+  ever get). Also fixed: fallback on rest days drove the PlotDays counter negative (display only).
+- Still open before default-flip: the +92% births effect deserves scrutiny (is skill-training the
+  whole story?), tech pacing under housing-first, and the untouched knobs (HYSTERESIS_BAND inert on
+  commerce-less ground, BUILD_COST_SCALE).
+
 A new opt-in scenario (a `CampFoundingEconomy` sibling with `buildEconomy` + `homePlots` on) is the
 feature's proving ground, added in B1 and growing assertions phase by phase. Its smoke test asserts the
 **acceptance bar**: the founding housing wave completes within a bounded period; weddings/fission resume

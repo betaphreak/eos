@@ -80,8 +80,11 @@ class HammerEconomyTest {
 					housed++;
 			}
 		assertTrue(landed > 0, "the settled colony has landed households");
-		assertTrue(housed > 0, "the housing wave completed houses: " + housed + "/" + landed
-				+ " landed households are housed");
+		// the calibrated acceptance bar (2026-07-23 measurement: with the HAMMER_FLOOR the
+		// founding wave completes in ~5-6 months): after a settled year the MAJORITY of
+		// landed households are housed — not merely some
+		assertTrue(housed * 2 > landed, "the housing wave housed a majority: " + housed
+				+ "/" + landed + " landed households");
 
 		// B3b: the unhoused elite commissioned the BuilderFirm (the palace precedent) —
 		// commissions were enqueued at least once (delivery depends on peasant labor and

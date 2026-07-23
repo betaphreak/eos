@@ -149,13 +149,17 @@ public class BuildEconomy {
 	 * @param labor the colony's labor market (the allocation of record)
 	 */
 	void applyUnhiredFallback(LaborMarket labor) {
-		for (Laborer l : marketChoosers)
-			if (l.isAlive() && !labor.wasHiredLastClear(l.getID())) {
-				workPlotDay(l);
-				periodFallbackDays++;
-				// workPlotDay counted it as a plot day too; keep the two disjoint
-				periodPlotDays--;
-			}
+		// only on workdays: a rest-day plot day yields nothing (workPlotDay no-ops), and
+		// counting it as a fallback made the disjoint plot-day counter go NEGATIVE
+		// (calibration finding 2026-07-23 — a display bug, not a flow bug)
+		if (colony.getDayType() == DayType.WORKDAY)
+			for (Laborer l : marketChoosers)
+				if (l.isAlive() && !labor.wasHiredLastClear(l.getID())) {
+					workPlotDay(l);
+					periodFallbackDays++;
+					// workPlotDay counted it as a plot day too; keep the two disjoint
+					periodPlotDays--;
+				}
 		marketChoosers.clear();
 		enqueueEliteCommissions();
 	}
@@ -454,6 +458,16 @@ public class BuildEconomy {
 		return rulerCompleted;
 	}
 
+	/**
+	 * The <b>hammer floor</b>: a plot day yields at least this much raw production even
+	 * on zero-production ground (grassland) — hut-raising isn't terrain-bound; any land
+	 * gives mud and sticks. Without it, households seated on 0-production plots are
+	 * PERMANENTLY homeless and the wedding gate collapses the birth rate (measured
+	 * calibration 2026-07-23: child-months −82% vs baseline). Commerce has no floor
+	 * (trade genuinely needs rivers/roads). UNCALIBRATED beyond that finding.
+	 */
+	public static final double HAMMER_FLOOR = 0.5;
+
 	// one yield channel's per-household share: the plot's raw yield × the daylight
 	// factor × the household's proficiency in the working skill ÷ the plot's Malthusian
 	// load (the same equal-split as home-plot food). The skill factor is the household's
@@ -463,6 +477,8 @@ public class BuildEconomy {
 		if (load <= 0)
 			return 0;
 		double raw = Math.max(0, plot.yields()[yieldIndex]);
+		if (yieldIndex == 1)
+			raw = Math.max(HAMMER_FLOOR, raw);
 		return raw * LaborMarket.daylightFactor(colony)
 				* Household.productivityOf(meanAdultLevel(laborer, skill)) / load;
 	}
