@@ -123,8 +123,11 @@
                              full-length scenario runs join under -Pfull. -->
                         <excludedGroups>${civstudio.test.excludedGroups}</excludedGroups>
                         <!-- cap the test JVM: parallel classes + the retained canonical run
-                             must GC, not swap (16 GB box; two 3.2 GB JVMs once drove it to 0.6 GB free) -->
-                        <argLine>-Xmx3g -Dcivstudio.printers.skip=true</argLine>
+                             must GC, not swap (16 GB box; two 3.2 GB JVMs once drove it to 0.6 GB free).
+                             printers.skip: no output/<seed>/ CSVs OR log folders (SimLog → output/sim.log).
+                             test.maxYears: colonies no longer collapse, so cap every scenario's horizon at
+                             15y in the suite — keeps runs short + peak heap down (prod/exec uncapped). -->
+                        <argLine>-Xmx4g -Dcivstudio.printers.skip=true -Dcivstudio.test.maxYears=15 -Dcivstudio.buildchoice.interactive=false</argLine>
                     </configuration>
                 </plugin>
 

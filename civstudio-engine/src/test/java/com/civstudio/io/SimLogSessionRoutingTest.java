@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
@@ -37,8 +38,37 @@ class SimLogSessionRoutingTest {
 
 	@Test
 	void twoSessionsInOneJvmWriteSeparateLogs() throws IOException {
+		// This guard is exactly about PER-SEED routing, which the test tier otherwise collapses
+		// to a single output/sim.log (-Dcivstudio.printers.skip). Each session opts into its own
+		// seed-scoped log (per session, not a global toggle — so parallel classes can't race),
+		// and the test deletes its two folders afterwards so the suite still leaves output/ clean.
+		try {
+			runRoutingAssertions();
+		} finally {
+			deleteTree(Path.of("output", Long.toString(SEED_A)));
+			deleteTree(Path.of("output", Long.toString(SEED_B)));
+		}
+	}
+
+	private static void deleteTree(Path root) throws IOException {
+		if (!Files.exists(root))
+			return;
+		try (var walk = Files.walk(root)) {
+			walk.sorted(Comparator.reverseOrder()).forEach(p -> {
+				try {
+					Files.deleteIfExists(p);
+				} catch (IOException ignored) {
+					// best-effort cleanup; a lingering handle is harmless (target of a later mvn clean)
+				}
+			});
+		}
+	}
+
+	private void runRoutingAssertions() throws IOException {
 		GameSession sessionA = new GameSession(SEED_A);
 		GameSession sessionB = new GameSession(SEED_B);
+		sessionA.setSeedScopedLog(true);
+		sessionB.setSeedScopedLog(true);
 		Settlement alpha = colony(sessionA, "Alpha");
 		Settlement beta = colony(sessionB, "Beta");
 

@@ -374,10 +374,19 @@ public final class SimLog {
 	}
 
 	// the seed-scoped log file path for colony's session, output/<seed>/<seed>.log;
-	// a session-less colony (a direct Settlement in a test) falls back to output/sim.log
+	// a session-less colony (a direct Settlement in a test) falls back to output/sim.log.
+	// Under the test tier (-Dcivstudio.printers.skip=true) EVERY session logs to the bare
+	// output/sim.log instead — the suite writes no output/<seed>/ folders at all (the CSV
+	// printers are already skipped; this was the last thing seeding per-seed dirs), and a
+	// test never reads the log back, so the shared root file is fine. A session that genuinely
+	// needs its own seed-scoped log even under the skip flag opts in PER SESSION
+	// (GameSession.setSeedScopedLog) — the routing guard does, and cleans up after itself; this
+	// is per-session, not a global toggle, so parallel test classes can't race on it.
 	private static String logFilePath(Settlement colony) {
 		GameSession session = colony == null ? null : colony.getSession();
-		if (session == null)
+		boolean root = Boolean.getBoolean("civstudio.printers.skip")
+				&& (session == null || !session.isSeedScopedLog());
+		if (session == null || root)
 			return "output/sim.log";
 		long seed = session.getSeed();
 		return "output/" + seed + "/" + seed + ".log";

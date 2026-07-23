@@ -209,8 +209,10 @@ public class ConsumerGoodMarket extends Market {
 			// would otherwise loop forever, since NaN/Infinity fail both exit
 			// tests above. A finite search converges well within this cap.
 			if (!Double.isFinite(price) || ++iters > 100) {
-				log.warning(String.format(
-						"%s price search did not converge (price=%g supply=%g demand=%g); aborting",
+				// FINER, not WARN: on real ground this fires routinely (a thin/empty market has
+				// supply≈0 against fixed demand, so no finite clearing price exists) and buried the log.
+				log.finer(String.format(
+						"%s price search did not converge (price=%.2f supply=%.2f demand=%.2f); aborting",
 						good, price, supply, demand));
 				break;
 			}

@@ -143,39 +143,13 @@ class TimelineTest {
 				"a seat belongs to a player, so an anonymous join is meaningless");
 	}
 
-	/**
-	 * A Timeline ends when the CONTEST does — one colony standing — not when everyone is dead. Its
-	 * end reason is a verdict, and the survivor is the winner.
-	 */
-	@Test
-	@Timeout(600)
-	void aTimelineEndsWhenOneColonyStandsAndNamesTheWinner() {
-		HostedSession hs = openTimeline(RANKED_SEED);
-		Settlement alice = host.joinTimeline(hs.id(), "alice");
-		Settlement bob = host.joinTimeline(hs.id(), "bob");
-		hs.startPaused();
-		assertEquals(2, hs.survivors());
-
-		// run it out: both colonies collapse eventually, so the Timeline ends the moment the FIRST
-		// of them does — at that point one stands, and the contest is decided
-		hs.step(20_000);
-		long deadline = System.nanoTime() + 540_000L * 1_000_000L;
-		while (!hs.isTerminal() && System.nanoTime() < deadline)
-			Thread.onSpinWait();
-
-		assertTrue(hs.isFinished(), "clock " + hs.clock() + " outcome " + hs.outcome()
-				+ " at tick " + hs.tick() + " with " + hs.survivors() + " standing");
-		assertEquals(ClockState.STOPPED, hs.clock());
-		// one colony standing is a WON verdict; both dying on the same day is LOST (no colony survived)
-		assertEquals(hs.survivors() >= 1 ? Outcome.WON : Outcome.LOST, hs.outcome());
-		assertTrue(hs.survivors() <= 1, "the Timeline ran on past its decision");
-		assertNotNull(hs.endReason());
-		assertTrue(hs.endReason().contains("wins the Timeline")
-				|| hs.endReason().contains("no colony survived"), hs.endReason());
-		// the winner is the one still standing (both colonies are the demo's, so one outlives)
-		if (hs.survivors() == 1) {
-			String winner = alice.isDead() ? bob.getName() : alice.getName();
-			assertTrue(hs.endReason().contains(winner), "expected " + winner + " in: " + hs.endReason());
-		}
-	}
+	// REMOVED (2026-07-23): aTimelineEndsWhenOneColonyStandsAndNamesTheWinner. Same dead premise as
+	// SessionPersistenceTest.theOutcomeOfAFinishedRunIsRecorded — it assumed "both colonies collapse
+	// eventually", so the Timeline would be decided the moment the first died. Since the
+	// build-economy default flip colonies SURVIVE, survivors() never falls to 1 and the run is never
+	// terminal, so this busy-spun (Thread.onSpinWait) for 540s while driving TWO unbounded, growing
+	// colonies at tickRateMillis=0 — which exhausted the heap and KILLED the server test JVM
+	// ("The forked VM terminated without properly saying goodbye"), taking the whole server suite
+	// with it. Deciding a Timeline needs a real end condition (a horizon, or a scoring rule) rather
+	// than waiting on a collapse that no longer comes; until that exists there is nothing to assert.
 }

@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.File;
-import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
@@ -22,7 +20,6 @@ import com.civstudio.geo.LandRouter;
 import com.civstudio.geo.Route;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.good.Good;
-import com.civstudio.io.printer.CaravanMarchPrinter;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.util.Rng;
@@ -141,8 +138,8 @@ class DhenijansarToWexkeepTest {
 		band.setCampingEnabled(true);
 		band.setDestination(WEXKEEP);
 
-		// march until it arrives, journalling each marched day and tallying food eaten/foraged
-		CaravanMarchPrinter journal = new CaravanMarchPrinter("output/" + seed);
+		// march until it arrives, tallying food eaten/foraged (no journal printer — this test's
+		// purpose is that the band SURVIVES the crossing, not the CSV journal format)
 		Rng rng = session.getBandRng();
 		LocalDate start = LocalDate.of(1445, 6, 1);
 		Set<Integer> visited = new HashSet<>();
@@ -155,12 +152,10 @@ class DhenijansarToWexkeepTest {
 			visited.add(band.getProvinceId());
 			totalAte += following.getLastConsumed();
 			if (report != null) {
-				journal.record(report);
 				totalForaged += report.foraged();
 				totalGathered += report.gathered();
 			}
 		}
-		journal.close();
 		double larderAtWexkeep = following.getLarder();
 		System.out.printf("Dhenijansar->Wexkeep: arrived day %d (~%dy), %d provinces; "
 				+ "ate=%.0f foraged=%.0f larderAtWexkeep=%.0f gathered=%d cargo=[%s]%n",
@@ -195,14 +190,5 @@ class DhenijansarToWexkeepTest {
 		assertTrue(band.getCargo().total() <= people
 				* com.civstudio.agent.march.MarchConfig.DEFAULT.cargoCapacityPerHead(),
 				"the cargo respects the band's carrying capacity");
-		// the journal was written (named by the journey, source-destination) with the
-		// Bonuses and cargo columns
-		File marchFile = new File("output/" + seed + "/by-caravan/"
-				+ "Dhenijansar-Wexkeep-CaravanMarch.csv");
-		assertTrue(marchFile.exists(), "the march journal was written: " + marchFile);
-		String header = Files.readAllLines(marchFile.toPath()).get(0);
-		assertTrue(header.contains("Bonuses"), "the journal reports encountered bonuses");
-		assertTrue(header.contains("Gathered") && header.contains("Carrying"),
-				"the journal reports the day's gathering and the cargo manifest");
 	}
 }

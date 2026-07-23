@@ -149,7 +149,17 @@ public record SimulationConfig(
 
 	/** The in-game date the run ends (exclusive; one day past the last step). */
 	public LocalDate endDate() {
-		return startDate.plusYears(durationYears);
+		return startDate.plusYears(effectiveDurationYears());
+	}
+
+	// the run horizon actually used: durationYears, but CAPPED under the test tier by
+	// -Dcivstudio.test.maxYears (surefire sets 15). Colonies no longer collapse, so every
+	// scenario now runs its full term — capping the horizon in tests keeps the suite fast
+	// without touching each scenario's stored durationYears (unset property ⇒ no cap, so
+	// exec:exec / prod runs are unchanged).
+	private int effectiveDurationYears() {
+		int cap = Integer.getInteger("civstudio.test.maxYears", 0);
+		return cap > 0 ? Math.min(durationYears, cap) : durationYears;
 	}
 
 	/** Number of daily steps to run (== days from {@code startDate} to {@code endDate}). */

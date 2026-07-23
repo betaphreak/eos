@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.File;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,13 +17,11 @@ import org.junit.jupiter.api.Test;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.SettlerCaravan;
 import com.civstudio.agent.Retinue;
-import com.civstudio.agent.march.MarchReport;
 import com.civstudio.bank.Bank;
 import com.civstudio.bank.BankConfig;
 import com.civstudio.geo.LandRouter;
 import com.civstudio.geo.WorldMap;
 import com.civstudio.good.Good;
-import com.civstudio.io.printer.CaravanMarchPrinter;
 import com.civstudio.settlement.GameSession;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.util.Rng;
@@ -113,16 +110,10 @@ class ParallelCaravansTest {
 				SettlerCaravan band = bands.get(i);
 				Rng rng = new Rng(seed * 31 + i);
 				marches.add(pool.submit(() -> {
-					CaravanMarchPrinter journal = new CaravanMarchPrinter("output/" + seed);
+					// no journal printer — the point is that the band SURVIVES its crossing
 					int day = 0;
-					try {
-						for (; day < maxDays && !band.isReadyToSettle(); day++) {
-							MarchReport r = band.tick(start.plusDays(day), rng);
-							if (r != null)
-								journal.record(r);
-						}
-					} finally {
-						journal.close();
+					for (; day < maxDays && !band.isReadyToSettle(); day++) {
+						band.tick(start.plusDays(day), rng);
 					}
 					return day;
 				}));
@@ -137,9 +128,6 @@ class ParallelCaravansTest {
 						"the band stands at " + DEST_NAMES[i]);
 				assertTrue(band.getFollowing().size() > 0,
 						"the band arrived with settlers in hand");
-				File journal = new File("output/" + seed + "/by-caravan/Dhenijansar-"
-						+ DEST_NAMES[i] + "-CaravanMarch.csv");
-				assertTrue(journal.exists(), "journey journal written: " + journal);
 				System.out.printf("Dhenijansar -> %-16s arrived day %4d (~%dy), size %d, cargo [%s]%n",
 						DEST_NAMES[i], days, days / 365, band.getFollowing().size(),
 						band.getCargo().manifest(3));

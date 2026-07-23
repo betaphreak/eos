@@ -72,9 +72,12 @@ public final class SessionRunner {
 		// camps — the journal is written from the single-threaded day-barrier below
 		CaravanMarchPrinter journal = null;
 		if (session != null && !session.getCaravans().isEmpty()) {
-			journal = new CaravanMarchPrinter("output/" + session.getSeed());
 			for (Caravan band : session.getCaravans())
 				band.setCampingEnabled(true);
+			// the journal is a developer artifact; the test tier skips it (no output/<seed>/),
+			// but camping above stays on so the SIM is byte-identical with or without it
+			if (!Boolean.getBoolean("civstudio.printers.skip"))
+				journal = new CaravanMarchPrinter("output/" + session.getSeed());
 		}
 		final CaravanMarchPrinter marchJournal = journal;
 		// one party for this (coordinating) thread, so the phaser stays alive while
@@ -125,7 +128,7 @@ public final class SessionRunner {
 		// Settlement column) and demote the raw files to by-settlement/, so a
 		// many-colony run is read as one file per table rather than N×tables loose
 		// files. Single-threaded here, so it stays deterministic at any colony count.
-		if (session != null && !colonies.isEmpty()) {
+		if (session != null && !colonies.isEmpty() && !Boolean.getBoolean("civstudio.printers.skip")) {
 			List<String> names = new ArrayList<>(colonies.size());
 			for (Settlement c : colonies)
 				names.add(c.getName());

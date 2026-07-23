@@ -30,6 +30,7 @@ import com.civstudio.tech.TechTree;
 import com.civstudio.util.Rng;
 import com.civstudio.util.RngSeed;
 import lombok.Getter;
+import lombok.Setter;
 
 /**
  * A game session owns the random-number seed and creates {@link Settlement}
@@ -73,6 +74,14 @@ public class GameSession {
 	// random-number seed for this session
 	@Getter
 	private final long seed;
+
+	// keep this session's SimLog output in its own seed-scoped file (output/<seed>/<seed>.log)
+	// even under the test tier's -Dcivstudio.printers.skip (which otherwise routes every session
+	// to the shared output/sim.log). Opt-in, per session — the log-routing guard sets it to
+	// verify per-seed separation without a global toggle that parallel test classes would race.
+	@Getter
+	@Setter
+	private boolean seedScopedLog = false;
 
 	// derives all of the session's decorrelated random streams off the seed (and owns
 	// the decorrelation salts); see RngSeed.

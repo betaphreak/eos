@@ -245,25 +245,13 @@ class SessionPersistenceTest {
 				"a finished run is not rebuilt — its outcome is columns, not a world");
 	}
 
-	/** A finished run's outcome is a column: it survives without replaying a single tick. */
-	@Test
-	@Timeout(600)
-	void theOutcomeOfAFinishedRunIsRecorded() {
-		HostedSession hs = host.create(SessionSpec.caravanDemo(555L, DHENIJANSAR), null);
-		hs.setTickRateMillis(0);
-		hs.start();
-
-		long deadline = System.nanoTime() + 540_000L * 1_000_000L;
-		while (!hs.isTerminal() && System.nanoTime() < deadline)
-			Thread.onSpinWait();
-		assertTrue(hs.isFinished(), "the demo colony collapses — the run ends itself");
-
-		SessionRecord r = registry.find(hs.id()).orElseThrow();
-		assertTrue(r.isFinished(), "the end is written down, not just broadcast");
-		assertEquals(hs.outcome().name(), r.outcome(), "the record's verdict matches the live one");
-		assertEquals(hs.endReason(), r.endReason());
-		assertEquals(hs.tick(), r.tick(), "how far it got");
-	}
+	// REMOVED (2026-07-23): theOutcomeOfAFinishedRunIsRecorded. Its premise died with the
+	// build-economy default flip — it waited (busy-spinning for up to 540s) for the demo colony to
+	// "collapse so the run ends itself", but colonies SURVIVE by design now, and a HostedSession has
+	// no horizon: runOver() is purely allDead(). So the run can never finish on its own and the test
+	// could only ever burn nine minutes and then fail. The recording path it covered still is:
+	// aStoppedRunIsNotAFinishedOne + the updateProgress/outcome assertions above exercise the same
+	// registry columns without waiting on a death that no longer comes.
 
 	@Test
 	@Timeout(180)
