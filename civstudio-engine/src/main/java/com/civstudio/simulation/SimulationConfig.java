@@ -85,6 +85,12 @@ import lombok.Builder;
  *                     the plot-working economy of {@code docs/plot-working-plan.md} P1).
  *                     Default {@code false} (the existing pure-market economy); a
  *                     province-founded scenario opts in
+ * @param buildEconomy whether landed laborer households face the daily <b>occupation
+ *                     choice</b> — sell labor at the center or stay and work the home
+ *                     plot for hammers + commerce (the build economy of
+ *                     {@code docs/build-queue-plan.md} B1). Requires {@code homePlots}.
+ *                     Default {@code false} (byte-identical for the whole existing
+ *                     suite); the calibration scenario opts in
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -106,7 +112,8 @@ public record SimulationConfig(
 		double expeditionTaxRate,
 		double expeditionNobleShare,
 		boolean foundAtCamp,
-		boolean homePlots) {
+		boolean homePlots,
+		boolean buildEconomy) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -220,8 +227,11 @@ public record SimulationConfig(
 				                                       //   ruler economy; geographic colonies
 				                                       //   opt in to found low and climb —
 				                                       //   docs/settlement-tier-ladder-plan.md D4)
-				false);                                // homePlots (pure-market economy by default;
+				false,                                 // homePlots (pure-market economy by default;
 				                                       //   a province-founded scenario opts into
 				                                       //   subsistence home plots — plot-working-plan.md P1)
+				false);                                // buildEconomy (no occupation choice by default;
+				                                       //   the build-queue calibration scenario opts in —
+				                                       //   build-queue-plan.md B1)
 	}
 }

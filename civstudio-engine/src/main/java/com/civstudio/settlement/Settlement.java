@@ -251,6 +251,13 @@ public class Settlement {
 	// the food API below delegates to it. Assigned in the constructor (after plotField).
 	private final FoodEconomy foodEconomy;
 
+	// the build economy (docs/build-queue-plan.md B1): the hammer/commerce side of plot-working —
+	// present only when SimulationConfig.buildEconomy is on (enableBuildEconomy(), called by the
+	// harness); null on a flag-off colony, whose behavior is then byte-identical. Sibling of
+	// foodEconomy over the same plotField.
+	@Getter
+	private BuildEconomy buildEconomy;
+
 	// the liturgical calendar (shared with the owning game session): classifies
 	// the current in-game date as a workday/weekend/holiday. A pure date lookup,
 	// independent of seed and location. See getDayType.
@@ -936,6 +943,18 @@ public class Settlement {
 	 */
 	public double getFoodBox() {
 		return foodEconomy.getFoodBox();
+	}
+
+	/**
+	 * Switch on the <b>build economy</b> (docs/build-queue-plan.md B1) — landed laborer
+	 * households gain the daily occupation choice (market labor vs working their home
+	 * plot for hammers + commerce). Called by the harness when
+	 * {@code SimulationConfig.buildEconomy} is set; never called on a flag-off colony,
+	 * which stays byte-identical ({@link #getBuildEconomy()} stays {@code null}).
+	 */
+	public void enableBuildEconomy() {
+		if (buildEconomy == null)
+			buildEconomy = new BuildEconomy(this, plotField);
 	}
 
 	// test seam: prime the food box so a unit test can exercise grow/shrink without driving a
@@ -1884,6 +1903,12 @@ public class Settlement {
 		for (Market market : markets.values()) {
 			market.clear();
 		}
+
+		// the build economy's unhired fallback: a household that offered labor today but
+		// was left unhired by the clearing works its home plot instead (no wasted days —
+		// docs/build-queue-plan.md B1). A no-op on a flag-off colony (null).
+		if (buildEconomy != null && getMarket("Labor") instanceof com.civstudio.market.LaborMarket lm)
+			buildEconomy.applyUnhiredFallback(lm);
 
 		for (Printer printer : printers)
 			printer.print(this);

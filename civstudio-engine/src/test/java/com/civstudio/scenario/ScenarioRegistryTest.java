@@ -52,12 +52,14 @@ class ScenarioRegistryTest {
 	@Test
 	void theBuiltInsRoundTripThroughJackson() {
 		ScenarioRegistry reg = ScenarioRegistry.load(sourceServing(ScenarioRegistry.canonicalJson()));
-		// the four the code founds today
+		// the five the code founds today
 		assertNotNull(reg.resolve("standard"));
 		assertEquals(FoundingShape.STANDARD_COLONY, reg.resolve("caravan-demo").shape());
 		assertEquals(FoundingShape.CAMP, reg.resolve("camp").shape());
 		assertEquals(FoundingShape.TIMELINE, reg.resolve("timeline").shape());
 		assertTrue(reg.resolve("camp").flag("homePlots", false), "camp founds on home plots");
+		assertTrue(reg.resolve("hammers").flag("buildEconomy", false),
+				"the hammers scenario founds with the build economy on");
 	}
 
 	@Test
@@ -88,7 +90,7 @@ class ScenarioRegistryTest {
 	@Test
 	void anAbsentResourceLeavesTheBuiltInsAlone() {
 		ScenarioRegistry reg = ScenarioRegistry.load(EMPTY_SOURCE);
-		assertEquals(4, reg.all().size());
+		assertEquals(5, reg.all().size());
 		assertNotNull(reg.resolve("timeline"));
 	}
 

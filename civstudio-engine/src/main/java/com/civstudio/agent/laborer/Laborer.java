@@ -7,6 +7,8 @@ import com.civstudio.agent.AbstractHousehold;
 import com.civstudio.agent.Granary;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.Rank;
+import com.civstudio.calendar.DayType;
+import com.civstudio.settlement.BuildEconomy;
 import com.civstudio.io.SimLog;
 import com.civstudio.race.Race;
 import com.civstudio.bank.Bank;
@@ -102,6 +104,28 @@ public class Laborer extends AbstractHousehold {
 	// Assigned at founding/promotion by the harness; freed on death. See docs/plot-working-plan.md P1.
 	@Getter
 	private Plot homePlot;
+
+	// --- the occupation choice (build economy, docs/build-queue-plan.md B1) ---------------
+	// Active only on a build-economy colony (Settlement.getBuildEconomy() != null) for a
+	// landed household; otherwise none of these are read and behavior is byte-identical.
+
+	// current occupation: false = sell labor at the center (the default), true = stay and
+	// work the home plot for hammers + commerce. Re-evaluated on workdays with hysteresis.
+	private boolean plotWorker;
+
+	// the last realized wage of a MARKET-chosen day (acct.priIC read the morning after) —
+	// the reservation-wage comparand. A 0 here means the household offered labor and was
+	// left unhired (the labor-surplus signal that pushes it toward the plot).
+	private double lastMarketWage;
+
+	// the optimism prior: until the household has been paid at least once, it assumes the
+	// market beats the plot (goes to market), so founding-day behavior matches today's and
+	// wages get discovered. Flips on the first positive realized wage.
+	private boolean everPaid;
+
+	// whether yesterday was a plot-chosen day, so this morning's acct.priIC (necessarily 0)
+	// is NOT mistaken for a rejected market day when updating lastMarketWage
+	private boolean plotDayYesterday;
 
 	/**
 	 * Create a new laborer
@@ -455,14 +479,70 @@ public class Laborer extends AbstractHousehold {
 		// post buy offer to necessity market
 		nMkt.addBuyOffer(this, demandForN);
 
-		// post every household member to the labor market (head and any spouse)
-		lMkt.addEmployee(this);
+		// the occupation choice (build economy, docs/build-queue-plan.md B1): a landed
+		// household on a build-economy colony weighs selling labor at the center against
+		// working its home plot for hammers + commerce. Everyone else (flag off, landless)
+		// posts labor unconditionally as before — byte-identical.
+		var buildEconomy = getColony().getBuildEconomy();
+		if (buildEconomy != null && homePlot != null) {
+			updateOccupation(buildEconomy);
+			// the choice binds only on workdays (rest days gate plot-working like firms);
+			// on a rest day everyone goes to market as today (enjoyment firms may hire)
+			boolean plotDay = plotWorker && getColony().getDayType() == DayType.WORKDAY;
+			if (plotDay) {
+				buildEconomy.workPlotDay(this);
+			} else {
+				lMkt.addEmployee(this);
+				buildEconomy.registerMarketChooser(this);
+			}
+			plotDayYesterday = plotDay;
+		} else {
+			// post every household member to the labor market (head and any spouse)
+			lMkt.addEmployee(this);
+		}
 
 		// if unmarried, seek a spouse on the wedding market (it weds on weekends)
 		seekSpouseIfSingle();
 
 		resetIncomeAccumulators(acct);
 		firstAct = false;
+	}
+
+	/**
+	 * Re-evaluate the household's <b>occupation</b> (build economy, B1): update the wage
+	 * memory from yesterday's outcome, then — on workdays only — apply the
+	 * reservation-wage rule with the optimism prior and the hysteresis band.
+	 * <ul>
+	 * <li><b>Wage memory</b>: the morning after a market-chosen day records the realized
+	 * wage ({@code acct.priIC}, already read into {@link #wage}); a plot-chosen
+	 * yesterday leaves the memory untouched (its 0 income is not a market signal). A
+	 * recorded 0 means the household was left unhired — the labor-surplus signal.</li>
+	 * <li><b>Optimism prior</b>: never paid yet → market (founding behavior matches
+	 * today's; wages get discovered).</li>
+	 * <li><b>Hysteresis</b>: switch only when the plot's commerce value beats the
+	 * remembered wage by {@link BuildEconomy#HYSTERESIS_BAND} (or falls below it by the
+	 * same margin) — no daily flip-flop.</li>
+	 * </ul>
+	 */
+	private void updateOccupation(BuildEconomy buildEconomy) {
+		if (!firstAct && !plotDayYesterday) {
+			lastMarketWage = wage;
+			if (wage > 0)
+				everPaid = true;
+		}
+		// hold the occupation on rest days (the plot value is 0 there — comparing would
+		// spuriously flip every plot-worker back to market each weekend)
+		if (getColony().getDayType() != DayType.WORKDAY)
+			return;
+		if (!everPaid) {
+			plotWorker = false;
+			return;
+		}
+		double plotValue = buildEconomy.plotCommerceValue(this);
+		if (!plotWorker && plotValue > lastMarketWage * (1 + BuildEconomy.HYSTERESIS_BAND))
+			plotWorker = true;
+		else if (plotWorker && plotValue < lastMarketWage * (1 - BuildEconomy.HYSTERESIS_BAND))
+			plotWorker = false;
 	}
 
 	/**

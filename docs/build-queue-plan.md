@@ -85,6 +85,26 @@ default-flip decision.
 
 ## B1 — The occupation choice (hammers + commerce day)
 
+**Status: BUILT 2026-07-23.** As-built: `settlement.BuildEconomy` (sibling of `FoodEconomy`, present
+only when the new `SimulationConfig.buildEconomy` flag is on — enabled by the harness constructor),
+the occupation state + `updateOccupation` on `Laborer` (wage memory, optimism prior, hysteresis via
+`BuildEconomy.HYSTERESIS_BAND` 0.25 UNCALIBRATED), `LaborMarket.daylightFactor` extracted as the
+shared day-length scaler + `wasHiredLastClear` (hired-ID bookkeeping) feeding the unhired fallback
+(`Settlement.newDay`, right after market clearing), commerce minted via a bare
+`Bank.credit(..., SECIC)`, CONSTRUCTION + COMMERCE trained on plot days, `HammerPrinter`
+(monthly plot/market/fallback day counts + hammer/commerce flows), and the `HammerEconomy` scenario
+(a one-flag contrast to `CampFoundingEconomy`; registry key `hammers`, honored by the server host's
+CAMP-shape flag read).
+
+**Calibration finding (2026-07-23), for B3+ to act on:** on real ground the **commerce channel of raw
+farmland is ~0** (Civ4 commerce needs rivers/coast/cottage-type improvements, none of which exist on
+shared home plots) — so the reservation wage, whose comparand is deliberately commerce-only, **never
+pulls a household home**; every plot day in the calibration run comes from the **unhired fallback**
+(the unemployed working their land — economically coherent for the era, and the hammers still flow).
+The choice machinery is built and armed but stays dormant until commerce channels open (P5
+improvements). The B3 housing project changes this independently: a homeless-and-fed household stays
+home for the *house*, not the commerce, so B3 is where chosen plot days first appear.
+
 **Goal.** The daily binary choice and the two new yield flows, ending in a per-household **hammer
 balance** and copper commerce income. No buildings yet — hammers accumulate (donation flows to a stub
 `Settlement` hammer sink so the numbers are observable in CSVs).

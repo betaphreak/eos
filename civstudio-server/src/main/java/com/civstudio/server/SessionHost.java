@@ -397,9 +397,11 @@ public final class SessionHost {
 		if (def.shape() == FoundingShape.TIMELINE)
 			return buildTimeline(id, owner, kind, mode, difficulty, spec, cfg);
 		// a CAMP scenario founds low and climbs the tier ladder; its flags carry the subsistence
-		// home-plot economy the camp survives on (docs/settlement-tier-ladder-plan.md D4)
+		// home-plot economy the camp survives on (docs/settlement-tier-ladder-plan.md D4) and,
+		// since B1, the build economy's occupation choice (docs/build-queue-plan.md)
 		if (def.shape() == FoundingShape.CAMP)
-			cfg = cfg.toBuilder().foundAtCamp(true).homePlots(def.flag("homePlots", false)).build();
+			cfg = cfg.toBuilder().foundAtCamp(true).homePlots(def.flag("homePlots", false))
+					.buildEconomy(def.flag("buildEconomy", false)).build();
 		// SimulationHarness.create builds the GameSession, founds the colony into the
 		// province, and installs the (now per-session) log — see docs/client-server.md
 		SimulationHarness h = SimulationHarness.create(cfg, spec.seed(), spec.provinceId());

@@ -394,6 +394,11 @@ public class SimulationHarness {
 		// apply the run's fertility parameters to the colony (read live by Laborer.act);
 		// a test can still override via colony.setFertilityConfig before run()
 		colony.setFertilityConfig(cfg.fertility());
+		// switch on the build economy (the occupation choice — docs/build-queue-plan.md B1)
+		// when the run opts in; a flag-off colony keeps a null BuildEconomy and is
+		// byte-identical
+		if (cfg.buildEconomy())
+			colony.enableBuildEconomy();
 	}
 
 	/** Create the markets and register them (labor market first). */
@@ -1037,6 +1042,20 @@ public class SimulationHarness {
 	 */
 	public void addGranaryPrinter(String fileName) {
 		colony.addPrinter(new GranaryPrinter(fileName, granary));
+	}
+
+	/**
+	 * Register a {@link com.civstudio.io.printer.HammerPrinter} for the colony's build
+	 * economy — the B1 calibration instrument (plot/market/fallback day counts, hammers
+	 * donated, commerce minted). A no-op on a colony without the build economy.
+	 *
+	 * @param fileName
+	 *            the CSV output file name
+	 */
+	public void addHammerPrinter(String fileName) {
+		if (colony.getBuildEconomy() != null)
+			colony.addPrinter(new com.civstudio.io.printer.HammerPrinter(fileName,
+					colony.getBuildEconomy()));
 	}
 
 	/**

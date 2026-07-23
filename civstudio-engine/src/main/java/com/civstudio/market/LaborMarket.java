@@ -42,12 +42,32 @@ public class LaborMarket extends Market {
 	// how strongly daylight modulates this colony's output (1 + sensitivity*(ratio
 	// - 1), so output is always 100% at the reference daylight): full below
 	// PENALTY_START_LATITUDE, falling linearly to 0 at the poles
-	private double daylightSensitivity() {
+	private static double daylightSensitivity(Settlement colony) {
 		double absLat = Math.abs(colony.getLatitude());
 		double penalty = (absLat - PENALTY_START_LATITUDE)
 				/ (POLE_LATITUDE - PENALTY_START_LATITUDE);
 		penalty = Math.min(1, Math.max(0, penalty));
 		return 1 - penalty;
+	}
+
+	/**
+	 * The colony's laborer <b>daylight factor</b> for the current day: 1.0 at
+	 * {@value #FULL_OUTPUT_DAYLIGHT_HOURS} hours of daylight, scaled up on longer days
+	 * and down on shorter ones, with the sensitivity fading to none toward the poles
+	 * (see {@link #daylightSensitivity}). The one day-length scaling shared by market
+	 * labor ({@link #addEmployee(Laborer)}) and home plot-working
+	 * ({@code settlement.BuildEconomy} — the full-parity rule of
+	 * {@code docs/build-queue-plan.md} B1), so neither occupation has a seasonal
+	 * loophole over the other.
+	 *
+	 * @param colony the colony whose day is being scaled
+	 * @return the daylight factor (1.0 when daylight is undefined — polar day/night)
+	 */
+	public static double daylightFactor(Settlement colony) {
+		double ratio = colony.getDaylightHours() / FULL_OUTPUT_DAYLIGHT_HOURS;
+		double factor = 1 + daylightSensitivity(colony) * (ratio - 1);
+		// polar day/night leaves daylight undefined; fall back to unscaled output
+		return Double.isFinite(factor) ? factor : 1;
 	}
 
 	/* employer */
@@ -74,6 +94,13 @@ public class LaborMarket extends Market {
 	private ArrayList<Employee> employees;
 
 	private double totalBudget; // sum of wage budgets of all employers
+
+	// the account ids credited a wage in the LAST clear() — i.e. the households at
+	// least one of whose members an operating firm actually hired. Read by the build
+	// economy's unhired fallback (docs/build-queue-plan.md B1) after clearing; a
+	// household that offered labor but appears nowhere here was left unhired and
+	// works its plot instead. Pure bookkeeping: no RNG, no behavior change.
+	private final Set<Integer> lastHired = new java.util.HashSet<>();
 
 	/**
 	 * Create a new labor market for the default {@code "Labor"} good.
@@ -159,11 +186,7 @@ public class LaborMarket extends Market {
 	 *            the laborer seeking employment
 	 */
 	public void addEmployee(Laborer laborer) {
-		double ratio = colony.getDaylightHours() / FULL_OUTPUT_DAYLIGHT_HOURS;
-		double daylightFactor = 1 + daylightSensitivity() * (ratio - 1);
-		// polar day/night leaves daylight undefined; fall back to unscaled output
-		if (!Double.isFinite(daylightFactor))
-			daylightFactor = 1;
+		double daylightFactor = daylightFactor(colony);
 		// every working adult member of the household is a separate earner: each is
 		// placed on the market with its own skills (so head and spouse may end up
 		// at different firms and train different skills), but all wages credit the
@@ -215,6 +238,7 @@ public class LaborMarket extends Market {
 	 * Clear the market.
 	 */
 	public void clear() {
+		lastHired.clear();
 		Collections.shuffle(employers, colony.getRng().getRandom());
 		Collections.shuffle(employees, colony.getRng().getRandom());
 		// the travel-time coupling: each worker loses the market's clearing overhead N
@@ -250,6 +274,7 @@ public class LaborMarket extends Market {
 					Employee employee = employees.get(i);
 					employer.bank.withdraw(employer.bankID, wage);
 					employee.bank.credit(employee.bankID, wage, Bank.PRIIC);
+					lastHired.add(employee.bankID);
 					// the labor the firm gets is the worker's proficiency in the
 					// firm's own work — productivityOf its level in the employer's
 					// skills (a skill-10 worker produces 1, as in the old homogeneous
@@ -274,6 +299,19 @@ public class LaborMarket extends Market {
 		employers.clear();
 		employees.clear();
 		totalBudget = 0;
+	}
+
+	/**
+	 * Whether the household with account id {@code bankID} had at least one member
+	 * hired (credited a wage) in the <b>last</b> {@link #clear()}. Read by the build
+	 * economy's unhired fallback: a household that offered labor but was not hired
+	 * falls back to working its home plot that day (docs/build-queue-plan.md B1).
+	 *
+	 * @param bankID the household's account id
+	 * @return whether it was hired in the last clearing
+	 */
+	public boolean wasHiredLastClear(int bankID) {
+		return lastHired.contains(bankID);
 	}
 
 	// the worker's effective skill level for an employer: the (rounded) mean of

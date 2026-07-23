@@ -54,6 +54,11 @@ public final class ScenarioRegistry {
 					"Founds low as a foraging camp and climbs the tier ladder, booting its ruler"
 							+ " economy at Smallholding; each household works a home plot.",
 					"default", FoundingShape.CAMP, Map.of("homePlots", true)),
+			new ScenarioDef("hammers", "Hammer Economy",
+					"The frontier camp with the build economy on: settled households choose daily"
+							+ " between wage labor and working their plot for hammers + commerce.",
+					"default", FoundingShape.CAMP,
+					Map.of("homePlots", true, "buildEconomy", true)),
 			new ScenarioDef("timeline", "Ranked Timeline",
 					"One shared world many players found into, run in lockstep until one colony"
 							+ " stands.",
