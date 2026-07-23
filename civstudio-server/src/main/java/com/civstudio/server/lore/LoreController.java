@@ -2,7 +2,7 @@ package com.civstudio.server.lore;
 
 import java.util.Map;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
  * </ul>
  */
 @RestController
-@ConditionalOnProperty(name = "civstudio.lore.datasource-url")
+// blank-safe gate (the yml default makes the property present-but-empty) — see LoreConfig
+@ConditionalOnExpression("T(org.springframework.util.StringUtils).hasText('${civstudio.lore.datasource-url:}')")
 public class LoreController {
 
 	private final LoreService lore;

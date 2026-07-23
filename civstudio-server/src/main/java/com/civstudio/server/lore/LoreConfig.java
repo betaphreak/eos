@@ -2,7 +2,7 @@ package com.civstudio.server.lore;
 
 import javax.sql.DataSource;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,7 +21,11 @@ import com.zaxxer.hikari.HikariDataSource;
  * unaffected.
  */
 @Configuration
-@ConditionalOnProperty(name = "civstudio.lore.datasource-url")
+// blank-safe gate: the yml default `${CIVSTUDIO_LORE_DATASOURCE_URL:}` makes the property PRESENT as
+// an empty string on machines without the lore env vars, which @ConditionalOnProperty(name=...) counts
+// as "set" — Hikari then dies on the URL-less pool and every context-loading test with it. hasText
+// treats blank as absent, so a clean environment simply runs without the lore beans (the intent).
+@ConditionalOnExpression("T(org.springframework.util.StringUtils).hasText('${civstudio.lore.datasource-url:}')")
 public class LoreConfig {
 
 	@Bean

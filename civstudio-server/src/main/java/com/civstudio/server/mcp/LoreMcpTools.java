@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 import com.civstudio.server.lore.LoreService;
@@ -22,7 +22,8 @@ import com.civstudio.server.lore.LoreService;
  * </ul>
  */
 @Component
-@ConditionalOnProperty(name = "civstudio.lore.datasource-url")
+// blank-safe gate (the yml default makes the property present-but-empty) — see LoreConfig
+@ConditionalOnExpression("T(org.springframework.util.StringUtils).hasText('${civstudio.lore.datasource-url:}')")
 public class LoreMcpTools {
 
 	/** Cap the caller-supplied k the same way {@link com.civstudio.server.lore.LoreController} does. */
