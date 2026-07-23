@@ -350,6 +350,18 @@ limit.
 
 ## B6 — The player verb (`queue_build`) + the Civ4 interrupt
 
+**Status: BUILT 2026-07-23.** As-built: engine — player orders FIFO ahead of the heuristic in
+`BuildEconomy` (pick-time validation, "by decree" log), `setHeuristicEnabled` +
+`queueAwaitingChoice()` (true only with the heuristic OFF, so unattended idle never counts),
+`buildableCandidates()` (brain-scored). Server — `QueueBuildCommand` (items+clear, named colony,
+tick-stamped, `CommandCodec` persisted + round-trip-tested), the `queueBuild` case on
+POST /commands (owner-gated), auto-pause in `HostedSession.maybeAwaitBuildChoice` between ticks
+(SINGLE_PLAYER only — demo/timeline keep the heuristic; clock state only, immediate emit),
+resume-on-submit; snapshot gains `awaitingBuildChoice` + `buildCandidates` (full state, survives
+withoutDeltas). Web — the #buildchoice decree modal (gameover-card pattern, click order = queue
+order, postCommand submit). Deploy note: inert until the server ships and a SINGLE_PLAYER
+build-economy session exists.
+
 **Goal.** The build queue as the first real player verb on the command spine — including the
 what-to-build-next interrupt that makes it feel like a game.
 

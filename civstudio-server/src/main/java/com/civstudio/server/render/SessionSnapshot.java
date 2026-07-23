@@ -34,7 +34,8 @@ import java.util.List;
  */
 public record SessionSnapshot(String sessionId, long seed, String scenario, String clockState,
 		String outcome, String endReason, long tick, String date, List<ColonyView> colonies,
-		List<CaravanView> caravans, List<LogLine> log, List<Integer> routeDirty) {
+		List<CaravanView> caravans, List<LogLine> log, List<Integer> routeDirty,
+		boolean awaitingBuildChoice, List<String> buildCandidates) {
 
 	/**
 	 * This frame with its two <b>per-frame deltas</b> — {@link #log()} and {@link #routeDirty()} —
@@ -55,7 +56,9 @@ public record SessionSnapshot(String sessionId, long seed, String scenario, Stri
 	public SessionSnapshot withoutDeltas() {
 		if (log.isEmpty() && routeDirty.isEmpty())
 			return this;
+		// awaitingBuildChoice/buildCandidates are FULL STATE (not deltas): a late joiner
+		// must still see the pause-and-choose modal, so they survive the stripping
 		return new SessionSnapshot(sessionId, seed, scenario, clockState, outcome, endReason, tick,
-				date, colonies, caravans, List.of(), List.of());
+				date, colonies, caravans, List.of(), List.of(), awaitingBuildChoice, buildCandidates);
 	}
 }

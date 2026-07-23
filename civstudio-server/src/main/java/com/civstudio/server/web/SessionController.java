@@ -306,6 +306,26 @@ public class SessionController {
 				ok.put("tick", tick);
 				return ResponseEntity.status(202).body(ok);
 			}
+			case "queueBuild" -> {
+				// the B6 player verb: append BUILDING_* ids to the ruler's queue (clear
+				// first for reorder/cancel). Ids are validated at pick time by the engine,
+				// so a bogus id is dropped, never wedged. Submitting also resumes a
+				// session auto-paused awaiting this very choice (HostedSession.submit).
+				java.util.List<String> items = req.items() == null ? java.util.List.of() : req.items();
+				boolean clear = Boolean.TRUE.equals(req.clear());
+				if (items.isEmpty() && !clear)
+					return ResponseEntity.badRequest().body(Map.of("error", "queueBuild needs items and/or clear"));
+				hs.submit(new com.civstudio.server.command.QueueBuildCommand(tick, colony, items, clear));
+				Map<String, Object> ok = new LinkedHashMap<>();
+				ok.put("accepted", true);
+				ok.put("type", type);
+				if (colony != null)
+					ok.put("colony", colony);
+				ok.put("items", items);
+				ok.put("clear", clear);
+				ok.put("tick", tick);
+				return ResponseEntity.status(202).body(ok);
+			}
 			default -> {
 				return ResponseEntity.badRequest().body(Map.of("error", "unknown command type: " + type));
 			}
@@ -499,7 +519,8 @@ public class SessionController {
 	 * caller's own colony and no one else's; optional (and meaning "the one colony") in a
 	 * single-colony run. See {@code docs/spectator-lobby.md} Phase 2.
 	 */
-	public record CommandRequest(String type, String colony, String lever, Double rate, Long tick) {
+	public record CommandRequest(String type, String colony, String lever, Double rate, Long tick,
+			java.util.List<String> items, Boolean clear) {
 	}
 
 	/** Body of {@code POST /api/sessions/{id}/chat}. */

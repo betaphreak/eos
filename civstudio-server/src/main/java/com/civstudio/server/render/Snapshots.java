@@ -73,8 +73,28 @@ public final class Snapshots {
 		for (Settlement c : colonies)
 			for (Caravan excursion : c.getExcursions())
 				caravanViews.add(caravanView(excursion, map));
+		// the B6 pause-and-choose surface: awaiting when any build-economy colony's ruler
+		// queue is idle with no pending orders AND its heuristic is off (the seated-session
+		// mode); candidates are the first such colony's brain-scored startable regulars
+		boolean awaiting = false;
+		List<String> candidates = List.of();
+		for (Settlement c : colonies) {
+			var be = c.getBuildEconomy();
+			if (be != null && be.queueAwaitingChoice()) {
+				awaiting = true;
+				List<String> ids = new ArrayList<>();
+				for (var b : be.buildableCandidates()) {
+					ids.add(b.id());
+					if (ids.size() >= 24)
+						break;
+				}
+				candidates = ids;
+				break;
+			}
+		}
 		return new SessionSnapshot(sessionId, seed, scenario, clockState, outcome, endReason, tick,
-				date == null ? "" : date.toString(), colonyViews, caravanViews, log, routeDirty);
+				date == null ? "" : date.toString(), colonyViews, caravanViews, log, routeDirty,
+				awaiting, candidates);
 	}
 
 	// project one colony's aggregates — the same tally the annual digest and CSV printers

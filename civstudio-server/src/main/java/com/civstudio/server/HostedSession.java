@@ -309,6 +309,10 @@ public final class HostedSession {
 	public void submit(GameCommand command) {
 		commandStore.append(id, command); // durable first, so a restart can replay it
 		commandLog.append(command);
+		// the B6 interrupt's other half: submitting the build choice resumes a session
+		// auto-paused awaiting it (the command applies at the top of the next tick)
+		if (command instanceof com.civstudio.server.command.QueueBuildCommand)
+			resume();
 	}
 
 	/**
@@ -659,6 +663,14 @@ public final class HostedSession {
 		});
 		for (Settlement c : colonies)
 			c.start();
+		// the B6 seated-session mode: a SINGLE_PLAYER run turns the ruler-queue heuristic
+		// OFF, so an empty queue genuinely idles — which is what raises the pause-and-
+		// choose interrupt below. Demo/timeline sessions keep the heuristic (unattended /
+		// must never freeze the shared world).
+		if (kind() == SessionKind.SINGLE_PLAYER)
+			for (Settlement c : colonies)
+				if (c.getBuildEconomy() != null)
+					c.getBuildEconomy().setHeuristicEnabled(false);
 		emit(); // tick-0 snapshot, so a subscriber (even to a paused session) sees state
 		// which of the two exits fired: the run reaching its own end (game over) or a stop() from
 		// outside. Knowable here and nowhere else — the finally cannot tell them apart after the fact.
@@ -679,6 +691,7 @@ public final class HostedSession {
 				tick++;
 				if (tick % snapshotEveryTicks == 0)
 					emit();
+				maybeAwaitBuildChoice();
 			}
 		} finally {
 			for (Settlement c : colonies) {
@@ -866,6 +879,29 @@ public final class HostedSession {
 	// "1 adult" / "3 adults"
 	private static String plural(int n, String one, String many) {
 		return n + " " + (n == 1 ? one : many);
+	}
+
+	// the B6 auto-pause (docs/build-queue-plan.md): a seated (SINGLE_PLAYER) session whose
+	// build-economy colony awaits a queue choice pauses itself between ticks — clock state
+	// only, never sim state, so replay is untouched. The snapshot (emitted immediately so
+	// the modal shows without waiting for the next cadence frame) carries the awaiting
+	// flag + candidates; submitting queue_build resumes (see submit()).
+	private void maybeAwaitBuildChoice() {
+		if (kind() != SessionKind.SINGLE_PLAYER)
+			return;
+		boolean awaiting = false;
+		for (Settlement c : colonies)
+			if (c.getBuildEconomy() != null && c.getBuildEconomy().queueAwaitingChoice()) {
+				awaiting = true;
+				break;
+			}
+		if (!awaiting)
+			return;
+		synchronized (gate) {
+			if (clock == ClockState.RUNNING)
+				clock = ClockState.PAUSED;
+		}
+		emit();
 	}
 
 	// assemble a fresh snapshot on this (session) thread and push it to subscribers; cache

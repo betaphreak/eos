@@ -398,6 +398,9 @@ function onSnapshot(s) {
   // suspended run that gets restored re-attaches cleanly.
   if (s.clockState === "STOPPED") showStopped(s);
   else hideStopped();
+  // the B6 pause-and-choose interrupt: a seated session auto-paused on an empty ruler
+  // queue asks the player for the next center building(s); submitting resumes (server)
+  syncBuildChoice(s);
   // point the viewport-windowed route feed at this session and flag the provinces whose route layer
   // changed this frame, so the draw layer refetches only those (routefetch.mjs). The refetch is async
   // and repaints itself when the layer lands, so it does not feed the repaint decision below.
@@ -593,6 +596,46 @@ async function postChat(text) {
       { method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
   } catch (err) { /* transient — the message just won't post */ }
+}
+
+// --- the B6 pause-and-choose modal (docs/build-queue-plan.md) -------------------------
+// Shown while the snapshot carries awaitingBuildChoice (the server auto-paused a seated
+// session on an empty ruler queue). Click order IS queue order; submit posts queue_build
+// and the server resumes. Candidate ids are prettified locally (the buildings bundle is
+// a techtree concern; bare ids suffice here).
+const bcPicked = [];
+function prettyBuilding(id) {
+  return id.replace(/^BUILDING_/, "").toLowerCase().replace(/_/g, " ")
+    .replace(/\b\w/g, ch => ch.toUpperCase());
+}
+function syncBuildChoice(s) {
+  const el = document.getElementById("buildchoice");
+  if (!el) return;
+  if (!s.awaitingBuildChoice || s.clockState === "STOPPED") { el.hidden = true; return; }
+  if (!el.hidden) return; // already open — keep the player's in-progress picks
+  bcPicked.length = 0;
+  const list = document.getElementById("bcList");
+  const submit = document.getElementById("bcSubmit");
+  list.innerHTML = "";
+  (s.buildCandidates || []).forEach(id => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "bc-item"; b.textContent = prettyBuilding(id);
+    b.onclick = () => {
+      const i = bcPicked.indexOf(id);
+      if (i >= 0) { bcPicked.splice(i, 1); b.classList.remove("picked"); }
+      else { bcPicked.push(id); b.classList.add("picked"); }
+      submit.disabled = bcPicked.length === 0;
+    };
+    list.appendChild(b);
+  });
+  submit.disabled = true;
+  submit.onclick = () => {
+    if (!bcPicked.length) return;
+    el.hidden = true;
+    postCommand({ type: "queueBuild", colony: s.colonies[0] && s.colonies[0].name,
+      items: bcPicked.slice() });
+  };
+  el.hidden = false;
 }
 
 async function postCommand(body) {

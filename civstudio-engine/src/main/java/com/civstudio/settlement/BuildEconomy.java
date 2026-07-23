@@ -238,12 +238,115 @@ public class BuildEconomy {
 	// C2C DLL shape: (1 + flavor sum, the flat-personality dot product) time-discounted
 	// by 100/(cost+3) — the discount that stops early expensive-stacking. Deterministic
 	// (id tie-break), no RNG.
+	// player-ordered building ids (B6): consumed ahead of the heuristic, FIFO; fed by
+	// the queue_build command on the CommandLog (tick-stamped, so replay reproduces the
+	// same picks). Invalid/duplicate/no-longer-buildable ids are dropped at pick time.
+	private final List<String> playerOrders = new ArrayList<>();
+
+	/**
+	 * Append player-chosen building ids to the ruler's queue (the B6 {@code queue_build}
+	 * verb) — consumed ahead of the heuristic, validated at pick time.
+	 */
+	public void submitBuildOrders(List<String> ids) {
+		playerOrders.addAll(ids);
+	}
+
+	/** Clear all pending player orders (the cancel verb). */
+	public void clearBuildOrders() {
+		playerOrders.clear();
+	}
+
+	// whether the heuristic brain may auto-pick when no player order is pending (B6):
+	// true for unattended colonies (the default); a player-SEATED session sets false so
+	// the queue can genuinely run empty — which is what raises the pause-and-choose
+	// interrupt server-side. While paused no ticks run, so nothing evaporates.
+	private boolean heuristicEnabled = true;
+
+	/** Enable/disable the heuristic auto-pick (the seated-session interrupt seam, B6). */
+	public void setHeuristicEnabled(boolean enabled) {
+		this.heuristicEnabled = enabled;
+	}
+
+	/**
+	 * Whether the center queue is <b>awaiting a player choice</b> (the B6 interrupt
+	 * predicate): idle with no pending orders <b>and</b> the heuristic off (a seated
+	 * session) — an unattended colony's idle-between-donations never counts.
+	 */
+	public boolean queueAwaitingChoice() {
+		return !heuristicEnabled && activeBuildId == null && playerOrders.isEmpty();
+	}
+
+	/** Pending player-ordered ids (read-only view, for the snapshot/rail). */
+	public List<String> getPendingOrders() {
+		return java.util.Collections.unmodifiableList(playerOrders);
+	}
+
+	/** The active center-queue item id, or {@code null} while idle (snapshot). */
+	public String getActiveBuildId() {
+		return activeBuildId;
+	}
+
+	/** Hammers still owed on the active item (snapshot). */
+	public double getActiveRemaining() {
+		return activeRemaining;
+	}
+
+	/**
+	 * The buildable candidates for the what-to-build-next modal (B6): every regular the
+	 * center could start today, sorted by the brain's score descending (id tie-break).
+	 */
+	public List<BuildingInfo> buildableCandidates() {
+		var plots = colony.getDistrictPlots();
+		if (plots.isEmpty())
+			return List.of();
+		Plot center = plots.get(0);
+		var known = knownTechs();
+		List<BuildingInfo> out = new ArrayList<>();
+		for (BuildingInfo b : BuildingCatalog.get().all())
+			if (centerCandidate(b, center, known))
+				out.add(b);
+		out.sort((x, y) -> {
+			int c = Double.compare(score(y), score(x));
+			return c != 0 ? c : x.id().compareTo(y.id());
+		});
+		return out;
+	}
+
+	// the shared center-queue candidate filter (the brain + the modal list)
+	private boolean centerCandidate(BuildingInfo b, Plot center, java.util.Set<String> known) {
+		return b.buildable() && !Boolean.TRUE.equals(b.autoBuild()) && b.kind() == null
+				&& b.prereqTech() != null && known.contains(b.prereqTech())
+				&& (b.obsoleteTech() == null || !known.contains(b.obsoleteTech()))
+				&& !center.hasBuilding(b.id());
+	}
+
+	private static double score(BuildingInfo b) {
+		return (1 + b.flavorSum()) * 100.0 / (b.effectiveCost() + 3);
+	}
+
 	private boolean pickNextBuilding() {
 		var plots = colony.getDistrictPlots();
 		if (plots.isEmpty())
 			return false;
 		Plot center = plots.get(0);
 		var known = knownTechs();
+		// player orders first (B6): FIFO, dropping ids that no longer qualify
+		while (!playerOrders.isEmpty()) {
+			String id = playerOrders.remove(0);
+			BuildingInfo b = BuildingCatalog.get().byId(id);
+			if (b != null && centerCandidate(b, center, known)) {
+				activeBuildId = b.id();
+				activeRemaining = b.effectiveCost() * BUILD_COST_SCALE;
+				rulerQueued++;
+				com.civstudio.io.SimLog.event(com.civstudio.agent.Rank.VILLAGE,
+						java.util.logging.Level.FINE, "the crown began building "
+								+ (b.name() != null ? b.name() : b.id())
+								+ " at the center (by decree)");
+				return true;
+			}
+		}
+		if (!heuristicEnabled)
+			return false; // seated session: the empty queue raises the B6 interrupt instead
 		BuildingInfo best = null;
 		double bestScore = 0;
 		for (BuildingInfo b : BuildingCatalog.get().all()) {

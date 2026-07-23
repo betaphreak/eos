@@ -26,11 +26,22 @@ public final class CommandCodec {
 	public String type(GameCommand command) {
 		if (command instanceof SetTaxRateCommand)
 			return "setTaxRate";
+		if (command instanceof QueueBuildCommand)
+			return "queueBuild";
 		throw new IllegalArgumentException("no codec for command " + command.getClass().getName());
 	}
 
 	/** The command-specific fields as a JSON object (the {@code tick} is a separate column). */
 	public String payload(GameCommand command) {
+		if (command instanceof QueueBuildCommand q) {
+			Map<String, Object> fields = new LinkedHashMap<>();
+			if (q.colony() != null)
+				fields.put("colony", q.colony());
+			fields.put("items", q.items());
+			if (q.clear())
+				fields.put("clear", true);
+			return json.writeValueAsString(fields);
+		}
 		if (command instanceof SetTaxRateCommand s) {
 			// `colony` is written only when the command names one — an all-colonies command stays
 			// byte-identical to what this codec has always written, and Map.of would reject the null
@@ -54,6 +65,14 @@ public final class CommandCodec {
 					n.hasNonNull("colony") ? n.get("colony").asText() : null,
 					SetTaxRateCommand.Lever.valueOf(n.get("lever").asText()),
 					n.get("rate").asDouble());
+			case "queueBuild" -> {
+				java.util.List<String> items = new java.util.ArrayList<>();
+				if (n.has("items"))
+					n.get("items").forEach(i -> items.add(i.asText()));
+				yield new QueueBuildCommand(tick,
+						n.hasNonNull("colony") ? n.get("colony").asText() : null,
+						items, n.has("clear") && n.get("clear").asBoolean());
+			}
 			default -> throw new IllegalArgumentException("unknown persisted command type: " + type);
 		};
 	}
