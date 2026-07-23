@@ -321,6 +321,15 @@ tech-gating respected; the 2-per-plot ruler limit enforced off-center; no hammer
 
 ## B5 — Household non-housing buildings
 
+**Status: BUILT 2026-07-23.** As-built: `BuildEconomy.pickHouseholdBuilding` (the ruler brain's
+scoring on the household's own plot, per-plot uniqueness) + `Laborer.buildOwnBuilding` (a housed
+household's surplus hammers pay its own next regular; completion raises it owned; at the limit or
+with nothing buildable, hammers donate to the ruler's queue). **Limit-scope ruling (user,
+2026-07-23): the 2-per-owner-per-plot limit counts only deliberate, costed regular constructions** —
+housing AND the emergent families (autobuild vernacular; the 185 costless state/property buildings:
+crime, disease, ordinances, beliefs, achievements) are exempt and stack freely, since nobody chose
+to build them; the same `buildable()` predicate that gates the brains scopes the limit.
+
 **Goal.** A housed household spends its hammers on up to **two** regular buildings on its own plot before
 donating.
 

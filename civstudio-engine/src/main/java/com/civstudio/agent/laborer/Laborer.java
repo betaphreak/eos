@@ -616,8 +616,13 @@ public class Laborer extends AbstractHousehold {
 	 * @return the hammers NOT consumed by the project (to donate)
 	 */
 	public double applyHammersToProject(double hammers, BuildEconomy buildEconomy) {
-		if (hammers <= 0 || housedForGate())
+		if (hammers <= 0)
 			return hammers;
+		// housed: build up to two of the household's OWN regular buildings on its plot
+		// (B5 — the 2-per-owner-per-plot limit counts only deliberate costed regulars;
+		// housing and the emergent families are exempt), then donate
+		if (housedForGate())
+			return buildOwnBuilding(hammers, buildEconomy);
 		// (re)target the cheapest available rung; no rung buildable yet → all donate
 		if (targetRungId == null) {
 			var rung = buildEconomy.cheapestAvailableHousing();
@@ -641,6 +646,36 @@ public class Laborer extends AbstractHousehold {
 		targetRungId = null;
 		targetRungCost = 0;
 		houseProgress = 0;
+		return overflow;
+	}
+
+	// the own-building slot (B5): pay hammers toward the household's next regular
+	// building (picked by the shared brain, at most 2 per owner per plot); completion
+	// raises it owned on the home plot; at the limit / nothing buildable → donate
+	private String targetBuildingId;
+	private double targetBuildingCost;
+	private double buildingProgress;
+
+	private double buildOwnBuilding(double hammers, BuildEconomy buildEconomy) {
+		if (targetBuildingId == null) {
+			var pick = buildEconomy.pickHouseholdBuilding(this);
+			if (pick == null)
+				return hammers; // at the limit or nothing qualifies — donate
+			targetBuildingId = pick.id();
+			targetBuildingCost = pick.effectiveCost() * BuildEconomy.BUILD_COST_SCALE;
+		}
+		buildingProgress += hammers;
+		if (buildingProgress < targetBuildingCost)
+			return 0;
+		double overflow = buildingProgress - targetBuildingCost;
+		homePlot.addBuilding(new com.civstudio.settlement.Building(targetBuildingId, getID()));
+		buildEconomy.noteHouseholdBuilt();
+		SimLog.event(Rank.HOUSEHOLD, Level.FINE, String.format(
+				"the %s household raised a %s on its plot",
+				getHead().surname(), targetBuildingId));
+		targetBuildingId = null;
+		targetBuildingCost = 0;
+		buildingProgress = 0;
 		return overflow;
 	}
 

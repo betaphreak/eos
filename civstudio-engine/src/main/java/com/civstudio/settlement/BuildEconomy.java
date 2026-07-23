@@ -288,6 +288,59 @@ public class BuildEconomy {
 		activeRemaining = 0;
 	}
 
+	/**
+	 * The <b>household building brain</b> (B5): the best regular building for a housed
+	 * household's own plot — same scoring as the ruler's brain, on the home plot, under
+	 * per-plot uniqueness and the <b>2-regulars-per-owner-per-plot</b> limit. The limit
+	 * counts only deliberate, costed regular constructions (user ruling 2026-07-23):
+	 * housing and the emergent families (autobuild vernacular, costless state/property
+	 * buildings) are exempt and stack freely — nobody *chose* to build them.
+	 * {@code null} when at the limit or nothing qualifies (hammers then donate).
+	 */
+	public BuildingInfo pickHouseholdBuilding(Laborer laborer) {
+		Plot plot = laborer.getHomePlot();
+		if (plot == null)
+			return null;
+		int ownedRegulars = 0;
+		for (Building b : plot.buildings())
+			if (b.ownerId() != null && b.ownerId() == laborer.getID() && !b.isHousing())
+				ownedRegulars++;
+		if (ownedRegulars >= 2)
+			return null;
+		var known = knownTechs();
+		BuildingInfo best = null;
+		double bestScore = 0;
+		for (BuildingInfo b : BuildingCatalog.get().all()) {
+			if (!b.buildable() || Boolean.TRUE.equals(b.autoBuild()) || b.kind() != null)
+				continue;
+			if (b.prereqTech() == null || !known.contains(b.prereqTech()))
+				continue;
+			if (b.obsoleteTech() != null && known.contains(b.obsoleteTech()))
+				continue;
+			if (plot.hasBuilding(b.id()))
+				continue;
+			double score = (1 + b.flavorSum()) * 100.0 / (b.effectiveCost() + 3);
+			if (best == null || score > bestScore
+					|| (score == bestScore && b.id().compareTo(best.id()) < 0)) {
+				best = b;
+				bestScore = score;
+			}
+		}
+		return best;
+	}
+
+	// cumulative household regular buildings completed (instrumentation, B5)
+	private int householdBuilt;
+
+	public void noteHouseholdBuilt() {
+		householdBuilt++;
+	}
+
+	/** Completed household-owned regular buildings since founding (B5). */
+	public int getHouseholdBuilt() {
+		return householdBuilt;
+	}
+
 	/** Buildings the ruler's queue has started / completed since founding (B4). */
 	public int getRulerQueued() {
 		return rulerQueued;

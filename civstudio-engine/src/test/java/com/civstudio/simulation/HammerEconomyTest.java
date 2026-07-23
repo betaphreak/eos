@@ -90,11 +90,13 @@ class HammerEconomyTest {
 				"the unhoused elite commissioned housing from the BuilderFirm ("
 						+ be.getEliteCommissions() + " commissions)");
 
-		// B4: donated hammers drive the ruler's center queue — once housed households
-		// donate, the brain picks a building (completion pace is calibration; starting
-		// one proves the queue is live)
-		assertTrue(be.getRulerQueued() > 0,
-				"the ruler's queue started a center building (" + be.getRulerQueued()
-						+ " queued, " + be.getRulerCompleted() + " completed)");
+		// B4/B5: housed households' surplus hammers build their OWN regulars first (the
+		// 2-per-owner-per-plot limit; housing + emergent families exempt), then donate
+		// into the ruler's center queue — at least one of the two paths must be live
+		// after a settled year (which fires first depends on how fast the housing wave
+		// completes; both are pace-calibration)
+		assertTrue(be.getHouseholdBuilt() > 0 || be.getRulerQueued() > 0,
+				"hammers flowed past housing: household regulars=" + be.getHouseholdBuilt()
+						+ ", ruler queued=" + be.getRulerQueued());
 	}
 }
