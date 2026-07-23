@@ -652,6 +652,12 @@ export interface ApiBuildingBuilding extends Struct.CollectionTypeSchema {
           localized: false;
         };
       }>;
+    autoBuild: Schema.Attribute.Boolean &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
     button: Schema.Attribute.String &
       Schema.Attribute.SetPluginOptions<{
         i18n: {
@@ -675,9 +681,21 @@ export interface ApiBuildingBuilding extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    flavors: Schema.Attribute.JSON &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
     key: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Unique &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    kind: Schema.Attribute.Enumeration<['housing']> &
       Schema.Attribute.SetPluginOptions<{
         i18n: {
           localized: false;
@@ -695,6 +713,7 @@ export interface ApiBuildingBuilding extends Struct.CollectionTypeSchema {
           localized: true;
         };
       }>;
+    obsoleteTech: Schema.Attribute.Relation<'manyToOne', 'api::tech.tech'>;
     pedia: Schema.Attribute.Text &
       Schema.Attribute.SetPluginOptions<{
         i18n: {
@@ -703,6 +722,12 @@ export interface ApiBuildingBuilding extends Struct.CollectionTypeSchema {
       }>;
     prereqTech: Schema.Attribute.Relation<'manyToOne', 'api::tech.tech'>;
     publishedAt: Schema.Attribute.DateTime;
+    replacedBy: Schema.Attribute.JSON &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1093,7 +1118,7 @@ export interface ApiFeatureFeature extends Struct.CollectionTypeSchema {
 export interface ApiHousingHousing extends Struct.CollectionTypeSchema {
   collectionName: 'housings';
   info: {
-    description: 'A C2C housing building (population-gated auto-build).';
+    description: "A C2C housing building \u2014 the rung catalog the build economy's housing targeting reads (docs/build-queue-plan.md).";
     displayName: 'Housing Building';
     pluralName: 'housings';
     singularName: 'housing';
@@ -1102,9 +1127,11 @@ export interface ApiHousingHousing extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
+    authoredCost: Schema.Attribute.Integer;
     autoBuild: Schema.Attribute.Boolean;
     bonus: Schema.Attribute.Relation<'manyToOne', 'api::bonus.bonus'>;
     commerceChanges: Schema.Attribute.JSON;
+    cost: Schema.Attribute.Integer;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1120,6 +1147,7 @@ export interface ApiHousingHousing extends Struct.CollectionTypeSchema {
       'api::housing.housing'
     > &
       Schema.Attribute.Private;
+    name: Schema.Attribute.String;
     obsoletesToBuilding: Schema.Attribute.Relation<
       'manyToOne',
       'api::building.building'

@@ -40,11 +40,63 @@ public final class HousingExporter {
 	/** Every housing building's {@code <Type>} starts with this. */
 	private static final String HOUSING_PREFIX = "BUILDING_HOUSING_";
 
+	/**
+	 * The <b>hand-priced default build costs</b> (docs/build-queue-plan.md B2): under the
+	 * build economy households hammer-build their housing, but C2C auto-grants it and so
+	 * ships no {@code iCost} — these are eos-authored, in C2C-hammer-like units (the B4
+	 * {@code BUILD_COST_SCALE} maps them to hammer-days). Roughly a ladder by prereq-tech
+	 * era, with the class variants (hovel &lt; insula &lt; domus &lt; villa &lt; palace)
+	 * priced apart. Studio's {@code authoredCost} overrides these per rung; a rung absent
+	 * here (the {@code HOMELESS} marker, the past-horizon rungs) has no cost and is
+	 * <b>unbuildable</b>. UNCALIBRATED.
+	 */
+	private static final java.util.Map<String, Integer> HAND_COSTS = java.util.Map.ofEntries(
+			// primitive shelters
+			java.util.Map.entry("BUILDING_HOUSING_ANIMAL_BURROW", 5),
+			java.util.Map.entry("BUILDING_HOUSING_TREE_HOLLOW", 5),
+			java.util.Map.entry("BUILDING_HOUSING_CAVE_DWELLING", 8),
+			java.util.Map.entry("BUILDING_HOUSING_LEAN_TOS", 10),
+			// early huts and tents
+			java.util.Map.entry("BUILDING_HOUSING_ANIMAL_HIDE_TENTS", 12),
+			java.util.Map.entry("BUILDING_HOUSING_BARK_HUTS", 15),
+			java.util.Map.entry("BUILDING_HOUSING_BONE_HUTS", 15),
+			java.util.Map.entry("BUILDING_HOUSING_GRASS_HUTS", 15),
+			java.util.Map.entry("BUILDING_HOUSING_TIPIS", 15),
+			java.util.Map.entry("BUILDING_HOUSING_YURTS", 15),
+			java.util.Map.entry("BUILDING_HOUSING_IGLOOS", 15),
+			java.util.Map.entry("BUILDING_HOUSING_STILT_HUTS", 18),
+			java.util.Map.entry("BUILDING_HOUSING_TREEHOUSES", 20),
+			// ancient solid construction
+			java.util.Map.entry("BUILDING_HOUSING_MUD_HUTS", 25),
+			java.util.Map.entry("BUILDING_HOUSING_LONGHOUSE", 30),
+			java.util.Map.entry("BUILDING_HOUSING_HOGANS", 30),
+			java.util.Map.entry("BUILDING_HOUSING_STONE_HUTS", 35),
+			java.util.Map.entry("BUILDING_HOUSING_PUEBLOS", 40),
+			java.util.Map.entry("BUILDING_HOUSING_CLIFF_DWELLING", 40),
+			// classical class-variant housing (TECH_SANITATION)
+			java.util.Map.entry("BUILDING_HOUSING_HOVELS", 40),
+			java.util.Map.entry("BUILDING_HOUSING_SLUMS", 45),
+			java.util.Map.entry("BUILDING_HOUSING_INSULAE", 60),
+			java.util.Map.entry("BUILDING_HOUSING_DOMUS", 80),
+			java.util.Map.entry("BUILDING_HOUSING_VILLAS", 120),
+			java.util.Map.entry("BUILDING_HOUSING_PALACES", 250),
+			// medieval class-variant housing (TECH_SURVEYING)
+			java.util.Map.entry("BUILDING_HOUSING_SHACKS", 50),
+			java.util.Map.entry("BUILDING_HOUSING_SHANTY_TOWN", 55),
+			java.util.Map.entry("BUILDING_HOUSING_COMMONS", 70),
+			java.util.Map.entry("BUILDING_HOUSING_COTTAGES", 80),
+			java.util.Map.entry("BUILDING_HOUSING_MANORS", 180),
+			java.util.Map.entry("BUILDING_HOUSING_ESTATES", 300),
+			// late-horizon oddballs
+			java.util.Map.entry("BUILDING_HOUSING_FRATERNITY_HOUSE", 120));
+
 	private HousingExporter() {
 	}
 
 	public static void main(String[] args) throws Exception {
 		Document doc = Civ4Xml.fetch(INPUT);
+		// TXT_KEY_BUILDING_* -> English display names (shared with the building importer)
+		var english = com.civstudio.settlement.export.BuildingInfoExporter.loadGameText();
 		List<HousingBuilding> out = new ArrayList<>();
 		for (Element info : Civ4Xml.infos(doc, "BuildingInfo")) {
 			String type = Civ4Xml.text(info, "Type");
@@ -52,6 +104,9 @@ public final class HousingExporter {
 				continue;
 			out.add(new HousingBuilding(
 					type,
+					english.get(Civ4Xml.text(info, "Description")),
+					HAND_COSTS.get(type),
+					null, // authoredCost is studio content — never exported
 					Civ4Xml.text(info, "PrereqTech"),
 					Civ4Xml.text(info, "ObsoleteTech"),
 					Civ4Xml.text(info, "ObsoletesToBuilding"),

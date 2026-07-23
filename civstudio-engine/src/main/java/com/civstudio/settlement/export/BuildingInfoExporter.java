@@ -41,12 +41,23 @@ import tools.jackson.databind.ObjectMapper;
  * Ids are the C2C {@code <Type>} verbatim ({@code BUILDING_*}) — the same id
  * {@link com.civstudio.settlement.Building} and the tech {@code Unlock} target use, so
  * there is no mapping table. Each row carries {@code {id, name, help, pedia, category,
- * prereqTech, andTechs, artDefineTag, button, cost}}: {@code name}/{@code help}/{@code
- * pedia} resolve the {@code TXT_KEY_BUILDING_*} strings from the building GameText;
- * {@code category} is the building's {@code <Advisor>} folded onto the shared
- * {@link Advisor} taxonomy (omitted when the building has no advisor — the belief /
- * housing module buildings); {@code button} is the {@code <Button>} path resolved
- * through {@code CIV4ArtDefines_Building.xml} by {@code artDefineTag}.
+ * prereqTech, andTechs, artDefineTag, button, cost, obsoleteTech, autoBuild, kind,
+ * flavors, replacedBy}}: {@code name}/{@code help}/{@code pedia} resolve the
+ * {@code TXT_KEY_BUILDING_*} strings from the building GameText; {@code category} is
+ * the building's {@code <Advisor>} folded onto the shared {@link Advisor} taxonomy
+ * (omitted when the building has no advisor — the belief / housing module buildings);
+ * {@code button} is the {@code <Button>} path resolved through
+ * {@code CIV4ArtDefines_Building.xml} by {@code artDefineTag}. The build-queue fields
+ * (docs/build-queue-plan.md B2): {@code obsoleteTech} is the raw {@code <ObsoleteTech>}
+ * (may name a past-horizon tech the engine can never research — then it simply never
+ * fires); {@code autoBuild} marks C2C's {@code <bAutoBuild>} rows (housing, civics,
+ * pests, resource markers — auto-granted in C2C, so they carry no {@code iCost});
+ * {@code kind} is {@code "housing"} for the {@code BUILDING_HOUSING_*} line (the id
+ * prefix is the discriminator — {@code bAutoBuild} also covers non-housing bookkeeping
+ * rows) and omitted otherwise (= regular); {@code flavors} is the C2C
+ * {@code <Flavors>} AI build-weight map ({@code FLAVOR_* → int}), the queue brain's
+ * ordering signal; {@code replacedBy} is {@code <ReplacementBuildings>} (the housing
+ * upgrade chain), raw ids not filtered to the horizon.
  * <p>
  * Pure data — no economic RNG, no runtime behaviour change (nothing loads
  * {@code buildings.json} yet; the tech {@code Unlock} wiring and the web bake are
@@ -110,7 +121,7 @@ public final class BuildingInfoExporter {
 		Map<String, Integer> perCategory = new TreeMap<>();
 		Map<String, String> byId = new HashMap<>(); // id -> source file, for duplicate detection
 		int scanned = 0, noPrereq = 0, gatedOut = 0, corporation = 0;
-		int noName = 0, noButton = 0, noCategory = 0, cappedUnlocks = 0;
+		int noName = 0, noButton = 0, noCategory = 0, cappedUnlocks = 0, housing = 0;
 
 		for (String file : BUILDING_FILES) {
 			Document doc = Civ4Xml.fetch(file);
@@ -184,6 +195,36 @@ public final class BuildingInfoExporter {
 				if (cost != null && !cost.isEmpty())
 					row.put("cost", cost);
 
+				// build-queue fields (docs/build-queue-plan.md B2). obsoleteTech is exported raw —
+				// a past-horizon tech can never be researched, so the obsolescence simply never fires.
+				String obsolete = Civ4Xml.text(b, "ObsoleteTech");
+				if (obsolete != null && !obsolete.isEmpty())
+					row.put("obsoleteTech", obsolete);
+				if ("1".equals(Civ4Xml.text(b, "bAutoBuild")))
+					row.put("autoBuild", true);
+				// the housing line: discriminated by id prefix, NOT bAutoBuild (which also covers
+				// C2C's civic/pest/resource bookkeeping rows); absent kind = regular
+				if (id.startsWith("BUILDING_HOUSING_")) {
+					row.put("kind", "housing");
+					housing++;
+				}
+				// the C2C <Flavors> AI build-weight map — the queue brain's ordering signal
+				Map<String, Integer> flavors = new LinkedHashMap<>();
+				Element flavorsEl = Civ4Xml.child(b, "Flavors");
+				if (flavorsEl != null)
+					for (Element fl : Civ4Xml.children(flavorsEl, "Flavor")) {
+						String type = Civ4Xml.text(fl, "FlavorType");
+						String weight = Civ4Xml.text(fl, "iFlavor");
+						if (type != null && weight != null && !weight.isEmpty())
+							flavors.put(type, Integer.parseInt(weight));
+					}
+				if (!flavors.isEmpty())
+					row.put("flavors", flavors);
+				// the replacement chain (housing upgrades), raw ids not filtered to the horizon
+				List<String> replacedBy = Civ4Xml.textList(b, "ReplacementBuildings", "BuildingType");
+				if (!replacedBy.isEmpty())
+					row.put("replacedBy", replacedBy);
+
 				out.add(row);
 				keptHere++;
 
@@ -215,6 +256,7 @@ public final class BuildingInfoExporter {
 		perFile.forEach((f, n) -> System.out.println("  " + f + ": " + n));
 		System.out.println("  by category: " + perCategory
 				+ " (+ " + noCategory + " uncategorized — no <Advisor>)");
+		System.out.println("  housing line (kind=housing): " + housing + " buildings");
 		if (noName > 0)
 			System.out.println("  WARNING: " + noName + " buildings had no English name");
 		if (noButton > 0)
@@ -236,9 +278,10 @@ public final class BuildingInfoExporter {
 	/**
 	 * Merge the {@code TXT_KEY_* -> English} maps of every building GameText file. The
 	 * English text is normally the direct text of {@code <English>}; some entries wrap it
-	 * in a {@code <Text>} child (the gendered/plural form), which is unwrapped.
+	 * in a {@code <Text>} child (the gendered/plural form), which is unwrapped. Public so
+	 * {@link com.civstudio.geo.export.HousingExporter} resolves its rung names the same way.
 	 */
-	private static Map<String, String> loadGameText() {
+	public static Map<String, String> loadGameText() {
 		Map<String, String> map = new HashMap<>();
 		for (String file : GAMETEXT_FILES) {
 			Document doc = Civ4Xml.fetch(file);

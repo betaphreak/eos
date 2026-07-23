@@ -7,8 +7,8 @@
       "searchable": true,
       "pageSize": 10,
       "relationOpenMode": "modal",
-      "mainField": "key",
-      "defaultSortBy": "key",
+      "mainField": "name",
+      "defaultSortBy": "name",
       "defaultSortOrder": "ASC"
     },
     "metadatas": {
@@ -38,6 +38,48 @@
         },
         "list": {
           "label": "key",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "name": {
+        "edit": {
+          "label": "name",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "name",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "cost": {
+        "edit": {
+          "label": "cost",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "cost",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "authoredCost": {
+        "edit": {
+          "label": "authoredCost",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "authoredCost",
           "searchable": true,
           "sortable": true
         }
@@ -352,11 +394,11 @@
     "layouts": {
       "list": [
         "id",
+        "name",
         "key",
-        "prereqTech",
-        "obsoleteTech",
-        "obsoletesToBuilding",
-        "prereqPopulation"
+        "cost",
+        "authoredCost",
+        "prereqTech"
       ],
       "edit": [
         [
@@ -365,75 +407,91 @@
             "size": 6
           },
           {
-            "name": "prereqTech",
+            "name": "name",
             "size": 6
           }
         ],
         [
+          {
+            "name": "cost",
+            "size": 6
+          },
+          {
+            "name": "authoredCost",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "prereqTech",
+            "size": 6
+          },
           {
             "name": "obsoleteTech",
             "size": 6
-          },
+          }
+        ],
+        [
           {
             "name": "obsoletesToBuilding",
             "size": 6
-          }
-        ],
-        [
+          },
           {
             "name": "prereqPopulation",
             "size": 6
-          },
+          }
+        ],
+        [
           {
             "name": "freshWater",
             "size": 6
-          }
-        ],
-        [
+          },
           {
             "name": "autoBuild",
             "size": 6
-          },
+          }
+        ],
+        [
           {
             "name": "bonus",
             "size": 6
-          }
-        ],
-        [
+          },
           {
             "name": "prereqBonuses",
             "size": 6
-          },
+          }
+        ],
+        [
           {
             "name": "prereqBuildings",
             "size": 6
-          }
-        ],
-        [
+          },
           {
             "name": "prereqOrBuildings",
             "size": 6
-          },
+          }
+        ],
+        [
           {
             "name": "prereqOrFeatures",
             "size": 6
-          }
-        ],
-        [
+          },
           {
             "name": "prereqOrTerrains",
             "size": 6
-          },
-          {
-            "name": "replacements",
-            "size": 6
           }
         ],
         [
           {
-            "name": "health",
+            "name": "replacements",
             "size": 6
           },
+          {
+            "name": "health",
+            "size": 6
+          }
+        ],
+        [
           {
             "name": "happiness",
             "size": 6

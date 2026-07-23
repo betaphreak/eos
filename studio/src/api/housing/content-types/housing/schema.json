@@ -5,7 +5,7 @@
     "singularName": "housing",
     "pluralName": "housings",
     "displayName": "Housing Building",
-    "description": "A C2C housing building (population-gated auto-build)."
+    "description": "A C2C housing building — the rung catalog the build economy's housing targeting reads (docs/build-queue-plan.md)."
   },
   "options": {
     "draftAndPublish": false
@@ -16,6 +16,15 @@
       "type": "string",
       "required": true,
       "unique": true
+    },
+    "name": {
+      "type": "string"
+    },
+    "cost": {
+      "type": "integer"
+    },
+    "authoredCost": {
+      "type": "integer"
     },
     "prereqTech": {
       "type": "relation",

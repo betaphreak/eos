@@ -156,6 +156,77 @@
           "sortable": true
         }
       },
+      "obsoleteTech": {
+        "edit": {
+          "label": "obsoleteTech",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true,
+          "mainField": "name"
+        },
+        "list": {
+          "label": "obsoleteTech",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "autoBuild": {
+        "edit": {
+          "label": "autoBuild",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "autoBuild",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "kind": {
+        "edit": {
+          "label": "kind",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "kind",
+          "searchable": true,
+          "sortable": true
+        }
+      },
+      "flavors": {
+        "edit": {
+          "label": "flavors",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "flavors",
+          "searchable": false,
+          "sortable": false
+        }
+      },
+      "replacedBy": {
+        "edit": {
+          "label": "replacedBy",
+          "description": "",
+          "placeholder": "",
+          "visible": true,
+          "editable": true
+        },
+        "list": {
+          "label": "replacedBy",
+          "searchable": false,
+          "sortable": false
+        }
+      },
       "createdAt": {
         "edit": {
           "label": "createdAt",
@@ -269,6 +340,34 @@
           {
             "name": "cost",
             "size": 6
+          }
+        ],
+        [
+          {
+            "name": "obsoleteTech",
+            "size": 6
+          },
+          {
+            "name": "autoBuild",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "kind",
+            "size": 6
+          }
+        ],
+        [
+          {
+            "name": "flavors",
+            "size": 12
+          }
+        ],
+        [
+          {
+            "name": "replacedBy",
+            "size": 12
           }
         ]
       ]

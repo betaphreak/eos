@@ -67,6 +67,8 @@ const ENUMS = {
   adjacencyType: ['sea', 'canal', 'lake'],
   buildingCategory: ['CULTURE', 'ECONOMY', 'GROWTH', 'MILITARY', 'RELIGION',
     'SCIENCE'],
+  // build-queue B2 (docs/build-queue-plan.md): non-regular building kinds; absent = regular
+  buildingKind: ['housing'],
   bonusClass: ['BONUSCLASS_CROP', 'BONUSCLASS_LIVESTOCK', 'BONUSCLASS_LUXURY',
     'BONUSCLASS_MANUFACTURED', 'BONUSCLASS_MISC', 'BONUSCLASS_PRODUCTION',
     'BONUSCLASS_SEAFOOD', 'BONUSCLASS_STRATEGIC', 'BONUSCLASS_WONDER'],
@@ -244,6 +246,14 @@ const SPECS = [
       artDefineTag: S(),
       button: S(),
       cost: I(),
+      // build-queue B2 fields (docs/build-queue-plan.md): the flat-catalog view the
+      // queue brain reads. kind=housing marks the BUILDING_HOUSING_* line (whose rich
+      // catalog is the `housing` type); autoBuild marks C2C's bookkeeping autobuilds.
+      obsoleteTech: m2o('tech'),
+      autoBuild: B(),
+      kind: En('buildingKind'),
+      flavors: J(), // C2C <Flavors> AI build weights: { FLAVOR_*: int }
+      replacedBy: J(), // C2C <ReplacementBuildings> upgrade chain: [BUILDING_*]
     },
   },
   {
@@ -290,9 +300,15 @@ const SPECS = [
   },
   {
     name: 'housing', plural: 'housings', display: 'Housing Building',
-    description: 'A C2C housing building (population-gated auto-build).',
+    description: 'A C2C housing building — the rung catalog the build economy\'s housing targeting reads (docs/build-queue-plan.md).',
     attributes: {
       key: S({ required: true, unique: true }), // BUILDING_HOUSING_*
+      name: S(), // display name (GameText), so the admin list is readable
+      // cost = the exporter's hand-priced default (C2C auto-grants housing, so it ships
+      // no iCost); authoredCost = the studio-authored override the seeder NEVER writes,
+      // so admin edits survive every re-seed. Effective build cost = authoredCost ?? cost.
+      cost: I(),
+      authoredCost: I(),
       prereqTech: m2o('tech'),
       obsoleteTech: m2o('tech'),
       obsoletesToBuilding: m2o('building'),

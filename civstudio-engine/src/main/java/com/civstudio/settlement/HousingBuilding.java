@@ -44,7 +44,19 @@ import java.util.List;
  * itself is likewise wired only when the auto-build phase consumes the {@code Unlock}
  * seam; this record is the data that phase reads.
  *
+ * <p>
+ * <b>Build-queue cut (docs/build-queue-plan.md B2):</b> under the build economy the
+ * housing line is <b>hammer-built by households</b>, not auto-raised — so each rung
+ * carries a build cost. C2C auto-grants housing and ships no {@code iCost}, so
+ * {@link #cost()} is the exporter's <b>hand-priced default</b> and
+ * {@link #authoredCost()} the studio-authored override (content, never seeded);
+ * {@link #effectiveCost()} prefers the authored value and a rung with neither is
+ * <b>unbuildable</b> ({@code BUILDING_HOUSING_HOMELESS}, the far-future rungs).
+ *
  * @param type                the Civ4 type key (e.g. {@code BUILDING_HOUSING_HOVELS})
+ * @param name                the English display name (GameText), or {@code null}
+ * @param cost                the hand-priced default build cost, or {@code null}
+ * @param authoredCost        the studio-authored cost override, or {@code null}
  * @param prereqTech          the tech that unlocks it, or {@code null}
  * @param obsoleteTech        the tech that retires it, or {@code null}
  * @param obsoletesToBuilding the building it becomes on obsolescence, or {@code null}
@@ -70,6 +82,9 @@ import java.util.List;
  */
 public record HousingBuilding(
 		String type,
+		String name,
+		Integer cost,
+		Integer authoredCost,
 		String prereqTech,
 		String obsoleteTech,
 		String obsoletesToBuilding,
@@ -106,6 +121,20 @@ public record HousingBuilding(
 
 	private static int[] pad(int[] a, int len) {
 		return a != null && a.length == len ? a : Arrays.copyOf(a == null ? new int[0] : a, len);
+	}
+
+	/**
+	 * The cost a housing build project must pay: the studio-authored override when
+	 * present, else the exporter's hand-priced default, else {@code null} (unbuildable —
+	 * the HOMELESS marker and the far-future rungs).
+	 */
+	public Integer effectiveCost() {
+		return authoredCost != null ? authoredCost : cost;
+	}
+
+	/** Whether this rung can be hammer-built at all (a costless rung cannot). */
+	public boolean buildable() {
+		return effectiveCost() != null;
 	}
 
 	@Override

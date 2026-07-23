@@ -97,7 +97,7 @@ const REL = {
   '/improvements.json': { validTerrains: ['terrain', 1], validFeatures: ['feature', 1], prereqTech: ['tech'], upgradeType: ['improvement'] },
   '/routes.json': { bonusType: ['bonus'] },
   '/units.json': { prereqTech: ['tech'], obsoleteTech: ['tech'], combatClass: ['combat'], andTechs: ['tech', 1] },
-  '/buildings.json': { prereqTech: ['tech'], andTechs: ['tech', 1] },
+  '/buildings.json': { prereqTech: ['tech'], obsoleteTech: ['tech'], andTechs: ['tech', 1] },
   '/recipes.json': { outputs: ['bonus', 1], bonus: ['bonus'], prereqBonuses: ['bonus', 1], vicinityBonuses: ['bonus', 1], rawVicinityBonuses: ['bonus', 1], prereqTech: ['tech'], obsoleteTech: ['tech'], prereqBuildings: ['building', 1], prereqOrBuildings: ['building', 1], prereqOrTerrains: ['terrain', 1], prereqOrFeatures: ['feature', 1] },
   '/housing.json': { prereqTech: ['tech'], obsoleteTech: ['tech'], obsoletesToBuilding: ['building'], bonus: ['bonus'], prereqBonuses: ['bonus', 1], prereqBuildings: ['building', 1], prereqOrBuildings: ['building', 1], replacements: ['building', 1], prereqOrFeatures: ['feature', 1], prereqOrTerrains: ['terrain', 1] },
 };
