@@ -407,8 +407,12 @@ verb.
   keeps no floor). Result: child-months **6,228 — +92% over baseline**, plausibly genuine (plot days
   train CONSTRUCTION/COMMERCE → higher productivity → fatter food cushions than baseline households
   ever get). Also fixed: fallback on rest days drove the PlotDays counter negative (display only).
-- Still open before default-flip: the +92% births effect deserves scrutiny (is skill-training the
-  whole story?), tech pacing under housing-first, and the untouched knobs (HYSTERESIS_BAND inert on
+- **Births-surplus probe (2026-07-23): training is NOT the cause** — disabling the plot-day learn()
+  calls left child-months exactly unchanged (6,228). The driver is the occupation choice itself:
+  plot days withdraw labor from the market, each firm's fixed wage budget splits among fewer
+  workers → higher per-worker wages (AvgTotalIncome +10%, savings +9% vs baseline) → fatter food
+  cushions → more births. Textbook labor-supply economics, intended by the design — not an artifact.
+- Still open before default-flip: tech pacing under housing-first, and the untouched knobs (HYSTERESIS_BAND inert on
   commerce-less ground, BUILD_COST_SCALE).
 
 A new opt-in scenario (a `CampFoundingEconomy` sibling with `buildEconomy` + `homePlots` on) is the
