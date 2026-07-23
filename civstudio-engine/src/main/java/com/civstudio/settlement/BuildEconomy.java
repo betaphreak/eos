@@ -110,6 +110,7 @@ public class BuildEconomy {
 		// or everything once currently housed — donates to the colony sink
 		double leftover = laborer.applyHammersToProject(hammers, this);
 		totalHammersDonated += leftover;
+		spendDonation(leftover); // the ruler's center queue (B4)
 		periodHammers += hammers;
 		// mint: commerce coin appears in the household's account with no counterparty
 		if (commerce > 0)
@@ -198,6 +199,103 @@ public class BuildEconomy {
 	/** Cumulative elite housing commissions enqueued since founding (B3b). */
 	public int getEliteCommissions() {
 		return eliteCommissions;
+	}
+
+	// --- the ruler's center build queue (B4, docs/build-queue-plan.md) ----------------
+
+	/**
+	 * Maps a building's catalog cost ({@code iCost}-scale) to donated hammers required.
+	 * UNCALIBRATED (the hammer printer instruments the pace).
+	 */
+	public static final double BUILD_COST_SCALE = 1.0;
+
+	// the active item: catalog id + hammers still owed; null id = queue idle (the brain
+	// picks on the next donation). Donated hammers with no active item evaporate
+	// (Civ4 use-it-or-lose-it — rarely binds, the brain refills immediately).
+	private String activeBuildId;
+	private double activeRemaining;
+	private int rulerQueued, rulerCompleted; // instrumentation
+
+	// spend a donation on the ruler's queue: pick a target if idle (the brain), then pay
+	// the active item; completion raises the ruler-owned building at the center, and the
+	// overflow carries into the next pick. Called wherever hammers are donated.
+	private void spendDonation(double hammers) {
+		while (hammers > 0) {
+			if (activeBuildId == null && !pickNextBuilding())
+				return; // nothing buildable — the donation evaporates
+			double paid = Math.min(hammers, activeRemaining);
+			activeRemaining -= paid;
+			hammers -= paid;
+			if (activeRemaining > 1e-9)
+				return;
+			completeActive();
+		}
+	}
+
+	// the B4 brain (the unattended-colony strategy; a player-fed queue arrives in B6):
+	// highest score among regular, buildable, non-autoBuild, prereq-known, non-obsolete
+	// buildings the center doesn't already have (per-PLOT uniqueness). Score follows the
+	// C2C DLL shape: (1 + flavor sum, the flat-personality dot product) time-discounted
+	// by 100/(cost+3) — the discount that stops early expensive-stacking. Deterministic
+	// (id tie-break), no RNG.
+	private boolean pickNextBuilding() {
+		var plots = colony.getDistrictPlots();
+		if (plots.isEmpty())
+			return false;
+		Plot center = plots.get(0);
+		var known = knownTechs();
+		BuildingInfo best = null;
+		double bestScore = 0;
+		for (BuildingInfo b : BuildingCatalog.get().all()) {
+			if (!b.buildable() || Boolean.TRUE.equals(b.autoBuild()) || b.kind() != null)
+				continue;
+			if (b.prereqTech() == null || !known.contains(b.prereqTech()))
+				continue;
+			if (b.obsoleteTech() != null && known.contains(b.obsoleteTech()))
+				continue;
+			if (center.hasBuilding(b.id()))
+				continue;
+			double score = (1 + b.flavorSum()) * 100.0 / (b.effectiveCost() + 3);
+			if (best == null || score > bestScore
+					|| (score == bestScore && b.id().compareTo(best.id()) < 0)) {
+				best = b;
+				bestScore = score;
+			}
+		}
+		if (best == null)
+			return false;
+		activeBuildId = best.id();
+		activeRemaining = best.effectiveCost() * BUILD_COST_SCALE;
+		rulerQueued++;
+		com.civstudio.io.SimLog.event(com.civstudio.agent.Rank.VILLAGE,
+				java.util.logging.Level.FINE, "the crown began building "
+						+ (best.name() != null ? best.name() : best.id())
+						+ " at the center");
+		return true;
+	}
+
+	private void completeActive() {
+		var plots = colony.getDistrictPlots();
+		var ruler = colony.getRuler();
+		if (!plots.isEmpty())
+			plots.get(0).addBuilding(new Building(activeBuildId,
+					ruler != null && ruler.isAlive() ? ruler.getID() : null));
+		rulerCompleted++;
+		com.civstudio.io.SimLog.event(com.civstudio.agent.Rank.VILLAGE,
+				java.util.logging.Level.INFO,
+				"the crown completed " + activeBuildId + " at the center");
+		activeBuildId = null;
+		activeRemaining = 0;
+	}
+
+	/** Buildings the ruler's queue has started / completed since founding (B4). */
+	public int getRulerQueued() {
+		return rulerQueued;
+	}
+
+	/** Completed center buildings of the ruler's queue (B4). */
+	public int getRulerCompleted() {
+		return rulerCompleted;
 	}
 
 	// one yield channel's per-household share: the plot's raw yield × the daylight

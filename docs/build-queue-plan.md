@@ -280,6 +280,15 @@ house completes at cost; overflow carries; successor inherits the house; wedding
 
 ## B4 — The ruler's main build queue
 
+**Status: BUILT 2026-07-23.** As-built, all in `BuildEconomy`: `spendDonation` pays the active item
+from every donation (overflow carries into the next pick; a donation with nothing buildable
+evaporates), the **brain** `pickNextBuilding` (regular + buildable + non-autoBuild + prereq-known +
+non-obsolete + not already at the center; score `(1 + flavorSum) × 100 ÷ (cost + 3)` — the C2C DLL
+shape with a flat-1 personality; deterministic, no RNG; the B6 player-fed strategy replaces this
+seam for seated colonies), completion raises the **ruler-owned** building at the center with a
+VILLAGE-rank SimLog event, `BUILD_COST_SCALE = 1.0` UNCALIBRATED, queued/completed counters
+instrumented and asserted in `HammerEconomyTest`.
+
 **Goal.** Donated hammers construct real buildings at the center.
 
 **Steps.**
@@ -387,6 +396,19 @@ B1 (occupation choice) ──► B2 (housing) ──► B4 (main queue) ──�
   what B1 produces. B2 gives hammers their first purpose and the demographic gate.
 - **B3 is independent** after B1 and can run in parallel with B2; B4 needs both.
 - **B6 last** — pure surface over a working queue.
+
+## Autobuilds = vernacular development (design lens, user 2026-07-23)
+
+C2C's `bAutoBuild` set is what a settlement does to itself, without the crown's queue — "what the
+peasants would build themselves": the **housing** line (B3 made this literal — households hammer-build
+their own shelter), the **`RESOURCES_*`** markers (cottage industry — charcoal burners appear when the
+materials and know-how exist, nobody commissions them), the **`PESTS_*`** infestations (organic
+development's dark side — arrive with population and food stores; a future sanitation/granary
+pressure), the **`CIVIC_*`/`WORLDVIEW_*`** practice markers (social states — estate-system/law
+territory), and the era **knowledge bases**. The B4 brain excluding all autobuilds from the ruler's
+queue is therefore the correct *semantics*, not just a data guard: the queue is deliberate crown
+construction; autobuilds are emergent. Future features should raise them from colony state (economy
+output, population, laws), never from hammers.
 
 ## Open questions (deliberately deferred)
 

@@ -89,5 +89,12 @@ class HammerEconomyTest {
 		assertTrue(be.getEliteCommissions() > 0,
 				"the unhoused elite commissioned housing from the BuilderFirm ("
 						+ be.getEliteCommissions() + " commissions)");
+
+		// B4: donated hammers drive the ruler's center queue — once housed households
+		// donate, the brain picks a building (completion pace is calibration; starting
+		// one proves the queue is live)
+		assertTrue(be.getRulerQueued() > 0,
+				"the ruler's queue started a center building (" + be.getRulerQueued()
+						+ " queued, " + be.getRulerCompleted() + " completed)");
 	}
 }
