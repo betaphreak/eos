@@ -15,6 +15,7 @@ import { consumePanMoved } from "./input.mjs";
 import { selectProvince } from "./rail.mjs";
 import { openCaravanRail } from "./caravan-detail.mjs";
 import { districtAt } from "./districts.mjs";
+import { buildingsOf } from "./district-plots.mjs";
 import { buildingName } from "./build-catalog.mjs";
 import { openCityScreen } from "./city-screen.mjs";
 import { liveColony } from "./overlays/live.mjs";
@@ -32,7 +33,7 @@ function buildingLines(q) {
   const dist = districtAt(q.x, q.y);
   if (!dist) return "";
   const out = [];
-  for (const b of dist.buildings || [])
+  for (const b of buildingsOf(dist))
     out.push(`<span class="r">▪ ${buildingName(b.id)}</span>`);
   for (const u of dist.underway || []) {
     const pct = u.cost > 0 ? Math.round(100 * Math.min(1, u.progress / u.cost)) : 0;

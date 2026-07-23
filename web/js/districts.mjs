@@ -14,7 +14,7 @@ import { P, ctx, pxr, pyr, px, py, provOnScreen, isPolitical, BUNDLE } from "./c
 import { drawBuildIcon } from "./build-catalog.mjs";
 import { bandAlpha } from "./bands.mjs";
 import { liveColony } from "./overlays/live.mjs";
-import { nearestPlots, indexDistricts, plotKey } from "./district-plots.mjs";
+import { nearestPlots, indexDistricts, plotKey, buildingsOf } from "./district-plots.mjs";
 import { footprintCells, plotBlocks } from "./footprints.mjs";
 
 // --- Civ6 district-hex chips (D4a): {TYPE: {src,w,h}} → loaded Images. We draw NEIGHBORHOOD
@@ -101,7 +101,7 @@ function drawBuildingIcon(id, cx, cy, s) {
 // (2a) OVERVIEW LOD — one plot's buildings as button icons ringed (then spiralled) around it.
 // Reads as "something stands here, and roughly how much".
 function drawPlotIcons(dist, cx, cy, plotPx) {
-  const ids = (dist.buildings || []).map(b => b.id);
+  const ids = buildingsOf(dist).map(b => b.id);
   for (const u of (dist.underway || [])) ids.push(u.id);
   if (!ids.length) return;
   const bs = Math.max(8, Math.min(plotPx * 0.4, 20));
@@ -117,7 +117,7 @@ function drawPlotIcons(dist, cx, cy, plotPx) {
 // per building, owner-tinted, and a part-filled scaffold for anything still rising. This is where a
 // settlement stops being icons and starts being a place.
 function drawPlotFootprints(dist, x0, y0, plotPx) {
-  const blocks = plotBlocks(dist.buildings, dist.underway);
+  const blocks = plotBlocks(buildingsOf(dist), dist.underway);
   if (!blocks.length) return;
   const cells = footprintCells(blocks.length, plotPx, x0, y0);
   for (let i = 0; i < blocks.length; i++) {
@@ -182,9 +182,15 @@ export function drawDistricts() {
   // raster coordinates, so a household's hut sits on that household's ground instead of piling onto
   // the city centre with everything else (which is what this drew before the coordinates shipped).
   if (anchored && Array.isArray(colony.districts)) {
+    const centre = centerPx(colony, plotPx);
     for (const dist of colony.districts) {
-      if (!Number.isFinite(dist.x) || !Number.isFinite(dist.y)) continue;   // older server
-      const x0 = pxr(dist.x), y0 = pyr(dist.y);
+      // An older server sends no coordinates (they arrived with the city screen). Fall back to the
+      // pre-coordinate behaviour — everything ringed on the centre — rather than drawing nothing:
+      // the static site can be a deploy ahead of the server, and a colony that suddenly has no
+      // buildings at all reads as a broken sim, which is a worse lie than the old one.
+      const has = Number.isFinite(dist.x) && Number.isFinite(dist.y);
+      const x0 = has ? pxr(dist.x) : centre.x - plotPx / 2;
+      const y0 = has ? pyr(dist.y) : centre.y - plotPx / 2;
       if (icons > 0.01) {
         ctx.globalAlpha = icons;
         drawPlotIcons(dist, x0 + plotPx / 2, y0 + plotPx / 2, plotPx);

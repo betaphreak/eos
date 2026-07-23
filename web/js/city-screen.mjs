@@ -12,6 +12,7 @@ import { prettyKey, escHtml } from "./plotlabel.mjs";
 import { buildingName, buildingCost } from "./build-catalog.mjs";
 import { renderPicker } from "./build-picker.mjs";
 import { reorder, append } from "./queue-edit.mjs";
+import { buildingsOf } from "./district-plots.mjs";
 import { liveSid, liveColony, postCommand } from "./overlays/live.mjs";
 import { draw } from "./repaint.mjs";
 
@@ -101,7 +102,7 @@ function plotsHtml(colony) {
   const rows = [];
   let hidden = 0;
   districts.forEach((d, i) => {
-    const bare = !(d.buildings || []).length && !(d.underway || []).length;
+    const bare = !buildingsOf(d).length && !(d.underway || []).length;
     if (bare && !showBare) { hidden++; return; }
     rows.push(plotRow(colony, d, i));
   });
@@ -119,7 +120,7 @@ function plotRow(colony, d, i) {
   const land = q ? [q.terrain && prettyKey(q.terrain), q.feature && prettyKey(q.feature)]
     .filter(Boolean).join(" · ") : `${d.x}, ${d.y}`;
   const center = i === 0 ? `<span class="city-badge">City center</span>` : "";
-  const built = (d.buildings || []).map(b =>
+  const built = buildingsOf(d).map(b =>
     `<span class="city-b own-${b.owner}" title="${escHtml(buildingName(b.id))} · ${ownerWord(b.owner)}">${escHtml(buildingName(b.id))}</span>`).join("");
   const rising = (d.underway || []).map(u => {
     const pct = u.cost > 0 ? Math.round(100 * Math.min(1, u.progress / u.cost)) : 0;

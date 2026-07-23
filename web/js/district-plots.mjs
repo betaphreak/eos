@@ -22,6 +22,17 @@ export function nearestPlots(plots, n, cx, cy, sx, sy) {
 export const plotKey = (x, y) => `${x},${y}`;
 
 /**
+ * One district's finished buildings as `{id, owner}`, whichever shape the server sent. Before the
+ * city screen the feed carried bare id STRINGS with no owner; the static site can be a deploy ahead
+ * of the server, and a client that assumes the new shape renders a row of `undefined` at exactly
+ * the moment someone is looking at a freshly-deployed page.
+ */
+export function buildingsOf(district) {
+  return ((district && district.buildings) || []).map(b =>
+    typeof b === "string" ? { id: b, owner: "NONE" } : { id: b.id, owner: b.owner || "NONE" });
+}
+
+/**
  * Index a colony's live district feed (snapshot `colony.districts`) by plot coordinate, so a
  * draw or a hover can ask "what stands HERE?" in one lookup. Entries without coordinates are
  * skipped — an older server that still sends bare indices simply yields an empty index rather

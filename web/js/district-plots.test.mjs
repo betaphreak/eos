@@ -45,3 +45,23 @@ test("the pick is stable — equidistant plots break ties on (y, x)", () => {
   const b = [...nearestPlots(plots.slice().reverse(), 6, 1.5, 1.5, sx, sy)].map(q => `${q.x},${q.y}`);
   assert.deepEqual(a.slice().sort(), b.slice().sort(), "input order must not change the pick");
 });
+
+test("a district's buildings read the same in either server shape", async () => {
+  const { buildingsOf } = await import("./district-plots.mjs");
+  // the shape the city screen ships
+  assert.deepEqual(buildingsOf({ buildings: [{ id: "BUILDING_CASTLE", owner: "RULER" }] }),
+    [{ id: "BUILDING_CASTLE", owner: "RULER" }]);
+  // the shape an older server (a deploy behind the static site) still sends: bare id strings
+  assert.deepEqual(buildingsOf({ buildings: ["BUILDING_CASTLE"] }),
+    [{ id: "BUILDING_CASTLE", owner: "NONE" }]);
+  // and the empty cases nobody should have to guard at the call site
+  assert.deepEqual(buildingsOf({}), []);
+  assert.deepEqual(buildingsOf(null), []);
+});
+
+test("indexDistricts keys by plot and skips coordinate-less entries", async () => {
+  const { indexDistricts, plotKey } = await import("./district-plots.mjs");
+  const idx = indexDistricts([{ x: 4012, y: 888, buildings: [] }, { index: 3, buildings: [] }]);
+  assert.equal(idx.size, 1, "an older server's index-only entry cannot be placed, so it is skipped");
+  assert.ok(idx.get(plotKey(4012, 888)));
+});
