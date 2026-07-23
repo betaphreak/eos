@@ -328,6 +328,10 @@ class SocialMobility implements ExpeditionReturn {
 	private void tryFission(Laborer parent) {
 		if (!parent.isAlive())
 			return;
+		// the housing gate (build economy B3): only a housed parent fissions — the child
+		// household starts homeless and becomes the next construction wave
+		if (!parent.housedForGate())
+			return;
 		Granary granary = colony.getGranary();
 		if (granary == null || granary.getStock() < FISSION_NECESSITY_DOWRY)
 			return; // no strategic store to dower a new household — fission waits

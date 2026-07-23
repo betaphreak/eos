@@ -1851,8 +1851,16 @@ public class Settlement {
 			// so the replacement's new household reuses that land (turnover keeps the core on the land;
 			// see claimHomePlot step 1). A no-op for a landless household or one without a home plot.
 			// See docs/plot-working-plan.md P2.
-			if (agent instanceof Laborer l && l.getHomePlot() != null)
+			if (agent instanceof Laborer l && l.getHomePlot() != null) {
+				// orphan the dead household's buildings first (owner cleared, buildings stay
+				// on the plot — durable): the successor seated on the same plot ADOPTS the
+				// orphaned house, so succession inherits shelter (build-queue-plan.md B3)
+				if (buildEconomy != null)
+					for (Building b : l.getHomePlot().buildings())
+						if (b.ownerId() != null && b.ownerId() == agent.getID())
+							b.setOwnerId(null);
 				releaseHomePlot(l.getHomePlot());
+			}
 			// a dead person of interest leaves the roster (a successor, if any,
 			// registers itself afresh in its constructor); log its passing once — at
 			// FINE (per-death demographic detail, off by default), and count it for the
@@ -2055,7 +2063,9 @@ public class Settlement {
 			return; // already present (idempotent)
 		if (center.buildings().size() >= tier.maxBuildings())
 			return; // this rung's building cap is reached (Camp 0, Cottage 1, Hamlet 3, …)
-		center.addBuilding(new Building(token));
+		// unowned: the tech auto-build is render-state (docs/district-buildout.md), not a
+		// household's property; B4's real queue supersedes this path for the build economy
+		center.addBuilding(new Building(token, null));
 	}
 
 	/**

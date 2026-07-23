@@ -396,8 +396,28 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	 * household is married. Call from {@link #act()}.
 	 */
 	protected final void seekSpouseIfSingle() {
+		// the housing gate (build economy, docs/build-queue-plan.md B3): an unhoused
+		// household does not wed. Default-true, so only overriders (a landed Laborer on
+		// a build-economy colony) are ever gated; pool weddings ride the market's own
+		// pool matching and are exempt by design.
+		if (!housedForGate())
+			return;
 		if (weddingMkt != null && isAlive() && getMemberCount() == 1)
 			weddingMkt.addSeeker(this);
+	}
+
+	/**
+	 * The <b>housing gate</b> (build economy, docs/build-queue-plan.md B3): whether
+	 * this household counts as housed for the demographic gates — weddings
+	 * ({@link #seekSpouseIfSingle()}) and fission ({@code SocialMobility}). Default
+	 * {@code true} (no gate); a landed {@code Laborer} on a build-economy colony
+	 * overrides it to require a <b>current</b> (non-obsolete) house it owns — an
+	 * obsolete-housed household stays sheltered but is re-gated until it modernizes.
+	 *
+	 * @return whether the household passes the housing gate
+	 */
+	public boolean housedForGate() {
+		return true;
 	}
 
 	/**

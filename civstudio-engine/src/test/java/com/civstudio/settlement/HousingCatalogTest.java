@@ -53,6 +53,31 @@ class HousingCatalogTest {
 		assertNull(HousingCatalog.get().byType("BUILDING_HOUSING_NO_SUCH"));
 	}
 
+	@Test
+	void cheapestAvailablePicksTheLowestUnlockedCurrentRung() {
+		HousingCatalog catalog = HousingCatalog.get();
+		// both prereqs known, nothing obsolete → bark huts (15) beat stone huts (35)
+		assertEquals("BUILDING_HOUSING_BARK_HUTS", catalog.cheapestAvailable(
+				java.util.Set.of("TECH_BARK_WORKING", "TECH_STONE_BUILDING")).type());
+		// surveying also known → bark huts obsolete → stone huts
+		assertEquals("BUILDING_HOUSING_STONE_HUTS", catalog.cheapestAvailable(
+				java.util.Set.of("TECH_BARK_WORKING", "TECH_STONE_BUILDING",
+						"TECH_SURVEYING")).type());
+		// nothing known → no rung
+		assertNull(catalog.cheapestAvailable(java.util.Set.of()));
+	}
+
+	@Test
+	void isCurrentTracksObsolescenceLeniently() {
+		HousingCatalog catalog = HousingCatalog.get();
+		assertTrue(catalog.isCurrent("BUILDING_HOUSING_BARK_HUTS", java.util.Set.of()));
+		assertFalse(catalog.isCurrent("BUILDING_HOUSING_BARK_HUTS",
+				java.util.Set.of("TECH_SURVEYING")));
+		// a rung missing from the catalog counts as current (an unseeded store must not
+		// evict anyone)
+		assertTrue(catalog.isCurrent("BUILDING_HOUSING_NO_SUCH", java.util.Set.of()));
+	}
+
 	private static HousingBuilding rung(String type, Integer cost, Integer authoredCost) {
 		return new HousingBuilding(type, null, cost, authoredCost, "TECH_A", null, null, 0, false,
 				true, null, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),

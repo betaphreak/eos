@@ -1,31 +1,70 @@
 package com.civstudio.settlement;
 
 /**
- * A <b>center building</b> standing on a {@link Plot} — a Civ4-style <i>city</i>
- * building (a banking house, granary, workshop…) with no land footprint of its own,
- * which lives at the <b>village center</b> (plot 0) where the landless center-grouped
- * firms and banks reside (see {@code docs/village-founding.md}). It is deliberately
- * <b>distinct</b> from the tile {@link com.civstudio.geo.Improvement} leg a
- * land-working firm raises on its own plot: an improvement enters the plot's
+ * A <b>placed building</b> standing on a {@link Plot} — a Civ4-style building instance
+ * (a banking house, granary, a household's hut…), distinct from the tile
+ * {@link com.civstudio.geo.Improvement} leg: an improvement enters the plot's
  * {@link Plot#yields()}; a building does not (its economic effect is deferred — see
  * {@code docs/plots.md}, <i>Buildings vs. improvements</i>).
  * <p>
- * A building is keyed by its <b>eos-native id</b> — the same id the tech tree's
- * {@link com.civstudio.tech.TechEffect.Unlock} names (e.g. {@code
- * "FIRM_BANKING_HOUSE"}), so that researching the unlocking tech is what (in a later
- * phase) triggers the building's auto-construction at the center.
- * <p>
- * <b>Phase 1 is the data model only.</b> A plot tracks its buildings, but nothing
- * populates them and they carry no yield, so the change is byte-identical; the
- * tech-gated auto-build trigger and the building's economic effect are later phases.
- *
- * @param id the building's eos-native id (the {@code Unlock} target; non-blank)
+ * A building is keyed by its <b>catalog id</b> — the same id the tech tree's
+ * {@link com.civstudio.tech.TechEffect.Unlock} names and {@link BuildingCatalog} /
+ * {@link HousingCatalog} carry (e.g. {@code "BUILDING_HOUSING_BARK_HUTS"}) — and since
+ * B3 carries an <b>owner</b> (docs/build-queue-plan.md): the agent id of the household
+ * (or ruler) that raised it, or {@code null} for an <b>unowned</b> building — orphaned
+ * by its owner's death (the estate seam: a dead household's house is orphaned, and the
+ * successor seated on the plot <b>adopts</b> it), or inherited ground from a previous
+ * colony (buildings are durable — they outlive the colony on the plot).
  */
-public record Building(String id) {
+public final class Building {
 
-	/** Validate the id is present. */
-	public Building {
+	// the catalog id (the Unlock target; non-blank, immutable)
+	private final String id;
+
+	// the owning agent's id, or null when unowned (orphaned/inherited) — mutable: an
+	// owner dies (orphaning it) and a successor adopts it
+	private Integer ownerId;
+
+	/**
+	 * Create a placed building.
+	 *
+	 * @param id      the building's catalog id (non-blank)
+	 * @param ownerId the owning agent's id, or {@code null} for unowned
+	 */
+	public Building(String id, Integer ownerId) {
 		if (id == null || id.isBlank())
 			throw new IllegalArgumentException("building id must be non-blank");
+		this.id = id;
+		this.ownerId = ownerId;
+	}
+
+	/** The building's catalog id (the {@code Unlock} target). */
+	public String id() {
+		return id;
+	}
+
+	/** The owning agent's id, or {@code null} when unowned (orphaned/inherited). */
+	public Integer ownerId() {
+		return ownerId;
+	}
+
+	/** Whether this building is a housing rung (the {@code BUILDING_HOUSING_*} line). */
+	public boolean isHousing() {
+		return id.startsWith("BUILDING_HOUSING_");
+	}
+
+	/**
+	 * Transfer (or clear, with {@code null}) ownership — a dying owner orphans its
+	 * buildings; a successor household adopts an orphaned house on its plot.
+	 *
+	 * @param ownerId the new owner's agent id, or {@code null} to orphan
+	 */
+	public void setOwnerId(Integer ownerId) {
+		this.ownerId = ownerId;
+	}
+
+	@Override
+	public String toString() {
+		return id + (ownerId == null ? " (unowned)" : " (owner #" + ownerId + ")");
 	}
 }

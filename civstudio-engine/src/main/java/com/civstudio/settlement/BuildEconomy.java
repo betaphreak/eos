@@ -106,8 +106,10 @@ public class BuildEconomy {
 			return;
 		double hammers = yieldShare(laborer, plot, 1, Skill.CONSTRUCTION);
 		double commerce = yieldShare(laborer, plot, 2, Skill.COMMERCE);
-		// donate: all hammers flow to the colony sink until B3 gives households projects
-		totalHammersDonated += hammers;
+		// hammers pay the household's housing project first (B3); the leftover — overflow,
+		// or everything once currently housed — donates to the colony sink
+		double leftover = laborer.applyHammersToProject(hammers, this);
+		totalHammersDonated += leftover;
 		periodHammers += hammers;
 		// mint: commerce coin appears in the household's account with no counterparty
 		if (commerce > 0)
@@ -179,6 +181,23 @@ public class BuildEconomy {
 				n++;
 			}
 		return n == 0 ? 0 : Math.round((float) sum / n);
+	}
+
+	/**
+	 * The colony's known tech ids (for obsolescence checks), never {@code null} — a
+	 * pre-research colony knows nothing.
+	 */
+	public java.util.Set<String> knownTechs() {
+		return colony.getResearch() != null ? colony.getResearch().getKnown()
+				: java.util.Set.of();
+	}
+
+	/**
+	 * The cheapest housing rung the colony can build today (the B3 self-build target),
+	 * or {@code null} when none is available yet.
+	 */
+	public HousingBuilding cheapestAvailableHousing() {
+		return HousingCatalog.get().cheapestAvailable(knownTechs());
 	}
 
 	// --- instrumentation (the B1 hammer printer + the calibration tests) --------------

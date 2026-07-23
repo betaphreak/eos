@@ -40,7 +40,7 @@ class PlotBuildingTest {
 	@Test
 	void addBuildingTracksItById() {
 		Plot p = plot();
-		p.addBuilding(new Building("FIRM_BANKING_HOUSE"));
+		p.addBuilding(new Building("FIRM_BANKING_HOUSE", null));
 		assertEquals(1, p.buildings().size());
 		assertTrue(p.hasBuilding("FIRM_BANKING_HOUSE"));
 		assertFalse(p.hasBuilding("BUILDING_GRANARY"));
@@ -50,7 +50,7 @@ class PlotBuildingTest {
 	void theBuildingsViewIsUnmodifiable() {
 		Plot p = plot();
 		assertThrows(UnsupportedOperationException.class,
-				() -> p.buildings().add(new Building("X")));
+				() -> p.buildings().add(new Building("X", null)));
 	}
 
 	@Test
@@ -59,14 +59,14 @@ class PlotBuildingTest {
 		// deferred), so adding one must leave the plot's yields exactly as they were
 		Plot p = plot();
 		int[] before = p.yields();
-		p.addBuilding(new Building("FIRM_BANKING_HOUSE"));
+		p.addBuilding(new Building("FIRM_BANKING_HOUSE", null));
 		assertArrayEquals(before, p.yields());
 	}
 
 	@Test
 	void aBuildingIdMustBePresentAndAddedBuildingNonNull() {
-		assertThrows(IllegalArgumentException.class, () -> new Building(" "));
-		assertThrows(IllegalArgumentException.class, () -> new Building(null));
+		assertThrows(IllegalArgumentException.class, () -> new Building(" ", null));
+		assertThrows(IllegalArgumentException.class, () -> new Building(null, null));
 		assertThrows(IllegalArgumentException.class, () -> plot().addBuilding(null));
 	}
 }

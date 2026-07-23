@@ -211,6 +211,25 @@ eos rows survive a re-seed; a tech's unlock set matches the catalog's prereq vie
 
 ## B3 — Housing
 
+**Status: B3a (household self-build + gate) BUILT 2026-07-23; B3b (elite commissions via the
+BuilderFirm) remains.** As-built for B3a: `Building` record → owner-carrying class (`ownerId`
+nullable = orphaned/inherited; the tech auto-build path places unowned render-state buildings);
+`Laborer` housing project (`applyHammersToProject` — hammers pay the cheapest available rung,
+overflow donates; completion raises the owned house on the home plot), **adoption** of orphaned
+houses (dead owner → `Settlement.newDay` orphans before releasing the plot → the successor seated on
+the same plot adopts — succession inherits shelter, and so does a later colony on durable ground);
+the **homeless-and-FED rule** in `updateOccupation` (larder ≥ 2 days' rations → stay home and build;
+hungry → market); the **gate** as `AbstractHousehold.housedForGate()` (default true; `Laborer`
+overrides — landed on a build-economy colony needs a *current* house; landless exempt) checked in
+`seekSpouseIfSingle` + `SocialMobility.tryFission`; obsolescence re-gates without evicting
+(`HousingCatalog.isCurrent`, lenient on unknown rungs).
+
+**Finding (2026-07-23):** the warm-start baseline **never applies `Unlock` token effects** for
+pre-known techs (`getGrantedTechTokens()` is empty at founding — also why early unit embodiment is
+null until live research). Housing targeting therefore reads `prereqTech ∈ knownTechs` straight off
+the catalog (`HousingCatalog.cheapestAvailable(knownTechs)`) instead of tokens. The token warm-start
+gap is a known follow-up, out of this feature's scope.
+
 **Goal.** The homeless state, the housing build project (from the B2 catalog's `BUILDING_HOUSING_*`
 line), and the wedding/fission gate.
 

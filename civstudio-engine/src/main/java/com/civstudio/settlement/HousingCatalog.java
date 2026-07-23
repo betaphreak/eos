@@ -63,6 +63,54 @@ public final class HousingCatalog {
 		return byType.get(type);
 	}
 
+	/**
+	 * The <b>cheapest available</b> housing rung a colony can build today — the B3
+	 * self-build target (docs/build-queue-plan.md): among rungs that are
+	 * {@link HousingBuilding#buildable() buildable}, <b>unlocked</b> (their
+	 * {@code prereqTech} known — read straight off the catalog rather than the
+	 * {@code Unlock} token set, because the warm-start baseline does not apply token
+	 * effects for pre-known techs; a known follow-up) and <b>not obsolete</b> (their
+	 * {@code obsoleteTech} unresearched), the lowest {@link
+	 * HousingBuilding#effectiveCost() effective cost}, type id as the deterministic
+	 * tie-break. {@code null} when the colony can build no housing yet.
+	 *
+	 * @param knownTechs the colony's known tech ids, never null
+	 * @return the cheapest available rung, or {@code null}
+	 */
+	public HousingBuilding cheapestAvailable(java.util.Set<String> knownTechs) {
+		HousingBuilding best = null;
+		for (HousingBuilding h : all) {
+			if (!h.buildable() || h.prereqTech() == null
+					|| !knownTechs.contains(h.prereqTech()))
+				continue;
+			if (h.obsoleteTech() != null && knownTechs.contains(h.obsoleteTech()))
+				continue;
+			if (best == null || h.effectiveCost() < best.effectiveCost()
+					|| (h.effectiveCost().equals(best.effectiveCost())
+							&& h.type().compareTo(best.type()) < 0))
+				best = h;
+		}
+		return best;
+	}
+
+	/**
+	 * Whether a placed housing building still counts as <b>current</b> — its rung not
+	 * obsoleted by a researched tech. An obsolete-housed household stays sheltered but
+	 * the wedding/fission gate re-applies until it builds current housing (the
+	 * Obsolescence decision). A rung missing from the catalog counts as current
+	 * (lenient — an unseeded store must not evict anyone).
+	 *
+	 * @param buildingId the placed building's id
+	 * @param knownTechs the colony's known tech ids
+	 * @return whether the housing is still current
+	 */
+	public boolean isCurrent(String buildingId, java.util.Set<String> knownTechs) {
+		HousingBuilding h = byType.get(buildingId);
+		if (h == null)
+			return true;
+		return h.obsoleteTech() == null || !knownTechs.contains(h.obsoleteTech());
+	}
+
 	static HousingCatalog load(WorldSource source) {
 		try (InputStream in = source.open(RESOURCE)) {
 			if (in == null) {

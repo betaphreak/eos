@@ -67,5 +67,20 @@ class HammerEconomyTest {
 				firmOutput += f.getOutput();
 		assertTrue(firmOutput > 0,
 				"firms still produce — home-working did not empty the labor market");
+
+		// B3: the housing wave fired — the homeless-and-fed rule sends unhoused landed
+		// households home to build, so after a settled year some completed their house
+		// (adoption of orphaned houses counts too) and pass the wedding/fission gate
+		int landed = 0, housed = 0;
+		for (Agent a : c.getAgents())
+			if (a.isAlive() && a instanceof com.civstudio.agent.laborer.Laborer l
+					&& l.getHomePlot() != null) {
+				landed++;
+				if (l.housedForGate())
+					housed++;
+			}
+		assertTrue(landed > 0, "the settled colony has landed households");
+		assertTrue(housed > 0, "the housing wave completed houses: " + housed + "/" + landed
+				+ " landed households are housed");
 	}
 }

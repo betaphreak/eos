@@ -127,6 +127,25 @@ public class Laborer extends AbstractHousehold {
 	// is NOT mistaken for a rejected market day when updating lastMarketWage
 	private boolean plotDayYesterday;
 
+	// --- housing (build economy B3, docs/build-queue-plan.md) -----------------------------
+
+	// the house this household owns on its home plot, or null while homeless. Set on
+	// completion of its housing project or by adopting an orphaned house on its plot;
+	// orphaned (owner cleared) when the household dies, so the successor re-adopts it.
+	@Getter
+	private Plot houseOnPlot; // the plot the house stands on (== homePlot when built)
+	private com.civstudio.settlement.Building house;
+
+	// the housing self-build project: the target rung id + cost, and the hammers paid in
+	private String targetRungId;
+	private double targetRungCost;
+	private double houseProgress;
+
+	// larder days of food required for a homeless household to stay home and build
+	// rather than earn (the homeless-and-FED rule; survival wages beat house-building
+	// when the larder is short). UNCALIBRATED.
+	private static final double FED_DAYS = 2;
+
 	/**
 	 * Create a new laborer
 	 *
@@ -485,6 +504,7 @@ public class Laborer extends AbstractHousehold {
 		// posts labor unconditionally as before — byte-identical.
 		var buildEconomy = getColony().getBuildEconomy();
 		if (buildEconomy != null && homePlot != null) {
+			adoptOrphanedHouse();
 			updateOccupation(buildEconomy);
 			// the choice binds only on workdays (rest days gate plot-working like firms);
 			// on a rest day everyone goes to market as today (enjoyment firms may hire)
@@ -534,6 +554,13 @@ public class Laborer extends AbstractHousehold {
 		// spuriously flip every plot-worker back to market each weekend)
 		if (getColony().getDayType() != DayType.WORKDAY)
 			return;
+		// the homeless-and-FED rule (B3): an unhoused household whose larder can carry it
+		// stays home to build its house — the demographic gate makes housing worth more
+		// than a wage. Homeless-and-hungry falls through to the normal rule (earn to eat).
+		if (!housedForGate() && necessity.getQuantity() >= FED_DAYS * dailyRation(getColony().getDate())) {
+			plotWorker = true;
+			return;
+		}
 		if (!everPaid) {
 			plotWorker = false;
 			return;
@@ -543,6 +570,78 @@ public class Laborer extends AbstractHousehold {
 			plotWorker = true;
 		else if (plotWorker && plotValue < lastMarketWage * (1 - BuildEconomy.HYSTERESIS_BAND))
 			plotWorker = false;
+	}
+
+	/**
+	 * The housing gate (B3): a landed laborer on a build-economy colony must own a
+	 * <b>current</b> (non-obsolete) house to wed or fission; everyone else — flag-off
+	 * colonies, landless households (they cannot build) — passes freely. An
+	 * obsolete-housed household stays sheltered but is re-gated until it modernizes.
+	 */
+	@Override
+	public boolean housedForGate() {
+		var buildEconomy = getColony().getBuildEconomy();
+		if (buildEconomy == null || homePlot == null)
+			return true;
+		return house != null && com.civstudio.settlement.HousingCatalog.get()
+				.isCurrent(house.id(), buildEconomy.knownTechs());
+	}
+
+	// adopt an orphaned (unowned) housing building standing on this household's home
+	// plot — the succession/inheritance seam: a dead household's house is orphaned, and
+	// the successor seated on the same plot takes it over (also covers ground inherited
+	// from a previous colony). A no-op once housed.
+	private void adoptOrphanedHouse() {
+		if (house != null || homePlot == null)
+			return;
+		for (com.civstudio.settlement.Building b : homePlot.buildings())
+			if (b.isHousing() && b.ownerId() == null) {
+				b.setOwnerId(getID());
+				house = b;
+				houseOnPlot = homePlot;
+				return;
+			}
+	}
+
+	/**
+	 * Pay plot-day hammers into this household's <b>housing project</b> (B3): while
+	 * unhoused (or housed obsolete), hammers build the colony's cheapest available
+	 * housing rung on the home plot; completion raises the {@link
+	 * com.civstudio.settlement.Building} (owned by this household) and houses the
+	 * household. Overflow beyond completion — and all hammers once currently housed —
+	 * is returned for donation to the colony sink.
+	 *
+	 * @param hammers      the plot day's hammers
+	 * @param buildEconomy the colony's build economy (the catalog/tech views)
+	 * @return the hammers NOT consumed by the project (to donate)
+	 */
+	public double applyHammersToProject(double hammers, BuildEconomy buildEconomy) {
+		if (hammers <= 0 || housedForGate())
+			return hammers;
+		// (re)target the cheapest available rung; no rung buildable yet → all donate
+		if (targetRungId == null) {
+			var rung = buildEconomy.cheapestAvailableHousing();
+			if (rung == null)
+				return hammers;
+			targetRungId = rung.type();
+			targetRungCost = rung.effectiveCost();
+		}
+		houseProgress += hammers;
+		if (houseProgress < targetRungCost)
+			return 0;
+		// complete: raise the house on the home plot, owned by this household
+		double overflow = houseProgress - targetRungCost;
+		var built = new com.civstudio.settlement.Building(targetRungId, getID());
+		homePlot.addBuilding(built);
+		house = built;
+		houseOnPlot = homePlot;
+		SimLog.event(Rank.HOUSEHOLD, Level.FINE, String.format(
+				"the %s household raised its %s on its home plot",
+				getHead().surname(), targetRungId));
+		targetRungId = null;
+		targetRungCost = 0;
+		houseProgress = 0;
+		return overflow;
 	}
 
 	/**
