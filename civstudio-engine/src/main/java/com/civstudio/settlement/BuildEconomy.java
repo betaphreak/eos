@@ -156,6 +156,48 @@ public class BuildEconomy {
 				periodPlotDays--;
 			}
 		marketChoosers.clear();
+		enqueueEliteCommissions();
+	}
+
+	// B3b: an unhoused Noble/Ruler commissions the BuilderFirm — a building-legged
+	// BuildProject at the center, sponsor-billed at cost (the ruler's is a coin wash,
+	// a noble's a real noble→crown transfer; the scaffold cap is the price). Target:
+	// the BEST available rung (a manor over a hut). One pending commission per
+	// household (deduped by scanning the live queue — no extra state to desync).
+	private void enqueueEliteCommissions() {
+		var plots = colony.getDistrictPlots();
+		if (plots.isEmpty())
+			return;
+		Plot center = plots.get(0);
+		for (com.civstudio.agent.Agent a : colony.getAgents()) {
+			if (!(a instanceof com.civstudio.agent.noble.Noble
+					|| a instanceof com.civstudio.agent.ruler.Ruler))
+				continue;
+			var elite = (com.civstudio.agent.AbstractHousehold) a;
+			if (!elite.isAlive() || elite.housedForGate() || hasPendingCommission(elite))
+				continue;
+			HousingBuilding rung = HousingCatalog.get().bestAvailable(knownTechs());
+			if (rung == null)
+				continue;
+			plotField.queueCommission(new com.civstudio.settlement.BuildProject(
+					center, rung.type(), rung.effectiveCost(), elite));
+			eliteCommissions++;
+		}
+	}
+
+	private boolean hasPendingCommission(com.civstudio.agent.AbstractHousehold owner) {
+		for (BuildProject p : plotField.activeProjects())
+			if (p.isBuildingCommission() && p.getBuildingOwner() == owner)
+				return true;
+		return false;
+	}
+
+	// cumulative elite commissions enqueued (instrumentation)
+	private int eliteCommissions;
+
+	/** Cumulative elite housing commissions enqueued since founding (B3b). */
+	public int getEliteCommissions() {
+		return eliteCommissions;
 	}
 
 	// one yield channel's per-household share: the plot's raw yield × the daylight

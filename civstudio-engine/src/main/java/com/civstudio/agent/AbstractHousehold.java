@@ -420,6 +420,33 @@ public abstract class AbstractHousehold extends Agent implements Household {
 		return true;
 	}
 
+	// the house this household owns (elite commissions set it on completion — B3b), or
+	// null while unhoused. Laborer manages its own self-built house separately.
+	private com.civstudio.settlement.Building house;
+
+	/** The house this household owns, or {@code null} while unhoused (B3b). */
+	public com.civstudio.settlement.Building getHouse() {
+		return house;
+	}
+
+	/** House this household (a completed commission calls this — B3b). */
+	public void setHouse(com.civstudio.settlement.Building house) {
+		this.house = house;
+	}
+
+	/**
+	 * Whether this household owns a <b>current</b> (non-obsolete) house — the shared
+	 * gate check for elite households (Noble/Ruler override {@link #housedForGate()}
+	 * with it on a build-economy colony; see docs/build-queue-plan.md B3b).
+	 */
+	protected final boolean hasCurrentHouse() {
+		var be = getColony().getBuildEconomy();
+		if (be == null)
+			return true;
+		return house != null && com.civstudio.settlement.HousingCatalog.get()
+				.isCurrent(house.id(), be.knownTechs());
+	}
+
 	/**
 	 * The head's in-game birth date — the source of truth for the household's age.
 	 *

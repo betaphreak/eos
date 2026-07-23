@@ -359,7 +359,9 @@ public class Ruler extends AbstractHousehold {
 		nMkt.addBuyOffer(this, demandForN);
 
 		// if unmarried, seek a spouse on the wedding market (the sovereign weds
-		// first of all, from its own wards — see WeddingMarket)
+		// first of all, from its own wards — see WeddingMarket); on a build-economy
+		// colony the housing gate applies (housedForGate below) — the vain court's
+		// palace commission comes first (docs/build-queue-plan.md B3b)
 		seekSpouseIfSingle();
 
 		// work the strategic export firm: post the ruler to the noble-only labor
@@ -585,6 +587,15 @@ public class Ruler extends AbstractHousehold {
 	@Override
 	public String role() {
 		return "Ruler";
+	}
+
+	/**
+	 * The housing gate (build economy B3b): the sovereign too needs a current house —
+	 * its palace commission is the BuilderFirm's first client (housing-first).
+	 */
+	@Override
+	public boolean housedForGate() {
+		return hasCurrentHouse();
 	}
 
 	/** A ruler commands a {@link Rank#VILLAGE} — the settlement it leads. */

@@ -211,8 +211,7 @@ eos rows survive a re-seed; a tech's unlock set matches the catalog's prereq vie
 
 ## B3 — Housing
 
-**Status: B3a (household self-build + gate) BUILT 2026-07-23; B3b (elite commissions via the
-BuilderFirm) remains.** As-built for B3a: `Building` record → owner-carrying class (`ownerId`
+**Status: BUILT 2026-07-23 (B3a household self-build + gate; B3b elite commissions).** B3b as-built: a building-legged `BuildProject` (owner=sponsor), `PlotField.queueCommission` behind plot-opening (scaffold-cap competition literal), completion raises the owned house at the center without appending a plot, `HousingCatalog.bestAvailable` elite targeting, the daily commission driver in `BuildEconomy` (deduped against the live queue), and `housedForGate` overrides on Noble/Ruler via `AbstractHousehold.hasCurrentHouse()`. As-built for B3a: `Building` record → owner-carrying class (`ownerId`
 nullable = orphaned/inherited; the tech auto-build path places unowned render-state buildings);
 `Laborer` housing project (`applyHammersToProject` — hammers pay the cheapest available rung,
 overflow donates; completion raises the owned house on the home plot), **adoption** of orphaned

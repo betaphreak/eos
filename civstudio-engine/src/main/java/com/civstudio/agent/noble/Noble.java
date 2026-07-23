@@ -421,6 +421,15 @@ public class Noble extends AbstractHousehold {
 		return "Noble";
 	}
 
+	/**
+	 * The housing gate (build economy B3b): a noble on a build-economy colony needs a
+	 * current house — commissioned from the BuilderFirm — to wed.
+	 */
+	@Override
+	public boolean housedForGate() {
+		return hasCurrentHouse();
+	}
+
 	/** A noble commands a {@link Rank#HOLDING} — the firms and estates it owns. */
 	@Override
 	public Rank rank() {

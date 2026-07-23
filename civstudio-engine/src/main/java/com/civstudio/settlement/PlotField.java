@@ -465,7 +465,7 @@ class PlotField {
 			if (plot == null)
 				return; // the shared pool emptied between the check and the claim (a race)
 			if (!plot.isWorkable()) {
-				buildQueue.add(new BuildProject(plot, null, 0, null)); // a peak: no work
+				buildQueue.add(new BuildProject(plot, (Improvement) null, 0, null)); // a peak: no work
 				continue;
 			}
 			Improvement imp = improvementFor(requester);
@@ -477,6 +477,12 @@ class PlotField {
 
 	// The unfinished construction tasks the builder is working through (the plots still
 	// queued to open). The builder applies its build-units to these each step.
+	// enqueue an elite building commission (B3b) behind whatever is already queued —
+	// the palace competes with plot-opening for the same scaffold-capped build-units
+	void queueCommission(BuildProject p) {
+		buildQueue.add(p);
+	}
+
 	List<BuildProject> activeProjects() {
 		List<BuildProject> active = new ArrayList<BuildProject>();
 		for (BuildProject p : buildQueue)
@@ -493,6 +499,15 @@ class PlotField {
 		while (!buildQueue.isEmpty() && buildQueue.get(0).isComplete()) {
 			BuildProject done = buildQueue.remove(0);
 			Plot plot = done.getPlot();
+			// a building commission (B3b) raises its building on the EXISTING plot —
+			// owned by the commissioner, who is now housed; nothing is appended
+			if (done.isBuildingCommission()) {
+				Building built = new Building(done.getBuildingId(),
+						done.getBuildingOwner().getID());
+				plot.addBuilding(built);
+				done.getBuildingOwner().setHouse(built);
+				continue;
+			}
 			// the builder has cleared the land and raised the firm's improvement (a
 			// FARM) — develop the plot before it is seated
 			if (done.getImprovement() != null)

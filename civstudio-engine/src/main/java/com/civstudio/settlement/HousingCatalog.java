@@ -94,6 +94,30 @@ public final class HousingCatalog {
 	}
 
 	/**
+	 * The <b>best available</b> housing rung — the highest effective cost among the
+	 * buildable, prereq-known, non-obsolete rungs (deterministic id tie-break): the
+	 * <b>elite</b> commission target (a manor over a hut — B3b). {@code null} when none.
+	 *
+	 * @param knownTechs the colony's known tech ids, never null
+	 * @return the most expensive available rung, or {@code null}
+	 */
+	public HousingBuilding bestAvailable(java.util.Set<String> knownTechs) {
+		HousingBuilding best = null;
+		for (HousingBuilding h : all) {
+			if (!h.buildable() || h.prereqTech() == null
+					|| !knownTechs.contains(h.prereqTech()))
+				continue;
+			if (h.obsoleteTech() != null && knownTechs.contains(h.obsoleteTech()))
+				continue;
+			if (best == null || h.effectiveCost() > best.effectiveCost()
+					|| (h.effectiveCost().equals(best.effectiveCost())
+							&& h.type().compareTo(best.type()) < 0))
+				best = h;
+		}
+		return best;
+	}
+
+	/**
 	 * Whether a placed housing building still counts as <b>current</b> — its rung not
 	 * obsoleted by a researched tech. An obsolete-housed household stays sheltered but
 	 * the wedding/fission gate re-applies until it builds current housing (the

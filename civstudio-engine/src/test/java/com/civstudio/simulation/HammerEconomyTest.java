@@ -82,5 +82,12 @@ class HammerEconomyTest {
 		assertTrue(landed > 0, "the settled colony has landed households");
 		assertTrue(housed > 0, "the housing wave completed houses: " + housed + "/" + landed
 				+ " landed households are housed");
+
+		// B3b: the unhoused elite commissioned the BuilderFirm (the palace precedent) —
+		// commissions were enqueued at least once (delivery depends on peasant labor and
+		// the scaffold cap; the enqueue proves the machinery is live)
+		assertTrue(be.getEliteCommissions() > 0,
+				"the unhoused elite commissioned housing from the BuilderFirm ("
+						+ be.getEliteCommissions() + " commissions)");
 	}
 }

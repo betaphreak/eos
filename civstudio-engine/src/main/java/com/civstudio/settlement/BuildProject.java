@@ -41,6 +41,41 @@ public final class BuildProject {
 	// who pays the builder for this task (the firm that requested the plot)
 	private final Agent sponsor;
 
+	// the building leg (build-queue B3b, docs/build-queue-plan.md): a commission to raise
+	// a BUILDING on an existing plot (elite housing at the center) instead of opening a
+	// new one — null for a classic plot-clearance task
+	@Getter
+	private final String buildingId;
+	@Getter
+	private final com.civstudio.agent.AbstractHousehold buildingOwner;
+
+	/**
+	 * Create a <b>building commission</b> (B3b): raise {@code buildingId} on the
+	 * existing {@code plot} (the center — elite housing stacks there), owned by and
+	 * sponsor-billed to {@code owner} through the BuilderFirm's existing at-cost
+	 * contract. The plot is NOT appended on completion (it already stands).
+	 *
+	 * @param plot       the existing plot the building rises on
+	 * @param buildingId the catalog id to raise
+	 * @param work       the build-units it requires (the rung's effective cost)
+	 * @param owner      the commissioning household — owner and sponsor in one
+	 */
+	public BuildProject(Plot plot, String buildingId,
+			double work, com.civstudio.agent.AbstractHousehold owner) {
+		this.plot = plot;
+		this.improvement = null;
+		this.buildingId = buildingId;
+		this.buildingOwner = owner;
+		this.workTotal = Math.max(0, work);
+		this.workRemaining = this.workTotal;
+		this.sponsor = owner;
+	}
+
+	/** Whether this task is a building commission (B3b) rather than a plot opening. */
+	public boolean isBuildingCommission() {
+		return buildingId != null;
+	}
+
 	/**
 	 * Create a construction task to open one plot.
 	 *
@@ -56,6 +91,8 @@ public final class BuildProject {
 	public BuildProject(Plot plot, Improvement improvement, double work, Agent sponsor) {
 		this.plot = plot;
 		this.improvement = improvement;
+		this.buildingId = null;
+		this.buildingOwner = null;
 		this.workTotal = Math.max(0, work);
 		this.workRemaining = this.workTotal;
 		this.sponsor = sponsor;
