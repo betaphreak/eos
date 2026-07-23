@@ -134,7 +134,7 @@ setFrame(() => {
 // this — not a free-running rAF loop — is the only place that knows a frame happened and what it cost.
 // The techOpen bail-out is deliberately outside the timing: a suppressed paint is not a fast frame.
 function paint() {
-  if (S.techOpen) return;   // tech-tree modal is in front — don't spend frames drawing the hidden map
+  if (S.techOpen || S.cityOpen) return;   // a full-canvas modal is in front — don't spend frames drawing the hidden map
   const t0 = performance.now();
   paintScene();
   noteFrame(performance.now() - t0);

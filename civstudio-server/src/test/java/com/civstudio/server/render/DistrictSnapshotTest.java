@@ -90,6 +90,30 @@ class DistrictSnapshotTest {
 		assertFalse(view.districts().isEmpty(), "the auto-built building shows in the feed");
 		DistrictView center = view.districts().get(0);
 		assertEquals(0, center.index(), "it lands at the village center, plot 0");
-		assertTrue(center.buildings().contains("BUILDING_ORCHARD"));
+		assertTrue(center.buildings().stream().anyMatch(b -> "BUILDING_ORCHARD".equals(b.id())));
+	}
+
+	@Test
+	void projectsEveryPlotWithItsRasterCoordinates() {
+		GameSession s = new GameSession(42);
+		Province dh = s.getWorldMap().findByName("Dhenijansar").orElseThrow();
+		Settlement c = s.newSettlement("Test", START, 30, 26, 5, 2, dh);
+		c.claimPlot(new PlotOccupant() {
+		});
+		c.claimPlot(new PlotOccupant() {
+		});
+
+		ColonyView view = project(c);
+		// EVERY plot projects, built or not — the city screen lays out the whole settlement
+		assertEquals(c.getDistrictPlots().size(), view.districts().size(),
+				"every plot of the colony is projected, not only the built ones");
+		for (int i = 0; i < view.districts().size(); i++) {
+			DistrictView d = view.districts().get(i);
+			var plot = c.getDistrictPlots().get(i);
+			// the coordinates are the whole point: without them a client cannot draw a building on
+			// the plot it stands on, and everything piles onto the city center
+			assertEquals(plot.x(), d.x(), "plot " + i + " reports its raster x");
+			assertEquals(plot.y(), d.y(), "plot " + i + " reports its raster y");
+		}
 	}
 }

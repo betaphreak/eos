@@ -79,6 +79,37 @@ public final class BuildingCatalog {
 		return housing;
 	}
 
+	/**
+	 * A building's <b>display name</b> for prose — the event log, a printer, anything a person
+	 * reads. Looks the id up in this catalog, then the richer {@link HousingCatalog} (the housing
+	 * line lives in both, and only the latter is guaranteed to carry a name), and falls back to a
+	 * prettified id so an unseeded content store degrades to "Bark Huts" rather than a bare token.
+	 *
+	 * @param id the {@code BUILDING_*} catalog id
+	 * @return the name to show
+	 */
+	public static String displayName(String id) {
+		if (id == null || id.isBlank())
+			return "";
+		BuildingInfo b = get().byId(id);
+		if (b != null && b.name() != null && !b.name().isBlank())
+			return b.name();
+		HousingBuilding h = HousingCatalog.get().byType(id);
+		if (h != null && h.name() != null && !h.name().isBlank())
+			return h.name();
+		String[] words = id.replaceFirst("^BUILDING_", "").toLowerCase(java.util.Locale.ROOT)
+				.split("_");
+		StringBuilder out = new StringBuilder();
+		for (String w : words) {
+			if (w.isEmpty())
+				continue;
+			if (!out.isEmpty())
+				out.append(' ');
+			out.append(Character.toUpperCase(w.charAt(0))).append(w, 1, w.length());
+		}
+		return out.toString();
+	}
+
 	static BuildingCatalog load(WorldSource source) {
 		try (InputStream in = source.open(RESOURCE)) {
 			if (in == null) {

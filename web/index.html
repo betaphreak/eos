@@ -381,6 +381,37 @@
         <button id="techZoomOut" data-tip="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
       </div>
     </div>
+
+    <!-- The city screen: clicking a colony's city center opens the settlement over the stage (the
+         tech-tree modal pattern — same region, top bar stays live, Esc closes). Left: the plots the
+         colony holds, what stands on each and what is rising. Right: the crown's build queue and
+         the verbs to run it. Populated by js/city-screen.mjs (docs/city-screen-plan.md). -->
+    <div id="cityModal" class="city-modal" hidden role="region" aria-label="Settlement">
+      <div class="city-head">
+        <div class="city-id">
+          <div class="city-name" id="cityName">—</div>
+          <div class="city-sub" id="citySub"></div>
+        </div>
+        <button id="cityClose" class="city-close" aria-label="Close settlement" data-tip="Close (Esc)">&times;</button>
+      </div>
+      <div class="city-body">
+        <section class="city-plots" id="cityPlots" aria-label="Settlement plots"></section>
+        <aside class="city-queue" aria-label="Build queue">
+          <div class="city-sec">Under construction</div>
+          <div id="cityActive"></div>
+          <div class="city-sec">The crown's queue</div>
+          <div id="cityQueue"></div>
+          <button id="cityDecree" class="city-decree" type="button" hidden>+ Decree a building</button>
+          <div id="cityPicker" class="city-picker" hidden>
+            <div class="bc-list" id="cityPickList"></div>
+            <div class="city-pickctl">
+              <button id="cityPickAdd" type="button" disabled>Add to queue</button>
+              <button id="cityPickCancel" type="button" class="ghost">Cancel</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
   </div>
 
   <!-- persistent bottom status line: surfaces errors/warnings (and any status message) -->

@@ -26,10 +26,32 @@ import java.util.List;
  *                   (skill order)
  * @param members    the roster, ruler and nobles first, then laborers, each ranked within its class
  *                   by its head's ablest skill
+ * @param candidates every building the crown could start at the center today, in the build brain's
+ *                   score order — the city screen's decree picker (see {@code
+ *                   docs/city-screen-plan.md}). Bare ids; the client joins {@code /api/buildings}
+ *                   for name, cost and icon. Uncapped: this is an on-demand fetch, not a per-tick
+ *                   frame, and a silently truncated list reads as "that is all you may build"
+ * @param canCommand whether <b>this caller</b> may command this colony — the answer to {@link
+ *                   com.civstudio.server.web.SessionAuthz#denyColonyCommand}, not a restatement of
+ *                   its rule, so the client never re-implements the authz. {@code false} on the
+ *                   projection itself; the controller fills it in per request
  */
 public record ColonyDetail(String name, String tier, String province, String rulerName,
 		int population, int nobles, int poolSize,
-		List<SkillAvg> skills, List<Resident> members) {
+		List<SkillAvg> skills, List<Resident> members, List<String> candidates,
+		boolean canCommand) {
+
+	/**
+	 * This sheet with its {@code canCommand} answered — the one field the projection cannot know
+	 * (it depends on who is asking, which only the request knows).
+	 *
+	 * @param allowed whether the caller may command this colony
+	 * @return a copy carrying the answer
+	 */
+	public ColonyDetail withCanCommand(boolean allowed) {
+		return new ColonyDetail(name, tier, province, rulerName, population, nobles, poolSize,
+				skills, members, candidates, allowed);
+	}
 
 	/**
 	 * One skill's colony-average level (across the household heads).

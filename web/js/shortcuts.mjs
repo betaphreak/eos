@@ -7,6 +7,7 @@ import { draw } from "./repaint.mjs";
 import { zoomAt } from "./main.mjs";
 import { resetView, toggleFullscreen, togglePlay, closePanel } from "./panel.mjs";
 import { setAdvisor } from "./advisors.mjs";
+import { closeCityScreen } from "./city-screen.mjs";
 
 // pan the camera and repaint — the shared tail of the WASD / arrow handlers
 function panBy(dx, dy) {
@@ -51,9 +52,14 @@ const REGISTRY = [
       if (move) panBy(move[0], move[1]);
     } },
   { keys: ["Escape"], cap: ["Esc"], label: "Close", modalSafe: true,
-    // in the Technology advisor, Escape returns to Main Map (keeps the selector consistent);
-    // otherwise collapse the sidebar (only prevent-default if it did something)
-    run: e => { if (S.techOpen) { e.preventDefault(); setAdvisor("mainmap"); } else if (closePanel()) { e.preventDefault(); } } },
+    // the city screen closes back to the map; in the Technology advisor, Escape returns to Main Map
+    // (keeps the selector consistent); otherwise collapse the sidebar (only prevent-default if it
+    // did something)
+    run: e => {
+      if (S.cityOpen) { e.preventDefault(); closeCityScreen(); }
+      else if (S.techOpen) { e.preventDefault(); setAdvisor("mainmap"); }
+      else if (closePanel()) { e.preventDefault(); }
+    } },
   { keys: ["+", "="],
     run: e => { e.preventDefault(); zoomAt(VIEW.w / 2, VIEW.h / 2, 1.5); } },
   { keys: ["-", "_"],
@@ -70,7 +76,7 @@ export function initShortcuts() {
   window.addEventListener("keydown", e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;                                  // leave OS/browser combos alone
     if (e.target instanceof HTMLElement && e.target.matches("input, textarea")) return;   // don't hijack typing
-    const modal = S.techOpen;   // a modal runs in paused mode — only modal-safe keys pass (no play/pan/zoom)
+    const modal = S.techOpen || S.cityOpen;   // a modal runs in paused mode — only modal-safe keys pass (no play/pan/zoom)
     for (const s of REGISTRY)
       if (s.keys.includes(e.key)) {
         if (modal && !s.modalSafe) { e.preventDefault(); return; }

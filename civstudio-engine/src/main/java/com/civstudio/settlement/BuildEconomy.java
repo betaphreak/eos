@@ -164,6 +164,7 @@ public class BuildEconomy {
 				}
 		marketChoosers.clear();
 		enqueueEliteCommissions();
+		rollDonationRate();
 	}
 
 	// B3b: an unhoused Noble/Ruler commissions the BuilderFirm — a building-legged
@@ -220,12 +221,24 @@ public class BuildEconomy {
 	// (Civ4 use-it-or-lose-it — rarely binds, the brain refills immediately).
 	private String activeBuildId;
 	private double activeRemaining;
+	// the active item's TOTAL work — the remainder's denominator. Kept only so a reader
+	// (the city screen's progress bar) can say how far along the crown's build is; the
+	// spend path itself never needs it.
+	private double activeCost;
 	private int rulerQueued, rulerCompleted; // instrumentation
+
+	// trailing hammers-donated-per-day, an EWMA rolled once a day (see rollDonationRate).
+	// Instrumentation only — nothing in the economy reads it; it is the ETA divisor the
+	// city screen needs to turn "hammers remaining" into "days remaining".
+	private double donationRate;
+	private double donatedToday;
+	private static final double RATE_ALPHA = 1.0 / 30;   // ~a month's memory
 
 	// spend a donation on the ruler's queue: pick a target if idle (the brain), then pay
 	// the active item; completion raises the ruler-owned building at the center, and the
 	// overflow carries into the next pick. Called wherever hammers are donated.
 	private void spendDonation(double hammers) {
+		donatedToday += Math.max(0, hammers);
 		while (hammers > 0) {
 			if (activeBuildId == null && !pickNextBuilding())
 				return; // nothing buildable — the donation evaporates
@@ -315,6 +328,24 @@ public class BuildEconomy {
 	}
 
 	/**
+	 * The active item's total work in hammers — the {@linkplain #getActiveRemaining()
+	 * remainder}'s denominator, {@code 0} while the queue is idle (the city screen's
+	 * progress bar).
+	 */
+	public double getActiveCost() {
+		return activeCost;
+	}
+
+	/**
+	 * Trailing hammers donated to the crown's queue per day (EWMA, ~a month's memory) —
+	 * the divisor that turns hammers remaining into days remaining. {@code 0} for a colony
+	 * that donates nothing.
+	 */
+	public double getDonationRate() {
+		return donationRate;
+	}
+
+	/**
 	 * The buildable candidates for the what-to-build-next modal (B6): every regular the
 	 * center could start today, sorted by the brain's score descending (id tie-break).
 	 */
@@ -359,7 +390,7 @@ public class BuildEconomy {
 			BuildingInfo b = BuildingCatalog.get().byId(id);
 			if (b != null && centerCandidate(b, center, known)) {
 				activeBuildId = b.id();
-				activeRemaining = b.effectiveCost() * BUILD_COST_SCALE;
+				activeRemaining = activeCost = b.effectiveCost() * BUILD_COST_SCALE;
 				rulerQueued++;
 				com.civstudio.io.SimLog.event(com.civstudio.agent.Rank.VILLAGE,
 						java.util.logging.Level.FINE, "the crown began building "
@@ -391,7 +422,7 @@ public class BuildEconomy {
 		if (best == null)
 			return false;
 		activeBuildId = best.id();
-		activeRemaining = best.effectiveCost() * BUILD_COST_SCALE;
+		activeRemaining = activeCost = best.effectiveCost() * BUILD_COST_SCALE;
 		rulerQueued++;
 		com.civstudio.io.SimLog.event(com.civstudio.agent.Rank.VILLAGE,
 				java.util.logging.Level.FINE, "the crown began building "
@@ -409,9 +440,18 @@ public class BuildEconomy {
 		rulerCompleted++;
 		com.civstudio.io.SimLog.event(com.civstudio.agent.Rank.VILLAGE,
 				java.util.logging.Level.INFO,
-				"the crown completed " + activeBuildId + " at the center");
+				"the crown completed " + BuildingCatalog.displayName(activeBuildId)
+						+ " at the center");
 		activeBuildId = null;
-		activeRemaining = 0;
+		activeRemaining = activeCost = 0;
+	}
+
+	// roll the day's donations into the trailing rate (once per day, from the daily
+	// fallback hook). An EWMA rather than a window: one double, no ring buffer, and a
+	// colony that stops donating decays toward 0 instead of holding a stale figure.
+	private void rollDonationRate() {
+		donationRate += RATE_ALPHA * (donatedToday - donationRate);
+		donatedToday = 0;
 	}
 
 	/**

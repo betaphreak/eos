@@ -806,6 +806,18 @@ public class Settlement {
 	}
 
 	/**
+	 * The builder's <b>unfinished</b> tasks — the plot clearances still queued to open,
+	 * and the elite housing commissions rising on plots that already stand (B3b). A read
+	 * view for anyone reporting what the colony is currently building (the city screen's
+	 * per-plot construction); the builder itself works the queue through {@link PlotField}.
+	 *
+	 * @return the live build projects, in queue order
+	 */
+	public List<BuildProject> getActiveProjects() {
+		return plotField.activeProjects();
+	}
+
+	/**
 	 * This colony's rung on the {@link SettlementTier} ladder — set at founding from the site
 	 * ({@code city_terrain} &rArr; {@link SettlementTier#METROPOLIS}, else {@link
 	 * SettlementTier#SMALLHOLDING}) and advanced by growth. The capability tests below derive

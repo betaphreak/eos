@@ -29,21 +29,29 @@ import com.civstudio.settlement.Settlement;
 public class ColonyController {
 
 	private final SessionHost host;
+	private final SessionAuthz authz;
 
-	public ColonyController(SessionHost host) {
+	public ColonyController(SessionHost host, SessionAuthz authz) {
 		this.host = host;
+		this.authz = authz;
 	}
 
 	@GetMapping("/api/sessions/{sid}/colony")
 	public ResponseEntity<ColonyDetail> colony(@PathVariable String sid,
-			@RequestParam(required = false) String colony) {
+			@RequestParam(required = false) String colony,
+			jakarta.servlet.http.HttpServletRequest http) {
 		HostedSession hs = host.getOrRestore(sid);
 		if (hs == null)
 			return ResponseEntity.notFound().build();
 		Settlement target = Colonies.resolve(hs, colony);
 		if (target == null)
 			return ResponseEntity.notFound().build();
+		// the sheet is public, but it carries the ANSWER to "may you command this colony?" so the
+		// city screen can show its write controls to whoever may actually use them — and to nobody
+		// else — without re-implementing the authz rule in JavaScript. Asking the gate itself keeps
+		// the two in step: a rule change lands here for free.
+		boolean canCommand = authz.denyColonyCommand(hs, target.getName(), http) == null;
 		return ResponseEntity.ok().cacheControl(CacheControl.noCache())
-				.body(ColonyProjections.of(target));
+				.body(ColonyProjections.of(target).withCanCommand(canCommand));
 	}
 }

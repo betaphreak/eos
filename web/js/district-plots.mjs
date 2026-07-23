@@ -17,3 +17,19 @@ export function nearestPlots(plots, n, cx, cy, sx, sy) {
   const ranked = plots.slice().sort((a, b) => d(a) - d(b) || a.y - b.y || a.x - b.x);
   return new Set(ranked.slice(0, n));
 }
+
+/** The key a plot is indexed by — its raster coordinates, the space the live feed speaks. */
+export const plotKey = (x, y) => `${x},${y}`;
+
+/**
+ * Index a colony's live district feed (snapshot `colony.districts`) by plot coordinate, so a
+ * draw or a hover can ask "what stands HERE?" in one lookup. Entries without coordinates are
+ * skipped — an older server that still sends bare indices simply yields an empty index rather
+ * than drawing everything in the wrong place.
+ */
+export function indexDistricts(districts) {
+  const by = new Map();
+  for (const d of districts || [])
+    if (Number.isFinite(d.x) && Number.isFinite(d.y)) by.set(plotKey(d.x, d.y), d);
+  return by;
+}

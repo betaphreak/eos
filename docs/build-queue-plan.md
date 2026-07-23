@@ -379,9 +379,13 @@ what-to-build-next interrupt that makes it feel like a game.
    likely a notification card + heuristic fallback there).
 3. Exposed through the existing admin-gated `submit_command` MCP tool; snapshot gains the queue (current
    item, progress, pending list) for the web/rail panel and `get_snapshot`.
-4. Web read surface (the Surface decision): buildings listed on plot hover and in the colony composition
-   rail; the queue panel in the right rail (read-only for spectators; the verb is player/admin-gated as
-   everything on the spine); SimLog queue/completion events already surface as notification cards.
+4. Web read surface (the Surface decision) — **shipped 2026-07-24 as the CITY SCREEN**, not a rail
+   panel: [`city-screen-plan.md`](city-screen-plan.md). Clicking the city centre opens the settlement
+   (every plot, its buildings, its households' huts under construction) with the crown's queue and
+   its verbs beside them; buildings also draw on the plots they stand on, and appear on plot hover.
+   That work found the interrupt's off-by-one: a queue command stamped for the next tick was not yet
+   due when the pause check ran, so a seated session stopped holding the very order it was waiting
+   for (fixed — the clock no longer pauses while the command log has anything pending).
 
 **Seams.** `CommandLog`/`HostedSession` (clock states — cf. the session-management ClockState split),
 `SessionWriteMcpTools`, snapshot DTO, web rail + modal, lobby/session seat identity (who counts as "a

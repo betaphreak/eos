@@ -19,6 +19,7 @@ import { showLiveLog, ingestLog, ingestChat, resetLog, setChatSender } from "../
 import { showNotify, ingestNotify, seedNotify, resetNotify } from "../notify.mjs";
 import { minusDays, LIFETIME_DAYS, MAX_CARDS } from "../notify-age.mjs";
 import { makeLogGate } from "../snapshot-dedupe.mjs";
+import { renderPicker } from "../build-picker.mjs";
 
 const PALETTE = ["#e8c37a","#6bd08a","#7aa2e0","#e07a9e","#9e7ae0","#e0a97a","#7ae0d0","#c0e07a"];
 
@@ -606,96 +607,7 @@ async function postChat(text) {
 // badge shows it), and the first candidate — the ruler-brain's highest-weighted pick — is
 // flagged ★ advised. Candidates arrive as bare ids; name/cost/icon join the /api/buildings
 // bundle (the same one the tech tree + districts read), falling back to a prettified id.
-const bcPicked = [];             // candidate ids in click order = queue order
-const bcRows = new Map();        // id -> { ord } (the badge span) — for renumbering on toggle
-
-const BC_SHEET = "assets/buildings/building-icons.webp";   // Phase-2 button sheet, 64² cells
-const bcSheet = new Image(); bcSheet.src = BC_SHEET;
-const bcSheetDims = () => [bcSheet.naturalWidth || 3200, bcSheet.naturalHeight || 1344];
-let bcMeta = null;               // id -> { name, cost, icon:[x,y] }, joined from /api/buildings
-async function loadBuildMeta() {
-  if (bcMeta) return bcMeta;
-  try {
-    const res = await fetch(LIVE_BASE + "/api/buildings");
-    if (!res.ok) return null;
-    const buf = await res.arrayBuffer();
-    let arr;
-    try {
-      const stream = new Response(buf).body.pipeThrough(new DecompressionStream("gzip"));
-      arr = JSON.parse(await new Response(stream).text());
-    } catch { arr = JSON.parse(new TextDecoder().decode(buf)); }
-    bcMeta = {};
-    for (const b of arr) bcMeta[b.id] = { name: b.name, cost: b.cost, icon: b.icon };
-    return bcMeta;
-  } catch { return null; }       // the modal still works on prettified ids
-}
-loadBuildMeta();
-
-function prettyBuilding(id) {
-  return id.replace(/^BUILDING_/, "").toLowerCase().replace(/_/g, " ")
-    .replace(/\b\w/g, ch => ch.toUpperCase());
-}
-
-// stamp a building's C2C button onto a 28px sprite cell (the techtree/districts idiom): the
-// bundle's [x,y] is a pixel offset into the 64²-cell sheet, scaled to the render size.
-function paintBuildIcon(el, icon, renderPx) {
-  const [x, y] = icon, [bw, bh] = bcSheetDims(), s = renderPx / 64;
-  el.style.backgroundImage = `url(${BC_SHEET})`;
-  el.style.backgroundSize = `${bw * s}px ${bh * s}px`;
-  el.style.backgroundPosition = `${-x * s}px ${-y * s}px`;
-}
-
-// re-stamp the 1-based order badge on every picked row (removing a pick shifts the rest) and
-// gate the submit button on having at least one pick.
-function bcRenumber() {
-  for (const { ord } of bcRows.values()) ord.textContent = "";
-  bcPicked.forEach((id, i) => { const r = bcRows.get(id); if (r) r.ord.textContent = String(i + 1); });
-  const submit = document.getElementById("bcSubmit");
-  if (submit) submit.disabled = bcPicked.length === 0;
-}
-
-function bcRow(id, advised) {
-  const meta = bcMeta && bcMeta[id];
-  const row = document.createElement("button");
-  row.type = "button"; row.className = "bc-item";
-
-  const ico = document.createElement("span"); ico.className = "bc-ico";
-  if (meta && meta.icon) paintBuildIcon(ico, meta.icon, 28);
-  else { ico.classList.add("chip"); ico.textContent = (meta && meta.name || prettyBuilding(id))[0]; }
-
-  const name = document.createElement("span"); name.className = "bc-name";
-  name.textContent = (meta && meta.name) || prettyBuilding(id);
-  if (advised) {
-    const rec = document.createElement("span"); rec.className = "bc-rec";
-    rec.textContent = "★ advised"; rec.title = "The court's recommendation";
-    name.appendChild(rec);
-  }
-
-  const cost = document.createElement("span"); cost.className = "bc-cost";
-  const c = meta && parseInt(meta.cost, 10);
-  if (Number.isFinite(c) && c > 0) cost.innerHTML = `${c}<span class="h">⚒</span>`;
-
-  const ord = document.createElement("span"); ord.className = "bc-ord";
-
-  row.append(ico, name, cost, ord);
-  if (bcPicked.includes(id)) row.classList.add("picked");
-  row.onclick = () => {
-    const i = bcPicked.indexOf(id);
-    if (i >= 0) { bcPicked.splice(i, 1); row.classList.remove("picked"); }
-    else { bcPicked.push(id); row.classList.add("picked"); }
-    bcRenumber();
-  };
-  bcRows.set(id, { ord });
-  return row;
-}
-
-function bcRender(candidates) {
-  const list = document.getElementById("bcList");
-  if (!list) return;
-  list.innerHTML = ""; bcRows.clear();
-  candidates.forEach((id, i) => list.appendChild(bcRow(id, i === 0)));   // [0] = brain's top pick
-  bcRenumber();
-}
+let bcPick = null;               // the live picker controller (its click order = queue order)
 
 function syncBuildChoice(s) {
   const el = document.getElementById("buildchoice");
@@ -703,31 +615,31 @@ function syncBuildChoice(s) {
   if (!s.awaitingBuildChoice || s.clockState === "STOPPED") { el.hidden = true; return; }
   if (!el.hidden) return; // already open — keep the player's in-progress picks
 
-  bcPicked.length = 0;
   const colony = s.colonies && s.colonies[0] && s.colonies[0].name;
   const kicker = document.getElementById("bcKicker");
   if (kicker) kicker.textContent = colony
     ? colony + " · the crown awaits your decree" : "The crown awaits your decree";
 
-  const candidates = s.buildCandidates || [];
-  bcRender(candidates);
-  // the bundle almost always beat us here (the modal opens on a server round-trip), but if not,
-  // re-render with real names/icons once it lands — safe while nothing's been picked yet.
-  if (!bcMeta) loadBuildMeta().then(m => {
-    if (m && !el.hidden && !bcPicked.length) bcRender(candidates);
-  });
-
   const submit = document.getElementById("bcSubmit");
   submit.disabled = true;
+  bcPick = renderPicker(document.getElementById("bcList"), s.buildCandidates || [],
+    { onChange: picked => { submit.disabled = picked.length === 0; } });
   submit.onclick = () => {
-    if (!bcPicked.length) return;
+    const items = bcPick.picked();
+    if (!items.length) return;
     el.hidden = true;
-    postCommand({ type: "queueBuild", colony, items: bcPicked.slice() });
+    postCommand({ type: "queueBuild", colony, items });
   };
   el.hidden = false;
 }
 
-async function postCommand(body) {
+/**
+ * Submit a player command to the live session (the general command seam — the build queue, the
+ * playback transport). Owner-gated server-side; the cookie rides along.
+ *
+ * @returns the accepted-command body, or null if it was refused
+ */
+export async function postCommand(body) {
   if (!sid) return null;
   // credentials: player commands are owner-gated (see docs/authentication.md) — send the cookie
   const r = await fetch(LIVE_BASE + "/api/sessions/" + sid + "/commands",

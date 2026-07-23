@@ -14,12 +14,31 @@ import { prettyKey, plotTip } from "./plotlabel.mjs";
 import { consumePanMoved } from "./input.mjs";
 import { selectProvince } from "./rail.mjs";
 import { openCaravanRail } from "./caravan-detail.mjs";
+import { districtAt } from "./districts.mjs";
+import { buildingName } from "./build-catalog.mjs";
+import { openCityScreen } from "./city-screen.mjs";
+import { liveColony } from "./overlays/live.mjs";
 
 // ---- interaction: hover province ----
 const tip=document.getElementById("tip");
 // a plot's resource label for the tooltip, or null: its bonus (or polar sea ice), Title Cased
 function resourceLabel(q){
   return q.bonus ? prettyKey(q.bonus) : null;   // the ◆ resource line; terrain/feature (incl. ice) live in plotTip
+}
+// What the live colony has standing (or rising) on this plot, as tooltip lines: the buildings by
+// name, and anything under construction with how far along it is. Empty for a plot the live colony
+// doesn't hold (and for every plot when no session is running) — the static map knows no buildings.
+function buildingLines(q) {
+  const dist = districtAt(q.x, q.y);
+  if (!dist) return "";
+  const out = [];
+  for (const b of dist.buildings || [])
+    out.push(`<span class="r">▪ ${buildingName(b.id)}</span>`);
+  for (const u of dist.underway || []) {
+    const pct = u.cost > 0 ? Math.round(100 * Math.min(1, u.progress / u.cost)) : 0;
+    out.push(`<span class="r" style="color:var(--gold,#c9a24a)">⚒ ${buildingName(u.id)} · ${pct}%</span>`);
+  }
+  return out.join("<br>");
 }
 // hover tooltip body — the info shown depends on the active overlay: physical (region · plots)
 // or political (the active dimension + region)
@@ -66,10 +85,12 @@ stage.addEventListener("mousemove", e=>{
   const hit = plotAt(mx, my);                   // plot under cursor (texture zoom): name/terrain/feature/resource
   const plot = hit ? plotTip(hit) : "";
   const res = hit ? resourceLabel(hit) : null;
-  if(best || plot || res){ S.hoverProv=best;
+  const built = hit ? buildingLines(hit) : "";
+  if(best || plot || res || built){ S.hoverProv=best;
     let html = best ? provTip(best) : "";
     if(plot) html += `${html?"<br>":""}${plot}`;
     if(res) html += `${html?"<br>":""}<span class="r">◆ ${res}</span>`;
+    if(built) html += `${html?"<br>":""}${built}`;
     tip.innerHTML=html;
     tip.style.left=Math.min(mx+14, r.width-230)+"px"; tip.style.top=(my+14)+"px"; tip.classList.add("on");
   } else { S.hoverProv=null; tip.classList.remove("on"); }
@@ -86,6 +107,11 @@ stage.addEventListener("click", e=>{
   if (mk && mk.realm) { switchRealm(mk.realm, { province: mk.prov, zoom: cam.k }); return; }
   // a caravan icon takes the click: open the band's composition panel (docs/caravan.md)
   if (mk && mk.caravan) { openCaravanRail(mk.caravan); return; }
+  // the live colony's CITY CENTER takes the click: open the settlement (docs/city-screen-plan.md).
+  // The centre plot is the seat of the colony — clicking it is the natural "enter the city" verb,
+  // and it beats the province selection that would otherwise swallow the click.
+  const q = plotAt(mx, my), colony = liveColony();
+  if (q && colony && q.x === colony.centerX && q.y === colony.centerY) { openCityScreen(); return; }
   // else the click selects the province under the cursor (toggles off if re-clicked)
   const prov = provinceAt(mx, my);
   if (prov) selectProvince(S.selectedProv===prov ? null : prov);

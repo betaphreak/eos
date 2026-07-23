@@ -74,4 +74,17 @@ public final class CommandLog {
 	public synchronized int pendingCount() {
 		return pending.size();
 	}
+
+	/**
+	 * Is anything at all still waiting to be applied? Distinct from "due now": a command submitted
+	 * during tick {@code T} is stamped {@code T+1} and so is <em>never</em> due at the moment it
+	 * lands. A caller deciding whether the session has nothing left to do (the build-choice pause)
+	 * must ask this, not {@link #drainDueBy}, or it will stop the clock one tick before the very
+	 * order it is waiting for gets its turn — and then nothing will ever run it.
+	 *
+	 * @return {@code true} while any submitted command has not yet been applied
+	 */
+	public synchronized boolean hasPending() {
+		return !pending.isEmpty();
+	}
 }

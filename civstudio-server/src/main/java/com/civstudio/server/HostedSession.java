@@ -901,6 +901,13 @@ public final class HostedSession {
 	private void maybeAwaitBuildChoice() {
 		if (!kind().playerChoosesBuilds() || !interactiveBuildChoice())
 			return;
+		// An order already submitted is an answer already given. A command stamped for the NEXT
+		// tick is not yet due, so the queue still looks empty here — pausing on that reading strands
+		// the very command the pause is waiting for: it would only be drained by the next iteration,
+		// which the pause prevents, so the run wedges until the player submits a second time (which
+		// releases the first and strands the second). Wait for the log to drain instead.
+		if (commandLog.hasPending())
+			return;
 		boolean awaiting = false;
 		for (Settlement c : colonies)
 			if (c.getBuildEconomy() != null && c.getBuildEconomy().queueAwaitingChoice()) {

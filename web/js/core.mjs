@@ -296,6 +296,7 @@ export const S = {
   selected: null,        // journey idx or null
   selectedProv: null,    // province whose full detail fills the sidebar, or null
   techOpen: false,       // the tech-tree modal is up — paint() pauses map rendering behind it
+  cityOpen: false,       // the city screen is up (same deal: a full-canvas modal over the stage)
   // the active Civ4-style advisor mode (see js/advisors.mjs) — a thin grouping ABOVE the
   // overlay/plane/techOpen render states it maps onto. Derived from those at init, then owned
   // by setAdvisor(); the render layer still keys off overlay/plane/techOpen, never this.

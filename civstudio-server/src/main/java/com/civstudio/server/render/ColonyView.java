@@ -58,6 +58,9 @@ import java.util.List;
  *                       <b>province's</b> anchor, not its centre (see {@code docs/urban-plots.md}), so a
  *                       client with only those rings the wrong plot — this says the centre outright
  * @param centerY        the raster y of the city-center plot, or {@code null} when no plot is laid
+ * @param queue          the crown's build queue — what it is building, how far along, and what is
+ *                       ordered behind it (see {@link BuildQueueView}); {@link BuildQueueView#NONE}
+ *                       for a colony with no build economy
  */
 public record ColonyView(String name, boolean alive, String date, int population,
 		int children, int nobles, int firms, int poolSize, double cpi,
@@ -66,5 +69,5 @@ public record ColonyView(String name, boolean alive, String date, int population
 		List<AdvisorView> advisors, List<String> knownTechs, int startingDistricts,
 		String culture, List<DistrictView> districts,
 		String researchingTech, double researchProgress, String tier, int provinceId,
-		Integer centerX, Integer centerY) {
+		Integer centerX, Integer centerY, BuildQueueView queue) {
 }

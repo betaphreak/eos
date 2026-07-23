@@ -163,24 +163,102 @@ public final class Snapshots {
 				c.getPlotCount(), c.getMaxPlots(), c.getLatitude(), c.getLongitude(),
 				bankProfitTax, nobleIncomeTax, advisorViews(c), knownTechs,
 				c.getStartingDistrictCount(), culture, districts, researchingTech, researchProgress,
-				c.getTier() == null ? null : c.getTier().name(), provinceId, centerX, centerY);
+				c.getTier() == null ? null : c.getTier().name(), provinceId, centerX, centerY,
+				queueView(c));
 	}
 
-	// project the colony's district plots that carry buildings — the placed-building state
-	// the web district view stamps (bare ids; the client joins /api/buildings). Only
-	// non-empty plots are sent (sparse); the plot's index is its position in the district
-	// map (0 = village center). See docs/district-buildout.md Phase D3.
+	// project EVERY plot of the colony — where it is, what stands on it, and what is rising
+	// on it (the city screen lays out the whole settlement; the plot count is province-capped).
+	// Buildings are bare ids the client joins against /api/buildings, plus whose they are; the
+	// x/y is what lets a client draw a building on the plot it actually stands on. See
+	// docs/district-buildout.md Phase D3 and docs/city-screen-plan.md.
 	private static List<DistrictView> districtViews(Settlement c) {
-		List<com.civstudio.settlement.Plot> plots = c.getDistrictPlots();
+		List<Plot> plots = c.getDistrictPlots();
+		if (plots.isEmpty())
+			return List.of();
+		// index the in-flight work by the plot it rises on, so each plot's projection is one
+		// map lookup rather than a scan of every household
+		java.util.Map<Plot, List<DistrictView.Underway>> underway = underwayByPlot(c, plots.get(0));
+		java.util.Map<Integer, String> owners = ownerKinds(c);
 		List<DistrictView> views = new ArrayList<>();
 		for (int i = 0; i < plots.size(); i++) {
-			List<com.civstudio.settlement.Building> buildings = plots.get(i).buildings();
-			if (buildings.isEmpty())
-				continue;
-			views.add(new DistrictView(i,
-					buildings.stream().map(com.civstudio.settlement.Building::id).toList()));
+			Plot p = plots.get(i);
+			List<DistrictView.PlacedBuilding> buildings = p.buildings().stream()
+					.map(b -> new DistrictView.PlacedBuilding(b.id(),
+							owners.getOrDefault(b.ownerId(), "NONE")))
+					.toList();
+			views.add(new DistrictView(i, p.x(), p.y(), buildings,
+					underway.getOrDefault(p, List.of())));
 		}
 		return views;
+	}
+
+	// every construction in flight in the colony, keyed by the plot it rises on: the crown's
+	// active queue item (at the center), each landed household's housing or own-building
+	// self-build (on its home plot), and the BuilderFirm's elite housing commissions.
+	private static java.util.Map<Plot, List<DistrictView.Underway>> underwayByPlot(Settlement c,
+			Plot center) {
+		java.util.Map<Plot, List<DistrictView.Underway>> byPlot = new java.util.IdentityHashMap<>();
+		var economy = c.getBuildEconomy();
+		if (economy != null && economy.getActiveBuildId() != null)
+			byPlot.computeIfAbsent(center, k -> new ArrayList<>())
+					.add(new DistrictView.Underway(economy.getActiveBuildId(),
+							economy.getActiveCost(),
+							economy.getActiveCost() - economy.getActiveRemaining(), "RULER"));
+		for (Agent a : c.getAgents()) {
+			if (!a.isAlive() || !(a instanceof com.civstudio.agent.laborer.Laborer l))
+				continue;
+			Plot home = l.getHomePlot();
+			if (home == null)
+				continue;
+			addProject(byPlot, home, l.getHousingProject(), "HOUSEHOLD");
+			addProject(byPlot, home, l.getOwnBuildingProject(), "HOUSEHOLD");
+		}
+		// the builder's queue: only its BUILDING legs (elite housing commissions) are a
+		// construction on a standing plot — a clearance task is a plot that does not exist yet
+		for (com.civstudio.settlement.BuildProject p : c.getActiveProjects()) {
+			if (!p.isBuildingCommission())
+				continue;
+			var owner = p.getBuildingOwner();
+			byPlot.computeIfAbsent(p.getPlot(), k -> new ArrayList<>())
+					.add(new DistrictView.Underway(p.getBuildingId(), p.getWorkTotal(),
+							p.getWorkTotal() - p.getWorkRemaining(),
+							owner instanceof com.civstudio.agent.ruler.Ruler ? "RULER" : "NOBLE"));
+		}
+		return byPlot;
+	}
+
+	private static void addProject(java.util.Map<Plot, List<DistrictView.Underway>> byPlot,
+			Plot plot, com.civstudio.agent.laborer.Laborer.HomeProject project, String owner) {
+		if (project == null || project.cost() <= 0)
+			return;
+		byPlot.computeIfAbsent(plot, k -> new ArrayList<>()).add(new DistrictView.Underway(
+				project.id(), project.cost(), project.progress(), owner));
+	}
+
+	// agent id -> the coarse owner class the client renders (the id itself is meaningless to a
+	// spectator). Built once per projection rather than scanned per building: a mature colony has
+	// hundreds of buildings and hundreds of agents, and the naive form is their product. An id
+	// that is absent — a null owner, or an owner that has since died — reads as unowned, which is
+	// exactly right: the building outlives its builder.
+	private static java.util.Map<Integer, String> ownerKinds(Settlement c) {
+		java.util.Map<Integer, String> kinds = new java.util.HashMap<>();
+		for (Agent a : c.getAgents())
+			if (a instanceof com.civstudio.agent.AbstractHousehold)
+				kinds.put(a.getID(), a instanceof com.civstudio.agent.ruler.Ruler ? "RULER"
+						: a instanceof com.civstudio.agent.noble.Noble ? "NOBLE" : "HOUSEHOLD");
+		return kinds;
+	}
+
+	// the crown's build queue (B4/B6): the active item + progress + the player's pending
+	// orders. NONE for a colony without the build economy.
+	private static BuildQueueView queueView(Settlement c) {
+		var economy = c.getBuildEconomy();
+		if (economy == null)
+			return BuildQueueView.NONE;
+		return new BuildQueueView(economy.getActiveBuildId(), economy.getActiveCost(),
+				economy.getActiveRemaining(), List.copyOf(economy.getPendingOrders()),
+				economy.getDonationRate(), economy.queueAwaitingChoice());
 	}
 
 	// project the colony's privy council: the court member seated in each filled advisor

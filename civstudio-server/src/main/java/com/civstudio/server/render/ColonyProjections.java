@@ -97,8 +97,14 @@ public final class ColonyProjections {
 
 		String tier = c.getTier() == null ? null : c.getTier().name();
 		String province = c.getProvince() == null ? null : c.getProvince().name();
+		// what the crown could start today, in the build brain's own score order — the city
+		// screen's decree picker. Empty for a colony without the build economy.
+		var economy = c.getBuildEconomy();
+		List<String> candidates = economy == null ? List.of()
+				: economy.buildableCandidates().stream().map(b -> b.id()).toList();
+		// canCommand is the caller's business, not the colony's — the controller fills it in
 		return new ColonyDetail(c.getName(), tier, province, rulerName,
-				population, nobles, poolSize, skills, roster);
+				population, nobles, poolSize, skills, roster, candidates, false);
 	}
 
 	// sort class: the ruler leads, then nobles, then everyone else (laborers)

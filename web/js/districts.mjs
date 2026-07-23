@@ -10,10 +10,12 @@
 //
 // Two sources: the map's urban plots (BUNDLE, geographic — every city) and the live session
 // snapshot (the POV colony's placed buildings, from the D3 district feed). Both fade in deep.
-import { P, ctx, pxr, pyr, px, py, provOnScreen, isPolitical, BUNDLE, apiUrl } from "./core.mjs";
+import { P, ctx, pxr, pyr, px, py, provOnScreen, isPolitical, BUNDLE } from "./core.mjs";
+import { drawBuildIcon } from "./build-catalog.mjs";
 import { bandAlpha } from "./bands.mjs";
 import { liveColony } from "./overlays/live.mjs";
-import { nearestPlots } from "./district-plots.mjs";
+import { nearestPlots, indexDistricts, plotKey } from "./district-plots.mjs";
+import { footprintCells, plotBlocks } from "./footprints.mjs";
 
 // --- Civ6 district-hex chips (D4a): {TYPE: {src,w,h}} → loaded Images. We draw NEIGHBORHOOD
 // (+ its baked ABANDONED variant); CITY_CENTER is a last-ditch fallback. ---
@@ -25,26 +27,8 @@ if (TILES) for (const [type, a] of Object.entries(TILES)) { const im = new Image
 // centred on the plot, not a tile blanketing the cell (the old full-hex D_HEX_SCALE pile-up).
 function iconSize(plotPx) { return Math.max(10, Math.min(plotPx * 0.55, 46)); }
 
-// --- building button icons (Phase 2 sheet) + the /api/buildings icon rects (D3 join) ---
-const BSHEET = "assets/buildings/building-icons.webp";
-const bsheetImg = new Image(); bsheetImg.src = BSHEET;
-let bmeta = null;               // BUILDING_* id -> { icon:[x,y,w,h], category }
-async function loadBuildingMeta() {
-  if (bmeta) return;
-  bmeta = {};
-  try {
-    const res = await fetch(apiUrl("/api/buildings"));
-    if (!res.ok) return;
-    const buf = await res.arrayBuffer();
-    let arr;
-    try {
-      const stream = new Response(buf).body.pipeThrough(new DecompressionStream("gzip"));
-      arr = JSON.parse(await new Response(stream).text());
-    } catch { arr = JSON.parse(new TextDecoder().decode(buf)); }
-    for (const b of arr) bmeta[b.id] = { icon: b.icon, category: b.category };
-  } catch { /* the tree works without it; icons just fall back to a dot */ }
-}
-loadBuildingMeta();
+// (the /api/buildings join — names, costs and the button-icon sheet — lives in build-catalog.mjs,
+//  shared with the decree modal and the city screen)
 
 // The colony's CITY CENTER in screen px — the centre of its `centerX`/`centerY` plot, the
 // water-first plot the engine actually founded on. Falls back to the colony's lat/lon, which is its
@@ -56,24 +40,15 @@ function centerPx(colony, plotPx) {
   return { x: px(colony.longitude), y: py(colony.latitude) };
 }
 
-// the province that hosts the live colony (so its urban plots read as ACTIVE, not abandoned): the
-// on-screen province whose plot bounds contain the colony's map point. The district view only fades
-// in at deep zoom, where one city province fills the view, so a plot-bbox containment test is exact
-// enough (and cheap — only loaded provinces are scanned). Null when the colony's province is off
-// screen (every visible urban plot is then correctly an unlinked, abandoned site).
-function colonyProvince(colony, plotPx) {
-  const { x: cx, y: cy } = centerPx(colony, plotPx);
-  for (const p of P) {
-    if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
-    let urban = false, x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    for (const q of p._plots) {
-      if (q.urban) urban = true;
-      if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x;
-      if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y;
-    }
-    if (!urban) continue;
-    if (cx >= pxr(x0) && cx <= pxr(x1 + 1) && cy >= pyr(y0) && cy <= pyr(y1 + 1)) return p;
-  }
+// the province that hosts the live colony (so its urban plots read as ACTIVE, not abandoned). The
+// colony says which province it sits in outright (ColonyView.provinceId), so this is a lookup — it
+// used to be a plot-bounding-box containment scan over every loaded province, inferring from the
+// colony's map point what the feed already knew. Null when that province isn't on screen (every
+// visible urban plot is then correctly an unlinked, abandoned site).
+function colonyProvince(colony) {
+  if (!colony.provinceId) return null;
+  for (const p of P)
+    if (p.id === colony.provinceId && p._plots && p._plots.length && provOnScreen(p)) return p;
   return null;
 }
 
@@ -106,42 +81,93 @@ function drawNeighborhood(active, cx, cy, s, center = false) {
   if (fake) ctx.restore();
 }
 
+// --- owner tints: whose building this is, at a glance (the feed's owner classes) ---
+const OWNER_TINT = {
+  RULER: "#c9a24a",       // the crown's gold
+  NOBLE: "#9b7bc0",       // an aristocratic violet
+  HOUSEHOLD: "#c3ab8b",   // warm hearth stone
+  NONE: "#8b8b86",        // unowned — orphaned or inherited ground
+};
+const tintOf = owner => OWNER_TINT[owner] || OWNER_TINT.NONE;
+
 // draw one building's button icon on a small plinth centred at (cx, cy), sized to `s` px
 function drawBuildingIcon(id, cx, cy, s) {
   // plinth: a soft shadow ellipse so the icon reads as sitting in the district
   ctx.beginPath(); ctx.ellipse(cx, cy + s * 0.42, s * 0.5, s * 0.2, 0, 0, Math.PI * 2);
   ctx.fillStyle = "rgba(30,24,18,0.35)"; ctx.fill();
-  const m = bmeta && bmeta[id];
-  if (m && m.icon && bsheetImg.complete && bsheetImg.naturalWidth) {
-    const [x, y, w, h] = m.icon;
-    ctx.drawImage(bsheetImg, x, y, w || 64, h || 64, cx - s / 2, cy - s / 2, s, s);
-  } else {
-    // no icon rect yet — a small stone chip so the building still shows
-    ctx.beginPath(); ctx.arc(cx, cy, s * 0.32, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(210,200,186,0.9)"; ctx.fill();
+  drawBuildIcon(ctx, id, cx, cy, s);
+}
+
+// (2a) OVERVIEW LOD — one plot's buildings as button icons ringed (then spiralled) around it.
+// Reads as "something stands here, and roughly how much".
+function drawPlotIcons(dist, cx, cy, plotPx) {
+  const ids = (dist.buildings || []).map(b => b.id);
+  for (const u of (dist.underway || [])) ids.push(u.id);
+  if (!ids.length) return;
+  const bs = Math.max(8, Math.min(plotPx * 0.4, 20));
+  for (let i = 0; i < ids.length; i++) {
+    const ring = Math.floor(i / 8), slot = i % 8;
+    const rad = plotPx * (0.45 + ring * 0.42);
+    const ang = (slot / 8) * Math.PI * 2 + ring * 0.4;
+    drawBuildingIcon(ids[i], cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, bs);
+  }
+}
+
+// (2b) DEEP LOD (band 6, docs/zoom-bands.md) — the plot as ground with blocks on it: one footprint
+// per building, owner-tinted, and a part-filled scaffold for anything still rising. This is where a
+// settlement stops being icons and starts being a place.
+function drawPlotFootprints(dist, x0, y0, plotPx) {
+  const blocks = plotBlocks(dist.buildings, dist.underway);
+  if (!blocks.length) return;
+  const cells = footprintCells(blocks.length, plotPx, x0, y0);
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i], c = cells[i];
+    if (b.progress == null) {
+      ctx.fillStyle = tintOf(b.owner);
+      ctx.fillRect(c.x, c.y, c.w, c.h);
+      // a thin south/east shadow so a block reads as standing, not painted on
+      ctx.fillStyle = "rgba(24,20,16,0.28)";
+      ctx.fillRect(c.x, c.y + c.h, c.w + 1, 1);
+      ctx.fillRect(c.x + c.w, c.y, 1, c.h + 1);
+    } else {
+      // a scaffold: the outline of what will stand, filled from the ground up by progress
+      const built = c.h * b.progress;
+      ctx.fillStyle = tintOf(b.owner);
+      ctx.globalAlpha *= 0.75;
+      ctx.fillRect(c.x, c.y + c.h - built, c.w, built);
+      ctx.globalAlpha /= 0.75;
+      ctx.strokeStyle = tintOf(b.owner);
+      ctx.lineWidth = Math.max(0.6, c.w * 0.06);
+      ctx.setLineDash([c.w * 0.22, c.w * 0.16]);
+      ctx.strokeRect(c.x, c.y, c.w, c.h);
+      ctx.setLineDash([]);
+    }
   }
 }
 
 /** The district view — a small district chip on every city's urban plots (abandoned unless the plot
  *  is one the live colony's districts occupy; its centre plot draws the CITY_CENTER art) + the POV
- *  colony's built buildings ringing that centre. Fades in at deep zoom (reading a city's plots). */
+ *  colony's buildings, each on the plot it actually stands on. Icons at the overview zoom, real
+ *  footprints past band 6. Fades in at deep zoom (reading a city's plots). */
 export function drawDistricts() {
-  const a = bandAlpha([4.5, 5.5]);   // fade in past the pip, when zoomed into a city
-  if (a <= 0.01 || isPolitical()) return;
+  const chips = bandAlpha([4.5, 5.5]);          // the neighborhood chips, past the interim pip
+  const icons = bandAlpha([4.5, 5.5, 6.0, 6.8]); // building icons: fade out as footprints take over
+  const feet = bandAlpha([6.0, 6.8]);            // band-6 footprints (docs/zoom-bands.md)
+  if (chips <= 0.01 || isPolitical()) return;
   const plotPx = pxr(1) - pxr(0);
   if (plotPx < 2) return;            // too small to read
   ctx.save();
-  ctx.globalAlpha = a;
 
   const colony = liveColony();
   const anchored = colony && (Number.isFinite(colony.latitude) || Number.isFinite(colony.centerX));
-  const liveProv = anchored ? colonyProvince(colony, plotPx) : null;
+  const liveProv = anchored ? colonyProvince(colony) : null;
   const built = liveProv ? livePlots(liveProv, colony, plotPx) : null;
   const s = iconSize(plotPx);
 
   // (1) geographic: a small district chip on every city's urban core plots. Abandoned by default
   // (an unlinked map site); active on the live colony's province — but only on the plots its
   // districts actually occupy, the rest of that core being unbuilt ground.
+  ctx.globalAlpha = chips;
   for (const p of P) {
     if (!p._plots || !p._plots.length || !provOnScreen(p)) continue;
     const live = p === liveProv;
@@ -152,21 +178,32 @@ export function drawDistricts() {
     }
   }
 
-  // (2) live: the POV colony's built buildings, ringed on its city center over that plot's chip
-  if (anchored && Array.isArray(colony.districts) && colony.districts.length) {
-    const { x: cx, y: cy } = centerPx(colony, plotPx);
-    const ids = [];
-    for (const dist of colony.districts) for (const id of (dist.buildings || [])) ids.push(id);
-    if (ids.length) {
-      const bs = Math.max(8, Math.min(plotPx * 0.4, 20));  // icon size (a fraction of a plot)
-      // ring (then spiral) the icons out from the center
-      for (let i = 0; i < ids.length; i++) {
-        const ring = Math.floor(i / 8), slot = i % 8;
-        const rad = plotPx * (0.45 + ring * 0.42);
-        const ang = (slot / 8) * Math.PI * 2 + ring * 0.4;
-        drawBuildingIcon(ids[i], cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, bs);
+  // (2) live: the POV colony's buildings, ON THE PLOTS THEY STAND ON. The feed carries each plot's
+  // raster coordinates, so a household's hut sits on that household's ground instead of piling onto
+  // the city centre with everything else (which is what this drew before the coordinates shipped).
+  if (anchored && Array.isArray(colony.districts)) {
+    for (const dist of colony.districts) {
+      if (!Number.isFinite(dist.x) || !Number.isFinite(dist.y)) continue;   // older server
+      const x0 = pxr(dist.x), y0 = pyr(dist.y);
+      if (icons > 0.01) {
+        ctx.globalAlpha = icons;
+        drawPlotIcons(dist, x0 + plotPx / 2, y0 + plotPx / 2, plotPx);
+      }
+      if (feet > 0.01) {
+        ctx.globalAlpha = feet;
+        drawPlotFootprints(dist, x0, y0, plotPx);
       }
     }
   }
   ctx.restore();
 }
+
+/** What the live colony has standing (or rising) on the plot at raster (x, y), or null. The map
+ *  tooltip's join — the same index the draw uses, so hover and paint can never disagree. */
+export function districtAt(x, y) {
+  const colony = liveColony();
+  if (!colony || !Array.isArray(colony.districts)) return null;
+  if (dIndexFor !== colony.districts) { dIndex = indexDistricts(colony.districts); dIndexFor = colony.districts; }
+  return dIndex.get(plotKey(x, y)) || null;
+}
+let dIndex = new Map(), dIndexFor = null;   // memoized per snapshot (the array identity is the key)

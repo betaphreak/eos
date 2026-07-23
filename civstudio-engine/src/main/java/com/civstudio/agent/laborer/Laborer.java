@@ -141,6 +141,41 @@ public class Laborer extends AbstractHousehold {
 	private double targetRungCost;
 	private double houseProgress;
 
+	/**
+	 * A construction this household is paying its own plot hammers into — its house
+	 * (the {@code BUILDING_HOUSING_*} rung it is raising) or, once housed, its own
+	 * regular building (B5). The read side of the two self-build slots: what is rising
+	 * on this household's home plot, and how far along.
+	 *
+	 * @param id       the catalog id being built
+	 * @param cost     the hammers the building needs in total
+	 * @param progress the hammers paid in so far
+	 */
+	public record HomeProject(String id, double cost, double progress) {
+	}
+
+	/**
+	 * The housing rung this household is currently raising on its home plot, or
+	 * {@code null} when it is housed (or has nothing targeted yet).
+	 *
+	 * @return the housing project, or {@code null}
+	 */
+	public HomeProject getHousingProject() {
+		return targetRungId == null ? null
+				: new HomeProject(targetRungId, targetRungCost, houseProgress);
+	}
+
+	/**
+	 * The regular building this (housed) household is raising on its home plot with its
+	 * own hammers (B5), or {@code null} when it is building none.
+	 *
+	 * @return the own-building project, or {@code null}
+	 */
+	public HomeProject getOwnBuildingProject() {
+		return targetBuildingId == null ? null
+				: new HomeProject(targetBuildingId, targetBuildingCost, buildingProgress);
+	}
+
 	// larder days of food required for a homeless household to stay home and build
 	// rather than earn (the homeless-and-FED rule; survival wages beat house-building
 	// when the larder is short). UNCALIBRATED.
@@ -642,7 +677,8 @@ public class Laborer extends AbstractHousehold {
 		houseOnPlot = homePlot;
 		SimLog.event(Rank.HOUSEHOLD, Level.FINE, String.format(
 				"the %s household raised its %s on its home plot",
-				getHead().surname(), targetRungId));
+				getHead().surname(),
+				com.civstudio.settlement.BuildingCatalog.displayName(targetRungId)));
 		targetRungId = null;
 		targetRungCost = 0;
 		houseProgress = 0;
@@ -672,7 +708,8 @@ public class Laborer extends AbstractHousehold {
 		buildEconomy.noteHouseholdBuilt();
 		SimLog.event(Rank.HOUSEHOLD, Level.FINE, String.format(
 				"the %s household raised a %s on its plot",
-				getHead().surname(), targetBuildingId));
+				getHead().surname(),
+				com.civstudio.settlement.BuildingCatalog.displayName(targetBuildingId)));
 		targetBuildingId = null;
 		targetBuildingCost = 0;
 		buildingProgress = 0;
