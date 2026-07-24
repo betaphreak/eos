@@ -50,6 +50,12 @@ public class ConsumerGoodMarket extends Market {
 	private class BuyOffer {
 		Agent buyer;
 		Demand demand;
+		// where the bought good is delivered when it differs from the buyer's own stock — the
+		// city-of-hamlets V2 seam: a village's leader PAYS (buyer = the leader, so its account is
+		// debited and its demand drives price discovery) but the food is delivered into the village
+		// LARDER (deliverTo), not the leader's own necessity. Null = deliver to buyer.getGood(good),
+		// the ordinary case. See addBuyOffer(Agent, Good, Demand).
+		com.civstudio.good.Good deliverTo;
 	}
 
 	/* sell offer */
@@ -131,8 +137,26 @@ public class ConsumerGoodMarket extends Market {
 	 * @param demand
 	 */
 	public void addBuyOffer(Agent buyer, Demand demand) {
+		addBuyOffer(buyer, null, demand);
+	}
+
+	/**
+	 * Add a buy offer whose <b>payer and delivery target differ</b> — {@code payer}'s bank account
+	 * is debited and its demand joins price discovery, but the bought good is delivered into {@code
+	 * deliverTo} rather than {@code payer.getGood(good)}. The city-of-hamlets V2 seam: a village's
+	 * leader pays for its {@link com.civstudio.settlement.Larder larder}'s food deficit (so the
+	 * village is the market's food participant) while the food lands in the larder, not the leader's
+	 * own store.
+	 *
+	 * @param payer     the agent whose account pays for the fill
+	 * @param deliverTo the good the bought quantity is added to (e.g. a village larder's Necessity);
+	 *                  {@code null} delivers to {@code payer.getGood(good)} as usual
+	 * @param demand    the demand curve
+	 */
+	public void addBuyOffer(Agent payer, com.civstudio.good.Good deliverTo, Demand demand) {
 		BuyOffer offer = new BuyOffer();
-		offer.buyer = buyer;
+		offer.buyer = payer;
+		offer.deliverTo = deliverTo;
 		offer.demand = demand;
 		buyOffers.add(offer);
 	}
@@ -234,7 +258,9 @@ public class ConsumerGoodMarket extends Market {
 						* vol;
 				double payAmt = qty * price;
 				offer.buyer.getBank().withdraw(offer.buyer.getID(), payAmt);
-				offer.buyer.getGood(good).increase(qty);
+				// deliver to the offer's target good when it names one (a village larder), else to the
+				// payer's own stock (the ordinary case)
+				(offer.deliverTo != null ? offer.deliverTo : offer.buyer.getGood(good)).increase(qty);
 			}
 			for (SellOffer offer : sellOffers) {
 				double qty = offer.qty / supply * vol;

@@ -172,12 +172,19 @@ A **Village** exists at one of two scopes:
     `SimulationConfig.villageLarder` flag + `Settlement.enableVillageLarders()`, harness wiring.
     Behavior-neutral: flag off = byte-identical (null subsystem), and even flag-on nothing eats from
     the pools yet. `VillageLarderTest`.
-  - *Slice 2 (next)* — **provisioned eating + leader-funded imports**: peasant households eat from
+  - *Slice 2a ✅ SHIPPED* — the **market delivery-target seam**: `ConsumerGoodMarket.addBuyOffer(payer,
+    deliverTo, demand)` bills the payer (so the village's leader pays and its demand joins price
+    discovery) but delivers the bought food into a named `Good` — the village larder's `Necessity` —
+    rather than the payer's own store. Backward-compatible (the old `addBuyOffer(buyer, demand)`
+    delegates with `deliverTo = null`); byte-identical. This is the mechanism that lets a leader fund
+    its village's imports without a new agent or a post-clear split — a `Noble` eats from its own
+    necessity, so its `getGood` can't be the larder.
+  - *Slice 2b (next)* — **provisioned eating + leader-funded imports**: peasant households eat from
     their hamlet larder (the eat → starve → child-granary-relief priority at larder scope, provisioned
-    regardless of pay), the larder filled by the village's home-plot subsistence + the **leader**
-    posting a deficit buy offer to the shared market (the food delivered into the larder's `Necessity`
-    when the market clears). Households stop posting individual necessity demand. Gate behind the
-    survival tests.
+    regardless of pay), the larder filled by home-plot subsistence + the **leader** posting a deficit
+    buy offer (via the 2a seam) to the shared market. Households stop posting individual necessity
+    demand. This rewires `Laborer.act()`'s eating loop — the project's most survival-critical code — so
+    it lands behind a dedicated survival test.
   - *Slice 3* — per-hamlet **births / immigration / dues** in the fan-out.
 - **V3 — leader-owned NFirms + surplus.** The village's **Necessity firm(s) are owned by its leader**
   (the fief-holder noble, or the crown for a demesne village) and hire the village's peasants; the
