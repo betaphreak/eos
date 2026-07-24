@@ -27,9 +27,13 @@ import java.util.List;
  * @param fiefLord  the surname of the noble (or ruler) that holds this plot as a fief
  *                  (docs/estate-system.md P3), or {@code null} when it is Crown demesne — the
  *                  households resident here are that lord's vassals
+ * @param households the number of peasant households resident on this plot — its size as a
+ *                  {@link com.civstudio.settlement.Hamlet hamlet} (city-of-hamlets V1). {@code 0}
+ *                  for the city center and for empty worked ground; a non-center plot with
+ *                  households is a hamlet led by its {@code fiefLord} (or the Crown)
  */
 public record DistrictView(int index, int x, int y, List<PlacedBuilding> buildings,
-		List<Underway> underway, String fiefLord) {
+		List<Underway> underway, String fiefLord, int households) {
 
 	/**
 	 * One finished building on the plot, as a bare eos-native id (the verbatim C2C

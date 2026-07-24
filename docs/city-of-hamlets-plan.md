@@ -132,13 +132,18 @@ A **Village** exists at one of two scopes:
   *farmed* plot the only new food comes from food bonuses (features clear when farmed; relief doesn't
   touch food), a modest shift. Still needs the CI full-world rebake → deploy → clear the plot cache
   before prod serves v10. It is the substrate V2/V3 stand on. See §8.
-- **V0 — the `Hamlet` entity.** A first-class object the City holds one-per-seat-plot: `territory`
-  (plots), `name` (GeoNames place name of the seat), `leader` (the seat's `ownerId` noble, or crown),
-  its resident households, and its own `tier` (capped at HAMLET). Pure grouping over what P3 gives —
-  no behavior change. (No `Village`→`Township` rename — there is no `Village` class; the name is free.)
-- **V1 — membership & roster + view.** Group households by their `homePlot` → village; a village
-  exposes its peasants, leader, population, territory. The **city screen shows each plot as a village**
-  (name · leader · N households) with a drill-down.
+- **V0 — the `Hamlet` entity. ✅ SHIPPED.** `settlement.Hamlet` (record: `seat`, `name`, `leaderId`,
+  `households`, `tier`) + `Settlement.hamlets()` / `householdsByHomePlot()`: one hamlet per plot with
+  resident households, led by the seat's `ownerId` (noble/ruler) or the Crown, named for the seat's
+  GeoNames place, tier derived from household count and **capped at HAMLET**; the city center (plot 0)
+  is excluded. A pure read-only projection over the shipped vassalage state — no stored state, no
+  behavior change. `HamletTest` covers the grouping + the tier derivation.
+- **V1 — membership & roster + view. ✅ SHIPPED.** `Settlement.householdsByHomePlot()` groups
+  households by `homePlot` → hamlet; `DistrictView.households` carries the per-plot count into the live
+  snapshot (same grouping the engine projects). The **city screen shows each plot as a hamlet** —
+  name (already from the plot grid) · leader (the ⚜ fief chip, or Crown) · **N households** (a new
+  `N⌂` badge + a "a hamlet · N households under the <house>" line) — and no longer folds away a
+  peopled plot as empty "worked ground".
 - **V2 — village larder + local tick.** Refactor the per-household larder into a **village larder** (a
   shared local food balance the village's peasants eat from). The city's `newDay` fans out a
   `Village.step()`: its **food balance** (its NFirm output into the larder, drawn by its households),

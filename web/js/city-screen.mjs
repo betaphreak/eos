@@ -102,7 +102,9 @@ function plotsHtml(colony) {
   const rows = [];
   let hidden = 0;
   districts.forEach((d, i) => {
-    const bare = !buildingsOf(d).length && !(d.underway || []).length;
+    // a plot with resident households is a hamlet — never fold it away as empty ground, even with
+    // nothing built on it yet (city-of-hamlets V1)
+    const bare = !buildingsOf(d).length && !(d.underway || []).length && !(d.households > 0);
     if (bare && !showBare) { hidden++; return; }
     rows.push(plotRow(colony, d, i));
   });
@@ -131,13 +133,27 @@ function plotRow(colony, d, i) {
       <span class="city-r-who">${houseWho(u)}</span>
     </div>`;
   }).join("");
-  const bare = !built && !rising ? `<div class="city-bare">worked ground</div>` : "";
+  // resident peasant households make this plot a hamlet (city-of-hamlets V1). A peopled plot with
+  // nothing built yet reads as its hamlet, not "worked ground"; the city center (plot 0) is the
+  // civic core, never a hamlet.
+  const folk = d.households || 0;
+  const isHamlet = folk > 0 && i !== 0;
+  const bare = !built && !rising
+    ? (isHamlet
+        ? `<div class="city-bare">a hamlet · ${folk} household${folk === 1 ? "" : "s"}${
+            d.fiefLord ? ` under the ${escHtml(d.fiefLord)} house` : " · crown demesne"}</div>`
+        : `<div class="city-bare">worked ground</div>`)
+    : "";
   // the plot's fief-lord (the noble/ruler who holds it) — its residents are that lord's vassals
   const fief = d.fiefLord
     ? `<span class="city-fief" title="held in fief by the ${escHtml(d.fiefLord)} house">⚜ ${escHtml(d.fiefLord)}</span>`
     : "";
+  // the hamlet's size in households (the "N households" of name · leader · N households)
+  const folkChip = folk > 0
+    ? `<span class="city-badge" title="${folk} peasant household${folk === 1 ? "" : "s"} live here">${folk}⌂</span>`
+    : "";
   return `<div class="city-plot">
-    <div class="city-p-head"><span class="city-p-name">${title}</span>${center}${fief}
+    <div class="city-p-head"><span class="city-p-name">${title}</span>${center}${fief}${folkChip}
       <span class="city-p-land">${escHtml(land)}</span></div>
     ${built ? `<div class="city-blds">${built}</div>` : ""}
     ${rising}${bare}

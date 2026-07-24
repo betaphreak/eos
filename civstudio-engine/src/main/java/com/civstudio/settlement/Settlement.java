@@ -6,6 +6,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.logging.Level;
@@ -34,6 +35,7 @@ import com.civstudio.agent.firm.BuilderFirm;
 import com.civstudio.agent.firm.Firm;
 import com.civstudio.agent.firm.FirmFactory;
 import com.civstudio.agent.firm.StrategicFirm;
+import com.civstudio.agent.laborer.Laborer;
 import com.civstudio.agent.ruler.Ruler;
 import com.civstudio.tech.ResearchState;
 import com.civstudio.bank.Bank;
@@ -803,6 +805,53 @@ public class Settlement {
 	 */
 	public List<Plot> getDistrictPlots() {
 		return plotField.getDistrictPlots();
+	}
+
+	/**
+	 * The colony's living, <b>landed</b> laborer households grouped by their {@linkplain
+	 * Laborer#getHomePlot() home plot} — the raw material of the {@linkplain #hamlets() hamlet}
+	 * grouping (city-of-hamlets V0). Landless households (no home plot) are omitted; the map is keyed
+	 * by plot identity ({@link IdentityHashMap}, so two distinct plots with equal fields never
+	 * merge). A read-only projection recomputed on each call — nothing is stored, so it never drifts
+	 * from the agent list.
+	 *
+	 * @return home plot &rarr; the households resident on it (each list non-empty)
+	 */
+	public Map<Plot, List<Laborer>> householdsByHomePlot() {
+		Map<Plot, List<Laborer>> byPlot = new IdentityHashMap<>();
+		for (Agent a : getAgents())
+			if (a.isAlive() && a instanceof Laborer l && l.getHomePlot() != null)
+				byPlot.computeIfAbsent(l.getHomePlot(), k -> new ArrayList<>()).add(l);
+		return byPlot;
+	}
+
+	/**
+	 * The colony's <b>hamlets</b> (city-of-hamlets V0, {@code docs/city-of-hamlets-plan.md}) — one
+	 * per {@linkplain #getDistrictPlots() plot} that has resident households, each led by that
+	 * plot's fief-holder (or the Crown when unenfeoffed), named for the plot, and tier-rated by its
+	 * household count (capped at {@link SettlementTier#HAMLET}, so a hamlet stays a <em>dependent</em>
+	 * cell). The city <b>center</b> (plot 0) is the non-hamlet civic core — the shared market and
+	 * crown seat — and is excluded. A pure grouping over the current fiefs and households, walked in
+	 * plot-claim order so the list is seed-stable; it stores nothing and changes no behaviour (the
+	 * storeys that give a hamlet its own larder, firms and tick are V2+).
+	 *
+	 * @return the hamlets, in plot-claim order
+	 */
+	public List<Hamlet> hamlets() {
+		List<Plot> plots = getDistrictPlots();
+		if (plots.isEmpty())
+			return List.of();
+		Plot center = plots.get(0);
+		Map<Plot, List<Laborer>> byHome = householdsByHomePlot();
+		List<Hamlet> out = new ArrayList<>();
+		for (Plot seat : plots) {
+			if (seat == center)
+				continue;
+			List<Laborer> hh = byHome.get(seat);
+			if (hh != null && !hh.isEmpty())
+				out.add(Hamlet.of(seat, hh));
+		}
+		return out;
 	}
 
 	/**

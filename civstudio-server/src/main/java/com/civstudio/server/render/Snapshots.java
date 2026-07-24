@@ -181,6 +181,9 @@ public final class Snapshots {
 		java.util.Map<Plot, List<DistrictView.Underway>> underway = underwayByPlot(c, plots.get(0));
 		java.util.Map<Integer, String> owners = ownerKinds(c);
 		java.util.Map<Integer, String> ownerNames = ownerSurnames(c);
+		// resident households per plot — the same hamlet grouping the engine projects (V1), so the
+		// city screen's "N households" agrees with Settlement.hamlets()
+		java.util.Map<Plot, List<com.civstudio.agent.laborer.Laborer>> byHome = c.householdsByHomePlot();
 		List<DistrictView> views = new ArrayList<>();
 		for (int i = 0; i < plots.size(); i++) {
 			Plot p = plots.get(i);
@@ -191,8 +194,9 @@ public final class Snapshots {
 					.toList();
 			// the plot's fief-lord (the noble/ruler that holds it), by surname — null = Crown demesne
 			String fiefLord = p.ownerId() == null ? null : ownerNames.get(p.ownerId());
+			int households = byHome.getOrDefault(p, List.of()).size();
 			views.add(new DistrictView(i, p.x(), p.y(), buildings,
-					underway.getOrDefault(p, List.of()), fiefLord));
+					underway.getOrDefault(p, List.of()), fiefLord, households));
 		}
 		return views;
 	}
