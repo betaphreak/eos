@@ -260,6 +260,13 @@ public class Settlement {
 	@Getter
 	private BuildEconomy buildEconomy;
 
+	// the village larders (docs/city-of-hamlets-plan.md V2): the per-hamlet food pools that organize
+	// food per village rather than per household — present only when SimulationConfig.villageLarder is
+	// on (enableVillageLarders(), called by the harness); null on a flag-off colony, whose food keeps
+	// running through the per-household necessity stock (byte-identical). Sibling of foodEconomy.
+	@Getter
+	private VillageLarders villageLarders;
+
 	// the liturgical calendar (shared with the owning game session): classifies
 	// the current in-game date as a workday/weekend/holiday. A pure date lookup,
 	// independent of seed and location. See getDayType.
@@ -1016,6 +1023,17 @@ public class Settlement {
 	public void enableBuildEconomy() {
 		if (buildEconomy == null)
 			buildEconomy = new BuildEconomy(this, plotField);
+	}
+
+	/**
+	 * Switch on the <b>village larders</b> (docs/city-of-hamlets-plan.md V2) — food is organized per
+	 * {@linkplain #hamlets() hamlet} as a provisioned larder rather than per household. Called by the
+	 * harness when {@code SimulationConfig.villageLarder} is set; never called on a flag-off colony,
+	 * which stays byte-identical ({@link #getVillageLarders()} stays {@code null}).
+	 */
+	public void enableVillageLarders() {
+		if (villageLarders == null)
+			villageLarders = new VillageLarders(this);
 	}
 
 	// test seam: prime the food box so a unit test can exercise grow/shrink without driving a

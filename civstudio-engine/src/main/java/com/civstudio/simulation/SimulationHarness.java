@@ -404,6 +404,10 @@ public class SimulationHarness {
 		// byte-identical
 		if (cfg.buildEconomy())
 			colony.enableBuildEconomy();
+		// switch on the per-hamlet village larders (city-of-hamlets V2) when the run opts in; a
+		// flag-off colony keeps a null VillageLarders and is byte-identical
+		if (cfg.villageLarder())
+			colony.enableVillageLarders();
 	}
 
 	/** Create the markets and register them (labor market first). */

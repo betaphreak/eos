@@ -43,9 +43,27 @@ future second city or **unincorporated villages** (none exist at game start).
   city market (and deficits bought from it). The leader is the employer-lord. (No separate per-
   household subsistence farming — the firm is the village's food engine; peasants earn wages and eat
   from the village larder.)
-- **Larder = a village-level shared food balance.** The village holds one larder its peasants eat
-  from (fed by its NFirm, split among its households) — a refactor of the current per-household
-  larder into a per-village pool.
+- **Larder = a village-level shared food balance, a PROVISIONED FLOOR.** (Decided 2026-07-24 — the
+  load-bearing fork.) The village holds one larder its peasants eat from (fed by its NFirm, split among
+  its households) — a refactor of the current per-household larder into a per-village pool. It is a
+  **provisioned floor, not a purchased good**: the larder feeds the village's resident households up to
+  their ration **regardless of their ability to pay** — a peasant does *not* individually buy its
+  staple food on the market. This is the feudal social contract made mechanical: **the lord feeds his
+  vassals.** Consequences that fall out of the choice:
+  - **The market participant for food is the VILLAGE, not the household.** Households stop posting
+    individual necessity demand; the village posts its larder's **surplus (sell) / deficit (buy)** to
+    the shared city market, so food price discovery runs on the *aggregate of village net balances*
+    (fewer, larger participants) rather than per-household demand. The unmet-demand pressure signal
+    survives, at village granularity.
+  - **The leader funds any deficit import** (the provision duty), from its **NFirm dividends + P4
+    dues** — so a peasant's wage goes to **Enjoyment + dues + savings**, never to its own bread; the
+    leader is the food-provider. This closes the money loop the earlier §2 BALANCE WATCH flagged:
+    wage → dues → the lord provisions the larder (buying the deficit if the fields fall short).
+  - **The provisioned floor IS the anti-collapse survival mechanism** — it replaces per-household
+    home-plot subsistence as the guarantee. A village whose NFirm output + food buildings + purchased
+    imports cannot fill the larder to the floor *starves* (the failure mode the survival tests gate:
+    keep dues + wage/price such that a village does not starve its own people). The current
+    per-household eat → starve → child-granary-relief priority moves to **village-larder scope**.
 - **Peasant pool = one city-wide `Retinue` (kept).** A single shared labor reserve; villages draw new
   households from it as they have room, on top of their own births/immigration. Least structural
   change to the pool.
@@ -144,11 +162,23 @@ A **Village** exists at one of two scopes:
   name (already from the plot grid) · leader (the ⚜ fief chip, or Crown) · **N households** (a new
   `N⌂` badge + a "a hamlet · N households under the <house>" line) — and no longer folds away a
   peopled plot as empty "worked ground".
-- **V2 — village larder + local tick.** Refactor the per-household larder into a **village larder** (a
-  shared local food balance the village's peasants eat from). The city's `newDay` fans out a
-  `Village.step()`: its **food balance** (its NFirm output into the larder, drawn by its households),
-  its **housing/building**, **births/immigration into that village**, and **dues** — per-village, not
-  global. Shared market still clears once, city-wide.
+- **V2 — village larder + local tick. 🚧 IN PROGRESS (flag-gated `villageLarder`, default off).**
+  Refactor the per-household larder into a **village larder** (a shared local food balance the
+  village's peasants eat from, the **provisioned floor**). The city's `newDay` fans out a
+  `Village.step()`: its **food balance**, **housing/building**, **births/immigration into that
+  village**, and **dues** — per-village, not global. Shared market still clears once, city-wide.
+  - *Slice 1 ✅ SHIPPED* — the foundation: `settlement.Larder` (a per-hamlet Necessity pool),
+    `settlement.VillageLarders` (the per-hamlet larder subsystem, one pool per hamlet seat), the
+    `SimulationConfig.villageLarder` flag + `Settlement.enableVillageLarders()`, harness wiring.
+    Behavior-neutral: flag off = byte-identical (null subsystem), and even flag-on nothing eats from
+    the pools yet. `VillageLarderTest`.
+  - *Slice 2 (next)* — **provisioned eating + leader-funded imports**: peasant households eat from
+    their hamlet larder (the eat → starve → child-granary-relief priority at larder scope, provisioned
+    regardless of pay), the larder filled by the village's home-plot subsistence + the **leader**
+    posting a deficit buy offer to the shared market (the food delivered into the larder's `Necessity`
+    when the market clears). Households stop posting individual necessity demand. Gate behind the
+    survival tests.
+  - *Slice 3* — per-hamlet **births / immigration / dues** in the fan-out.
 - **V3 — leader-owned NFirms + surplus.** The village's **Necessity firm(s) are owned by its leader**
   (the fief-holder noble, or the crown for a demesne village) and hire the village's peasants; the
   village feeds itself from the larder and posts only **surplus/deficit** to the shared market. The
@@ -163,6 +193,17 @@ A **Village** exists at one of two scopes:
 
 ## 5. Open details to settle as we build
 
+- **Larder = provisioned floor. ✅ DECIDED (2026-07-24)** — see the larder bullet in §2. The larder
+  feeds resident households regardless of pay; the *village* (not the household) is the market's food
+  participant. Unblocks V2/V3.
+- **Labor market = SHARED + village affinity. ✅ DECIDED (2026-07-24).** Labor stays **one city-wide
+  market** (one price discovery, the existing wage-budget allocation) — no per-village markets. A
+  village's NFirm **hires its own resident peasants first**, spilling over to other villages' peasants
+  only when it is short of labor. Keeps the shared-economy principle intact while making "the lord's
+  firm employs his own people" the default. (The provisioned floor already decoupled *eating* from
+  *earning*, so affinity is about identity/flavor + keeping wages coherent, not survival.) This is a
+  **V3** concern — V2's labor is unchanged; V3 adds the affinity rule when the NFirms move under
+  villages.
 - **Farm-plot → village association.** How do the empty farm plots map to a village — by proximity to
   the seat, or by the ruler granting the noble a seat + its fields together? (Extend `grantFief` /
   `Noble.fief` from one plot to a territory.)

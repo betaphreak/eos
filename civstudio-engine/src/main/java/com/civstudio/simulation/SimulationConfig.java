@@ -113,7 +113,8 @@ public record SimulationConfig(
 		double expeditionNobleShare,
 		boolean foundAtCamp,
 		boolean homePlots,
-		boolean buildEconomy) {
+		boolean buildEconomy,
+		boolean villageLarder) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -240,8 +241,12 @@ public record SimulationConfig(
 				true,                                  // homePlots (THE DEFAULT since the 2026-07-23 flip;
 				                                       //   a province-founded scenario opts into
 				                                       //   subsistence home plots — plot-working-plan.md P1)
-				true);                                 // buildEconomy (THE DEFAULT since the flip —
+				true,                                  // buildEconomy (THE DEFAULT since the flip —
 				                                       //   the build-queue calibration scenario opts in —
 				                                       //   build-queue-plan.md B1)
+				false);                                // villageLarder (city-of-hamlets V2 — OFF by
+				                                       //   default; the flag-on path organizes food per
+				                                       //   hamlet as a provisioned larder. Byte-identical
+				                                       //   off — docs/city-of-hamlets-plan.md V2)
 	}
 }
