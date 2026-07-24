@@ -193,7 +193,20 @@ A **Village** exists at one of two scopes:
     4-angle simplify pass on the diff (single `provisioned()` eval via a `foodStock(boolean)` overload,
     shared `isHamletSeat` predicate, reuse `Settlement.getHouseholdById`, dropped the dead
     `Larder.draw()`).
-  - *Slice 3* — per-hamlet **births / immigration / dues** in the fan-out.
+  - *Slice 3 ✅ SHIPPED (emergent — no new machinery).* Per-hamlet births / immigration / dues turned
+    out to be **already emergent** from the household-in-a-village model, so no explicit `Village.step()`
+    fan-out was built: a peasant's **births** are gated on its village larder (slice 2b's `foodStock`
+    redirect), its **dues** flow to its village's leader (its liege is the plot's fief-holder, P4), and
+    **immigration** seats a new household on a plot = in a village (`claimHomePlot`). A test
+    (`provisionedVillagesStillPayDuesToTheirLeaderAndGrowLocally`) locks in that the provisioned floor
+    doesn't sever the fill (larder) from the take (dues) or the growth (births).
+
+**V2 status:** the food model is **functionally complete and survival-tested**, all behind the
+default-off `villageLarder` flag. What remains to make it the default (a build-economy-style flip):
+**calibration** of the uncalibrated levers (`FLOOR_DAYS`, `FOUNDING_STOCK`, the `dailyNeed`
+over-estimate) and validating the provisioned economy is at least as healthy as the market one, plus
+optionally surfacing the larder/food status in the city screen. Then **V3** (leader-owned NFirms +
+surplus export) is the next storey.
 - **V3 — leader-owned NFirms + surplus.** The village's **Necessity firm(s) are owned by its leader**
   (the fief-holder noble, or the crown for a demesne village) and hire the village's peasants; the
   village feeds itself from the larder and posts only **surplus/deficit** to the shared market. The

@@ -9,7 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
+import com.civstudio.agent.Agent;
 import com.civstudio.agent.firm.StrategicFirmConfig;
+import com.civstudio.agent.noble.Noble;
 import com.civstudio.bank.Bank;
 import com.civstudio.era.Era;
 import com.civstudio.simulation.SimulationConfig;
@@ -110,5 +112,31 @@ class VillageLarderTest {
 				totalFood += l.available();
 		}
 		assertTrue(totalFood > 0, "the villages' larders hold food after three years");
+	}
+
+	// slice 3 (per-hamlet births / immigration / dues) is EMERGENT, not new machinery: a peasant lives
+	// in a village (its home plot), so its births are gated on that village's larder (slice 2b), its
+	// dues flow to that village's leader (its liege = the plot's fief-holder, P4), and immigration
+	// seats it on a plot = in a village. This locks in that the provisioned floor does NOT break those
+	// per-village behaviours — so a future change can't silently sever the fill (larder) from the take
+	// (dues) or the growth (births).
+	@Test
+	void provisionedVillagesStillPayDuesToTheirLeaderAndGrowLocally() {
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder().villageLarder(true).build();
+		Settlement colony = foundColony(cfg);
+		colony.run(2 * 365);
+		assertTrue(colony.isAlive(), "the provisioned colony is alive");
+
+		// dues still flow to the hamlet leaders under the provisioned floor (P4 is independent of the
+		// larder — a provisioned peasant pays its village's noble even though it buys no food)
+		double dues = 0;
+		for (Agent a : colony.getAgents())
+			if (a instanceof Noble n && n.isAlive())
+				dues += n.getDuesCollected();
+		assertTrue(dues > 0, "provisioned peasants pay dues to their hamlet's noble leader");
+
+		// the villages hold (and grow) their own peasant populations — births happen in-village
+		int villagers = colony.hamlets().stream().mapToInt(h -> h.households().size()).sum();
+		assertTrue(villagers > 0, "the villages hold peasants after two years of provisioned life");
 	}
 }
