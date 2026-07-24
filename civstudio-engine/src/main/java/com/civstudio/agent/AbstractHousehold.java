@@ -284,6 +284,17 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	}
 
 	/**
+	 * The raw id this household is sworn to, or {@code null} if unassigned (a direct crown vassal by
+	 * default). Unlike {@link #getLiege} this does not resolve the agent or fall back to the ruler —
+	 * a cheap read for a lord collecting dues from the vassals whose id matches its own.
+	 *
+	 * @return the liege's stored id, or {@code null}
+	 */
+	public Integer getLiegeId() {
+		return liegeId;
+	}
+
+	/**
 	 * Whether this household is the sovereign root of the feudal tree — the Crown, which is sworn
 	 * to no one. {@code false} for every household but the {@link com.civstudio.agent.ruler.Ruler},
 	 * which overrides this.

@@ -81,6 +81,14 @@ public class Noble extends AbstractHousehold {
 	// ennoblement (the ablest laborer keeps its home plot as its fief) or by a ruler's grant.
 	private com.civstudio.settlement.Plot fief;
 
+	/**
+	 * The <b>dues</b> a vassal owes its liege each step, as a fraction of the vassal's income
+	 * (docs/estate-system.md P4). A noble collects it from the households on its fiefs; the crown
+	 * collects it from its direct-vassal peasants ({@code Ruler.collectDuesFromDirectVassals}).
+	 * UNCALIBRATED — a light feudal render, not a wage tax.
+	 */
+	public static final double VASSAL_DUES_RATE = 0.05;
+
 	// enjoyment and necessity the noble consumes
 	private final Enjoyment enjoyment;
 	private final Necessity necessity;
@@ -342,7 +350,12 @@ public class Noble extends AbstractHousehold {
 			}
 		}
 
-		// income this step is the wage and dividends just credited plus interest
+		// dues from this noble's VASSALS (docs/estate-system.md P4): a slice of each vassal peasant's
+		// income, credited as secondary income so it flows into the noble's income below — and is in
+		// turn taxed by the crown (the feudal levy, Ruler.collectTaxes on noble income)
+		collectDues();
+
+		// income this step is the wage, dividends and vassal dues just credited plus interest
 		income = wage + acct.secIC + acct.interest;
 
 		double checking = acct.getChecking();
@@ -454,7 +467,20 @@ public class Noble extends AbstractHousehold {
 	 */
 	@Override
 	public Agent successor(Settlement colony) {
-		return new Noble(this, config, colony);
+		Noble heir = new Noble(this, config, colony);
+		// P5: the heir inherits the line's FIEF and its VASSALS (docs/estate-system.md) — the plot
+		// passes to the heir, and every household sworn to the late noble is re-sworn to the heir, so
+		// a fief and its tenants stay with the dynasty across a death rather than reverting to the
+		// Crown. (A noble that dies heirless leaves its plot's dead ownerId to read as Crown demesne.)
+		if (fief != null) {
+			fief.setOwnerId(heir.getID());
+			heir.setFief(fief);
+		}
+		for (Agent a : colony.getAgents())
+			if (a.isAlive() && a instanceof com.civstudio.agent.laborer.Laborer l
+					&& l.getLiegeId() != null && l.getLiegeId() == getID())
+				l.setLiegeId(heir.getID());
+		return heir;
 	}
 
 	/**
@@ -516,6 +542,37 @@ public class Noble extends AbstractHousehold {
 	 */
 	public void setFief(com.civstudio.settlement.Plot fief) {
 		this.fief = fief;
+	}
+
+	// collect dues from this noble's vassals — the households sworn directly to it (their liegeId is
+	// this noble's id, set when they were seated on its fief). A slice of each vassal's income moves
+	// from the vassal's bank into the noble's, credited as secondary income (P4). O(agents) once a
+	// step, like the crown's tax collection.
+	private double collectDues() {
+		if (VASSAL_DUES_RATE <= 0)
+			return 0;
+		double collected = 0;
+		for (Agent a : getColony().getAgents()) {
+			if (a.isAlive() && a instanceof com.civstudio.agent.laborer.Laborer l
+					&& l.getLiegeId() != null && l.getLiegeId() == getID()) {
+				double due = VASSAL_DUES_RATE * l.getIncome();
+				if (due > 0) {
+					l.getBank().withdraw(l.getID(), due);
+					getBank().credit(getID(), due, Bank.SECIC);
+					collected += due;
+				}
+			}
+		}
+		duesCollected += collected;
+		return collected;
+	}
+
+	// cumulative vassal dues this noble has collected over its life (instrumentation, P4)
+	private double duesCollected;
+
+	/** The total vassal dues this noble has collected since it was raised (docs/estate-system.md P4). */
+	public double getDuesCollected() {
+		return duesCollected;
 	}
 
 	/**

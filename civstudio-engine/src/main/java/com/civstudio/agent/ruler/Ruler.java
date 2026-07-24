@@ -317,6 +317,9 @@ public class Ruler extends AbstractHousehold {
 
 		// tax the colony's accumulated wealth into the treasury before spending
 		collectTaxes();
+		// and collect the crown's feudal dues from its DIRECT vassals — the peasants not enfeoffed
+		// to a noble (docs/estate-system.md P4; the crown's own demesne render)
+		collectDuesFromDirectVassals();
 
 		// once a month, review each consumer-good sector and charter/dissolve firms
 		// so their count tracks demand (see reviewSectors), and pick the colony's next
@@ -414,6 +417,38 @@ public class Ruler extends AbstractHousehold {
 	 * profit reflects what owners have already drawn. The revenue lands in the
 	 * (gold) treasury, so copper-quoted taxes fire the gold bank's FX fee.
 	 */
+	// collect the crown's feudal dues from its DIRECT vassals — the peasant households sworn to no
+	// noble (liegeId null, or this ruler's own id): a slice of each one's income into the treasury,
+	// the crown's counterpart of a noble's dues from its fief tenants (P4). Kept separate from
+	// collectTaxes so it runs regardless of the crown's tax levers.
+	private void collectDuesFromDirectVassals() {
+		if (Noble.VASSAL_DUES_RATE <= 0)
+			return;
+		Bank treasury = getBank();
+		for (Agent a : getColony().getAgents()) {
+			if (!(a.isAlive() && a instanceof com.civstudio.agent.laborer.Laborer l))
+				continue;
+			Integer liege = l.getLiegeId();
+			if (liege != null && liege != getID())
+				continue; // sworn to a noble — that noble collects, not the crown
+			double due = Noble.VASSAL_DUES_RATE * l.getIncome();
+			if (due > 0) {
+				l.getBank().withdraw(l.getID(), due);
+				treasury.credit(getID(), due, Bank.OTHER);
+				crownDuesCollected += due; // a feudal render, tracked apart from the tax instrumentation
+			}
+		}
+	}
+
+	// cumulative feudal dues the crown has collected from its DIRECT vassals (instrumentation, P4) —
+	// kept apart from taxCollected so the tax levers stay independently measurable
+	private double crownDuesCollected;
+
+	/** Total feudal dues the crown has collected from its direct-vassal peasants (P4). */
+	public double getCrownDuesCollected() {
+		return crownDuesCollected;
+	}
+
 	private void collectTaxes() {
 		if (bankProfitTaxRate <= 0 && nobleIncomeTaxRate <= 0)
 			return;
