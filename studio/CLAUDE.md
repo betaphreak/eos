@@ -31,9 +31,6 @@ npm run upgrade      # Upgrade Strapi to latest (npm run upgrade:dry for a dry r
 
 node scripts/gen-schemas.mjs           # (re)generate the 26 repetitive content-type schemas from the spec
 node scripts/validate-schemas.mjs      # structural lint of every schema (no DB); CI-friendly
-node scripts/gen-view-configs.mjs      # (re)generate admin view layouts (edit form + list) from schemas → config/sync
-node scripts/validate-view-configs.mjs # structural lint of the view configs vs schemas (no DB); CI-friendly
-npx config-sync import -y              # apply config/sync (roles, view layouts, …) to the DB; `diff` to preview
 npx strapi ts:generate-types           # authoritative: load the whole registry + regen types/generated
 ```
 
@@ -109,22 +106,26 @@ When adding a custom route, remember to **enable its action's permission in the 
   human-readable/URL-safe blob names instead of Strapi's random hashes.
 - The Azure host is allow-listed in the CSP `img-src`/`media-src` directives in `config/middlewares.ts`.
 
-### Config sync
+### Admin config & permissions (no config-sync)
 
-`strapi-plugin-config-sync` is installed and syncs admin config (roles, content-manager layouts,
-plugin settings, i18n locales) as JSON files under `config/sync/`. These files are committed and are
-the source of truth for admin/permission configuration across environments — regenerate them via the
-plugin (Config Sync admin page or the `config-sync` CLI: `import`/`export`/`diff`) rather than editing
-by hand.
+`strapi-plugin-config-sync` was **removed** (2026-07-24). Its `import` step ran in the seed workflow
+and rewrote `admin_permissions` / core-store from committed JSON **underneath the live Strapi
+process**, which — because the committed files never captured super-admin's runtime-granted
+permissions — pruned the running admin's Content Manager down to a handful of visible collection
+types until the container was restarted. It caused more trouble than it saved, so admin config is no
+longer version-controlled or applied on seed.
 
-The **content-manager view layouts** for the api collection types (the edit form + list view — files
-`core-store.plugin_content_manager_configuration_content_types##api##<n>.<n>.json`) are **generated
-from the schemas** by `scripts/gen-view-configs.mjs` (mainField, sensible field order/sizes, list
-columns), NOT hand-edited or clicked in the admin — so a schema change reflows the form on a re-run.
-`scripts/validate-view-configs.mjs` lints them against the schemas with no DB. After generating, apply
-with `npx config-sync import -y`. (Admin/user **role** permissions are partly runtime-managed by
-Strapi — super-admin is auto-granted every existing type — so those two files show a standing
-`config-sync diff`; that is expected, not drift from these layouts.)
+Consequences to know:
+- **Admin role permissions** are Strapi's own concern now: super-admin is auto-granted every content
+  type on boot, so the Content Manager shows everything. There is no committed source of truth for
+  admin/permission config and no automated path to push permission changes to prod — set them in the
+  admin UI (they persist in the DB; a reseed only wipes `api::*` content tables, never permission
+  tables).
+- **Public-role permissions** (e.g. the lore panel's `wiki-article` public find/findOne, the
+  `world-bundle` route perm) likewise persist in the prod DB from before the removal; grant any new
+  public perms in Settings → Roles → Public.
+- **Content-manager view layouts** fall back to Strapi's schema-derived defaults (the generator/
+  validator scripts that produced the `config/sync` layout files were removed with the plugin).
 
 ### Other config
 

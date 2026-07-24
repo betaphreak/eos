@@ -65,10 +65,3 @@ jobs:
       - name: Seed
         working-directory: studio
         run: node scripts/seed.js --bulk
-
-      # Apply committed config/sync (roles, PERMISSIONS, admin view layouts) to the prod DB — this is how
-      # the wiki-article public find/findOne (and any other permission changes) reach prod; there is no
-      # other automated path (the studio image entrypoint is just `npm run start`).
-      - name: Apply config-sync (roles, permissions, view layouts)
-        working-directory: studio
-        run: npx config-sync import -y
