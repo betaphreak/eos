@@ -260,6 +260,12 @@ public class Ruler extends AbstractHousehold {
 				+ " of the settlement.");
 	}
 
+	/** The Crown is the sovereign root of the feudal tree — sworn to no liege. */
+	@Override
+	protected boolean isSovereign() {
+		return true;
+	}
+
 	/** The current bank-profit tax rate — fraction of each public bank's distributable profit. */
 	public double getBankProfitTaxRate() {
 		return bankProfitTaxRate;

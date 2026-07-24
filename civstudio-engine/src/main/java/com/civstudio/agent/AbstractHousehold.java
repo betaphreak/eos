@@ -78,6 +78,15 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	// household posts itself here each step via seekSpouseIfSingle().
 	private final WeddingMarket weddingMkt;
 
+	// the feudal up-link (docs/estate-system.md; ruler -> nobles -> peasants). The agent id this
+	// household is sworn to: a Noble's liege is the Crown, a Laborer's is a Noble — or, until a
+	// fief re-points it, the Crown directly. null means UNASSIGNED: getLiege() then defaults to the
+	// colony's ruler, so an unassigned household reads as a direct crown vassal (the P1 neutral
+	// state — everyone is the Crown's until a grant hands them to a noble). Stored as an id, not a
+	// reference, so a liege's death simply falls back to the crown — the same death-safe seam as
+	// Building.ownerId. The Ruler is the sovereign root (isSovereign() → getLiege() is null).
+	private Integer liegeId;
+
 	/**
 	 * Open this household's accounts and draw its identity (age, skill, named
 	 * head). Account funding follows {@code fundedFromEquity}: a fresh endowment
@@ -231,6 +240,46 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	@Override
 	public void addMember(Member member) {
 		members.add(member);
+	}
+
+	/**
+	 * The liege lord this household is sworn to (its up-link in the feudal tree
+	 * ruler&rarr;nobles&rarr;peasants; {@code docs/estate-system.md}), or {@code null} if it is
+	 * sovereign (the Crown). An unassigned household — no liege set, or one whose liege has since
+	 * died — defaults to the colony's ruler: a direct vassal of the Crown. The grant/ennoblement
+	 * seam re-points it with {@link #setLiege}.
+	 *
+	 * @return this household's liege, or {@code null} if it is the sovereign root
+	 */
+	public AbstractHousehold getLiege() {
+		if (isSovereign())
+			return null;
+		if (liegeId != null)
+			for (Agent a : getColony().getAgents())
+				if (a.getID() == liegeId && a.isAlive() && a instanceof AbstractHousehold h)
+					return h;
+		return getColony().getRuler(); // unassigned (or liege dead) → a direct vassal of the Crown
+	}
+
+	/**
+	 * Swear this household to a new liege — the fief-grant / ennoblement seam ({@code
+	 * docs/estate-system.md}). Passing {@code null} clears the tie back to the Crown default.
+	 *
+	 * @param liege the new liege lord, or {@code null} to revert to a direct crown vassal
+	 */
+	public void setLiege(AbstractHousehold liege) {
+		this.liegeId = liege == null ? null : liege.getID();
+	}
+
+	/**
+	 * Whether this household is the sovereign root of the feudal tree — the Crown, which is sworn
+	 * to no one. {@code false} for every household but the {@link com.civstudio.agent.ruler.Ruler},
+	 * which overrides this.
+	 *
+	 * @return whether this household is the sovereign root
+	 */
+	protected boolean isSovereign() {
+		return false;
 	}
 
 	/**

@@ -290,18 +290,12 @@ class PlotField {
 	// released by plot on death — the shared model tracks only per-plot load, not which household is on
 	// which plot — so no occupant is passed. Package-visible for Settlement.claimHomePlot.
 	Plot claimHomePlot() {
-		// the least-loaded existing home-farm plot
-		Plot minPlot = null;
-		int minLoad = Integer.MAX_VALUE;
-		for (Map.Entry<Plot, Integer> e : homePlotLoads.entrySet())
-			if (e.getValue() < minLoad) {
-				minLoad = e.getValue();
-				minPlot = e.getKey();
-			}
-		// 1. reuse a fully-freed home plot (a dead household's land) at density 1
-		if (minPlot != null && minLoad == 0) {
-			homePlotLoads.put(minPlot, 1);
-			return minPlot;
+		// 1. reuse a fully-freed home plot (a dead household's land) at density 1 — urban or not,
+		//    a single household on its own plot is always allowed
+		Plot freed = leastLoadedHomePlot(p -> true);
+		if (freed != null && homePlotLoads.get(freed) == 0) {
+			homePlotLoads.put(freed, 1);
+			return freed;
 		}
 		// 2. else claim fresh workable land from the province while it lasts (density 1)
 		Plot fresh = claimFreshWorkablePlot();
@@ -309,12 +303,32 @@ class PlotField {
 			homePlotLoads.put(fresh, 1);
 			return fresh;
 		}
-		// 3. else crowd the least-loaded home plot (the Malthusian density rise)
-		if (minPlot != null) {
-			homePlotLoads.put(minPlot, minLoad + 1);
-			return minPlot;
+		// 3. else crowd the least-loaded URBAN home plot — only urban plots stack. A NON-urban plot
+		//    holds a single household by rule (user ruling 2026-07-24): it is that family's own
+		//    ground to farm and build its house on. The dense urban core is the overflow sink (the
+		//    Malthusian density rise, now confined to it) until it too fills.
+		Plot urban = leastLoadedHomePlot(Plot::urban);
+		if (urban != null) {
+			homePlotLoads.put(urban, homePlotLoads.get(urban) + 1);
+			return urban;
 		}
-		return null; // no workable home plot available (a province-less colony) — landless
+		// 4. no urban plot left to absorb the overflow — the colony has hit its land ceiling. The
+		//    household is landless (eats from the market, cannot build/wed until land frees), the
+		//    same as a province-less colony has always been.
+		return null;
+	}
+
+	// the least-loaded home-farm plot matching the filter (by current household load), or null when
+	// none matches. Used by claimHomePlot: any plot for the density-1 reuse, urban-only for crowding.
+	private Plot leastLoadedHomePlot(java.util.function.Predicate<Plot> filter) {
+		Plot best = null;
+		int bestLoad = Integer.MAX_VALUE;
+		for (Map.Entry<Plot, Integer> e : homePlotLoads.entrySet())
+			if (filter.test(e.getKey()) && e.getValue() < bestLoad) {
+				bestLoad = e.getValue();
+				best = e.getKey();
+			}
+		return best;
 	}
 
 	// append the next fresh WORKABLE plot from the shared province pool (skipping peaks, which stay on
