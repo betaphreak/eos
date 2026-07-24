@@ -606,6 +606,25 @@ public final class Plot {
 	}
 
 	/**
+	 * Whether a <b>regular building</b> stands on this plot — a firm {@link #getOccupant()
+	 * occupant} or any non-housing {@link Building}. This is the "developed ground" signal
+	 * (user ruling 2026-07-24): a plot with a regular building is <b>not farmable</b> and
+	 * hosts stacked housing; a plot with only the households' own huts ({@link
+	 * Building#isHousing() housing}) — or nothing — is empty ground a single household farms.
+	 * Housing is deliberately excluded: a farmstead has a farmhouse and still farms its land.
+	 *
+	 * @return whether developed by a firm or a non-housing building
+	 */
+	public boolean hasRegularBuilding() {
+		if (occupant != null)
+			return true;
+		for (Building b : buildings)
+			if (!b.isHousing())
+				return true;
+		return false;
+	}
+
+	/**
 	 * Add a center building to this plot. The tech-gated auto-build trigger (a later
 	 * phase) calls this once a building's prerequisite is met; nothing does yet, so the
 	 * collection stays empty in this phase and the data model is byte-identical.

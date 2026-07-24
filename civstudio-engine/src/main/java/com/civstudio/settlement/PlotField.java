@@ -86,15 +86,16 @@ class PlotField {
 	private final Map<PlotOccupant, Plot> plotByOccupant =
 			new IdentityHashMap<PlotOccupant, Plot>();
 
-	// the SHARED home-farm plots and how many households work each (docs/plot-working-plan.md P2 — the
-	// Malthusian plot-working model). A settled household farms a workable plot, but plots are shared:
-	// a plot's food splits equally among the households on it (Settlement.homePlotFoodYield divides by
-	// the load). The colony spreads households one-per-plot until it has claimed all the workable land
-	// its province allows (density 1, each self-sufficient), then piles further households onto the
-	// least-crowded plot (density rises → per-household food falls → the colony self-limits by food). A
-	// home-farm plot is kept DISTINCT from a firm-occupied plot (firstVacantPlot skips these keys) and
-	// is retained as claimed farmland even when its load falls to 0, so the next household reuses it
-	// before fresh land is claimed. Keyed by identity, like plotByOccupant.
+	// the home plots and how many households live on each (docs/plot-working-plan.md P2). Under the
+	// "has a regular building" model (user ruling 2026-07-24): an EMPTY plot (no regular building) is a
+	// single-household FARM — the household works it for subsistence (Settlement.homePlotFoodYield,
+	// split by load, which stays 1 for a farm); a BUILT plot (a firm/civic/food building stands there)
+	// is dense stacked HOUSING for up to HOUSING_PER_BUILT_PLOT city dwellers, who draw no subsistence
+	// (developed ground is not farmed) and eat from the market and food buildings. So this map holds
+	// two kinds of home plot: single-household farms and multi-household urban housing. An empty farm
+	// plot is kept DISTINCT from a firm-seat request (firstVacantPlot skips these keys) and retained
+	// when its load falls to 0 so the next household reuses it before fresh land is claimed. Keyed by
+	// identity, like plotByOccupant.
 	private final Map<Plot, Integer> homePlotLoads = new IdentityHashMap<Plot, Integer>();
 
 	// outstanding plot-clearance tasks the builder is working through, in the order
@@ -289,37 +290,44 @@ class PlotField {
 	// (a landless household). The household holds the returned plot itself (Laborer.homePlot) and is
 	// released by plot on death — the shared model tracks only per-plot load, not which household is on
 	// which plot — so no occupant is passed. Package-visible for Settlement.claimHomePlot.
+	// how many households one BUILT plot (a plot with a regular building) may stack as urban housing.
+	// Empty ground is a single-household farm; developed ground is dense housing (user ruling
+	// 2026-07-24). This is the "housing runs out eventually" ceiling that feeds the landless outlet.
+	// UNCALIBRATED — generous, so an ordinary city seats its people and only genuine overpopulation
+	// (food buildings pushing past the raw land) strands a household.
+	static final int HOUSING_PER_BUILT_PLOT = 20;
+
 	Plot claimHomePlot() {
-		// 1. reuse a fully-freed home plot (a dead household's land) at density 1 — urban or not,
-		//    a single household on its own plot is always allowed
-		Plot freed = leastLoadedHomePlot(p -> true);
-		if (freed != null && homePlotLoads.get(freed) == 0) {
+		// The "has a regular building" model (user ruling 2026-07-24): empty ground is a single-
+		// household FARM; developed ground (a firm or a non-housing building) is stacked HOUSING.
+		// 1. reuse a fully-freed FARM plot (empty ground a dead household left) at density 1
+		Plot freed = leastLoadedHomePlot(p -> homePlotLoads.get(p) == 0 && !p.hasRegularBuilding());
+		if (freed != null) {
 			homePlotLoads.put(freed, 1);
 			return freed;
 		}
-		// 2. else claim fresh workable land from the province while it lasts (density 1)
+		// 2. claim fresh empty workable land — a single-household farm of its own
 		Plot fresh = claimFreshWorkablePlot();
 		if (fresh != null) {
 			homePlotLoads.put(fresh, 1);
 			return fresh;
 		}
-		// 3. else crowd the least-loaded URBAN home plot — only urban plots stack. A NON-urban plot
-		//    holds a single household by rule (user ruling 2026-07-24): it is that family's own
-		//    ground to farm and build its house on. The dense urban core is the overflow sink (the
-		//    Malthusian density rise, now confined to it) until it too fills.
-		Plot urban = leastLoadedHomePlot(Plot::urban);
-		if (urban != null) {
-			homePlotLoads.put(urban, homePlotLoads.get(urban) + 1);
-			return urban;
+		// 3. no empty ground left: stack as HOUSING on the least-crowded BUILT plot (a firm/civic/
+		//    food building stands there — not farmland), up to HOUSING_PER_BUILT_PLOT. These are the
+		//    city dwellers, fed by the market and food buildings rather than a plot of their own.
+		Plot built = leastLoadedBuiltPlot();
+		if (built != null) {
+			homePlotLoads.merge(built, 1, Integer::sum);
+			return built;
 		}
-		// 4. no urban plot left to absorb the overflow — the colony has hit its land ceiling. The
-		//    household is landless (eats from the market, cannot build/wed until land frees), the
-		//    same as a province-less colony has always been.
+		// 4. no farm and no housing room — the colony has hit its land ceiling. The household is
+		//    landless (market-fed, cannot build/wed until land frees); the landless-emigration
+		//    outlet sheds it as a settler band.
 		return null;
 	}
 
 	// the least-loaded home-farm plot matching the filter (by current household load), or null when
-	// none matches. Used by claimHomePlot: any plot for the density-1 reuse, urban-only for crowding.
+	// none matches. Used by claimHomePlot for the density-1 farm reuse.
 	private Plot leastLoadedHomePlot(java.util.function.Predicate<Plot> filter) {
 		Plot best = null;
 		int bestLoad = Integer.MAX_VALUE;
@@ -328,6 +336,24 @@ class PlotField {
 				bestLoad = e.getValue();
 				best = e.getKey();
 			}
+		return best;
+	}
+
+	// the least-crowded BUILT plot (a regular building stands on it) still under the housing cap, or
+	// null when every developed plot is full — the urban-housing overflow sink. Scans all plots (not
+	// just current home plots) so a firm/civic plot with no housing yet can take its first dweller.
+	private Plot leastLoadedBuiltPlot() {
+		Plot best = null;
+		int bestLoad = HOUSING_PER_BUILT_PLOT;
+		for (Plot p : plots) {
+			if (!p.hasRegularBuilding())
+				continue;
+			int load = homePlotLoads.getOrDefault(p, 0);
+			if (load < bestLoad) {
+				bestLoad = load;
+				best = p;
+			}
+		}
 		return best;
 	}
 

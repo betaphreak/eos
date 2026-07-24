@@ -198,6 +198,70 @@ public class SettlerCaravan extends MarchingCaravan {
 		return band;
 	}
 
+	/**
+	 * Muster a settler band from a colony's <b>landless emigrants</b> — the land-scarcity outlet
+	 * ({@code docs/estate-system.md}; user ruling 2026-07-24). Unlike {@link #dissolve} this does
+	 * <b>not</b> drain the colony: a subset of its households — those with no ground of their own
+	 * ({@code Laborer.homePlot == null}) — pool their people and food into a fresh wandering band
+	 * that strikes out to seek land, while the colony itself carries on. A landless <b>noble</b> leads
+	 * if one is among the emigrants (a fief-less lord leading his followers); otherwise the ablest
+	 * commoner. The rest become the band's following (a fresh pool it re-homes when it settles). The
+	 * emigrants' coin stays with the colony (it settles into the bank's equity when the caller removes
+	 * each household), so the band leaves poor — its wealth is its people.
+	 * <p>
+	 * The caller is expected to remove the emigrant households from the colony (e.g. {@link
+	 * com.civstudio.settlement.Settlement#scheduleRemoveAgent}); this factory only reads their people
+	 * and drains their larders into the band.
+	 *
+	 * @param colony    the colony the band leaves
+	 * @param emigrants the landless households joining the band (non-empty)
+	 * @param bank      the copper bank the band's following pool transacts through
+	 * @return the wandering settler band the emigrants form
+	 */
+	public static SettlerCaravan ofEmigrants(Settlement colony,
+			List<? extends AbstractHousehold> emigrants, Bank bank) {
+		if (emigrants.isEmpty())
+			throw new IllegalArgumentException("a settler band needs at least one emigrant household");
+		// pool every emigrant's people and drain their larders into the band's carried food
+		List<Member> people = new ArrayList<>();
+		double larder = 0;
+		for (AbstractHousehold h : emigrants) {
+			people.addAll(h.getMembers());
+			Good food = h.getGood("Necessity");
+			if (food != null)
+				larder += food.decrease(food.getQuantity());
+		}
+		// a landless NOBLE leads if one is among the emigrants (a fief-less lord leading his followers
+		// to new land — user ruling 2026-07-24; the ablest noble head where several). Otherwise the
+		// ablest commoner leads. (Nobles hold no plot until the fief phase, so today the emigrants are
+		// commoners and the ablest leads — the noble branch is dormant until a grant can strand one.)
+		Member leader = null;
+		for (AbstractHousehold h : emigrants)
+			if (h instanceof com.civstudio.agent.noble.Noble) {
+				Member head = h.getHead();
+				if (leader == null || head.skills().overallLevel() > leader.skills().overallLevel())
+					leader = head;
+			}
+		if (leader == null) {
+			leader = people.get(0);
+			for (Member m : people)
+				if (m.skills().overallLevel() > leader.skills().overallLevel())
+					leader = m;
+		}
+		List<Member> following = new ArrayList<>(people);
+		following.remove(leader);
+		Retinue band = new Retinue(following, larder, bank, colony);
+
+		Province province = colony.getProvince();
+		SettlerCaravan settler = (province != null && colony.getSession() != null)
+				? new SettlerCaravan(leader, band, 0, province.id(), colony.getSession())
+				: new SettlerCaravan(leader, band, 0, colony.getLatitude(), colony.getLongitude());
+		// carry the colony's research out, so a colony the band re-founds resumes where this left off
+		if (colony.getResearch() != null)
+			settler.research = colony.getResearch().snapshot();
+		return settler;
+	}
+
 	// ---- the settle goal (the settler flavor's mission) ---------------------------------
 
 	@Override

@@ -37,6 +37,7 @@ import com.civstudio.agent.firm.StrategicFirmConfig;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.ExpeditionStats;
 import com.civstudio.agent.ExplorerProvisioner;
+import com.civstudio.agent.LandlessProvisioner;
 import com.civstudio.agent.Retinue;
 import com.civstudio.agent.RetinueConfig;
 import com.civstudio.agent.laborer.Laborer;
@@ -219,6 +220,10 @@ public class SimulationHarness {
 	// the colony's seasonal explorer-levy provisioner (City settlements only; null for a Village or
 	// a bare sim), retained so the Expeditions printer can read its muster tally (see expeditionStats)
 	private ExplorerProvisioner explorerProvisioner;
+
+	// the colony's landless-emigration provisioner (same install gate as the explorer levy): sheds
+	// landless households as wandering settler bands. Retained for diagnostics (getLandlessDeparted).
+	private LandlessProvisioner landlessProvisioner;
 
 
 	// necessity (food) firms run a higher technology coefficient than the other
@@ -1593,7 +1598,17 @@ public class SimulationHarness {
 			explorerProvisioner = new ExplorerProvisioner(colony, retinue);
 			explorerProvisioner.setReward(mobility()); // the renewal loop on a live return
 			colony.addStepAction(explorerProvisioner);
+			// the land-scarcity outlet: a district-bearing colony sheds households it can give no
+			// ground (no farm, no housing slot) as wandering settler bands seeking land elsewhere
+			// (docs/estate-system.md; user ruling 2026-07-24)
+			landlessProvisioner = new LandlessProvisioner(colony, getCopperBank());
+			colony.addStepAction(landlessProvisioner);
 		}
+	}
+
+	/** How many landless-emigrant settler bands the colony has shed (0 if none installed). */
+	public int getLandlessDeparted() {
+		return landlessProvisioner == null ? 0 : landlessProvisioner.getDeparted();
 	}
 
 	/**

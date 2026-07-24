@@ -188,13 +188,16 @@ class FoodEconomy {
 	 * yield ({@link Plot#yields()} index 0) times {@link Settlement#HOUSEHOLD_PLOT_RATE}, <b>split
 	 * equally</b> among the households sharing it ({@code ÷} its {@link PlotField#homePlotLoad(Plot)
 	 * load} — the P2 Malthusian dilution). Dropped straight into the household's larder, outside the
-	 * market. {@code 0} for a landless household (a {@code null} or non-home plot).
+	 * market. {@code 0} for a landless household (a {@code null} or non-home plot), and {@code 0}
+	 * for a household on <b>developed ground</b> ({@link Plot#hasRegularBuilding()}) — a plot with a
+	 * regular building is not farmed (user ruling 2026-07-24); those households are stacked urban
+	 * dwellers fed by the market and food buildings, not by subsistence farming.
 	 *
 	 * @param homePlot the household's home plot, or {@code null} if it is landless
-	 * @return the day's per-household home-plot food, or 0 if landless
+	 * @return the day's per-household home-plot food, or 0 if landless or on built ground
 	 */
 	double homePlotFoodYield(Plot homePlot) {
-		if (homePlot == null)
+		if (homePlot == null || homePlot.hasRegularBuilding())
 			return 0;
 		int load = plotField.homePlotLoad(homePlot);
 		if (load <= 0)

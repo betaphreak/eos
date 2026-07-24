@@ -3,6 +3,7 @@ package com.civstudio.settlement;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -49,30 +50,51 @@ class HomePlotTest {
 	}
 
 	@Test
-	void claimHomePlotSharesPlotsUnderCrowdingRatherThanGoingLandless() {
+	void emptyPlotsAreSingleHouseholdFarmsAndOverflowIsLandlessWithoutBuiltGround() {
 		Settlement c = dhenijansar();
-		// seat more households than the province has plots: the P2 model shares plots (Malthus) rather
-		// than turning the overflow landless, so every household still gets a (possibly shared) plot
+		// the "has a regular building" model (user ruling 2026-07-24): an empty plot is a
+		// single-household FARM — never shared. A bare colony has no developed ground to stack
+		// housing on, so once its workable land is each taken by one household the overflow is
+		// landless (claimHomePlot returns null).
 		int n = c.getMaxPlots() + 20;
+		int seated = 0, landless = 0;
 		List<Plot> assigned = new ArrayList<>();
 		for (int i = 0; i < n; i++) {
 			Plot p = c.claimHomePlot();
-			assertNotNull(p, "a household always gets a (possibly shared) home plot — no landless overflow");
+			if (p == null) {
+				landless++;
+				continue;
+			}
+			seated++;
 			assigned.add(p);
+			assertEquals(1, c.homePlotLoad(p), "an empty plot is a single-household farm — never shared");
 		}
+		assertTrue(seated > 0, "the colony seats households on empty farm plots");
+		assertTrue(landless > 0, "with no built ground, the overflow beyond empty plots is landless");
+		assertEquals(seated, new HashSet<>(assigned).size(), "each farm plot holds exactly one household");
+	}
 
-		// more households than distinct plots → at least one plot is shared (load >= 2)
-		int maxLoad = 0;
-		for (Plot p : new HashSet<>(assigned))
-			maxLoad = Math.max(maxLoad, c.homePlotLoad(p));
-		assertTrue(maxLoad >= 2, "crowding shares a plot among multiple households (max load " + maxLoad + ")");
+	@Test
+	void householdsStackAsHousingOnBuiltGround() {
+		Settlement c = dhenijansar();
+		// exhaust the empty workable land — each plot a single-household farm
+		List<Plot> farms = new ArrayList<>();
+		for (Plot p = c.claimHomePlot(); p != null; p = c.claimHomePlot())
+			farms.add(p);
+		assertTrue(farms.size() > 0, "the colony seats households on its empty land");
+		assertNull(c.claimHomePlot(), "no empty land and no developed ground → landless");
 
-		// a shared plot's food splits equally: each household on a load-N plot gets 1/N of its yield×rate
-		Plot shared = assigned.stream().filter(p -> c.homePlotLoad(p) >= 2).findFirst().orElseThrow();
-		int load = c.homePlotLoad(shared);
-		double expected = Math.max(0, shared.yields()[0]) * Settlement.HOUSEHOLD_PLOT_RATE / load;
-		assertEquals(expected, c.homePlotFoodYield(shared), 1e-9,
-				"a shared plot's food splits equally among the " + load + " households on it");
+		// develop one plot with a REGULAR (non-housing) building — it becomes stacked-housing ground,
+		// no longer farmed. A household with no empty land now stacks there rather than going landless.
+		Plot dev = farms.get(0);
+		dev.addBuilding(new Building("BUILDING_TESTER_CIVIC", null));
+		assertTrue(dev.hasRegularBuilding(), "a non-housing building makes the plot developed ground");
+		assertEquals(0.0, c.homePlotFoodYield(dev), 1e-9, "developed ground yields no subsistence food");
+
+		int before = c.homePlotLoad(dev);
+		Plot stacked = c.claimHomePlot();
+		assertSame(dev, stacked, "a household with no empty land stacks as housing on developed ground");
+		assertEquals(before + 1, c.homePlotLoad(dev), "the developed plot now houses another household");
 	}
 
 	@Test

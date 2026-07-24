@@ -41,6 +41,11 @@ class ExplorerRenewalTest {
 	void aReturnedExplorerPeasantLeavesThePoolAndFoundsAHousehold() {
 		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder().durationYears(1).build();
 		SimulationHarness h = SimulationHarness.create(cfg, 7654321, DHENIJANSAR);
+		// a modest founding population so the colony has ROOM to seat its people: the full-tier
+		// DEFAULT retinue overfills this small province (more households than farm + housing land),
+		// and its true landless overflow is shed as emigrant caravans (LandlessProvisioner) rather
+		// than founding households — which is a different mechanic than the renewal under test here.
+		h.tuneEconomy(e -> e.toBuilder().retinueSize(30).build());
 		h.foundStandardColony();
 		Settlement colony = h.getColony();
 		GameSession session = colony.getSession();
