@@ -209,14 +209,70 @@ left a stale offer → NPE crediting a closed account; guarded centrally in `Lab
 otherwise the full engine (471) + server (131) + `-Pfull` scenario suites stay green — the survival,
 growth, and CanonicalRun-dependent tests holding *is* the calibration validation that the levers
 (`FLOOR_DAYS`, `FOUNDING_STOCK`, the `dailyNeed` over-estimate) produce a healthy economy. Those levers
-remain uncalibrated in the fine-tuning sense (a future tuning lever), and surfacing the larder/food
-status in the city screen is still optional. The next storey is **V3** (leader-owned NFirms + surplus
-export), which uses the shared-labor + village-affinity decision.
-- **V3 — leader-owned NFirms + surplus.** The village's **Necessity firm(s) are owned by its leader**
-  (the fief-holder noble, or the crown for a demesne village) and hire the village's peasants; the
-  village feeds itself from the larder and posts only **surplus/deficit** to the shared market. The
-  city keeps the **Enjoyment firms**. This is the biggest economic departure (firms move under
-  villages, food distribution becomes the larder) — sequence it carefully behind the survival tests.
+were later revisited under V3: `FOUNDING_STOCK` was **recalibrated away** (it is now the village's own
+floor — see V3 below), and the larder/food status **is** now surfaced in the city screen. `FLOOR_DAYS`
+and the `dailyNeed` over-estimate remain as tuning levers.
+- **V3 — leader-owned NFirms + surplus. ✅ SHIPPED — AND THE DEFAULT (flag flipped on, 2026-07-24).**
+  Every necessity farm now belongs to a **village** rather than to the city at large, via one link
+  (`NFirm.village`, the hamlet seat) set by a new daily pass, `settlement.VillageFirms` (gated by
+  `SimulationConfig.villageFirms`, wired by the harness, run at the top of `Settlement.newDay` before
+  the agents act). Three consequences ride that one link:
+  - **It feeds its own village first.** `ConsumerGoodFirm.act()` gained a `deliverLocally()` hook,
+    called after production and *before* the sell offer; `NFirm` overrides it to move what its
+    larder is short of the floor into that larder (`VillageLarders.deposit`), so only the **surplus**
+    reaches the shared market. Crucially this is a **priced local sale, not a free transfer**: the
+    village's leader *buys* the food at the going market price (money leader → farm), because a farm
+    that gave its output away would lose the revenue its labor-share wage budget is sized from and
+    spiral to zero output. Two caps make it degrade gracefully — the larder takes only up to its
+    floor (a full village exports the rest), and the leader buys only what its purse affords.
+  - **It hires its own village's people first.** `Firm.laborAffinity()` (null by default; `NFirm`
+    returns its village) plus a worker's home plot on the labor-market employee. `LaborMarket.clear`
+    now sizes every firm's slice up front, then runs `placeVillagers` — a pure **reordering** of the
+    already-shuffled workforce inside the already-sized slices, so every firm still hires the same
+    number of workers at the same wage; only *who* changes. A farm may take villagers from anywhere
+    except a slice whose employer wants that same village (so one farm never robs another of its own
+    people), which makes the pass monotone and hence terminating, and means being served late in the
+    shuffle costs a farm nothing. Labor stays **one city-wide market with one wage discovery** — the
+    §5 shared-labor decision, honored exactly.
+  - **Its leader owns it.** The pass grants each village's farm to that village's fief-holder
+    (`Noble.owns` added so an already-correct holding is left alone rather than removed and re-added).
+    A **crown-demesne village keeps its farm's existing owner**: the `Ruler` is a treasury, not a
+    rentier — it draws no dividends — so there is no crown hand to move the holding into. The crown's
+    stake in a demesne village stays its provisioning duty and its taxes.
+
+  **Assignment is balanced, not spatial** (farms go to the villages with the fewest, ties on
+  plot-claim order, plus one gentle rebalancing move a day): the plot field is claim-ordered, not a
+  spatial grid, so proximity would have been a fiction. The "territory grows by proximity" rule stays
+  a later storey.
+
+  **What the shipped colony actually looks like — the finding that shapes V3's weight.** A mature
+  colony runs **~400 hamlets of one household each** against **1–2 necessity farms**: since the
+  build-economy flip, food is overwhelmingly **home-plot subsistence** dropped straight into the
+  larder, and the dynamic provisioning has shrunk the farm sector to near-vestigial. So V3's
+  machinery is correct and lands the model, but its present *economic* weight is small — it will
+  grow as cities densify (a built-up village cannot farm its own ground and must import). Two things
+  fell out of looking:
+  - **`FOUNDING_STOCK` was recalibrated away** (the lever the user flagged). A flat 100 units per
+    larder, conceived when a "village" meant many households, is multiplied by ~400 one-household
+    villages into ~40,000 units of food **created from nothing** — about 100 days of the whole
+    colony's ration need. The founding endowment is now the village's **own floor** (`FLOOR_DAYS` of
+    its ration need, ~5 units), which removes the free lunch and folds two uncalibrated levers into
+    one. Full suite stayed green, so it was not load-bearing.
+  - **A Crown-demesne village is usually provisioned by a broke crown.** The treasury runs deeply
+    negative on a young colony, and the purse cap (`max(0, checking + savings)`) then buys nothing —
+    by design, but it means the crown's provisioning duty is mostly nominal today. Noble-led villages
+    do provision. Worth revisiting if the crown's finances are ever reworked.
+
+  **Validation.** Engine 482 (488 under `-Pfull`) + server 131 green with the flag **on**, including
+  every survival/growth/CanonicalRun test — the same calibration signal V2's flip rested on. Only the
+  two tests asserting "off by default" changed. `VillageFirmTest` covers assignment, the grant→
+  ownership move, the priced larder sale with its floor cap, the live surplus market, and multi-year
+  survival; `LaborMarketTest` covers the affinity rule directly.
+  - *Reporting.* `DistrictView` gained `larder` / `larderFloor` / `farms`, and the **city screen**
+    now shows each hamlet's food status: a 🍞 larder chip that turns red when the village has fallen
+    below the floor its lord provisions it to, and a 🌾 chip for the farms working its fields
+    (`web/js/hamlet-food.mjs`, unit tested). A starving village was otherwise invisible until its
+    people began to die.
 - **V4 — lifecycle & unincorporated villages.** Charter a new village (ruler grants a leftover plot →
   a village seeded with peasants), the 44 leftover plots as **unincorporated villages** (a `Village`
   with no parent city), and the seam for a **second city** to incorporate them. `Township` converges

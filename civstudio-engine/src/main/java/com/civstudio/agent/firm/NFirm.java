@@ -17,6 +17,13 @@ import com.civstudio.skill.Skill;
  */
 public class NFirm extends ConsumerGoodFirm {
 
+	// the hamlet seat this farm belongs to (city-of-hamlets V3): the village whose larder it fills
+	// before selling, whose residents it hires first, and whose leader owns it. Null = a CITY farm —
+	// the pre-V3 behaviour, and what every farm is while the village-firm subsystem is off. Assigned
+	// (and re-assigned) by settlement.VillageFirms; a death-safe plain reference, since a plot outlives
+	// the households on it.
+	private com.civstudio.settlement.Plot village;
+
 	/**
 	 * Create a new necessity firm
 	 * 
@@ -47,6 +54,58 @@ public class NFirm extends ConsumerGoodFirm {
 				initWageBudget, initCapital, capitalProducers, config, bank,
 				colony);
 		product = new Necessity(0);
+	}
+
+	/**
+	 * The <b>village</b> this farm belongs to — the seat plot of the hamlet whose larder it fills,
+	 * whose residents it hires first, and whose leader owns it (city-of-hamlets V3, {@code
+	 * docs/city-of-hamlets-plan.md}). {@code null} for a <b>city</b> farm: one no village has claimed,
+	 * which sells its whole output on the shared market and draws from the whole workforce — the
+	 * pre-V3 behaviour every farm keeps while the village-firm subsystem is off.
+	 *
+	 * @return the hamlet seat this farm serves, or {@code null} if it is a city farm
+	 */
+	public com.civstudio.settlement.Plot getVillage() {
+		return village;
+	}
+
+	/**
+	 * Attach this farm to a village (or detach it with {@code null}) — the assignment {@link
+	 * com.civstudio.settlement.VillageFirms} makes each day, so a farm follows the villages that
+	 * actually exist rather than a bundle fixed at founding.
+	 *
+	 * @param village the hamlet seat this farm now serves, or {@code null} to make it a city farm
+	 */
+	public void setVillage(com.civstudio.settlement.Plot village) {
+		this.village = village;
+	}
+
+	/**
+	 * {@inheritDoc} A village farm draws on <b>its own village's residents first</b> — the lord's
+	 * fields are worked by the lord's own people — spilling over to the rest of the city's workforce
+	 * only when the village cannot fill its slice (the shared-labor + affinity decision of {@code
+	 * docs/city-of-hamlets-plan.md} §5). A city farm has no affinity.
+	 */
+	@Override
+	public com.civstudio.settlement.Plot laborAffinity() {
+		return village;
+	}
+
+	/**
+	 * {@inheritDoc} A village farm <b>feeds its own village first</b>: it moves what its larder is
+	 * short of its floor straight into that larder — bought by the village's leader at the going
+	 * market price, since the leader owns both the farm and the duty to provision — and only the
+	 * <b>surplus</b> reaches the shared market. A city farm (no village) delivers nothing locally and
+	 * sells everything, as before. See {@code docs/city-of-hamlets-plan.md} V3.
+	 */
+	@Override
+	protected double deliverLocally() {
+		if (village == null)
+			return 0;
+		double moved = getColony().stockVillageLarder(this, village, product.getQuantity());
+		if (moved > 0)
+			product.decrease(moved);
+		return moved;
 	}
 
 	/**

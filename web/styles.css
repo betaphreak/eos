@@ -1295,6 +1295,14 @@ body.auth-anon #clock { cursor: not-allowed; }
   border-radius: 999px; color: var(--gold, #c9a24a);
   border: 1px solid color-mix(in srgb, var(--gold, #c9a24a) 55%, transparent);
 }
+/* a hamlet's larder: gold like any badge while the village is fed, red once it has fallen below
+   the floor its lord provisions it to — a starving village is otherwise invisible until its
+   people begin to die (city-of-hamlets V2/V3) */
+.city-larder.hungry {
+  color: color-mix(in srgb, var(--red, #c0574d) 88%, var(--ink));
+  border-color: color-mix(in srgb, var(--red, #c0574d) 60%, transparent);
+  background: color-mix(in srgb, var(--red, #c0574d) 12%, transparent);
+}
 .city-fief {
   font-size: 10px; letter-spacing: .04em; padding: 1px 7px; border-radius: 999px;
   color: color-mix(in srgb, var(--violet, #8d7dbd) 80%, var(--ink));

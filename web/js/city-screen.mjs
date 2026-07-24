@@ -13,6 +13,7 @@ import { buildingName, buildingCost } from "./build-catalog.mjs";
 import { renderPicker } from "./build-picker.mjs";
 import { reorder, append } from "./queue-edit.mjs";
 import { buildingsOf } from "./district-plots.mjs";
+import { larderChip, farmChip } from "./hamlet-food.mjs";
 import { liveSid, liveColony, postCommand } from "./overlays/live.mjs";
 import { draw } from "./repaint.mjs";
 
@@ -152,8 +153,16 @@ function plotRow(colony, d, i) {
   const folkChip = folk > 0
     ? `<span class="city-badge" title="${folk} peasant household${folk === 1 ? "" : "s"} live here">${folk}⌂</span>`
     : "";
+  // the hamlet's shared LARDER — the food its households eat from, against the level its lord holds
+  // it at (city-of-hamlets V2). Below that floor the village is going hungry and the chip says so,
+  // which is the whole point of surfacing it: a starving village is otherwise invisible until its
+  // people start dying. Its FARMS (V3) are the village's own food engine — a hamlet with them
+  // exports its surplus, one without lives off its home plots and its lord's imports.
+  const larder = larderChip(d, isHamlet);
+  const farms = farmChip(d);
   return `<div class="city-plot">
-    <div class="city-p-head"><span class="city-p-name">${title}</span>${center}${fief}${folkChip}
+    <div class="city-p-head"><span class="city-p-name">${title}</span>${center}${fief}${folkChip}${
+      larder}${farms}
       <span class="city-p-land">${escHtml(land)}</span></div>
     ${built ? `<div class="city-blds">${built}</div>` : ""}
     ${rising}${bare}

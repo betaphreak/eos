@@ -176,6 +176,21 @@ public abstract class Firm extends Agent implements Property {
 	}
 
 	/**
+	 * The plot whose <b>resident households this firm hires first</b> — its labor affinity. The
+	 * {@link com.civstudio.market.LaborMarket} is a single city-wide market with one wage discovery,
+	 * but a firm that names an affinity gets its own villagers filled into its slice of the workforce
+	 * before outsiders (a village farm works its lord's own people; see {@code
+	 * docs/city-of-hamlets-plan.md} V3). Defaults to {@code null} — no affinity, so the firm draws
+	 * from the shuffled workforce exactly as before. Only {@link NFirm} overrides it, and only once a
+	 * village has claimed it.
+	 *
+	 * @return the home plot whose residents this firm prefers, or {@code null} for no preference
+	 */
+	public com.civstudio.settlement.Plot laborAffinity() {
+		return null;
+	}
+
+	/**
 	 * Whether this firm operates — hires labor and so produces — on the given
 	 * kind of day. By default a firm runs only on {@link DayType#WORKDAY
 	 * workdays}; the weekly day of rest (Sunday) and feast days are days off.

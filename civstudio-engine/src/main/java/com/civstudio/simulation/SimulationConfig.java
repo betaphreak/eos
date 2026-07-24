@@ -91,6 +91,15 @@ import lombok.Builder;
  *                     {@code docs/build-queue-plan.md} B1). Requires {@code homePlots}.
  *                     Default {@code false} (byte-identical for the whole existing
  *                     suite); the calibration scenario opts in
+ * @param villageLarder whether food is organized <b>per hamlet</b> as a provisioned
+ *                     {@link com.civstudio.settlement.Larder larder} the village's peasants
+ *                     eat from — the lord feeds his vassals — rather than per household
+ *                     ({@code docs/city-of-hamlets-plan.md} V2). No effect without
+ *                     {@code homePlots}
+ * @param villageFirms whether each hamlet's <b>necessity farm</b> belongs to that village —
+ *                     owned by its leader, hiring its own residents first, filling its own
+ *                     larder before selling the surplus on the shared market
+ *                     ({@code docs/city-of-hamlets-plan.md} V3). Requires {@code villageLarder}
  */
 @Builder(toBuilder = true)
 public record SimulationConfig(
@@ -114,7 +123,8 @@ public record SimulationConfig(
 		boolean foundAtCamp,
 		boolean homePlots,
 		boolean buildEconomy,
-		boolean villageLarder) {
+		boolean villageLarder,
+		boolean villageFirms) {
 
 	/** Inclusive bounds for a market's initial price. */
 	@Builder(toBuilder = true)
@@ -244,10 +254,16 @@ public record SimulationConfig(
 				true,                                  // buildEconomy (THE DEFAULT since the flip —
 				                                       //   the build-queue calibration scenario opts in —
 				                                       //   build-queue-plan.md B1)
-				true);                                 // villageLarder (city-of-hamlets V2 — THE DEFAULT
+				true,                                  // villageLarder (city-of-hamlets V2 — THE DEFAULT
 				                                       //   as of the 2026-07-24 flip: a home-plot colony
 				                                       //   organizes food per hamlet as a provisioned
 				                                       //   larder (the lord feeds his vassals). No effect
-				                                       //   without home plots. docs/city-of-hamlets-plan.md V2)
+				                                       //   without home plots. docs/city-of-hamlets-plan.md V2),
+				true);                                 // villageFirms (city-of-hamlets V3 — THE DEFAULT
+				                                       //   as of the 2026-07-24 flip: each hamlet's
+				                                       //   necessity farm is its leader's, hires its own
+				                                       //   residents first, and fills its larder before
+				                                       //   selling the surplus. Needs villageLarder.
+				                                       //   docs/city-of-hamlets-plan.md V3)
 	}
 }

@@ -11,6 +11,7 @@ import com.civstudio.agent.Household;
 import com.civstudio.agent.Member;
 import com.civstudio.agent.firm.Firm;
 import com.civstudio.agent.laborer.Laborer;
+import com.civstudio.settlement.Plot;
 import com.civstudio.settlement.Settlement;
 import com.civstudio.settlement.TravelLadder;
 import com.civstudio.good.Labor;
@@ -80,6 +81,7 @@ public class LaborMarket extends Market {
 		private Set<Skill> skills; // skills this employer's labor trains
 		private boolean operating; // whether the firm hires today (see Firm.operatesOn)
 		private double commute; // round-trip travel to its plot in seconds (0 = in-town)
+		private Plot village; // the home plot whose residents it hires first (null = no preference)
 	}
 
 	/* employee */
@@ -88,6 +90,7 @@ public class LaborMarket extends Market {
 		private Bank bank; // bank of the employee
 		private SkillTracker skills; // worker's skills: drive labor + gain XP (may be null)
 		private double laborMultiplier; // non-skill scaling (day length); 1 for nobles
+		private Plot village; // the worker's home plot — the village it belongs to (may be null)
 	}
 
 	private ArrayList<Employer> employers;
@@ -164,6 +167,9 @@ public class LaborMarket extends Market {
 		// the round-trip commute its workers walk to its plot (0 for a center-grouped
 		// firm, or any firm in a province-less colony — see Settlement.plotTravelTime)
 		employer.commute = colony.plotTravelTime(firm);
+		// the village whose own residents this firm hires first, if any (a city-of-hamlets V3 village
+		// farm); null for every other firm, and the affinity pass then does nothing at all
+		employer.village = firm.laborAffinity();
 		employers.add(employer);
 		totalBudget += wageBudget;
 	}
@@ -198,8 +204,10 @@ public class LaborMarket extends Market {
 			// labor market lives), so it supplies no labor until it returns
 			// (docs/explorer-caravan.md)
 			if (member.isAdult(colony.getDate()) && !member.isDrafted())
+				// the worker carries its household's home plot — the village it belongs to — so a
+				// village farm can fill its slice with its own people first (city-of-hamlets V3)
 				addEmployee(laborer.getID(), laborer.getBank(), daylightFactor,
-						member.skills());
+						member.skills(), laborer.getHomePlot());
 	}
 
 	/**
@@ -226,11 +234,30 @@ public class LaborMarket extends Market {
 	 */
 	public void addEmployee(int bankID, Bank bank, double laborMultiplier,
 			SkillTracker skills) {
+		addEmployee(bankID, bank, laborMultiplier, skills, null);
+	}
+
+	/**
+	 * Add an employee that belongs to a <b>village</b> — the {@link #addEmployee(int, Bank, double,
+	 * SkillTracker)} primitive plus the worker's home plot, which a village farm reads to hire its own
+	 * residents before outsiders (city-of-hamlets V3; see {@link Firm#laborAffinity()}). Everything
+	 * else — the wage split, the delivered labor, the training — is identical: affinity changes only
+	 * <em>which</em> of the shuffled workers land in which firm's slice, never how many or at what wage.
+	 *
+	 * @param bankID          the employee's account number
+	 * @param bank            the bank at which the employee holds its accounts
+	 * @param laborMultiplier a non-skill scaling of delivered labor (e.g. day length); pass 1 for none
+	 * @param skills          the worker's skills (may be null)
+	 * @param village         the worker's home plot, or {@code null} if it belongs to no village
+	 */
+	public void addEmployee(int bankID, Bank bank, double laborMultiplier,
+			SkillTracker skills, Plot village) {
 		Employee employee = new Employee();
 		employee.bankID = bankID;
 		employee.bank = bank;
 		employee.laborMultiplier = laborMultiplier;
 		employee.skills = skills;
+		employee.village = village;
 		employees.add(employee);
 	}
 
@@ -249,17 +276,25 @@ public class LaborMarket extends Market {
 		boolean coupled = colony.getProvince() != null;
 		double n = employees.size();
 		double d = coupled ? colony.getWorkWindowSeconds() : 0;
-		int low = 0;
+
+		// each firm's contiguous slice of the (shuffled) workforce is sized by its share of the total
+		// wage budget — including firms that are closed today, so an open firm gets only its own share
+		// instead of the whole pool. With no budget at all (an empty/all-zero market) no one is hired.
+		// Sized up front so the village-affinity pass can see every firm's slice before anyone is paid.
+		int[] bounds = new int[employers.size()];
 		double sum = 0;
-		for (Employer employer : employers) {
-			sum += employer.wageBudget;
-			// each firm's contiguous slice of the (shuffled) workforce is sized by
-			// its share of the total wage budget — including firms that are closed
-			// today, so an open firm gets only its own share instead of the whole
-			// pool. With no budget at all (an empty/all-zero market) no one is hired.
-			int high = totalBudget > 0
+		for (int i = 0; i < employers.size(); i++) {
+			sum += employers.get(i).wageBudget;
+			bounds[i] = totalBudget > 0
 					? (int) (Math.min(1, sum / totalBudget) * employees.size())
-					: low;
+					: (i == 0 ? 0 : bounds[i - 1]);
+		}
+		applyVillageAffinity(bounds);
+
+		int low = 0;
+		for (int i = 0; i < employers.size(); i++) {
+			Employer employer = employers.get(i);
+			int high = bounds[i];
 
 			// a firm closed today reserves its slice but hires no one: those workers
 			// rest (no wage, no labor delivered, no experience gained)
@@ -270,8 +305,8 @@ public class LaborMarket extends Market {
 				// 1 for a province-less colony (the coupling is off)
 				double workFactor = coupled
 						? TravelLadder.workFactor(employer.commute, n, d) : 1.0;
-				for (int i = low; i < high; i++) {
-					Employee employee = employees.get(i);
+				for (int w = low; w < high; w++) {
+					Employee employee = employees.get(w);
 					// a worker whose account has been closed since it posted this offer — its household
 					// died or DEPARTED (drafted into an expedition, emigrated as a settler caravan,
 					// dissolved) between act() and this clear — is simply not hired: no wage paid, no
@@ -307,6 +342,84 @@ public class LaborMarket extends Market {
 		employers.clear();
 		employees.clear();
 		totalBudget = 0;
+	}
+
+	/**
+	 * <b>Village affinity</b> (city-of-hamlets V3): a village farm's slice of the workforce is filled
+	 * with its own village's residents before outsiders — the lord's fields are worked by the lord's
+	 * own people. This is a pure <em>reordering</em> of the already-shuffled workforce within the
+	 * already-sized slices: every firm still hires exactly as many workers, at exactly the same wage,
+	 * out of exactly the same pool. It only decides <em>who</em> ends up where, so labor stays one
+	 * city-wide market with one wage discovery (the shared-labor decision of {@code
+	 * docs/city-of-hamlets-plan.md} §5).
+	 * <p>
+	 * Firms are served in the shuffled order, so which village farm gets first pick of a worker two
+	 * could use is random, not positional. With no village firm on the market this returns immediately
+	 * and the clearing is byte-identical to the pre-V3 one.
+	 *
+	 * @param bounds each employer's slice end (its start is the previous employer's end)
+	 */
+	private void applyVillageAffinity(int[] bounds) {
+		Object[] wanted = new Object[employers.size()];
+		boolean any = false;
+		for (int i = 0; i < employers.size(); i++) {
+			Employer employer = employers.get(i);
+			wanted[i] = employer.operating ? employer.village : null;
+			any |= wanted[i] != null;
+		}
+		if (any)
+			placeVillagers(employees, e -> e.village, wanted, bounds);
+	}
+
+	/**
+	 * The affinity reorder itself, over any list of workers: for each slice {@code [bounds[i-1],
+	 * bounds[i])} whose employer {@code wanted[i]} names a village, swap that village's own people
+	 * into the slice until it is full of them or none are left elsewhere. A villager is taken from
+	 * anywhere <em>except</em> a slice whose employer wants that same village — so a farm never robs
+	 * another farm of its own people, only of the outsiders it was going to work with anyway. That
+	 * makes the pass monotone (each swap places one more worker with the employer that wants it, and
+	 * unplaces none), hence terminating, and independent of which employer happens to be served first
+	 * beyond who gets a contested worker.
+	 * <p>
+	 * Package-private and generic over the worker type so the rule can be exercised directly.
+	 *
+	 * @param workers   the shuffled workforce, reordered in place
+	 * @param villageOf the village a worker belongs to (compared by identity; {@code null} = none)
+	 * @param wanted    per employer, the village it hires first ({@code null} = no preference)
+	 * @param bounds    per employer, the end of its slice (its start is the previous employer's end)
+	 */
+	static <T> void placeVillagers(java.util.List<T> workers,
+			java.util.function.Function<T, Object> villageOf, Object[] wanted, int[] bounds) {
+		// the village each POSITION's employer wants, so a scan can tell "this villager is already
+		// where it belongs" from "this villager is working for someone else's village"
+		Object[] wantedAt = new Object[workers.size()];
+		int low = 0;
+		for (int i = 0; i < wanted.length; i++) {
+			for (int p = low; p < Math.min(bounds[i], wantedAt.length); p++)
+				wantedAt[p] = wanted[i];
+			low = bounds[i];
+		}
+
+		low = 0;
+		for (int i = 0; i < wanted.length; i++) {
+			int high = bounds[i];
+			// one forward cursor over the whole workforce per employer: a position it has passed can
+			// never become a source again (either it was never a takeable villager, or it was taken
+			// and now holds the outsider swapped back into it), so the scan is linear, not quadratic
+			int q = 0;
+			for (int p = low; wanted[i] != null && p < high; p++) {
+				if (villageOf.apply(workers.get(p)) == wanted[i])
+					continue; // already one of the village's own
+				while (q < workers.size() && !((q < low || q >= high) && wantedAt[q] != wanted[i]
+						&& villageOf.apply(workers.get(q)) == wanted[i]))
+					q++;
+				if (q >= workers.size())
+					break; // no more of this village's people to be had: the rest are outsiders
+				// positions keep their employer; only the workers standing in them move
+				Collections.swap(workers, p, q++);
+			}
+			low = high;
+		}
 	}
 
 	/**

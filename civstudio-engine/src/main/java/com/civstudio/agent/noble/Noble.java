@@ -518,6 +518,19 @@ public class Noble extends AbstractHousehold {
 		return properties.remove(firm);
 	}
 
+	/**
+	 * Whether this noble currently owns {@code property} — the non-mutating query behind an
+	 * ownership <em>re</em>-assignment, so a holding that is already in the right hands is left
+	 * untouched rather than removed and re-added. Used by the city-of-hamlets village firms, which
+	 * re-sync each village farm to its village's leader every day.
+	 *
+	 * @param property the asset to test
+	 * @return whether it is in this noble's property
+	 */
+	public boolean owns(Property property) {
+		return properties.contains(property);
+	}
+
 	/** Number of firms this noble currently owns (used to spread newly chartered
 	 * firms across owners; counts firms specifically, not any owned banks). */
 	public int getFirmCount() {

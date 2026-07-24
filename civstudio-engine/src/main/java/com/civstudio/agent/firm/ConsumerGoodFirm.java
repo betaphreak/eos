@@ -186,6 +186,23 @@ public abstract class ConsumerGoodFirm extends Firm {
 		return false;
 	}
 
+	/**
+	 * Move part of this step's product <b>out of the market</b> to a local consumer, and report how
+	 * much left. Called each step after production and before the sell offer, so what is delivered
+	 * locally is never also offered for sale. The hook the city-of-hamlets V3 village farm uses to
+	 * fill its own village's {@link com.civstudio.settlement.Larder larder} first (paid for by the
+	 * village's leader at the going market price — a real transaction, not a free transfer, so the
+	 * firm keeps the revenue that funds its wage bill) and sell only the surplus.
+	 * <p>
+	 * Defaults to delivering nothing, so an ordinary firm sells its whole output as before; the
+	 * implementor is responsible for decreasing {@link #product} by what it moved.
+	 *
+	 * @return the quantity delivered locally (0 for no local delivery)
+	 */
+	protected double deliverLocally() {
+		return 0;
+	}
+
 	// whether this is the colony's ONLY living subsistence (food) firm — the one whose collapse would
 	// leave the colony with no food supply. Then the subsistence floors apply; with several food firms
 	// the market may scale each down or shut some (the sector still feeds the colony), so they do not
@@ -293,6 +310,12 @@ public abstract class ConsumerGoodFirm extends Firm {
 			newOutput = output;
 			newWageBudget = wageBudget;
 		}
+
+		// deliver locally BEFORE offering the rest for sale: a village farm fills its own village's
+		// larder first and puts only the SURPLUS on the shared market (city-of-hamlets V3). A no-op for
+		// every other firm, and for a farm no village has claimed, so the market sees the whole output
+		// exactly as before.
+		deliverLocally();
 
 		// post sell offer to product market
 		if (product.getQuantity() > 0)

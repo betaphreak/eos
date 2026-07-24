@@ -31,9 +31,19 @@ import java.util.List;
  *                  {@link com.civstudio.settlement.Hamlet hamlet} (city-of-hamlets V1). {@code 0}
  *                  for the city center and for empty worked ground; a non-center plot with
  *                  households is a hamlet led by its {@code fiefLord} (or the Crown)
+ * @param larder    the food this hamlet's shared {@link com.civstudio.settlement.Larder larder}
+ *                  holds — the pool its households eat from (city-of-hamlets V2). {@code 0} for
+ *                  a plot that is no hamlet, and for a colony not running village larders
+ * @param larderFloor the level that larder is held at (its households' ration need over the
+ *                  provisioning window): {@code larder >= larderFloor} is a fed village, below it
+ *                  a hungry one its lord has not managed to provision
+ * @param farms     how many of the colony's necessity farms work for this hamlet — its own food
+ *                  engine (city-of-hamlets V3). A hamlet with farms is an exporter, one without
+ *                  lives off its home plots and its lord's imports
  */
 public record DistrictView(int index, int x, int y, List<PlacedBuilding> buildings,
-		List<Underway> underway, String fiefLord, int households) {
+		List<Underway> underway, String fiefLord, int households,
+		double larder, double larderFloor, int farms) {
 
 	/**
 	 * One finished building on the plot, as a bare eos-native id (the verbatim C2C

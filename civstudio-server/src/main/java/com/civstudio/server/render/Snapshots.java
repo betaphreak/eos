@@ -184,6 +184,12 @@ public final class Snapshots {
 		// resident households per plot — the same hamlet grouping the engine projects (V1), so the
 		// city screen's "N households" agrees with Settlement.hamlets()
 		java.util.Map<Plot, List<com.civstudio.agent.laborer.Laborer>> byHome = c.householdsByHomePlot();
+		// how many necessity farms work for each hamlet (city-of-hamlets V3) — counted once rather
+		// than rescanned per plot
+		java.util.Map<Plot, Integer> farmsByVillage = new java.util.IdentityHashMap<>();
+		for (com.civstudio.agent.Agent a : c.getAgents())
+			if (a.isAlive() && a instanceof com.civstudio.agent.firm.NFirm f && f.getVillage() != null)
+				farmsByVillage.merge(f.getVillage(), 1, Integer::sum);
 		List<DistrictView> views = new ArrayList<>();
 		for (int i = 0; i < plots.size(); i++) {
 			Plot p = plots.get(i);
@@ -196,7 +202,9 @@ public final class Snapshots {
 			String fiefLord = p.ownerId() == null ? null : ownerNames.get(p.ownerId());
 			int households = byHome.getOrDefault(p, List.of()).size();
 			views.add(new DistrictView(i, p.x(), p.y(), buildings,
-					underway.getOrDefault(p, List.of()), fiefLord, households));
+					underway.getOrDefault(p, List.of()), fiefLord, households,
+					c.villageLarderStock(p), c.villageLarderFloor(p),
+					farmsByVillage.getOrDefault(p, 0)));
 		}
 		return views;
 	}

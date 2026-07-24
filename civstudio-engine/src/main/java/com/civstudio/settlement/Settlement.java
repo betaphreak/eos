@@ -267,6 +267,13 @@ public class Settlement {
 	@Getter
 	private VillageLarders villageLarders;
 
+	// the village firms (docs/city-of-hamlets-plan.md V3): the daily pass that makes each necessity
+	// farm belong to a hamlet — its leader's, feeding its larder first, hiring its own residents —
+	// present only when SimulationConfig.villageFirms is on (enableVillageFirms(), called by the
+	// harness); null on a flag-off colony, whose farms stay city farms (byte-identical).
+	@Getter
+	private VillageFirms villageFirms;
+
 	// the liturgical calendar (shared with the owning game session): classifies
 	// the current in-game date as a workday/weekend/holiday. A pure date lookup,
 	// independent of seed and location. See getDayType.
@@ -1062,6 +1069,61 @@ public class Settlement {
 	 */
 	public com.civstudio.good.Good villageLarderGood(Plot seat) {
 		return villageLarders == null ? null : villageLarders.larderFor(seat).good();
+	}
+
+	/**
+	 * How much food a village's {@link Larder} holds right now, and the level it is held at — the
+	 * pair that says whether a village is <b>fed</b> ({@code stock >= floor}) or going hungry. A
+	 * non-creating read for reporting (the city screen's per-hamlet food status); both are 0 when the
+	 * village larders are off or the plot is no village.
+	 *
+	 * @param seat the hamlet's seat plot
+	 * @return the larder's current stock in necessity units
+	 */
+	public double villageLarderStock(Plot seat) {
+		if (villageLarders == null)
+			return 0;
+		Larder larder = villageLarders.larderIfPresent(seat);
+		return larder == null ? 0 : larder.available();
+	}
+
+	/**
+	 * The level the village's larder is held at — its households' ration need over the provisioning
+	 * floor's window. See {@link #villageLarderStock(Plot)}.
+	 *
+	 * @param seat the hamlet's seat plot
+	 * @return the larder's floor in necessity units, or 0 when there is no village larder here
+	 */
+	public double villageLarderFloor(Plot seat) {
+		return villageLarders == null ? 0 : villageLarders.floorFor(seat);
+	}
+
+	/**
+	 * Switch on the <b>village firms</b> (docs/city-of-hamlets-plan.md V3) — each necessity farm
+	 * belongs to a {@linkplain #hamlets() hamlet}: owned by that village's leader, hiring its residents
+	 * first, and filling its {@link Larder} before selling the surplus. Called by the harness when
+	 * {@code SimulationConfig.villageFirms} is set; never called on a flag-off colony, whose farms stay
+	 * city farms ({@link #getVillageFirms()} stays {@code null}). Requires the {@linkplain
+	 * #enableVillageLarders() village larders} — without a larder there is nothing local to fill.
+	 */
+	public void enableVillageFirms() {
+		if (villageFirms == null)
+			villageFirms = new VillageFirms(this);
+	}
+
+	/**
+	 * <b>Deliver a village farm's produce into its village's larder</b> (city-of-hamlets V3) — the
+	 * local sale a farm makes to its own village instead of putting that food on the shared market: the
+	 * village's leader buys it at the going market price, capped by the larder's floor and the leader's
+	 * purse. Returns 0 when the village larders are off, so a flag-off colony's farm sells everything.
+	 *
+	 * @param farm    the village's necessity farm, the seller
+	 * @param seat    the village's seat plot
+	 * @param offered the produce the farm has on hand
+	 * @return the quantity taken into the larder (the farm decreases its stock by it)
+	 */
+	public double stockVillageLarder(Agent farm, Plot seat, double offered) {
+		return villageLarders == null ? 0 : villageLarders.deposit(farm, seat, offered);
 	}
 
 	// test seam: prime the food box so a unit test can exercise grow/shrink without driving a
@@ -1956,6 +2018,12 @@ public class Settlement {
 		// compute this day's dawn/sunrise/sunset/dusk before agents act, so they
 		// can read the day's daylight when they act
 		updateSolarTimes();
+
+		// city-of-hamlets V3: settle which village each necessity farm belongs to (and whose it is)
+		// BEFORE the agents act, so a farm produces, delivers and hires as the village it serves today.
+		// Flag-off = no-op (null subsystem). See docs/city-of-hamlets-plan.md V3.
+		if (villageFirms != null)
+			villageFirms.assign();
 
 		for (Agent agent : agents) {
 			agent.act();
