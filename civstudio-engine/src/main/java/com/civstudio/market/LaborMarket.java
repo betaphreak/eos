@@ -272,6 +272,14 @@ public class LaborMarket extends Market {
 						? TravelLadder.workFactor(employer.commute, n, d) : 1.0;
 				for (int i = low; i < high; i++) {
 					Employee employee = employees.get(i);
+					// a worker whose account has been closed since it posted this offer — its household
+					// died or DEPARTED (drafted into an expedition, emigrated as a settler caravan,
+					// dissolved) between act() and this clear — is simply not hired: no wage paid, no
+					// labor delivered, no training. Its reserved slice is forfeit. (Latent since the
+					// deferred-settlement model; a household that posts labor then leaves the same step
+					// left a stale offer. Surfaced by the village-larder flip changing departure timing.)
+					if (employee.bank.getAcct(employee.bankID) == null)
+						continue;
 					employer.bank.withdraw(employer.bankID, wage);
 					employee.bank.credit(employee.bankID, wage, Bank.PRIIC);
 					lastHired.add(employee.bankID);

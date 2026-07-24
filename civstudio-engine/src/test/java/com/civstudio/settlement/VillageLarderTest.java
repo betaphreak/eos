@@ -59,11 +59,13 @@ class VillageLarderTest {
 	}
 
 	@Test
-	void villageLarderIsOffByDefaultAndByteIdentical() {
-		assertFalse(SimulationConfig.DEFAULT.villageLarder(), "the flag is OFF by default");
-		Settlement colony = foundColony(SimulationConfig.DEFAULT);
-		assertNull(colony.getVillageLarders(),
-				"a flag-off colony builds no village larders — food keeps its per-household path");
+	void villageLarderIsOnByDefaultAndOptsOutCleanly() {
+		assertTrue(SimulationConfig.DEFAULT.villageLarder(),
+				"the flag is ON by default (the 2026-07-24 flip)");
+		// a run can still opt OUT — a flag-off colony builds no village larders and keeps its
+		// per-household food path (the collapse-era pure-market scenarios rely on this)
+		Settlement off = foundColony(SimulationConfig.DEFAULT.toBuilder().villageLarder(false).build());
+		assertNull(off.getVillageLarders(), "a flag-off colony builds no village larders");
 	}
 
 	@Test

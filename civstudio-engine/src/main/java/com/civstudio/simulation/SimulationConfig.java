@@ -244,9 +244,10 @@ public record SimulationConfig(
 				true,                                  // buildEconomy (THE DEFAULT since the flip —
 				                                       //   the build-queue calibration scenario opts in —
 				                                       //   build-queue-plan.md B1)
-				false);                                // villageLarder (city-of-hamlets V2 — OFF by
-				                                       //   default; the flag-on path organizes food per
-				                                       //   hamlet as a provisioned larder. Byte-identical
-				                                       //   off — docs/city-of-hamlets-plan.md V2)
+				true);                                 // villageLarder (city-of-hamlets V2 — THE DEFAULT
+				                                       //   as of the 2026-07-24 flip: a home-plot colony
+				                                       //   organizes food per hamlet as a provisioned
+				                                       //   larder (the lord feeds his vassals). No effect
+				                                       //   without home plots. docs/city-of-hamlets-plan.md V2)
 	}
 }

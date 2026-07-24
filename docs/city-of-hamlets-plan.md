@@ -201,12 +201,17 @@ A **Village** exists at one of two scopes:
     (`provisionedVillagesStillPayDuesToTheirLeaderAndGrowLocally`) locks in that the provisioned floor
     doesn't sever the fill (larder) from the take (dues) or the growth (births).
 
-**V2 status:** the food model is **functionally complete and survival-tested**, all behind the
-default-off `villageLarder` flag. What remains to make it the default (a build-economy-style flip):
-**calibration** of the uncalibrated levers (`FLOOR_DAYS`, `FOUNDING_STOCK`, the `dailyNeed`
-over-estimate) and validating the provisioned economy is at least as healthy as the market one, plus
-optionally surfacing the larder/food status in the city screen. Then **V3** (leader-owned NFirms +
-surplus export) is the next storey.
+**V2 status: ✅ THE DEFAULT (flag flipped on, 2026-07-24).** `SimulationConfig.villageLarder` now
+defaults **on**, so every home-plot colony organizes food per hamlet as a provisioned larder — the
+build-economy-style flip. The flip surfaced exactly one latent bug (a labor-market employee whose
+household departs — drafted / emigrated / dissolved — between posting its offer and the market clear
+left a stale offer → NPE crediting a closed account; guarded centrally in `LaborMarket.clear`), and
+otherwise the full engine (471) + server (131) + `-Pfull` scenario suites stay green — the survival,
+growth, and CanonicalRun-dependent tests holding *is* the calibration validation that the levers
+(`FLOOR_DAYS`, `FOUNDING_STOCK`, the `dailyNeed` over-estimate) produce a healthy economy. Those levers
+remain uncalibrated in the fine-tuning sense (a future tuning lever), and surfacing the larder/food
+status in the city screen is still optional. The next storey is **V3** (leader-owned NFirms + surplus
+export), which uses the shared-labor + village-affinity decision.
 - **V3 — leader-owned NFirms + surplus.** The village's **Necessity firm(s) are owned by its leader**
   (the fief-holder noble, or the crown for a demesne village) and hire the village's peasants; the
   village feeds itself from the larder and posts only **surplus/deficit** to the shared market. The
