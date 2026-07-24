@@ -101,7 +101,16 @@ class SettlementCampFoundingTest {
 		Settlement c = h.getColony();
 		c.start();
 		assertEquals(SettlementTier.CAMP, c.getTier());
-		double bareSiteFood = c.campPlotFood(); // wild terrain (+ feature), no improvement yet
+		double bareSiteFood = c.campPlotFood(); // wild terrain (+ feature/bonus), no improvement yet
+
+		// Pin the forage to the design "typical ground" effective yield (~0.14/forager, a small surplus
+		// over the SNACK ration, per FoodEconomy) so this test exercises the HUNTING_CAMP mechanic —
+		// not the incidental richness of the site. Since MAP_VERSION 10 urban plots keep their full
+		// natural yield stack (feature/bonus/relief), Dhenijansar's forage plot is richer than the old
+		// stripped-bare ground; without pinning, the band would climb out of CAMP before finishing the
+		// improvement. Normalizing per-forager × plot-food to 0.14 keeps the band near parity, so the
+		// HUNTING_CAMP's food lift is what carries the climb — the thing under test.
+		c.setCampForagePerForager(0.14 / bareSiteFood);
 
 		// drive it on real forage; the well-sited band builds its HUNTING_CAMP and climbs
 		for (int i = 0; i < 400 && c.getTier() == SettlementTier.CAMP; i++)

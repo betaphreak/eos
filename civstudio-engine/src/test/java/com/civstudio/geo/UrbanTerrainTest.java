@@ -2,7 +2,6 @@ package com.civstudio.geo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -11,11 +10,15 @@ import com.civstudio.util.Rng;
 
 /**
  * The per-province urban core (see {@code docs/urban-plots.md} + {@code docs/plot-generator.md}).
- * Urban is now an <b>overlay flag</b> on the plot's natural terrain/relief — not a base terrain
- * (the synthetic {@code TERRAIN_URBAN} ground was retired: a city sits ON real ground). An ordinary
- * LAND province gets exactly one {@code urban()} core plot at its Civ4 {@code foundValue} site, and
- * a {@code city_terrain} province (Dhenijansar) is <b>fully urban</b> — every plot flagged urban, the
- * city render layer covering it with its Civ6 district tiles.
+ * Urban is a <b>pure overlay flag</b> on the plot's full natural yield stack — terrain, relief,
+ * feature, and bonus all survive (the synthetic {@code TERRAIN_URBAN} ground was retired, and the
+ * gen-time flatten/feature-strip/bonus-strip was retired in MAP_VERSION 10 — a city sits ON real,
+ * fully-yielding ground so it can feed itself from its own fields; see
+ * {@code docs/city-of-hamlets-plan.md} §8). The one gen-time guard is workability: an urban plot is
+ * never an unworkable {@code PEAK}. An ordinary LAND province gets exactly one {@code urban()} core
+ * plot at its Civ4 {@code foundValue} site, and a {@code city_terrain} province (Dhenijansar) is
+ * <b>fully urban</b> — every plot flagged urban, the city render layer covering it with its Civ6
+ * district tiles.
  */
 class UrbanTerrainTest {
 
@@ -32,11 +35,11 @@ class UrbanTerrainTest {
 		long urban = field.plots().stream()
 				.filter(ProvincePlotField.ProvincePlot::urban).count();
 		assertEquals(1, urban, "an ordinary province gets exactly one urban core plot");
-		// the urban core keeps its NATURAL terrain (the built-up flag is an overlay, not a terrain)
+		// the urban core keeps its full natural yield stack (the built-up flag is a pure overlay,
+		// not a terrain and not a yield edit) — only workability is guarded (never a peak)
 		field.plots().stream().filter(ProvincePlotField.ProvincePlot::urban).forEach(pl -> {
 			assertNotEquals("TERRAIN_URBAN", pl.terrain().type(), "urban is an overlay, ground stays natural");
-			assertNull(pl.feature(), "no wild feature on built-up ground");
-			assertNull(pl.bonus(), "the resource is built over");
+			assertNotEquals(PlotType.PEAK, pl.plotType(), "an urban plot is never an unworkable peak");
 		});
 	}
 
@@ -50,13 +53,12 @@ class UrbanTerrainTest {
 				dh, TerrainRegistry.load(), ProvinceRaster.load(), new Rng(7));
 
 		// a city_terrain province is one sprawling city — every plot is flagged urban (the render
-		// layer covers it), with no farmland/features/resources showing through, but the ground
-		// keeps its natural terrain/relief beneath the overlay.
+		// layer covers it), and the ground keeps its full natural yield stack beneath the overlay
+		// (terrain/relief/feature/bonus) so the city can farm its own fields; only peaks are guarded.
 		for (var pl : field.plots()) {
 			assertTrue(pl.urban(), "every city plot is flagged urban");
 			assertNotEquals("TERRAIN_URBAN", pl.terrain().type(), "the ground beneath stays natural terrain");
-			assertNull(pl.feature(), "no wild feature on built-up ground");
-			assertNull(pl.bonus(), "no resource on built-up ground");
+			assertNotEquals(PlotType.PEAK, pl.plotType(), "an urban plot is never an unworkable peak");
 		}
 	}
 }

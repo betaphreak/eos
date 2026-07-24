@@ -119,17 +119,19 @@ A **Village** exists at one of two scopes:
 
 ## 4. Phased plan
 
-- **M — urban fields (map regen; the food substrate).** Stop the generation-time yield surgery on
-  urban cells: an urban plot keeps its **full natural yield stack** — terrain, relief, feature, and
-  (critically) **bonus** — exactly like every other plot; `urban` becomes a pure orthogonal overlay
-  (a footprint marker), never a replacement for the feature slot. Whether a plot actually farms is
-  decided at runtime by `hasRegularBuilding()` (paved core = no farm), not stamped at gen. One
-  gen-time guard survives: don't seat a city **core** on an unworkable peak. Roads are no longer
-  pre-paved on urban plots either — a city's ground carries **trails**, upgraded by real building, not
-  a free paved network (see the routes note in §8). This is a `GEN_VERSION`/`MAP_VERSION` bump → CI
-  rebake → deploy → clear the plot cache, and a **one-time calibration re-tune** (`YIELD_REFERENCE` +
-  the survival/growth tests), since cities on rich land now have a higher food box. It is the
-  substrate V2/V3 stand on and lands first. See §8.
+- **M — urban fields (map regen; the food substrate). ✅ SHIPPED (MAP_VERSION 10).** Stopped the
+  generation-time yield surgery on urban cells: an urban plot keeps its **full natural yield stack** —
+  terrain, relief, feature, and (critically) **bonus** — exactly like every other plot; `urban` is a
+  pure orthogonal overlay (a footprint marker), never a replacement for the feature slot. Whether a
+  plot actually farms is decided at runtime by `hasRegularBuilding()` (paved core = no farm), not
+  stamped at gen. One gen-time guard survives: an urban plot is never an unworkable peak (peaks in the
+  footprint are clamped to hills). Roads are no longer pre-paved on urban plots either — a city's
+  ground carries **trails**, upgraded by real building, not a free paved network (see the routes note
+  in §8). **Calibration held: no `YIELD_REFERENCE` re-tune was needed** — the full engine + server
+  suites stayed green (survival, growth, CanonicalRun, twin-settlement all pass), because for a
+  *farmed* plot the only new food comes from food bonuses (features clear when farmed; relief doesn't
+  touch food), a modest shift. Still needs the CI full-world rebake → deploy → clear the plot cache
+  before prod serves v10. It is the substrate V2/V3 stand on. See §8.
 - **V0 — the `Hamlet` entity.** A first-class object the City holds one-per-seat-plot: `territory`
   (plots), `name` (GeoNames place name of the seat), `leader` (the seat's `ownerId` noble, or crown),
   its resident households, and its own `tier` (capped at HAMLET). Pure grouping over what P3 gives —
@@ -260,7 +262,12 @@ paving. (Routes are per-session state, not baked into the `.map`, so this is a r
 not part of the `GEN_VERSION` field data — but it lands with the same regen so the two urban cleanups
 ship together.)
 
-**Cost.** A `GEN_VERSION`/`MAP_VERSION` bump (CI rebake → deploy → clear the plot cache) and a
-**one-time calibration re-tune** (`YIELD_REFERENCE` + `CanonicalRun` + the ruler-colony survival /
-growth tests), since cities on rich ground now bank more food. Calibration serves the model — re-tune
-once rather than distort the world to avoid it.
+**Cost (as-built).** A `MAP_VERSION` bump 9→10 (CI rebake → deploy → clear the plot cache — still
+pending for prod). The feared **calibration re-tune did NOT materialize**: `YIELD_REFERENCE` was left
+untouched and the full engine (463) + server (131) suites stayed green — `CanonicalRun`, the
+ruler-colony survival tests, growth, and twin-settlement all pass. The reason the shift was mild: for
+a *farmed* plot the only new food is a food **bonus** (features are cleared by farming; relief feeds
+production, not food), so the aggregate food box moved within tolerance. The one fixture that needed a
+touch was `SettlementCampFoundingTest` — its Dhenijansar forage plot got richer, so the camp climbed
+before finishing its HUNTING_CAMP; pinned the forage rate to the design "typical ground" yield so the
+test still measures the improvement mechanic, not the site's incidental richness.

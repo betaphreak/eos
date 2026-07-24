@@ -280,36 +280,38 @@ public final class ProvincePlotField {
 
 		// the urban core: site the province's city on its best Civ4 foundValue cell(s) — as
 		// close as possible to as many bonuses as fit in a city work radius — and flag them
-		// built-up. Urban is now an OVERLAY, not a base terrain: the plot keeps the natural
-		// TERRAIN the generator drew (the synthetic TERRAIN_URBAN ground was retired — a city
-		// sits ON real ground), and we mark `urban` so the web district layer and the caravan
-		// camp rule can read it. The core is still flattened to level, built ground (a city
-		// footprint) and its wild feature/resource cleared (built over) — only the ground terrain
-		// changed from synthetic to natural. Runs after the bonus stage so the score reads the
-		// final resource layout; consumes no rng. One plot for an ordinary province, a denser
-		// core for a city_terrain province. See docs/urban-plots.md. Only plain LAND provinces get
-		// a surface city: underground holds are their own cave-cities (DWARVEN_HOLD) and the special
-		// surface terrains keep their character; every city_terrain province is LAND, so all get a core.
+		// built-up. Urban is a PURE OVERLAY, not a base terrain and not a yield edit
+		// (docs/city-of-hamlets-plan.md §8): the plot keeps its FULL natural yield stack — terrain,
+		// relief, feature, and bonus — exactly like every other plot (the synthetic TERRAIN_URBAN
+		// ground was retired long ago; the gen-time flatten/feature-strip/bonus-strip is retired
+		// here). We only mark `urban` (for the web district layer, the caravan camp rule, and the
+		// hamlet food model — a city on rich land feeds itself from its own fields), and apply ONE
+		// workability guard: an unworkable PEAK is clamped to a HILL so the whole footprint can be
+		// built and farmed. Whether a given plot actually farms is a runtime fact
+		// (Plot.hasRegularBuilding), not stamped here. Runs after the bonus stage so the core score
+		// reads the final resource layout; consumes no rng. One plot for an ordinary province, a
+		// denser core for a city_terrain province. See docs/urban-plots.md. Only plain LAND provinces
+		// get a surface city: underground holds are their own cave-cities (DWARVEN_HOLD) and the
+		// special surface terrains keep their character; every city_terrain province is LAND, so all
+		// get a core.
 		boolean[] urban = new boolean[w * h];
 		if (province.type() == ProvinceType.LAND && !cells.isEmpty()) {
 			if (province.city()) {
 				// a city_terrain province is one sprawling city — flag EVERY plot urban (the city
-				// render layer covers it), on level built ground with wild features/resources cleared.
+				// render layer covers it); the ground keeps its full natural yields beneath.
 				for (int[] c : cells) {
 					int idx = c[1] * w + c[0];
 					urban[idx] = true;
-					composed[idx] = PlotType.FLAT;
-					feature[idx] = null;
-					bonusGrid[idx] = null;
+					if (composed[idx] == PlotType.PEAK)
+						composed[idx] = PlotType.HILL; // keep the footprint workable/buildable
 				}
 			} else {
 				int coreSize = CityPlacement.coreSize(province, cells.size());
 				for (int idx : CityPlacement.coreCells(w, h, cells, ground, composed, feature,
 						bonusGrid, mask, coreSize)) {
-					urban[idx] = true;             // built-up overlay; the natural terrain stays
-					composed[idx] = PlotType.FLAT; // a city stands on level, built ground
-					feature[idx] = null;           // built ground carries no wild feature
-					bonusGrid[idx] = null;         // the resource is built over
+					urban[idx] = true;                  // built-up overlay; the plot stays fully natural
+					if (composed[idx] == PlotType.PEAK) // (CityPlacement already avoids peak cores, so
+						composed[idx] = PlotType.HILL;  // this guard is belt-and-braces here)
 				}
 			}
 		}
