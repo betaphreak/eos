@@ -28,6 +28,8 @@ public final class CommandCodec {
 			return "setTaxRate";
 		if (command instanceof QueueBuildCommand)
 			return "queueBuild";
+		if (command instanceof GrantPlotCommand)
+			return "grantPlot";
 		throw new IllegalArgumentException("no codec for command " + command.getClass().getName());
 	}
 
@@ -40,6 +42,14 @@ public final class CommandCodec {
 			fields.put("items", q.items());
 			if (q.clear())
 				fields.put("clear", true);
+			return json.writeValueAsString(fields);
+		}
+		if (command instanceof GrantPlotCommand g) {
+			Map<String, Object> fields = new LinkedHashMap<>();
+			if (g.colony() != null)
+				fields.put("colony", g.colony());
+			fields.put("plotIndex", g.plotIndex());
+			fields.put("nobleId", g.nobleId());
 			return json.writeValueAsString(fields);
 		}
 		if (command instanceof SetTaxRateCommand s) {
@@ -73,6 +83,9 @@ public final class CommandCodec {
 						n.hasNonNull("colony") ? n.get("colony").asText() : null,
 						items, n.has("clear") && n.get("clear").asBoolean());
 			}
+			case "grantPlot" -> new GrantPlotCommand(tick,
+					n.hasNonNull("colony") ? n.get("colony").asText() : null,
+					n.get("plotIndex").asInt(), n.get("nobleId").asInt());
 			default -> throw new IllegalArgumentException("unknown persisted command type: " + type);
 		};
 	}

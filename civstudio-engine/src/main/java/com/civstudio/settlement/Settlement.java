@@ -1111,6 +1111,32 @@ public class Settlement {
 	}
 
 	/**
+	 * <b>Enfeoff</b> a plot to a noble — the ruler's grant (docs/estate-system.md P3): the plot
+	 * becomes the noble's fief (its palace is later raised there by {@link
+	 * com.civstudio.settlement.BuildEconomy#enqueueEliteCommissions the elite commissions}), and
+	 * every household resident on it becomes the noble's <b>vassal</b>. A noble holds one fief, so
+	 * a re-grant releases its previous plot back to the Crown. Both the auto-grant on ennoblement
+	 * ({@code SocialMobility.ennobleBestLaborer}) and the player {@code grantPlot} decree route here.
+	 *
+	 * @param plot  the plot to grant (a plot of this colony)
+	 * @param noble the noble the plot is granted to
+	 */
+	public void grantFief(Plot plot, com.civstudio.agent.noble.Noble noble) {
+		if (plot == null || noble == null)
+			return;
+		Plot old = noble.getFief();
+		if (old != null && old != plot)
+			old.setOwnerId(null); // a noble holds one fief; its old ground returns to the Crown
+		plot.setOwnerId(noble.getID());
+		noble.setFief(plot);
+		// every household resident on the granted plot is now the noble's vassal
+		for (Agent a : getAgents())
+			if (a instanceof com.civstudio.agent.laborer.Laborer l && l.isAlive()
+					&& l.getHomePlot() == plot)
+				l.setLiege(noble);
+	}
+
+	/**
 	 * Claim a <b>home plot</b> for a landed household to farm (the plot-working economy of {@code
 	 * docs/plot-working-plan.md} P2): a <b>shared</b> workable plot — the colony spreads households
 	 * one-per-plot across its province's workable land (density 1, each self-sufficient), then piles

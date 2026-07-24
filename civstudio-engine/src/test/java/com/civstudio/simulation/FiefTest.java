@@ -60,4 +60,50 @@ class FiefTest {
 		// a noble is a direct vassal of the Crown (the ruler leads the feudal tree)
 		assertSame(colony.getRuler(), raised.getLiege(), "a noble is a direct vassal of the crown");
 	}
+
+	@Test
+	void grantingAPlotEnfeoffsTheNobleAndMakesItsResidentsVassals() {
+		SimulationConfig cfg = SimulationConfig.DEFAULT;
+		SimulationHarness h = SimulationHarness.create(cfg, 7654321);
+		Settlement colony = h.getColony();
+		h.createMarkets();
+		Bank copper = h.getCopperBank();
+		h.createNobleLaborMarket();
+		Era.Economy econ = colony.getEconomy();
+		h.createFirms(copper, i -> copper,
+				i -> econ.eFirm().savings(), i -> econ.nFirm().savings());
+		h.createStrategicFirm(copper, StrategicFirmConfig.DEFAULT);
+		h.primeNobleLabor();
+		h.createDefaultRuler();
+		h.createDefaultRetinue();
+		h.foundLaborersFromRetinue(i -> copper, i -> 15);
+		colony.run(150);
+
+		Noble noble = null;
+		for (Agent a : colony.getAgents())
+			if (a instanceof Noble n && n.isAlive()) {
+				noble = n;
+				break;
+			}
+		assertNotNull(noble, "a laborer was ennobled");
+
+		// a landed commoner NOT already on the noble's fief — a vassal candidate
+		com.civstudio.agent.laborer.Laborer peasant = null;
+		for (Agent a : colony.getAgents())
+			if (a instanceof com.civstudio.agent.laborer.Laborer l && l.isAlive()
+					&& l.getHomePlot() != null && l.getHomePlot() != noble.getFief()) {
+				peasant = l;
+				break;
+			}
+		assertNotNull(peasant, "the colony has a landed commoner to enfeoff under the noble");
+		assertSame(colony.getRuler(), peasant.getLiege(), "the commoner starts a direct crown vassal");
+
+		// the ruler grants the commoner's plot to the noble
+		com.civstudio.settlement.Plot granted = peasant.getHomePlot();
+		colony.grantFief(granted, noble);
+
+		assertEquals(noble.getID(), (int) granted.ownerId(), "the plot is now held by the noble");
+		assertSame(granted, noble.getFief(), "the noble holds the granted plot as its fief");
+		assertSame(noble, peasant.getLiege(), "a household on the granted fief is now the noble's vassal");
+	}
 }

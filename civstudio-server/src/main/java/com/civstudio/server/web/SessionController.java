@@ -326,6 +326,23 @@ public class SessionController {
 				ok.put("tick", tick);
 				return ResponseEntity.status(202).body(ok);
 			}
+			case "grantPlot" -> {
+				// the P3 ruler decree: enfeoff a plot to a noble (its residents become that noble's
+				// vassals). A grant that no longer resolves at its tick is a no-op in the engine.
+				if (req.plotIndex() == null || req.nobleId() == null)
+					return ResponseEntity.badRequest().body(Map.of("error", "grantPlot needs plotIndex and nobleId"));
+				hs.submit(new com.civstudio.server.command.GrantPlotCommand(tick, colony,
+						req.plotIndex(), req.nobleId()));
+				Map<String, Object> ok = new LinkedHashMap<>();
+				ok.put("accepted", true);
+				ok.put("type", type);
+				if (colony != null)
+					ok.put("colony", colony);
+				ok.put("plotIndex", req.plotIndex());
+				ok.put("nobleId", req.nobleId());
+				ok.put("tick", tick);
+				return ResponseEntity.status(202).body(ok);
+			}
 			default -> {
 				return ResponseEntity.badRequest().body(Map.of("error", "unknown command type: " + type));
 			}
@@ -520,7 +537,7 @@ public class SessionController {
 	 * single-colony run. See {@code docs/spectator-lobby.md} Phase 2.
 	 */
 	public record CommandRequest(String type, String colony, String lever, Double rate, Long tick,
-			java.util.List<String> items, Boolean clear) {
+			java.util.List<String> items, Boolean clear, Integer plotIndex, Integer nobleId) {
 	}
 
 	/** Body of {@code POST /api/sessions/{id}/chat}. */

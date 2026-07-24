@@ -182,17 +182,12 @@ class SocialMobility implements ExpeditionReturn {
 		// only as a deferred end-of-step action (the laborer's offers have cleared).
 		Noble noble = (Noble) rankLadder().reformTo(best, Rank.HOLDING);
 		if (noble != null && fief != null) {
-			// enfeoff the new noble with its home plot: it holds the ground it rose from, and its
-			// palace is raised there (BuildEconomy.enqueueEliteCommissions). The ennobled household
-			// left the farm (it is a rentier now), so release its plot load — this also plugs the
-			// orphan-plot leak the old ennoblement left (the load was never decremented).
-			fief.setOwnerId(noble.getID());
-			noble.setFief(fief);
+			// the ennobled household left the farm (it is a rentier now), so release its plot load —
+			// this plugs the orphan-plot leak the old ennoblement left (the load was never decremented)
 			colony.releaseHomePlot(fief);
-			// every household still resident on the fief is now the noble's vassal
-			for (Agent a : colony.getAgents())
-				if (a instanceof Laborer l && l != best && l.isAlive() && l.getHomePlot() == fief)
-					l.setLiege(noble);
+			// enfeoff the new noble with the ground it rose from: it holds the plot as its fief (its
+			// palace is raised there), and any household still resident becomes its vassal
+			colony.grantFief(fief, noble);
 		}
 		return noble;
 	}
