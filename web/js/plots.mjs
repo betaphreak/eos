@@ -74,7 +74,7 @@ const MAX_TEX_PLOTS = 20000;
 // Urban plots (docs/urban-plots.md): a city is now an OVERLAY on natural terrain, not a synthetic
 // terrain — the plot cache (MAP_VERSION 8+) carries the generated ground plus a `urban` flag, so an
 // urban plot renders as its real terrain and the `q.urban` flag (straight off the plot JSON) locates
-// the city for the district layer (districts.mjs), routes (urban→paved) and the info panel. No client
+// the city for the district layer (districts.mjs), routes (urban→trail) and the info panel. No client
 // re-terraining is needed any more; the old TERRAIN_URBAN grey-ground substrate was retired engine-side.
 
 // the colour a river cell tints toward on the 1px/plot canvas — the hue the old flat blend

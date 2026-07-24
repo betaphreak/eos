@@ -54,8 +54,9 @@ public record RouteType(
 	/** The C2C trail — the "explored/passable" baseline route (see the class doc). */
 	public static final String TRAIL = "ROUTE_TRAIL";
 
-	/** The best pre-tech road tier — urban (city-core) plots start paved (see {@code
-	 * ProvincePlotPool}), so a settlement's own ground is fully routable from founding. */
+	/** The best pre-tech road tier — real infrastructure a settlement <b>builds</b>. Urban
+	 * (city-core) plots start on a {@link #TRAIL} (see {@code ProvincePlotPool}), routable from
+	 * founding but unpaved; a city earns its paved roads through route-building. */
 	public static final String PAVED_ROAD = "ROUTE_PAVED_ROAD";
 
 	/** Normalize {@code yields} to a defensive length-3 copy (missing → 0). */

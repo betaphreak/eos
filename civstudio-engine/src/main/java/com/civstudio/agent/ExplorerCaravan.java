@@ -323,7 +323,7 @@ public final class ExplorerCaravan extends MarchingCaravan {
 	// The frontier signal is GameSession.hasPlotPool: a pool exists precisely where someone has
 	// reached into the ground (a band camped or trailed, a colony was founded), so its ABSENCE is
 	// proof the province is untouched — see the note there for why the seemingly obvious test (scan
-	// the plots for a route) is both wrong (urban plots are pre-paved) and expensive (asking builds
+	// the plots for a route) is both wrong (urban plots start trailed) and expensive (asking builds
 	// the field). The band still forages OPPORTUNISTICALLY once under way: it takes what its route
 	// crosses (docs/explorer-caravan.md decision 11). Frontier-seeking chooses the DIRECTION, not
 	// the prize — a band cannot target a bonus it has not discovered yet.

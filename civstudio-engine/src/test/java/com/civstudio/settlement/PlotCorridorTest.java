@@ -93,7 +93,7 @@ class PlotCorridorTest {
 	}
 
 	@Test
-	void urbanPlotsComePrePaved() {
+	void urbanPlotsComeTrailed() {
 		GameSession session = new GameSession(3);
 		// Dhenijansar is an all-urban city province — every plot is city-core ground
 		ProvincePlotPool pool = session.provincePlotPool(session.getWorldMap().province(DHENIJANSAR));
@@ -103,8 +103,8 @@ class PlotCorridorTest {
 		for (Plot p : pool.plots())
 			if (p.urban()) {
 				assertNotNull(p.routeType(), "an urban plot comes with a route by default");
-				assertEquals(RouteType.PAVED_ROAD, p.routeType().type(),
-						"urban plots start paved (fully routable from founding)");
+				assertEquals(RouteType.TRAIL, p.routeType().type(),
+						"urban plots start on a trail — routable from founding, but unpaved (a city earns its paving)");
 			}
 	}
 
@@ -138,7 +138,7 @@ class PlotCorridorTest {
 		assertTrue(before.plotCount() > 1, "a multi-plot corridor to upgrade");
 		double costBefore = before.totalCost();
 
-		// Dhenijansar is an all-urban city, so its corridor is already PAVED (costFactor 0.4);
+		// Dhenijansar is an all-urban city, so its corridor is already TRAILED (a slow baseline route);
 		// lay a strictly-better HIGHWAY (0.22) on every plot to exercise the route override
 		RouteType highway = session.getTerrainRegistry().route("ROUTE_HIGHWAY");
 		assertNotNull(highway);

@@ -147,7 +147,7 @@ public class GameSession {
 	// provinces whose route layer changed since the render loop last drained this — the "refetch
 	// your in-view routes here" signal the snapshot advertises (docs/route-rendering.md §Viewport-
 	// windowed route persistence). Fed by markRouteDirty (a band laying a trail; a pool created
-	// pre-paved), drained each emit by the host. The pool holds the authoritative layer; this is
+	// with urban trails), drained each emit by the host. The pool holds the authoritative layer; this is
 	// only the change notification, so a drop just delays a refetch until the next change or a
 	// viewport re-entry.
 	private final Set<Integer> dirtyRouteProvinces = new LinkedHashSet<>();
@@ -282,7 +282,7 @@ public class GameSession {
 	 * and arguably right</b> — a settled province is not a frontier either.
 	 * <p>
 	 * Note why the obvious test — scanning the pool's plots for a {@code routeType} — is <b>not</b>
-	 * used: {@code ProvincePlotPool.paveUrbanPlots} pre-paves every urban plot at construction, so
+	 * used: {@code ProvincePlotPool.trailUrbanPlots} trails every urban plot at construction, so
 	 * every city province would report itself explored on day zero with nobody having set foot in
 	 * it. And reading a candidate's plots at all would force the very generation this avoids —
 	 * {@link #provincePlotPool} is {@code computeIfAbsent}, so asking is building.
@@ -306,7 +306,7 @@ public class GameSession {
 				Rng terrainRng = rngSeed.forProvinceCanonical(RngSeed.Stream.TERRAIN, id);
 				ProvincePlotPool pool = ProvincePlotPool.loadOrGenerate(province, terrainRegistry,
 						provinceRaster, terrainRng);
-				// a pool born with routes (urban city-core pre-paving) is a change a client viewing
+				// a pool born with routes (urban city-core trails) is a change a client viewing
 				// this province must pick up — mark it dirty so the next snapshot tells them to fetch.
 				if (pool.hasRoutes())
 					dirtyRouteProvinces.add(id);
@@ -332,7 +332,7 @@ public class GameSession {
 	/**
 	 * Flag a province's route layer as changed, so the next render snapshot tells clients to refetch
 	 * its routes (docs/route-rendering.md). Called on the session thread when a band pioneers a trail
-	 * ({@link com.civstudio.agent.MarchingCaravan#layTrail}) or a pool is born pre-paved. Idempotent.
+	 * ({@link com.civstudio.agent.MarchingCaravan#layTrail}) or a pool is born trailed. Idempotent.
 	 *
 	 * @param provinceId the province whose route layer changed
 	 */

@@ -72,9 +72,9 @@ public final class ProvincePlotPool {
 		for (Plot p : plots) {
 			sx += p.x();
 			sy += p.y();
-			// seed the registry from any plot that already carries a route — the urban pre-paving
-			// (paveUrbanPlots) runs on the plot list before this constructor, so the city core's
-			// paved roads land here without touching that path. Seeding does not bump routeRev: a
+			// seed the registry from any plot that already carries a route — the urban trailing
+			// (trailUrbanPlots) runs on the plot list before this constructor, so the city core's
+			// trails land here without touching that path. Seeding does not bump routeRev: a
 			// client fetches a province's routes on first view regardless; the rev is only the
 			// "changed since" delta signal.
 			if (p.routeType() != null)
@@ -103,7 +103,7 @@ public final class ProvincePlotPool {
 		List<Plot> plots = new ArrayList<>(field.size());
 		for (ProvincePlot pp : field.plots())
 			plots.add(toPlot(pp));
-		paveUrbanPlots(plots, registry);
+		trailUrbanPlots(plots, registry);
 		return new ProvincePlotPool(province, plots);
 	}
 
@@ -139,23 +139,25 @@ public final class ProvincePlotPool {
 				plots.add(toPlot(pp));
 			ProvincePlotStore.save(province.id(), plots);
 		}
-		paveUrbanPlots(plots, registry);
+		trailUrbanPlots(plots, registry);
 		return new ProvincePlotPool(province, plots);
 	}
 
-	// urban (city-core) plots come PRE-PAVED — every urban plot starts with a paved
-	// road (the best pre-tech route tier), so a settlement's own ground is fully routable from
-	// founding (and, once trail-gating lands in Phase 6, its caravans can leave). A per-session
-	// default applied at pool construction — routes are per-session state and never bake into the
-	// canonical .map (ProvincePlotStore serializes only terrain/feature/bonus). Set before
-	// any corridor is cached, so no invalidation is needed. See docs/explorer-caravan.md §Phase 3.
-	private static void paveUrbanPlots(List<Plot> plots, TerrainRegistry registry) {
-		RouteType paved = registry.route(RouteType.PAVED_ROAD);
-		if (paved == null)
+	// urban (city-core) plots start TRAILED — every urban plot begins with a trail (the tier the
+	// Explorer pioneers), so a settlement's own ground is routable from founding (a trail is the
+	// minimum a caravan needs to leave, once trail-gating lands in Phase 6) WITHOUT handing the city
+	// a free paved network. A paved road is real infrastructure a settlement builds; the city has to
+	// earn its paving (docs/city-of-hamlets-plan.md §8 — the roads→trails cleanup that ships with
+	// urban-fields). A per-session default applied at pool construction — routes are per-session state
+	// and never bake into the canonical .map (ProvincePlotStore serializes only terrain/feature/bonus).
+	// Set before any corridor is cached, so no invalidation is needed. See docs/explorer-caravan.md §Phase 3.
+	private static void trailUrbanPlots(List<Plot> plots, TerrainRegistry registry) {
+		RouteType trail = registry.route(RouteType.TRAIL);
+		if (trail == null)
 			return;
 		for (Plot p : plots)
 			if (p.urban())
-				p.layRoute(paved);
+				p.layRoute(trail);
 	}
 
 	/** The province this pool belongs to. */
@@ -167,7 +169,7 @@ public final class ProvincePlotPool {
 	 * Record that a route was laid (or upgraded) on one of this province's plots, so the standing
 	 * route layer this pool serves stays authoritative. Every route-laying site calls this after
 	 * {@link Plot#layRoute}: a caravan pioneering a trail ({@link
-	 * com.civstudio.agent.MarchingCaravan#layTrail}), a future road-builder. Urban pre-paving is
+	 * com.civstudio.agent.MarchingCaravan#layTrail}), a future road-builder. Urban trailing is
 	 * captured by the constructor's seed scan instead, so it need not call here. Idempotent: a plot
 	 * already in the layer is not re-added, but any call bumps {@link #routeRev()} (an upgrade
 	 * trail→road is a change clients must refetch even though the plot was already routed).
@@ -201,7 +203,7 @@ public final class ProvincePlotPool {
 
 	/**
 	 * Whether this province carries any route at all — a cheap check used to decide whether a
-	 * freshly-built (possibly pre-paved) pool should notify viewing clients (see {@link
+	 * freshly-built (possibly trailed) pool should notify viewing clients (see {@link
 	 * GameSession#provincePlotPool}).
 	 *
 	 * @return {@code true} if at least one plot carries a route

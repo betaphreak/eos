@@ -1,0 +1,266 @@
+# Design note: the city of hamlets
+
+**Status:** Design (not built) — the plan for turning a city's plots into first-class **hamlets**:
+self-contained peasant cells, each led by the noble (or crown) that holds it, under the city's shared
+money and market. ("Hamlet" is the code/type name — the tier a hamlet caps at; the UI may still say
+"village" as flavor. See §7.) Grows directly out of the shipped vassalage (P1–P5) and the P2 land
+model.
+**Date:** 2026-07-24
+**Depends on:** the vassalage — `Plot.ownerId` (fief-holder), `Noble.fief`, `AbstractHousehold.liege`
+(ruler→nobles→peasants), `Settlement.grantFief`; the P2 land model (empty plot = single-household
+farm, built plot = stacked housing, `Plot.hasRegularBuilding`); `FoodEconomy`; the `SettlementTier`
+ladder (one `Settlement` class + a `tier` field — NO `Village`/`City` subclasses; see §7).
+
+---
+
+## 1. What this is
+
+A **City** is not a monolith of agents; it is a **ruler over a set of Villages** — its plots, each a
+self-contained cluster of peasants led by the noble that got it from the ruler (or by the crown
+directly). A village *is* a fief made first-class: the plot(s) + its resident peasants + its leader.
+Province 4111's city holds ~30 villages (its 30 plots); 44 urban plots remain in the province for a
+future second city or **unincorporated villages** (none exist at game start).
+
+## 2. Decisions (from the 2026-07-24 design dialogue)
+
+- **Autonomy = shared economy, local population.** Money, banks, and the consumer-good **market** (one
+  price discovery) are city-wide; a village owns its **population, leader, food, housing, births, and
+  dues** locally. Each village's local state steps per-village inside the city's `newDay`; the market
+  clears once, city-wide, after the fan-out.
+- **Leader = fief OR crown demesne.** A noble-held plot is a noble-led village; an un-enfeoffed plot
+  is a **crown demesne village** (matches "the ruler holds some peasants directly").
+- **Self-contained villages.** A village's peasants live and work *their own* ground; the village
+  feeds itself locally and posts only **surplus/deficit** to the shared market.
+- **Firm split.** **Enjoyment firms stay city-level** (luxury, sold on the shared market); **villages
+  get the Necessity firms** (food). So villages are the food cells; the city is luxury + market.
+- **Village = seat plot + farmland.** A village is its **seat plot** (the leader's manor/palace +
+  stacked peasant housing) plus **whatever farmland exists around it (or none)** — the empty plots it
+  works for food. A village therefore holds a *set* of plots, not one (extend `Noble.fief` → a
+  territory).
+- **Food production = the leader's village Necessity firm(s) employing its peasants.** The leader
+  (noble, or the crown for a demesne village) owns the village's `NFirm`(s); they **hire the village's
+  peasants** and produce food into the **village larder**, with the **surplus sold** to the shared
+  city market (and deficits bought from it). The leader is the employer-lord. (No separate per-
+  household subsistence farming — the firm is the village's food engine; peasants earn wages and eat
+  from the village larder.)
+- **Larder = a village-level shared food balance.** The village holds one larder its peasants eat
+  from (fed by its NFirm, split among its households) — a refactor of the current per-household
+  larder into a per-village pool.
+- **Peasant pool = one city-wide `Retinue` (kept).** A single shared labor reserve; villages draw new
+  households from it as they have room, on top of their own births/immigration. Least structural
+  change to the pool.
+- **Founding = emergent.** The city starts with a few villages and **incorporates more plots into
+  villages as it grows** into them; the village count climbs over the run rather than all ~30 existing
+  at day one.
+- **Incorporation = the builder developing a plot.** When the colony's `BuilderFirm` develops a new
+  plot (a seat), that plot **becomes a village** — villages track the physical buildout. A grant /
+  ennoblement then hands the village to a noble; an un-granted one is a crown demesne village.
+- **Territory grows by proximity.** A village starts as its seat; as its population grows it **claims
+  nearby empty plots as fields** (organic spread outward). Territory expands with need, not a fixed
+  bundle at grant time. **Urban ground is farmable ground** (see §8): an urban plot keeps its natural
+  terrain food yield, and the "paved, no farm" signal is `Plot.hasRegularBuilding()`, not the `urban`
+  flag. So even in all-urban territory a village's *unbuilt* urban plots are real fields its NFirm
+  farms; only its **built** plots (the seat's manor + stacked housing, firms) don't farm. A dense,
+  fully built-up village is a **net food importer** (it buys from the shared city market); a village
+  with unbuilt urban fields is a net **exporter**. As a city densifies, more plots gain a regular
+  building and its farmable base shrinks — so it drifts from self-feeding toward import-dependent as it
+  grows, the shared market balancing exporters against importers. **Food buildings are additive**
+  (bonus food to the land), not the lifeline the all-urban case once seemed to need.
+- **The leader takes BOTH firm profit and dues.** The leader draws NFirm dividends (as owner) **and**
+  collects P4 dues from its peasants — the full feudal + capitalist take. BALANCE WATCH: the same
+  peasants are squeezed from both sides; keep dues + the firm's wage/price low enough that a village
+  doesn't starve its own people (survival tests gate this).
+- **Overflow → the city pool.** When a village fills (seat stacking cap + no more claimable fields),
+  its surplus returns to the shared city `Retinue`, to be **re-seated** in whichever village has room
+  (or a newly-incorporated one). The pool is the inter-village buffer; no direct village→village
+  migration.
+- **Name = `Hamlet` (leave `Village` alone).** There is **no `Village` class today** — the old
+  `Village`/`City` subclasses were long ago collapsed into one `Settlement` + a `SettlementTier` field,
+  and the old "Village" *rung* is now `SMALLHOLDING`. Rather than reuse "Village" (still live as the
+  *separate* `Rank.VILLAGE` command-rank and a tile-improvement), the new sub-unit is a **`Hamlet`**,
+  named for the tier it sits at — **zero collision, self-documenting, nothing to rename**. (Scrap the
+  earlier `Village`→`Township` idea entirely; the UI may still *say* "village" as flavor.) On the ladder
+  (`CAMP<COTTAGE<HAMLET<SMALLHOLDING<TOWN<METROPOLIS`) a `Hamlet` carries **its own `tier`, capped at
+  HAMLET**, and grows `CAMP→COTTAGE→HAMLET` via its own food-box as it gains households — while
+  **sharing the city's market and banks** (consistent with "shared economy, local population"). The
+  HAMLET cap (`minHouseholds` 9, below SMALLHOLDING's 16 — the rung a settlement boots a Ruler and
+  becomes a real colony) is what keeps a hamlet a *dependent* unit, and replaces the ad-hoc P2 stacking
+  cap. A city is the `TOWN`/`METROPOLIS` `Settlement` that contains its hamlets. Wrinkle: HAMLET's
+  derived head-rank is a Captain, but a hamlet's leader comes from the **fief** (noble by grant, or
+  crown) — decoupled (HAMLET in *size*, noble-*led*). An **unincorporated** hamlet is a standalone
+  low-tier `Settlement` (literally at HAMLET); one that outgrows HAMLET graduates into a real
+  `SMALLHOLDING` colony — a clean promotion; a second city can incorporate it (V4).
+
+## 3. The model
+
+A **Village** exists at one of two scopes:
+- **Incorporated** — a neighborhood of a city; shares the city's money, banks, and market (the case
+  the phases below build first).
+- **Unincorporated** — a **standalone village on a leftover province plot**, belonging to no city; it
+  is its own small settlement with its own economy (what today's `Village`/`Township` already is). The
+  province holds more plots than a city occupies (province 4111: a ~30-plot city + 44 leftover urban
+  plots), and those leftover plots can carry unincorporated villages. None exist at game start; they
+  emerge (a seceding neighborhood, a settler band that settles a leftover plot, or the builder
+  developing ground outside the city) and can later be **incorporated into a second city** (V4).
+
+- **City** = ruler/crown · shared banks + money · shared consumer-good **market** (price discovery) ·
+  **Enjoyment firms** + dynamic provisioning · the villages. Its **center plot (index 0) is the
+  non-village core** — the shared market + Enjoyment firms + civic heart, sitting *above* the villages,
+  not one of them (the ruler heads the city; it does not also run a central village).
+- **Village** = a **leader** (fief-holder `Noble`, or the crown for a demesne village) · a **territory**
+  (seat plot + 0..N farm plots) · its **peasant households** (on the seat, P2 stacking) · the leader's
+  **Necessity firm(s)** employing those peasants · a **village larder** (shared local food balance) ·
+  local **housing/building**, **births/immigration**, and **dues**.
+- **Economy flow:** the leader's village NFirm(s) hire the village's peasants and farm its fields →
+  food into the **village larder** (its peasants eat from it), **surplus sold** to the shared city
+  market, deficits bought from it. Peasants earn wages (spent on **Enjoyment** from the city's
+  Enjoyment firms, dues, savings). Money/banks and the market are shared; dues run peasant → village
+  leader → crown (the vassalage levy).
+
+## 4. Phased plan
+
+- **M — urban fields (map regen; the food substrate).** Stop the generation-time yield surgery on
+  urban cells: an urban plot keeps its **full natural yield stack** — terrain, relief, feature, and
+  (critically) **bonus** — exactly like every other plot; `urban` becomes a pure orthogonal overlay
+  (a footprint marker), never a replacement for the feature slot. Whether a plot actually farms is
+  decided at runtime by `hasRegularBuilding()` (paved core = no farm), not stamped at gen. One
+  gen-time guard survives: don't seat a city **core** on an unworkable peak. Roads are no longer
+  pre-paved on urban plots either — a city's ground carries **trails**, upgraded by real building, not
+  a free paved network (see the routes note in §8). This is a `GEN_VERSION`/`MAP_VERSION` bump → CI
+  rebake → deploy → clear the plot cache, and a **one-time calibration re-tune** (`YIELD_REFERENCE` +
+  the survival/growth tests), since cities on rich land now have a higher food box. It is the
+  substrate V2/V3 stand on and lands first. See §8.
+- **V0 — the `Hamlet` entity.** A first-class object the City holds one-per-seat-plot: `territory`
+  (plots), `name` (GeoNames place name of the seat), `leader` (the seat's `ownerId` noble, or crown),
+  its resident households, and its own `tier` (capped at HAMLET). Pure grouping over what P3 gives —
+  no behavior change. (No `Village`→`Township` rename — there is no `Village` class; the name is free.)
+- **V1 — membership & roster + view.** Group households by their `homePlot` → village; a village
+  exposes its peasants, leader, population, territory. The **city screen shows each plot as a village**
+  (name · leader · N households) with a drill-down.
+- **V2 — village larder + local tick.** Refactor the per-household larder into a **village larder** (a
+  shared local food balance the village's peasants eat from). The city's `newDay` fans out a
+  `Village.step()`: its **food balance** (its NFirm output into the larder, drawn by its households),
+  its **housing/building**, **births/immigration into that village**, and **dues** — per-village, not
+  global. Shared market still clears once, city-wide.
+- **V3 — leader-owned NFirms + surplus.** The village's **Necessity firm(s) are owned by its leader**
+  (the fief-holder noble, or the crown for a demesne village) and hire the village's peasants; the
+  village feeds itself from the larder and posts only **surplus/deficit** to the shared market. The
+  city keeps the **Enjoyment firms**. This is the biggest economic departure (firms move under
+  villages, food distribution becomes the larder) — sequence it carefully behind the survival tests.
+- **V4 — lifecycle & unincorporated villages.** Charter a new village (ruler grants a leftover plot →
+  a village seeded with peasants), the 44 leftover plots as **unincorporated villages** (a `Village`
+  with no parent city), and the seam for a **second city** to incorporate them. `Township` converges
+  into "unincorporated `Village`" here.
+- **V5 — governance.** The leader runs *its* village (dues, housing, eventually local policy) — ties
+  into the estate system.
+
+## 5. Open details to settle as we build
+
+- **Farm-plot → village association.** How do the empty farm plots map to a village — by proximity to
+  the seat, or by the ruler granting the noble a seat + its fields together? (Extend `grantFief` /
+  `Noble.fief` from one plot to a territory.)
+- **Population growth & migration.** Each village grows its own population (births/immigration); is
+  there migration *between* villages (a full village overflows to a neighbour, or to a caravan — the
+  P2 landless-emigration outlet)?
+- **Village size.** Seat stacking (P2 cap ~20) + fields; what's a healthy village size vs the ~30 per
+  city?
+- **Determinism.** Per-village fan-out must keep the seed-reproducible order (villages stepped in a
+  stable order; no new economic RNG stream leakage).
+
+## 6. Relation to what's shipped
+
+This is the natural next storey on the vassalage: P1–P5 gave the tree (ruler→nobles→peasants), fiefs
+(`Plot.ownerId`), the grant decree, dues, and inheritance. The city-of-hamlets makes the fief a
+first-class **place** with its own people and tick. It does **not** depend on closing the
+**food-building gap** (food-producing buildings have no engine effect yet): urban fields feed the city
+on their own (see §8), so food buildings are an additive bonus to the land whenever they land, not a
+prerequisite.
+
+## 7. How a Hamlet aligns with the tier + rank ladders
+
+Two **orthogonal** ladders; a Hamlet sits on both, and "Village" touches each differently.
+
+- **Size — `SettlementTier` (`CAMP<COTTAGE<HAMLET<SMALLHOLDING<TOWN<METROPOLIS`).** The old "Village"
+  is now the **`SMALLHOLDING`** rung — where a settlement boots its own **Ruler** and becomes a real,
+  self-governing colony (16+ households). A `Hamlet` caps one rung below at **`HAMLET`** (9–15), to
+  stay a *dependent* unit. So they are a **continuum**: a Hamlet is a proto-Village, and the old
+  "Village" (`SMALLHOLDING`) is a grown-up, independent Hamlet. An *incorporated* hamlet caps at
+  HAMLET and overflows to the city pool; an *unincorporated* one that outgrows HAMLET **graduates into
+  a `SMALLHOLDING`** colony (the V4 promotion → seed a second city).
+- **Governance — the `Rank` ladder.** `Rank.VILLAGE` is **not a place** — it is the command rank a
+  **city ruler** holds (`SettlementTier.headRank` maps SMALLHOLDING/TOWN → Ruler `Rank.VILLAGE`,
+  METROPOLIS → Mayor `Rank.CITY`). The vassalage tree already IS this ladder: **city ruler
+  (`Rank.VILLAGE`/`CITY`) → hamlet leader (`Rank.HOLDING` noble) → peasants (`Rank.HOUSEHOLD`)**. A
+  Hamlet is the geographic cell a `HOLDING` noble governs, one rung under the ruler. Size and
+  governance are independent — a HAMLET-*sized* place is *noble*-governed, no conflict.
+- **The incorporation seam.** HAMLET's *derived* head-rank is a Captain (`Rank.CARAVAN`) — a
+  *standalone* HAMLET camp is Captain-led. An *incorporated* hamlet is Noble-led. So **incorporation
+  swaps the head's rank**: a standalone Captain-led HAMLET, granted to a noble and pulled into a city,
+  has its head become a `Rank.HOLDING` noble. That swap *is* the unincorporated→incorporated moment,
+  and `grantFief` is the hook.
+- **Not the tile-improvement.** The Civ4 `Cottage→Hamlet→Village→Town→Suburbs` line is a plot's cottage
+  densifying — a different domain (`geo.Improvement`), not a settlement. Name overlap only: keep
+  `geo.Improvement`-"Hamlet" (a tile stage) and `settlement.Hamlet` (the unit) clearly commented apart.
+
+**In one line:** a Hamlet is the HAMLET-tier, `HOLDING`-governed *dependent* cell; a "Village"
+(`SMALLHOLDING`) is what it *graduates into* when independent; `Rank.VILLAGE` is the ruler-rank above
+it. One continuum — a hamlet is a colony-in-waiting — with governance layered on by the fief.
+
+## 8. Urban ground is farmable ground (the map-regen decision)
+
+The earlier premise — "an all-urban city cannot feed itself from village fields" — was **wrong**, and
+correcting it is what unblocks the food model. Two facts about the shipped code:
+
+- **`urban` is already an overlay on natural terrain, and `Plot.yields()` never reads it.** An urban
+  plot's food yield is its natural terrain's yield (grassland ≈ 2, …). Urban does **not** zero food.
+- **The real "no farm" gate is `Plot.hasRegularBuilding()`** (a firm occupant or a non-housing
+  building) — read by `FoodEconomy.homePlotFoodYield` and by where an NFirm may raise its FARM. That
+  is a *runtime, building-presence* fact, not the `urban` flag.
+
+So an *unbuilt* urban plot already is a real field, farmable by home-plot subsistence and by an NFirm
+(whose `yieldFactor(NECESSITY)` reads the same natural food). That is why fully-urban Dhenijansar
+already feeds itself.
+
+**The decision (the design-correct choice).** Stop doing yield surgery at generation. Today gen strips
+urban cells to `FLAT` + `feature=null` + `bonus=null` — which pre-emptively *paves* even the unbuilt
+field plots the hamlet economy needs. Instead:
+
+- an urban plot keeps its **full natural yield stack** — terrain, relief, feature, **bonus** — like
+  every other plot;
+- `urban` is a **pure orthogonal overlay** (a zoning/footprint marker), *not* the plot's feature — it
+  cannot occupy the yield-bearing feature slot, exactly as relief is orthogonal to terrain;
+- **runtime `hasRegularBuilding()` decides paving**, at the plots actually built (the seat's manor,
+  firms), not the whole footprint at gen;
+- one gen-time guard survives: don't seat a city **core** on an unworkable peak.
+
+**Why keep the full stack (not strip to bare terrain):**
+1. *World-coherence.* `CityPlacement.foundValue` sites cities *on* good land (near bonuses); stripping
+   models "the city bulldozed exactly the wheat it was founded next to" — backwards. Cities kept their
+   peri-urban gardens and grazing.
+2. *The map must matter inside cities.* The hamlet economy is a food **gradient** (field hamlets
+   export, dense hamlets import, trading over the shared market). Bare, identical urban fields flatten
+   that gradient to noise; feature/bonus/relief make "this hamlet sits on cattle land" a real economic
+   difference — the whole reason a real imported map is worth having inside a city.
+3. *The urbanization arc falls out for free.* As a city densifies, more plots gain a regular building,
+   so its farmable base **shrinks as it grows** — rich land is a head start, not permanent immunity;
+   the city drifts self-feeding → import-dependent naturally.
+4. *Model consistency.* Urban stops being the one plot-type that is a `yields()` exception.
+
+**The bonus is the load-bearing leg.** Features add yield only while *wild*; farming **clears** them,
+so a farmed urban field loses its forest yield anyway (intended agronomy). A **food bonus, though, is
+added to a cleared farm too** (`Plot.yields()`), so it carries "cities on good land feed better"
+through to farming. Stripping the bonus was the real error; keeping it is what matters most.
+
+**Roads → trails.** In the same spirit, urban plots are no longer **pre-paved** with a road network at
+generation. A paved road is real infrastructure that a settlement *builds*; ground under a city starts
+as a **trail** (`ROUTE_TRAIL`, the tier the Explorer pioneers) and is upgraded only by actual
+route-building. Free paved cities were the routing analogue of free-farmland-stripping — an
+unearned overlay masking the natural ground. Trails keep the plot honest: the city has to earn its
+paving. (Routes are per-session state, not baked into the `.map`, so this is a route-stamping change,
+not part of the `GEN_VERSION` field data — but it lands with the same regen so the two urban cleanups
+ship together.)
+
+**Cost.** A `GEN_VERSION`/`MAP_VERSION` bump (CI rebake → deploy → clear the plot cache) and a
+**one-time calibration re-tune** (`YIELD_REFERENCE` + `CanonicalRun` + the ruler-colony survival /
+growth tests), since cities on rich ground now bank more food. Calibration serves the model — re-tune
+once rather than distort the world to avoid it.

@@ -8,9 +8,9 @@
 // Data source: the engine's per-plot RouteType maps to a tier via ROUTES.byType. In Live mode the
 // standing route layer is fetched per province from the viewport-windowed feed (routefetch.mjs →
 // route-index.mjs), so a late-joining or reloading client sees the whole network. Off Live (WorldMap),
-// or before a province's layer loads, city-core plots — which the engine founds pre-paved
-// (ProvincePlotPool) and which the plot grid flags `urban` — stand in as PAVED_ROAD, so a paved city
-// core is visible on zoom-in with no session. docs/route-rendering.md §Viewport-windowed route persistence.
+// or before a province's layer loads, city-core plots — which the engine founds on a TRAIL
+// (ProvincePlotPool) and which the plot grid flags `urban` — stand in as the trail tier, so a trailed
+// city core is visible on zoom-in with no session. docs/route-rendering.md §Viewport-windowed route persistence.
 import { P, ctx, ROUTES, pxr, pyr, provOnScreen, isPolitical } from "./core.mjs";
 import { draw } from "./repaint.mjs";
 import { bandAlpha } from "./bands.mjs";
@@ -32,14 +32,14 @@ if (ROUTES) for (const k of TIERS) if (ROUTES[k]) {
 }
 
 /** The route tier a plot draws in, or null. Prefers the live per-plot RouteType from the global
- *  route-index (the trails bands pioneered + pre-paved cores the feed serves), then any static
- *  `q.route`, then treats urban city-core plots as paved road (the stand-in before the layer loads /
- *  off Live). */
+ *  route-index (the trails bands pioneered + trailed cores the feed serves), then any static
+ *  `q.route`, then treats urban city-core plots as a trail (the stand-in before the layer loads /
+ *  off Live) — a city earns its paved roads by building them. */
 function plotTier(q) {
   const live = routeType(q.x, q.y);
   if (live && ROUTES.byType[live]) return ROUTES.byType[live];
   if (q.route && ROUTES.byType[q.route]) return ROUTES.byType[q.route];
-  if (q.urban) return "road";
+  if (q.urban) return "trail";
   return null;
 }
 

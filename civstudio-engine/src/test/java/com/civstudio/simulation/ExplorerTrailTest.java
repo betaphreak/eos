@@ -58,9 +58,9 @@ class ExplorerTrailTest {
 		ExplorerCaravan band = ExplorerCaravan.muster(colony, draftees, larder);
 		band.setTripLimits(1e9, 20, 1);
 
-		// the home province (Dhenijansar) is an all-urban city, so its core plots come pre-paved
-		// (ROUTE_PAVED_ROAD) — the explorer trails the RURAL ground it reaches beyond the city.
-		// Drive it out (summer — longest days), tracking every province it enters.
+		// the home province (Dhenijansar) is an all-urban city, so its core plots start TRAILED by
+		// default — the explorer pioneers a trail on the RURAL (non-urban) ground it reaches beyond
+		// the city. Drive it out (summer — longest days), tracking every province it enters.
 		Set<Integer> visited = new HashSet<>();
 		Rng rng = session.getBandRng();
 		LocalDate day = LocalDate.of(1445, 6, 21);
@@ -71,13 +71,15 @@ class ExplorerTrailTest {
 		}
 		assertTrue(visited.size() > 1, "the explorer marched beyond its home province");
 
-		// somewhere on the rural ground it crossed, it pioneered a ROUTE_TRAIL (distinct from the
-		// city's pre-paved roads — so we look for the trail tier specifically)
+		// somewhere on the rural ground it crossed, it pioneered a ROUTE_TRAIL — we look for a trail on
+		// a NON-URBAN plot specifically, since the city's own urban plots start trailed by default and
+		// would otherwise mask the pioneering we mean to prove.
 		boolean trailed = false;
 		for (int pid : visited) {
 			ProvincePlotPool pp = session.provincePlotPool(session.getWorldMap().province(pid));
 			for (Plot p : pp.plots())
-				if (p.routeType() != null && RouteType.TRAIL.equals(p.routeType().type())) {
+				if (!p.urban() && p.routeType() != null
+						&& RouteType.TRAIL.equals(p.routeType().type())) {
 					trailed = true;
 					break;
 				}

@@ -19,7 +19,7 @@ import java.util.List;
  * small centre-relief nudge (a {@link PlotType#PEAK} is unfoundable, a {@link PlotType#HILL}
  * slightly preferred). The highest-scoring cell is the city centre; a {@code city}-flagged
  * province (Anbennar {@code city_terrain}) grows a denser core of the nearest few cells around
- * it (but note {@code city_terrain} provinces are paved wholesale upstream, so this path serves
+ * it (but note {@code city_terrain} provinces are trailed wholesale upstream, so this path serves
  * ordinary provinces — the single village/city centre).
  * <p>
  * Deterministic — a pure scan of the finished terrain/relief/feature/bonus grids and the
