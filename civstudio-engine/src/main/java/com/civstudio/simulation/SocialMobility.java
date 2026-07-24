@@ -170,6 +170,9 @@ class SocialMobility implements ExpeditionReturn {
 				best = lab;
 		if (best == null)
 			return null;
+		// the ablest laborer keeps the ground it lived on as its FIEF (docs/estate-system.md P3):
+		// captured before the reform swaps the agent away
+		com.civstudio.settlement.Plot fief = best.getHomePlot();
 		// reform the chosen laborer up the rank ladder to HOLDING explicitly (R1 —
 		// docs/rank-ladder-improvements.md): the HOLDING factory re-banks it in silver,
 		// carries its balances and members over, and the ladder closes the old account and
@@ -177,7 +180,21 @@ class SocialMobility implements ExpeditionReturn {
 		// noble that adopted its head. A targeted reform (not the adjacency walk) so it is
 		// unaffected when the intermediate CARAVAN rung is realized. Safe here: this runs
 		// only as a deferred end-of-step action (the laborer's offers have cleared).
-		return (Noble) rankLadder().reformTo(best, Rank.HOLDING);
+		Noble noble = (Noble) rankLadder().reformTo(best, Rank.HOLDING);
+		if (noble != null && fief != null) {
+			// enfeoff the new noble with its home plot: it holds the ground it rose from, and its
+			// palace is raised there (BuildEconomy.enqueueEliteCommissions). The ennobled household
+			// left the farm (it is a rentier now), so release its plot load — this also plugs the
+			// orphan-plot leak the old ennoblement left (the load was never decremented).
+			fief.setOwnerId(noble.getID());
+			noble.setFief(fief);
+			colony.releaseHomePlot(fief);
+			// every household still resident on the fief is now the noble's vassal
+			for (Agent a : colony.getAgents())
+				if (a instanceof Laborer l && l != best && l.isAlive() && l.getHomePlot() == fief)
+					l.setLiege(noble);
+		}
+		return noble;
 	}
 
 	/**

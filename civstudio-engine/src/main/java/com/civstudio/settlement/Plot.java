@@ -141,6 +141,13 @@ public final class Plot {
 	// addBuilding) and the building effect are later phases. See docs/plots.md.
 	private final List<Building> buildings = new ArrayList<>();
 
+	// the FIEF-HOLDER: the agent id of the household (a Noble, or the Ruler) that holds this plot as
+	// its fief, or null when it is held by the Crown directly / unenfeoffed (docs/estate-system.md,
+	// the vassalage P3). The households resident on a fief are that holder's vassals. Like occupant
+	// and routeType this is MUTABLE per-session state, excluded from the canonical .map; and like
+	// Building.ownerId it is a death-safe id — a null or dead holder simply reads as Crown-held.
+	private Integer ownerId;
+
 	/**
 	 * Create a vacant, undeveloped plot at the given ladder index.
 	 *
@@ -615,6 +622,28 @@ public final class Plot {
 	 *
 	 * @return whether developed by a firm or a non-housing building
 	 */
+	/**
+	 * The <b>fief-holder</b> of this plot — the agent id of the household (a {@link
+	 * com.civstudio.agent.noble.Noble} or the {@link com.civstudio.agent.ruler.Ruler}) that holds
+	 * it as a fief, or {@code null} when it is held by the Crown directly (docs/estate-system.md,
+	 * vassalage P3). The households resident here are that holder's vassals.
+	 *
+	 * @return the fief-holder's agent id, or {@code null} if Crown-held
+	 */
+	public Integer ownerId() {
+		return ownerId;
+	}
+
+	/**
+	 * Enfeoff this plot to a holder (or clear it back to the Crown with {@code null}) — the
+	 * grant / ennoblement seam ({@code docs/estate-system.md}).
+	 *
+	 * @param ownerId the fief-holder's agent id, or {@code null} to hold it as Crown demesne
+	 */
+	public void setOwnerId(Integer ownerId) {
+		this.ownerId = ownerId;
+	}
+
 	public boolean hasRegularBuilding() {
 		if (occupant != null)
 			return true;

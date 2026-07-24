@@ -760,6 +760,9 @@ public class Laborer extends AbstractHousehold {
 	 */
 	public void setHomePlot(Plot homePlot) {
 		this.homePlot = homePlot;
+		// a household living on a fief is the fief-holder's vassal (docs/estate-system.md P3): swear
+		// it to the plot's holder, or back to the Crown default on unenfeoffed / no ground
+		setLiegeId(homePlot == null ? null : homePlot.ownerId());
 	}
 
 	// the daily necessity ration a member eats: an adult the FINE worker ration

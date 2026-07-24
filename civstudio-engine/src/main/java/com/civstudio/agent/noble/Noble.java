@@ -76,6 +76,11 @@ public class Noble extends AbstractHousehold {
 	// replaced (see act).
 	private final List<Property> properties;
 
+	// the FIEF this noble holds — the plot granted to it (its manor ground, where its palace is
+	// raised), or null for a landless noble (docs/estate-system.md, vassalage P3). Set on
+	// ennoblement (the ablest laborer keeps its home plot as its fief) or by a ruler's grant.
+	private com.civstudio.settlement.Plot fief;
+
 	// enjoyment and necessity the noble consumes
 	private final Enjoyment enjoyment;
 	private final Necessity necessity;
@@ -491,6 +496,26 @@ public class Noble extends AbstractHousehold {
 	 * firms across owners; counts firms specifically, not any owned banks). */
 	public int getFirmCount() {
 		return (int) properties.stream().filter(h -> h instanceof Firm).count();
+	}
+
+	/**
+	 * The fief this noble holds — the plot granted to it (its manor ground, where its palace is
+	 * raised), or {@code null} for a landless noble (docs/estate-system.md, vassalage P3).
+	 *
+	 * @return this noble's fief plot, or {@code null}
+	 */
+	public com.civstudio.settlement.Plot getFief() {
+		return fief;
+	}
+
+	/**
+	 * Grant this noble a fief — its manor ground (the ennoblement / grant seam). Passing {@code
+	 * null} makes it landless.
+	 *
+	 * @param fief the plot this noble now holds, or {@code null}
+	 */
+	public void setFief(com.civstudio.settlement.Plot fief) {
+		this.fief = fief;
 	}
 
 	/**

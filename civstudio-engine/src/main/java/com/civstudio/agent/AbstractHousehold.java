@@ -272,6 +272,18 @@ public abstract class AbstractHousehold extends Agent implements Household {
 	}
 
 	/**
+	 * Swear this household to a liege by agent id — the seam a household on a fief uses to swear to
+	 * the plot's holder ({@link com.civstudio.settlement.Plot#ownerId()}) without resolving the agent
+	 * first. {@code null} reverts to the Crown default. Death-safe, like {@link #setLiege}: a since-
+	 * dead id simply reads back as a direct crown vassal.
+	 *
+	 * @param liegeId the liege's agent id, or {@code null} to revert to a direct crown vassal
+	 */
+	public void setLiegeId(Integer liegeId) {
+		this.liegeId = liegeId;
+	}
+
+	/**
 	 * Whether this household is the sovereign root of the feudal tree — the Crown, which is sworn
 	 * to no one. {@code false} for every household but the {@link com.civstudio.agent.ruler.Ruler},
 	 * which overrides this.

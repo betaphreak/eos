@@ -187,8 +187,13 @@ public class BuildEconomy {
 			HousingBuilding rung = HousingCatalog.get().bestAvailable(knownTechs());
 			if (rung == null)
 				continue;
+			// a noble raises its palace on its FIEF — the ground it holds (docs/estate-system.md P3);
+			// the crown (and a landless noble) still builds at the city center
+			Plot site = center;
+			if (a instanceof com.civstudio.agent.noble.Noble n && n.getFief() != null)
+				site = n.getFief();
 			plotField.queueCommission(new com.civstudio.settlement.BuildProject(
-					center, rung.type(), rung.effectiveCost(), elite));
+					site, rung.type(), rung.effectiveCost(), elite));
 			eliteCommissions++;
 		}
 	}
