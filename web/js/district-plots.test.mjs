@@ -48,12 +48,16 @@ test("the pick is stable — equidistant plots break ties on (y, x)", () => {
 
 test("a district's buildings read the same in either server shape", async () => {
   const { buildingsOf } = await import("./district-plots.mjs");
-  // the shape the city screen ships
+  // the shape the city screen ships — a house also carries its owning household's surname
+  assert.deepEqual(buildingsOf({ buildings: [
+    { id: "BUILDING_HOUSING_BARK_HUTS", owner: "HOUSEHOLD", ownerName: "Giurovici" }] }),
+    [{ id: "BUILDING_HOUSING_BARK_HUTS", owner: "HOUSEHOLD", ownerName: "Giurovici" }]);
+  // a building with no household behind it — ownerName defaults to null
   assert.deepEqual(buildingsOf({ buildings: [{ id: "BUILDING_CASTLE", owner: "RULER" }] }),
-    [{ id: "BUILDING_CASTLE", owner: "RULER" }]);
+    [{ id: "BUILDING_CASTLE", owner: "RULER", ownerName: null }]);
   // the shape an older server (a deploy behind the static site) still sends: bare id strings
   assert.deepEqual(buildingsOf({ buildings: ["BUILDING_CASTLE"] }),
-    [{ id: "BUILDING_CASTLE", owner: "NONE" }]);
+    [{ id: "BUILDING_CASTLE", owner: "NONE", ownerName: null }]);
   // and the empty cases nobody should have to guard at the call site
   assert.deepEqual(buildingsOf({}), []);
   assert.deepEqual(buildingsOf(null), []);

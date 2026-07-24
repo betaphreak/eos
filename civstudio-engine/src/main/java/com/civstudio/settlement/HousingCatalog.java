@@ -118,6 +118,36 @@ public final class HousingCatalog {
 	}
 
 	/**
+	 * The next housing rung <b>up</b> — the cheapest available (buildable, prereq-known,
+	 * non-obsolete) rung whose effective cost is strictly greater than {@code cost}, the
+	 * id as the deterministic tie-break. The household <b>upgrade</b> target (B5): a housed
+	 * household climbs one rung at a time toward {@link #bestAvailable}. {@code null} when
+	 * nothing available is dearer than {@code cost} (the household is at the top of the
+	 * ladder, and its hammers donate instead).
+	 *
+	 * @param cost       the household's current house cost (0 when it has none)
+	 * @param knownTechs the colony's known tech ids, never null
+	 * @return the cheapest available rung dearer than {@code cost}, or {@code null}
+	 */
+	public HousingBuilding cheapestAbove(double cost, java.util.Set<String> knownTechs) {
+		HousingBuilding best = null;
+		for (HousingBuilding h : all) {
+			if (!h.buildable() || h.prereqTech() == null
+					|| !knownTechs.contains(h.prereqTech()))
+				continue;
+			if (h.obsoleteTech() != null && knownTechs.contains(h.obsoleteTech()))
+				continue;
+			if (h.effectiveCost() <= cost)
+				continue;
+			if (best == null || h.effectiveCost() < best.effectiveCost()
+					|| (h.effectiveCost().equals(best.effectiveCost())
+							&& h.type().compareTo(best.type()) < 0))
+				best = h;
+		}
+		return best;
+	}
+
+	/**
 	 * Whether a placed housing building still counts as <b>current</b> — its rung not
 	 * obsoleted by a researched tech. An obsolete-housed household stays sheltered but
 	 * the wedding/fission gate re-applies until it builds current housing (the

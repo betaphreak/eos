@@ -32,25 +32,31 @@ public record DistrictView(int index, int x, int y, List<PlacedBuilding> buildin
 	 * One finished building on the plot, as a bare eos-native id (the verbatim C2C
 	 * {@code BUILDING_*}) plus <b>whose</b> it is.
 	 *
-	 * @param id    the building's catalog id
-	 * @param owner who raised it: {@code RULER}, {@code NOBLE}, {@code HOUSEHOLD}, or
-	 *              {@code NONE} for an unowned building (orphaned by its owner's death, or
-	 *              inherited ground from an earlier colony — see {@link
-	 *              com.civstudio.settlement.Building})
+	 * @param id        the building's catalog id
+	 * @param owner     who raised it: {@code RULER}, {@code NOBLE}, {@code HOUSEHOLD}, or
+	 *                  {@code NONE} for an unowned building (orphaned by its owner's death, or
+	 *                  inherited ground from an earlier colony — see {@link
+	 *                  com.civstudio.settlement.Building})
+	 * @param ownerName the owning household's surname, so a house can be named for the
+	 *                  family that raised it; {@code null} for an unowned building or one
+	 *                  whose owner has no dynasty
 	 */
-	public record PlacedBuilding(String id, String owner) {
+	public record PlacedBuilding(String id, String owner, String ownerName) {
 	}
 
 	/**
 	 * One construction in flight on the plot — the state that makes a colony's building
 	 * visible <em>while</em> it happens rather than only when it completes.
 	 *
-	 * @param id       the catalog id being raised
-	 * @param cost     the work it needs in total (hammers, or builder build-units for a
-	 *                 commission)
-	 * @param progress the work paid in so far — {@code progress/cost} is the bar
-	 * @param owner    who is raising it: {@code RULER}, {@code NOBLE}, {@code HOUSEHOLD}
+	 * @param id        the catalog id being raised
+	 * @param cost      the work it needs in total (hammers, or builder build-units for a
+	 *                  commission)
+	 * @param progress  the work paid in so far — {@code progress/cost} is the bar
+	 * @param owner     who is raising it: {@code RULER}, {@code NOBLE}, {@code HOUSEHOLD}
+	 * @param ownerName the raising household's surname (so a rising house can be named for
+	 *                  its family), or {@code null} where there is no dynasty behind it
 	 */
-	public record Underway(String id, double cost, double progress, String owner) {
+	public record Underway(String id, double cost, double progress, String owner,
+			String ownerName) {
 	}
 }

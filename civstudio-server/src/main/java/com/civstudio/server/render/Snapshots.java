@@ -180,12 +180,14 @@ public final class Snapshots {
 		// map lookup rather than a scan of every household
 		java.util.Map<Plot, List<DistrictView.Underway>> underway = underwayByPlot(c, plots.get(0));
 		java.util.Map<Integer, String> owners = ownerKinds(c);
+		java.util.Map<Integer, String> ownerNames = ownerSurnames(c);
 		List<DistrictView> views = new ArrayList<>();
 		for (int i = 0; i < plots.size(); i++) {
 			Plot p = plots.get(i);
 			List<DistrictView.PlacedBuilding> buildings = p.buildings().stream()
 					.map(b -> new DistrictView.PlacedBuilding(b.id(),
-							owners.getOrDefault(b.ownerId(), "NONE")))
+							owners.getOrDefault(b.ownerId(), "NONE"),
+							ownerNames.get(b.ownerId())))
 					.toList();
 			views.add(new DistrictView(i, p.x(), p.y(), buildings,
 					underway.getOrDefault(p, List.of())));
@@ -204,15 +206,16 @@ public final class Snapshots {
 			byPlot.computeIfAbsent(center, k -> new ArrayList<>())
 					.add(new DistrictView.Underway(economy.getActiveBuildId(),
 							economy.getActiveCost(),
-							economy.getActiveCost() - economy.getActiveRemaining(), "RULER"));
+							economy.getActiveCost() - economy.getActiveRemaining(), "RULER", null));
 		for (Agent a : c.getAgents()) {
 			if (!a.isAlive() || !(a instanceof com.civstudio.agent.laborer.Laborer l))
 				continue;
 			Plot home = l.getHomePlot();
 			if (home == null)
 				continue;
-			addProject(byPlot, home, l.getHousingProject(), "HOUSEHOLD");
-			addProject(byPlot, home, l.getOwnBuildingProject(), "HOUSEHOLD");
+			String surname = l.getHead() == null ? null : l.getHead().surname();
+			addProject(byPlot, home, l.getHousingProject(), "HOUSEHOLD", surname);
+			addProject(byPlot, home, l.getUpgradeProject(), "HOUSEHOLD", surname);
 		}
 		// the builder's queue: only its BUILDING legs (elite housing commissions) are a
 		// construction on a standing plot — a clearance task is a plot that does not exist yet
@@ -220,20 +223,24 @@ public final class Snapshots {
 			if (!p.isBuildingCommission())
 				continue;
 			var owner = p.getBuildingOwner();
+			String ownerName = owner instanceof com.civstudio.agent.AbstractHousehold h
+					&& h.getHead() != null ? h.getHead().surname() : null;
 			byPlot.computeIfAbsent(p.getPlot(), k -> new ArrayList<>())
 					.add(new DistrictView.Underway(p.getBuildingId(), p.getWorkTotal(),
 							p.getWorkTotal() - p.getWorkRemaining(),
-							owner instanceof com.civstudio.agent.ruler.Ruler ? "RULER" : "NOBLE"));
+							owner instanceof com.civstudio.agent.ruler.Ruler ? "RULER" : "NOBLE",
+							ownerName));
 		}
 		return byPlot;
 	}
 
 	private static void addProject(java.util.Map<Plot, List<DistrictView.Underway>> byPlot,
-			Plot plot, com.civstudio.agent.laborer.Laborer.HomeProject project, String owner) {
+			Plot plot, com.civstudio.agent.laborer.Laborer.HomeProject project, String owner,
+			String ownerName) {
 		if (project == null || project.cost() <= 0)
 			return;
 		byPlot.computeIfAbsent(plot, k -> new ArrayList<>()).add(new DistrictView.Underway(
-				project.id(), project.cost(), project.progress(), owner));
+				project.id(), project.cost(), project.progress(), owner, ownerName));
 	}
 
 	// agent id -> the coarse owner class the client renders (the id itself is meaningless to a
@@ -248,6 +255,17 @@ public final class Snapshots {
 				kinds.put(a.getID(), a instanceof com.civstudio.agent.ruler.Ruler ? "RULER"
 						: a instanceof com.civstudio.agent.noble.Noble ? "NOBLE" : "HOUSEHOLD");
 		return kinds;
+	}
+
+	// agent id -> the owning household's surname, so a house can be named for the family that
+	// raised it. Same shape and reasoning as ownerKinds (built once, absent id reads as unnamed);
+	// the head can be null on a freshly emptied household, which reads as no name.
+	private static java.util.Map<Integer, String> ownerSurnames(Settlement c) {
+		java.util.Map<Integer, String> names = new java.util.HashMap<>();
+		for (Agent a : c.getAgents())
+			if (a instanceof com.civstudio.agent.AbstractHousehold h && h.getHead() != null)
+				names.put(a.getID(), h.getHead().surname());
+		return names;
 	}
 
 	// the crown's build queue (B4/B6): the active item + progress + the player's pending

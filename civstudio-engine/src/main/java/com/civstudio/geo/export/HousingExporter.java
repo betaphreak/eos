@@ -43,8 +43,9 @@ public final class HousingExporter {
 	/**
 	 * The <b>hand-priced default build costs</b> (docs/build-queue-plan.md B2): under the
 	 * build economy households hammer-build their housing, but C2C auto-grants it and so
-	 * ships no {@code iCost} — these are eos-authored, in C2C-hammer-like units (the B4
-	 * {@code BUILD_COST_SCALE} maps them to hammer-days). Roughly a ladder by prereq-tech
+	 * ships no {@code iCost} — these are eos-authored, in C2C-hammer-like units. Housing is
+	 * built at this raw cost (1x); only the crown's regular buildings carry {@code
+	 * BUILD_COST_SCALE} (user ruling 2026-07-24). Roughly a ladder by prereq-tech
 	 * era, with the class variants (hovel &lt; insula &lt; domus &lt; villa &lt; palace)
 	 * priced apart. Studio's {@code authoredCost} overrides these per rung; a rung absent
 	 * here (the {@code HOMELESS} marker, the past-horizon rungs) has no cost and is

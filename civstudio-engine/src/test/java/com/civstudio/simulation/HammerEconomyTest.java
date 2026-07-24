@@ -70,7 +70,10 @@ class HammerEconomyTest {
 
 		// B3: the housing wave fired — the homeless-and-fed rule sends unhoused landed
 		// households home to build, so after a settled year some completed their house
-		// (adoption of orphaned houses counts too) and pass the wedding/fission gate
+		// (adoption of orphaned houses counts too) and pass the wedding/fission gate.
+		// Housing builds at raw 1x cost (only the crown's REGULAR buildings carry the 5x
+		// BUILD_COST_SCALE — user ruling 2026-07-24), so the founding wave still completes
+		// in ~5-6 months and the wage economy is not starved.
 		int landed = 0, housed = 0;
 		for (Agent a : c.getAgents())
 			if (a.isAlive() && a instanceof com.civstudio.agent.laborer.Laborer l
@@ -80,9 +83,7 @@ class HammerEconomyTest {
 					housed++;
 			}
 		assertTrue(landed > 0, "the settled colony has landed households");
-		// the calibrated acceptance bar (2026-07-23 measurement: with the HAMMER_FLOOR the
-		// founding wave completes in ~5-6 months): after a settled year the MAJORITY of
-		// landed households are housed — not merely some
+		// after a settled year the MAJORITY of landed households are housed — not merely some
 		assertTrue(housed * 2 > landed, "the housing wave housed a majority: " + housed
 				+ "/" + landed + " landed households");
 
@@ -93,13 +94,12 @@ class HammerEconomyTest {
 				"the unhoused elite commissioned housing from the BuilderFirm ("
 						+ be.getEliteCommissions() + " commissions)");
 
-		// B4/B5: housed households' surplus hammers build their OWN regulars first (the
-		// 2-per-owner-per-plot limit; housing + emergent families exempt), then donate
-		// into the ruler's center queue — at least one of the two paths must be live
-		// after a settled year (which fires first depends on how fast the housing wave
-		// completes; both are pace-calibration)
-		assertTrue(be.getHouseholdBuilt() > 0 || be.getRulerQueued() > 0,
-				"hammers flowed past housing: household regulars=" + be.getHouseholdBuilt()
+		// B5: housed households build ONLY housing now (user ruling 2026-07-24) — surplus
+		// hammers climb the housing ladder (upgrades), and once atop it donate into the
+		// crown's center queue (which builds its regular buildings at the 5x scale). At
+		// least one of the two paths must be live after a settled year.
+		assertTrue(be.getHousingUpgrades() > 0 || be.getRulerQueued() > 0,
+				"hammers flowed past the first house: housing upgrades=" + be.getHousingUpgrades()
 						+ ", ruler queued=" + be.getRulerQueued());
 	}
 }

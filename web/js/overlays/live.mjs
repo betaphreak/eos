@@ -608,12 +608,22 @@ async function postChat(text) {
 // flagged ★ advised. Candidates arrive as bare ids; name/cost/icon join the /api/buildings
 // bundle (the same one the tech tree + districts read), falling back to a prettified id.
 let bcPick = null;               // the live picker controller (its click order = queue order)
+let bcSubmitted = false;         // a decree is in flight — see syncBuildChoice
 
 function syncBuildChoice(s) {
   const el = document.getElementById("buildchoice");
   if (!el) return;
-  if (!s.awaitingBuildChoice || s.clockState === "STOPPED") { el.hidden = true; return; }
+  if (!s.awaitingBuildChoice || s.clockState === "STOPPED") {
+    el.hidden = true;
+    bcSubmitted = false;   // the server cleared the await — the next one is a real, new prompt
+    return;
+  }
   if (!el.hidden) return; // already open — keep the player's in-progress picks
+  // a decree we already submitted is still applying server-side: the queue_build command takes a
+  // tick to land, so the snapshot keeps reporting awaitingBuildChoice for a frame or two. Without
+  // this guard the just-closed modal reopens on that stale snapshot (the "shows up twice" bug),
+  // then vanishes once the decree lands. Hold it closed until the await genuinely clears above.
+  if (bcSubmitted) return;
 
   const colony = s.colonies && s.colonies[0] && s.colonies[0].name;
   const kicker = document.getElementById("bcKicker");
@@ -624,11 +634,15 @@ function syncBuildChoice(s) {
   submit.disabled = true;
   bcPick = renderPicker(document.getElementById("bcList"), s.buildCandidates || [],
     { onChange: picked => { submit.disabled = picked.length === 0; } });
-  submit.onclick = () => {
+  submit.onclick = async () => {
     const items = bcPick.picked();
     if (!items.length) return;
     el.hidden = true;
-    postCommand({ type: "queueBuild", colony, items });
+    bcSubmitted = true;
+    // if the command is refused (not the owner, session gone), let the prompt come back so the
+    // player can retry rather than being stuck behind a hidden-but-still-awaiting modal
+    const ok = await postCommand({ type: "queueBuild", colony, items });
+    if (!ok) bcSubmitted = false;
   };
   el.hidden = false;
 }

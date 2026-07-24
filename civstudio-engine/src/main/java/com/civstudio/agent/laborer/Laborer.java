@@ -143,9 +143,9 @@ public class Laborer extends AbstractHousehold {
 
 	/**
 	 * A construction this household is paying its own plot hammers into — its house
-	 * (the {@code BUILDING_HOUSING_*} rung it is raising) or, once housed, its own
-	 * regular building (B5). The read side of the two self-build slots: what is rising
-	 * on this household's home plot, and how far along.
+	 * (the {@code BUILDING_HOUSING_*} rung it is raising) or, once housed, the next
+	 * housing rung up it is upgrading to (B5). The read side of the two self-build slots:
+	 * what is rising on this household's home plot, and how far along.
 	 *
 	 * @param id       the catalog id being built
 	 * @param cost     the hammers the building needs in total
@@ -166,14 +166,14 @@ public class Laborer extends AbstractHousehold {
 	}
 
 	/**
-	 * The regular building this (housed) household is raising on its home plot with its
-	 * own hammers (B5), or {@code null} when it is building none.
+	 * The housing rung this (housed) household is upgrading to on its home plot with its
+	 * own hammers (B5), or {@code null} when it is building none (at the top of the ladder).
 	 *
-	 * @return the own-building project, or {@code null}
+	 * @return the housing-upgrade project, or {@code null}
 	 */
-	public HomeProject getOwnBuildingProject() {
-		return targetBuildingId == null ? null
-				: new HomeProject(targetBuildingId, targetBuildingCost, buildingProgress);
+	public HomeProject getUpgradeProject() {
+		return targetUpgradeId == null ? null
+				: new HomeProject(targetUpgradeId, targetUpgradeCost, upgradeProgress);
 	}
 
 	// larder days of food required for a homeless household to stay home and build
@@ -653,17 +653,21 @@ public class Laborer extends AbstractHousehold {
 	public double applyHammersToProject(double hammers, BuildEconomy buildEconomy) {
 		if (hammers <= 0)
 			return hammers;
-		// housed: build up to two of the household's OWN regular buildings on its plot
-		// (B5 — the 2-per-owner-per-plot limit counts only deliberate costed regulars;
-		// housing and the emergent families are exempt), then donate
+		// housed: households build ONLY housing (user ruling 2026-07-24) — surplus hammers
+		// climb the housing ladder (upgrade to the next rung up) rather than raising
+		// arbitrary regular buildings; at the top of the ladder the hammers donate
 		if (housedForGate())
-			return buildOwnBuilding(hammers, buildEconomy);
+			return upgradeHousing(hammers, buildEconomy);
 		// (re)target the cheapest available rung; no rung buildable yet → all donate
 		if (targetRungId == null) {
 			var rung = buildEconomy.cheapestAvailableHousing();
 			if (rung == null)
 				return hammers;
 			targetRungId = rung.type();
+			// housing builds at its raw catalog cost (1x) — only the crown's REGULAR buildings
+			// carry the BUILD_COST_SCALE slowdown (user ruling 2026-07-24); keeping housing fast
+			// keeps the founding wave healthy so unhoused households do not sit home-building for
+			// years and starve the wage economy
 			targetRungCost = rung.effectiveCost();
 		}
 		houseProgress += hammers;
@@ -685,34 +689,43 @@ public class Laborer extends AbstractHousehold {
 		return overflow;
 	}
 
-	// the own-building slot (B5): pay hammers toward the household's next regular
-	// building (picked by the shared brain, at most 2 per owner per plot); completion
-	// raises it owned on the home plot; at the limit / nothing buildable → donate
-	private String targetBuildingId;
-	private double targetBuildingCost;
-	private double buildingProgress;
+	// the housing-upgrade slot (B5): once housed, a household pours its own plot hammers
+	// into the NEXT housing rung up, climbing the ladder toward the best available housing
+	// (households build ONLY housing — user ruling 2026-07-24); completion retires the old
+	// house and raises the better one owned on the home plot; at the top → donate
+	private String targetUpgradeId;
+	private double targetUpgradeCost;
+	private double upgradeProgress;
 
-	private double buildOwnBuilding(double hammers, BuildEconomy buildEconomy) {
-		if (targetBuildingId == null) {
-			var pick = buildEconomy.pickHouseholdBuilding(this);
-			if (pick == null)
-				return hammers; // at the limit or nothing qualifies — donate
-			targetBuildingId = pick.id();
-			targetBuildingCost = pick.effectiveCost() * BuildEconomy.BUILD_COST_SCALE;
+	private double upgradeHousing(double hammers, BuildEconomy buildEconomy) {
+		if (targetUpgradeId == null) {
+			var next = buildEconomy.nextHousingUpgrade(house);
+			if (next == null)
+				return hammers; // already at the best available rung — donate
+			targetUpgradeId = next.type();
+			// housing (base and upgrade) builds at raw catalog cost (1x); only the crown's
+			// regular buildings carry BUILD_COST_SCALE (user ruling 2026-07-24)
+			targetUpgradeCost = next.effectiveCost();
 		}
-		buildingProgress += hammers;
-		if (buildingProgress < targetBuildingCost)
+		upgradeProgress += hammers;
+		if (upgradeProgress < targetUpgradeCost)
 			return 0;
-		double overflow = buildingProgress - targetBuildingCost;
-		homePlot.addBuilding(new com.civstudio.settlement.Building(targetBuildingId, getID()));
-		buildEconomy.noteHouseholdBuilt();
+		double overflow = upgradeProgress - targetUpgradeCost;
+		// the family moves up: retire the house it replaces, raise the better rung
+		if (house != null && houseOnPlot != null)
+			houseOnPlot.removeBuilding(house);
+		var built = new com.civstudio.settlement.Building(targetUpgradeId, getID());
+		homePlot.addBuilding(built);
+		buildEconomy.noteHousingUpgrade();
 		SimLog.event(Rank.HOUSEHOLD, Level.FINE, String.format(
-				"the %s household raised a %s on its plot",
+				"the %s household upgraded to a %s on its home plot",
 				getHead().surname(),
-				com.civstudio.settlement.BuildingCatalog.displayName(targetBuildingId)));
-		targetBuildingId = null;
-		targetBuildingCost = 0;
-		buildingProgress = 0;
+				com.civstudio.settlement.BuildingCatalog.displayName(targetUpgradeId)));
+		house = built;
+		houseOnPlot = homePlot;
+		targetUpgradeId = null;
+		targetUpgradeCost = 0;
+		upgradeProgress = 0;
 		return overflow;
 	}
 

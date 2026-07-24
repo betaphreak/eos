@@ -121,14 +121,14 @@ function plotRow(colony, d, i) {
     .filter(Boolean).join(" · ") : `${d.x}, ${d.y}`;
   const center = i === 0 ? `<span class="city-badge">City center</span>` : "";
   const built = buildingsOf(d).map(b =>
-    `<span class="city-b own-${b.owner}" title="${escHtml(buildingName(b.id))} · ${ownerWord(b.owner)}">${escHtml(buildingName(b.id))}</span>`).join("");
+    `<span class="city-b own-${b.owner}" title="${escHtml(buildingName(b.id))} · ${houseWho(b)}">${escHtml(houseName(b))}</span>`).join("");
   const rising = (d.underway || []).map(u => {
     const pct = u.cost > 0 ? Math.round(100 * Math.min(1, u.progress / u.cost)) : 0;
     return `<div class="city-rising own-${u.owner}">
-      <span class="city-r-name">⚒ ${escHtml(buildingName(u.id))}</span>
+      <span class="city-r-name">⚒ ${escHtml(houseName(u))}</span>
       <span class="city-r-bar"><span style="width:${pct}%"></span></span>
       <span class="city-r-pct">${pct}%</span>
-      <span class="city-r-who">${ownerWord(u.owner)}</span>
+      <span class="city-r-who">${houseWho(u)}</span>
     </div>`;
   }).join("");
   const bare = !built && !rising ? `<div class="city-bare">worked ground</div>` : "";
@@ -142,6 +142,17 @@ function plotRow(colony, d, i) {
 
 const ownerWord = o => ({ RULER: "the crown", NOBLE: "a noble house", HOUSEHOLD: "a household" })[o]
   || "unowned";
+
+// housing is named for the family that raised it: the chip reads "the <surname> House"; the rung
+// itself (e.g. Bark Huts) rides the tooltip / owner line. Any other building keeps its catalog name.
+const isHousing = id => typeof id === "string" && id.startsWith("BUILDING_HOUSING_");
+// a house is named for the family that raised it AND the rung it is: "Aldresult Palace",
+// "Giurovici Bark Huts". Any other building keeps its plain catalog name.
+// houseName is raw (the call site escapes it); houseWho returns display-ready HTML (call site does not)
+const houseName = b => b.ownerName && isHousing(b.id)
+  ? `${b.ownerName} ${buildingName(b.id)}` : buildingName(b.id);
+const houseWho = b => b.ownerName && isHousing(b.id)
+  ? `the ${escHtml(b.ownerName)} household` : ownerWord(b.owner);
 
 function renderQueue(colony) {
   const q = colony.queue || {};

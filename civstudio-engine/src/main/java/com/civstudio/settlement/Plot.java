@@ -617,4 +617,15 @@ public final class Plot {
 			throw new IllegalArgumentException("building must be non-null");
 		buildings.add(building);
 	}
+
+	/**
+	 * Remove a center building from this plot — the housing-upgrade seam: a household that
+	 * climbs to a better rung retires the house it replaces (docs/build-queue-plan.md B5).
+	 * A no-op if the building is not on this plot.
+	 *
+	 * @param building the building to remove
+	 */
+	public void removeBuilding(Building building) {
+		buildings.remove(building);
+	}
 }

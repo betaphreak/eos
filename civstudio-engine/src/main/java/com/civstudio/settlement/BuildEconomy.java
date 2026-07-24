@@ -211,10 +211,15 @@ public class BuildEconomy {
 	// --- the ruler's center build queue (B4, docs/build-queue-plan.md) ----------------
 
 	/**
-	 * Maps a building's catalog cost ({@code iCost}-scale) to donated hammers required.
-	 * UNCALIBRATED (the hammer printer instruments the pace).
+	 * Maps a <b>regular</b> building's catalog cost ({@code iCost}-scale) to donated hammers
+	 * required. UNCALIBRATED (the hammer printer instruments the pace). Deliberately slow: at
+	 * {@code 5.0} a regular building costs five times its catalog hammers, so the crown's
+	 * construction reads as the multi-season undertaking it is rather than completing in days.
+	 * <b>Housing is exempt</b> — the household housing ladder (base house and upgrades) builds
+	 * at raw 1x cost, so the founding wave stays fast and the wage economy is not starved by
+	 * households sitting home-building for years (user ruling 2026-07-24).
 	 */
-	public static final double BUILD_COST_SCALE = 1.0;
+	public static final double BUILD_COST_SCALE = 5.0;
 
 	// the active item: catalog id + hammers still owed; null id = queue idle (the brain
 	// picks on the next donation). Donated hammers with no active item evaporate
@@ -454,57 +459,18 @@ public class BuildEconomy {
 		donatedToday = 0;
 	}
 
-	/**
-	 * The <b>household building brain</b> (B5): the best regular building for a housed
-	 * household's own plot — same scoring as the ruler's brain, on the home plot, under
-	 * per-plot uniqueness and the <b>2-regulars-per-owner-per-plot</b> limit. The limit
-	 * counts only deliberate, costed regular constructions (user ruling 2026-07-23):
-	 * housing and the emergent families (autobuild vernacular, costless state/property
-	 * buildings) are exempt and stack freely — nobody *chose* to build them.
-	 * {@code null} when at the limit or nothing qualifies (hammers then donate).
-	 */
-	public BuildingInfo pickHouseholdBuilding(Laborer laborer) {
-		Plot plot = laborer.getHomePlot();
-		if (plot == null)
-			return null;
-		int ownedRegulars = 0;
-		for (Building b : plot.buildings())
-			if (b.ownerId() != null && b.ownerId() == laborer.getID() && !b.isHousing())
-				ownedRegulars++;
-		if (ownedRegulars >= 2)
-			return null;
-		var known = knownTechs();
-		BuildingInfo best = null;
-		double bestScore = 0;
-		for (BuildingInfo b : BuildingCatalog.get().all()) {
-			if (!b.buildable() || Boolean.TRUE.equals(b.autoBuild()) || b.kind() != null)
-				continue;
-			if (b.prereqTech() == null || !known.contains(b.prereqTech()))
-				continue;
-			if (b.obsoleteTech() != null && known.contains(b.obsoleteTech()))
-				continue;
-			if (plot.hasBuilding(b.id()))
-				continue;
-			double score = (1 + b.flavorSum()) * 100.0 / (b.effectiveCost() + 3);
-			if (best == null || score > bestScore
-					|| (score == bestScore && b.id().compareTo(best.id()) < 0)) {
-				best = b;
-				bestScore = score;
-			}
-		}
-		return best;
+	// cumulative household housing upgrades completed (instrumentation, B5). Households
+	// build ONLY housing (user ruling 2026-07-24): once housed, surplus hammers climb the
+	// housing ladder rather than raising arbitrary regular buildings.
+	private int housingUpgrades;
+
+	public void noteHousingUpgrade() {
+		housingUpgrades++;
 	}
 
-	// cumulative household regular buildings completed (instrumentation, B5)
-	private int householdBuilt;
-
-	public void noteHouseholdBuilt() {
-		householdBuilt++;
-	}
-
-	/** Completed household-owned regular buildings since founding (B5). */
-	public int getHouseholdBuilt() {
-		return householdBuilt;
+	/** Completed household housing upgrades since founding (B5). */
+	public int getHousingUpgrades() {
+		return housingUpgrades;
 	}
 
 	/** Buildings the ruler's queue has started / completed since founding (B4). */
@@ -569,6 +535,26 @@ public class BuildEconomy {
 	 */
 	public HousingBuilding cheapestAvailableHousing() {
 		return HousingCatalog.get().cheapestAvailable(knownTechs());
+	}
+
+	/**
+	 * The next housing rung <b>up</b> from a household's current house — the household
+	 * upgrade target (B5): once housed, a household builds only housing, climbing one rung
+	 * at a time toward the best available. The cheapest available rung dearer than the
+	 * current house (or the cheapest available outright when it has none, or an unknown
+	 * rung); {@code null} at the top of the ladder.
+	 *
+	 * @param house the household's current house, or {@code null}
+	 * @return the next rung up, or {@code null} when already at the best available
+	 */
+	public HousingBuilding nextHousingUpgrade(Building house) {
+		double currentCost = 0;
+		if (house != null) {
+			var cur = HousingCatalog.get().byType(house.id());
+			if (cur != null)
+				currentCost = cur.effectiveCost();
+		}
+		return HousingCatalog.get().cheapestAbove(currentCost, knownTechs());
 	}
 
 	// --- instrumentation (the B1 hammer printer + the calibration tests) --------------

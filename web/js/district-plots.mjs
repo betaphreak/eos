@@ -22,14 +22,16 @@ export function nearestPlots(plots, n, cx, cy, sx, sy) {
 export const plotKey = (x, y) => `${x},${y}`;
 
 /**
- * One district's finished buildings as `{id, owner}`, whichever shape the server sent. Before the
- * city screen the feed carried bare id STRINGS with no owner; the static site can be a deploy ahead
- * of the server, and a client that assumes the new shape renders a row of `undefined` at exactly
- * the moment someone is looking at a freshly-deployed page.
+ * One district's finished buildings as `{id, owner, ownerName}`, whichever shape the server sent.
+ * Before the city screen the feed carried bare id STRINGS with no owner; the static site can be a
+ * deploy ahead of the server, and a client that assumes the new shape renders a row of `undefined`
+ * at exactly the moment someone is looking at a freshly-deployed page. `ownerName` (the owning
+ * household's surname, so a house can be named for its family) is likewise absent on an older feed.
  */
 export function buildingsOf(district) {
   return ((district && district.buildings) || []).map(b =>
-    typeof b === "string" ? { id: b, owner: "NONE" } : { id: b.id, owner: b.owner || "NONE" });
+    typeof b === "string" ? { id: b, owner: "NONE", ownerName: null }
+      : { id: b.id, owner: b.owner || "NONE", ownerName: b.ownerName || null });
 }
 
 /**
