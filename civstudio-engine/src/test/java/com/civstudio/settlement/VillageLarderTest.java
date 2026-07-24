@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -42,18 +43,17 @@ class VillageLarderTest {
 	}
 
 	@Test
-	void larderStocksAndDrawsAsAProvisionedPool() {
+	void larderStocksAndReportsAsAPool() {
 		Larder l = new Larder();
 		assertEquals(0, l.available());
 		l.stock(10);
 		assertEquals(10, l.available(), 1e-9);
-		assertEquals(4, l.draw(4), 1e-9, "draws what is asked when the larder can cover it");
-		assertEquals(6, l.available(), 1e-9);
-		// provisioned: a short larder gives everything it has and no more (the caller starves the rest)
-		assertEquals(6, l.draw(100), 1e-9);
-		assertEquals(0, l.available(), 1e-9);
+		// the eating path touches the pool through good() — increase() is the home-plot drop, decrease()
+		// the ration draw — and available() reflects it
+		l.good().decrease(4);
+		assertEquals(6, l.available(), 1e-9, "available() reflects the pool the households eat from");
 		l.stock(-5); // a non-positive stock is a no-op (never goes negative)
-		assertEquals(0, l.available(), 1e-9);
+		assertEquals(6, l.available(), 1e-9);
 	}
 
 	@Test
@@ -79,9 +79,36 @@ class VillageLarderTest {
 			assertNotNull(larder, "a larder is created for each hamlet seat");
 			assertSame(larder, larders.larderFor(ham.seat()), "one larder per hamlet seat (reused)");
 			assertSame(larder, larders.larderIfPresent(ham.seat()), "the created larder is the present one");
+			// the larder now carries real food (pre-stock + provisioning + eating, slice 2b), so assert
+			// the SAME pool is served on every lookup by a delta rather than an absolute
+			double before = larder.available();
 			larder.stock(5);
-			assertEquals(5, larders.larderIfPresent(ham.seat()).available(), 1e-9,
+			assertEquals(before + 5, larders.larderIfPresent(ham.seat()).available(), 1e-9,
 					"the same pool is served on every lookup");
 		}
+	}
+
+	// THE survival test (slice 2b): the provisioned floor must actually feed the city. A flag-on
+	// colony — where peasants eat from their village larder (not their own market purchases) and the
+	// leaders import the deficit — must survive a multi-year run with its villages fed, not starve
+	// itself the day food stopped being individually bought.
+	@Test
+	void aProvisionedColonySurvivesAndFeedsItsVillages() {
+		SimulationConfig cfg = SimulationConfig.DEFAULT.toBuilder().villageLarder(true).build();
+		Settlement colony = foundColony(cfg);
+		colony.run(3 * 365); // three years
+
+		assertTrue(colony.isAlive(), "the provisioned colony survives a multi-year run");
+		assertFalse(colony.hamlets().isEmpty(), "it still holds peopled villages");
+
+		// the villages' larders hold food — the provisioned floor is fed, not empty
+		VillageLarders larders = colony.getVillageLarders();
+		double totalFood = 0;
+		for (Hamlet ham : colony.hamlets()) {
+			Larder l = larders.larderIfPresent(ham.seat());
+			if (l != null)
+				totalFood += l.available();
+		}
+		assertTrue(totalFood > 0, "the villages' larders hold food after three years");
 	}
 }

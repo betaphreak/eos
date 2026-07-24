@@ -40,22 +40,11 @@ public final class Larder {
 	}
 
 	/**
-	 * Draw up to {@code want} food from the larder, returning what was actually available to give —
-	 * a provisioned draw, so a short larder feeds what it can and the caller starves the remainder.
-	 *
-	 * @param want the food requested
-	 * @return the food drawn (the smaller of {@code want} and what was available)
-	 */
-	public double draw(double want) {
-		double got = Math.min(Math.max(0, want), food.getQuantity());
-		food.decrease(got);
-		return got;
-	}
-
-	/**
-	 * The underlying {@link Necessity} good — the seam the market delivers a purchased import into
-	 * (the leader's buy offer targets this when the village imports its deficit; V2 slice 2).
-	 * Package-visible: only the settlement's food machinery reaches it.
+	 * The underlying {@link Necessity} good — the single seam every food flow touches: the market
+	 * delivers a purchased import into it (the leader's buy offer targets it when the village imports
+	 * its deficit), and a provisioned household eats from it directly ({@code increase} is the
+	 * home-plot drop, {@code decrease} the ration draw). Package-visible: only the settlement's food
+	 * machinery reaches it.
 	 *
 	 * @return the larder's Necessity pool
 	 */

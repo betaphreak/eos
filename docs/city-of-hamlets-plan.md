@@ -179,12 +179,20 @@ A **Village** exists at one of two scopes:
     delegates with `deliverTo = null`); byte-identical. This is the mechanism that lets a leader fund
     its village's imports without a new agent or a post-clear split — a `Noble` eats from its own
     necessity, so its `getGood` can't be the larder.
-  - *Slice 2b (next)* — **provisioned eating + leader-funded imports**: peasant households eat from
-    their hamlet larder (the eat → starve → child-granary-relief priority at larder scope, provisioned
-    regardless of pay), the larder filled by home-plot subsistence + the **leader** posting a deficit
-    buy offer (via the 2a seam) to the shared market. Households stop posting individual necessity
-    demand. This rewires `Laborer.act()`'s eating loop — the project's most survival-critical code — so
-    it lands behind a dedicated survival test.
+  - *Slice 2b ✅ SHIPPED* — **provisioned eating + leader-funded imports**. `Laborer.act()` routes its
+    eating through a `foodStock()` seam — the hamlet's shared `Larder` when the household is
+    provisioned (its home plot is a `Settlement.isHamletSeat`), else its own necessity — so the whole
+    eat → starve → child-granary-relief priority and births run at larder scope unchanged; a
+    provisioned peasant drops its home-plot food into the larder and posts **no** necessity demand (its
+    wage flows to enjoyment + dues + savings). Each village's leader tops the larder to a `FLOOR_DAYS`
+    floor by posting a **purse-capped** deficit buy (via the 2a seam) in `VillageLarders.provision()`,
+    after the day's eating and before the market clears; a poor lord under-provisions rather than
+    borrowing without bound. Larders are pre-stocked with a founding buffer so day 1 is fed.
+    **`VillageLarderTest.aProvisionedColonySurvivesAndFeedsItsVillages`** asserts a flag-on colony
+    survives three years with fed larders; the full suite (470) stays byte-identical flag-off. Ran the
+    4-angle simplify pass on the diff (single `provisioned()` eval via a `foodStock(boolean)` overload,
+    shared `isHamletSeat` predicate, reuse `Settlement.getHouseholdById`, dropped the dead
+    `Larder.draw()`).
   - *Slice 3* — per-hamlet **births / immigration / dues** in the fan-out.
 - **V3 — leader-owned NFirms + surplus.** The village's **Necessity firm(s) are owned by its leader**
   (the fief-holder noble, or the crown for a demesne village) and hire the village's peasants; the

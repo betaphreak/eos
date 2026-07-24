@@ -403,8 +403,13 @@ public class Laborer extends AbstractHousehold {
 		// as before, so this is byte-identical when no plot is assigned. This is the
 		// settled analogue of the camp's forage (a generalization of campForageYield); see
 		// docs/plot-working-plan.md P1.
+		// the food this household eats from — its hamlet's shared village larder when provisioned
+		// (city-of-hamlets V2), else its own necessity stock (byte-identical when off / landless)
+		boolean provisioned = provisioned();
+		Good foodStock = foodStock(provisioned);
+
 		if (homePlot != null)
-			necessity.increase(getColony().homePlotFoodYield(homePlot));
+			foodStock.increase(getColony().homePlotFoodYield(homePlot));
 
 		// the household eats per member, in priority order (head, then other adults,
 		// then children): an adult eats the FINE worker ration, a child the SNACK
@@ -417,7 +422,7 @@ public class Laborer extends AbstractHousehold {
 		// starve when even the granary is empty. See docs/births.md.
 		LocalDate today = getColony().getDate();
 		var members = getMembers();
-		double available = necessity.getQuantity();
+		double available = foodStock.getQuantity();
 		double headRation = rationFor(members.get(0), today);
 		if (available < headRation) {
 			dieAndSettleEstate();
@@ -459,7 +464,7 @@ public class Laborer extends AbstractHousehold {
 			}
 			break;
 		}
-		necessity.decrease(available - remaining);
+		foodStock.decrease(available - remaining);
 		if (starvedOff != null)
 			for (Member m : starvedOff)
 				removeMember(m);
@@ -469,7 +474,7 @@ public class Laborer extends AbstractHousehold {
 		// colony's fertility config (the universal birth mechanism, shared with
 		// nobles and the ruler). The newborn is added now, so it counts toward this
 		// step's necessity buffer below. See docs/births.md.
-		bearChildIfFertile(necessity.getQuantity(), config.eatAmt());
+		bearChildIfFertile(foodStock.getQuantity(), config.eatAmt());
 
 		if (!firstAct) {
 			if (RR < lowRR)
@@ -516,22 +521,29 @@ public class Laborer extends AbstractHousehold {
 		// `mouths` is the daily ration in adult-equivalents (an all-adult household
 		// equals its member count, preserving the prior behaviour exactly).
 		double dailyNeed = dailyRation(today);
-		double mouths = dailyNeed / config.eatAmt();
-		nConsumption = consumption * Math.max(0, 1 - necessity.getQuantity()
-				/ (getColony().getTargetNStock() * mouths));
+		if (provisioned) {
+			// a provisioned peasant buys NO food — its village's leader imports the larder's deficit,
+			// so the household's whole discretionary spend goes to enjoyment + savings (its wage flows
+			// to enjoyment, dues and savings, never to its own bread). See city-of-hamlets V2.
+			nConsumption = 0;
+			minN = 0;
+		} else {
+			double mouths = dailyNeed / config.eatAmt();
+			nConsumption = consumption * Math.max(0, 1 - foodStock.getQuantity()
+					/ (getColony().getTargetNStock() * mouths));
+			// if the household has under two days' food, buy at least a day's worth for everyone
+			minN = foodStock.getQuantity() < 2 * dailyNeed ? dailyNeed : 0;
+		}
 
 		// compute consumption of enjoyment (in $)
 		eConsumption = consumption - nConsumption;
 
-		// if the household has under two days' food, buy at least a day's worth for
-		// everyone
-		minN = necessity.getQuantity() < 2 * dailyNeed ? dailyNeed : 0;
-
 		// post buy offer to enjoyment market
 		eMkt.addBuyOffer(this, demandForE);
 
-		// post buy offer to necessity market
-		nMkt.addBuyOffer(this, demandForN);
+		// post buy offer to necessity market — a provisioned peasant does not (the village buys)
+		if (!provisioned)
+			nMkt.addBuyOffer(this, demandForN);
 
 		// the occupation choice (build economy, docs/build-queue-plan.md B1): a landed
 		// household on a build-economy colony weighs selling labor at the center against
@@ -592,7 +604,7 @@ public class Laborer extends AbstractHousehold {
 		// the homeless-and-FED rule (B3): an unhoused household whose larder can carry it
 		// stays home to build its house — the demographic gate makes housing worth more
 		// than a wage. Homeless-and-hungry falls through to the normal rule (earn to eat).
-		if (!housedForGate() && necessity.getQuantity() >= FED_DAYS * dailyRation(getColony().getDate())) {
+		if (!housedForGate() && foodStock().getQuantity() >= FED_DAYS * dailyRation(getColony().getDate())) {
 			plotWorker = true;
 			return;
 		}
@@ -763,6 +775,33 @@ public class Laborer extends AbstractHousehold {
 		// a household living on a fief is the fief-holder's vassal (docs/estate-system.md P3): swear
 		// it to the plot's holder, or back to the Crown default on unenfeoffed / no ground
 		setLiegeId(homePlot == null ? null : homePlot.ownerId());
+	}
+
+	// city-of-hamlets V2: whether this household is PROVISIONED — a landed peasant on a village-larder
+	// colony eats from its hamlet's shared larder (the provisioned floor), not its own necessity, and
+	// buys no food itself (its village's leader imports the larder's deficit). Landless / flag-off keep
+	// their own stock, byte-identical.
+	private boolean provisioned() {
+		// only a household on a HAMLET SEAT is provisioned: Settlement.isHamletSeat excludes a null
+		// home plot (landless) and the city center (the civic core is not a village), the single
+		// definition hamlets() also uses — so a household there keeps the market food path.
+		return getColony().getVillageLarders() != null && getColony().isHamletSeat(homePlot);
+	}
+
+	// the food stock this household eats from and drops its home-plot food into: its hamlet's shared
+	// village larder when provisioned, else its own necessity stock (the byte-identical default).
+	private Good foodStock() {
+		return foodStock(provisioned());
+	}
+
+	// as foodStock(), given the already-computed provisioned flag, so act() evaluates provisioned() once
+	private Good foodStock(boolean provisioned) {
+		if (provisioned) {
+			Good larder = getColony().villageLarderGood(homePlot);
+			if (larder != null)
+				return larder;
+		}
+		return necessity;
 	}
 
 	// the daily necessity ration a member eats: an adult the FINE worker ration

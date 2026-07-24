@@ -848,17 +848,31 @@ public class Settlement {
 		List<Plot> plots = getDistrictPlots();
 		if (plots.isEmpty())
 			return List.of();
-		Plot center = plots.get(0);
 		Map<Plot, List<Laborer>> byHome = householdsByHomePlot();
 		List<Hamlet> out = new ArrayList<>();
 		for (Plot seat : plots) {
-			if (seat == center)
+			if (!isHamletSeat(seat))
 				continue;
 			List<Laborer> hh = byHome.get(seat);
 			if (hh != null && !hh.isEmpty())
 				out.add(Hamlet.of(seat, hh));
 		}
 		return out;
+	}
+
+	/**
+	 * Whether {@code plot} is a <b>hamlet seat</b> — a claimed district plot that is not the city
+	 * {@linkplain #getCityCenter() center} (the civic core is not a village). The single definition of
+	 * "a plot that can be a village," shared by {@link #hamlets()} (a hamlet is projected on each seat
+	 * that has residents) and the provisioned-eating check ({@code Laborer.provisioned()}), so the two
+	 * never disagree on which plots are villages — a village fed by one path and drained by another
+	 * (city-of-hamlets V2).
+	 *
+	 * @param plot a plot, or {@code null}
+	 * @return {@code true} if it is a non-center district plot
+	 */
+	public boolean isHamletSeat(Plot plot) {
+		return plot != null && plot != getCityCenter();
 	}
 
 	/**
@@ -1034,6 +1048,20 @@ public class Settlement {
 	public void enableVillageLarders() {
 		if (villageLarders == null)
 			villageLarders = new VillageLarders(this);
+	}
+
+	/**
+	 * The {@link Larder} food pool of the hamlet whose seat is {@code seat} — the village larder a
+	 * <b>provisioned</b> peasant household eats from and drops its home-plot food into (city-of-hamlets
+	 * V2). Creates the larder (pre-stocked with its founding buffer) on first use. Returns {@code null}
+	 * when the village larders are off (the flag-off, byte-identical path — households keep their own
+	 * necessity stock).
+	 *
+	 * @param seat the household's home plot (its hamlet's seat)
+	 * @return the hamlet's larder good, or {@code null} if village larders are off
+	 */
+	public com.civstudio.good.Good villageLarderGood(Plot seat) {
+		return villageLarders == null ? null : villageLarders.larderFor(seat).good();
 	}
 
 	// test seam: prime the food box so a unit test can exercise grow/shrink without driving a
@@ -1940,6 +1968,14 @@ public class Settlement {
 					member.skills().tick();
 			}
 		}
+
+		// city-of-hamlets V2: after the households have eaten from their village larders, each
+		// village's leader posts a buy offer for the larder's food deficit (funded by the leader's
+		// account, delivered into the larder) — the village is the market's food participant. Posted
+		// before the market clears this step so the fill lands for the next day. Flag-off = no-op
+		// (null subsystem). See docs/city-of-hamlets-plan.md V2 slice 2b.
+		if (villageLarders != null)
+			villageLarders.provision();
 
 		for (Bank bank : banks)
 			bank.act();
