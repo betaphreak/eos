@@ -132,8 +132,12 @@ function plotRow(colony, d, i) {
     </div>`;
   }).join("");
   const bare = !built && !rising ? `<div class="city-bare">worked ground</div>` : "";
+  // the plot's fief-lord (the noble/ruler who holds it) — its residents are that lord's vassals
+  const fief = d.fiefLord
+    ? `<span class="city-fief" title="held in fief by the ${escHtml(d.fiefLord)} house">⚜ ${escHtml(d.fiefLord)}</span>`
+    : "";
   return `<div class="city-plot">
-    <div class="city-p-head"><span class="city-p-name">${title}</span>${center}
+    <div class="city-p-head"><span class="city-p-name">${title}</span>${center}${fief}
       <span class="city-p-land">${escHtml(land)}</span></div>
     ${built ? `<div class="city-blds">${built}</div>` : ""}
     ${rising}${bare}

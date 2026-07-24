@@ -1295,6 +1295,12 @@ body.auth-anon #clock { cursor: not-allowed; }
   border-radius: 999px; color: var(--gold, #c9a24a);
   border: 1px solid color-mix(in srgb, var(--gold, #c9a24a) 55%, transparent);
 }
+.city-fief {
+  font-size: 10px; letter-spacing: .04em; padding: 1px 7px; border-radius: 999px;
+  color: color-mix(in srgb, var(--violet, #8d7dbd) 80%, var(--ink));
+  border: 1px solid color-mix(in srgb, var(--violet, #8d7dbd) 55%, transparent);
+  background: color-mix(in srgb, var(--violet, #8d7dbd) 12%, transparent);
+}
 .city-blds { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
 .city-b {
   font-size: 11.5px; padding: 2px 7px; border-radius: 999px; color: var(--ink);

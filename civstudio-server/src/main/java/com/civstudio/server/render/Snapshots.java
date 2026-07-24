@@ -189,8 +189,10 @@ public final class Snapshots {
 							owners.getOrDefault(b.ownerId(), "NONE"),
 							ownerNames.get(b.ownerId())))
 					.toList();
+			// the plot's fief-lord (the noble/ruler that holds it), by surname — null = Crown demesne
+			String fiefLord = p.ownerId() == null ? null : ownerNames.get(p.ownerId());
 			views.add(new DistrictView(i, p.x(), p.y(), buildings,
-					underway.getOrDefault(p, List.of())));
+					underway.getOrDefault(p, List.of()), fiefLord));
 		}
 		return views;
 	}

@@ -24,9 +24,12 @@ import java.util.List;
  * @param buildings the buildings standing on the plot
  * @param underway  the constructions currently rising on it (household self-builds, elite
  *                  commissions, and — on the center — the crown's active queue item)
+ * @param fiefLord  the surname of the noble (or ruler) that holds this plot as a fief
+ *                  (docs/estate-system.md P3), or {@code null} when it is Crown demesne — the
+ *                  households resident here are that lord's vassals
  */
 public record DistrictView(int index, int x, int y, List<PlacedBuilding> buildings,
-		List<Underway> underway) {
+		List<Underway> underway, String fiefLord) {
 
 	/**
 	 * One finished building on the plot, as a bare eos-native id (the verbatim C2C
